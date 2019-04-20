@@ -1,0 +1,23 @@
+
+{ 
+    "color_dark_wall": {
+      "r": 0,
+      "g": 0,
+      "b": 100
+    },
+    "color_light_wall": {
+      "r": 130,
+      "g": 110,
+      "b": 50
+    },
+    "color_dark_ground": {
+      "r": 50,
+      "g": 50,
+      "b": 150
+    },
+    "color_light_ground": {
+      "r": 200,
+      "g": 180,
+      "b": 50
+    }
+}

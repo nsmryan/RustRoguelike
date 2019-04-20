@@ -1,17 +1,29 @@
 extern crate tcod;
 extern crate rand;
+extern crate serde;
+#[macro_use]extern crate serde_derive;
+extern crate serde_json;
 
 
 use std::cmp;
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
+use std::io::Read;
 
 use rand::Rng;
+
+use serde::{Serialize, Deserialize};
 
 use tcod::console::*;
 use tcod::colors::*;
 use tcod::input::Key;
 use tcod::input::KeyCode::*;
 use tcod::map::{Map as FovMap, FovAlgorithm};
+use tcod::input::{self, Event, Mouse};
 
+
+const CONFIG_FILE_NAME: &str = &"config.json";
 
 const SCREEN_WIDTH: i32 = 80;
 const SCREEN_HEIGHT: i32 = 50;
@@ -23,15 +35,12 @@ const MAP_HEIGHT: i32 = 43;
 const FOV_ALGO: FovAlgorithm = FovAlgorithm::Basic;
 const FOV_LIGHT_WALLS: bool = true;
 const TORCH_RADIOUS: i32 = 10;
-
-const COLOR_DARK_WALL: Color = Color { r: 0, g: 0, b: 100 };
-const COLOR_LIGHT_WALL: Color = Color { r: 130, g: 110, b: 50 };
-const COLOR_DARK_GROUND: Color = Color { r: 50, g: 50, b: 150 };
-const COLOR_LIGHT_GROUND: Color = Color { r: 200, g: 180, b: 50 };
+const HEAL_AMOUNT: i32 = 4;
 
 const ROOM_MAX_SIZE: i32 = 10;
 const ROOM_MIN_SIZE: i32 = 6;
 const MAX_ROOMS: i32 = 30;
+const MAX_ROOM_ITEMS: i32 = 2;
 
 const MAX_ROOM_MONSTERS: i32 = 3;
 
@@ -45,10 +54,54 @@ const MSG_X: i32 = BAR_WIDTH + 2;
 const MSG_WIDTH: i32 = SCREEN_WIDTH - BAR_WIDTH - 2;
 const MSG_HEIGHT: usize = PANEL_HEIGHT as usize - 1;
 
+const INVENTORY_WIDTH: i32 = 50;
+
 
 type Map = Vec<Vec<Tile>>;
 
 type Messages = Vec<(String, Color)>;
+
+pub struct Game {
+    pub root: Root,
+    pub console: Offscreen,
+    pub fov: FovMap,
+    pub mouse: Mouse,
+}
+
+impl Game {
+    pub fn with_root(root: Root) -> Game {
+        Game {
+            root: root,
+            console: Offscreen::new(SCREEN_WIDTH, SCREEN_HEIGHT),
+            fov: FovMap::new(MAP_WIDTH, MAP_HEIGHT),
+            mouse: Default::default(),
+        }
+    }
+}
+
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub struct ColorConfig {
+    r: u8,
+    g: u8,
+    b: u8,
+}
+
+impl ColorConfig {
+    pub fn color(&self) -> Color {
+        Color::new(self.r, self.g, self.b)
+    }
+}
+
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub struct Config {
+    color_dark_wall: ColorConfig,
+    color_light_wall: ColorConfig,
+    color_dark_ground: ColorConfig,
+    color_light_ground: ColorConfig,
+}
+
 
 #[derive(Clone, Copy, Debug)]
 pub struct Rect  {
@@ -89,6 +142,7 @@ pub struct Object {
     alive: bool,
     fighter: Option<Fighter>,
     ai: Option<Ai>,
+    item: Option<Item>,
 }
 
 impl Object {
@@ -103,16 +157,17 @@ impl Object {
             alive: false,
             fighter: None,
             ai: None,
+            item: None,        
         }
     }
 
-    pub fn draw(&self, con: &mut Console) {
-        con.set_default_foreground(self.color);
-        con.put_char(self.x, self.y, self.char, BackgroundFlag::None);
+    pub fn draw(&self, console: &mut Console) {
+        console.set_default_foreground(self.color);
+        console.put_char(self.x, self.y, self.char, BackgroundFlag::None);
     }
 
-    pub fn clear(&self, con: &mut Console) {
-        con.put_char(self.x, self.y, ' ', BackgroundFlag::None);
+    pub fn clear(&self, console: &mut Console) {
+        console.put_char(self.x, self.y, ' ', BackgroundFlag::None);
     }
 
     pub fn pos(&self) -> (i32, i32) {
@@ -152,6 +207,15 @@ impl Object {
             target.take_damage(damage);
         } else {
             message(messages, format!("{} attacks {} but it has no effect!", self.name, target.name), WHITE);
+        }
+    }
+
+    pub fn heal(&mut self, amount: i32) {
+        if let Some(ref mut fighter) = self.fighter {
+            fighter.hp += amount;
+            if fighter.hp > fighter.max_hp {
+                fighter.hp = fighter.max_hp;
+            }
         }
     }
 }
@@ -251,6 +315,15 @@ impl DeathCallback {
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct Ai;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Item {
+    Heal,
+}
+
+enum UseResult {
+    UsedUp,
+    Cancelled,
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct Tile {
@@ -270,10 +343,14 @@ impl Tile {
 }
 
 
-fn handle_keys(root: &mut Root, map: &Map, objects: &mut [Object], messages: &mut Messages) -> PlayerAction {
+fn handle_keys(game: &mut Game,
+               key: Key,
+               map: &Map,
+               objects: &mut Vec<Object>,
+               inventory: &mut Vec<Object>,
+               messages: &mut Messages) -> PlayerAction {
     use PlayerAction::*;
 
-    let key = root.wait_for_keypress(true);
     let player_alive = objects[PLAYER].alive;
 
     match (key, player_alive) {
@@ -298,15 +375,142 @@ fn handle_keys(root: &mut Root, map: &Map, objects: &mut [Object], messages: &mu
         }
 
         (Key { code: Enter, alt: true, .. }, _) => {
-            let fullscreen = root.is_fullscreen();
-            root.set_default_foreground(WHITE);
-            root.set_fullscreen(!fullscreen);
+            let fullscreen = game.root.is_fullscreen();
+            game.root.set_default_foreground(WHITE);
+            game.root.set_fullscreen(!fullscreen);
             DidntTakeTurn
         },
+
+        (Key {printable: 'g', .. }, true) => {
+            let item_id = objects.iter().position(|object| {
+                object.pos() == objects[PLAYER].pos() && object.item.is_some()
+            });
+            if let Some(item_id) = item_id {
+                pick_item_up(item_id, objects, inventory, messages);
+            }
+            DidntTakeTurn
+        }
+
+        (Key {printable: 'i', .. }, true) => {
+            let inventory_index =
+                inventory_menu(inventory,
+                               "Press the key next to an item to use it, or any other to cancel.\n",
+                               &mut game.root);
+            if let Some(inventory_index) = inventory_index {
+                use_item(inventory_index, inventory, objects, messages);
+            }
+            DidntTakeTurn
+        }
 
         (Key { code: Escape, .. }, _) => Exit,
 
         (_, _) => DidntTakeTurn,
+    }
+}
+
+fn cast_heal(_inventory_id: usize, objects: &mut [Object], messages: &mut Messages) -> UseResult {
+    if let Some(fighter) = objects[PLAYER].fighter {
+        if fighter.hp == fighter.max_hp {
+            message(messages, "You are alrady at full health.", RED);
+            return UseResult::Cancelled;
+        }
+        message(messages, "Your wounds start to feel better!", LIGHT_VIOLET);
+        objects[PLAYER].heal(HEAL_AMOUNT);
+        return UseResult::UsedUp;
+    }
+    UseResult::Cancelled
+}
+
+fn menu<T: AsRef<str>>(header: &str, options: &[T], width: i32, root: &mut Root) -> Option<usize> {
+    assert!(options.len() <= 26, "Cannot have a menu with more than 26 options");
+
+    let header_height = root.get_height_rect(0, 0, width, SCREEN_HEIGHT, header);
+    let height = options.len() as i32 + header_height;
+
+    let mut window = Offscreen::new(width, height);
+
+    window.set_default_foreground(WHITE);
+    window.print_rect_ex(0, 0, width, height, BackgroundFlag::None, TextAlignment::Left, header);
+
+    for (index, option_text) in options.iter().enumerate() {
+        let menu_letter = (b'a' + index as u8) as char;
+        let text = format!("({}) {}", menu_letter, option_text.as_ref());
+        window.print_ex(0, header_height + index as i32,
+                        BackgroundFlag::None, TextAlignment::Left, text);
+    }
+
+    let x = SCREEN_WIDTH / 2 - width / 2;
+    let y = SCREEN_HEIGHT / 2 - height / 2;
+    tcod::console::blit(&mut window, (0, 0), (width, height), root, (x, y), 1.0, 0.7);
+
+    root.flush();
+    let key = root.wait_for_keypress(true);
+
+    if key.printable.is_alphabetic() {
+        let index = key.printable.to_ascii_lowercase() as usize - 'a' as usize;
+        if index < options.len() {
+            Some(index)
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+fn inventory_menu(inventory: &[Object], header: &str, root: &mut Root) -> Option<usize> {
+    let options = if inventory.len() == 0 {
+        vec!["Inventory is empty.".into()]
+    } else {
+        inventory.iter().map(|item| { item.name.clone() }).collect()
+    };
+
+    let inventory_index = menu(header, &options, INVENTORY_WIDTH, root);
+
+    if inventory.len() > 0 {
+        inventory_index
+    } else {
+        None
+    }
+}
+
+fn use_item(inventory_id: usize,
+            inventory: &mut Vec<Object>,
+            objects: &mut [Object],
+            messages: &mut Messages) {
+    use Item::*;
+
+    if let Some(item) = inventory[inventory_id].item {
+        let on_use = match item {
+            Heal => cast_heal,
+        };
+        match on_use(inventory_id, objects, messages) {
+            UseResult::UsedUp => {
+                inventory.remove(inventory_id);
+            }
+            UseResult::Cancelled => {
+                message(messages, "Cancelled", WHITE);
+            }
+        }
+    } else {
+        message(messages,
+                format!("The {} cannot be used.", inventory[inventory_id].name),
+                WHITE);
+    }
+}
+
+fn pick_item_up(object_id: usize,
+                objects: &mut Vec<Object>,
+                inventory: &mut Vec<Object>,
+                messages: &mut Messages) {
+    if inventory.len() >= 26 {
+        message(messages,
+                format!("Your inventory is full, cannot pick up {}", objects[object_id].name),
+                RED);
+    } else {
+        let item = objects.swap_remove(object_id);
+        message(messages, format!("You picked up a {}!", item.name), GREEN);
+        inventory.push(item);
     }
 }
 
@@ -381,7 +585,7 @@ fn create_v_tunnel(y1: i32, y2: i32, x: i32, map: &mut Map) {
 }
 
 fn make_map(objects: &mut Vec<Object>) -> (Map, (i32, i32)) {
-    let mut map = vec![vec![Tile::empty(); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
+    let mut map = vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
 
     let mut rooms = vec![];
 
@@ -424,28 +628,27 @@ fn make_map(objects: &mut Vec<Object>) -> (Map, (i32, i32)) {
     (map, starting_position)
 }
 
-fn render_all(root: &mut Root,
-              con: &mut Offscreen,
+fn render_all(game: &mut Game,
               panel: &mut Offscreen,
               objects: &[Object],
               map: &mut Map,
               messages: &mut Messages,
-              fov_map: &mut FovMap,
-              fov_recompute: bool) {
+              fov_recompute: bool,
+              config: &Config) {
     if fov_recompute {
         let player = &objects[PLAYER];
-        fov_map.compute_fov(player.x, player.y, TORCH_RADIOUS, FOV_LIGHT_WALLS, FOV_ALGO);
+        game.fov.compute_fov(player.x, player.y, TORCH_RADIOUS, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
-            let visible = fov_map.is_in_fov(x, y);
+            let visible = game.fov.is_in_fov(x, y);
             let wall = map[x as usize][y as usize].block_sight;
             let color = match (visible, wall) {
-                (false, true) => COLOR_DARK_WALL,
-                (false, false) => COLOR_DARK_GROUND,
-                (true, true) => COLOR_LIGHT_WALL,
-                (true, false) => COLOR_LIGHT_GROUND,
+                (false, true) => config.color_dark_wall,
+                (false, false) => config.color_dark_ground,
+                (true, true) => config.color_light_wall,
+                (true, false) => config.color_light_ground,
             };
 
             let mut explored = map[x as usize][y as usize].explored;
@@ -454,17 +657,17 @@ fn render_all(root: &mut Root,
             }
 
             if explored {
-                con.set_char_background(x, y, color, BackgroundFlag::Set);
+                game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
             }
             map[x as usize][y as usize].explored = explored;
         }
     }
 
-    let mut to_draw: Vec<_> = objects.iter().filter(|o| fov_map.is_in_fov(o.x, o.y)).collect();
+    let mut to_draw: Vec<_> = objects.iter().filter(|o| game.fov.is_in_fov(o.x, o.y)).collect();
     to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
 
     for object in &to_draw {
-        object.draw(con);
+        object.draw(&mut game.console);
     }
 
     panel.set_default_background(BLACK);
@@ -485,9 +688,24 @@ fn render_all(root: &mut Root,
         panel.print_rect(MSG_X, y, MSG_WIDTH, 0, msg);
     }
 
-    blit(con, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), root, (0, 0), 1.0, 1.0);
+    panel.set_default_foreground(LIGHT_GREY);
+    panel.print_ex(1, 0, BackgroundFlag::None, TextAlignment::Left,
+                   get_names_under_mouse(game.mouse, objects, &mut game.fov));
 
-    blit(panel, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), root, (0, PANEL_Y), 1.0, 1.0);
+    blit(&mut game.console, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, 0), 1.0, 1.0);
+
+    blit(panel, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, PANEL_Y), 1.0, 1.0);
+}
+
+fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> String {
+    let (x, y) = (mouse.cx as i32, mouse.cy as i32);
+
+    let names = objects.iter()
+                       .filter(|obj| { obj.pos() == (x, y) && fov_map.is_in_fov(obj.x, obj.y)})
+                       .map(|obj| obj.name.clone())
+                       .collect::<Vec<_>>();
+
+    names.join(", ")
 }
 
 fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
@@ -515,6 +733,19 @@ fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
             objects.push(monster);
         }
     }
+
+    let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
+
+    for _ in 0..num_items {
+        let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
+        let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
+
+        if !is_blocked(x, y, map, objects) {
+            let mut object = Object::new(x, y, '!', "healing potion", VIOLET, false);
+            object.item = Some(Item::Heal);
+            objects.push(object);
+        }
+    }
 }
 
 fn render_bar(panel: &mut Offscreen,
@@ -537,7 +768,10 @@ fn render_bar(panel: &mut Offscreen,
     }
 
     panel.set_default_foreground(WHITE);
-    panel.print_ex(x + total_width / 2, y, BackgroundFlag::None, TextAlignment::Center,
+    panel.print_ex(x + total_width / 2,
+                   y,
+                   BackgroundFlag::None,
+                   TextAlignment::Center,
                    &format!("{}: {}/{}", name, value, maximum));
 }
 
@@ -547,6 +781,16 @@ fn main() {
     let mut panel = Offscreen::new(SCREEN_WIDTH, PANEL_HEIGHT);
 
     let mut messages = vec![];
+
+    let mut inventory = vec![];
+
+    let mut config: Config;
+    {
+        let mut file = File::open("config.json").unwrap();
+        let mut config_string = String::new();
+        file.read_to_string(&mut config_string).unwrap();
+        config = serde_json::from_str(&config_string).unwrap();
+    }
 
     let mut player = Object::new(0, 0, '@', "player", WHITE, true);
     player.alive = true;
@@ -565,37 +809,46 @@ fn main() {
         .title("Rogue-like")
         .init();
 
-    for object in &objects {
-        object.draw(&mut root);
-    }
-    root.flush();
-        
-    let mut con = Offscreen::new(SCREEN_WIDTH, SCREEN_HEIGHT);
+    let mut game = Game::with_root(root);
 
-    let mut fov_map = FovMap::new(MAP_WIDTH, MAP_HEIGHT);
+    for object in &objects {
+        object.draw(&mut game.root);
+    }
+    game.root.flush();
+        
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
-            fov_map.set(x, y,
-                        !map[x as usize][y as usize].block_sight,
-                        !map[x as usize][y as usize].blocked);
+            game.fov.set(x, y,
+                         !map[x as usize][y as usize].block_sight,
+                         !map[x as usize][y as usize].blocked);
         }
     }
 
     message(&mut messages, "Welcome Stranger! Prepare to perish in the Desolation of Salt!", RED);
 
-    while !root.window_closed() {
-        let fov_recompute = previous_player_position != (objects[PLAYER].x, objects[PLAYER].y);
-        render_all(&mut root, &mut con, &mut panel,
-                   &objects, &mut map, &mut messages, &mut fov_map, fov_recompute);
+    let mut key = Default::default();
 
-        root.flush();
+    while !game.root.window_closed() {
+        match input::check_for_event(input::MOUSE | input::KEY_PRESS) {
+            Some((_, Event::Mouse(m))) => game.mouse = m,
+            Some((_, Event::Key(k))) => key = k,
+            _ => key = Default::default(),
+        }
+
+        let fov_recompute = previous_player_position != (objects[PLAYER].x, objects[PLAYER].y);
+        render_all(&mut game, &mut panel,
+                   &objects, &mut map, &mut messages,
+                   fov_recompute,
+                   &config);
+
+        game.root.flush();
 
         for object in &objects {
-            object.clear(&mut con);
+            object.clear(&mut game.console);
         }
 
         previous_player_position = (objects[PLAYER].x, objects[PLAYER].y);
-        let player_action = handle_keys(&mut root, &map, &mut objects, &mut messages);
+        let player_action = handle_keys(&mut game, key, &map, &mut objects, &mut inventory, &mut messages);
         if player_action == PlayerAction::Exit {
             break;
         }
@@ -603,9 +856,20 @@ fn main() {
         if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
             for id in 1..objects.len() {
                 if objects[id].ai.is_some() {
-                    ai_take_turn(id, &map, &mut objects, &fov_map, &mut messages);
+                    ai_take_turn(id, &map, &mut objects, &game.fov, &mut messages);
                 }
             }
         }
+
+        // reload configuration
+        match File::open("config.json") {
+            Ok(mut file) => {
+                let mut config_string = String::new();
+                file.read_to_string(&mut config_string).unwrap();
+                config = serde_json::from_str(&config_string).unwrap();
+            }
+          _ => (),
+        }
     }
 }
+
