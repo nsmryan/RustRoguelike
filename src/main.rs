@@ -53,122 +53,6 @@ pub struct Config {
 }
 
 
-#[derive(Clone, Copy, Debug)]
-pub struct Rect  {
-    x1: i32,
-    y1: i32,
-    x2: i32,
-    y2: i32,
-}
-
-impl Rect {
-    pub fn new(x: i32, y: i32, w: i32, h: i32) -> Self {
-        Rect { x1: x, y1: y, x2: x + w, y2: y + h }
-    }
-
-    pub fn center(&self) -> (i32, i32) {
-        let center_x = (self.x1 + self.x2) / 2;
-        let center_y = (self.y1 + self.y2) / 2;
-        (center_x, center_y)
-    }
-
-    pub fn intersects_with(&self, other: &Rect) -> bool {
-        (self.x1 <= other.x2) &&
-        (self.x2 >= other.x1) &&
-        (self.y1 <= other.y2) &&
-        (self.y2 >= other.y1)
-    }
-}
-
-
-#[derive(Clone, Debug)]
-pub struct Object {
-    x: i32,
-    y: i32,
-    char: char,
-    color: Color,
-    name: String,
-    blocks: bool,
-    alive: bool,
-    fighter: Option<Fighter>,
-    ai: Option<Ai>,
-    item: Option<Item>,
-}
-
-impl Object {
-    pub fn new(x: i32, y: i32, char: char, name: &str, color: Color, blocks: bool) -> Self {
-        Object {
-            x: x,
-            y: y,
-            char: char,
-            color: color,
-            name: name.into(),
-            blocks: blocks,
-            alive: false,
-            fighter: None,
-            ai: None,
-            item: None,        
-        }
-    }
-
-    pub fn draw(&self, console: &mut Console) {
-        console.set_default_foreground(self.color);
-        console.put_char(self.x, self.y, self.char, BackgroundFlag::None);
-    }
-
-    pub fn clear(&self, console: &mut Console) {
-        console.put_char(self.x, self.y, ' ', BackgroundFlag::None);
-    }
-
-    pub fn pos(&self) -> (i32, i32) {
-        (self.x, self.y)
-    }
-
-    pub fn set_pos(&mut self, x: i32, y: i32) {
-        self.x = x;
-        self.y = y;
-    }
-
-    pub fn distance_to(&self, other: &Object) -> f32 {
-        let dx = other.x - self.x;
-        let dy = other.y - self.y;
-        ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
-    }
-
-    pub fn take_damage(&mut self, damage: i32) {
-        if let Some(fighter) = self.fighter.as_mut() {
-            if damage > 0 {
-                fighter.hp -= damage;
-            }
-        }
-
-        if let Some(fighter) = self.fighter {
-            if fighter.hp <= 0 {
-                self.alive = false;
-                fighter.on_death.callback(self);
-            }
-        }
-    }
-
-    pub fn attack(&mut self, target: &mut Object, messages: &mut Messages) {
-        let damage = self.fighter.map_or(0, |f| f.power) - target.fighter.map_or(0, |f| f.defense);
-        if damage > 0 {
-            message(messages, format!("{} attacks {} for {} hit points.", self.name, target.name, damage), WHITE);
-            target.take_damage(damage);
-        } else {
-            message(messages, format!("{} attacks {} but it has no effect!", self.name, target.name), WHITE);
-        }
-    }
-
-    pub fn heal(&mut self, amount: i32) {
-        if let Some(ref mut fighter) = self.fighter {
-            fighter.hp += amount;
-            if fighter.hp > fighter.max_hp {
-                fighter.hp = fighter.max_hp;
-            }
-        }
-    }
-}
 
 pub fn player_death(player: &mut Object) {
     player.char = '%';
@@ -228,29 +112,6 @@ fn mut_two<T>(first_index: usize, second_index: usize, items: &mut [T]) -> (&mut
     }
 }
 
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum PlayerAction {
-    TookTurn,
-    DidntTakeTurn,
-    Exit,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct Fighter {
-    max_hp: i32,
-    hp: i32,
-    defense: i32,
-    power: i32,
-    on_death: DeathCallback,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-enum DeathCallback {
-    Player,
-    Monster,
-}
-
 impl DeathCallback {
     fn callback(self, object: &mut Object) {
         use DeathCallback::*;
@@ -260,19 +121,6 @@ impl DeathCallback {
         };
         callback(object);
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct Ai;
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-enum Item {
-    Heal,
-}
-
-enum UseResult {
-    UsedUp,
-    Cancelled,
 }
 
 
@@ -344,10 +192,10 @@ fn handle_keys(game: &mut Game,
 fn cast_heal(_inventory_id: usize, objects: &mut [Object], messages: &mut Messages) -> UseResult {
     if let Some(fighter) = objects[PLAYER].fighter {
         if fighter.hp == fighter.max_hp {
-            message(messages, "You are alrady at full health.", RED);
+            messages.message("You are alrady at full health.", RED);
             return UseResult::Cancelled;
         }
-        message(messages, "Your wounds start to feel better!", LIGHT_VIOLET);
+        messages.message("Your wounds start to feel better!", LIGHT_VIOLET);
         objects[PLAYER].heal(HEAL_AMOUNT);
         return UseResult::UsedUp;
     }
@@ -422,13 +270,11 @@ fn use_item(inventory_id: usize,
                 inventory.remove(inventory_id);
             }
             UseResult::Cancelled => {
-                message(messages, "Cancelled", WHITE);
+                messages.message("Cancelled", WHITE);
             }
         }
     } else {
-        message(messages,
-                format!("The {} cannot be used.", inventory[inventory_id].name),
-                WHITE);
+        messages.message(format!("The {} cannot be used.", inventory[inventory_id].name), WHITE);
     }
 }
 
@@ -437,22 +283,12 @@ fn pick_item_up(object_id: usize,
                 inventory: &mut Vec<Object>,
                 messages: &mut Messages) {
     if inventory.len() >= 26 {
-        message(messages,
-                format!("Your inventory is full, cannot pick up {}", objects[object_id].name),
-                RED);
+        messages.message(format!("Your inventory is full, cannot pick up {}", objects[object_id].name), RED);
     } else {
         let item = objects.swap_remove(object_id);
-        message(messages, format!("You picked up a {}!", item.name), GREEN);
+        messages.message(format!("You picked up a {}!", item.name), GREEN);
         inventory.push(item);
     }
-}
-
-fn message<T: Into<String>>(messages: &mut Messages, message: T, color: Color) {
-    if messages.len() == MSG_HEIGHT {
-        messages.remove(0);
-    }
-
-    messages.push((message.into(), color));
 }
 
 fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], messages: &mut Messages) {
@@ -475,26 +311,6 @@ fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], me
     }
 }
 
-fn create_room(room: Rect, map: &mut Map) {
-    for x in (room.x1 + 1)..room.x2 {
-        for y in (room.y1 + 1)..room.y2 {
-            map[x as usize][y as usize] = Tile::empty();
-        }
-    }
-
-    for x in room.x1..room.x2 {
-        map[x as usize][room.y1 as usize] = Tile::wall();
-        map[x as usize][room.y2 as usize] = Tile::wall();
-    }
-
-    for y in room.y1..room.y2 {
-        map[room.x1 as usize][y as usize] = Tile::wall();
-        map[room.x2 as usize][y as usize] = Tile::wall();
-    }
-
-    map[room.x2 as usize][room.y2 as usize] = Tile::wall();
-}
-
 fn render_all(game: &mut Game,
               objects: &[Object],
               map: &mut Map,
@@ -509,7 +325,7 @@ fn render_all(game: &mut Game,
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
             let visible = game.fov.is_in_fov(x, y);
-            let wall = map[x as usize][y as usize].block_sight;
+            let wall = map.0[x as usize][y as usize].block_sight;
             let color = match (visible, wall) {
                 (false, true) => config.color_dark_wall,
                 (false, false) => config.color_dark_ground,
@@ -517,7 +333,7 @@ fn render_all(game: &mut Game,
                 (true, false) => config.color_light_ground,
             };
 
-            let mut explored = map[x as usize][y as usize].explored;
+            let mut explored = map.0[x as usize][y as usize].explored;
             if visible {
                 explored = true;
             }
@@ -525,7 +341,7 @@ fn render_all(game: &mut Game,
             if explored {
                 game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
             }
-            map[x as usize][y as usize].explored = explored;
+            map.0[x as usize][y as usize].explored = explored;
         }
     }
 
@@ -544,7 +360,7 @@ fn render_all(game: &mut Game,
     render_bar(game, 1, 1, BAR_WIDTH, "HP", hp, max_hp, LIGHT_RED, DARK_RED);
 
     let mut y = MSG_HEIGHT as i32;
-    for &(ref msg, color) in messages.iter().rev() {
+    for &(ref msg, color) in messages.0.iter().rev() {
         let msg_height = game.panel.get_height_rect(MSG_X, y, MSG_WIDTH, 0, msg);
         y -= msg_height;
         if y < 0 {
@@ -605,7 +421,7 @@ fn main() {
     let mut previous_player_position = (-1, -1);
 
 
-    let mut messages = vec![];
+    let mut messages = Messages::new();
 
     let mut inventory = vec![];
 
@@ -644,12 +460,12 @@ fn main() {
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
             game.fov.set(x, y,
-                         !map[x as usize][y as usize].block_sight,
-                         !map[x as usize][y as usize].blocked);
+                         !map.0[x as usize][y as usize].block_sight,
+                         !map.0[x as usize][y as usize].blocked);
         }
     }
 
-    message(&mut messages, "Welcome Stranger! Prepare to perish in the Desolation of Salt!", RED);
+    messages.message("Welcome Stranger! Prepare to perish in the Desolation of Salt!", RED);
 
     let mut key = Default::default();
 

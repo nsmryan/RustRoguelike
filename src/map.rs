@@ -1,14 +1,21 @@
 use rand::Rng;
+use std::cmp;
 
-use tcod::map::{Map as FovMap};
 use tcod::colors::*;
 
+use crate::constants::*;
+use crate::types::*;
 
-pub struct Map(Vec<Vec<Tile>>);
+
+pub struct Map(pub Vec<Vec<Tile>>);
 
 impl Map {
-    fn is_blocked(&self, x: i32, y: i32, objects: &[Object]) -> bool {
-        if self[x as usize][y as usize].blocked {
+    pub fn with_vec(map: Vec<Vec<Tile>>) -> Map {
+        Map(map)
+    }
+
+    pub fn is_blocked(&self, x: i32, y: i32, objects: &[Object]) -> bool {
+        if self.0[x as usize][y as usize].blocked {
             return true;
         }
 
@@ -20,7 +27,7 @@ impl Map {
 
 
 pub fn make_map(objects: &mut Vec<Object>) -> (Map, (i32, i32)) {
-    let mut map = vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
+    let mut map = Map::with_vec(vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize]);
 
     let mut rooms = vec![];
 
@@ -65,13 +72,13 @@ pub fn make_map(objects: &mut Vec<Object>) -> (Map, (i32, i32)) {
 
 pub fn create_h_tunnel(x1: i32, x2: i32, y: i32, map: &mut Map) {
     for x in cmp::min(x1, x2)..(cmp::max(x1, x2)+1) {
-        map[x as usize][y as usize] = Tile::empty();
+        map.0[x as usize][y as usize] = Tile::empty();
     }
 }
 
 pub fn create_v_tunnel(y1: i32, y2: i32, x: i32, map: &mut Map) {
     for y in cmp::min(y1, y2)..(cmp::max(y1, y2)+1) {
-        map[x as usize][y as usize] = Tile::empty();
+        map.0[x as usize][y as usize] = Tile::empty();
     }
 }
 
@@ -82,7 +89,7 @@ pub fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
         let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
         let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
 
-        if !is_blocked(x, y, map, objects) {
+        if !map.is_blocked(x, y, objects) {
             let mut monster = if rand::random::<f32>() < 0.8 {
                 let mut orc = Object::new(x, y, 'o', "orc", DESATURATED_GREEN, true);
                 orc.fighter = Some(Fighter{max_hp: 10, hp: 10, defense: 0, power: 3, on_death: DeathCallback::Monster });
@@ -107,11 +114,31 @@ pub fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
         let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
         let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
 
-        if !is_blocked(x, y, map, objects) {
+        if !map.is_blocked(x, y, objects) {
             let mut object = Object::new(x, y, '!', "healing potion", VIOLET, false);
             object.item = Some(Item::Heal);
             objects.push(object);
         }
     }
+}
+
+fn create_room(room: Rect, map: &mut Map) {
+    for x in (room.x1 + 1)..room.x2 {
+        for y in (room.y1 + 1)..room.y2 {
+            map.0[x as usize][y as usize] = Tile::empty();
+        }
+    }
+
+    for x in room.x1..room.x2 {
+        map.0[x as usize][room.y1 as usize] = Tile::wall();
+        map.0[x as usize][room.y2 as usize] = Tile::wall();
+    }
+
+    for y in room.y1..room.y2 {
+        map.0[room.x1 as usize][y as usize] = Tile::wall();
+        map.0[room.x2 as usize][y as usize] = Tile::wall();
+    }
+
+    map.0[room.x2 as usize][room.y2 as usize] = Tile::wall();
 }
 
