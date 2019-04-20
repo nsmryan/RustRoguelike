@@ -4,10 +4,13 @@ extern crate serde;
 #[macro_use]extern crate serde_derive;
 extern crate serde_json;
 
+mod types;
+mod constants;
+mod map;
+
 
 use std::cmp;
 use std::fs::File;
-use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::Read;
 
@@ -15,71 +18,16 @@ use rand::Rng;
 
 use serde::{Serialize, Deserialize};
 
+use tcod::map::{Map as FovMap};
 use tcod::console::*;
 use tcod::colors::*;
 use tcod::input::Key;
 use tcod::input::KeyCode::*;
-use tcod::map::{Map as FovMap, FovAlgorithm};
 use tcod::input::{self, Event, Mouse};
 
-
-const CONFIG_FILE_NAME: &str = &"config.json";
-
-const SCREEN_WIDTH: i32 = 80;
-const SCREEN_HEIGHT: i32 = 50;
-const LIMIT_FPS: i32 = 20;
-
-const MAP_WIDTH: i32 = 80;
-const MAP_HEIGHT: i32 = 43;
-
-const FOV_ALGO: FovAlgorithm = FovAlgorithm::Basic;
-const FOV_LIGHT_WALLS: bool = true;
-const TORCH_RADIOUS: i32 = 10;
-const HEAL_AMOUNT: i32 = 4;
-
-const ROOM_MAX_SIZE: i32 = 10;
-const ROOM_MIN_SIZE: i32 = 6;
-const MAX_ROOMS: i32 = 30;
-const MAX_ROOM_ITEMS: i32 = 2;
-
-const MAX_ROOM_MONSTERS: i32 = 3;
-
-const PLAYER: usize = 0;
-
-const BAR_WIDTH: i32 = 20;
-const PANEL_HEIGHT: i32 = 7;
-const PANEL_Y: i32 = SCREEN_HEIGHT - PANEL_HEIGHT;
-
-const MSG_X: i32 = BAR_WIDTH + 2;
-const MSG_WIDTH: i32 = SCREEN_WIDTH - BAR_WIDTH - 2;
-const MSG_HEIGHT: usize = PANEL_HEIGHT as usize - 1;
-
-const INVENTORY_WIDTH: i32 = 50;
-
-
-type Map = Vec<Vec<Tile>>;
-
-type Messages = Vec<(String, Color)>;
-
-pub struct Game {
-    pub root: Root,
-    pub console: Offscreen,
-    pub fov: FovMap,
-    pub mouse: Mouse,
-    pub panel: Offscreen,
-}
-
-impl Game {
-    pub fn with_root(root: Root) -> Game {
-        Game {
-            root: root,
-            console: Offscreen::new(SCREEN_WIDTH, SCREEN_HEIGHT),
-            fov: FovMap::new(MAP_WIDTH, MAP_HEIGHT),
-            mouse: Default::default(),
-            panel: Offscreen::new(SCREEN_WIDTH, PANEL_HEIGHT),
-        }
-    }
-}
+use types::*;
+use constants::*;
+use map::*;
 
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -239,7 +187,7 @@ pub fn monster_death(monster: &mut Object) {
 pub fn move_by(id: usize, dx: i32, dy: i32, map: &Map, objects: &mut [Object]) {
     let (x, y) = objects[id].pos();
 
-    if !is_blocked(x + dx, y + dy, map, objects){
+    if !map.is_blocked(x + dx, y + dy, objects){
         objects[id].set_pos(x + dx, y + dy);
     }
 }
@@ -325,23 +273,6 @@ enum Item {
 enum UseResult {
     UsedUp,
     Cancelled,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Tile {
-    pub blocked: bool,
-    pub block_sight: bool,
-    pub explored: bool,
-}
-
-impl Tile {
-    pub fn empty() -> Self {
-        Tile { blocked: false, block_sight: false, explored: false, }
-    }
-
-    pub fn wall() -> Self {
-        Tile { blocked: true, block_sight: true, explored: false, }
-    }
 }
 
 
@@ -544,16 +475,6 @@ fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], me
     }
 }
 
-fn is_blocked(x: i32, y: i32, map: &Map, objects: &[Object]) -> bool {
-    if map[x as usize][y as usize].blocked {
-        return true;
-    }
-
-    objects.iter().any(|object| {
-        object.blocks && object.pos() == (x, y)
-    })
-}
-
 fn create_room(room: Rect, map: &mut Map) {
     for x in (room.x1 + 1)..room.x2 {
         for y in (room.y1 + 1)..room.y2 {
@@ -572,62 +493,6 @@ fn create_room(room: Rect, map: &mut Map) {
     }
 
     map[room.x2 as usize][room.y2 as usize] = Tile::wall();
-}
-
-fn create_h_tunnel(x1: i32, x2: i32, y: i32, map: &mut Map) {
-    for x in cmp::min(x1, x2)..(cmp::max(x1, x2)+1) {
-        map[x as usize][y as usize] = Tile::empty();
-    }
-}
-
-fn create_v_tunnel(y1: i32, y2: i32, x: i32, map: &mut Map) {
-    for y in cmp::min(y1, y2)..(cmp::max(y1, y2)+1) {
-        map[x as usize][y as usize] = Tile::empty();
-    }
-}
-
-fn make_map(objects: &mut Vec<Object>) -> (Map, (i32, i32)) {
-    let mut map = vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
-
-    let mut rooms = vec![];
-
-    let mut starting_position = (0, 0);
-
-    for _ in 0..MAX_ROOMS {
-        let w = rand::thread_rng().gen_range(ROOM_MIN_SIZE, ROOM_MAX_SIZE + 1);
-        let h = rand::thread_rng().gen_range(ROOM_MIN_SIZE, ROOM_MAX_SIZE + 1);
-
-        let x = rand::thread_rng().gen_range(0, MAP_WIDTH - w);
-        let y = rand::thread_rng().gen_range(0, MAP_HEIGHT - h);
-
-        let new_room = Rect::new(x, y, w, h);
-
-        let failed = rooms.iter().any(|other_room| new_room.intersects_with(other_room));
-
-        if !failed {
-            create_room(new_room, &mut map);
-            place_objects(new_room, &map, objects);
-
-            let (new_x, new_y) = new_room.center();
-            if rooms.is_empty() {
-                starting_position = (new_x, new_y)
-            } else {
-                let (prev_x, prev_y) = rooms[rooms.len()-1].center();
-
-                if rand::random() {
-                    create_h_tunnel(prev_x, new_x, prev_y, &mut map);
-                    create_v_tunnel(prev_y, new_y, prev_x, &mut map);
-                } else {
-                    create_v_tunnel(prev_y, new_y, prev_x, &mut map);
-                    create_h_tunnel(prev_x, new_x, prev_y, &mut map);
-                }
-            }
-
-            rooms.push(new_room)
-        }
-    }
-
-    (map, starting_position)
 }
 
 fn render_all(game: &mut Game,
@@ -707,46 +572,6 @@ fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> 
                        .collect::<Vec<_>>();
 
     names.join(", ")
-}
-
-fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
-    let num_monsters = rand::thread_rng().gen_range(0, MAX_ROOM_MONSTERS + 1);
-
-    for _ in 0..num_monsters {
-        let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
-        let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
-
-        if !is_blocked(x, y, map, objects) {
-            let mut monster = if rand::random::<f32>() < 0.8 {
-                let mut orc = Object::new(x, y, 'o', "orc", DESATURATED_GREEN, true);
-                orc.fighter = Some(Fighter{max_hp: 10, hp: 10, defense: 0, power: 3, on_death: DeathCallback::Monster });
-                orc.ai = Some(Ai);
-                orc
-            } else {
-                let mut troll = Object::new(x, y, 'T', "troll", DARKER_GREEN, true);
-                troll.fighter = Some(Fighter{max_hp: 16, hp: 16, defense: 1, power: 4, on_death: DeathCallback::Monster });
-                troll.ai = Some(Ai);
-                troll
-            };
-
-            monster.alive = true;
-
-            objects.push(monster);
-        }
-    }
-
-    let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
-
-    for _ in 0..num_items {
-        let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
-        let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
-
-        if !is_blocked(x, y, map, objects) {
-            let mut object = Object::new(x, y, '!', "healing potion", VIOLET, false);
-            object.item = Some(Item::Heal);
-            objects.push(object);
-        }
-    }
 }
 
 fn render_bar(game: &mut Game,
