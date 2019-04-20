@@ -66,6 +66,7 @@ pub struct Game {
     pub console: Offscreen,
     pub fov: FovMap,
     pub mouse: Mouse,
+    pub panel: Offscreen,
 }
 
 impl Game {
@@ -75,6 +76,7 @@ impl Game {
             console: Offscreen::new(SCREEN_WIDTH, SCREEN_HEIGHT),
             fov: FovMap::new(MAP_WIDTH, MAP_HEIGHT),
             mouse: Default::default(),
+            panel: Offscreen::new(SCREEN_WIDTH, PANEL_HEIGHT),
         }
     }
 }
@@ -629,7 +631,6 @@ fn make_map(objects: &mut Vec<Object>) -> (Map, (i32, i32)) {
 }
 
 fn render_all(game: &mut Game,
-              panel: &mut Offscreen,
               objects: &[Object],
               map: &mut Map,
               messages: &mut Messages,
@@ -670,31 +671,31 @@ fn render_all(game: &mut Game,
         object.draw(&mut game.console);
     }
 
-    panel.set_default_background(BLACK);
-    panel.clear();
+    game.panel.set_default_background(BLACK);
+    game.panel.clear();
 
     let hp = objects[PLAYER].fighter.map_or(0, |f| f.hp);
     let max_hp = objects[PLAYER].fighter.map_or(0, |f| f.max_hp);
-    render_bar(panel, 1, 1, BAR_WIDTH, "HP", hp, max_hp, LIGHT_RED, DARK_RED);
+    render_bar(game, 1, 1, BAR_WIDTH, "HP", hp, max_hp, LIGHT_RED, DARK_RED);
 
     let mut y = MSG_HEIGHT as i32;
     for &(ref msg, color) in messages.iter().rev() {
-        let msg_height = panel.get_height_rect(MSG_X, y, MSG_WIDTH, 0, msg);
+        let msg_height = game.panel.get_height_rect(MSG_X, y, MSG_WIDTH, 0, msg);
         y -= msg_height;
         if y < 0 {
             break;
         }
-        panel.set_default_foreground(color);
-        panel.print_rect(MSG_X, y, MSG_WIDTH, 0, msg);
+        game.panel.set_default_foreground(color);
+        game.panel.print_rect(MSG_X, y, MSG_WIDTH, 0, msg);
     }
 
-    panel.set_default_foreground(LIGHT_GREY);
-    panel.print_ex(1, 0, BackgroundFlag::None, TextAlignment::Left,
+    game.panel.set_default_foreground(LIGHT_GREY);
+    game.panel.print_ex(1, 0, BackgroundFlag::None, TextAlignment::Left,
                    get_names_under_mouse(game.mouse, objects, &mut game.fov));
 
     blit(&mut game.console, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, 0), 1.0, 1.0);
 
-    blit(panel, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, PANEL_Y), 1.0, 1.0);
+    blit(&mut game.panel, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, PANEL_Y), 1.0, 1.0);
 }
 
 fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> String {
@@ -748,7 +749,7 @@ fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
     }
 }
 
-fn render_bar(panel: &mut Offscreen,
+fn render_bar(game: &mut Game,
               x: i32,
               y: i32,
               total_width: i32,
@@ -759,16 +760,16 @@ fn render_bar(panel: &mut Offscreen,
               back_color: Color) {
     let bar_width = (value as f32 / maximum as f32 * total_width as f32) as i32;
 
-    panel.set_default_background(back_color);
-    panel.rect(x, y, total_width, 1, false, BackgroundFlag::Screen);
+    game.panel.set_default_background(back_color);
+    game.panel.rect(x, y, total_width, 1, false, BackgroundFlag::Screen);
 
-    panel.set_default_background(bar_color);
+    game.panel.set_default_background(bar_color);
     if bar_width > 0 {
-        panel.rect(x, y, bar_width, 1, false, BackgroundFlag::Screen);
+        game.panel.rect(x, y, bar_width, 1, false, BackgroundFlag::Screen);
     }
 
-    panel.set_default_foreground(WHITE);
-    panel.print_ex(x + total_width / 2,
+    game.panel.set_default_foreground(WHITE);
+    game.panel.print_ex(x + total_width / 2,
                    y,
                    BackgroundFlag::None,
                    TextAlignment::Center,
@@ -778,7 +779,6 @@ fn render_bar(panel: &mut Offscreen,
 fn main() {
     let mut previous_player_position = (-1, -1);
 
-    let mut panel = Offscreen::new(SCREEN_WIDTH, PANEL_HEIGHT);
 
     let mut messages = vec![];
 
@@ -802,7 +802,7 @@ fn main() {
     objects[PLAYER].x = player_x;
     objects[PLAYER].y = player_y;
 
-    let mut root = Root::initializer()
+    let root = Root::initializer()
         .font("arial10x10.png", FontLayout::Tcod)
         .font_type(FontType::Greyscale)
         .size(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -836,7 +836,7 @@ fn main() {
         }
 
         let fov_recompute = previous_player_position != (objects[PLAYER].x, objects[PLAYER].y);
-        render_all(&mut game, &mut panel,
+        render_all(&mut game, 
                    &objects, &mut map, &mut messages,
                    fov_recompute,
                    &config);
