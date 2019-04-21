@@ -50,6 +50,8 @@ pub struct Config {
     color_light_wall: ColorConfig,
     color_dark_ground: ColorConfig,
     color_light_ground: ColorConfig,
+    color_dark_water: ColorConfig,
+    color_light_water: ColorConfig,
 }
 
 
@@ -126,7 +128,7 @@ impl DeathCallback {
 
 fn handle_keys(game: &mut Game,
                key: Key,
-               map: &Map,
+               map: &mut Map,
                objects: &mut Vec<Object>,
                inventory: &mut Vec<Object>,
                messages: &mut Messages) -> PlayerAction {
@@ -135,23 +137,55 @@ fn handle_keys(game: &mut Game,
     let player_alive = objects[PLAYER].alive;
 
     match (key, player_alive) {
-        (Key { code: Up, .. }, true) => {
+        (Key { code: Up,      .. }, true)  |
+        (Key { code: Number8, .. }, true)  |
+        (Key { code: NumPad8, .. }, true) => {
             player_move_or_attack(0, -1, map, objects, messages);
             TookTurn
         }
 
-        (Key { code: Down, .. }, true) =>{
+        (Key { code: Down,    .. }, true) |
+        (Key { code: Number2, .. }, true) |
+        (Key { code: NumPad2, .. }, true) => {
             player_move_or_attack(0, 1, map, objects, messages);
             TookTurn
         }
 
-        (Key { code: Left, .. }, true) => {
+        (Key { code: Left,    .. }, true) |
+        (Key { code: Number4, .. }, true) |
+        (Key { code: NumPad4, .. }, true) => {
             player_move_or_attack(-1, 0, map, objects, messages);
             TookTurn
         }
 
-        (Key { code: Right, .. }, true) => {
+        (Key { code: Right,   .. }, true) |
+        (Key { code: Number6, .. }, true) |
+        (Key { code: NumPad6, .. }, true) => {
             player_move_or_attack(1, 0, map, objects, messages);
+            TookTurn
+        }
+
+        (Key { code: Number9, .. }, true)  |
+        (Key { code: NumPad9, .. }, true) => {
+            player_move_or_attack(1, -1, map, objects, messages);
+            TookTurn
+        }
+
+        (Key { code: Number3, .. }, true) |
+        (Key { code: NumPad3, .. }, true) => {
+            player_move_or_attack(1, 1, map, objects, messages);
+            TookTurn
+        }
+
+        (Key { code: Number1, .. }, true) |
+        (Key { code: NumPad1, .. }, true) => {
+            player_move_or_attack(-1, 1, map, objects, messages);
+            TookTurn
+        }
+
+        (Key { code: Number7, .. }, true) |
+        (Key { code: NumPad7, .. }, true) => {
+            player_move_or_attack(-1, -1, map, objects, messages);
             TookTurn
         }
 
@@ -184,6 +218,15 @@ fn handle_keys(game: &mut Game,
         }
 
         (Key { code: Escape, .. }, _) => Exit,
+
+        (Key {printable: 'v', .. }, true) => {
+            for x in 0..MAP_WIDTH {
+                for y in 0..MAP_HEIGHT {
+                    map.0[x as usize][y as usize].explored = true;
+                }
+            }
+            DidntTakeTurn
+        }
 
         (_, _) => DidntTakeTurn,
     }
@@ -326,11 +369,13 @@ fn render_all(game: &mut Game,
         for x in 0..MAP_WIDTH {
             let visible = game.fov.is_in_fov(x, y);
             let wall = map.0[x as usize][y as usize].block_sight;
-            let color = match (visible, wall) {
-                (false, true) => config.color_dark_wall,
-                (false, false) => config.color_dark_ground,
-                (true, true) => config.color_light_wall,
-                (true, false) => config.color_light_ground,
+            let color = match (map.0[x as usize][y as usize].tile_type, visible) {
+                (TileType::Wall, false) => config.color_dark_wall,
+                (TileType::Empty, false) => config.color_dark_ground,
+                (TileType::Water, false) => config.color_dark_water,
+                (TileType::Wall, true) => config.color_light_wall,
+                (TileType::Empty, true) => config.color_light_ground,
+                (TileType::Water, true) => config.color_light_water,
             };
 
             let mut explored = map.0[x as usize][y as usize].explored;
@@ -439,7 +484,9 @@ fn main() {
 
     let mut objects = vec!(player);
 
-    let (mut map, (player_x, player_y)) = make_map(&mut objects);
+    let (mut map, position) = make_map(&mut objects);
+    let player_x = position.0;
+    let player_y = position.1;
     objects[PLAYER].x = player_x;
     objects[PLAYER].y = player_y;
 
@@ -489,7 +536,7 @@ fn main() {
         }
 
         previous_player_position = (objects[PLAYER].x, objects[PLAYER].y);
-        let player_action = handle_keys(&mut game, key, &map, &mut objects, &mut inventory, &mut messages);
+        let player_action = handle_keys(&mut game, key, &mut map, &mut objects, &mut inventory, &mut messages);
         if player_action == PlayerAction::Exit {
             break;
         }

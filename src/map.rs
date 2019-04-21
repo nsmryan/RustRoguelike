@@ -26,12 +26,114 @@ impl Map {
 }
 
 
-pub fn make_map(objects: &mut Vec<Object>) -> (Map, (i32, i32)) {
+pub fn make_map(objects: &mut Vec<Object>) -> (Map, Position) {
     let mut map = Map::with_vec(vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize]);
 
-    let mut rooms = vec![];
+    /* Generate rooms, from tutorial */
+    //let starting_position = make_rooms(&mut map, objects);
 
+    let starting_position = make_island(&mut map, objects);
+
+    (map, starting_position)
+}
+
+pub fn make_island(map: &mut Map, objects: &mut Vec<Object>) -> Position {
+    let center = Position(MAP_WIDTH/2, MAP_HEIGHT/2);
+
+    for x in 0..MAP_WIDTH {
+        for y in 0..MAP_HEIGHT {
+            let pos = Position(x, y);
+            if pos.distance(&center) <= ISLAND_RADIUS {
+                map.0[x as usize][y as usize] = Tile::empty();
+            } else {
+                map.0[x as usize][y as usize] = Tile::water();
+            }
+        }
+    }
+
+    let obstacles = vec!(Obstacle::Block, Obstacle::Wall, Obstacle::Square, Obstacle::LShape);
+    
+    for _ in 0..ISLAND_NUM_OBSTICLES {
+        let pos = Position(center.0 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
+                           center.1 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS));
+
+        let obstacle = *rand::thread_rng().choose(&obstacles).unwrap();
+        add_obstacle(map, &pos, obstacle);
+    }
+
+
+    // random subtraction
+    for _ in 0..ISLAND_NUM_SUBTRACTIONS_ATTEMPTS {
+        let pos = Position(center.0 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
+                           center.1 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS));
+
+        if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
+            map.0[pos.0 as usize][pos.1 as usize] = Tile::empty();
+        }
+    }
+
+    // random additions
+    for _ in 0..ISLAND_NUM_ADDITION_ATTEMPTS {
+        let pos = Position(center.0 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
+                           center.1 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS));
+        let obstacle = *rand::thread_rng().choose(&obstacles).unwrap();
+
+        if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
+            add_obstacle(map, &pos, obstacle);
+        }
+    }
+
+    center
+}
+
+pub fn add_obstacle(map: &mut Map, pos: &Position, obstacle: Obstacle) {
+    match obstacle {
+       Obstacle::Block => {
+         map.0[pos.0 as usize][pos.1 as usize] = Tile::wall();
+       }
+
+       Obstacle::Wall => {
+           if rand::thread_rng().next_f64() < 0.5 {
+               for x in 0..3 {
+                 map.0[pos.0 as usize + x][pos.1 as usize] = Tile::wall();
+               }
+           } else {
+               for y in 0..3 {
+                 map.0[pos.0 as usize][pos.1 as usize + y] = Tile::wall();
+               }
+           }
+       }
+
+       Obstacle::Square => {
+           for x in 0..2 {
+               for y in 0..2 {
+                 map.0[pos.0 as usize + x][pos.1 as usize + y] = Tile::wall();
+               }
+           }
+       }
+
+       Obstacle::LShape => {
+           let dir = rand::thread_rng().choose(&[1, -1]).unwrap();
+
+           if rand::thread_rng().next_f64() < 0.5 {
+               for x in 0..3 {
+                 map.0[pos.0 as usize + x][pos.1 as usize] = Tile::wall();
+               }
+               map.0[pos.0 as usize][(pos.1 + dir) as usize] = Tile::wall();
+           } else {
+               for y in 0..3 {
+                 map.0[pos.0 as usize][pos.1 as usize + y] = Tile::wall();
+               }
+               map.0[(pos.0 + dir) as usize][pos.1 as usize] = Tile::wall();
+           }
+       }
+    }
+}
+
+pub fn make_rooms(map: &mut Map, objects: &mut Vec<Object>) -> Position {
     let mut starting_position = (0, 0);
+
+    let mut rooms = vec![];
 
     for _ in 0..MAX_ROOMS {
         let w = rand::thread_rng().gen_range(ROOM_MIN_SIZE, ROOM_MAX_SIZE + 1);
@@ -45,8 +147,8 @@ pub fn make_map(objects: &mut Vec<Object>) -> (Map, (i32, i32)) {
         let failed = rooms.iter().any(|other_room| new_room.intersects_with(other_room));
 
         if !failed {
-            create_room(new_room, &mut map);
-            place_objects(new_room, &map, objects);
+            create_room(new_room, map);
+            place_objects(new_room, map, objects);
 
             let (new_x, new_y) = new_room.center();
             if rooms.is_empty() {
@@ -55,11 +157,11 @@ pub fn make_map(objects: &mut Vec<Object>) -> (Map, (i32, i32)) {
                 let (prev_x, prev_y) = rooms[rooms.len()-1].center();
 
                 if rand::random() {
-                    create_h_tunnel(prev_x, new_x, prev_y, &mut map);
-                    create_v_tunnel(prev_y, new_y, prev_x, &mut map);
+                    create_h_tunnel(prev_x, new_x, prev_y, map);
+                    create_v_tunnel(prev_y, new_y, prev_x, map);
                 } else {
-                    create_v_tunnel(prev_y, new_y, prev_x, &mut map);
-                    create_h_tunnel(prev_x, new_x, prev_y, &mut map);
+                    create_v_tunnel(prev_y, new_y, prev_x, map);
+                    create_h_tunnel(prev_x, new_x, prev_y, map);
                 }
             }
 
@@ -67,7 +169,7 @@ pub fn make_map(objects: &mut Vec<Object>) -> (Map, (i32, i32)) {
         }
     }
 
-    (map, starting_position)
+    Position(starting_position.0, starting_position.1)
 }
 
 pub fn create_h_tunnel(x1: i32, x2: i32, y: i32, map: &mut Map) {

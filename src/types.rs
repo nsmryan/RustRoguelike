@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 use tcod::console::*;
 use tcod::map::{Map as FovMap};
 use tcod::input::Mouse;
@@ -49,16 +51,48 @@ pub struct Tile {
     pub blocked: bool,
     pub block_sight: bool,
     pub explored: bool,
+    pub tile_type: TileType,
 }
 
 impl Tile {
     pub fn empty() -> Self {
-        Tile { blocked: false, block_sight: false, explored: false, }
+        Tile { blocked: false,
+               block_sight: false,
+               explored: false,
+               tile_type: TileType::Empty
+        }
     }
 
     pub fn wall() -> Self {
-        Tile { blocked: true, block_sight: true, explored: false, }
+        Tile { blocked: true,
+               block_sight: true,
+               explored: false,
+               tile_type: TileType::Wall,
+        }
     }
+
+    pub fn water() -> Self {
+        Tile { blocked: true,
+               block_sight: false,
+               explored: false,
+               tile_type: TileType::Water,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum TileType {
+    Empty,
+    Wall,
+    Water
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Obstacle {
+    Block,
+    Wall,
+    Square,
+    LShape,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -209,6 +243,16 @@ impl Rect {
         (self.x2 >= other.x1) &&
         (self.y1 <= other.y2) &&
         (self.y2 >= other.y1)
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Position(pub i32, pub i32);
+
+impl Position {
+    pub fn distance(&self, other: &Position) -> i32 {
+        let dist_i32 = (self.0 - other.0).pow(2) + (self.1 - other.1).pow(2);
+        (dist_i32 as f64).sqrt() as i32
     }
 }
 
