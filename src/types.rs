@@ -4,9 +4,9 @@ use tcod::console::*;
 use tcod::map::{Map as FovMap};
 use tcod::input::Mouse;
 use tcod::colors::*;
+use tcod::pathfinding::*;
 
 use crate::constants::*;
-
 
 
 pub struct Messages(pub Vec<(String, Color)>);
@@ -32,6 +32,7 @@ pub struct Game {
     pub fov: FovMap,
     pub mouse: Mouse,
     pub panel: Offscreen,
+    pub turn_count: usize,
 }
 
 impl Game {
@@ -42,9 +43,11 @@ impl Game {
             fov: FovMap::new(MAP_WIDTH, MAP_HEIGHT),
             mouse: Default::default(),
             panel: Offscreen::new(SCREEN_WIDTH, PANEL_HEIGHT),
+            turn_count: 0,
         }
     }
 }
+
 
 #[derive(Clone, Copy, Debug)]
 pub struct Tile {
@@ -80,12 +83,14 @@ impl Tile {
     }
 }
 
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TileType {
     Empty,
     Wall,
     Water
 }
+
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Obstacle {
@@ -95,18 +100,25 @@ pub enum Obstacle {
     LShape,
 }
 
+
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Ai;
+pub enum Ai {
+    Idle,
+    Seeking(Position),
+}
+
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Item {
     Heal,
 }
 
+
 pub enum UseResult {
     UsedUp,
     Cancelled,
 }
+
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PlayerAction {
@@ -114,6 +126,7 @@ pub enum PlayerAction {
     DidntTakeTurn,
     Exit,
 }
+
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Fighter {
@@ -124,11 +137,49 @@ pub struct Fighter {
     pub on_death: DeathCallback,
 }
 
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DeathCallback {
     Player,
     Monster,
 }
+
+impl DeathCallback {
+    fn callback(self, object: &mut Object) {
+        use DeathCallback::*;
+        let callback: fn(&mut Object) = match self {
+            Player => player_death,
+            Monster => monster_death,
+        };
+        callback(object);
+    }
+}
+
+pub fn player_death(player: &mut Object) {
+    player.char = '%';
+    player.color = DARK_RED;
+}
+
+pub fn monster_death(monster: &mut Object) {
+    monster.char = '%';
+    monster.color = DARK_RED;
+    monster.blocks = false;
+    monster.fighter = None;
+    monster.ai = None;
+    monster.name = format!("remains of {}", monster.name);
+}
+
+
+pub type Momentum = (i32, i32);
+
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum MomentumChange {
+    Lost,
+    PreviousDirection,
+    CurrentDirection,
+}
+
 
 #[derive(Clone, Debug)]
 pub struct Object {
@@ -142,6 +193,7 @@ pub struct Object {
     pub fighter: Option<Fighter>,
     pub ai: Option<Ai>,
     pub item: Option<Item>,
+    pub momentum: Option<Momentum>,
 }
 
 impl Object {
@@ -157,6 +209,7 @@ impl Object {
             fighter: None,
             ai: None,
             item: None,        
+            momentum: None,
         }
     }
 
@@ -219,6 +272,7 @@ impl Object {
     }
 }
 
+
 #[derive(Clone, Copy, Debug)]
 pub struct Rect  {
     pub x1: i32,
@@ -246,10 +300,15 @@ impl Rect {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Position(pub i32, pub i32);
 
 impl Position {
+    pub fn new(x: i32, y: i32) -> Position {
+        Position(x, y)
+    }
+
     pub fn distance(&self, other: &Position) -> i32 {
         let dist_i32 = (self.0 - other.0).pow(2) + (self.1 - other.1).pow(2);
         (dist_i32 as f64).sqrt() as i32

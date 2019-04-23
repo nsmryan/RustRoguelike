@@ -3,27 +3,32 @@ extern crate rand;
 extern crate serde;
 #[macro_use]extern crate serde_derive;
 extern crate serde_json;
+extern crate num;
 
-mod types;
+#[allow(dead_code)]mod types;
 mod constants;
 mod map;
 
 
-use std::cmp;
-use std::fs::File;
-use std::io::BufReader;
-use std::io::Read;
+#[allow(unused_imports)]use std::cmp;
+#[allow(unused_imports)]use std::fs::File;
+#[allow(unused_imports)]use std::io::BufReader;
+#[allow(unused_imports)]use std::io::Read;
 
 use rand::Rng;
 
 use serde::{Serialize, Deserialize};
 
-use tcod::map::{Map as FovMap};
-use tcod::console::*;
-use tcod::colors::*;
-use tcod::input::Key;
-use tcod::input::KeyCode::*;
-use tcod::input::{self, Event, Mouse};
+use num::clamp;
+
+#[allow(unused_imports)]use tcod::map::{Map as FovMap};
+#[allow(unused_imports)]use tcod::console::*;
+#[allow(unused_imports)]use tcod::colors::*;
+#[allow(unused_imports)]use tcod::input::Key;
+#[allow(unused_imports)]use tcod::input::KeyCode::*;
+#[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
+#[allow(unused_imports)]use tcod::pathfinding::*;
+#[allow(unused_imports)]use tcod::AsNative;
 
 use types::*;
 use constants::*;
@@ -54,20 +59,67 @@ pub struct Config {
     color_light_water: ColorConfig,
 }
 
+pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) {
+    let (x, y) = objects[PLAYER].pos();
 
+    let (mut mx, mut my) = objects[PLAYER].momentum.unwrap();
 
-pub fn player_death(player: &mut Object) {
-    player.char = '%';
-    player.color = DARK_RED;
-}
+    let has_momentum = mx.abs() > 1 || my.abs() > 1;
+    let momentum_diagonal = mx.abs() != 0 && my.abs() != 0;
+    let side_move = dx.abs() != 0 && dy.abs() != 0;
+    let same_direction = mx.signum() == dx.signum() && my.signum() == dy.signum();
 
-pub fn monster_death(monster: &mut Object) {
-    monster.char = '%';
-    monster.color = DARK_RED;
-    monster.blocks = false;
-    monster.fighter = None;
-    monster.ai = None;
-    monster.name = format!("remains of {}", monster.name);
+    let momentum_change: MomentumChange;
+
+    // if the space is not blocked, move
+    if !map.is_blocked(x + dx, y + dy, objects) {
+        objects[PLAYER].set_pos(x + dx, y + dy);
+        momentum_change = MomentumChange::CurrentDirection;
+    } else if has_momentum &&
+              side_move &&
+              !momentum_diagonal &&
+              !map.is_blocked(x + mx.signum(), y + my.signum(), objects) && // free next to wall
+              !map.is_blocked(x + 2*mx.signum(), y + 2*my.signum(), objects) && // free space to move to
+              map.is_blocked(x + dx, y + dy, objects) {
+                // jump off wall
+                objects[PLAYER].set_pos(x + 2*mx.signum(), y + 2*my.signum());
+                momentum_change = MomentumChange::PreviousDirection;
+    } else if has_momentum &&
+              same_direction &&
+              map.is_blocked(x + dx, y + dy, objects) &&
+              !map.is_blocked(x + 2*dx, y + 2*dy, objects) {
+                // if the location is blocked, and the next location in the
+                // line is not, and we have momentum, then jump over obstacle
+                objects[PLAYER].set_pos(x + 2*dx, y + 2*dy);
+                momentum_change = MomentumChange::CurrentDirection;
+    } else {
+        // otherwise we hit a wall and lose our momentum
+        momentum_change = MomentumChange::Lost;
+    }
+
+    match momentum_change {
+        MomentumChange::Lost => {
+            mx = 0;
+            my = 0;
+        }
+
+        MomentumChange::PreviousDirection => {
+            mx = clamp(mx + mx.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
+            my = clamp(my + my.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
+        }
+
+        MomentumChange::CurrentDirection => {
+            if same_direction {
+                mx = clamp(mx + dx, -MAX_MOMENTUM, MAX_MOMENTUM);
+                my = clamp(my + dy, -MAX_MOMENTUM, MAX_MOMENTUM);
+            } else {
+                mx = dx;
+                my = dy;
+            }
+        }
+    }
+
+    objects[PLAYER].momentum = Some((mx, my));
 }
 
 pub fn move_by(id: usize, dx: i32, dy: i32, map: &Map, objects: &mut [Object]) {
@@ -90,15 +142,38 @@ pub fn move_towards(id: usize, target_x: i32, target_y: i32, map: &Map, objects:
 
 fn ai_take_turn(monster_id: usize, map: &Map, objects: &mut [Object], fov_map: &FovMap, messages: &mut Messages) {
     let (monster_x, monster_y) = objects[monster_id].pos();
+    let (player_x, player_y) = objects[PLAYER].pos();
+    let player_pos = Position::new(player_x, player_y);
 
-    if fov_map.is_in_fov(monster_x, monster_y) {
-        if objects[monster_id].distance_to(&objects[PLAYER]) >= 2.0 {
-            let (player_x, player_y) = objects[PLAYER].pos();
-            move_towards(monster_id, player_x, player_y, map, objects);
-        } else if objects[PLAYER].fighter.map_or(false, |f| f.hp > 0) {
-            let (monster, player) = mut_two(monster_id, PLAYER, objects);
-            monster.attack(player, messages);
+    if fov_map.is_in_fov(monster_x, monster_y) && objects[monster_id].ai == Some(Ai::Idle) {
+        objects[monster_id].ai = Some(Ai::Seeking(player_pos));
+    }
+
+    match objects[monster_id].ai {
+        Some(Ai::Idle) => {
         }
+
+        Some(Ai::Seeking(target_pos)) => {
+            if fov_map.is_in_fov(monster_x, monster_y) {
+                objects[monster_id].ai = Some(Ai::Seeking(player_pos));
+            }
+
+            let map_copy = map.make_tcod_map();
+            let mut astar = AStar::new_from_map(map_copy, 1.5);
+            astar.find((monster_x, monster_y), (player_x, player_y));
+
+            if let Some((target_x, target_y)) = astar.walk_one_step(true) {
+                move_towards(monster_id, target_x, target_y, map, objects);
+
+                if objects[monster_id].pos() == (target_x, target_y) {
+                    objects[monster_id].ai = Some(Ai::Idle);
+                }
+            }
+        }
+        
+        None => {}
+        //let (monster, player) = mut_two(monster_id, PLAYER, objects);
+        //monster.attack(player, messages);
     }
 }
 
@@ -113,18 +188,6 @@ fn mut_two<T>(first_index: usize, second_index: usize, items: &mut [T]) -> (&mut
         (&mut second_slice[0], &mut first_slice[second_index])
     }
 }
-
-impl DeathCallback {
-    fn callback(self, object: &mut Object) {
-        use DeathCallback::*;
-        let callback: fn(&mut Object) = match self {
-            Player => player_death,
-            Monster => monster_death,
-        };
-        callback(object);
-    }
-}
-
 
 fn handle_keys(game: &mut Game,
                key: Key,
@@ -186,6 +249,12 @@ fn handle_keys(game: &mut Game,
         (Key { code: Number7, .. }, true) |
         (Key { code: NumPad7, .. }, true) => {
             player_move_or_attack(-1, -1, map, objects, messages);
+            TookTurn
+        }
+
+        (Key { code: Number5, .. }, true) |
+        (Key { code: NumPad5, .. }, true) => {
+            objects[PLAYER].momentum = Some((0, 0));
             TookTurn
         }
 
@@ -349,7 +418,7 @@ fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], me
         }
 
         None => {
-            move_by(PLAYER, dx, dy, map, objects);
+            move_player_by(objects, map, dx, dy);
         }
     }
 }
@@ -416,8 +485,8 @@ fn render_all(game: &mut Game,
     }
 
     game.panel.set_default_foreground(LIGHT_GREY);
-    game.panel.print_ex(1, 0, BackgroundFlag::None, TextAlignment::Left,
-                   get_names_under_mouse(game.mouse, objects, &mut game.fov));
+    game.panel.print_ex(1, 2, BackgroundFlag::None, TextAlignment::Left, format!("Turn Count: {}", game.turn_count));
+    game.panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, format!("{:?}", (objects[PLAYER].momentum.unwrap().0, objects[PLAYER].momentum.unwrap().1)));
 
     blit(&mut game.console, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, 0), 1.0, 1.0);
 
@@ -462,6 +531,15 @@ fn render_bar(game: &mut Game,
                    &format!("{}: {}/{}", name, value, maximum));
 }
 
+pub fn make_player() -> Object {
+    let mut player = Object::new(0, 0, '@', "player", WHITE, true);
+    player.alive = true;
+    player.fighter = Some(Fighter{max_hp: 50, hp: 50, defense: 2, power: 5, on_death: DeathCallback::Player });
+    player.momentum = Some((0, 0));
+
+    player
+}
+
 fn main() {
     let mut previous_player_position = (-1, -1);
 
@@ -478,9 +556,7 @@ fn main() {
         config = serde_json::from_str(&config_string).unwrap();
     }
 
-    let mut player = Object::new(0, 0, '@', "player", WHITE, true);
-    player.alive = true;
-    player.fighter = Some(Fighter{max_hp: 50, hp: 50, defense: 2, power: 5, on_death: DeathCallback::Player });
+    let mut player = make_player();
 
     let mut objects = vec!(player);
 
@@ -512,7 +588,7 @@ fn main() {
         }
     }
 
-    messages.message("Welcome Stranger! Prepare to perish in the Desolation of Salt!", RED);
+    messages.message("Welcome Stranger! Prepare to perish in the Desolation of Salt!", ORANGE);
 
     let mut key = Default::default();
 
@@ -537,8 +613,16 @@ fn main() {
 
         previous_player_position = (objects[PLAYER].x, objects[PLAYER].y);
         let player_action = handle_keys(&mut game, key, &mut map, &mut objects, &mut inventory, &mut messages);
-        if player_action == PlayerAction::Exit {
+        match player_action {
+          PlayerAction::Exit => {
             break;
+          }
+
+          PlayerAction::TookTurn => {
+              game.turn_count += 1;
+          }
+          
+          _ => {}
         }
 
         if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {

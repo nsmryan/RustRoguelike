@@ -24,6 +24,7 @@ pub const MAX_ROOM_ITEMS: i32 = 2;
 pub const MAX_ROOM_MONSTERS: i32 = 3;
 
 pub const PLAYER: usize = 0;
+pub const MAX_MOMENTUM: i32 = 2;
 
 pub const BAR_WIDTH: i32 = 20;
 pub const PANEL_HEIGHT: i32 = 7;

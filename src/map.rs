@@ -23,6 +23,24 @@ impl Map {
             object.blocks && object.pos() == (x, y)
         })
     }
+
+    pub fn size(&self) -> (i32, i32) {
+        (self.0.len() as i32, self.0[0].len() as i32)
+    }
+
+    pub fn make_tcod_map(&self) -> tcod::map::Map {
+        let (map_width, map_height) = self.size();
+        let mut map_copy = tcod::map::Map::new(map_width, map_height);
+        for x in 0..map_width {
+            for y in 0..map_height {
+                let transparent = !self.0[x as usize][y as usize].block_sight;
+                let walkable = !self.0[x as usize][y as usize].blocked;
+                map_copy.set(x, y, transparent, walkable);
+            }
+        }
+
+        map_copy
+    }
 }
 
 
@@ -80,6 +98,32 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>) -> Position {
 
         if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
             add_obstacle(map, &pos, obstacle);
+        }
+    }
+
+    // add monsters
+    loop {
+        let x = rand::thread_rng().gen_range(0, MAP_WIDTH);
+        let y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+
+        if !map.is_blocked(x, y, objects) {
+            let mut monster = if rand::random::<f32>() < 0.8 {
+                let mut orc = Object::new(x, y, 'o', "orc", DESATURATED_GREEN, true);
+                orc.fighter = Some(Fighter{max_hp: 10, hp: 10, defense: 0, power: 3, on_death: DeathCallback::Monster });
+                orc.ai = Some(Ai::Idle);
+                orc
+            } else {
+                let mut troll = Object::new(x, y, 'T', "troll", DARKER_GREEN, true);
+                troll.fighter = Some(Fighter{max_hp: 16, hp: 16, defense: 1, power: 4, on_death: DeathCallback::Monster });
+                troll.ai = Some(Ai::Idle);
+                troll
+            };
+
+            monster.alive = true;
+
+            objects.push(monster);
+
+            break;
         }
     }
 
@@ -195,12 +239,12 @@ pub fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
             let mut monster = if rand::random::<f32>() < 0.8 {
                 let mut orc = Object::new(x, y, 'o', "orc", DESATURATED_GREEN, true);
                 orc.fighter = Some(Fighter{max_hp: 10, hp: 10, defense: 0, power: 3, on_death: DeathCallback::Monster });
-                orc.ai = Some(Ai);
+                orc.ai = Some(Ai::Idle);
                 orc
             } else {
                 let mut troll = Object::new(x, y, 'T', "troll", DARKER_GREEN, true);
                 troll.fighter = Some(Fighter{max_hp: 16, hp: 16, defense: 1, power: 4, on_death: DeathCallback::Monster });
-                troll.ai = Some(Ai);
+                troll.ai = Some(Ai::Idle);
                 troll
             };
 
