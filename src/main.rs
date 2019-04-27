@@ -472,19 +472,36 @@ fn render_all(game: &mut Game,
                         } else {
                             game.console.set_char_background(x, y, config.color_dark_ground.color(), BackgroundFlag::Set);
                         }
-                        let mut chr = if tile_type == TileType::Wall {
-                            if map.0[x as usize - 1][y as usize].tile_type == TileType::Wall ||
-                               map.0[x as usize + 1][y as usize].tile_type == TileType::Wall {
-                               tcod::chars::SUBP_N
+
+                        let left = map[(x - 1, y)].tile_type == tile_type;
+                        let right = map[(x + 1, y)].tile_type == tile_type;
+                        let horiz = left || right;
+
+                        let above = map[(x, y + 1)].tile_type == tile_type;
+                        let below = map[(x, y - 1)].tile_type == tile_type;
+                        let vert = above || below;
+
+                        let chr;
+                        if tile_type == TileType::Wall {
+                            if horiz && vert {
+                               chr = tcod::chars::SUBP_N;
+                               game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
+                            } else if horiz {
+                               chr = tcod::chars::SUBP_N;
+                            } else if vert {
+                               chr = tcod::chars::SUBP_E;
                             } else {
-                               tcod::chars::SUBP_E
+                               chr = tcod::chars::SUBP_E;
                             }
                         } else {
-                            if map.0[x as usize - 1][y as usize].tile_type == TileType::ShortWall ||
-                               map.0[x as usize + 1][y as usize].tile_type == TileType::ShortWall {
-                               tcod::chars::HLINE
+                            if horiz && vert {
+                               chr = tcod::chars::CROSS
+                            } else if horiz {
+                               chr = tcod::chars::HLINE;
+                            } else if vert {
+                               chr = tcod::chars::VLINE;
                             } else {
-                               tcod::chars::VLINE
+                               chr = tcod::chars::VLINE;
                             }
                         };
 
