@@ -108,6 +108,14 @@ pub enum Obstacle {
     ShortWall,
     Square,
     LShape,
+    Building,
+}
+
+impl Obstacle {
+    pub fn all_obstacles() -> Vec<Obstacle> {
+        vec!(Obstacle::Block, Obstacle::Wall, Obstacle::ShortWall, Obstacle::Square,
+             Obstacle::LShape, Obstacle::Building)
+    }
 }
 
 
@@ -326,6 +334,10 @@ impl Position {
 
     pub fn pair(&self) -> (i32, i32) {
         (self.0, self.1)
+    }
+
+    pub fn move_by(&self, dist_x: i32, dist_y: i32) -> Position {
+        Position(self.0 + dist_x, self.1 + dist_y)
     }
 
     pub fn move_x(&self, dist_x: i32) -> Position {

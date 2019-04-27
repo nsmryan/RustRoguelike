@@ -467,7 +467,11 @@ fn render_all(game: &mut Game,
                     }
 
                     TileType::ShortWall | TileType::Wall => {
-                        game.console.set_char_background(x, y, config.color_light_ground.color(), BackgroundFlag::Set);
+                        if visible {
+                            game.console.set_char_background(x, y, config.color_light_ground.color(), BackgroundFlag::Set);
+                        } else {
+                            game.console.set_char_background(x, y, config.color_dark_ground.color(), BackgroundFlag::Set);
+                        }
                         let mut chr = if tile_type == TileType::Wall {
                             if map.0[x as usize - 1][y as usize].tile_type == TileType::Wall ||
                                map.0[x as usize + 1][y as usize].tile_type == TileType::Wall {

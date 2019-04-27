@@ -79,7 +79,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>) -> Position {
         }
     }
 
-    let obstacles = vec!(Obstacle::Block, Obstacle::Wall, Obstacle::ShortWall, Obstacle::Square, Obstacle::LShape);
+    let obstacles = Obstacle::all_obstacles();
     
     for _ in 0..ISLAND_NUM_OBSTICLES {
         let pos = Position(center.0 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
@@ -194,6 +194,14 @@ pub fn add_obstacle(map: &mut Map, pos: &Position, obstacle: Obstacle) {
                }
                map.0[(pos.0 + dir) as usize][pos.1 as usize] = Tile::wall();
            }
+       }
+
+       Obstacle::Building => {
+           let size = 2;
+           place_line(map, &pos.move_by(-size, size), &pos.move_by(size, size), Tile::wall());
+           place_line(map, &pos.move_by(-size, size), &pos.move_by(-size, -size), Tile::wall());
+           place_line(map, &pos.move_by(-size, -size), &pos.move_by(size, -size), Tile::wall());
+           place_line(map, &pos.move_by(size, -size), &pos.move_by(size, size), Tile::wall());
        }
     }
 }
