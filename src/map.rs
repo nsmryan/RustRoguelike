@@ -1,6 +1,6 @@
 use rand::Rng;
 use std::cmp;
-use std::ops::Index;
+use std::ops::{Index, IndexMut};
 
 use tcod::colors::*;
 use tcod::line::*;
@@ -50,6 +50,12 @@ impl Index<(i32, i32)> for Map {
 
     fn index(&self, index: (i32, i32)) -> &Tile {
         &self.0[index.0 as usize][index.1 as usize]
+    }
+}
+
+impl IndexMut<(i32, i32)> for Map {
+    fn index_mut(&mut self, index: (i32, i32)) -> &mut Tile {
+        &mut self.0[index.0 as usize][index.1 as usize]
     }
 }
 
@@ -140,12 +146,16 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>) -> Position {
     center
 }
 
-pub fn place_line(map: &mut Map, start: &Position, end: &Position, tile: Tile) {
+pub fn place_line(map: &mut Map, start: &Position, end: &Position, tile: Tile) -> Vec<Position> {
+    let mut positions = Vec::new();
     let mut line = Line::new(start.pair(), end.pair());
 
-    while let Some((x, y)) = line.step() {
-        map.0[x as usize][y as usize] = tile;
+    while let Some(pos) = line.step() {
+        map[pos] = tile;
+        positions.push(Position::new(pos.0, pos.1));
     }
+
+    positions
 }
 
 pub fn add_obstacle(map: &mut Map, pos: &Position, obstacle: Obstacle) {
