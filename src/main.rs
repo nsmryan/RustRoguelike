@@ -80,13 +80,13 @@ pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) {
               !momentum_diagonal &&
               !map.is_blocked(x + mx.signum(), y + my.signum(), objects) && // free next to wall
               !map.is_blocked(x + 2*mx.signum(), y + 2*my.signum(), objects) && // free space to move to
-              map.is_blocked(x + dx, y + dy, objects) {
+              map[(x + dx, y + dy)].tile_type == TileType::Wall {
                 // jump off wall
                 objects[PLAYER].set_pos(x + 2*mx.signum(), y + 2*my.signum());
                 momentum_change = MomentumChange::PreviousDirection;
     } else if has_momentum &&
               same_direction &&
-              map.is_blocked(x + dx, y + dy, objects) &&
+              map[(x + dx, y + dy)].tile_type == TileType::ShortWall &&
               !map.is_blocked(x + 2*dx, y + 2*dy, objects) {
                 // if the location is blocked, and the next location in the
                 // line is not, and we have momentum, then jump over obstacle
@@ -438,13 +438,20 @@ fn render_all(game: &mut Game,
         for x in 0..MAP_WIDTH {
             let visible = game.fov.is_in_fov(x, y);
             let wall = map.0[x as usize][y as usize].block_sight;
+
+            // Color based on TileType and visibility
             let color = match (map.0[x as usize][y as usize].tile_type, visible) {
-                (TileType::Wall, false) => config.color_dark_wall,
-                (TileType::Empty, false) => config.color_dark_ground,
-                (TileType::Water, false) => config.color_dark_water,
                 (TileType::Wall, true) => config.color_light_wall,
+                (TileType::Wall, false) => config.color_dark_wall,
+
                 (TileType::Empty, true) => config.color_light_ground,
+                (TileType::Empty, false) => config.color_dark_ground,
+
                 (TileType::Water, true) => config.color_light_water,
+                (TileType::Water, false) => config.color_dark_water,
+
+                (TileType::ShortWall, true) => config.color_light_wall,
+                (TileType::ShortWall, false) => config.color_dark_wall,
             };
 
             let mut explored = map.0[x as usize][y as usize].explored;
@@ -453,7 +460,34 @@ fn render_all(game: &mut Game,
             }
 
             if explored {
-                game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
+                let tile_type = map.0[x as usize][y as usize].tile_type;
+                match tile_type {
+                    TileType::Empty | TileType::Water => {
+                        game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
+                    }
+
+                    TileType::ShortWall | TileType::Wall => {
+                        game.console.set_char_background(x, y, config.color_light_ground.color(), BackgroundFlag::Set);
+                        let mut chr = if tile_type == TileType::Wall {
+                            if map.0[x as usize - 1][y as usize].tile_type == TileType::Wall ||
+                               map.0[x as usize + 1][y as usize].tile_type == TileType::Wall {
+                               tcod::chars::SUBP_N
+                            } else {
+                               tcod::chars::SUBP_E
+                            }
+                        } else {
+                            if map.0[x as usize - 1][y as usize].tile_type == TileType::ShortWall ||
+                               map.0[x as usize + 1][y as usize].tile_type == TileType::ShortWall {
+                               tcod::chars::HLINE
+                            } else {
+                               tcod::chars::VLINE
+                            }
+                        };
+
+                        game.console.set_default_foreground(color.color());
+                        game.console.put_char(x, y, chr, BackgroundFlag::None);
+                    }
+                }
             }
             map.0[x as usize][y as usize].explored = explored;
         }
@@ -465,6 +499,10 @@ fn render_all(game: &mut Game,
     for object in &to_draw {
         object.draw(&mut game.console);
     }
+
+    // print all special characters
+    //game.console.set_default_foreground(config.color_dark_ground.color());
+    //print_all_special_char(game);
 
     game.panel.set_default_background(BLACK);
     game.panel.clear();
@@ -491,6 +529,47 @@ fn render_all(game: &mut Game,
     blit(&mut game.console, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, 0), 1.0, 1.0);
 
     blit(&mut game.panel, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, PANEL_Y), 1.0, 1.0);
+}
+
+// BLOCK3 solid block
+// CHECKBOX_UNSET unfilled block
+// CROSS cross
+// DCROSS invert cross
+// DHLINE invert horizontal line
+// DTEEE,DTEEN,DTEES,DTEEW invert tees
+// DNE,DNW,DSE,DSW corners
+// DVLINE divider lines vertical
+// TEEE,TEEN,TEES,TEEW tees
+// RADIO_SET,RADIO_UNSET unfilled circle and circle with inner filled circle
+// SUBP_DIAG,SUBP_E, SUBP_N,SUBP_NE,SUBP_NW,SUBP_SE,SUBP_SW half blocks, directional. maybe
+// SW as well
+// VLINE HLINE thin lines
+// ARROW2_E,ARROW2_N,ARROW2_S,ARROW2_W solid arrow
+// ARROW_E,ARROW_N,ARROW_S,ARROW_W  thin arrow
+fn print_all_special_char(game: &mut Game) {
+    use tcod::chars::*;
+    let keys = vec!(ARROW2_E,ARROW2_N,ARROW2_S,ARROW2_W,ARROW_E,ARROW_N,ARROW_S,
+                    ARROW_W,BLOCK1,BLOCK2,BLOCK3,BULLET,BULLET_INV,BULLET_SQUARE,
+                    CENT,CHECKBOX_SET,CHECKBOX_UNSET,CLUB,COPYRIGHT,CROSS,CURRENCY,
+                    DARROW_H,DARROW_V,DCROSS,DHLINE,DIAMOND,DIVISION,DNE,DNW,DSE,DSW,
+                    DTEEE,DTEEN,DTEES,DTEEW,DVLINE,EXCLAM_DOUBLE,FEMALE,FUNCTION,
+                    GRADE,HALF,HEART,HLINE,LIGHT,MALE,MULTIPLICATION,NE,NOTE,
+                    NOTE_DOUBLE,NW,ONE_QUARTER,PILCROW,POUND,POW1,POW2,
+                    POW3,RADIO_SET,RADIO_UNSET,RESERVED,SE,SECTION,
+                    SMILIE,SMILIE_INV,SPADE,SUBP_DIAG,SUBP_E, SUBP_N,SUBP_NE,SUBP_NW,SUBP_SE,SUBP_SW
+                    ,SW,TEEE,TEEN,TEES,TEEW,THREE_QUARTERS,UMLAUT,VLINE,YEN);
+    let mut index = 0;
+    for key in keys.iter() {
+        let index_x = index % 32;
+        let index_y = index / 32;
+        let x = (SCREEN_WIDTH/2 + index_x - (keys.len() / 4) as i32);
+        let y = SCREEN_HEIGHT/2 + index_y;
+        game.console.put_char(x,
+                              y,
+                              *key,
+                              BackgroundFlag::None);
+        index += 1;
+    }
 }
 
 fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> String {

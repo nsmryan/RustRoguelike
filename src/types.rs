@@ -62,7 +62,15 @@ impl Tile {
         Tile { blocked: false,
                block_sight: false,
                explored: false,
-               tile_type: TileType::Empty
+               tile_type: TileType::Empty,
+        }
+    }
+
+    pub fn water() -> Self {
+        Tile { blocked: true,
+               block_sight: false,
+               explored: false,
+               tile_type: TileType::Water,
         }
     }
 
@@ -74,11 +82,11 @@ impl Tile {
         }
     }
 
-    pub fn water() -> Self {
+    pub fn short_wall() -> Self {
         Tile { blocked: true,
                block_sight: false,
                explored: false,
-               tile_type: TileType::Water,
+               tile_type: TileType::ShortWall,
         }
     }
 }
@@ -87,8 +95,9 @@ impl Tile {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TileType {
     Empty,
+    ShortWall,
     Wall,
-    Water
+    Water,
 }
 
 
@@ -96,6 +105,7 @@ pub enum TileType {
 pub enum Obstacle {
     Block,
     Wall,
+    ShortWall,
     Square,
     LShape,
 }
@@ -312,6 +322,18 @@ impl Position {
     pub fn distance(&self, other: &Position) -> i32 {
         let dist_i32 = (self.0 - other.0).pow(2) + (self.1 - other.1).pow(2);
         (dist_i32 as f64).sqrt() as i32
+    }
+
+    pub fn pair(&self) -> (i32, i32) {
+        (self.0, self.1)
+    }
+
+    pub fn move_x(&self, dist_x: i32) -> Position {
+        Position(self.0 + dist_x, self.1)
+    }
+
+    pub fn move_y(&self, dist_y: i32) -> Position {
+        Position(self.0, self.1 + dist_y)
     }
 }
 

@@ -1,7 +1,9 @@
 use rand::Rng;
 use std::cmp;
+use std::ops::Index;
 
 use tcod::colors::*;
+use tcod::line::*;
 
 use crate::constants::*;
 use crate::types::*;
@@ -43,6 +45,14 @@ impl Map {
     }
 }
 
+impl Index<(i32, i32)> for Map {
+    type Output = Tile;
+
+    fn index(&self, index: (i32, i32)) -> &Tile {
+        &self.0[index.0 as usize][index.1 as usize]
+    }
+}
+
 
 pub fn make_map(objects: &mut Vec<Object>) -> (Map, Position) {
     let mut map = Map::with_vec(vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize]);
@@ -69,7 +79,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>) -> Position {
         }
     }
 
-    let obstacles = vec!(Obstacle::Block, Obstacle::Wall, Obstacle::Square, Obstacle::LShape);
+    let obstacles = vec!(Obstacle::Block, Obstacle::Wall, Obstacle::ShortWall, Obstacle::Square, Obstacle::LShape);
     
     for _ in 0..ISLAND_NUM_OBSTICLES {
         let pos = Position(center.0 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
@@ -130,6 +140,14 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>) -> Position {
     center
 }
 
+pub fn place_line(map: &mut Map, start: &Position, end: &Position, tile: Tile) {
+    let mut line = Line::new(start.pair(), end.pair());
+
+    while let Some((x, y)) = line.step() {
+        map.0[x as usize][y as usize] = tile;
+    }
+}
+
 pub fn add_obstacle(map: &mut Map, pos: &Position, obstacle: Obstacle) {
     match obstacle {
        Obstacle::Block => {
@@ -137,15 +155,21 @@ pub fn add_obstacle(map: &mut Map, pos: &Position, obstacle: Obstacle) {
        }
 
        Obstacle::Wall => {
-           if rand::thread_rng().next_f64() < 0.5 {
-               for x in 0..3 {
-                 map.0[pos.0 as usize + x][pos.1 as usize] = Tile::wall();
-               }
+           let end_pos = if rand::thread_rng().next_f64() < 0.5 {
+               pos.move_x(3)
            } else {
-               for y in 0..3 {
-                 map.0[pos.0 as usize][pos.1 as usize + y] = Tile::wall();
-               }
-           }
+               pos.move_y(3)
+           };
+           place_line(map, pos, &end_pos, Tile::wall());
+       }
+
+       Obstacle::ShortWall => {
+           let end_pos = if rand::thread_rng().next_f64() < 0.5 {
+                    pos.move_x(3)
+               } else {
+                    pos.move_y(3)
+               };
+           place_line(map, pos, &end_pos, Tile::short_wall());
        }
 
        Obstacle::Square => {
