@@ -71,6 +71,11 @@ pub fn make_map(objects: &mut Vec<Object>) -> (Map, Position) {
     (map, starting_position)
 }
 
+pub fn random_position() -> Position {
+    Position(rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
+             rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS))
+}
+
 pub fn make_island(map: &mut Map, objects: &mut Vec<Object>) -> Position {
     let center = Position(MAP_WIDTH/2, MAP_HEIGHT/2);
 
@@ -88,11 +93,21 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>) -> Position {
     let obstacles = Obstacle::all_obstacles();
     
     for _ in 0..ISLAND_NUM_OBSTICLES {
-        let pos = Position(center.0 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
-                           center.1 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS));
+        let rand_pos = random_position();
+        let pos = Position(center.0 + rand_pos.0, center.1 + rand_pos.1);
 
         let obstacle = *rand::thread_rng().choose(&obstacles).unwrap();
-        add_obstacle(map, &pos, obstacle);
+
+        // Buildings are generated separately, so don't add them in random generation
+        if obstacle != Obstacle::Building {
+            add_obstacle(map, &pos, obstacle);
+        }
+    }
+
+    for _ in 0..rand::thread_rng().gen_range(3, 5) {
+        let rand_pos = random_position();
+        let pos = Position(center.0 + rand_pos.0, center.1 + rand_pos.1);
+        add_obstacle(map, &pos, Obstacle::Building);
     }
 
 
@@ -126,12 +141,14 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>) -> Position {
             let mut monster = if rand::random::<f32>() < 0.8 {
                 let mut orc = Object::new(x, y, 'o', "orc", DESATURATED_GREEN, true);
                 orc.fighter = Some(Fighter{max_hp: 10, hp: 10, defense: 0, power: 3, on_death: DeathCallback::Monster });
-                orc.ai = Some(Ai::Idle);
+                orc.ai = Some(Ai::BasicEnemy);
+                orc.behavior = Some(Behavior::Idle);
                 orc
             } else {
                 let mut troll = Object::new(x, y, 'T', "troll", DARKER_GREEN, true);
                 troll.fighter = Some(Fighter{max_hp: 16, hp: 16, defense: 1, power: 4, on_death: DeathCallback::Monster });
-                troll.ai = Some(Ai::Idle);
+                troll.ai = Some(Ai::BasicEnemy);
+                troll.behavior = Some(Behavior::Idle);
                 troll
             };
 
@@ -150,7 +167,10 @@ pub fn place_line(map: &mut Map, start: &Position, end: &Position, tile: Tile) -
     let mut positions = Vec::new();
     let mut line = Line::new(start.pair(), end.pair());
 
+    println!("{:?}, {:?}", start, end);
+
     while let Some(pos) = line.step() {
+        println!("{:?}", pos);
         map[pos] = tile;
         positions.push(Position::new(pos.0, pos.1));
     }
@@ -208,11 +228,14 @@ pub fn add_obstacle(map: &mut Map, pos: &Position, obstacle: Obstacle) {
 
        Obstacle::Building => {
            let size = 2;
-           let positions = vec!();
-           positions.append(place_line(map, &pos.move_by(-size, size), &pos.move_by(size, size), Tile::wall()));
-           positions.append(place_line(map, &pos.move_by(-size, size), &pos.move_by(-size, -size), Tile::wall()));
-           positions.append(place_line(map, &pos.move_by(-size, -size), &pos.move_by(size, -size), Tile::wall()));
-           positions.append(place_line(map, &pos.move_by(size, -size), &pos.move_by(size, size), Tile::wall()));
+           let mut positions = vec!();
+           positions.append(&mut place_line(map, &pos.move_by(-size, size), &pos.move_by(size, size), Tile::wall()));
+           positions.append(&mut place_line(map, &pos.move_by(-size, size), &pos.move_by(-size, -size), Tile::wall()));
+           positions.append(&mut place_line(map, &pos.move_by(-size, -size), &pos.move_by(size, -size), Tile::wall()));
+           positions.append(&mut place_line(map, &pos.move_by(size, -size), &pos.move_by(size, size), Tile::wall()));
+           for _ in 0..rand::thread_rng().gen_range(0, 10) {
+               positions.swap_remove(rand::thread_rng().gen_range(0, positions.len()));
+           }
        }
     }
 }
@@ -282,12 +305,14 @@ pub fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
             let mut monster = if rand::random::<f32>() < 0.8 {
                 let mut orc = Object::new(x, y, 'o', "orc", DESATURATED_GREEN, true);
                 orc.fighter = Some(Fighter{max_hp: 10, hp: 10, defense: 0, power: 3, on_death: DeathCallback::Monster });
-                orc.ai = Some(Ai::Idle);
+                orc.ai = Some(Ai::BasicEnemy);
+                orc.behavior = Some(Behavior::Idle);
                 orc
             } else {
                 let mut troll = Object::new(x, y, 'T', "troll", DARKER_GREEN, true);
                 troll.fighter = Some(Fighter{max_hp: 16, hp: 16, defense: 1, power: 4, on_death: DeathCallback::Monster });
-                troll.ai = Some(Ai::Idle);
+                troll.ai = Some(Ai::BasicEnemy);
+                troll.behavior = Some(Behavior::Idle);
                 troll
             };
 

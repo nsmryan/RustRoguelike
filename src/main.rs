@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 extern crate tcod;
 extern crate rand;
 extern crate serde;
@@ -5,7 +7,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate num;
 
-#[allow(dead_code)]mod types;
+mod types;
 mod constants;
 mod map;
 
@@ -140,40 +142,69 @@ pub fn move_towards(id: usize, target_x: i32, target_y: i32, map: &Map, objects:
     move_by(id, dx, dy, map, objects);
 }
 
-fn ai_take_turn(monster_id: usize, map: &Map, objects: &mut [Object], fov_map: &FovMap, messages: &mut Messages) {
+fn basic_ai_take_turn(monster_id: usize,
+                      map: &Map,
+                      objects: &mut [Object],
+                      fov_map: &FovMap,
+                      messages: &mut Messages) {
     let (monster_x, monster_y) = objects[monster_id].pos();
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
 
-    if fov_map.is_in_fov(monster_x, monster_y) && objects[monster_id].ai == Some(Ai::Idle) {
-        objects[monster_id].ai = Some(Ai::Seeking(player_pos));
+    if fov_map.is_in_fov(monster_x, monster_y) &&
+        objects[monster_id].behavior == Some(Behavior::Idle) {
+        objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
     }
 
-    match objects[monster_id].ai {
-        Some(Ai::Idle) => {
+    match objects[monster_id].behavior {
+        Some(Behavior::Idle) => {
         }
 
-        Some(Ai::Seeking(target_pos)) => {
+        Some(Behavior::Seeking(target_pos_orig)) => {
+            let mut target_pos = target_pos_orig;
+
             if fov_map.is_in_fov(monster_x, monster_y) {
-                objects[monster_id].ai = Some(Ai::Seeking(player_pos));
+                objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
+                target_pos = player_pos;
             }
 
             let map_copy = map.make_tcod_map();
             let mut astar = AStar::new_from_map(map_copy, 1.5);
-            astar.find((monster_x, monster_y), (player_x, player_y));
+            astar.find((monster_x, monster_y), target_pos.pair());
 
             if let Some((target_x, target_y)) = astar.walk_one_step(true) {
                 move_towards(monster_id, target_x, target_y, map, objects);
 
                 if objects[monster_id].pos() == (target_x, target_y) {
-                    objects[monster_id].ai = Some(Ai::Idle);
+                    objects[monster_id].behavior = Some(Behavior::Idle);
                 }
             }
         }
         
-        None => {}
-        //let (monster, player) = mut_two(monster_id, PLAYER, objects);
-        //monster.attack(player, messages);
+        None => {
+        }
+
+        _ => {}
+    }
+}
+
+fn ai_take_turn(monster_id: usize, map: &Map, objects: &mut [Object], fov_map: &FovMap, messages: &mut Messages) {
+    match objects[monster_id].ai {
+        Some(Ai::BasicEnemy) => {
+            basic_ai_take_turn(monster_id, map, objects, fov_map, messages);
+        }
+
+        Some(Ai::Patrol) => {
+        }
+
+        Some(Ai::Guard) => {
+        }
+
+        Some(Ai::Passive) => {
+        }
+
+        None => {
+        }
     }
 }
 
@@ -437,7 +468,6 @@ fn render_all(game: &mut Game,
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
             let visible = game.fov.is_in_fov(x, y);
-            let wall = map.0[x as usize][y as usize].block_sight;
 
             // Color based on TileType and visibility
             let color = match (map.0[x as usize][y as usize].tile_type, visible) {

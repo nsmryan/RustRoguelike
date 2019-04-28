@@ -113,18 +113,34 @@ pub enum Obstacle {
 
 impl Obstacle {
     pub fn all_obstacles() -> Vec<Obstacle> {
-        vec!(Obstacle::Block, Obstacle::Wall, Obstacle::ShortWall, Obstacle::Square,
-             Obstacle::LShape, Obstacle::Building)
+        vec!(Obstacle::Block,  Obstacle::Wall,   Obstacle::ShortWall,
+             Obstacle::Square, Obstacle::LShape, Obstacle::Building)
     }
 }
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Ai {
-    Idle,
-    Seeking(Position),
+    BasicEnemy,
+    Patrol,
+    Guard,
+    Passive,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum Behavior {
+    Idle,
+    Seeking(Position),
+    Patrol(Vec<Position>, usize, PatrolDir),
+    Guard(Position),
+    Alert,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PatrolDir {
+    Forward,
+    Reverse,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Item {
@@ -210,6 +226,7 @@ pub struct Object {
     pub alive: bool,
     pub fighter: Option<Fighter>,
     pub ai: Option<Ai>,
+    pub behavior: Option<Behavior>,
     pub item: Option<Item>,
     pub momentum: Option<Momentum>,
 }
@@ -226,6 +243,7 @@ impl Object {
             alive: false,
             fighter: None,
             ai: None,
+            behavior: None,
             item: None,        
             momentum: None,
         }
