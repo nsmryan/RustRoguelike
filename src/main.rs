@@ -124,6 +124,7 @@ fn smart_ai_take_turn(monster_id: usize,
                       objects: &mut [Object],
                       fov_map: &FovMap,
                       messages: &mut Messages) {
+
 }
 
 fn basic_ai_take_turn(monster_id: usize,
@@ -135,13 +136,11 @@ fn basic_ai_take_turn(monster_id: usize,
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
 
-    if fov_map.is_in_fov(monster_x, monster_y) &&
-        objects[monster_id].behavior == Some(Behavior::Idle) {
-        objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
-    }
-
     match objects[monster_id].behavior {
         Some(Behavior::Idle) => {
+            if fov_map.is_in_fov(monster_x, monster_y) {
+                objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
+            }
         }
 
         Some(Behavior::Seeking(target_pos_orig)) => {
@@ -165,10 +164,9 @@ fn basic_ai_take_turn(monster_id: usize,
             }
         }
         
-        None => {
+        behavior => {
+            panic!("Ai behavior {:?} unexpected!", behavior);
         }
-
-        _ => {}
     }
 }
 

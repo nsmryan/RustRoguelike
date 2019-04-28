@@ -170,7 +170,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
     // Test smart Ai
     let pos = random_position();
     let mut smart = Object::new(pos.0, pos.1, 'g', "guard", DARK_BLUE, true);
-    smart.fighter = Some(Fighter{max_hp: 16, hp: 16, defense: 1, power: 4, on_death: DeathCallback::Monster });
+    smart.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 4, on_death: DeathCallback::Monster } );
     smart.ai = Some(Ai::Smart);
     smart.behavior = Some(Behavior::SmartSearch(AwarenessMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize)));
     objects.push(smart);
