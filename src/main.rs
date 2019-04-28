@@ -37,30 +37,6 @@ use constants::*;
 use map::*;
 
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct ColorConfig {
-    r: u8,
-    g: u8,
-    b: u8,
-}
-
-impl ColorConfig {
-    pub fn color(&self) -> Color {
-        Color::new(self.r, self.g, self.b)
-    }
-}
-
-
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct Config {
-    color_dark_wall: ColorConfig,
-    color_light_wall: ColorConfig,
-    color_dark_ground: ColorConfig,
-    color_light_ground: ColorConfig,
-    color_dark_water: ColorConfig,
-    color_light_water: ColorConfig,
-}
-
 pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) {
     let (x, y) = objects[PLAYER].pos();
 
@@ -142,6 +118,14 @@ pub fn move_towards(id: usize, target_x: i32, target_y: i32, map: &Map, objects:
     move_by(id, dx, dy, map, objects);
 }
 
+
+fn smart_ai_take_turn(monster_id: usize,
+                      map: &Map,
+                      objects: &mut [Object],
+                      fov_map: &FovMap,
+                      messages: &mut Messages) {
+}
+
 fn basic_ai_take_turn(monster_id: usize,
                       map: &Map,
                       objects: &mut [Object],
@@ -190,8 +174,12 @@ fn basic_ai_take_turn(monster_id: usize,
 
 fn ai_take_turn(monster_id: usize, map: &Map, objects: &mut [Object], fov_map: &FovMap, messages: &mut Messages) {
     match objects[monster_id].ai {
-        Some(Ai::BasicEnemy) => {
+        Some(Ai::Basic) => {
             basic_ai_take_turn(monster_id, map, objects, fov_map, messages);
+        }
+
+        Some(Ai::Smart) => {
+            smart_ai_take_turn(monster_id, map, objects, fov_map, messages);
         }
 
         Some(Ai::Patrol) => {
@@ -690,7 +678,7 @@ fn main() {
 
     let mut objects = vec!(player);
 
-    let (mut map, position) = make_map(&mut objects);
+    let (mut map, position) = make_map(&mut objects, &config);
     let player_x = position.0;
     let player_y = position.1;
     objects[PLAYER].x = player_x;

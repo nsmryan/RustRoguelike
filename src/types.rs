@@ -1,5 +1,3 @@
-use std::cmp::min;
-
 use tcod::console::*;
 use tcod::map::{Map as FovMap};
 use tcod::input::Mouse;
@@ -8,6 +6,8 @@ use tcod::pathfinding::*;
 
 use crate::constants::*;
 
+
+type ObjectId = usize;
 
 pub struct Messages(pub Vec<(String, Color)>);
 
@@ -121,7 +121,8 @@ impl Obstacle {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Ai {
-    BasicEnemy,
+    Basic,
+    Smart,
     Patrol,
     Guard,
     Passive,
@@ -131,6 +132,8 @@ pub enum Ai {
 pub enum Behavior {
     Idle,
     Seeking(Position),
+    SmartSearch(AwarenessMap),
+    SmartSeeking(AwarenessMap),
     Patrol(Vec<Position>, usize, PatrolDir),
     Guard(Position),
     Alert,
@@ -142,11 +145,23 @@ pub enum PatrolDir {
     Reverse,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct AwarenessMap {
+    pub weight: Vec<Vec<f32>>,
+}
+
+impl AwarenessMap {
+    pub fn new(width: usize, height: usize) -> AwarenessMap {
+        AwarenessMap {
+            weight: vec![vec![0.0; width]; height],
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Item {
     Heal,
 }
-
 
 pub enum UseResult {
     UsedUp,
@@ -365,5 +380,32 @@ impl Position {
     pub fn move_y(&self, dist_y: i32) -> Position {
         Position(self.0, self.1 + dist_y)
     }
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub struct ColorConfig {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+
+impl ColorConfig {
+    pub fn color(&self) -> Color {
+        Color::new(self.r, self.g, self.b)
+    }
+}
+
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub struct Config {
+    pub color_dark_wall: ColorConfig,
+    pub color_light_wall: ColorConfig,
+    pub color_dark_ground: ColorConfig,
+    pub color_light_ground: ColorConfig,
+    pub color_dark_water: ColorConfig,
+    pub color_light_water: ColorConfig,
+
+    pub color_orc: ColorConfig,
+    pub color_troll: ColorConfig,
 }
 
