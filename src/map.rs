@@ -208,10 +208,11 @@ pub fn add_obstacle(map: &mut Map, pos: &Position, obstacle: Obstacle) {
 
        Obstacle::Building => {
            let size = 2;
-           place_line(map, &pos.move_by(-size, size), &pos.move_by(size, size), Tile::wall());
-           place_line(map, &pos.move_by(-size, size), &pos.move_by(-size, -size), Tile::wall());
-           place_line(map, &pos.move_by(-size, -size), &pos.move_by(size, -size), Tile::wall());
-           place_line(map, &pos.move_by(size, -size), &pos.move_by(size, size), Tile::wall());
+           let positions = vec!();
+           positions.append(place_line(map, &pos.move_by(-size, size), &pos.move_by(size, size), Tile::wall()));
+           positions.append(place_line(map, &pos.move_by(-size, size), &pos.move_by(-size, -size), Tile::wall()));
+           positions.append(place_line(map, &pos.move_by(-size, -size), &pos.move_by(size, -size), Tile::wall()));
+           positions.append(place_line(map, &pos.move_by(size, -size), &pos.move_by(size, size), Tile::wall()));
        }
     }
 }
