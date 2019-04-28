@@ -77,8 +77,7 @@ pub fn random_offset() -> Position {
 }
 
 pub fn random_position() -> Position {
-    Position(rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
-    rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS))
+    Position(rand::thread_rng().gen_range(0, MAP_WIDTH), rand::thread_rng().gen_range(0, MAP_HEIGHT))
 }
 
 pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) -> Position {
