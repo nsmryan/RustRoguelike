@@ -73,7 +73,7 @@ pub fn make_map(objects: &mut Vec<Object>) -> (Map, Position) {
 
 pub fn random_position() -> Position {
     Position(rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
-             rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS))
+    rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS))
 }
 
 pub fn make_island(map: &mut Map, objects: &mut Vec<Object>) -> Position {
@@ -91,7 +91,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>) -> Position {
     }
 
     let obstacles = Obstacle::all_obstacles();
-    
+
     for _ in 0..ISLAND_NUM_OBSTICLES {
         let rand_pos = random_position();
         let pos = Position(center.0 + rand_pos.0, center.1 + rand_pos.1);
@@ -114,7 +114,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>) -> Position {
     // random subtraction
     for _ in 0..ISLAND_NUM_SUBTRACTIONS_ATTEMPTS {
         let pos = Position(center.0 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
-                           center.1 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS));
+        center.1 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS));
 
         if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
             map.0[pos.0 as usize][pos.1 as usize] = Tile::empty();
@@ -124,7 +124,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>) -> Position {
     // random additions
     for _ in 0..ISLAND_NUM_ADDITION_ATTEMPTS {
         let pos = Position(center.0 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
-                           center.1 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS));
+        center.1 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS));
         let obstacle = *rand::thread_rng().choose(&obstacles).unwrap();
 
         if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
@@ -163,14 +163,25 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>) -> Position {
     center
 }
 
+pub fn place_block(map: &mut Map, start: &Position, width: i32, tile: Tile) -> Vec<Position> {
+    let mut positions = Vec::new();
+
+    for x in 0..width {
+        for y in 0..width {
+            let pos = (start.0 + x, start.1 + y);
+            map[pos] = tile;
+            positions.push(Position::new(pos.0, pos.1));
+        }
+    }
+
+    positions
+}
+
 pub fn place_line(map: &mut Map, start: &Position, end: &Position, tile: Tile) -> Vec<Position> {
     let mut positions = Vec::new();
     let mut line = Line::new(start.pair(), end.pair());
 
-    println!("{:?}, {:?}", start, end);
-
     while let Some(pos) = line.step() {
-        println!("{:?}", pos);
         map[pos] = tile;
         positions.push(Position::new(pos.0, pos.1));
     }
@@ -180,63 +191,59 @@ pub fn place_line(map: &mut Map, start: &Position, end: &Position, tile: Tile) -
 
 pub fn add_obstacle(map: &mut Map, pos: &Position, obstacle: Obstacle) {
     match obstacle {
-       Obstacle::Block => {
-         map.0[pos.0 as usize][pos.1 as usize] = Tile::wall();
-       }
+        Obstacle::Block => {
+            map.0[pos.0 as usize][pos.1 as usize] = Tile::wall();
+        }
 
-       Obstacle::Wall => {
-           let end_pos = if rand::thread_rng().next_f64() < 0.5 {
-               pos.move_x(3)
-           } else {
-               pos.move_y(3)
-           };
-           place_line(map, pos, &end_pos, Tile::wall());
-       }
+        Obstacle::Wall => {
+            let end_pos = if rand::thread_rng().next_f64() < 0.5 {
+                pos.move_x(3)
+            } else {
+                pos.move_y(3)
+            };
+            place_line(map, pos, &end_pos, Tile::wall());
+        }
 
-       Obstacle::ShortWall => {
-           let end_pos = if rand::thread_rng().next_f64() < 0.5 {
-                    pos.move_x(3)
-               } else {
-                    pos.move_y(3)
-               };
-           place_line(map, pos, &end_pos, Tile::short_wall());
-       }
+        Obstacle::ShortWall => {
+            let end_pos = if rand::thread_rng().next_f64() < 0.5 {
+                pos.move_x(3)
+            } else {
+                pos.move_y(3)
+            };
+            place_line(map, pos, &end_pos, Tile::short_wall());
+        }
 
-       Obstacle::Square => {
-           for x in 0..2 {
-               for y in 0..2 {
-                 map.0[pos.0 as usize + x][pos.1 as usize + y] = Tile::wall();
-               }
-           }
-       }
+        Obstacle::Square => {
+            place_block(map, pos, 2, Tile::wall());
+        }
 
-       Obstacle::LShape => {
-           let dir = rand::thread_rng().choose(&[1, -1]).unwrap();
+        Obstacle::LShape => {
+            let dir = rand::thread_rng().choose(&[1, -1]).unwrap();
 
-           if rand::thread_rng().next_f64() < 0.5 {
-               for x in 0..3 {
-                 map.0[pos.0 as usize + x][pos.1 as usize] = Tile::wall();
-               }
-               map.0[pos.0 as usize][(pos.1 + dir) as usize] = Tile::wall();
-           } else {
-               for y in 0..3 {
-                 map.0[pos.0 as usize][pos.1 as usize + y] = Tile::wall();
-               }
-               map.0[(pos.0 + dir) as usize][pos.1 as usize] = Tile::wall();
-           }
-       }
+            if rand::thread_rng().next_f64() < 0.5 {
+                for x in 0..3 {
+                    map.0[pos.0 as usize + x][pos.1 as usize] = Tile::wall();
+                }
+                map.0[pos.0 as usize][(pos.1 + dir) as usize] = Tile::wall();
+            } else {
+                for y in 0..3 {
+                    map.0[pos.0 as usize][pos.1 as usize + y] = Tile::wall();
+                }
+                map.0[(pos.0 + dir) as usize][pos.1 as usize] = Tile::wall();
+            }
+        }
 
-       Obstacle::Building => {
-           let size = 2;
-           let mut positions = vec!();
-           positions.append(&mut place_line(map, &pos.move_by(-size, size), &pos.move_by(size, size), Tile::wall()));
-           positions.append(&mut place_line(map, &pos.move_by(-size, size), &pos.move_by(-size, -size), Tile::wall()));
-           positions.append(&mut place_line(map, &pos.move_by(-size, -size), &pos.move_by(size, -size), Tile::wall()));
-           positions.append(&mut place_line(map, &pos.move_by(size, -size), &pos.move_by(size, size), Tile::wall()));
-           for _ in 0..rand::thread_rng().gen_range(0, 10) {
-               positions.swap_remove(rand::thread_rng().gen_range(0, positions.len()));
-           }
-       }
+        Obstacle::Building => {
+            let size = 2;
+            let mut positions = vec!();
+            positions.append(&mut place_line(map, &pos.move_by(-size, size), &pos.move_by(size, size), Tile::wall()));
+            positions.append(&mut place_line(map, &pos.move_by(-size, size), &pos.move_by(-size, -size), Tile::wall()));
+            positions.append(&mut place_line(map, &pos.move_by(-size, -size), &pos.move_by(size, -size), Tile::wall()));
+            positions.append(&mut place_line(map, &pos.move_by(size, -size), &pos.move_by(size, size), Tile::wall()));
+            for _ in 0..rand::thread_rng().gen_range(0, 10) {
+                positions.swap_remove(rand::thread_rng().gen_range(0, positions.len()));
+            }
+        }
     }
 }
 
