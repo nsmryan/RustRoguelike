@@ -124,7 +124,91 @@ fn smart_ai_take_turn(monster_id: usize,
                       objects: &mut [Object],
                       fov_map: &FovMap,
                       messages: &mut Messages) {
+    let (monster_x, monster_y) = objects[monster_id].pos();
+    let (player_x, player_y) = objects[PLAYER].pos();
+    let player_pos = Position::new(player_x, player_y);
 
+    match objects[monster_id].behavior {
+        Some(Behavior::Idle) => {
+            if fov_map.is_in_fov(monster_x, monster_y) {
+                objects[monster_id].behavior = Some(Behavior::Seeking(Position::new(player_x, player_y));
+            }
+        }
+
+        Some(Behavior::Seeking(awareness_map)) => {
+
+            ai_seek_take_turn(target_pos,
+                              monster_id,
+                              map,
+                              objects,
+                              fov_map,
+                              messages);
+
+            if !fov_map.is_in_fov(monster_x, monster_y) {
+                awareness_map = AwarenessMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize);
+                awareness_map.expected_position(player_pos);
+                objects[monster_id].behavior =
+                    Some(Behavior::SmartSeeking(awareness_map));
+
+            }
+        }
+
+        Some(Behavior::SmartSeeking(awareness_map)) => {
+            if fov_map.is_in_fov(monster_x, monster_y) {
+                objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
+            } else {
+                fov_map.compute_fov(monster_x, monster_y, TORCH_RADIOUS, FOV_LIGHT_WALLS, FOV_ALGO);
+
+                for y in 0..MAP_HEIGHT {
+                    for x in 0..MAP_WIDTH {
+                        if fov_map.is_in_fov(x, y) {
+                            awareness_map.visible(x, y);
+                        }
+                    }
+                }
+
+                awareness_map.disperse();
+
+                // recompute player fov, in case it is used by other monsters. likely there is a
+                // better way to do this.
+                fov_map.compute_fov(player_x, player_y, TORCH_RADIOUS, FOV_LIGHT_WALLS, FOV_ALGO);
+            }
+        }
+        
+        ref behavior => {
+            panic!("Ai behavior {:?} unexpected!", behavior);
+        }
+    }
+}
+
+fn ai_seek_take_turn(target_pos_orig: Position, 
+                     monster_id: usize,
+                     map: &Map,
+                     objects: &mut [Object],
+                     fov_map: &FovMap,
+                     messages: &mut Messages) {
+    let mut target_pos = target_pos_orig;
+    let (player_x, player_y) = objects[PLAYER].pos();
+    let player_pos = Position::new(player_x, player_y);
+
+    let (monster_x, monster_y) = objects[monster_id].pos();
+
+    if fov_map.is_in_fov(monster_x, monster_y) {
+        objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
+        target_pos = player_pos;
+    }
+
+    let map_copy = map.make_tcod_map();
+    let mut astar = AStar::new_from_map(map_copy, 1.5);
+    astar.find((monster_x, monster_y), target_pos.pair());
+
+    if let Some((dx, dy)) = astar.walk_one_step(true) {
+        move_towards(monster_id, dx, dy, map, objects);
+
+        if objects[monster_id].pos() == target_pos.pair() {
+            objects[monster_id].behavior = Some(Behavior::Idle);
+        }
+    }
 }
 
 fn basic_ai_take_turn(monster_id: usize,
@@ -143,25 +227,13 @@ fn basic_ai_take_turn(monster_id: usize,
             }
         }
 
-        Some(Behavior::Seeking(target_pos_orig)) => {
-            let mut target_pos = target_pos_orig;
-
-            if fov_map.is_in_fov(monster_x, monster_y) {
-                objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
-                target_pos = player_pos;
-            }
-
-            let map_copy = map.make_tcod_map();
-            let mut astar = AStar::new_from_map(map_copy, 1.5);
-            astar.find((monster_x, monster_y), target_pos.pair());
-
-            if let Some((dx, dy)) = astar.walk_one_step(true) {
-                move_towards(monster_id, dx, dy, map, objects);
-
-                if objects[monster_id].pos() == target_pos.pair() {
-                    objects[monster_id].behavior = Some(Behavior::Idle);
-                }
-            }
+        Some(Behavior::Seeking(target_pos)) => {
+            ai_seek_take_turn(target_pos,
+                              monster_id,
+                              map,
+                              objects,
+                              fov_map,
+                              messages);
         }
         
         ref behavior => {
@@ -661,14 +733,13 @@ pub fn make_player() -> Object {
 fn main() {
     let mut previous_player_position = (-1, -1);
 
-
     let mut messages = Messages::new();
 
     let mut inventory = vec![];
 
     let mut config: Config;
     {
-        let mut file = File::open("config.json").unwrap();
+        let mut file = File::open("config.json").expect("Could not open/parse config file config.json");
         let mut config_string = String::new();
         file.read_to_string(&mut config_string).unwrap();
         config = serde_json::from_str(&config_string).unwrap();
@@ -755,8 +826,8 @@ fn main() {
         match File::open("config.json") {
             Ok(mut file) => {
                 let mut config_string = String::new();
-                file.read_to_string(&mut config_string).unwrap();
-                config = serde_json::from_str(&config_string).unwrap();
+                file.read_to_string(&mut config_string).expect("Could not read config file!");
+                config = serde_json::from_str(&config_string).expect("Could not read JSON- config.json has a parsing error!");
             }
           _ => (),
         }

@@ -147,13 +147,52 @@ pub enum PatrolDir {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AwarenessMap {
-    pub weight: Vec<Vec<f32>>,
+    pub weights: Vec<Vec<f32>>,
+    pub alt_weights: Vec<Vec<f32>>,
+    pub width: usize,
+    pub height: usize,
 }
 
 impl AwarenessMap {
     pub fn new(width: usize, height: usize) -> AwarenessMap {
         AwarenessMap {
-            weight: vec![vec![0.0; width]; height],
+            weights: vec![vec![0.0; width]; height],
+            alt_weights: vec![vec![0.0; width]; height],
+            width: width,
+            height: height,
+        }
+    }
+
+    pub fn expected_position(&self, position: Position) {
+        for y in 0..self.height {
+            for x in 0..self.width {
+                if (x, y) == position.pair() {
+                    self.weights[y][x] = 1.0;
+                } else {
+                    self.weights[y][x] = 0.0;
+                }
+            }
+        }
+    }
+
+    pub fn visible(&self, position: Position) {
+        self.weights[position.1][position.0] = 0.0;
+    }
+
+    pub fn disperse(&mut self) {
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let mut potential_positions =
+                    vec![(x + 1, y),     (x + 1, y + 1), (x + 1, y - 1)
+                         (x,     y + 1), (x,     y - 1), (x - 1, y),
+                         (x - 1, y + 1)  (x - 1, y - 1)];
+                let potential_positions =
+                    potential_positions.iter()
+                                       .filter(|(x, y)| x >= 0 && y >= 0 && x < self.width && y < self.height)
+                                       .filter(|(x, y)| self.weights[y][x] > 0.0)
+                                       .collect::Vec<(i32, i32)();
+
+            }
         }
     }
 }
@@ -247,11 +286,11 @@ pub struct Object {
 }
 
 impl Object {
-    pub fn new(x: i32, y: i32, char: char, name: &str, color: Color, blocks: bool) -> Self {
+    pub fn new(x: i32, y: i32, chr: char, name: &str, color: Color, blocks: bool) -> Self {
         Object {
             x: x,
             y: y,
-            char: char,
+            char: chr,
             color: color,
             name: name.into(),
             blocks: blocks,
@@ -305,6 +344,7 @@ impl Object {
 
     pub fn attack(&mut self, target: &mut Object, messages: &mut Messages) {
         let damage = self.fighter.map_or(0, |f| f.power) - target.fighter.map_or(0, |f| f.defense);
+
         if damage > 0 {
             messages.message(format!("{} attacks {} for {} hit points.", self.name, target.name, damage), WHITE);
             target.take_damage(damage);
