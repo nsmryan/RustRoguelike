@@ -1,29 +1,29 @@
 
 { 
     "color_dark_wall": {
-      "r": 0,
-      "g": 0,
-      "b": 100
+      "r": 80,
+      "g": 65,
+      "b": 40
     },
     "color_light_wall": {
-      "r": 130,
-      "g": 110,
-      "b": 50
+      "r": 128,
+      "g": 102,
+      "b": 64
     },
     "color_dark_ground": {
-      "r": 50,
-      "g": 50,
-      "b": 150
+      "r": 2,
+      "g": 22,
+      "b": 38
     },
     "color_light_ground": {
-      "r": 200,
-      "g": 180,
-      "b": 50
+      "r": 20,
+      "g": 50,
+      "b": 75
     },
     "color_light_water": {
-      "r": 0,
-      "g": 0,
-      "b": 250
+      "r": 110,
+      "g": 90,
+      "b": 80
     },
     "color_dark_water": {
       "r": 0,
