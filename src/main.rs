@@ -269,67 +269,6 @@ fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], me
     }
 }
 
-// BLOCK3 solid block
-// CHECKBOX_UNSET unfilled block
-// CROSS cross
-// DCROSS invert cross
-// DHLINE invert horizontal line
-// DTEEE,DTEEN,DTEES,DTEEW invert tees
-// DNE,DNW,DSE,DSW corners
-// DVLINE divider lines vertical
-// TEEE,TEEN,TEES,TEEW tees
-// RADIO_SET,RADIO_UNSET unfilled circle and circle with inner filled circle
-// SUBP_DIAG,SUBP_E, SUBP_N,SUBP_NE,SUBP_NW,SUBP_SE,SUBP_SW half blocks, directional. maybe
-// SW as well
-// VLINE HLINE thin lines
-// ARROW2_E,ARROW2_N,ARROW2_S,ARROW2_W solid arrow
-// ARROW_E,ARROW_N,ARROW_S,ARROW_W  thin arrow
-fn print_all_special_char(game: &mut Game) {
-    use tcod::chars::*;
-    let keys = vec!(ARROW2_E,ARROW2_N,ARROW2_S,ARROW2_W,ARROW_E,ARROW_N,ARROW_S,
-                    ARROW_W,BLOCK1,BLOCK2,BLOCK3,BULLET,BULLET_INV,BULLET_SQUARE,
-                    CENT,CHECKBOX_SET,CHECKBOX_UNSET,CLUB,COPYRIGHT,CROSS,CURRENCY,
-                    DARROW_H,DARROW_V,DCROSS,DHLINE,DIAMOND,DIVISION,DNE,DNW,DSE,DSW,
-                    DTEEE,DTEEN,DTEES,DTEEW,DVLINE,EXCLAM_DOUBLE,FEMALE,FUNCTION,
-                    GRADE,HALF,HEART,HLINE,LIGHT,MALE,MULTIPLICATION,NE,NOTE,
-                    NOTE_DOUBLE,NW,ONE_QUARTER,PILCROW,POUND,POW1,POW2,
-                    POW3,RADIO_SET,RADIO_UNSET,RESERVED,SE,SECTION,
-                    SMILIE,SMILIE_INV,SPADE,SUBP_DIAG,SUBP_E, SUBP_N,SUBP_NE,SUBP_NW,SUBP_SE,SUBP_SW
-                    ,SW,TEEE,TEEN,TEES,TEEW,THREE_QUARTERS,UMLAUT,VLINE,YEN);
-    let mut index = 0;
-
-    for x in 0..MAP_WIDTH {
-        for y in 0..MAP_HEIGHT {
-            game.console.set_char_background(x, y, BLACK, BackgroundFlag::Set);
-            game.console.put_char(x, y, ' ', BackgroundFlag::None);
-        }
-    }
-
-    game.console.set_default_foreground(WHITE);
-    for key in 0..256 {
-        let index_x = 10 + (index % 32);
-        let index_y = -10 + ((index / 32) * 2);
-
-        let x = SCREEN_WIDTH/2 + index_x - 32 as i32;
-        let y = SCREEN_HEIGHT/2 + index_y;
-
-        game.console.put_char(x,
-                              y,
-                              key as u8 as char,
-                              BackgroundFlag::None);
-        if game.mouse.cx as i32 == x && game.mouse.cy as i32 == y {
-            game.console.print_ex(x,
-                                  y - 1,
-                                  BackgroundFlag::None,
-                                  TextAlignment::Left,
-                                  format!("{}", key));
-        }
-
-        index += 1;
-    }
-}
-
-
 pub fn make_player() -> Object {
     let mut player = Object::new(0, 0, '@', "player", WHITE, true);
     player.alive = true;
