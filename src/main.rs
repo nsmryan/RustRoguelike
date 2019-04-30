@@ -25,6 +25,7 @@ mod ai;
 #[allow(unused_imports)]use tcod::input::KeyCode::*;
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
 #[allow(unused_imports)]use tcod::AsNative;
+#[allow(unused_imports)]use tcod::image;
 
 use types::*;
 use constants::*;
@@ -393,6 +394,7 @@ fn render_all(game: &mut Game,
     blit(&mut game.console, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, 0), 1.0, 1.0);
 
     blit(&mut game.panel, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, PANEL_Y), 1.0, 1.0);
+
 }
 
 // BLOCK3 solid block

@@ -48,6 +48,104 @@ impl Game {
 }
 
 
+#[derive(Clone, Debug)]
+pub struct Object {
+    pub x: i32,
+    pub y: i32,
+    pub char: char,
+    pub color: Color,
+    pub name: String,
+    pub blocks: bool,
+    pub alive: bool,
+    pub fighter: Option<Fighter>,
+    pub ai: Option<Ai>,
+    pub behavior: Option<Behavior>,
+    pub item: Option<Item>,
+    pub momentum: Option<Momentum>,
+}
+
+impl Object {
+    pub fn new(x: i32, y: i32, chr: char, name: &str, color: Color, blocks: bool) -> Self {
+        Object {
+            x: x,
+            y: y,
+            char: chr,
+            color: color,
+            name: name.into(),
+            blocks: blocks,
+            alive: false,
+            fighter: None,
+            ai: None,
+            behavior: None,
+            item: None,        
+            momentum: None,
+        }
+    }
+
+    pub fn draw(&self, console: &mut Console) {
+        console.set_default_foreground(self.color);
+        console.put_char(self.x, self.y, self.char, BackgroundFlag::None);
+        console.set_default_foreground(WHITE);
+        console.set_default_background(WHITE);
+        console.rect(self.x + 1, self.y, 1, 1, true, BackgroundFlag::Default);
+    }
+
+    pub fn clear(&self, console: &mut Console) {
+        console.put_char(self.x, self.y, ' ', BackgroundFlag::None);
+    }
+
+    pub fn pos(&self) -> (i32, i32) {
+        (self.x, self.y)
+    }
+
+    pub fn set_pos(&mut self, x: i32, y: i32) {
+        self.x = x;
+        self.y = y;
+    }
+
+    pub fn distance_to(&self, other: &Object) -> f32 {
+        let dx = other.x - self.x;
+        let dy = other.y - self.y;
+        ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
+    }
+
+    pub fn take_damage(&mut self, damage: i32) {
+        if let Some(fighter) = self.fighter.as_mut() {
+            if damage > 0 {
+                fighter.hp -= damage;
+            }
+        }
+
+        if let Some(fighter) = self.fighter {
+            if fighter.hp <= 0 {
+                self.alive = false;
+                fighter.on_death.callback(self);
+            }
+        }
+    }
+
+    pub fn attack(&mut self, target: &mut Object, messages: &mut Messages) {
+        let damage = self.fighter.map_or(0, |f| f.power) - target.fighter.map_or(0, |f| f.defense);
+
+        if damage > 0 {
+            messages.message(format!("{} attacks {} for {} hit points.", self.name, target.name, damage), WHITE);
+            target.take_damage(damage);
+        } else {
+            messages.message(format!("{} attacks {} but it has no effect!", self.name, target.name), WHITE);
+        }
+    }
+
+    pub fn heal(&mut self, amount: i32) {
+        if let Some(ref mut fighter) = self.fighter {
+            fighter.hp += amount;
+            if fighter.hp > fighter.max_hp {
+                fighter.hp = fighter.max_hp;
+            }
+        }
+    }
+}
+
+
 #[derive(Clone, Copy, Debug)]
 pub struct Tile {
     pub blocked: bool,
@@ -265,101 +363,6 @@ pub enum MomentumChange {
     Lost,
     PreviousDirection,
     CurrentDirection,
-}
-
-
-#[derive(Clone, Debug)]
-pub struct Object {
-    pub x: i32,
-    pub y: i32,
-    pub char: char,
-    pub color: Color,
-    pub name: String,
-    pub blocks: bool,
-    pub alive: bool,
-    pub fighter: Option<Fighter>,
-    pub ai: Option<Ai>,
-    pub behavior: Option<Behavior>,
-    pub item: Option<Item>,
-    pub momentum: Option<Momentum>,
-}
-
-impl Object {
-    pub fn new(x: i32, y: i32, chr: char, name: &str, color: Color, blocks: bool) -> Self {
-        Object {
-            x: x,
-            y: y,
-            char: chr,
-            color: color,
-            name: name.into(),
-            blocks: blocks,
-            alive: false,
-            fighter: None,
-            ai: None,
-            behavior: None,
-            item: None,        
-            momentum: None,
-        }
-    }
-
-    pub fn draw(&self, console: &mut Console) {
-        console.set_default_foreground(self.color);
-        console.put_char(self.x, self.y, self.char, BackgroundFlag::None);
-    }
-
-    pub fn clear(&self, console: &mut Console) {
-        console.put_char(self.x, self.y, ' ', BackgroundFlag::None);
-    }
-
-    pub fn pos(&self) -> (i32, i32) {
-        (self.x, self.y)
-    }
-
-    pub fn set_pos(&mut self, x: i32, y: i32) {
-        self.x = x;
-        self.y = y;
-    }
-
-    pub fn distance_to(&self, other: &Object) -> f32 {
-        let dx = other.x - self.x;
-        let dy = other.y - self.y;
-        ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
-    }
-
-    pub fn take_damage(&mut self, damage: i32) {
-        if let Some(fighter) = self.fighter.as_mut() {
-            if damage > 0 {
-                fighter.hp -= damage;
-            }
-        }
-
-        if let Some(fighter) = self.fighter {
-            if fighter.hp <= 0 {
-                self.alive = false;
-                fighter.on_death.callback(self);
-            }
-        }
-    }
-
-    pub fn attack(&mut self, target: &mut Object, messages: &mut Messages) {
-        let damage = self.fighter.map_or(0, |f| f.power) - target.fighter.map_or(0, |f| f.defense);
-
-        if damage > 0 {
-            messages.message(format!("{} attacks {} for {} hit points.", self.name, target.name, damage), WHITE);
-            target.take_damage(damage);
-        } else {
-            messages.message(format!("{} attacks {} but it has no effect!", self.name, target.name), WHITE);
-        }
-    }
-
-    pub fn heal(&mut self, amount: i32) {
-        if let Some(ref mut fighter) = self.fighter {
-            fighter.hp += amount;
-            if fighter.hp > fighter.max_hp {
-                fighter.hp = fighter.max_hp;
-            }
-        }
-    }
 }
 
 
