@@ -144,14 +144,14 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         if !map.is_blocked(x, y, objects) {
             let mut monster = if rand::random::<f32>() < 1.0 {
                 let mut orc = Object::new(x, y, 'o', "orc", DESATURATED_GREEN, true);
-                orc.fighter = Some(Fighter{max_hp: 10, hp: 10, defense: 0, power: 3, on_death: DeathCallback::Monster });
+                orc.fighter = Some( Fighter { max_hp: 10, hp: 10, defense: 0, power: 3, on_death: DeathCallback::Monster } );
                 orc.ai = Some(Ai::Basic);
                 orc.behavior = Some(Behavior::Idle);
                 orc.color = config.color_orc.color();
                 orc
             } else {
                 let mut troll = Object::new(x, y, 'T', "troll", DARKER_GREEN, true);
-                troll.fighter = Some(Fighter{max_hp: 16, hp: 16, defense: 1, power: 4, on_death: DeathCallback::Monster });
+                troll.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 4, on_death: DeathCallback::Monster } );
                 troll.ai = Some(Ai::Basic);
                 troll.behavior = Some(Behavior::Idle);
                 troll.color = config.color_troll.color();
@@ -167,12 +167,14 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
     }
 
     // Test smart Ai
+    /*
     let pos = random_position();
     let mut smart = Object::new(pos.0, pos.1, 'g', "guard", DARK_BLUE, true);
     smart.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 4, on_death: DeathCallback::Monster } );
     smart.ai = Some(Ai::Smart);
     smart.behavior = Some(Behavior::SmartSearch(AwarenessMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize)));
     objects.push(smart);
+    */
 
     center
 }

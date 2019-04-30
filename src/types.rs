@@ -2,7 +2,6 @@ use tcod::console::*;
 use tcod::map::{Map as FovMap};
 use tcod::input::Mouse;
 use tcod::colors::*;
-use tcod::pathfinding::*;
 
 use crate::constants::*;
 
@@ -163,10 +162,10 @@ impl AwarenessMap {
         }
     }
 
-    pub fn expected_position(&self, position: Position) {
+    pub fn expected_position(&mut self, position: Position) {
         for y in 0..self.height {
             for x in 0..self.width {
-                if (x, y) == position.pair() {
+                if (x as i32, y as i32) == position.pair() {
                     self.weights[y][x] = 1.0;
                 } else {
                     self.weights[y][x] = 0.0;
@@ -175,22 +174,22 @@ impl AwarenessMap {
         }
     }
 
-    pub fn visible(&self, position: Position) {
-        self.weights[position.1][position.0] = 0.0;
+    pub fn visible(&mut self, position: Position) {
+        self.weights[position.1 as usize][position.0 as usize] = 0.0;
     }
 
     pub fn disperse(&mut self) {
         for y in 0..self.height {
             for x in 0..self.width {
                 let mut potential_positions =
-                    vec![(x + 1, y),     (x + 1, y + 1), (x + 1, y - 1)
+                    vec![(x + 1, y),     (x + 1, y + 1), (x + 1, y - 1),
                          (x,     y + 1), (x,     y - 1), (x - 1, y),
-                         (x - 1, y + 1)  (x - 1, y - 1)];
+                         (x - 1, y + 1), (x - 1, y - 1)];
                 let potential_positions =
                     potential_positions.iter()
-                                       .filter(|(x, y)| x >= 0 && y >= 0 && x < self.width && y < self.height)
-                                       .filter(|(x, y)| self.weights[y][x] > 0.0)
-                                       .collect::Vec<(i32, i32)();
+                                       .filter(|(x, y)| *x >= 0 && *y >= 0 && *x < self.width && *y < self.height)
+                                       .filter(|(x, y)| self.weights[*y as usize][*x as usize] > 0.0);
+                                       //.collect::Vec<(i32, i32)>();
 
             }
         }
