@@ -364,10 +364,6 @@ fn render_all(game: &mut Game,
         object.draw(&mut game.console);
     }
 
-    /* print all special characters */
-    //game.console.set_default_foreground(config.color_dark_ground.color());
-    //print_all_special_char(game);
-
     game.panel.set_default_background(BLACK);
     game.panel.clear();
 
@@ -390,6 +386,9 @@ fn render_all(game: &mut Game,
     game.panel.print_ex(1, 2, BackgroundFlag::None, TextAlignment::Left, format!("Turn Count: {}", game.turn_count));
     game.panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, format!("{:?}", (objects[PLAYER].momentum.unwrap().0, objects[PLAYER].momentum.unwrap().1)));
     game.panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, get_names_under_mouse(game.mouse, objects, &game.fov));
+
+    /* print all special characters */
+    //print_all_special_char(game);
 
     blit(&mut game.console, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, 0), 1.0, 1.0);
 
@@ -424,18 +423,38 @@ fn print_all_special_char(game: &mut Game) {
                     SMILIE,SMILIE_INV,SPADE,SUBP_DIAG,SUBP_E, SUBP_N,SUBP_NE,SUBP_NW,SUBP_SE,SUBP_SW
                     ,SW,TEEE,TEEN,TEES,TEEW,THREE_QUARTERS,UMLAUT,VLINE,YEN);
     let mut index = 0;
-    for key in keys.iter() {
-        let index_x = index % 32;
-        let index_y = index / 32;
-        let x = SCREEN_WIDTH/2 + index_x - (keys.len() / 4) as i32;
+
+    for x in 0..MAP_WIDTH {
+        for y in 0..MAP_HEIGHT {
+            game.console.set_char_background(x, y, BLACK, BackgroundFlag::Set);
+            game.console.put_char(x, y, ' ', BackgroundFlag::None);
+        }
+    }
+
+    game.console.set_default_foreground(WHITE);
+    for key in 0..256 {
+        let index_x = 10 + (index % 32);
+        let index_y = -10 + ((index / 32) * 2);
+
+        let x = SCREEN_WIDTH/2 + index_x - 32 as i32;
         let y = SCREEN_HEIGHT/2 + index_y;
+
         game.console.put_char(x,
                               y,
-                              *key,
+                              key as u8 as char,
                               BackgroundFlag::None);
+        if game.mouse.cx as i32 == x && game.mouse.cy as i32 == y {
+            game.console.print_ex(x,
+                                  y - 1,
+                                  BackgroundFlag::None,
+                                  TextAlignment::Left,
+                                  format!("{}", key));
+        }
+
         index += 1;
     }
 }
+
 
 fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> String {
     let (x, y) = (mouse.cx as i32, mouse.cy as i32);
@@ -518,11 +537,6 @@ fn main() {
 
     let mut game = Game::with_root(root);
 
-    for object in &objects {
-        object.draw(&mut game.root);
-    }
-    game.root.flush();
-        
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
             game.fov.set(x, y,
