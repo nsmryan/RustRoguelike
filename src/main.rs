@@ -330,17 +330,6 @@ fn print_all_special_char(game: &mut Game) {
 }
 
 
-fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> String {
-    let (x, y) = (mouse.cx as i32, mouse.cy as i32);
-
-    let names = objects.iter()
-                       .filter(|obj| { obj.pos() == (x, y) && fov_map.is_in_fov(obj.x, obj.y)})
-                       .map(|obj| { format!("{}, Ai {:?}, Behavior {:?}", obj.name.clone(), obj.ai, obj.behavior) })
-                       .collect::<Vec<_>>();
-
-    names.join(", ")
-}
-
 pub fn make_player() -> Object {
     let mut player = Object::new(0, 0, '@', "player", WHITE, true);
     player.alive = true;
