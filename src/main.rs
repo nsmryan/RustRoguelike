@@ -289,7 +289,7 @@ fn main() {
     {
         let mut file = File::open("config.json").expect("Could not open/parse config file config.json");
         let mut config_string = String::new();
-        file.read_to_string(&mut config_string).unwrap();
+        file.read_to_string(&mut config_string).expect("dude");
         config = serde_json::from_str(&config_string).unwrap();
     }
 
