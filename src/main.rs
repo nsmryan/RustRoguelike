@@ -9,6 +9,7 @@ extern crate num;
 
 mod types;
 mod constants;
+mod display;
 mod map;
 mod ai;
 
@@ -25,9 +26,11 @@ mod ai;
 #[allow(unused_imports)]use tcod::input::KeyCode::*;
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
 #[allow(unused_imports)]use tcod::AsNative;
+#[allow(unused_imports)]use tcod::image;
 
 use types::*;
 use constants::*;
+use display::*;
 use map::*;
 use ai::*;
 
@@ -264,234 +267,6 @@ fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], me
             move_player_by(objects, map, dx, dy);
         }
     }
-}
-
-fn render_all(game: &mut Game,
-              objects: &[Object],
-              map: &mut Map,
-              messages: &mut Messages,
-              fov_recompute: bool,
-              config: &Config) {
-    if fov_recompute {
-        let player = &objects[PLAYER];
-        game.fov.compute_fov(player.x, player.y, TORCH_RADIOUS, FOV_LIGHT_WALLS, FOV_ALGO);
-    }
-
-    for y in 0..MAP_HEIGHT {
-        for x in 0..MAP_WIDTH {
-            let visible = game.fov.is_in_fov(x, y);
-
-            // Color based on TileType and visibility
-            let color = match (map.0[x as usize][y as usize].tile_type, visible) {
-                (TileType::Wall, true) => config.color_light_wall,
-                (TileType::Wall, false) => config.color_dark_wall,
-
-                (TileType::Empty, true) => config.color_light_ground,
-                (TileType::Empty, false) => config.color_dark_ground,
-
-                (TileType::Water, true) => config.color_light_water,
-                (TileType::Water, false) => config.color_dark_water,
-
-                (TileType::ShortWall, true) => config.color_light_wall,
-                (TileType::ShortWall, false) => config.color_dark_wall,
-            };
-
-            let mut explored = map.0[x as usize][y as usize].explored;
-            if visible {
-                explored = true;
-            }
-
-            if explored {
-                let tile_type = map.0[x as usize][y as usize].tile_type;
-                match tile_type {
-                    TileType::Empty | TileType::Water => {
-                        game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
-                    }
-
-                    TileType::ShortWall | TileType::Wall => {
-                        if visible {
-                            game.console.set_char_background(x, y, config.color_light_ground.color(), BackgroundFlag::Set);
-                        } else {
-                            game.console.set_char_background(x, y, config.color_dark_ground.color(), BackgroundFlag::Set);
-                        }
-
-                        let left = map[(x - 1, y)].tile_type == tile_type;
-                        let right = map[(x + 1, y)].tile_type == tile_type;
-                        let horiz = left || right;
-
-                        let above = map[(x, y + 1)].tile_type == tile_type;
-                        let below = map[(x, y - 1)].tile_type == tile_type;
-                        let vert = above || below;
-
-                        let chr;
-                        if tile_type == TileType::Wall {
-                            if horiz && vert {
-                               chr = tcod::chars::SUBP_N;
-                               game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
-                            } else if horiz {
-                               chr = tcod::chars::SUBP_N;
-                            } else if vert {
-                               chr = tcod::chars::SUBP_E;
-                            } else {
-                               chr = tcod::chars::SUBP_E;
-                            }
-                        } else {
-                            if horiz && vert {
-                               chr = tcod::chars::CROSS
-                            } else if horiz {
-                               chr = tcod::chars::HLINE;
-                            } else if vert {
-                               chr = tcod::chars::VLINE;
-                            } else {
-                               chr = tcod::chars::VLINE;
-                            }
-                        };
-
-                        game.console.set_default_foreground(color.color());
-                        game.console.put_char(x, y, chr, BackgroundFlag::None);
-                    }
-                }
-            }
-            map.0[x as usize][y as usize].explored = explored;
-        }
-    }
-
-    /* Draw objects */
-    let mut to_draw: Vec<_> = objects.iter().filter(|o| game.fov.is_in_fov(o.x, o.y)).collect();
-    to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
-
-    for object in &to_draw {
-        object.draw(&mut game.console);
-    }
-
-    game.panel.set_default_background(BLACK);
-    game.panel.clear();
-
-    let hp = objects[PLAYER].fighter.map_or(0, |f| f.hp);
-    let max_hp = objects[PLAYER].fighter.map_or(0, |f| f.max_hp);
-    render_bar(game, 1, 1, BAR_WIDTH, "HP", hp, max_hp, LIGHT_RED, DARK_RED);
-
-    let mut y = MSG_HEIGHT as i32;
-    for &(ref msg, color) in messages.0.iter().rev() {
-        let msg_height = game.panel.get_height_rect(MSG_X, y, MSG_WIDTH, 0, msg);
-        y -= msg_height;
-        if y < 0 {
-            break;
-        }
-        game.panel.set_default_foreground(color);
-        game.panel.print_rect(MSG_X, y, MSG_WIDTH, 0, msg);
-    }
-
-    game.panel.set_default_foreground(LIGHT_GREY);
-    game.panel.print_ex(1, 2, BackgroundFlag::None, TextAlignment::Left, format!("Turn Count: {}", game.turn_count));
-    game.panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, format!("{:?}", (objects[PLAYER].momentum.unwrap().0, objects[PLAYER].momentum.unwrap().1)));
-    game.panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, get_names_under_mouse(game.mouse, objects, &game.fov));
-
-    /* print all special characters */
-    //print_all_special_char(game);
-
-    blit(&mut game.console, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, 0), 1.0, 1.0);
-
-    blit(&mut game.panel, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, PANEL_Y), 1.0, 1.0);
-}
-
-// BLOCK3 solid block
-// CHECKBOX_UNSET unfilled block
-// CROSS cross
-// DCROSS invert cross
-// DHLINE invert horizontal line
-// DTEEE,DTEEN,DTEES,DTEEW invert tees
-// DNE,DNW,DSE,DSW corners
-// DVLINE divider lines vertical
-// TEEE,TEEN,TEES,TEEW tees
-// RADIO_SET,RADIO_UNSET unfilled circle and circle with inner filled circle
-// SUBP_DIAG,SUBP_E, SUBP_N,SUBP_NE,SUBP_NW,SUBP_SE,SUBP_SW half blocks, directional. maybe
-// SW as well
-// VLINE HLINE thin lines
-// ARROW2_E,ARROW2_N,ARROW2_S,ARROW2_W solid arrow
-// ARROW_E,ARROW_N,ARROW_S,ARROW_W  thin arrow
-fn print_all_special_char(game: &mut Game) {
-    use tcod::chars::*;
-    let keys = vec!(ARROW2_E,ARROW2_N,ARROW2_S,ARROW2_W,ARROW_E,ARROW_N,ARROW_S,
-                    ARROW_W,BLOCK1,BLOCK2,BLOCK3,BULLET,BULLET_INV,BULLET_SQUARE,
-                    CENT,CHECKBOX_SET,CHECKBOX_UNSET,CLUB,COPYRIGHT,CROSS,CURRENCY,
-                    DARROW_H,DARROW_V,DCROSS,DHLINE,DIAMOND,DIVISION,DNE,DNW,DSE,DSW,
-                    DTEEE,DTEEN,DTEES,DTEEW,DVLINE,EXCLAM_DOUBLE,FEMALE,FUNCTION,
-                    GRADE,HALF,HEART,HLINE,LIGHT,MALE,MULTIPLICATION,NE,NOTE,
-                    NOTE_DOUBLE,NW,ONE_QUARTER,PILCROW,POUND,POW1,POW2,
-                    POW3,RADIO_SET,RADIO_UNSET,RESERVED,SE,SECTION,
-                    SMILIE,SMILIE_INV,SPADE,SUBP_DIAG,SUBP_E, SUBP_N,SUBP_NE,SUBP_NW,SUBP_SE,SUBP_SW
-                    ,SW,TEEE,TEEN,TEES,TEEW,THREE_QUARTERS,UMLAUT,VLINE,YEN);
-    let mut index = 0;
-
-    for x in 0..MAP_WIDTH {
-        for y in 0..MAP_HEIGHT {
-            game.console.set_char_background(x, y, BLACK, BackgroundFlag::Set);
-            game.console.put_char(x, y, ' ', BackgroundFlag::None);
-        }
-    }
-
-    game.console.set_default_foreground(WHITE);
-    for key in 0..256 {
-        let index_x = 10 + (index % 32);
-        let index_y = -10 + ((index / 32) * 2);
-
-        let x = SCREEN_WIDTH/2 + index_x - 32 as i32;
-        let y = SCREEN_HEIGHT/2 + index_y;
-
-        game.console.put_char(x,
-                              y,
-                              key as u8 as char,
-                              BackgroundFlag::None);
-        if game.mouse.cx as i32 == x && game.mouse.cy as i32 == y {
-            game.console.print_ex(x,
-                                  y - 1,
-                                  BackgroundFlag::None,
-                                  TextAlignment::Left,
-                                  format!("{}", key));
-        }
-
-        index += 1;
-    }
-}
-
-
-fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> String {
-    let (x, y) = (mouse.cx as i32, mouse.cy as i32);
-
-    let names = objects.iter()
-                       .filter(|obj| { obj.pos() == (x, y) && fov_map.is_in_fov(obj.x, obj.y)})
-                       .map(|obj| { format!("{}, Ai {:?}, Behavior {:?}", obj.name.clone(), obj.ai, obj.behavior) })
-                       .collect::<Vec<_>>();
-
-    names.join(", ")
-}
-
-fn render_bar(game: &mut Game,
-              x: i32,
-              y: i32,
-              total_width: i32,
-              name: &str,
-              value: i32,
-              maximum: i32,
-              bar_color: Color,
-              back_color: Color) {
-    let bar_width = (value as f32 / maximum as f32 * total_width as f32) as i32;
-
-    game.panel.set_default_background(back_color);
-    game.panel.rect(x, y, total_width, 1, false, BackgroundFlag::Screen);
-
-    game.panel.set_default_background(bar_color);
-    if bar_width > 0 {
-        game.panel.rect(x, y, bar_width, 1, false, BackgroundFlag::Screen);
-    }
-
-    game.panel.set_default_foreground(WHITE);
-    game.panel.print_ex(x + total_width / 2,
-                   y,
-                   BackgroundFlag::None,
-                   TextAlignment::Center,
-                   &format!("{}: {}/{}", name, value, maximum));
 }
 
 pub fn make_player() -> Object {
