@@ -35,114 +35,125 @@ use map::*;
 use ai::*;
 
 
-fn handle_keys(game: &mut Game,
-               key: Key,
-               map: &mut Map,
-               objects: &mut Vec<Object>,
-               inventory: &mut Vec<Object>,
-               messages: &mut Messages) -> PlayerAction {
+fn handle_input(game: &mut Game,
+                key: Key,
+                map: &mut Map,
+                objects: &mut Vec<Object>,
+                inventory: &mut Vec<Object>,
+                messages: &mut Messages) -> PlayerAction {
     use PlayerAction::*;
 
     let player_alive = objects[PLAYER].alive;
 
-    match (key, player_alive) {
-        (Key { code: Up,      .. }, true)  |
-        (Key { code: Number8, .. }, true)  |
-        (Key { code: NumPad8, .. }, true) => {
-            player_move_or_attack(0, -1, map, objects, messages);
-            TookTurn
-        }
-
-        (Key { code: Down,    .. }, true) |
-        (Key { code: Number2, .. }, true) |
-        (Key { code: NumPad2, .. }, true) => {
-            player_move_or_attack(0, 1, map, objects, messages);
-            TookTurn
-        }
-(Key { code: Left,    .. }, true) |
-        (Key { code: Number4, .. }, true) |
-        (Key { code: NumPad4, .. }, true) => {
-            player_move_or_attack(-1, 0, map, objects, messages);
-            TookTurn
-        }
-
-        (Key { code: Right,   .. }, true) |
-        (Key { code: Number6, .. }, true) |
-        (Key { code: NumPad6, .. }, true) => {
-            player_move_or_attack(1, 0, map, objects, messages);
-            TookTurn
-        }
-
-        (Key { code: Number9, .. }, true)  |
-        (Key { code: NumPad9, .. }, true) => {
-            player_move_or_attack(1, -1, map, objects, messages);
-            TookTurn
-        }
-
-        (Key { code: Number3, .. }, true) |
-        (Key { code: NumPad3, .. }, true) => {
-            player_move_or_attack(1, 1, map, objects, messages);
-            TookTurn
-        }
-
-        (Key { code: Number1, .. }, true) |
-        (Key { code: NumPad1, .. }, true) => {
-            player_move_or_attack(-1, 1, map, objects, messages);
-            TookTurn
-        }
-
-        (Key { code: Number7, .. }, true) |
-        (Key { code: NumPad7, .. }, true) => {
-            player_move_or_attack(-1, -1, map, objects, messages);
-            TookTurn
-        }
-
-        (Key { code: Number5, .. }, true) |
-        (Key { code: NumPad5, .. }, true) => {
-            objects[PLAYER].momentum = Some((0, 0));
-            TookTurn
-        }
-
-        (Key { code: Enter, alt: true, .. }, _) => {
-            let fullscreen = game.root.is_fullscreen();
-            game.root.set_default_foreground(WHITE);
-            game.root.set_fullscreen(!fullscreen);
-            DidntTakeTurn
-        },
-
-        (Key {printable: 'g', .. }, true) => {
-            let item_id = objects.iter().position(|object| {
-                object.pos() == objects[PLAYER].pos() && object.item.is_some()
-            });
-            if let Some(item_id) = item_id {
-                pick_item_up(item_id, objects, inventory, messages);
+    if game.mouse.lbutton_pressed {
+        for index in 0..inventory.len() {
+            let (mx, my) = (game.mouse.x, game.mouse.y);
+            if item == Item::Stone && map[(mx, my)].is_empty() {
+                map[(my, my)] = inventory[index];
+                inventory.swap_remove(index);
+                break;
             }
-            DidntTakeTurn
         }
-
-        (Key {printable: 'i', .. }, true) => {
-            let inventory_index =
-                inventory_menu(inventory,
-                               "Press the key next to an item to use it, or any other to cancel.\n",
-                               &mut game.root);
-            if let Some(inventory_index) = inventory_index {
-                use_item(inventory_index, inventory, objects, messages);
+    } else {
+        match (key, player_alive) {
+            (Key { code: Up,      .. }, true)  |
+            (Key { code: Number8, .. }, true)  |
+            (Key { code: NumPad8, .. }, true) => {
+                player_move_or_attack(0, -1, map, objects, messages);
+                TookTurn
             }
-            DidntTakeTurn
-        }
 
-        (Key { code: Escape, .. }, _) => Exit,
+            (Key { code: Down,    .. }, true) |
+            (Key { code: Number2, .. }, true) |
+            (Key { code: NumPad2, .. }, true) => {
+                player_move_or_attack(0, 1, map, objects, messages);
+                TookTurn
+            }
+            (Key { code: Left,    .. }, true) |
+            (Key { code: Number4, .. }, true) |
+            (Key { code: NumPad4, .. }, true) => {
+                player_move_or_attack(-1, 0, map, objects, messages);
+                TookTurn
+            }
 
-        (Key {printable: 'v', .. }, true) => {
-            for x in 0..MAP_WIDTH {
-                for y in 0..MAP_HEIGHT {
-                    map.0[x as usize][y as usize].explored = true;
+            (Key { code: Right,   .. }, true) |
+            (Key { code: Number6, .. }, true) |
+            (Key { code: NumPad6, .. }, true) => {
+                player_move_or_attack(1, 0, map, objects, messages);
+                TookTurn
+            }
+
+            (Key { code: Number9, .. }, true)  |
+            (Key { code: NumPad9, .. }, true) => {
+                player_move_or_attack(1, -1, map, objects, messages);
+                TookTurn
+            }
+
+            (Key { code: Number3, .. }, true) |
+            (Key { code: NumPad3, .. }, true) => {
+                player_move_or_attack(1, 1, map, objects, messages);
+                TookTurn
+            }
+
+            (Key { code: Number1, .. }, true) |
+            (Key { code: NumPad1, .. }, true) => {
+                player_move_or_attack(-1, 1, map, objects, messages);
+                TookTurn
+            }
+
+            (Key { code: Number7, .. }, true) |
+            (Key { code: NumPad7, .. }, true) => {
+                player_move_or_attack(-1, -1, map, objects, messages);
+                TookTurn
+            }
+
+            (Key { code: Number5, .. }, true) |
+            (Key { code: NumPad5, .. }, true) => {
+                objects[PLAYER].momentum = Some((0, 0));
+                TookTurn
+            }
+
+            (Key { code: Enter, alt: true, .. }, _) => {
+                let fullscreen = game.root.is_fullscreen();
+                game.root.set_default_foreground(WHITE);
+                game.root.set_fullscreen(!fullscreen);
+                DidntTakeTurn
+            },
+
+            (Key {printable: 'g', .. }, true) => {
+                let item_id = objects.iter().position(|object| {
+                    object.pos() == objects[PLAYER].pos() && object.item.is_some()
+                });
+                if let Some(item_id) = item_id {
+                    pick_item_up(item_id, objects, inventory, messages);
                 }
+                DidntTakeTurn
             }
-            DidntTakeTurn
-        }
 
-        (_, _) => DidntTakeTurn,
+            (Key {printable: 'i', .. }, true) => {
+                let inventory_index =
+                    inventory_menu(inventory,
+                                   "Press the key next to an item to use it, or any other to cancel.\n",
+                                   &mut game.root);
+                if let Some(inventory_index) = inventory_index {
+                    use_item(inventory_index, inventory, objects, messages);
+                }
+                DidntTakeTurn
+            }
+
+            (Key { code: Escape, .. }, _) => Exit,
+
+            (Key {printable: 'v', .. }, true) => {
+                for x in 0..MAP_WIDTH {
+                    for y in 0..MAP_HEIGHT {
+                        map.0[x as usize][y as usize].explored = true;
+                    }
+                }
+                DidntTakeTurn
+            }
+
+            (_, _) => DidntTakeTurn,
+        }
     }
 }
 
@@ -221,6 +232,7 @@ fn use_item(inventory_id: usize,
     if let Some(item) = inventory[inventory_id].item {
         let on_use = match item {
             Heal => cast_heal,
+            Stone => unimplemented!(),
         };
         match on_use(inventory_id, objects, messages) {
             UseResult::UsedUp => {
@@ -277,6 +289,17 @@ pub fn make_player() -> Object {
     player
 }
 
+pub fn setup_fov(fov: &mut FovMap, map: &Map) {
+    for y in 0..MAP_HEIGHT {
+        for x in 0..MAP_WIDTH {
+            fov.set(x,
+                    y,
+                    !map.0[x as usize][y as usize].block_sight,
+                    !map.0[x as usize][y as usize].blocked);
+        }
+    }
+}
+
 fn main() {
     let mut previous_player_position = (-1, -1);
 
@@ -288,13 +311,11 @@ fn main() {
     {
         let mut file = File::open("config.json").expect("Could not open/parse config file config.json");
         let mut config_string = String::new();
-        file.read_to_string(&mut config_string).expect("Could not parse config.json file!");
-        config = serde_json::from_str(&config_string).unwrap();
+        file.read_to_string(&mut config_string).expect("Could not read contents of config.json");
+        config = serde_json::from_str(&config_string).expect("Could not parse config.json file!");
     }
 
-    let mut player = make_player();
-
-    let mut objects = vec!(player);
+    let mut objects = vec!(make_player());
 
     let (mut map, position) = make_map(&mut objects, &config);
     let player_x = position.0;
@@ -311,13 +332,7 @@ fn main() {
 
     let mut game = Game::with_root(root);
 
-    for y in 0..MAP_HEIGHT {
-        for x in 0..MAP_WIDTH {
-            game.fov.set(x, y,
-                         !map.0[x as usize][y as usize].block_sight,
-                         !map.0[x as usize][y as usize].blocked);
-        }
-    }
+    setup_fov(&mut game.fov, &map);
 
     messages.message("Welcome Stranger! Prepare to perish in the Desolation of Salt!", ORANGE);
 
@@ -338,12 +353,12 @@ fn main() {
 
         game.root.flush();
 
-        for object in &objects {
+        for object in objects.iter() {
             object.clear(&mut game.console);
         }
 
         previous_player_position = (objects[PLAYER].x, objects[PLAYER].y);
-        let player_action = handle_keys(&mut game, key, &mut map, &mut objects, &mut inventory, &mut messages);
+        let player_action = handle_input(&mut game, key, &mut map, &mut objects, &mut inventory, &mut messages);
         match player_action {
           PlayerAction::Exit => {
             break;
