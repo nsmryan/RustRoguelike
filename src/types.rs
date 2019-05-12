@@ -297,6 +297,7 @@ impl AwarenessMap {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Item {
     Heal,
+    Goal,
 }
 
 pub enum UseResult {

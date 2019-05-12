@@ -59,7 +59,7 @@ fn handle_keys(game: &mut Game,
             player_move_or_attack(0, 1, map, objects, messages);
             TookTurn
         }
-(Key { code: Left,    .. }, true) |
+        (Key { code: Left,    .. }, true) |
         (Key { code: Number4, .. }, true) |
         (Key { code: NumPad4, .. }, true) => {
             player_move_or_attack(-1, 0, map, objects, messages);
@@ -146,6 +146,11 @@ fn handle_keys(game: &mut Game,
     }
 }
 
+fn gather_goal(messages: &mut Messages){
+    messages.message("You've got the goal object! Nice work.", LIGHT_VIOLET);
+
+}
+
 fn cast_heal(_inventory_id: usize, objects: &mut [Object], messages: &mut Messages) -> UseResult {
     if let Some(fighter) = objects[PLAYER].fighter {
         if fighter.hp == fighter.max_hp {
@@ -221,6 +226,7 @@ fn use_item(inventory_id: usize,
     if let Some(item) = inventory[inventory_id].item {
         let on_use = match item {
             Heal => cast_heal,
+            Goal => gather_goal,
         };
         match on_use(inventory_id, objects, messages) {
             UseResult::UsedUp => {
