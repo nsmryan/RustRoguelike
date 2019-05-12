@@ -59,8 +59,7 @@ fn handle_keys(game: &mut Game,
             player_move_or_attack(0, 1, map, objects, messages);
             TookTurn
         }
-
-        (Key { code: Left,    .. }, true) |
+(Key { code: Left,    .. }, true) |
         (Key { code: Number4, .. }, true) |
         (Key { code: NumPad4, .. }, true) => {
             player_move_or_attack(-1, 0, map, objects, messages);
@@ -289,7 +288,7 @@ fn main() {
     {
         let mut file = File::open("config.json").expect("Could not open/parse config file config.json");
         let mut config_string = String::new();
-        file.read_to_string(&mut config_string).expect("dude");
+        file.read_to_string(&mut config_string).expect("Could not parse config.json file!");
         config = serde_json::from_str(&config_string).unwrap();
     }
 
@@ -304,7 +303,7 @@ fn main() {
     objects[PLAYER].y = player_y;
 
     let root = Root::initializer()
-        .font("arial10x10.png", FontLayout::Tcod)
+        .font("rexpaint16x16.png", FontLayout::AsciiInRow)
         .font_type(FontType::Greyscale)
         .size(SCREEN_WIDTH, SCREEN_HEIGHT)
         .title("Rogue-like")

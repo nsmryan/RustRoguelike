@@ -186,18 +186,6 @@ impl Tile {
                tile_type: TileType::ShortWall,
         }
     }
-
-    pub fn kill_square() -> Self {
-        Tile { blocked: true,
-               block_sight: false,
-               explored: false,
-               tile_type: TileType::KillSquare,
-        }
-    }
-
-
-
-
 }
 
 
@@ -207,7 +195,6 @@ pub enum TileType {
     ShortWall,
     Wall,
     Water,
-    KillSquare,
 }
 
 
