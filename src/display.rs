@@ -39,7 +39,7 @@ pub fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap)
     let (x, y) = (mouse.cx as i32, mouse.cy as i32);
 
     let names = objects.iter()
-                       .filter(|obj| { obj.pos() == (x, y) && fov_map.is_in_fov(obj.x, obj.y)})
+                       .filter(|obj| { obj.pos() == (x, y) && fov_map.is_in_fov(obj.x, obj.y) })
                        .map(|obj| { format!("{}, Ai {:?}, Behavior {:?}", obj.name.clone(), obj.ai, obj.behavior) })
                        .collect::<Vec<_>>();
 
@@ -197,7 +197,10 @@ pub fn render_all(game: &mut Game,
     }
 
     /* Draw objects */
-    let mut to_draw: Vec<_> = objects.iter().filter(|o| game.fov.is_in_fov(o.x, o.y)).collect();
+    let mut to_draw: Vec<_> =
+        objects.iter().filter(|o| {
+            game.fov.is_in_fov(o.x, o.y)
+        }).collect();
     to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
 
     for object in &to_draw {

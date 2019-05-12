@@ -27,6 +27,7 @@ mod ai;
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
 #[allow(unused_imports)]use tcod::AsNative;
 #[allow(unused_imports)]use tcod::image;
+use tcod::line::*;
 
 use types::*;
 use constants::*;
@@ -48,12 +49,26 @@ fn handle_input(game: &mut Game,
     if game.mouse.lbutton_pressed {
         for index in 0..inventory.len() {
             let (mx, my) = (game.mouse.x, game.mouse.y);
-            if item == Item::Stone && map[(mx, my)].is_empty() {
-                map[(my, my)] = inventory[index];
-                inventory.swap_remove(index);
+            if inventory[index].item == Some(Item::Stone) {
+                let mut item = inventory.swap_remove(index);
+                let obj_id = objects.len();
+                item.x = objects[PLAYER].x;
+                item.y = objects[PLAYER].y;
+                objects.push(item);
+                let ix = mx as i32 / 10;
+                let iy = my as i32 / 10;
+                println!("{:?} -> {:?}", (objects[PLAYER].x, objects[PLAYER].y), (mx as i32, my as i32));
+                println!("{:?} -> {:?}", (10, 10), (ix as i32, iy as i32));
+                let animation =
+                    Animation::Thrown(obj_id,
+                                      Line::new((objects[PLAYER].x, objects[PLAYER].y),
+                                                (ix, iy)));
+                game.animations.push(animation);
                 break;
             }
         }
+
+        TookTurn
     } else {
         match (key, player_alive) {
             (Key { code: Up,      .. }, true)  |
@@ -300,12 +315,30 @@ pub fn setup_fov(fov: &mut FovMap, map: &Map) {
     }
 }
 
+fn step_animation(objects: &mut [Object], animation: &mut Animation) -> bool {
+    match animation {
+        Animation::Thrown(obj_id, line) => {
+            match line.step() {
+                Some(next) => {
+                    objects[*obj_id].x = next.0;
+                    objects[*obj_id].y = next.1;
+                    false
+                },
+
+                None => {
+                    true
+                },
+            }
+        }
+    }
+}
+
 fn main() {
     let mut previous_player_position = (-1, -1);
 
     let mut messages = Messages::new();
 
-    let mut inventory = vec![];
+    let mut inventory = vec![Object::make_stone(0, 0)];
 
     let mut config: Config;
     {
@@ -357,18 +390,37 @@ fn main() {
             object.clear(&mut game.console);
         }
 
-        previous_player_position = (objects[PLAYER].x, objects[PLAYER].y);
-        let player_action = handle_input(&mut game, key, &mut map, &mut objects, &mut inventory, &mut messages);
-        match player_action {
-          PlayerAction::Exit => {
-            break;
-          }
+        // If there is an animation playing, let it finish
+        let player_action;
+        if game.animations.len() > 0 {
+            let mut finished_ixs = Vec::new();
+            let mut ix = 0; 
+            for mut animation in game.animations.iter_mut() {
+              let finished = step_animation(&mut objects, &mut animation);
+              if finished {
+                  finished_ixs.push(ix)
+              }
+              ix += 1;
+            }
+            finished_ixs.sort_unstable();
+            for ix in finished_ixs.iter().rev() {
+                game.animations.swap_remove(*ix);
+            }
+            player_action = PlayerAction::DidntTakeTurn;
+        } else {
+            previous_player_position = (objects[PLAYER].x, objects[PLAYER].y);
+            player_action = handle_input(&mut game, key, &mut map, &mut objects, &mut inventory, &mut messages);
+            match player_action {
+              PlayerAction::Exit => {
+                break;
+              }
 
-          PlayerAction::TookTurn => {
-              game.turn_count += 1;
-          }
-          
-          _ => {}
+              PlayerAction::TookTurn => {
+                  game.turn_count += 1;
+              }
+              
+              _ => {}
+            }
         }
 
         if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {

@@ -146,12 +146,13 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
     }
 
     // random stones
-    for _ in 0..5 {
-        let x = rand::thread_rng().gen_range(0, MAP_WIDTH);
-        let y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+    let mut rng = rand::thread_rng();
+    for _ in 0..10 {
+        let x = rng.gen_range(0, MAP_WIDTH);
+        let y = rng.gen_range(0, MAP_HEIGHT);
 
         if map.is_empty(x, y, &objects) {
-            let mut stone = Object::new(x, y, '.', "Stone", GREY, false);
+            let mut stone = Object::make_stone(x, y);
             stone.item = Some(Item::Stone);
             objects.push(stone);
         }
