@@ -6,6 +6,8 @@ extern crate serde;
 #[macro_use]extern crate serde_derive;
 extern crate serde_json;
 extern crate num;
+extern crate timer;
+extern crate chrono;
 
 mod types;
 mod constants;
@@ -18,6 +20,7 @@ mod ai;
 #[allow(unused_imports)]use std::fs::File;
 #[allow(unused_imports)]use std::io::BufReader;
 #[allow(unused_imports)]use std::io::Read;
+#[allow(unused_imports)]use std::sync::mpsc::channel;
 
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
 #[allow(unused_imports)]use tcod::console::*;
@@ -28,6 +31,8 @@ mod ai;
 #[allow(unused_imports)]use tcod::AsNative;
 #[allow(unused_imports)]use tcod::image;
 use tcod::line::*;
+
+use timer::*;
 
 use types::*;
 use constants::*;
@@ -381,7 +386,19 @@ fn main() {
 
     let mut key = Default::default();
 
+    // Start game tick timer
+    let timer = Timer::new();
+    let (tick_sender, tick_receiver) = channel();
+    let guard = 
+    {
+        timer.schedule_repeating(chrono::Duration::milliseconds(1000), move || {
+            tick_sender.send(0);
+        });
+    };
+
     while !game.root.window_closed() {
+        tick_receiver.recv();
+
         match input::check_for_event(input::MOUSE | input::KEY_PRESS) {
             Some((_, Event::Mouse(m))) => game.mouse = m,
             Some((_, Event::Key(k))) => key = k,
