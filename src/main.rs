@@ -390,14 +390,12 @@ fn main() {
     let timer = Timer::new();
     let (tick_sender, tick_receiver) = channel();
     let guard = 
-    {
-        timer.schedule_repeating(chrono::Duration::milliseconds(1000), move || {
+        timer.schedule_repeating(chrono::Duration::milliseconds(TIME_BETWEEN_FRAMES_MS), move || {
             tick_sender.send(0);
         });
-    };
 
     while !game.root.window_closed() {
-        tick_receiver.recv();
+        let tick_count = tick_receiver.recv().unwrap();
 
         match input::check_for_event(input::MOUSE | input::KEY_PRESS) {
             Some((_, Event::Mouse(m))) => game.mouse = m,
