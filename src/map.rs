@@ -381,6 +381,13 @@ pub fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
             objects.push(object);
         }
     }
+        let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
+        let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
+        let mut object = Object::new(x,y, '\u{FD}', "goal", RED, false);
+        object.item = Some(Item::Goal);
+        objects.push(object);
+
+
 }
 
 fn create_room(room: Rect, map: &mut Map) {

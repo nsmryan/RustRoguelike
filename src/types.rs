@@ -305,12 +305,14 @@ impl AwarenessMap {
 pub enum Item {
     Heal,
     Stone,
+    Goal,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum UseResult {
     UsedUp,
     Cancelled,
+    Keep,
 }
 
 

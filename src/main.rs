@@ -172,6 +172,12 @@ fn handle_input(game: &mut Game,
     }
 }
 
+fn gather_goal(_inventory_id: usize, objects: &mut [Object], messages: &mut Messages) -> UseResult {
+    messages.message("You've got the goal object! Nice work.", LIGHT_VIOLET);
+
+    UseResult::Keep
+}
+
 fn cast_heal(_inventory_id: usize, objects: &mut [Object], messages: &mut Messages) -> UseResult {
     if let Some(fighter) = objects[PLAYER].fighter {
         if fighter.hp == fighter.max_hp {
@@ -248,6 +254,7 @@ fn use_item(inventory_id: usize,
         let on_use = match item {
             Heal => cast_heal,
             Stone => unimplemented!(),
+            Goal => gather_goal,
         };
         match on_use(inventory_id, objects, messages) {
             UseResult::UsedUp => {
@@ -255,6 +262,9 @@ fn use_item(inventory_id: usize,
             }
             UseResult::Cancelled => {
                 messages.message("Cancelled", WHITE);
+            }
+
+            UseResult::Keep => {
             }
         }
     } else {
@@ -357,7 +367,7 @@ fn main() {
     objects[PLAYER].y = player_y;
 
     let root = Root::initializer()
-        .font("arial10x10.png", FontLayout::Tcod)
+        .font("rexpaint16x16.png", FontLayout::AsciiInRow)
         .font_type(FontType::Greyscale)
         .size(SCREEN_WIDTH, SCREEN_HEIGHT)
         .title("Rogue-like")

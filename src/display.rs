@@ -166,14 +166,14 @@ pub fn render_all(game: &mut Game,
                         let chr;
                         if tile_type == TileType::Wall {
                             if horiz && vert {
-                               chr = tcod::chars::SUBP_N;
+                               chr = '\u{DC}';
                                game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
                             } else if horiz {
-                               chr = tcod::chars::SUBP_N;
+                               chr = '\u{DF}';
                             } else if vert {
-                               chr = tcod::chars::SUBP_E;
+                               chr = '\u{DD}';
                             } else {
-                               chr = tcod::chars::SUBP_E;
+                               chr = '\u{DC}';
                             }
                         } else {
                             if horiz && vert {
