@@ -3,6 +3,9 @@ use tcod::map::{FovAlgorithm};
 
 pub const CONFIG_FILE_NAME: &str = &"config.json";
 
+pub const FONT_WIDTH: i32 = 16;
+pub const FONT_HEIGHT: i32 = 16;
+
 pub const SCREEN_WIDTH: i32 = 80;
 pub const SCREEN_HEIGHT: i32 = 50;
 pub const LIMIT_FPS: i32 = 20;

@@ -55,10 +55,10 @@ fn handle_input(game: &mut Game,
                 item.x = objects[PLAYER].x;
                 item.y = objects[PLAYER].y;
                 objects.push(item);
-                let ix = mx as i32 / 10;
-                let iy = my as i32 / 10;
+                let ix = mx as i32 / FONT_WIDTH;
+                let iy = my as i32 / FONT_HEIGHT;
                 println!("{:?} -> {:?}", (objects[PLAYER].x, objects[PLAYER].y), (mx as i32, my as i32));
-                println!("{:?} -> {:?}", (10, 10), (ix as i32, iy as i32));
+                println!("{:?} -> {:?}", (16, 16), (ix as i32, iy as i32));
                 let animation =
                     Animation::Thrown(obj_id,
                                       Line::new((objects[PLAYER].x, objects[PLAYER].y),
