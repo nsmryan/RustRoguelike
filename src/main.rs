@@ -189,12 +189,13 @@ fn cast_heal(_inventory_id: usize, objects: &mut [Object], messages: &mut Messag
         objects[PLAYER].heal(HEAL_AMOUNT);
         return UseResult::UsedUp;
     }
+
     UseResult::Cancelled
 }
 
 fn inventory_menu(inventory: &[Object], header: &str, root: &mut Root) -> Option<usize> {
     let options = if inventory.len() == 0 {
-        vec!["Inventory is empty.".into()]
+        vec!("Inventory is empty.".into())
     } else {
         inventory.iter().map(|item| { item.name.clone() }).collect()
     };
@@ -289,14 +290,18 @@ pub fn setup_fov(fov: &mut FovMap, map: &Map) {
     }
 }
 
-fn step_animation(objects: &mut [Object], animation: &mut Animation) -> bool {
+fn step_animation(objects: &mut [Object], map: &Map, animation: &mut Animation) -> bool {
     match animation {
         Animation::Thrown(obj_id, line) => {
             match line.step() {
                 Some(next) => {
-                    objects[*obj_id].x = next.0;
-                    objects[*obj_id].y = next.1;
-                    false
+                    if map.0[next.0 as usize][next.1 as usize].block_sight {
+                        true
+                    } else {
+                        objects[*obj_id].x = next.0;
+                        objects[*obj_id].y = next.1;
+                        false
+                    }
                 },
 
                 None => {
@@ -380,7 +385,7 @@ fn main() {
             let mut finished_ixs = Vec::new();
             let mut ix = 0; 
             for mut animation in game.animations.iter_mut() {
-              let finished = step_animation(&mut objects, &mut animation);
+              let finished = step_animation(&mut objects, &map, &mut animation);
               if finished {
                   finished_ixs.push(ix)
               }
