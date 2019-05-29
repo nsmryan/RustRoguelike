@@ -19,7 +19,7 @@ pub const HEAL_AMOUNT: i32 = 4;
 pub const ROOM_MAX_SIZE: i32 = 10;
 pub const ROOM_MIN_SIZE: i32 = 6;
 pub const MAX_ROOMS: i32 = 30;
-pub const MAX_ROOM_ITEMS: i32 = 2;
+pub const MAX_ROOM_ITEMS: i32 = 12;
 
 pub const MAX_ROOM_MONSTERS: i32 = 3;
 
@@ -37,7 +37,7 @@ pub const MSG_HEIGHT: usize = PANEL_HEIGHT as usize - 1;
 pub const INVENTORY_WIDTH: i32 = 50;
 
 pub const ISLAND_RADIUS: i32 = 15;
-pub const ISLAND_NUM_OBSTICLES: i32 = 15;
+pub const ISLAND_NUM_OBSTACLES: i32 = 15;
 pub const ISLAND_NUM_SUBTRACTIONS_ATTEMPTS: i32 = 50;
 pub const ISLAND_NUM_ADDITION_ATTEMPTS: i32 = 50;
 

@@ -132,6 +132,9 @@ pub fn render_all(game: &mut Game,
                 (TileType::Water, true) => config.color_light_water,
                 (TileType::Water, false) => config.color_dark_water,
 
+                (TileType::Exit, true) => config.color_light_exit,
+                (TileType::Exit, false) => config.color_dark_exit,
+
                 (TileType::ShortWall, true) => config.color_light_wall,
                 (TileType::ShortWall, false) => config.color_dark_wall,
             };
@@ -147,6 +150,12 @@ pub fn render_all(game: &mut Game,
                     TileType::Empty | TileType::Water => {
                         game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
                     }
+
+                    TileType::Empty | TileType::Exit => {
+                        game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
+                    }
+
+
 
                     TileType::ShortWall | TileType::Wall => {
                         if visible {

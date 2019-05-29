@@ -10,6 +10,16 @@
       "g": 102,
       "b": 64
     },
+    "color_light_exit": {
+      "r": 246,
+      "g": 148,
+      "b": 12 
+    },
+    "color_dark_exit": {
+      "r": 153,
+      "g": 91,
+      "b": 7
+    },    
     "color_dark_ground": {
       "r": 2,
       "g": 22,
