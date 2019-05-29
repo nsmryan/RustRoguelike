@@ -431,6 +431,10 @@ impl Position {
     pub fn move_y(&self, dist_y: i32) -> Position {
         Position(self.0, self.1 + dist_y)
     }
+
+    pub fn add(&self, other: Position) -> Position{
+        Position(self.0 + other.0, self.1 + other.1)
+    }
 }
 
 pub enum Animation {

@@ -62,12 +62,43 @@ impl Index<(i32, i32)> for Map {
     }
 }
 
+impl Index<Position> for Map {
+    type Output = Tile;
+
+    fn index(&self, position: Position) -> &Tile {
+        &self.0[position.0 as usize][position.1 as usize]
+    }
+}
+
 impl IndexMut<(i32, i32)> for Map {
     fn index_mut(&mut self, index: (i32, i32)) -> &mut Tile {
         &mut self.0[index.0 as usize][index.1 as usize]
     }
 }
 
+pub fn near_tile_type(map: &Map, position: Position, tile_type: TileType) -> bool {
+    let mut neighbor_offsets: Vec<(i32, i32)>
+        = vec!((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1));
+
+    /*
+     neighbor_offsets.iter()
+                     .map(|offset| position.add(Position(offset.0, offset.1)))
+                     .any(|pos| map[pos].tile_type == tile_type)
+    */
+
+    let mut near_given_tile = false;
+
+    for offset in neighbor_offsets {
+        let neighbor_position = position.add(Position(offset.0, offset.1));
+
+        if map[neighbor_position].tile_type == tile_type {
+            near_given_tile = true;
+            break;
+        }
+    }
+
+    return near_given_tile;
+}
 
 pub fn make_map(objects: &mut Vec<Object>, config: &Config) -> (Map, Position) {
     let mut map = Map::with_vec(vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize]);
@@ -82,7 +113,7 @@ pub fn make_map(objects: &mut Vec<Object>, config: &Config) -> (Map, Position) {
 
 pub fn random_offset() -> Position {
     Position(rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
-    rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS))
+             rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS))
 }
 
 pub fn random_position() -> Position {

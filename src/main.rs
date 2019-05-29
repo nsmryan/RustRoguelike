@@ -358,7 +358,9 @@ fn main() {
             tick_sender.send(0);
         });
 
+    /* Main Game Loop */
     while !game.root.window_closed() {
+        /* FPS Limiting */
         let tick_count = tick_receiver.recv().unwrap();
 
         match input::check_for_event(input::MOUSE | input::KEY_PRESS) {
@@ -367,6 +369,7 @@ fn main() {
             _ => key = Default::default(),
         }
 
+        /* Display */
         let fov_recompute = previous_player_position != (objects[PLAYER].x, objects[PLAYER].y);
         render_all(&mut game, 
                    &objects, &mut map, &mut messages,
@@ -379,6 +382,7 @@ fn main() {
             object.clear(&mut game.console);
         }
 
+        /* Player Action and Animations */
         // If there is an animation playing, let it finish
         let player_action;
         if game.animations.len() > 0 {
@@ -412,6 +416,7 @@ fn main() {
             }
         }
 
+        /* AI */
         if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
             for id in 1..objects.len() {
                 if objects[id].ai.is_some() {
