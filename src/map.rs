@@ -18,13 +18,22 @@ impl Map {
     }
 
     pub fn is_blocked(&self, x: i32, y: i32, objects: &[Object]) -> bool {
-        if self.0[x as usize][y as usize].blocked {
+        if self[(x, y)].blocked {
             return true;
         }
 
-        objects.iter().any(|object| {
-            object.blocks && object.pos() == (x, y)
-        })
+        let mut is_blocked = false;
+        for object in objects.iter() {
+            if object.blocks && object.pos() == (x, y) {
+                is_blocked = true;
+                break;
+            }
+        }
+        return is_blocked;
+    }
+
+    pub fn is_empty(&self, x: i32, y: i32, objects: &[Object]) -> bool {
+        self[(x, y)].tile_type == TileType::Empty
     }
 
     pub fn size(&self) -> (i32, i32) {
@@ -134,6 +143,19 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
 
         if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
             add_obstacle(map, &pos, obstacle);
+        }
+    }
+
+    // random stones
+    let mut rng = rand::thread_rng();
+    for _ in 0..10 {
+        let x = rng.gen_range(0, MAP_WIDTH);
+        let y = rng.gen_range(0, MAP_HEIGHT);
+
+        if map.is_empty(x, y, &objects) {
+            let mut stone = Object::make_stone(x, y);
+            stone.item = Some(Item::Stone);
+            objects.push(stone);
         }
     }
 

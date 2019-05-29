@@ -2,6 +2,7 @@ use tcod::console::*;
 use tcod::map::{Map as FovMap};
 use tcod::input::Mouse;
 use tcod::colors::*;
+use tcod::line::*;
 
 use crate::constants::*;
 
@@ -32,6 +33,7 @@ pub struct Game {
     pub mouse: Mouse,
     pub panel: Offscreen,
     pub turn_count: usize,
+    pub animations: Vec<Animation>,
 }
 
 impl Game {
@@ -43,6 +45,7 @@ impl Game {
             mouse: Default::default(),
             panel: Offscreen::new(SCREEN_WIDTH, PANEL_HEIGHT),
             turn_count: 0,
+            animations: Vec::new(),
         }
     }
 }
@@ -86,8 +89,6 @@ impl Object {
         console.set_default_foreground(self.color);
         console.put_char(self.x, self.y, self.char, BackgroundFlag::None);
         console.set_default_foreground(WHITE);
-        console.set_default_background(WHITE);
-        console.rect(self.x + 1, self.y, 1, 1, true, BackgroundFlag::Default);
     }
 
     pub fn clear(&self, console: &mut Console) {
@@ -142,6 +143,10 @@ impl Object {
                 fighter.hp = fighter.max_hp;
             }
         }
+    }
+
+    pub fn make_stone(x: i32, y: i32) -> Object {
+        Object::new(x, y, 'o', "stone", GREY, false)
     }
 }
 
@@ -308,12 +313,15 @@ impl AwarenessMap {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Item {
     Heal,
+    Stone,
     Goal,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum UseResult {
     UsedUp,
     Cancelled,
+    Keep,
 }
 
 
@@ -434,6 +442,10 @@ impl Position {
     pub fn move_y(&self, dist_y: i32) -> Position {
         Position(self.0, self.1 + dist_y)
     }
+}
+
+pub enum Animation {
+    Thrown(ObjectId, Line),
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
