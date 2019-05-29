@@ -89,8 +89,6 @@ impl Object {
         console.set_default_foreground(self.color);
         console.put_char(self.x, self.y, self.char, BackgroundFlag::None);
         console.set_default_foreground(WHITE);
-        console.set_default_background(WHITE);
-        console.rect(self.x + 1, self.y, 1, 1, true, BackgroundFlag::Default);
     }
 
     pub fn clear(&self, console: &mut Console) {

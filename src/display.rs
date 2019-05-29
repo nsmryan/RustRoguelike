@@ -35,6 +35,43 @@ pub fn render_bar(game: &mut Game,
                    &format!("{}: {}/{}", name, value, maximum));
 }
 
+pub fn menu<T: AsRef<str>>(header: &str, options: &[T], width: i32, root: &mut Root) -> Option<usize> {
+    assert!(options.len() <= 26, "Cannot have a menu with more than 26 options");
+
+    let header_height = root.get_height_rect(0, 0, width, SCREEN_HEIGHT, header);
+    let height = options.len() as i32 + header_height;
+
+    let mut window = Offscreen::new(width, height);
+
+    window.set_default_foreground(WHITE);
+    window.print_rect_ex(0, 0, width, height, BackgroundFlag::None, TextAlignment::Left, header);
+
+    for (index, option_text) in options.iter().enumerate() {
+        let menu_letter = (b'a' + index as u8) as char;
+        let text = format!("({}) {}", menu_letter, option_text.as_ref());
+        window.print_ex(0, header_height + index as i32,
+                        BackgroundFlag::None, TextAlignment::Left, text);
+    }
+
+    let x = SCREEN_WIDTH / 2 - width / 2;
+    let y = SCREEN_HEIGHT / 2 - height / 2;
+    tcod::console::blit(&mut window, (0, 0), (width, height), root, (x, y), 1.0, 0.7);
+
+    root.flush();
+    let key = root.wait_for_keypress(true);
+
+    if key.printable.is_alphabetic() {
+        let index = key.printable.to_ascii_lowercase() as usize - 'a' as usize;
+        if index < options.len() {
+            Some(index)
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
 pub fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> String {
     let (x, y) = (mouse.cx as i32, mouse.cy as i32);
 
@@ -236,9 +273,7 @@ pub fn render_all(game: &mut Game,
     /* print all special characters */
     //print_all_special_char(game);
 
-    blit(&mut game.console, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, 0), 1.0, 1.0);
-
-    blit(&mut game.panel, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, PANEL_Y), 1.0, 1.0);
-
+    blit(&mut game.console, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, 0),       1.0, 1.0);
+    blit(&mut game.panel,   (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, PANEL_Y), 1.0, 1.0);
 }
 
