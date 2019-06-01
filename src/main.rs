@@ -8,6 +8,7 @@ extern crate serde_json;
 extern crate num;
 extern crate timer;
 extern crate chrono;
+extern crate rodio;
 
 mod types;
 mod constants;
@@ -33,6 +34,8 @@ mod ai;
 use tcod::line::*;
 
 use timer::*;
+
+use rodio::Source;
 
 use types::*;
 use constants::*;
@@ -357,6 +360,14 @@ fn main() {
         timer.schedule_repeating(chrono::Duration::milliseconds(TIME_BETWEEN_FRAMES_MS), move || {
             tick_sender.send(0);
         });
+
+    let device = rodio::default_output_device().unwrap();
+
+    // This is an example of opening a sound file and playing it.
+    // It will play asychronously allowing the game to continue
+    // let file = File::open("test.wav").unwrap();
+    // let source = rodio::Decoder::new(BufReader::new(file)).unwrap();
+    // rodio::play_raw(&device, source.convert_samples());
 
     /* Main Game Loop */
     while !game.root.window_closed() {
