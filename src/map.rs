@@ -31,7 +31,7 @@ impl Map {
         return is_blocked;
     }
 
-    pub fn is_empty(&self, x: i32, y: i32, objects: &[Object]) -> bool {
+    pub fn is_empty(&self, x: i32, y: i32, _objects: &[Object]) -> bool {
         self[(x, y)].tile_type == TileType::Empty
     }
 
@@ -77,7 +77,7 @@ impl IndexMut<(i32, i32)> for Map {
 }
 
 pub fn near_tile_type(map: &Map, position: Position, tile_type: TileType) -> bool {
-    let mut neighbor_offsets: Vec<(i32, i32)>
+    let neighbor_offsets: Vec<(i32, i32)>
         = vec!((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1));
 
     /*

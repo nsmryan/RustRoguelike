@@ -284,13 +284,13 @@ impl AwarenessMap {
     pub fn disperse(&mut self) {
         for y in 0..self.height {
             for x in 0..self.width {
-                let mut potential_positions =
+                let potential_positions =
                     vec![(x + 1, y),     (x + 1, y + 1), (x + 1, y - 1),
                          (x,     y + 1), (x,     y - 1), (x - 1, y),
                          (x - 1, y + 1), (x - 1, y - 1)];
                 let potential_positions =
                     potential_positions.iter()
-                                       .filter(|(x, y)| *x >= 0 && *y >= 0 && *x < self.width && *y < self.height)
+                                       .filter(|(x, y)| *x < self.width && *y < self.height)
                                        .filter(|(x, y)| self.weights[*y as usize][*x as usize] > 0.0);
                                        //.collect::Vec<(i32, i32)>();
 

@@ -176,7 +176,7 @@ fn handle_input(game: &mut Game,
     }
 }
 
-fn gather_goal(_inventory_id: usize, objects: &mut [Object], messages: &mut Messages) -> UseResult {
+fn gather_goal(_inventory_id: usize, _objects: &mut [Object], messages: &mut Messages) -> UseResult {
     messages.message("You've got the goal object! Nice work.", LIGHT_VIOLET);
 
     UseResult::Keep
@@ -356,15 +356,15 @@ fn main() {
     // Start game tick timer
     let timer = Timer::new();
     let (tick_sender, tick_receiver) = channel();
-    let guard = 
+    let _guard = 
         timer.schedule_repeating(chrono::Duration::milliseconds(TIME_BETWEEN_FRAMES_MS), move || {
-            tick_sender.send(0);
+            tick_sender.send(0).unwrap();
         });
 
-    let device = rodio::default_output_device().unwrap();
 
     // This is an example of opening a sound file and playing it.
     // It will play asychronously allowing the game to continue
+    // let device = rodio::default_output_device().unwrap();
     // let file = File::open("test.wav").unwrap();
     // let source = rodio::Decoder::new(BufReader::new(file)).unwrap();
     // rodio::play_raw(&device, source.convert_samples());
@@ -372,7 +372,7 @@ fn main() {
     /* Main Game Loop */
     while !game.root.window_closed() {
         /* FPS Limiting */
-        let tick_count = tick_receiver.recv().unwrap();
+        tick_receiver.recv().unwrap();
 
         match input::check_for_event(input::MOUSE | input::KEY_PRESS) {
             Some((_, Event::Mouse(m))) => game.mouse = m,
