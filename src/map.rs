@@ -201,6 +201,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
                 orc.ai = Some(Ai::Basic);
                 orc.behavior = Some(Behavior::Idle);
                 orc.color = config.color_orc.color();
+                orc.monster = Some(MonsterType::Single);
                 orc
             } else {
                 let mut troll = Object::new(x, y, 'T', "troll", DARKER_GREEN, true);
@@ -208,6 +209,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
                 troll.ai = Some(Ai::Basic);
                 troll.behavior = Some(Behavior::Idle);
                 troll.color = config.color_troll.color();
+                troll.monster = Some(MonsterType::Single);
                 troll
             };
 

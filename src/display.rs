@@ -72,6 +72,16 @@ pub fn menu<T: AsRef<str>>(header: &str, options: &[T], width: i32, root: &mut R
     }
 }
 
+pub fn get_objects_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> Vec<ObjectId> {
+    let (x, y) = (mouse.cx as i32, mouse.cy as i32);
+
+    objects.iter()
+           .enumerate()
+           .filter(|(index, obj)| { obj.pos() == (x, y) && fov_map.is_in_fov(obj.x, obj.y) })
+           .map(|(index, _)| index)
+           .collect::<Vec<_>>()
+}
+
 pub fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> String {
     let (x, y) = (mouse.cx as i32, mouse.cy as i32);
 
@@ -260,6 +270,18 @@ pub fn render_all(game: &mut Game,
         }
         game.panel.set_default_foreground(color);
         game.panel.print_rect(MSG_X, y, MSG_WIDTH, 0, msg);
+    }
+
+    let ids = get_objects_under_mouse(game.mouse, objects, &game.fov);
+    for id in ids {
+        if let Some(monsterType) = objects[id].monster {
+            let offsets = monsterType.offsets();
+            for offset in offsets {
+                game.console.print_rect(game.mouse.cx as i32 + offset.0,
+                                        game.mouse.cy as i32 + offset.1,
+                                        1, 0, "1");
+            }
+        }
     }
 
     game.panel.set_default_foreground(LIGHT_GREY);
