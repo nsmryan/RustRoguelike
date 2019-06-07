@@ -1,4 +1,3 @@
-use rand::Rng;
 #[allow(unused_imports)]use std::cmp;
 
 use num::clamp;
@@ -163,7 +162,7 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
                      map: &Map,
                      objects: &mut [Object],
                      fov_map: &FovMap,
-                     messages: &mut Messages) {
+                     _messages: &mut Messages) {
     let mut target_pos = target_pos_orig;
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);

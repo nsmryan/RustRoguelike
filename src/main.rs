@@ -8,6 +8,7 @@ extern crate serde_json;
 extern crate num;
 extern crate timer;
 extern crate chrono;
+extern crate rodio;
 
 mod types;
 mod constants;
@@ -33,6 +34,8 @@ mod ai;
 use tcod::line::*;
 
 use timer::*;
+
+use rodio::Source;
 
 use types::*;
 use constants::*;
@@ -173,7 +176,7 @@ fn handle_input(game: &mut Game,
     }
 }
 
-fn gather_goal(_inventory_id: usize, objects: &mut [Object], messages: &mut Messages) -> UseResult {
+fn gather_goal(_inventory_id: usize, _objects: &mut [Object], messages: &mut Messages) -> UseResult {
     messages.message("You've got the goal object! Nice work.", LIGHT_VIOLET);
     UseResult::Keep
 }
@@ -351,13 +354,23 @@ fn main() {
     // Start game tick timer
     let timer = Timer::new();
     let (tick_sender, tick_receiver) = channel();
-    let guard = 
+    let _guard = 
         timer.schedule_repeating(chrono::Duration::milliseconds(TIME_BETWEEN_FRAMES_MS), move || {
-            tick_sender.send(0);
+            tick_sender.send(0).unwrap();
         });
 
+
+    // This is an example of opening a sound file and playing it.
+    // It will play asychronously allowing the game to continue
+    // let device = rodio::default_output_device().unwrap();
+    // let file = File::open("test.wav").unwrap();
+    // let source = rodio::Decoder::new(BufReader::new(file)).unwrap();
+    // rodio::play_raw(&device, source.convert_samples());
+
+    /* Main Game Loop */
     while !game.root.window_closed() {
-        let tick_count = tick_receiver.recv().unwrap();
+        /* FPS Limiting */
+        tick_receiver.recv().unwrap();
 
         match input::check_for_event(input::MOUSE | input::KEY_PRESS) {
             Some((_, Event::Mouse(m))) => game.mouse = m,
@@ -365,6 +378,7 @@ fn main() {
             _ => key = Default::default(),
         }
 
+        /* Display */
         let fov_recompute = previous_player_position != (objects[PLAYER].x, objects[PLAYER].y);
         render_all(&mut game, 
                    &objects, &mut map, &mut messages,
@@ -377,6 +391,7 @@ fn main() {
             object.clear(&mut game.console);
         }
 
+        /* Player Action and Animations */
         // If there is an animation playing, let it finish
         let player_action;
         if game.animations.len() > 0 {
@@ -410,6 +425,7 @@ fn main() {
             }
         }
 
+        /* AI */
         if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
             for id in 1..objects.len() {
                 if objects[id].ai.is_some() {
