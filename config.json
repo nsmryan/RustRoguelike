@@ -3,8 +3,7 @@
     "color_dark_wall": {
       "r": 80,
       "g": 65,
-      "b": 40
-    },
+      "b": 40 },
     "color_light_wall": {
       "r": 128,
       "g": 102,
@@ -29,6 +28,16 @@
       "r": 0,
       "g": 0,
       "b": 150
+    },
+    "color_light_exit": {
+      "r": 250,
+      "g": 250,
+      "b": 0
+    },
+    "color_dark_exit": {
+      "r": 204,
+      "g": 204,
+      "b": 0
     },
     "color_orc": {
       "r": 100,

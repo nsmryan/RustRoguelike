@@ -217,15 +217,24 @@ impl Tile {
                tile_type: TileType::ShortWall,
         }
     }
+
+    pub fn exit() -> Self {
+        Tile { blocked: false,
+               block_sight: false,
+               explored: false,
+               tile_type: TileType::Exit,
+        }
+    }
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TileType {
     Empty,
     ShortWall,
     Wall,
     Water,
+    Exit,
 }
 
 
@@ -493,6 +502,8 @@ pub struct Config {
     pub color_light_ground: ColorConfig,
     pub color_dark_water: ColorConfig,
     pub color_light_water: ColorConfig,
+    pub color_dark_exit: ColorConfig,
+    pub color_light_exit: ColorConfig,
 
     pub color_orc: ColorConfig,
     pub color_troll: ColorConfig,
