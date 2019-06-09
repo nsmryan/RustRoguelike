@@ -313,6 +313,15 @@ fn step_animation(objects: &mut [Object], map: &Map, animation: &mut Animation) 
     }
 }
 
+/// Play a sound file.
+/// This implementation is inefficient, but simple.
+pub fn play_sound(file_name: &str) {
+    let device = rodio::default_output_device().unwrap();
+    let file = File::open(file_name).unwrap();
+    let source = rodio::Decoder::new(BufReader::new(file)).unwrap();
+    rodio::play_raw(&device, source.convert_samples());
+}
+
 fn main() {
     let mut previous_player_position = (-1, -1);
 
@@ -359,14 +368,6 @@ fn main() {
             tick_sender.send(0).unwrap();
         });
 
-
-    // This is an example of opening a sound file and playing it.
-    // It will play asychronously allowing the game to continue
-    // let device = rodio::default_output_device().unwrap();
-    // let file = File::open("test.wav").unwrap();
-    // let source = rodio::Decoder::new(BufReader::new(file)).unwrap();
-    // rodio::play_raw(&device, source.convert_samples());
-
     /* Main Game Loop */
     while !game.root.window_closed() {
         /* FPS Limiting */
@@ -390,6 +391,11 @@ fn main() {
         for object in objects.iter() {
             object.clear(&mut game.console);
         }
+
+        for clearable in game.needs_clear.iter() {
+            game.console.put_char(clearable.0, clearable.1, ' ', BackgroundFlag::None);
+        }
+        game.needs_clear.clear();
 
         /* Player Action and Animations */
         // If there is an animation playing, let it finish

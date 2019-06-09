@@ -7,7 +7,7 @@ use tcod::line::*;
 use crate::constants::*;
 
 
-type ObjectId = usize;
+pub type ObjectId = usize;
 
 pub struct Messages(pub Vec<(String, Color)>);
 
@@ -34,6 +34,7 @@ pub struct Game {
     pub panel: Offscreen,
     pub turn_count: usize,
     pub animations: Vec<Animation>,
+    pub needs_clear: Vec<(i32, i32)>,
 }
 
 impl Game {
@@ -46,10 +47,33 @@ impl Game {
             panel: Offscreen::new(SCREEN_WIDTH, PANEL_HEIGHT),
             turn_count: 0,
             animations: Vec::new(),
+            needs_clear: Vec::new(),
         }
     }
 }
 
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum MonsterType {
+    Single,
+    Diag,
+}
+
+impl MonsterType {
+    pub fn offsets(&self) -> Vec<Position> {
+        match self {
+            MonsterType::Single => {
+                let offsets = vec!((0,   1), (-1, 1), (-1,  0), (-1, -1), 
+                                   (0,  -1), (1, -1), (1,  0),  (1, 1));
+                offsets.iter().map(|pair| Position::from_pair(&pair)).collect()
+            },
+
+            MonsterType::Diag => {
+                let offsets = vec!((1, 1), (1, -1), (-1, 1), (-1, -1));
+                offsets.iter().map(|pair| Position::from_pair(pair)).collect()
+            },
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct Object {
@@ -65,6 +89,7 @@ pub struct Object {
     pub behavior: Option<Behavior>,
     pub item: Option<Item>,
     pub momentum: Option<Momentum>,
+    pub monster: Option<MonsterType>,
 }
 
 impl Object {
@@ -82,6 +107,7 @@ impl Object {
             behavior: None,
             item: None,        
             momentum: None,
+            monster: None,
         }
     }
 
@@ -420,6 +446,10 @@ pub struct Position(pub i32, pub i32);
 impl Position {
     pub fn new(x: i32, y: i32) -> Position {
         Position(x, y)
+    }
+
+    pub fn from_pair(pair: &(i32, i32)) -> Position {
+        Position::new(pair.0, pair.1)
     }
 
     pub fn distance(&self, other: &Position) -> i32 {
