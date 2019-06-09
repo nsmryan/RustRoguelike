@@ -123,6 +123,7 @@ pub fn random_position() -> Position {
 pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) -> Position {
     let center = Position(MAP_WIDTH/2, MAP_HEIGHT/2);
 
+    // Fill island with land, and rest of map with water
     for x in 0..MAP_WIDTH {
         for y in 0..MAP_HEIGHT {
             let pos = Position(x, y);
@@ -134,6 +135,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         }
     }
 
+    // add obstacles
     let obstacles = Obstacle::all_obstacles();
 
     for _ in 0..ISLAND_NUM_OBSTICLES {
@@ -148,6 +150,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         }
     }
 
+    // add add buildings
     for _ in 0..rand::thread_rng().gen_range(3, 5) {
         let rand_pos = random_offset();
         let pos = Position(center.0 + rand_pos.0, center.1 + rand_pos.1);
@@ -220,6 +223,13 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
             break;
         }
     }
+
+    // add goal object
+    let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
+    let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
+    let mut object = Object::new(x,y, '\u{FD}', "goal", RED, false);
+    object.item = Some(Item::Goal);
+    objects.push(object);
 
     // Test smart Ai
     /*
@@ -414,13 +424,6 @@ pub fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
             objects.push(object);
         }
     }
-        let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
-        let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
-        let mut object = Object::new(x,y, '\u{FD}', "goal", RED, false);
-        object.item = Some(Item::Goal);
-        objects.push(object);
-
-
 }
 
 fn create_room(room: Rect, map: &mut Map) {
