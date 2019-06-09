@@ -433,6 +433,14 @@ fn main() {
             }
         }
 
+        // check exit condition
+        let has_goal =
+            inventory.iter().any(|obj| obj.item.map_or(false, |item| item == Item::Goal));
+        let player_pos = (objects[PLAYER].x, objects[PLAYER].y);
+        if has_goal && map[player_pos].tile_type == TileType::Exit {
+            std::process::exit(0);
+        }
+
         /* AI */
         if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
             for id in 1..objects.len() {
