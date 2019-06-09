@@ -394,6 +394,11 @@ fn main() {
             object.clear(&mut game.console);
         }
 
+        for clearable in game.needs_clear.iter() {
+            game.console.put_char(clearable.0, clearable.1, ' ', BackgroundFlag::None);
+        }
+        game.needs_clear.clear();
+
         /* Player Action and Animations */
         // If there is an animation playing, let it finish
         let player_action;

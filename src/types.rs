@@ -34,6 +34,7 @@ pub struct Game {
     pub panel: Offscreen,
     pub turn_count: usize,
     pub animations: Vec<Animation>,
+    pub needs_clear: Vec<(i32, i32)>,
 }
 
 impl Game {
@@ -46,6 +47,7 @@ impl Game {
             panel: Offscreen::new(SCREEN_WIDTH, PANEL_HEIGHT),
             turn_count: 0,
             animations: Vec::new(),
+            needs_clear: Vec::new(),
         }
     }
 }
@@ -60,9 +62,8 @@ impl MonsterType {
     pub fn offsets(&self) -> Vec<Position> {
         match self {
             MonsterType::Single => {
-                let offsets = vec!((0, 1), (0, -1), (-1, 0),
-                                   (-1, -1), (0, -1), (1, -1),
-                                   (1, 0), (1, 1));
+                let offsets = vec!((0,   1), (-1, 1), (-1,  0), (-1, -1), 
+                                   (0,  -1), (1, -1), (1,  0),  (1, 1));
                 offsets.iter().map(|pair| Position::from_pair(&pair)).collect()
             },
 

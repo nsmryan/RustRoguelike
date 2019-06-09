@@ -254,6 +254,23 @@ pub fn render_all(game: &mut Game,
         object.draw(&mut game.console);
     }
 
+    let ids = get_objects_under_mouse(game.mouse, objects, &game.fov);
+    for id in ids {
+        if let Some(monsterType) = objects[id].monster {
+            let offsets = monsterType.offsets();
+            for offset in offsets {
+                let x = game.mouse.cx as i32 + offset.0;
+                let y = game.mouse.cy as i32 + offset.1;
+                game.console.put_char(x,
+                                      y,
+                                      '.',
+                                      BackgroundFlag::None);
+
+                game.needs_clear.push((x, y));
+            }
+        }
+    }
+
     game.panel.set_default_background(BLACK);
     game.panel.clear();
 
@@ -270,18 +287,6 @@ pub fn render_all(game: &mut Game,
         }
         game.panel.set_default_foreground(color);
         game.panel.print_rect(MSG_X, y, MSG_WIDTH, 0, msg);
-    }
-
-    let ids = get_objects_under_mouse(game.mouse, objects, &game.fov);
-    for id in ids {
-        if let Some(monsterType) = objects[id].monster {
-            let offsets = monsterType.offsets();
-            for offset in offsets {
-                game.console.print_rect(game.mouse.cx as i32 + offset.0,
-                                        game.mouse.cy as i32 + offset.1,
-                                        1, 0, "1");
-            }
-        }
     }
 
     game.panel.set_default_foreground(LIGHT_GREY);
