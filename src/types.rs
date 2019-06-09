@@ -53,21 +53,21 @@ impl Game {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum MonsterType {
+pub enum Reach {
     Single,
     Diag,
 }
 
-impl MonsterType {
+impl Reach {
     pub fn offsets(&self) -> Vec<Position> {
         match self {
-            MonsterType::Single => {
+            Reach::Single => {
                 let offsets = vec!((0,   1), (-1, 1), (-1,  0), (-1, -1), 
                                    (0,  -1), (1, -1), (1,  0),  (1, 1));
                 offsets.iter().map(|pair| Position::from_pair(&pair)).collect()
             },
 
-            MonsterType::Diag => {
+            Reach::Diag => {
                 let offsets = vec!((1, 1), (1, -1), (-1, 1), (-1, -1));
                 offsets.iter().map(|pair| Position::from_pair(pair)).collect()
             },
@@ -89,7 +89,8 @@ pub struct Object {
     pub behavior: Option<Behavior>,
     pub item: Option<Item>,
     pub momentum: Option<Momentum>,
-    pub monster: Option<MonsterType>,
+    pub movement: Option<Reach>,
+    pub attack: Option<Reach>,
 }
 
 impl Object {
@@ -107,7 +108,8 @@ impl Object {
             behavior: None,
             item: None,        
             momentum: None,
-            monster: None,
+            movement: None,
+            attack: None,
         }
     }
 
@@ -260,19 +262,13 @@ impl Obstacle {
 pub enum Ai {
     Basic,
     Smart,
-    Patrol,
-    Guard,
-    Passive,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Behavior {
     Idle,
     Seeking(Position),
-    SmartSearch(AwarenessMap),
-    SmartSeeking(AwarenessMap),
-    Patrol(Vec<Position>, usize, PatrolDir),
-    Guard(Position),
+    Attacking,
     Alert,
 }
 

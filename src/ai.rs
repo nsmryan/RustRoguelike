@@ -120,12 +120,14 @@ pub fn smart_ai_take_turn(monster_id: usize,
             if !fov_map.is_in_fov(monster_x, monster_y) {
                 let mut awareness_map = AwarenessMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize);
                 awareness_map.expected_position(player_pos);
-                objects[monster_id].behavior =
-                    Some(Behavior::SmartSeeking(awareness_map));
+                // NOTE removed until smart seeking is added back in
+                //objects[monster_id].behavior =
+                    //Some(Behavior::SmartSeeking(awareness_map));
 
             }
         }
 
+        /*
         Some(Behavior::SmartSeeking(awareness_map)) => {
             if fov_map.is_in_fov(monster_x, monster_y) {
                 objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
@@ -150,11 +152,19 @@ pub fn smart_ai_take_turn(monster_id: usize,
                 // NOTE must update with new map here.
             }
         }
+        */
         
         ref behavior => {
             panic!("Ai behavior {:?} unexpected!", behavior);
         }
     }
+}
+
+pub fn ai_attack(monster_id: usize,
+                 map: &Map,
+                 objects: &mut [Object],
+                 fov_map: &FovMap,
+                 _messages: &mut Messages) {
 }
 
 pub fn ai_seek_take_turn(target_pos_orig: Position, 
@@ -182,7 +192,7 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
         move_towards(monster_id, dx, dy, map, objects);
 
         if objects[monster_id].pos() == target_pos.pair() {
-            objects[monster_id].behavior = Some(Behavior::Idle);
+            objects[monster_id].behavior = Some(Behavior::Attacking);
         }
     }
 }
@@ -212,6 +222,14 @@ fn basic_ai_take_turn(monster_id: usize,
                               messages);
         }
         
+        Some(Behavior::Attacking) => {
+            ai_attack(monster_id,
+                      map,
+                      objects,
+                      fov_map,
+                      messages);
+        }
+
         ref behavior => {
             panic!("Ai behavior {:?} unexpected!", behavior);
         }
@@ -226,15 +244,6 @@ pub fn ai_take_turn(monster_id: usize, map: &Map, objects: &mut [Object], fov_ma
 
         Some(Ai::Smart) => {
             smart_ai_take_turn(monster_id, map, objects, fov_map, messages);
-        }
-
-        Some(Ai::Patrol) => {
-        }
-
-        Some(Ai::Guard) => {
-        }
-
-        Some(Ai::Passive) => {
         }
 
         None => {
