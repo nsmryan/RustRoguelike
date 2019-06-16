@@ -69,6 +69,13 @@ impl Reach {
 
             Reach::Diag => {
                 let offsets = vec!((1, 1), (1, -1), (-1, 1), (-1, -1));
+                let mut offsets = vec!();
+                for dist in 1..5 {
+                    offsets.push((dist, dist));
+                    offsets.push((-1 * dist, dist));
+                    offsets.push((dist, -1 * dist));
+                    offsets.push((-1 * dist, -1 * dist));
+                }
                 offsets.iter().map(|pair| Position::from_pair(pair)).collect()
             },
         }

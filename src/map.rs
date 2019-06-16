@@ -204,7 +204,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
                 orc.behavior = Some(Behavior::Idle);
                 orc.color = config.color_orc.color();
                 orc.movement = Some(Reach::Single);
-                orc.attack = Some(Reach::Single);
+                orc.attack = Some(Reach::Diag);
                 orc
             } else {
                 let mut troll = Object::new(x, y, 'T', "troll", DARKER_GREEN, true);
