@@ -124,27 +124,54 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
     let player_pos = Position::new(player_x, player_y);
 
     let (monster_x, monster_y) = objects[monster_id].pos();
+    let monster_pos = Position::new(monster_x, monster_y);
     let took_turn: AiAction;
 
-    // if the player is in view, update our target location to seek towards
     if fov_map.is_in_fov(monster_x, monster_y) {
+        // if the player is in view, update our target location to seek towards
         target_pos = player_pos;
-    }
 
-    if let Some(hit_pos) = ai_can_hit_player(monster_id, objects) {
-        // TODO we should return something or call something
-        // to indicate that we also want to perform an attack.
-        // This way the monster attacks when you get into its reach
-        objects[monster_id].behavior = Some(Behavior::Attacking);
+        if let Some(hit_pos) = ai_can_hit_player(monster_id, objects) {
+            // TODO we should return something or call something
+            // to indicate that we also want to perform an attack.
+            // This way the monster attacks when you get into its reach
+            objects[monster_id].behavior = Some(Behavior::Attacking);
 
-        took_turn = AiAction::DidntTakeTurn;
-    } else {
-        // if the monster cannot hit the player, just make a move
-        // towards the player
-        // TODO this should move not toward the player, but to a square
-        // in which we can attack the player
-        ai_take_astar_step(monster_id, (monster_x, monster_y), target_pos.pair(), map, objects);
-        took_turn = AiAction::TookTurn;
+            took_turn = AiAction::DidntTakeTurn;
+        } else {
+            // check positions that can hit player, filter by FOV, and get the closest.
+            // then move to this closest position.
+            if let Some(reach) = objects[monster_id].attack {
+                // get all locations they can hit
+                let positions: Vec<(i32, i32)> =
+                    reach.offsets()
+                         .iter()
+                         .map(|pos| (pos.0 + player_x, pos.1 + player_y))
+                         .filter(|(x, y)| fov_map.is_in_fov(*x, *y))
+                         .filter(|(x, y)| !map.is_blocked(*x, *y, objects))
+                         .collect();
+                if positions.len() > 0 {
+                    target_pos = positions.iter()
+                                          .min_by_key(|pos| monster_pos.distance(&Position::from_pair(pos)))
+                                          .map(|pair| Position::from_pair(pair))
+                                          .unwrap();
+                }
+
+                ai_take_astar_step(monster_id, (monster_x, monster_y), target_pos.pair(), map, objects);
+            }
+
+            took_turn = AiAction::TookTurn;
+        }
+    } else { // the monster can't see the player
+        if target_pos == monster_pos { 
+            // if the monster reached its target then go back to being idle
+            objects[monster_id].behavior = Some(Behavior::Idle);
+            took_turn = AiAction::TookTurn;
+        } else {
+            // if the monster has not reached its target, move towards the target.
+            ai_take_astar_step(monster_id, (monster_x, monster_y), target_pos.pair(), map, objects);
+            took_turn = AiAction::TookTurn;
+        }
     }
 
     return took_turn;
