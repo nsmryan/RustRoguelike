@@ -117,12 +117,18 @@ pub fn random_position() -> Position {
     Position(rand::thread_rng().gen_range(0, MAP_WIDTH), rand::thread_rng().gen_range(0, MAP_HEIGHT))
 }
 
+pub fn pos_in_radius(pos: Position, radius: i32) -> Position {
+    return Position(pos.0 + rand::thread_rng().gen_range(-radius, radius),
+                    pos.1 + rand::thread_rng().gen_range(-radius, radius));
+}
+
 pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) -> Position {
     let center = Position(MAP_WIDTH/2, MAP_HEIGHT/2);
 
     let mut water_tile_positions = Vec::new();
 
-    // Fill island with land, and rest of map with water
+    /* Create Island */
+    // the center has land, the remaining square are filled with water
     for x in 0..MAP_WIDTH {
         for y in 0..MAP_HEIGHT {
             let pos = Position(x, y);
@@ -135,7 +141,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         }
     }
 
-    // add obstacles
+    /* add obstacles */
     let obstacles = Obstacle::all_obstacles();
 
     for _ in 0..ISLAND_NUM_OBSTICLES {
@@ -150,27 +156,25 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         }
     }
 
-    // add buildings
+    /* add buildings */
     for _ in 0..rand::thread_rng().gen_range(3, 5) {
         let rand_pos = random_offset();
         let pos = Position(center.0 + rand_pos.0, center.1 + rand_pos.1);
         add_obstacle(map, &pos, Obstacle::Building);
     }
 
-    // random subtraction
+    /* random subtraction */
     for _ in 0..ISLAND_NUM_SUBTRACTIONS_ATTEMPTS {
-        let pos = Position(center.0 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
-        center.1 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS));
+        let pos = pos_in_radius(center, ISLAND_RADIUS);
 
         if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
             map.0[pos.0 as usize][pos.1 as usize] = Tile::empty();
         }
     }
 
-    // random additions
+    /* random additions */
     for _ in 0..ISLAND_NUM_ADDITION_ATTEMPTS {
-        let pos = Position(center.0 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
-        center.1 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS));
+        let pos = pos_in_radius(center, ISLAND_RADIUS);
         let obstacle = *rand::thread_rng().choose(&obstacles).unwrap();
 
         if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
@@ -178,23 +182,21 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         }
     }
 
-    // random stones
+    /* random stones */
     let mut rng = rand::thread_rng();
     for _ in 0..10 {
-        let x = rng.gen_range(0, MAP_WIDTH);
-        let y = rng.gen_range(0, MAP_HEIGHT);
+        let pos = pos_in_radius(center, ISLAND_RADIUS);
 
-        if map.is_empty(x, y, &objects) {
-            let mut stone = Object::make_stone(x, y);
+        if map.is_empty(pos.0, pos.1, &objects) {
+            let mut stone = Object::make_stone(pos.0, pos.1);
             stone.item = Some(Item::Stone);
             objects.push(stone);
         }
     }
 
-    // add monsters
+    /* add monsters */
     loop {
-        let x = rand::thread_rng().gen_range(0, MAP_WIDTH);
-        let y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+        let (x, y) = pos_in_radius(center, ISLAND_RADIUS).pair();
 
         if !map.is_blocked(x, y, objects) {
             let mut monster = if rand::random::<f32>() < 1.0 {
@@ -225,18 +227,18 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         }
     }
 
-    // add goal object
-    let mut x = rand::thread_rng().gen_range(0, MAP_WIDTH);
-    let mut y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+    /* add goal object */
+    let (mut x, mut y) = pos_in_radius(center, ISLAND_RADIUS).pair();
     while !map.is_empty(x, y, &objects) {
-        x = rand::thread_rng().gen_range(0, MAP_WIDTH);
-        y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+        let pos = pos_in_radius(center, ISLAND_RADIUS).pair();
+        x = pos.0;
+        y = pos.1;
     }
     let mut object = Object::new(x, y, '\u{FD}', "goal", RED, false);
     object.item = Some(Item::Goal);
     objects.push(object);
 
-    // add exit
+    /* add exit */
     // find edge of island
     let map_size = map.size();
     let mut edge_positions = Vec::new();
@@ -248,9 +250,13 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
             }
         }
     }
+    // choose a random edge position
     let edge_pos = edge_positions[rand::thread_rng().gen_range(0, edge_positions.len())];
+
+    // make the random edge position the exit
     map.0[edge_pos.0 as usize][edge_pos.1 as usize] = Tile::exit();
 
+    /* Ensure that objects placed outside of the island are removed */
     for pos in water_tile_positions {
         map[pos].tile_type = TileType::Water;
     }
