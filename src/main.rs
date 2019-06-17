@@ -184,7 +184,7 @@ fn gather_goal(_inventory_id: usize, _objects: &mut [Object], messages: &mut Mes
 fn cast_heal(_inventory_id: usize, objects: &mut [Object], messages: &mut Messages) -> UseResult {
     if let Some(fighter) = objects[PLAYER].fighter {
         if fighter.hp == fighter.max_hp {
-            messages.message("You are alrady at full health.", RED);
+            messages.message("You are already at full health.", RED);
             return UseResult::Cancelled;
         }
         messages.message("Your wounds start to feel better!", LIGHT_VIOLET);
@@ -429,6 +429,14 @@ fn main() {
               
               _ => {}
             }
+        }
+
+        // check exit condition
+        let has_goal =
+            inventory.iter().any(|obj| obj.item.map_or(false, |item| item == Item::Goal));
+        let player_pos = (objects[PLAYER].x, objects[PLAYER].y);
+        if has_goal && map[player_pos].tile_type == TileType::Exit {
+            std::process::exit(0);
         }
 
         /* AI */

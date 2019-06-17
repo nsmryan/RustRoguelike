@@ -124,6 +124,9 @@ pub fn random_position() -> Position {
 pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) -> Position {
     let center = Position(MAP_WIDTH/2, MAP_HEIGHT/2);
 
+    let mut water_tile_positions = Vec::new();
+
+    // Fill island with land, and rest of map with water
     for x in 0..MAP_WIDTH {
         for y in 0..MAP_HEIGHT {
             let pos = Position(x, y);
@@ -131,10 +134,12 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
                 map.0[x as usize][y as usize] = Tile::empty();
             } else {
                 map.0[x as usize][y as usize] = Tile::water();
+                water_tile_positions.push((x, y));
             }
         }
     }
 
+    // add obstacles
     let obstacles = Obstacle::all_obstacles();
 
     for _ in 0..ISLAND_NUM_OBSTACLES {
@@ -149,6 +154,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         }
     }
 
+    // add buildings
     for _ in 0..rand::thread_rng().gen_range(3, 5) {
         let rand_pos = random_offset();
         let pos = Position(center.0 + rand_pos.0, center.1 + rand_pos.1);
@@ -244,6 +250,32 @@ let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
         }
     }
 
+    // add goal object
+    let mut x = rand::thread_rng().gen_range(0, MAP_WIDTH);
+    let mut y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+    while !map.is_empty(x, y, &objects) {
+        x = rand::thread_rng().gen_range(0, MAP_WIDTH);
+        y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+    }
+    let mut object = Object::new(x, y, '\u{FD}', "goal", RED, false);
+    object.item = Some(Item::Goal);
+    objects.push(object);
+
+    // add exit
+    // find edge of island
+    let map_size = map.size();
+    let mut edge_positions = Vec::new();
+    for x in 0..map_size.0 {
+        for y in 0..map_size.1 {
+            let pos = Position::from_pair(&(x, y));
+            if !(map[(x, y)].tile_type == TileType::Water) && near_tile_type(&map, pos, TileType::Water) {
+                edge_positions.push(pos);
+            }
+        }
+    }
+    let edge_pos = edge_positions[rand::thread_rng().gen_range(0, edge_positions.len())];
+    map.0[edge_pos.0 as usize][edge_pos.1 as usize] = Tile::exit();
+
     // Test smart Ai
     /*
     let pos = random_position();
@@ -253,6 +285,10 @@ let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
     smart.behavior = Some(Behavior::SmartSearch(AwarenessMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize)));
     objects.push(smart);
     */
+
+    for pos in water_tile_positions {
+        map[pos].tile_type = TileType::Water;
+    }
 
     center
 }
@@ -437,15 +473,6 @@ pub fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
             objects.push(object);
         }
     }
-            let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
-            let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
-            
-        if !map.is_blocked(x, y, objects) {
-            let mut object = Object::new(x,y, '\u{FD}', "goal", RED, false);
-            object.item = Some(Item::Goal);
-            objects.push(object);
-        }
-
 }
 
 fn create_room(room: Rect, map: &mut Map) {

@@ -184,6 +184,9 @@ pub fn render_all(game: &mut Game,
 
                 (TileType::ShortWall, true) => config.color_light_wall,
                 (TileType::ShortWall, false) => config.color_dark_wall,
+
+                (TileType::Exit, true) => config.color_light_exit,
+                (TileType::Exit, false) => config.color_dark_exit,
             };
 
             let mut explored = map.0[x as usize][y as usize].explored;
@@ -194,7 +197,7 @@ pub fn render_all(game: &mut Game,
             if explored {
                 let tile_type = map.0[x as usize][y as usize].tile_type;
                 match tile_type {
-                    TileType::Empty | TileType::Water => {
+                    TileType::Empty | TileType::Water | TileType::Exit => {
                         game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
                     }
 

@@ -226,11 +226,10 @@ impl Tile {
         }
     }
 
-
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TileType {
     Empty,
     ShortWall,
@@ -504,9 +503,8 @@ pub struct Config {
     pub color_light_ground: ColorConfig,
     pub color_dark_water: ColorConfig,
     pub color_light_water: ColorConfig,
-    pub color_light_exit: ColorConfig,
     pub color_dark_exit: ColorConfig,
-
+    pub color_light_exit: ColorConfig,
 
     pub color_orc: ColorConfig,
     pub color_troll: ColorConfig,
