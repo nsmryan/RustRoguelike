@@ -189,7 +189,7 @@ pub fn render_all(game: &mut Game,
                 (TileType::Wall, true) => config.color_light_wall,
                 (TileType::Wall, false) => config.color_dark_wall,
 
-                (TileType::Empty, true) => config.color_light_ground,
+                (TileType::Empty, true) => lerp(config.color_light_ground_low, config.color_light_ground_high, rand_from_x_y(x, y)),
                 (TileType::Empty, false) => config.color_dark_ground,
 
                 (TileType::Water, true) => config.color_light_water,
