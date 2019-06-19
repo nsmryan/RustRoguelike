@@ -1,5 +1,4 @@
 use rand::Rng;
-use std::cmp;
 use std::ops::{Index, IndexMut};
 use std::print;
 

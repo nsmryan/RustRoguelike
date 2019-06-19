@@ -37,6 +37,8 @@ use timer::*;
 
 use rodio::Source;
 
+use num::clamp;
+
 use types::*;
 use constants::*;
 use display::*;
@@ -60,13 +62,25 @@ fn handle_input(game: &mut Game,
             if inventory[index].item == Some(Item::Stone) {
                 let mut item = inventory.swap_remove(index);
                 let obj_id = objects.len();
-                item.x = objects[PLAYER].x;
-                item.y = objects[PLAYER].y;
+
+                // TODO this enforces a square limit, not a radius, on throw distance
+                let start_x = objects[PLAYER].x;
+                let start_y = objects[PLAYER].y;
+                let end_x = mx as i32 / FONT_WIDTH;
+                let end_y = my as i32 / FONT_HEIGHT;
+                let throw_dist =
+                    Position::new(start_x, start_y).distance(&Position::new(end_x, end_y));
+                let target_x = start_x + clamp(end_x - start_x, -PLAYER_THROW_DIST, PLAYER_THROW_DIST);
+                let target_y = start_y + clamp(end_y - start_y, -PLAYER_THROW_DIST, PLAYER_THROW_DIST);
+
+                item.x = start_x;
+                item.y = start_y;
                 objects.push(item);
+
                 let animation =
                     Animation::Thrown(obj_id,
-                                      Line::new((objects[PLAYER].x, objects[PLAYER].y),
-                                                (mx as i32 / FONT_WIDTH, my as i32 / FONT_HEIGHT)));
+                                      Line::new((start_x, start_y),
+                                                (target_x, target_y)));
                 game.animations.push(animation);
                 break;
             }
@@ -453,6 +467,7 @@ fn main() {
 
         /* AI */
         if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
+            println!("PlayerAction = {:?}", player_action);
             for id in 1..objects.len() {
                 if objects[id].ai.is_some() {
                     ai_take_turn(id, &map, &mut objects, &game.fov, &mut messages, &mut game.animations);
