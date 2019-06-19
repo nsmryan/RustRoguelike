@@ -280,14 +280,28 @@ pub fn render_all(game: &mut Game,
 
     let ids = get_objects_under_mouse(game.mouse, objects, &game.fov);
     for id in ids {
-        if let Some(monsterType) = objects[id].monster {
-            let offsets = monsterType.offsets();
+        if let Some(movement) = objects[id].movement {
+            let offsets = movement.offsets();
             for offset in offsets {
                 let x = game.mouse.cx as i32 + offset.0;
                 let y = game.mouse.cy as i32 + offset.1;
                 game.console.put_char(x,
                                       y,
                                       '.',
+                                      BackgroundFlag::None);
+
+                game.needs_clear.push((x, y));
+            }
+        }
+
+        if let Some(attack) = objects[id].attack {
+            let offsets = attack.offsets();
+            for offset in offsets {
+                let x = game.mouse.cx as i32 + offset.0;
+                let y = game.mouse.cy as i32 + offset.1;
+                game.console.put_char(x,
+                                      y,
+                                      'x',
                                       BackgroundFlag::None);
 
                 game.needs_clear.push((x, y));

@@ -91,99 +91,123 @@ pub fn move_towards(id: usize, target_x: i32, target_y: i32, map: &Map, objects:
     move_by(id, dx, dy, map, objects);
 }
 
-pub fn smart_ai_take_turn(monster_id: usize,
-                      map: &Map,
-                      objects: &mut [Object],
-                      fov_map: &FovMap,
-                      messages: &mut Messages) {
-    let (monster_x, monster_y) = objects[monster_id].pos();
+pub fn ai_attack(monster_id: usize,
+                 map: &Map,
+                 objects: &mut [Object],
+                 fov_map: &FovMap,
+                 _messages: &mut Messages) -> AiAction {
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
+    let took_turn: AiAction;
 
-    match &objects[monster_id].behavior {
-        Some(Behavior::Idle) => {
-            if fov_map.is_in_fov(monster_x, monster_y) {
-                objects[monster_id].behavior =
-                    Some(Behavior::Seeking(Position::new(player_x, player_y)));
-            }
-        }
-
-        Some(Behavior::Seeking(target_pos)) => {
-
-            ai_seek_take_turn(*target_pos,
-                              monster_id,
-                              map,
-                              objects,
-                              fov_map,
-                              messages);
-
-            if !fov_map.is_in_fov(monster_x, monster_y) {
-                let mut awareness_map = AwarenessMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize);
-                awareness_map.expected_position(player_pos);
-                objects[monster_id].behavior =
-                    Some(Behavior::SmartSeeking(awareness_map));
-
-            }
-        }
-
-        Some(Behavior::SmartSeeking(awareness_map)) => {
-            if fov_map.is_in_fov(monster_x, monster_y) {
-                objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
-            } else {
-                let mut awareness_map = awareness_map.clone();
-                //fov_map.compute_fov(monster_x, monster_y, TORCH_RADIOUS, FOV_LIGHT_WALLS, FOV_ALGO);
-
-                for y in 0..MAP_HEIGHT {
-                    for x in 0..MAP_WIDTH {
-                        if fov_map.is_in_fov(x, y) {
-                            awareness_map.visible(Position::new(x, y));
-                        }
-                    }
-                }
-
-                awareness_map.disperse();
-
-                // recompute player fov, in case it is used by other monsters. likely there is a
-                // better way to do this.
-                //fov_map.compute_fov(player_x, player_y, TORCH_RADIOUS, FOV_LIGHT_WALLS, FOV_ALGO);
-
-                // NOTE must update with new map here.
-            }
-        }
-        
-        ref behavior => {
-            panic!("Ai behavior {:?} unexpected!", behavior);
-        }
+    if let Some(hit_pos) = ai_can_hit_player(monster_id, objects) {
+        let (player, monster) = mut_two(PLAYER, monster_id, objects);
+        monster.attack(player, _messages);
+        took_turn = AiAction::TookTurn;
+    } else {
+        // can't hit- seek to current player position instead
+        objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
+        took_turn = AiAction::DidntTakeTurn;
     }
+
+    return took_turn;
 }
 
 pub fn ai_seek_take_turn(target_pos_orig: Position, 
-                     monster_id: usize,
-                     map: &Map,
-                     objects: &mut [Object],
-                     fov_map: &FovMap,
-                     _messages: &mut Messages) {
+                         monster_id: usize,
+                         map: &Map,
+                         objects: &mut [Object],
+                         fov_map: &FovMap,
+                         _messages: &mut Messages) -> AiAction {
     let mut target_pos = target_pos_orig;
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
 
     let (monster_x, monster_y) = objects[monster_id].pos();
+    let monster_pos = Position::new(monster_x, monster_y);
+    let took_turn: AiAction;
 
     if fov_map.is_in_fov(monster_x, monster_y) {
-        objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
+        // if the player is in view, update our target location to seek towards
         target_pos = player_pos;
+
+        if let Some(hit_pos) = ai_can_hit_player(monster_id, objects) {
+            // TODO we should return something or call something
+            // to indicate that we also want to perform an attack.
+            // This way the monster attacks when you get into its reach
+            objects[monster_id].behavior = Some(Behavior::Attacking);
+
+            took_turn = AiAction::DidntTakeTurn;
+        } else {
+            // check positions that can hit player, filter by FOV, and get the closest.
+            // then move to this closest position.
+            if let Some(reach) = objects[monster_id].attack {
+                // get all locations they can hit
+                let positions: Vec<(i32, i32)> =
+                    reach.offsets()
+                         .iter()
+                         .map(|pos| (pos.0 + player_x, pos.1 + player_y))
+                         .filter(|(x, y)| fov_map.is_in_fov(*x, *y))
+                         .filter(|(x, y)| !map.is_blocked(*x, *y, objects))
+                         .collect();
+                if positions.len() > 0 {
+                    target_pos = positions.iter()
+                                          .min_by_key(|pos| monster_pos.distance(&Position::from_pair(pos)))
+                                          .map(|pair| Position::from_pair(pair))
+                                          .unwrap();
+                }
+
+                ai_take_astar_step(monster_id, (monster_x, monster_y), target_pos.pair(), map, objects);
+            }
+
+            took_turn = AiAction::TookTurn;
+        }
+    } else { // the monster can't see the player
+        if target_pos == monster_pos { 
+            // if the monster reached its target then go back to being idle
+            objects[monster_id].behavior = Some(Behavior::Idle);
+            took_turn = AiAction::TookTurn;
+        } else {
+            // if the monster has not reached its target, move towards the target.
+            ai_take_astar_step(monster_id, (monster_x, monster_y), target_pos.pair(), map, objects);
+            took_turn = AiAction::TookTurn;
+        }
     }
 
+    return took_turn;
+}
+
+fn ai_can_hit_player(monster_id: ObjectId, objects: &[Object]) -> Option<(i32, i32)> {
+    let (player_x, player_y) = objects[PLAYER].pos();
+    let (monster_x, monster_y) = objects[monster_id].pos();
+    let mut hit_pos = None;
+ 
+    if let Some(reach) = objects[monster_id].attack {
+        // get all locations they can hit
+        let positions: Vec<(i32, i32)> =
+            reach.offsets()
+                 .iter()
+                 .map(|pos| (pos.0 + monster_x, pos.1 + monster_y))
+                 .collect();
+
+        // look through attack positions, in case one hits the player
+        for pos in positions {
+            if player_x == pos.0 && player_y == pos.1 {
+                hit_pos = Some(pos)
+            }
+        }
+    }
+
+    return hit_pos;
+}
+
+fn ai_take_astar_step(monster_id: ObjectId, monster_pos: (i32, i32), target_pos: (i32, i32), map: &Map, objects: &mut [Object]) {
     let map_copy = map.make_tcod_map();
     let mut astar = AStar::new_from_map(map_copy, 1.5);
-    astar.find((monster_x, monster_y), target_pos.pair());
+    astar.find(monster_pos, target_pos);
 
     if let Some((dx, dy)) = astar.walk_one_step(true) {
         move_towards(monster_id, dx, dy, map, objects);
-
-        if objects[monster_id].pos() == target_pos.pair() {
-            objects[monster_id].behavior = Some(Behavior::Idle);
-        }
     }
 }
 
@@ -191,7 +215,7 @@ fn basic_ai_take_turn(monster_id: usize,
                       map: &Map,
                       objects: &mut [Object],
                       fov_map: &FovMap,
-                      messages: &mut Messages) {
+                      messages: &mut Messages) -> AiAction {
     let (monster_x, monster_y) = objects[monster_id].pos();
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
@@ -201,6 +225,7 @@ fn basic_ai_take_turn(monster_id: usize,
             if fov_map.is_in_fov(monster_x, monster_y) {
                 objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
             }
+            AiAction::TookTurn
         }
 
         Some(Behavior::Seeking(target_pos)) => {
@@ -209,9 +234,17 @@ fn basic_ai_take_turn(monster_id: usize,
                               map,
                               objects,
                               fov_map,
-                              messages);
+                              messages)
         }
         
+        Some(Behavior::Attacking) => {
+            ai_attack(monster_id,
+                      map,
+                      objects,
+                      fov_map,
+                      messages)
+        }
+
         ref behavior => {
             panic!("Ai behavior {:?} unexpected!", behavior);
         }
@@ -221,20 +254,13 @@ fn basic_ai_take_turn(monster_id: usize,
 pub fn ai_take_turn(monster_id: usize, map: &Map, objects: &mut [Object], fov_map: &FovMap, messages: &mut Messages) {
     match objects[monster_id].ai {
         Some(Ai::Basic) => {
-            basic_ai_take_turn(monster_id, map, objects, fov_map, messages);
-        }
+            let took_turn = basic_ai_take_turn(monster_id, map, objects, fov_map, messages);
 
-        Some(Ai::Smart) => {
-            smart_ai_take_turn(monster_id, map, objects, fov_map, messages);
-        }
-
-        Some(Ai::Patrol) => {
-        }
-
-        Some(Ai::Guard) => {
-        }
-
-        Some(Ai::Passive) => {
+            // allow an extra iteration if the AI didn't take a turn.
+            // note that this is not in a loop- only one extra iteration is allowed
+            if took_turn == AiAction::DidntTakeTurn {
+                basic_ai_take_turn(monster_id, map, objects, fov_map, messages);
+            }
         }
 
         None => {
