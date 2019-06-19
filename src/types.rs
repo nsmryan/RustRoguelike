@@ -491,6 +491,13 @@ impl ColorConfig {
     pub fn color(&self) -> Color {
         Color::new(self.r, self.g, self.b)
     }
+
+    pub fn from_color(color: Color) -> ColorConfig {
+        ColorConfig { r: color.r,
+                      g: color.g,
+                      b: color.b,
+        }
+    }
 }
 
 
