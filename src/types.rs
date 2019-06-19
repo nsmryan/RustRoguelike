@@ -225,6 +225,7 @@ impl Tile {
                tile_type: TileType::Exit,
         }
     }
+
 }
 
 
@@ -511,7 +512,9 @@ pub struct Config {
     pub color_light_water: ColorConfig,
     pub color_dark_exit: ColorConfig,
     pub color_light_exit: ColorConfig,
-
+    
+    pub color_light_ground_low: ColorConfig,
+    pub color_light_ground_high: ColorConfig,
     pub color_orc: ColorConfig,
     pub color_troll: ColorConfig,
 }

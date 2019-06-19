@@ -188,8 +188,8 @@ pub fn render_all(game: &mut Game,
                 (TileType::Wall, true) => config.color_light_wall.color(),
                 (TileType::Wall, false) => config.color_dark_wall.color(),
 
-                (TileType::Empty, true) => config.color_light_ground.color(),
-                (TileType::Empty, false) => config.color_dark_ground.color(),
+                (TileType::Empty, true) => lerp(config.color_light_ground_low, config.color_light_ground_high, rand_from_x_y(x, y)),
+                (TileType::Empty, false) => config.color_dark_ground,
 
                 (TileType::Water, true) => config.color_light_water.color(),
                 (TileType::Water, false) => config.color_dark_water.color(),
@@ -212,6 +212,12 @@ pub fn render_all(game: &mut Game,
                     TileType::Empty | TileType::Water | TileType::Exit => {
                         game.console.set_char_background(x, y, color, BackgroundFlag::Set);
                     }
+
+                    TileType::Empty | TileType::Exit => {
+                        game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
+                    }
+
+
 
                     TileType::ShortWall | TileType::Wall => {
                         if visible {

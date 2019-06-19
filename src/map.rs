@@ -1,6 +1,7 @@
 use rand::Rng;
 use std::cmp;
 use std::ops::{Index, IndexMut};
+use std::print;
 
 use tcod::colors::*;
 use tcod::line::*;
@@ -141,7 +142,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
     // add obstacles
     let obstacles = Obstacle::all_obstacles();
 
-    for _ in 0..ISLAND_NUM_OBSTICLES {
+    for _ in 0..ISLAND_NUM_OBSTACLES {
         let rand_pos = random_offset();
         let pos = Position(center.0 + rand_pos.0, center.1 + rand_pos.1);
 
@@ -218,6 +219,28 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
                 troll.monster = Some(MonsterType::Single);
                 troll
             };
+
+let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
+
+    for _ in 0..num_items {
+        let x = rand::thread_rng().gen_range(0, MAP_WIDTH);
+        let y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+
+        if !map.is_blocked(x, y, objects) {
+            let mut object = Object::new(x, y, '!', "healing potion", VIOLET, false);
+            object.item = Some(Item::Heal);
+            objects.push(object);
+        }
+    }
+        let x = rand::thread_rng().gen_range(0, MAP_WIDTH);
+        let y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+            
+        if !map.is_blocked(x, y, objects) {
+            let mut object = Object::new(x,y, '\u{FD}', "goal", RED, false);
+            object.item = Some(Item::Goal);
+            objects.push(object);
+        }
+
 
             monster.alive = true;
 

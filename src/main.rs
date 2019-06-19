@@ -42,7 +42,7 @@ use constants::*;
 use display::*;
 use map::*;
 use ai::*;
-
+use std::print;
 
 fn handle_input(game: &mut Game,
                 key: Key,
@@ -178,14 +178,13 @@ fn handle_input(game: &mut Game,
 
 fn gather_goal(_inventory_id: usize, _objects: &mut [Object], messages: &mut Messages) -> UseResult {
     messages.message("You've got the goal object! Nice work.", LIGHT_VIOLET);
-
     UseResult::Keep
 }
 
 fn cast_heal(_inventory_id: usize, objects: &mut [Object], messages: &mut Messages) -> UseResult {
     if let Some(fighter) = objects[PLAYER].fighter {
         if fighter.hp == fighter.max_hp {
-            messages.message("You are alrady at full health.", RED);
+            messages.message("You are already at full health.", RED);
             return UseResult::Cancelled;
         }
         messages.message("Your wounds start to feel better!", LIGHT_VIOLET);
@@ -256,7 +255,6 @@ fn pick_item_up(object_id: usize,
 fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], messages: &mut Messages) {
     let x = objects[PLAYER].x + dx;
     let y = objects[PLAYER].y + dy;
-
     let target_id = objects.iter().position(|object| {
         object.fighter.is_some() && object.pos() == (x, y)
     });
