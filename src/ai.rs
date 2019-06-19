@@ -4,6 +4,7 @@ use num::clamp;
 
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
 #[allow(unused_imports)]use tcod::pathfinding::*;
+use tcod::line::*;
 
 use crate::constants::*;
 use crate::types::*;
@@ -93,16 +94,34 @@ pub fn move_towards(id: usize, target_x: i32, target_y: i32, map: &Map, objects:
 
 pub fn ai_attack(monster_id: usize,
                  map: &Map,
-                 objects: &mut [Object],
+                 objects: &mut Vec<Object>,
                  fov_map: &FovMap,
-                 _messages: &mut Messages) -> AiAction {
+                 _messages: &mut Messages,
+                 animations: &mut Vec<Animation>) -> AiAction {
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
+    let (monster_x, monster_y) = objects[monster_id].pos();
     let took_turn: AiAction;
 
     if let Some(hit_pos) = ai_can_hit_player(monster_id, objects) {
         let (player, monster) = mut_two(PLAYER, monster_id, objects);
+
+        // apply attack 
         monster.attack(player, _messages);
+
+        // add animation
+        let mut thrown_obj =
+            Object::new(monster_x, monster_y, '.', "thrown", tcod::colors::BLACK, false);
+        let obj_id = objects.len();
+        thrown_obj.x = monster_x;
+        thrown_obj.y = monster_y;
+        objects.push(thrown_obj);
+        let animation =
+            Animation::Thrown(obj_id,
+                              Line::new((monster_x, monster_y),
+                                        (player_x, player_y)));
+        animations.push(animation);
+
         took_turn = AiAction::TookTurn;
     } else {
         // can't hit- seek to current player position instead
@@ -116,7 +135,7 @@ pub fn ai_attack(monster_id: usize,
 pub fn ai_seek_take_turn(target_pos_orig: Position, 
                          monster_id: usize,
                          map: &Map,
-                         objects: &mut [Object],
+                         objects: &mut Vec<Object>,
                          fov_map: &FovMap,
                          _messages: &mut Messages) -> AiAction {
     let mut target_pos = target_pos_orig;
@@ -213,9 +232,10 @@ fn ai_take_astar_step(monster_id: ObjectId, monster_pos: (i32, i32), target_pos:
 
 fn basic_ai_take_turn(monster_id: usize,
                       map: &Map,
-                      objects: &mut [Object],
+                      objects: &mut Vec<Object>,
                       fov_map: &FovMap,
-                      messages: &mut Messages) -> AiAction {
+                      messages: &mut Messages,
+                      animations: &mut Vec<Animation>) -> AiAction {
     let (monster_x, monster_y) = objects[monster_id].pos();
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
@@ -242,7 +262,8 @@ fn basic_ai_take_turn(monster_id: usize,
                       map,
                       objects,
                       fov_map,
-                      messages)
+                      messages,
+                      animations)
         }
 
         ref behavior => {
@@ -251,15 +272,20 @@ fn basic_ai_take_turn(monster_id: usize,
     }
 }
 
-pub fn ai_take_turn(monster_id: usize, map: &Map, objects: &mut [Object], fov_map: &FovMap, messages: &mut Messages) {
+pub fn ai_take_turn(monster_id: usize,
+                    map: &Map,
+                    objects: &mut Vec<Object>,
+                    fov_map: &FovMap,
+                    messages: &mut Messages,
+                    animations: &mut Vec<Animation>) {
     match objects[monster_id].ai {
         Some(Ai::Basic) => {
-            let took_turn = basic_ai_take_turn(monster_id, map, objects, fov_map, messages);
+            let took_turn = basic_ai_take_turn(monster_id, map, objects, fov_map, messages, animations);
 
             // allow an extra iteration if the AI didn't take a turn.
             // note that this is not in a loop- only one extra iteration is allowed
             if took_turn == AiAction::DidntTakeTurn {
-                basic_ai_take_turn(monster_id, map, objects, fov_map, messages);
+                basic_ai_take_turn(monster_id, map, objects, fov_map, messages, animations);
             }
         }
 

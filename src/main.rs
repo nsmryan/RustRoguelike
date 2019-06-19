@@ -455,7 +455,7 @@ fn main() {
         if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
             for id in 1..objects.len() {
                 if objects[id].ai.is_some() {
-                    ai_take_turn(id, &map, &mut objects, &game.fov, &mut messages);
+                    ai_take_turn(id, &map, &mut objects, &game.fov, &mut messages, &mut game.animations);
                 }
             }
         }

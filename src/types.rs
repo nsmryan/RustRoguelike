@@ -3,6 +3,7 @@ use tcod::map::{Map as FovMap};
 use tcod::input::Mouse;
 use tcod::colors::*;
 use tcod::line::*;
+use tcod::pathfinding::*;
 
 use crate::constants::*;
 
