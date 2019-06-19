@@ -1,3 +1,5 @@
+use std::num::Wrapping;
+
 #[allow(unused_imports)]use tcod::console::*;
 #[allow(unused_imports)]use tcod::colors::*;
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
@@ -151,6 +153,20 @@ fn print_all_special_char(game: &mut Game) {
 
         index += 1;
     }
+}
+
+pub fn rand_from_x_y(x: i32, y: i32) -> f64 {
+    let mut seed: u64 = (x as u64) << 32;
+    seed |= y as u64;
+    let seed = Wrapping(seed);
+
+    let a = Wrapping(742938285);
+    let e = 31;
+    let m = Wrapping((2^e) -1);
+
+    let result = (seed * a) % m;
+
+    return 1.0 / (result.0 as f64);
 }
 
 pub fn render_all(game: &mut Game,
