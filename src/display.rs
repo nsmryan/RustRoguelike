@@ -163,9 +163,9 @@ pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
     (x as u32).hash(&mut hasher);
     (y as u32).hash(&mut hasher);
  
-    let result = hasher.finish();
+    let result: u64 = hasher.finish();
 
-    return (result as f32) / 4294967296.0;
+    return ((result & 0xFFFFFFFF) as f32) / 4294967295.0;
 }
 
 pub fn render_all(game: &mut Game,
@@ -188,8 +188,8 @@ pub fn render_all(game: &mut Game,
                 (TileType::Wall, true) => config.color_light_wall.color(),
                 (TileType::Wall, false) => config.color_dark_wall.color(),
 
-                (TileType::Empty, true) => lerp(config.color_light_ground_low, config.color_light_ground_high, rand_from_x_y(x, y)),
-                (TileType::Empty, false) => config.color_dark_ground,
+                (TileType::Empty, true) => lerp(config.color_light_ground_low.color(), config.color_light_ground_high.color(), rand_from_x_y(x, y)),
+                (TileType::Empty, false) => config.color_dark_ground.color(),
 
                 (TileType::Water, true) => config.color_light_water.color(),
                 (TileType::Water, false) => config.color_dark_water.color(),
@@ -212,12 +212,6 @@ pub fn render_all(game: &mut Game,
                     TileType::Empty | TileType::Water | TileType::Exit => {
                         game.console.set_char_background(x, y, color, BackgroundFlag::Set);
                     }
-
-                    TileType::Empty | TileType::Exit => {
-                        game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
-                    }
-
-
 
                     TileType::ShortWall | TileType::Wall => {
                         if visible {

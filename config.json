@@ -50,16 +50,13 @@
       "b": 0
     },
     "color_light_ground_low": {
-      "r": 253,
+      "r": 103,
       "g": 223,
-      "b": 173
+      "b": 193
     },
     "color_light_ground_high": {
-      "r": 253,
+      "r": 103,
       "g": 250,
       "b": 200
     }
-
-
-
 }
