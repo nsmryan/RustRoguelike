@@ -3,6 +3,7 @@ use tcod::map::{Map as FovMap};
 use tcod::input::Mouse;
 use tcod::colors::*;
 use tcod::line::*;
+use tcod::pathfinding::*;
 
 use crate::constants::*;
 
@@ -53,22 +54,29 @@ impl Game {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum MonsterType {
+pub enum Reach {
     Single,
     Diag,
 }
 
-impl MonsterType {
+impl Reach {
     pub fn offsets(&self) -> Vec<Position> {
         match self {
-            MonsterType::Single => {
+            Reach::Single => {
                 let offsets = vec!((0,   1), (-1, 1), (-1,  0), (-1, -1), 
                                    (0,  -1), (1, -1), (1,  0),  (1, 1));
                 offsets.iter().map(|pair| Position::from_pair(&pair)).collect()
             },
 
-            MonsterType::Diag => {
+            Reach::Diag => {
                 let offsets = vec!((1, 1), (1, -1), (-1, 1), (-1, -1));
+                let mut offsets = vec!();
+                for dist in 1..5 {
+                    offsets.push((dist, dist));
+                    offsets.push((-1 * dist, dist));
+                    offsets.push((dist, -1 * dist));
+                    offsets.push((-1 * dist, -1 * dist));
+                }
                 offsets.iter().map(|pair| Position::from_pair(pair)).collect()
             },
         }
@@ -89,7 +97,8 @@ pub struct Object {
     pub behavior: Option<Behavior>,
     pub item: Option<Item>,
     pub momentum: Option<Momentum>,
-    pub monster: Option<MonsterType>,
+    pub movement: Option<Reach>,
+    pub attack: Option<Reach>,
 }
 
 impl Object {
@@ -107,7 +116,8 @@ impl Object {
             behavior: None,
             item: None,        
             momentum: None,
-            monster: None,
+            movement: None,
+            attack: None,
         }
     }
 
@@ -260,20 +270,13 @@ impl Obstacle {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Ai {
     Basic,
-    Smart,
-    Patrol,
-    Guard,
-    Passive,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Behavior {
     Idle,
     Seeking(Position),
-    SmartSearch(AwarenessMap),
-    SmartSeeking(AwarenessMap),
-    Patrol(Vec<Position>, usize, PatrolDir),
-    Guard(Position),
+    Attacking,
     Alert,
 }
 
@@ -355,6 +358,13 @@ pub enum PlayerAction {
     TookTurn,
     DidntTakeTurn,
     Exit,
+}
+
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AiAction {
+    TookTurn,
+    DidntTakeTurn,
 }
 
 

@@ -104,9 +104,6 @@ pub fn near_tile_type(map: &Map, position: Position, tile_type: TileType) -> boo
 pub fn make_map(objects: &mut Vec<Object>, config: &Config) -> (Map, Position) {
     let mut map = Map::with_vec(vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize]);
 
-    /* Generate rooms, from tutorial */
-    //let starting_position = make_rooms(&mut map, objects);
-
     let starting_position = make_island(&mut map, objects, config);
 
     (map, starting_position)
@@ -121,12 +118,18 @@ pub fn random_position() -> Position {
     Position(rand::thread_rng().gen_range(0, MAP_WIDTH), rand::thread_rng().gen_range(0, MAP_HEIGHT))
 }
 
+pub fn pos_in_radius(pos: Position, radius: i32) -> Position {
+    return Position(pos.0 + rand::thread_rng().gen_range(-radius, radius),
+                    pos.1 + rand::thread_rng().gen_range(-radius, radius));
+}
+
 pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) -> Position {
     let center = Position(MAP_WIDTH/2, MAP_HEIGHT/2);
 
     let mut water_tile_positions = Vec::new();
 
-    // Fill island with land, and rest of map with water
+    /* Create Island */
+    // the center has land, the remaining square are filled with water
     for x in 0..MAP_WIDTH {
         for y in 0..MAP_HEIGHT {
             let pos = Position(x, y);
@@ -139,7 +142,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         }
     }
 
-    // add obstacles
+    /* add obstacles */
     let obstacles = Obstacle::all_obstacles();
 
     for _ in 0..ISLAND_NUM_OBSTACLES {
@@ -154,28 +157,25 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         }
     }
 
-    // add buildings
+    /* add buildings */
     for _ in 0..rand::thread_rng().gen_range(3, 5) {
         let rand_pos = random_offset();
         let pos = Position(center.0 + rand_pos.0, center.1 + rand_pos.1);
         add_obstacle(map, &pos, Obstacle::Building);
     }
 
-
-    // random subtraction
+    /* random subtraction */
     for _ in 0..ISLAND_NUM_SUBTRACTIONS_ATTEMPTS {
-        let pos = Position(center.0 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
-        center.1 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS));
+        let pos = pos_in_radius(center, ISLAND_RADIUS);
 
         if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
             map.0[pos.0 as usize][pos.1 as usize] = Tile::empty();
         }
     }
 
-    // random additions
+    /* random additions */
     for _ in 0..ISLAND_NUM_ADDITION_ATTEMPTS {
-        let pos = Position(center.0 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
-        center.1 + rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS));
+        let pos = pos_in_radius(center, ISLAND_RADIUS);
         let obstacle = *rand::thread_rng().choose(&obstacles).unwrap();
 
         if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
@@ -183,23 +183,21 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         }
     }
 
-    // random stones
+    /* random stones */
     let mut rng = rand::thread_rng();
     for _ in 0..10 {
-        let x = rng.gen_range(0, MAP_WIDTH);
-        let y = rng.gen_range(0, MAP_HEIGHT);
+        let pos = pos_in_radius(center, ISLAND_RADIUS);
 
-        if map.is_empty(x, y, &objects) {
-            let mut stone = Object::make_stone(x, y);
+        if map.is_empty(pos.0, pos.1, &objects) {
+            let mut stone = Object::make_stone(pos.0, pos.1);
             stone.item = Some(Item::Stone);
             objects.push(stone);
         }
     }
 
-    // add monsters
+    /* add monsters */
     loop {
-        let x = rand::thread_rng().gen_range(0, MAP_WIDTH);
-        let y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+        let (x, y) = pos_in_radius(center, ISLAND_RADIUS).pair();
 
         if !map.is_blocked(x, y, objects) {
             let mut monster = if rand::random::<f32>() < 1.0 {
@@ -208,7 +206,8 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
                 orc.ai = Some(Ai::Basic);
                 orc.behavior = Some(Behavior::Idle);
                 orc.color = config.color_orc.color();
-                orc.monster = Some(MonsterType::Single);
+                orc.movement = Some(Reach::Single);
+                orc.attack = Some(Reach::Diag);
                 orc
             } else {
                 let mut troll = Object::new(x, y, 'T', "troll", DARKER_GREEN, true);
@@ -216,7 +215,8 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
                 troll.ai = Some(Ai::Basic);
                 troll.behavior = Some(Behavior::Idle);
                 troll.color = config.color_troll.color();
-                troll.monster = Some(MonsterType::Single);
+                troll.movement = Some(Reach::Single);
+                troll.attack = Some(Reach::Diag);
                 troll
             };
 
@@ -250,18 +250,18 @@ let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
         }
     }
 
-    // add goal object
-    let mut x = rand::thread_rng().gen_range(0, MAP_WIDTH);
-    let mut y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+    /* add goal object */
+    let (mut x, mut y) = pos_in_radius(center, ISLAND_RADIUS).pair();
     while !map.is_empty(x, y, &objects) {
-        x = rand::thread_rng().gen_range(0, MAP_WIDTH);
-        y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+        let pos = pos_in_radius(center, ISLAND_RADIUS).pair();
+        x = pos.0;
+        y = pos.1;
     }
     let mut object = Object::new(x, y, '\u{FD}', "goal", RED, false);
     object.item = Some(Item::Goal);
     objects.push(object);
 
-    // add exit
+    /* add exit */
     // find edge of island
     let map_size = map.size();
     let mut edge_positions = Vec::new();
@@ -273,19 +273,13 @@ let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
             }
         }
     }
+    // choose a random edge position
     let edge_pos = edge_positions[rand::thread_rng().gen_range(0, edge_positions.len())];
+
+    // make the random edge position the exit
     map.0[edge_pos.0 as usize][edge_pos.1 as usize] = Tile::exit();
 
-    // Test smart Ai
-    /*
-    let pos = random_position();
-    let mut smart = Object::new(pos.0, pos.1, 'g', "guard", DARK_BLUE, true);
-    smart.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 4, on_death: DeathCallback::Monster } );
-    smart.ai = Some(Ai::Smart);
-    smart.behavior = Some(Behavior::SmartSearch(AwarenessMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize)));
-    objects.push(smart);
-    */
-
+    /* Ensure that objects placed outside of the island are removed */
     for pos in water_tile_positions {
         map[pos].tile_type = TileType::Water;
     }
@@ -377,121 +371,5 @@ pub fn add_obstacle(map: &mut Map, pos: &Position, obstacle: Obstacle) {
             }
         }
     }
-}
-
-pub fn make_rooms(map: &mut Map, objects: &mut Vec<Object>) -> Position {
-    let mut starting_position = (0, 0);
-
-    let mut rooms = vec![];
-
-    for _ in 0..MAX_ROOMS {
-        let w = rand::thread_rng().gen_range(ROOM_MIN_SIZE, ROOM_MAX_SIZE + 1);
-        let h = rand::thread_rng().gen_range(ROOM_MIN_SIZE, ROOM_MAX_SIZE + 1);
-
-        let x = rand::thread_rng().gen_range(0, MAP_WIDTH - w);
-        let y = rand::thread_rng().gen_range(0, MAP_HEIGHT - h);
-
-        let new_room = Rect::new(x, y, w, h);
-
-        let failed = rooms.iter().any(|other_room| new_room.intersects_with(other_room));
-
-        if !failed {
-            create_room(new_room, map);
-            place_objects(new_room, map, objects);
-
-            let (new_x, new_y) = new_room.center();
-            if rooms.is_empty() {
-                starting_position = (new_x, new_y)
-            } else {
-                let (prev_x, prev_y) = rooms[rooms.len()-1].center();
-
-                if rand::random() {
-                    create_h_tunnel(prev_x, new_x, prev_y, map);
-                    create_v_tunnel(prev_y, new_y, prev_x, map);
-                } else {
-                    create_v_tunnel(prev_y, new_y, prev_x, map);
-                    create_h_tunnel(prev_x, new_x, prev_y, map);
-                }
-            }
-
-            rooms.push(new_room)
-        }
-    }
-
-    Position(starting_position.0, starting_position.1)
-}
-
-pub fn create_h_tunnel(x1: i32, x2: i32, y: i32, map: &mut Map) {
-    for x in cmp::min(x1, x2)..(cmp::max(x1, x2)+1) {
-        map.0[x as usize][y as usize] = Tile::empty();
-    }
-}
-
-pub fn create_v_tunnel(y1: i32, y2: i32, x: i32, map: &mut Map) {
-    for y in cmp::min(y1, y2)..(cmp::max(y1, y2)+1) {
-        map.0[x as usize][y as usize] = Tile::empty();
-    }
-}
-
-pub fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
-    let num_monsters = rand::thread_rng().gen_range(0, MAX_ROOM_MONSTERS + 1);
-
-    for _ in 0..num_monsters {
-        let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
-        let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
-
-        if !map.is_blocked(x, y, objects) {
-            let mut monster = if rand::random::<f32>() < 0.8 {
-                let mut orc = Object::new(x, y, 'o', "orc", DESATURATED_GREEN, true);
-                orc.fighter = Some(Fighter{max_hp: 10, hp: 10, defense: 0, power: 3, on_death: DeathCallback::Monster });
-                orc.ai = Some(Ai::Basic);
-                orc.behavior = Some(Behavior::Idle);
-                orc
-            } else {
-                let mut troll = Object::new(x, y, 'T', "troll", DARKER_GREEN, true);
-                troll.fighter = Some(Fighter{max_hp: 16, hp: 16, defense: 1, power: 4, on_death: DeathCallback::Monster });
-                troll.ai = Some(Ai::Basic);
-                troll.behavior = Some(Behavior::Idle);
-                troll
-            };
-
-            monster.alive = true;
-
-            objects.push(monster);
-        }
-    }
-
-    let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
-
-    for _ in 0..num_items {
-        let x = rand::thread_rng().gen_range(room.x1 + 1, room.x2);
-        let y = rand::thread_rng().gen_range(room.y1 + 1, room.y2);
-
-        if !map.is_blocked(x, y, objects) {
-            let mut object = Object::new(x, y, '!', "healing potion", VIOLET, false);
-            object.item = Some(Item::Heal);
-            objects.push(object);
-        }
-    }
-}
-
-fn create_room(room: Rect, map: &mut Map) {
-    for x in (room.x1 + 1)..room.x2 {
-        for y in (room.y1 + 1)..room.y2 {
-            map.0[x as usize][y as usize] = Tile::empty();
-        }
-    }
-
-    for x in room.x1..room.x2 {
-        map.0[x as usize][room.y1 as usize] = Tile::wall();
-        map.0[x as usize][room.y2 as usize] = Tile::wall();
-    }
-
-    for y in room.y1..room.y2 {
-        map.0[room.x1 as usize][y as usize] = Tile::wall();
-        map.0[room.x2 as usize][y as usize] = Tile::wall();
-    }
-
-    map.0[room.x2 as usize][room.y2 as usize] = Tile::wall();
 }
 

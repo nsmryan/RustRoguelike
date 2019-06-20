@@ -1,4 +1,6 @@
 use std::num::Wrapping;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{BuildHasher, Hash, Hasher};
 
 #[allow(unused_imports)]use tcod::console::*;
 #[allow(unused_imports)]use tcod::colors::*;
@@ -156,17 +158,14 @@ fn print_all_special_char(game: &mut Game) {
 }
 
 pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
-    let mut seed: u64 = (x as u64) << 32;
-    seed |= y as u64;
-    let seed = Wrapping(seed);
+    let mut hasher = DefaultHasher::new();
 
-    let a = Wrapping(742938285);
-    let e = 31;
-    let m = Wrapping((2^e) -1);
+    (x as u32).hash(&mut hasher);
+    (y as u32).hash(&mut hasher);
+ 
+    let result: u64 = hasher.finish();
 
-    let result = (seed * a) % m;
-
-    return 1.0 / (result.0 as f32);
+    return ((result & 0xFFFFFFFF) as f32) / 4294967295.0;
 }
 
 pub fn render_all(game: &mut Game,
@@ -186,23 +185,20 @@ pub fn render_all(game: &mut Game,
 
             // Color based on TileType and visibility
             let color = match (map.0[x as usize][y as usize].tile_type, visible) {
-                (TileType::Wall, true) => config.color_light_wall,
-                (TileType::Wall, false) => config.color_dark_wall,
+                (TileType::Wall, true) => config.color_light_wall.color(),
+                (TileType::Wall, false) => config.color_dark_wall.color(),
 
-                (TileType::Empty, true) => ColorConfig::from_color(lerp(config.color_light_ground_low.color(), config.color_light_ground_high.color(), rand_from_x_y(x, y))),
-                (TileType::Empty, false) => config.color_dark_ground,
+                (TileType::Empty, true) => lerp(config.color_light_ground_low.color(), config.color_light_ground_high.color(), rand_from_x_y(x, y)),
+                (TileType::Empty, false) => config.color_dark_ground.color(),
 
-                (TileType::Water, true) => config.color_light_water,
-                (TileType::Water, false) => config.color_dark_water,
+                (TileType::Water, true) => config.color_light_water.color(),
+                (TileType::Water, false) => config.color_dark_water.color(),
 
-                (TileType::Exit, true) => config.color_light_exit,
-                (TileType::Exit, false) => config.color_dark_exit,
+                (TileType::ShortWall, true) => config.color_light_wall.color(),
+                (TileType::ShortWall, false) => config.color_dark_wall.color(),
 
-                (TileType::ShortWall, true) => config.color_light_wall,
-                (TileType::ShortWall, false) => config.color_dark_wall,
-
-                (TileType::Exit, true) => config.color_light_exit,
-                (TileType::Exit, false) => config.color_dark_exit,
+                (TileType::Exit, true) => config.color_light_exit.color(),
+                (TileType::Exit, false) => config.color_dark_exit.color(),
             };
 
             let mut explored = map.0[x as usize][y as usize].explored;
@@ -214,14 +210,8 @@ pub fn render_all(game: &mut Game,
                 let tile_type = map.0[x as usize][y as usize].tile_type;
                 match tile_type {
                     TileType::Empty | TileType::Water | TileType::Exit => {
-                        game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
+                        game.console.set_char_background(x, y, color, BackgroundFlag::Set);
                     }
-
-                    TileType::Empty | TileType::Exit => {
-                        game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
-                    }
-
-
 
                     TileType::ShortWall | TileType::Wall => {
                         if visible {
@@ -242,7 +232,7 @@ pub fn render_all(game: &mut Game,
                         if tile_type == TileType::Wall {
                             if horiz && vert {
                                chr = '\u{DC}';
-                               game.console.set_char_background(x, y, color.color(), BackgroundFlag::Set);
+                               game.console.set_char_background(x, y, color, BackgroundFlag::Set);
                             } else if horiz {
                                chr = '\u{DF}';
                             } else if vert {
@@ -262,7 +252,7 @@ pub fn render_all(game: &mut Game,
                             }
                         };
 
-                        game.console.set_default_foreground(color.color());
+                        game.console.set_default_foreground(color);
                         game.console.put_char(x, y, chr, BackgroundFlag::None);
                     }
                 }
@@ -284,14 +274,28 @@ pub fn render_all(game: &mut Game,
 
     let ids = get_objects_under_mouse(game.mouse, objects, &game.fov);
     for id in ids {
-        if let Some(monsterType) = objects[id].monster {
-            let offsets = monsterType.offsets();
+        if let Some(movement) = objects[id].movement {
+            let offsets = movement.offsets();
             for offset in offsets {
                 let x = game.mouse.cx as i32 + offset.0;
                 let y = game.mouse.cy as i32 + offset.1;
                 game.console.put_char(x,
                                       y,
                                       '.',
+                                      BackgroundFlag::None);
+
+                game.needs_clear.push((x, y));
+            }
+        }
+
+        if let Some(attack) = objects[id].attack {
+            let offsets = attack.offsets();
+            for offset in offsets {
+                let x = game.mouse.cx as i32 + offset.0;
+                let y = game.mouse.cy as i32 + offset.1;
+                game.console.put_char(x,
+                                      y,
+                                      'x',
                                       BackgroundFlag::None);
 
                 game.needs_clear.push((x, y));
