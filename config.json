@@ -20,14 +20,14 @@
       "b": 7
     },    
     "color_dark_ground": {
-      "r": 2,
-      "g": 22,
-      "b": 38
+      "r": 1,
+      "g": 10,
+      "b": 18
     },
     "color_light_ground": {
-      "r": 20,
-      "g": 50,
-      "b": 75
+      "r": 2,
+      "g": 17,
+      "b": 35
     },
     "color_light_water": {
       "r": 110,
@@ -50,14 +50,14 @@
       "b": 0
     },
     "color_light_ground_low": {
-      "r": 253,
-      "g": 223,
-      "b": 173
+      "r": 2,
+      "g": 17,
+      "b": 35
     },
     "color_light_ground_high": {
-      "r": 253,
-      "g": 250,
-      "b": 200
+      "r": 4,
+      "g": 30,
+      "b": 50
     }
 
 

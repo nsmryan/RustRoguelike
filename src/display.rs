@@ -155,7 +155,7 @@ fn print_all_special_char(game: &mut Game) {
     }
 }
 
-pub fn rand_from_x_y(x: i32, y: i32) -> f64 {
+pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
     let mut seed: u64 = (x as u64) << 32;
     seed |= y as u64;
     let seed = Wrapping(seed);
@@ -166,7 +166,7 @@ pub fn rand_from_x_y(x: i32, y: i32) -> f64 {
 
     let result = (seed * a) % m;
 
-    return 1.0 / (result.0 as f64);
+    return 1.0 / (result.0 as f32);
 }
 
 pub fn render_all(game: &mut Game,
@@ -189,7 +189,7 @@ pub fn render_all(game: &mut Game,
                 (TileType::Wall, true) => config.color_light_wall,
                 (TileType::Wall, false) => config.color_dark_wall,
 
-                (TileType::Empty, true) => lerp(config.color_light_ground_low, config.color_light_ground_high, rand_from_x_y(x, y)),
+                (TileType::Empty, true) => ColorConfig::from_color(lerp(config.color_light_ground_low.color(), config.color_light_ground_high.color(), rand_from_x_y(x, y))),
                 (TileType::Empty, false) => config.color_dark_ground,
 
                 (TileType::Water, true) => config.color_light_water,
