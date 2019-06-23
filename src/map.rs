@@ -202,7 +202,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         if !map.is_blocked(x, y, objects) {
             let mut monster = if rand::random::<f32>() < 1.0 {
                 let mut orc = Object::new(x, y, 'o', "orc", DESATURATED_GREEN, true);
-                orc.fighter = Some( Fighter { max_hp: 10, hp: 10, defense: 0, power: 3, on_death: DeathCallback::Monster } );
+                orc.fighter = Some( Fighter { max_hp: 10, hp: 10, defense: 0, power: 15, on_death: DeathCallback::Monster } );
                 orc.ai = Some(Ai::Basic);
                 orc.behavior = Some(Behavior::Idle);
                 orc.color = config.color_orc.color();

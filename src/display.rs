@@ -234,9 +234,9 @@ pub fn render_all(game: &mut Game,
                                chr = '\u{DC}';
                                game.console.set_char_background(x, y, color, BackgroundFlag::Set);
                             } else if horiz {
-                               chr = '\u{DF}';
+                               chr = '\u{EC}';
                             } else if vert {
-                               chr = '\u{DD}';
+                               chr = '\u{ED}';
                             } else {
                                chr = '\u{DC}';
                             }
