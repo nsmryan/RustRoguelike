@@ -86,9 +86,6 @@ fn handle_input(game: &mut Game,
             }
         }
 
-        // clear left mouse button, as the click was handled already
-        game.mouse.lbutton_pressed = false;
-
         dbg!(());
         TookTurn
     } else {
@@ -418,7 +415,10 @@ fn main() {
         match input::check_for_event(input::MOUSE | input::KEY_PRESS) {
             Some((_, Event::Mouse(m))) => game.mouse = m,
             Some((_, Event::Key(k))) => key = k,
-            _ => key = Default::default(),
+            _ => {
+                key = Default::default();
+                game.mouse = Default::default();
+            },
         }
 
         /* Display */
