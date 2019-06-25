@@ -151,9 +151,6 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
         target_pos = player_pos;
 
         if let Some(hit_pos) = ai_can_hit_player(monster_id, objects) {
-            // TODO we should return something or call something
-            // to indicate that we also want to perform an attack.
-            // This way the monster attacks when you get into its reach
             objects[monster_id].behavior = Some(Behavior::Attacking);
 
             took_turn = AiAction::DidntTakeTurn;
