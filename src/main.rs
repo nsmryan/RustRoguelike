@@ -86,6 +86,10 @@ fn handle_input(game: &mut Game,
             }
         }
 
+        // clear left mouse button, as the click was handled already
+        game.mouse.lbutton_pressed = false;
+
+        dbg!(());
         TookTurn
     } else {
         match (key, player_alive) {
@@ -93,6 +97,7 @@ fn handle_input(game: &mut Game,
             (Key { code: Number8, .. }, true)  |
             (Key { code: NumPad8, .. }, true) => {
                 player_move_or_attack(0, -1, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
 
@@ -100,12 +105,14 @@ fn handle_input(game: &mut Game,
             (Key { code: Number2, .. }, true) |
             (Key { code: NumPad2, .. }, true) => {
                 player_move_or_attack(0, 1, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
             (Key { code: Left,    .. }, true) |
             (Key { code: Number4, .. }, true) |
             (Key { code: NumPad4, .. }, true) => {
                 player_move_or_attack(-1, 0, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
 
@@ -113,36 +120,42 @@ fn handle_input(game: &mut Game,
             (Key { code: Number6, .. }, true) |
             (Key { code: NumPad6, .. }, true) => {
                 player_move_or_attack(1, 0, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
 
             (Key { code: Number9, .. }, true)  |
             (Key { code: NumPad9, .. }, true) => {
                 player_move_or_attack(1, -1, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
 
             (Key { code: Number3, .. }, true) |
             (Key { code: NumPad3, .. }, true) => {
                 player_move_or_attack(1, 1, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
 
             (Key { code: Number1, .. }, true) |
             (Key { code: NumPad1, .. }, true) => {
                 player_move_or_attack(-1, 1, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
 
             (Key { code: Number7, .. }, true) |
             (Key { code: NumPad7, .. }, true) => {
                 player_move_or_attack(-1, -1, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
 
             (Key { code: Number5, .. }, true) |
             (Key { code: NumPad5, .. }, true) => {
                 objects[PLAYER].momentum = Some((0, 0));
+                dbg!(());
                 TookTurn
             }
 
@@ -467,7 +480,6 @@ fn main() {
 
         /* AI */
         if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
-            println!("PlayerAction = {:?}", player_action);
             for id in 1..objects.len() {
                 if objects[id].ai.is_some() {
                     ai_take_turn(id, &map, &mut objects, &game.fov, &mut messages, &mut game.animations);

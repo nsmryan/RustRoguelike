@@ -274,6 +274,7 @@ pub fn render_all(game: &mut Game,
 
     let ids = get_objects_under_mouse(game.mouse, objects, &game.fov);
     for id in ids {
+        // draw enemy movement positions
         if let Some(movement) = objects[id].movement {
             let offsets = movement.offsets();
             for offset in offsets {
@@ -288,11 +289,13 @@ pub fn render_all(game: &mut Game,
             }
         }
 
+        // draw enemy attack positions
         if let Some(attack) = objects[id].attack {
             let offsets = attack.offsets();
             for offset in offsets {
                 let x = game.mouse.cx as i32 + offset.0;
                 let y = game.mouse.cy as i32 + offset.1;
+                // TODO don't draw if blocked before reaching player
                 game.console.put_char(x,
                                       y,
                                       'x',

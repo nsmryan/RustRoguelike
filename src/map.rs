@@ -81,10 +81,10 @@ pub fn near_tile_type(map: &Map, position: Position, tile_type: TileType) -> boo
         = vec!((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1));
 
     /*
-     neighbor_offsets.iter()
-                     .map(|offset| position.add(Position(offset.0, offset.1)))
-                     .any(|pos| map[pos].tile_type == tile_type)
-    */
+       neighbor_offsets.iter()
+       .map(|offset| position.add(Position(offset.0, offset.1)))
+       .any(|pos| map[pos].tile_type == tile_type)
+       */
 
     let mut near_given_tile = false;
 
@@ -110,7 +110,7 @@ pub fn make_map(objects: &mut Vec<Object>, config: &Config) -> (Map, Position) {
 
 pub fn random_offset() -> Position {
     Position(rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
-             rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS))
+    rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS))
 }
 
 pub fn random_position() -> Position {
@@ -119,7 +119,7 @@ pub fn random_position() -> Position {
 
 pub fn pos_in_radius(pos: Position, radius: i32) -> Position {
     return Position(pos.0 + rand::thread_rng().gen_range(-radius, radius),
-                    pos.1 + rand::thread_rng().gen_range(-radius, radius));
+    pos.1 + rand::thread_rng().gen_range(-radius, radius));
 }
 
 pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) -> Position {
@@ -219,26 +219,26 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
                 troll
             };
 
-let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
+            let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
 
-    for _ in 0..num_items {
-        let x = rand::thread_rng().gen_range(0, MAP_WIDTH);
-        let y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+            for _ in 0..num_items {
+                let x = rand::thread_rng().gen_range(0, MAP_WIDTH);
+                let y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
 
-        if !map.is_blocked(x, y, objects) {
-            let mut object = Object::new(x, y, '!', "healing potion", VIOLET, false);
-            object.item = Some(Item::Heal);
-            objects.push(object);
-        }
-    }
-        let x = rand::thread_rng().gen_range(0, MAP_WIDTH);
-        let y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
-            
-        if !map.is_blocked(x, y, objects) {
-            let mut object = Object::new(x,y, '\u{FD}', "goal", RED, false);
-            object.item = Some(Item::Goal);
-            objects.push(object);
-        }
+                if !map.is_blocked(x, y, objects) {
+                    let mut object = Object::new(x, y, '!', "healing potion", VIOLET, false);
+                    object.item = Some(Item::Heal);
+                    objects.push(object);
+                }
+            }
+            let x = rand::thread_rng().gen_range(0, MAP_WIDTH);
+            let y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+
+            if !map.is_blocked(x, y, objects) {
+                let mut object = Object::new(x,y, '\u{FD}', "goal", RED, false);
+                object.item = Some(Item::Goal);
+                objects.push(object);
+            }
 
 
             monster.alive = true;
