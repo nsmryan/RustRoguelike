@@ -31,6 +31,8 @@ pub const MAX_MONSTERS: i32 = 15;
 pub const PLAYER: usize = 0;
 pub const MAX_MOMENTUM: i32 = 2;
 
+pub const PLAYER_THROW_DIST: i32 = 5;
+
 pub const BAR_WIDTH: i32 = 20;
 pub const PANEL_HEIGHT: i32 = 7;
 pub const PANEL_Y: i32 = SCREEN_HEIGHT - PANEL_HEIGHT;

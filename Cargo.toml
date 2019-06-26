@@ -14,3 +14,11 @@ num = "0.2"
 timer = "0.2"
 chrono = "0.4"
 rodio = "0.8"
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.release]
+opt-level = 3
+debug = false

@@ -3,7 +3,6 @@ use tcod::map::{Map as FovMap};
 use tcod::input::Mouse;
 use tcod::colors::*;
 use tcod::line::*;
-use tcod::pathfinding::*;
 
 use crate::constants::*;
 
@@ -155,9 +154,13 @@ impl Object {
     }
 
     pub fn distance_to(&self, other: &Object) -> f32 {
-        let dx = other.x - self.x;
-        let dy = other.y - self.y;
-        ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
+        return self.distance(&Position::new(other.x, other.y));
+    }
+
+    pub fn distance(&self, other: &Position) -> f32 {
+        let dx = other.0 - self.x;
+        let dy = other.1 - self.y;
+        return ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
     }
 
     pub fn take_damage(&mut self, damage: i32) {

@@ -37,6 +37,8 @@ use timer::*;
 
 use rodio::Source;
 
+use num::clamp;
+
 use types::*;
 use constants::*;
 use display::*;
@@ -60,18 +62,31 @@ fn handle_input(game: &mut Game,
             if inventory[index].item == Some(Item::Stone) {
                 let mut item = inventory.swap_remove(index);
                 let obj_id = objects.len();
-                item.x = objects[PLAYER].x;
-                item.y = objects[PLAYER].y;
+
+                // TODO this enforces a square limit, not a radius, on throw distance
+                let start_x = objects[PLAYER].x;
+                let start_y = objects[PLAYER].y;
+                let end_x = mx as i32 / FONT_WIDTH;
+                let end_y = my as i32 / FONT_HEIGHT;
+                let throw_dist =
+                    Position::new(start_x, start_y).distance(&Position::new(end_x, end_y));
+                let target_x = start_x + clamp(end_x - start_x, -PLAYER_THROW_DIST, PLAYER_THROW_DIST);
+                let target_y = start_y + clamp(end_y - start_y, -PLAYER_THROW_DIST, PLAYER_THROW_DIST);
+
+                item.x = start_x;
+                item.y = start_y;
                 objects.push(item);
+
                 let animation =
                     Animation::Thrown(obj_id,
-                                      Line::new((objects[PLAYER].x, objects[PLAYER].y),
-                                                (mx as i32 / FONT_WIDTH, my as i32 / FONT_HEIGHT)));
+                                      Line::new((start_x, start_y),
+                                                (target_x, target_y)));
                 game.animations.push(animation);
                 break;
             }
         }
 
+        dbg!(());
         TookTurn
     } else {
         match (key, player_alive) {
@@ -79,6 +94,7 @@ fn handle_input(game: &mut Game,
             (Key { code: Number8, .. }, true)  |
             (Key { code: NumPad8, .. }, true) => {
                 player_move_or_attack(0, -1, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
 
@@ -86,12 +102,14 @@ fn handle_input(game: &mut Game,
             (Key { code: Number2, .. }, true) |
             (Key { code: NumPad2, .. }, true) => {
                 player_move_or_attack(0, 1, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
             (Key { code: Left,    .. }, true) |
             (Key { code: Number4, .. }, true) |
             (Key { code: NumPad4, .. }, true) => {
                 player_move_or_attack(-1, 0, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
 
@@ -99,36 +117,42 @@ fn handle_input(game: &mut Game,
             (Key { code: Number6, .. }, true) |
             (Key { code: NumPad6, .. }, true) => {
                 player_move_or_attack(1, 0, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
 
             (Key { code: Number9, .. }, true)  |
             (Key { code: NumPad9, .. }, true) => {
                 player_move_or_attack(1, -1, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
 
             (Key { code: Number3, .. }, true) |
             (Key { code: NumPad3, .. }, true) => {
                 player_move_or_attack(1, 1, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
 
             (Key { code: Number1, .. }, true) |
             (Key { code: NumPad1, .. }, true) => {
                 player_move_or_attack(-1, 1, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
 
             (Key { code: Number7, .. }, true) |
             (Key { code: NumPad7, .. }, true) => {
                 player_move_or_attack(-1, -1, map, objects, messages);
+        dbg!(());
                 TookTurn
             }
 
             (Key { code: Number5, .. }, true) |
             (Key { code: NumPad5, .. }, true) => {
                 objects[PLAYER].momentum = Some((0, 0));
+                dbg!(());
                 TookTurn
             }
 
@@ -391,7 +415,10 @@ fn main() {
         match input::check_for_event(input::MOUSE | input::KEY_PRESS) {
             Some((_, Event::Mouse(m))) => game.mouse = m,
             Some((_, Event::Key(k))) => key = k,
-            _ => key = Default::default(),
+            _ => {
+                key = Default::default();
+                game.mouse = Default::default();
+            },
         }
 
         /* Display */
