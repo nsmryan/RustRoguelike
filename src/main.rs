@@ -270,7 +270,7 @@ fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], me
         }
     }
 }
-
+//if we want to use a character sprite, a potential value is '\u{8B}'
 pub fn make_player() -> Object {
     let mut player = Object::new(0, 0, '@', "player", WHITE, true);
     player.alive = true;

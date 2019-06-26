@@ -57,6 +57,7 @@ impl Game {
 pub enum Reach {
     Single,
     Diag,
+    Horiz,
 }
 
 impl Reach {
@@ -67,6 +68,19 @@ impl Reach {
                                    (0,  -1), (1, -1), (1,  0),  (1, 1));
                 offsets.iter().map(|pair| Position::from_pair(&pair)).collect()
             },
+
+            Reach::Horiz => {
+                let offsets = vec!((1,   0), (0, 1), (-1,  0), (0, -1));
+                let mut offsets = vec!();
+                for dist in 1..5 {
+                    offsets.push((dist, 0));
+                    offsets.push((0, dist));
+                    offsets.push((-1 * dist, 0));
+                    offsets.push((0, -1 * dist));
+                }
+                offsets.iter().map(|pair| Position::from_pair(pair)).collect()
+            },
+
 
             Reach::Diag => {
                 let offsets = vec!((1, 1), (1, -1), (-1, 1), (-1, -1));
@@ -198,41 +212,41 @@ pub struct Tile {
 impl Tile {
     pub fn empty() -> Self {
         Tile { blocked: false,
-               block_sight: false,
-               explored: false,
-               tile_type: TileType::Empty,
+        block_sight: false,
+        explored: false,
+        tile_type: TileType::Empty,
         }
     }
 
     pub fn water() -> Self {
         Tile { blocked: true,
-               block_sight: false,
-               explored: false,
-               tile_type: TileType::Water,
+        block_sight: false,
+        explored: false,
+        tile_type: TileType::Water,
         }
     }
 
     pub fn wall() -> Self {
         Tile { blocked: true,
-               block_sight: true,
-               explored: false,
-               tile_type: TileType::Wall,
+        block_sight: true,
+        explored: false,
+        tile_type: TileType::Wall,
         }
     }
 
     pub fn short_wall() -> Self {
         Tile { blocked: true,
-               block_sight: false,
-               explored: false,
-               tile_type: TileType::ShortWall,
+        block_sight: false,
+        explored: false,
+        tile_type: TileType::ShortWall,
         }
     }
 
     pub fn exit() -> Self {
         Tile { blocked: false,
-               block_sight: false,
-               explored: false,
-               tile_type: TileType::Exit,
+        block_sight: false,
+        explored: false,
+        tile_type: TileType::Exit,
         }
     }
 
@@ -325,13 +339,13 @@ impl AwarenessMap {
             for x in 0..self.width {
                 let potential_positions =
                     vec![(x + 1, y),     (x + 1, y + 1), (x + 1, y - 1),
-                         (x,     y + 1), (x,     y - 1), (x - 1, y),
-                         (x - 1, y + 1), (x - 1, y - 1)];
+                    (x,     y + 1), (x,     y - 1), (x - 1, y),
+                    (x - 1, y + 1), (x - 1, y - 1)];
                 let potential_positions =
                     potential_positions.iter()
-                                       .filter(|(x, y)| *x < self.width && *y < self.height)
-                                       .filter(|(x, y)| self.weights[*y as usize][*x as usize] > 0.0);
-                                       //.collect::Vec<(i32, i32)>();
+                    .filter(|(x, y)| *x < self.width && *y < self.height)
+                    .filter(|(x, y)| self.weights[*y as usize][*x as usize] > 0.0);
+                //.collect::Vec<(i32, i32)>();
 
             }
         }
@@ -442,9 +456,9 @@ impl Rect {
 
     pub fn intersects_with(&self, other: &Rect) -> bool {
         (self.x1 <= other.x2) &&
-        (self.x2 >= other.x1) &&
-        (self.y1 <= other.y2) &&
-        (self.y2 >= other.y1)
+            (self.x2 >= other.x1) &&
+            (self.y1 <= other.y2) &&
+            (self.y2 >= other.y1)
     }
 }
 
@@ -505,8 +519,8 @@ impl ColorConfig {
 
     pub fn from_color(color: Color) -> ColorConfig {
         ColorConfig { r: color.r,
-                      g: color.g,
-                      b: color.b,
+        g: color.g,
+        b: color.b,
         }
     }
 }
@@ -522,7 +536,7 @@ pub struct Config {
     pub color_light_water: ColorConfig,
     pub color_dark_exit: ColorConfig,
     pub color_light_exit: ColorConfig,
-    
+    pub color_kobold: ColorConfig,    
     pub color_light_ground_low: ColorConfig,
     pub color_light_ground_high: ColorConfig,
     pub color_orc: ColorConfig,

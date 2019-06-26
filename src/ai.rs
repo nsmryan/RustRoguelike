@@ -6,13 +6,50 @@ use num::clamp;
 #[allow(unused_imports)]use tcod::pathfinding::*;
 use tcod::line::*;
 
+use tcod::colors::*;
 use crate::constants::*;
 use crate::types::*;
 use crate::map::*;
 
 
-pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) {
-    let (x, y) = objects[PLAYER].pos();
+pub fn make_orc(config: &Config, x: i32, y :i32) -> Object {
+    let mut orc = Object::new(x, y, '\u{98}', "orc", config.color_orc.color(), true);
+    orc.fighter = Some( Fighter { max_hp: 10, hp: 10, defense: 0, power: 5, on_death: DeathCallback::Monster } );
+    orc.ai = Some(Ai::Basic);
+    orc.behavior = Some(Behavior::Idle);
+    orc.color = config.color_orc.color();
+    orc.movement = Some(Reach::Single);
+    orc.attack = Some(Reach::Diag);
+    orc.alive = true;
+    orc
+}                
+
+pub fn make_troll(config: &Config, x: i32, y :i32) -> Object {
+    let mut troll = Object::new(x, y, '\u{15}', "troll", config.color_troll.color(), true);
+    troll.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 10, on_death: DeathCallback::Monster } );
+    troll.ai = Some(Ai::Basic);
+    troll.behavior = Some(Behavior::Idle);
+    troll.color = config.color_troll.color();
+    troll.movement = Some(Reach::Single);
+    troll.attack = Some(Reach::Diag);
+    troll.alive = true;
+    troll
+}
+
+pub fn make_kobold(config: &Config, x: i32, y :i32) -> Object {
+    let mut kobold = Object::new(x, y, '\u{A5}', "kobold", config.color_kobold.color(), true);
+    kobold.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, on_death: DeathCallback::Monster } );
+    kobold.ai = Some(Ai::Basic);
+    kobold.behavior = Some(Behavior::Idle);
+    kobold.color = config.color_kobold.color();
+    kobold.movement = Some(Reach::Horiz);
+    kobold.attack = Some(Reach::Horiz);
+    kobold.alive = true;
+    kobold
+}
+
+    pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) {
+        let (x, y) = objects[PLAYER].pos();
 
     let (mut mx, mut my) = objects[PLAYER].momentum.unwrap();
 
@@ -176,7 +213,7 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
                                           .unwrap();
                 }
 
-                ai_take_astar_step(monster_id, (monster_x, monster_y), target_pos.pair(), map, objects);
+
             }
 
             took_turn = AiAction::TookTurn;

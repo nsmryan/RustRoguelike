@@ -6,6 +6,7 @@ use std::print;
 use tcod::colors::*;
 use tcod::line::*;
 
+use crate::ai::*;
 use crate::constants::*;
 use crate::types::*;
 
@@ -82,10 +83,10 @@ pub fn near_tile_type(map: &Map, position: Position, tile_type: TileType) -> boo
         = vec!((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1));
 
     /*
-     neighbor_offsets.iter()
-                     .map(|offset| position.add(Position(offset.0, offset.1)))
-                     .any(|pos| map[pos].tile_type == tile_type)
-    */
+       neighbor_offsets.iter()
+       .map(|offset| position.add(Position(offset.0, offset.1)))
+       .any(|pos| map[pos].tile_type == tile_type)
+       */
 
     let mut near_given_tile = false;
 
@@ -111,7 +112,7 @@ pub fn make_map(objects: &mut Vec<Object>, config: &Config) -> (Map, Position) {
 
 pub fn random_offset() -> Position {
     Position(rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
-             rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS))
+    rand::thread_rng().gen_range(-ISLAND_RADIUS, ISLAND_RADIUS))
 }
 
 pub fn random_position() -> Position {
@@ -120,7 +121,7 @@ pub fn random_position() -> Position {
 
 pub fn pos_in_radius(pos: Position, radius: i32) -> Position {
     return Position(pos.0 + rand::thread_rng().gen_range(-radius, radius),
-                    pos.1 + rand::thread_rng().gen_range(-radius, radius));
+    pos.1 + rand::thread_rng().gen_range(-radius, radius));
 }
 
 pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) -> Position {
@@ -196,59 +197,59 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
     }
 
     /* add monsters */
-    loop {
-        let (x, y) = pos_in_radius(center, ISLAND_RADIUS).pair();
 
-        if !map.is_blocked(x, y, objects) {
-            let mut monster = if rand::random::<f32>() < 1.0 {
-                let mut orc = Object::new(x, y, 'o', "orc", DESATURATED_GREEN, true);
-                orc.fighter = Some( Fighter { max_hp: 10, hp: 10, defense: 0, power: 15, on_death: DeathCallback::Monster } );
-                orc.ai = Some(Ai::Basic);
-                orc.behavior = Some(Behavior::Idle);
-                orc.color = config.color_orc.color();
-                orc.movement = Some(Reach::Single);
-                orc.attack = Some(Reach::Diag);
-                orc
-            } else {
-                let mut troll = Object::new(x, y, 'T', "troll", DARKER_GREEN, true);
-                troll.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 4, on_death: DeathCallback::Monster } );
-                troll.ai = Some(Ai::Basic);
-                troll.behavior = Some(Behavior::Idle);
-                troll.color = config.color_troll.color();
-                troll.movement = Some(Reach::Single);
-                troll.attack = Some(Reach::Diag);
-                troll
-            };
 
-let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
+    for i in 0..2 {
 
-    for _ in 0..num_items {
-        let x = rand::thread_rng().gen_range(0, MAP_WIDTH);
-        let y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+        loop {
+            let (x, y) = pos_in_radius(center, ISLAND_RADIUS).pair();
 
-        if !map.is_blocked(x, y, objects) {
-            let mut object = Object::new(x, y, '!', "healing potion", VIOLET, false);
-            object.item = Some(Item::Heal);
-            objects.push(object);
+            if !map.is_blocked(x, y, objects) {
+                let mut monster = make_orc(config,x,y);
+                objects.push(monster);
+                break;
+            }
         }
     }
-        let x = rand::thread_rng().gen_range(0, MAP_WIDTH);
-        let y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
-            
-        if !map.is_blocked(x, y, objects) {
-            let mut object = Object::new(x,y, '\u{FD}', "goal", RED, false);
-            object.item = Some(Item::Goal);
-            objects.push(object);
-        }
 
+    for i in 0..2 {
 
-            monster.alive = true;
+        loop {
+            let (x, y) = pos_in_radius(center, ISLAND_RADIUS).pair();
 
-            objects.push(monster);
-
-            break;
+            if !map.is_blocked(x, y, objects) {
+                let mut monster = make_kobold(config,x,y);
+                objects.push(monster);
+                break;
+            }
         }
     }
+    
+    for i in 0..2 {
+
+        loop {
+            let (x, y) = pos_in_radius(center, ISLAND_RADIUS).pair();
+
+            if !map.is_blocked(x, y, objects) {
+                let mut monster = make_troll(config,x,y);
+                objects.push(monster);
+                break;
+            }
+        }
+    }
+
+    let x = rand::thread_rng().gen_range(0, MAP_WIDTH);
+    let y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+
+    if !map.is_blocked(x, y, objects) {
+        let mut object = Object::new(x,y, '\u{FD}', "goal", RED, false);
+        object.item = Some(Item::Goal);
+        objects.push(object);
+    }
+
+
+
+
 
     /* add goal object */
     let (mut x, mut y) = pos_in_radius(center, ISLAND_RADIUS).pair();

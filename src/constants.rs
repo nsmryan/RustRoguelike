@@ -25,7 +25,8 @@ pub const ROOM_MIN_SIZE: i32 = 6;
 pub const MAX_ROOMS: i32 = 30;
 pub const MAX_ROOM_ITEMS: i32 = 12;
 
-pub const MAX_ROOM_MONSTERS: i32 = 3;
+pub const MAX_MONSTERS: i32 = 15;
+
 
 pub const PLAYER: usize = 0;
 pub const MAX_MOMENTUM: i32 = 2;
