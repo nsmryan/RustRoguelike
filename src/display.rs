@@ -274,38 +274,38 @@ pub fn render_all(game: &mut Game,
 
     let ids = get_objects_under_mouse(game.mouse, objects, &game.fov);
     for id in ids {
+        if !objects[id].alive {
+            continue;
+        }
+
         // draw enemy movement positions
         if let Some(movement) = objects[id].movement {
-            if objects[id].alive {
-                let offsets = movement.offsets();
-                for offset in offsets {
-                    let x = game.mouse.cx as i32 + offset.0;
-                    let y = game.mouse.cy as i32 + offset.1;
-                    game.console.put_char(x,
-                                          y,
-                                          '.',
-                                          BackgroundFlag::None);
+            let offsets = movement.offsets();
+            for offset in offsets {
+                let x = game.mouse.cx as i32 + offset.0;
+                let y = game.mouse.cy as i32 + offset.1;
+                game.console.put_char(x,
+                                      y,
+                                      '.',
+                                      BackgroundFlag::None);
 
-                    game.needs_clear.push((x, y));
-                }
+                game.needs_clear.push((x, y));
             }
         }
 
         // draw enemy attack positions
         if let Some(attack) = objects[id].attack {
-            if objects[id].alive {
-                let offsets = attack.offsets();
-                for offset in offsets {
-                    let x = game.mouse.cx as i32 + offset.0;
-                    let y = game.mouse.cy as i32 + offset.1;
-                    // TODO don't draw if blocked before reaching player
-                    game.console.put_char(x,
-                                          y,
-                                          'x',
-                                          BackgroundFlag::None);
+            let offsets = attack.offsets();
+            for offset in offsets {
+                let x = game.mouse.cx as i32 + offset.0;
+                let y = game.mouse.cy as i32 + offset.1;
+                // TODO don't draw if blocked before reaching player
+                game.console.put_char(x,
+                                      y,
+                                      'x',
+                                      BackgroundFlag::None);
 
-                    game.needs_clear.push((x, y));
-                }
+                game.needs_clear.push((x, y));
             }
         }
     }
