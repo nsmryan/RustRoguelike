@@ -63,15 +63,14 @@ fn handle_input(game: &mut Game,
                 let mut item = inventory.swap_remove(index);
                 let obj_id = objects.len();
 
-                // TODO this enforces a square limit, not a radius, on throw distance
                 let start_x = objects[PLAYER].x;
                 let start_y = objects[PLAYER].y;
                 let end_x = mx as i32 / FONT_WIDTH;
                 let end_y = my as i32 / FONT_HEIGHT;
-                let throw_dist =
-                    Position::new(start_x, start_y).distance(&Position::new(end_x, end_y));
-                let target_x = start_x + clamp(end_x - start_x, -PLAYER_THROW_DIST, PLAYER_THROW_DIST);
-                let target_y = start_y + clamp(end_y - start_y, -PLAYER_THROW_DIST, PLAYER_THROW_DIST);
+                let throw_line = Line::new((start_x, start_y), (end_x, end_y));
+
+                let (target_x, target_y) =
+                    throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
 
                 item.x = start_x;
                 item.y = start_y;
