@@ -276,32 +276,36 @@ pub fn render_all(game: &mut Game,
     for id in ids {
         // draw enemy movement positions
         if let Some(movement) = objects[id].movement {
-            let offsets = movement.offsets();
-            for offset in offsets {
-                let x = game.mouse.cx as i32 + offset.0;
-                let y = game.mouse.cy as i32 + offset.1;
-                game.console.put_char(x,
-                                      y,
-                                      '.',
-                                      BackgroundFlag::None);
+            if objects[id].alive {
+                let offsets = movement.offsets();
+                for offset in offsets {
+                    let x = game.mouse.cx as i32 + offset.0;
+                    let y = game.mouse.cy as i32 + offset.1;
+                    game.console.put_char(x,
+                                          y,
+                                          '.',
+                                          BackgroundFlag::None);
 
-                game.needs_clear.push((x, y));
+                    game.needs_clear.push((x, y));
+                }
             }
         }
 
         // draw enemy attack positions
         if let Some(attack) = objects[id].attack {
-            let offsets = attack.offsets();
-            for offset in offsets {
-                let x = game.mouse.cx as i32 + offset.0;
-                let y = game.mouse.cy as i32 + offset.1;
-                // TODO don't draw if blocked before reaching player
-                game.console.put_char(x,
-                                      y,
-                                      'x',
-                                      BackgroundFlag::None);
+            if objects[id].alive {
+                let offsets = attack.offsets();
+                for offset in offsets {
+                    let x = game.mouse.cx as i32 + offset.0;
+                    let y = game.mouse.cy as i32 + offset.1;
+                    // TODO don't draw if blocked before reaching player
+                    game.console.put_char(x,
+                                          y,
+                                          'x',
+                                          BackgroundFlag::None);
 
-                game.needs_clear.push((x, y));
+                    game.needs_clear.push((x, y));
+                }
             }
         }
     }
