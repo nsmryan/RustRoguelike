@@ -6,7 +6,6 @@ use num::clamp;
 #[allow(unused_imports)]use tcod::pathfinding::*;
 use tcod::line::*;
 
-use tcod::colors::*;
 use crate::constants::*;
 use crate::types::*;
 use crate::map::*;
@@ -48,8 +47,8 @@ pub fn make_kobold(config: &Config, x: i32, y :i32) -> Object {
     kobold
 }
 
-    pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) {
-        let (x, y) = objects[PLAYER].pos();
+pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) {
+    let (x, y) = objects[PLAYER].pos();
 
     let (mut mx, mut my) = objects[PLAYER].momentum.unwrap();
 
@@ -65,50 +64,50 @@ pub fn make_kobold(config: &Config, x: i32, y :i32) -> Object {
         objects[PLAYER].set_pos(x + dx, y + dy);
         momentum_change = MomentumChange::CurrentDirection;
     } else if has_momentum &&
-              side_move &&
-              !momentum_diagonal &&
-              !map.is_blocked(x + mx.signum(), y + my.signum(), objects) && // free next to wall
-              !map.is_blocked(x + 2*mx.signum(), y + 2*my.signum(), objects) && // free space to move to
-              map[(x + dx, y + dy)].tile_type == TileType::Wall {
+        side_move &&
+            !momentum_diagonal &&
+            !map.is_blocked(x + mx.signum(), y + my.signum(), objects) && // free next to wall
+            !map.is_blocked(x + 2*mx.signum(), y + 2*my.signum(), objects) && // free space to move to
+            map[(x + dx, y + dy)].tile_type == TileType::Wall {
                 // jump off wall
                 objects[PLAYER].set_pos(x + 2*mx.signum(), y + 2*my.signum());
                 momentum_change = MomentumChange::PreviousDirection;
-    } else if has_momentum &&
-              same_direction &&
-              map[(x + dx, y + dy)].tile_type == TileType::ShortWall &&
-              !map.is_blocked(x + 2*dx, y + 2*dy, objects) {
-                // if the location is blocked, and the next location in the
-                // line is not, and we have momentum, then jump over obstacle
-                objects[PLAYER].set_pos(x + 2*dx, y + 2*dy);
-                momentum_change = MomentumChange::CurrentDirection;
-    } else {
-        // otherwise we hit a wall and lose our momentum
-        momentum_change = MomentumChange::Lost;
-    }
+            } else if has_momentum &&
+                same_direction &&
+                    map[(x + dx, y + dy)].tile_type == TileType::ShortWall &&
+                    !map.is_blocked(x + 2*dx, y + 2*dy, objects) {
+                        // if the location is blocked, and the next location in the
+                        // line is not, and we have momentum, then jump over obstacle
+                        objects[PLAYER].set_pos(x + 2*dx, y + 2*dy);
+                        momentum_change = MomentumChange::CurrentDirection;
+                    } else {
+                        // otherwise we hit a wall and lose our momentum
+                        momentum_change = MomentumChange::Lost;
+                    }
 
-    match momentum_change {
-        MomentumChange::Lost => {
-            mx = 0;
-            my = 0;
-        }
+            match momentum_change {
+                MomentumChange::Lost => {
+                    mx = 0;
+                    my = 0;
+                }
 
-        MomentumChange::PreviousDirection => {
-            mx = clamp(mx + mx.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
-            my = clamp(my + my.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
-        }
+                MomentumChange::PreviousDirection => {
+                    mx = clamp(mx + mx.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
+                    my = clamp(my + my.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
+                }
 
-        MomentumChange::CurrentDirection => {
-            if same_direction {
-                mx = clamp(mx + dx, -MAX_MOMENTUM, MAX_MOMENTUM);
-                my = clamp(my + dy, -MAX_MOMENTUM, MAX_MOMENTUM);
-            } else {
-                mx = dx;
-                my = dy;
+                MomentumChange::CurrentDirection => {
+                    if same_direction {
+                        mx = clamp(mx + dx, -MAX_MOMENTUM, MAX_MOMENTUM);
+                        my = clamp(my + dy, -MAX_MOMENTUM, MAX_MOMENTUM);
+                    } else {
+                        mx = dx;
+                        my = dy;
+                    }
+                }
             }
-        }
-    }
 
-    objects[PLAYER].momentum = Some((mx, my));
+            objects[PLAYER].momentum = Some((mx, my));
 }
 
 pub fn move_by(id: usize, dx: i32, dy: i32, map: &Map, objects: &mut [Object]) {
@@ -130,9 +129,9 @@ pub fn move_towards(id: usize, target_x: i32, target_y: i32, map: &Map, objects:
 }
 
 pub fn ai_attack(monster_id: usize,
-                 map: &Map,
+                 _map: &Map,
                  objects: &mut Vec<Object>,
-                 fov_map: &FovMap,
+                 _fov_map: &FovMap,
                  _messages: &mut Messages,
                  animations: &mut Vec<Animation>) -> AiAction {
     let (player_x, player_y) = objects[PLAYER].pos();
@@ -140,7 +139,7 @@ pub fn ai_attack(monster_id: usize,
     let (monster_x, monster_y) = objects[monster_id].pos();
     let took_turn: AiAction;
 
-    if let Some(hit_pos) = ai_can_hit_player(monster_id, objects) {
+    if let Some(_hit_pos) = ai_can_hit_player(monster_id, objects) {
         let (player, monster) = mut_two(PLAYER, monster_id, objects);
 
         // apply attack 
@@ -156,7 +155,7 @@ pub fn ai_attack(monster_id: usize,
         let animation =
             Animation::Thrown(obj_id,
                               Line::new((monster_x, monster_y),
-                                        (player_x, player_y)));
+                              (player_x, player_y)));
         animations.push(animation);
 
         took_turn = AiAction::TookTurn;
@@ -187,7 +186,7 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
         // if the player is in view, update our target location to seek towards
         target_pos = player_pos;
 
-        if let Some(hit_pos) = ai_can_hit_player(monster_id, objects) {
+        if let Some(_hit_pos) = ai_can_hit_player(monster_id, objects) {
             objects[monster_id].behavior = Some(Behavior::Attacking);
 
             took_turn = AiAction::DidntTakeTurn;
@@ -198,19 +197,19 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
                 // get all locations they can hit
                 let positions: Vec<(i32, i32)> =
                     reach.offsets()
-                         .iter()
-                         .map(|pos| (pos.0 + player_x, pos.1 + player_y))
-                         .filter(|(x, y)| fov_map.is_in_fov(*x, *y))
-                         .filter(|(x, y)| !map.is_blocked(*x, *y, objects))
-                         .collect();
+                    .iter()
+                    .map(|pos| (pos.0 + player_x, pos.1 + player_y))
+                    .filter(|(x, y)| fov_map.is_in_fov(*x, *y))
+                    .filter(|(x, y)| !map.is_blocked(*x, *y, objects))
+                    .collect();
                 if positions.len() > 0 {
                     target_pos = positions.iter()
-                                          .min_by_key(|pos| monster_pos.distance(&Position::from_pair(pos)))
-                                          .map(|pair| Position::from_pair(pair))
-                                          .unwrap();
+                        .min_by_key(|pos| monster_pos.distance(&Position::from_pair(pos)))
+                        .map(|pair| Position::from_pair(pair))
+                        .unwrap();
                 }
 
-
+                objects[monster_id].behavior = Some(Behavior::Seeking(target_pos));
             }
 
             took_turn = AiAction::TookTurn;
@@ -234,14 +233,14 @@ fn ai_can_hit_player(monster_id: ObjectId, objects: &[Object]) -> Option<(i32, i
     let (player_x, player_y) = objects[PLAYER].pos();
     let (monster_x, monster_y) = objects[monster_id].pos();
     let mut hit_pos = None;
- 
+
     if let Some(reach) = objects[monster_id].attack {
         // get all locations they can hit
         let positions: Vec<(i32, i32)> =
             reach.offsets()
-                 .iter()
-                 .map(|pos| (pos.0 + monster_x, pos.1 + monster_y))
-                 .collect();
+            .iter()
+            .map(|pos| (pos.0 + monster_x, pos.1 + monster_y))
+            .collect();
 
         // look through attack positions, in case one hits the player
         for pos in positions {
@@ -290,7 +289,7 @@ fn basic_ai_take_turn(monster_id: usize,
                               fov_map,
                               messages)
         }
-        
+
         Some(Behavior::Attacking) => {
             ai_attack(monster_id,
                       map,

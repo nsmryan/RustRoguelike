@@ -69,7 +69,6 @@ impl Reach {
             },
 
             Reach::Horiz => {
-                let offsets = vec!((1,   0), (0, 1), (-1,  0), (0, -1));
                 let mut offsets = vec!();
                 for dist in 1..5 {
                     offsets.push((dist, 0));
@@ -82,7 +81,6 @@ impl Reach {
 
 
             Reach::Diag => {
-                let offsets = vec!((1, 1), (1, -1), (-1, 1), (-1, -1));
                 let mut offsets = vec!();
                 for dist in 1..5 {
                     offsets.push((dist, dist));
@@ -268,7 +266,6 @@ impl AwarenessMap {
                     potential_positions.iter()
                     .filter(|(x, y)| *x < self.width && *y < self.height)
                     .filter(|(x, y)| self.weights[*y as usize][*x as usize] > 0.0);
-                //.collect::Vec<(i32, i32)>();
 
             }
         }
@@ -277,7 +274,6 @@ impl AwarenessMap {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Item {
-    Heal,
     Stone,
     Goal,
 }

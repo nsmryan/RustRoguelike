@@ -1,6 +1,5 @@
-use std::num::Wrapping;
 use std::collections::hash_map::DefaultHasher;
-use std::hash::{BuildHasher, Hash, Hasher};
+use std::hash::{Hash, Hasher};
 
 #[allow(unused_imports)]use tcod::console::*;
 #[allow(unused_imports)]use tcod::colors::*;
@@ -81,7 +80,7 @@ pub fn get_objects_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMa
 
     objects.iter()
            .enumerate()
-           .filter(|(index, obj)| { obj.pos() == (x, y) && fov_map.is_in_fov(obj.x, obj.y) })
+           .filter(|(_, obj)| obj.pos() == (x, y) && fov_map.is_in_fov(obj.x, obj.y))
            .map(|(index, _)| index)
            .collect::<Vec<_>>()
 }

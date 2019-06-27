@@ -1,6 +1,5 @@
 use rand::Rng;
 use std::ops::{Index, IndexMut};
-use std::print;
 
 use tcod::colors::*;
 use tcod::line::*;
@@ -280,7 +279,6 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
     }
 
     /* random stones */
-    let mut rng = rand::thread_rng();
     for _ in 0..10 {
         let pos = pos_in_radius(center, ISLAND_RADIUS);
 
@@ -292,41 +290,36 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
     }
 
     /* add monsters */
-
-
-    for i in 0..2 {
-
+    for _ in 0..2 {
         loop {
             let (x, y) = pos_in_radius(center, ISLAND_RADIUS).pair();
 
             if !map.is_blocked(x, y, objects) {
-                let mut monster = make_orc(config,x,y);
+                let monster = make_orc(config,x,y);
                 objects.push(monster);
                 break;
             }
         }
     }
 
-    for i in 0..2 {
-
+    for _ in 0..2 {
         loop {
             let (x, y) = pos_in_radius(center, ISLAND_RADIUS).pair();
 
             if !map.is_blocked(x, y, objects) {
-                let mut monster = make_kobold(config,x,y);
+                let monster = make_kobold(config,x,y);
                 objects.push(monster);
                 break;
             }
         }
     }
     
-    for i in 0..2 {
-
+    for _ in 0..2 {
         loop {
             let (x, y) = pos_in_radius(center, ISLAND_RADIUS).pair();
 
             if !map.is_blocked(x, y, objects) {
-                let mut monster = make_troll(config,x,y);
+                let monster = make_troll(config,x,y);
                 objects.push(monster);
                 break;
             }

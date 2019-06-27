@@ -15,6 +15,7 @@ mod constants;
 mod display;
 mod map;
 mod ai;
+mod input;
 
 
 #[allow(unused_imports)]use std::cmp;
@@ -28,261 +29,21 @@ mod ai;
 #[allow(unused_imports)]use tcod::colors::*;
 #[allow(unused_imports)]use tcod::input::Key;
 #[allow(unused_imports)]use tcod::input::KeyCode::*;
-#[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
+#[allow(unused_imports)]use tcod::input::{Event, Mouse};
 #[allow(unused_imports)]use tcod::AsNative;
 #[allow(unused_imports)]use tcod::image;
-use tcod::line::*;
 
 use timer::*;
 
 use rodio::Source;
-
-use num::clamp;
 
 use types::*;
 use constants::*;
 use display::*;
 use map::*;
 use ai::*;
-use std::print;
+use input::*;
 
-fn handle_input(game: &mut Game,
-                key: Key,
-                map: &mut Map,
-                objects: &mut Vec<Object>,
-                inventory: &mut Vec<Object>,
-                messages: &mut Messages) -> PlayerAction {
-    use PlayerAction::*;
-
-    let player_alive = objects[PLAYER].alive;
-
-    if game.mouse.lbutton_pressed {
-        for index in 0..inventory.len() {
-            let (mx, my) = (game.mouse.x, game.mouse.y);
-            if inventory[index].item == Some(Item::Stone) {
-                let mut item = inventory.swap_remove(index);
-                let obj_id = objects.len();
-
-                let start_x = objects[PLAYER].x;
-                let start_y = objects[PLAYER].y;
-                let end_x = mx as i32 / FONT_WIDTH;
-                let end_y = my as i32 / FONT_HEIGHT;
-                let throw_line = Line::new((start_x, start_y), (end_x, end_y));
-
-                let (target_x, target_y) =
-                    throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
-
-                item.x = start_x;
-                item.y = start_y;
-                objects.push(item);
-
-                let animation =
-                    Animation::Thrown(obj_id,
-                                      Line::new((start_x, start_y),
-                                                (target_x, target_y)));
-                game.animations.push(animation);
-                break;
-            }
-        }
-
-        TookTurn
-    } else {
-        match (key, player_alive) {
-            (Key { code: Up,      .. }, true)  |
-            (Key { code: Number8, .. }, true)  |
-            (Key { code: NumPad8, .. }, true) => {
-                player_move_or_attack(0, -1, map, objects, messages);
-                TookTurn
-            }
-
-            (Key { code: Down,    .. }, true) |
-            (Key { code: Number2, .. }, true) |
-            (Key { code: NumPad2, .. }, true) => {
-                player_move_or_attack(0, 1, map, objects, messages);
-                TookTurn
-            }
-            (Key { code: Left,    .. }, true) |
-            (Key { code: Number4, .. }, true) |
-            (Key { code: NumPad4, .. }, true) => {
-                player_move_or_attack(-1, 0, map, objects, messages);
-                TookTurn
-            }
-
-            (Key { code: Right,   .. }, true) |
-            (Key { code: Number6, .. }, true) |
-            (Key { code: NumPad6, .. }, true) => {
-                player_move_or_attack(1, 0, map, objects, messages);
-                TookTurn
-            }
-
-            (Key { code: Number9, .. }, true)  |
-            (Key { code: NumPad9, .. }, true) => {
-                player_move_or_attack(1, -1, map, objects, messages);
-                TookTurn
-            }
-
-            (Key { code: Number3, .. }, true) |
-            (Key { code: NumPad3, .. }, true) => {
-                player_move_or_attack(1, 1, map, objects, messages);
-                TookTurn
-            }
-
-            (Key { code: Number1, .. }, true) |
-            (Key { code: NumPad1, .. }, true) => {
-                player_move_or_attack(-1, 1, map, objects, messages);
-                TookTurn
-            }
-
-            (Key { code: Number7, .. }, true) |
-            (Key { code: NumPad7, .. }, true) => {
-                player_move_or_attack(-1, -1, map, objects, messages);
-                TookTurn
-            }
-
-            (Key { code: Number5, .. }, true) |
-            (Key { code: NumPad5, .. }, true) => {
-                objects[PLAYER].momentum = Some((0, 0));
-                TookTurn
-            }
-
-            (Key { code: Enter, alt: true, .. }, _) => {
-                let fullscreen = game.root.is_fullscreen();
-                game.root.set_default_foreground(WHITE);
-                game.root.set_fullscreen(!fullscreen);
-                DidntTakeTurn
-            },
-
-            (Key {printable: 'g', .. }, true) => {
-                let item_id = objects.iter().position(|object| {
-                    object.pos() == objects[PLAYER].pos() && object.item.is_some()
-                });
-                if let Some(item_id) = item_id {
-                    pick_item_up(item_id, objects, inventory, messages);
-                }
-                DidntTakeTurn
-            }
-
-            (Key {printable: 'i', .. }, true) => {
-                let inventory_index =
-                    inventory_menu(inventory,
-                                   "Press the key next to an item to use it, or any other to cancel.\n",
-                                   &mut game.root);
-                if let Some(inventory_index) = inventory_index {
-                    use_item(inventory_index, inventory, objects, messages);
-                }
-                DidntTakeTurn
-            }
-
-            (Key { code: Escape, .. }, _) => Exit,
-
-            (Key {printable: 'v', .. }, true) => {
-                for x in 0..MAP_WIDTH {
-                    for y in 0..MAP_HEIGHT {
-                        map.0[x as usize][y as usize].explored = true;
-                    }
-                }
-                DidntTakeTurn
-            }
-
-            (_, _) => DidntTakeTurn,
-        }
-    }
-}
-
-fn gather_goal(_inventory_id: usize, _objects: &mut [Object], messages: &mut Messages) -> UseResult {
-    messages.message("You've got the goal object! Nice work.", LIGHT_VIOLET);
-    UseResult::Keep
-}
-
-fn cast_heal(_inventory_id: usize, objects: &mut [Object], messages: &mut Messages) -> UseResult {
-    if let Some(fighter) = objects[PLAYER].fighter {
-        if fighter.hp == fighter.max_hp {
-            messages.message("You are already at full health.", RED);
-            return UseResult::Cancelled;
-        }
-        messages.message("Your wounds start to feel better!", LIGHT_VIOLET);
-        objects[PLAYER].heal(HEAL_AMOUNT);
-        return UseResult::UsedUp;
-    }
-
-    UseResult::Cancelled
-}
-
-fn inventory_menu(inventory: &[Object], header: &str, root: &mut Root) -> Option<usize> {
-    let options = if inventory.len() == 0 {
-        vec!("Inventory is empty.".into())
-    } else {
-        inventory.iter().map(|item| { item.name.clone() }).collect()
-    };
-
-    let inventory_index = menu(header, &options, INVENTORY_WIDTH, root);
-
-    if inventory.len() > 0 {
-        inventory_index
-    } else {
-        None
-    }
-}
-
-fn use_item(inventory_id: usize,
-            inventory: &mut Vec<Object>,
-            objects: &mut [Object],
-            messages: &mut Messages) {
-    use Item::*;
-
-    if let Some(item) = inventory[inventory_id].item {
-        let on_use = match item {
-            Heal => cast_heal,
-            Stone => unimplemented!(),
-            Goal => gather_goal,
-        };
-        match on_use(inventory_id, objects, messages) {
-            UseResult::UsedUp => {
-                inventory.remove(inventory_id);
-            }
-            UseResult::Cancelled => {
-                messages.message("Cancelled", WHITE);
-            }
-
-            UseResult::Keep => {
-            }
-        }
-    } else {
-        messages.message(format!("The {} cannot be used.", inventory[inventory_id].name), WHITE);
-    }
-}
-
-fn pick_item_up(object_id: usize,
-                objects: &mut Vec<Object>,
-                inventory: &mut Vec<Object>,
-                messages: &mut Messages) {
-    if inventory.len() >= 26 {
-        messages.message(format!("Your inventory is full, cannot pick up {}", objects[object_id].name), RED);
-    } else {
-        let item = objects.swap_remove(object_id);
-        messages.message(format!("You picked up a {}!", item.name), GREEN);
-        inventory.push(item);
-    }
-}
-
-fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], messages: &mut Messages) {
-    let x = objects[PLAYER].x + dx;
-    let y = objects[PLAYER].y + dy;
-    let target_id = objects.iter().position(|object| {
-        object.fighter.is_some() && object.pos() == (x, y)
-    });
-
-    match target_id {
-        Some(target_id) => {
-            let (player, target) = mut_two(PLAYER, target_id, objects);
-             player.attack(target, messages);
-        }
-
-        None => {
-            move_player_by(objects, map, dx, dy);
-        }
-    }
-}
 //if we want to use a character sprite, a potential value is '\u{8B}'
 pub fn make_player() -> Object {
     let mut player = Object::new(0, 0, '@', "player", WHITE, true);
@@ -401,7 +162,7 @@ fn main() {
         /* FPS Limiting */
         tick_receiver.recv().unwrap();
 
-        match input::check_for_event(input::MOUSE | input::KEY_PRESS) {
+        match tcod::input::check_for_event(tcod::input::MOUSE | tcod::input::KEY_PRESS) {
             Some((_, Event::Mouse(m))) => game.mouse = m,
             Some((_, Event::Key(k))) => key = k,
             _ => {
