@@ -284,12 +284,17 @@ pub fn render_all(game: &mut Game,
             for offset in offsets {
                 let x = game.mouse.cx as i32 + offset.0;
                 let y = game.mouse.cy as i32 + offset.1;
-                game.console.put_char(x,
-                                      y,
-                                      '.',
-                                      BackgroundFlag::None);
 
-                game.needs_clear.push((x, y));
+                if map.clear_path((game.mouse.cx as i32, game.mouse.cy as i32), 
+                                  (x, y),
+                                  &objects) {
+                    game.console.put_char(x,
+                                          y,
+                                          '.',
+                                          BackgroundFlag::None);
+
+                    game.needs_clear.push((x, y));
+                }
             }
         }
 
@@ -299,13 +304,17 @@ pub fn render_all(game: &mut Game,
             for offset in offsets {
                 let x = game.mouse.cx as i32 + offset.0;
                 let y = game.mouse.cy as i32 + offset.1;
-                // TODO don't draw if blocked before reaching player
-                game.console.put_char(x,
-                                      y,
-                                      'x',
-                                      BackgroundFlag::None);
 
-                game.needs_clear.push((x, y));
+                if map.clear_path((game.mouse.cx as i32, game.mouse.cy as i32), 
+                                  (x, y),
+                                  &objects) {
+                    game.console.put_char(x,
+                                          y,
+                                          'x',
+                                          BackgroundFlag::None);
+
+                    game.needs_clear.push((x, y));
+                }
             }
         }
     }
