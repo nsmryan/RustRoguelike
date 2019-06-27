@@ -86,6 +86,12 @@ impl IndexMut<(i32, i32)> for Map {
     }
 }
 
+impl IndexMut<Position> for Map {
+    fn index_mut(&mut self, position: Position) -> &mut Tile {
+        &mut self.0[position.0 as usize][position.1 as usize]
+    }
+}
+
 pub fn near_tile_type(map: &Map, position: Position, tile_type: TileType) -> bool {
     let neighbor_offsets: Vec<(i32, i32)>
         = vec!((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1));
@@ -114,6 +120,8 @@ pub fn make_map(objects: &mut Vec<Object>, config: &Config) -> (Map, Position) {
     let mut map = Map::with_vec(vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize]);
 
     let starting_position = make_island(&mut map, objects, config);
+
+    map[starting_position].tile_type = TileType::Empty;
 
     (map, starting_position)
 }
@@ -293,7 +301,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         map[pos].tile_type = TileType::Water;
     }
 
-    center
+    return center;
 }
 
 pub fn place_block(map: &mut Map, start: &Position, width: i32, tile: Tile) -> Vec<Position> {
