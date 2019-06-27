@@ -53,6 +53,14 @@ impl Map {
 
         map_copy
     }
+
+    pub fn clear_path(&self, start: &Position, end: &Position, objects: &[Object]) -> bool {
+        let line = Line::new((start.0, start.1), (end.0, end.1));
+
+        let path_blocked = line.iter().any(|point| self.is_blocked(point.x, point.y, objects));
+
+        return !path_blocked;
+    }
 }
 
 impl Index<(i32, i32)> for Map {
