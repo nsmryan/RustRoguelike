@@ -313,6 +313,7 @@ pub fn render_all(game: &mut Game,
         object.draw(&mut game.console);
     }
 
+    // Draw movement and attack overlays
     let ids = get_objects_under_mouse(game.mouse, objects, &game.fov);
     for id in ids {
         if !objects[id].alive {
@@ -330,7 +331,6 @@ pub fn render_all(game: &mut Game,
             draw_attack_overlay(game, map, id, objects);
         }
     }
-
 
     game.panel.set_default_background(BLACK);
     game.panel.clear();

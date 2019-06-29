@@ -209,6 +209,8 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
                         .unwrap();
                 }
 
+                ai_take_astar_step(monster_id, (monster_x, monster_y), target_pos.pair(), map, objects);
+
                 objects[monster_id].behavior = Some(Behavior::Seeking(target_pos));
             }
 
