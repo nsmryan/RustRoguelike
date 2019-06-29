@@ -210,7 +210,7 @@ fn main() {
             player_action = PlayerAction::DidntTakeTurn;
         } else {
             previous_player_position = (objects[PLAYER].x, objects[PLAYER].y);
-            player_action = handle_input(&mut game, key, &mut map, &mut objects, &mut inventory, &mut messages);
+            player_action = handle_input(&mut game, key, &mut map, &mut objects, &mut inventory, &config, &mut messages);
             match player_action {
               PlayerAction::Exit => {
                 break;

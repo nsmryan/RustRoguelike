@@ -17,6 +17,7 @@ pub fn handle_input(game: &mut Game,
                     map: &mut Map,
                     objects: &mut Vec<Object>,
                     inventory: &mut Vec<Object>,
+                    config: &Config,
                     messages: &mut Messages) -> PlayerAction {
     use PlayerAction::*;
 
@@ -147,6 +148,21 @@ pub fn handle_input(game: &mut Game,
                         map.0[x as usize][y as usize].explored = true;
                     }
                 }
+                DidntTakeTurn
+            }
+
+            (Key {code: NumPadAdd, .. }, true) => {
+                game.display_overlays = !game.display_overlays;
+
+                DidntTakeTurn
+            }
+
+            (Key {printable: 't', .. }, true) => {
+                let fighter = objects[PLAYER].fighter.unwrap();
+                let god_mode_hp = 1000000;
+                objects[PLAYER].fighter =
+                    Some(Fighter { hp: god_mode_hp, max_hp: god_mode_hp, ..fighter });
+
                 DidntTakeTurn
             }
 

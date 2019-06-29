@@ -167,6 +167,48 @@ pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
     return ((result & 0xFFFFFFFF) as f32) / 4294967295.0;
 }
 
+pub fn draw_movement_overlay(game: &mut Game, map: &mut Map, id: ObjectId, objects: &[Object]) {
+    if let Some(movement) = objects[id].movement {
+        let offsets = movement.offsets();
+        for offset in offsets {
+            let x = objects[id].x as i32 + offset.0;
+            let y = objects[id].y as i32 + offset.1;
+
+            if map.clear_path((objects[id].x as i32, objects[id].y as i32), 
+                              (x, y),
+                              &objects) {
+                game.console.put_char(x,
+                                      y,
+                                      '.',
+                                      BackgroundFlag::None);
+
+                game.needs_clear.push((x, y));
+            }
+        }
+    }
+}
+
+pub fn draw_attack_overlay(game: &mut Game, map: &mut Map, id: ObjectId, objects: &[Object]) {
+    if let Some(attack) = objects[id].attack {
+        let offsets = attack.offsets();
+        for offset in offsets {
+            let x = objects[id].x as i32 + offset.0;
+            let y = objects[id].y as i32 + offset.1;
+
+            if map.clear_path((objects[id].x as i32, objects[id].y as i32), 
+                              (x, y),
+                              &objects) {
+                game.console.put_char(x,
+                                      y,
+                                      'x',
+                                      BackgroundFlag::None);
+
+                game.needs_clear.push((x, y));
+            }
+        }
+    }
+}
+
 pub fn render_all(game: &mut Game,
               objects: &[Object],
               map: &mut Map,
@@ -277,46 +319,18 @@ pub fn render_all(game: &mut Game,
             continue;
         }
 
-        // draw enemy movement positions
-        if let Some(movement) = objects[id].movement {
-            let offsets = movement.offsets();
-            for offset in offsets {
-                let x = game.mouse.cx as i32 + offset.0;
-                let y = game.mouse.cy as i32 + offset.1;
+        draw_movement_overlay(game, map, id, objects);
+        draw_attack_overlay(game, map, id, objects);
+    }
 
-                if map.clear_path((game.mouse.cx as i32, game.mouse.cy as i32), 
-                                  (x, y),
-                                  &objects) {
-                    game.console.put_char(x,
-                                          y,
-                                          '.',
-                                          BackgroundFlag::None);
-
-                    game.needs_clear.push((x, y));
-                }
-            }
-        }
-
-        // draw enemy attack positions
-        if let Some(attack) = objects[id].attack {
-            let offsets = attack.offsets();
-            for offset in offsets {
-                let x = game.mouse.cx as i32 + offset.0;
-                let y = game.mouse.cy as i32 + offset.1;
-
-                if map.clear_path((game.mouse.cx as i32, game.mouse.cy as i32), 
-                                  (x, y),
-                                  &objects) {
-                    game.console.put_char(x,
-                                          y,
-                                          'x',
-                                          BackgroundFlag::None);
-
-                    game.needs_clear.push((x, y));
-                }
-            }
+    for id in 0..objects.len() {
+        let (x, y) = (objects[id].x, objects[id].y);
+        if game.display_overlays && game.fov.is_in_fov(x, y) && objects[id].alive {
+            draw_movement_overlay(game, map, id, objects);
+            draw_attack_overlay(game, map, id, objects);
         }
     }
+
 
     game.panel.set_default_background(BLACK);
     game.panel.clear();

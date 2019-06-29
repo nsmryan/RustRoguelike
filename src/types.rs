@@ -33,6 +33,7 @@ pub struct Game {
     pub mouse: Mouse,
     pub panel: Offscreen,
     pub turn_count: usize,
+    pub display_overlays: bool,
     pub animations: Vec<Animation>,
     pub needs_clear: Vec<(i32, i32)>,
 }
@@ -46,6 +47,7 @@ impl Game {
             mouse: Default::default(),
             panel: Offscreen::new(SCREEN_WIDTH, PANEL_HEIGHT),
             turn_count: 0,
+            display_overlays: false,
             animations: Vec::new(),
             needs_clear: Vec::new(),
         }
