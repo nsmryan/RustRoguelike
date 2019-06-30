@@ -298,6 +298,7 @@ pub fn render_all(game: &mut Game,
                     }
                 }
             }
+
             map.0[x as usize][y as usize].explored = explored;
         }
     }
@@ -330,6 +331,51 @@ pub fn render_all(game: &mut Game,
             draw_movement_overlay(game, map, id, objects);
             draw_attack_overlay(game, map, id, objects);
         }
+    }
+
+    // display for checking out character flags
+    for x in 0..10 {
+        game.console.put_char(x, 0, '+', BackgroundFlag::None);
+        game.console.put_char(x, 0, 'X', BackgroundFlag::None);
+
+        game.console.put_char(x, 1, '+', BackgroundFlag::None);
+        game.console.put_char(x, 1, 'X', BackgroundFlag::Set);
+
+        game.console.put_char(x, 2, '+', BackgroundFlag::None);
+        game.console.put_char(x, 2, 'X', BackgroundFlag::Lighten);
+
+        game.console.put_char(x, 3, '+', BackgroundFlag::None);
+        game.console.put_char(x, 3, 'X', BackgroundFlag::Darken);
+
+        game.console.put_char(x, 4, '+', BackgroundFlag::None);
+        game.console.put_char(x, 4, 'X', BackgroundFlag::Screen);
+
+        game.console.put_char(x, 5, '+', BackgroundFlag::None);
+        game.console.put_char(x, 5, 'X', BackgroundFlag::ColorDodge);
+
+        game.console.put_char(x, 6, '+', BackgroundFlag::None);
+        game.console.put_char(x, 6, 'X', BackgroundFlag::ColorBurn);
+
+        game.console.put_char(x, 7, '+', BackgroundFlag::None);
+        game.console.put_char(x, 7, 'X', BackgroundFlag::Add);
+
+        game.console.put_char(x, 8, '+', BackgroundFlag::None);
+        game.console.put_char(x, 8, 'X', BackgroundFlag::AddA);
+
+        game.console.put_char(x, 9, '+', BackgroundFlag::None);
+        game.console.put_char(x, 9, 'X', BackgroundFlag::Burn);
+
+        game.console.put_char(x, 10, '+', BackgroundFlag::None);
+        game.console.put_char(x, 10, 'X', BackgroundFlag::Overlay);
+
+        game.console.put_char(x, 11, '+', BackgroundFlag::None);
+        game.console.put_char(x, 11, 'X', BackgroundFlag::Alph);
+
+        game.console.put_char(x, 12, '+', BackgroundFlag::None);
+        game.console.put_char(x, 12, 'X', BackgroundFlag::Default);
+
+        game.console.put_char(x, 13, '+', BackgroundFlag::None);
+        game.console.put_char(x, 13, 'X', BackgroundFlag::Multiply);
     }
 
     game.panel.set_default_background(BLACK);
