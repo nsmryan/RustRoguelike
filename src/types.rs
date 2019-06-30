@@ -1,6 +1,4 @@
 use std::convert::Into;
-use std::ops::Deref;
-use std::ops::DerefMut;
 
 use tcod::console::*;
 use tcod::map::{Map as FovMap};
