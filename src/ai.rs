@@ -47,6 +47,13 @@ pub fn make_kobold(config: &Config, x: i32, y :i32) -> Object {
     kobold
 }
 
+pub fn can_see_player(fov_map: &FovMap, monster_pos: Position, player_pos: Position) -> bool {
+    let within_fov = fov_map.is_in_fov(monster_pos.0, monster_pos.1);
+    let within_sight_range = player_pos.distance(&monster_pos) <= MONSTER_VIEW_DIST;
+
+    return within_fov && within_sight_range;
+}
+
 pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) {
     let (x, y) = objects[PLAYER].pos();
 
@@ -182,7 +189,8 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
     let monster_pos = Position::new(monster_x, monster_y);
     let took_turn: AiAction;
 
-    if fov_map.is_in_fov(monster_x, monster_y) {
+               
+    if can_see_player(fov_map, monster_pos, player_pos) {
         // if the player is in view, update our target location to seek towards
         target_pos = player_pos;
 
@@ -274,13 +282,14 @@ fn basic_ai_take_turn(monster_id: usize,
     let (monster_x, monster_y) = objects[monster_id].pos();
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
+    let monster_pos = Position::new(monster_x, monster_y);
 
     match objects[monster_id].behavior {
         Some(Behavior::Idle) => {
-            if fov_map.is_in_fov(monster_x, monster_y) {
+            if can_see_player(fov_map, monster_pos, player_pos) {
                 objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
             } else if let Some(sound_pos) = map[(monster_x, monster_y)].sound {
-                objects[monster_id].behavior = Some(Behavior::Seeking(sound_pos));
+                objects[monster_id].behavior = Some(Behavior::Seeking(Position::from_pair(&sound_pos)));
             }
 
             AiAction::TookTurn

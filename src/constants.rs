@@ -27,6 +27,8 @@ pub const MAX_ROOM_ITEMS: i32 = 12;
 
 pub const MAX_MONSTERS: i32 = 15;
 
+pub const MONSTER_VIEW_DIST: i32 = 6;
+
 
 pub const PLAYER: usize = 0;
 pub const MAX_MOMENTUM: i32 = 2;
