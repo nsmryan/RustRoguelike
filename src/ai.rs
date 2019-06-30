@@ -279,7 +279,10 @@ fn basic_ai_take_turn(monster_id: usize,
         Some(Behavior::Idle) => {
             if fov_map.is_in_fov(monster_x, monster_y) {
                 objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
+            } else if let Some(sound_pos) = map[(monster_x, monster_y)].sound {
+                objects[monster_id].behavior = Some(Behavior::Seeking(sound_pos));
             }
+
             AiAction::TookTurn
         }
 
