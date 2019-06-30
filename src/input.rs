@@ -23,6 +23,7 @@ pub fn handle_input(game: &mut Game,
     let player_alive = objects[PLAYER].alive;
 
     if game.mouse.lbutton_pressed {
+        let mut stone_thrown = false;
         for index in 0..inventory.len() {
             let (mx, my) = (game.mouse.x, game.mouse.y);
             if inventory[index].item == Some(Item::Stone) {
@@ -47,11 +48,17 @@ pub fn handle_input(game: &mut Game,
                                       Line::new((start_x, start_y),
                                                 (target_x, target_y)));
                 game.animations.push(animation);
+                stone_thrown = true;
                 break;
             }
         }
+        if stone_thrown == true {
+            TookTurn
+        }
+        else {
+            DidntTakeTurn
+        }
 
-        TookTurn
     } else {
         match (key, player_alive) {
             (Key { code: Up,      .. }, true)  |
