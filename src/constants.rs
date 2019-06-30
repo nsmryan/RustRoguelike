@@ -27,6 +27,8 @@ pub const MAX_ROOM_ITEMS: i32 = 12;
 
 pub const MAX_MONSTERS: i32 = 15;
 
+pub const MONSTER_VIEW_DIST: i32 = 6;
+
 
 pub const PLAYER: usize = 0;
 pub const MAX_MOMENTUM: i32 = 2;
@@ -42,6 +44,8 @@ pub const MSG_WIDTH: i32 = SCREEN_WIDTH - BAR_WIDTH - 2;
 pub const MSG_HEIGHT: usize = PANEL_HEIGHT as usize - 1;
 
 pub const INVENTORY_WIDTH: i32 = 50;
+
+pub const STONE_SOUND_RADIUS: i32 = 5;
 
 pub const ISLAND_RADIUS: i32 = 15;
 pub const ISLAND_NUM_OBSTACLES: i32 = 15;

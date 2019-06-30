@@ -167,6 +167,48 @@ pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
     return ((result & 0xFFFFFFFF) as f32) / 4294967295.0;
 }
 
+pub fn draw_movement_overlay(game: &mut Game, map: &mut Map, id: ObjectId, objects: &[Object]) {
+    if let Some(movement) = objects[id].movement {
+        let offsets = movement.offsets();
+        for offset in offsets {
+            let x = objects[id].x as i32 + offset.0;
+            let y = objects[id].y as i32 + offset.1;
+
+            if map.clear_path((objects[id].x as i32, objects[id].y as i32), 
+                              (x, y),
+                              &objects) {
+                game.console.put_char(x,
+                                      y,
+                                      '.',
+                                      BackgroundFlag::None);
+
+                game.needs_clear.push((x, y));
+            }
+        }
+    }
+}
+
+pub fn draw_attack_overlay(game: &mut Game, map: &mut Map, id: ObjectId, objects: &[Object]) {
+    if let Some(attack) = objects[id].attack {
+        let offsets = attack.offsets();
+        for offset in offsets {
+            let x = objects[id].x as i32 + offset.0;
+            let y = objects[id].y as i32 + offset.1;
+
+            if map.clear_path((objects[id].x as i32, objects[id].y as i32), 
+                              (x, y),
+                              &objects) {
+                game.console.put_char(x,
+                                      y,
+                                      'x',
+                                      BackgroundFlag::None);
+
+                game.needs_clear.push((x, y));
+            }
+        }
+    }
+}
+
 pub fn render_all(game: &mut Game,
               objects: &[Object],
               map: &mut Map,
@@ -256,6 +298,16 @@ pub fn render_all(game: &mut Game,
                     }
                 }
             }
+
+            // after animations play, draw sound for a frame
+            if game.animations.len() == 0 {
+               if let Some(sound_loc) = map[(x, y)].sound {
+                   if map.clear_path_obstacles(sound_loc, (x, y), objects) {
+                      game.console.put_char(x, y, '.', BackgroundFlag::None);
+                   }
+               }
+            }
+
             map.0[x as usize][y as usize].explored = explored;
         }
     }
@@ -271,52 +323,71 @@ pub fn render_all(game: &mut Game,
         object.draw(&mut game.console);
     }
 
+    // Draw movement and attack overlays
     let ids = get_objects_under_mouse(game.mouse, objects, &game.fov);
     for id in ids {
         if !objects[id].alive {
             continue;
         }
 
-        // draw enemy movement positions
-        if let Some(movement) = objects[id].movement {
-            let offsets = movement.offsets();
-            for offset in offsets {
-                let x = game.mouse.cx as i32 + offset.0;
-                let y = game.mouse.cy as i32 + offset.1;
+        draw_movement_overlay(game, map, id, objects);
+        draw_attack_overlay(game, map, id, objects);
+    }
 
-                if map.clear_path((game.mouse.cx as i32, game.mouse.cy as i32), 
-                                  (x, y),
-                                  &objects) {
-                    game.console.put_char(x,
-                                          y,
-                                          '.',
-                                          BackgroundFlag::None);
-
-                    game.needs_clear.push((x, y));
-                }
-            }
-        }
-
-        // draw enemy attack positions
-        if let Some(attack) = objects[id].attack {
-            let offsets = attack.offsets();
-            for offset in offsets {
-                let x = game.mouse.cx as i32 + offset.0;
-                let y = game.mouse.cy as i32 + offset.1;
-
-                if map.clear_path((game.mouse.cx as i32, game.mouse.cy as i32), 
-                                  (x, y),
-                                  &objects) {
-                    game.console.put_char(x,
-                                          y,
-                                          'x',
-                                          BackgroundFlag::None);
-
-                    game.needs_clear.push((x, y));
-                }
-            }
+    for id in 0..objects.len() {
+        let (x, y) = (objects[id].x, objects[id].y);
+        if game.display_overlays && game.fov.is_in_fov(x, y) && objects[id].alive {
+            draw_movement_overlay(game, map, id, objects);
+            draw_attack_overlay(game, map, id, objects);
         }
     }
+
+    // display for checking out character flags
+    /*
+    for x in 0..10 {
+        game.console.put_char(x, 0, '+', BackgroundFlag::None);
+        game.console.put_char(x, 0, 'X', BackgroundFlag::None);
+
+        game.console.put_char(x, 1, '+', BackgroundFlag::None);
+        game.console.put_char(x, 1, 'X', BackgroundFlag::Set);
+
+        game.console.put_char(x, 2, '+', BackgroundFlag::None);
+        game.console.put_char(x, 2, 'X', BackgroundFlag::Lighten);
+
+        game.console.put_char(x, 3, '+', BackgroundFlag::None);
+        game.console.put_char(x, 3, 'X', BackgroundFlag::Darken);
+
+        game.console.put_char(x, 4, '+', BackgroundFlag::None);
+        game.console.put_char(x, 4, 'X', BackgroundFlag::Screen);
+
+        game.console.put_char(x, 5, '+', BackgroundFlag::None);
+        game.console.put_char(x, 5, 'X', BackgroundFlag::ColorDodge);
+
+        game.console.put_char(x, 6, '+', BackgroundFlag::None);
+        game.console.put_char(x, 6, 'X', BackgroundFlag::ColorBurn);
+
+        game.console.put_char(x, 7, '+', BackgroundFlag::None);
+        game.console.put_char(x, 7, 'X', BackgroundFlag::Add);
+
+        game.console.put_char(x, 8, '+', BackgroundFlag::None);
+        game.console.put_char(x, 8, 'X', BackgroundFlag::AddA);
+
+        game.console.put_char(x, 9, '+', BackgroundFlag::None);
+        game.console.put_char(x, 9, 'X', BackgroundFlag::Burn);
+
+        game.console.put_char(x, 10, '+', BackgroundFlag::None);
+        game.console.put_char(x, 10, 'X', BackgroundFlag::Overlay);
+
+        game.console.put_char(x, 11, '+', BackgroundFlag::None);
+        game.console.put_char(x, 11, 'X', BackgroundFlag::Alph);
+
+        game.console.put_char(x, 12, '+', BackgroundFlag::None);
+        game.console.put_char(x, 12, 'X', BackgroundFlag::Default);
+
+        game.console.put_char(x, 13, '+', BackgroundFlag::None);
+        game.console.put_char(x, 13, 'X', BackgroundFlag::Multiply);
+    }
+    */
 
     game.panel.set_default_background(BLACK);
     game.panel.clear();

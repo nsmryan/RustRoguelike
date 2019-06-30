@@ -1,3 +1,5 @@
+use std::convert::Into;
+
 use tcod::console::*;
 use tcod::map::{Map as FovMap};
 use tcod::input::Mouse;
@@ -33,6 +35,7 @@ pub struct Game {
     pub mouse: Mouse,
     pub panel: Offscreen,
     pub turn_count: usize,
+    pub display_overlays: bool,
     pub animations: Vec<Animation>,
     pub needs_clear: Vec<(i32, i32)>,
 }
@@ -46,6 +49,7 @@ impl Game {
             mouse: Default::default(),
             panel: Offscreen::new(SCREEN_WIDTH, PANEL_HEIGHT),
             turn_count: 0,
+            display_overlays: false,
             animations: Vec::new(),
             needs_clear: Vec::new(),
         }
@@ -417,6 +421,12 @@ impl Position {
 
     pub fn add(&self, other: Position) -> Position{
         Position(self.0 + other.0, self.1 + other.1)
+    }
+}
+
+impl Into<(i32, i32)> for Position {
+    fn into(self) -> (i32, i32) {
+        (self.0, self.1)
     }
 }
 

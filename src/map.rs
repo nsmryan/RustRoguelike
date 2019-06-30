@@ -1,5 +1,7 @@
-use rand::Rng;
 use std::ops::{Index, IndexMut};
+use std::collections::HashSet;
+
+use rand::Rng;
 
 use tcod::colors::*;
 use tcod::line::*;
@@ -15,46 +17,52 @@ pub struct Tile {
     pub block_sight: bool,
     pub explored: bool,
     pub tile_type: TileType,
+    pub sound: Option<(i32, i32)>,
 }
 
 impl Tile {
     pub fn empty() -> Self {
         Tile { blocked: false,
-        block_sight: false,
-        explored: false,
-        tile_type: TileType::Empty,
+               block_sight: false,
+               explored: false,
+               tile_type: TileType::Empty,
+               sound: None,
         }
     }
 
     pub fn water() -> Self {
         Tile { blocked: true,
-        block_sight: false,
-        explored: false,
-        tile_type: TileType::Water,
+               block_sight: false,
+               explored: false,
+               tile_type: TileType::Water,
+               sound: None,
         }
     }
 
     pub fn wall() -> Self {
         Tile { blocked: true,
-        block_sight: true,
-        explored: false,
-        tile_type: TileType::Wall,
+               block_sight: true,
+               explored: false,
+               tile_type: TileType::Wall,
+               sound: None,
         }
     }
 
     pub fn short_wall() -> Self {
         Tile { blocked: true,
-        block_sight: false,
-        explored: false,
-        tile_type: TileType::ShortWall,
+               block_sight: false,
+               explored: false,
+               tile_type: TileType::ShortWall,
+               sound: None,
         }
     }
 
     pub fn exit() -> Self {
         Tile { blocked: false,
-        block_sight: false,
-        explored: false,
-        tile_type: TileType::Exit,
+               block_sight: false,
+               explored: false,
+               tile_type: TileType::Exit,
+               sound: None,
         }
     }
 }
@@ -139,6 +147,39 @@ impl Map {
             line.into_iter().any(|point| self.is_blocked(point.0, point.1, objects));
 
         return !path_blocked;
+    }
+
+    // this function is like clear_path, but only looks for terrain, not objects like monsters
+    pub fn clear_path_obstacles(&self, start: (i32, i32), end: (i32, i32), objects: &[Object]) -> bool {
+        let line = Line::new((start.0, start.1), (end.0, end.1));
+
+        let path_blocked =
+            line.into_iter().any(|point| self[point].blocked);
+
+        return !path_blocked;
+    }
+
+    pub fn pos_in_radius(&self, start: (i32, i32), radius: i32) -> Vec<(i32, i32)> {
+        let mut circle_positions = HashSet::new();
+        let start_pos = Position::from_pair(&start);
+
+        // for each position on the edges of a square around the point, with the
+        // radius as the distance in x/y, add to a set.
+        // duplicates will be removed, leaving only points within the radius.
+        for x in (start.0 - radius)..(start.0 + radius) {
+            for y in (start.1 - radius)..(start.1 + radius) {
+                let mut line = Line::new((start.0, start.1), (x, y));
+
+                // get points to the edge of square, filtering for points within the given radius
+                for point in line.into_iter() {
+                    if start_pos.distance(&Position::from_pair(&point)) < radius {
+                        circle_positions.insert(point);
+                    }
+                }
+            }
+        }
+
+        return circle_positions.iter().map(|pos| *pos).collect();
     }
 }
 
@@ -334,10 +375,6 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         object.item = Some(Item::Goal);
         objects.push(object);
     }
-
-
-
-
 
     /* add goal object */
     let (mut x, mut y) = pos_in_radius(center, ISLAND_RADIUS).pair();
