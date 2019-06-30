@@ -50,7 +50,6 @@ pub fn handle_input(game: &mut Game,
                                                 (target_x, target_y)));
                 game.animations.push(animation);
                 stone_thrown = true;
-                throw_stone((mx as i32, my as i32), item, game, map, objects);
                 break;
             }
         }
