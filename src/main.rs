@@ -185,10 +185,28 @@ fn main() {
             object.clear(&mut game.console);
         }
 
+        /* Clear locations with temporary characters displayed */
         for clearable in game.needs_clear.iter() {
             game.console.put_char(clearable.0, clearable.1, ' ', BackgroundFlag::None);
         }
         game.needs_clear.clear();
+
+        /* Clear Sounds from Map */
+        // sounds are cleared after animations, in case they are used for an animation
+        if game.animations.len() == 0 {
+            let map_size = map.size();
+            for x in 0..map_size.0
+            {
+                for y in 0..map_size.1
+                {
+                    if map[(x, y)].sound.is_some() {
+                        // clear any position with sound information drawn
+                        game.needs_clear.push((x, y));
+                        map[(x, y)].sound = None;
+                    }
+                }
+            }
+        }
 
         /* Player Action and Animations */
         // If there is an animation playing, let it finish

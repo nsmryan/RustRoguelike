@@ -149,6 +149,16 @@ impl Map {
         return !path_blocked;
     }
 
+    // this function is like clear_path, but only looks for terrain, not objects like monsters
+    pub fn clear_path_obstacles(&self, start: (i32, i32), end: (i32, i32), objects: &[Object]) -> bool {
+        let line = Line::new((start.0, start.1), (end.0, end.1));
+
+        let path_blocked =
+            line.into_iter().any(|point| self[point].blocked);
+
+        return !path_blocked;
+    }
+
     pub fn pos_in_radius(&self, start: (i32, i32), radius: i32) -> Vec<(i32, i32)> {
         let mut circle_positions = HashSet::new();
         let start_pos = Position::from_pair(&start);
@@ -158,12 +168,14 @@ impl Map {
         // duplicates will be removed, leaving only points within the radius.
         for x in (start.0 - radius)..(start.0 + radius) {
             for y in (start.1 - radius)..(start.1 + radius) {
-                let line = Line::new((start.0, start.1), (x, y));
+                let mut line = Line::new((start.0, start.1), (x, y));
 
                 // get points to the edge of square, filtering for points within the given radius
-                line.into_iter()
-                    .filter(|point| start_pos.distance(&Position::from_pair(point)) < radius)
-                    .map(|point| circle_positions.insert(point));
+                for point in line.into_iter() {
+                    if start_pos.distance(&Position::from_pair(&point)) < radius {
+                        circle_positions.insert(point);
+                    }
+                }
             }
         }
 

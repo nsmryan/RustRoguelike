@@ -299,6 +299,15 @@ pub fn render_all(game: &mut Game,
                 }
             }
 
+            // after animations play, draw sound for a frame
+            if game.animations.len() == 0 {
+               if let Some(sound_loc) = map[(x, y)].sound {
+                   if map.clear_path_obstacles(sound_loc, (x, y), objects) {
+                      game.console.put_char(x, y, '.', BackgroundFlag::None);
+                   }
+               }
+            }
+
             map.0[x as usize][y as usize].explored = explored;
         }
     }
@@ -334,6 +343,7 @@ pub fn render_all(game: &mut Game,
     }
 
     // display for checking out character flags
+    /*
     for x in 0..10 {
         game.console.put_char(x, 0, '+', BackgroundFlag::None);
         game.console.put_char(x, 0, 'X', BackgroundFlag::None);
@@ -377,6 +387,7 @@ pub fn render_all(game: &mut Game,
         game.console.put_char(x, 13, '+', BackgroundFlag::None);
         game.console.put_char(x, 13, 'X', BackgroundFlag::Multiply);
     }
+    */
 
     game.panel.set_default_background(BLACK);
     game.panel.clear();

@@ -28,26 +28,7 @@ pub fn handle_input(game: &mut Game,
             let (mx, my) = (game.mouse.x, game.mouse.y);
             if inventory[index].item == Some(Item::Stone) {
                 let mut item = inventory.swap_remove(index);
-                let obj_id = objects.len();
-
-                let start_x = objects[PLAYER].x;
-                let start_y = objects[PLAYER].y;
-                let end_x = mx as i32 / FONT_WIDTH;
-                let end_y = my as i32 / FONT_HEIGHT;
-                let throw_line = Line::new((start_x, start_y), (end_x, end_y));
-
-                let (target_x, target_y) =
-                    throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
-
-                item.x = start_x;
-                item.y = start_y;
-                objects.push(item);
-
-                let animation =
-                    Animation::Thrown(obj_id,
-                                      Line::new((start_x, start_y),
-                                                (target_x, target_y)));
-                game.animations.push(animation);
+                throw_stone((mx as i32, my as i32), item, game, map, objects);
                 break;
             }
         }
@@ -168,6 +149,41 @@ pub fn handle_input(game: &mut Game,
 
             (_, _) => DidntTakeTurn,
         }
+    }
+}
+
+pub fn throw_stone(pos: (i32, i32),
+                   mut stone: Object,
+                   game: &mut Game,
+                   map: &mut Map,
+                   objects: &mut Vec<Object>) {
+    let (mx, my) = pos;
+    let obj_id = objects.len();
+
+    let start_x = objects[PLAYER].x;
+    let start_y = objects[PLAYER].y;
+    let end_x = mx / FONT_WIDTH;
+    let end_y = my / FONT_HEIGHT;
+    let throw_line = Line::new((start_x, start_y), (end_x, end_y));
+
+    // get target position in direction of player click
+    let (target_x, target_y) =
+        throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
+
+    stone.x = start_x;
+    stone.y = start_y;
+    objects.push(stone);
+
+    // add animation to animation list
+    let animation =
+        Animation::Thrown(obj_id,
+                          Line::new((start_x, start_y),
+                                    (target_x, target_y)));
+    game.animations.push(animation);
+
+    // add sound to map
+    for pos in map.pos_in_radius((target_x, target_y), STONE_SOUND_RADIUS) {
+        map[pos].sound = Some((target_x, target_y));
     }
 }
 
