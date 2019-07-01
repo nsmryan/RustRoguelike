@@ -103,6 +103,10 @@ impl Map {
         Map(map)
     }
 
+    pub fn from_dims(width: usize, height: usize) -> Map {
+        Map(vec!(vec!(Tile::empty(); width); height))
+    }
+
     pub fn is_blocked(&self, x: i32, y: i32, objects: &[Object]) -> bool {
         if self[(x, y)].blocked {
             return true;

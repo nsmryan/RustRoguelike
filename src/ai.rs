@@ -139,7 +139,6 @@ pub fn ai_attack(monster_id: usize,
                  _map: &Map,
                  objects: &mut Vec<Object>,
                  _fov_map: &FovMap,
-                 _messages: &mut Messages,
                  animations: &mut Vec<Animation>) -> AiAction {
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
@@ -150,7 +149,7 @@ pub fn ai_attack(monster_id: usize,
         let (player, monster) = mut_two(PLAYER, monster_id, objects);
 
         // apply attack 
-        monster.attack(player, _messages);
+        monster.attack(player);
 
         // add animation
         let mut thrown_obj =
@@ -179,15 +178,14 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
                          monster_id: usize,
                          map: &Map,
                          objects: &mut Vec<Object>,
-                         fov_map: &FovMap,
-                         _messages: &mut Messages) -> AiAction {
+                         fov_map: &FovMap) -> AiTurn {
     let mut target_pos = target_pos_orig;
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
 
     let (monster_x, monster_y) = objects[monster_id].pos();
     let monster_pos = Position::new(monster_x, monster_y);
-    let took_turn: AiAction;
+    let turn: AiTurn;
 
                
     if can_see_player(fov_map, monster_pos, player_pos) {
@@ -195,9 +193,7 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
         target_pos = player_pos;
 
         if let Some(_hit_pos) = ai_can_hit_player(monster_id, objects) {
-            objects[monster_id].behavior = Some(Behavior::Attacking);
-
-            took_turn = AiAction::DidntTakeTurn;
+            turn = AiTurn::StateChange(Behavior::Attacking);
         } else {
             // check positions that can hit player, filter by FOV, and get the closest.
             // then move to this closest position.
@@ -222,7 +218,7 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
                 objects[monster_id].behavior = Some(Behavior::Seeking(target_pos));
             }
 
-            took_turn = AiAction::TookTurn;
+            turn = AiAction::TookTurn;
         }
     } else { // the monster can't see the player
         if target_pos == monster_pos { 
@@ -277,7 +273,6 @@ fn basic_ai_take_turn(monster_id: usize,
                       map: &Map,
                       objects: &mut Vec<Object>,
                       fov_map: &FovMap,
-                      messages: &mut Messages,
                       animations: &mut Vec<Animation>) -> AiAction {
     let (monster_x, monster_y) = objects[monster_id].pos();
     let (player_x, player_y) = objects[PLAYER].pos();
@@ -300,8 +295,7 @@ fn basic_ai_take_turn(monster_id: usize,
                               monster_id,
                               map,
                               objects,
-                              fov_map,
-                              messages)
+                              fov_map)
         }
 
         Some(Behavior::Attacking) => {
@@ -309,7 +303,6 @@ fn basic_ai_take_turn(monster_id: usize,
                       map,
                       objects,
                       fov_map,
-                      messages,
                       animations)
         }
 
@@ -323,16 +316,15 @@ pub fn ai_take_turn(monster_id: usize,
                     map: &Map,
                     objects: &mut Vec<Object>,
                     fov_map: &FovMap,
-                    messages: &mut Messages,
                     animations: &mut Vec<Animation>) {
     match objects[monster_id].ai {
         Some(Ai::Basic) => {
-            let took_turn = basic_ai_take_turn(monster_id, map, objects, fov_map, messages, animations);
+            let took_turn = basic_ai_take_turn(monster_id, map, objects, fov_map, animations);
 
             // allow an extra iteration if the AI didn't take a turn.
             // note that this is not in a loop- only one extra iteration is allowed
             if took_turn == AiAction::DidntTakeTurn {
-                basic_ai_take_turn(monster_id, map, objects, fov_map, messages, animations);
+                basic_ai_take_turn(monster_id, map, objects, fov_map, animations);
             }
         }
 

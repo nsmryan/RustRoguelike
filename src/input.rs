@@ -253,7 +253,7 @@ fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], me
     match target_id {
         Some(target_id) => {
             let (player, target) = mut_two(PLAYER, target_id, objects);
-             player.attack(target, messages);
+             player.attack(target);
         }
 
         None => {

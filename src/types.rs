@@ -180,14 +180,14 @@ impl Object {
         }
     }
 
-    pub fn attack(&mut self, target: &mut Object, messages: &mut Messages) {
+    pub fn attack(&mut self, target: &mut Object) {
         let damage = self.fighter.map_or(0, |f| f.power) - target.fighter.map_or(0, |f| f.defense);
 
         if damage > 0 {
-            messages.message(format!("{} attacks {} for {} hit points.", self.name, target.name, damage), WHITE);
+            //messages.message(format!("{} attacks {} for {} hit points.", self.name, target.name, damage), WHITE);
             target.take_damage(damage);
         } else {
-            messages.message(format!("{} attacks {} but it has no effect!", self.name, target.name), WHITE);
+            //messages.message(format!("{} attacks {} but it has no effect!", self.name, target.name), WHITE);
         }
     }
 
@@ -300,8 +300,16 @@ pub enum PlayerAction {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AiAction {
-    TookTurn,
-    DidntTakeTurn,
+    Move((i32, i32)),
+    Attack((i32, i32)),
+    Skip,
+}
+
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AiTurn {
+    Action(AiAction),
+    StateChange(Behavior),
 }
 
 
