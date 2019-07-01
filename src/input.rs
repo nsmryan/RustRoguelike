@@ -24,16 +24,42 @@ pub fn handle_input(game: &mut Game,
     let player_alive = objects[PLAYER].alive;
 
     if game.mouse.lbutton_pressed {
+        let mut stone_thrown = false;
         for index in 0..inventory.len() {
             let (mx, my) = (game.mouse.x, game.mouse.y);
             if inventory[index].item == Some(Item::Stone) {
                 let mut item = inventory.swap_remove(index);
-                throw_stone((mx as i32, my as i32), item, game, map, objects);
+                let obj_id = objects.len();
+
+                let start_x = objects[PLAYER].x;
+                let start_y = objects[PLAYER].y;
+                let end_x = mx as i32 / FONT_WIDTH;
+                let end_y = my as i32 / FONT_HEIGHT;
+                let throw_line = Line::new((start_x, start_y), (end_x, end_y));
+
+                let (target_x, target_y) =
+                    throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
+
+                item.x = start_x;
+                item.y = start_y;
+                objects.push(item);
+
+                let animation =
+                    Animation::Thrown(obj_id,
+                                      Line::new((start_x, start_y),
+                                                (target_x, target_y)));
+                game.animations.push(animation);
+                stone_thrown = true;
                 break;
             }
         }
+        if stone_thrown == true {
+            TookTurn
+        }
+        else {
+            DidntTakeTurn
+        }
 
-        TookTurn
     } else {
         match (key, player_alive) {
             (Key { code: Up,      .. }, true)  |
