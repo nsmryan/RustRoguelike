@@ -21,83 +21,91 @@ pub fn handle_input(game: &mut Game,
                     messages: &mut Messages) -> PlayerAction {
     use PlayerAction::*;
 
+    let player_action: PlayerAction;
+
     let player_alive = objects[PLAYER].alive;
 
     if game.mouse.lbutton_pressed {
+        let mut found_stone = false;
         for index in 0..inventory.len() {
             let (mx, my) = (game.mouse.x, game.mouse.y);
             if inventory[index].item == Some(Item::Stone) {
                 let mut item = inventory.swap_remove(index);
                 throw_stone((mx as i32, my as i32), item, game, map, objects);
+                found_stone = true;
                 break;
             }
         }
 
-        TookTurn
+        if found_stone {
+            player_action = TookTurn;
+        } else {
+            player_action = DidntTakeTurn;
+        }
     } else {
         match (key, player_alive) {
             (Key { code: Up,      .. }, true)  |
             (Key { code: Number8, .. }, true)  |
             (Key { code: NumPad8, .. }, true) => {
                 player_move_or_attack(0, -1, map, objects, messages);
-                TookTurn
+                player_action = TookTurn;
             }
 
             (Key { code: Down,    .. }, true) |
             (Key { code: Number2, .. }, true) |
             (Key { code: NumPad2, .. }, true) => {
                 player_move_or_attack(0, 1, map, objects, messages);
-                TookTurn
+                player_action = TookTurn;
             }
             (Key { code: Left,    .. }, true) |
             (Key { code: Number4, .. }, true) |
             (Key { code: NumPad4, .. }, true) => {
                 player_move_or_attack(-1, 0, map, objects, messages);
-                TookTurn
+                player_action = TookTurn;
             }
 
             (Key { code: Right,   .. }, true) |
             (Key { code: Number6, .. }, true) |
             (Key { code: NumPad6, .. }, true) => {
                 player_move_or_attack(1, 0, map, objects, messages);
-                TookTurn
+                player_action = TookTurn;
             }
 
             (Key { code: Number9, .. }, true)  |
             (Key { code: NumPad9, .. }, true) => {
                 player_move_or_attack(1, -1, map, objects, messages);
-                TookTurn
+                player_action = TookTurn;
             }
 
             (Key { code: Number3, .. }, true) |
             (Key { code: NumPad3, .. }, true) => {
                 player_move_or_attack(1, 1, map, objects, messages);
-                TookTurn
+                player_action = TookTurn;
             }
 
             (Key { code: Number1, .. }, true) |
             (Key { code: NumPad1, .. }, true) => {
                 player_move_or_attack(-1, 1, map, objects, messages);
-                TookTurn
+                player_action = TookTurn;
             }
 
             (Key { code: Number7, .. }, true) |
             (Key { code: NumPad7, .. }, true) => {
                 player_move_or_attack(-1, -1, map, objects, messages);
-                TookTurn
+                player_action = TookTurn;
             }
 
             (Key { code: Number5, .. }, true) |
             (Key { code: NumPad5, .. }, true) => {
                 objects[PLAYER].momentum = Some((0, 0));
-                TookTurn
+                player_action = TookTurn;
             }
 
             (Key { code: Enter, alt: true, .. }, _) => {
                 let fullscreen = game.root.is_fullscreen();
                 game.root.set_default_foreground(WHITE);
                 game.root.set_fullscreen(!fullscreen);
-                DidntTakeTurn
+                player_action = DidntTakeTurn;
             },
 
             (Key {printable: 'g', .. }, true) => {
@@ -107,7 +115,7 @@ pub fn handle_input(game: &mut Game,
                 if let Some(item_id) = item_id {
                     pick_item_up(item_id, objects, inventory, messages);
                 }
-                DidntTakeTurn
+                player_action = DidntTakeTurn;
             }
 
             (Key {printable: 'i', .. }, true) => {
@@ -118,10 +126,12 @@ pub fn handle_input(game: &mut Game,
                 if let Some(inventory_index) = inventory_index {
                     use_item(inventory_index, inventory, objects, messages);
                 }
-                DidntTakeTurn
+                player_action = DidntTakeTurn;
             }
 
-            (Key { code: Escape, .. }, _) => Exit,
+            (Key { code: Escape, .. }, _) => {
+                player_action = Exit;
+            }
 
             (Key {printable: 'v', .. }, true) => {
                 for x in 0..MAP_WIDTH {
@@ -129,13 +139,13 @@ pub fn handle_input(game: &mut Game,
                         map.0[x as usize][y as usize].explored = true;
                     }
                 }
-                DidntTakeTurn
+                player_action = DidntTakeTurn;
             }
 
             (Key {code: NumPadAdd, .. }, true) => {
                 game.display_overlays = !game.display_overlays;
 
-                DidntTakeTurn
+                player_action = DidntTakeTurn;
             }
 
             (Key {printable: 't', .. }, true) => {
@@ -144,12 +154,16 @@ pub fn handle_input(game: &mut Game,
                 objects[PLAYER].fighter =
                     Some(Fighter { hp: god_mode_hp, max_hp: god_mode_hp, ..fighter });
 
-                DidntTakeTurn
+                player_action = DidntTakeTurn;
             }
 
-            (_, _) => DidntTakeTurn,
+            (_, _) => {
+                player_action = DidntTakeTurn;
+            }
         }
     }
+
+    return player_action;
 }
 
 pub fn throw_stone(pos: (i32, i32),
