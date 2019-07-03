@@ -226,20 +226,20 @@ pub fn render_all(game: &mut Game,
 
             // Color based on TileType and visibility
             let color = match (map.0[x as usize][y as usize].tile_type, visible) {
-                (TileType::Wall, true) => config.color_light_wall.color(),
-                (TileType::Wall, false) => config.color_dark_wall.color(),
+                (TileType::Wall, true) => config.color_light_brown.color(),
+                (TileType::Wall, false) => config.color_dark_brown.color(),
 
-                (TileType::Empty, true) => lerp(config.color_light_ground_low.color(), config.color_light_ground_high.color(), rand_from_x_y(x, y)),
-                (TileType::Empty, false) => config.color_dark_ground.color(),
+                (TileType::Empty, true) => lerp(config.color_tile_blue_light.color(), config.color_tile_blue_dark.color(), rand_from_x_y(x, y)),
+                (TileType::Empty, false) => config.color_very_dark_blue.color(),
 
-                (TileType::Water, true) => config.color_light_water.color(),
-                (TileType::Water, false) => config.color_dark_water.color(),
+                (TileType::Water, true) => config.color_blueish_grey.color(),
+                (TileType::Water, false) => config.color_dark_brown.color(),
 
-                (TileType::ShortWall, true) => config.color_light_wall.color(),
-                (TileType::ShortWall, false) => config.color_dark_wall.color(),
+                (TileType::ShortWall, true) => config.color_light_brown.color(),
+                (TileType::ShortWall, false) => config.color_dark_brown.color(),
 
-                (TileType::Exit, true) => config.color_light_exit.color(),
-                (TileType::Exit, false) => config.color_dark_exit.color(),
+                (TileType::Exit, true) => config.color_orange.color(),
+                (TileType::Exit, false) => config.color_red.color(),
             };
 
             let mut explored = map.0[x as usize][y as usize].explored;
@@ -256,9 +256,9 @@ pub fn render_all(game: &mut Game,
 
                     TileType::ShortWall | TileType::Wall => {
                         if visible {
-                            game.console.set_char_background(x, y, config.color_light_ground.color(), BackgroundFlag::Set);
+                            game.console.set_char_background(x, y, config.color_tile_blue_light.color(), BackgroundFlag::Set);
                         } else {
-                            game.console.set_char_background(x, y, config.color_dark_ground.color(), BackgroundFlag::Set);
+                            game.console.set_char_background(x, y, config.color_very_dark_blue.color(), BackgroundFlag::Set);
                         }
 
                         let left = map[(x - 1, y)].tile_type == tile_type;

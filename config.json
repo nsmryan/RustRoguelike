@@ -1,67 +1,110 @@
 
 { 
-    "color_dark_wall": {
-      "r": 80,
-      "g": 65,
-      "b": 40 },
-    "color_light_wall": {
-      "r": 128,
-      "g": 102,
+
+    
+    "color_dark_brown": {
+      "r": 30,
+      "g": 25,
+      "b": 15 
+    },
+    "color_medium_brown": {
+      "r": 110,
+      "g": 90,
+      "b": 80 
+    },
+    "color_light_green": {
+      "r": 110,
+      "g": 180,
+      "b": 32
+    },
+    "color_tile_blue_dark": {
+      "r": 2,
+      "g": 17,
+      "b": 35
+    },
+    "color_tile_blue_light": {
+      "r": 4,
+      "g": 30,
+      "b": 50
+    },
+    "color_light_brown": {
+      "r": 158,
+      "g": 134,
+      "b": 100
+    },    
+    "color_ice_blue": {
+      "r": 0,
+      "g": 128,
+      "b": 255
+    },
+    "color_dark_blue": {
+      "r": 0,
+      "g": 0,
       "b": 64
     },
-    "color_light_exit": {
-      "r": 246,
-      "g": 148,
-      "b": 12 
-    },
-    "color_dark_exit": {
-      "r": 153,
-      "g": 91,
-      "b": 7
-    },    
-    "color_dark_ground": {
+    "color_very_dark_blue": {
       "r": 1,
       "g": 10,
       "b": 18
     },
-    "color_light_ground": {
-      "r": 2,
-      "g": 17,
-      "b": 35
+    "color_orange": {
+      "r": 217,
+      "g": 54,
+      "b": 0
     },
-    "color_light_water": {
-      "r": 110,
-      "g": 90,
-      "b": 80
-    },
-    "color_dark_water": {
-      "r": 0,
+    "color_red": {
+      "r": 102,
       "g": 0,
-      "b": 150
+      "b": 0
     },
-    "color_orc": {
-      "r": 0,
-      "g": 178,
-      "b": 178
+    "color_medium_grey": {
+      "r": 40,
+      "g": 40,
+      "b": 40 	
     },
-    "color_troll": {
+    "color_mint_green": {
       "r": 146,
       "g": 197,
-      "b": 127 	
+      "b": 127	
     },
-    "color_kobold": {
-      "r": 89,
-      "g": 178,
-      "b": 0 	
+    "color_blueish_grey": {
+      "r": 45,
+      "g": 45,
+      "b": 65
     },
-    "color_light_ground_low": {
-      "r": 2,
-      "g": 17,
-      "b": 35
+    "color_pink": {
+      "r": 210,
+      "g": 137,
+      "b": 154
     },
-    "color_light_ground_high": {
-      "r": 4,
-      "g": 30,
-      "b": 50
+    "color_rose_red": {
+      "r": 104,
+      "g": 43,
+      "b": 58
+    },
+    "color_light_orange": {
+      "r": 246,
+      "g": 148,
+      "b": 12
+    },
+    "color_bone_white": {
+      "r": 24,
+      "g": 226,
+      "b": 183
+    },
+    "color_warm_grey": {
+      "r": 99,
+      "g": 95,
+      "b": 82
+    },
+    "color_soft_green": {
+      "r": 172,
+      "g": 216,
+      "b": 172
+    },
+    "color_light_grey": {
+      "r": 132,
+      "g": 132,
+      "b": 132
     }
 }
