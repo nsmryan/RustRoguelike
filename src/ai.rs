@@ -21,7 +21,7 @@ pub fn make_orc(config: &Config, x: i32, y :i32) -> Object {
     orc.attack = Some(Reach::Diag);
     orc.alive = true;
     orc
-}                
+} 
 
 pub fn make_troll(config: &Config, x: i32, y :i32) -> Object {
     let mut troll = Object::new(x, y, '\u{15}', "troll", config.color_troll.color(), true);
@@ -138,7 +138,7 @@ pub fn move_towards(start_pos: (i32, i32), target_pos: (i32, i32)) -> (i32, i32)
 
 pub fn ai_attack(monster_id: usize,
                  _map: &Map,
-                 objects: &mut Vec<Object>,
+                 objects: &Vec<Object>,
                  _fov_map: &FovMap) -> AiTurn {
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
@@ -159,7 +159,7 @@ pub fn ai_attack(monster_id: usize,
 pub fn ai_seek_take_turn(target_pos_orig: Position, 
                          monster_id: usize,
                          map: &Map,
-                         objects: &mut Vec<Object>,
+                         objects: &Vec<Object>,
                          fov_map: &FovMap) -> AiTurn {
     let mut target_pos = target_pos_orig;
     let (player_x, player_y) = objects[PLAYER].pos();
@@ -260,7 +260,7 @@ fn ai_take_astar_step(monster_pos: (i32, i32), target_pos: (i32, i32), map: &Map
 
 fn basic_ai_take_turn(monster_id: usize,
                       map: &Map,
-                      objects: &mut Vec<Object>,
+                      objects: &Vec<Object>,
                       fov_map: &FovMap) -> AiTurn {
     let (monster_x, monster_y) = objects[monster_id].pos();
     let (player_x, player_y) = objects[PLAYER].pos();
