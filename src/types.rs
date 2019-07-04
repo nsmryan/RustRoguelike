@@ -318,6 +318,10 @@ impl AiTurn {
     pub fn add(&mut self, action: AiAction) {
         self.0.push(action);
     }
+
+    pub fn action(&self) -> Vec<AiAction> {
+        return self.0;
+    }
 }
 
 

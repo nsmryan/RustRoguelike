@@ -326,15 +326,19 @@ pub fn ai_take_turn(monster_id: usize,
                     objects: &mut Vec<Object>,
                     fov_map: &FovMap,
                     animations: &mut Vec<Animation>) {
+    let turn;
+
     match objects[monster_id].ai {
         Some(Ai::Basic) => {
-            let turn = basic_ai_take_turn(monster_id, map, objects, fov_map);
-
-            // TODO interpret turn
+            turn = basic_ai_take_turn(monster_id, map, objects, fov_map);
         }
 
         None => {
+            turn = AiTurn::new();
         }
+    }
+
+    for action in turn.actions.iter() {
     }
 }
 
