@@ -148,26 +148,6 @@ pub fn ai_attack(monster_id: usize,
     if let Some(hit_pos) = ai_can_hit_player(monster_id, objects) {
         turn.add(AiAction::Attack(hit_pos));
 
-        // TODO move this to where the actions are interpreted
-        /*
-        let (player, monster) = mut_two(PLAYER, monster_id, objects);
-
-        // apply attack 
-        monster.attack(player);
-
-        // add animation
-        let mut thrown_obj =
-            Object::new(monster_x, monster_y, '.', "thrown", tcod::colors::BLACK, false);
-        let obj_id = objects.len();
-        thrown_obj.x = monster_x;
-        thrown_obj.y = monster_y;
-        objects.push(thrown_obj);
-        let animation =
-            Animation::Thrown(obj_id,
-                              Line::new((monster_x, monster_y),
-                              (player_x, player_y)));
-        animations.push(animation);
-        */
     } else {
         // can't hit- seek to current player position instead
         turn.add(AiAction::StateChange(Behavior::Seeking(player_pos)));
@@ -338,7 +318,52 @@ pub fn ai_take_turn(monster_id: usize,
         }
     }
 
-    for action in turn.actions.iter() {
+    ai_apply_actions(monster_id,
+                     turn,
+                     map,
+                     objects,
+                     fov_map,
+                     animations);
+}
+
+pub fn ai_apply_actions(monster_id: usize,
+                        turn: AiTurn,
+                        map: &Map,
+                        objects: &mut Vec<Object>,
+                        fov_map: &FovMap,
+                        animations: &mut Vec<Animation>) {
+    for action in turn.actions().iter() {
+        match action {
+            AiAction::Move(pos) => {
+                move_by(monster_id, pos.0, pos.1, map, objects);
+            },
+
+            AiAction::Attack(pos) => {
+                let (player_x, player_y) = objects[PLAYER].pos();
+                let (monster_x, monster_y) = objects[monster_id].pos();
+                let (player, monster) = mut_two(PLAYER, monster_id, objects);
+
+                // apply attack 
+                monster.attack(player);
+
+                // add animation
+                let mut thrown_obj =
+                    Object::new(monster_x, monster_y, '.', "thrown", tcod::colors::BLACK, false);
+                let obj_id = objects.len();
+                thrown_obj.x = monster_x;
+                thrown_obj.y = monster_y;
+                objects.push(thrown_obj);
+                let animation =
+                    Animation::Thrown(obj_id,
+                                      Line::new((monster_x, monster_y),
+                                      (player_x, player_y)));
+                animations.push(animation);
+            },
+
+            AiAction::StateChange(behavior) => {
+                objects[monster_id].behavior = Some(*behavior);
+            },
+        }
     }
 }
 

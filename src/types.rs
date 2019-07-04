@@ -302,7 +302,6 @@ pub enum PlayerAction {
 pub enum AiAction {
     Move((i32, i32)),
     Attack((i32, i32)),
-    Skip,
     StateChange(Behavior),
 }
 
@@ -319,7 +318,7 @@ impl AiTurn {
         self.0.push(action);
     }
 
-    pub fn action(&self) -> Vec<AiAction> {
+    pub fn actions(self) -> Vec<AiAction> {
         return self.0;
     }
 }
