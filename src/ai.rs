@@ -125,27 +125,31 @@ pub fn move_by(id: usize, dx: i32, dy: i32, map: &Map, objects: &mut [Object]) {
     }
 }
 
-pub fn move_towards(id: usize, target_x: i32, target_y: i32, map: &Map, objects: &mut [Object]) {
-    let dx = target_x - objects[id].x;
-    let dy = target_y - objects[id].y;
+pub fn move_towards(start_pos: (i32, i32), target_pos: (i32, i32)) -> (i32, i32) {
+    let dx = target_pos.0 - start_pos.0;
+    let dy = target_pos.1 - start_pos.1;
     let distance = ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
 
     let dx = (dx as f32 / distance).round() as i32;
     let dy = (dy as f32 / distance).round() as i32;
-    move_by(id, dx, dy, map, objects);
+
+    return (dx, dy);
 }
 
 pub fn ai_attack(monster_id: usize,
                  _map: &Map,
                  objects: &mut Vec<Object>,
-                 _fov_map: &FovMap,
-                 animations: &mut Vec<Animation>) -> AiAction {
+                 _fov_map: &FovMap) -> AiTurn {
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
     let (monster_x, monster_y) = objects[monster_id].pos();
-    let took_turn: AiAction;
+    let mut turn: AiTurn = AiTurn::new();
 
-    if let Some(_hit_pos) = ai_can_hit_player(monster_id, objects) {
+    if let Some(hit_pos) = ai_can_hit_player(monster_id, objects) {
+        turn.add(AiAction::Attack(hit_pos));
+
+        // TODO move this to where the actions are interpreted
+        /*
         let (player, monster) = mut_two(PLAYER, monster_id, objects);
 
         // apply attack 
@@ -163,15 +167,13 @@ pub fn ai_attack(monster_id: usize,
                               Line::new((monster_x, monster_y),
                               (player_x, player_y)));
         animations.push(animation);
-
-        took_turn = AiAction::TookTurn;
+        */
     } else {
         // can't hit- seek to current player position instead
-        objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
-        took_turn = AiAction::DidntTakeTurn;
+        turn.add(AiAction::StateChange(Behavior::Seeking(player_pos)));
     }
 
-    return took_turn;
+    return turn;
 }
 
 pub fn ai_seek_take_turn(target_pos_orig: Position, 
@@ -185,7 +187,7 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
 
     let (monster_x, monster_y) = objects[monster_id].pos();
     let monster_pos = Position::new(monster_x, monster_y);
-    let turn: AiTurn;
+    let mut turn: AiTurn = AiTurn::new();
 
                
     if can_see_player(fov_map, monster_pos, player_pos) {
@@ -193,10 +195,11 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
         target_pos = player_pos;
 
         if let Some(_hit_pos) = ai_can_hit_player(monster_id, objects) {
-            turn = AiTurn::StateChange(Behavior::Attacking);
+            turn.add(AiAction::StateChange(Behavior::Attacking));
         } else {
             // check positions that can hit player, filter by FOV, and get the closest.
             // then move to this closest position.
+            let mut pos_offset = (0, 0);
             if let Some(reach) = objects[monster_id].attack {
                 // get all locations they can hit
                 let positions: Vec<(i32, i32)> =
@@ -213,26 +216,26 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
                         .unwrap();
                 }
 
-                ai_take_astar_step(monster_id, (monster_x, monster_y), target_pos.pair(), map, objects);
+                pos_offset = ai_take_astar_step((monster_x, monster_y), target_pos.pair(), map);
 
-                objects[monster_id].behavior = Some(Behavior::Seeking(target_pos));
+                turn.add(AiAction::StateChange(Behavior::Seeking(target_pos)));
             }
 
-            turn = AiAction::TookTurn;
+            turn.add(AiAction::Move(pos_offset));
         }
     } else { // the monster can't see the player
         if target_pos == monster_pos { 
             // if the monster reached its target then go back to being idle
-            objects[monster_id].behavior = Some(Behavior::Idle);
-            took_turn = AiAction::TookTurn;
+            turn.add(AiAction::StateChange(Behavior::Idle));
         } else {
             // if the monster has not reached its target, move towards the target.
-            ai_take_astar_step(monster_id, (monster_x, monster_y), target_pos.pair(), map, objects);
-            took_turn = AiAction::TookTurn;
+            let pos_offset = ai_take_astar_step((monster_x, monster_y), target_pos.pair(), map);
+
+            turn.add(AiAction::Move(pos_offset));
         }
     }
 
-    return took_turn;
+    return turn;
 }
 
 fn ai_can_hit_player(monster_id: ObjectId, objects: &[Object]) -> Option<(i32, i32)> {
@@ -259,21 +262,26 @@ fn ai_can_hit_player(monster_id: ObjectId, objects: &[Object]) -> Option<(i32, i
     return hit_pos;
 }
 
-fn ai_take_astar_step(monster_id: ObjectId, monster_pos: (i32, i32), target_pos: (i32, i32), map: &Map, objects: &mut [Object]) {
+fn ai_take_astar_step(monster_pos: (i32, i32), target_pos: (i32, i32), map: &Map) -> (i32, i32) {
     let map_copy = map.make_tcod_map();
     let mut astar = AStar::new_from_map(map_copy, 1.5);
     astar.find(monster_pos, target_pos);
 
-    if let Some((dx, dy)) = astar.walk_one_step(true) {
-        move_towards(monster_id, dx, dy, map, objects);
+    match astar.walk_one_step(true) {
+        Some(target_pos) => {
+            return move_towards(monster_pos, target_pos);
+        }
+
+        None => {
+            return (0, 0);
+        }
     }
 }
 
 fn basic_ai_take_turn(monster_id: usize,
                       map: &Map,
                       objects: &mut Vec<Object>,
-                      fov_map: &FovMap,
-                      animations: &mut Vec<Animation>) -> AiAction {
+                      fov_map: &FovMap) -> AiTurn {
     let (monster_x, monster_y) = objects[monster_id].pos();
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
@@ -281,13 +289,15 @@ fn basic_ai_take_turn(monster_id: usize,
 
     match objects[monster_id].behavior {
         Some(Behavior::Idle) => {
+            let mut turn = AiTurn::new();
+
             if can_see_player(fov_map, monster_pos, player_pos) {
-                objects[monster_id].behavior = Some(Behavior::Seeking(player_pos));
+                turn.add(AiAction::StateChange(Behavior::Seeking(player_pos)));
             } else if let Some(sound_pos) = map[(monster_x, monster_y)].sound {
-                objects[monster_id].behavior = Some(Behavior::Seeking(Position::from_pair(&sound_pos)));
+                turn.add(AiAction::StateChange(Behavior::Seeking(Position::from_pair(&sound_pos))));
             }
 
-            AiAction::TookTurn
+            return turn;
         }
 
         Some(Behavior::Seeking(target_pos)) => {
@@ -302,8 +312,7 @@ fn basic_ai_take_turn(monster_id: usize,
             ai_attack(monster_id,
                       map,
                       objects,
-                      fov_map,
-                      animations)
+                      fov_map)
         }
 
         ref behavior => {
@@ -319,13 +328,9 @@ pub fn ai_take_turn(monster_id: usize,
                     animations: &mut Vec<Animation>) {
     match objects[monster_id].ai {
         Some(Ai::Basic) => {
-            let took_turn = basic_ai_take_turn(monster_id, map, objects, fov_map, animations);
+            let turn = basic_ai_take_turn(monster_id, map, objects, fov_map);
 
-            // allow an extra iteration if the AI didn't take a turn.
-            // note that this is not in a loop- only one extra iteration is allowed
-            if took_turn == AiAction::DidntTakeTurn {
-                basic_ai_take_turn(monster_id, map, objects, fov_map, animations);
-            }
+            // TODO interpret turn
         }
 
         None => {

@@ -211,7 +211,7 @@ pub enum Ai {
     Basic,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Behavior {
     Idle,
     Seeking(Position),
@@ -303,13 +303,21 @@ pub enum AiAction {
     Move((i32, i32)),
     Attack((i32, i32)),
     Skip,
+    StateChange(Behavior),
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum AiTurn {
-    Action(AiAction),
-    StateChange(Behavior),
+#[derive(Clone, Debug, PartialEq)]
+pub struct AiTurn(Vec<AiAction>);
+
+impl AiTurn {
+    pub fn new() -> AiTurn {
+        return AiTurn(Vec::new());
+    }
+
+    pub fn add(&mut self, action: AiAction) {
+        self.0.push(action);
+    }
 }
 
 
