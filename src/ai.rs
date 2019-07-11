@@ -12,11 +12,11 @@ use crate::map::*;
 
 
 pub fn make_orc(config: &Config, x: i32, y :i32) -> Object {
-    let mut orc = Object::new(x, y, '\u{98}', "orc", config.color_orc.color(), true);
+    let mut orc = Object::new(x, y, '\u{98}', "orc", config.color_light_orange.color(), true);
     orc.fighter = Some( Fighter { max_hp: 10, hp: 10, defense: 0, power: 5, on_death: DeathCallback::Monster } );
     orc.ai = Some(Ai::Basic);
     orc.behavior = Some(Behavior::Idle);
-    orc.color = config.color_orc.color();
+    orc.color = config.color_light_orange.color();
     orc.movement = Some(Reach::Single);
     orc.attack = Some(Reach::Diag);
     orc.alive = true;
@@ -24,11 +24,11 @@ pub fn make_orc(config: &Config, x: i32, y :i32) -> Object {
 } 
 
 pub fn make_troll(config: &Config, x: i32, y :i32) -> Object {
-    let mut troll = Object::new(x, y, '\u{15}', "troll", config.color_troll.color(), true);
+    let mut troll = Object::new(x, y, '\u{15}', "troll", config.color_mint_green.color(), true);
     troll.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 10, on_death: DeathCallback::Monster } );
     troll.ai = Some(Ai::Basic);
     troll.behavior = Some(Behavior::Idle);
-    troll.color = config.color_troll.color();
+    troll.color = config.color_mint_green.color();
     troll.movement = Some(Reach::Single);
     troll.attack = Some(Reach::Diag);
     troll.alive = true;
@@ -36,11 +36,11 @@ pub fn make_troll(config: &Config, x: i32, y :i32) -> Object {
 }
 
 pub fn make_kobold(config: &Config, x: i32, y :i32) -> Object {
-    let mut kobold = Object::new(x, y, '\u{A5}', "kobold", config.color_kobold.color(), true);
+    let mut kobold = Object::new(x, y, '\u{A5}', "kobold", config.color_ice_blue.color(), true);
     kobold.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, on_death: DeathCallback::Monster } );
     kobold.ai = Some(Ai::Basic);
     kobold.behavior = Some(Behavior::Idle);
-    kobold.color = config.color_kobold.color();
+    kobold.color = config.color_ice_blue.color();
     kobold.movement = Some(Reach::Horiz);
     kobold.attack = Some(Reach::Horiz);
     kobold.alive = true;
@@ -378,4 +378,3 @@ pub fn mut_two<T>(first_index: usize, second_index: usize, items: &mut [T]) -> (
         (&mut second_slice[0], &mut first_slice[second_index])
     }
 }
-

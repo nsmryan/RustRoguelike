@@ -473,21 +473,28 @@ impl ColorConfig {
     }
 }
 
-
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub color_dark_wall: ColorConfig,
-    pub color_light_wall: ColorConfig,
-    pub color_dark_ground: ColorConfig,
-    pub color_light_ground: ColorConfig,
-    pub color_dark_water: ColorConfig,
-    pub color_light_water: ColorConfig,
-    pub color_dark_exit: ColorConfig,
-    pub color_light_exit: ColorConfig,
-    pub color_kobold: ColorConfig,    
-    pub color_light_ground_low: ColorConfig,
-    pub color_light_ground_high: ColorConfig,
-    pub color_orc: ColorConfig,
-    pub color_troll: ColorConfig,
+    pub color_dark_brown: ColorConfig,
+    pub color_medium_brown: ColorConfig,
+    pub color_light_green: ColorConfig,
+    pub color_tile_blue_light: ColorConfig,
+    pub color_tile_blue_dark: ColorConfig,
+    pub color_light_brown: ColorConfig,
+    pub color_ice_blue: ColorConfig,
+    pub color_dark_blue: ColorConfig,
+    pub color_very_dark_blue: ColorConfig,    
+    pub color_orange: ColorConfig,
+    pub color_red: ColorConfig,
+    pub color_medium_grey: ColorConfig,
+    pub color_mint_green: ColorConfig,
+    pub color_blueish_grey: ColorConfig,
+    pub color_pink: ColorConfig,
+    pub color_rose_red: ColorConfig,
+    pub color_light_orange: ColorConfig,
+    pub color_bone_white: ColorConfig,
+    pub color_warm_grey: ColorConfig,
+    pub color_soft_green: ColorConfig,
+    pub color_light_grey: ColorConfig,
 }
 
