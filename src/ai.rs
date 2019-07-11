@@ -185,7 +185,7 @@ pub fn ai_investigate(target_pos_orig: Position,
                       map: &Map,
                       objects: &Vec<Object>,
                       fov_map: &FovMap) -> AiTurn {
-    let mut target_pos = target_pos_orig;
+    let target_pos = target_pos_orig;
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
 

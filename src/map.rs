@@ -172,7 +172,7 @@ impl Map {
         // duplicates will be removed, leaving only points within the radius.
         for x in (start.0 - radius)..(start.0 + radius) {
             for y in (start.1 - radius)..(start.1 + radius) {
-                let mut line = Line::new((start.0, start.1), (x, y));
+                let line = Line::new((start.0, start.1), (x, y));
 
                 // get points to the edge of square, filtering for points within the given radius
                 for point in line.into_iter() {
