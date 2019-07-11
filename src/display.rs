@@ -210,14 +210,18 @@ pub fn draw_attack_overlay(game: &mut Game, map: &mut Map, id: ObjectId, objects
 }
 
 pub fn render_all(game: &mut Game,
-              objects: &[Object],
-              map: &mut Map,
-              messages: &mut Messages,
-              fov_recompute: bool,
-              config: &Config) {
+                  objects: &[Object],
+                  map: &mut Map,
+                  messages: &mut Messages,
+                  fov_recompute: bool,
+                  config: &Config) {
     if fov_recompute {
         let player = &objects[PLAYER];
-        game.fov.compute_fov(player.x, player.y, TORCH_RADIOUS, FOV_LIGHT_WALLS, FOV_ALGO);
+        let mut fov_distance = config.fov_distance;
+        if game.god_mode {
+            fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
+        }
+        game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
     for y in 0..MAP_HEIGHT {

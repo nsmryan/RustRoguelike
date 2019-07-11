@@ -154,6 +154,14 @@ pub fn handle_input(game: &mut Game,
                 objects[PLAYER].fighter =
                     Some(Fighter { hp: god_mode_hp, max_hp: god_mode_hp, ..fighter });
 
+                game.god_mode = true;
+
+                for x in 0..map.0.len() {
+                    for y in 0..map.0[0].len() {
+                        game.fov.set(x as i32, y as i32, true, true);
+                    }
+                }
+
                 player_action = DidntTakeTurn;
             }
 

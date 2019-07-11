@@ -38,6 +38,7 @@ pub struct Game {
     pub display_overlays: bool,
     pub animations: Vec<Animation>,
     pub needs_clear: Vec<(i32, i32)>,
+    pub god_mode: bool,
 }
 
 impl Game {
@@ -52,6 +53,7 @@ impl Game {
             display_overlays: false,
             animations: Vec::new(),
             needs_clear: Vec::new(),
+            god_mode: false,
         }
     }
 }
@@ -494,5 +496,6 @@ pub struct Config {
     pub color_warm_grey: ColorConfig,
     pub color_soft_green: ColorConfig,
     pub color_light_grey: ColorConfig,
+    pub fov_distance: i32,
 }
 

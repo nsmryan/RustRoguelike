@@ -177,7 +177,9 @@ fn main() {
         /* Display */
         let fov_recompute = previous_player_position != (objects[PLAYER].x, objects[PLAYER].y);
         render_all(&mut game, 
-                   &objects, &mut map, &mut messages,
+                   &objects,
+                   &mut map,
+                   &mut messages,
                    fov_recompute,
                    &config);
 
