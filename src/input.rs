@@ -17,7 +17,7 @@ pub fn handle_input(game: &mut Game,
                     map: &mut Map,
                     objects: &mut Vec<Object>,
                     inventory: &mut Vec<Object>,
-                    config: &Config,
+                    _config: &Config,
                     messages: &mut Messages) -> PlayerAction {
     use PlayerAction::*;
 
@@ -154,8 +154,11 @@ pub fn handle_input(game: &mut Game,
                 objects[PLAYER].fighter =
                     Some(Fighter { hp: god_mode_hp, max_hp: god_mode_hp, ..fighter });
 
+                // set god mode flag
                 game.god_mode = true;
 
+                // set all tiles to be transparent and walkable. walkable is not current used
+                // anywhere
                 for x in 0..map.0.len() {
                     for y in 0..map.0[0].len() {
                         game.fov.set(x as i32, y as i32, true, true);
@@ -265,7 +268,7 @@ fn pick_item_up(object_id: usize,
     }
 }
 
-fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], messages: &mut Messages) {
+fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], _messages: &mut Messages) {
     let x = objects[PLAYER].x + dx;
     let y = objects[PLAYER].y + dy;
     let target_id = objects.iter().position(|object| {

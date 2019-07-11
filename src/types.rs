@@ -254,7 +254,7 @@ impl AwarenessMap {
                     vec![(x + 1, y),     (x + 1, y + 1), (x + 1, y - 1),
                     (x,     y + 1), (x,     y - 1), (x - 1, y),
                     (x - 1, y + 1), (x - 1, y - 1)];
-                let potential_positions =
+                let _potential_positions =
                     potential_positions.iter()
                     .filter(|(x, y)| *x < self.width && *y < self.height)
                     .filter(|(x, y)| self.weights[*y as usize][*x as usize] > 0.0);
@@ -301,7 +301,7 @@ pub enum Behavior {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AiAction {
     Move((i32, i32)),
-    Attack((i32, i32)),
+    Attack(ObjectId, (i32, i32)),
     StateChange(Behavior),
 }
 

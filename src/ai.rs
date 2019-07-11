@@ -150,7 +150,7 @@ pub fn ai_attack(monster_id: usize,
     let mut turn: AiTurn = AiTurn::new();
 
     if let Some(hit_pos) = ai_can_hit_target(monster_id, target_id, objects) {
-        turn.add(AiAction::Attack(hit_pos));
+        turn.add(AiAction::Attack(target_id, hit_pos));
     } else {
         // check positions that can hit target, filter by FOV, and get the closest.
         // then move to this closest position.
@@ -327,7 +327,7 @@ pub fn ai_apply_actions(monster_id: usize,
                         turn: AiTurn,
                         map: &Map,
                         objects: &mut Vec<Object>,
-                        fov_map: &FovMap,
+                        _fov_map: &FovMap,
                         animations: &mut Vec<Animation>) {
     for action in turn.actions().iter() {
         match action {
@@ -335,13 +335,13 @@ pub fn ai_apply_actions(monster_id: usize,
                 move_by(monster_id, pos.0, pos.1, map, objects);
             },
 
-            AiAction::Attack(pos) => {
-                let (player_x, player_y) = objects[PLAYER].pos();
+            AiAction::Attack(target_id, pos) => {
+                let (target_x, target_y) = *pos;
                 let (monster_x, monster_y) = objects[monster_id].pos();
-                let (player, monster) = mut_two(PLAYER, monster_id, objects);
+                let (target, monster) = mut_two(*target_id, monster_id, objects);
 
                 // apply attack 
-                monster.attack(player);
+                monster.attack(target);
 
                 // add animation
                 let mut thrown_obj =
@@ -353,7 +353,7 @@ pub fn ai_apply_actions(monster_id: usize,
                 let animation =
                     Animation::Thrown(obj_id,
                                       Line::new((monster_x, monster_y),
-                                      (player_x, player_y)));
+                                      (target_x, target_y)));
                 animations.push(animation);
             },
 
