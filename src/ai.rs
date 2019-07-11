@@ -71,50 +71,50 @@ pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) {
         objects[PLAYER].set_pos(x + dx, y + dy);
         momentum_change = MomentumChange::CurrentDirection;
     } else if has_momentum &&
-        side_move &&
-            !momentum_diagonal &&
-            !map.is_blocked(x + mx.signum(), y + my.signum(), objects) && // free next to wall
-            !map.is_blocked(x + 2*mx.signum(), y + 2*my.signum(), objects) && // free space to move to
-            map[(x + dx, y + dy)].tile_type == TileType::Wall {
-                // jump off wall
-                objects[PLAYER].set_pos(x + 2*mx.signum(), y + 2*my.signum());
-                momentum_change = MomentumChange::PreviousDirection;
-            } else if has_momentum &&
-                same_direction &&
-                    map[(x + dx, y + dy)].tile_type == TileType::ShortWall &&
-                    !map.is_blocked(x + 2*dx, y + 2*dy, objects) {
-                        // if the location is blocked, and the next location in the
-                        // line is not, and we have momentum, then jump over obstacle
-                        objects[PLAYER].set_pos(x + 2*dx, y + 2*dy);
-                        momentum_change = MomentumChange::CurrentDirection;
-                    } else {
-                        // otherwise we hit a wall and lose our momentum
-                        momentum_change = MomentumChange::Lost;
-                    }
+              side_move &&
+              !momentum_diagonal &&
+              !map.is_blocked(x + mx.signum(), y + my.signum(), objects) && // free next to wall
+              !map.is_blocked(x + 2*mx.signum(), y + 2*my.signum(), objects) && // free space to move to
+              map[(x + dx, y + dy)].tile_type == TileType::Wall {
+        // jump off wall
+        objects[PLAYER].set_pos(x + 2*mx.signum(), y + 2*my.signum());
+        momentum_change = MomentumChange::PreviousDirection;
+    } else if has_momentum &&
+              same_direction &&
+              map[(x + dx, y + dy)].tile_type == TileType::ShortWall &&
+              !map.is_blocked(x + 2*dx, y + 2*dy, objects) {
+            // if the location is blocked, and the next location in the
+            // line is not, and we have momentum, then jump over obstacle
+            objects[PLAYER].set_pos(x + 2*dx, y + 2*dy);
+            momentum_change = MomentumChange::CurrentDirection;
+    } else {
+        // otherwise we hit a wall and lose our momentum
+        momentum_change = MomentumChange::Lost;
+    }
 
-            match momentum_change {
-                MomentumChange::Lost => {
-                    mx = 0;
-                    my = 0;
-                }
+    match momentum_change {
+        MomentumChange::Lost => {
+            mx = 0;
+            my = 0;
+        }
 
-                MomentumChange::PreviousDirection => {
-                    mx = clamp(mx + mx.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
-                    my = clamp(my + my.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
-                }
+        MomentumChange::PreviousDirection => {
+            mx = clamp(mx + mx.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
+            my = clamp(my + my.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
+        }
 
-                MomentumChange::CurrentDirection => {
-                    if same_direction {
-                        mx = clamp(mx + dx, -MAX_MOMENTUM, MAX_MOMENTUM);
-                        my = clamp(my + dy, -MAX_MOMENTUM, MAX_MOMENTUM);
-                    } else {
-                        mx = dx;
-                        my = dy;
-                    }
-                }
+        MomentumChange::CurrentDirection => {
+            if same_direction {
+                mx = clamp(mx + dx, -MAX_MOMENTUM, MAX_MOMENTUM);
+                my = clamp(my + dy, -MAX_MOMENTUM, MAX_MOMENTUM);
+            } else {
+                mx = dx;
+                my = dy;
             }
+        }
+    }
 
-            objects[PLAYER].momentum = Some((mx, my));
+    objects[PLAYER].momentum = Some((mx, my));
 }
 
 pub fn move_by(id: usize, dx: i32, dy: i32, map: &Map, objects: &mut [Object]) {
