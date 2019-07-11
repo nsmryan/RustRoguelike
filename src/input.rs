@@ -30,7 +30,7 @@ pub fn handle_input(game: &mut Game,
         for index in 0..inventory.len() {
             let (mx, my) = (game.mouse.x, game.mouse.y);
             if inventory[index].item == Some(Item::Stone) {
-                let mut item = inventory.swap_remove(index);
+                let item = inventory.swap_remove(index);
                 throw_stone((mx as i32, my as i32), item, game, map, objects);
                 found_stone = true;
                 break;
