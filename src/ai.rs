@@ -137,30 +137,54 @@ pub fn move_towards(start_pos: (i32, i32), target_pos: (i32, i32)) -> (i32, i32)
 }
 
 pub fn ai_attack(monster_id: usize,
-                 _map: &Map,
+                 target_id: usize,
+                 map: &Map,
                  objects: &Vec<Object>,
-                 _fov_map: &FovMap) -> AiTurn {
-    let (player_x, player_y) = objects[PLAYER].pos();
-    let player_pos = Position::new(player_x, player_y);
+                 fov_map: &FovMap) -> AiTurn {
+    let (target_x, target_y) = objects[target_id].pos();
+    let mut target_pos = Position::new(target_x, target_y);
+
     let (monster_x, monster_y) = objects[monster_id].pos();
+    let monster_pos = Position::new(monster_x, monster_y);
+
     let mut turn: AiTurn = AiTurn::new();
 
-    if let Some(hit_pos) = ai_can_hit_player(monster_id, objects) {
+    if let Some(hit_pos) = ai_can_hit_target(monster_id, target_id, objects) {
         turn.add(AiAction::Attack(hit_pos));
-
     } else {
-        // can't hit- seek to current player position instead
-        turn.add(AiAction::StateChange(Behavior::Seeking(player_pos)));
+        // check positions that can hit target, filter by FOV, and get the closest.
+        // then move to this closest position.
+        let mut pos_offset = (0, 0);
+        if let Some(reach) = objects[monster_id].attack {
+            // get all locations they can hit
+            let positions: Vec<(i32, i32)> =
+                reach.offsets()
+                .iter()
+                .map(|pos| (pos.0 + target_x, pos.1 + target_y))
+                .filter(|(x, y)| fov_map.is_in_fov(*x, *y))
+                .filter(|(x, y)| !map.is_blocked(*x, *y, objects))
+                .collect();
+            if positions.len() > 0 {
+                target_pos = positions.iter()
+                                      .min_by_key(|pos| monster_pos.distance(&Position::from_pair(pos)))
+                                      .map(|pair| Position::from_pair(pair))
+                                      .unwrap();
+            }
+
+            pos_offset = ai_take_astar_step((monster_x, monster_y), target_pos.pair(), map);
+        }
+
+        turn.add(AiAction::Move(pos_offset));
     }
 
     return turn;
 }
 
-pub fn ai_seek_take_turn(target_pos_orig: Position, 
-                         monster_id: usize,
-                         map: &Map,
-                         objects: &Vec<Object>,
-                         fov_map: &FovMap) -> AiTurn {
+pub fn ai_investigate(target_pos_orig: Position, 
+                      monster_id: usize,
+                      map: &Map,
+                      objects: &Vec<Object>,
+                      fov_map: &FovMap) -> AiTurn {
     let mut target_pos = target_pos_orig;
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
@@ -171,38 +195,8 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
 
                
     if can_see_player(fov_map, monster_pos, player_pos) {
-        // if the player is in view, update our target location to seek towards
-        target_pos = player_pos;
-
-        if let Some(_hit_pos) = ai_can_hit_player(monster_id, objects) {
-            turn.add(AiAction::StateChange(Behavior::Attacking));
-        } else {
-            // check positions that can hit player, filter by FOV, and get the closest.
-            // then move to this closest position.
-            let mut pos_offset = (0, 0);
-            if let Some(reach) = objects[monster_id].attack {
-                // get all locations they can hit
-                let positions: Vec<(i32, i32)> =
-                    reach.offsets()
-                    .iter()
-                    .map(|pos| (pos.0 + player_x, pos.1 + player_y))
-                    .filter(|(x, y)| fov_map.is_in_fov(*x, *y))
-                    .filter(|(x, y)| !map.is_blocked(*x, *y, objects))
-                    .collect();
-                if positions.len() > 0 {
-                    target_pos = positions.iter()
-                        .min_by_key(|pos| monster_pos.distance(&Position::from_pair(pos)))
-                        .map(|pair| Position::from_pair(pair))
-                        .unwrap();
-                }
-
-                pos_offset = ai_take_astar_step((monster_x, monster_y), target_pos.pair(), map);
-
-                turn.add(AiAction::StateChange(Behavior::Seeking(target_pos)));
-            }
-
-            turn.add(AiAction::Move(pos_offset));
-        }
+        // TODO this causes a turn delay between seeing the player and attacking them
+        turn.add(AiAction::StateChange(Behavior::Attacking(PLAYER)));
     } else { // the monster can't see the player
         if target_pos == monster_pos { 
             // if the monster reached its target then go back to being idle
@@ -218,8 +212,8 @@ pub fn ai_seek_take_turn(target_pos_orig: Position,
     return turn;
 }
 
-fn ai_can_hit_player(monster_id: ObjectId, objects: &[Object]) -> Option<(i32, i32)> {
-    let (player_x, player_y) = objects[PLAYER].pos();
+fn ai_can_hit_target(monster_id: ObjectId, target_id: ObjectId, objects: &[Object]) -> Option<(i32, i32)> {
+    let (target_x, target_y) = objects[target_id].pos();
     let (monster_x, monster_y) = objects[monster_id].pos();
     let mut hit_pos = None;
 
@@ -231,9 +225,9 @@ fn ai_can_hit_player(monster_id: ObjectId, objects: &[Object]) -> Option<(i32, i
             .map(|pos| (pos.0 + monster_x, pos.1 + monster_y))
             .collect();
 
-        // look through attack positions, in case one hits the player
+        // look through attack positions, in case one hits the target
         for pos in positions {
-            if player_x == pos.0 && player_y == pos.1 {
+            if target_x == pos.0 && target_y == pos.1 {
                 hit_pos = Some(pos)
             }
         }
@@ -272,24 +266,27 @@ fn basic_ai_take_turn(monster_id: usize,
             let mut turn = AiTurn::new();
 
             if can_see_player(fov_map, monster_pos, player_pos) {
-                turn.add(AiAction::StateChange(Behavior::Seeking(player_pos)));
+                // TODO will cause a turn between seeing the player and attacking
+                turn.add(AiAction::StateChange(Behavior::Attacking(PLAYER)));
             } else if let Some(sound_pos) = map[(monster_x, monster_y)].sound {
-                turn.add(AiAction::StateChange(Behavior::Seeking(Position::from_pair(&sound_pos))));
+                let sound_position = Position::from_pair(&sound_pos);
+                turn.add(AiAction::StateChange(Behavior::Investigating(sound_position)));
             }
 
             return turn;
         }
 
-        Some(Behavior::Seeking(target_pos)) => {
-            ai_seek_take_turn(target_pos,
-                              monster_id,
-                              map,
-                              objects,
-                              fov_map)
+        Some(Behavior::Investigating(target_pos)) => {
+            ai_investigate(target_pos,
+                           monster_id,
+                           map,
+                           objects,
+                           fov_map)
         }
 
-        Some(Behavior::Attacking) => {
+        Some(Behavior::Attacking(object_id)) => {
             ai_attack(monster_id,
+                      object_id,
                       map,
                       objects,
                       fov_map)
@@ -306,7 +303,7 @@ pub fn ai_take_turn(monster_id: usize,
                     objects: &mut Vec<Object>,
                     fov_map: &FovMap,
                     animations: &mut Vec<Animation>) {
-    let turn;
+    let turn: AiTurn;
 
     match objects[monster_id].ai {
         Some(Ai::Basic) => {

@@ -205,20 +205,6 @@ impl Object {
     }
 }
 
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Ai {
-    Basic,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Behavior {
-    Idle,
-    Seeking(Position),
-    Attacking,
-    Alert,
-}
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PatrolDir {
     Forward,
@@ -297,6 +283,18 @@ pub enum PlayerAction {
     Exit,
 }
 
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Ai {
+    Basic,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Behavior {
+    Idle,
+    Investigating(Position),
+    Attacking(ObjectId),
+}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AiAction {
