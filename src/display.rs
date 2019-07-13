@@ -209,21 +209,9 @@ pub fn draw_attack_overlay(game: &mut Game, map: &mut Map, id: ObjectId, objects
     }
 }
 
-pub fn render_all(game: &mut Game,
-                  objects: &[Object],
+pub fn render_map(game: &mut Game,
                   map: &mut Map,
-                  messages: &mut Messages,
-                  fov_recompute: bool,
                   config: &Config) {
-    if fov_recompute {
-        let player = &objects[PLAYER];
-        let mut fov_distance = config.fov_distance;
-        if game.god_mode {
-            fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
-        }
-        game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
-    }
-
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
             let visible = game.fov.is_in_fov(x, y);
@@ -303,6 +291,14 @@ pub fn render_all(game: &mut Game,
                 }
             }
 
+            map.0[x as usize][y as usize].explored = explored;
+        }
+    }
+}
+
+pub fn render_sound(game: &mut Game, map: &Map, objects: &[Object]) {
+    for y in 0..MAP_HEIGHT {
+        for x in 0..MAP_WIDTH {
             // after animations play, draw sound for a frame
             if game.animations.len() == 0 {
                if let Some(sound_loc) = map[(x, y)].sound {
@@ -311,10 +307,28 @@ pub fn render_all(game: &mut Game,
                    }
                }
             }
-
-            map.0[x as usize][y as usize].explored = explored;
         }
     }
+}
+
+pub fn render_all(game: &mut Game,
+                  objects: &[Object],
+                  map: &mut Map,
+                  messages: &mut Messages,
+                  fov_recompute: bool,
+                  config: &Config) {
+    if fov_recompute {
+        let player = &objects[PLAYER];
+        let mut fov_distance = config.fov_distance;
+        if game.god_mode {
+            fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
+        }
+        game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
+    }
+
+    render_map(game, map, config);
+
+    render_sound(game, map, objects);
 
     /* Draw objects */
     let mut to_draw: Vec<_> =
