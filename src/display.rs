@@ -167,7 +167,7 @@ pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
     return ((result & 0xFFFFFFFF) as f32) / 4294967295.0;
 }
 
-pub fn draw_movement_overlay(game: &mut Game, map: &mut Map, id: ObjectId, objects: &[Object]) {
+pub fn draw_movement_overlay(game: &mut Game, map: &Map, id: ObjectId, objects: &[Object]) {
     if let Some(movement) = objects[id].movement {
         let offsets = movement.offsets();
         for offset in offsets {
@@ -188,7 +188,7 @@ pub fn draw_movement_overlay(game: &mut Game, map: &mut Map, id: ObjectId, objec
     }
 }
 
-pub fn draw_attack_overlay(game: &mut Game, map: &mut Map, id: ObjectId, objects: &[Object]) {
+pub fn draw_attack_overlay(game: &mut Game, map: &Map, id: ObjectId, objects: &[Object]) {
     if let Some(attack) = objects[id].attack {
         let offsets = attack.offsets();
         for offset in offsets {
@@ -324,29 +324,7 @@ pub fn render_objects(console: &mut Console, fov: &FovMap, objects: &[Object]) {
     }
 }
 
-pub fn render_all(game: &mut Game,
-                  objects: &[Object],
-                  map: &mut Map,
-                  messages: &mut Messages,
-                  fov_recompute: bool,
-                  config: &Config) {
-    if fov_recompute {
-        let player = &objects[PLAYER];
-        let mut fov_distance = config.fov_distance;
-        if game.god_mode {
-            fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
-        }
-        game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
-    }
-
-    render_map(&mut game.console, &game.fov, map, config);
-
-    render_sound(game, map, objects);
-
-    /* Draw objects */
-    render_objects(&mut game.console, &game.fov, objects);
-
-    // Draw movement and attack overlays
+pub fn render_overlays(game: &mut Game, map: &Map, objects: &[Object]) {
     let ids = get_objects_under_mouse(game.mouse, objects, &game.fov);
     for id in ids {
         if !objects[id].alive {
@@ -364,9 +342,9 @@ pub fn render_all(game: &mut Game,
             draw_attack_overlay(game, map, id, objects);
         }
     }
+}
 
-    // display for checking out character flags
-    /*
+pub fn render_character_flags(game: &mut Game) {
     for x in 0..10 {
         game.console.put_char(x, 0, '+', BackgroundFlag::None);
         game.console.put_char(x, 0, 'X', BackgroundFlag::None);
@@ -410,11 +388,40 @@ pub fn render_all(game: &mut Game,
         game.console.put_char(x, 13, '+', BackgroundFlag::None);
         game.console.put_char(x, 13, 'X', BackgroundFlag::Multiply);
     }
-    */
+}
+
+pub fn render_all(game: &mut Game,
+                  objects: &[Object],
+                  map: &mut Map,
+                  messages: &mut Messages,
+                  fov_recompute: bool,
+                  config: &Config) {
+    if fov_recompute {
+        let player = &objects[PLAYER];
+        let mut fov_distance = config.fov_distance;
+        if game.god_mode {
+            fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
+        }
+        game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
+    }
+
+    render_map(&mut game.console, &game.fov, map, config);
+
+    render_sound(game, map, objects);
+
+    /* Draw objects */
+    render_objects(&mut game.console, &game.fov, objects);
+
+    // Draw movement and attack overlays
+    render_overlays(game, map, objects);
+
+    // display for checking out character flags
+    //render_character_flags(game);
 
     game.panel.set_default_background(BLACK);
     game.panel.clear();
 
+    // Draw UI overlay
     let hp = objects[PLAYER].fighter.map_or(0, |f| f.hp);
     let max_hp = objects[PLAYER].fighter.map_or(0, |f| f.max_hp);
     render_bar(game, 1, 1, BAR_WIDTH, "HP", hp, max_hp, LIGHT_RED, DARK_RED);
@@ -441,6 +448,7 @@ pub fn render_all(game: &mut Game,
     /* print all special characters */
     //print_all_special_char(game);
 
+    // replace screen with new console contents
     blit(&mut game.console, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, 0),       1.0, 1.0);
     blit(&mut game.panel,   (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, PANEL_Y), 1.0, 1.0);
 }
