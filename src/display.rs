@@ -209,7 +209,7 @@ pub fn draw_attack_overlay(game: &mut Game, map: &mut Map, id: ObjectId, objects
     }
 }
 
-pub fn render_map(console: &Console,
+pub fn render_map(console: &mut Console,
                   fov: &FovMap,
                   map: &mut Map,
                   config: &Config) {
@@ -312,6 +312,18 @@ pub fn render_sound(game: &mut Game, map: &Map, objects: &[Object]) {
     }
 }
 
+pub fn render_objects(console: &mut Console, fov: &FovMap, objects: &[Object]) {
+    let mut to_draw: Vec<_> =
+        objects.iter().filter(|o| {
+            fov.is_in_fov(o.x, o.y)
+        }).collect();
+    to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
+
+    for object in &to_draw {
+        object.draw(console);
+    }
+}
+
 pub fn render_all(game: &mut Game,
                   objects: &[Object],
                   map: &mut Map,
@@ -327,20 +339,12 @@ pub fn render_all(game: &mut Game,
         game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
-    render_map(game.console, game.fov, map, config);
+    render_map(&mut game.console, &game.fov, map, config);
 
     render_sound(game, map, objects);
 
     /* Draw objects */
-    let mut to_draw: Vec<_> =
-        objects.iter().filter(|o| {
-            game.fov.is_in_fov(o.x, o.y)
-        }).collect();
-    to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
-
-    for object in &to_draw {
-        object.draw(&mut game.console);
-    }
+    render_objects(&mut game.console, &game.fov, objects);
 
     // Draw movement and attack overlays
     let ids = get_objects_under_mouse(game.mouse, objects, &game.fov);
