@@ -209,12 +209,13 @@ pub fn draw_attack_overlay(game: &mut Game, map: &mut Map, id: ObjectId, objects
     }
 }
 
-pub fn render_map(game: &mut Game,
+pub fn render_map(console: &Console,
+                  fov: &FovMap,
                   map: &mut Map,
                   config: &Config) {
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
-            let visible = game.fov.is_in_fov(x, y);
+            let visible = fov.is_in_fov(x, y);
 
             // Color based on TileType and visibility
             let color = match (map.0[x as usize][y as usize].tile_type, visible) {
@@ -243,14 +244,14 @@ pub fn render_map(game: &mut Game,
                 let tile_type = map.0[x as usize][y as usize].tile_type;
                 match tile_type {
                     TileType::Empty | TileType::Water | TileType::Exit => {
-                        game.console.set_char_background(x, y, color, BackgroundFlag::Set);
+                        console.set_char_background(x, y, color, BackgroundFlag::Set);
                     }
 
                     TileType::ShortWall | TileType::Wall => {
                         if visible {
-                            game.console.set_char_background(x, y, config.color_tile_blue_light.color(), BackgroundFlag::Set);
+                            console.set_char_background(x, y, config.color_tile_blue_light.color(), BackgroundFlag::Set);
                         } else {
-                            game.console.set_char_background(x, y, config.color_very_dark_blue.color(), BackgroundFlag::Set);
+                            console.set_char_background(x, y, config.color_very_dark_blue.color(), BackgroundFlag::Set);
                         }
 
                         let left = map[(x - 1, y)].tile_type == tile_type;
@@ -265,7 +266,7 @@ pub fn render_map(game: &mut Game,
                         if tile_type == TileType::Wall {
                             if horiz && vert {
                                chr = '\u{DC}';
-                               game.console.set_char_background(x, y, color, BackgroundFlag::Set);
+                               console.set_char_background(x, y, color, BackgroundFlag::Set);
                             } else if horiz {
                                chr = '\u{EC}';
                             } else if vert {
@@ -285,8 +286,8 @@ pub fn render_map(game: &mut Game,
                             }
                         };
 
-                        game.console.set_default_foreground(color);
-                        game.console.put_char(x, y, chr, BackgroundFlag::None);
+                        console.set_default_foreground(color);
+                        console.put_char(x, y, chr, BackgroundFlag::None);
                     }
                 }
             }
@@ -326,7 +327,7 @@ pub fn render_all(game: &mut Game,
         game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
-    render_map(game, map, config);
+    render_map(game.console, game.fov, map, config);
 
     render_sound(game, map, objects);
 
