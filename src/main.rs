@@ -10,12 +10,10 @@ extern crate timer;
 extern crate chrono;
 extern crate rodio;
 
-mod types;
+mod engine;
 mod constants;
-mod display;
-mod map;
-mod ai;
 mod input;
+mod game;
 #[cfg(test)]
 mod tests;
 
@@ -39,12 +37,13 @@ use timer::*;
 
 use rodio::Source;
 
-use types::*;
+use engine::types::*;
 use constants::*;
-use display::*;
-use map::*;
-use ai::*;
+use engine::display::*;
+use engine::map::*;
+use engine::ai::*;
 use input::*;
+use game::*;
 
 //if we want to use a character sprite, a potential value is '\u{8B}'
 pub fn make_player() -> Object {

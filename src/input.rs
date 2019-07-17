@@ -1,3 +1,5 @@
+use num::clamp;
+
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
 #[allow(unused_imports)]use tcod::input::Key;
 #[allow(unused_imports)]use tcod::input::KeyCode::*;
@@ -5,11 +7,11 @@
 #[allow(unused_imports)]use tcod::colors::*;
 use tcod::line::*;
 
-use crate::types::*;
+use crate::engine::types::*;
+use crate::engine::map::*;
+use crate::engine::display::*;
+use crate::engine::ai::*;
 use crate::constants::*;
-use crate::map::*;
-use crate::display::*;
-use crate::ai::*;
 
 
 pub fn handle_input(game: &mut Game,
@@ -239,6 +241,11 @@ fn use_item(inventory_id: usize,
     }
 }
 
+fn gather_goal(_inventory_id: usize, _objects: &mut [Object], messages: &mut Messages) -> UseResult {
+    messages.message("You've got the goal object! Nice work.", LIGHT_VIOLET);
+    UseResult::Keep
+}
+
 fn inventory_menu(inventory: &[Object], header: &str, root: &mut Root) -> Option<usize> {
     let options = if inventory.len() == 0 {
         vec!("Inventory is empty.".into())
@@ -287,8 +294,66 @@ fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], _m
     }
 }
 
-fn gather_goal(_inventory_id: usize, _objects: &mut [Object], messages: &mut Messages) -> UseResult {
-    messages.message("You've got the goal object! Nice work.", LIGHT_VIOLET);
-    UseResult::Keep
+pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) {
+    let (x, y) = objects[PLAYER].pos();
+
+    let (mut mx, mut my) = objects[PLAYER].momentum.unwrap();
+
+    let has_momentum = mx.abs() > 1 || my.abs() > 1;
+    let momentum_diagonal = mx.abs() != 0 && my.abs() != 0;
+    let side_move = dx.abs() != 0 && dy.abs() != 0;
+    let same_direction = mx.signum() == dx.signum() && my.signum() == dy.signum();
+
+    let momentum_change: MomentumChange;
+
+    // if the space is not blocked, move
+    if !map.is_blocked(x + dx, y + dy, objects) {
+        objects[PLAYER].set_pos(x + dx, y + dy);
+        momentum_change = MomentumChange::CurrentDirection;
+    } else if has_momentum &&
+              side_move &&
+              !momentum_diagonal &&
+              !map.is_blocked(x + mx.signum(), y + my.signum(), objects) && // free next to wall
+              !map.is_blocked(x + 2*mx.signum(), y + 2*my.signum(), objects) && // free space to move to
+              map[(x + dx, y + dy)].tile_type == TileType::Wall {
+        // jump off wall
+        objects[PLAYER].set_pos(x + 2*mx.signum(), y + 2*my.signum());
+        momentum_change = MomentumChange::PreviousDirection;
+    } else if has_momentum &&
+              same_direction &&
+              map[(x + dx, y + dy)].tile_type == TileType::ShortWall &&
+              !map.is_blocked(x + 2*dx, y + 2*dy, objects) {
+            // if the location is blocked, and the next location in the
+            // line is not, and we have momentum, then jump over obstacle
+            objects[PLAYER].set_pos(x + 2*dx, y + 2*dy);
+            momentum_change = MomentumChange::CurrentDirection;
+    } else {
+        // otherwise we hit a wall and lose our momentum
+        momentum_change = MomentumChange::Lost;
+    }
+
+    match momentum_change {
+        MomentumChange::Lost => {
+            mx = 0;
+            my = 0;
+        }
+
+        MomentumChange::PreviousDirection => {
+            mx = clamp(mx + mx.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
+            my = clamp(my + my.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
+        }
+
+        MomentumChange::CurrentDirection => {
+            if same_direction {
+                mx = clamp(mx + dx, -MAX_MOMENTUM, MAX_MOMENTUM);
+                my = clamp(my + dy, -MAX_MOMENTUM, MAX_MOMENTUM);
+            } else {
+                mx = dx;
+                my = dy;
+            }
+        }
+    }
+
+    objects[PLAYER].momentum = Some((mx, my));
 }
 
