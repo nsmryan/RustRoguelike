@@ -163,6 +163,7 @@ pub fn ai_attack(monster_id: usize,
                 .map(|pos| (pos.0 + target_x, pos.1 + target_y))
                 .filter(|(x, y)| fov_map.is_in_fov(*x, *y))
                 .filter(|(x, y)| !map.is_blocked(*x, *y, objects))
+                .filter(|(x, y)| map.clear_path_obstacles((monster_x, monster_y), (target_x, target_y)))
                 .collect();
             if positions.len() > 0 {
                 target_pos = positions.iter()
@@ -227,6 +228,7 @@ fn ai_can_hit_target(monster_id: ObjectId,
                 reach.offsets()
                 .iter()
                 .map(|pos| (pos.0 + monster_x, pos.1 + monster_y))
+                .filter(|(x, y)| map.clear_path_obstacles((monster_x, monster_y), (target_x, target_y)))
                 .collect();
 
             // look through attack positions, in case one hits the target

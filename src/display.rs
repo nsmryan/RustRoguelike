@@ -303,7 +303,7 @@ pub fn render_sound(game: &mut Game, map: &Map, objects: &[Object]) {
             // after animations play, draw sound for a frame
             if game.animations.len() == 0 {
                if let Some(sound_loc) = map[(x, y)].sound {
-                   if map.clear_path_obstacles(sound_loc, (x, y), objects) {
+                   if map.clear_path_obstacles(sound_loc, (x, y)) {
                       game.console.put_char(x, y, '.', BackgroundFlag::None);
                    }
                }

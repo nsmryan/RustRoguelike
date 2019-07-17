@@ -154,7 +154,7 @@ impl Map {
     }
 
     // this function is like clear_path, but only looks for terrain, not objects like monsters
-    pub fn clear_path_obstacles(&self, start: (i32, i32), end: (i32, i32), _objects: &[Object]) -> bool {
+    pub fn clear_path_obstacles(&self, start: (i32, i32), end: (i32, i32)) -> bool {
         let line = Line::new((start.0, start.1), (end.0, end.1));
 
         let path_blocked =
