@@ -47,52 +47,44 @@ pub fn handle_input(game: &mut Game,
             (Key { code: Up,      .. }, true)  |
             (Key { code: Number8, .. }, true)  |
             (Key { code: NumPad8, .. }, true) => {
-                player_move_or_attack(0, -1, map, objects, messages);
-                player_action = TookTurn;
+                player_action = player_move_or_attack(0, -1, map, objects, messages);
             }
 
             (Key { code: Down,    .. }, true) |
             (Key { code: Number2, .. }, true) |
             (Key { code: NumPad2, .. }, true) => {
-                player_move_or_attack(0, 1, map, objects, messages);
-                player_action = TookTurn;
+                player_action = player_move_or_attack(0, 1, map, objects, messages);
             }
             (Key { code: Left,    .. }, true) |
             (Key { code: Number4, .. }, true) |
             (Key { code: NumPad4, .. }, true) => {
-                player_move_or_attack(-1, 0, map, objects, messages);
-                player_action = TookTurn;
+                player_action = player_move_or_attack(-1, 0, map, objects, messages);
             }
 
             (Key { code: Right,   .. }, true) |
             (Key { code: Number6, .. }, true) |
             (Key { code: NumPad6, .. }, true) => {
-                player_move_or_attack(1, 0, map, objects, messages);
-                player_action = TookTurn;
+                player_action = player_move_or_attack(1, 0, map, objects, messages);
             }
 
             (Key { code: Number9, .. }, true)  |
             (Key { code: NumPad9, .. }, true) => {
-                player_move_or_attack(1, -1, map, objects, messages);
-                player_action = TookTurn;
+                player_action = player_move_or_attack(1, -1, map, objects, messages);
             }
 
             (Key { code: Number3, .. }, true) |
             (Key { code: NumPad3, .. }, true) => {
-                player_move_or_attack(1, 1, map, objects, messages);
-                player_action = TookTurn;
+                player_action = player_move_or_attack(1, 1, map, objects, messages);
             }
 
             (Key { code: Number1, .. }, true) |
             (Key { code: NumPad1, .. }, true) => {
-                player_move_or_attack(-1, 1, map, objects, messages);
-                player_action = TookTurn;
+                player_action = player_move_or_attack(-1, 1, map, objects, messages);
             }
 
             (Key { code: Number7, .. }, true) |
             (Key { code: NumPad7, .. }, true) => {
-                player_move_or_attack(-1, -1, map, objects, messages);
-                player_action = TookTurn;
+                player_action = player_move_or_attack(-1, -1, map, objects, messages);
             }
 
             (Key { code: Number5, .. }, true) |
@@ -268,7 +260,13 @@ fn pick_item_up(object_id: usize,
     }
 }
 
-fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], _messages: &mut Messages) {
+fn player_move_or_attack(dx: i32,
+                         dy: i32,
+                         map: &Map,
+                         objects: &mut [Object],
+                         _messages: &mut Messages) -> PlayerAction {
+    let took_turn: PlayerAction;
+
     let x = objects[PLAYER].x + dx;
     let y = objects[PLAYER].y + dy;
     let target_id = objects.iter().position(|object| {
@@ -279,12 +277,21 @@ fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], _m
         Some(target_id) => {
             let (player, target) = mut_two(PLAYER, target_id, objects);
              player.attack(target);
+
+             took_turn = PlayerAction::TookTurn;
         }
 
         None => {
             move_player_by(objects, map, dx, dy);
+            if objects[PLAYER].x == x && objects[PLAYER].y == y {
+                took_turn = PlayerAction::TookTurn;
+            } else {
+                took_turn = PlayerAction::DidntTakeTurn;
+            }
         }
     }
+
+    return took_turn;
 }
 
 fn gather_goal(_inventory_id: usize, _objects: &mut [Object], messages: &mut Messages) -> UseResult {
