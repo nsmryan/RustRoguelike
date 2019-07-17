@@ -45,15 +45,6 @@ use engine::ai::*;
 use input::*;
 use game::*;
 
-//if we want to use a character sprite, a potential value is '\u{8B}'
-pub fn make_player() -> Object {
-    let mut player = Object::new(0, 0, '@', "player", WHITE, true);
-    player.alive = true;
-    player.fighter = Some(Fighter{max_hp: 50, hp: 50, defense: 2, power: 5, on_death: DeathCallback::Player });
-    player.momentum = Some((0, 0));
-
-    player
-}
 
 pub fn setup_fov(fov: &mut FovMap, map: &Map) {
     for y in 0..MAP_HEIGHT {
@@ -112,6 +103,26 @@ pub fn play_sound(file_name: &str) {
     rodio::play_raw(&device, source.convert_samples());
 }
 
+pub fn run_game<F>(mut step: F)
+  where F: FnMut() -> bool {
+    // start game tick timer
+    let timer = Timer::new();
+    let (tick_sender, tick_receiver) = channel();
+    let _guard = 
+        timer.schedule_repeating(chrono::Duration::milliseconds(TIME_BETWEEN_FRAMES_MS), move || {
+            tick_sender.send(0).unwrap();
+        });
+
+    /* main game loop */
+    let mut running = true;
+    while running {
+        /* fps limiting */
+        tick_receiver.recv().unwrap();
+
+        running = step();
+    }
+}
+
 fn main() {
     let mut previous_player_position = (-1, -1);
 
@@ -150,7 +161,7 @@ fn main() {
 
     let mut key = Default::default();
 
-    // Start game tick timer
+    // start game tick timer
     let timer = Timer::new();
     let (tick_sender, tick_receiver) = channel();
     let _guard = 
@@ -158,9 +169,9 @@ fn main() {
             tick_sender.send(0).unwrap();
         });
 
-    /* Main Game Loop */
-    while !game.root.window_closed() {
-        /* FPS Limiting */
+    /* main game loop */
+    run_game(move || {
+        /* fps limiting */
         tick_receiver.recv().unwrap();
 
         match tcod::input::check_for_event(tcod::input::MOUSE | tcod::input::KEY_PRESS) {
@@ -216,7 +227,7 @@ fn main() {
             player_action = handle_input(&mut game, key, &mut map, &mut objects, &mut inventory, &config, &mut messages);
             match player_action {
               PlayerAction::Exit => {
-                break;
+                return false;
               }
 
               PlayerAction::TookTurn => {
@@ -250,6 +261,8 @@ fn main() {
             }
           _ => (),
         }
-    }
+
+      return !game.root.window_closed();
+    });
 }
 
