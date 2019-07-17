@@ -123,6 +123,107 @@ pub fn run_game<F>(mut step: F)
     }
 }
 
+pub fn step_game(game: &mut Game,
+                 config: &mut Config,
+                 previous_player_position: &mut (i32, i32),
+                 map: &mut Map,
+                 objects: &mut Vec<Object>,
+                 messages: &mut Messages,
+                 inventory: &mut Vec<Object>) -> bool {
+    /* Handle Inputs */
+    let mut key = Default::default();
+
+    match tcod::input::check_for_event(tcod::input::MOUSE | tcod::input::KEY_PRESS) {
+        Some((_, Event::Mouse(m))) => game.mouse = m,
+        Some((_, Event::Key(k))) => key = k,
+        _ => {
+            key = Default::default();
+            game.mouse.lbutton_pressed = false;
+            game.mouse.rbutton_pressed = false;
+        },
+    }
+
+    /* Display */
+    let fov_recompute = *previous_player_position != (objects[PLAYER].x, objects[PLAYER].y);
+    render_all(game, 
+               objects,
+               map,
+               messages,
+               fov_recompute,
+               config);
+
+    game.root.flush();
+
+    for object in objects.iter() {
+        object.clear(&mut game.console);
+    }
+
+    for clearable in game.needs_clear.iter() {
+        game.console.put_char(clearable.0, clearable.1, ' ', BackgroundFlag::None);
+    }
+    game.needs_clear.clear();
+
+    /* Player Action and Animations */
+    // If there is an animation playing, let it finish
+    let player_action;
+    if game.animations.len() > 0 {
+        let mut finished_ixs = Vec::new();
+        let mut ix = 0; 
+        for mut animation in game.animations.iter_mut() {
+          let finished = step_animation(objects, map, &mut animation);
+          if finished {
+              finished_ixs.push(ix)
+          }
+          ix += 1;
+        }
+        finished_ixs.sort_unstable();
+        for ix in finished_ixs.iter().rev() {
+            game.animations.swap_remove(*ix);
+        }
+        player_action = PlayerAction::DidntTakeTurn;
+    } else {
+        *previous_player_position = (objects[PLAYER].x, objects[PLAYER].y);
+        player_action = handle_input(game, key, map, objects, inventory, config, messages);
+        match player_action {
+          PlayerAction::Exit => {
+            return false;
+          }
+
+          PlayerAction::TookTurn => {
+              game.turn_count += 1;
+          }
+          
+          _ => {}
+        }
+    }
+
+    /* Check Exit Condition */
+    if exit_condition_met(&inventory, map, objects) {
+        std::process::exit(0);
+    }
+
+    /* AI */
+    if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
+        for id in 1..objects.len() {
+            if objects[id].ai.is_some() {
+                ai_take_turn(id, map, objects, &game.fov, &mut game.animations);
+            }
+        }
+    }
+
+    // reload configuration
+    match File::open("config.json") {
+        Ok(mut file) => {
+            let mut config_string = String::new();
+            file.read_to_string(&mut config_string).expect("Could not read config file!");
+            *config = serde_json::from_str(&config_string).expect("Could not read JSON- config.json has a parsing error!");
+        }
+      _ => (),
+    }
+
+  return !game.root.window_closed();
+}
+
 fn main() {
     let mut previous_player_position = (-1, -1);
 
@@ -159,110 +260,15 @@ fn main() {
 
     messages.message("Welcome Stranger! Prepare to perish in the Desolation of Salt!", ORANGE);
 
-    let mut key = Default::default();
-
-    // start game tick timer
-    let timer = Timer::new();
-    let (tick_sender, tick_receiver) = channel();
-    let _guard = 
-        timer.schedule_repeating(chrono::Duration::milliseconds(TIME_BETWEEN_FRAMES_MS), move || {
-            tick_sender.send(0).unwrap();
-        });
-
     /* main game loop */
     run_game(move || {
-        /* fps limiting */
-        tick_receiver.recv().unwrap();
-
-        match tcod::input::check_for_event(tcod::input::MOUSE | tcod::input::KEY_PRESS) {
-            Some((_, Event::Mouse(m))) => game.mouse = m,
-            Some((_, Event::Key(k))) => key = k,
-            _ => {
-                key = Default::default();
-                game.mouse.lbutton_pressed = false;
-                game.mouse.rbutton_pressed = false;
-            },
-        }
-
-        /* Display */
-        let fov_recompute = previous_player_position != (objects[PLAYER].x, objects[PLAYER].y);
-        render_all(&mut game, 
-                   &objects,
-                   &mut map,
-                   &mut messages,
-                   fov_recompute,
-                   &config);
-
-        game.root.flush();
-
-        for object in objects.iter() {
-            object.clear(&mut game.console);
-        }
-
-        for clearable in game.needs_clear.iter() {
-            game.console.put_char(clearable.0, clearable.1, ' ', BackgroundFlag::None);
-        }
-        game.needs_clear.clear();
-
-        /* Player Action and Animations */
-        // If there is an animation playing, let it finish
-        let player_action;
-        if game.animations.len() > 0 {
-            let mut finished_ixs = Vec::new();
-            let mut ix = 0; 
-            for mut animation in game.animations.iter_mut() {
-              let finished = step_animation(&mut objects, &map, &mut animation);
-              if finished {
-                  finished_ixs.push(ix)
-              }
-              ix += 1;
-            }
-            finished_ixs.sort_unstable();
-            for ix in finished_ixs.iter().rev() {
-                game.animations.swap_remove(*ix);
-            }
-            player_action = PlayerAction::DidntTakeTurn;
-        } else {
-            previous_player_position = (objects[PLAYER].x, objects[PLAYER].y);
-            player_action = handle_input(&mut game, key, &mut map, &mut objects, &mut inventory, &config, &mut messages);
-            match player_action {
-              PlayerAction::Exit => {
-                return false;
-              }
-
-              PlayerAction::TookTurn => {
-                  game.turn_count += 1;
-              }
-              
-              _ => {}
-            }
-        }
-
-        // check exit condition
-        if exit_condition_met(&inventory, &map, &objects) {
-            std::process::exit(0);
-        }
-
-        /* AI */
-        if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
-            for id in 1..objects.len() {
-                if objects[id].ai.is_some() {
-                    ai_take_turn(id, &map, &mut objects, &game.fov, &mut game.animations);
-                }
-            }
-        }
-
-        // reload configuration
-        match File::open("config.json") {
-            Ok(mut file) => {
-                let mut config_string = String::new();
-                file.read_to_string(&mut config_string).expect("Could not read config file!");
-                config = serde_json::from_str(&config_string).expect("Could not read JSON- config.json has a parsing error!");
-            }
-          _ => (),
-        }
-
-      return !game.root.window_closed();
+        step_game(&mut game,
+                  &mut config,
+                  &mut previous_player_position,
+                  &mut map,
+                  &mut objects,
+                  &mut messages,
+                  &mut inventory)
     });
 }
 
