@@ -149,7 +149,7 @@ pub fn ai_attack(monster_id: usize,
 
     let mut turn: AiTurn = AiTurn::new();
 
-    if let Some(hit_pos) = ai_can_hit_target(monster_id, target_id, objects) {
+    if let Some(hit_pos) = ai_can_hit_target(monster_id, target_id, objects, fov_map) {
         turn.add(AiAction::Attack(target_id, hit_pos));
     } else {
         // check positions that can hit target, filter by FOV, and get the closest.
@@ -212,23 +212,28 @@ pub fn ai_investigate(target_pos_orig: Position,
     return turn;
 }
 
-fn ai_can_hit_target(monster_id: ObjectId, target_id: ObjectId, objects: &[Object]) -> Option<(i32, i32)> {
+fn ai_can_hit_target(monster_id: ObjectId,
+                     target_id: ObjectId,
+                     objects: &[Object],
+                     fov_map: &FovMap) -> Option<(i32, i32)> {
     let (target_x, target_y) = objects[target_id].pos();
     let (monster_x, monster_y) = objects[monster_id].pos();
     let mut hit_pos = None;
 
-    if let Some(reach) = objects[monster_id].attack {
-        // get all locations they can hit
-        let positions: Vec<(i32, i32)> =
-            reach.offsets()
-            .iter()
-            .map(|pos| (pos.0 + monster_x, pos.1 + monster_y))
-            .collect();
+    if fov_map.is_in_fov(monster_x, monster_y) {
+        if let Some(reach) = objects[monster_id].attack {
+            // get all locations they can hit
+            let positions: Vec<(i32, i32)> =
+                reach.offsets()
+                .iter()
+                .map(|pos| (pos.0 + monster_x, pos.1 + monster_y))
+                .collect();
 
-        // look through attack positions, in case one hits the target
-        for pos in positions {
-            if target_x == pos.0 && target_y == pos.1 {
-                hit_pos = Some(pos)
+            // look through attack positions, in case one hits the target
+            for pos in positions {
+                if target_x == pos.0 && target_y == pos.1 {
+                    hit_pos = Some(pos)
+                }
             }
         }
     }

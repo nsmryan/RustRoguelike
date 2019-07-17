@@ -394,17 +394,7 @@ pub fn render_all(game: &mut Game,
                   objects: &[Object],
                   map: &mut Map,
                   messages: &mut Messages,
-                  fov_recompute: bool,
                   config: &Config) {
-    if fov_recompute {
-        let player = &objects[PLAYER];
-        let mut fov_distance = config.fov_distance;
-        if game.god_mode {
-            fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
-        }
-        game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
-    }
-
     render_map(&mut game.console, &game.fov, map, config);
 
     render_sound(game, map, objects);

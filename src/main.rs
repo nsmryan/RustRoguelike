@@ -174,13 +174,21 @@ fn main() {
             },
         }
 
+        /* Field of View */
+        if previous_player_position != (objects[PLAYER].x, objects[PLAYER].y) {
+            let player = &objects[PLAYER];
+            let mut fov_distance = config.fov_distance;
+            if game.god_mode {
+                fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
+            }
+            game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
+        }
+
         /* Display */
-        let fov_recompute = previous_player_position != (objects[PLAYER].x, objects[PLAYER].y);
         render_all(&mut game, 
                    &objects,
                    &mut map,
                    &mut messages,
-                   fov_recompute,
                    &config);
 
         game.root.flush();
