@@ -220,7 +220,7 @@ fn ai_can_hit_target(monster_id: ObjectId,
     let (monster_x, monster_y) = objects[monster_id].pos();
     let mut hit_pos = None;
 
-    if fov_map.is_in_fov(monster_x, monster_y) {
+    if fov_map.is_in_fov(target_x, target_y) {
         if let Some(reach) = objects[monster_id].attack {
             // get all locations they can hit
             let positions: Vec<(i32, i32)> =
@@ -260,11 +260,13 @@ fn ai_take_astar_step(monster_pos: (i32, i32), target_pos: (i32, i32), map: &Map
 fn basic_ai_take_turn(monster_id: usize,
                       map: &Map,
                       objects: &Vec<Object>,
-                      fov_map: &FovMap) -> AiTurn {
+                      fov_map: &mut FovMap) -> AiTurn {
     let (monster_x, monster_y) = objects[monster_id].pos();
     let (player_x, player_y) = objects[PLAYER].pos();
     let player_pos = Position::new(player_x, player_y);
     let monster_pos = Position::new(monster_x, monster_y);
+
+    fov_map.compute_fov(monster_x, monster_y, MONSTER_VIEW_DIST, FOV_LIGHT_WALLS, FOV_ALGO);
 
     match objects[monster_id].behavior {
         Some(Behavior::Idle) => {
@@ -306,7 +308,7 @@ fn basic_ai_take_turn(monster_id: usize,
 pub fn ai_take_turn(monster_id: usize,
                     map: &Map,
                     objects: &mut Vec<Object>,
-                    fov_map: &FovMap,
+                    fov_map: &mut FovMap,
                     animations: &mut Vec<Animation>) {
     let turn: AiTurn;
 
@@ -324,7 +326,6 @@ pub fn ai_take_turn(monster_id: usize,
                      turn,
                      map,
                      objects,
-                     fov_map,
                      animations);
 }
 
@@ -332,7 +333,6 @@ pub fn ai_apply_actions(monster_id: usize,
                         turn: AiTurn,
                         map: &Map,
                         objects: &mut Vec<Object>,
-                        _fov_map: &FovMap,
                         animations: &mut Vec<Animation>) {
     for action in turn.actions().iter() {
         match action {

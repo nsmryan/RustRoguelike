@@ -5,7 +5,7 @@ authors = ["nsmryan <nsmryan@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-tcod = "0.13"
+tcod = "0.15"
 rand = "0.3.9"
 serde = "1.0"
 serde_json = "1.0"

@@ -17,7 +17,6 @@ pub const MAP_HEIGHT: i32 = 43;
 
 pub const FOV_ALGO: FovAlgorithm = FovAlgorithm::Basic;
 pub const FOV_LIGHT_WALLS: bool = true;
-pub const TORCH_RADIOUS: i32 = 10;
 pub const HEAL_AMOUNT: i32 = 4;
 
 pub const ROOM_MAX_SIZE: i32 = 10;

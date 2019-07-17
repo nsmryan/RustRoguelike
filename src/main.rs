@@ -243,9 +243,11 @@ fn main() {
 
         /* AI */
         if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
+            let mut ai_fov = game.fov.clone();
+
             for id in 1..objects.len() {
                 if objects[id].ai.is_some() {
-                    ai_take_turn(id, &map, &mut objects, &game.fov, &mut game.animations);
+                    ai_take_turn(id, &map, &mut objects, &mut ai_fov, &mut game.animations);
                 }
             }
         }
