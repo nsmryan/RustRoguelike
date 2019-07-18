@@ -453,7 +453,7 @@ pub enum Animation {
     Thrown(ObjectId, Line),
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, Default)]
 pub struct ColorConfig {
     pub r: u8,
     pub g: u8,
@@ -473,7 +473,7 @@ impl ColorConfig {
     }
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, Default)]
 pub struct Config {
     pub color_dark_brown: ColorConfig,
     pub color_medium_brown: ColorConfig,

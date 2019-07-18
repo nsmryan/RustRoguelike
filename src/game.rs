@@ -1,6 +1,7 @@
 use rand::Rng;
 
 use tcod::colors::*;
+#[allow(unused_imports)]use tcod::map::{Map as FovMap};
 
 use crate::engine::types::*;
 use crate::constants::*;
@@ -51,6 +52,19 @@ pub fn make_kobold(config: &Config, x: i32, y :i32) -> Object {
     kobold.attack = Some(Reach::Horiz);
     kobold.alive = true;
     kobold
+}
+
+pub fn setup_fov(fov: &mut FovMap, map: &Map) {
+    let dims = map.size();
+
+    for y in 0..dims.1 {
+        for x in 0..dims.0 {
+            fov.set(x,
+                    y,
+                    !map.0[x as usize][y as usize].block_sight,
+                    !map.0[x as usize][y as usize].blocked);
+        }
+    }
 }
 
 pub fn make_map(objects: &mut Vec<Object>, config: &Config) -> (Map, Position) {

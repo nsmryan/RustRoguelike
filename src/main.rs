@@ -46,17 +46,6 @@ use input::*;
 use game::*;
 
 
-pub fn setup_fov(fov: &mut FovMap, map: &Map) {
-    for y in 0..MAP_HEIGHT {
-        for x in 0..MAP_WIDTH {
-            fov.set(x,
-                    y,
-                    !map.0[x as usize][y as usize].block_sight,
-                    !map.0[x as usize][y as usize].blocked);
-        }
-    }
-}
-
 fn step_animation(objects: &mut [Object], map: &Map, animation: &mut Animation) -> bool {
     match animation {
         Animation::Thrown(obj_id, line) => {
