@@ -24,6 +24,8 @@ mod tests;
 #[allow(unused_imports)]use std::io::Read;
 #[allow(unused_imports)]use std::sync::mpsc::channel;
 
+use rand::prelude::*;
+
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
 #[allow(unused_imports)]use tcod::console::*;
 #[allow(unused_imports)]use tcod::colors::*;
@@ -230,7 +232,9 @@ fn main() {
 
     let mut objects = vec!(make_player());
 
-    let (mut map, position) = make_map(&mut objects, &config);
+    let rng: SmallRng = SeedableRng::seed_from_u64(0);
+
+    let (mut map, position) = make_map(&mut objects, &config, &mut rng);
     let player_x = position.0;
     let player_y = position.1;
     objects[PLAYER].x = player_x;

@@ -1,4 +1,6 @@
 use rand::Rng;
+use rand::prelude::SliceRandom;
+use rand::prelude::*;
 
 use tcod::colors::*;
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
@@ -67,17 +69,17 @@ pub fn setup_fov(fov: &mut FovMap, map: &Map) {
     }
 }
 
-pub fn make_map(objects: &mut Vec<Object>, config: &Config) -> (Map, Position) {
+pub fn make_map(objects: &mut Vec<Object>, config: &Config, rng: &mut SmallRng) -> (Map, Position) {
     let mut map = Map::with_vec(vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize]);
 
-    let starting_position = make_island(&mut map, objects, config);
+    let starting_position = make_island(&mut map, objects, config, rng);
 
     map[starting_position].tile_type = TileType::Empty;
 
     (map, starting_position)
 }
 
-pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) -> Position {
+pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config, rng: &mut SmallRng) -> Position {
     let center = Position(MAP_WIDTH/2, MAP_HEIGHT/2);
 
     let mut water_tile_positions = Vec::new();
@@ -103,19 +105,19 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         let rand_pos = random_offset();
         let pos = Position(center.0 + rand_pos.0, center.1 + rand_pos.1);
 
-        let obstacle = *rand::thread_rng().choose(&obstacles).unwrap();
+        let obstacle = *obstacles.choose(rng).unwrap();
 
         // Buildings are generated separately, so don't add them in random generation
         if obstacle != Obstacle::Building {
-            add_obstacle(map, &pos, obstacle);
+            add_obstacle(map, &pos, obstacle, rng);
         }
     }
 
     /* add buildings */
-    for _ in 0..rand::thread_rng().gen_range(3, 5) {
+    for _ in 0..rng.gen_range(3, 5) {
         let rand_pos = random_offset();
         let pos = Position(center.0 + rand_pos.0, center.1 + rand_pos.1);
-        add_obstacle(map, &pos, Obstacle::Building);
+        add_obstacle(map, &pos, Obstacle::Building, rng);
     }
 
     /* random subtraction */
@@ -130,10 +132,10 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
     /* random additions */
     for _ in 0..ISLAND_NUM_ADDITION_ATTEMPTS {
         let pos = pos_in_radius(center, ISLAND_RADIUS);
-        let obstacle = *rand::thread_rng().choose(&obstacles).unwrap();
+        let obstacle = *obstacles.choose(rng).unwrap();
 
         if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
-            add_obstacle(map, &pos, obstacle);
+            add_obstacle(map, &pos, obstacle, rng);
         }
     }
 
@@ -185,8 +187,8 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         }
     }
 
-    let x = rand::thread_rng().gen_range(0, MAP_WIDTH);
-    let y = rand::thread_rng().gen_range(0, MAP_HEIGHT);
+    let x = rng.gen_range(0, MAP_WIDTH);
+    let y = rng.gen_range(0, MAP_HEIGHT);
 
     if !map.is_blocked(x, y, objects) {
         let mut object = Object::new(x,y, '\u{FD}', "goal", RED, false);
@@ -218,7 +220,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config) ->
         }
     }
     // choose a random edge position
-    let edge_pos = edge_positions[rand::thread_rng().gen_range(0, edge_positions.len())];
+    let edge_pos = edge_positions[rng.gen_range(0, edge_positions.len())];
 
     // make the random edge position the exit
     map.0[edge_pos.0 as usize][edge_pos.1 as usize] = Tile::exit();
