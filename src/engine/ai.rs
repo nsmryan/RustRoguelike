@@ -152,7 +152,7 @@ fn ai_take_astar_step(monster_pos: (i32, i32), target_pos: (i32, i32), map: &Map
     }
 }
 
-fn basic_ai_take_turn(monster_id: usize,
+pub fn basic_ai_take_turn(monster_id: usize,
                       map: &Map,
                       objects: &Vec<Object>,
                       fov_map: &FovMap) -> AiTurn {
