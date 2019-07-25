@@ -244,11 +244,11 @@ pub fn random_offset(rng: &mut SmallRng) -> Position {
 }
 
 pub fn random_position(rng: &mut SmallRng) -> Position {
-    Position(rng.gen_range(0, MAP_WIDTH), rand::thread_rng().gen_range(0, MAP_HEIGHT))
+    Position(rng.gen_range(0, MAP_WIDTH), rng.gen_range(0, MAP_HEIGHT))
 }
 
 pub fn pos_in_radius(pos: Position, radius: i32, rng: &mut SmallRng) -> Position {
-    return Position(pos.0 + rand::thread_rng().gen_range(-radius, radius),
+    return Position(pos.0 + rng.gen_range(-radius, radius),
     pos.1 + rng.gen_range(-radius, radius));
 }
 

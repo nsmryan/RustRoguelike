@@ -232,7 +232,7 @@ fn main() {
 
     let mut objects = vec!(make_player());
 
-    let rng: SmallRng = SeedableRng::seed_from_u64(0);
+    let mut rng: SmallRng = SeedableRng::seed_from_u64(0);
 
     let (mut map, position) = make_map(&mut objects, &config, &mut rng);
     let player_x = position.0;

@@ -102,7 +102,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config, rn
     let obstacles = Obstacle::all_obstacles();
 
     for _ in 0..ISLAND_NUM_OBSTACLES {
-        let rand_pos = random_offset();
+        let rand_pos = random_offset(rng);
         let pos = Position(center.0 + rand_pos.0, center.1 + rand_pos.1);
 
         let obstacle = *obstacles.choose(rng).unwrap();
@@ -115,14 +115,14 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config, rn
 
     /* add buildings */
     for _ in 0..rng.gen_range(3, 5) {
-        let rand_pos = random_offset();
+        let rand_pos = random_offset(rng);
         let pos = Position(center.0 + rand_pos.0, center.1 + rand_pos.1);
         add_obstacle(map, &pos, Obstacle::Building, rng);
     }
 
     /* random subtraction */
     for _ in 0..ISLAND_NUM_SUBTRACTIONS_ATTEMPTS {
-        let pos = pos_in_radius(center, ISLAND_RADIUS);
+        let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
         if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
             map.0[pos.0 as usize][pos.1 as usize] = Tile::empty();
@@ -131,7 +131,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config, rn
 
     /* random additions */
     for _ in 0..ISLAND_NUM_ADDITION_ATTEMPTS {
-        let pos = pos_in_radius(center, ISLAND_RADIUS);
+        let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
         let obstacle = *obstacles.choose(rng).unwrap();
 
         if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
@@ -141,7 +141,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config, rn
 
     /* random stones */
     for _ in 0..10 {
-        let pos = pos_in_radius(center, ISLAND_RADIUS);
+        let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
         if map.is_empty(pos.0, pos.1, &objects) {
             let mut stone = Object::make_stone(pos.0, pos.1);
@@ -153,7 +153,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config, rn
     /* add monsters */
     for _ in 0..2 {
         loop {
-            let (x, y) = pos_in_radius(center, ISLAND_RADIUS).pair();
+            let (x, y) = pos_in_radius(center, ISLAND_RADIUS, rng).pair();
 
             if !map.is_blocked(x, y, objects) {
                 let monster = make_orc(config,x,y);
@@ -165,7 +165,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config, rn
 
     for _ in 0..2 {
         loop {
-            let (x, y) = pos_in_radius(center, ISLAND_RADIUS).pair();
+            let (x, y) = pos_in_radius(center, ISLAND_RADIUS, rng).pair();
 
             if !map.is_blocked(x, y, objects) {
                 let monster = make_kobold(config,x,y);
@@ -177,7 +177,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config, rn
     
     for _ in 0..2 {
         loop {
-            let (x, y) = pos_in_radius(center, ISLAND_RADIUS).pair();
+            let (x, y) = pos_in_radius(center, ISLAND_RADIUS, rng).pair();
 
             if !map.is_blocked(x, y, objects) {
                 let monster = make_troll(config,x,y);
@@ -197,9 +197,9 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config, rn
     }
 
     /* add goal object */
-    let (mut x, mut y) = pos_in_radius(center, ISLAND_RADIUS).pair();
+    let (mut x, mut y) = pos_in_radius(center, ISLAND_RADIUS, rng).pair();
     while !map.is_empty(x, y, &objects) {
-        let pos = pos_in_radius(center, ISLAND_RADIUS).pair();
+        let pos = pos_in_radius(center, ISLAND_RADIUS, rng).pair();
         x = pos.0;
         y = pos.1;
     }
