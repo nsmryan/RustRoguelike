@@ -18,11 +18,14 @@ mod game;
 mod tests;
 
 
-#[allow(unused_imports)]use std::cmp;
-#[allow(unused_imports)]use std::fs::File;
-#[allow(unused_imports)]use std::io::BufReader;
-#[allow(unused_imports)]use std::io::Read;
-#[allow(unused_imports)]use std::sync::mpsc::channel;
+use std::env;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+use std::cmp;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::Read;
+use std::sync::mpsc::channel;
 
 use rand::prelude::*;
 
@@ -216,6 +219,19 @@ pub fn step_game(game: &mut Game,
 }
 
 fn main() {
+    let args = env::args().collect::<Vec<String>>();
+
+    // Create seed for random number generator, either from
+    // user input or randomly
+    let seed: u64;
+    if args.len() > 1 {
+        let mut hasher = DefaultHasher::new();
+        args[1].hash(&mut hasher);
+        seed = hasher.finish();
+    } else {
+        seed = rand::thread_rng().gen();
+    }
+
     let mut previous_player_position = (-1, -1);
 
     let mut messages = Messages::new();
@@ -232,7 +248,7 @@ fn main() {
 
     let mut objects = vec!(make_player());
 
-    let mut rng: SmallRng = SeedableRng::seed_from_u64(0);
+    let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
 
     let (mut map, position) = make_map(&mut objects, &config, &mut rng);
     let player_x = position.0;
