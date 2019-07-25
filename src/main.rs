@@ -254,7 +254,7 @@ pub fn write_map(file_name: &str, map: &Map) {
     // write out map to a file
     let mut map_file = File::create(file_name).unwrap();
     for row in map.0.iter() {
-        for tile in row {
+        for tile in row.iter() {
             let tile_char = match tile.tile_type {
                 TileType::Empty => ' ',
                 TileType::ShortWall => '.',
