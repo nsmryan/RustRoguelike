@@ -19,9 +19,9 @@ mod tests;
 
 
 use std::env;
+use std::io::Write;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::cmp;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
@@ -218,6 +218,26 @@ pub fn step_game(game: &mut Game,
   return !game.root.window_closed();
 }
 
+pub fn write_map(file_name: &str, map: &Map) {
+    // write out map to a file
+    let mut map_file = File::create(file_name).unwrap();
+    for row in map.0.iter() {
+        for tile in row {
+            let tile_char = match tile.tile_type {
+                TileType::Empty => ' ',
+                TileType::ShortWall => '.',
+                TileType::Wall => '#',
+                TileType::Water => 'w',
+                TileType::Exit => 'x',
+            };
+            let buffer = [tile_char as u8];
+            map_file.write(&buffer[..]).unwrap();
+        }
+        let buffer = ['\n' as u8];
+        map_file.write(&buffer[..]).unwrap();
+    }
+}
+
 fn main() {
     let args = env::args().collect::<Vec<String>>();
 
@@ -255,6 +275,9 @@ fn main() {
     let player_y = position.1;
     objects[PLAYER].x = player_x;
     objects[PLAYER].y = player_y;
+
+    // write out map to a file
+    write_map("map.csv", &map);
 
     let root = Root::initializer()
         .font("rexpaint16x16.png", FontLayout::AsciiInRow)

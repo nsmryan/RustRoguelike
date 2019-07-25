@@ -1,7 +1,6 @@
 use std::ops::{Index, IndexMut};
 use std::collections::HashSet;
 
-use rand::RngCore;
 use rand::prelude::*;
 
 use tcod::line::*;
