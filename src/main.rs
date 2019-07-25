@@ -19,11 +19,13 @@ mod tests;
 
 
 use std::env;
+use std::path::Path;
 use std::io::Write;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::fs::File;
 use std::io::BufReader;
+use std::io::BufRead;
 use std::io::Read;
 use std::sync::mpsc::channel;
 
@@ -215,9 +217,39 @@ pub fn step_game(game: &mut Game,
       _ => (),
     }
 
+  if Path::new("map.csv").exists() {
+      *map = read_map("map.csv");
+  }
+
   return !game.root.window_closed();
 }
 
+pub fn read_map(file_name: &str) -> Map {
+    let file = File::open(file_name).unwrap();
+    let file = BufReader::new(file);
+    let mut map = Map(Vec::new());
+
+    for line in file.lines() {
+        let mut line_tiles = Vec::new();
+
+        for chr in line.unwrap().chars() {
+            let tile = 
+                match chr {
+                    ' ' => Tile::empty(),
+                    '.' => Tile::short_wall(),
+                    '#' => Tile::wall(),
+                    'w' => Tile::water(),
+                    'x' => Tile::exit(),
+                    _ => panic!("Unexpected char in map!"),
+                };
+            line_tiles.push(tile);
+        }
+
+        map.0.push(line_tiles);
+    }
+
+    return map;
+}
 pub fn write_map(file_name: &str, map: &Map) {
     // write out map to a file
     let mut map_file = File::create(file_name).unwrap();
