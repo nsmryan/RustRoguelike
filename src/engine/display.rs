@@ -227,6 +227,7 @@ pub fn render_map(console: &mut Console,
                   fov: &FovMap,
                   map: &mut Map,
                   config: &Config) {
+    println!("map width = {}", map.0.len());
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
             let visible = fov.is_in_fov(x, y);

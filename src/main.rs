@@ -228,9 +228,10 @@ pub fn read_map(file_name: &str) -> Map {
     let file = File::open(file_name).unwrap();
     let file = BufReader::new(file);
     let mut map = Map(Vec::new());
+    let mut rot_map = Vec::new();
 
     for line in file.lines() {
-        let mut line_tiles = Vec::new();
+        let mut rot_line = Vec::new();
 
         for chr in line.unwrap().chars() {
             let tile = 
@@ -242,10 +243,17 @@ pub fn read_map(file_name: &str) -> Map {
                     'x' => Tile::exit(),
                     _ => panic!("Unexpected char in map!"),
                 };
-            line_tiles.push(tile);
+            rot_line.push(tile);
         }
+        rot_map.push(rot_line)
+    }
 
-        map.0.push(line_tiles);
+    for x in 0..MAP_WIDTH {
+        let mut line = Vec::new();
+        for y in 0..MAP_HEIGHT {
+            line.push(rot_map[y as usize][x as usize]);
+        }
+        map.0.push(line);
     }
 
     return map;
@@ -253,7 +261,11 @@ pub fn read_map(file_name: &str) -> Map {
 pub fn write_map(file_name: &str, map: &Map) {
     // write out map to a file
     let mut map_file = File::create(file_name).unwrap();
+    let mut map_vec = Vec::new();
+
     for row in map.0.iter() {
+        let mut line_vec = Vec::new();
+
         for tile in row.iter() {
             let tile_char = match tile.tile_type {
                 TileType::Empty => ' ',
@@ -262,12 +274,25 @@ pub fn write_map(file_name: &str, map: &Map) {
                 TileType::Water => 'w',
                 TileType::Exit => 'x',
             };
-            let buffer = [tile_char as u8];
-            map_file.write(&buffer[..]).unwrap();
+            line_vec.push(tile_char as u8);
         }
-        let buffer = ['\n' as u8];
-        map_file.write(&buffer[..]).unwrap();
+
+        map_vec.push(line_vec);
     }
+
+    let mut final_map_vec = Vec::new();
+    println!("MAP_HEIGHT = {}", MAP_HEIGHT);
+    println!("MAP_WIDTH = {}", MAP_WIDTH);
+    println!("map_vec.len() = {}", map_vec.len());
+    println!("map_vec[0].len() = {}", map_vec[0].len());
+    for y in 0..MAP_HEIGHT {
+        for x in 0..MAP_WIDTH {
+            println!("{} {}", y, x);
+            final_map_vec.push(map_vec[x as usize][y as usize]);
+        }
+        final_map_vec.push('\n' as u8);
+    }
+    map_file.write(&final_map_vec).unwrap();
 }
 
 fn main() {
