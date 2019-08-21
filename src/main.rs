@@ -119,6 +119,28 @@ pub fn run_game<F>(mut step: F)
     }
 }
 
+fn animations(game: &mut Game, objects: &mut [Object], map: &Map) {
+    let mut finished_ixs = Vec::new();
+    let mut ix = 0; 
+
+    /* For each animation, step its state */
+    for mut animation in game.animations.iter_mut() {
+      let finished = step_animation(objects, map, &mut animation);
+
+      // for a finished animation, record that it should be removed
+      if finished {
+          finished_ixs.push(ix)
+      }
+      ix += 1;
+    }
+
+    // remove finished animations
+    finished_ixs.sort_unstable();
+    for ix in finished_ixs.iter().rev() {
+        game.animations.swap_remove(*ix);
+    }
+}
+
 pub fn step_game(game: &mut Game,
                  config: &mut Config,
                  previous_player_position: &mut (i32, i32),
@@ -161,25 +183,13 @@ pub fn step_game(game: &mut Game,
 
     /* Player Action and Animations */
     // If there is an animation playing, let it finish
+    *previous_player_position = (objects[PLAYER].x, objects[PLAYER].y);
     let player_action;
     if game.animations.len() > 0 {
-        let mut finished_ixs = Vec::new();
-        let mut ix = 0; 
-        for mut animation in game.animations.iter_mut() {
-          let finished = step_animation(objects, map, &mut animation);
-          if finished {
-              finished_ixs.push(ix)
-          }
-          ix += 1;
-        }
-        finished_ixs.sort_unstable();
-        for ix in finished_ixs.iter().rev() {
-            game.animations.swap_remove(*ix);
-        }
+        animations(game, objects, map);
         player_action = PlayerAction::DidntTakeTurn;
     } else {
-        *previous_player_position = (objects[PLAYER].x, objects[PLAYER].y);
-        player_action = handle_input(game, key, map, objects, inventory, config, messages);
+        player_action = handle_input(game, key, map, objects, inventory, messages);
         match player_action {
           PlayerAction::Exit => {
             return false;
@@ -207,7 +217,7 @@ pub fn step_game(game: &mut Game,
         }
     }
 
-    // reload configuration
+    /* Reload Configuration */
     match File::open("config.json") {
         Ok(mut file) => {
             let mut config_string = String::new();

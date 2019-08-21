@@ -19,7 +19,6 @@ pub fn handle_input(game: &mut Game,
                     map: &mut Map,
                     objects: &mut Vec<Object>,
                     inventory: &mut Vec<Object>,
-                    _config: &Config,
                     messages: &mut Messages) -> PlayerAction {
     use PlayerAction::*;
 
