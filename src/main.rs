@@ -217,7 +217,7 @@ pub fn step_game(game: &mut Game,
       _ => (),
     }
 
-  if Path::new("map.csv").exists() {
+  if config.load_map_file && Path::new("map.csv").exists() {
       *map = read_map("map.csv");
   }
 
@@ -287,7 +287,6 @@ pub fn write_map(file_name: &str, map: &Map) {
     println!("map_vec[0].len() = {}", map_vec[0].len());
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
-            println!("{} {}", y, x);
             final_map_vec.push(map_vec[x as usize][y as usize]);
         }
         final_map_vec.push('\n' as u8);
@@ -308,6 +307,7 @@ fn main() {
     } else {
         seed = rand::thread_rng().gen();
     }
+    println!("Seed: {} (0x{:X})", seed, seed);
 
     let mut previous_player_position = (-1, -1);
 

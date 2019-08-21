@@ -497,5 +497,6 @@ pub struct Config {
     pub color_soft_green: ColorConfig,
     pub color_light_grey: ColorConfig,
     pub fov_distance: i32,
+    pub load_map_file: bool,
 }
 
