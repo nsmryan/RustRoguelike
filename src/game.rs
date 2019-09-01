@@ -63,8 +63,8 @@ pub fn setup_fov(fov: &mut FovMap, map: &Map) {
         for x in 0..dims.0 {
             fov.set(x,
                     y,
-                    !map.0[x as usize][y as usize].block_sight,
-                    !map.0[x as usize][y as usize].blocked);
+                    !map.tiles[x as usize][y as usize].block_sight,
+                    !map.tiles[x as usize][y as usize].blocked);
         }
     }
 }
@@ -74,12 +74,19 @@ pub fn make_map(objects: &mut Vec<Object>, config: &Config, rng: &mut SmallRng) 
 
     let starting_position = make_island(&mut map, objects, config, rng);
 
+    // TODO TESTING: remove once between tile walls work
+    map[starting_position].bottom_wall = Wall::TallWall;
+    map[(starting_position.0, starting_position.1 + 1)].left_wall   = Wall::TallWall;
+    
     map[starting_position].tile_type = TileType::Empty;
 
     (map, starting_position)
 }
 
-pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config, rng: &mut SmallRng) -> Position {
+pub fn make_island(map: &mut Map,
+                   objects: &mut Vec<Object>,
+                   config: &Config,
+                   rng: &mut SmallRng) -> Position {
     let center = Position(MAP_WIDTH/2, MAP_HEIGHT/2);
 
     let mut water_tile_positions = Vec::new();
@@ -90,9 +97,9 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config, rn
         for y in 0..MAP_HEIGHT {
             let pos = Position(x, y);
             if pos.distance(&center) <= ISLAND_RADIUS {
-                map.0[x as usize][y as usize] = Tile::empty();
+                map.tiles[x as usize][y as usize] = Tile::empty();
             } else {
-                map.0[x as usize][y as usize] = Tile::water();
+                map.tiles[x as usize][y as usize] = Tile::water();
                 water_tile_positions.push((x, y));
             }
         }
@@ -124,8 +131,8 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config, rn
     for _ in 0..ISLAND_NUM_SUBTRACTIONS_ATTEMPTS {
         let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-        if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
-            map.0[pos.0 as usize][pos.1 as usize] = Tile::empty();
+        if map.tiles[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
+            map.tiles[pos.0 as usize][pos.1 as usize] = Tile::empty();
         }
     }
 
@@ -134,7 +141,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config, rn
         let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
         let obstacle = *obstacles.choose(rng).unwrap();
 
-        if map.0[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
+        if map.tiles[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
             add_obstacle(map, &pos, obstacle, rng);
         }
     }
@@ -223,7 +230,7 @@ pub fn make_island(map: &mut Map, objects: &mut Vec<Object>, config: &Config, rn
     let edge_pos = edge_positions[rng.gen_range(0, edge_positions.len())];
 
     // make the random edge position the exit
-    map.0[edge_pos.0 as usize][edge_pos.1 as usize] = Tile::exit();
+    map.tiles[edge_pos.0 as usize][edge_pos.1 as usize] = Tile::exit();
 
     /* Ensure that objects placed outside of the island are removed */
     for pos in water_tile_positions {

@@ -232,7 +232,7 @@ pub fn render_map(console: &mut Console,
             let visible = fov.is_in_fov(x, y);
 
             // Color based on TileType and visibility
-            let color = match (map.0[x as usize][y as usize].tile_type, visible) {
+            let color = match (map.tiles[x as usize][y as usize].tile_type, visible) {
                 (TileType::Wall, true) => config.color_light_brown.color(),
                 (TileType::Wall, false) => config.color_dark_brown.color(),
 
@@ -249,15 +249,36 @@ pub fn render_map(console: &mut Console,
                 (TileType::Exit, false) => config.color_red.color(),
             };
 
-            let mut explored = map.0[x as usize][y as usize].explored;
+            let mut explored = map.tiles[x as usize][y as usize].explored;
             if visible {
                 explored = true;
             }
 
             if explored {
-                let tile_type = map.0[x as usize][y as usize].tile_type;
+                let tile_type = map.tiles[x as usize][y as usize].tile_type;
                 match tile_type {
-                    TileType::Empty | TileType::Water | TileType::Exit => {
+                    TileType::Empty => {
+                        let has_bottom_wall = map.tiles[x as usize][y as usize].bottom_wall != Wall::Empty;
+                        let has_left_wall = map.tiles[x as usize][y as usize].left_wall != Wall::Empty;
+
+                        let chr;
+                        if  has_bottom_wall && has_left_wall {
+                            // TODO this is a solid wall- there is no joint left/bottom wall tile
+                            // yet
+                            chr = '\u{DB}';
+                        } else if has_left_wall {
+                            chr = '\u{DD}';
+                        } else if has_bottom_wall {
+                            chr = '\u{DC}';
+                        } else {
+                            chr = ' ';
+                        }
+
+                        console.put_char(x, y, chr, BackgroundFlag::None);
+                        console.set_char_background(x, y, color, BackgroundFlag::Set);
+                    }
+
+                    TileType::Water | TileType::Exit => {
                         console.put_char(x, y, ' ', BackgroundFlag::None);
                         console.set_char_background(x, y, color, BackgroundFlag::Set);
                     }
@@ -307,7 +328,7 @@ pub fn render_map(console: &mut Console,
                 }
             }
 
-            map.0[x as usize][y as usize].explored = explored;
+            map.tiles[x as usize][y as usize].explored = explored;
         }
     }
 }

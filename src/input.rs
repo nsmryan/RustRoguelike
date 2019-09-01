@@ -135,7 +135,7 @@ pub fn handle_input(game: &mut Game,
             (Key {printable: 'v', .. }, true) => {
                 for x in 0..MAP_WIDTH {
                     for y in 0..MAP_HEIGHT {
-                        map.0[x as usize][y as usize].explored = true;
+                        map.tiles[x as usize][y as usize].explored = true;
                     }
                 }
                 player_action = DidntTakeTurn;
@@ -145,7 +145,7 @@ pub fn handle_input(game: &mut Game,
                 let mut rng: SmallRng = SeedableRng::seed_from_u64(2);
                 let (map_regen, _position) = make_map(objects, config, &mut rng);
                 setup_fov(&mut game.fov, &map_regen);
-                map.0 = map_regen.0;
+                map.tiles = map_regen.tiles;
                 player_action = DidntTakeTurn;
             }
 
@@ -166,8 +166,8 @@ pub fn handle_input(game: &mut Game,
 
                 // set all tiles to be transparent and walkable. walkable is not current used
                 // anywhere
-                for x in 0..map.0.len() {
-                    for y in 0..map.0[0].len() {
+                for x in 0..map.tiles.len() {
+                    for y in 0..map.tiles[0].len() {
                         game.fov.set(x as i32, y as i32, true, true);
                     }
                 }
@@ -322,7 +322,8 @@ pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) -> Pl
     let player_action: PlayerAction;
 
     // if the space is not blocked, move
-    if !map.is_blocked(x + dx, y + dy, objects) {
+    if !map.is_blocked(x + dx, y + dy, objects) &&
+       !map.is_blocked_by_wall(x, y, dx, dy) {
         objects[PLAYER].set_pos(x + dx, y + dy);
         momentum_change = MomentumChange::CurrentDirection;
 

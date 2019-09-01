@@ -16,6 +16,8 @@ pub struct Tile {
     pub explored: bool,
     pub tile_type: TileType,
     pub sound: Option<(i32, i32)>,
+    pub bottom_wall: Wall,
+    pub left_wall: Wall,
 }
 
 impl Tile {
@@ -25,6 +27,8 @@ impl Tile {
                explored: false,
                tile_type: TileType::Empty,
                sound: None,
+               bottom_wall: Wall::Empty,
+               left_wall: Wall::Empty,
         }
     }
 
@@ -34,6 +38,8 @@ impl Tile {
                explored: false,
                tile_type: TileType::Water,
                sound: None,
+               bottom_wall: Wall::Empty,
+               left_wall: Wall::Empty,
         }
     }
 
@@ -43,6 +49,8 @@ impl Tile {
                explored: false,
                tile_type: TileType::Wall,
                sound: None,
+               bottom_wall: Wall::Empty,
+               left_wall: Wall::Empty,
         }
     }
 
@@ -52,6 +60,8 @@ impl Tile {
                explored: false,
                tile_type: TileType::ShortWall,
                sound: None,
+               bottom_wall: Wall::Empty,
+               left_wall: Wall::Empty,
         }
     }
 
@@ -61,6 +71,8 @@ impl Tile {
                explored: false,
                tile_type: TileType::Exit,
                sound: None,
+               bottom_wall: Wall::Empty,
+               left_wall: Wall::Empty,
         }
     }
 }
@@ -93,16 +105,65 @@ impl Obstacle {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Wall {
+    Empty,
+    ShortWall,
+    TallWall,
+}
 
-pub struct Map(pub Vec<Vec<Tile>>);
+pub struct Map {
+    pub tiles: Vec<Vec<Tile>>,
+}
 
 impl Map {
-    pub fn with_vec(map: Vec<Vec<Tile>>) -> Map {
-        Map(map)
+    pub fn with_vec(tiles: Vec<Vec<Tile>>) -> Map {
+        let map =
+            Map {
+                tiles: tiles,
+            };
+
+        return map;
     }
 
     pub fn from_dims(width: usize, height: usize) -> Map {
-        Map(vec!(vec!(Tile::empty(); width); height))
+        let map =
+            Map {
+              tiles: vec!(vec!(Tile::empty(); width); height),
+            };
+
+        return map;
+    }
+
+    pub fn empty() -> Map {
+        let map =
+            Map {
+                tiles: Vec::new(),
+            };
+
+        return map;
+    }
+
+    pub fn is_blocked_by_wall(&self, x: i32, y: i32, dx: i32, dy: i32) -> bool {
+        let mut blocked = false;
+
+        if dx == 1 {
+            blocked = self[(x + dx, y)].left_wall != Wall::Empty;
+            //println!("move right {:?}", self[(x + dx, y)].left_wall);
+        } else if dx == -1 {
+            blocked = self[(x, y)].left_wall != Wall::Empty;
+            //println!("move left {:?}", self[(x, y)].left_wall);
+        } 
+        
+        if dy == 1 {
+            blocked |= self[(x, y + dy)].bottom_wall != Wall::Empty;
+            //println!("move down {:?}", self[(x, y)].bottom_wall);
+        } else if dy == -1 {
+            blocked |= self[(x, y)].bottom_wall != Wall::Empty;
+            //println!("move up {:?}", self[(x, y + dy)].bottom_wall);
+        }
+
+        return blocked;
     }
 
     pub fn is_blocked(&self, x: i32, y: i32, objects: &[Object]) -> bool {
@@ -117,6 +178,7 @@ impl Map {
                 break;
             }
         }
+
         return is_blocked;
     }
 
@@ -125,7 +187,7 @@ impl Map {
     }
 
     pub fn size(&self) -> (i32, i32) {
-        (self.0.len() as i32, self.0[0].len() as i32)
+        (self.tiles.len() as i32, self.tiles[0].len() as i32)
     }
 
     pub fn make_tcod_map(&self) -> tcod::map::Map {
@@ -133,8 +195,8 @@ impl Map {
         let mut map_copy = tcod::map::Map::new(map_width, map_height);
         for x in 0..map_width {
             for y in 0..map_height {
-                let transparent = !self.0[x as usize][y as usize].block_sight;
-                let walkable = !self.0[x as usize][y as usize].blocked;
+                let transparent = !self.tiles[x as usize][y as usize].block_sight;
+                let walkable = !self.tiles[x as usize][y as usize].blocked;
                 map_copy.set(x, y, transparent, walkable);
             }
         }
@@ -189,7 +251,7 @@ impl Index<(i32, i32)> for Map {
     type Output = Tile;
 
     fn index(&self, index: (i32, i32)) -> &Tile {
-        &self.0[index.0 as usize][index.1 as usize]
+        &self.tiles[index.0 as usize][index.1 as usize]
     }
 }
 
@@ -197,19 +259,19 @@ impl Index<Position> for Map {
     type Output = Tile;
 
     fn index(&self, position: Position) -> &Tile {
-        &self.0[position.0 as usize][position.1 as usize]
+        &self.tiles[position.0 as usize][position.1 as usize]
     }
 }
 
 impl IndexMut<(i32, i32)> for Map {
     fn index_mut(&mut self, index: (i32, i32)) -> &mut Tile {
-        &mut self.0[index.0 as usize][index.1 as usize]
+        &mut self.tiles[index.0 as usize][index.1 as usize]
     }
 }
 
 impl IndexMut<Position> for Map {
     fn index_mut(&mut self, position: Position) -> &mut Tile {
-        &mut self.0[position.0 as usize][position.1 as usize]
+        &mut self.tiles[position.0 as usize][position.1 as usize]
     }
 }
 
@@ -238,8 +300,11 @@ pub fn near_tile_type(map: &Map, position: Position, tile_type: TileType) -> boo
 }
 
 pub fn random_offset(rng: &mut SmallRng) -> Position {
-    Position(rng.gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
-    rng.gen_range(-ISLAND_RADIUS, ISLAND_RADIUS))
+    let position = 
+        Position(rng.gen_range(-ISLAND_RADIUS, ISLAND_RADIUS),
+                 rng.gen_range(-ISLAND_RADIUS, ISLAND_RADIUS));
+
+    return position;
 }
 
 pub fn random_position(rng: &mut SmallRng) -> Position {
@@ -280,7 +345,7 @@ pub fn place_line(map: &mut Map, start: &Position, end: &Position, tile: Tile) -
 pub fn add_obstacle(map: &mut Map, pos: &Position, obstacle: Obstacle, rng: &mut SmallRng) {
     match obstacle {
         Obstacle::Block => {
-            map.0[pos.0 as usize][pos.1 as usize] = Tile::wall();
+            map.tiles[pos.0 as usize][pos.1 as usize] = Tile::wall();
         }
 
         Obstacle::Wall => {
@@ -313,14 +378,14 @@ pub fn add_obstacle(map: &mut Map, pos: &Position, obstacle: Obstacle, rng: &mut
 
             if rng.gen_bool(0.5) {
                 for x in 0..3 {
-                    map.0[pos.0 as usize + x][pos.1 as usize] = Tile::wall();
+                    map.tiles[pos.0 as usize + x][pos.1 as usize] = Tile::wall();
                 }
-                map.0[pos.0 as usize][(pos.1 + dir) as usize] = Tile::wall();
+                map.tiles[pos.0 as usize][(pos.1 + dir) as usize] = Tile::wall();
             } else {
                 for y in 0..3 {
-                    map.0[pos.0 as usize][pos.1 as usize + y] = Tile::wall();
+                    map.tiles[pos.0 as usize][pos.1 as usize + y] = Tile::wall();
                 }
-                map.0[(pos.0 + dir) as usize][pos.1 as usize] = Tile::wall();
+                map.tiles[(pos.0 + dir) as usize][pos.1 as usize] = Tile::wall();
             }
         }
 

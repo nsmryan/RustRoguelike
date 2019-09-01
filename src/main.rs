@@ -59,7 +59,7 @@ fn step_animation(objects: &mut [Object], map: &Map, animation: &mut Animation) 
         Animation::Thrown(obj_id, line) => {
             match line.step() {
                 Some(next) => {
-                    if map.0[next.0 as usize][next.1 as usize].block_sight {
+                    if map.tiles[next.0 as usize][next.1 as usize].block_sight {
                         return true;
                     } else {
                         objects[*obj_id].x = next.0;
@@ -239,7 +239,7 @@ pub fn step_game(game: &mut Game,
 pub fn read_map(file_name: &str) -> Map {
     let file = File::open(file_name).unwrap();
     let file = BufReader::new(file);
-    let mut map = Map(Vec::new());
+    let mut map = Map::empty();
     let mut rot_map = Vec::new();
 
     for line in file.lines() {
@@ -265,17 +265,18 @@ pub fn read_map(file_name: &str) -> Map {
         for y in 0..MAP_HEIGHT {
             line.push(rot_map[y as usize][x as usize]);
         }
-        map.0.push(line);
+        map.tiles.push(line);
     }
 
     return map;
 }
+
 pub fn write_map(file_name: &str, map: &Map) {
     // write out map to a file
     let mut map_file = File::create(file_name).unwrap();
     let mut map_vec = Vec::new();
 
-    for row in map.0.iter() {
+    for row in map.tiles.iter() {
         let mut line_vec = Vec::new();
 
         for tile in row.iter() {
