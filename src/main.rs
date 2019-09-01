@@ -14,6 +14,7 @@ mod engine;
 mod constants;
 mod input;
 mod game;
+
 #[cfg(test)]
 mod tests;
 
@@ -59,16 +60,16 @@ fn step_animation(objects: &mut [Object], map: &Map, animation: &mut Animation) 
             match line.step() {
                 Some(next) => {
                     if map.0[next.0 as usize][next.1 as usize].block_sight {
-                        true
+                        return true;
                     } else {
                         objects[*obj_id].x = next.0;
                         objects[*obj_id].y = next.1;
-                        false
+                        return false;
                     }
                 },
 
                 None => {
-                    true
+                    return true;
                 },
             }
         }
@@ -195,7 +196,7 @@ pub fn step_game(game: &mut Game,
             return false;
           }
 
-          PlayerAction::TookTurn => {
+          PlayerAction::TookTurn | PlayerAction::TookHalfTurn => {
               game.turn_count += 1;
           }
           
@@ -209,7 +210,8 @@ pub fn step_game(game: &mut Game,
     }
 
     /* AI */
-    if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
+    // TODO player should only be able to take 1 half turn
+    if objects[PLAYER].alive && player_action == PlayerAction::TookTurn {
         for id in 1..objects.len() {
             if objects[id].ai.is_some() {
                 ai_take_turn(id, map, objects, &game.fov, &mut game.animations);

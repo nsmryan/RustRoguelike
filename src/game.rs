@@ -15,7 +15,7 @@ pub fn make_player() -> Object {
     let mut player = Object::new(0, 0, '@', "player", WHITE, true);
     player.alive = true;
     player.fighter = Some(Fighter{max_hp: 50, hp: 50, defense: 2, power: 5, on_death: DeathCallback::Player });
-    player.momentum = Some((0, 0));
+    player.momentum = Some(Default::default());
 
     player
 }

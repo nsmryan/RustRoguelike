@@ -258,6 +258,7 @@ pub fn render_map(console: &mut Console,
                 let tile_type = map.0[x as usize][y as usize].tile_type;
                 match tile_type {
                     TileType::Empty | TileType::Water | TileType::Exit => {
+                        console.put_char(x, y, ' ', BackgroundFlag::None);
                         console.set_char_background(x, y, color, BackgroundFlag::Set);
                     }
 
@@ -286,7 +287,7 @@ pub fn render_map(console: &mut Console,
                             } else if vert {
                                chr = '\u{ED}';
                             } else {
-                               chr = '\u{DC}';
+                               chr = '\u{FE}';
                             }
                         } else {
                             if horiz && vert {
@@ -456,7 +457,7 @@ pub fn render_all(game: &mut Game,
 
     game.panel.set_default_foreground(LIGHT_GREY);
     game.panel.print_ex(1, 2, BackgroundFlag::None, TextAlignment::Left, format!("Turn Count: {}", game.turn_count));
-    game.panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, format!("{:?}", (objects[PLAYER].momentum.unwrap().0, objects[PLAYER].momentum.unwrap().1)));
+    game.panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, format!("{:?}", (objects[PLAYER].momentum.unwrap().mx, objects[PLAYER].momentum.unwrap().my)));
     game.panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, get_names_under_mouse(game.mouse, objects, &game.fov));
 
     game.console.set_default_background(LIGHT_GREY);

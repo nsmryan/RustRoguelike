@@ -1,4 +1,5 @@
 use std::convert::Into;
+use std::cmp;
 
 use tcod::console::*;
 use tcod::map::{Map as FovMap};
@@ -281,6 +282,7 @@ pub enum UseResult {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PlayerAction {
     TookTurn,
+    TookHalfTurn,
     DidntTakeTurn,
     Exit,
 }
@@ -366,7 +368,28 @@ pub fn monster_death(monster: &mut Object) {
 }
 
 
-pub type Momentum = (i32, i32);
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Momentum {
+    pub mx: i32,
+    pub my: i32,
+    pub took_half_turn: bool,
+}
+
+impl Default for Momentum {
+    fn default() -> Momentum {
+        Momentum {
+            mx: 0,
+            my: 0,
+            took_half_turn: false,
+        }
+    }
+}
+
+impl Momentum {
+    pub fn magnitude(&self) -> i32 {
+        return cmp::max(self.mx, self.my);
+    }
+}
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
