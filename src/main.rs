@@ -190,7 +190,7 @@ pub fn step_game(game: &mut Game,
         animations(game, objects, map);
         player_action = PlayerAction::DidntTakeTurn;
     } else {
-        player_action = handle_input(game, key, map, objects, inventory, messages);
+        player_action = handle_input(game, key, map, objects, inventory, messages, config);
         match player_action {
           PlayerAction::Exit => {
             return false;

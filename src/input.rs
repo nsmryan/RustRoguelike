@@ -2,6 +2,8 @@ use std::cmp;
 
 use num::clamp;
 
+use rand::prelude::*;
+
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
 #[allow(unused_imports)]use tcod::input::Key;
 #[allow(unused_imports)]use tcod::input::KeyCode::*;
@@ -14,6 +16,7 @@ use crate::engine::map::*;
 use crate::engine::display::*;
 use crate::engine::ai::*;
 use crate::constants::*;
+use crate::game::*;
 
 
 pub fn handle_input(game: &mut Game,
@@ -21,7 +24,8 @@ pub fn handle_input(game: &mut Game,
                     map: &mut Map,
                     objects: &mut Vec<Object>,
                     inventory: &mut Vec<Object>,
-                    messages: &mut Messages) -> PlayerAction {
+                    messages: &mut Messages,
+                    config: &Config) -> PlayerAction {
     use PlayerAction::*;
 
     let player_action: PlayerAction;
@@ -134,6 +138,14 @@ pub fn handle_input(game: &mut Game,
                         map.0[x as usize][y as usize].explored = true;
                     }
                 }
+                player_action = DidntTakeTurn;
+            }
+
+            (Key {printable: 'r', .. }, true) => {
+                let mut rng: SmallRng = SeedableRng::seed_from_u64(2);
+                let (map_regen, _position) = make_map(objects, config, &mut rng);
+                setup_fov(&mut game.fov, &map_regen);
+                map.0 = map_regen.0;
                 player_action = DidntTakeTurn;
             }
 
