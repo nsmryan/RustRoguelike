@@ -195,7 +195,7 @@ pub fn draw_movement_overlay(console: &mut Console,
     return added_positions;
 }
 
-pub fn draw_attack_overlay(console: &mut Console,
+pub fn draw_attack_overlay(console: &mut dyn Console,
                            map: &Map,
                            id: ObjectId,
                            objects: &[Object]) -> Vec<(i32, i32)> {
@@ -223,7 +223,7 @@ pub fn draw_attack_overlay(console: &mut Console,
     return added_positions;
 }
 
-pub fn render_map(console: &mut Console,
+pub fn render_map(console: &mut dyn Console,
                   fov: &FovMap,
                   map: &mut Map,
                   config: &Config) {
@@ -333,7 +333,7 @@ pub fn render_map(console: &mut Console,
     }
 }
 
-pub fn render_sound(console: &mut Console,
+pub fn render_sound(console: &mut dyn Console,
                     animations: &Vec<Animation>,
                     map: &Map,
                     objects: &[Object]) {
@@ -351,7 +351,7 @@ pub fn render_sound(console: &mut Console,
     }
 }
 
-pub fn render_objects(console: &mut Console, fov: &FovMap, objects: &[Object]) {
+pub fn render_objects(console: &mut dyn Console, fov: &FovMap, objects: &[Object]) {
     let mut to_draw: Vec<_> =
         objects.iter().filter(|o| {
             fov.is_in_fov(o.x, o.y)
@@ -363,7 +363,7 @@ pub fn render_objects(console: &mut Console, fov: &FovMap, objects: &[Object]) {
     }
 }
 
-pub fn render_character_flags(console: &mut Console) {
+pub fn render_character_flags(console: &mut dyn Console) {
     for x in 0..10 {
         console.put_char(x, 0, '+', BackgroundFlag::None);
         console.put_char(x, 0, 'X', BackgroundFlag::None);
@@ -416,15 +416,17 @@ pub fn render_overlays(game: &mut Game, map: &Map, objects: &[Object]) {
             continue;
         }
 
-        game.needs_clear.extend(draw_movement_overlay(&mut game.console, map, id, objects));
-        game.needs_clear.extend(draw_attack_overlay(&mut game.console, map, id, objects));
+        // TODO removed for ggez
+        //  game.needs_clear.extend(draw_movement_overlay(&mut game.console, map, id, objects));
+        //  game.needs_clear.extend(draw_attack_overlay(&mut game.console, map, id, objects));
     }
 
     for id in 0..objects.len() {
         let (x, y) = (objects[id].x, objects[id].y);
         if game.display_overlays && game.fov.is_in_fov(x, y) && objects[id].alive {
-            game.needs_clear.extend(draw_movement_overlay(&mut game.console, map, id, objects));
-            game.needs_clear.extend(draw_attack_overlay(&mut game.console, map, id, objects));
+            // TODO removed for ggez
+            // game.needs_clear.extend(draw_movement_overlay(&mut game.console, map, id, objects));
+            // game.needs_clear.extend(draw_attack_overlay(&mut game.console, map, id, objects));
         }
     }
 }
@@ -444,51 +446,60 @@ pub fn render_all(game: &mut Game,
         game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
-    render_map(&mut game.console, &game.fov, map, config);
+    // TODO removed for ggez
+    // render_map(&mut game.console, &game.fov, map, config);
 
-    render_sound(&mut game.console, &game.animations, map, objects);
+    // TODO removed for ggez
+    // render_sound(&mut game.console, &game.animations, map, objects);
 
     /* Draw objects */
-    render_objects(&mut game.console, &game.fov, objects);
+    // TODO removed for ggez
+    // render_objects(&mut game.console, &game.fov, objects);
 
     // Draw movement and attack overlays
-    render_overlays(game, map, objects);
+    // TODO removed for ggez
+    // render_overlays(game, map, objects);
 
     // display for checking out character flags
     //render_character_flags(&mut game.console);
 
-    game.panel.set_default_background(BLACK);
-    game.panel.clear();
+    // TODO removed for ggez
+    // game.panel.set_default_background(BLACK);
+    // game.panel.clear();
 
     // Draw UI overlay
     let hp = objects[PLAYER].fighter.map_or(0, |f| f.hp);
     let max_hp = objects[PLAYER].fighter.map_or(0, |f| f.max_hp);
-    render_bar(&mut game.panel, 1, 1, BAR_WIDTH, "HP", hp, max_hp, LIGHT_RED, DARK_RED);
+    // TODO removed for ggez
+    // render_bar(&mut game.panel, 1, 1, BAR_WIDTH, "HP", hp, max_hp, LIGHT_RED, DARK_RED);
 
     let mut y = MSG_HEIGHT as i32;
     for &(ref msg, color) in messages.0.iter().rev() {
-        let msg_height = game.panel.get_height_rect(MSG_X, y, MSG_WIDTH, 0, msg);
-        y -= msg_height;
-        if y < 0 {
-            break;
-        }
-        game.panel.set_default_foreground(color);
-        game.panel.print_rect(MSG_X, y, MSG_WIDTH, 0, msg);
+        // TODO removed for ggez
+        // let msg_height = game.panel.get_height_rect(MSG_X, y, MSG_WIDTH, 0, msg);
+        // y -= msg_height;
+        // if y < 0 {
+        //     break;
+        // }
+        // game.panel.set_default_foreground(color);
+        // game.panel.print_rect(MSG_X, y, MSG_WIDTH, 0, msg);
     }
 
-    game.panel.set_default_foreground(LIGHT_GREY);
-    game.panel.print_ex(1, 2, BackgroundFlag::None, TextAlignment::Left, format!("Turn Count: {}", game.turn_count));
-    game.panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, format!("{:?}", (objects[PLAYER].momentum.unwrap().mx, objects[PLAYER].momentum.unwrap().my)));
-    game.panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, get_names_under_mouse(game.mouse, objects, &game.fov));
+    // TODO removed for ggez
+    //  game.panel.set_default_foreground(LIGHT_GREY);
+    //  game.panel.print_ex(1, 2, BackgroundFlag::None, TextAlignment::Left, format!("Turn Count: {}", game.turn_count));
+    //  game.panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, format!("{:?}", (objects[PLAYER].momentum.unwrap().mx, objects[PLAYER].momentum.unwrap().my)));
+    //  game.panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, get_names_under_mouse(game.mouse, objects, &game.fov));
 
-    game.console.set_default_background(LIGHT_GREY);
-    game.console.set_default_foreground(RED);
+    //  game.console.set_default_background(LIGHT_GREY);
+    //  game.console.set_default_foreground(RED);
 
     /* print all special characters */
     //print_all_special_char(&mut game.console, game.mouse);
 
     // replace screen with new console contents
-    blit(&mut game.console, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, 0),       1.0, 1.0);
-    blit(&mut game.panel,   (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, PANEL_Y), 1.0, 1.0);
+    // TODO removed for ggez
+    // blit(&mut game.console, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, 0),       1.0, 1.0);
+    // blit(&mut game.panel,   (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, PANEL_Y), 1.0, 1.0);
 }
 

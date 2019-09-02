@@ -30,11 +30,11 @@ impl Messages {
 
 
 pub struct Game {
-    pub root: Root,
-    pub console: Offscreen,
+    //pub root: Root,
+    //pub console: Offscreen,
     pub fov: FovMap,
     pub mouse: Mouse,
-    pub panel: Offscreen,
+    //pub panel: Offscreen,
     pub turn_count: usize,
     pub display_overlays: bool,
     pub animations: Vec<Animation>,
@@ -43,6 +43,7 @@ pub struct Game {
 }
 
 impl Game {
+    /*
     pub fn with_root(root: Root) -> Game {
         Game {
             root: root,
@@ -50,6 +51,19 @@ impl Game {
             fov: FovMap::new(MAP_WIDTH, MAP_HEIGHT),
             mouse: Default::default(),
             panel: Offscreen::new(SCREEN_WIDTH, PANEL_HEIGHT),
+            turn_count: 0,
+            display_overlays: false,
+            animations: Vec::new(),
+            needs_clear: Vec::new(),
+            god_mode: false,
+        }
+    }
+    */
+
+    pub fn new() -> Game {
+        Game {
+            fov: FovMap::new(MAP_WIDTH, MAP_HEIGHT),
+            mouse: Default::default(),
             turn_count: 0,
             display_overlays: false,
             animations: Vec::new(),
@@ -285,6 +299,29 @@ pub enum PlayerAction {
     TookHalfTurn,
     DidntTakeTurn,
     Exit,
+}
+
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum InputAction {
+    Left,
+    Right,
+    Up,
+    Down,
+    DownLeft,
+    DownRight,
+    UpLeft,
+    UpRight,
+    Center,
+    Pickup,
+    Inventory,
+    Exit,
+    ExploreAll,
+    RegenerateMap,
+    ToggleOverlays,
+    GodMode,
+    FullScreen,
+    None,
 }
 
 

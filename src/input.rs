@@ -20,7 +20,7 @@ use crate::game::*;
 
 
 pub fn handle_input(game: &mut Game,
-                    key: Key,
+                    input_action: InputAction,
                     map: &mut Map,
                     objects: &mut Vec<Object>,
                     inventory: &mut Vec<Object>,
@@ -50,64 +50,77 @@ pub fn handle_input(game: &mut Game,
             player_action = DidntTakeTurn;
         }
     } else {
-        match (key, player_alive) {
-            (Key { code: Up,      .. }, true)  |
-            (Key { code: Number8, .. }, true)  |
-            (Key { code: NumPad8, .. }, true) => {
+        match (input_action, player_alive) {
+            //(Key { code: Up,      .. }, true)  |
+            //(Key { code: Number8, .. }, true)  |
+            //(Key { code: NumPad8, .. }, true) => {
+            (InputAction::Up, true) => {
                 player_action = player_move_or_attack(0, -1, map, objects, messages);
             }
 
-            (Key { code: Down,    .. }, true) |
-            (Key { code: Number2, .. }, true) |
-            (Key { code: NumPad2, .. }, true) => {
+            // (Key { code: Down,    .. }, true) |
+            // (Key { code: Number2, .. }, true) |
+            // (Key { code: NumPad2, .. }, true) => {
+            (InputAction::Down, true) => {
                 player_action = player_move_or_attack(0, 1, map, objects, messages);
             }
-            (Key { code: Left,    .. }, true) |
-            (Key { code: Number4, .. }, true) |
-            (Key { code: NumPad4, .. }, true) => {
+
+            //(Key { code: Left,    .. }, true) |
+            //(Key { code: Number4, .. }, true) |
+            //(Key { code: NumPad4, .. }, true) => {
+            (InputAction::Left, true) => {
                 player_action = player_move_or_attack(-1, 0, map, objects, messages);
             }
 
-            (Key { code: Right,   .. }, true) |
-            (Key { code: Number6, .. }, true) |
-            (Key { code: NumPad6, .. }, true) => {
+            //(Key { code: Right,   .. }, true) |
+            //(Key { code: Number6, .. }, true) |
+            //(Key { code: NumPad6, .. }, true) => {
+            (InputAction::Right, true) =>{
                 player_action = player_move_or_attack(1, 0, map, objects, messages);
             }
 
-            (Key { code: Number9, .. }, true)  |
-            (Key { code: NumPad9, .. }, true) => {
+            //(Key { code: Number9, .. }, true)  |
+            //(Key { code: NumPad9, .. }, true) => {
+            (InputAction::UpRight, true) => {
                 player_action = player_move_or_attack(1, -1, map, objects, messages);
             }
 
-            (Key { code: Number3, .. }, true) |
-            (Key { code: NumPad3, .. }, true) => {
+            //(Key { code: Number3, .. }, true) |
+            //(Key { code: NumPad3, .. }, true) => {
+            (InputAction::DownRight, true) => {
                 player_action = player_move_or_attack(1, 1, map, objects, messages);
             }
 
-            (Key { code: Number1, .. }, true) |
-            (Key { code: NumPad1, .. }, true) => {
+            //(Key { code: Number1, .. }, true) |
+            //(Key { code: NumPad1, .. }, true) => {
+            (InputAction::DownLeft, true) => {
                 player_action = player_move_or_attack(-1, 1, map, objects, messages);
             }
 
-            (Key { code: Number7, .. }, true) |
-            (Key { code: NumPad7, .. }, true) => {
+            //(Key { code: Number7, .. }, true) |
+            //(Key { code: NumPad7, .. }, true) => {
+            (InputAction::UpLeft, true) => {
                 player_action = player_move_or_attack(-1, -1, map, objects, messages);
             }
 
-            (Key { code: Number5, .. }, true) |
-            (Key { code: NumPad5, .. }, true) => {
+            // (Key { code: Number5, .. }, true) |
+            // (Key { code: NumPad5, .. }, true) => {
+            (InputAction::Center, true) => {
                 objects[PLAYER].momentum = Default::default();
                 player_action = TookTurn;
             }
 
-            (Key { code: Enter, alt: true, .. }, _) => {
-                let fullscreen = game.root.is_fullscreen();
-                game.root.set_default_foreground(WHITE);
-                game.root.set_fullscreen(!fullscreen);
+            //(Key { code: Enter, alt: true, .. }, _) => {
+            (InputAction::FullScreen, _) => {
+                // TODO removed for ggez
+                // let fullscreen = game.root.is_fullscreen();
+                // game.root.set_default_foreground(WHITE);
+                // game.root.set_fullscreen(!fullscreen);
                 player_action = DidntTakeTurn;
             },
 
-            (Key {printable: 'g', .. }, true) => {
+            // (Key {printable: 'g', .. }, true) => {
+            (InputAction::Pickup, true) => {
                 let item_id = objects.iter().position(|object| {
                     object.pos() == objects[PLAYER].pos() && object.item.is_some()
                 });
@@ -117,22 +130,26 @@ pub fn handle_input(game: &mut Game,
                 player_action = DidntTakeTurn;
             }
 
-            (Key {printable: 'i', .. }, true) => {
-                let inventory_index =
-                    inventory_menu(inventory,
-                                   "Press the key next to an item to use it, or any other to cancel.\n",
-                                   &mut game.root);
-                if let Some(inventory_index) = inventory_index {
-                    use_item(inventory_index, inventory, objects, messages);
-                }
+            // (Key {printable: 'i', .. }, true) => {
+            (InputAction::Inventory, true) => {
+                // TODO removed for ggez
+                //let inventory_index =
+                //    inventory_menu(inventory,
+                //                   "Press the key next to an item to use it, or any other to cancel.\n",
+                //                   &mut game.root);
+                //if let Some(inventory_index) = inventory_index {
+                //    use_item(inventory_index, inventory, objects, messages);
+                //}
                 player_action = DidntTakeTurn;
             }
 
-            (Key { code: Escape, .. }, _) => {
+            // (Key { code: Escape, .. }, _) => {
+            (InputAction::Exit, _) => {
                 player_action = Exit;
             }
 
-            (Key {printable: 'v', .. }, true) => {
+            // (Key {printable: 'v', .. }, true) => {
+            (InputAction::ExploreAll, _) => {
                 for x in 0..MAP_WIDTH {
                     for y in 0..MAP_HEIGHT {
                         map.tiles[x as usize][y as usize].explored = true;
@@ -141,7 +158,8 @@ pub fn handle_input(game: &mut Game,
                 player_action = DidntTakeTurn;
             }
 
-            (Key {printable: 'r', .. }, true) => {
+            // (Key {printable: 'r', .. }, true) => {
+            (InputAction::RegenerateMap, _) => {
                 let mut rng: SmallRng = SeedableRng::seed_from_u64(2);
                 let (map_regen, _position) = make_map(objects, config, &mut rng);
                 setup_fov(&mut game.fov, &map_regen);
@@ -149,13 +167,15 @@ pub fn handle_input(game: &mut Game,
                 player_action = DidntTakeTurn;
             }
 
-            (Key {code: NumPadAdd, .. }, true) => {
+            // (Key {code: NumPadAdd, .. }, true) => {
+            (InputAction::ToggleOverlays, _) => {
                 game.display_overlays = !game.display_overlays;
 
                 player_action = DidntTakeTurn;
             }
 
-            (Key {printable: 't', .. }, true) => {
+            //(Key {printable: 't', .. }, true) => {
+            (InputAction::GodMode, true) => {
                 let fighter = objects[PLAYER].fighter.unwrap();
                 let god_mode_hp = 1000000;
                 objects[PLAYER].fighter =
@@ -175,6 +195,7 @@ pub fn handle_input(game: &mut Game,
                 player_action = DidntTakeTurn;
             }
 
+            //(_, _) => {
             (_, _) => {
                 player_action = DidntTakeTurn;
             }

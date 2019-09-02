@@ -15,10 +15,20 @@ timer = "0.2"
 chrono = "0.4"
 rodio = "0.8"
 
+ggez = "0.5.1"
+
+gfx_core = "0.9"
+gfx_device_gl = "0.16"
+
+imgui = "0.1.0"
+imgui-gfx-renderer = "0.1.0"
+
+mint = "0.5.1"
+
 [profile.dev]
 opt-level = 0
 debug = true
 
 [profile.release]
 opt-level = 3
-debug = false
+debug = true

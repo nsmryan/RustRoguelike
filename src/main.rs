@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+extern crate ggez;
 extern crate tcod;
 extern crate rand;
 extern crate serde;
@@ -9,11 +10,13 @@ extern crate num;
 extern crate timer;
 extern crate chrono;
 extern crate rodio;
+extern crate mint;
 
 mod engine;
 mod constants;
 mod input;
 mod game;
+mod imgui_wrapper;
 
 #[cfg(test)]
 mod tests;
@@ -29,6 +32,7 @@ use std::io::BufReader;
 use std::io::BufRead;
 use std::io::Read;
 use std::sync::mpsc::channel;
+use std::time::Instant;
 
 use rand::prelude::*;
 
@@ -41,6 +45,16 @@ use rand::prelude::*;
 #[allow(unused_imports)]use tcod::AsNative;
 #[allow(unused_imports)]use tcod::image;
 
+use ggez::event::{self, EventHandler, KeyCode, KeyMods, MouseButton};
+use ggez::{Context, GameResult};
+use ggez::graphics;
+use ggez::graphics::Image;
+// use ggez::graphics::spritebatch::SpriteBatch;
+use ggez::graphics::Drawable;
+use ggez::graphics::DrawParam;
+
+use mint::Point2;
+
 use timer::*;
 
 use rodio::Source;
@@ -52,6 +66,7 @@ use engine::map::*;
 use engine::ai::*;
 use input::*;
 use game::*;
+use imgui_wrapper::*;
 
 
 fn step_animation(objects: &mut [Object], map: &Map, animation: &mut Animation) -> bool {
@@ -148,39 +163,46 @@ pub fn step_game(game: &mut Game,
                  map: &mut Map,
                  objects: &mut Vec<Object>,
                  messages: &mut Messages,
-                 inventory: &mut Vec<Object>) -> bool {
+                 inventory: &mut Vec<Object>,
+                 input_action: InputAction) -> bool {
     /* Handle Inputs */
-    let mut key = Default::default();
-
-    match tcod::input::check_for_event(tcod::input::MOUSE | tcod::input::KEY_PRESS) {
-        Some((_, Event::Mouse(m))) => game.mouse = m,
-        Some((_, Event::Key(k))) => key = k,
-        _ => {
-            key = Default::default();
-            game.mouse.lbutton_pressed = false;
-            game.mouse.rbutton_pressed = false;
-        },
-    }
+    // TODO removed for ggez, should go somewhere else
+    //let mut key = Default::default();
+    //match tcod::input::check_for_event(tcod::input::MOUSE | tcod::input::KEY_PRESS) {
+    //    Some((_, Event::Mouse(m))) => game.mouse = m,
+    //    Some((_, Event::Key(k))) => key = k,
+    //    _ => {
+    //        key = Default::default();
+    //        game.mouse.lbutton_pressed = false;
+    //        game.mouse.rbutton_pressed = false;
+    //    },
+    //}
+    //dbg!(key.printable);
 
     /* Display */
     let fov_recompute = *previous_player_position != (objects[PLAYER].x, objects[PLAYER].y);
-    render_all(game, 
-               objects,
-               map,
-               messages,
-               fov_recompute,
-               config);
+    // TODO removed for ggez
+    //render_all(game, 
+    //           objects,
+    //           map,
+    //           messages,
+    //           fov_recompute,
+    //           config);
 
-    game.root.flush();
+    // TODO removed for ggez
+    // game.root.flush();
 
     for object in objects.iter() {
-        object.clear(&mut game.console);
+        // TODO removed for ggez
+        // object.clear(&mut game.console);
     }
 
     for clearable in game.needs_clear.iter() {
-        game.console.put_char(clearable.0, clearable.1, ' ', BackgroundFlag::None);
+        // TODO removed for ggez
+        // game.console.put_char(clearable.0, clearable.1, ' ', BackgroundFlag::None);
     }
-    game.needs_clear.clear();
+    // TODO removed for ggez
+    //  game.needs_clear.clear();
 
     /* Player Action and Animations */
     // If there is an animation playing, let it finish
@@ -190,7 +212,7 @@ pub fn step_game(game: &mut Game,
         animations(game, objects, map);
         player_action = PlayerAction::DidntTakeTurn;
     } else {
-        player_action = handle_input(game, key, map, objects, inventory, messages, config);
+        player_action = handle_input(game, input_action, map, objects, inventory, messages, config);
         match player_action {
           PlayerAction::Exit => {
             return false;
@@ -233,7 +255,9 @@ pub fn step_game(game: &mut Game,
       *map = read_map("map.csv");
   }
 
-  return !game.root.window_closed();
+  // TODO removed for ggez
+  // return !game.root.window_closed();
+  return false; 
 }
 
 pub fn read_map(file_name: &str) -> Map {
@@ -310,6 +334,23 @@ pub fn write_map(file_name: &str, map: &Map) {
 fn main() {
     let args = env::args().collect::<Vec<String>>();
 
+    let mut window_mode: ggez::conf::WindowMode = Default::default();
+    window_mode.width = ((SCREEN_WIDTH - 1) * FONT_WIDTH) as f32;
+    window_mode.height = (SCREEN_HEIGHT * FONT_HEIGHT)  as f32;
+
+    dbg!("");
+    let cb = ggez::ContextBuilder::new("Roguelike", "like")
+             .window_mode(window_mode);
+    dbg!("");
+    let (ref mut ctx, event_loop) = &mut cb.build().unwrap();
+    dbg!("");
+    let state = &mut GameState::new(ctx, &args).unwrap();
+    dbg!("");
+    event::run(ctx, event_loop, state).unwrap();
+    dbg!("");
+
+    return;
+
     // Create seed for random number generator, either from
     // user input or randomly
     let seed: u64;
@@ -349,28 +390,421 @@ fn main() {
     // write out map to a file
     write_map("map.csv", &map);
 
-    let root = Root::initializer()
-        .font("rexpaint16x16.png", FontLayout::AsciiInRow)
-        .font_type(FontType::Greyscale)
-        .size(SCREEN_WIDTH, SCREEN_HEIGHT)
-        .title("Rogue-like")
-        .init();
+    //let root = Root::initializer()
+    //    .font("rexpaint16x16.png", FontLayout::AsciiInRow)
+    //    .font_type(FontType::Greyscale)
+    //    .size(SCREEN_WIDTH, SCREEN_HEIGHT)
+    //    .title("Rogue-like")
+    //    .init();
 
-    let mut game = Game::with_root(root);
+    let mut game = Game::new();
 
     setup_fov(&mut game.fov, &map);
 
     messages.message("Welcome Stranger! Prepare to perish in the Desolation of Salt!", ORANGE);
 
     /* main game loop */
-    run_game(move || {
-        step_game(&mut game,
-                  &mut config,
-                  &mut previous_player_position,
-                  &mut map,
-                  &mut objects,
-                  &mut messages,
-                  &mut inventory)
-    });
+    //run_game(move || {
+    //    step_game(&mut game,
+    //              &mut config,
+    //              &mut previous_player_position,
+    //              &mut map,
+    //              &mut objects,
+    //              &mut messages,
+    //              &mut inventory)
+    //});
+}
+
+struct GameState {
+    game: Game,
+    config: Config,
+    previous_player_position: (i32, i32),
+    map: Map,
+    objects: Vec<Object>,
+    messages: Messages,
+    inventory: Vec<Object>,
+    imgui_wrapper: ImGuiWrapper,
+    font_image: Image,
+    input_action: InputAction,
+}
+
+impl GameState {
+    fn new(mut ctx: &mut Context, args: &Vec<String>) -> GameResult<GameState> {
+        let imgui_wrapper = ImGuiWrapper::new(&mut ctx);
+
+        // Create seed for random number generator, either from
+        // user input or randomly
+        let seed: u64;
+        if args.len() > 1 {
+            let mut hasher = DefaultHasher::new();
+            args[1].hash(&mut hasher);
+            seed = hasher.finish();
+        } else {
+            seed = rand::thread_rng().gen();
+        }
+        println!("Seed: {} (0x{:X})", seed, seed);
+
+        let mut previous_player_position = (-1, -1);
+
+        let mut messages = Messages::new();
+
+        let mut inventory = vec![Object::make_stone(0, 0)];
+
+        let config: Config;
+        {
+            let mut file = File::open("config.json").expect("Could not open/parse config file config.json");
+            let mut config_string = String::new();
+            file.read_to_string(&mut config_string).expect("Could not read contents of config.json");
+            config = serde_json::from_str(&config_string).expect("Could not parse config.json file!");
+        }
+
+        let mut objects = vec!(make_player());
+
+        let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
+
+        let (map, position) = make_map(&mut objects, &config, &mut rng);
+        let player_x = position.0;
+        let player_y = position.1;
+        objects[PLAYER].x = player_x;
+        objects[PLAYER].y = player_y;
+
+        // write out map to a file
+        write_map("map.csv", &map);
+
+        let mut game = Game::new();
+
+        setup_fov(&mut game.fov, &map);
+
+        messages.message("Welcome Stranger! Prepare to perish in the Desolation of Salt!", ORANGE);
+
+        let font_image = Image::new(ctx, "/rexpaint16x16.png").unwrap();
+
+        let input_action = InputAction::None;
+
+        let state = GameState {
+            game,
+            config,
+            previous_player_position,
+            map,
+            objects,
+            messages,
+            inventory,
+            font_image,
+            imgui_wrapper,
+            input_action,
+        };
+
+        Ok(state)
+    }
+}
+
+// TODO this could be done with a spritebatch, likely
+// speeding this up.
+// there may be some performance issues in debug, but there
+// are currenly lots of performance issues in debug so it might
+// still be better.
+fn draw_char(ctx: &mut Context,
+             font_image: &Image,
+             chr: char,
+             x: i32,
+             y: i32,
+             color: Color) {
+    let chr_x = (chr as i32) % 16;
+    let chr_y = (chr as i32) / 16;
+    let draw_params =
+        DrawParam {
+            src: ggez::graphics::Rect {
+                x: (chr_x as f32) / 16.0,
+                y: (chr_y as f32) / 16.0,
+                w: 1.0 / 16.0,
+                h: 1.0 / 16.0,
+            },
+            dest: Point2 { x: x as f32 * 16.0, y: y as f32 * 16.0} ,
+            rotation: 0.0,
+            scale: mint::Vector2 { x: 1.0, y: 1.0 },
+            offset: Point2 { x: 1.0, y: 1.0 },
+            color: ggez::graphics::Color::new(color.r as f32 / 256.0,
+                                              color.g as f32 / 256.0,
+                                              color.b as f32 / 256.0,
+                                              1.0),
+        };
+
+    font_image.draw(ctx, draw_params);
+}
+
+impl EventHandler for GameState {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+        step_game(&mut self.game,
+                  &mut self.config,
+                  &mut self.previous_player_position,
+                  &mut self.map,
+                  &mut self.objects,
+                  &mut self.messages,
+                  &mut self.inventory,
+                  self.input_action);
+
+        Ok(())
+    }
+
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        let start_time = Instant::now();
+
+        graphics::clear(ctx, graphics::WHITE);
+
+        let (w, h) = graphics::drawable_size(ctx);
+        let block_w = w / MAP_WIDTH as f32;
+        let block_h = h / MAP_HEIGHT as f32;
+
+        for y in 0..MAP_HEIGHT {
+            for x in 0..MAP_WIDTH {
+                let chr;
+
+                // Render game stuff
+                let tile_type = self.map[(x, y)].tile_type;
+                let visible = self.game.fov.is_in_fov(x, y);
+
+                let mut color = match (self.map.tiles[x as usize][y as usize].tile_type, visible) {
+                    (TileType::Wall, true) => self.config.color_light_brown.color(),
+                    (TileType::Wall, false) => self.config.color_dark_brown.color(),
+
+                    (TileType::Empty, true) => lerp(self.config.color_tile_blue_light.color(), self.config.color_tile_blue_dark.color(), rand_from_x_y(x, y)),
+                    (TileType::Empty, false) => self.config.color_very_dark_blue.color(),
+
+                    (TileType::Water, true) => self.config.color_blueish_grey.color(),
+                    (TileType::Water, false) => self.config.color_dark_brown.color(),
+
+                    (TileType::ShortWall, true) => self.config.color_light_brown.color(),
+                    (TileType::ShortWall, false) => self.config.color_dark_brown.color(),
+
+                    (TileType::Exit, true) => self.config.color_orange.color(),
+                    (TileType::Exit, false) => self.config.color_red.color(),
+                };
+                //println!("color = {:?}", color);
+
+                // TODO removed while working out rendering
+                //let mut explored = map.tiles[x as usize][y as usize].explored;
+                //if visible 
+                //    explored = true;
+                //
+
+                //if explored 
+
+                match tile_type {
+                    TileType::Empty => {
+                        let has_bottom_wall = self.map.tiles[x as usize][y as usize].bottom_wall != Wall::Empty;
+                        let has_left_wall = self.map.tiles[x as usize][y as usize].left_wall != Wall::Empty;
+
+                        if  has_bottom_wall && has_left_wall {
+                            // TODO this is a solid wall- there is no joint left/bottom wall tile
+                            // yet
+                            chr = '\u{DB}';
+                        } else if has_left_wall {
+                            chr = '\u{DD}';
+                        } else if has_bottom_wall {
+                            chr = '\u{DC}';
+                        } else {
+                            chr = ' ';
+                        }
+
+                        //console.put_char(x, y, chr, BackgroundFlag::None);
+                        //console.set_char_background(x, y, color, BackgroundFlag::Set);
+                    }
+
+                    TileType::Water | TileType::Exit => {
+                        //console.put_char(x, y, ' ', BackgroundFlag::None);
+                        //console.set_char_background(x, y, color, BackgroundFlag::Set);
+                        chr = ' ';
+                        color = WHITE;
+                    }
+
+                    TileType::ShortWall | TileType::Wall => {
+                        if visible {
+                            //console.set_char_background(x, y, config.color_tile_blue_light.color(), BackgroundFlag::Set);
+                            color = self.config.color_tile_blue_light.color();
+                        } else {
+                            //console.set_char_background(x, y, config.color_very_dark_blue.color(), BackgroundFlag::Set);
+                            color = self.config.color_very_dark_blue.color();
+                        }
+
+                        let left = self.map[(x - 1, y)].tile_type == tile_type;
+                        let right = self.map[(x + 1, y)].tile_type == tile_type;
+                        let horiz = left || right;
+
+                        let above = self.map[(x, y + 1)].tile_type == tile_type;
+                        let below = self.map[(x, y - 1)].tile_type == tile_type;
+                        let vert = above || below;
+
+                        if tile_type == TileType::Wall {
+                            if horiz && vert {
+                               chr = '\u{DC}';
+                            } else if horiz {
+                               chr = '\u{EC}';
+                            } else if vert {
+                               chr = '\u{ED}';
+                            } else {
+                               chr = '\u{FE}';
+                            }
+                        } else {
+                            if horiz && vert {
+                               chr = tcod::chars::CROSS
+                            } else if horiz {
+                               chr = tcod::chars::HLINE;
+                            } else if vert {
+                               chr = tcod::chars::VLINE;
+                            } else {
+                               chr = tcod::chars::VLINE;
+                            }
+                        };
+                    }
+                }
+
+                //if chr != ' ' {
+                    // NOTE: this takes a good bit of time to create
+                    let chr_text = graphics::Text::new(
+                        format!("{}", chr)
+                    );
+
+                    draw_char(ctx, &self.font_image, chr, x, y, color);
+                //}
+
+                // TODO removed while working out rendering
+                // map.tiles[x as usize][y as usize].explored = explored;
+            }
+        }
+        dbg!(start_time.elapsed().as_millis());
+
+        /* from render_objects */
+        let mut to_draw: Vec<_> =
+            self.objects.iter().filter(|o| {
+                // TODO removed while testing rendering
+                true // self.game.fov.is_in_fov(o.x, o.y)
+            }).collect();
+        to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
+
+        for object in &to_draw {
+            draw_char(ctx, &self.font_image, object.char, object.x, object.y, object.color);
+        }
+
+        // Render game ui
+        // this takes around 70ms on last measurement
+        self.imgui_wrapper.render(ctx);
+
+        graphics::present(ctx)?;
+
+        Ok(())
+    }
+
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
+        self.imgui_wrapper.update_mouse_pos(x, y);
+    }
+
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        button: MouseButton,
+        _x: f32,
+        _y: f32,
+    ) {
+        self.imgui_wrapper.update_mouse_down((
+            button == MouseButton::Left,
+            button == MouseButton::Right,
+            button == MouseButton::Middle,
+        ));
+    }
+
+    fn mouse_button_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        _button: MouseButton,
+        _x: f32,
+        _y: f32,
+    ) {
+        self.imgui_wrapper.update_mouse_down((false, false, false));
+    }
+
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: KeyCode,
+        keymods: KeyMods,
+        _repeat: bool,
+    ) {
+        dbg!(keycode);
+        match keycode {
+            KeyCode::Key8 | KeyCode::Numpad8 | KeyCode::Up => {
+                self.input_action = InputAction::Up;
+            }
+
+            KeyCode::Key8 | KeyCode::Numpad8 | KeyCode::Right => {
+                self.input_action = InputAction::Right;
+            }
+
+            KeyCode::Key2 | KeyCode::Numpad2 | KeyCode::Down => {
+                self.input_action = InputAction::Down;
+            }
+
+            KeyCode::Key4 | KeyCode::Numpad4 | KeyCode::Left => {
+                self.input_action = InputAction::Left;
+            }
+
+            KeyCode::Key7 | KeyCode::Numpad7 => {
+                self.input_action = InputAction::UpLeft;
+            }
+
+            KeyCode::Key9 | KeyCode::Numpad9 => {
+                self.input_action = InputAction::UpRight;
+            }
+
+            KeyCode::Key3 | KeyCode::Numpad3 => {
+                self.input_action = InputAction::DownRight;
+            }
+
+            KeyCode::Key1 | KeyCode::Numpad1 => {
+                self.input_action = InputAction::DownLeft;
+            }
+
+            KeyCode::Key5 | KeyCode::Numpad5 => {
+                self.input_action = InputAction::Center;
+            }
+
+            KeyCode::Return => {
+                if keymods.contains(KeyMods::ALT) {
+                    self.input_action = InputAction::FullScreen;
+                }
+            }
+
+            KeyCode::G => {
+                self.input_action = InputAction::Pickup;
+            }
+
+            KeyCode::I => {
+                self.input_action = InputAction::Inventory;
+            }
+
+            KeyCode::V => {
+                self.input_action = InputAction::ExploreAll;
+            }
+
+            KeyCode::Escape => {
+                self.input_action = InputAction::Exit;
+            }
+
+            KeyCode::R => {
+                self.input_action = InputAction::RegenerateMap;
+            }
+
+            KeyCode::Add => {
+                self.input_action = InputAction::ToggleOverlays;
+            }
+
+            KeyCode::T => {
+                self.input_action = InputAction::GodMode;
+            }
+
+            _ => {
+                self.input_action = InputAction::None;
+            }
+        }
+    }
 }
 
