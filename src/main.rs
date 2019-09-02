@@ -549,7 +549,17 @@ impl EventHandler for GameState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let start_time = Instant::now();
 
-        graphics::clear(ctx, graphics::WHITE);
+        let fov_recompute = self.previous_player_position != (self.objects[PLAYER].x, self.objects[PLAYER].y);
+        if fov_recompute {
+            let player = &self.objects[PLAYER];
+            let mut fov_distance = self.config.fov_distance;
+            if self.game.god_mode {
+                fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
+            }
+            self.game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
+        }
+
+        graphics::clear(ctx, graphics::BLACK);
 
         let (w, h) = graphics::drawable_size(ctx);
         let block_w = w / MAP_WIDTH as f32;
@@ -564,28 +574,38 @@ impl EventHandler for GameState {
                 let visible = self.game.fov.is_in_fov(x, y);
 
                 let mut color = match (self.map.tiles[x as usize][y as usize].tile_type, visible) {
-                    (TileType::Wall, true) => self.config.color_light_brown.color(),
-                    (TileType::Wall, false) => self.config.color_dark_brown.color(),
+                    (TileType::Wall, true) =>
+                        self.config.color_light_brown.color(),
+                    (TileType::Wall, false) =>
+                        self.config.color_dark_brown.color(),
 
-                    (TileType::Empty, true) => lerp(self.config.color_tile_blue_light.color(), self.config.color_tile_blue_dark.color(), rand_from_x_y(x, y)),
-                    (TileType::Empty, false) => self.config.color_very_dark_blue.color(),
+                    (TileType::Empty, true) =>
+                        lerp(self.config.color_tile_blue_light.color(), self.config.color_tile_blue_dark.color(), rand_from_x_y(x, y)),
+                    (TileType::Empty, false) =>
+                        self.config.color_very_dark_blue.color(),
 
-                    (TileType::Water, true) => self.config.color_blueish_grey.color(),
-                    (TileType::Water, false) => self.config.color_dark_brown.color(),
+                    (TileType::Water, true) =>
+                        self.config.color_blueish_grey.color(),
+                    (TileType::Water, false) =>
+                        self.config.color_dark_brown.color(),
 
-                    (TileType::ShortWall, true) => self.config.color_light_brown.color(),
-                    (TileType::ShortWall, false) => self.config.color_dark_brown.color(),
+                    (TileType::ShortWall, true) =>
+                        self.config.color_light_brown.color(),
+                    (TileType::ShortWall, false) =>
+                        self.config.color_dark_brown.color(),
 
-                    (TileType::Exit, true) => self.config.color_orange.color(),
-                    (TileType::Exit, false) => self.config.color_red.color(),
+                    (TileType::Exit, true) =>
+                        self.config.color_orange.color(),
+                    (TileType::Exit, false) =>
+                        self.config.color_red.color(),
                 };
                 //println!("color = {:?}", color);
 
                 // TODO removed while working out rendering
-                //let mut explored = map.tiles[x as usize][y as usize].explored;
-                //if visible 
-                //    explored = true;
-                //
+                let mut explored = self.map.tiles[x as usize][y as usize].explored;
+                if visible {
+                    explored = true;
+                }
 
                 //if explored 
 
@@ -668,7 +688,7 @@ impl EventHandler for GameState {
                 //}
 
                 // TODO removed while working out rendering
-                // map.tiles[x as usize][y as usize].explored = explored;
+                self.map.tiles[x as usize][y as usize].explored = explored;
             }
         }
         dbg!(start_time.elapsed().as_millis());
