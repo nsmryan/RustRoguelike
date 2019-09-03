@@ -678,6 +678,9 @@ impl EventHandler for GameState {
                     }
                 }
 
+                if chr != ' ' {
+                    chr = '\u{AB}';
+                }
                 //if chr != ' ' {
                     // NOTE: this takes a good bit of time to create
                     let chr_text = graphics::Text::new(
