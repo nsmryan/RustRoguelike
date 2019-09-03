@@ -411,7 +411,7 @@ impl GameState {
 
         let font_image = Image::new(ctx, "/rexpaint16x16.png").unwrap();
 
-        let sprite_batch = SpriteBatch::new(font_image);
+        let sprite_batch = SpriteBatch::new(font_image.clone());
 
         let input_action = InputAction::None;
 
@@ -438,8 +438,7 @@ impl GameState {
 // there may be some performance issues in debug, but there
 // are currenly lots of performance issues in debug so it might
 // still be better.
-fn draw_char(ctx: &mut Context,
-             font_image: &Image,
+fn draw_char(sprite_batch: &mut SpriteBatch,
              chr: char,
              x: i32,
              y: i32,
@@ -464,7 +463,7 @@ fn draw_char(ctx: &mut Context,
                                               1.0),
         };
 
-    font_image.draw(ctx, draw_params);
+    sprite_batch.add(draw_params);
 }
 
 impl EventHandler for GameState {
@@ -620,14 +619,13 @@ impl EventHandler for GameState {
                         format!("{}", chr)
                     );
 
-                    draw_char(ctx, &self.font_image, chr, x, y, color);
+                    draw_char(&mut self.sprite_batch, chr, x, y, color);
                 //}
 
                 // TODO removed while working out rendering
                 self.map.tiles[x as usize][y as usize].explored = explored;
             }
         }
-        //dbg!(start_time.elapsed().as_millis());
 
         /* from render_objects */
         let mut to_draw: Vec<_> =
@@ -638,14 +636,20 @@ impl EventHandler for GameState {
         to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
 
         for object in &to_draw {
-            draw_char(ctx, &self.font_image, object.char, object.x, object.y, object.color);
+            draw_char(&mut self.sprite_batch, object.char, object.x, object.y, object.color);
         }
+
+        self.sprite_batch.draw(ctx, Default::default());
 
         // Render game ui
         // this takes around 70ms on last measurement
         self.imgui_wrapper.render(ctx);
 
         graphics::present(ctx)?;
+
+        self.sprite_batch.clear();
+
+        dbg!(start_time.elapsed().as_millis());
 
         Ok(())
     }
