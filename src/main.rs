@@ -49,7 +49,7 @@ use ggez::event::{self, EventHandler, KeyCode, KeyMods, MouseButton};
 use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::graphics::Image;
-// use ggez::graphics::spritebatch::SpriteBatch;
+use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::graphics::Drawable;
 use ggez::graphics::DrawParam;
 
@@ -354,6 +354,7 @@ struct GameState {
     inventory: Vec<Object>,
     imgui_wrapper: ImGuiWrapper,
     font_image: Image,
+    sprite_batch: SpriteBatch,
     input_action: InputAction,
 }
 
@@ -410,6 +411,8 @@ impl GameState {
 
         let font_image = Image::new(ctx, "/rexpaint16x16.png").unwrap();
 
+        let sprite_batch = SpriteBatch::new(font_image);
+
         let input_action = InputAction::None;
 
         let state = GameState {
@@ -420,8 +423,9 @@ impl GameState {
             objects,
             messages,
             inventory,
-            font_image,
             imgui_wrapper,
+            font_image,
+            sprite_batch,
             input_action,
         };
 
