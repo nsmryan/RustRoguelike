@@ -232,7 +232,6 @@ pub fn step_game(game: &mut Game,
     }
 
     /* AI */
-    // TODO player should only be able to take 1 half turn
     if objects[PLAYER].alive && player_action == PlayerAction::TookTurn {
         for id in 1..objects.len() {
             if objects[id].ai.is_some() {
@@ -338,81 +337,11 @@ fn main() {
     window_mode.width = ((SCREEN_WIDTH - 1) * FONT_WIDTH) as f32;
     window_mode.height = (SCREEN_HEIGHT * FONT_HEIGHT)  as f32;
 
-    dbg!("");
     let cb = ggez::ContextBuilder::new("Roguelike", "like")
              .window_mode(window_mode);
-    dbg!("");
     let (ref mut ctx, event_loop) = &mut cb.build().unwrap();
-    dbg!("");
     let state = &mut GameState::new(ctx, &args).unwrap();
-    dbg!("");
     event::run(ctx, event_loop, state).unwrap();
-    dbg!("");
-
-    return;
-
-    // Create seed for random number generator, either from
-    // user input or randomly
-    let seed: u64;
-    if args.len() > 1 {
-        let mut hasher = DefaultHasher::new();
-        args[1].hash(&mut hasher);
-        seed = hasher.finish();
-    } else {
-        seed = rand::thread_rng().gen();
-    }
-    println!("Seed: {} (0x{:X})", seed, seed);
-
-    let mut previous_player_position = (-1, -1);
-
-    let mut messages = Messages::new();
-
-    let mut inventory = vec![Object::make_stone(0, 0)];
-
-    let mut config: Config;
-    {
-        let mut file = File::open("config.json").expect("Could not open/parse config file config.json");
-        let mut config_string = String::new();
-        file.read_to_string(&mut config_string).expect("Could not read contents of config.json");
-        config = serde_json::from_str(&config_string).expect("Could not parse config.json file!");
-    }
-
-    let mut objects = vec!(make_player());
-
-    let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
-
-    let (mut map, position) = make_map(&mut objects, &config, &mut rng);
-    let player_x = position.0;
-    let player_y = position.1;
-    objects[PLAYER].x = player_x;
-    objects[PLAYER].y = player_y;
-
-    // write out map to a file
-    write_map("map.csv", &map);
-
-    //let root = Root::initializer()
-    //    .font("rexpaint16x16.png", FontLayout::AsciiInRow)
-    //    .font_type(FontType::Greyscale)
-    //    .size(SCREEN_WIDTH, SCREEN_HEIGHT)
-    //    .title("Rogue-like")
-    //    .init();
-
-    let mut game = Game::new();
-
-    setup_fov(&mut game.fov, &map);
-
-    messages.message("Welcome Stranger! Prepare to perish in the Desolation of Salt!", ORANGE);
-
-    /* main game loop */
-    //run_game(move || {
-    //    step_game(&mut game,
-    //              &mut config,
-    //              &mut previous_player_position,
-    //              &mut map,
-    //              &mut objects,
-    //              &mut messages,
-    //              &mut inventory)
-    //});
 }
 
 struct GameState {
@@ -474,6 +403,8 @@ impl GameState {
         let mut game = Game::new();
 
         setup_fov(&mut game.fov, &map);
+        let fov_distance = config.fov_distance;
+        game.fov.compute_fov(player_x, player_y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
 
         messages.message("Welcome Stranger! Prepare to perish in the Desolation of Salt!", ORANGE);
 
@@ -542,6 +473,8 @@ impl EventHandler for GameState {
                   &mut self.messages,
                   &mut self.inventory,
                   self.input_action);
+
+        self.input_action = InputAction::None;
 
         Ok(())
     }
@@ -623,7 +556,7 @@ impl EventHandler for GameState {
                         } else if has_bottom_wall {
                             chr = '\u{DC}';
                         } else {
-                            chr = ' ';
+                            chr = '\u{AB}';
                         }
 
                         //console.put_char(x, y, chr, BackgroundFlag::None);
@@ -633,8 +566,7 @@ impl EventHandler for GameState {
                     TileType::Water | TileType::Exit => {
                         //console.put_char(x, y, ' ', BackgroundFlag::None);
                         //console.set_char_background(x, y, color, BackgroundFlag::Set);
-                        chr = ' ';
-                        color = WHITE;
+                        chr = '\u{AB}';
                     }
 
                     TileType::ShortWall | TileType::Wall => {
@@ -678,9 +610,6 @@ impl EventHandler for GameState {
                     }
                 }
 
-                if chr != ' ' {
-                    chr = '\u{AB}';
-                }
                 //if chr != ' ' {
                     // NOTE: this takes a good bit of time to create
                     let chr_text = graphics::Text::new(
@@ -694,7 +623,7 @@ impl EventHandler for GameState {
                 self.map.tiles[x as usize][y as usize].explored = explored;
             }
         }
-        dbg!(start_time.elapsed().as_millis());
+        //dbg!(start_time.elapsed().as_millis());
 
         /* from render_objects */
         let mut to_draw: Vec<_> =
@@ -752,7 +681,6 @@ impl EventHandler for GameState {
         keymods: KeyMods,
         _repeat: bool,
     ) {
-        dbg!(keycode);
         match keycode {
             KeyCode::Key8 | KeyCode::Numpad8 | KeyCode::Up => {
                 self.input_action = InputAction::Up;

@@ -361,6 +361,7 @@ pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) -> Pl
               !momentum_diagonal &&
               !map.is_blocked(x + mx.signum(), y + my.signum(), objects) && // free next to wall
               !map.is_blocked(x + 2*mx.signum(), y + 2*my.signum(), objects) && // free space to move to
+              !map.is_blocked_by_wall(x, y, dx, dy) &&
               map[(x + dx, y + dy)].tile_type == TileType::Wall {
         // jump off wall
         objects[PLAYER].set_pos(x + 2*mx.signum(), y + 2*my.signum());
@@ -369,7 +370,8 @@ pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) -> Pl
     } else if has_momentum &&
               same_direction &&
               map[(x + dx, y + dy)].tile_type == TileType::ShortWall &&
-              !map.is_blocked(x + 2*dx, y + 2*dy, objects) {
+              !map.is_blocked(x + 2*dx, y + 2*dy, objects) &&
+              !map.is_blocked_by_wall(x, y, dx, dy) {
         // if the location is blocked by a short wall, and the next location in the
         // line is not, and we have momentum, then jump over obstacle
         objects[PLAYER].set_pos(x + 2*dx, y + 2*dy);
