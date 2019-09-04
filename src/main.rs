@@ -32,7 +32,6 @@ use std::io::BufReader;
 use std::io::BufRead;
 use std::io::Read;
 use std::sync::mpsc::channel;
-use std::time::Instant;
 
 use rand::prelude::*;
 
@@ -404,7 +403,7 @@ impl GameState {
         let fov_distance = config.fov_distance;
         game.fov.compute_fov(player_x, player_y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
 
-        messages.message("Welcome Stranger! Prepare to perish in the Desolation of Salt!", ORANGE);
+        messages.message("Welcome Stranger! Prepare to perish in the Desolation of Salt!", config.color_orange.color());
 
         let font_image = Image::new(ctx, "/rexpaint16x16.png").unwrap();
 

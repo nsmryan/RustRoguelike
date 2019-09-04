@@ -3,14 +3,16 @@ use std::hash::{Hash, Hasher};
 use std::time::Instant;
 
 #[allow(unused_imports)]use tcod::console::*;
-#[allow(unused_imports)]use tcod::colors::*;
+//#[allow(unused_imports)]use tcod::colors::*;
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
 
 use ggez::graphics::DrawParam;
 use ggez::graphics::Drawable;
+use ggez::graphics::Color;
 use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::graphics;
+use ggez::graphics::WHITE;
 use ggez::{Context, GameResult};
 
 use mint::Point2;
@@ -21,6 +23,7 @@ use crate::engine::map::*;
 use crate::imgui_wrapper::*;
 
 
+// TODO rendering code removed for ggez
 pub fn render_bar(panel: &mut Offscreen,
                   x: i32,
                   y: i32,
@@ -32,57 +35,60 @@ pub fn render_bar(panel: &mut Offscreen,
                   back_color: Color) {
     let bar_width = (value as f32 / maximum as f32 * total_width as f32) as i32;
 
-    panel.set_default_background(back_color);
-    panel.rect(x, y, total_width, 1, false, BackgroundFlag::Screen);
+    //panel.set_default_background(back_color);
+    //panel.rect(x, y, total_width, 1, false, BackgroundFlag::Screen);
 
-    panel.set_default_background(bar_color);
-    if bar_width > 0 {
-        panel.rect(x, y, bar_width, 1, false, BackgroundFlag::Screen);
-    }
+    //panel.set_default_background(bar_color);
+    //if bar_width > 0 {
+        //panel.rect(x, y, bar_width, 1, false, BackgroundFlag::Screen);
+    //}
 
-    panel.set_default_foreground(WHITE);
-    panel.print_ex(x + total_width / 2,
-                   y,
-                   BackgroundFlag::None,
-                   TextAlignment::Center,
-                   &format!("{}: {}/{}", name, value, maximum));
+    //panel.set_default_foreground(WHITE);
+    //panel.print_ex(x + total_width / 2,
+                   //y,
+                   //BackgroundFlag::None,
+                   //TextAlignment::Center,
+                   //&format!("{}: {}/{}", name, value, maximum));
 }
 
+// TODO logic removed for ggez
 pub fn menu<T: AsRef<str>>(header: &str, options: &[T], width: i32, root: &mut Root) -> Option<usize> {
     assert!(options.len() <= 26, "Cannot have a menu with more than 26 options");
 
     let header_height = root.get_height_rect(0, 0, width, SCREEN_HEIGHT, header);
     let height = options.len() as i32 + header_height;
 
-    let mut window = Offscreen::new(width, height);
+    // let mut window = Offscreen::new(width, height);
 
-    window.set_default_foreground(WHITE);
-    window.print_rect_ex(0, 0, width, height, BackgroundFlag::None, TextAlignment::Left, header);
+    //window.set_default_foreground(WHITE);
+    //window.print_rect_ex(0, 0, width, height, BackgroundFlag::None, TextAlignment::Left, header);
 
     for (index, option_text) in options.iter().enumerate() {
         let menu_letter = (b'a' + index as u8) as char;
         let text = format!("({}) {}", menu_letter, option_text.as_ref());
-        window.print_ex(0, header_height + index as i32,
-                        BackgroundFlag::None, TextAlignment::Left, text);
+        //window.print_ex(0, header_height + index as i32,
+         //               BackgroundFlag::None, TextAlignment::Left, text);
     }
 
     let x = SCREEN_WIDTH / 2 - width / 2;
     let y = SCREEN_HEIGHT / 2 - height / 2;
-    tcod::console::blit(&mut window, (0, 0), (width, height), root, (x, y), 1.0, 0.7);
+    //tcod::console::blit(&mut window, (0, 0), (width, height), root, (x, y), 1.0, 0.7);
 
-    root.flush();
-    let key = root.wait_for_keypress(true);
+    //root.flush();
+    //let key = root.wait_for_keypress(true);
 
-    if key.printable.is_alphabetic() {
-        let index = key.printable.to_ascii_lowercase() as usize - 'a' as usize;
-        if index < options.len() {
-            Some(index)
-        } else {
-            None
-        }
-    } else {
-        None
-    }
+    //if key.printable.is_alphabetic() {
+        //let index = key.printable.to_ascii_lowercase() as usize - 'a' as usize;
+        //if index < options.len() {
+            //Some(index)
+        //} else {
+            //None
+        //}
+    //} else {
+        //None
+    //}
+
+    None
 }
 
 pub fn get_objects_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> Vec<ObjectId> {
@@ -106,6 +112,7 @@ pub fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap)
     names.join(", ")
 }
 
+// TODO logic commented out for ggez
 // BLOCK3 solid block
 // CHECKBOX_UNSET unfilled block
 // CROSS cross
@@ -137,12 +144,12 @@ fn print_all_special_char(console: &mut Offscreen, mouse: Mouse) {
 
     for x in 0..MAP_WIDTH {
         for y in 0..MAP_HEIGHT {
-            console.set_char_background(x, y, BLACK, BackgroundFlag::Set);
-            console.put_char(x, y, ' ', BackgroundFlag::None);
+            //console.set_char_background(x, y, BLACK, BackgroundFlag::Set);
+            //console.put_char(x, y, ' ', BackgroundFlag::None);
         }
     }
 
-    console.set_default_foreground(WHITE);
+    //console.set_default_foreground(WHITE);
     for key in 0..256 {
         let index_x = 10 + (index % 32);
         let index_y = -10 + ((index / 32) * 2);
@@ -150,17 +157,17 @@ fn print_all_special_char(console: &mut Offscreen, mouse: Mouse) {
         let x = SCREEN_WIDTH/2 + index_x - 32 as i32;
         let y = SCREEN_HEIGHT/2 + index_y;
 
-        console.put_char(x,
-                              y,
-                              key as u8 as char,
-                              BackgroundFlag::None);
-        if mouse.cx as i32 == x && mouse.cy as i32 == y {
-            console.print_ex(x,
-                                  y - 1,
-                                  BackgroundFlag::None,
-                                  TextAlignment::Left,
-                                  format!("{}", key));
-        }
+        //console.put_char(x,
+                              //y,
+                              //key as u8 as char,
+                              //BackgroundFlag::None);
+        //if mouse.cx as i32 == x && mouse.cy as i32 == y {
+            //console.print_ex(x,
+                                  //y - 1,
+                                  //BackgroundFlag::None,
+                                  //TextAlignment::Left,
+                                  //format!("{}", key));
+        //}
 
         index += 1;
     }
@@ -177,11 +184,14 @@ pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
     return ((result & 0xFFFFFFFF) as f32) / 4294967295.0;
 }
 
-pub fn draw_movement_overlay(console: &mut dyn Console,
+pub fn draw_movement_overlay(sprite_batch: &mut SpriteBatch,
                              map: &Map,
                              id: ObjectId,
+                             config: &Config,
                              objects: &[Object]) -> Vec<(i32, i32)> {
     let mut added_positions = Vec::new();
+
+    let color = config.color_warm_grey.color();
 
     if let Some(movement) = objects[id].movement {
         let offsets = movement.offsets();
@@ -192,10 +202,7 @@ pub fn draw_movement_overlay(console: &mut dyn Console,
             if map.clear_path((objects[id].x as i32, objects[id].y as i32), 
                               (x, y),
                               &objects) {
-                console.put_char(x,
-                                      y,
-                                      '.',
-                                      BackgroundFlag::None);
+                draw_char(sprite_batch, '.', x, y, color);
 
                 added_positions.push((x, y));
             }
@@ -205,11 +212,14 @@ pub fn draw_movement_overlay(console: &mut dyn Console,
     return added_positions;
 }
 
-pub fn draw_attack_overlay(console: &mut dyn Console,
+pub fn draw_attack_overlay(sprite_batch: &mut SpriteBatch,
                            map: &Map,
                            id: ObjectId,
+                           config: &Config,
                            objects: &[Object]) -> Vec<(i32, i32)> {
     let mut added_positions = Vec::new();
+
+    let color = config.color_warm_grey.color();
 
     if let Some(attack) = objects[id].attack {
         let offsets = attack.offsets();
@@ -220,10 +230,7 @@ pub fn draw_attack_overlay(console: &mut dyn Console,
             if map.clear_path((objects[id].x as i32, objects[id].y as i32), 
                               (x, y),
                               &objects) {
-                console.put_char(x,
-                                      y,
-                                      'x',
-                                      BackgroundFlag::None);
+                draw_char(sprite_batch, 'x', x, y, color);
 
                 added_positions.push((x, y));
             }
@@ -231,6 +238,19 @@ pub fn draw_attack_overlay(console: &mut dyn Console,
     }
 
     return added_positions;
+}
+
+pub fn lerp(first: f32, second: f32, scale: f32) -> f32 {
+    return first + ((second - first) * scale);
+}
+
+pub fn lerp_color(color1: Color, color2: Color, scale: f32) -> Color {
+    return Color {
+        r: lerp(color1.r, color2.r, scale),
+        g: lerp(color1.g, color2.g, scale),
+        b: lerp(color1.b, color2.b, scale),
+        a: lerp(color1.a, color2.a, scale),
+    };
 }
 
 pub fn render_map(ctx: &mut Context,
@@ -257,7 +277,7 @@ pub fn render_map(ctx: &mut Context,
                     config.color_dark_brown.color(),
 
                 (TileType::Empty, true) =>
-                    lerp(config.color_tile_blue_light.color(), config.color_tile_blue_dark.color(), rand_from_x_y(x, y)),
+                    lerp_color(config.color_tile_blue_light.color(), config.color_tile_blue_dark.color(), rand_from_x_y(x, y)),
                 (TileType::Empty, false) =>
                     config.color_very_dark_blue.color(),
 
@@ -446,7 +466,7 @@ pub fn render_character_flags(console: &mut dyn Console) {
     }
 }
 
-pub fn render_overlays(game: &mut Game, map: &Map, objects: &[Object]) {
+pub fn render_overlays(game: &mut Game, sprite_batch: &mut SpriteBatch, map: &Map, objects: &[Object], config: &Config) {
     let ids = get_objects_under_mouse(game.mouse, objects, &game.fov);
     for id in ids {
         if !objects[id].alive {
@@ -454,16 +474,16 @@ pub fn render_overlays(game: &mut Game, map: &Map, objects: &[Object]) {
         }
 
         // TODO removed for ggez
-        //  game.needs_clear.extend(draw_movement_overlay(&mut game.console, map, id, objects));
-        //  game.needs_clear.extend(draw_attack_overlay(&mut game.console, map, id, objects));
+        game.needs_clear.extend(draw_movement_overlay(sprite_batch, map, id, config, objects));
+        game.needs_clear.extend(draw_attack_overlay(sprite_batch, map, id, config, objects));
     }
 
     for id in 0..objects.len() {
         let (x, y) = (objects[id].x, objects[id].y);
         if game.display_overlays && game.fov.is_in_fov(x, y) && objects[id].alive {
             // TODO removed for ggez
-            // game.needs_clear.extend(draw_movement_overlay(&mut game.console, map, id, objects));
-            // game.needs_clear.extend(draw_attack_overlay(&mut game.console, map, id, objects));
+            game.needs_clear.extend(draw_movement_overlay(sprite_batch, map, id, config, objects));
+            game.needs_clear.extend(draw_attack_overlay(sprite_batch, map, id, config, objects));
         }
     }
 }
@@ -504,7 +524,7 @@ pub fn render_all(ctx: &mut Context,
 
     // Draw movement and attack overlays
     // TODO removed for ggez
-    // render_overlays(game, map, objects);
+    render_overlays(game, sprite_batch, map, objects, config);
 
     // Draw UI overlay
     // let hp = objects[PLAYER].fighter.map_or(0, |f| f.hp);

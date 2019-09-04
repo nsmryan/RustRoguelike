@@ -8,8 +8,9 @@ use rand::prelude::*;
 #[allow(unused_imports)]use tcod::input::Key;
 #[allow(unused_imports)]use tcod::input::KeyCode::*;
 #[allow(unused_imports)]use tcod::console::*;
-#[allow(unused_imports)]use tcod::colors::*;
 use tcod::line::*;
+
+use ggez::graphics::WHITE;
 
 use crate::engine::types::*;
 use crate::engine::map::*;
@@ -125,7 +126,7 @@ pub fn handle_input(game: &mut Game,
                     object.pos() == objects[PLAYER].pos() && object.item.is_some()
                 });
                 if let Some(item_id) = item_id {
-                    pick_item_up(item_id, objects, inventory, messages);
+                    pick_item_up(item_id, objects, inventory, config, messages);
                 }
                 player_action = DidntTakeTurn;
             }
@@ -138,7 +139,7 @@ pub fn handle_input(game: &mut Game,
                 //                   "Press the key next to an item to use it, or any other to cancel.\n",
                 //                   &mut game.root);
                 //if let Some(inventory_index) = inventory_index {
-                //    use_item(inventory_index, inventory, objects, messages);
+                //    use_item(inventory_index, inventory, objects, config, messages);
                 //}
                 player_action = DidntTakeTurn;
             }
@@ -243,6 +244,7 @@ pub fn throw_stone(pos: (i32, i32),
 fn use_item(inventory_id: usize,
             inventory: &mut Vec<Object>,
             objects: &mut [Object],
+            config: &Config,
             messages: &mut Messages) {
     use Item::*;
 
@@ -251,7 +253,7 @@ fn use_item(inventory_id: usize,
             Stone => unimplemented!(),
             Goal => gather_goal,
         };
-        match on_use(inventory_id, objects, messages) {
+        match on_use(inventory_id, objects, config, messages) {
             UseResult::UsedUp => {
                 inventory.remove(inventory_id);
             }
@@ -267,8 +269,8 @@ fn use_item(inventory_id: usize,
     }
 }
 
-fn gather_goal(_inventory_id: usize, _objects: &mut [Object], messages: &mut Messages) -> UseResult {
-    messages.message("You've got the goal object! Nice work.", LIGHT_VIOLET);
+fn gather_goal(_inventory_id: usize, _objects: &mut [Object], config: &Config, messages: &mut Messages) -> UseResult {
+    messages.message("You've got the goal object! Nice work.", config.color_orange.color());
     UseResult::Keep
 }
 
@@ -291,12 +293,13 @@ fn inventory_menu(inventory: &[Object], header: &str, root: &mut Root) -> Option
 fn pick_item_up(object_id: usize,
                 objects: &mut Vec<Object>,
                 inventory: &mut Vec<Object>,
+                config: &Config,
                 messages: &mut Messages) {
     if inventory.len() >= 26 {
-        messages.message(format!("Your inventory is full, cannot pick up {}", objects[object_id].name), RED);
+        messages.message(format!("Your inventory is full, cannot pick up {}", objects[object_id].name), config.color_red.color());
     } else {
         let item = objects.swap_remove(object_id);
-        messages.message(format!("You picked up a {}!", item.name), GREEN);
+        messages.message(format!("You picked up a {}!", item.name), config.color_light_green.color());
         inventory.push(item);
     }
 }

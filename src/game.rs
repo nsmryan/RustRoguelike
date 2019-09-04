@@ -2,8 +2,9 @@ use rand::Rng;
 use rand::prelude::SliceRandom;
 use rand::prelude::*;
 
-use tcod::colors::*;
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
+
+use ggez::graphics::WHITE;
 
 use crate::engine::types::*;
 use crate::constants::*;
@@ -198,7 +199,7 @@ pub fn make_island(map: &mut Map,
     let y = rng.gen_range(0, MAP_HEIGHT);
 
     if !map.is_blocked(x, y, objects) {
-        let mut object = Object::new(x,y, '\u{FD}', "goal", RED, false);
+        let mut object = Object::new(x,y, '\u{FD}', "goal", config.color_red.color(), false);
         object.item = Some(Item::Goal);
         objects.push(object);
     }
@@ -210,7 +211,7 @@ pub fn make_island(map: &mut Map,
         x = pos.0;
         y = pos.1;
     }
-    let mut object = Object::new(x, y, '\u{FD}', "goal", RED, false);
+    let mut object = Object::new(x, y, '\u{FD}', "goal", config.color_red.color(), false);
     object.item = Some(Item::Goal);
     objects.push(object);
 

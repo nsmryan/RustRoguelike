@@ -4,6 +4,8 @@
 #[allow(unused_imports)]use tcod::pathfinding::*;
 use tcod::line::*;
 
+use ggez::graphics::{BLACK, WHITE};
+
 use crate::constants::*;
 use crate::engine::types::*;
 use crate::engine::map::*;
@@ -245,7 +247,7 @@ pub fn ai_apply_actions(monster_id: usize,
 
                 // add animation
                 let mut thrown_obj =
-                    Object::new(monster_x, monster_y, '.', "thrown", tcod::colors::BLACK, false);
+                    Object::new(monster_x, monster_y, '.', "thrown", BLACK, false);
                 let obj_id = objects.len();
                 thrown_obj.x = monster_x;
                 thrown_obj.y = monster_y;

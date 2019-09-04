@@ -4,8 +4,9 @@ use std::cmp;
 use tcod::console::*;
 use tcod::map::{Map as FovMap};
 use tcod::input::Mouse;
-use tcod::colors::*;
 use tcod::line::*;
+
+use ggez::graphics::Color;
 
 use crate::constants::*;
 
@@ -154,9 +155,11 @@ impl Object {
     }
 
     pub fn draw(&self, console: &mut dyn Console) {
-        console.set_default_foreground(self.color);
-        console.put_char(self.x, self.y, self.char, BackgroundFlag::None);
-        console.set_default_foreground(WHITE);
+        // TODO removed for ggez. may remove entirely and render separte from type
+        // definitions
+        //console.set_default_foreground(self.color);
+        //console.put_char(self.x, self.y, self.char, BackgroundFlag::None);
+        //console.set_default_foreground(WHITE);
     }
 
     pub fn clear(&self, console: &mut dyn Console) {
@@ -380,24 +383,24 @@ pub enum DeathCallback {
 }
 
 impl DeathCallback {
-    fn callback(self, object: &mut Object) {
+    fn callback(self, object: &mut Object, config: &Config) {
         use DeathCallback::*;
         let callback: fn(&mut Object) = match self {
             Player => player_death,
             Monster => monster_death,
         };
-        callback(object);
+        callback(object, config);
     }
 }
 
-pub fn player_death(player: &mut Object) {
+pub fn player_death(player: &mut Object, config: &Config) {
     player.char = '%';
-    player.color = DARK_RED;
+    player.color = config.color_red.color();
 }
 
-pub fn monster_death(monster: &mut Object) {
+pub fn monster_death(monster: &mut Object, config: &Config) {
     monster.char = '%';
-    monster.color = DARK_RED;
+    monster.color = config.color_red.color();
     monster.blocks = false;
     monster.fighter = None;
     monster.ai = None;
@@ -522,13 +525,13 @@ pub struct ColorConfig {
 
 impl ColorConfig {
     pub fn color(&self) -> Color {
-        Color::new(self.r, self.g, self.b)
+        Color::new(self.r as f32 / 256.0, self.g as f32 / 256.0, self.b as f32 / 256.0, 1.0)
     }
 
     pub fn from_color(color: Color) -> ColorConfig {
-        ColorConfig { r: color.r,
-        g: color.g,
-        b: color.b,
+        ColorConfig { r: (color.r * 256.0) as u8,
+                      g: (color.g * 256.0) as u8,
+                      b: (color.b * 256.0) as u8,
         }
     }
 }
