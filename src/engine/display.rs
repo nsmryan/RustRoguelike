@@ -1,14 +1,24 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::time::Instant;
 
 #[allow(unused_imports)]use tcod::console::*;
 #[allow(unused_imports)]use tcod::colors::*;
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
 
+use ggez::graphics::DrawParam;
+use ggez::graphics::Drawable;
+use ggez::graphics::spritebatch::SpriteBatch;
+use ggez::graphics;
+use ggez::{Context, GameResult};
+
+use mint::Point2;
+
 use crate::engine::types::*;
 use crate::constants::*;
 use crate::engine::map::*;
+use crate::imgui_wrapper::*;
 
 
 pub fn render_bar(panel: &mut Offscreen,
@@ -167,7 +177,7 @@ pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
     return ((result & 0xFFFFFFFF) as f32) / 4294967295.0;
 }
 
-pub fn draw_movement_overlay(console: &mut Console,
+pub fn draw_movement_overlay(console: &mut dyn Console,
                              map: &Map,
                              id: ObjectId,
                              objects: &[Object]) -> Vec<(i32, i32)> {
@@ -223,114 +233,141 @@ pub fn draw_attack_overlay(console: &mut dyn Console,
     return added_positions;
 }
 
-pub fn render_map(console: &mut dyn Console,
-                  fov: &FovMap,
+pub fn render_map(ctx: &mut Context,
+                  game: &mut Game,
                   map: &mut Map,
+                  sprite_batch: &mut SpriteBatch,
                   config: &Config) {
+    let (w, h) = graphics::drawable_size(ctx);
+    let block_w = w / MAP_WIDTH as f32;
+    let block_h = h / MAP_HEIGHT as f32;
+
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
-            let visible = fov.is_in_fov(x, y);
+            let chr;
 
-            // Color based on TileType and visibility
-            let color = match (map.tiles[x as usize][y as usize].tile_type, visible) {
-                (TileType::Wall, true) => config.color_light_brown.color(),
-                (TileType::Wall, false) => config.color_dark_brown.color(),
+            // Render game stuff
+            let tile_type = map[(x, y)].tile_type;
+            let visible = game.fov.is_in_fov(x, y);
 
-                (TileType::Empty, true) => lerp(config.color_tile_blue_light.color(), config.color_tile_blue_dark.color(), rand_from_x_y(x, y)),
-                (TileType::Empty, false) => config.color_very_dark_blue.color(),
+            let mut color = match (map.tiles[x as usize][y as usize].tile_type, visible) {
+                (TileType::Wall, true) =>
+                    config.color_light_brown.color(),
+                (TileType::Wall, false) =>
+                    config.color_dark_brown.color(),
 
-                (TileType::Water, true) => config.color_blueish_grey.color(),
-                (TileType::Water, false) => config.color_dark_brown.color(),
+                (TileType::Empty, true) =>
+                    lerp(config.color_tile_blue_light.color(), config.color_tile_blue_dark.color(), rand_from_x_y(x, y)),
+                (TileType::Empty, false) =>
+                    config.color_very_dark_blue.color(),
 
-                (TileType::ShortWall, true) => config.color_light_brown.color(),
-                (TileType::ShortWall, false) => config.color_dark_brown.color(),
+                (TileType::Water, true) =>
+                    config.color_blueish_grey.color(),
+                (TileType::Water, false) =>
+                    config.color_dark_brown.color(),
 
-                (TileType::Exit, true) => config.color_orange.color(),
-                (TileType::Exit, false) => config.color_red.color(),
+                (TileType::ShortWall, true) =>
+                    config.color_light_brown.color(),
+                (TileType::ShortWall, false) =>
+                    config.color_dark_brown.color(),
+
+                (TileType::Exit, true) =>
+                    config.color_orange.color(),
+                (TileType::Exit, false) =>
+                    config.color_red.color(),
             };
+            //println!("color = {:?}", color);
 
+            // TODO removed while working out rendering
             let mut explored = map.tiles[x as usize][y as usize].explored;
             if visible {
                 explored = true;
             }
 
-            if explored {
-                let tile_type = map.tiles[x as usize][y as usize].tile_type;
-                match tile_type {
-                    TileType::Empty => {
-                        let has_bottom_wall = map.tiles[x as usize][y as usize].bottom_wall != Wall::Empty;
-                        let has_left_wall = map.tiles[x as usize][y as usize].left_wall != Wall::Empty;
+            //if explored 
 
-                        let chr;
-                        if  has_bottom_wall && has_left_wall {
-                            // TODO this is a solid wall- there is no joint left/bottom wall tile
-                            // yet
-                            chr = '\u{DB}';
-                        } else if has_left_wall {
-                            chr = '\u{DD}';
-                        } else if has_bottom_wall {
-                            chr = '\u{DC}';
+            match tile_type {
+                TileType::Empty => {
+                    let has_bottom_wall = map.tiles[x as usize][y as usize].bottom_wall != Wall::Empty;
+                    let has_left_wall = map.tiles[x as usize][y as usize].left_wall != Wall::Empty;
+
+                    if  has_bottom_wall && has_left_wall {
+                        // TODO this is a solid wall- there is no joint left/bottom wall tile
+                        // yet
+                        chr = '\u{DB}';
+                    } else if has_left_wall {
+                        chr = '\u{DD}';
+                    } else if has_bottom_wall {
+                        chr = '\u{DC}';
+                    } else {
+                        chr = '\u{AB}';
+                    }
+
+                    //console.put_char(x, y, chr, BackgroundFlag::None);
+                    //console.set_char_background(x, y, color, BackgroundFlag::Set);
+                }
+
+                TileType::Water | TileType::Exit => {
+                    //console.put_char(x, y, ' ', BackgroundFlag::None);
+                    //console.set_char_background(x, y, color, BackgroundFlag::Set);
+                    chr = '\u{AB}';
+                }
+
+                TileType::ShortWall | TileType::Wall => {
+                    if visible {
+                        //console.set_char_background(x, y, config.color_tile_blue_light.color(), BackgroundFlag::Set);
+                        color = config.color_tile_blue_light.color();
+                    } else {
+                        //console.set_char_background(x, y, config.color_very_dark_blue.color(), BackgroundFlag::Set);
+                        color = config.color_very_dark_blue.color();
+                    }
+
+                    let left = map[(x - 1, y)].tile_type == tile_type;
+                    let right = map[(x + 1, y)].tile_type == tile_type;
+                    let horiz = left || right;
+
+                    let above = map[(x, y + 1)].tile_type == tile_type;
+                    let below = map[(x, y - 1)].tile_type == tile_type;
+                    let vert = above || below;
+
+                    if tile_type == TileType::Wall {
+                        if horiz && vert {
+                           chr = '\u{DC}';
+                        } else if horiz {
+                           chr = '\u{EC}';
+                        } else if vert {
+                           chr = '\u{ED}';
                         } else {
-                            chr = ' ';
+                           chr = '\u{FE}';
                         }
-
-                        console.put_char(x, y, chr, BackgroundFlag::None);
-                        console.set_char_background(x, y, color, BackgroundFlag::Set);
-                    }
-
-                    TileType::Water | TileType::Exit => {
-                        console.put_char(x, y, ' ', BackgroundFlag::None);
-                        console.set_char_background(x, y, color, BackgroundFlag::Set);
-                    }
-
-                    TileType::ShortWall | TileType::Wall => {
-                        if visible {
-                            console.set_char_background(x, y, config.color_tile_blue_light.color(), BackgroundFlag::Set);
+                    } else {
+                        if horiz && vert {
+                           chr = tcod::chars::CROSS
+                        } else if horiz {
+                           chr = tcod::chars::HLINE;
+                        } else if vert {
+                           chr = tcod::chars::VLINE;
                         } else {
-                            console.set_char_background(x, y, config.color_very_dark_blue.color(), BackgroundFlag::Set);
+                           chr = tcod::chars::VLINE;
                         }
-
-                        let left = map[(x - 1, y)].tile_type == tile_type;
-                        let right = map[(x + 1, y)].tile_type == tile_type;
-                        let horiz = left || right;
-
-                        let above = map[(x, y + 1)].tile_type == tile_type;
-                        let below = map[(x, y - 1)].tile_type == tile_type;
-                        let vert = above || below;
-
-                        let chr;
-                        if tile_type == TileType::Wall {
-                            if horiz && vert {
-                               chr = '\u{DC}';
-                               console.set_char_background(x, y, color, BackgroundFlag::Set);
-                            } else if horiz {
-                               chr = '\u{EC}';
-                            } else if vert {
-                               chr = '\u{ED}';
-                            } else {
-                               chr = '\u{FE}';
-                            }
-                        } else {
-                            if horiz && vert {
-                               chr = tcod::chars::CROSS
-                            } else if horiz {
-                               chr = tcod::chars::HLINE;
-                            } else if vert {
-                               chr = tcod::chars::VLINE;
-                            } else {
-                               chr = tcod::chars::VLINE;
-                            }
-                        };
-
-                        console.set_default_foreground(color);
-                        console.put_char(x, y, chr, BackgroundFlag::None);
-                    }
+                    };
                 }
             }
 
+            //if chr != ' ' {
+                // NOTE: this takes a good bit of time to create
+                let chr_text = graphics::Text::new(
+                    format!("{}", chr)
+                );
+
+                draw_char(sprite_batch, chr, x, y, color);
+            //}
+
+            // TODO removed while working out rendering
             map.tiles[x as usize][y as usize].explored = explored;
         }
     }
+
 }
 
 pub fn render_sound(console: &mut dyn Console,
@@ -351,7 +388,7 @@ pub fn render_sound(console: &mut dyn Console,
     }
 }
 
-pub fn render_objects(console: &mut dyn Console, fov: &FovMap, objects: &[Object]) {
+pub fn render_objects(ctx: &mut Context, fov: &FovMap, objects: &[Object], sprite_batch: &mut SpriteBatch) {
     let mut to_draw: Vec<_> =
         objects.iter().filter(|o| {
             fov.is_in_fov(o.x, o.y)
@@ -359,7 +396,7 @@ pub fn render_objects(console: &mut dyn Console, fov: &FovMap, objects: &[Object
     to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
 
     for object in &to_draw {
-        object.draw(console);
+        draw_char(sprite_batch, object.char, object.x, object.y, object.color);
     }
 }
 
@@ -431,12 +468,17 @@ pub fn render_overlays(game: &mut Game, map: &Map, objects: &[Object]) {
     }
 }
 
-pub fn render_all(game: &mut Game,
+pub fn render_all(ctx: &mut Context,
+                  game: &mut Game,
                   objects: &[Object],
                   map: &mut Map,
                   messages: &mut Messages,
+                  imgui_wrapper: &mut ImGuiWrapper,
+                  sprite_batch: &mut SpriteBatch,
                   fov_recompute: bool,
-                  config: &Config) {
+                  config: &Config)  -> GameResult<()> {
+    let start_time = Instant::now();
+
     if fov_recompute {
         let player = &objects[PLAYER];
         let mut fov_distance = config.fov_distance;
@@ -446,60 +488,72 @@ pub fn render_all(game: &mut Game,
         game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
-    // TODO removed for ggez
-    // render_map(&mut game.console, &game.fov, map, config);
+    graphics::clear(ctx, graphics::BLACK);
+
+    render_map(ctx,
+               game,
+               map,
+               sprite_batch,
+               config);
+
+    /* from render_objects */
+    render_objects(ctx, &game.fov, objects, sprite_batch);
 
     // TODO removed for ggez
     // render_sound(&mut game.console, &game.animations, map, objects);
-
-    /* Draw objects */
-    // TODO removed for ggez
-    // render_objects(&mut game.console, &game.fov, objects);
 
     // Draw movement and attack overlays
     // TODO removed for ggez
     // render_overlays(game, map, objects);
 
-    // display for checking out character flags
-    //render_character_flags(&mut game.console);
-
-    // TODO removed for ggez
-    // game.panel.set_default_background(BLACK);
-    // game.panel.clear();
-
     // Draw UI overlay
-    let hp = objects[PLAYER].fighter.map_or(0, |f| f.hp);
-    let max_hp = objects[PLAYER].fighter.map_or(0, |f| f.max_hp);
+    // let hp = objects[PLAYER].fighter.map_or(0, |f| f.hp);
+    // let max_hp = objects[PLAYER].fighter.map_or(0, |f| f.max_hp);
     // TODO removed for ggez
     // render_bar(&mut game.panel, 1, 1, BAR_WIDTH, "HP", hp, max_hp, LIGHT_RED, DARK_RED);
 
-    let mut y = MSG_HEIGHT as i32;
-    for &(ref msg, color) in messages.0.iter().rev() {
-        // TODO removed for ggez
-        // let msg_height = game.panel.get_height_rect(MSG_X, y, MSG_WIDTH, 0, msg);
-        // y -= msg_height;
-        // if y < 0 {
-        //     break;
-        // }
-        // game.panel.set_default_foreground(color);
-        // game.panel.print_rect(MSG_X, y, MSG_WIDTH, 0, msg);
-    }
+    //  TODO add back in lower menu
 
-    // TODO removed for ggez
-    //  game.panel.set_default_foreground(LIGHT_GREY);
-    //  game.panel.print_ex(1, 2, BackgroundFlag::None, TextAlignment::Left, format!("Turn Count: {}", game.turn_count));
-    //  game.panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, format!("{:?}", (objects[PLAYER].momentum.unwrap().mx, objects[PLAYER].momentum.unwrap().my)));
-    //  game.panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, get_names_under_mouse(game.mouse, objects, &game.fov));
+    //  TODO add back in turns, health, names under cursor
 
-    //  game.console.set_default_background(LIGHT_GREY);
-    //  game.console.set_default_foreground(RED);
+    sprite_batch.draw(ctx, Default::default())?;
 
-    /* print all special characters */
-    //print_all_special_char(&mut game.console, game.mouse);
+    // Render game ui
+    imgui_wrapper.render(ctx);
 
-    // replace screen with new console contents
-    // TODO removed for ggez
-    // blit(&mut game.console, (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, 0),       1.0, 1.0);
-    // blit(&mut game.panel,   (0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), &mut game.root, (0, PANEL_Y), 1.0, 1.0);
+    graphics::present(ctx)?;
+
+    sprite_batch.clear();
+
+    dbg!(start_time.elapsed().as_millis());
+
+    Ok(())
 }
 
+pub fn draw_char(sprite_batch: &mut SpriteBatch,
+             chr: char,
+             x: i32,
+             y: i32,
+             color: Color) {
+    let chr_x = (chr as i32) % 16;
+    let chr_y = (chr as i32) / 16;
+    let draw_params =
+        DrawParam {
+            src: ggez::graphics::Rect {
+                x: (chr_x as f32) / 16.0,
+                y: (chr_y as f32) / 16.0,
+                w: 1.0 / 16.0,
+                h: 1.0 / 16.0,
+            },
+            dest: Point2 { x: x as f32 * 16.0, y: y as f32 * 16.0} ,
+            rotation: 0.0,
+            scale: mint::Vector2 { x: 1.0, y: 1.0 },
+            offset: Point2 { x: 1.0, y: 1.0 },
+            color: ggez::graphics::Color::new(color.r as f32 / 256.0,
+                                              color.g as f32 / 256.0,
+                                              color.b as f32 / 256.0,
+                                              1.0),
+        };
+
+    sprite_batch.add(draw_params);
+}

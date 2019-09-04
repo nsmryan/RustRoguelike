@@ -153,13 +153,13 @@ impl Object {
         }
     }
 
-    pub fn draw(&self, console: &mut Console) {
+    pub fn draw(&self, console: &mut dyn Console) {
         console.set_default_foreground(self.color);
         console.put_char(self.x, self.y, self.char, BackgroundFlag::None);
         console.set_default_foreground(WHITE);
     }
 
-    pub fn clear(&self, console: &mut Console) {
+    pub fn clear(&self, console: &mut dyn Console) {
         console.put_char(self.x, self.y, ' ', BackgroundFlag::None);
     }
 

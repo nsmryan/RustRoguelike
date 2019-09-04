@@ -51,9 +51,6 @@ use ggez::graphics;
 use ggez::graphics::Image;
 use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::graphics::Drawable;
-use ggez::graphics::DrawParam;
-
-use mint::Point2;
 
 use timer::*;
 
@@ -374,7 +371,7 @@ impl GameState {
         }
         println!("Seed: {} (0x{:X})", seed, seed);
 
-        let mut previous_player_position = (-1, -1);
+        let previous_player_position = (-1, -1);
 
         let mut messages = Messages::new();
 
@@ -433,38 +430,6 @@ impl GameState {
     }
 }
 
-// TODO this could be done with a spritebatch, likely
-// speeding this up.
-// there may be some performance issues in debug, but there
-// are currenly lots of performance issues in debug so it might
-// still be better.
-fn draw_char(sprite_batch: &mut SpriteBatch,
-             chr: char,
-             x: i32,
-             y: i32,
-             color: Color) {
-    let chr_x = (chr as i32) % 16;
-    let chr_y = (chr as i32) / 16;
-    let draw_params =
-        DrawParam {
-            src: ggez::graphics::Rect {
-                x: (chr_x as f32) / 16.0,
-                y: (chr_y as f32) / 16.0,
-                w: 1.0 / 16.0,
-                h: 1.0 / 16.0,
-            },
-            dest: Point2 { x: x as f32 * 16.0, y: y as f32 * 16.0} ,
-            rotation: 0.0,
-            scale: mint::Vector2 { x: 1.0, y: 1.0 },
-            offset: Point2 { x: 1.0, y: 1.0 },
-            color: ggez::graphics::Color::new(color.r as f32 / 256.0,
-                                              color.g as f32 / 256.0,
-                                              color.b as f32 / 256.0,
-                                              1.0),
-        };
-
-    sprite_batch.add(draw_params);
-}
 
 impl EventHandler for GameState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
@@ -483,175 +448,17 @@ impl EventHandler for GameState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let start_time = Instant::now();
-
         let fov_recompute = self.previous_player_position != (self.objects[PLAYER].x, self.objects[PLAYER].y);
-        if fov_recompute {
-            let player = &self.objects[PLAYER];
-            let mut fov_distance = self.config.fov_distance;
-            if self.game.god_mode {
-                fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
-            }
-            self.game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
-        }
 
-        graphics::clear(ctx, graphics::BLACK);
-
-        let (w, h) = graphics::drawable_size(ctx);
-        let block_w = w / MAP_WIDTH as f32;
-        let block_h = h / MAP_HEIGHT as f32;
-
-        for y in 0..MAP_HEIGHT {
-            for x in 0..MAP_WIDTH {
-                let chr;
-
-                // Render game stuff
-                let tile_type = self.map[(x, y)].tile_type;
-                let visible = self.game.fov.is_in_fov(x, y);
-
-                let mut color = match (self.map.tiles[x as usize][y as usize].tile_type, visible) {
-                    (TileType::Wall, true) =>
-                        self.config.color_light_brown.color(),
-                    (TileType::Wall, false) =>
-                        self.config.color_dark_brown.color(),
-
-                    (TileType::Empty, true) =>
-                        lerp(self.config.color_tile_blue_light.color(), self.config.color_tile_blue_dark.color(), rand_from_x_y(x, y)),
-                    (TileType::Empty, false) =>
-                        self.config.color_very_dark_blue.color(),
-
-                    (TileType::Water, true) =>
-                        self.config.color_blueish_grey.color(),
-                    (TileType::Water, false) =>
-                        self.config.color_dark_brown.color(),
-
-                    (TileType::ShortWall, true) =>
-                        self.config.color_light_brown.color(),
-                    (TileType::ShortWall, false) =>
-                        self.config.color_dark_brown.color(),
-
-                    (TileType::Exit, true) =>
-                        self.config.color_orange.color(),
-                    (TileType::Exit, false) =>
-                        self.config.color_red.color(),
-                };
-                //println!("color = {:?}", color);
-
-                // TODO removed while working out rendering
-                let mut explored = self.map.tiles[x as usize][y as usize].explored;
-                if visible {
-                    explored = true;
-                }
-
-                //if explored 
-
-                match tile_type {
-                    TileType::Empty => {
-                        let has_bottom_wall = self.map.tiles[x as usize][y as usize].bottom_wall != Wall::Empty;
-                        let has_left_wall = self.map.tiles[x as usize][y as usize].left_wall != Wall::Empty;
-
-                        if  has_bottom_wall && has_left_wall {
-                            // TODO this is a solid wall- there is no joint left/bottom wall tile
-                            // yet
-                            chr = '\u{DB}';
-                        } else if has_left_wall {
-                            chr = '\u{DD}';
-                        } else if has_bottom_wall {
-                            chr = '\u{DC}';
-                        } else {
-                            chr = '\u{AB}';
-                        }
-
-                        //console.put_char(x, y, chr, BackgroundFlag::None);
-                        //console.set_char_background(x, y, color, BackgroundFlag::Set);
-                    }
-
-                    TileType::Water | TileType::Exit => {
-                        //console.put_char(x, y, ' ', BackgroundFlag::None);
-                        //console.set_char_background(x, y, color, BackgroundFlag::Set);
-                        chr = '\u{AB}';
-                    }
-
-                    TileType::ShortWall | TileType::Wall => {
-                        if visible {
-                            //console.set_char_background(x, y, config.color_tile_blue_light.color(), BackgroundFlag::Set);
-                            color = self.config.color_tile_blue_light.color();
-                        } else {
-                            //console.set_char_background(x, y, config.color_very_dark_blue.color(), BackgroundFlag::Set);
-                            color = self.config.color_very_dark_blue.color();
-                        }
-
-                        let left = self.map[(x - 1, y)].tile_type == tile_type;
-                        let right = self.map[(x + 1, y)].tile_type == tile_type;
-                        let horiz = left || right;
-
-                        let above = self.map[(x, y + 1)].tile_type == tile_type;
-                        let below = self.map[(x, y - 1)].tile_type == tile_type;
-                        let vert = above || below;
-
-                        if tile_type == TileType::Wall {
-                            if horiz && vert {
-                               chr = '\u{DC}';
-                            } else if horiz {
-                               chr = '\u{EC}';
-                            } else if vert {
-                               chr = '\u{ED}';
-                            } else {
-                               chr = '\u{FE}';
-                            }
-                        } else {
-                            if horiz && vert {
-                               chr = tcod::chars::CROSS
-                            } else if horiz {
-                               chr = tcod::chars::HLINE;
-                            } else if vert {
-                               chr = tcod::chars::VLINE;
-                            } else {
-                               chr = tcod::chars::VLINE;
-                            }
-                        };
-                    }
-                }
-
-                //if chr != ' ' {
-                    // NOTE: this takes a good bit of time to create
-                    let chr_text = graphics::Text::new(
-                        format!("{}", chr)
-                    );
-
-                    draw_char(&mut self.sprite_batch, chr, x, y, color);
-                //}
-
-                // TODO removed while working out rendering
-                self.map.tiles[x as usize][y as usize].explored = explored;
-            }
-        }
-
-        /* from render_objects */
-        let mut to_draw: Vec<_> =
-            self.objects.iter().filter(|o| {
-                // TODO removed while testing rendering
-                true // self.game.fov.is_in_fov(o.x, o.y)
-            }).collect();
-        to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
-
-        for object in &to_draw {
-            draw_char(&mut self.sprite_batch, object.char, object.x, object.y, object.color);
-        }
-
-        self.sprite_batch.draw(ctx, Default::default());
-
-        // Render game ui
-        // this takes around 70ms on last measurement
-        self.imgui_wrapper.render(ctx);
-
-        graphics::present(ctx)?;
-
-        self.sprite_batch.clear();
-
-        dbg!(start_time.elapsed().as_millis());
-
-        Ok(())
+        render_all(ctx,
+                   &mut self.game,
+                   &self.objects,
+                   &mut self.map,
+                   &mut self.messages,
+                   &mut self.imgui_wrapper,
+                   &mut self.sprite_batch,
+                   fov_recompute,
+                   &self.config)
     }
 
     fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
