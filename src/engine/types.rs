@@ -185,7 +185,7 @@ impl Object {
         return ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
     }
 
-    pub fn take_damage(&mut self, damage: i32) {
+    pub fn take_damage(&mut self, damage: i32, config: &Config) {
         if let Some(fighter) = self.fighter.as_mut() {
             if damage > 0 {
                 fighter.hp -= damage;
@@ -195,17 +195,17 @@ impl Object {
         if let Some(fighter) = self.fighter {
             if fighter.hp <= 0 {
                 self.alive = false;
-                fighter.on_death.callback(self);
+                fighter.on_death.callback(self, config);
             }
         }
     }
 
-    pub fn attack(&mut self, target: &mut Object) {
+    pub fn attack(&mut self, target: &mut Object, config: &Config) {
         let damage = self.fighter.map_or(0, |f| f.power) - target.fighter.map_or(0, |f| f.defense);
 
         if damage > 0 {
             //messages.message(format!("{} attacks {} for {} hit points.", self.name, target.name, damage), WHITE);
-            target.take_damage(damage);
+            target.take_damage(damage, config);
         } else {
             //messages.message(format!("{} attacks {} but it has no effect!", self.name, target.name), WHITE);
         }
@@ -220,8 +220,8 @@ impl Object {
         }
     }
 
-    pub fn make_stone(x: i32, y: i32) -> Object {
-        Object::new(x, y, 'o', "stone", GREY, false)
+    pub fn make_stone(x: i32, y: i32, config: &Config) -> Object {
+        Object::new(x, y, 'o', "stone", config.color_warm_grey.color(), false)
     }
 }
 
@@ -385,10 +385,12 @@ pub enum DeathCallback {
 impl DeathCallback {
     fn callback(self, object: &mut Object, config: &Config) {
         use DeathCallback::*;
-        let callback: fn(&mut Object) = match self {
+
+        let callback: fn(&mut Object, &Config) = match self {
             Player => player_death,
             Monster => monster_death,
         };
+
         callback(object, config);
     }
 }
@@ -525,7 +527,10 @@ pub struct ColorConfig {
 
 impl ColorConfig {
     pub fn color(&self) -> Color {
-        Color::new(self.r as f32 / 256.0, self.g as f32 / 256.0, self.b as f32 / 256.0, 1.0)
+        Color::new(self.r as f32 / 256.0,
+                   self.g as f32 / 256.0,
+                   self.b as f32 / 256.0,
+                   1.0)
     }
 
     pub fn from_color(color: Color) -> ColorConfig {

@@ -11,6 +11,7 @@ use rand::prelude::*;
 use tcod::line::*;
 
 use ggez::graphics::WHITE;
+use ggez::event::{KeyCode, KeyMods};
 
 use crate::engine::types::*;
 use crate::engine::map::*;
@@ -56,52 +57,52 @@ pub fn handle_input(game: &mut Game,
             //(Key { code: Number8, .. }, true)  |
             //(Key { code: NumPad8, .. }, true) => {
             (InputAction::Up, true) => {
-                player_action = player_move_or_attack(0, -1, map, objects, messages);
+                player_action = player_move_or_attack(0, -1, map, objects, messages, config);
             }
 
             // (Key { code: Down,    .. }, true) |
             // (Key { code: Number2, .. }, true) |
             // (Key { code: NumPad2, .. }, true) => {
             (InputAction::Down, true) => {
-                player_action = player_move_or_attack(0, 1, map, objects, messages);
+                player_action = player_move_or_attack(0, 1, map, objects, messages, config);
             }
 
             //(Key { code: Left,    .. }, true) |
             //(Key { code: Number4, .. }, true) |
             //(Key { code: NumPad4, .. }, true) => {
             (InputAction::Left, true) => {
-                player_action = player_move_or_attack(-1, 0, map, objects, messages);
+                player_action = player_move_or_attack(-1, 0, map, objects, messages, config);
             }
 
             //(Key { code: Right,   .. }, true) |
             //(Key { code: Number6, .. }, true) |
             //(Key { code: NumPad6, .. }, true) => {
             (InputAction::Right, true) =>{
-                player_action = player_move_or_attack(1, 0, map, objects, messages);
+                player_action = player_move_or_attack(1, 0, map, objects, messages, config);
             }
 
             //(Key { code: Number9, .. }, true)  |
             //(Key { code: NumPad9, .. }, true) => {
             (InputAction::UpRight, true) => {
-                player_action = player_move_or_attack(1, -1, map, objects, messages);
+                player_action = player_move_or_attack(1, -1, map, objects, messages, config);
             }
 
             //(Key { code: Number3, .. }, true) |
             //(Key { code: NumPad3, .. }, true) => {
             (InputAction::DownRight, true) => {
-                player_action = player_move_or_attack(1, 1, map, objects, messages);
+                player_action = player_move_or_attack(1, 1, map, objects, messages, config);
             }
 
             //(Key { code: Number1, .. }, true) |
             //(Key { code: NumPad1, .. }, true) => {
             (InputAction::DownLeft, true) => {
-                player_action = player_move_or_attack(-1, 1, map, objects, messages);
+                player_action = player_move_or_attack(-1, 1, map, objects, messages, config);
             }
 
             //(Key { code: Number7, .. }, true) |
             //(Key { code: NumPad7, .. }, true) => {
             (InputAction::UpLeft, true) => {
-                player_action = player_move_or_attack(-1, -1, map, objects, messages);
+                player_action = player_move_or_attack(-1, -1, map, objects, messages, config);
             }
 
             // (Key { code: Number5, .. }, true) |
@@ -206,6 +207,56 @@ pub fn handle_input(game: &mut Game,
     return player_action;
 }
 
+pub fn move_valid(object_id: ObjectId, objects: &[Object], dx: i32, dy: i32, map: &Map) -> bool {
+    let x = objects[object_id].x;
+    let y = objects[object_id].y;
+    let move_line = Line::new((x, y), (x + dx, y + dy));
+
+    let valid = 
+        move_line.into_iter()
+                 .all(|(x_pos, y_pos)| !map.is_blocked(x_pos, y_pos, objects) &&
+                                       !map.is_blocked_by_wall(x_pos, y_pos, dx, dy));
+
+    return valid;
+}
+
+pub fn move_action(input_action: InputAction, object_id: ObjectId, objects: &[Object], map: &Map) -> Option<(i32, i32)> {
+    match objects[object_id].momentum {
+        None => {
+            unimplemented!();
+        }
+
+        Some(momentum) => {
+            unimplemented!();
+        }
+    }
+}
+
+pub fn valid_moves(object_id: ObjectId, objects: &[Object], map: &Map) -> Vec<(i32, i32)> {
+    let x = objects[object_id].x;
+    let y = objects[object_id].y;
+    let mut moves: Vec<(i32, i32)> = Vec::new();
+
+    let possible_moves =
+        vec![InputAction::Left,
+             InputAction::Right,
+             InputAction::Up,
+             InputAction::Down,
+             InputAction::DownLeft,
+             InputAction::DownRight,
+             InputAction::UpLeft,
+             InputAction::UpRight,
+             InputAction::Center];
+
+    for input_action in possible_moves {
+        if let Some(pos) = move_action(input_action, object_id, objects, map) {
+            moves.push(pos);
+        }
+    }
+
+    return moves;
+}
+
 pub fn throw_stone(pos: (i32, i32),
                    mut stone: Object,
                    game: &mut Game,
@@ -304,7 +355,12 @@ fn pick_item_up(object_id: usize,
     }
 }
 
-fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], _messages: &mut Messages) -> PlayerAction {
+fn player_move_or_attack(dx: i32,
+                         dy: i32,
+                         map: &Map,
+                         objects: &mut [Object],
+                         _messages: &mut Messages,
+                         config: &Config) -> PlayerAction {
     let x = objects[PLAYER].x + dx;
     let y = objects[PLAYER].y + dy;
     let target_id = objects.iter().position(|object| {
@@ -315,7 +371,7 @@ fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object], _m
     match target_id {
         Some(target_id) => {
             let (player, target) = mut_two(PLAYER, target_id, objects);
-             player.attack(target);
+             player.attack(target, config);
              player_action = PlayerAction::TookTurn;
         }
 
@@ -346,8 +402,7 @@ pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) -> Pl
     let player_action: PlayerAction;
 
     // if the space is not blocked, move
-    if !map.is_blocked(x + dx, y + dy, objects) &&
-       !map.is_blocked_by_wall(x, y, dx, dy) {
+    if move_valid(PLAYER, objects, dx, dy, map) {
         objects[PLAYER].set_pos(x + dx, y + dy);
         momentum_change = MomentumChange::CurrentDirection;
 
@@ -362,6 +417,8 @@ pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) -> Pl
     } else if has_momentum &&
               side_move &&
               !momentum_diagonal &&
+              move_valid(PLAYER, objects, mx.signum(), my.signum(), map) &&
+              move_valid(PLAYER, objects, dx, dy, map) &&
               !map.is_blocked(x + mx.signum(), y + my.signum(), objects) && // free next to wall
               !map.is_blocked(x + 2*mx.signum(), y + 2*my.signum(), objects) && // free space to move to
               !map.is_blocked_by_wall(x, y, dx, dy) &&
@@ -418,3 +475,86 @@ pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) -> Pl
     return player_action;
 }
 
+pub fn map_keycode_to_action(keycode: KeyCode, keymods: KeyMods) -> InputAction {
+    let input_action: InputAction;
+
+    match keycode {
+        KeyCode::Key8 | KeyCode::Numpad8 | KeyCode::Up => {
+            input_action = InputAction::Up;
+        }
+
+        KeyCode::Key8 | KeyCode::Numpad8 | KeyCode::Right => {
+            input_action = InputAction::Right;
+        }
+
+        KeyCode::Key2 | KeyCode::Numpad2 | KeyCode::Down => {
+            input_action = InputAction::Down;
+        }
+
+        KeyCode::Key4 | KeyCode::Numpad4 | KeyCode::Left => {
+            input_action = InputAction::Left;
+        }
+
+        KeyCode::Key7 | KeyCode::Numpad7 => {
+            input_action = InputAction::UpLeft;
+        }
+
+        KeyCode::Key9 | KeyCode::Numpad9 => {
+            input_action = InputAction::UpRight;
+        }
+
+        KeyCode::Key3 | KeyCode::Numpad3 => {
+            input_action = InputAction::DownRight;
+        }
+
+        KeyCode::Key1 | KeyCode::Numpad1 => {
+            input_action = InputAction::DownLeft;
+        }
+
+        KeyCode::Key5 | KeyCode::Numpad5 => {
+            input_action = InputAction::Center;
+        }
+
+        KeyCode::Return => {
+            if keymods.contains(KeyMods::ALT) {
+                input_action = InputAction::FullScreen;
+            } else {
+                input_action = InputAction::None;
+            }
+        }
+
+        KeyCode::G => {
+            input_action = InputAction::Pickup;
+        }
+
+        KeyCode::I => {
+            input_action = InputAction::Inventory;
+        }
+
+        KeyCode::V => {
+            input_action = InputAction::ExploreAll;
+        }
+
+        KeyCode::Escape => {
+            input_action = InputAction::Exit;
+        }
+
+        KeyCode::R => {
+            input_action = InputAction::RegenerateMap;
+        }
+
+        KeyCode::Add => {
+            input_action = InputAction::ToggleOverlays;
+        }
+
+        KeyCode::T => {
+            input_action = InputAction::GodMode;
+        }
+
+        _ => {
+            input_action = InputAction::None;
+        }
+    }
+
+    return input_action;
+}

@@ -152,7 +152,7 @@ pub fn make_island(map: &mut Map,
         let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
         if map.is_empty(pos.0, pos.1, &objects) {
-            let mut stone = Object::make_stone(pos.0, pos.1);
+            let mut stone = Object::make_stone(pos.0, pos.1, config);
             stone.item = Some(Item::Stone);
             objects.push(stone);
         }

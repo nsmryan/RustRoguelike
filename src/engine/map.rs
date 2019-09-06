@@ -147,20 +147,16 @@ impl Map {
     pub fn is_blocked_by_wall(&self, x: i32, y: i32, dx: i32, dy: i32) -> bool {
         let mut blocked = false;
 
-        if dx == 1 {
+        if dx >=1 {
             blocked = self[(x + dx, y)].left_wall != Wall::Empty;
-            //println!("move right {:?}", self[(x + dx, y)].left_wall);
-        } else if dx == -1 {
+        } else if dx <= -1 {
             blocked = self[(x, y)].left_wall != Wall::Empty;
-            //println!("move left {:?}", self[(x, y)].left_wall);
         } 
         
-        if dy == 1 {
+        if dy >= 1 {
             blocked |= self[(x, y + dy)].bottom_wall != Wall::Empty;
-            //println!("move down {:?}", self[(x, y)].bottom_wall);
-        } else if dy == -1 {
+        } else if dy <= -1 {
             blocked |= self[(x, y)].bottom_wall != Wall::Empty;
-            //println!("move up {:?}", self[(x, y + dy)].bottom_wall);
         }
 
         return blocked;

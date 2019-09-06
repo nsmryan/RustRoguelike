@@ -3,7 +3,6 @@ use std::hash::{Hash, Hasher};
 use std::time::Instant;
 
 #[allow(unused_imports)]use tcod::console::*;
-//#[allow(unused_imports)]use tcod::colors::*;
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
 
@@ -12,7 +11,6 @@ use ggez::graphics::Drawable;
 use ggez::graphics::Color;
 use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::graphics;
-use ggez::graphics::WHITE;
 use ggez::{Context, GameResult};
 
 use mint::Point2;
@@ -55,23 +53,23 @@ pub fn render_bar(panel: &mut Offscreen,
 pub fn menu<T: AsRef<str>>(header: &str, options: &[T], width: i32, root: &mut Root) -> Option<usize> {
     assert!(options.len() <= 26, "Cannot have a menu with more than 26 options");
 
-    let header_height = root.get_height_rect(0, 0, width, SCREEN_HEIGHT, header);
-    let height = options.len() as i32 + header_height;
+    //let header_height = root.get_height_rect(0, 0, width, SCREEN_HEIGHT, header);
+    //let height = options.len() as i32 + header_height;
 
     // let mut window = Offscreen::new(width, height);
 
     //window.set_default_foreground(WHITE);
     //window.print_rect_ex(0, 0, width, height, BackgroundFlag::None, TextAlignment::Left, header);
 
-    for (index, option_text) in options.iter().enumerate() {
-        let menu_letter = (b'a' + index as u8) as char;
-        let text = format!("({}) {}", menu_letter, option_text.as_ref());
+    //for (index, option_text) in options.iter().enumerate() {
+        //let menu_letter = (b'a' + index as u8) as char;
+        //let text = format!("({}) {}", menu_letter, option_text.as_ref());
         //window.print_ex(0, header_height + index as i32,
          //               BackgroundFlag::None, TextAlignment::Left, text);
-    }
+    //}
 
-    let x = SCREEN_WIDTH / 2 - width / 2;
-    let y = SCREEN_HEIGHT / 2 - height / 2;
+    //let x = SCREEN_WIDTH / 2 - width / 2;
+    //let y = SCREEN_HEIGHT / 2 - height / 2;
     //tcod::console::blit(&mut window, (0, 0), (width, height), root, (x, y), 1.0, 0.7);
 
     //root.flush();
@@ -128,7 +126,7 @@ pub fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap)
 // VLINE HLINE thin lines
 // ARROW2_E,ARROW2_N,ARROW2_S,ARROW2_W solid arrow
 // ARROW_E,ARROW_N,ARROW_S,ARROW_W  thin arrow
-fn print_all_special_char(console: &mut Offscreen, mouse: Mouse) {
+fn print_all_special_char(console: &mut Offscreen, _mouse: Mouse) {
     use tcod::chars::*;
     let _ = vec!(ARROW2_E,ARROW2_N,ARROW2_S,ARROW2_W,ARROW_E,ARROW_N,ARROW_S,
                  ARROW_W,BLOCK1,BLOCK2,BLOCK3,BULLET,BULLET_INV,BULLET_SQUARE,
@@ -140,22 +138,22 @@ fn print_all_special_char(console: &mut Offscreen, mouse: Mouse) {
                  POW3,RADIO_SET,RADIO_UNSET,RESERVED,SE,SECTION,
                  SMILIE,SMILIE_INV,SPADE,SUBP_DIAG,SUBP_E, SUBP_N,SUBP_NE,SUBP_NW,SUBP_SE,SUBP_SW
                  ,SW,TEEE,TEEN,TEES,TEEW,THREE_QUARTERS,UMLAUT,VLINE,YEN);
-    let mut index = 0;
+    //let mut index = 0;
 
-    for x in 0..MAP_WIDTH {
-        for y in 0..MAP_HEIGHT {
+    //for x in 0..MAP_WIDTH {
+        //for y in 0..MAP_HEIGHT {
             //console.set_char_background(x, y, BLACK, BackgroundFlag::Set);
             //console.put_char(x, y, ' ', BackgroundFlag::None);
-        }
-    }
+        //}
+    //}
 
     //console.set_default_foreground(WHITE);
-    for key in 0..256 {
-        let index_x = 10 + (index % 32);
-        let index_y = -10 + ((index / 32) * 2);
+    //for key in 0..256 {
+        //let index_x = 10 + (index % 32);
+        //let index_y = -10 + ((index / 32) * 2);
 
-        let x = SCREEN_WIDTH/2 + index_x - 32 as i32;
-        let y = SCREEN_HEIGHT/2 + index_y;
+        //let x = SCREEN_WIDTH/2 + index_x - 32 as i32;
+        //let y = SCREEN_HEIGHT/2 + index_y;
 
         //console.put_char(x,
                               //y,
@@ -169,8 +167,8 @@ fn print_all_special_char(console: &mut Offscreen, mouse: Mouse) {
                                   //format!("{}", key));
         //}
 
-        index += 1;
-    }
+        //index += 1;
+    //}
 }
 
 pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
@@ -258,10 +256,6 @@ pub fn render_map(ctx: &mut Context,
                   map: &mut Map,
                   sprite_batch: &mut SpriteBatch,
                   config: &Config) {
-    let (w, h) = graphics::drawable_size(ctx);
-    let block_w = w / MAP_WIDTH as f32;
-    let block_h = h / MAP_HEIGHT as f32;
-
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
             let chr;
@@ -374,14 +368,7 @@ pub fn render_map(ctx: &mut Context,
                 }
             }
 
-            //if chr != ' ' {
-                // NOTE: this takes a good bit of time to create
-                let chr_text = graphics::Text::new(
-                    format!("{}", chr)
-                );
-
-                draw_char(sprite_batch, chr, x, y, color);
-            //}
+            draw_char(sprite_batch, chr, x, y, color);
 
             // TODO removed while working out rendering
             map.tiles[x as usize][y as usize].explored = explored;
@@ -408,7 +395,10 @@ pub fn render_sound(console: &mut dyn Console,
     }
 }
 
-pub fn render_objects(ctx: &mut Context, fov: &FovMap, objects: &[Object], sprite_batch: &mut SpriteBatch) {
+pub fn render_objects(ctx: &mut Context,
+                      fov: &FovMap,
+                      objects: &[Object],
+                      sprite_batch: &mut SpriteBatch) {
     let mut to_draw: Vec<_> =
         objects.iter().filter(|o| {
             fov.is_in_fov(o.x, o.y)
@@ -492,7 +482,7 @@ pub fn render_all(ctx: &mut Context,
                   game: &mut Game,
                   objects: &[Object],
                   map: &mut Map,
-                  messages: &mut Messages,
+                  _messages: &mut Messages,
                   imgui_wrapper: &mut ImGuiWrapper,
                   sprite_batch: &mut SpriteBatch,
                   fov_recompute: bool,
@@ -507,6 +497,8 @@ pub fn render_all(ctx: &mut Context,
         }
         game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
     }
+
+    sprite_batch.clear();
 
     graphics::clear(ctx, graphics::BLACK);
 
@@ -543,8 +535,6 @@ pub fn render_all(ctx: &mut Context,
 
     graphics::present(ctx)?;
 
-    sprite_batch.clear();
-
     dbg!(start_time.elapsed().as_millis());
 
     Ok(())
@@ -569,10 +559,7 @@ pub fn draw_char(sprite_batch: &mut SpriteBatch,
             rotation: 0.0,
             scale: mint::Vector2 { x: 1.0, y: 1.0 },
             offset: Point2 { x: 1.0, y: 1.0 },
-            color: ggez::graphics::Color::new(color.r as f32 / 256.0,
-                                              color.g as f32 / 256.0,
-                                              color.b as f32 / 256.0,
-                                              1.0),
+            color: color,
         };
 
     sprite_batch.add(draw_params);

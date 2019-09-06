@@ -49,7 +49,6 @@ use ggez::{Context, GameResult};
 use ggez::graphics;
 use ggez::graphics::Image;
 use ggez::graphics::spritebatch::SpriteBatch;
-use ggez::graphics::Drawable;
 
 use timer::*;
 
@@ -231,7 +230,7 @@ pub fn step_game(game: &mut Game,
     if objects[PLAYER].alive && player_action == PlayerAction::TookTurn {
         for id in 1..objects.len() {
             if objects[id].ai.is_some() {
-                ai_take_turn(id, map, objects, &game.fov, &mut game.animations);
+                ai_take_turn(id, map, objects, &game.fov, &mut game.animations, config);
             }
         }
     }
@@ -374,8 +373,6 @@ impl GameState {
 
         let mut messages = Messages::new();
 
-        let mut inventory = vec![Object::make_stone(0, 0)];
-
         let config: Config;
         {
             let mut file = File::open("config.json").expect("Could not open/parse config file config.json");
@@ -383,6 +380,8 @@ impl GameState {
             file.read_to_string(&mut config_string).expect("Could not read contents of config.json");
             config = serde_json::from_str(&config_string).expect("Could not parse config.json file!");
         }
+
+        let inventory = vec![Object::make_stone(0, 0, &config)];
 
         let mut objects = vec!(make_player());
 
@@ -495,81 +494,7 @@ impl EventHandler for GameState {
         keymods: KeyMods,
         _repeat: bool,
     ) {
-        match keycode {
-            KeyCode::Key8 | KeyCode::Numpad8 | KeyCode::Up => {
-                self.input_action = InputAction::Up;
-            }
-
-            KeyCode::Key8 | KeyCode::Numpad8 | KeyCode::Right => {
-                self.input_action = InputAction::Right;
-            }
-
-            KeyCode::Key2 | KeyCode::Numpad2 | KeyCode::Down => {
-                self.input_action = InputAction::Down;
-            }
-
-            KeyCode::Key4 | KeyCode::Numpad4 | KeyCode::Left => {
-                self.input_action = InputAction::Left;
-            }
-
-            KeyCode::Key7 | KeyCode::Numpad7 => {
-                self.input_action = InputAction::UpLeft;
-            }
-
-            KeyCode::Key9 | KeyCode::Numpad9 => {
-                self.input_action = InputAction::UpRight;
-            }
-
-            KeyCode::Key3 | KeyCode::Numpad3 => {
-                self.input_action = InputAction::DownRight;
-            }
-
-            KeyCode::Key1 | KeyCode::Numpad1 => {
-                self.input_action = InputAction::DownLeft;
-            }
-
-            KeyCode::Key5 | KeyCode::Numpad5 => {
-                self.input_action = InputAction::Center;
-            }
-
-            KeyCode::Return => {
-                if keymods.contains(KeyMods::ALT) {
-                    self.input_action = InputAction::FullScreen;
-                }
-            }
-
-            KeyCode::G => {
-                self.input_action = InputAction::Pickup;
-            }
-
-            KeyCode::I => {
-                self.input_action = InputAction::Inventory;
-            }
-
-            KeyCode::V => {
-                self.input_action = InputAction::ExploreAll;
-            }
-
-            KeyCode::Escape => {
-                self.input_action = InputAction::Exit;
-            }
-
-            KeyCode::R => {
-                self.input_action = InputAction::RegenerateMap;
-            }
-
-            KeyCode::Add => {
-                self.input_action = InputAction::ToggleOverlays;
-            }
-
-            KeyCode::T => {
-                self.input_action = InputAction::GodMode;
-            }
-
-            _ => {
-                self.input_action = InputAction::None;
-            }
-        }
+        self.input_action = map_keycode_to_action(keycode, keymods);
     }
 }
 

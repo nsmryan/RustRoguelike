@@ -4,7 +4,7 @@
 #[allow(unused_imports)]use tcod::pathfinding::*;
 use tcod::line::*;
 
-use ggez::graphics::{BLACK, WHITE};
+use ggez::graphics::BLACK;
 
 use crate::constants::*;
 use crate::engine::types::*;
@@ -204,7 +204,8 @@ pub fn ai_take_turn(monster_id: usize,
                     map: &Map,
                     objects: &mut Vec<Object>,
                     fov_map: &FovMap,
-                    animations: &mut Vec<Animation>) {
+                    animations: &mut Vec<Animation>,
+                    config: &Config) {
     let turn: AiTurn;
 
     match objects[monster_id].ai {
@@ -222,7 +223,8 @@ pub fn ai_take_turn(monster_id: usize,
                      map,
                      objects,
                      fov_map,
-                     animations);
+                     animations,
+                     config);
 }
 
 pub fn ai_apply_actions(monster_id: usize,
@@ -230,7 +232,8 @@ pub fn ai_apply_actions(monster_id: usize,
                         map: &Map,
                         objects: &mut Vec<Object>,
                         _fov_map: &FovMap,
-                        animations: &mut Vec<Animation>) {
+                        animations: &mut Vec<Animation>,
+                        config: &Config) {
     for action in turn.actions().iter() {
         match action {
             AiAction::Move(pos) => {
@@ -243,7 +246,7 @@ pub fn ai_apply_actions(monster_id: usize,
                 let (target, monster) = mut_two(*target_id, monster_id, objects);
 
                 // apply attack 
-                monster.attack(target);
+                monster.attack(target, config);
 
                 // add animation
                 let mut thrown_obj =
