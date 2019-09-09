@@ -221,15 +221,113 @@ pub fn move_valid(object_id: ObjectId, objects: &[Object], dx: i32, dy: i32, map
 }
 
 pub fn move_action(input_action: InputAction, object_id: ObjectId, objects: &[Object], map: &Map) -> Option<(i32, i32)> {
+    let pos: Option<(i32, i32)>;
     match objects[object_id].momentum {
         None => {
-            unimplemented!();
+            match input_action {
+                Left => pos = Some((-1, 0));
+                Right => pos = Some((1, 0));
+                Up => pos = Some((0, 1));
+                Down => pos = Some((0, -1));
+                DownLeft => pos = Some((-1, -1));
+                DownRight => pos = Some((-1, 1));
+                UpLeft => pos = Some((-1, 1));
+                UpRight => pos = Some((1, 1));
+                Center => pos = Some((0, 0));
+                _ => panic!(format!("Unexpected input {:?}!", input_action));
+            }
         }
 
         Some(momentum) => {
-            unimplemented!();
+            let momentum = objects[PLAYER].momentum.unwrap();
+            let mut mx = momentum.mx;
+            let mut my = momentum.my;
+            let mut took_half_turn = false;
+
+            let has_momentum = mx.abs() > 1 || my.abs() > 1;
+            let momentum_diagonal = mx.abs() != 0 && my.abs() != 0;
+            let side_move = dx.abs() != 0 && dy.abs() != 0;
+            let same_direction = mx.signum() == dx.signum() && my.signum() == dy.signum();
+            let momentum_magnitude = cmp::max(mx, my);
+
+            let momentum_change: MomentumChange;
+
+            let player_action: PlayerAction;
+
+            // if the space is not blocked, move
+            if move_valid(PLAYER, objects, dx, dy, map) {
+                objects[PLAYER].set_pos(x + dx, y + dy);
+                momentum_change = MomentumChange::CurrentDirection;
+
+                // if the player has enough momentum, they get another action, taking only a half turn
+                // if the player previous took a half turn, they cannot take another
+                if momentum_magnitude > 1 && !momentum.took_half_turn {
+                    player_action = PlayerAction::TookHalfTurn;
+                    took_half_turn = true;
+                } else {
+                    player_action = PlayerAction::TookTurn;
+                }
+            } else if has_momentum &&
+                      side_move &&
+                      !momentum_diagonal &&
+                      move_valid(PLAYER, objects, mx.signum(), my.signum(), map) &&
+                      move_valid(PLAYER, objects, dx, dy, map) &&
+                      !map.is_blocked(x + mx.signum(), y + my.signum(), objects) && // free next to wall
+                      !map.is_blocked(x + 2*mx.signum(), y + 2*my.signum(), objects) && // free space to move to
+                      !map.is_blocked_by_wall(x, y, dx, dy) &&
+                      map[(x + dx, y + dy)].tile_type == TileType::Wall {
+                // jump off wall
+                objects[PLAYER].set_pos(x + 2*mx.signum(), y + 2*my.signum());
+                momentum_change = MomentumChange::PreviousDirection;
+                player_action = PlayerAction::TookTurn;
+            } else if has_momentum &&
+                      same_direction &&
+                      map[(x + dx, y + dy)].tile_type == TileType::ShortWall &&
+                      !map.is_blocked(x + 2*dx, y + 2*dy, objects) &&
+                      !map.is_blocked_by_wall(x, y, dx, dy) {
+                // if the location is blocked by a short wall, and the next location in the
+                // line is not, and we have momentum, then jump over obstacle
+                objects[PLAYER].set_pos(x + 2*dx, y + 2*dy);
+                momentum_change = MomentumChange::CurrentDirection;
+                player_action = PlayerAction::TookTurn;
+            } else {
+                // otherwise we hit a wall and lose our momentum
+                momentum_change = MomentumChange::Lost;
+                player_action = PlayerAction::TookTurn;
+            }
+
+            match momentum_change {
+                MomentumChange::Lost => {
+                    mx = 0;
+                    my = 0;
+                }
+
+                MomentumChange::PreviousDirection => {
+                    mx = clamp(mx + mx.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
+                    my = clamp(my + my.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
+                }
+
+                MomentumChange::CurrentDirection => {
+                    if same_direction {
+                        mx = clamp(mx + dx, -MAX_MOMENTUM, MAX_MOMENTUM);
+                        my = clamp(my + dy, -MAX_MOMENTUM, MAX_MOMENTUM);
+                    } else {
+                        mx = dx;
+                        my = dy;
+                    }
+                }
+            }
+
+            objects[PLAYER].momentum = 
+                Some(Momentum {
+                    mx: mx,
+                    my: my,
+                    took_half_turn: took_half_turn,
+                });
         }
     }
+
+    return pos;
 }
 
 pub fn valid_moves(object_id: ObjectId, objects: &[Object], map: &Map) -> Vec<(i32, i32)> {
