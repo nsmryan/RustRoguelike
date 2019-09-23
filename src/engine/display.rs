@@ -256,8 +256,8 @@ pub fn render_map(ctx: &mut Context,
                   map: &mut Map,
                   sprite_batch: &mut SpriteBatch,
                   config: &Config) {
-    for y in 0..MAP_HEIGHT {
-        for x in 0..MAP_WIDTH {
+    for y in 0..map.height() {
+        for x in 0..map.width() {
             let chr;
 
             // Render game stuff
@@ -381,8 +381,8 @@ pub fn render_sound(console: &mut dyn Console,
                     animations: &Vec<Animation>,
                     map: &Map,
                     objects: &[Object]) {
-    for y in 0..MAP_HEIGHT {
-        for x in 0..MAP_WIDTH {
+    for y in 1..map.height() {
+        for x in 0..map.width() {
             // after animations play, draw sound for a frame
             if animations.len() == 0 {
                if let Some(sound_loc) = map[(x, y)].sound {
@@ -535,7 +535,7 @@ pub fn render_all(ctx: &mut Context,
 
     graphics::present(ctx)?;
 
-    dbg!(start_time.elapsed().as_millis());
+    //dbg!(start_time.elapsed().as_millis());
 
     Ok(())
 }

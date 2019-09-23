@@ -12,8 +12,8 @@ pub const LIMIT_FPS: i32 = 20;
 
 pub const TIME_BETWEEN_FRAMES_MS: i64 = 25;
 
-pub const MAP_WIDTH: i32 = 80;
-pub const MAP_HEIGHT: i32 = 43;
+pub const MAP_WIDTH: i32 = 60;
+pub const MAP_HEIGHT: i32 = 60;
 
 pub const FOV_ALGO: FovAlgorithm = FovAlgorithm::Basic;
 pub const FOV_LIGHT_WALLS: bool = true;

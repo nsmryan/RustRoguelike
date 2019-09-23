@@ -11,6 +11,7 @@ extern crate timer;
 extern crate chrono;
 extern crate rodio;
 extern crate mint;
+extern crate rexpaint;
 
 mod engine;
 mod constants;
@@ -53,6 +54,8 @@ use ggez::graphics::spritebatch::SpriteBatch;
 use timer::*;
 
 use rodio::Source;
+
+use rexpaint::*;
 
 use engine::types::*;
 use constants::*;
@@ -245,13 +248,78 @@ pub fn step_game(game: &mut Game,
       _ => (),
     }
 
-  if config.load_map_file && Path::new("map.csv").exists() {
-      *map = read_map("map.csv");
+  if config.load_map_file && Path::new("map.xp").exists() {
+      *map = read_map_xp("map.xp");
   }
+  //if config.load_map_file && Path::new("map.csv").exists() {
+  //    *map = read_map("map.csv");
+  //}
 
   // TODO removed for ggez
   // return !game.root.window_closed();
   return false; 
+}
+
+pub fn read_map_xp(file_name: &str) -> Map {
+    let file = File::open(file_name).unwrap();
+    let mut buf_reader = BufReader::new(file);
+    //let mut rot_map = Vec::new();
+    let mut map_lines = Vec::new();
+
+    let xp = XpFile::read(&mut buf_reader).unwrap();
+
+    for layer in xp.layers {
+        let width = layer.width;
+        let height = layer.height;
+
+        println!("Layers: {} {}", width, height);
+
+        for x in 0..width {
+            let mut line = Vec::new();
+
+            for y in 0..height {
+                let index = width * x + y;
+                let cell = layer.cells[index];
+
+                let chr = std::char::from_u32(cell.ch).unwrap();
+                println!("({}, {})", x, y);
+                let tile = 
+                    match chr {
+                        ' ' => Tile::empty(),
+                        '.' => Tile::short_wall(),
+                        '#' | '\u{DC}' | '\u{EC}' | '\u{ED}' | '\u{FE}' => Tile::wall(),
+                        'w' | '\u{AB}' => Tile::water(),
+                        'x' => Tile::exit(),
+                        '\u{DB}' | '\u{DD}' | '\u{AB}' => Tile::empty(),
+                        '\u{99}' => Tile::empty(), // TODO torch?
+                        '\u{8d}' => Tile::empty(), // TODO dot?
+                        '\u{91}' => Tile::empty(), // TODO orc?
+                        '\u{a1}' => Tile::empty(), // TODO mage?
+                        '\u{92}' => Tile::empty(), // TODO rocks?
+                        '\u{a2}' => Tile::empty(), // TODO idk?
+                        '\u{9f}' => Tile::empty(), // TODO idk?
+                        '\u{86}' => Tile::empty(), // TODO idk?
+                        _ => Tile::empty(), // panic!(format!("Unexpected char '{}' ({}) in map!", chr, cell.ch)),
+                    };
+
+                line.push(tile);
+            }
+
+            map_lines.push(line);
+        }
+    }
+
+    let map = Map::with_vec(map_lines);
+
+    //for x in 0..MAP_WIDTH {
+    //    let mut line = Vec::new();
+    //    for y in 0..MAP_HEIGHT {
+    //        line.push(rot_map[y as usize][x as usize]);
+    //    }
+    //    map.tiles.push(line);
+    //}
+
+    return map;
 }
 
 pub fn read_map(file_name: &str) -> Map {
@@ -260,10 +328,16 @@ pub fn read_map(file_name: &str) -> Map {
     let mut map = Map::empty();
     let mut rot_map = Vec::new();
 
+    let mut width = 0;
+    let mut height = 0;
+
     for line in file.lines() {
         let mut rot_line = Vec::new();
+        height += 1;
 
         for chr in line.unwrap().chars() {
+            width += 1;
+
             let tile = 
                 match chr {
                     ' ' => Tile::empty(),
@@ -278,9 +352,9 @@ pub fn read_map(file_name: &str) -> Map {
         rot_map.push(rot_line)
     }
 
-    for x in 0..MAP_WIDTH {
+    for x in 0..width {
         let mut line = Vec::new();
-        for y in 0..MAP_HEIGHT {
+        for y in 0..height {
             line.push(rot_map[y as usize][x as usize]);
         }
         map.tiles.push(line);
@@ -312,12 +386,12 @@ pub fn write_map(file_name: &str, map: &Map) {
     }
 
     let mut final_map_vec = Vec::new();
-    println!("MAP_HEIGHT = {}", MAP_HEIGHT);
-    println!("MAP_WIDTH = {}", MAP_WIDTH);
+    println!("height = {}", map.height());
+    println!("MAP_WIDTH = {}", map.width());
     println!("map_vec.len() = {}", map_vec.len());
     println!("map_vec[0].len() = {}", map_vec[0].len());
-    for y in 0..MAP_HEIGHT {
-        for x in 0..MAP_WIDTH {
+    for y in 0..map.height() {
+        for x in 0..map.width() {
             final_map_vec.push(map_vec[x as usize][y as usize]);
         }
         final_map_vec.push('\n' as u8);

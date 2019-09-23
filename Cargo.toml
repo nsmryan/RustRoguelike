@@ -25,6 +25,8 @@ imgui-gfx-renderer = "0.1.0"
 
 mint = "0.5.1"
 
+rexpaint = "*"
+
 [profile.dev]
 opt-level = 0
 debug = true

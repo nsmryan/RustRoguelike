@@ -88,14 +88,14 @@ pub fn make_island(map: &mut Map,
                    objects: &mut Vec<Object>,
                    config: &Config,
                    rng: &mut SmallRng) -> Position {
-    let center = Position(MAP_WIDTH/2, MAP_HEIGHT/2);
+    let center = Position(map.width() / 2, map.height() / 2);
 
     let mut water_tile_positions = Vec::new();
 
     /* Create Island */
     // the center has land, the remaining square are filled with water
-    for x in 0..MAP_WIDTH {
-        for y in 0..MAP_HEIGHT {
+    for x in 0..map.width() {
+        for y in 0..map.height() {
             let pos = Position(x, y);
             if pos.distance(&center) <= ISLAND_RADIUS {
                 map.tiles[x as usize][y as usize] = Tile::empty();
@@ -195,8 +195,8 @@ pub fn make_island(map: &mut Map,
         }
     }
 
-    let x = rng.gen_range(0, MAP_WIDTH);
-    let y = rng.gen_range(0, MAP_HEIGHT);
+    let x = rng.gen_range(0, map.width());
+    let y = rng.gen_range(0, map.height());
 
     if !map.is_blocked(x, y, objects) {
         let mut object = Object::new(x,y, '\u{FD}', "goal", config.color_red.color(), false);

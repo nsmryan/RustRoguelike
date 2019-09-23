@@ -147,7 +147,7 @@ impl Map {
     pub fn is_blocked_by_wall(&self, x: i32, y: i32, dx: i32, dy: i32) -> bool {
         let mut blocked = false;
 
-        if dx >=1 {
+        if dx >= 1 {
             blocked = self[(x + dx, y)].left_wall != Wall::Empty;
         } else if dx <= -1 {
             blocked = self[(x, y)].left_wall != Wall::Empty;
@@ -179,11 +179,19 @@ impl Map {
     }
 
     pub fn is_empty(&self, x: i32, y: i32, _objects: &[Object]) -> bool {
-        self[(x, y)].tile_type == TileType::Empty
+        return self[(x, y)].tile_type == TileType::Empty;
     }
 
     pub fn size(&self) -> (i32, i32) {
-        (self.tiles.len() as i32, self.tiles[0].len() as i32)
+        return (self.tiles.len() as i32, self.tiles[0].len() as i32);
+    }
+
+    pub fn width(&self) -> i32 {
+        return self.tiles.len() as i32;
+    }
+
+    pub fn height(&self) -> i32 {
+        return self.tiles[0].len() as i32;
     }
 
     pub fn make_tcod_map(&self) -> tcod::map::Map {

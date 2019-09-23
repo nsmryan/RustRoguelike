@@ -53,56 +53,12 @@ pub fn handle_input(game: &mut Game,
         }
     } else {
         match (input_action, player_alive) {
-            //(Key { code: Up,      .. }, true)  |
-            //(Key { code: Number8, .. }, true)  |
-            //(Key { code: NumPad8, .. }, true) => {
-            (InputAction::Up, true) => {
-                player_action = player_move_or_attack(0, -1, map, objects, messages, config);
-            }
-
-            // (Key { code: Down,    .. }, true) |
-            // (Key { code: Number2, .. }, true) |
-            // (Key { code: NumPad2, .. }, true) => {
-            (InputAction::Down, true) => {
-                player_action = player_move_or_attack(0, 1, map, objects, messages, config);
-            }
-
-            //(Key { code: Left,    .. }, true) |
-            //(Key { code: Number4, .. }, true) |
-            //(Key { code: NumPad4, .. }, true) => {
-            (InputAction::Left, true) => {
-                player_action = player_move_or_attack(-1, 0, map, objects, messages, config);
-            }
-
-            //(Key { code: Right,   .. }, true) |
-            //(Key { code: Number6, .. }, true) |
-            //(Key { code: NumPad6, .. }, true) => {
-            (InputAction::Right, true) =>{
-                player_action = player_move_or_attack(1, 0, map, objects, messages, config);
-            }
-
-            //(Key { code: Number9, .. }, true)  |
-            //(Key { code: NumPad9, .. }, true) => {
-            (InputAction::UpRight, true) => {
-                player_action = player_move_or_attack(1, -1, map, objects, messages, config);
-            }
-
-            //(Key { code: Number3, .. }, true) |
-            //(Key { code: NumPad3, .. }, true) => {
-            (InputAction::DownRight, true) => {
-                player_action = player_move_or_attack(1, 1, map, objects, messages, config);
-            }
-
-            //(Key { code: Number1, .. }, true) |
-            //(Key { code: NumPad1, .. }, true) => {
-            (InputAction::DownLeft, true) => {
-                player_action = player_move_or_attack(-1, 1, map, objects, messages, config);
-            }
-
-            //(Key { code: Number7, .. }, true) |
-            //(Key { code: NumPad7, .. }, true) => {
-            (InputAction::UpLeft, true) => {
-                player_action = player_move_or_attack(-1, -1, map, objects, messages, config);
+            (InputAction::Move(move_action), true) => {
+                player_action = player_move_or_attack(move_action,
+                                                      map,
+                                                      objects,
+                                                      messages,
+                                                      config);
             }
 
             // (Key { code: Number5, .. }, true) |
@@ -207,6 +163,8 @@ pub fn handle_input(game: &mut Game,
     return player_action;
 }
 
+/// Check whether a move, given as an offset from an object's current position,
+/// hits a wall or object.
 pub fn move_valid(object_id: ObjectId, objects: &[Object], dx: i32, dy: i32, map: &Map) -> bool {
     let x = objects[object_id].x;
     let y = objects[object_id].y;
@@ -220,6 +178,7 @@ pub fn move_valid(object_id: ObjectId, objects: &[Object], dx: i32, dy: i32, map
     return valid;
 }
 
+/*
 pub fn move_action(input_action: InputAction, object_id: ObjectId, objects: &[Object], map: &Map) -> Option<(i32, i32)> {
     let pos: Option<(i32, i32)>;
     match objects[object_id].momentum {
@@ -354,6 +313,7 @@ pub fn valid_moves(object_id: ObjectId, objects: &[Object], map: &Map) -> Vec<(i
 
     return moves;
 }
+*/
 
 pub fn throw_stone(pos: (i32, i32),
                    mut stone: Object,
@@ -453,65 +413,74 @@ fn pick_item_up(object_id: usize,
     }
 }
 
-fn player_move_or_attack(dx: i32,
-                         dy: i32,
+fn player_move_or_attack(move_action: MoveAction,
                          map: &Map,
                          objects: &mut [Object],
                          _messages: &mut Messages,
                          config: &Config) -> PlayerAction {
-    let x = objects[PLAYER].x + dx;
-    let y = objects[PLAYER].y + dy;
-    let target_id = objects.iter().position(|object| {
-        object.fighter.is_some() && object.pos() == (x, y)
-    });
+    let player_action: PlayerAction;
 
-    let player_action;
-    match target_id {
-        Some(target_id) => {
+    let orig_pos = objects[PLAYER].pos();
+
+    match calculate_move(move_action, PLAYER, objects) {
+        Some(Movement::Collide(dx, dy, target_id)) => {
             let (player, target) = mut_two(PLAYER, target_id, objects);
-             player.attack(target, config);
-             player_action = PlayerAction::TookTurn;
+            player.attack(target, config);
+            player_action = PlayerAction::TookTurn;
+        }
+
+        Some(Movement::Move(x, y)) => {
+            objects[PLAYER].set_pos(x, y);
+            let mut momentum = objects[PLAYER].momentum.unwrap();
+            momentum.moved(dx, dy);
+            if momentum.magnitude() > 1 && !momentum.took_half_turn {
+                player_action = PlayerAction::TookHalfTurn;
+            } else {
+                player_action = PlayerAction::TookTurn;
+            }
+
+            momentum.took_half_turn = player_action == PlayerAction::TookHalfTurn;
+            objects[PLAYER].momentum = Some(momentum);
+        }
+
+        Some(Movement::WallKick(x, y, dir_x, dir_y)) => {
+            objects[PLAYER].set_pos(x, y);
+            momentum.set_momentum(dir_x, dir_y);
+
+            // TODO could check for enemy and attack
         }
 
         None => {
-            player_action = move_player_by(objects, map, dx, dy);
+             player_action = PlayerAction::DidntTakeTurn;
         }
     }
 
     return player_action;
 }
 
-pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) -> PlayerAction {
-    let (x, y) = objects[PLAYER].pos();
+pub fn calculate_move(action: MoveAction,
+                      object_id: ObjectId,
+                      objects: &mut [Object],
+                      map: &Map) -> Option<Movement> {
+    let movement: Option<Movement>;
 
-    let momentum = objects[PLAYER].momentum.unwrap();
-    let mut mx = momentum.mx;
-    let mut my = momentum.my;
-    let mut took_half_turn = false;
+    let (x, y) = objects[object_id].pos();
+    let (dx, dy) = action.into_move();
 
-    let has_momentum = mx.abs() > 1 || my.abs() > 1;
-    let momentum_diagonal = mx.abs() != 0 && my.abs() != 0;
-    let side_move = dx.abs() != 0 && dy.abs() != 0;
+    if move_valid(object_id, objects, dx, dy, map) {
+        match objects[object_id].momentum {
+            Some(mut momentum) => {
+                let side_move = dx.abs() != 0 && dy.abs() != 0;
+
+                // if max momentum, and will hit short wall, than jump over wall
+                if momentum.magnitude() == MAX_MOMENTUM &&
+                   map[(x + dx, y + dy)].tile_type == TileType::ShortWall &&
+                   !map.is_blocked(x + 2 * dx.signum(), y + 2 * dy.signum(), objects) &&
+                   !map.is_blocked_by_wall(x, y, dx, dy) {
+                       movement = Movement::Move(x + 2 * dx.signum(), y + 2 * dy.signum());
+
+                // check for diagonal wall kick
     let same_direction = mx.signum() == dx.signum() && my.signum() == dy.signum();
-    let momentum_magnitude = cmp::max(mx, my);
-
-    let momentum_change: MomentumChange;
-
-    let player_action: PlayerAction;
-
-    // if the space is not blocked, move
-    if move_valid(PLAYER, objects, dx, dy, map) {
-        objects[PLAYER].set_pos(x + dx, y + dy);
-        momentum_change = MomentumChange::CurrentDirection;
-
-        // if the player has enough momentum, they get another action, taking only a half turn
-        // if the player previous took a half turn, they cannot take another
-        if momentum_magnitude > 1 && !momentum.took_half_turn {
-            player_action = PlayerAction::TookHalfTurn;
-            took_half_turn = true;
-        } else {
-            player_action = PlayerAction::TookTurn;
-        }
     } else if has_momentum &&
               side_move &&
               !momentum_diagonal &&
@@ -521,56 +490,24 @@ pub fn move_player_by(objects: &mut [Object], map: &Map, dx: i32, dy: i32) -> Pl
               !map.is_blocked(x + 2*mx.signum(), y + 2*my.signum(), objects) && // free space to move to
               !map.is_blocked_by_wall(x, y, dx, dy) &&
               map[(x + dx, y + dy)].tile_type == TileType::Wall {
-        // jump off wall
+
         objects[PLAYER].set_pos(x + 2*mx.signum(), y + 2*my.signum());
-        momentum_change = MomentumChange::PreviousDirection;
-        player_action = PlayerAction::TookTurn;
-    } else if has_momentum &&
-              same_direction &&
-              map[(x + dx, y + dy)].tile_type == TileType::ShortWall &&
-              !map.is_blocked(x + 2*dx, y + 2*dy, objects) &&
-              !map.is_blocked_by_wall(x, y, dx, dy) {
-        // if the location is blocked by a short wall, and the next location in the
-        // line is not, and we have momentum, then jump over obstacle
-        objects[PLAYER].set_pos(x + 2*dx, y + 2*dy);
-        momentum_change = MomentumChange::CurrentDirection;
-        player_action = PlayerAction::TookTurn;
+
+                // otherwise move normally
+                } else {
+                    movement = Some(Movement::Move(x + dx, y + dy));
+                }
+            },
+
+            None => {
+                movement = Some(Movement::Move(x + dx, y + dy));
+            },
+        }
     } else {
-        // otherwise we hit a wall and lose our momentum
-        momentum_change = MomentumChange::Lost;
-        player_action = PlayerAction::TookTurn;
+        movement = None;
     }
 
-    match momentum_change {
-        MomentumChange::Lost => {
-            mx = 0;
-            my = 0;
-        }
-
-        MomentumChange::PreviousDirection => {
-            mx = clamp(mx + mx.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
-            my = clamp(my + my.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
-        }
-
-        MomentumChange::CurrentDirection => {
-            if same_direction {
-                mx = clamp(mx + dx, -MAX_MOMENTUM, MAX_MOMENTUM);
-                my = clamp(my + dy, -MAX_MOMENTUM, MAX_MOMENTUM);
-            } else {
-                mx = dx;
-                my = dy;
-            }
-        }
-    }
-
-    objects[PLAYER].momentum = 
-        Some(Momentum {
-            mx: mx,
-            my: my,
-            took_half_turn: took_half_turn,
-        });
-
-    return player_action;
+    return movement;
 }
 
 pub fn map_keycode_to_action(keycode: KeyCode, keymods: KeyMods) -> InputAction {
@@ -578,39 +515,39 @@ pub fn map_keycode_to_action(keycode: KeyCode, keymods: KeyMods) -> InputAction 
 
     match keycode {
         KeyCode::Key8 | KeyCode::Numpad8 | KeyCode::Up => {
-            input_action = InputAction::Up;
+            input_action = InputAction::Move(MoveAction::Up);
         }
 
         KeyCode::Key8 | KeyCode::Numpad8 | KeyCode::Right => {
-            input_action = InputAction::Right;
+            input_action = InputAction::Move(MoveAction::Right);
         }
 
         KeyCode::Key2 | KeyCode::Numpad2 | KeyCode::Down => {
-            input_action = InputAction::Down;
+            input_action = InputAction::Move(MoveAction::Down);
         }
 
         KeyCode::Key4 | KeyCode::Numpad4 | KeyCode::Left => {
-            input_action = InputAction::Left;
+            input_action = InputAction::Move(MoveAction::Left);
         }
 
         KeyCode::Key7 | KeyCode::Numpad7 => {
-            input_action = InputAction::UpLeft;
+            input_action = InputAction::Move(MoveAction::UpLeft);
         }
 
         KeyCode::Key9 | KeyCode::Numpad9 => {
-            input_action = InputAction::UpRight;
+            input_action = InputAction::Move(MoveAction::UpRight);
         }
 
         KeyCode::Key3 | KeyCode::Numpad3 => {
-            input_action = InputAction::DownRight;
+            input_action = InputAction::Move(MoveAction::DownRight);
         }
 
         KeyCode::Key1 | KeyCode::Numpad1 => {
-            input_action = InputAction::DownLeft;
+            input_action = InputAction::Move(MoveAction::DownLeft);
         }
 
         KeyCode::Key5 | KeyCode::Numpad5 => {
-            input_action = InputAction::Center;
+            input_action = InputAction::Move(MoveAction::Center);
         }
 
         KeyCode::Return => {

@@ -6,6 +6,8 @@ use tcod::map::{Map as FovMap};
 use tcod::input::Mouse;
 use tcod::line::*;
 
+use num::clamp;
+
 use ggez::graphics::Color;
 
 use crate::constants::*;
@@ -306,7 +308,7 @@ pub enum PlayerAction {
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum InputAction {
+pub enum MoveAction {
     Left,
     Right,
     Up,
@@ -316,6 +318,27 @@ pub enum InputAction {
     UpLeft,
     UpRight,
     Center,
+}
+
+impl MoveAction {
+    pub fn into_move(self) -> (i32, i32) {
+        match self {
+            Left => (-1, 0),
+            Right => (1, 0),
+            Up => (0, -1),
+            Down => (0, 1),
+            DownLeft => (-1, 1),
+            DownRight => (1, 1),
+            UpLeft => (-1, -1),
+            UpRight => (1, -1),
+            Center => (0, 0),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum InputAction {
+    Move(MoveAction),
     Pickup,
     Inventory,
     Exit,
@@ -431,6 +454,29 @@ impl Momentum {
     pub fn magnitude(&self) -> i32 {
         return cmp::max(self.mx, self.my);
     }
+
+    pub fn diagonal(&self) -> i32 {
+        return mx.abs() != 0 && my.abs() != 0;
+    }
+
+    pub fn moved(&mut self, dx: i32, y: dy) {
+        if dx.signum() != self.mx.signum() {
+            self.mx = 0;
+        } else {
+            self.mx = clamp(self.mx + dx.signum(), MAX_MOMENTUM, -MAX_MOMENTUM);
+        }
+
+        if dy.signum() != self.my.signum() {
+            self.my = 0;
+        } else {
+            self.my = clamp(self.my + dy.signum(), MAX_MOMENTUM, -MAX_MOMENTUM);
+        }
+    }
+
+    pub fn set_momentum(&mut self, mx: i32, y: my) {
+        self.mx = mx;
+        self.my = my;
+    }
 }
 
 
@@ -439,6 +485,14 @@ pub enum MomentumChange {
     Lost,
     PreviousDirection,
     CurrentDirection,
+}
+
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Movement {
+    Move(i32, i32),
+    Collide(i32, i32, ObjectId),
+    WallKick(i32, i32, i32, i32), // x, y, dir_x, dir_y
 }
 
 
