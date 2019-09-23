@@ -477,6 +477,11 @@ impl Momentum {
         self.mx = mx;
         self.my = my;
     }
+
+    pub fn clear(&mut self) {
+        self.mx = 0;
+        self.my = 0;
+    }
 }
 
 
@@ -491,7 +496,8 @@ pub enum MomentumChange {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Movement {
     Move(i32, i32),
-    Collide(i32, i32, ObjectId),
+    Attack(i32, i32, ObjectId),
+    Collide(i32, i32),
     WallKick(i32, i32, i32, i32), // x, y, dir_x, dir_y
 }
 

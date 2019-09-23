@@ -423,10 +423,15 @@ fn player_move_or_attack(move_action: MoveAction,
     let orig_pos = objects[PLAYER].pos();
 
     match calculate_move(move_action, PLAYER, objects) {
-        Some(Movement::Collide(dx, dy, target_id)) => {
+        Some(Movement::Attack(dx, dy, target_id)) => {
             let (player, target) = mut_two(PLAYER, target_id, objects);
             player.attack(target, config);
             player_action = PlayerAction::TookTurn;
+        }
+
+        Some(Movement::Collide(x, y)) => {
+            objects[PLAYER].set_pos(x, y);
+            objects[PLAYER].momentum.unwrap().clear();
         }
 
         Some(Movement::Move(x, y)) => {
@@ -467,6 +472,12 @@ pub fn calculate_move(action: MoveAction,
     let (x, y) = objects[object_id].pos();
     let (dx, dy) = action.into_move();
 
+    // TODO check if hit wall
+    //        if wall, check for wall kick
+    //        else collide with wall
+    //      check if hit enemy
+    //        if so, move to them and return collide
+    //
     if move_valid(object_id, objects, dx, dy, map) {
         match objects[object_id].momentum {
             Some(mut momentum) => {
