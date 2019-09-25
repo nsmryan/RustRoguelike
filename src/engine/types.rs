@@ -451,15 +451,19 @@ impl Default for Momentum {
 }
 
 impl Momentum {
+    pub fn running(&mut self, mx: i32, my: i32) -> bool {
+        return self.magnitude() != 0;
+    }
+
     pub fn magnitude(&self) -> i32 {
         return cmp::max(self.mx, self.my);
     }
 
-    pub fn diagonal(&self) -> i32 {
-        return mx.abs() != 0 && my.abs() != 0;
+    pub fn diagonal(&self) -> bool {
+        return self.mx.abs() != 0 && self.my.abs() != 0;
     }
 
-    pub fn moved(&mut self, dx: i32, y: dy) {
+    pub fn moved(&mut self, dx: i32, dy: i32) {
         if dx.signum() != self.mx.signum() {
             self.mx = 0;
         } else {
@@ -473,7 +477,7 @@ impl Momentum {
         }
     }
 
-    pub fn set_momentum(&mut self, mx: i32, y: my) {
+    pub fn set_momentum(&mut self, mx: i32, my: i32) {
         self.mx = mx;
         self.my = my;
     }
@@ -499,6 +503,7 @@ pub enum Movement {
     Attack(i32, i32, ObjectId),
     Collide(i32, i32),
     WallKick(i32, i32, i32, i32), // x, y, dir_x, dir_y
+    JumpWall(i32, i32),
 }
 
 

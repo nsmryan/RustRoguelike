@@ -1,7 +1,5 @@
 use std::cmp;
 
-use num::clamp;
-
 use rand::prelude::*;
 
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
@@ -59,13 +57,6 @@ pub fn handle_input(game: &mut Game,
                                                       objects,
                                                       messages,
                                                       config);
-            }
-
-            // (Key { code: Number5, .. }, true) |
-            // (Key { code: NumPad5, .. }, true) => {
-            (InputAction::Center, true) => {
-                objects[PLAYER].momentum = Default::default();
-                player_action = TookTurn;
             }
 
             //(Key { code: Enter, alt: true, .. }, _) => {
@@ -166,16 +157,52 @@ pub fn handle_input(game: &mut Game,
 /// Check whether a move, given as an offset from an object's current position,
 /// hits a wall or object.
 pub fn move_valid(object_id: ObjectId, objects: &[Object], dx: i32, dy: i32, map: &Map) -> bool {
+    return check_collision(object_id, objects, dx, dy, map).is_none();
+}
+
+
+pub fn move_just_before(object_id: ObjectId, objects: &[Object], dx: i32, dy: i32, map: &Map) -> Option<(i32, i32)> {
     let x = objects[object_id].x;
     let y = objects[object_id].y;
     let move_line = Line::new((x, y), (x + dx, y + dy));
 
-    let valid = 
-        move_line.into_iter()
-                 .all(|(x_pos, y_pos)| !map.is_blocked(x_pos, y_pos, objects) &&
-                                       !map.is_blocked_by_wall(x_pos, y_pos, dx, dy));
+    let mut pos = None;
+    let mut collided = false;
 
-    return valid;
+    for (x_pos, y_pos) in move_line.into_iter() {
+        if !map.is_blocked(x_pos, y_pos, objects) &&
+           !map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
+            collided = true;
+            break;
+       }
+       pos = Some((x_pos, y_pos));
+    }
+
+    if !collided {
+        pos = None;
+    }
+
+    return pos;
+}
+
+/// Moves the given object with a given offset, returning the square that it collides with, or None
+/// indicating no collision.
+pub fn check_collision(object_id: ObjectId, objects: &[Object], dx: i32, dy: i32, map: &Map) -> Option<(i32, i32)> {
+    let x = objects[object_id].x;
+    let y = objects[object_id].y;
+    let move_line = Line::new((x, y), (x + dx, y + dy));
+
+    let mut pos = None;
+
+    for (x_pos, y_pos) in move_line.into_iter() {
+        if !map.is_blocked(x_pos, y_pos, objects) &&
+           !map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
+            pos = Some((x_pos, y_pos));
+            break;
+       }
+    }
+
+    return pos;
 }
 
 /*
@@ -422,7 +449,7 @@ fn player_move_or_attack(move_action: MoveAction,
 
     let orig_pos = objects[PLAYER].pos();
 
-    match calculate_move(move_action, PLAYER, objects) {
+    match calculate_move(move_action, PLAYER, objects, map) {
         Some(Movement::Attack(dx, dy, target_id)) => {
             let (player, target) = mut_two(PLAYER, target_id, objects);
             player.attack(target, config);
@@ -437,7 +464,7 @@ fn player_move_or_attack(move_action: MoveAction,
         Some(Movement::Move(x, y)) => {
             objects[PLAYER].set_pos(x, y);
             let mut momentum = objects[PLAYER].momentum.unwrap();
-            momentum.moved(dx, dy);
+            momentum.moved(x, y);
             if momentum.magnitude() > 1 && !momentum.took_half_turn {
                 player_action = PlayerAction::TookHalfTurn;
             } else {
@@ -449,6 +476,7 @@ fn player_move_or_attack(move_action: MoveAction,
         }
 
         Some(Movement::WallKick(x, y, dir_x, dir_y)) => {
+            let mut momentum = objects[PLAYER].momentum.unwrap();
             objects[PLAYER].set_pos(x, y);
             momentum.set_momentum(dir_x, dir_y);
 
@@ -472,50 +500,58 @@ pub fn calculate_move(action: MoveAction,
     let (x, y) = objects[object_id].pos();
     let (dx, dy) = action.into_move();
 
-    // TODO check if hit wall
-    //        if wall, check for wall kick
-    //        else collide with wall
-    //      check if hit enemy
-    //        if so, move to them and return collide
-    //
-    if move_valid(object_id, objects, dx, dy, map) {
-        match objects[object_id].momentum {
-            Some(mut momentum) => {
-                let side_move = dx.abs() != 0 && dy.abs() != 0;
+    if let Some(collision_pos) = check_collision(object_id, objects, dx, dy, map) {
+        if map[collision_pos].blocked {
+            match objects[object_id].momentum {
+                Some(mut momentum) => {
+                    let side_move = dx.abs() != 0 && dy.abs() != 0;
+                    //let same_direction = momentum.mx.signum() == dx.signum() && momentum.my.signum() == dy.signum();
 
-                // if max momentum, and will hit short wall, than jump over wall
-                if momentum.magnitude() == MAX_MOMENTUM &&
-                   map[(x + dx, y + dy)].tile_type == TileType::ShortWall &&
-                   !map.is_blocked(x + 2 * dx.signum(), y + 2 * dy.signum(), objects) &&
-                   !map.is_blocked_by_wall(x, y, dx, dy) {
-                       movement = Movement::Move(x + 2 * dx.signum(), y + 2 * dy.signum());
+                    // TODO check if hit wall
+                    //        if wall, check for wall kick
+                    //        else collide with wall
+                    //      check if hit enemy
+                    //        if so, move to them and return collide
 
-                // check for diagonal wall kick
-    let same_direction = mx.signum() == dx.signum() && my.signum() == dy.signum();
-    } else if has_momentum &&
-              side_move &&
-              !momentum_diagonal &&
-              move_valid(PLAYER, objects, mx.signum(), my.signum(), map) &&
-              move_valid(PLAYER, objects, dx, dy, map) &&
-              !map.is_blocked(x + mx.signum(), y + my.signum(), objects) && // free next to wall
-              !map.is_blocked(x + 2*mx.signum(), y + 2*my.signum(), objects) && // free space to move to
-              !map.is_blocked_by_wall(x, y, dx, dy) &&
-              map[(x + dx, y + dy)].tile_type == TileType::Wall {
+                    // if max momentum, and will hit short wall, and there is space beyond the
+                    // wall, than jump over the wall.
+                    if momentum.magnitude() == MAX_MOMENTUM &&
+                       map[collision_pos].tile_type == TileType::ShortWall &&
+                       !map.is_blocked(collision_pos.0 + 2*dx.signum(), collision_pos.1 + 2 * dy.signum(), objects) {
 
-        objects[PLAYER].set_pos(x + 2*mx.signum(), y + 2*my.signum());
+                           movement = Some(Movement::JumpWall(collision_pos.0 + 2 * dx.signum(), collision_pos.1 + 2 * dy.signum()));
+                    // check for diagonal wall kick
+                    /*
+                    } else if map[collision_pos].tile_type == TileType::Wall &&
+                              momentum.running() &&
+                              side_move &&
+                              move_valid(PLAYER, objects, mx.signum(), my.signum(), map) &&
+                              move_valid(PLAYER, objects, dx, dy, map) &&
+                              !map.is_blocked(x + mx.signum(), y + my.signum(), objects) && // free next to wall
+                              !map.is_blocked(x + 2*mx.signum(), y + 2*my.signum(), objects) {
+                              (dx.signum() == 1 && dy.signum() == -1 && !map.is_blocked(x + 1, y)) ||
 
-                // otherwise move normally
-                } else {
+                        objects[PLAYER].set_pos(x + 2*mx.signum(), y + 2*my.signum());
+                    */
+                    } else { // otherwise move normally
+                        movement = Some(Movement::Move(x + dx, y + dy));
+                    }
+                },
+
+                None => {
                     movement = Some(Movement::Move(x + dx, y + dy));
-                }
-            },
-
-            None => {
-                movement = Some(Movement::Move(x + dx, y + dy));
-            },
+                },
+            }
+        } else {
+            // otherwise, we hit an object
+            // TODO implement move_just_before
+            let Some((new_x, new_y)) = move_just_before(PLAYER, objects, + dx, y + dy, map);
+            // TODO consider some kind of check on whether we attack or not
+            //      perhaps instead of Attack, say CollideObject
+            movement = Some(Movement::Attack(new_x, new_y, map[(x, y)].object_id));
         }
     } else {
-        movement = None;
+        movement = Some(Movement::Move(x + dx, x + dy));
     }
 
     return movement;
