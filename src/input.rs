@@ -1,5 +1,3 @@
-use std::cmp;
-
 use rand::prelude::*;
 
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
@@ -13,7 +11,6 @@ use ggez::event::{KeyCode, KeyMods};
 
 use crate::engine::types::*;
 use crate::engine::map::*;
-use crate::engine::display::*;
 use crate::engine::ai::*;
 use crate::constants::*;
 use crate::game::*;
@@ -81,14 +78,6 @@ pub fn handle_input(game: &mut Game,
 
             // (Key {printable: 'i', .. }, true) => {
             (InputAction::Inventory, true) => {
-                // TODO removed for ggez
-                //let inventory_index =
-                //    inventory_menu(inventory,
-                //                   "Press the key next to an item to use it, or any other to cancel.\n",
-                //                   &mut game.root);
-                //if let Some(inventory_index) = inventory_index {
-                //    use_item(inventory_index, inventory, objects, config, messages);
-                //}
                 player_action = DidntTakeTurn;
             }
 
@@ -410,22 +399,6 @@ fn gather_goal(_inventory_id: usize, _objects: &mut [Object], config: &Config, m
     UseResult::Keep
 }
 
-fn inventory_menu(inventory: &[Object], header: &str, root: &mut Root) -> Option<usize> {
-    let options = if inventory.len() == 0 {
-        vec!("Inventory is empty.".into())
-    } else {
-        inventory.iter().map(|item| { item.name.clone() }).collect()
-    };
-
-    let inventory_index = menu(header, &options, INVENTORY_WIDTH, root);
-
-    if inventory.len() > 0 {
-        return inventory_index;
-    } else {
-        return None;
-    }
-}
-
 fn pick_item_up(object_id: usize,
                 objects: &mut Vec<Object>,
                 inventory: &mut Vec<Object>,
@@ -447,21 +420,22 @@ fn player_move_or_attack(move_action: MoveAction,
                          config: &Config) -> PlayerAction {
     let player_action: PlayerAction;
 
-    let orig_pos = objects[PLAYER].pos();
-
     match calculate_move(move_action, PLAYER, objects, map) {
-        Some(Movement::Attack(dx, dy, target_id)) => {
+        Some(Movement::Attack(_dx, _dy, target_id)) => {
             let (player, target) = mut_two(PLAYER, target_id, objects);
             player.attack(target, config);
             player_action = PlayerAction::TookTurn;
         }
 
+        // TODO may want to check if any movement occurred, and not take turn
+        // if the player is against a wall.
         Some(Movement::Collide(x, y)) => {
             objects[PLAYER].set_pos(x, y);
             objects[PLAYER].momentum.unwrap().clear();
+            player_action = PlayerAction::TookTurn;
         }
 
-        Some(Movement::Move(x, y)) => {
+        Some(Movement::Move(x, y)) | Some(Movement::JumpWall(x, y)) => {
             objects[PLAYER].set_pos(x, y);
             let mut momentum = objects[PLAYER].momentum.unwrap();
             momentum.moved(x, y);
@@ -481,6 +455,7 @@ fn player_move_or_attack(move_action: MoveAction,
             momentum.set_momentum(dir_x, dir_y);
 
             // TODO could check for enemy and attack
+            player_action = PlayerAction::TookTurn;
         }
 
         None => {
@@ -503,8 +478,8 @@ pub fn calculate_move(action: MoveAction,
     if let Some(collision_pos) = check_collision(object_id, objects, dx, dy, map) {
         if map[collision_pos].blocked {
             match objects[object_id].momentum {
-                Some(mut momentum) => {
-                    let side_move = dx.abs() != 0 && dy.abs() != 0;
+                Some(momentum) => {
+                    let _side_move = dx.abs() != 0 && dy.abs() != 0;
                     //let same_direction = momentum.mx.signum() == dx.signum() && momentum.my.signum() == dy.signum();
 
                     // TODO check if hit wall
@@ -544,11 +519,24 @@ pub fn calculate_move(action: MoveAction,
             }
         } else {
             // otherwise, we hit an object
-            // TODO implement move_just_before
-            let Some((new_x, new_y)) = move_just_before(PLAYER, objects, + dx, y + dy, map);
+            let new_x;
+            let new_y;
+            if let Some((just_before_x, just_before_y)) = move_just_before(PLAYER, objects, dx, dy, map) {
+                new_x = just_before_x;
+                new_y = just_before_y;
+            } else {
+                new_x = x;
+                new_y = y;
+            }
+
             // TODO consider some kind of check on whether we attack or not
             //      perhaps instead of Attack, say CollideObject
-            movement = Some(Movement::Attack(new_x, new_y, map[(x, y)].object_id));
+            let object_id = objects.iter().position(|o| o.x == x && o.y == y).unwrap();
+            if object_id != PLAYER {
+                movement = Some(Movement::Attack(new_x, new_y, object_id));
+            } else {
+                movement = Some(Movement::Move(new_x, new_y));
+            }
         }
     } else {
         movement = Some(Movement::Move(x + dx, x + dy));
@@ -565,7 +553,7 @@ pub fn map_keycode_to_action(keycode: KeyCode, keymods: KeyMods) -> InputAction 
             input_action = InputAction::Move(MoveAction::Up);
         }
 
-        KeyCode::Key8 | KeyCode::Numpad8 | KeyCode::Right => {
+        KeyCode::Key6 | KeyCode::Numpad6 | KeyCode::Right => {
             input_action = InputAction::Move(MoveAction::Right);
         }
 

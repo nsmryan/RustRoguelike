@@ -76,7 +76,7 @@ impl Game {
     }
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Reach {
     Single,
     Diag,
@@ -118,7 +118,7 @@ impl Reach {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Object {
     pub x: i32,
     pub y: i32,
@@ -157,11 +157,7 @@ impl Object {
     }
 
     pub fn draw(&self, console: &mut dyn Console) {
-        // TODO removed for ggez. may remove entirely and render separte from type
-        // definitions
-        //console.set_default_foreground(self.color);
-        //console.put_char(self.x, self.y, self.char, BackgroundFlag::None);
-        //console.set_default_foreground(WHITE);
+        // TODO remove? char drawn anyway
     }
 
     pub fn clear(&self, console: &mut dyn Console) {
@@ -323,15 +319,15 @@ pub enum MoveAction {
 impl MoveAction {
     pub fn into_move(self) -> (i32, i32) {
         match self {
-            Left => (-1, 0),
-            Right => (1, 0),
-            Up => (0, -1),
-            Down => (0, 1),
-            DownLeft => (-1, 1),
-            DownRight => (1, 1),
-            UpLeft => (-1, -1),
-            UpRight => (1, -1),
-            Center => (0, 0),
+            MoveAction::Left => (-1, 0),
+            MoveAction::Right => (1, 0),
+            MoveAction::Up => (0, -1),
+            MoveAction::Down => (0, 1),
+            MoveAction::DownLeft => (-1, 1),
+            MoveAction::DownRight => (1, 1),
+            MoveAction::UpLeft => (-1, -1),
+            MoveAction::UpRight => (1, -1),
+            MoveAction::Center => (0, 0),
         }
     }
 }
@@ -451,7 +447,7 @@ impl Default for Momentum {
 }
 
 impl Momentum {
-    pub fn running(&mut self, mx: i32, my: i32) -> bool {
+    pub fn running(&mut self) -> bool {
         return self.magnitude() != 0;
     }
 

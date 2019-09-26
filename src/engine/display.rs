@@ -1,6 +1,5 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::time::Instant;
 
 #[allow(unused_imports)]use tcod::console::*;
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
@@ -21,74 +20,6 @@ use crate::engine::map::*;
 use crate::imgui_wrapper::*;
 
 
-// TODO rendering code removed for ggez
-pub fn render_bar(panel: &mut Offscreen,
-                  x: i32,
-                  y: i32,
-                  total_width: i32,
-                  name: &str,
-                  value: i32,
-                  maximum: i32,
-                  bar_color: Color,
-                  back_color: Color) {
-    let bar_width = (value as f32 / maximum as f32 * total_width as f32) as i32;
-
-    //panel.set_default_background(back_color);
-    //panel.rect(x, y, total_width, 1, false, BackgroundFlag::Screen);
-
-    //panel.set_default_background(bar_color);
-    //if bar_width > 0 {
-        //panel.rect(x, y, bar_width, 1, false, BackgroundFlag::Screen);
-    //}
-
-    //panel.set_default_foreground(WHITE);
-    //panel.print_ex(x + total_width / 2,
-                   //y,
-                   //BackgroundFlag::None,
-                   //TextAlignment::Center,
-                   //&format!("{}: {}/{}", name, value, maximum));
-}
-
-// TODO logic removed for ggez
-pub fn menu<T: AsRef<str>>(header: &str, options: &[T], width: i32, root: &mut Root) -> Option<usize> {
-    assert!(options.len() <= 26, "Cannot have a menu with more than 26 options");
-
-    //let header_height = root.get_height_rect(0, 0, width, SCREEN_HEIGHT, header);
-    //let height = options.len() as i32 + header_height;
-
-    // let mut window = Offscreen::new(width, height);
-
-    //window.set_default_foreground(WHITE);
-    //window.print_rect_ex(0, 0, width, height, BackgroundFlag::None, TextAlignment::Left, header);
-
-    //for (index, option_text) in options.iter().enumerate() {
-        //let menu_letter = (b'a' + index as u8) as char;
-        //let text = format!("({}) {}", menu_letter, option_text.as_ref());
-        //window.print_ex(0, header_height + index as i32,
-         //               BackgroundFlag::None, TextAlignment::Left, text);
-    //}
-
-    //let x = SCREEN_WIDTH / 2 - width / 2;
-    //let y = SCREEN_HEIGHT / 2 - height / 2;
-    //tcod::console::blit(&mut window, (0, 0), (width, height), root, (x, y), 1.0, 0.7);
-
-    //root.flush();
-    //let key = root.wait_for_keypress(true);
-
-    //if key.printable.is_alphabetic() {
-        //let index = key.printable.to_ascii_lowercase() as usize - 'a' as usize;
-        //if index < options.len() {
-            //Some(index)
-        //} else {
-            //None
-        //}
-    //} else {
-        //None
-    //}
-
-    None
-}
-
 pub fn get_objects_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> Vec<ObjectId> {
     let (x, y) = (mouse.cx as i32, mouse.cy as i32);
 
@@ -108,67 +39,6 @@ pub fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap)
                        .collect::<Vec<_>>();
 
     names.join(", ")
-}
-
-// TODO logic commented out for ggez
-// BLOCK3 solid block
-// CHECKBOX_UNSET unfilled block
-// CROSS cross
-// DCROSS invert cross
-// DHLINE invert horizontal line
-// DTEEE,DTEEN,DTEES,DTEEW invert tees
-// DNE,DNW,DSE,DSW corners
-// DVLINE divider lines vertical
-// TEEE,TEEN,TEES,TEEW tees
-// RADIO_SET,RADIO_UNSET unfilled circle and circle with inner filled circle
-// SUBP_DIAG,SUBP_E, SUBP_N,SUBP_NE,SUBP_NW,SUBP_SE,SUBP_SW half blocks, directional. maybe
-// SW as well
-// VLINE HLINE thin lines
-// ARROW2_E,ARROW2_N,ARROW2_S,ARROW2_W solid arrow
-// ARROW_E,ARROW_N,ARROW_S,ARROW_W  thin arrow
-fn print_all_special_char(console: &mut Offscreen, _mouse: Mouse) {
-    use tcod::chars::*;
-    let _ = vec!(ARROW2_E,ARROW2_N,ARROW2_S,ARROW2_W,ARROW_E,ARROW_N,ARROW_S,
-                 ARROW_W,BLOCK1,BLOCK2,BLOCK3,BULLET,BULLET_INV,BULLET_SQUARE,
-                 CENT,CHECKBOX_SET,CHECKBOX_UNSET,CLUB,COPYRIGHT,CROSS,CURRENCY,
-                 DARROW_H,DARROW_V,DCROSS,DHLINE,DIAMOND,DIVISION,DNE,DNW,DSE,DSW,
-                 DTEEE,DTEEN,DTEES,DTEEW,DVLINE,EXCLAM_DOUBLE,FEMALE,FUNCTION,
-                 GRADE,HALF,HEART,HLINE,LIGHT,MALE,MULTIPLICATION,NE,NOTE,
-                 NOTE_DOUBLE,NW,ONE_QUARTER,PILCROW,POUND,POW1,POW2,
-                 POW3,RADIO_SET,RADIO_UNSET,RESERVED,SE,SECTION,
-                 SMILIE,SMILIE_INV,SPADE,SUBP_DIAG,SUBP_E, SUBP_N,SUBP_NE,SUBP_NW,SUBP_SE,SUBP_SW
-                 ,SW,TEEE,TEEN,TEES,TEEW,THREE_QUARTERS,UMLAUT,VLINE,YEN);
-    //let mut index = 0;
-
-    //for x in 0..MAP_WIDTH {
-        //for y in 0..MAP_HEIGHT {
-            //console.set_char_background(x, y, BLACK, BackgroundFlag::Set);
-            //console.put_char(x, y, ' ', BackgroundFlag::None);
-        //}
-    //}
-
-    //console.set_default_foreground(WHITE);
-    //for key in 0..256 {
-        //let index_x = 10 + (index % 32);
-        //let index_y = -10 + ((index / 32) * 2);
-
-        //let x = SCREEN_WIDTH/2 + index_x - 32 as i32;
-        //let y = SCREEN_HEIGHT/2 + index_y;
-
-        //console.put_char(x,
-                              //y,
-                              //key as u8 as char,
-                              //BackgroundFlag::None);
-        //if mouse.cx as i32 == x && mouse.cy as i32 == y {
-            //console.print_ex(x,
-                                  //y - 1,
-                                  //BackgroundFlag::None,
-                                  //TextAlignment::Left,
-                                  //format!("{}", key));
-        //}
-
-        //index += 1;
-    //}
 }
 
 pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
@@ -251,7 +121,7 @@ pub fn lerp_color(color1: Color, color2: Color, scale: f32) -> Color {
     };
 }
 
-pub fn render_map(ctx: &mut Context,
+pub fn render_map(_ctx: &mut Context,
                   game: &mut Game,
                   map: &mut Map,
                   sprite_batch: &mut SpriteBatch,
@@ -395,7 +265,7 @@ pub fn render_sound(console: &mut dyn Console,
     }
 }
 
-pub fn render_objects(ctx: &mut Context,
+pub fn render_objects(_ctx: &mut Context,
                       fov: &FovMap,
                       objects: &[Object],
                       sprite_batch: &mut SpriteBatch) {
@@ -487,8 +357,6 @@ pub fn render_all(ctx: &mut Context,
                   sprite_batch: &mut SpriteBatch,
                   fov_recompute: bool,
                   config: &Config)  -> GameResult<()> {
-    let start_time = Instant::now();
-
     if fov_recompute {
         let player = &objects[PLAYER];
         let mut fov_distance = config.fov_distance;

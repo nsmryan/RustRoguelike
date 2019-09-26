@@ -47,7 +47,6 @@ use rand::prelude::*;
 
 use ggez::event::{self, EventHandler, KeyCode, KeyMods, MouseButton};
 use ggez::{Context, GameResult};
-use ggez::graphics;
 use ggez::graphics::Image;
 use ggez::graphics::spritebatch::SpriteBatch;
 
@@ -163,44 +162,7 @@ pub fn step_game(game: &mut Game,
                  messages: &mut Messages,
                  inventory: &mut Vec<Object>,
                  input_action: InputAction) -> bool {
-    /* Handle Inputs */
-    // TODO removed for ggez, should go somewhere else
-    //let mut key = Default::default();
-    //match tcod::input::check_for_event(tcod::input::MOUSE | tcod::input::KEY_PRESS) {
-    //    Some((_, Event::Mouse(m))) => game.mouse = m,
-    //    Some((_, Event::Key(k))) => key = k,
-    //    _ => {
-    //        key = Default::default();
-    //        game.mouse.lbutton_pressed = false;
-    //        game.mouse.rbutton_pressed = false;
-    //    },
-    //}
-    //dbg!(key.printable);
-
     /* Display */
-    let fov_recompute = *previous_player_position != (objects[PLAYER].x, objects[PLAYER].y);
-    // TODO removed for ggez
-    //render_all(game, 
-    //           objects,
-    //           map,
-    //           messages,
-    //           fov_recompute,
-    //           config);
-
-    // TODO removed for ggez
-    // game.root.flush();
-
-    for object in objects.iter() {
-        // TODO removed for ggez
-        // object.clear(&mut game.console);
-    }
-
-    for clearable in game.needs_clear.iter() {
-        // TODO removed for ggez
-        // game.console.put_char(clearable.0, clearable.1, ' ', BackgroundFlag::None);
-    }
-    // TODO removed for ggez
-    //  game.needs_clear.clear();
 
     /* Player Action and Animations */
     // If there is an animation playing, let it finish
@@ -282,7 +244,6 @@ pub fn read_map_xp(file_name: &str) -> Map {
                 let cell = layer.cells[index];
 
                 let chr = std::char::from_u32(cell.ch).unwrap();
-                println!("({}, {})", x, y);
                 let tile = 
                     match chr {
                         ' ' => Tile::empty(),
@@ -290,7 +251,7 @@ pub fn read_map_xp(file_name: &str) -> Map {
                         '#' | '\u{DC}' | '\u{EC}' | '\u{ED}' | '\u{FE}' => Tile::wall(),
                         'w' | '\u{AB}' => Tile::water(),
                         'x' => Tile::exit(),
-                        '\u{DB}' | '\u{DD}' | '\u{AB}' => Tile::empty(),
+                        '\u{DB}' | '\u{DD}' => Tile::empty(),
                         '\u{99}' => Tile::empty(), // TODO torch?
                         '\u{8d}' => Tile::empty(), // TODO dot?
                         '\u{91}' => Tile::empty(), // TODO orc?
