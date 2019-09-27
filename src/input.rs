@@ -159,8 +159,8 @@ pub fn move_just_before(object_id: ObjectId, objects: &[Object], dx: i32, dy: i3
     let mut collided = false;
 
     for (x_pos, y_pos) in move_line.into_iter() {
-        if !map.is_blocked(x_pos, y_pos, objects) &&
-           !map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
+        if map.is_blocked(x_pos, y_pos, objects) ||
+           map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
             collided = true;
             break;
        }
@@ -184,8 +184,8 @@ pub fn check_collision(object_id: ObjectId, objects: &[Object], dx: i32, dy: i32
     let mut pos = None;
 
     for (x_pos, y_pos) in move_line.into_iter() {
-        if !map.is_blocked(x_pos, y_pos, objects) &&
-           !map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
+        if map.is_blocked(x_pos, y_pos, objects) &&
+           map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
             pos = Some((x_pos, y_pos));
             break;
        }
@@ -420,7 +420,9 @@ fn player_move_or_attack(move_action: MoveAction,
                          config: &Config) -> PlayerAction {
     let player_action: PlayerAction;
 
-    match calculate_move(move_action, PLAYER, objects, map) {
+    let movement = calculate_move(move_action, PLAYER, objects, map);
+
+    match movement {
         Some(Movement::Attack(_dx, _dy, target_id)) => {
             let (player, target) = mut_two(PLAYER, target_id, objects);
             player.attack(target, config);
@@ -436,6 +438,7 @@ fn player_move_or_attack(move_action: MoveAction,
         }
 
         Some(Movement::Move(x, y)) | Some(Movement::JumpWall(x, y)) => {
+            dbg!(x, y);
             objects[PLAYER].set_pos(x, y);
             let mut momentum = objects[PLAYER].momentum.unwrap();
             momentum.moved(x, y);
@@ -479,6 +482,7 @@ pub fn calculate_move(action: MoveAction,
         if map[collision_pos].blocked {
             match objects[object_id].momentum {
                 Some(momentum) => {
+            dbg!();
                     let _side_move = dx.abs() != 0 && dy.abs() != 0;
                     //let same_direction = momentum.mx.signum() == dx.signum() && momentum.my.signum() == dy.signum();
 
@@ -514,6 +518,7 @@ pub fn calculate_move(action: MoveAction,
                 },
 
                 None => {
+            dbg!();
                     movement = Some(Movement::Move(x + dx, y + dy));
                 },
             }
@@ -535,11 +540,13 @@ pub fn calculate_move(action: MoveAction,
             if object_id != PLAYER {
                 movement = Some(Movement::Attack(new_x, new_y, object_id));
             } else {
+                dbg!(x, y, new_x, new_y);
                 movement = Some(Movement::Move(new_x, new_y));
             }
         }
     } else {
-        movement = Some(Movement::Move(x + dx, x + dy));
+        dbg!((x, y, x+dx, y + dy));
+        movement = Some(Movement::Move(x + dx, y + dy));
     }
 
     return movement;

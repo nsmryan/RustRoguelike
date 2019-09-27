@@ -234,8 +234,6 @@ pub fn read_map_xp(file_name: &str) -> Map {
         let width = layer.width;
         let height = layer.height;
 
-        println!("Layers: {} {}", width, height);
-
         for x in 0..width {
             let mut line = Vec::new();
 
