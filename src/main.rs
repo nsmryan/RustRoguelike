@@ -212,13 +212,14 @@ pub fn step_game(game: &mut Game,
 
   if config.load_map_file && Path::new("map.xp").exists() {
       *map = read_map_xp("map.xp");
-  }
-  //if config.load_map_file && Path::new("map.csv").exists() {
-  //    *map = read_map("map.csv");
-  //}
 
-  // TODO removed for ggez
-  // return !game.root.window_closed();
+      let dims = map.size();
+      game.fov = FovMap::new(dims.0, dims.1);
+      setup_fov(&mut game.fov, &map);
+      let fov_distance = config.fov_distance;
+      game.fov.compute_fov(objects[PLAYER].x, objects[PLAYER].y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
+  }
+
   return false; 
 }
 
@@ -238,7 +239,7 @@ pub fn read_map_xp(file_name: &str) -> Map {
             let mut line = Vec::new();
 
             for y in 0..height {
-                let index = width * x + y;
+                let index = width * y + x;
                 let cell = layer.cells[index];
 
                 let chr = std::char::from_u32(cell.ch).unwrap();
