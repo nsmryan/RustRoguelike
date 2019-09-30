@@ -283,12 +283,6 @@ pub fn near_tile_type(map: &Map, position: Position, tile_type: TileType) -> boo
     let neighbor_offsets: Vec<(i32, i32)>
         = vec!((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1));
 
-    /*
-       neighbor_offsets.iter()
-       .map(|offset| position.add(Position(offset.0, offset.1)))
-       .any(|pos| map[pos].tile_type == tile_type)
-       */
-
     let mut near_given_tile = false;
 
     for offset in neighbor_offsets {

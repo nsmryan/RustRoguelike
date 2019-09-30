@@ -1,7 +1,6 @@
 use std::convert::Into;
 use std::cmp;
 
-use tcod::console::*;
 use tcod::map::{Map as FovMap};
 use tcod::input::Mouse;
 use tcod::line::*;
@@ -33,11 +32,8 @@ impl Messages {
 
 
 pub struct Game {
-    //pub root: Root,
-    //pub console: Offscreen,
     pub fov: FovMap,
     pub mouse: Mouse,
-    //pub panel: Offscreen,
     pub turn_count: usize,
     pub display_overlays: bool,
     pub animations: Vec<Animation>,
@@ -46,23 +42,6 @@ pub struct Game {
 }
 
 impl Game {
-    /*
-    pub fn with_root(root: Root) -> Game {
-        Game {
-            root: root,
-            console: Offscreen::new(SCREEN_WIDTH, SCREEN_HEIGHT),
-            fov: FovMap::new(MAP_WIDTH, MAP_HEIGHT),
-            mouse: Default::default(),
-            panel: Offscreen::new(SCREEN_WIDTH, PANEL_HEIGHT),
-            turn_count: 0,
-            display_overlays: false,
-            animations: Vec::new(),
-            needs_clear: Vec::new(),
-            god_mode: false,
-        }
-    }
-    */
-
     pub fn new() -> Game {
         Game {
             fov: FovMap::new(MAP_WIDTH, MAP_HEIGHT),
@@ -154,14 +133,6 @@ impl Object {
             movement: None,
             attack: None,
         }
-    }
-
-    pub fn draw(&self, console: &mut dyn Console) {
-        // TODO remove? char drawn anyway
-    }
-
-    pub fn clear(&self, console: &mut dyn Console) {
-        console.put_char(self.x, self.y, ' ', BackgroundFlag::None);
     }
 
     pub fn pos(&self) -> (i32, i32) {
@@ -274,7 +245,6 @@ impl AwarenessMap {
                     potential_positions.iter()
                     .filter(|(x, y)| *x < self.width && *y < self.height)
                     .filter(|(x, y)| self.weights[*y as usize][*x as usize] > 0.0);
-
             }
         }
     }
