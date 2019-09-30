@@ -94,24 +94,24 @@ fn step_animation(objects: &mut [Object], map: &Map, animation: &mut Animation) 
 //}
 
 pub fn run_game<F>(mut step: F)
-  where F: FnMut() -> bool {
-    // start game tick timer
-    let timer = Timer::new();
-    let (tick_sender, tick_receiver) = channel();
-    let _guard = 
-        timer.schedule_repeating(chrono::Duration::milliseconds(TIME_BETWEEN_FRAMES_MS), move || {
-            tick_sender.send(0).unwrap();
-        });
+    where F: FnMut() -> bool {
+        // start game tick timer
+        let timer = Timer::new();
+        let (tick_sender, tick_receiver) = channel();
+        let _guard = 
+            timer.schedule_repeating(chrono::Duration::milliseconds(TIME_BETWEEN_FRAMES_MS), move || {
+                tick_sender.send(0).unwrap();
+            });
 
-    /* main game loop */
-    let mut running = true;
-    while running {
-        /* fps limiting */
-        tick_receiver.recv().unwrap();
+        /* main game loop */
+        let mut running = true;
+        while running {
+            /* fps limiting */
+            tick_receiver.recv().unwrap();
 
-        running = step();
+            running = step();
+        }
     }
-}
 
 fn animations(game: &mut Game, objects: &mut [Object], map: &Map) {
     let mut finished_ixs = Vec::new();
@@ -119,13 +119,13 @@ fn animations(game: &mut Game, objects: &mut [Object], map: &Map) {
 
     /* For each animation, step its state */
     for mut animation in game.animations.iter_mut() {
-      let finished = step_animation(objects, map, &mut animation);
+        let finished = step_animation(objects, map, &mut animation);
 
-      // for a finished animation, record that it should be removed
-      if finished {
-          finished_ixs.push(ix)
-      }
-      ix += 1;
+        // for a finished animation, record that it should be removed
+        if finished {
+            finished_ixs.push(ix)
+        }
+        ix += 1;
     }
 
     // remove finished animations
@@ -155,15 +155,15 @@ pub fn step_game(game: &mut Game,
     } else {
         player_action = handle_input(game, input_action, map, objects, inventory, messages, config);
         match player_action {
-          PlayerAction::Exit => {
-            return false;
-          }
+            PlayerAction::Exit => {
+                return false;
+            }
 
-          PlayerAction::TookTurn | PlayerAction::TookHalfTurn => {
-              game.turn_count += 1;
-          }
-          
-          _ => {}
+            PlayerAction::TookTurn | PlayerAction::TookHalfTurn => {
+                game.turn_count += 1;
+            }
+
+            _ => {}
         }
     }
 
@@ -188,20 +188,34 @@ pub fn step_game(game: &mut Game,
             file.read_to_string(&mut config_string).expect("Could not read config file!");
             *config = serde_json::from_str(&config_string).expect("Could not read JSON- config.json has a parsing error!");
         }
-      _ => (),
+        _ => (),
     }
 
-  if config.load_map_file && Path::new("map.xp").exists() {
-      *map = read_map_xp("map.xp");
+    if config.load_map_file && Path::new("map.xp").exists() {
+        *map = read_map_xp("map.xp");
 
-      let dims = map.size();
-      game.fov = FovMap::new(dims.0, dims.1);
-      setup_fov(&mut game.fov, &map);
-      let fov_distance = config.fov_distance;
-      game.fov.compute_fov(objects[PLAYER].x, objects[PLAYER].y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
-  }
+        let dims = map.size();
+        game.fov = FovMap::new(dims.0, dims.1);
+        setup_fov(&mut game.fov, &map);
+        let fov_distance = config.fov_distance;
+        game.fov.compute_fov(objects[PLAYER].x, objects[PLAYER].y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
 
-  return false; 
+    }
+
+    if *previous_player_position != (objects[PLAYER].x, objects[PLAYER].y) {
+        let player = &objects[PLAYER];
+        let mut fov_distance = config.fov_distance;
+        if game.god_mode {
+            fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
+        }
+        game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
+    }
+
+    if game.god_mode {
+        game.fov.compute_fov(objects[PLAYER].x, objects[PLAYER].y, 1000, FOV_LIGHT_WALLS, FOV_ALGO);
+    }
+
+    return false; 
 }
 
 struct GameState {
@@ -308,8 +322,6 @@ impl EventHandler for GameState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let fov_recompute = self.previous_player_position != (self.objects[PLAYER].x, self.objects[PLAYER].y);
-
         render_all(ctx,
                    &mut self.game,
                    &self.objects,
@@ -317,7 +329,6 @@ impl EventHandler for GameState {
                    &mut self.messages,
                    &mut self.imgui_wrapper,
                    &mut self.sprite_batch,
-                   fov_recompute,
                    &self.config)
     }
 
@@ -331,12 +342,12 @@ impl EventHandler for GameState {
         button: MouseButton,
         _x: f32,
         _y: f32,
-    ) {
+        ) {
         self.imgui_wrapper.update_mouse_down((
-            button == MouseButton::Left,
-            button == MouseButton::Right,
-            button == MouseButton::Middle,
-        ));
+                button == MouseButton::Left,
+                button == MouseButton::Right,
+                button == MouseButton::Middle,
+                ));
     }
 
     fn mouse_button_up_event(
@@ -345,7 +356,7 @@ impl EventHandler for GameState {
         _button: MouseButton,
         _x: f32,
         _y: f32,
-    ) {
+        ) {
         self.imgui_wrapper.update_mouse_down((false, false, false));
     }
 
@@ -355,7 +366,7 @@ impl EventHandler for GameState {
         keycode: KeyCode,
         keymods: KeyMods,
         _repeat: bool,
-    ) {
+        ) {
         self.input_action = map_keycode_to_action(keycode, keymods);
     }
 }
@@ -368,7 +379,7 @@ fn main() {
     window_mode.height = (SCREEN_HEIGHT * FONT_HEIGHT)  as f32;
 
     let cb = ggez::ContextBuilder::new("Roguelike", "like")
-             .window_mode(window_mode);
+        .window_mode(window_mode);
     let (ref mut ctx, event_loop) = &mut cb.build().unwrap();
     let state = &mut GameState::new(ctx, &args).unwrap();
     event::run(ctx, event_loop, state).unwrap();

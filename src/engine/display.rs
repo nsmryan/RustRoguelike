@@ -355,17 +355,7 @@ pub fn render_all(ctx: &mut Context,
                   _messages: &mut Messages,
                   imgui_wrapper: &mut ImGuiWrapper,
                   sprite_batch: &mut SpriteBatch,
-                  fov_recompute: bool,
                   config: &Config)  -> GameResult<()> {
-    if fov_recompute {
-        let player = &objects[PLAYER];
-        let mut fov_distance = config.fov_distance;
-        if game.god_mode {
-            fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
-        }
-        game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
-    }
-
     sprite_batch.clear();
 
     graphics::clear(ctx, graphics::BLACK);

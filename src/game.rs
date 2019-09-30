@@ -264,7 +264,6 @@ pub fn exit_condition_met(inventory: &[Object], map: &Map, objects: &[Object]) -
 pub fn read_map_xp(file_name: &str) -> Map {
     let file = File::open(file_name).unwrap();
     let mut buf_reader = BufReader::new(file);
-    //let mut rot_map = Vec::new();
     let mut map_lines = Vec::new();
 
     let xp = XpFile::read(&mut buf_reader).unwrap();
