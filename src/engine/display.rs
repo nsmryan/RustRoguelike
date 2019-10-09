@@ -15,7 +15,6 @@ use ggez::{Context, GameResult};
 use mint::Point2;
 
 use crate::engine::types::*;
-use crate::constants::*;
 use crate::engine::map::*;
 use crate::imgui_wrapper::*;
 
@@ -131,10 +130,10 @@ pub fn render_map(_ctx: &mut Context,
             let chr;
 
             // Render game stuff
-            let tile_type = map[(x, y)].tile_type;
             let visible = game.fov.is_in_fov(x, y);
 
-            let mut color = match (map.tiles[x as usize][y as usize].tile_type, visible) {
+            let tile = &map.tiles[x as usize][y as usize];
+            let mut color = match (tile.tile_type, visible) {
                 (TileType::Wall, true) =>
                     config.color_light_brown.color(),
                 (TileType::Wall, false) =>
@@ -160,24 +159,18 @@ pub fn render_map(_ctx: &mut Context,
                 (TileType::Exit, false) =>
                     config.color_red.color(),
             };
-            //println!("color = {:?}", color);
 
-            // TODO removed while working out rendering
             let mut explored = map.tiles[x as usize][y as usize].explored;
             if visible {
                 explored = true;
             }
 
-            //if explored 
-
-            match tile_type {
+            match tile.tile_type {
                 TileType::Empty => {
                     let has_bottom_wall = map.tiles[x as usize][y as usize].bottom_wall != Wall::Empty;
                     let has_left_wall = map.tiles[x as usize][y as usize].left_wall != Wall::Empty;
 
                     if  has_bottom_wall && has_left_wall {
-                        // TODO this is a solid wall- there is no joint left/bottom wall tile
-                        // yet
                         chr = '\u{DB}';
                     } else if has_left_wall {
                         chr = '\u{DD}';
@@ -186,53 +179,54 @@ pub fn render_map(_ctx: &mut Context,
                     } else {
                         chr = '\u{AB}';
                     }
-
-                    //console.put_char(x, y, chr, BackgroundFlag::None);
-                    //console.set_char_background(x, y, color, BackgroundFlag::Set);
                 }
 
                 TileType::Water | TileType::Exit => {
-                    //console.put_char(x, y, ' ', BackgroundFlag::None);
-                    //console.set_char_background(x, y, color, BackgroundFlag::Set);
                     chr = '\u{AB}';
                 }
 
                 TileType::ShortWall | TileType::Wall => {
                     if visible {
-                        //console.set_char_background(x, y, config.color_tile_blue_light.color(), BackgroundFlag::Set);
                         color = config.color_tile_blue_light.color();
                     } else {
-                        //console.set_char_background(x, y, config.color_very_dark_blue.color(), BackgroundFlag::Set);
                         color = config.color_very_dark_blue.color();
                     }
 
-                    let left = map[(x - 1, y)].tile_type == tile_type;
-                    let right = map[(x + 1, y)].tile_type == tile_type;
-                    let horiz = left || right;
+                    match tile.chr {
+                        Some(tile_chr) => {
+                            chr = tile_chr;
+                        },
 
-                    let above = map[(x, y + 1)].tile_type == tile_type;
-                    let below = map[(x, y - 1)].tile_type == tile_type;
-                    let vert = above || below;
+                        None => {
+                            let left = map[(x - 1, y)].tile_type == tile.tile_type;
+                            let right = map[(x + 1, y)].tile_type == tile.tile_type;
+                            let horiz = left || right;
 
-                    if tile_type == TileType::Wall {
-                        if horiz && vert {
-                           chr = '\u{DC}';
-                        } else if horiz {
-                           chr = '\u{EC}';
-                        } else if vert {
-                           chr = '\u{ED}';
-                        } else {
-                           chr = '\u{FE}';
-                        }
-                    } else {
-                        if horiz && vert {
-                           chr = tcod::chars::CROSS
-                        } else if horiz {
-                           chr = tcod::chars::HLINE;
-                        } else if vert {
-                           chr = tcod::chars::VLINE;
-                        } else {
-                           chr = tcod::chars::VLINE;
+                            let above = map[(x, y + 1)].tile_type == tile.tile_type;
+                            let below = map[(x, y - 1)].tile_type == tile.tile_type;
+                            let vert = above || below;
+
+                            if tile.tile_type == TileType::Wall {
+                                if horiz && vert {
+                                   chr = '\u{DC}';
+                                } else if horiz {
+                                   chr = '\u{EC}';
+                                } else if vert {
+                                   chr = '\u{ED}';
+                                } else {
+                                   chr = '\u{FE}';
+                                }
+                            } else {
+                                if horiz && vert {
+                                   chr = tcod::chars::CROSS
+                                } else if horiz {
+                                   chr = tcod::chars::HLINE;
+                                } else if vert {
+                                   chr = tcod::chars::VLINE;
+                                } else {
+                                   chr = tcod::chars::VLINE;
+                                }
+                            }
                         }
                     };
                 }
@@ -277,52 +271,6 @@ pub fn render_objects(_ctx: &mut Context,
 
     for object in &to_draw {
         draw_char(sprite_batch, object.char, object.x, object.y, object.color);
-    }
-}
-
-pub fn render_character_flags(console: &mut dyn Console) {
-    for x in 0..10 {
-        console.put_char(x, 0, '+', BackgroundFlag::None);
-        console.put_char(x, 0, 'X', BackgroundFlag::None);
-
-        console.put_char(x, 1, '+', BackgroundFlag::None);
-        console.put_char(x, 1, 'X', BackgroundFlag::Set);
-
-        console.put_char(x, 2, '+', BackgroundFlag::None);
-        console.put_char(x, 2, 'X', BackgroundFlag::Lighten);
-
-        console.put_char(x, 3, '+', BackgroundFlag::None);
-        console.put_char(x, 3, 'X', BackgroundFlag::Darken);
-
-        console.put_char(x, 4, '+', BackgroundFlag::None);
-        console.put_char(x, 4, 'X', BackgroundFlag::Screen);
-
-        console.put_char(x, 5, '+', BackgroundFlag::None);
-        console.put_char(x, 5, 'X', BackgroundFlag::ColorDodge);
-
-        console.put_char(x, 6, '+', BackgroundFlag::None);
-        console.put_char(x, 6, 'X', BackgroundFlag::ColorBurn);
-
-        console.put_char(x, 7, '+', BackgroundFlag::None);
-        console.put_char(x, 7, 'X', BackgroundFlag::Add);
-
-        console.put_char(x, 8, '+', BackgroundFlag::None);
-        console.put_char(x, 8, 'X', BackgroundFlag::AddA);
-
-        console.put_char(x, 9, '+', BackgroundFlag::None);
-        console.put_char(x, 9, 'X', BackgroundFlag::Burn);
-
-        console.put_char(x, 10, '+', BackgroundFlag::None);
-        console.put_char(x, 10, 'X', BackgroundFlag::Overlay);
-
-        console.put_char(x, 11, '+', BackgroundFlag::None);
-        console.put_char(x, 11, 'X', BackgroundFlag::Alph);
-
-        console.put_char(x, 12, '+', BackgroundFlag::None);
-        console.put_char(x, 12, 'X', BackgroundFlag::Default);
-
-        console.put_char(x, 13, '+', BackgroundFlag::None);
-        console.put_char(x, 13, 'X', BackgroundFlag::Multiply);
     }
 }
 

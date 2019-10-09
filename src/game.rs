@@ -283,8 +283,8 @@ pub fn read_map_xp(file_name: &str) -> Map {
                 let tile = 
                     match chr {
                         ' ' => Tile::empty(),
-                        '.' => Tile::short_wall(),
-                        '#' | '\u{DC}' | '\u{EC}' | '\u{ED}' | '\u{FE}' => Tile::wall(),
+                        '\u{9C}' | '\u{9D}' | '\u{9E}' | '\u{9F}' => Tile::short_wall_with(Some(chr)),
+                        '#' | '\u{DC}' | '\u{EC}' | '\u{ED}' | '\u{FE}' => Tile::wall_with(Some(chr)),
                         'w' | '\u{AB}' => Tile::water(),
                         'x' => Tile::exit(),
                         '\u{DB}' | '\u{DD}' => Tile::empty(),

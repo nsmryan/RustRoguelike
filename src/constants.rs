@@ -52,3 +52,31 @@ pub const ISLAND_NUM_OBSTACLES: i32 = 15;
 pub const ISLAND_NUM_SUBTRACTIONS_ATTEMPTS: i32 = 50;
 pub const ISLAND_NUM_ADDITION_ATTEMPTS: i32 = 50;
 
+pub const MAP_LAYER_GROUND: usize = 0;
+pub const MAP_LAYER_ENVIRONMENT: usize = 1;
+pub const MAP_LAYER_ENTITIES: usize = 2;
+
+pub const MAP_GROUND: u8 = 154;
+pub const MAP_WATER: u8 = 224;
+pub const MAP_EMPTY: u8 = 32;
+
+pub const MAP_STATUE_1: u8 = 148;
+pub const MAP_STATUE_2: u8 = 149;
+pub const MAP_STATUE_3: u8 = 140;
+pub const MAP_STATUE_4: u8 = 133;
+
+pub const MAP_THIN_WALL_TOP: u8 = 0x9c;
+pub const MAP_THIN_WALL_BOTTOM: u8 = 0x9D;
+pub const MAP_THIN_WALL_LEFT: u8 = 0x9E;
+pub const MAP_THIN_WALL_RIGHT: u8 = 0x9F;
+
+pub const MAP_THICK_WALL_RIGHT: u8 = 175;
+pub const MAP_THICK_WALL_LEFT: u8 = 174;
+pub const MAP_THICK_WALL_TOP: u8 = 172;
+pub const MAP_THICK_WALL_BOTTOM: u8 =  173;
+
+pub const ENTITY_ORC: u8 = 0x98;
+pub const ENTITY_POLAXE: u8 = 0x8C;
+pub const ENTITY_CASTLE: u8 = 0x85;
+pub const ENTITY_PLAYER: u8 = 0x40;
+pub const ENTITY_SWIRL_CIRCLE: u8 = 0x15;

@@ -11,7 +11,6 @@ extern crate timer;
 extern crate chrono;
 extern crate mint;
 extern crate rexpaint;
-//extern crate rodio; // TODO removed until sound is added back to the game.
 
 mod engine;
 mod constants;
@@ -20,7 +19,9 @@ mod game;
 mod imgui_wrapper;
 
 #[cfg(test)]
-mod tests; 
+mod tests;
+
+
 use std::env;
 use std::path::Path;
 use std::io::Write;
@@ -50,7 +51,7 @@ use ggez::graphics::spritebatch::SpriteBatch;
 
 use timer::*;
 
-// use rodio::Source;
+use rexpaint::*;
 
 use engine::types::*;
 use constants::*;
@@ -84,34 +85,40 @@ fn step_animation(objects: &mut [Object], map: &Map, animation: &mut Animation) 
     }
 }
 
-/// Play a sound file.
-/// This implementation is inefficient, but simple.
-//pub fn play_sound(file_name: &str) {
-//    let device = rodio::default_output_device().unwrap();
-//    let file = File::open(file_name).unwrap();
-//    let source = rodio::Decoder::new(BufReader::new(file)).unwrap();
-//    rodio::play_raw(&device, source.convert_samples());
-//}
+/// Check whether the exit condition for the game is met.
+fn exit_condition_met(inventory: &[Object], map: &Map, objects: &[Object]) -> bool {
+    // loop over objects in inventory, and check whether any
+    // are the goal object.
+    let has_goal =
+        inventory.iter().any(|obj| obj.item.map_or(false, |item| item == Item::Goal));
+
+    let player_pos = (objects[PLAYER].x, objects[PLAYER].y);
+    let on_exit_tile = map[player_pos].tile_type == TileType::Exit;
+
+    let exit_condition = has_goal && on_exit_tile;
+
+    return exit_condition;
+}
 
 pub fn run_game<F>(mut step: F)
-    where F: FnMut() -> bool {
-        // start game tick timer
-        let timer = Timer::new();
-        let (tick_sender, tick_receiver) = channel();
-        let _guard = 
-            timer.schedule_repeating(chrono::Duration::milliseconds(TIME_BETWEEN_FRAMES_MS), move || {
-                tick_sender.send(0).unwrap();
-            });
+  where F: FnMut() -> bool {
+    // start game tick timer
+    let timer = Timer::new();
+    let (tick_sender, tick_receiver) = channel();
+    let _guard = 
+        timer.schedule_repeating(chrono::Duration::milliseconds(TIME_BETWEEN_FRAMES_MS), move || {
+            tick_sender.send(0).unwrap();
+        });
 
-        /* main game loop */
-        let mut running = true;
-        while running {
-            /* fps limiting */
-            tick_receiver.recv().unwrap();
+    /* main game loop */
+    let mut running = true;
+    while running {
+        /* fps limiting */
+        tick_receiver.recv().unwrap();
 
-            running = step();
-        }
+        running = step();
     }
+}
 
 fn animations(game: &mut Game, objects: &mut [Object], map: &Map) {
     let mut finished_ixs = Vec::new();
@@ -119,13 +126,13 @@ fn animations(game: &mut Game, objects: &mut [Object], map: &Map) {
 
     /* For each animation, step its state */
     for mut animation in game.animations.iter_mut() {
-        let finished = step_animation(objects, map, &mut animation);
+      let finished = step_animation(objects, map, &mut animation);
 
-        // for a finished animation, record that it should be removed
-        if finished {
-            finished_ixs.push(ix)
-        }
-        ix += 1;
+      // for a finished animation, record that it should be removed
+      if finished {
+          finished_ixs.push(ix)
+      }
+      ix += 1;
     }
 
     // remove finished animations
@@ -155,15 +162,15 @@ pub fn step_game(game: &mut Game,
     } else {
         player_action = handle_input(game, input_action, map, objects, inventory, messages, config);
         match player_action {
-            PlayerAction::Exit => {
-                return false;
-            }
+          PlayerAction::Exit => {
+            return false;
+          }
 
-            PlayerAction::TookTurn | PlayerAction::TookHalfTurn => {
-                game.turn_count += 1;
-            }
-
-            _ => {}
+          PlayerAction::TookTurn | PlayerAction::TookHalfTurn => {
+              game.turn_count += 1;
+          }
+          
+          _ => {}
         }
     }
 
@@ -188,34 +195,234 @@ pub fn step_game(game: &mut Game,
             file.read_to_string(&mut config_string).expect("Could not read config file!");
             *config = serde_json::from_str(&config_string).expect("Could not read JSON- config.json has a parsing error!");
         }
-        _ => (),
+      _ => (),
     }
 
-    if config.load_map_file && Path::new("map.xp").exists() {
-        *map = read_map_xp("map.xp");
+  if config.load_map_file && Path::new("map.xp").exists() {
+      let (new_object, new_map) = read_map_xp("map.xp");
+      *map = new_map;
+      // TODO updates objects
 
-        let dims = map.size();
-        game.fov = FovMap::new(dims.0, dims.1);
-        setup_fov(&mut game.fov, &map);
-        let fov_distance = config.fov_distance;
-        game.fov.compute_fov(objects[PLAYER].x, objects[PLAYER].y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
-
-    }
+      let dims = map.size();
+      game.fov = FovMap::new(dims.0, dims.1);
+      setup_fov(&mut game.fov, &map);
+      let fov_distance = config.fov_distance;
+      game.fov.compute_fov(objects[PLAYER].x, objects[PLAYER].y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
+  }
 
     if *previous_player_position != (objects[PLAYER].x, objects[PLAYER].y) {
-        let player = &objects[PLAYER];
-        let mut fov_distance = config.fov_distance;
-        if game.god_mode {
-            fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
-        }
-        game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
+    let player = &objects[PLAYER];
+    let mut fov_distance = config.fov_distance;
+    if game.god_mode {
+        fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
+    }
+    game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
     if game.god_mode {
         game.fov.compute_fov(objects[PLAYER].x, objects[PLAYER].y, 1000, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
-    return false; 
+  return false; 
+}
+
+pub fn read_map_xp(file_name: &str) -> (Vec<Object>, Map) {
+    let file = File::open(file_name).unwrap();
+    let mut buf_reader = BufReader::new(file);
+    let xp = XpFile::read(&mut buf_reader).unwrap();
+
+    let mut map = Map::from_dims(xp.layers[0].width, xp.layers[0].height);
+    let mut objects = Vec::new();
+
+
+    for (layer_index, layer) in xp.layers.iter().enumerate() {
+        let width = layer.width;
+        let height = layer.height;
+
+        for x in 0..width {
+            for y in 0..height {
+                let index = y + height * x;
+                let cell = layer.cells[index];
+
+                let chr = std::char::from_u32(cell.ch).unwrap();
+
+                match layer_index {
+                    MAP_LAYER_GROUND => {
+                        match chr as u8 {
+                            MAP_GROUND => {
+                            }
+
+                            MAP_WATER => {
+                                map[(x, y)] = Tile::water();
+                            }
+
+                            _ => {
+                                panic!(format!("Unexpected character {} in ground layer!", chr as u8));
+                            }
+                        }
+                    }
+
+                    MAP_LAYER_ENVIRONMENT => {
+                        match chr as u8 {
+                            MAP_THIN_WALL_TOP => {
+                                map[(x, y)].chr = Some(chr);
+                            }
+
+                            MAP_THIN_WALL_BOTTOM => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].bottom_wall = Wall::ShortWall;
+                            }
+
+                            MAP_THIN_WALL_LEFT => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].bottom_wall = Wall::ShortWall;
+                            }
+
+                            MAP_THIN_WALL_RIGHT => {
+                                map[(x, y)].chr = Some(chr);
+                            }
+
+                            MAP_THICK_WALL_TOP => {
+                                map[(x, y)].chr = Some(chr);
+                            }
+
+                            MAP_THICK_WALL_LEFT => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].bottom_wall = Wall::TallWall;
+                            }
+
+                            MAP_THICK_WALL_RIGHT => {
+                                map[(x, y)].chr = Some(chr);
+                            }
+
+                            MAP_THICK_WALL_BOTTOM => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].bottom_wall = Wall::TallWall;
+                            }
+
+                            MAP_EMPTY => {
+                                // Nothing to do here...
+                            }
+
+                            MAP_STATUE_1 | MAP_STATUE_2 | MAP_STATUE_3 | MAP_STATUE_4 => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].blocked = true;
+                            }
+
+                            _ => {
+                                panic!(format!("Unexpected character {} in environment layer!", chr as u8));
+                            }
+                        }
+                    }
+
+                    MAP_LAYER_ENTITIES => {
+                        match chr as u8 {
+                            _ => {
+                                panic!(format!("Unexpected character {} in entities layer!", chr as u8));
+                            }
+                        }
+                    }
+
+                    _ => {
+                        panic!(format!("Layer {} not expected in map file!", layer_index));
+                    }
+                }
+            }
+        }
+    }
+
+    return (objects, map);
+}
+
+pub fn read_map(file_name: &str) -> Map {
+    let file = File::open(file_name).unwrap();
+    let file = BufReader::new(file);
+    let mut map = Map::empty();
+    let mut rot_map = Vec::new();
+
+    let mut width = 0;
+    let mut height = 0;
+
+    for line in file.lines() {
+        let mut rot_line = Vec::new();
+        height += 1;
+
+        for chr in line.unwrap().chars() {
+            width += 1;
+
+            let tile = 
+                match chr {
+                    ' ' => Tile::empty(),
+                    '.' => Tile::short_wall(),
+                    '#' => Tile::wall(),
+                    'w' => Tile::water(),
+                    'x' => Tile::exit(),
+                    _ => panic!("Unexpected char in map!"),
+                };
+            rot_line.push(tile);
+        }
+        rot_map.push(rot_line)
+    }
+
+    for x in 0..width {
+        let mut line = Vec::new();
+        for y in 0..height {
+            line.push(rot_map[y as usize][x as usize]);
+        }
+        map.tiles.push(line);
+    }
+
+    return map;
+}
+
+pub fn write_map(file_name: &str, map: &Map) {
+    // write out map to a file
+    let mut map_file = File::create(file_name).unwrap();
+    let mut map_vec = Vec::new();
+
+    for row in map.tiles.iter() {
+        let mut line_vec = Vec::new();
+
+        for tile in row.iter() {
+            let tile_char = match tile.tile_type {
+                TileType::Empty => ' ',
+                TileType::ShortWall => '.',
+                TileType::Wall => '#',
+                TileType::Water => 'w',
+                TileType::Exit => 'x',
+            };
+            line_vec.push(tile_char as u8);
+        }
+
+        map_vec.push(line_vec);
+    }
+
+    let mut final_map_vec = Vec::new();
+    println!("height = {}", map.height());
+    println!("MAP_WIDTH = {}", map.width());
+    println!("map_vec.len() = {}", map_vec.len());
+    println!("map_vec[0].len() = {}", map_vec[0].len());
+    for y in 0..map.height() {
+        for x in 0..map.width() {
+            final_map_vec.push(map_vec[x as usize][y as usize]);
+        }
+        final_map_vec.push('\n' as u8);
+    }
+    map_file.write(&final_map_vec).unwrap();
+}
+
+fn main() {
+    let args = env::args().collect::<Vec<String>>();
+
+    let mut window_mode: ggez::conf::WindowMode = Default::default();
+    window_mode.width = ((SCREEN_WIDTH - 1) * FONT_WIDTH) as f32;
+    window_mode.height = (SCREEN_HEIGHT * FONT_HEIGHT)  as f32;
+
+    let cb = ggez::ContextBuilder::new("Roguelike", "like")
+             .window_mode(window_mode);
+    let (ref mut ctx, event_loop) = &mut cb.build().unwrap();
+    let state = &mut GameState::new(ctx, &args).unwrap();
+    event::run(ctx, event_loop, state).unwrap();
 }
 
 struct GameState {
@@ -271,6 +478,9 @@ impl GameState {
         let player_y = position.1;
         objects[PLAYER].x = player_x;
         objects[PLAYER].y = player_y;
+
+        // write out map to a file
+        write_map("map.csv", &map);
 
         let mut game = Game::new();
 
@@ -342,12 +552,12 @@ impl EventHandler for GameState {
         button: MouseButton,
         _x: f32,
         _y: f32,
-        ) {
+    ) {
         self.imgui_wrapper.update_mouse_down((
-                button == MouseButton::Left,
-                button == MouseButton::Right,
-                button == MouseButton::Middle,
-                ));
+            button == MouseButton::Left,
+            button == MouseButton::Right,
+            button == MouseButton::Middle,
+        ));
     }
 
     fn mouse_button_up_event(
@@ -356,7 +566,7 @@ impl EventHandler for GameState {
         _button: MouseButton,
         _x: f32,
         _y: f32,
-        ) {
+    ) {
         self.imgui_wrapper.update_mouse_down((false, false, false));
     }
 
@@ -366,22 +576,8 @@ impl EventHandler for GameState {
         keycode: KeyCode,
         keymods: KeyMods,
         _repeat: bool,
-        ) {
+    ) {
         self.input_action = map_keycode_to_action(keycode, keymods);
     }
-}
-
-fn main() {
-    let args = env::args().collect::<Vec<String>>();
-
-    let mut window_mode: ggez::conf::WindowMode = Default::default();
-    window_mode.width = ((SCREEN_WIDTH - 1) * FONT_WIDTH) as f32;
-    window_mode.height = (SCREEN_HEIGHT * FONT_HEIGHT)  as f32;
-
-    let cb = ggez::ContextBuilder::new("Roguelike", "like")
-        .window_mode(window_mode);
-    let (ref mut ctx, event_loop) = &mut cb.build().unwrap();
-    let state = &mut GameState::new(ctx, &args).unwrap();
-    event::run(ctx, event_loop, state).unwrap();
 }
 

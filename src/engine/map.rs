@@ -18,6 +18,7 @@ pub struct Tile {
     pub sound: Option<(i32, i32)>,
     pub bottom_wall: Wall,
     pub left_wall: Wall,
+    pub chr: Option<char>,
 }
 
 impl Tile {
@@ -29,6 +30,7 @@ impl Tile {
                sound: None,
                bottom_wall: Wall::Empty,
                left_wall: Wall::Empty,
+               chr: Some(' '),
         }
     }
 
@@ -40,10 +42,15 @@ impl Tile {
                sound: None,
                bottom_wall: Wall::Empty,
                left_wall: Wall::Empty,
+               chr: Some(' '),
         }
     }
 
     pub fn wall() -> Self {
+        return Tile::wall_with(None);
+    }
+
+    pub fn wall_with(chr: Option<char>) -> Self {
         Tile { blocked: true,
                block_sight: true,
                explored: false,
@@ -51,10 +58,15 @@ impl Tile {
                sound: None,
                bottom_wall: Wall::Empty,
                left_wall: Wall::Empty,
+               chr: chr,
         }
     }
 
     pub fn short_wall() -> Self {
+        return Tile::short_wall_with(None);
+    }
+
+    pub fn short_wall_with(chr: Option<char>) -> Self {
         Tile { blocked: true,
                block_sight: false,
                explored: false,
@@ -62,6 +74,7 @@ impl Tile {
                sound: None,
                bottom_wall: Wall::Empty,
                left_wall: Wall::Empty,
+               chr: chr,
         }
     }
 
@@ -73,6 +86,7 @@ impl Tile {
                sound: None,
                bottom_wall: Wall::Empty,
                left_wall: Wall::Empty,
+               chr: None,
         }
     }
 }
@@ -129,7 +143,7 @@ impl Map {
     pub fn from_dims(width: usize, height: usize) -> Map {
         let map =
             Map {
-              tiles: vec!(vec!(Tile::empty(); width); height),
+              tiles: vec!(vec!(Tile::empty(); height); width),
             };
 
         return map;
@@ -259,6 +273,14 @@ impl Index<(i32, i32)> for Map {
     }
 }
 
+impl Index<(usize, usize)> for Map {
+    type Output = Tile;
+
+    fn index(&self, index: (usize, usize)) -> &Tile {
+        &self.tiles[index.0][index.1]
+    }
+}
+
 impl Index<Position> for Map {
     type Output = Tile;
 
@@ -270,6 +292,12 @@ impl Index<Position> for Map {
 impl IndexMut<(i32, i32)> for Map {
     fn index_mut(&mut self, index: (i32, i32)) -> &mut Tile {
         &mut self.tiles[index.0 as usize][index.1 as usize]
+    }
+}
+
+impl IndexMut<(usize, usize)> for Map {
+    fn index_mut(&mut self, index: (usize, usize)) -> &mut Tile {
+        &mut self.tiles[index.0][index.1]
     }
 }
 

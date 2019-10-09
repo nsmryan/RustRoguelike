@@ -12,6 +12,7 @@ use crate::engine::map::*;
 
 
 
+// TODO these are utilities that are not specific to AI
 pub fn can_see_player(fov_map: &FovMap, monster_pos: Position, player_pos: Position) -> bool {
     let within_fov = fov_map.is_in_fov(monster_pos.0, monster_pos.1);
     let within_sight_range = player_pos.distance(&monster_pos) <= MONSTER_VIEW_DIST;
@@ -27,7 +28,7 @@ pub fn move_by(id: usize, dx: i32, dy: i32, map: &Map, objects: &mut [Object]) {
     }
 }
 
-pub fn move_towards(start_pos: (i32, i32), target_pos: (i32, i32)) -> (i32, i32) {
+pub fn step_towards(start_pos: (i32, i32), target_pos: (i32, i32)) -> (i32, i32) {
     let dx = target_pos.0 - start_pos.0;
     let dy = target_pos.1 - start_pos.1;
     let distance = ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
@@ -145,7 +146,7 @@ fn ai_take_astar_step(monster_pos: (i32, i32), target_pos: (i32, i32), map: &Map
 
     match astar.walk_one_step(true) {
         Some(target_pos) => {
-            return move_towards(monster_pos, target_pos);
+            return step_towards(monster_pos, target_pos);
         }
 
         None => {
