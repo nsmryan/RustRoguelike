@@ -24,7 +24,7 @@ struct MouseState {
     wheel: f32,
 }
 
-pub struct ImGuiWrapper {
+pub struct Gui {
     pub imgui: imgui::Context,
     pub renderer: Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
     last_frame: Instant,
@@ -32,7 +32,7 @@ pub struct ImGuiWrapper {
     show_popup: bool,
 }
 
-impl ImGuiWrapper {
+impl Gui {
     pub fn new(ctx: &mut Context) -> Self {
         // Create the imgui object
         let mut imgui = imgui::Context::create();
@@ -95,7 +95,7 @@ impl ImGuiWrapper {
             let mouse_state = self.mouse_state;
             let mouse_pos = ((mouse_state.pos.0 / FONT_WIDTH) + 1,
                              (mouse_state.pos.1 / FONT_HEIGHT) + 1);
-            dbg!(mouse_pos);
+
             // Window
             let ui_width = 300.0;
             Window::new(im_str!("Lower Panel"))

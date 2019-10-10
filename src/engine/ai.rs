@@ -59,13 +59,23 @@ pub fn ai_attack(monster_id: usize,
         let mut pos_offset = (0, 0);
         if let Some(reach) = objects[monster_id].attack {
             // get all locations they can hit
+            let attack_positions =
+                MoveAction::move_actions().iter()
+                                          .map(|move_action| reach.move_with_reach(move_action))
+                                          .filter_map(|mov| mov)
+                                          .map(|mov| mov.add(monster_pos).into_pair())
+                                          .collect::<Vec<(i32, i32)>>();
+            // filter locations that are blocked or out of sight
             let positions: Vec<(i32, i32)> =
-                reach.offsets()
+                attack_positions
                 .iter()
-                .map(|pos| (pos.0 + target_x, pos.1 + target_y))
                 .filter(|(x, y)| fov_map.is_in_fov(*x, *y))
                 .filter(|(x, y)| !map.is_blocked(*x, *y, objects))
+                .map(|pair| *pair)
                 .collect();
+
+            // if there are any options to move to that will allow the monster to
+            // attack, move to the one closest to their current position.
             if positions.len() > 0 {
                 target_pos = positions.iter()
                                       .min_by_key(|pos| monster_pos.distance(&Position::from_pair(**pos)))

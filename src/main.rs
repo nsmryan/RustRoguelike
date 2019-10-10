@@ -533,7 +533,7 @@ struct GameState {
     objects: Vec<Object>,
     messages: Messages,
     inventory: Vec<Object>,
-    imgui_wrapper: ImGuiWrapper,
+    imgui_wrapper: Gui,
     font_image: Image,
     sprite_batch: SpriteBatch,
     input_action: InputAction,
@@ -541,7 +541,7 @@ struct GameState {
 
 impl GameState {
     fn new(mut ctx: &mut Context, args: &Vec<String>) -> GameResult<GameState> {
-        let imgui_wrapper = ImGuiWrapper::new(&mut ctx);
+        let imgui_wrapper = Gui::new(&mut ctx);
 
         // Create seed for random number generator, either from
         // user input or randomly

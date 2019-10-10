@@ -225,6 +225,7 @@ pub fn check_collision(object_id: ObjectId,
     for (x_pos, y_pos) in line_positions {
         if map.is_blocked(x_pos, y_pos, objects) {
             if map[(x_pos, y_pos)].blocked {
+                dbg!();
                 result = Collision::BlockedTile((x_pos, y_pos), last_pos);
             } else {
                 let entity_id = objects.iter()

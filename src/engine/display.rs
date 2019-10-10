@@ -271,7 +271,7 @@ pub fn render_all(ctx: &mut Context,
                   objects: &[Object],
                   map: &mut Map,
                   _messages: &mut Messages,
-                  imgui_wrapper: &mut ImGuiWrapper,
+                  imgui_wrapper: &mut Gui,
                   sprite_batch: &mut SpriteBatch,
                   config: &Config)  -> GameResult<()> {
     sprite_batch.clear();
