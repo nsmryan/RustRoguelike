@@ -400,6 +400,10 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map) {
                                 objects.push(make_orc(config, x as i32, y as i32));
                             }
 
+                            ENTITY_SWIRL_CIRCLE => {
+                                objects.push(make_kobold(config, x as i32, y as i32));
+                            }
+
                             MAP_EMPTY => {
                                 // Nothing to do here...
                             }

@@ -16,7 +16,9 @@ use mint::Point2;
 
 use crate::engine::types::*;
 use crate::engine::map::*;
+use crate::input::calculate_move;
 use crate::imgui_wrapper::*;
+use crate::constants::*;
 
 
 pub fn get_objects_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> Vec<ObjectId> {
@@ -229,18 +231,32 @@ pub fn render_overlays(game: &mut Game, sprite_batch: &mut SpriteBatch, map: &Ma
         if !objects[id].alive {
             continue;
         }
-
-        // TODO removed for ggez
-        game.needs_clear.extend(draw_movement_overlay(sprite_batch, map, id, config, objects));
-        game.needs_clear.extend(draw_attack_overlay(sprite_batch, map, id, config, objects));
     }
 
-    for id in 0..objects.len() {
-        let (x, y) = (objects[id].x, objects[id].y);
-        if game.display_overlays && game.fov.is_in_fov(x, y) && objects[id].alive {
-            // TODO removed for ggez
-            game.needs_clear.extend(draw_movement_overlay(sprite_batch, map, id, config, objects));
-            game.needs_clear.extend(draw_attack_overlay(sprite_batch, map, id, config, objects));
+    // Draw player action overlay. Could draw arrows to indicate how to reach each location
+    for move_action in MoveAction::move_actions().iter() {
+        if let Some(movement) = calculate_move(*move_action, PLAYER, objects, map) {
+            match movement {
+                Movement::Move(x, y) => {
+                    draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
+                }
+
+                Movement::Attack(x, y, object_id) => {
+                    draw_char(sprite_batch, MAP_STAR as char, x, y, config.color_red.color());
+                }
+
+                Movement::Collide(x, y) => {
+                    draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
+                }
+
+                Movement::WallKick(x, y, dir_x, dir_y) => {
+                    draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
+                }
+
+                Movement::JumpWall(x, y) => {
+                    draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
+                }
+            }
         }
     }
 }

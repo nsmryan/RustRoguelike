@@ -96,6 +96,7 @@ impl ImGuiWrapper {
         .collapsible(false)
         .title_bar(false)
         .resizable(false)
+        .bg_alpha(0.0)
         .build(|| {
           ui.text(im_str!("Debug Inspector"));
           ui.separator();

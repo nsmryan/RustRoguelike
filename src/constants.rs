@@ -96,11 +96,13 @@ pub const MAP_DOT_BOTTOM_LEFT: u8 = 161;
 pub const MAP_DOT_BOTTOM_RIGHT: u8 = 162;
 
 pub const MAP_DOT_MIDDLE: u8 = 249;
+pub const MAP_SMALL_DOT_MIDDLE: u8 = 250;
+pub const MAP_STAR: u8 = 15;
 pub const MAP_ORB: u8 = 135;
 
 pub const MAP_ROOK: u8 = 130;
 
-pub const ENTITY_GOL: u8 = 152;
+pub const ENTITY_ORC: u8 = 152;
 pub const ENTITY_POLAXE: u8 = 0x8C;
 pub const ENTITY_CASTLE: u8 = 0x85;
 pub const ENTITY_PLAYER: u8 = 0x40;

@@ -300,6 +300,18 @@ impl MoveAction {
             MoveAction::Center => (0, 0),
         }
     }
+
+    pub fn move_actions() -> Vec<MoveAction> {
+        return vec!(MoveAction::Left,
+                    MoveAction::Right,
+                    MoveAction::Up,
+                    MoveAction::Down,
+                    MoveAction::DownLeft,
+                    MoveAction::DownRight,
+                    MoveAction::UpLeft,
+                    MoveAction::UpRight,
+                    MoveAction::Center);
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

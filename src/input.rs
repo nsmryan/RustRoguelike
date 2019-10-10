@@ -521,7 +521,7 @@ fn player_move_or_attack(move_action: MoveAction,
 
 pub fn calculate_move(action: MoveAction,
                       object_id: ObjectId,
-                      objects: &mut [Object],
+                      objects: &[Object],
                       map: &Map) -> Option<Movement> {
     let movement: Option<Movement>;
 
@@ -532,19 +532,16 @@ pub fn calculate_move(action: MoveAction,
     match check_collision(object_id, objects, dx, dy, map) {
         Collision::NoCollision(new_x, new_y) => {
             // no collision- just move to location
-            dbg!("simple move");
             movement = Some(Movement::Move(new_x, new_y));
         }
 
         Collision::BlockedTile((_tile_x, _tile_y), (new_x, new_y)) => {
-            dbg!("blocked tile");
             movement = Some(Movement::Move(new_x, new_y));
         }
 
         Collision::Wall((tile_x, tile_y), (new_x, new_y)) => {
             match objects[object_id].momentum {
                 Some(momentum) => {
-                    dbg!("momentum move");
                     // if max momentum, and will hit short wall, and there is space beyond the
                     // wall, than jump over the wall.
                     if momentum.magnitude() == MAX_MOMENTUM &&
@@ -552,27 +549,26 @@ pub fn calculate_move(action: MoveAction,
                         !map.is_blocked(tile_x + 2 * dx, tile_y + 2 * dy, objects) {
                             movement = Some(Movement::JumpWall(tile_x + 2 * dx, tile_y + 2 * dy));
                     } else { // otherwise move normally, stopping just before the blocking tile
-                        dbg!();
                         movement = Some(Movement::Move(new_x, new_y));
                     }
                 },
 
                 None => {
-                    dbg!("non momentum move");
                     // with no momentum, the movement will end just before the blocked location
                     movement = Some(Movement::Move(x + dx, y + dy));
                 },
             }
         }
 
-        Collision::Entity(object_id, (new_x, new_y)) => {
+        Collision::Entity(other_object_id, (new_x, new_y)) => {
             // find if an entity occupies the square we will move into
-            dbg!();
-            if object_id != PLAYER {
-                dbg!("attacking");
-                movement = Some(Movement::Attack(new_x, new_y, object_id));
+
+            // if hit oneself, don't attack
+            if other_object_id != object_id {
+                movement = Some(Movement::Attack(new_x, new_y, other_object_id));
             } else {
-                dbg!("move to");
+                // otherwise just move
+                panic!("Is this possible? Let find out!");
                 movement = Some(Movement::Move(new_x, new_y));
             }
         }
