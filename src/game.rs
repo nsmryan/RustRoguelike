@@ -1,11 +1,6 @@
-use std::fs::File;
-use std::io::BufReader;
-
 use rand::Rng;
 use rand::prelude::SliceRandom;
 use rand::prelude::*;
-
-use rexpaint::*;
 
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
 
@@ -228,7 +223,7 @@ pub fn make_island(map: &mut Map,
     let mut edge_positions = Vec::new();
     for x in 0..map_size.0 {
         for y in 0..map_size.1 {
-            let pos = Position::from_pair(&(x, y));
+            let pos = Position::from_pair((x, y));
             if !(map[(x, y)].tile_type == TileType::Water) && near_tile_type(&map, pos, TileType::Water) {
                 edge_positions.push(pos);
             }
@@ -263,60 +258,3 @@ pub fn exit_condition_met(inventory: &[Object], map: &Map, objects: &[Object]) -
     return exit_condition;
 }
 
-pub fn read_map_xp(file_name: &str) -> Map {
-    let file = File::open(file_name).unwrap();
-    let mut buf_reader = BufReader::new(file);
-    let mut map_lines = Vec::new();
-
-    let xp = XpFile::read(&mut buf_reader).unwrap();
-
-    for layer in xp.layers {
-        let width = layer.width;
-        let height = layer.height;
-
-        for x in 0..width {
-            let mut line = Vec::new();
-
-            for y in 0..height {
-                let index = width * y + x;
-                let cell = layer.cells[index];
-
-                let chr = std::char::from_u32(cell.ch).unwrap();
-                let tile = 
-                    match chr {
-                        ' ' => Tile::empty(),
-                        '\u{9C}' | '\u{9D}' | '\u{9E}' | '\u{9F}' => Tile::short_wall_with(Some(chr)),
-                        '#' | '\u{DC}' | '\u{EC}' | '\u{ED}' | '\u{FE}' => Tile::wall_with(Some(chr)),
-                        'w' | '\u{AB}' => Tile::water(),
-                        'x' => Tile::exit(),
-                        '\u{DB}' | '\u{DD}' => Tile::empty(),
-                        '\u{99}' => Tile::empty(), // TODO torch?
-                        '\u{8d}' => Tile::empty(), // TODO dot?
-                        '\u{91}' => Tile::empty(), // TODO orc?
-                        '\u{a1}' => Tile::empty(), // TODO mage?
-                        '\u{92}' => Tile::empty(), // TODO rocks?
-                        '\u{a2}' => Tile::empty(), // TODO idk?
-                        '\u{9f}' => Tile::empty(), // TODO idk?
-                        '\u{86}' => Tile::empty(), // TODO idk?
-                        _ => Tile::empty(), // panic!(format!("Unexpected char '{}' ({}) in map!", chr, cell.ch)),
-                    };
-
-                line.push(tile);
-            }
-
-            map_lines.push(line);
-        }
-    }
-
-    let map = Map::with_vec(map_lines);
-
-    //for x in 0..MAP_WIDTH {
-    //    let mut line = Vec::new();
-    //    for y in 0..MAP_HEIGHT {
-    //        line.push(rot_map[y as usize][x as usize]);
-    //    }
-    //    map.tiles.push(line);
-    //}
-
-    return map;
-}

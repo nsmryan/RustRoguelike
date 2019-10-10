@@ -243,7 +243,7 @@ impl Map {
 
     pub fn pos_in_radius(&self, start: (i32, i32), radius: i32) -> Vec<(i32, i32)> {
         let mut circle_positions = HashSet::new();
-        let start_pos = Position::from_pair(&start);
+        let start_pos = Position::from_pair(start);
 
         // for each position on the edges of a square around the point, with the
         // radius as the distance in x/y, add to a set.
@@ -254,7 +254,7 @@ impl Map {
 
                 // get points to the edge of square, filtering for points within the given radius
                 for point in line.into_iter() {
-                    if start_pos.distance(&Position::from_pair(&point)) < radius {
+                    if start_pos.distance(&Position::from_pair(point)) < radius {
                         circle_positions.insert(point);
                     }
                 }

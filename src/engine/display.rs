@@ -168,9 +168,9 @@ pub fn render_map(_ctx: &mut Context,
             let visible = game.fov.is_in_fov(x, y);
 
             let tile = &map.tiles[x as usize][y as usize];
-            let mut color = tile_color(config, x, y, tile, visible);
+            let color = tile_color(config, x, y, tile, visible);
 
-            let mut explored = map.tiles[x as usize][y as usize].explored || visible;
+            let explored = map.tiles[x as usize][y as usize].explored || visible;
 
             match tile.chr {
                 Some(character) => {
@@ -241,7 +241,7 @@ pub fn render_overlays(game: &mut Game, sprite_batch: &mut SpriteBatch, map: &Ma
                     draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
                 }
 
-                Movement::Attack(x, y, object_id) => {
+                Movement::Attack(x, y, _object_id) => {
                     draw_char(sprite_batch, MAP_STAR as char, x, y, config.color_red.color());
                 }
 
@@ -249,7 +249,7 @@ pub fn render_overlays(game: &mut Game, sprite_batch: &mut SpriteBatch, map: &Ma
                     draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
                 }
 
-                Movement::WallKick(x, y, dir_x, dir_y) => {
+                Movement::WallKick(x, y, _dir_x, _dir_y) => {
                     draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
                 }
 

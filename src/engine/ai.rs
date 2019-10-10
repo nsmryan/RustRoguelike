@@ -68,8 +68,8 @@ pub fn ai_attack(monster_id: usize,
                 .collect();
             if positions.len() > 0 {
                 target_pos = positions.iter()
-                                      .min_by_key(|pos| monster_pos.distance(&Position::from_pair(pos)))
-                                      .map(|pair| Position::from_pair(pair))
+                                      .min_by_key(|pos| monster_pos.distance(&Position::from_pair(**pos)))
+                                      .map(|pair| Position::from_pair(*pair))
                                       .unwrap();
             }
 
@@ -171,7 +171,7 @@ pub fn basic_ai_take_turn(monster_id: usize,
                 // TODO will cause a turn between seeing the player and attacking
                 turn.add(AiAction::StateChange(Behavior::Attacking(PLAYER)));
             } else if let Some(sound_pos) = map[(monster_x, monster_y)].sound {
-                let sound_position = Position::from_pair(&sound_pos);
+                let sound_position = Position::from_pair(sound_pos);
                 turn.add(AiAction::StateChange(Behavior::Investigating(sound_position)));
             }
 

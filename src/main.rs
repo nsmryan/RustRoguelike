@@ -200,7 +200,7 @@ pub fn step_game(game: &mut Game,
     }
 
   if config.load_map_file && Path::new("map.xp").exists() {
-      let (new_object, new_map) = read_map_xp(&config, "map.xp");
+      let (_new_object, new_map) = read_map_xp(&config, "map.xp");
       *map = new_map;
       // TODO updates objects
 

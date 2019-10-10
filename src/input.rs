@@ -561,16 +561,9 @@ pub fn calculate_move(action: MoveAction,
         }
 
         Collision::Entity(other_object_id, (new_x, new_y)) => {
-            // find if an entity occupies the square we will move into
-
-            // if hit oneself, don't attack
-            if other_object_id != object_id {
-                movement = Some(Movement::Attack(new_x, new_y, other_object_id));
-            } else {
-                // otherwise just move
-                panic!("Is this possible? Let find out!");
-                movement = Some(Movement::Move(new_x, new_y));
-            }
+            // record that an attack would occur. if this is not desired, the
+            // calling code will handle this.
+            movement = Some(Movement::Attack(new_x, new_y, other_object_id));
         }
     }
 
