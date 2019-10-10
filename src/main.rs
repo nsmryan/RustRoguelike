@@ -199,7 +199,7 @@ pub fn step_game(game: &mut Game,
     }
 
   if config.load_map_file && Path::new("map.xp").exists() {
-      let (new_object, new_map) = read_map_xp("map.xp");
+      let (new_object, new_map) = read_map_xp(&config, "map.xp");
       *map = new_map;
       // TODO updates objects
 
@@ -226,7 +226,7 @@ pub fn step_game(game: &mut Game,
   return false; 
 }
 
-pub fn read_map_xp(file_name: &str) -> (Vec<Object>, Map) {
+pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map) {
     let file = File::open(file_name).unwrap();
     let mut buf_reader = BufReader::new(file);
     let xp = XpFile::read(&mut buf_reader).unwrap();
@@ -282,6 +282,23 @@ pub fn read_map_xp(file_name: &str) -> (Vec<Object>, Map) {
                                 map[(x, y)].chr = Some(chr);
                             }
 
+                            MAP_THIN_WALL_TOP_LEFT => {
+                                map[(x, y)].chr = Some(chr);
+                            }
+
+                            MAP_THIN_WALL_BOTTOM_LEFT => {
+                                map[(x, y)].chr = Some(chr);
+                            }
+
+                            MAP_THIN_WALL_TOP_RIGHT => {
+                                map[(x, y)].chr = Some(chr);
+                            }
+
+                            MAP_THIN_WALL_BOTTOM_RIGHT => {
+                                map[(x, y)].chr = Some(chr);
+                            }
+
+
                             MAP_THICK_WALL_TOP => {
                                 map[(x, y)].chr = Some(chr);
                             }
@@ -300,11 +317,73 @@ pub fn read_map_xp(file_name: &str) -> (Vec<Object>, Map) {
                                 map[(x, y)].bottom_wall = Wall::TallWall;
                             }
 
+                            MAP_THICK_WALL_TOP_LEFT => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].left_wall = Wall::TallWall;
+                            }
+
+                            MAP_THICK_WALL_BOTTOM_LEFT => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].bottom_wall = Wall::TallWall;
+                                map[(x, y)].left_wall = Wall::TallWall;
+                            }
+
+                            MAP_THICK_WALL_TOP_RIGHT => {
+                                map[(x, y)].chr = Some(chr);
+                            }
+
+                            MAP_THICK_WALL_BOTTOM_RIGHT => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].bottom_wall = Wall::TallWall;
+                            }
+
+                            MAP_DOT_TOP_LEFT => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].bottom_wall = Wall::TallWall;
+                            }
+
+                            MAP_DOT_TOP_RIGHT => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].bottom_wall = Wall::TallWall;
+                            }
+
+                            MAP_DOT_BOTTOM_LEFT => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].bottom_wall = Wall::TallWall;
+                            }
+
+                            MAP_DOT_BOTTOM_RIGHT => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].bottom_wall = Wall::TallWall;
+                            }
+
+                            MAP_ROOK => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].blocked = true;
+                            }
+
+                            MAP_DOT_MIDDLE | MAP_ORB => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].blocked = true;
+                            }
+
                             MAP_EMPTY => {
                                 // Nothing to do here...
                             }
 
-                            MAP_STATUE_1 | MAP_STATUE_2 | MAP_STATUE_3 | MAP_STATUE_4 => {
+                            MAP_STATUE_1 | MAP_STATUE_2 | MAP_STATUE_3 |
+                            MAP_STATUE_4 | MAP_STATUE_5 | MAP_STATUE_6 => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].blocked = true;
+                            }
+
+                            MAP_WIDE_SPIKES| MAP_TALL_SPIKES => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].blocked = true;
+                            }
+
+                            // TODO This should be in entity layer...
+                            ENTITY_PLAYER => {
                                 map[(x, y)].chr = Some(chr);
                                 map[(x, y)].blocked = true;
                             }
@@ -317,6 +396,14 @@ pub fn read_map_xp(file_name: &str) -> (Vec<Object>, Map) {
 
                     MAP_LAYER_ENTITIES => {
                         match chr as u8 {
+                            ENTITY_ORC => {
+                                objects.push(make_orc(config, x as i32, y as i32));
+                            }
+
+                            MAP_EMPTY => {
+                                // Nothing to do here...
+                            }
+
                             _ => {
                                 panic!(format!("Unexpected character {} in entities layer!", chr as u8));
                             }

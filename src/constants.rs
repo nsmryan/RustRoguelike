@@ -64,18 +64,43 @@ pub const MAP_STATUE_1: u8 = 148;
 pub const MAP_STATUE_2: u8 = 149;
 pub const MAP_STATUE_3: u8 = 140;
 pub const MAP_STATUE_4: u8 = 133;
+pub const MAP_STATUE_5: u8 = 132;
+pub const MAP_STATUE_6: u8 = 151;
+
+pub const MAP_TALL_SPIKES: u8 = 136;
+pub const MAP_WIDE_SPIKES: u8 = 137;
 
 pub const MAP_THIN_WALL_TOP: u8 = 0x9c;
 pub const MAP_THIN_WALL_BOTTOM: u8 = 0x9D;
 pub const MAP_THIN_WALL_LEFT: u8 = 0x9E;
 pub const MAP_THIN_WALL_RIGHT: u8 = 0x9F;
 
+pub const MAP_THIN_WALL_TOP_LEFT: u8 = 24;
+pub const MAP_THIN_WALL_BOTTOM_LEFT: u8 = 25;
+pub const MAP_THIN_WALL_TOP_RIGHT: u8 = 26;
+pub const MAP_THIN_WALL_BOTTOM_RIGHT: u8 = 27;
+
 pub const MAP_THICK_WALL_RIGHT: u8 = 175;
 pub const MAP_THICK_WALL_LEFT: u8 = 174;
 pub const MAP_THICK_WALL_TOP: u8 = 172;
 pub const MAP_THICK_WALL_BOTTOM: u8 =  173;
 
-pub const ENTITY_ORC: u8 = 0x98;
+pub const MAP_THICK_WALL_TOP_LEFT: u8 = 240;
+pub const MAP_THICK_WALL_BOTTOM_LEFT: u8 = 241;
+pub const MAP_THICK_WALL_TOP_RIGHT: u8 = 242;
+pub const MAP_THICK_WALL_BOTTOM_RIGHT: u8 = 243;
+
+pub const MAP_DOT_TOP_LEFT: u8 = 145;
+pub const MAP_DOT_TOP_RIGHT: u8 = 146;
+pub const MAP_DOT_BOTTOM_LEFT: u8 = 161;
+pub const MAP_DOT_BOTTOM_RIGHT: u8 = 162;
+
+pub const MAP_DOT_MIDDLE: u8 = 249;
+pub const MAP_ORB: u8 = 135;
+
+pub const MAP_ROOK: u8 = 130;
+
+pub const ENTITY_GOL: u8 = 152;
 pub const ENTITY_POLAXE: u8 = 0x8C;
 pub const ENTITY_CASTLE: u8 = 0x85;
 pub const ENTITY_PLAYER: u8 = 0x40;
