@@ -10,6 +10,10 @@ use imgui_gfx_renderer::*;
 
 use std::time::Instant;
 
+use crate::engine::types::*;
+use crate::engine::map::*;
+
+
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 struct MouseState {
   pos: (i32, i32),
@@ -64,7 +68,7 @@ impl ImGuiWrapper {
     }
   }
 
-  pub fn render(&mut self, ctx: &mut Context) {
+  pub fn render(&mut self, ctx: &mut Context, map: &Map, objects: &[Object]) {
     // Update mouse
     self.update_mouse();
 
@@ -84,27 +88,32 @@ impl ImGuiWrapper {
 
     {
       // Window
-      let ui_height = 130.0;
+      let ui_width = 300.0;
       ui.window(im_str!("Lower Panel"))
-        .size([w, ui_height], imgui::Condition::FirstUseEver)
-        .position([0.0, h - ui_height], imgui::Condition::FirstUseEver)
+        .size([ui_width, h], imgui::Condition::FirstUseEver)
+        .position([w - ui_width, 0.0], imgui::Condition::FirstUseEver)
         .movable(false)
         .collapsible(false)
         .title_bar(false)
         .resizable(false)
         .build(|| {
-          ui.text(im_str!("Hello world!"));
+          ui.text(im_str!("Debug Inspector"));
           ui.separator();
-          let mouse_pos = ui.io().mouse_pos;
+
           ui.text(im_str!(
-            "Mouse Position: ({:.1},{:.1})",
-            mouse_pos[0],
-            mouse_pos[1]
+            "Player Position: ({:},{:})",
+            objects[0].x,
+            objects[0].y
           ));
 
-          if ui.small_button(im_str!("small button")) {
-            println!("Small button clicked");
-          }
+          ui.text(im_str!("Tile:"));
+          ui.same_line(0.0);
+          ui.text(im_str!(
+            "({:?}, {:?}, {:})",
+            map[objects[0].pos()].tile_type,
+            map[objects[0].pos()].chr,
+            map[objects[0].pos()].blocked,
+          ));
         });
 
       // Popup
@@ -116,27 +125,6 @@ impl ImGuiWrapper {
         if ui.menu_item(im_str!("popup menu item 2")).build() {
           println!("popup menu item 2 clicked");
         }
-      });
-
-      // Menu bar
-      ui.main_menu_bar(|| {
-        ui.menu(im_str!("Menu 1")).build(|| {
-          if ui.menu_item(im_str!("Item 1.1")).build() {
-            println!("item 1.1 inside menu bar clicked");
-          }
-
-          ui.menu(im_str!("Item 1.2")).build(|| {
-            if ui.menu_item(im_str!("Item 1.2.1")).build() {
-              println!("item 1.2.1 inside menu bar clicked");
-            }
-          });
-        });
-
-        ui.menu(im_str!("Menu 2")).build(|| {
-          if ui.menu_item(im_str!("Item 2.1")).build() {
-            println!("item 2.1 inside menu bar clicked");
-          }
-        });
       });
     }
 

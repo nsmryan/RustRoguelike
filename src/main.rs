@@ -418,7 +418,15 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map) {
         }
     }
 
-    return (objects, map);
+    let dims = map.size();
+    let mut transposed_map = Map::from_dims(dims.1 as usize, dims.0 as usize);
+    for x in 0..dims.0 {
+        for y in 0..dims.1 {
+            transposed_map[(y, x)] = map[(x, y)];
+        }
+    }
+
+    return (objects, transposed_map);
 }
 
 pub fn read_map(file_name: &str) -> Map {

@@ -120,6 +120,39 @@ pub fn lerp_color(color1: Color, color2: Color, scale: f32) -> Color {
     };
 }
 
+pub fn tile_color(config: &Config, x: i32, y: i32, tile: &Tile, visible: bool) -> Color {
+    let color = match (tile.tile_type, visible) {
+        (TileType::Wall, true) =>
+            config.color_light_brown.color(),
+        (TileType::Wall, false) =>
+            config.color_dark_brown.color(),
+
+        (TileType::Empty, true) =>
+            // TODO use perlin noise to smooth colors
+            lerp_color(config.color_tile_blue_light.color(), config.color_tile_blue_dark.color(), rand_from_x_y(x, y)),
+
+        (TileType::Empty, false) =>
+            lerp_color(config.color_tile_blue_dark.color(), config.color_very_dark_blue.color(), rand_from_x_y(x, y)),
+
+        (TileType::Water, true) =>
+            config.color_blueish_grey.color(),
+        (TileType::Water, false) =>
+            config.color_dark_brown.color(),
+
+        (TileType::ShortWall, true) =>
+            config.color_light_brown.color(),
+        (TileType::ShortWall, false) =>
+            config.color_dark_brown.color(),
+
+        (TileType::Exit, true) =>
+            config.color_orange.color(),
+        (TileType::Exit, false) =>
+            config.color_red.color(),
+    };
+
+    return color;
+}
+
 pub fn render_map(_ctx: &mut Context,
                   game: &mut Game,
                   map: &mut Map,
@@ -133,108 +166,24 @@ pub fn render_map(_ctx: &mut Context,
             let visible = game.fov.is_in_fov(x, y);
 
             let tile = &map.tiles[x as usize][y as usize];
-            let mut color = match (tile.tile_type, visible) {
-                (TileType::Wall, true) =>
-                    config.color_light_brown.color(),
-                (TileType::Wall, false) =>
-                    config.color_dark_brown.color(),
+            let mut color = tile_color(config, x, y, tile, visible);
 
-                (TileType::Empty, true) =>
-                    lerp_color(config.color_tile_blue_light.color(), config.color_tile_blue_dark.color(), rand_from_x_y(x, y)),
-                (TileType::Empty, false) =>
-                    config.color_very_dark_blue.color(),
+            let mut explored = map.tiles[x as usize][y as usize].explored || visible;
 
-                (TileType::Water, true) =>
-                    config.color_blueish_grey.color(),
-                (TileType::Water, false) =>
-                    config.color_dark_brown.color(),
-
-                (TileType::ShortWall, true) =>
-                    config.color_light_brown.color(),
-                (TileType::ShortWall, false) =>
-                    config.color_dark_brown.color(),
-
-                (TileType::Exit, true) =>
-                    config.color_orange.color(),
-                (TileType::Exit, false) =>
-                    config.color_red.color(),
-            };
-
-            let mut explored = map.tiles[x as usize][y as usize].explored;
-            if visible {
-                explored = true;
-            }
-
-            match tile.tile_type {
-                TileType::Empty => {
-                    let has_bottom_wall = map.tiles[x as usize][y as usize].bottom_wall != Wall::Empty;
-                    let has_left_wall = map.tiles[x as usize][y as usize].left_wall != Wall::Empty;
-
-                    if  has_bottom_wall && has_left_wall {
-                        chr = '\u{DB}';
-                    } else if has_left_wall {
-                        chr = '\u{DD}';
-                    } else if has_bottom_wall {
-                        chr = '\u{DC}';
-                    } else {
-                        chr = '\u{AB}';
-                    }
+            match tile.chr {
+                Some(character) => {
+                    chr = character;
                 }
 
-                TileType::Water | TileType::Exit => {
-                    chr = '\u{AB}';
-                }
-
-                TileType::ShortWall | TileType::Wall => {
-                    if visible {
-                        color = config.color_tile_blue_light.color();
-                    } else {
-                        color = config.color_very_dark_blue.color();
-                    }
-
-                    match tile.chr {
-                        Some(tile_chr) => {
-                            chr = tile_chr;
-                        },
-
-                        None => {
-                            let left = map[(x - 1, y)].tile_type == tile.tile_type;
-                            let right = map[(x + 1, y)].tile_type == tile.tile_type;
-                            let horiz = left || right;
-
-                            let above = map[(x, y + 1)].tile_type == tile.tile_type;
-                            let below = map[(x, y - 1)].tile_type == tile.tile_type;
-                            let vert = above || below;
-
-                            if tile.tile_type == TileType::Wall {
-                                if horiz && vert {
-                                   chr = '\u{DC}';
-                                } else if horiz {
-                                   chr = '\u{EC}';
-                                } else if vert {
-                                   chr = '\u{ED}';
-                                } else {
-                                   chr = '\u{FE}';
-                                }
-                            } else {
-                                if horiz && vert {
-                                   chr = tcod::chars::CROSS
-                                } else if horiz {
-                                   chr = tcod::chars::HLINE;
-                                } else if vert {
-                                   chr = tcod::chars::VLINE;
-                                } else {
-                                   chr = tcod::chars::VLINE;
-                                }
-                            }
-                        }
-                    };
+                None => {
+                    // TODO placeholder to check if any characters are not assigned.
+                    // chr should perhaps be required, not Option
+                    chr = '+';
                 }
             }
 
             draw_char(sprite_batch, chr, x, y, color);
 
-            // TODO removed while working out rendering
             map.tiles[x as usize][y as usize].explored = explored;
         }
     }
@@ -337,7 +286,7 @@ pub fn render_all(ctx: &mut Context,
     sprite_batch.draw(ctx, Default::default())?;
 
     // Render game ui
-    imgui_wrapper.render(ctx);
+    imgui_wrapper.render(ctx, map, objects);
 
     graphics::present(ctx)?;
 
