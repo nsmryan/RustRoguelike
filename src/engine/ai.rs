@@ -12,8 +12,7 @@ use crate::engine::map::*;
 
 
 
-// TODO these are utilities that are not specific to AI
-pub fn can_see_player(fov_map: &FovMap, monster_pos: Position, player_pos: Position) -> bool {
+pub fn location_within_fov(fov_map: &FovMap, monster_pos: Position, player_pos: Position) -> bool {
     let within_fov = fov_map.is_in_fov(monster_pos.0, monster_pos.1);
     let within_sight_range = player_pos.distance(&monster_pos) <= MONSTER_VIEW_DIST;
 
@@ -97,7 +96,7 @@ pub fn ai_investigate(target_pos_orig: Position,
     let mut turn: AiTurn = AiTurn::new();
 
                
-    if can_see_player(fov_map, monster_pos, player_pos) {
+    if location_within_fov(fov_map, monster_pos, player_pos) {
         // TODO this causes a turn delay between seeing the player and attacking them
         turn.add(AiAction::StateChange(Behavior::Attacking(PLAYER)));
     } else { // the monster can't see the player
@@ -168,7 +167,7 @@ pub fn basic_ai_take_turn(monster_id: usize,
         Some(Behavior::Idle) => {
             let mut turn = AiTurn::new();
 
-            if can_see_player(fov_map, monster_pos, player_pos) {
+            if location_within_fov(fov_map, monster_pos, player_pos) {
                 // TODO will cause a turn between seeing the player and attacking
                 turn.add(AiAction::StateChange(Behavior::Attacking(PLAYER)));
             } else if let Some(sound_pos) = map[(monster_x, monster_y)].sound {

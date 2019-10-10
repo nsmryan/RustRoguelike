@@ -57,23 +57,27 @@ impl Game {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Reach {
-    Single,
-    Diag,
-    Horiz,
+    Single(usize),
+    Diag(usize),
+    Horiz(usize),
 }
 
 impl Reach {
     pub fn offsets(&self) -> Vec<Position> {
         match self {
-            Reach::Single => {
-                let offsets = vec!((0,   1), (-1, 1), (-1,  0), (-1, -1), 
-                                   (0,  -1), (1, -1), (1,  0),  (1, 1));
-                offsets.iter().map(|pair| Position::from_pair(&pair)).collect()
+            Reach::Single(dist) => {
+                let dist = (*dist) as i32;
+                let mut offsets =
+                    vec!( (0, dist),      (-dist, dist), (-dist,  0),
+                          (-dist, -dist), (0,  -dist),   (dist, -dist),
+                          (dist,  0), (dist, dist));
+                offsets.iter().map(|pair| Position::from_pair(pair)).collect()
             },
 
-            Reach::Horiz => {
+            Reach::Horiz(dist) => {
+                let dist = (*dist) as i32;
                 let mut offsets = vec!();
-                for dist in 1..5 {
+                for dist in 1..dist {
                     offsets.push((dist, 0));
                     offsets.push((0, dist));
                     offsets.push((-1 * dist, 0));
@@ -83,9 +87,10 @@ impl Reach {
             },
 
 
-            Reach::Diag => {
+            Reach::Diag(dist) => {
                 let mut offsets = vec!();
-                for dist in 1..5 {
+                let dist = (*dist) as i32;
+                for dist in 1..dist {
                     offsets.push((dist, dist));
                     offsets.push((-1 * dist, dist));
                     offsets.push((dist, -1 * dist));

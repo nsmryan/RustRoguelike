@@ -12,6 +12,7 @@ use std::time::Instant;
 
 use crate::engine::types::*;
 use crate::engine::map::*;
+use crate::style::*;
 
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
@@ -34,6 +35,8 @@ impl ImGuiWrapper {
     // Create the imgui object
     let mut imgui = imgui::Context::create();
     imgui.set_ini_filename(None);
+
+    set_style_dark(imgui.style_mut());
 
     let (factory, gfx_device, _, _, _) = graphics::gfx_objects(ctx);
 
@@ -89,15 +92,15 @@ impl ImGuiWrapper {
     {
       // Window
       let ui_width = 300.0;
-      ui.window(im_str!("Lower Panel"))
+      Window::new(im_str!("Lower Panel"))
         .size([ui_width, h], imgui::Condition::FirstUseEver)
         .position([w - ui_width, 0.0], imgui::Condition::FirstUseEver)
         .movable(false)
         .collapsible(false)
+        .bg_alpha(0.0)
         .title_bar(false)
         .resizable(false)
-        .bg_alpha(0.0)
-        .build(|| {
+        .build(&ui, || {
           ui.text(im_str!("Debug Inspector"));
           ui.separator();
 
@@ -116,17 +119,6 @@ impl ImGuiWrapper {
             map[objects[0].pos()].blocked,
           ));
         });
-
-      // Popup
-      ui.popup(im_str!("popup"), || {
-        if ui.menu_item(im_str!("popup menu item 1")).build() {
-          println!("popup menu item 1 clicked");
-        }
-
-        if ui.menu_item(im_str!("popup menu item 2")).build() {
-          println!("popup menu item 2 clicked");
-        }
-      });
     }
 
     if self.show_popup {

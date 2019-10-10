@@ -13,16 +13,14 @@ serde_derive = "1.0"
 num = "0.2"
 timer = "0.2"
 chrono = "0.4"
-# removed until sound is added
-# rodio = "0.8"
 
 ggez = "0.5.1"
 
-gfx_core = "0.9"
-gfx_device_gl = "0.16"
+gfx_core = "*"
+gfx_device_gl = "*"
 
-imgui = "0.1.0"
-imgui-gfx-renderer = "0.1.0"
+imgui = "0.2"
+imgui-gfx-renderer = "0.2"
 
 mint = "0.5.1"
 

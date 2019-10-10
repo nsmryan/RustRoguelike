@@ -22,6 +22,8 @@ pub fn make_player() -> Object {
     player.alive = true;
     player.fighter = Some(Fighter{max_hp: 50, hp: 50, defense: 2, power: 5, on_death: DeathCallback::Player });
     player.momentum = Some(Default::default());
+    player.movement = Some(Reach::Single(1));
+    player.attack = Some(Reach::Single(1));
 
     player
 }
@@ -32,8 +34,8 @@ pub fn make_orc(config: &Config, x: i32, y :i32) -> Object {
     orc.ai = Some(Ai::Basic);
     orc.behavior = Some(Behavior::Idle);
     orc.color = config.color_light_orange.color();
-    orc.movement = Some(Reach::Single);
-    orc.attack = Some(Reach::Diag);
+    orc.movement = Some(Reach::Single(1));
+    orc.attack = Some(Reach::Diag(5));
     orc.alive = true;
     orc
 } 
@@ -44,8 +46,8 @@ pub fn make_troll(config: &Config, x: i32, y :i32) -> Object {
     troll.ai = Some(Ai::Basic);
     troll.behavior = Some(Behavior::Idle);
     troll.color = config.color_mint_green.color();
-    troll.movement = Some(Reach::Single);
-    troll.attack = Some(Reach::Diag);
+    troll.movement = Some(Reach::Single(1));
+    troll.attack = Some(Reach::Diag(5));
     troll.alive = true;
     troll
 }
@@ -56,8 +58,8 @@ pub fn make_kobold(config: &Config, x: i32, y :i32) -> Object {
     kobold.ai = Some(Ai::Basic);
     kobold.behavior = Some(Behavior::Idle);
     kobold.color = config.color_ice_blue.color();
-    kobold.movement = Some(Reach::Horiz);
-    kobold.attack = Some(Reach::Horiz);
+    kobold.movement = Some(Reach::Horiz(1));
+    kobold.attack = Some(Reach::Horiz(5));
     kobold.alive = true;
     kobold
 }

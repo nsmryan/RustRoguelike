@@ -17,6 +17,7 @@ mod constants;
 mod input;
 mod game;
 mod imgui_wrapper;
+mod style;
 
 #[cfg(test)]
 mod tests;
