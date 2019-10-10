@@ -238,13 +238,6 @@ pub fn render_objects(_ctx: &mut Context,
 }
 
 pub fn render_overlays(game: &mut Game, sprite_batch: &mut SpriteBatch, map: &Map, objects: &[Object], config: &Config) {
-    let ids = get_objects_under_mouse(game.mouse, objects, &game.fov);
-    for id in ids {
-        if !objects[id].alive {
-            continue;
-        }
-    }
-
     // Draw player action overlay. Could draw arrows to indicate how to reach each location
     for move_action in MoveAction::move_actions().iter() {
         if let Some(movement) = calculate_move(*move_action, objects[PLAYER].movement.unwrap(), PLAYER, objects, map) {
