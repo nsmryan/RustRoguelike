@@ -1,6 +1,9 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
+use noise::Perlin;
+use noise::NoiseFn;
+
 #[allow(unused_imports)]use tcod::console::*;
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
@@ -123,6 +126,8 @@ pub fn lerp_color(color1: Color, color2: Color, scale: f32) -> Color {
 }
 
 pub fn tile_color(config: &Config, x: i32, y: i32, tile: &Tile, visible: bool) -> Color {
+    let perlin = Perlin::new();
+
     let color = match (tile.tile_type, visible) {
         (TileType::Wall, true) =>
             config.color_light_brown.color(),
@@ -131,10 +136,17 @@ pub fn tile_color(config: &Config, x: i32, y: i32, tile: &Tile, visible: bool) -
 
         (TileType::Empty, true) =>
             // TODO use perlin noise to smooth colors
-            lerp_color(config.color_tile_blue_light.color(), config.color_tile_blue_dark.color(), rand_from_x_y(x, y)),
+            lerp_color(config.color_tile_blue_light.color(),
+                       config.color_tile_blue_dark.color(),
+                       perlin.get([x as f64 / config.tile_noise_scaler,
+                                   y as f64 / config.tile_noise_scaler]) as f32),
 
         (TileType::Empty, false) =>
-            lerp_color(config.color_tile_blue_dark.color(), config.color_very_dark_blue.color(), rand_from_x_y(x, y)),
+            // TODO use perlin noise to smooth colors
+            lerp_color(config.color_tile_blue_dark.color(),
+                       config.color_very_dark_blue.color(),
+                       perlin.get([x as f64 / config.tile_noise_scaler,
+                                   y as f64 / config.tile_noise_scaler]) as f32),
 
         (TileType::Water, true) =>
             config.color_blueish_grey.color(),

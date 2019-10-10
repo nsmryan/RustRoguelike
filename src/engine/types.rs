@@ -70,7 +70,7 @@ impl Reach {
                 let neg_dist = dist * -1;
                 match move_action {
                     MoveAction::Left => Some(Position::from_pair((neg_dist, 0))),
-                    MoveAction::Right => Some(Position::from_pair((neg_dist, 0))),
+                    MoveAction::Right => Some(Position::from_pair((dist, 0))),
                     MoveAction::Up => Some(Position::from_pair((0, neg_dist))),
                     MoveAction::Down => Some(Position::from_pair((0, dist))),
                     MoveAction::DownLeft => Some(Position::from_pair((neg_dist, dist))),
@@ -670,5 +670,6 @@ pub struct Config {
     pub color_light_grey: ColorConfig,
     pub fov_distance: i32,
     pub load_map_file: bool,
+    pub tile_noise_scaler: f64,
 }
 

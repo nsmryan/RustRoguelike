@@ -108,6 +108,7 @@
       "b": 132
     },
     "fov_distance": 10,
-    "load_map_file": true
+    "load_map_file": true,
+    "tile_noise_scaler": 4.0
 }
 

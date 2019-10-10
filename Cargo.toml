@@ -30,7 +30,9 @@ rexpaint = "*"
 [profile.dev]
 opt-level = 0
 debug = true
+lto = false
 
 [profile.release]
 opt-level = 3
 debug = true
+lto = false
