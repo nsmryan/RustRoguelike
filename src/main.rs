@@ -369,7 +369,7 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map) {
                             }
 
                             MAP_EMPTY => {
-                                // Nothing to do here...
+                                map[(x, y)].chr = Some(MAP_EMPTY_CHAR as char);
                             }
 
                             MAP_STATUE_1 | MAP_STATUE_2 | MAP_STATUE_3 |

@@ -235,7 +235,7 @@ pub fn render_overlays(game: &mut Game, sprite_batch: &mut SpriteBatch, map: &Ma
 
     // Draw player action overlay. Could draw arrows to indicate how to reach each location
     for move_action in MoveAction::move_actions().iter() {
-        if let Some(movement) = calculate_move(*move_action, PLAYER, objects, map) {
+        if let Some(movement) = calculate_move(*move_action, objects[PLAYER].movement.unwrap(), PLAYER, objects, map) {
             match movement {
                 Movement::Move(x, y) => {
                     draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());

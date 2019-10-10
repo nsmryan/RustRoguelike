@@ -13,6 +13,7 @@ serde_derive = "1.0"
 num = "0.2"
 timer = "0.2"
 chrono = "0.4"
+noise = "0.6"
 
 ggez = "0.5.1"
 

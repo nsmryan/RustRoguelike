@@ -606,6 +606,10 @@ impl Position {
     pub fn add(&self, other: Position) -> Position{
         Position(self.0 + other.0, self.1 + other.1)
     }
+
+    pub fn into_pair(&self) -> (i32, i32) {
+        return (self.0, self.1);
+    }
 }
 
 impl Into<(i32, i32)> for Position {

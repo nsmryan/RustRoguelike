@@ -59,6 +59,7 @@ pub const MAP_LAYER_ENTITIES: usize = 2;
 pub const MAP_GROUND: u8 = 154;
 pub const MAP_WATER: u8 = 224;
 pub const MAP_EMPTY: u8 = 32;
+pub const MAP_EMPTY_CHAR: u8 = 219; // all white square
 
 pub const MAP_STATUE_1: u8 = 148;
 pub const MAP_STATUE_2: u8 = 149;

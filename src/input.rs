@@ -218,7 +218,11 @@ pub fn check_collision(object_id: ObjectId,
     let mut last_pos = (x, y);
     let mut result: Collision = Collision::NoCollision(x + dx, y + dy);
 
-    for (x_pos, y_pos) in move_line.into_iter() {
+    // move one position into the line- don't check for collisions with yourself!
+    let mut line_positions = move_line.into_iter();
+    line_positions.next();
+
+    for (x_pos, y_pos) in line_positions {
         if map.is_blocked(x_pos, y_pos, objects) {
             if map[(x_pos, y_pos)].blocked {
                 result = Collision::BlockedTile((x_pos, y_pos), last_pos);
@@ -471,7 +475,7 @@ fn player_move_or_attack(move_action: MoveAction,
                          config: &Config) -> PlayerAction {
     let player_action: PlayerAction;
 
-    let movement = calculate_move(move_action, PLAYER, objects, map);
+    let movement = calculate_move(move_action, objects[PLAYER].movement.unwrap(), PLAYER, objects, map);
 
     match movement {
         Some(Movement::Attack(_dx, _dy, target_id)) => {
@@ -520,51 +524,56 @@ fn player_move_or_attack(move_action: MoveAction,
 }
 
 pub fn calculate_move(action: MoveAction,
+                      reach: Reach,
                       object_id: ObjectId,
                       objects: &[Object],
                       map: &Map) -> Option<Movement> {
     let movement: Option<Movement>;
 
     let (x, y) = objects[object_id].pos();
-    let (dx, dy) = action.into_move();
+    if let Some(delta_pos) = reach.move_with_reach(&action) {
+        let (dx, dy) = delta_pos.into_pair();
+        // check if movement collides with a blocked location or an entity
+        match check_collision(object_id, objects, dx, dy, map) {
+            Collision::NoCollision(new_x, new_y) => {
+                // no collision- just move to location
+                movement = Some(Movement::Move(new_x, new_y));
+            }
 
-    // check if movement collides with a blocked location or an entity
-    match check_collision(object_id, objects, dx, dy, map) {
-        Collision::NoCollision(new_x, new_y) => {
-            // no collision- just move to location
-            movement = Some(Movement::Move(new_x, new_y));
-        }
+            Collision::BlockedTile((_tile_x, _tile_y), (new_x, new_y)) => {
+                movement = Some(Movement::Move(new_x, new_y));
+            }
 
-        Collision::BlockedTile((_tile_x, _tile_y), (new_x, new_y)) => {
-            movement = Some(Movement::Move(new_x, new_y));
-        }
+            Collision::Wall((tile_x, tile_y), (new_x, new_y)) => {
+                match objects[object_id].momentum {
+                    Some(momentum) => {
+                        // if max momentum, and will hit short wall, and there is space beyond the
+                        // wall, than jump over the wall.
+                        if momentum.magnitude() == MAX_MOMENTUM &&
+                            map[(tile_x, tile_y)].tile_type == TileType::ShortWall &&
+                            !map.is_blocked(tile_x + 2 * dx, tile_y + 2 * dy, objects) {
+                                movement = Some(Movement::JumpWall(tile_x + 2 * dx, tile_y + 2 * dy));
+                        } else { // otherwise move normally, stopping just before the blocking tile
+                            movement = Some(Movement::Move(new_x, new_y));
+                        }
+                    },
 
-        Collision::Wall((tile_x, tile_y), (new_x, new_y)) => {
-            match objects[object_id].momentum {
-                Some(momentum) => {
-                    // if max momentum, and will hit short wall, and there is space beyond the
-                    // wall, than jump over the wall.
-                    if momentum.magnitude() == MAX_MOMENTUM &&
-                        map[(tile_x, tile_y)].tile_type == TileType::ShortWall &&
-                        !map.is_blocked(tile_x + 2 * dx, tile_y + 2 * dy, objects) {
-                            movement = Some(Movement::JumpWall(tile_x + 2 * dx, tile_y + 2 * dy));
-                    } else { // otherwise move normally, stopping just before the blocking tile
-                        movement = Some(Movement::Move(new_x, new_y));
-                    }
-                },
+                    None => {
+                        // with no momentum, the movement will end just before the blocked location
+                        movement = Some(Movement::Move(x + dx, y + dy));
+                    },
+                }
+            }
 
-                None => {
-                    // with no momentum, the movement will end just before the blocked location
-                    movement = Some(Movement::Move(x + dx, y + dy));
-                },
+            Collision::Entity(other_object_id, (new_x, new_y)) => {
+                // record that an attack would occur. if this is not desired, the
+                // calling code will handle this.
+                movement = Some(Movement::Attack(new_x, new_y, other_object_id));
             }
         }
+    } else {
+        movement = None;
 
-        Collision::Entity(other_object_id, (new_x, new_y)) => {
-            // record that an attack would occur. if this is not desired, the
-            // calling code will handle this.
-            movement = Some(Movement::Attack(new_x, new_y, other_object_id));
-        }
     }
 
     return movement;
