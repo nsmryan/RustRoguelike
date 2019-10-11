@@ -12,7 +12,6 @@ use std::time::Instant;
 
 use crate::engine::types::*;
 use crate::engine::map::*;
-use crate::engine::display::*;
 use crate::style::*;
 use crate::constants::*;
 

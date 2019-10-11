@@ -218,9 +218,7 @@ pub fn check_collision(object_id: ObjectId,
     let mut last_pos = (x, y);
     let mut result: Collision = Collision::NoCollision(x + dx, y + dy);
 
-    // move one position into the line- don't check for collisions with yourself!
     let mut line_positions = move_line.into_iter();
-    line_positions.next();
 
     for (x_pos, y_pos) in line_positions {
         if map.is_blocked(x_pos, y_pos, objects) {
@@ -228,6 +226,7 @@ pub fn check_collision(object_id: ObjectId,
                 dbg!();
                 result = Collision::BlockedTile((x_pos, y_pos), last_pos);
             } else {
+                dbg!();
                 let entity_id = objects.iter()
                                        .enumerate()
                                        .find(|(_index, obj)| obj.pos() == (x_pos, y_pos))
