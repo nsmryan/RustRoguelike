@@ -65,6 +65,7 @@ pub fn ai_attack(monster_id: usize,
                                           .filter_map(|mov| mov)
                                           .map(|mov| mov.add(monster_pos).into_pair())
                                           .collect::<Vec<(i32, i32)>>();
+
             // filter locations that are blocked or out of sight
             let positions: Vec<(i32, i32)> =
                 attack_positions
@@ -83,6 +84,8 @@ pub fn ai_attack(monster_id: usize,
                                       .unwrap();
             }
 
+            // TODO this system does not use calculate_move, which is intended to
+            // be a unified movement system for all entities.
             pos_offset = ai_take_astar_step((monster_x, monster_y), target_pos.pair(), map);
         }
 

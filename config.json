@@ -109,6 +109,7 @@
     },
     "fov_distance": 10,
     "load_map_file": true,
-    "tile_noise_scaler": 4.0
+    "tile_noise_scaler": 4.0,
+    "highlight_alpha": 0.09
 }
 

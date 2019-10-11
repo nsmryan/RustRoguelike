@@ -671,5 +671,6 @@ pub struct Config {
     pub fov_distance: i32,
     pub load_map_file: bool,
     pub tile_noise_scaler: f64,
+    pub highlight_alpha: f32,
 }
 

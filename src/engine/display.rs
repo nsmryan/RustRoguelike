@@ -34,17 +34,6 @@ pub fn get_objects_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMa
            .collect::<Vec<_>>()
 }
 
-pub fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> String {
-    let (x, y) = (mouse.cx as i32, mouse.cy as i32);
-
-    let names = objects.iter()
-                       .filter(|obj| { obj.pos() == (x, y) && fov_map.is_in_fov(obj.x, obj.y) })
-                       .map(|obj| { format!("{}, Ai {:?}, Behavior {:?}", obj.name.clone(), obj.ai, obj.behavior) })
-                       .collect::<Vec<_>>();
-
-    names.join(", ")
-}
-
 pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
     let mut hasher = DefaultHasher::new();
 
@@ -56,6 +45,9 @@ pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
     return ((result & 0xFFFFFFFF) as f32) / 4294967295.0;
 }
 
+// TODO merge this with current movement overlay-
+// it uses a highlight color, which is nice, and 
+// checks for clear paths.
 pub fn draw_movement_overlay(sprite_batch: &mut SpriteBatch,
                              map: &Map,
                              id: ObjectId,
@@ -135,14 +127,12 @@ pub fn tile_color(config: &Config, x: i32, y: i32, tile: &Tile, visible: bool) -
             config.color_dark_brown.color(),
 
         (TileType::Empty, true) =>
-            // TODO use perlin noise to smooth colors
             lerp_color(config.color_tile_blue_light.color(),
                        config.color_tile_blue_dark.color(),
                        perlin.get([x as f64 / config.tile_noise_scaler,
                                    y as f64 / config.tile_noise_scaler]) as f32),
 
         (TileType::Empty, false) =>
-            // TODO use perlin noise to smooth colors
             lerp_color(config.color_tile_blue_dark.color(),
                        config.color_very_dark_blue.color(),
                        perlin.get([x as f64 / config.tile_noise_scaler,
@@ -239,27 +229,36 @@ pub fn render_objects(_ctx: &mut Context,
 
 pub fn render_overlays(game: &mut Game, sprite_batch: &mut SpriteBatch, map: &Map, objects: &[Object], config: &Config) {
     // Draw player action overlay. Could draw arrows to indicate how to reach each location
+    // TODO consider drawing a very alpha grey as a highlight
+    let mut highlight_color = config.color_warm_grey.color();
+    highlight_color.a = config.highlight_alpha;
+
     for move_action in MoveAction::move_actions().iter() {
         if let Some(movement) = calculate_move(*move_action, objects[PLAYER].movement.unwrap(), PLAYER, objects, map) {
             match movement {
                 Movement::Move(x, y) => {
                     draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
+                    draw_char(sprite_batch, MAP_EMPTY_CHAR as char, x, y, highlight_color);
                 }
 
                 Movement::Attack(x, y, _object_id) => {
                     draw_char(sprite_batch, MAP_STAR as char, x, y, config.color_red.color());
+                    draw_char(sprite_batch, MAP_EMPTY_CHAR as char, x, y, highlight_color);
                 }
 
                 Movement::Collide(x, y) => {
                     draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
+                    draw_char(sprite_batch, MAP_EMPTY_CHAR as char, x, y, highlight_color);
                 }
 
                 Movement::WallKick(x, y, _dir_x, _dir_y) => {
                     draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
+                    draw_char(sprite_batch, MAP_EMPTY_CHAR as char, x, y, highlight_color);
                 }
 
                 Movement::JumpWall(x, y) => {
                     draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
+                    draw_char(sprite_batch, MAP_EMPTY_CHAR as char, x, y, highlight_color);
                 }
             }
         }
