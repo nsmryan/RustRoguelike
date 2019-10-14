@@ -117,6 +117,27 @@ pub fn lerp_color(color1: Color, color2: Color, scale: f32) -> Color {
     };
 }
 
+pub fn empty_tile_color(config: &Config, x: i32, y: i32, visible: bool) -> Color {
+    let perlin = Perlin::new();
+
+    let low_color;
+    let high_color;
+    if visible {
+        low_color = config.color_tile_blue_light.color();
+        high_color = config.color_tile_blue_dark.color();
+    } else {
+        low_color = config.color_tile_blue_dark.color();
+        high_color = config.color_very_dark_blue.color();
+    }
+    let color =
+        lerp_color(low_color,
+                   high_color,
+                   perlin.get([x as f64 / config.tile_noise_scaler,
+                               y as f64 / config.tile_noise_scaler]) as f32);
+
+   return color;
+}
+
 pub fn tile_color(config: &Config, x: i32, y: i32, tile: &Tile, visible: bool) -> Color {
     let perlin = Perlin::new();
 
@@ -127,21 +148,15 @@ pub fn tile_color(config: &Config, x: i32, y: i32, tile: &Tile, visible: bool) -
             config.color_dark_brown.color(),
 
         (TileType::Empty, true) =>
-            lerp_color(config.color_tile_blue_light.color(),
-                       config.color_tile_blue_dark.color(),
-                       perlin.get([x as f64 / config.tile_noise_scaler,
-                                   y as f64 / config.tile_noise_scaler]) as f32),
+            config.color_light_brown.color(),
 
         (TileType::Empty, false) =>
-            lerp_color(config.color_tile_blue_dark.color(),
-                       config.color_very_dark_blue.color(),
-                       perlin.get([x as f64 / config.tile_noise_scaler,
-                                   y as f64 / config.tile_noise_scaler]) as f32),
+            config.color_dark_brown.color(),
 
         (TileType::Water, true) =>
             config.color_blueish_grey.color(),
         (TileType::Water, false) =>
-            config.color_dark_brown.color(),
+            config.color_blueish_grey.color(),
 
         (TileType::ShortWall, true) =>
             config.color_light_brown.color(),
@@ -186,7 +201,11 @@ pub fn render_map(_ctx: &mut Context,
                 }
             }
 
-            draw_char(sprite_batch, chr, x, y, color);
+            draw_char(sprite_batch, MAP_EMPTY_CHAR as char, x, y, empty_tile_color(config, x, y, visible));
+
+            if chr != MAP_EMPTY_CHAR as char || tile.tile_type == TileType::Water {
+                draw_char(sprite_batch, chr, x, y, color);
+            }
 
             map.tiles[x as usize][y as usize].explored = explored;
         }
