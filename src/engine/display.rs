@@ -177,6 +177,13 @@ pub fn render_map(_ctx: &mut Context,
                   map: &mut Map,
                   sprite_batch: &mut SpriteBatch,
                   config: &Config) {
+    // TODO render empty tiles with perlin noise
+    //      render walls, statues, etc
+    //      if a tile has a side wall, render based on cases:
+    //      left wall, bottom wall, left and bottom walls,
+    //      right wall, top wall, right and top walls.
+    //      this is inclusive- if multiple conditions occur,
+    //      may draw multiple times
     for y in 0..map.height() {
         for x in 0..map.width() {
             let chr;
