@@ -265,9 +265,14 @@ pub fn render_overlays(game: &mut Game, sprite_batch: &mut SpriteBatch, map: &Ma
 
     // Draw player movement overlay
     for move_action in MoveAction::move_actions().iter() {
-        if let Some(movement) = calculate_move(*move_action, objects[PLAYER].movement.unwrap(), PLAYER, objects, map) {
-            let xy = movement.xy();
-            draw_char(sprite_batch, MAP_EMPTY_CHAR as char, xy.0, xy.1, highlight_color);
+        // for all movements except staying still
+        if *move_action != MoveAction::Center {
+            // calculate the move that would occur
+            if let Some(movement) = calculate_move(*move_action, objects[PLAYER].movement.unwrap(), PLAYER, objects, map) {
+                // draw a highlight on that square
+                let xy = movement.xy();
+                draw_char(sprite_batch, MAP_EMPTY_CHAR as char, xy.0, xy.1, highlight_color);
+            }
         }
     }
 

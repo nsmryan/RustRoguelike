@@ -131,6 +131,9 @@ impl Gui {
                                 ui.same_line(0.0);
                                 ui.text(im_str!("hp {}/{}", fighter.hp, fighter.max_hp));
                             }
+                            if let Some(behave) = objects[id].behavior {
+                                ui.text(im_str!("state {:?}", behave));
+                            }
                             break;
                         }
                     }

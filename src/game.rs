@@ -161,7 +161,7 @@ pub fn make_island(map: &mut Map,
     }
 
     /* add monsters */
-    for _ in 0..2 {
+    for _ in 0..0 {
         loop {
             let (x, y) = pos_in_radius(center, ISLAND_RADIUS, rng).pair();
 
@@ -173,7 +173,7 @@ pub fn make_island(map: &mut Map,
         }
     }
 
-    for _ in 0..2 {
+    for _ in 0..1 {
         loop {
             let (x, y) = pos_in_radius(center, ISLAND_RADIUS, rng).pair();
 
@@ -185,7 +185,7 @@ pub fn make_island(map: &mut Map,
         }
     }
     
-    for _ in 0..2 {
+    for _ in 0..0 {
         loop {
             let (x, y) = pos_in_radius(center, ISLAND_RADIUS, rng).pair();
 
