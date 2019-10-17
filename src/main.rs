@@ -424,6 +424,15 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map) {
         }
     }
 
+    //let mut small_map = Map::from_dims(map.width() as usize/ 2, map.height() as usize / 2);
+    //let x_offset = map.width() / 4;
+    //let y_offset = map.height() / 4;
+    //for x in 0..map.width() / 2 {
+    //    for y in 0..map.height() / 2 {
+    //        small_map[(x, y)] = map[(x + x_offset, y + y_offset)];
+    //    }
+    //}
+
     return (objects, map);
 }
 
@@ -636,7 +645,7 @@ impl EventHandler for GameState {
     }
 
     fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
-        self.imgui_wrapper.update_mouse_pos(x, y);
+        self.imgui_wrapper.update_mouse_pos(x, y, &mut self.game.mouse_state);
     }
 
     fn mouse_button_down_event(
@@ -649,8 +658,9 @@ impl EventHandler for GameState {
         self.imgui_wrapper.update_mouse_down((
             button == MouseButton::Left,
             button == MouseButton::Right,
-            button == MouseButton::Middle,
-        ));
+            button == MouseButton::Middle),
+            &mut self.game.mouse_state,
+        );
     }
 
     fn mouse_button_up_event(
@@ -660,7 +670,7 @@ impl EventHandler for GameState {
         _x: f32,
         _y: f32,
     ) {
-        self.imgui_wrapper.update_mouse_down((false, false, false));
+        self.imgui_wrapper.update_mouse_down((false, false, false), &mut self.game.mouse_state);
     }
 
     fn key_down_event(

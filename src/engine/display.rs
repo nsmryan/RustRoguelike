@@ -24,14 +24,18 @@ use crate::imgui_wrapper::*;
 use crate::constants::*;
 
 
-pub fn get_objects_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> Vec<ObjectId> {
-    let (x, y) = (mouse.cx as i32, mouse.cy as i32);
+pub fn get_objects_under_mouse(x: i32, y: i32, objects: &[Object], fov_map: &FovMap) -> Vec<ObjectId> {
+    let mut object_ids = Vec::new();
 
-    objects.iter()
-           .enumerate()
-           .filter(|(_, obj)| obj.pos() == (x, y) && fov_map.is_in_fov(obj.x, obj.y))
-           .map(|(index, _)| index)
-           .collect::<Vec<_>>()
+    for object_index in 0..objects.len() {
+        if objects[object_index].pos() == (x, y) {
+            if fov_map.is_in_fov(x, y) {
+                object_ids.push(object_index);
+            }
+        }
+    }
+
+    return object_ids;
 }
 
 pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
@@ -259,33 +263,31 @@ pub fn render_overlays(game: &mut Game, sprite_batch: &mut SpriteBatch, map: &Ma
     let mut highlight_color = config.color_warm_grey.color();
     highlight_color.a = config.highlight_alpha;
 
+    // Draw player movement overlay
     for move_action in MoveAction::move_actions().iter() {
         if let Some(movement) = calculate_move(*move_action, objects[PLAYER].movement.unwrap(), PLAYER, objects, map) {
-            match movement {
-                Movement::Move(x, y) => {
-                    draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
-                    draw_char(sprite_batch, MAP_EMPTY_CHAR as char, x, y, highlight_color);
-                }
+            let xy = movement.xy();
+            draw_char(sprite_batch, MAP_EMPTY_CHAR as char, xy.0, xy.1, highlight_color);
+        }
+    }
 
-                Movement::Attack(x, y, _object_id) => {
-                    draw_char(sprite_batch, MAP_STAR as char, x, y, config.color_red.color());
-                    draw_char(sprite_batch, MAP_EMPTY_CHAR as char, x, y, highlight_color);
-                }
+    let mut attack_highlight_color = config.color_red.color();
+    attack_highlight_color.a = config.highlight_alpha;
+    // Draw monster attack overlay
+    let mouse_x = (game.mouse_state.pos.0 as i32 / FONT_WIDTH) + 1;
+    let mouse_y = (game.mouse_state.pos.1 as i32 / FONT_HEIGHT) + 1;
+    let object_ids =  get_objects_under_mouse(mouse_x, mouse_y, objects, &game.fov);
+    for object_id in object_ids.iter() {
+        if let Some(reach) = objects[*object_id].attack {
+            let attack_positions = 
+                reach.offsets()
+                     .iter()
+                     .map(|offset| (mouse_x + offset.0,
+                                    mouse_y + offset.1))
+                     .collect::<Vec<(i32, i32)>>();
 
-                Movement::Collide(x, y) => {
-                    draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
-                    draw_char(sprite_batch, MAP_EMPTY_CHAR as char, x, y, highlight_color);
-                }
-
-                Movement::WallKick(x, y, _dir_x, _dir_y) => {
-                    draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
-                    draw_char(sprite_batch, MAP_EMPTY_CHAR as char, x, y, highlight_color);
-                }
-
-                Movement::JumpWall(x, y) => {
-                    draw_char(sprite_batch, MAP_SMALL_DOT_MIDDLE as char, x, y, config.color_ice_blue.color());
-                    draw_char(sprite_batch, MAP_EMPTY_CHAR as char, x, y, highlight_color);
-                }
+            for position in attack_positions {
+                draw_char(sprite_batch, MAP_EMPTY_CHAR as char, position.0, position.1, attack_highlight_color);
             }
         }
     }
@@ -332,7 +334,7 @@ pub fn render_all(ctx: &mut Context,
     sprite_batch.draw(ctx, Default::default())?;
 
     // Render game ui
-    imgui_wrapper.render(ctx, map, objects);
+    imgui_wrapper.render(ctx, map, objects, &mut game.mouse_state);
 
     graphics::present(ctx)?;
 

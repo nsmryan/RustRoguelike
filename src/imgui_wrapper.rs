@@ -16,13 +16,6 @@ use crate::style::*;
 use crate::constants::*;
 
 
-#[derive(Copy, Clone, PartialEq, Debug, Default)]
-struct MouseState {
-    pos: (i32, i32),
-    pressed: (bool, bool, bool),
-    wheel: f32,
-}
-
 pub struct Gui {
     pub imgui: imgui::Context,
     pub renderer: Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
@@ -72,9 +65,9 @@ impl Gui {
         }
     }
 
-    pub fn render(&mut self, ctx: &mut Context, map: &Map, objects: &[Object]) {
+    pub fn render(&mut self, ctx: &mut Context, map: &Map, objects: &[Object], mouse_state: &mut MouseState) {
         // Update mouse
-        self.update_mouse();
+        self.update_mouse(mouse_state);
 
         // Create new frame
         let now = Instant::now();
@@ -91,7 +84,6 @@ impl Gui {
         let ui = self.imgui.frame();
 
         {
-            let mouse_state = self.mouse_state;
             let mouse_pos = ((mouse_state.pos.0 / FONT_WIDTH) + 1,
                              (mouse_state.pos.1 / FONT_HEIGHT) + 1);
 
@@ -163,34 +155,30 @@ impl Gui {
             .unwrap();
     }
 
-    fn update_mouse(&mut self) {
-        self.imgui.io_mut().mouse_pos = [self.mouse_state.pos.0 as f32, self.mouse_state.pos.1 as f32];
+    fn update_mouse(&mut self, mouse_state: &mut MouseState) {
+        self.imgui.io_mut().mouse_pos = [mouse_state.pos.0 as f32, mouse_state.pos.1 as f32];
 
         self.imgui.io_mut().mouse_down = [
-            self.mouse_state.pressed.0,
-            self.mouse_state.pressed.1,
-            self.mouse_state.pressed.2,
+            mouse_state.pressed.0,
+            mouse_state.pressed.1,
+            mouse_state.pressed.2,
             false,
             false,
         ];
 
-        self.imgui.io_mut().mouse_wheel = self.mouse_state.wheel;
-        self.mouse_state.wheel = 0.0;
+        self.imgui.io_mut().mouse_wheel = mouse_state.wheel;
+        mouse_state.wheel = 0.0;
     }
 
-    pub fn update_mouse_pos(&mut self, x: f32, y: f32) {
-        self.mouse_state.pos = (x as i32, y as i32);
+    pub fn update_mouse_pos(&mut self, x: f32, y: f32, mouse_state: &mut MouseState) {
+        mouse_state.pos = (x as i32, y as i32);
     }
 
-    pub fn update_mouse_down(&mut self, pressed: (bool, bool, bool)) {
-        self.mouse_state.pressed = pressed;
+    pub fn update_mouse_down(&mut self, pressed: (bool, bool, bool), mouse_state: &mut MouseState) {
+        mouse_state.pressed = pressed;
 
         if pressed.0 {
             self.show_popup = false;
         }
-    }
-
-    pub fn open_popup(&mut self) {
-        self.show_popup = true;
     }
 }

@@ -71,10 +71,10 @@ pub fn handle_input(game: &mut Game,
 
     let player_alive = objects[PLAYER].alive;
 
-    if game.mouse.lbutton_pressed {
+    if game.mouse_state.pressed.0 {
         let mut found_stone = false;
         for index in 0..inventory.len() {
-            let (mx, my) = (game.mouse.x, game.mouse.y);
+            let (mx, my) = (game.mouse_state.pos.0, game.mouse_state.pos.1);
             if inventory[index].item == Some(Item::Stone) {
                 let item = inventory.swap_remove(index);
                 throw_stone((mx as i32, my as i32), item, game, map, objects);
@@ -226,7 +226,6 @@ pub fn check_collision(object_id: ObjectId,
                 dbg!();
                 result = Collision::BlockedTile((x_pos, y_pos), last_pos);
             } else {
-                dbg!();
                 let entity_id = objects.iter()
                                        .enumerate()
                                        .find(|(_index, obj)| obj.pos() == (x_pos, y_pos))

@@ -31,26 +31,35 @@ impl Messages {
 }
 
 
+// TODO pressed state should be broken out, not in a tuple
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
+pub struct MouseState {
+    pub pos: (i32, i32),
+    pub pressed: (bool, bool, bool),
+    pub wheel: f32,
+}
+
+
 pub struct Game {
     pub fov: FovMap,
-    pub mouse: Mouse,
     pub turn_count: usize,
     pub display_overlays: bool,
     pub animations: Vec<Animation>,
     pub needs_clear: Vec<(i32, i32)>,
     pub god_mode: bool,
+    pub mouse_state: MouseState,
 }
 
 impl Game {
     pub fn new() -> Game {
         Game {
             fov: FovMap::new(MAP_WIDTH, MAP_HEIGHT),
-            mouse: Default::default(),
             turn_count: 0,
             display_overlays: false,
             animations: Vec::new(),
             needs_clear: Vec::new(),
             god_mode: false,
+            mouse_state: Default::default(),
         }
     }
 }
@@ -539,6 +548,18 @@ pub enum Movement {
     Collide(i32, i32),
     WallKick(i32, i32, i32, i32), // x, y, dir_x, dir_y
     JumpWall(i32, i32),
+}
+
+impl Movement {
+    pub fn xy(&self) -> (i32, i32) {
+        match self {
+            Movement::Move(x, y) => (*x, *y),
+            Movement::Attack(x, y, _) => (*x, *y),
+            Movement::Collide(x, y) => (*x, *y),
+            Movement::WallKick(x, y, _, _) => (*x, *y),
+            Movement::JumpWall(x, y) => (*x, *y),
+        }
+    }
 }
 
 
