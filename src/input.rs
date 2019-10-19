@@ -179,6 +179,14 @@ pub fn move_valid(object_id: ObjectId, objects: &[Object], dx: i32, dy: i32, map
     return check_collision(object_id, objects, dx, dy, map).no_collsion();
 }
 
+pub fn line_inclusive(x: i32, y: i32, dx: i32, dy: i32) -> impl Iterator<Item=(i32, i32)> {
+    let start_loc = (x + (dx.signum() * dx.abs() * -1),
+                     y + (dy.signum() * dy.abs() * -1));
+    let end_loc = (x + dx, y + dy);
+
+    return Line::new(start_loc, end_loc).into_iter();
+}
+
 pub fn move_just_before(object_id: ObjectId, objects: &[Object], dx: i32, dy: i32, map: &Map) -> Option<(i32, i32)> {
     let x = objects[object_id].x;
     let y = objects[object_id].y;
@@ -218,30 +226,32 @@ pub fn check_collision(object_id: ObjectId,
     let mut last_pos = (x, y);
     let mut result: Collision = Collision::NoCollision(x + dx, y + dy);
 
-    let mut line_positions = move_line.into_iter();
+    if map.is_blocked_by_wall(x, y, dx, dy) {
+        result = Collision::Wall((x, y), (x, y));
+    } else {
+        for (x_pos, y_pos) in move_line.into_iter() {
+            if map.is_blocked(x_pos, y_pos, objects) {
+                if map[(x_pos, y_pos)].blocked {
+                    result = Collision::BlockedTile((x_pos, y_pos), last_pos);
+                } else {
+                    let entity_id = objects.iter()
+                                           .enumerate()
+                                           .find(|(_index, obj)| obj.pos() == (x_pos, y_pos))
+                                           .unwrap()
+                                           .0;
 
-    for (x_pos, y_pos) in line_positions {
-        if map.is_blocked(x_pos, y_pos, objects) {
-            if map[(x_pos, y_pos)].blocked {
-                result = Collision::BlockedTile((x_pos, y_pos), last_pos);
-            } else {
-                let entity_id = objects.iter()
-                                       .enumerate()
-                                       .find(|(_index, obj)| obj.pos() == (x_pos, y_pos))
-                                       .unwrap()
-                                       .0;
-
-                result = Collision::Entity(entity_id, last_pos);
+                    result = Collision::Entity(entity_id, last_pos);
+                }
+                break;
             }
-            break;
-        }
 
-        if map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
-            result = Collision::Wall((x_pos, y_pos), last_pos);
-            break;
-        }
+            if map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
+                result = Collision::Wall((x_pos, y_pos), (x_pos, y_pos));
+                break;
+            }
 
-        last_pos = (x_pos, y_pos);
+            last_pos = (x_pos, y_pos);
+        }
     }
 
     return result;

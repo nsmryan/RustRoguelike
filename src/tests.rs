@@ -1,4 +1,5 @@
-#[allow(unused_imports)]use tcod::map::{Map as FovMap};
+use tcod::map::{Map as FovMap};
+use tcod::line::*;
 
 use crate::engine::ai::*;
 use crate::engine::types::*;
@@ -35,3 +36,11 @@ fn test_enemy_move() {
     assert_eq!(turn, expected_turn);
 }
 
+#[test]
+fn test_line_inclusive() {
+    let mut move_line = Line::new((0, 0), (1, 1)).into_iter();
+
+    assert_eq!(move_line.next(), Some((0, 0)));
+    assert_eq!(move_line.next(), Some((1, 1)));
+    assert_eq!(move_line.next(), None);
+}

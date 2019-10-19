@@ -158,6 +158,9 @@ impl Map {
         return map;
     }
 
+    // TODO this does not check all squares between start and end- only
+    // the first and last square are used. this could result in skipping
+    // over walls for long movements.
     pub fn is_blocked_by_wall(&self, x: i32, y: i32, dx: i32, dy: i32) -> bool {
         let mut blocked = false;
 
@@ -168,9 +171,9 @@ impl Map {
         } 
         
         if dy >= 1 {
-            blocked |= self[(x, y + dy)].bottom_wall != Wall::Empty;
-        } else if dy <= -1 {
             blocked |= self[(x, y)].bottom_wall != Wall::Empty;
+        } else if dy <= -1 {
+            blocked |= self[(x, y + dy)].bottom_wall != Wall::Empty;
         }
 
         return blocked;

@@ -200,9 +200,12 @@ pub fn step_game(game: &mut Game,
     }
 
   if config.load_map_file && Path::new("map.xp").exists() {
-      let (_new_object, new_map) = read_map_xp(&config, "map.xp");
+      let (new_objects, new_map) = read_map_xp(&config, "map.xp");
       *map = new_map;
-      // TODO updates objects
+      let player = objects[0].clone();
+      objects.clear();
+      objects.push(player);
+      objects.extend(new_objects);
 
       let dims = map.size();
       game.fov = FovMap::new(dims.0, dims.1);
@@ -277,7 +280,7 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map) {
 
                             MAP_THIN_WALL_LEFT => {
                                 map[(x, y)].chr = Some(chr);
-                                map[(x, y)].bottom_wall = Wall::ShortWall;
+                                map[(x, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_RIGHT => {
@@ -286,10 +289,13 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map) {
 
                             MAP_THIN_WALL_TOP_LEFT => {
                                 map[(x, y)].chr = Some(chr);
+                                map[(x, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM_LEFT => {
                                 map[(x, y)].chr = Some(chr);
+                                map[(x, y)].left_wall = Wall::ShortWall;
+                                map[(x, y)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_TOP_RIGHT => {
@@ -298,6 +304,7 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map) {
 
                             MAP_THIN_WALL_BOTTOM_RIGHT => {
                                 map[(x, y)].chr = Some(chr);
+                                map[(x, y)].bottom_wall = Wall::ShortWall;
                             }
 
 
@@ -307,7 +314,7 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map) {
 
                             MAP_THICK_WALL_LEFT => {
                                 map[(x, y)].chr = Some(chr);
-                                map[(x, y)].bottom_wall = Wall::TallWall;
+                                map[(x, y)].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_RIGHT => {
@@ -341,22 +348,22 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map) {
 
                             MAP_DOT_TOP_LEFT => {
                                 map[(x, y)].chr = Some(chr);
-                                map[(x, y)].bottom_wall = Wall::TallWall;
+                                map[(x, y)].blocked = true;
                             }
 
                             MAP_DOT_TOP_RIGHT => {
                                 map[(x, y)].chr = Some(chr);
-                                map[(x, y)].bottom_wall = Wall::TallWall;
+                                map[(x, y)].blocked = true;
                             }
 
                             MAP_DOT_BOTTOM_LEFT => {
                                 map[(x, y)].chr = Some(chr);
-                                map[(x, y)].bottom_wall = Wall::TallWall;
+                                map[(x, y)].blocked = true;
                             }
 
                             MAP_DOT_BOTTOM_RIGHT => {
                                 map[(x, y)].chr = Some(chr);
-                                map[(x, y)].bottom_wall = Wall::TallWall;
+                                map[(x, y)].blocked = true;
                             }
 
                             MAP_ROOK => {
@@ -424,93 +431,7 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map) {
         }
     }
 
-    //let mut small_map = Map::from_dims(map.width() as usize/ 2, map.height() as usize / 2);
-    //let x_offset = map.width() / 4;
-    //let y_offset = map.height() / 4;
-    //for x in 0..map.width() / 2 {
-    //    for y in 0..map.height() / 2 {
-    //        small_map[(x, y)] = map[(x + x_offset, y + y_offset)];
-    //    }
-    //}
-
     return (objects, map);
-}
-
-pub fn read_map(file_name: &str) -> Map {
-    let file = File::open(file_name).unwrap();
-    let file = BufReader::new(file);
-    let mut map = Map::empty();
-    let mut rot_map = Vec::new();
-
-    let mut width = 0;
-    let mut height = 0;
-
-    for line in file.lines() {
-        let mut rot_line = Vec::new();
-        height += 1;
-
-        for chr in line.unwrap().chars() {
-            width += 1;
-
-            let tile = 
-                match chr {
-                    ' ' => Tile::empty(),
-                    '.' => Tile::short_wall(),
-                    '#' => Tile::wall(),
-                    'w' => Tile::water(),
-                    'x' => Tile::exit(),
-                    _ => panic!("Unexpected char in map!"),
-                };
-            rot_line.push(tile);
-        }
-        rot_map.push(rot_line)
-    }
-
-    for x in 0..width {
-        let mut line = Vec::new();
-        for y in 0..height {
-            line.push(rot_map[y as usize][x as usize]);
-        }
-        map.tiles.push(line);
-    }
-
-    return map;
-}
-
-pub fn write_map(file_name: &str, map: &Map) {
-    // write out map to a file
-    let mut map_file = File::create(file_name).unwrap();
-    let mut map_vec = Vec::new();
-
-    for row in map.tiles.iter() {
-        let mut line_vec = Vec::new();
-
-        for tile in row.iter() {
-            let tile_char = match tile.tile_type {
-                TileType::Empty => ' ',
-                TileType::ShortWall => '.',
-                TileType::Wall => '#',
-                TileType::Water => 'w',
-                TileType::Exit => 'x',
-            };
-            line_vec.push(tile_char as u8);
-        }
-
-        map_vec.push(line_vec);
-    }
-
-    let mut final_map_vec = Vec::new();
-    println!("height = {}", map.height());
-    println!("MAP_WIDTH = {}", map.width());
-    println!("map_vec.len() = {}", map_vec.len());
-    println!("map_vec[0].len() = {}", map_vec[0].len());
-    for y in 0..map.height() {
-        for x in 0..map.width() {
-            final_map_vec.push(map_vec[x as usize][y as usize]);
-        }
-        final_map_vec.push('\n' as u8);
-    }
-    map_file.write(&final_map_vec).unwrap();
 }
 
 fn main() {
@@ -580,9 +501,6 @@ impl GameState {
         let player_y = position.1;
         objects[PLAYER].x = player_x;
         objects[PLAYER].y = player_y;
-
-        // write out map to a file
-        write_map("map.csv", &map);
 
         let mut game = Game::new();
 

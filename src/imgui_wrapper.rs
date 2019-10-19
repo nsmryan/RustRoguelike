@@ -106,6 +106,10 @@ impl Gui {
                             objects[0].x,
                             objects[0].y
                     ));
+                    ui.text(im_str!(
+                            "Player Momentum: {:}",
+                            objects[0].momentum.unwrap().magnitude(),
+                    ));
 
                     ui.text(im_str!("Tile:"));
                     ui.same_line(0.0);
@@ -115,6 +119,10 @@ impl Gui {
                             map[objects[0].pos()].chr,
                             map[objects[0].pos()].blocked,
                             ));
+                    ui.text(im_str!(
+                            "left: {:?}, bottom: {:?}",
+                            map[objects[0].pos()].left_wall,
+                            map[objects[0].pos()].bottom_wall));
 
                     let ids = 
                         objects.iter()

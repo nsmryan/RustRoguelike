@@ -143,8 +143,6 @@ pub fn empty_tile_color(config: &Config, x: i32, y: i32, visible: bool) -> Color
 }
 
 pub fn tile_color(config: &Config, x: i32, y: i32, tile: &Tile, visible: bool) -> Color {
-    let perlin = Perlin::new();
-
     let color = match (tile.tile_type, visible) {
         (TileType::Wall, true) =>
             config.color_light_brown.color(),
@@ -181,13 +179,6 @@ pub fn render_map(_ctx: &mut Context,
                   map: &mut Map,
                   sprite_batch: &mut SpriteBatch,
                   config: &Config) {
-    // TODO render empty tiles with perlin noise
-    //      render walls, statues, etc
-    //      if a tile has a side wall, render based on cases:
-    //      left wall, bottom wall, left and bottom walls,
-    //      right wall, top wall, right and top walls.
-    //      this is inclusive- if multiple conditions occur,
-    //      may draw multiple times
     for y in 0..map.height() {
         for x in 0..map.width() {
             let chr;
@@ -199,6 +190,13 @@ pub fn render_map(_ctx: &mut Context,
             let color = tile_color(config, x, y, tile, visible);
 
             let explored = map.tiles[x as usize][y as usize].explored || visible;
+
+            let wall_color;
+            if explored {
+                wall_color = config.color_light_brown.color();
+            } else {
+                wall_color = config.color_dark_brown.color();
+            }
 
             match tile.chr {
                 Some(character) => {
@@ -212,10 +210,43 @@ pub fn render_map(_ctx: &mut Context,
                 }
             }
 
+            // draw empty tile first, in case there is transparency in the character
             draw_char(sprite_batch, MAP_EMPTY_CHAR as char, x, y, empty_tile_color(config, x, y, visible));
 
+            // if the tile is not empty or water, draw it
             if chr != MAP_EMPTY_CHAR as char || tile.tile_type == TileType::Water {
                 draw_char(sprite_batch, chr, x, y, color);
+            }
+
+            // finally, draw the between-tile walls appropriate to this tile
+            if tile.bottom_wall == Wall::ShortWall {
+                draw_char(sprite_batch, MAP_THIN_WALL_BOTTOM as char, x, y, wall_color);
+            } else if tile.bottom_wall == Wall::TallWall {
+                draw_char(sprite_batch, MAP_THICK_WALL_BOTTOM as char, x, y, wall_color);
+            }
+
+            if tile.left_wall == Wall::ShortWall {
+                draw_char(sprite_batch, MAP_THIN_WALL_LEFT as char, x, y, wall_color);
+            } else if tile.left_wall == Wall::TallWall {
+                draw_char(sprite_batch, MAP_THICK_WALL_LEFT as char, x, y, wall_color);
+            }
+
+            if x + 1 < MAP_WIDTH {
+                let right_tile = &map.tiles[x as usize + 1][y as usize];
+                if right_tile.left_wall == Wall::ShortWall {
+                    draw_char(sprite_batch, MAP_THIN_WALL_RIGHT as char, x, y, wall_color);
+                } else if right_tile.left_wall == Wall::TallWall {
+                    draw_char(sprite_batch, MAP_THICK_WALL_RIGHT as char, x, y, wall_color);
+                }
+            }
+
+            if y - 1 >= 0 {
+                let above_tile = &map.tiles[x as usize][y as usize - 1];
+                if above_tile.bottom_wall == Wall::ShortWall {
+                    draw_char(sprite_batch, MAP_THIN_WALL_TOP as char, x, y, wall_color);
+                } else if above_tile.bottom_wall == Wall::TallWall {
+                    draw_char(sprite_batch, MAP_THICK_WALL_TOP as char, x, y, wall_color);
+                }
             }
 
             map.tiles[x as usize][y as usize].explored = explored;
@@ -269,6 +300,9 @@ pub fn render_overlays(game: &mut Game, sprite_batch: &mut SpriteBatch, map: &Ma
         if *move_action != MoveAction::Center {
             // calculate the move that would occur
             if let Some(movement) = calculate_move(*move_action, objects[PLAYER].movement.unwrap(), PLAYER, objects, map) {
+                if *move_action == MoveAction::Left {
+                    dbg!(movement);
+                }
                 // draw a highlight on that square
                 let xy = movement.xy();
                 draw_char(sprite_batch, MAP_EMPTY_CHAR as char, xy.0, xy.1, highlight_color);
