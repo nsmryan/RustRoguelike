@@ -25,12 +25,10 @@ mod tests;
 
 use std::env;
 use std::path::Path;
-use std::io::Write;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::fs::File;
 use std::io::BufReader;
-use std::io::BufRead;
 use std::io::Read;
 use std::sync::mpsc::channel;
 
@@ -199,8 +197,8 @@ pub fn step_game(game: &mut Game,
       _ => (),
     }
 
-  if config.load_map_file && Path::new("map.xp").exists() {
-      let (new_objects, new_map) = read_map_xp(&config, "map.xp");
+  if config.load_map_file_every_frame && Path::new("map.xp").exists() {
+      let (new_objects, new_map, _) = read_map_xp(&config, "map.xp");
       *map = new_map;
       let player = objects[0].clone();
       objects.clear();
@@ -230,13 +228,14 @@ pub fn step_game(game: &mut Game,
   return false; 
 }
 
-pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map) {
+pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map, (i32, i32)) {
     let file = File::open(file_name).unwrap();
     let mut buf_reader = BufReader::new(file);
     let xp = XpFile::read(&mut buf_reader).unwrap();
 
     let mut map = Map::from_dims(xp.layers[0].width, xp.layers[0].height);
     let mut objects = Vec::new();
+    let mut player_position = (0, 0);
 
 
     for (layer_index, layer) in xp.layers.iter().enumerate() {
@@ -417,6 +416,10 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map) {
                                 // Nothing to do here...
                             }
 
+                            ENTITY_PLAYER => {
+                                player_position = (x as i32, y as i32);
+                            }
+
                             _ => {
                                 panic!(format!("Unexpected character {} in entities layer!", chr as u8));
                             }
@@ -431,7 +434,7 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map) {
         }
     }
 
-    return (objects, map);
+    return (objects, map, player_position);
 }
 
 fn main() {
@@ -496,9 +499,23 @@ impl GameState {
 
         let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
 
-        let (map, position) = make_map(&mut objects, &config, &mut rng);
-        let player_x = position.0;
-        let player_y = position.1;
+        let map;
+        let player_position;
+        if config.load_map_file {
+            let (new_objects, new_map, mut position) = read_map_xp(&config, "map.xp");
+            objects.extend(new_objects);
+            map = new_map;
+            if position == (0, 0) {
+                position = (map.width() / 2, map.height() / 2);
+            }
+            player_position = position;
+        } else {
+            let (new_map, position) = make_map(&mut objects, &config, &mut rng);
+            map = new_map;
+            player_position = position.into_pair();
+        }
+        let player_x = player_position.0;
+        let player_y = player_position.1;
         objects[PLAYER].x = player_x;
         objects[PLAYER].y = player_y;
 

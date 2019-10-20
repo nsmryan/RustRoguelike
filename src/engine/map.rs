@@ -195,6 +195,13 @@ impl Map {
         return is_blocked;
     }
 
+    pub fn is_within_bounds(&self, x: i32, y: i32) -> bool {
+        let x_bounds = x >= 0 && x < self.width();
+        let y_bounds = y >= 0 && y < self.height();
+
+        return x_bounds && y_bounds;
+    }
+
     pub fn is_empty(&self, x: i32, y: i32, _objects: &[Object]) -> bool {
         return self[(x, y)].tile_type == TileType::Empty;
     }

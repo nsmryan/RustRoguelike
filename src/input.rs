@@ -196,6 +196,10 @@ pub fn move_just_before(object_id: ObjectId, objects: &[Object], dx: i32, dy: i3
     let mut collided = false;
 
     for (x_pos, y_pos) in move_line.into_iter() {
+        if !map.is_within_bounds(x_pos, y_pos) {
+            break;
+        }
+
         if map.is_blocked(x_pos, y_pos, objects) ||
            map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
                 collided = true;
@@ -226,7 +230,8 @@ pub fn check_collision(object_id: ObjectId,
     let mut last_pos = (x, y);
     let mut result: Collision = Collision::NoCollision(x + dx, y + dy);
 
-    if map.is_blocked_by_wall(x, y, dx, dy) {
+    if !map.is_within_bounds(x + dx, y + dy) ||
+       map.is_blocked_by_wall(x, y, dx, dy) {
         result = Collision::Wall((x, y), (x, y));
     } else {
         for (x_pos, y_pos) in move_line.into_iter() {

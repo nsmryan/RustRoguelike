@@ -2,7 +2,6 @@ use std::convert::Into;
 use std::cmp;
 
 use tcod::map::{Map as FovMap};
-use tcod::input::Mouse;
 use tcod::line::*;
 
 use num::clamp;
@@ -691,6 +690,7 @@ pub struct Config {
     pub color_light_grey: ColorConfig,
     pub fov_distance: i32,
     pub load_map_file: bool,
+    pub load_map_file_every_frame: bool,
     pub tile_noise_scaler: f64,
     pub highlight_alpha: f32,
 }

@@ -142,7 +142,7 @@ pub fn empty_tile_color(config: &Config, x: i32, y: i32, visible: bool) -> Color
    return color;
 }
 
-pub fn tile_color(config: &Config, x: i32, y: i32, tile: &Tile, visible: bool) -> Color {
+pub fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> Color {
     let color = match (tile.tile_type, visible) {
         (TileType::Wall, true) =>
             config.color_light_brown.color(),
@@ -300,9 +300,6 @@ pub fn render_overlays(game: &mut Game, sprite_batch: &mut SpriteBatch, map: &Ma
         if *move_action != MoveAction::Center {
             // calculate the move that would occur
             if let Some(movement) = calculate_move(*move_action, objects[PLAYER].movement.unwrap(), PLAYER, objects, map) {
-                if *move_action == MoveAction::Left {
-                    dbg!(movement);
-                }
                 // draw a highlight on that square
                 let xy = movement.xy();
                 draw_char(sprite_batch, MAP_EMPTY_CHAR as char, xy.0, xy.1, highlight_color);
