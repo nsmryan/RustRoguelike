@@ -2,9 +2,6 @@
 
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
 #[allow(unused_imports)]use tcod::pathfinding::*;
-use tcod::line::*;
-
-use ggez::graphics::BLACK;
 
 use crate::constants::*;
 use crate::engine::types::*;
@@ -218,7 +215,6 @@ pub fn ai_take_turn(monster_id: usize,
                     map: &Map,
                     objects: &mut Vec<Object>,
                     fov_map: &FovMap,
-                    animations: &mut Vec<Animation>,
                     config: &Config) {
     let turn: AiTurn;
 
@@ -237,7 +233,6 @@ pub fn ai_take_turn(monster_id: usize,
                      map,
                      objects,
                      fov_map,
-                     animations,
                      config);
 }
 
@@ -246,7 +241,6 @@ pub fn ai_apply_actions(monster_id: usize,
                         map: &Map,
                         objects: &mut Vec<Object>,
                         _fov_map: &FovMap,
-                        animations: &mut Vec<Animation>,
                         config: &Config) {
     for action in turn.actions().iter() {
         match action {
@@ -261,19 +255,6 @@ pub fn ai_apply_actions(monster_id: usize,
 
                 // apply attack 
                 monster.attack(target, config);
-
-                // add animation
-                let mut thrown_obj =
-                    Object::new(monster_x, monster_y, '.', "thrown", BLACK, false);
-                let obj_id = objects.len();
-                thrown_obj.x = monster_x;
-                thrown_obj.y = monster_y;
-                objects.push(thrown_obj);
-                let animation =
-                    Animation::Thrown(obj_id,
-                                      Line::new((monster_x, monster_y),
-                                      (target_x, target_y)));
-                animations.push(animation);
             },
 
             AiAction::StateChange(behavior) => {

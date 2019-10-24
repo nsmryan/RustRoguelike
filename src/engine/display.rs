@@ -175,7 +175,7 @@ pub fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool)
 }
 
 pub fn render_map(_ctx: &mut Context,
-                  game: &mut Game,
+                  fov: &FovMap,
                   map: &mut Map,
                   sprite_batch: &mut SpriteBatch,
                   config: &Config) {
@@ -184,7 +184,7 @@ pub fn render_map(_ctx: &mut Context,
             let chr;
 
             // Render game stuff
-            let visible = game.fov.is_in_fov(x, y);
+            let visible = fov.is_in_fov(x, y);
 
             let tile = &map.tiles[x as usize][y as usize];
             let color = tile_color(config, x, y, tile, visible);
@@ -256,12 +256,13 @@ pub fn render_map(_ctx: &mut Context,
 }
 
 pub fn render_sound(console: &mut dyn Console,
-                    animations: &Vec<Animation>,
                     map: &Map,
                     objects: &[Object]) {
     for y in 1..map.height() {
         for x in 0..map.width() {
+            // TODO add back in with animations
             // after animations play, draw sound for a frame
+            /*
             if animations.len() == 0 {
                if let Some(sound_loc) = map[(x, y)].sound {
                    if map.clear_path_obstacles(sound_loc, (x, y), objects) {
@@ -269,6 +270,7 @@ pub fn render_sound(console: &mut dyn Console,
                    }
                }
             }
+            */
         }
     }
 }
@@ -288,7 +290,7 @@ pub fn render_objects(_ctx: &mut Context,
     }
 }
 
-pub fn render_overlays(game: &mut Game, sprite_batch: &mut SpriteBatch, map: &Map, objects: &[Object], config: &Config) {
+pub fn render_overlays(mouse_state: &MouseState, fov: &FovMap, sprite_batch: &mut SpriteBatch, map: &Map, objects: &[Object], config: &Config) {
     // Draw player action overlay. Could draw arrows to indicate how to reach each location
     // TODO consider drawing a very alpha grey as a highlight
     let mut highlight_color = config.color_warm_grey.color();
@@ -310,9 +312,9 @@ pub fn render_overlays(game: &mut Game, sprite_batch: &mut SpriteBatch, map: &Ma
     let mut attack_highlight_color = config.color_red.color();
     attack_highlight_color.a = config.highlight_alpha;
     // Draw monster attack overlay
-    let mouse_x = (game.mouse_state.pos.0 as i32 / FONT_WIDTH) + 1;
-    let mouse_y = (game.mouse_state.pos.1 as i32 / FONT_HEIGHT) + 1;
-    let object_ids =  get_objects_under_mouse(mouse_x, mouse_y, objects, &game.fov);
+    let mouse_x = (mouse_state.pos.0 as i32 / FONT_WIDTH) + 1;
+    let mouse_y = (mouse_state.pos.1 as i32 / FONT_HEIGHT) + 1;
+    let object_ids =  get_objects_under_mouse(mouse_x, mouse_y, objects, &fov);
     for object_id in object_ids.iter() {
         if let Some(reach) = objects[*object_id].attack {
             let attack_positions = 
@@ -330,32 +332,32 @@ pub fn render_overlays(game: &mut Game, sprite_batch: &mut SpriteBatch, map: &Ma
 }
 
 pub fn render_all(ctx: &mut Context,
-                  game: &mut Game,
+                  mouse_state: &mut MouseState,
                   objects: &[Object],
                   map: &mut Map,
-                  _messages: &mut Messages,
                   imgui_wrapper: &mut Gui,
                   sprite_batch: &mut SpriteBatch,
+                  fov: &FovMap,
                   config: &Config)  -> GameResult<()> {
     sprite_batch.clear();
 
     graphics::clear(ctx, graphics::BLACK);
 
     render_map(ctx,
-               game,
+               fov,
                map,
                sprite_batch,
                config);
 
     /* from render_objects */
-    render_objects(ctx, &game.fov, objects, sprite_batch);
+    render_objects(ctx, fov, objects, sprite_batch);
 
     // TODO removed for ggez
     // render_sound(&mut game.console, &game.animations, map, objects);
 
     // Draw movement and attack overlays
     // TODO removed for ggez
-    render_overlays(game, sprite_batch, map, objects, config);
+    render_overlays(mouse_state, fov, sprite_batch, map, objects, config);
 
     // Draw UI overlay
     // let hp = objects[PLAYER].fighter.map_or(0, |f| f.hp);
@@ -370,7 +372,7 @@ pub fn render_all(ctx: &mut Context,
     sprite_batch.draw(ctx, Default::default())?;
 
     // Render game ui
-    imgui_wrapper.render(ctx, map, objects, &mut game.mouse_state);
+    imgui_wrapper.render(ctx, map, objects, mouse_state);
 
     graphics::present(ctx)?;
 

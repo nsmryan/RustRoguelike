@@ -4,9 +4,9 @@ use rand::prelude::*;
 #[allow(unused_imports)]use tcod::input::Key;
 #[allow(unused_imports)]use tcod::input::KeyCode::*;
 #[allow(unused_imports)]use tcod::console::*;
+#[allow(unused_imports)]use tcod::map::{Map as FovMap};
 use tcod::line::*;
 
-use ggez::graphics::WHITE;
 use ggez::event::{KeyCode, KeyMods};
 
 use crate::engine::types::*;
@@ -58,12 +58,13 @@ impl Collision {
 }
 
 
-pub fn handle_input(game: &mut Game,
-                    input_action: InputAction,
+pub fn handle_input(input_action: InputAction,
+                    mouse_state: &MouseState,
                     map: &mut Map,
                     objects: &mut Vec<Object>,
-                    inventory: &mut Vec<Object>,
-                    messages: &mut Messages,
+                    fov: &mut FovMap,
+                    god_mode: &mut bool,
+                    display_overlays: &mut bool,
                     config: &Config) -> PlayerAction {
     use PlayerAction::*;
 
@@ -71,7 +72,9 @@ pub fn handle_input(game: &mut Game,
 
     let player_alive = objects[PLAYER].alive;
 
-    if game.mouse_state.pressed.0 {
+    if mouse_state.pressed.0 {
+        // TODO add back in with new inventory
+        /*
         let mut found_stone = false;
         for index in 0..inventory.len() {
             let (mx, my) = (game.mouse_state.pos.0, game.mouse_state.pos.1);
@@ -88,13 +91,14 @@ pub fn handle_input(game: &mut Game,
         } else {
             player_action = DidntTakeTurn;
         }
+        */
+        player_action = DidntTakeTurn;
     } else {
         match (input_action, player_alive) {
             (InputAction::Move(move_action), true) => {
                 player_action = player_move_or_attack(move_action,
                                                       map,
                                                       objects,
-                                                      messages,
                                                       config);
             }
 
@@ -108,7 +112,8 @@ pub fn handle_input(game: &mut Game,
                     object.pos() == objects[PLAYER].pos() && object.item.is_some()
                 });
                 if let Some(item_id) = item_id {
-                    pick_item_up(item_id, objects, inventory, config, messages);
+                    // TODO add back in with new inventory
+                    //pick_item_up(item_id, objects, inventory, config);
                 }
                 player_action = DidntTakeTurn;
             }
@@ -133,13 +138,13 @@ pub fn handle_input(game: &mut Game,
             (InputAction::RegenerateMap, _) => {
                 let mut rng: SmallRng = SeedableRng::seed_from_u64(2);
                 let (map_regen, _position) = make_map(objects, config, &mut rng);
-                setup_fov(&mut game.fov, &map_regen);
+                setup_fov(fov, &map_regen);
                 map.tiles = map_regen.tiles;
                 player_action = DidntTakeTurn;
             }
 
             (InputAction::ToggleOverlays, _) => {
-                game.display_overlays = !game.display_overlays;
+                *display_overlays = !(*display_overlays);
 
                 player_action = DidntTakeTurn;
             }
@@ -151,13 +156,13 @@ pub fn handle_input(game: &mut Game,
                     Some(Fighter { hp: god_mode_hp, max_hp: god_mode_hp, ..fighter });
 
                 // set god mode flag
-                game.god_mode = true;
+                *god_mode = true;
 
                 // set all tiles to be transparent and walkable. walkable is not current used
                 // anywhere
                 for x in 0..map.tiles.len() {
                     for y in 0..map.tiles[0].len() {
-                        game.fov.set(x as i32, y as i32, true, true);
+                        fov.set(x as i32, y as i32, true, true);
                     }
                 }
 
@@ -400,10 +405,9 @@ pub fn valid_moves(object_id: ObjectId, objects: &[Object], map: &Map) -> Vec<(i
 */
 
     pub fn throw_stone(pos: (i32, i32),
-    mut stone: Object,
-    game: &mut Game,
-    map: &mut Map,
-    objects: &mut Vec<Object>) {
+                       mut stone: Object,
+                       map: &mut Map,
+                       objects: &mut Vec<Object>) {
         let (mx, my) = pos;
         let obj_id = objects.len();
 
@@ -422,11 +426,12 @@ pub fn valid_moves(object_id: ObjectId, objects: &[Object], map: &Map) -> Vec<(i
         objects.push(stone);
 
         // add animation to animation list
-        let animation =
-            Animation::Thrown(obj_id,
-                              Line::new((start_x, start_y),
-                              (target_x, target_y)));
-        game.animations.push(animation);
+        // TODO add back in with animations
+        //let animation =
+        //    Animation::Thrown(obj_id,
+        //                      Line::new((start_x, start_y),
+        //                      (target_x, target_y)));
+        //game.animations.push(animation);
 
         // add sound to map
         for pos in map.pos_in_radius((target_x, target_y), STONE_SOUND_RADIUS) {
@@ -437,8 +442,7 @@ pub fn valid_moves(object_id: ObjectId, objects: &[Object], map: &Map) -> Vec<(i
 fn use_item(inventory_id: usize,
             inventory: &mut Vec<Object>,
             objects: &mut [Object],
-            config: &Config,
-            messages: &mut Messages) {
+            config: &Config) {
     use Item::*;
 
     if let Some(item) = inventory[inventory_id].item {
@@ -446,37 +450,36 @@ fn use_item(inventory_id: usize,
             Stone => unimplemented!(),
             Goal => gather_goal,
         };
-        match on_use(inventory_id, objects, config, messages) {
+        match on_use(inventory_id, objects, config) {
             UseResult::UsedUp => {
                 inventory.remove(inventory_id);
             }
             UseResult::Cancelled => {
-                messages.message("Cancelled", WHITE);
+                // messages.message("Cancelled", WHITE);
             }
 
             UseResult::Keep => {
             }
         }
     } else {
-        messages.message(format!("The {} cannot be used.", inventory[inventory_id].name), WHITE);
+        // messages.message(format!("The {} cannot be used.", inventory[inventory_id].name), WHITE);
     }
 }
 
-fn gather_goal(_inventory_id: usize, _objects: &mut [Object], config: &Config, messages: &mut Messages) -> UseResult {
-    messages.message("You've got the goal object! Nice work.", config.color_orange.color());
+fn gather_goal(_inventory_id: usize, _objects: &mut [Object], config: &Config) -> UseResult {
+    // messages.message("You've got the goal object! Nice work.", config.color_orange.color());
     UseResult::Keep
 }
 
 fn pick_item_up(object_id: usize,
                 objects: &mut Vec<Object>,
                 inventory: &mut Vec<Object>,
-                config: &Config,
-                messages: &mut Messages) {
+                config: &Config) {
     if inventory.len() >= 26 {
-        messages.message(format!("Your inventory is full, cannot pick up {}", objects[object_id].name), config.color_red.color());
+        // messages.message(format!("Your inventory is full, cannot pick up {}", objects[object_id].name), config.color_red.color());
     } else {
         let item = objects.swap_remove(object_id);
-        messages.message(format!("You picked up a {}!", item.name), config.color_light_green.color());
+        // messages.message(format!("You picked up a {}!", item.name), config.color_light_green.color());
         inventory.push(item);
     }
 }
@@ -484,7 +487,6 @@ fn pick_item_up(object_id: usize,
 fn player_move_or_attack(move_action: MoveAction,
                          map: &Map,
                          objects: &mut [Object],
-                         _messages: &mut Messages,
                          config: &Config) -> PlayerAction {
     let player_action: PlayerAction;
 
@@ -507,15 +509,17 @@ fn player_move_or_attack(move_action: MoveAction,
 
         Some(Movement::Move(x, y)) | Some(Movement::JumpWall(x, y)) => {
             objects[PLAYER].set_pos(x, y);
-            let mut momentum = objects[PLAYER].momentum.unwrap();
-            momentum.moved(x, y);
+            let momentum = objects[PLAYER].momentum.unwrap();
+
+            objects[PLAYER].momentum.unwrap().moved(x, y);
+
             if momentum.magnitude() > 1 && !momentum.took_half_turn {
                 player_action = PlayerAction::TookHalfTurn;
             } else {
                 player_action = PlayerAction::TookTurn;
             }
 
-            momentum.took_half_turn = player_action == PlayerAction::TookHalfTurn;
+            objects[PLAYER].momentum.unwrap().took_half_turn = player_action == PlayerAction::TookHalfTurn;
             objects[PLAYER].momentum = Some(momentum);
         }
 

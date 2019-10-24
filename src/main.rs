@@ -18,6 +18,7 @@ mod input;
 mod game;
 mod imgui_wrapper;
 mod style;
+mod plat;
 
 #[cfg(test)]
 mod tests;
@@ -62,34 +63,14 @@ use game::*;
 use imgui_wrapper::*;
 
 
-fn step_animation(objects: &mut [Object], map: &Map, animation: &mut Animation) -> bool {
-    match animation {
-        Animation::Thrown(obj_id, line) => {
-            match line.step() {
-                Some(next) => {
-                    if map.tiles[next.0 as usize][next.1 as usize].block_sight {
-                        return true;
-                    } else {
-                        objects[*obj_id].x = next.0;
-                        objects[*obj_id].y = next.1;
-                        return false;
-                    }
-                },
-
-                None => {
-                    return true;
-                },
-            }
-        }
-    }
-}
-
 /// Check whether the exit condition for the game is met.
-fn exit_condition_met(inventory: &[Object], map: &Map, objects: &[Object]) -> bool {
+fn exit_condition_met(map: &Map, objects: &[Object]) -> bool {
     // loop over objects in inventory, and check whether any
     // are the goal object.
-    let has_goal =
-        inventory.iter().any(|obj| obj.item.map_or(false, |item| item == Item::Goal));
+    //let has_goal =
+    //inventory.iter().any(|obj| obj.item.map_or(false, |item| item == Item::Goal));
+    // TODO add back in with new inventory!
+    let has_goal = false;
 
     let player_pos = (objects[PLAYER].x, objects[PLAYER].y);
     let on_exit_tile = map[player_pos].tile_type == TileType::Exit;
@@ -100,54 +81,34 @@ fn exit_condition_met(inventory: &[Object], map: &Map, objects: &[Object]) -> bo
 }
 
 pub fn run_game<F>(mut step: F)
-  where F: FnMut() -> bool {
-    // start game tick timer
-    let timer = Timer::new();
-    let (tick_sender, tick_receiver) = channel();
-    let _guard = 
-        timer.schedule_repeating(chrono::Duration::milliseconds(TIME_BETWEEN_FRAMES_MS), move || {
-            tick_sender.send(0).unwrap();
-        });
+    where F: FnMut() -> bool {
+        // start game tick timer
+        let timer = Timer::new();
+        let (tick_sender, tick_receiver) = channel();
+        let _guard = 
+            timer.schedule_repeating(chrono::Duration::milliseconds(TIME_BETWEEN_FRAMES_MS), move || {
+                tick_sender.send(0).unwrap();
+            });
 
-    /* main game loop */
-    let mut running = true;
-    while running {
-        /* fps limiting */
-        tick_receiver.recv().unwrap();
+        /* main game loop */
+        let mut running = true;
+        while running {
+            /* fps limiting */
+            tick_receiver.recv().unwrap();
 
-        running = step();
-    }
-}
-
-fn animations(game: &mut Game, objects: &mut [Object], map: &Map) {
-    let mut finished_ixs = Vec::new();
-    let mut ix = 0; 
-
-    /* For each animation, step its state */
-    for mut animation in game.animations.iter_mut() {
-      let finished = step_animation(objects, map, &mut animation);
-
-      // for a finished animation, record that it should be removed
-      if finished {
-          finished_ixs.push(ix)
-      }
-      ix += 1;
+            running = step();
+        }
     }
 
-    // remove finished animations
-    finished_ixs.sort_unstable();
-    for ix in finished_ixs.iter().rev() {
-        game.animations.swap_remove(*ix);
-    }
-}
-
-pub fn step_game(game: &mut Game,
-                 config: &mut Config,
+pub fn step_game(config: &mut Config,
+                 mouse_state: &MouseState,
                  previous_player_position: &mut (i32, i32),
                  map: &mut Map,
                  objects: &mut Vec<Object>,
-                 messages: &mut Messages,
-                 inventory: &mut Vec<Object>,
+                 fov: &mut FovMap,
+                 turn_count: &mut usize,
+                 god_mode: &mut bool,
+                 display_overlays: &mut bool,
                  input_action: InputAction) -> bool {
     /* Display */
 
@@ -155,26 +116,27 @@ pub fn step_game(game: &mut Game,
     // If there is an animation playing, let it finish
     *previous_player_position = (objects[PLAYER].x, objects[PLAYER].y);
     let player_action;
+    // TODO animations removed
+    /*
     if game.animations.len() > 0 {
-        animations(game, objects, map);
         player_action = PlayerAction::DidntTakeTurn;
     } else {
-        player_action = handle_input(game, input_action, map, objects, inventory, messages, config);
-        match player_action {
-          PlayerAction::Exit => {
+    */
+    player_action = handle_input(input_action, mouse_state, map, objects, fov, god_mode, display_overlays, config);
+    match player_action {
+        PlayerAction::Exit => {
             return false;
-          }
-
-          PlayerAction::TookTurn | PlayerAction::TookHalfTurn => {
-              game.turn_count += 1;
-          }
-          
-          _ => {}
         }
+
+        PlayerAction::TookTurn | PlayerAction::TookHalfTurn => {
+            *turn_count += 1;
+        }
+
+        _ => {}
     }
 
     /* Check Exit Condition */
-    if exit_condition_met(&inventory, map, objects) {
+    if exit_condition_met(map, objects) {
         std::process::exit(0);
     }
 
@@ -182,7 +144,7 @@ pub fn step_game(game: &mut Game,
     if objects[PLAYER].alive && player_action == PlayerAction::TookTurn {
         for id in 1..objects.len() {
             if objects[id].ai.is_some() {
-                ai_take_turn(id, map, objects, &game.fov, &mut game.animations, config);
+                ai_take_turn(id, map, objects, fov, config);
             }
         }
     }
@@ -194,38 +156,38 @@ pub fn step_game(game: &mut Game,
             file.read_to_string(&mut config_string).expect("Could not read config file!");
             *config = serde_json::from_str(&config_string).expect("Could not read JSON- config.json has a parsing error!");
         }
-      _ => (),
+        _ => (),
     }
 
-  if config.load_map_file_every_frame && Path::new("map.xp").exists() {
-      let (new_objects, new_map, _) = read_map_xp(&config, "map.xp");
-      *map = new_map;
-      let player = objects[0].clone();
-      objects.clear();
-      objects.push(player);
-      objects.extend(new_objects);
+    if config.load_map_file_every_frame && Path::new("map.xp").exists() {
+        let (new_objects, new_map, _) = read_map_xp(&config, "map.xp");
+        *map = new_map;
+        let player = objects[0].clone();
+        objects.clear();
+        objects.push(player);
+        objects.extend(new_objects);
 
-      let dims = map.size();
-      game.fov = FovMap::new(dims.0, dims.1);
-      setup_fov(&mut game.fov, &map);
-      let fov_distance = config.fov_distance;
-      game.fov.compute_fov(objects[PLAYER].x, objects[PLAYER].y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
-  }
+        let dims = map.size();
+        *fov = FovMap::new(dims.0, dims.1);
+        setup_fov(fov, &map);
+        let fov_distance = config.fov_distance;
+        fov.compute_fov(objects[PLAYER].x, objects[PLAYER].y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
+    }
 
     if *previous_player_position != (objects[PLAYER].x, objects[PLAYER].y) {
-    let player = &objects[PLAYER];
-    let mut fov_distance = config.fov_distance;
-    if game.god_mode {
-        fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
-    }
-    game.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
-    }
-
-    if game.god_mode {
-        game.fov.compute_fov(objects[PLAYER].x, objects[PLAYER].y, 1000, FOV_LIGHT_WALLS, FOV_ALGO);
+        let player = &objects[PLAYER];
+        let mut fov_distance = config.fov_distance;
+        if *god_mode {
+            fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
+        }
+        fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
-  return false; 
+    if *god_mode {
+        fov.compute_fov(objects[PLAYER].x, objects[PLAYER].y, 1000, FOV_LIGHT_WALLS, FOV_ALGO);
+    }
+
+    return false; 
 }
 
 pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map, (i32, i32)) {
@@ -380,10 +342,10 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map, (i32,
                             }
 
                             MAP_STATUE_1 | MAP_STATUE_2 | MAP_STATUE_3 |
-                            MAP_STATUE_4 | MAP_STATUE_5 | MAP_STATUE_6 => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].blocked = true;
-                            }
+                                MAP_STATUE_4 | MAP_STATUE_5 | MAP_STATUE_6 => {
+                                    map[(x, y)].chr = Some(chr);
+                                    map[(x, y)].blocked = true;
+                                }
 
                             MAP_WIDE_SPIKES| MAP_TALL_SPIKES => {
                                 map[(x, y)].chr = Some(chr);
@@ -445,30 +407,77 @@ fn main() {
     window_mode.height = (SCREEN_HEIGHT * FONT_HEIGHT)  as f32;
 
     let cb = ggez::ContextBuilder::new("Roguelike", "like")
-             .window_mode(window_mode);
+        .window_mode(window_mode);
     let (ref mut ctx, event_loop) = &mut cb.build().unwrap();
-    let state = &mut GameState::new(ctx, &args).unwrap();
+
+    let config: Config;
+    {
+        let mut file = File::open("config.json").expect("Could not open/parse config file config.json");
+        let mut config_string = String::new();
+        file.read_to_string(&mut config_string).expect("Could not read contents of config.json");
+        config = serde_json::from_str(&config_string).expect("Could not parse config.json file!");
+    }
+
+    let state = &mut Game::new(ctx, &args, config).unwrap();
     event::run(ctx, event_loop, state).unwrap();
 }
 
-struct GameState {
-    game: Game,
-    config: Config,
-    previous_player_position: (i32, i32),
-    map: Map,
-    objects: Vec<Object>,
-    messages: Messages,
-    inventory: Vec<Object>,
+struct DisplayState {
     imgui_wrapper: Gui,
     font_image: Image,
     sprite_batch: SpriteBatch,
-    input_action: InputAction,
+    display_overlays: bool,
+}
+
+impl DisplayState {
+    pub fn new(font_image: Image, ctx: &mut Context) -> DisplayState {
+        let imgui_wrapper = Gui::new(ctx);
+
+        let sprite_batch = SpriteBatch::new(font_image.clone());
+
+        DisplayState {
+            imgui_wrapper,
+            font_image,
+            sprite_batch,
+            display_overlays: false,
+        }
+    }
+}
+
+struct GameState {
+    map: Map,
+    objects: Vec<Object>,
+    fov: FovMap,
 }
 
 impl GameState {
-    fn new(mut ctx: &mut Context, args: &Vec<String>) -> GameResult<GameState> {
-        let imgui_wrapper = Gui::new(&mut ctx);
+    pub fn new(map: Map, objects: Vec<Object>, fov: FovMap) -> GameState {
+        GameState {
+            map,
+            objects,
+            fov,
+        }
+    }
+}
 
+struct Game {
+    config: Config,
+
+    input_action: InputAction,
+
+    mouse_state: MouseState,
+
+    display_state: DisplayState,
+
+    game_state: GameState,
+
+    previous_player_position: (i32, i32),
+    turn_count: usize,
+    god_mode: bool,
+}
+
+impl Game {
+    fn new(mut ctx: &mut Context, args: &Vec<String>, config: Config) -> GameResult<Game> {
         // Create seed for random number generator, either from
         // user input or randomly
         let seed: u64;
@@ -482,18 +491,6 @@ impl GameState {
         println!("Seed: {} (0x{:X})", seed, seed);
 
         let previous_player_position = (-1, -1);
-
-        let mut messages = Messages::new();
-
-        let config: Config;
-        {
-            let mut file = File::open("config.json").expect("Could not open/parse config file config.json");
-            let mut config_string = String::new();
-            file.read_to_string(&mut config_string).expect("Could not read contents of config.json");
-            config = serde_json::from_str(&config_string).expect("Could not parse config.json file!");
-        }
-
-        let inventory = vec![Object::make_stone(0, 0, &config)];
 
         let mut objects = vec!(make_player());
 
@@ -519,32 +516,28 @@ impl GameState {
         objects[PLAYER].x = player_x;
         objects[PLAYER].y = player_y;
 
-        let mut game = Game::new();
-
-        setup_fov(&mut game.fov, &map);
+        let mut fov = FovMap::new(MAP_WIDTH, MAP_HEIGHT);
+        setup_fov(&mut fov, &map);
         let fov_distance = config.fov_distance;
-        game.fov.compute_fov(player_x, player_y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
-
-        messages.message("Welcome Stranger! Prepare to perish in the Desolation of Salt!", config.color_orange.color());
+        fov.compute_fov(player_x, player_y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
 
         let font_image = Image::new(ctx, "/rexpaint16x16.png").unwrap();
 
-        let sprite_batch = SpriteBatch::new(font_image.clone());
-
         let input_action = InputAction::None;
 
-        let state = GameState {
-            game,
+        let display_state = DisplayState::new(font_image, ctx);
+
+        let game_state = GameState::new(map, objects, fov);
+
+        let state = Game {
             config,
             previous_player_position,
-            map,
-            objects,
-            messages,
-            inventory,
-            imgui_wrapper,
-            font_image,
-            sprite_batch,
             input_action,
+            game_state,
+            display_state: display_state,
+            turn_count: 0,
+            god_mode: false,
+            mouse_state: Default::default(),
         };
 
         Ok(state)
@@ -552,15 +545,17 @@ impl GameState {
 }
 
 
-impl EventHandler for GameState {
+impl EventHandler for Game {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
-        step_game(&mut self.game,
-                  &mut self.config,
+        step_game(&mut self.config,
+                  &self.mouse_state,
                   &mut self.previous_player_position,
-                  &mut self.map,
-                  &mut self.objects,
-                  &mut self.messages,
-                  &mut self.inventory,
+                  &mut self.game_state.map,
+                  &mut self.game_state.objects,
+                  &mut self.game_state.fov,
+                  &mut self.turn_count,
+                  &mut self.god_mode,
+                  &mut self.display_state.display_overlays,
                   self.input_action);
 
         self.input_action = InputAction::None;
@@ -570,17 +565,17 @@ impl EventHandler for GameState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         render_all(ctx,
-                   &mut self.game,
-                   &self.objects,
-                   &mut self.map,
-                   &mut self.messages,
-                   &mut self.imgui_wrapper,
-                   &mut self.sprite_batch,
+                   &mut self.mouse_state,
+                   &self.game_state.objects,
+                   &mut self.game_state.map,
+                   &mut self.display_state.imgui_wrapper,
+                   &mut self.display_state.sprite_batch,
+                   &self.game_state.fov,
                    &self.config)
     }
 
     fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
-        self.imgui_wrapper.update_mouse_pos(x, y, &mut self.game.mouse_state);
+        self.display_state.imgui_wrapper.update_mouse_pos(x, y, &mut self.mouse_state);
     }
 
     fn mouse_button_down_event(
@@ -589,13 +584,13 @@ impl EventHandler for GameState {
         button: MouseButton,
         _x: f32,
         _y: f32,
-    ) {
-        self.imgui_wrapper.update_mouse_down((
-            button == MouseButton::Left,
-            button == MouseButton::Right,
-            button == MouseButton::Middle),
-            &mut self.game.mouse_state,
-        );
+        ) {
+        self.display_state.imgui_wrapper.update_mouse_down((
+                button == MouseButton::Left,
+                button == MouseButton::Right,
+                button == MouseButton::Middle),
+                &mut self.mouse_state,
+                );
     }
 
     fn mouse_button_up_event(
@@ -604,8 +599,8 @@ impl EventHandler for GameState {
         _button: MouseButton,
         _x: f32,
         _y: f32,
-    ) {
-        self.imgui_wrapper.update_mouse_down((false, false, false), &mut self.game.mouse_state);
+        ) {
+        self.display_state.imgui_wrapper.update_mouse_down((false, false, false), &mut self.mouse_state);
     }
 
     fn key_down_event(
@@ -614,7 +609,7 @@ impl EventHandler for GameState {
         keycode: KeyCode,
         keymods: KeyMods,
         _repeat: bool,
-    ) {
+        ) {
         self.input_action = map_keycode_to_action(keycode, keymods);
     }
 }

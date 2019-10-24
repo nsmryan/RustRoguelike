@@ -39,30 +39,6 @@ pub struct MouseState {
 }
 
 
-pub struct Game {
-    pub fov: FovMap,
-    pub turn_count: usize,
-    pub display_overlays: bool,
-    pub animations: Vec<Animation>,
-    pub needs_clear: Vec<(i32, i32)>,
-    pub god_mode: bool,
-    pub mouse_state: MouseState,
-}
-
-impl Game {
-    pub fn new() -> Game {
-        Game {
-            fov: FovMap::new(MAP_WIDTH, MAP_HEIGHT),
-            turn_count: 0,
-            display_overlays: false,
-            animations: Vec::new(),
-            needs_clear: Vec::new(),
-            god_mode: false,
-            mouse_state: Default::default(),
-        }
-    }
-}
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Reach {
     Single(usize),
@@ -636,10 +612,6 @@ impl Into<(i32, i32)> for Position {
     fn into(self) -> (i32, i32) {
         (self.0, self.1)
     }
-}
-
-pub enum Animation {
-    Thrown(ObjectId, Line),
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, Default)]

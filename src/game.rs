@@ -243,18 +243,3 @@ pub fn make_island(map: &mut Map,
     return center;
 }
 
-/// Check whether the exit condition for the game is met.
-pub fn exit_condition_met(inventory: &[Object], map: &Map, objects: &[Object]) -> bool {
-    // loop over objects in inventory, and check whether any
-    // are the goal object.
-    let has_goal =
-        inventory.iter().any(|obj| obj.item.map_or(false, |item| item == Item::Goal));
-
-    let player_pos = (objects[PLAYER].x, objects[PLAYER].y);
-    let on_exit_tile = map[player_pos].tile_type == TileType::Exit;
-
-    let exit_condition = has_goal && on_exit_tile;
-
-    return exit_condition;
-}
-
