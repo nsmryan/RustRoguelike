@@ -8,7 +8,7 @@ use noise::NoiseFn;
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
 
-use ggez::graphics::{Color, Drawable, DrawParam, Image};
+use ggez::graphics::{Rect, Color, Drawable, DrawParam, Image, screen_coordinates};
 use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::graphics;
 use ggez::{Context, GameResult};
@@ -20,6 +20,7 @@ use crate::engine::map::*;
 use crate::input::calculate_move;
 use crate::imgui_wrapper::*;
 use crate::constants::*;
+use crate::plat::*;
 
 
 pub struct DisplayState {
@@ -28,6 +29,7 @@ pub struct DisplayState {
     pub background_image: Option<Image>,
     pub sprite_batch: SpriteBatch,
     pub display_overlays: bool,
+    pub screen_sections: Plan,
 }
 
 impl DisplayState {
@@ -42,6 +44,7 @@ impl DisplayState {
             background_image: None,
             sprite_batch,
             display_overlays: false,
+            screen_sections: Plan::empty(),
         }
     }
 }
@@ -278,11 +281,11 @@ pub fn render_map(_ctx: &mut Context,
 
 }
 
-pub fn render_sound(console: &mut dyn Console,
-                    map: &Map,
-                    objects: &[Object]) {
-    for y in 1..map.height() {
-        for x in 0..map.width() {
+pub fn render_sound(_console: &mut dyn Console,
+                    _map: &Map,
+                    _objects: &[Object]) {
+    //for y in 1..map.height() {
+        //for x in 0..map.width() {
             // TODO add back in with animations
             // after animations play, draw sound for a frame
             /*
@@ -294,8 +297,8 @@ pub fn render_sound(console: &mut dyn Console,
                }
             }
             */
-        }
-    }
+        //}
+    //}
 }
 
 pub fn render_objects(_ctx: &mut Context,
@@ -365,40 +368,54 @@ pub fn render_all(ctx: &mut Context,
 
     graphics::clear(ctx, graphics::BLACK);
 
-    render_map(ctx,
-               fov,
-               map,
-               &mut display_state.sprite_batch,
-               config);
+    let screen_rect = screen_coordinates(ctx);
 
-    /* from render_objects */
-    render_objects(ctx, fov, objects, &mut display_state.sprite_batch);
+    let plots = display_state.screen_sections
+                             .plot(0,
+                                   0,
+                                   screen_rect.w.abs() as usize,
+                                   screen_rect.h.abs() as usize);
+    for plot in plots {
+        let plot_rect = Rect::new(plot.x as f32, plot.y as f32, plot.width as f32, plot.height as f32);
 
-    // TODO removed for ggez
-    // render_sound(&mut game.console, &game.animations, map, objects);
+        match plot.name.as_str() {
+            "screen" => {
+            }
 
-    // Draw movement and attack overlays
-    // TODO removed for ggez
-    render_overlays(mouse_state, fov, &mut display_state.sprite_batch, map, objects, config);
+            "map" => {
+                render_map(ctx,
+                           fov,
+                           map,
+                           &mut display_state.sprite_batch,
+                           config);
 
-    // Draw UI overlay
-    // let hp = objects[PLAYER].fighter.map_or(0, |f| f.hp);
-    // let max_hp = objects[PLAYER].fighter.map_or(0, |f| f.max_hp);
-    // TODO removed for ggez
-    // render_bar(&mut game.panel, 1, 1, BAR_WIDTH, "HP", hp, max_hp, LIGHT_RED, DARK_RED);
+                render_objects(ctx, fov, objects, &mut display_state.sprite_batch);
 
-    //  TODO add back in lower menu
+                render_overlays(mouse_state, fov, &mut display_state.sprite_batch, map, objects, config);
 
-    //  TODO add back in turns, health, names under cursor
+                let scale = plot.scale(screen_rect.w.abs() as usize, screen_rect.h.abs() as usize);
+                let ((x_offset, y_offset), scaler) = plot.fit(screen_rect.w.abs() as usize, screen_rect.h.abs() as usize);
+                dbg!(x_offset, y_offset, scaler);
+                dbg!(screen_rect.w, screen_rect.h);
+                dbg!(plot.width, plot.height);
+                display_state.sprite_batch
+                             .draw(ctx,
+                                   DrawParam::default().dest([x_offset, y_offset])
+                                                       .scale([scaler, scaler]))?;
+            }
 
-    display_state.sprite_batch.draw(ctx, Default::default())?;
+            "inspector" => {
+                // Render game ui
+                display_state.imgui_wrapper.render(ctx, map, objects, mouse_state);
+            }
 
-    // Render game ui
-    display_state.imgui_wrapper.render(ctx, map, objects, mouse_state);
+            section_name => {
+                panic!(format!("Unexpected screen section '{}'", section_name));
+            }
+        }
+    }
 
     graphics::present(ctx)?;
-
-    //dbg!(start_time.elapsed().as_millis());
 
     Ok(())
 }

@@ -47,7 +47,6 @@ use rand::prelude::*;
 use ggez::event::{self, EventHandler, KeyCode, KeyMods, MouseButton};
 use ggez::{Context, GameResult};
 use ggez::graphics::Image;
-use ggez::graphics::spritebatch::SpriteBatch;
 
 use timer::*;
 
@@ -60,7 +59,7 @@ use engine::map::*;
 use engine::ai::*;
 use input::*;
 use game::*;
-use imgui_wrapper::*;
+use plat::*;
 
 
 /// Check whether the exit condition for the game is met.
@@ -456,7 +455,7 @@ struct Game {
 }
 
 impl Game {
-    fn new(mut ctx: &mut Context, args: &Vec<String>, config: Config) -> GameResult<Game> {
+    fn new(ctx: &mut Context, args: &Vec<String>, config: Config) -> GameResult<Game> {
         // Create seed for random number generator, either from
         // user input or randomly
         let seed: u64;
@@ -508,7 +507,7 @@ impl Game {
 
         let game_state = GameState::new(map, objects, fov);
 
-        let state = Game {
+        let mut state = Game {
             config,
             previous_player_position,
             input_action,
@@ -518,6 +517,9 @@ impl Game {
             god_mode: false,
             mouse_state: Default::default(),
         };
+
+        state.display_state.screen_sections =
+            Plan::vert("screen", 0.80, Plan::zone("map"), Plan::zone("inspector"));
 
         Ok(state)
     }

@@ -1,5 +1,4 @@
 use std::convert::Into;
-use std::cmp;
 
 use tcod::line::*;
 

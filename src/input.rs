@@ -111,7 +111,7 @@ pub fn handle_input(input_action: InputAction,
                 let item_id = objects.iter().position(|object| {
                     object.pos() == objects[PLAYER].pos() && object.item.is_some()
                 });
-                if let Some(item_id) = item_id {
+                if let Some(_item_id) = item_id {
                     // TODO add back in with new inventory
                     //pick_item_up(item_id, objects, inventory, config);
                 }
@@ -321,7 +321,6 @@ pub fn throw_stone(pos: (i32, i32),
                    map: &mut Map,
                    objects: &mut Vec<Object>) {
     let (mx, my) = pos;
-    let obj_id = objects.len();
 
     let start_x = objects[PLAYER].x;
     let start_y = objects[PLAYER].y;
@@ -378,7 +377,7 @@ fn use_item(inventory_id: usize,
     }
 }
 
-fn gather_goal(_inventory_id: usize, _objects: &mut [Object], config: &Config) -> UseResult {
+fn gather_goal(_inventory_id: usize, _objects: &mut [Object], _config: &Config) -> UseResult {
     // messages.message("You've got the goal object! Nice work.", config.color_orange.color());
     UseResult::Keep
 }
@@ -386,7 +385,7 @@ fn gather_goal(_inventory_id: usize, _objects: &mut [Object], config: &Config) -
 fn pick_item_up(object_id: usize,
                 objects: &mut Vec<Object>,
                 inventory: &mut Vec<Object>,
-                config: &Config) {
+                _config: &Config) {
     if inventory.len() >= 26 {
         // messages.message(format!("Your inventory is full, cannot pick up {}", objects[object_id].name), config.color_red.color());
     } else {
