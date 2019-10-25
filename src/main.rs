@@ -422,27 +422,6 @@ fn main() {
     event::run(ctx, event_loop, state).unwrap();
 }
 
-struct DisplayState {
-    imgui_wrapper: Gui,
-    font_image: Image,
-    sprite_batch: SpriteBatch,
-    display_overlays: bool,
-}
-
-impl DisplayState {
-    pub fn new(font_image: Image, ctx: &mut Context) -> DisplayState {
-        let imgui_wrapper = Gui::new(ctx);
-
-        let sprite_batch = SpriteBatch::new(font_image.clone());
-
-        DisplayState {
-            imgui_wrapper,
-            font_image,
-            sprite_batch,
-            display_overlays: false,
-        }
-    }
-}
 
 struct GameState {
     map: Map,
@@ -568,9 +547,8 @@ impl EventHandler for Game {
                    &mut self.mouse_state,
                    &self.game_state.objects,
                    &mut self.game_state.map,
-                   &mut self.display_state.imgui_wrapper,
-                   &mut self.display_state.sprite_batch,
                    &self.game_state.fov,
+                   &mut self.display_state,
                    &self.config)
     }
 

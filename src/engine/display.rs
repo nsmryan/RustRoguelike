@@ -8,9 +8,7 @@ use noise::NoiseFn;
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
 
-use ggez::graphics::DrawParam;
-use ggez::graphics::Drawable;
-use ggez::graphics::Color;
+use ggez::graphics::{Color, Drawable, DrawParam, Image};
 use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::graphics;
 use ggez::{Context, GameResult};
@@ -22,6 +20,31 @@ use crate::engine::map::*;
 use crate::input::calculate_move;
 use crate::imgui_wrapper::*;
 use crate::constants::*;
+
+
+pub struct DisplayState {
+    pub imgui_wrapper: Gui,
+    pub font_image: Image,
+    pub background_image: Option<Image>,
+    pub sprite_batch: SpriteBatch,
+    pub display_overlays: bool,
+}
+
+impl DisplayState {
+    pub fn new(font_image: Image, ctx: &mut Context) -> DisplayState {
+        let imgui_wrapper = Gui::new(ctx);
+
+        let sprite_batch = SpriteBatch::new(font_image.clone());
+
+        DisplayState {
+            imgui_wrapper,
+            font_image,
+            background_image: None,
+            sprite_batch,
+            display_overlays: false,
+        }
+    }
+}
 
 
 pub fn get_objects_under_mouse(x: i32, y: i32, objects: &[Object], fov_map: &FovMap) -> Vec<ObjectId> {
@@ -335,29 +358,28 @@ pub fn render_all(ctx: &mut Context,
                   mouse_state: &mut MouseState,
                   objects: &[Object],
                   map: &mut Map,
-                  imgui_wrapper: &mut Gui,
-                  sprite_batch: &mut SpriteBatch,
                   fov: &FovMap,
+                  display_state: &mut DisplayState,
                   config: &Config)  -> GameResult<()> {
-    sprite_batch.clear();
+    display_state.sprite_batch.clear();
 
     graphics::clear(ctx, graphics::BLACK);
 
     render_map(ctx,
                fov,
                map,
-               sprite_batch,
+               &mut display_state.sprite_batch,
                config);
 
     /* from render_objects */
-    render_objects(ctx, fov, objects, sprite_batch);
+    render_objects(ctx, fov, objects, &mut display_state.sprite_batch);
 
     // TODO removed for ggez
     // render_sound(&mut game.console, &game.animations, map, objects);
 
     // Draw movement and attack overlays
     // TODO removed for ggez
-    render_overlays(mouse_state, fov, sprite_batch, map, objects, config);
+    render_overlays(mouse_state, fov, &mut display_state.sprite_batch, map, objects, config);
 
     // Draw UI overlay
     // let hp = objects[PLAYER].fighter.map_or(0, |f| f.hp);
@@ -369,10 +391,10 @@ pub fn render_all(ctx: &mut Context,
 
     //  TODO add back in turns, health, names under cursor
 
-    sprite_batch.draw(ctx, Default::default())?;
+    display_state.sprite_batch.draw(ctx, Default::default())?;
 
     // Render game ui
-    imgui_wrapper.render(ctx, map, objects, mouse_state);
+    display_state.imgui_wrapper.render(ctx, map, objects, mouse_state);
 
     graphics::present(ctx)?;
 

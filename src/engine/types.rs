@@ -1,7 +1,6 @@
 use std::convert::Into;
 use std::cmp;
 
-use tcod::map::{Map as FovMap};
 use tcod::line::*;
 
 use num::clamp;
@@ -475,7 +474,11 @@ impl Momentum {
     }
 
     pub fn magnitude(&self) -> i32 {
-        return cmp::max(self.mx, self.my);
+        if self.mx.abs() > self.my.abs() {
+            return self.mx;
+        } else {
+            return self.my;
+        }
     }
 
     pub fn diagonal(&self) -> bool {
@@ -483,16 +486,16 @@ impl Momentum {
     }
 
     pub fn moved(&mut self, dx: i32, dy: i32) {
-        if dx.signum() != self.mx.signum() {
+        if self.mx != 0 && dx.signum() != self.mx.signum() {
             self.mx = 0;
         } else {
-            self.mx = clamp(self.mx + dx.signum(), MAX_MOMENTUM, -MAX_MOMENTUM);
+            self.mx = clamp(self.mx + dx.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
         }
 
-        if dy.signum() != self.my.signum() {
+        if self.my != 0 && dy.signum() != self.my.signum() {
             self.my = 0;
         } else {
-            self.my = clamp(self.my + dy.signum(), MAX_MOMENTUM, -MAX_MOMENTUM);
+            self.my = clamp(self.my + dy.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
         }
     }
 

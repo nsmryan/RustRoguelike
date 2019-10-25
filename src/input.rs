@@ -268,30 +268,6 @@ pub fn check_collision(object_id: ObjectId,
 }
 
 /*
-   pub fn move_action(input_action: InputAction, object_id: ObjectId, objects: &[Object], map: &Map) -> Option<(i32, i32)> {
-   let pos: Option<(i32, i32)>;
-   match objects[object_id].momentum {
-   None => {
-   match input_action {
-   Left => pos = Some((-1, 0));
-   Right => pos = Some((1, 0));
-   Up => pos = Some((0, 1));
-   Down => pos = Some((0, -1));
-   DownLeft => pos = Some((-1, -1));
-   DownRight => pos = Some((-1, 1));
-   UpLeft => pos = Some((-1, 1));
-   UpRight => pos = Some((1, 1));
-   Center => pos = Some((0, 0));
-   _ => panic!(format!("Unexpected input {:?}!", input_action));
-   }
-   }
-
-   Some(momentum) => {
-   let momentum = objects[PLAYER].momentum.unwrap();
-   let mut mx = momentum.mx;
-   let mut my = momentum.my;
-   let mut took_half_turn = false;
-
    let has_momentum = mx.abs() > 1 || my.abs() > 1;
    let momentum_diagonal = mx.abs() != 0 && my.abs() != 0;
    let side_move = dx.abs() != 0 && dy.abs() != 0;
@@ -301,11 +277,6 @@ pub fn check_collision(object_id: ObjectId,
    let momentum_change: MomentumChange;
 
    let player_action: PlayerAction;
-
-// if the space is not blocked, move
-if move_valid(PLAYER, objects, dx, dy, map) {
-objects[PLAYER].set_pos(x + dx, y + dy);
-momentum_change = MomentumChange::CurrentDirection;
 
 // if the player has enough momentum, they get another action, taking only a half turn
 // if the player previous took a half turn, they cannot take another
@@ -343,101 +314,42 @@ player_action = PlayerAction::TookTurn;
     momentum_change = MomentumChange::Lost;
     player_action = PlayerAction::TookTurn;
 }
-
-match momentum_change {
-    MomentumChange::Lost => {
-        mx = 0;
-        my = 0;
-    }
-
-    MomentumChange::PreviousDirection => {
-        mx = clamp(mx + mx.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
-        my = clamp(my + my.signum(), -MAX_MOMENTUM, MAX_MOMENTUM);
-    }
-
-    MomentumChange::CurrentDirection => {
-        if same_direction {
-            mx = clamp(mx + dx, -MAX_MOMENTUM, MAX_MOMENTUM);
-            my = clamp(my + dy, -MAX_MOMENTUM, MAX_MOMENTUM);
-        } else {
-            mx = dx;
-            my = dy;
-        }
-    }
-}
-
-objects[PLAYER].momentum = 
-    Some(Momentum {
-        mx: mx,
-        my: my,
-        took_half_turn: took_half_turn,
-    });
-}
-}
-
-return pos;
-}
-
-pub fn valid_moves(object_id: ObjectId, objects: &[Object], map: &Map) -> Vec<(i32, i32)> {
-    let x = objects[object_id].x;
-    let y = objects[object_id].y;
-    let mut moves: Vec<(i32, i32)> = Vec::new();
-
-    let possible_moves =
-        vec![InputAction::Left,
-    InputAction::Right,
-    InputAction::Up,
-    InputAction::Down,
-    InputAction::DownLeft,
-    InputAction::DownRight,
-    InputAction::UpLeft,
-    InputAction::UpRight,
-    InputAction::Center];
-
-    for input_action in possible_moves {
-        if let Some(pos) = move_action(input_action, object_id, objects, map) {
-            moves.push(pos);
-        }
-    }
-
-    return moves;
-}
 */
 
-    pub fn throw_stone(pos: (i32, i32),
-                       mut stone: Object,
-                       map: &mut Map,
-                       objects: &mut Vec<Object>) {
-        let (mx, my) = pos;
-        let obj_id = objects.len();
+pub fn throw_stone(pos: (i32, i32),
+                   mut stone: Object,
+                   map: &mut Map,
+                   objects: &mut Vec<Object>) {
+    let (mx, my) = pos;
+    let obj_id = objects.len();
 
-        let start_x = objects[PLAYER].x;
-        let start_y = objects[PLAYER].y;
-        let end_x = mx / FONT_WIDTH;
-        let end_y = my / FONT_HEIGHT;
-        let throw_line = Line::new((start_x, start_y), (end_x, end_y));
+    let start_x = objects[PLAYER].x;
+    let start_y = objects[PLAYER].y;
+    let end_x = mx / FONT_WIDTH;
+    let end_y = my / FONT_HEIGHT;
+    let throw_line = Line::new((start_x, start_y), (end_x, end_y));
 
-        // get target position in direction of player click
-        let (target_x, target_y) =
-            throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
+    // get target position in direction of player click
+    let (target_x, target_y) =
+        throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
 
-        stone.x = start_x;
-        stone.y = start_y;
-        objects.push(stone);
+    stone.x = start_x;
+    stone.y = start_y;
+    objects.push(stone);
 
-        // add animation to animation list
-        // TODO add back in with animations
-        //let animation =
-        //    Animation::Thrown(obj_id,
-        //                      Line::new((start_x, start_y),
-        //                      (target_x, target_y)));
-        //game.animations.push(animation);
+    // add animation to animation list
+    // TODO add back in with animations
+    //let animation =
+    //    Animation::Thrown(obj_id,
+    //                      Line::new((start_x, start_y),
+    //                      (target_x, target_y)));
+    //game.animations.push(animation);
 
-        // add sound to map
-        for pos in map.pos_in_radius((target_x, target_y), STONE_SOUND_RADIUS) {
-            map[pos].sound = Some((target_x, target_y));
-        }
+    // add sound to map
+    for pos in map.pos_in_radius((target_x, target_y), STONE_SOUND_RADIUS) {
+        map[pos].sound = Some((target_x, target_y));
     }
+}
 
 fn use_item(inventory_id: usize,
             inventory: &mut Vec<Object>,
@@ -493,14 +405,21 @@ fn player_move_or_attack(move_action: MoveAction,
     let movement = calculate_move(move_action, objects[PLAYER].movement.unwrap(), PLAYER, objects, map);
 
     match movement {
-        Some(Movement::Attack(_dx, _dy, target_id)) => {
+        Some(Movement::Attack(new_x, new_y, target_id)) => {
             let (player, target) = mut_two(PLAYER, target_id, objects);
             player.attack(target, config);
+
+            // if we attack without moving, we lost all our momentum
+            if (new_x, new_y) == (objects[PLAYER].x, objects[PLAYER].y)
+            {
+                objects[PLAYER].momentum.as_mut().map(|momentum| momentum.clear());
+            }
+
+            objects[PLAYER].set_pos(new_x, new_y);
+
             player_action = PlayerAction::TookTurn;
         }
 
-        // TODO may want to check if any movement occurred, and not take turn
-        // if the player is against a wall.
         Some(Movement::Collide(x, y)) => {
             objects[PLAYER].set_pos(x, y);
             objects[PLAYER].momentum.unwrap().clear();
@@ -508,10 +427,12 @@ fn player_move_or_attack(move_action: MoveAction,
         }
 
         Some(Movement::Move(x, y)) | Some(Movement::JumpWall(x, y)) => {
+            let (dx, dy) = (x - objects[PLAYER].x, y - objects[PLAYER].y);
+
             objects[PLAYER].set_pos(x, y);
             let momentum = objects[PLAYER].momentum.unwrap();
 
-            objects[PLAYER].momentum.unwrap().moved(x, y);
+            objects[PLAYER].momentum.as_mut().map(|momentum| momentum.moved(dx, dy));
 
             if momentum.magnitude() > 1 && !momentum.took_half_turn {
                 player_action = PlayerAction::TookHalfTurn;
@@ -519,8 +440,7 @@ fn player_move_or_attack(move_action: MoveAction,
                 player_action = PlayerAction::TookTurn;
             }
 
-            objects[PLAYER].momentum.unwrap().took_half_turn = player_action == PlayerAction::TookHalfTurn;
-            objects[PLAYER].momentum = Some(momentum);
+            objects[PLAYER].momentum.as_mut().map(|momentum| momentum.took_half_turn = player_action == PlayerAction::TookHalfTurn);
         }
 
         Some(Movement::WallKick(x, y, dir_x, dir_y)) => {
