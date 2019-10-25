@@ -486,6 +486,9 @@ impl Momentum {
     }
 
     pub fn moved(&mut self, dx: i32, dy: i32) {
+        // if the movement is in the opposite direction, and we have some momentum
+        // currently, lose our momentum.
+
         if self.mx != 0 && dx.signum() != self.mx.signum() {
             self.mx = 0;
         } else {
@@ -509,15 +512,6 @@ impl Momentum {
         self.my = 0;
     }
 }
-
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum MomentumChange {
-    Lost,
-    PreviousDirection,
-    CurrentDirection,
-}
-
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Movement {
