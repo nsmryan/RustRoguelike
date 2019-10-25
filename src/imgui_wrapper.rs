@@ -65,7 +65,7 @@ impl Gui {
         }
     }
 
-    pub fn render(&mut self, ctx: &mut Context, map: &Map, objects: &[Object], mouse_state: &mut MouseState) {
+    pub fn render(&mut self, ctx: &mut Context, map: &Map, objects: &[Object], mouse_state: &mut MouseState, dims: (usize, usize), pos: (usize, usize)) {
         // Update mouse
         self.update_mouse(mouse_state);
 
@@ -88,10 +88,12 @@ impl Gui {
                              (mouse_state.pos.1 / FONT_HEIGHT) + 1);
 
             // Window
-            let ui_width = 300.0;
+            let ui_width = dims.0 as f32;
+            let ui_height = dims.1 as f32;
+            dbg!(dims, pos);
             Window::new(im_str!("Lower Panel"))
-                .size([ui_width, h], imgui::Condition::FirstUseEver)
-                .position([w - ui_width, 0.0], imgui::Condition::FirstUseEver)
+                .size([ui_width, ui_height], imgui::Condition::FirstUseEver)
+                .position([pos.0 as f32, pos.1 as f32], imgui::Condition::FirstUseEver)
                 .movable(false)
                 .collapsible(false)
                 .bg_alpha(0.0)

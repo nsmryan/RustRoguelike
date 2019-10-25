@@ -370,12 +370,12 @@ pub fn render_all(ctx: &mut Context,
                   fov: &FovMap,
                   display_state: &mut DisplayState,
                   config: &Config)  -> GameResult<()> {
-    graphics::clear(ctx, graphics::WHITE);
+    graphics::clear(ctx, graphics::BLACK);
 
     let screen_rect = screen_coordinates(ctx);
 
     set_canvas(ctx, Some(&display_state.map_canvas));
-    graphics::clear(ctx, graphics::WHITE);
+    graphics::clear(ctx, graphics::BLACK);
 
     render_map(ctx,
                fov,
@@ -414,15 +414,10 @@ pub fn render_all(ctx: &mut Context,
             }
 
             "map" => {
-                let scale = plot.scale(screen_rect.w.abs() as usize, screen_rect.h.abs() as usize);
                 let map_dims = display_state.map_canvas.image().dimensions();
                 let map_width = (MAP_WIDTH * FONT_WIDTH) as usize;
                 let map_height = (MAP_HEIGHT * FONT_HEIGHT) as usize;
                 let ((x_offset, y_offset), scaler) = plot.fit(map_dims.w as usize, map_dims.h as usize);
-                dbg!(x_offset, y_offset, scaler);
-                dbg!(screen_rect.w, screen_rect.h);
-                dbg!(plot.width, plot.height);
-                dbg!(display_state.map_canvas.image().dimensions());
 
                 draw(ctx,
                      &display_state.map_canvas,
@@ -432,7 +427,7 @@ pub fn render_all(ctx: &mut Context,
 
             "inspector" => {
                 // Render game ui
-                display_state.imgui_wrapper.render(ctx, map, objects, mouse_state);
+                display_state.imgui_wrapper.render(ctx, map, objects, mouse_state, plot.dims(), plot.pos());
             }
 
             section_name => {
@@ -455,18 +450,23 @@ pub fn draw_char(sprite_batch: &mut SpriteBatch,
     let chr_y = (chr as i32) / FONT_HEIGHT;
     let font_width = FONT_WIDTH as f32;
     let font_height = FONT_HEIGHT as f32;
+
+    let font_part = 1.0 / 16.0;
+    let pixel = font_part / 16.0;
+
     let draw_params =
         DrawParam {
             src: ggez::graphics::Rect {
-                x: (chr_x as f32) / font_width,
-                y: (chr_y as f32) / font_height,
-                w: 1.0 / font_width,
-                h: 1.0 / font_height,
+                x: chr_x as f32 * font_part + pixel,
+                y: chr_y as f32 * font_part + pixel,
+                w: font_part - pixel * 2.0,
+                h: font_part - pixel * 2.0,
             },
-            dest: Point2 { x: x as f32 * font_width, y: y as f32 * font_height} ,
+            dest: Point2 { x: x as f32 * (FONT_WIDTH as f32 - 2.0),
+                           y: y as f32 * (FONT_HEIGHT as f32 - 2.0) },
             rotation: 0.0,
             scale: mint::Vector2 { x: 1.0, y: 1.0 },
-            offset: Point2 { x: 1.0, y: 1.0 },
+            offset: Point2 { x: 0.0, y: 0.0 },
             color: color,
         };
 
