@@ -475,9 +475,9 @@ impl Momentum {
 
     pub fn magnitude(&self) -> i32 {
         if self.mx.abs() > self.my.abs() {
-            return self.mx;
+            return self.mx.abs();
         } else {
-            return self.my;
+            return self.my.abs();
         }
     }
 

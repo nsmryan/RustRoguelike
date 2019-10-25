@@ -237,7 +237,7 @@ pub fn check_collision(object_id: ObjectId,
 
     if !map.is_within_bounds(x + dx, y + dy) ||
        map.is_blocked_by_wall(x, y, dx, dy) {
-        result = Collision::Wall((x, y), (x, y));
+        result = Collision::Wall((x + dx, y + dy), (x, y));
     } else {
         for (x_pos, y_pos) in move_line.into_iter() {
             if map.is_blocked(x_pos, y_pos, objects) {
@@ -256,7 +256,7 @@ pub fn check_collision(object_id: ObjectId,
             }
 
             if map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
-                result = Collision::Wall((x_pos, y_pos), (x_pos, y_pos));
+                result = Collision::Wall((x_pos + dx, y_pos + dy), (x_pos, y_pos));
                 break;
             }
 
@@ -484,12 +484,10 @@ pub fn calculate_move(action: MoveAction,
             Collision::Wall((tile_x, tile_y), (new_x, new_y)) => {
                 match objects[object_id].momentum {
                     Some(momentum) => {
-                        // if max momentum, and will hit short wall, and there is space beyond the
-                        // wall, than jump over the wall.
+                        // if max momentum, and there is space beyond the wall, than jump over the wall.
                         if momentum.magnitude() == MAX_MOMENTUM &&
-                            map[(tile_x, tile_y)].tile_type == TileType::ShortWall &&
-                            !map.is_blocked(tile_x + 2 * dx, tile_y + 2 * dy, objects) {
-                                movement = Some(Movement::JumpWall(tile_x + 2 * dx, tile_y + 2 * dy));
+                            !map.is_blocked(tile_x, tile_y, objects) {
+                                movement = Some(Movement::JumpWall(tile_x, tile_y));
                         } else { // otherwise move normally, stopping just before the blocking tile
                             movement = Some(Movement::Move(new_x, new_y));
                         }
