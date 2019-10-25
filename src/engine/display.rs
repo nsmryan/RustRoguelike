@@ -8,9 +8,10 @@ use noise::NoiseFn;
 #[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
 
-use ggez::graphics::{Rect, Color, Drawable, DrawParam, Image, screen_coordinates};
+use ggez::graphics::{draw, set_canvas, Canvas, Rect, Color, Drawable, DrawParam, Image, screen_coordinates};
 use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::graphics;
+use ggez::conf::NumSamples;
 use ggez::{Context, GameResult};
 
 use mint::Point2;
@@ -27,6 +28,7 @@ pub struct DisplayState {
     pub imgui_wrapper: Gui,
     pub font_image: Image,
     pub background_image: Option<Image>,
+    pub map_canvas: Canvas,
     pub sprite_batch: SpriteBatch,
     pub display_overlays: bool,
     pub screen_sections: Plan,
@@ -42,6 +44,7 @@ impl DisplayState {
             imgui_wrapper,
             font_image,
             background_image: None,
+            map_canvas: Canvas::new(ctx, (FONT_WIDTH * MAP_WIDTH) as u16, (FONT_HEIGHT * MAP_HEIGHT) as u16, NumSamples::One).unwrap(),
             sprite_batch,
             display_overlays: false,
             screen_sections: Plan::empty(),
@@ -205,8 +208,11 @@ pub fn render_map(_ctx: &mut Context,
                   map: &mut Map,
                   sprite_batch: &mut SpriteBatch,
                   config: &Config) {
-    for y in 0..map.height() {
-        for x in 0..map.width() {
+    let map_width = map.width();
+    let map_height = map.height();
+
+    for y in 0..map_height {
+        for x in 0..map_width {
             let chr;
 
             // Render game stuff
@@ -257,7 +263,7 @@ pub fn render_map(_ctx: &mut Context,
                 draw_char(sprite_batch, MAP_THICK_WALL_LEFT as char, x, y, wall_color);
             }
 
-            if x + 1 < MAP_WIDTH {
+            if x + 1 < map_width {
                 let right_tile = &map.tiles[x as usize + 1][y as usize];
                 if right_tile.left_wall == Wall::ShortWall {
                     draw_char(sprite_batch, MAP_THIN_WALL_RIGHT as char, x, y, wall_color);
@@ -364,11 +370,36 @@ pub fn render_all(ctx: &mut Context,
                   fov: &FovMap,
                   display_state: &mut DisplayState,
                   config: &Config)  -> GameResult<()> {
-    display_state.sprite_batch.clear();
-
-    graphics::clear(ctx, graphics::BLACK);
+    graphics::clear(ctx, graphics::WHITE);
 
     let screen_rect = screen_coordinates(ctx);
+
+    set_canvas(ctx, Some(&display_state.map_canvas));
+    graphics::clear(ctx, graphics::WHITE);
+
+    render_map(ctx,
+               fov,
+               map,
+               &mut display_state.sprite_batch,
+               config);
+
+    render_objects(ctx,
+                   fov,
+                   objects,
+                   &mut display_state.sprite_batch);
+
+    render_overlays(mouse_state,
+                    fov,
+                    &mut display_state.sprite_batch,
+                    map,
+                    objects,
+                    config);
+
+    display_state.sprite_batch.draw(ctx, DrawParam::default()).unwrap();
+
+    display_state.sprite_batch.clear();
+
+    set_canvas(ctx, None);
 
     let plots = display_state.screen_sections
                              .plot(0,
@@ -383,25 +414,20 @@ pub fn render_all(ctx: &mut Context,
             }
 
             "map" => {
-                render_map(ctx,
-                           fov,
-                           map,
-                           &mut display_state.sprite_batch,
-                           config);
-
-                render_objects(ctx, fov, objects, &mut display_state.sprite_batch);
-
-                render_overlays(mouse_state, fov, &mut display_state.sprite_batch, map, objects, config);
-
                 let scale = plot.scale(screen_rect.w.abs() as usize, screen_rect.h.abs() as usize);
-                let ((x_offset, y_offset), scaler) = plot.fit(screen_rect.w.abs() as usize, screen_rect.h.abs() as usize);
+                let map_dims = display_state.map_canvas.image().dimensions();
+                let map_width = (MAP_WIDTH * FONT_WIDTH) as usize;
+                let map_height = (MAP_HEIGHT * FONT_HEIGHT) as usize;
+                let ((x_offset, y_offset), scaler) = plot.fit(map_dims.w as usize, map_dims.h as usize);
                 dbg!(x_offset, y_offset, scaler);
                 dbg!(screen_rect.w, screen_rect.h);
                 dbg!(plot.width, plot.height);
-                display_state.sprite_batch
-                             .draw(ctx,
-                                   DrawParam::default().dest([x_offset, y_offset])
-                                                       .scale([scaler, scaler]))?;
+                dbg!(display_state.map_canvas.image().dimensions());
+
+                draw(ctx,
+                     &display_state.map_canvas,
+                     DrawParam::default().dest([x_offset, y_offset])
+                                         .scale([scaler, scaler]))?;
             }
 
             "inspector" => {
@@ -421,21 +447,23 @@ pub fn render_all(ctx: &mut Context,
 }
 
 pub fn draw_char(sprite_batch: &mut SpriteBatch,
-             chr: char,
-             x: i32,
-             y: i32,
-             color: Color) {
-    let chr_x = (chr as i32) % 16;
-    let chr_y = (chr as i32) / 16;
+                 chr: char,
+                 x: i32,
+                 y: i32,
+                 color: Color) {
+    let chr_x = (chr as i32) % FONT_WIDTH;
+    let chr_y = (chr as i32) / FONT_HEIGHT;
+    let font_width = FONT_WIDTH as f32;
+    let font_height = FONT_HEIGHT as f32;
     let draw_params =
         DrawParam {
             src: ggez::graphics::Rect {
-                x: (chr_x as f32) / 16.0,
-                y: (chr_y as f32) / 16.0,
-                w: 1.0 / 16.0,
-                h: 1.0 / 16.0,
+                x: (chr_x as f32) / font_width,
+                y: (chr_y as f32) / font_height,
+                w: 1.0 / font_width,
+                h: 1.0 / font_height,
             },
-            dest: Point2 { x: x as f32 * 16.0, y: y as f32 * 16.0} ,
+            dest: Point2 { x: x as f32 * font_width, y: y as f32 * font_height} ,
             rotation: 0.0,
             scale: mint::Vector2 { x: 1.0, y: 1.0 },
             offset: Point2 { x: 1.0, y: 1.0 },

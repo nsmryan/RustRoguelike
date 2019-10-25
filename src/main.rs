@@ -46,7 +46,7 @@ use rand::prelude::*;
 
 use ggez::event::{self, EventHandler, KeyCode, KeyMods, MouseButton};
 use ggez::{Context, GameResult};
-use ggez::graphics::Image;
+use ggez::graphics::{Canvas, Image};
 
 use timer::*;
 

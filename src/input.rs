@@ -127,8 +127,8 @@ pub fn handle_input(input_action: InputAction,
             }
 
             (InputAction::ExploreAll, _) => {
-                for x in 0..MAP_WIDTH {
-                    for y in 0..MAP_HEIGHT {
+                for x in 0..map.width() {
+                    for y in 0..map.height() {
                         map.tiles[x as usize][y as usize].explored = true;
                     }
                 }
