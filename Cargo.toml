@@ -5,7 +5,9 @@ authors = ["nsmryan <nsmryan@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+# consider replacing with pathfinding and doryen_fov
 tcod = "0.13"
+
 rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
 serde = "1.0"
 serde_json = "1.0"

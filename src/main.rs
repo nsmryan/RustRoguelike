@@ -166,8 +166,7 @@ pub fn step_game(config: &mut Config,
         objects.push(player);
         objects.extend(new_objects);
 
-        let dims = map.size();
-        *fov = FovMap::new(dims.0, dims.1);
+        *fov = FovMap::new(map.width(), map.height());
         setup_fov(fov, &map);
         let fov_distance = config.fov_distance;
         fov.compute_fov(objects[PLAYER].x, objects[PLAYER].y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
@@ -494,7 +493,7 @@ impl Game {
         objects[PLAYER].x = player_x;
         objects[PLAYER].y = player_y;
 
-        let mut fov = FovMap::new(MAP_WIDTH, MAP_HEIGHT);
+        let mut fov = FovMap::new(map.width(), map.height());
         setup_fov(&mut fov, &map);
         let fov_distance = config.fov_distance;
         fov.compute_fov(player_x, player_y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);

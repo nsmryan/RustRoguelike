@@ -90,7 +90,6 @@ impl Gui {
             // Window
             let ui_width = dims.0 as f32;
             let ui_height = dims.1 as f32;
-            dbg!(dims, pos);
             Window::new(im_str!("Lower Panel"))
                 .size([ui_width, ui_height], imgui::Condition::FirstUseEver)
                 .position([pos.0 as f32, pos.1 as f32], imgui::Condition::FirstUseEver)

@@ -1,9 +1,5 @@
 use rand::prelude::*;
 
-#[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
-#[allow(unused_imports)]use tcod::input::Key;
-#[allow(unused_imports)]use tcod::input::KeyCode::*;
-#[allow(unused_imports)]use tcod::console::*;
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
 use tcod::line::*;
 

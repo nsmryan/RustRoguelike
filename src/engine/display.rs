@@ -4,8 +4,6 @@ use std::hash::{Hash, Hasher};
 use noise::Perlin;
 use noise::NoiseFn;
 
-#[allow(unused_imports)]use tcod::console::*;
-#[allow(unused_imports)]use tcod::input::{self, Event, Mouse};
 #[allow(unused_imports)]use tcod::map::{Map as FovMap};
 
 use ggez::graphics::{draw, set_canvas, Canvas, Rect, Color, Drawable, DrawParam, Image, screen_coordinates};
@@ -28,6 +26,7 @@ pub struct DisplayState {
     pub imgui_wrapper: Gui,
     pub font_image: Image,
     pub background_image: Option<Image>,
+    pub redraw_background: bool,
     pub map_canvas: Canvas,
     pub sprite_batch: SpriteBatch,
     pub display_overlays: bool,
@@ -40,14 +39,35 @@ impl DisplayState {
 
         let sprite_batch = SpriteBatch::new(font_image.clone());
 
+        let map_width_pixels  = (FONT_WIDTH * MAP_WIDTH) as u16;
+        let map_height_pixels = (FONT_HEIGHT * MAP_HEIGHT) as u16;
         DisplayState {
             imgui_wrapper,
             font_image,
+            redraw_background: true,
             background_image: None,
-            map_canvas: Canvas::new(ctx, (FONT_WIDTH * MAP_WIDTH) as u16, (FONT_HEIGHT * MAP_HEIGHT) as u16, NumSamples::One).unwrap(),
+            map_canvas: Canvas::new(ctx, map_width_pixels, map_height_pixels, NumSamples::One).unwrap(),
             sprite_batch,
             display_overlays: false,
             screen_sections: Plan::empty(),
+        }
+    }
+}
+
+
+pub struct Area {
+    x_offset: f32,
+    y_offset: f32,
+    font_width: usize,
+    font_height: usize,
+}
+
+impl Area {
+    pub fn new(x_offset: f32, y_offset: f32, font_width: usize, font_height: usize) -> Area {
+        Area { x_offset,
+               y_offset,
+               font_width,
+               font_height,
         }
     }
 }
@@ -84,6 +104,7 @@ pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
 pub fn draw_movement_overlay(sprite_batch: &mut SpriteBatch,
                              map: &Map,
                              id: ObjectId,
+                             area: &Area,
                              config: &Config,
                              objects: &[Object]) -> Vec<(i32, i32)> {
     let mut added_positions = Vec::new();
@@ -99,7 +120,7 @@ pub fn draw_movement_overlay(sprite_batch: &mut SpriteBatch,
             if map.clear_path((objects[id].x as i32, objects[id].y as i32), 
                               (x, y),
                               &objects) {
-                draw_char(sprite_batch, '.', x, y, color);
+                draw_char(sprite_batch, '.', x, y, color, area);
 
                 added_positions.push((x, y));
             }
@@ -113,6 +134,7 @@ pub fn draw_attack_overlay(sprite_batch: &mut SpriteBatch,
                            map: &Map,
                            id: ObjectId,
                            config: &Config,
+                           area: &Area,
                            objects: &[Object]) -> Vec<(i32, i32)> {
     let mut added_positions = Vec::new();
 
@@ -127,7 +149,7 @@ pub fn draw_attack_overlay(sprite_batch: &mut SpriteBatch,
             if map.clear_path((objects[id].x as i32, objects[id].y as i32), 
                               (x, y),
                               &objects) {
-                draw_char(sprite_batch, 'x', x, y, color);
+                draw_char(sprite_batch, 'x', x, y, color, area);
 
                 added_positions.push((x, y));
             }
@@ -203,18 +225,42 @@ pub fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool)
     return color;
 }
 
-pub fn render_map(_ctx: &mut Context,
-                  fov: &FovMap,
+pub fn render_background(fov: &FovMap,
+                         map: &mut Map,
+                         sprite_batch: &mut SpriteBatch,
+                         area: &Area,
+                         config: &Config) {
+    for y in 0..map.height() {
+        for x in 0..map.width() {
+            let visible = fov.is_in_fov(x, y);
+            draw_char(sprite_batch,
+                      MAP_EMPTY_CHAR as char,
+                      x,
+                      y,
+                      empty_tile_color(config, x, y, visible),
+                      area);
+
+            let tile = &map.tiles[x as usize][y as usize];
+            if tile.tile_type == TileType::Water {
+                let color = tile_color(config, x, y, tile, visible);
+                let chr = tile.chr.map_or('+', |chr| chr);
+                draw_char(sprite_batch, chr, x, y, color, area);
+            }
+        }
+    }
+
+}
+
+pub fn render_map(fov: &FovMap,
                   map: &mut Map,
                   sprite_batch: &mut SpriteBatch,
+                  area: &Area,
                   config: &Config) {
     let map_width = map.width();
     let map_height = map.height();
 
     for y in 0..map_height {
         for x in 0..map_width {
-            let chr;
-
             // Render game stuff
             let visible = fov.is_in_fov(x, y);
 
@@ -230,54 +276,44 @@ pub fn render_map(_ctx: &mut Context,
                 wall_color = config.color_dark_brown.color();
             }
 
-            match tile.chr {
-                Some(character) => {
-                    chr = character;
-                }
-
-                None => {
-                    // TODO placeholder to check if any characters are not assigned.
-                    // chr should perhaps be required, not Option
-                    chr = '+';
-                }
-            }
+            let chr = tile.chr.map_or('+', |chr| chr);
 
             // draw empty tile first, in case there is transparency in the character
-            draw_char(sprite_batch, MAP_EMPTY_CHAR as char, x, y, empty_tile_color(config, x, y, visible));
+            // draw_char(sprite_batch, MAP_EMPTY_CHAR as char, x, y, empty_tile_color(config, x, y, visible));
 
             // if the tile is not empty or water, draw it
-            if chr != MAP_EMPTY_CHAR as char || tile.tile_type == TileType::Water {
-                draw_char(sprite_batch, chr, x, y, color);
+            if chr != MAP_EMPTY_CHAR as char && tile.tile_type != TileType::Water {
+                draw_char(sprite_batch, chr, x, y, color, area);
             }
 
             // finally, draw the between-tile walls appropriate to this tile
             if tile.bottom_wall == Wall::ShortWall {
-                draw_char(sprite_batch, MAP_THIN_WALL_BOTTOM as char, x, y, wall_color);
+                draw_char(sprite_batch, MAP_THIN_WALL_BOTTOM as char, x, y, wall_color, area);
             } else if tile.bottom_wall == Wall::TallWall {
-                draw_char(sprite_batch, MAP_THICK_WALL_BOTTOM as char, x, y, wall_color);
+                draw_char(sprite_batch, MAP_THICK_WALL_BOTTOM as char, x, y, wall_color, area);
             }
 
             if tile.left_wall == Wall::ShortWall {
-                draw_char(sprite_batch, MAP_THIN_WALL_LEFT as char, x, y, wall_color);
+                draw_char(sprite_batch, MAP_THIN_WALL_LEFT as char, x, y, wall_color, area);
             } else if tile.left_wall == Wall::TallWall {
-                draw_char(sprite_batch, MAP_THICK_WALL_LEFT as char, x, y, wall_color);
+                draw_char(sprite_batch, MAP_THICK_WALL_LEFT as char, x, y, wall_color, area);
             }
 
             if x + 1 < map_width {
                 let right_tile = &map.tiles[x as usize + 1][y as usize];
                 if right_tile.left_wall == Wall::ShortWall {
-                    draw_char(sprite_batch, MAP_THIN_WALL_RIGHT as char, x, y, wall_color);
+                    draw_char(sprite_batch, MAP_THIN_WALL_RIGHT as char, x, y, wall_color, area);
                 } else if right_tile.left_wall == Wall::TallWall {
-                    draw_char(sprite_batch, MAP_THICK_WALL_RIGHT as char, x, y, wall_color);
+                    draw_char(sprite_batch, MAP_THICK_WALL_RIGHT as char, x, y, wall_color, area);
                 }
             }
 
             if y - 1 >= 0 {
                 let above_tile = &map.tiles[x as usize][y as usize - 1];
                 if above_tile.bottom_wall == Wall::ShortWall {
-                    draw_char(sprite_batch, MAP_THIN_WALL_TOP as char, x, y, wall_color);
+                    draw_char(sprite_batch, MAP_THIN_WALL_TOP as char, x, y, wall_color, area);
                 } else if above_tile.bottom_wall == Wall::TallWall {
-                    draw_char(sprite_batch, MAP_THICK_WALL_TOP as char, x, y, wall_color);
+                    draw_char(sprite_batch, MAP_THICK_WALL_TOP as char, x, y, wall_color, area);
                 }
             }
 
@@ -287,29 +323,10 @@ pub fn render_map(_ctx: &mut Context,
 
 }
 
-pub fn render_sound(_console: &mut dyn Console,
-                    _map: &Map,
-                    _objects: &[Object]) {
-    //for y in 1..map.height() {
-        //for x in 0..map.width() {
-            // TODO add back in with animations
-            // after animations play, draw sound for a frame
-            /*
-            if animations.len() == 0 {
-               if let Some(sound_loc) = map[(x, y)].sound {
-                   if map.clear_path_obstacles(sound_loc, (x, y), objects) {
-                      console.put_char(x, y, '.', BackgroundFlag::None);
-                   }
-               }
-            }
-            */
-        //}
-    //}
-}
-
 pub fn render_objects(_ctx: &mut Context,
                       fov: &FovMap,
                       objects: &[Object],
+                      area: &Area,
                       sprite_batch: &mut SpriteBatch) {
     let mut to_draw: Vec<_> =
         objects.iter().filter(|o| {
@@ -318,11 +335,17 @@ pub fn render_objects(_ctx: &mut Context,
     to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
 
     for object in &to_draw {
-        draw_char(sprite_batch, object.char, object.x, object.y, object.color);
+        draw_char(sprite_batch, object.char, object.x, object.y, object.color, area);
     }
 }
 
-pub fn render_overlays(mouse_state: &MouseState, fov: &FovMap, sprite_batch: &mut SpriteBatch, map: &Map, objects: &[Object], config: &Config) {
+pub fn render_overlays(mouse_state: &MouseState,
+                       fov: &FovMap,
+                       sprite_batch: &mut SpriteBatch,
+                       map: &Map,
+                       objects: &[Object],
+                       area: &Area,
+                       config: &Config) {
     // Draw player action overlay. Could draw arrows to indicate how to reach each location
     // TODO consider drawing a very alpha grey as a highlight
     let mut highlight_color = config.color_warm_grey.color();
@@ -336,7 +359,7 @@ pub fn render_overlays(mouse_state: &MouseState, fov: &FovMap, sprite_batch: &mu
             if let Some(movement) = calculate_move(*move_action, objects[PLAYER].movement.unwrap(), PLAYER, objects, map) {
                 // draw a highlight on that square
                 let xy = movement.xy();
-                draw_char(sprite_batch, MAP_EMPTY_CHAR as char, xy.0, xy.1, highlight_color);
+                draw_char(sprite_batch, MAP_EMPTY_CHAR as char, xy.0, xy.1, highlight_color, area);
             }
         }
     }
@@ -357,7 +380,7 @@ pub fn render_overlays(mouse_state: &MouseState, fov: &FovMap, sprite_batch: &mu
                      .collect::<Vec<(i32, i32)>>();
 
             for position in attack_positions {
-                draw_char(sprite_batch, MAP_EMPTY_CHAR as char, position.0, position.1, attack_highlight_color);
+                draw_char(sprite_batch, MAP_EMPTY_CHAR as char, position.0, position.1, attack_highlight_color, area);
             }
         }
     }
@@ -374,33 +397,6 @@ pub fn render_all(ctx: &mut Context,
 
     let screen_rect = screen_coordinates(ctx);
 
-    set_canvas(ctx, Some(&display_state.map_canvas));
-    graphics::clear(ctx, graphics::BLACK);
-
-    render_map(ctx,
-               fov,
-               map,
-               &mut display_state.sprite_batch,
-               config);
-
-    render_objects(ctx,
-                   fov,
-                   objects,
-                   &mut display_state.sprite_batch);
-
-    render_overlays(mouse_state,
-                    fov,
-                    &mut display_state.sprite_batch,
-                    map,
-                    objects,
-                    config);
-
-    display_state.sprite_batch.draw(ctx, DrawParam::default()).unwrap();
-
-    display_state.sprite_batch.clear();
-
-    set_canvas(ctx, None);
-
     let plots = display_state.screen_sections
                              .plot(0,
                                    0,
@@ -414,15 +410,42 @@ pub fn render_all(ctx: &mut Context,
             }
 
             "map" => {
-                let map_dims = display_state.map_canvas.image().dimensions();
-                let map_width = (MAP_WIDTH * FONT_WIDTH) as usize;
-                let map_height = (MAP_HEIGHT * FONT_HEIGHT) as usize;
-                let ((x_offset, y_offset), scaler) = plot.fit(map_dims.w as usize, map_dims.h as usize);
+                let ((x_offset, y_offset), scaler) =
+                    plot.fit(map.width() as usize * FONT_WIDTH as usize, map.height() as usize * FONT_HEIGHT as usize);
+                let area = Area::new(x_offset,
+                                     y_offset,
+                                     (scaler * FONT_WIDTH as f32) as usize,
+                                     (scaler * FONT_HEIGHT as f32) as usize);
+                dbg!(area.x_offset, area.y_offset, area.font_width, area.font_height);
 
-                draw(ctx,
-                     &display_state.map_canvas,
-                     DrawParam::default().dest([x_offset, y_offset])
-                                         .scale([scaler, scaler]))?;
+                render_background(fov,
+                                  map,
+                                  &mut display_state.sprite_batch,
+                                  &area,
+                                  config);
+
+                render_map(fov,
+                           map,
+                           &mut display_state.sprite_batch,
+                           &area,
+                           config);
+
+                render_objects(ctx,
+                               fov,
+                               objects,
+                               &area,
+                               &mut display_state.sprite_batch);
+
+                render_overlays(mouse_state,
+                                fov,
+                                &mut display_state.sprite_batch,
+                                map,
+                                objects,
+                                &area,
+                                config);
+
+                display_state.sprite_batch.draw(ctx, DrawParam::default()).unwrap();
+                display_state.sprite_batch.clear();
             }
 
             "inspector" => {
@@ -445,27 +468,29 @@ pub fn draw_char(sprite_batch: &mut SpriteBatch,
                  chr: char,
                  x: i32,
                  y: i32,
-                 color: Color) {
+                 color: Color,
+                 area: &Area) {
     let chr_x = (chr as i32) % FONT_WIDTH;
     let chr_y = (chr as i32) / FONT_HEIGHT;
-    let font_width = FONT_WIDTH as f32;
-    let font_height = FONT_HEIGHT as f32;
 
-    let font_part = 1.0 / 16.0;
-    let pixel = font_part / 16.0;
+    let font_part = 1.0 / FONT_WIDTH as f32;
+    let pixel = font_part / FONT_HEIGHT as f32;
 
+    let dest_x = area.font_width as f32 / (area.font_width as f32);
+    let dest_y = area.font_height as f32 / (area.font_height as f32);
     let draw_params =
         DrawParam {
             src: ggez::graphics::Rect {
-                x: chr_x as f32 * font_part + pixel,
-                y: chr_y as f32 * font_part + pixel,
-                w: font_part - pixel * 2.0,
-                h: font_part - pixel * 2.0,
+                x: chr_x as f32 * font_part, // + pixel,
+                y: chr_y as f32 * font_part, // + pixel,
+                w: font_part,// - pixel * 2.0,
+                h: font_part,// - pixel * 2.0,
             },
-            dest: Point2 { x: x as f32 * (FONT_WIDTH as f32 - 2.0),
-                           y: y as f32 * (FONT_HEIGHT as f32 - 2.0) },
+            dest: Point2 { x: x as f32 * (area.font_width as f32),//  - 2.0),
+                           y: y as f32 * (area.font_height as f32), }, // - 2.0) },
             rotation: 0.0,
-            scale: mint::Vector2 { x: 1.0, y: 1.0 },
+            scale: mint::Vector2 { x: dest_x, // - 2.0),
+                                   y: dest_y, }, // - 2.0) },
             offset: Point2 { x: 0.0, y: 0.0 },
             color: color,
         };

@@ -1,7 +1,5 @@
 use std::convert::Into;
 
-use tcod::line::*;
-
 use num::clamp;
 
 use ggez::graphics::Color;
@@ -136,6 +134,13 @@ impl Reach {
     }
 }
 
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Animation {
+    Idle(),
+}
+
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Object {
     pub x: i32,
@@ -152,6 +157,7 @@ pub struct Object {
     pub momentum: Option<Momentum>,
     pub movement: Option<Reach>,
     pub attack: Option<Reach>,
+    pub animation: Option<Animation>,
 }
 
 impl Object {
@@ -171,6 +177,7 @@ impl Object {
             momentum: None,
             movement: None,
             attack: None,
+            animation: None,
         }
     }
 
