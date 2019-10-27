@@ -416,7 +416,6 @@ pub fn render_all(ctx: &mut Context,
                                      y_offset,
                                      (scaler * FONT_WIDTH as f32) as usize,
                                      (scaler * FONT_HEIGHT as f32) as usize);
-                dbg!(area.x_offset, area.y_offset, area.font_width, area.font_height);
 
                 render_background(fov,
                                   map,
