@@ -99,21 +99,12 @@ pub fn run_game<F>(mut step: F)
         }
     }
 
-pub fn step_game(config: &mut Config,
-                 mouse_state: &MouseState,
-                 previous_player_position: &mut (i32, i32),
-                 map: &mut Map,
-                 objects: &mut Vec<Object>,
-                 fov: &mut FovMap,
-                 turn_count: &mut usize,
-                 god_mode: &mut bool,
-                 display_overlays: &mut bool,
-                 input_action: InputAction) -> bool {
+pub fn step_game(game: &mut Game) -> bool {
     /* Display */
 
     /* Player Action and Animations */
     // If there is an animation playing, let it finish
-    *previous_player_position = (objects[PLAYER].x, objects[PLAYER].y);
+    game.settings.previous_player_position = (game.data.objects[PLAYER].x, game.data.objects[PLAYER].y);
     let player_action;
     // TODO animations removed
     /*
@@ -121,29 +112,36 @@ pub fn step_game(config: &mut Config,
         player_action = PlayerAction::DidntTakeTurn;
     } else {
     */
-    player_action = handle_input(input_action, mouse_state, map, objects, fov, god_mode, display_overlays, config);
+    player_action = handle_input(game.input_action,
+                                 &mut game.mouse_state,
+                                 &mut game.data.map,
+                                 &mut game.data.objects,
+                                 &mut game.data.fov,
+                                 &mut game.settings.god_mode,
+                                 &mut game.display_state.display_overlays,
+                                 &game.config);
     match player_action {
         PlayerAction::Exit => {
             return false;
         }
 
         PlayerAction::TookTurn | PlayerAction::TookHalfTurn => {
-            *turn_count += 1;
+            game.settings.turn_count += 1;
         }
 
         _ => {}
     }
 
     /* Check Exit Condition */
-    if exit_condition_met(map, objects) {
+    if exit_condition_met(&game.data.map, &mut game.data.objects) {
         std::process::exit(0);
     }
 
     /* AI */
-    if objects[PLAYER].alive && player_action == PlayerAction::TookTurn {
-        for id in 1..objects.len() {
-            if objects[id].ai.is_some() {
-                ai_take_turn(id, map, objects, fov, config);
+    if game.data.objects[PLAYER].alive && player_action == PlayerAction::TookTurn {
+        for id in 1..game.data.objects.len() {
+            if game.data.objects[id].ai.is_some() {
+                ai_take_turn(id, &mut game.data.map, &mut game.data.objects, &mut game.data.fov, &game.config);
             }
         }
     }
@@ -153,36 +151,40 @@ pub fn step_game(config: &mut Config,
         Ok(mut file) => {
             let mut config_string = String::new();
             file.read_to_string(&mut config_string).expect("Could not read config file!");
-            *config = serde_json::from_str(&config_string).expect("Could not read JSON- config.json has a parsing error!");
+            game.config = serde_json::from_str(&config_string).expect("Could not read JSON- config.json has a parsing error!");
         }
         _ => (),
     }
 
-    if config.load_map_file_every_frame && Path::new("map.xp").exists() {
-        let (new_objects, new_map, _) = read_map_xp(&config, "map.xp");
-        *map = new_map;
-        let player = objects[0].clone();
-        objects.clear();
-        objects.push(player);
-        objects.extend(new_objects);
+    if game.config.load_map_file_every_frame && Path::new("map.xp").exists() {
+        let (new_objects, new_map, _) = read_map_xp(&game.config, "map.xp");
+        game.data.map = new_map;
+        let player = game.data.objects[0].clone();
+        game.data.objects.clear();
+        game.data.objects.push(player);
+        game.data.objects.extend(new_objects);
 
-        *fov = FovMap::new(map.width(), map.height());
-        setup_fov(fov, &map);
-        let fov_distance = config.fov_distance;
-        fov.compute_fov(objects[PLAYER].x, objects[PLAYER].y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
+        game.data.fov = FovMap::new(game.data.map.width(), game.data.map.height());
+        setup_fov(&mut game.data.fov, &game.data.map);
+        let fov_distance = game.config.fov_distance;
+        game.data.fov.compute_fov(game.data.objects[PLAYER].x,
+                                        game.data.objects[PLAYER].y,
+                                        fov_distance,
+                                        FOV_LIGHT_WALLS,
+                                        FOV_ALGO);
     }
 
-    if *previous_player_position != (objects[PLAYER].x, objects[PLAYER].y) {
-        let player = &objects[PLAYER];
-        let mut fov_distance = config.fov_distance;
-        if *god_mode {
+    if game.settings.previous_player_position != (game.data.objects[PLAYER].x, game.data.objects[PLAYER].y) {
+        let player = &game.data.objects[PLAYER];
+        let mut fov_distance = game.config.fov_distance;
+        if game.settings.god_mode {
             fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
         }
-        fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
+        game.data.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
-    if *god_mode {
-        fov.compute_fov(objects[PLAYER].x, objects[PLAYER].y, 1000, FOV_LIGHT_WALLS, FOV_ALGO);
+    if game.settings.god_mode {
+        game.data.fov.compute_fov(game.data.objects[PLAYER].x, game.data.objects[PLAYER].y, 1000, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
     return false; 
@@ -421,15 +423,22 @@ fn main() {
 }
 
 
-struct GameState {
+#[derive(Eq, PartialEq, Copy, Clone)]
+pub enum GameState {
+    Playing,
+    Win,
+    Lose,
+}
+
+pub struct GameData {
     map: Map,
     objects: Vec<Object>,
     fov: FovMap,
 }
 
-impl GameState {
-    pub fn new(map: Map, objects: Vec<Object>, fov: FovMap) -> GameState {
-        GameState {
+impl GameData {
+    pub fn new(map: Map, objects: Vec<Object>, fov: FovMap) -> GameData {
+        GameData {
             map,
             objects,
             fov,
@@ -437,24 +446,42 @@ impl GameState {
     }
 }
 
-struct Game {
-    config: Config,
+pub struct GameSettings {
+    pub previous_player_position: (i32, i32),
+    pub turn_count: usize,
+    pub god_mode: bool,
+}
 
-    input_action: InputAction,
+impl GameSettings {
+    pub fn new(previous_player_position: (i32, i32),
+               turn_count: usize,
+               god_mode: bool) -> GameSettings {
+        GameSettings {
+            previous_player_position,
+            turn_count,
+            god_mode,
+        }
+    }
+}
 
-    mouse_state: MouseState,
+pub struct Game {
+    pub config: Config,
 
-    display_state: DisplayState,
+    pub input_action: InputAction,
 
-    game_state: GameState,
+    pub mouse_state: MouseState,
 
-    previous_player_position: (i32, i32),
-    turn_count: usize,
-    god_mode: bool,
+    pub display_state: DisplayState,
+
+    pub data: GameData,
+
+    pub settings: GameSettings,
+
+    pub state: GameState,
 }
 
 impl Game {
-    fn new(ctx: &mut Context, args: &Vec<String>, config: Config) -> GameResult<Game> {
+    pub fn new(ctx: &mut Context, args: &Vec<String>, config: Config) -> GameResult<Game> {
         // Create seed for random number generator, either from
         // user input or randomly
         let seed: u64;
@@ -504,17 +531,16 @@ impl Game {
 
         let display_state = DisplayState::new(font_image, ctx);
 
-        let game_state = GameState::new(map, objects, fov);
+        let data = GameData::new(map, objects, fov);
 
         let mut state = Game {
             config,
-            previous_player_position,
             input_action,
-            game_state,
+            data,
             display_state: display_state,
-            turn_count: 0,
-            god_mode: false,
+            settings: GameSettings::new(previous_player_position, 0, false),
             mouse_state: Default::default(),
+            state: GameState::Playing,
         };
 
         state.display_state.screen_sections =
@@ -527,16 +553,7 @@ impl Game {
 
 impl EventHandler for Game {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
-        step_game(&mut self.config,
-                  &self.mouse_state,
-                  &mut self.previous_player_position,
-                  &mut self.game_state.map,
-                  &mut self.game_state.objects,
-                  &mut self.game_state.fov,
-                  &mut self.turn_count,
-                  &mut self.god_mode,
-                  &mut self.display_state.display_overlays,
-                  self.input_action);
+        step_game(self);
 
         self.input_action = InputAction::None;
 
@@ -546,9 +563,9 @@ impl EventHandler for Game {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         render_all(ctx,
                    &mut self.mouse_state,
-                   &self.game_state.objects,
-                   &mut self.game_state.map,
-                   &self.game_state.fov,
+                   &self.data.objects,
+                   &mut self.data.map,
+                   &self.data.fov,
                    &mut self.display_state,
                    &self.config)
     }
