@@ -405,6 +405,13 @@ pub fn render_all(ctx: &mut Context,
     for plot in plots {
         let plot_rect = Rect::new(plot.x as f32, plot.y as f32, plot.width as f32, plot.height as f32);
 
+        //if plot.contains(mouse_state.x, mouse_state.y) {
+        //    let (new_x, y_new) = plot.within(mouse_state.x, mouse_state.y);
+        //    mouse_state.x_within = new_x;
+        //    mouse_state.y_within = new_y;
+        //    mouse_state.area_name = plot.name();
+        //}
+
         match plot.name.as_str() {
             "screen" => {
             }

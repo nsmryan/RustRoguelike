@@ -114,9 +114,7 @@ pub fn step_game(game: &mut Game) -> bool {
     */
     player_action = handle_input(game.input_action,
                                  &mut game.mouse_state,
-                                 &mut game.data.map,
-                                 &mut game.data.objects,
-                                 &mut game.data.fov,
+                                 &mut game.data,
                                  &mut game.settings.god_mode,
                                  &mut game.display_state.display_overlays,
                                  &game.config);
@@ -422,47 +420,6 @@ fn main() {
     event::run(ctx, event_loop, state).unwrap();
 }
 
-
-#[derive(Eq, PartialEq, Copy, Clone)]
-pub enum GameState {
-    Playing,
-    Win,
-    Lose,
-}
-
-pub struct GameData {
-    map: Map,
-    objects: Vec<Object>,
-    fov: FovMap,
-}
-
-impl GameData {
-    pub fn new(map: Map, objects: Vec<Object>, fov: FovMap) -> GameData {
-        GameData {
-            map,
-            objects,
-            fov,
-        }
-    }
-}
-
-pub struct GameSettings {
-    pub previous_player_position: (i32, i32),
-    pub turn_count: usize,
-    pub god_mode: bool,
-}
-
-impl GameSettings {
-    pub fn new(previous_player_position: (i32, i32),
-               turn_count: usize,
-               god_mode: bool) -> GameSettings {
-        GameSettings {
-            previous_player_position,
-            turn_count,
-            god_mode,
-        }
-    }
-}
 
 pub struct Game {
     pub config: Config,

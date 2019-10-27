@@ -56,9 +56,7 @@ impl Collision {
 
 pub fn handle_input(input_action: InputAction,
                     mouse_state: &MouseState,
-                    map: &mut Map,
-                    objects: &mut Vec<Object>,
-                    fov: &mut FovMap,
+                    game_data: &mut GameData, 
                     god_mode: &mut bool,
                     display_overlays: &mut bool,
                     config: &Config) -> PlayerAction {
@@ -66,7 +64,7 @@ pub fn handle_input(input_action: InputAction,
 
     let player_action: PlayerAction;
 
-    let player_alive = objects[PLAYER].alive;
+    let player_alive = game_data.objects[PLAYER].alive;
 
     if mouse_state.pressed.0 {
         // TODO add back in with new inventory
@@ -93,8 +91,8 @@ pub fn handle_input(input_action: InputAction,
         match (input_action, player_alive) {
             (InputAction::Move(move_action), true) => {
                 player_action = player_move_or_attack(move_action,
-                                                      map,
-                                                      objects,
+                                                      &mut game_data.map,
+                                                      &mut game_data.objects,
                                                       config);
             }
 
@@ -104,8 +102,8 @@ pub fn handle_input(input_action: InputAction,
             },
 
             (InputAction::Pickup, true) => {
-                let item_id = objects.iter().position(|object| {
-                    object.pos() == objects[PLAYER].pos() && object.item.is_some()
+                let item_id = game_data.objects.iter().position(|object| {
+                    object.pos() == game_data.objects[PLAYER].pos() && object.item.is_some()
                 });
                 if let Some(_item_id) = item_id {
                     // TODO add back in with new inventory
@@ -123,9 +121,9 @@ pub fn handle_input(input_action: InputAction,
             }
 
             (InputAction::ExploreAll, _) => {
-                for x in 0..map.width() {
-                    for y in 0..map.height() {
-                        map.tiles[x as usize][y as usize].explored = true;
+                for x in 0..game_data.map.width() {
+                    for y in 0..game_data.map.height() {
+                        game_data.map.tiles[x as usize][y as usize].explored = true;
                     }
                 }
                 player_action = DidntTakeTurn;
@@ -133,9 +131,9 @@ pub fn handle_input(input_action: InputAction,
 
             (InputAction::RegenerateMap, _) => {
                 let mut rng: SmallRng = SeedableRng::seed_from_u64(2);
-                let (map_regen, _position) = make_map(objects, config, &mut rng);
-                setup_fov(fov, &map_regen);
-                map.tiles = map_regen.tiles;
+                let (map_regen, _position) = make_map(&mut game_data.objects, config, &mut rng);
+                setup_fov(&mut game_data.fov, &map_regen);
+                game_data.map.tiles = map_regen.tiles;
                 player_action = DidntTakeTurn;
             }
 
@@ -146,9 +144,9 @@ pub fn handle_input(input_action: InputAction,
             }
 
             (InputAction::GodMode, true) => {
-                let fighter = objects[PLAYER].fighter.unwrap();
+                let fighter = game_data.objects[PLAYER].fighter.unwrap();
                 let god_mode_hp = 1000000;
-                objects[PLAYER].fighter =
+                game_data.objects[PLAYER].fighter =
                     Some(Fighter { hp: god_mode_hp, max_hp: god_mode_hp, ..fighter });
 
                 // set god mode flag
@@ -156,9 +154,9 @@ pub fn handle_input(input_action: InputAction,
 
                 // set all tiles to be transparent and walkable. walkable is not current used
                 // anywhere
-                for x in 0..map.tiles.len() {
-                    for y in 0..map.tiles[0].len() {
-                        fov.set(x as i32, y as i32, true, true);
+                for x in 0..game_data.map.tiles.len() {
+                    for y in 0..game_data.map.tiles[0].len() {
+                        game_data.fov.set(x as i32, y as i32, true, true);
                     }
                 }
 

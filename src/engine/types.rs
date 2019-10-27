@@ -1,10 +1,13 @@
 use std::convert::Into;
 
+#[allow(unused_imports)]use tcod::map::{Map as FovMap};
+
 use num::clamp;
 
 use ggez::graphics::Color;
 
 use crate::constants::*;
+use crate::engine::map::*;
 
 
 pub type ObjectId = usize;
@@ -22,6 +25,47 @@ impl Messages {
         }
 
         self.0.push((message.into(), color));
+    }
+}
+
+#[derive(Eq, PartialEq, Copy, Clone)]
+pub enum GameState {
+    Playing,
+    Win,
+    Lose,
+}
+
+pub struct GameData {
+    pub map: Map,
+    pub objects: Vec<Object>,
+    pub fov: FovMap,
+}
+
+impl GameData {
+    pub fn new(map: Map, objects: Vec<Object>, fov: FovMap) -> GameData {
+        GameData {
+            map,
+            objects,
+            fov,
+        }
+    }
+}
+
+pub struct GameSettings {
+    pub previous_player_position: (i32, i32),
+    pub turn_count: usize,
+    pub god_mode: bool,
+}
+
+impl GameSettings {
+    pub fn new(previous_player_position: (i32, i32),
+               turn_count: usize,
+               god_mode: bool) -> GameSettings {
+        GameSettings {
+            previous_player_position,
+            turn_count,
+            god_mode,
+        }
     }
 }
 
