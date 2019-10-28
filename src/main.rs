@@ -212,6 +212,9 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map, (i32,
                 match layer_index {
                     MAP_LAYER_GROUND => {
                         match chr as u8 {
+                            0 => {
+                            }
+
                             MAP_GROUND => {
                             }
 
@@ -350,6 +353,21 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map, (i32,
                                 map[(x, y)].blocked = true;
                             }
 
+                            MAP_WALL => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].blocked = true;
+                            }
+
+                            ENTITY_HERO => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].blocked = true;
+                            }
+
+                            ENTITY_CLOAK_GUY => {
+                                map[(x, y)].chr = Some(chr);
+                                map[(x, y)].blocked = true;
+                            }
+
                             // TODO This should be in entity layer...
                             ENTITY_PLAYER => {
                                 map[(x, y)].chr = Some(chr);
@@ -369,6 +387,15 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map, (i32,
                             }
 
                             ENTITY_SWIRL_CIRCLE => {
+                                objects.push(make_kobold(config, x as i32, y as i32));
+                            }
+
+                            ENTITY_ORB => {
+                                // TODO should be an objective
+                            }
+
+                            ENTITY_GOBLIN => {
+                                // TODO should be different from kobold
                                 objects.push(make_kobold(config, x as i32, y as i32));
                             }
 

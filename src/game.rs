@@ -201,7 +201,7 @@ pub fn make_island(map: &mut Map,
     let y = rng.gen_range(0, map.height());
 
     if !map.is_blocked(x, y, objects) {
-        let mut object = Object::new(x,y, '\u{FD}', "goal", config.color_red.color(), false);
+        let mut object = Object::new(x,y, ENTITY_GOAL as char, "goal", config.color_red.color(), false);
         object.item = Some(Item::Goal);
         objects.push(object);
     }
@@ -213,7 +213,7 @@ pub fn make_island(map: &mut Map,
         x = pos.0;
         y = pos.1;
     }
-    let mut object = Object::new(x, y, '\u{FD}', "goal", config.color_red.color(), false);
+    let mut object = Object::new(x, y, ENTITY_GOAL as char, "goal", config.color_red.color(), false);
     object.item = Some(Item::Goal);
     objects.push(object);
 

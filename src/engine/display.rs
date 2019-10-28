@@ -320,7 +320,6 @@ pub fn render_map(fov: &FovMap,
             map.tiles[x as usize][y as usize].explored = explored;
         }
     }
-
 }
 
 pub fn render_objects(_ctx: &mut Context,
@@ -347,7 +346,6 @@ pub fn render_overlays(mouse_state: &MouseState,
                        area: &Area,
                        config: &Config) {
     // Draw player action overlay. Could draw arrows to indicate how to reach each location
-    // TODO consider drawing a very alpha grey as a highlight
     let mut highlight_color = config.color_warm_grey.color();
     highlight_color.a = config.highlight_alpha;
 
@@ -421,8 +419,8 @@ pub fn render_all(ctx: &mut Context,
                     plot.fit(map.width() as usize * FONT_WIDTH as usize, map.height() as usize * FONT_HEIGHT as usize);
                 let area = Area::new(x_offset,
                                      y_offset,
-                                     (scaler * FONT_WIDTH as f32) as usize,
-                                     (scaler * FONT_HEIGHT as f32) as usize);
+                                     (plot.width as f32 / map.width() as f32) as usize,
+                                     (plot.height as f32 / map.height() as f32) as usize);
 
                 render_background(fov,
                                   map,
@@ -482,8 +480,9 @@ pub fn draw_char(sprite_batch: &mut SpriteBatch,
     let font_part = 1.0 / FONT_WIDTH as f32;
     let pixel = font_part / FONT_HEIGHT as f32;
 
-    let dest_x = area.font_width as f32 / (area.font_width as f32);
-    let dest_y = area.font_height as f32 / (area.font_height as f32);
+    let scale_x = (area.font_width as f32)  / (FONT_WIDTH as f32);
+    let scale_y = (area.font_height as f32) / (FONT_HEIGHT as f32);
+
     let draw_params =
         DrawParam {
             src: ggez::graphics::Rect {
@@ -495,8 +494,8 @@ pub fn draw_char(sprite_batch: &mut SpriteBatch,
             dest: Point2 { x: x as f32 * (area.font_width as f32),//  - 2.0),
                            y: y as f32 * (area.font_height as f32), }, // - 2.0) },
             rotation: 0.0,
-            scale: mint::Vector2 { x: dest_x, // - 2.0),
-                                   y: dest_y, }, // - 2.0) },
+            scale: mint::Vector2 { x: scale_x, // - 2.0),
+                                   y: scale_y, }, // - 2.0) },
             offset: Point2 { x: 0.0, y: 0.0 },
             color: color,
         };
