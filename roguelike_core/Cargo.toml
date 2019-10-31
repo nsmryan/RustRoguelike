@@ -1,0 +1,18 @@
+[package]
+name = "roguelike_map"
+version = "0.1.0"
+authors = ["nsmryan <nsmryan@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tcod = "0.13"
+
+rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
+
+num = "0.2"
+
+# May want to add this back in to save and restore state
+# serde = "1.0"
+# serde_derive = "1.0"
