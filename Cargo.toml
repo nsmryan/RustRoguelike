@@ -15,9 +15,9 @@ serde_derive = "1.0"
 num = "0.2"
 timer = "0.2"
 chrono = "0.4"
-noise = "0.6"
+noise = { version = "0.6", default-features = false }
 
-ggez = "0.5.1"
+ggez = { version = "0.5.1", default-features = false }
 
 gfx_core = "*"
 gfx_device_gl = "*"
@@ -35,6 +35,6 @@ debug = true
 lto = false
 
 [profile.release]
-opt-level = 3
-debug = true
+opt-level = 1
+debug = false
 lto = false

@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-
 extern crate ggez;
 extern crate tcod;
 extern crate rand;
