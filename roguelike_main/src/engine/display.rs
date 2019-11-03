@@ -17,7 +17,7 @@ use roguelike_core::map::*;
 
 use crate::game::*;
 use crate::engine::types::*;
-use crate::input::calculate_move;
+use crate::movement::calculate_move;
 use crate::imgui_wrapper::*;
 use crate::constants::*;
 use crate::plat::*;

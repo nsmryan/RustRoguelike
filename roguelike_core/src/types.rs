@@ -271,20 +271,6 @@ impl MoveAction {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum InputAction {
-    Move(MoveAction),
-    Pickup,
-    Inventory,
-    Exit,
-    ExploreAll,
-    RegenerateMap,
-    ToggleOverlays,
-    GodMode,
-    FullScreen,
-    None,
-}
-
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Ai {

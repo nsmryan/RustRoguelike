@@ -14,12 +14,12 @@ extern crate roguelike_core;
 
 mod engine;
 mod constants;
-mod input;
 mod game;
 mod imgui_wrapper;
 mod style;
 mod plat;
 mod ai;
+mod movement;
 
 #[cfg(test)]
 mod tests;
@@ -48,10 +48,10 @@ use roguelike_core::map::*;
 use roguelike_core::types::*;
 
 use engine::types::*;
+use engine::input::*;
 use engine::display::*;
 
 use constants::*;
-use input::*;
 use game::*;
 use plat::*;
 use ai::*;
