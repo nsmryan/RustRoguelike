@@ -407,8 +407,7 @@ pub fn handle_input(input_action: InputAction,
             (InputAction::Move(move_action), true) => {
                 player_action = player_move_or_attack(move_action,
                                                       &mut game_data.map,
-                                                      &mut game_data.objects,
-                                                      config);
+                                                      &mut game_data.objects);
             }
 
             (InputAction::FullScreen, _) => {

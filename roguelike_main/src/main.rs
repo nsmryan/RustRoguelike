@@ -159,11 +159,11 @@ pub fn step_game(game: &mut Game) -> bool {
     }
 
     if game.settings.previous_player_position != (game.data.objects[PLAYER].x, game.data.objects[PLAYER].y) {
-        let player = &game.data.objects[PLAYER];
-        if game.settings.god_mode {
+        // let player = &game.data.objects[PLAYER];
+        // if game.settings.god_mode {
             // TODO need to store this somewhere, ideally as part of the player object
-            let fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
-        }
+            // let fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
+        // }
     }
 
     return false; 

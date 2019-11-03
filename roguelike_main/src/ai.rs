@@ -5,7 +5,6 @@ use roguelike_core::types::*;
 
 use crate::constants::*;
 use crate::game::*;
-use crate::engine::types::*;
 
 
 pub fn location_within_fov(map: &Map, monster_pos: Position, player_pos: Position) -> bool {
@@ -148,7 +147,7 @@ fn ai_take_astar_step(monster_pos: (i32, i32),
                       map: &Map) -> (i32, i32) {
     let astar_iter = map.astar(monster_pos, target_pos);
 
-    let recalculate_when_needed = true;
+    // let recalculate_when_needed = true;
     if astar_iter.len() > 0 {
         return step_towards(monster_pos, astar_iter[0]);
     } else {
@@ -230,9 +229,9 @@ pub fn ai_apply_actions(monster_id: usize,
                 move_by(monster_id, pos.0, pos.1, map, objects);
             },
 
-            AiAction::Attack(target_id, pos) => {
-                let (target_x, target_y) = *pos;
-                let (monster_x, monster_y) = objects[monster_id].pos();
+            AiAction::Attack(target_id, _pos) => {
+                // let (target_x, target_y) = *pos;
+                // let (monster_x, monster_y) = objects[monster_id].pos();
                 let (target, monster) = mut_two(*target_id, monster_id, objects);
 
                 // apply attack 

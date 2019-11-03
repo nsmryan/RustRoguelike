@@ -3,7 +3,6 @@ use tcod::line::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 
-use crate::engine::types::*;
 use crate::ai::*;
 use crate::constants::*;
 use crate::game::*;
@@ -141,8 +140,7 @@ pub fn check_collision(object_id: ObjectId,
 
 pub fn player_move_or_attack(move_action: MoveAction,
                          map: &Map,
-                         objects: &mut [Object],
-                         config: &Config) -> PlayerAction {
+                         objects: &mut [Object]) -> PlayerAction {
     let player_action: PlayerAction;
 
     let movement = calculate_move(move_action, objects[PLAYER].movement.unwrap(), PLAYER, objects, map);

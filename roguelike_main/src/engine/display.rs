@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 use noise::Perlin;
 use noise::NoiseFn;
 
-use ggez::graphics::{Rect, Color as GGEZColor, Drawable, DrawParam,
+use ggez::graphics::{Color as GGEZColor, Drawable, DrawParam,
                      Image, screen_coordinates };
 use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::graphics;
@@ -36,9 +36,6 @@ impl DisplayState {
         let imgui_wrapper = Gui::new(ctx);
 
         let sprite_batch = SpriteBatch::new(font_image.clone());
-
-        let map_width_pixels  = (FONT_WIDTH * MAP_WIDTH) as u16;
-        let map_height_pixels = (FONT_HEIGHT * MAP_HEIGHT) as u16;
 
         return DisplayState {
             imgui_wrapper,
@@ -320,7 +317,7 @@ pub fn render_objects(map: &Map,
                       objects: &[Object],
                       area: &Area,
                       sprite_batch: &mut SpriteBatch) {
-    let mut to_draw: Vec<_> =
+    let to_draw: Vec<_> =
         objects.iter().filter(|o| {
             map.is_in_fov(o.x, o.y)
         }).collect();
@@ -395,7 +392,7 @@ pub fn render_all(ctx: &mut Context,
                                    screen_rect.w.abs() as usize,
                                    screen_rect.h.abs() as usize);
     for plot in plots {
-        let plot_rect = Rect::new(plot.x as f32, plot.y as f32, plot.width as f32, plot.height as f32);
+        // let plot_rect = Rect::new(plot.x as f32, plot.y as f32, plot.width as f32, plot.height as f32);
 
         //if plot.contains(mouse_state.x, mouse_state.y) {
         //    let (new_x, y_new) = plot.within(mouse_state.x, mouse_state.y);
@@ -409,7 +406,7 @@ pub fn render_all(ctx: &mut Context,
             }
 
             "map" => {
-                let ((x_offset, y_offset), scaler) =
+                let ((x_offset, y_offset), _scaler) =
                     plot.fit(map.width() as usize * FONT_WIDTH as usize, map.height() as usize * FONT_HEIGHT as usize);
                 let area = Area::new(x_offset,
                                      y_offset,
@@ -465,13 +462,6 @@ pub fn engine_color(color: &Color) -> GGEZColor {
                    color.a as f32 / 256.0)
 }
 
-//pub fn from_color(color: Color) -> ColorConfig {
-//    ColorConfig { r: (color.r * 256.0) as u8,
-//                  g: (color.g * 256.0) as u8,
-//                  b: (color.b * 256.0) as u8,
-//    }
-//}
-
 pub fn draw_char(sprite_batch: &mut SpriteBatch,
                  chr: char,
                  x: i32,
@@ -482,7 +472,7 @@ pub fn draw_char(sprite_batch: &mut SpriteBatch,
     let chr_y = (chr as i32) / FONT_HEIGHT;
 
     let font_part = 1.0 / FONT_WIDTH as f32;
-    let pixel = font_part / FONT_HEIGHT as f32;
+    //let pixel = font_part / FONT_HEIGHT as f32;
 
     let scale_x = (area.font_width as f32)  / (FONT_WIDTH as f32);
     let scale_y = (area.font_height as f32) / (FONT_HEIGHT as f32);
