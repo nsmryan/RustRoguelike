@@ -1,9 +1,11 @@
 use std::ops::{Index, IndexMut};
 use std::collections::HashSet;
+use std::boxed::Box;
 
 use rand::prelude::*;
 
 use tcod::map::{Map as FovMap};
+use tcod::pathfinding::*;
 use tcod::line::*;
 
 use crate::types::*;
@@ -128,25 +130,33 @@ pub enum Wall {
 
 pub struct Map {
     pub tiles: Vec<Vec<Tile>>,
-    // TODO add fov
-    // TODO add astar map
+    fov: FovMap,
 }
 
 impl Map {
     pub fn with_vec(tiles: Vec<Vec<Tile>>) -> Map {
-        let map =
+        let width = tiles.len();
+        let height = tiles[0].len();
+        let mut map =
             Map {
-                tiles: tiles,
+                tiles,
+                fov: FovMap::new(width as i32, height as i32),
             };
+
+        map.compute_fov();
 
         return map;
     }
 
     pub fn from_dims(width: usize, height: usize) -> Map {
-        let map =
+        let tiles = vec!(vec!(Tile::empty(); height); width);
+        let mut map =
             Map {
-              tiles: vec!(vec!(Tile::empty(); height); width),
+                tiles,
+                fov: FovMap::new(width as i32, height as i32),
             };
+
+        map.compute_fov();
 
         return map;
     }
@@ -155,6 +165,7 @@ impl Map {
         let map =
             Map {
                 tiles: Vec::new(),
+                fov: FovMap::new(1, 1),
             };
 
         return map;
@@ -181,31 +192,6 @@ impl Map {
         return blocked;
     }
 
-    pub fn is_blocked(&self, x: i32, y: i32, objects: &[Object]) -> bool {
-        if self[(x, y)].blocked {
-            return true;
-        }
-
-        let mut is_blocked = false;
-        for object in objects.iter() {
-            if object.blocks && object.pos() == (x, y) {
-                is_blocked = true;
-                break;
-            }
-        }
-
-        return is_blocked;
-    }
-
-    pub fn clear_path(&self, start: (i32, i32), end: (i32, i32), objects: &[Object]) -> bool {
-        let line = Line::new((start.0, start.1), (end.0, end.1));
-
-        let path_blocked =
-            line.into_iter().any(|point| self.is_blocked(point.0, point.1, objects));
-
-        return !path_blocked;
-    }
-
     pub fn is_empty(&self, x: i32, y: i32) -> bool {
         return self[(x, y)].tile_type == TileType::Empty;
     }
@@ -229,18 +215,8 @@ impl Map {
         return self.tiles[0].len() as i32;
     }
 
-    pub fn make_tcod_map(&self) -> tcod::map::Map {
-        let (map_width, map_height) = self.size();
-        let mut map_copy = tcod::map::Map::new(map_width, map_height);
-        for x in 0..map_width {
-            for y in 0..map_height {
-                let transparent = !self.tiles[x as usize][y as usize].block_sight;
-                let walkable = !self.tiles[x as usize][y as usize].blocked;
-                map_copy.set(x, y, transparent, walkable);
-            }
-        }
-
-        map_copy
+    pub fn is_in_fov(&self, width: i32, height: i32) -> bool {
+        return self.fov.is_in_fov(width, height);
     }
 
     // this function is like clear_path, but only looks for terrain, not objects like monsters
@@ -273,6 +249,33 @@ impl Map {
         }
 
         return circle_positions.iter().map(|pos| *pos).collect();
+    }
+
+    pub fn astar(&self, start: (i32, i32), end: (i32, i32)) -> Vec<(i32, i32)> {
+        let map_copy = make_tcod_map(&self.tiles);
+        let mut astar = AStar::new_from_map(map_copy, 1.5);
+
+        astar.find(start, end);
+
+        // NOTE potentially inefficient
+        return astar.iter().into_iter().collect::<Vec<_>>();
+    }
+
+    pub fn set_cell(&mut self, x: i32, y: i32, transparent: bool, walkable: bool) {
+        self.fov.set(x, y, transparent, walkable);
+    }
+
+    pub fn compute_fov(&mut self) {
+        let dims = self.fov.size();
+
+        for y in 0..dims.1 {
+            for x in 0..dims.0 {
+                self.fov.set(x,
+                             y,
+                             !self.tiles[x as usize][y as usize].block_sight,
+                             !self.tiles[x as usize][y as usize].blocked);
+            }
+        }
     }
 }
 
@@ -438,3 +441,19 @@ fn move_y(pos: (i32, i32), offset_y: i32) -> (i32, i32) {
 fn move_x(pos: (i32, i32), offset_x: i32) -> (i32, i32) {
     return (pos.0 + offset_x, pos.1);
 }
+
+// TODO put in constructor, and in set_fov function
+pub fn make_tcod_map(tiles: &Vec<Vec<Tile>>) -> tcod::map::Map {
+    let (map_width, map_height) = (tiles.len(), tiles[0].len());
+    let mut map_copy = tcod::map::Map::new(map_width as i32, map_height as i32);
+    for x in 0..map_width {
+        for y in 0..map_height {
+            let transparent = !tiles[x as usize][y as usize].block_sight;
+            let walkable = !tiles[x as usize][y as usize].blocked;
+            map_copy.set(x as i32, y as i32, transparent, walkable);
+        }
+    }
+
+    map_copy
+}
+

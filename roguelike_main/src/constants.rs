@@ -1,5 +1,3 @@
-use tcod::map::{FovAlgorithm};
-
 
 pub const CONFIG_FILE_NAME: &str = &"config.json";
 
@@ -15,7 +13,6 @@ pub const TIME_BETWEEN_FRAMES_MS: i64 = 25;
 pub const MAP_WIDTH: i32 = 80;
 pub const MAP_HEIGHT: i32 = 60;
 
-pub const FOV_ALGO: FovAlgorithm = FovAlgorithm::Basic;
 pub const FOV_LIGHT_WALLS: bool = true;
 pub const TORCH_RADIOUS: i32 = 10;
 pub const HEAL_AMOUNT: i32 = 4;

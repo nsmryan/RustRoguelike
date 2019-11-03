@@ -10,8 +10,10 @@ use imgui_gfx_renderer::*;
 
 use std::time::Instant;
 
+use roguelike_core::types::*;
+use roguelike_core::map::*;
+
 use crate::engine::types::*;
-use crate::engine::map::*;
 use crate::style::*;
 use crate::constants::*;
 

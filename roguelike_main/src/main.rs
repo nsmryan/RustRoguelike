@@ -10,6 +10,7 @@ extern crate timer;
 extern crate chrono;
 extern crate mint;
 extern crate rexpaint;
+extern crate roguelike_core;
 
 mod engine;
 mod constants;
@@ -34,28 +35,22 @@ use std::sync::mpsc::channel;
 
 use rand::prelude::*;
 
-#[allow(unused_imports)]use tcod::map::{Map as FovMap};
-#[allow(unused_imports)]use tcod::console::*;
-#[allow(unused_imports)]use tcod::colors::*;
-#[allow(unused_imports)]use tcod::input::Key;
-#[allow(unused_imports)]use tcod::input::KeyCode::*;
-#[allow(unused_imports)]use tcod::input::{Event, Mouse};
-#[allow(unused_imports)]use tcod::AsNative;
-#[allow(unused_imports)]use tcod::image;
-
 use ggez::event::{self, EventHandler, KeyCode, KeyMods, MouseButton};
 use ggez::{Context, GameResult};
-use ggez::graphics::{Canvas, Image};
+use ggez::graphics::Image;
 
 use timer::*;
 
 use rexpaint::*;
 
+use roguelike_core::map::*;
+use roguelike_core::types::*;
+
 use engine::types::*;
-use constants::*;
 use engine::display::*;
-use engine::map::*;
 use engine::ai::*;
+
+use constants::*;
 use input::*;
 use game::*;
 use plat::*;
@@ -138,7 +133,7 @@ pub fn step_game(game: &mut Game) -> bool {
     if game.data.objects[PLAYER].alive && player_action == PlayerAction::TookTurn {
         for id in 1..game.data.objects.len() {
             if game.data.objects[id].ai.is_some() {
-                ai_take_turn(id, &mut game.data.map, &mut game.data.objects, &mut game.data.fov, &game.config);
+                ai_take_turn(id, &mut game.data.map, &mut game.data.objects, &game.config);
             }
         }
     }
@@ -160,28 +155,14 @@ pub fn step_game(game: &mut Game) -> bool {
         game.data.objects.clear();
         game.data.objects.push(player);
         game.data.objects.extend(new_objects);
-
-        game.data.fov = FovMap::new(game.data.map.width(), game.data.map.height());
-        setup_fov(&mut game.data.fov, &game.data.map);
-        let fov_distance = game.config.fov_distance;
-        game.data.fov.compute_fov(game.data.objects[PLAYER].x,
-                                        game.data.objects[PLAYER].y,
-                                        fov_distance,
-                                        FOV_LIGHT_WALLS,
-                                        FOV_ALGO);
     }
 
     if game.settings.previous_player_position != (game.data.objects[PLAYER].x, game.data.objects[PLAYER].y) {
         let player = &game.data.objects[PLAYER];
-        let mut fov_distance = game.config.fov_distance;
         if game.settings.god_mode {
-            fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
+            // TODO need to store this somewhere, ideally as part of the player object
+            let fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
         }
-        game.data.fov.compute_fov(player.x, player.y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
-    }
-
-    if game.settings.god_mode {
-        game.data.fov.compute_fov(game.data.objects[PLAYER].x, game.data.objects[PLAYER].y, 1000, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
     return false; 
@@ -420,6 +401,8 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map, (i32,
         }
     }
 
+    map.compute_fov();
+
     return (objects, map, player_position);
 }
 
@@ -479,7 +462,7 @@ impl Game {
 
         let previous_player_position = (-1, -1);
 
-        let mut objects = vec!(make_player());
+        let mut objects = vec!(make_player(&config));
 
         let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
 
@@ -503,18 +486,13 @@ impl Game {
         objects[PLAYER].x = player_x;
         objects[PLAYER].y = player_y;
 
-        let mut fov = FovMap::new(map.width(), map.height());
-        setup_fov(&mut fov, &map);
-        let fov_distance = config.fov_distance;
-        fov.compute_fov(player_x, player_y, fov_distance, FOV_LIGHT_WALLS, FOV_ALGO);
-
         let font_image = Image::new(ctx, "/rexpaint16x16.png").unwrap();
 
         let input_action = InputAction::None;
 
         let display_state = DisplayState::new(font_image, ctx);
 
-        let data = GameData::new(map, objects, fov);
+        let data = GameData::new(map, objects);
 
         let mut state = Game {
             config,
@@ -548,7 +526,6 @@ impl EventHandler for Game {
                    &mut self.mouse_state,
                    &self.data.objects,
                    &mut self.data.map,
-                   &self.data.fov,
                    &mut self.display_state,
                    &self.config)
     }

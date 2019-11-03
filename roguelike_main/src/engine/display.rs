@@ -4,9 +4,9 @@ use std::hash::{Hash, Hasher};
 use noise::Perlin;
 use noise::NoiseFn;
 
-#[allow(unused_imports)]use tcod::map::{Map as FovMap};
-
-use ggez::graphics::{draw, set_canvas, Canvas, Rect, Color, Drawable, DrawParam, Image, screen_coordinates};
+use ggez::graphics::{draw, set_canvas, Canvas, Rect, Color,
+                     Drawable, DrawParam, Image, screen_coordinates,
+                     WHITE};
 use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::graphics;
 use ggez::conf::NumSamples;
@@ -14,8 +14,10 @@ use ggez::{Context, GameResult};
 
 use mint::Point2;
 
+use roguelike_core::types::*;
+use roguelike_core::map::*;
+
 use crate::engine::types::*;
-use crate::engine::map::*;
 use crate::input::calculate_move;
 use crate::imgui_wrapper::*;
 use crate::constants::*;
@@ -73,12 +75,12 @@ impl Area {
 }
 
 
-pub fn get_objects_under_mouse(x: i32, y: i32, objects: &[Object], fov_map: &FovMap) -> Vec<ObjectId> {
+pub fn get_objects_under_mouse(x: i32, y: i32, objects: &[Object], map: &Map) -> Vec<ObjectId> {
     let mut object_ids = Vec::new();
 
     for object_index in 0..objects.len() {
         if objects[object_index].pos() == (x, y) {
-            if fov_map.is_in_fov(x, y) {
+            if map.is_in_fov(x, y) {
                 object_ids.push(object_index);
             }
         }
@@ -117,7 +119,7 @@ pub fn draw_movement_overlay(sprite_batch: &mut SpriteBatch,
             let x = objects[id].x as i32 + offset.0;
             let y = objects[id].y as i32 + offset.1;
 
-            if map.clear_path((objects[id].x as i32, objects[id].y as i32), 
+            if clear_path(map, (objects[id].x as i32, objects[id].y as i32), 
                               (x, y),
                               &objects) {
                 draw_char(sprite_batch, '.', x, y, color, area);
@@ -146,7 +148,7 @@ pub fn draw_attack_overlay(sprite_batch: &mut SpriteBatch,
             let x = objects[id].x as i32 + offset.0;
             let y = objects[id].y as i32 + offset.1;
 
-            if map.clear_path((objects[id].x as i32, objects[id].y as i32), 
+            if clear_path(map, (objects[id].x as i32, objects[id].y as i32), 
                               (x, y),
                               &objects) {
                 draw_char(sprite_batch, 'x', x, y, color, area);
@@ -225,14 +227,13 @@ pub fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool)
     return color;
 }
 
-pub fn render_background(fov: &FovMap,
-                         map: &mut Map,
+pub fn render_background(map: &mut Map,
                          sprite_batch: &mut SpriteBatch,
                          area: &Area,
                          config: &Config) {
     for y in 0..map.height() {
         for x in 0..map.width() {
-            let visible = fov.is_in_fov(x, y);
+            let visible = map.is_in_fov(x, y);
             draw_char(sprite_batch,
                       MAP_EMPTY_CHAR as char,
                       x,
@@ -251,8 +252,7 @@ pub fn render_background(fov: &FovMap,
 
 }
 
-pub fn render_map(fov: &FovMap,
-                  map: &mut Map,
+pub fn render_map(map: &mut Map,
                   sprite_batch: &mut SpriteBatch,
                   area: &Area,
                   config: &Config) {
@@ -262,7 +262,7 @@ pub fn render_map(fov: &FovMap,
     for y in 0..map_height {
         for x in 0..map_width {
             // Render game stuff
-            let visible = fov.is_in_fov(x, y);
+            let visible = map.is_in_fov(x, y);
 
             let tile = &map.tiles[x as usize][y as usize];
             let color = tile_color(config, x, y, tile, visible);
@@ -322,16 +322,15 @@ pub fn render_map(fov: &FovMap,
     }
 }
 
-pub fn render_objects(_ctx: &mut Context,
-                      fov: &FovMap,
+pub fn render_objects(map: &Map,
                       objects: &[Object],
                       area: &Area,
                       sprite_batch: &mut SpriteBatch) {
     let mut to_draw: Vec<_> =
         objects.iter().filter(|o| {
-            fov.is_in_fov(o.x, o.y)
+            map.is_in_fov(o.x, o.y)
         }).collect();
-    to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
+    // to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
 
     for object in &to_draw {
         draw_char(sprite_batch, object.char, object.x, object.y, object.color, area);
@@ -339,7 +338,6 @@ pub fn render_objects(_ctx: &mut Context,
 }
 
 pub fn render_overlays(mouse_state: &MouseState,
-                       fov: &FovMap,
                        sprite_batch: &mut SpriteBatch,
                        map: &Map,
                        objects: &[Object],
@@ -367,7 +365,7 @@ pub fn render_overlays(mouse_state: &MouseState,
     // Draw monster attack overlay
     let mouse_x = (mouse_state.pos.0 as i32 / FONT_WIDTH) + 1;
     let mouse_y = (mouse_state.pos.1 as i32 / FONT_HEIGHT) + 1;
-    let object_ids =  get_objects_under_mouse(mouse_x, mouse_y, objects, &fov);
+    let object_ids =  get_objects_under_mouse(mouse_x, mouse_y, objects, map);
     for object_id in object_ids.iter() {
         if let Some(reach) = objects[*object_id].attack {
             let attack_positions = 
@@ -388,7 +386,6 @@ pub fn render_all(ctx: &mut Context,
                   mouse_state: &mut MouseState,
                   objects: &[Object],
                   map: &mut Map,
-                  fov: &FovMap,
                   display_state: &mut DisplayState,
                   config: &Config)  -> GameResult<()> {
     graphics::clear(ctx, graphics::BLACK);
@@ -422,26 +419,22 @@ pub fn render_all(ctx: &mut Context,
                                      (plot.width as f32 / map.width() as f32) as usize,
                                      (plot.height as f32 / map.height() as f32) as usize);
 
-                render_background(fov,
-                                  map,
+                render_background(map,
                                   &mut display_state.sprite_batch,
                                   &area,
                                   config);
 
-                render_map(fov,
-                           map,
+                render_map(map,
                            &mut display_state.sprite_batch,
                            &area,
                            config);
 
-                render_objects(ctx,
-                               fov,
+                render_objects(map,
                                objects,
                                &area,
                                &mut display_state.sprite_batch);
 
                 render_overlays(mouse_state,
-                                fov,
                                 &mut display_state.sprite_batch,
                                 map,
                                 objects,

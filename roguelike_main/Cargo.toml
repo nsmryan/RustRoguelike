@@ -1,0 +1,34 @@
+[package]
+name = "roguelike_main"
+version = "0.1.0"
+authors = ["nsmryan <nsmryan@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tcod = "0.13"
+
+rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+num = "0.2"
+timer = "0.2"
+chrono = "0.4"
+noise = { version = "0.6", default-features = false }
+
+ggez = { version = "0.5.1", default-features = false }
+
+gfx_core = "*"
+gfx_device_gl = "*"
+
+imgui = "0.2"
+imgui-gfx-renderer = "0.2"
+
+mint = "0.5.1"
+
+rexpaint = "*"
+
+roguelike_core = { path = "../roguelike_core" }
+

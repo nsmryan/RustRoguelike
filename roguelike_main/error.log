@@ -1,0 +1,154 @@
+    Checking roguelike_main v0.1.0 (/home/noah/Documents/libtcod-rs/roguelike_main)
+warning: unused import: `std::convert::Into`
+ --> roguelike_main/src/engine/types.rs:1:5
+  |
+1 | use std::convert::Into;
+  |     ^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `num::clamp`
+ --> roguelike_main/src/engine/types.rs:3:5
+  |
+3 | use num::clamp;
+  |     ^^^^^^^^^^
+
+warning: unused import: `crate::constants::*`
+ --> roguelike_main/src/engine/types.rs:7:5
+  |
+7 | use crate::constants::*;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `tcod::pathfinding::*`
+ --> roguelike_main/src/engine/ai.rs:3:5
+  |
+3 | use tcod::pathfinding::*;
+  |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `draw`, `set_canvas`
+ --> roguelike_main/src/engine/display.rs:7:22
+  |
+7 | use ggez::graphics::{draw, set_canvas, Canvas, Rect, Color,
+  |                      ^^^^  ^^^^^^^^^^
+
+warning: unused import: `ggez::graphics::WHITE`
+ --> roguelike_main/src/game.rs:5:5
+  |
+5 | use ggez::graphics::WHITE;
+  |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::engine::types::*`
+  --> roguelike_main/src/imgui_wrapper.rs:16:5
+   |
+16 | use crate::engine::types::*;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `tcod::colors::*`
+  --> roguelike_main/src/main.rs:38:5
+   |
+38 | use tcod::colors::*;
+   |     ^^^^^^^^^^^^^^^
+
+warning: unused variable: `player`
+   --> roguelike_main/src/main.rs:163:13
+    |
+163 |         let player = &game.data.objects[PLAYER];
+    |             ^^^^^^ help: consider prefixing with an underscore: `_player`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `fov_distance`
+   --> roguelike_main/src/main.rs:166:17
+    |
+166 |             let fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
+    |                 ^^^^^^^^^^^^ help: consider prefixing with an underscore: `_fov_distance`
+
+warning: unused variable: `recalculate_when_needed`
+   --> roguelike_main/src/engine/ai.rs:152:9
+    |
+152 |     let recalculate_when_needed = true;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^ help: consider prefixing with an underscore: `_recalculate_when_needed`
+
+warning: unused variable: `target_x`
+   --> roguelike_main/src/engine/ai.rs:238:22
+    |
+238 |                 let (target_x, target_y) = *pos;
+    |                      ^^^^^^^^ help: consider prefixing with an underscore: `_target_x`
+
+warning: unused variable: `target_y`
+   --> roguelike_main/src/engine/ai.rs:238:32
+    |
+238 |                 let (target_x, target_y) = *pos;
+    |                                ^^^^^^^^ help: consider prefixing with an underscore: `_target_y`
+
+warning: unused variable: `monster_x`
+   --> roguelike_main/src/engine/ai.rs:239:22
+    |
+239 |                 let (monster_x, monster_y) = objects[monster_id].pos();
+    |                      ^^^^^^^^^ help: consider prefixing with an underscore: `_monster_x`
+
+warning: unused variable: `monster_y`
+   --> roguelike_main/src/engine/ai.rs:239:33
+    |
+239 |                 let (monster_x, monster_y) = objects[monster_id].pos();
+    |                                 ^^^^^^^^^ help: consider prefixing with an underscore: `_monster_y`
+
+warning: unused variable: `config`
+   --> roguelike_main/src/engine/ai.rs:230:25
+    |
+230 |                         config: &Config) {
+    |                         ^^^^^^ help: consider prefixing with an underscore: `_config`
+
+warning: unused variable: `plot_rect`
+   --> roguelike_main/src/engine/display.rs:402:13
+    |
+402 |         let plot_rect = Rect::new(plot.x as f32, plot.y as f32, plot.width as f32, plot.height as f32);
+    |             ^^^^^^^^^ help: consider prefixing with an underscore: `_plot_rect`
+
+warning: unused variable: `scaler`
+   --> roguelike_main/src/engine/display.rs:416:44
+    |
+416 |                 let ((x_offset, y_offset), scaler) =
+    |                                            ^^^^^^ help: consider prefixing with an underscore: `_scaler`
+
+warning: unused variable: `pixel`
+   --> roguelike_main/src/engine/display.rs:476:9
+    |
+476 |     let pixel = font_part / FONT_HEIGHT as f32;
+    |         ^^^^^ help: consider prefixing with an underscore: `_pixel`
+
+warning: unused variable: `config`
+   --> roguelike_main/src/input.rs:394:26
+    |
+394 |                          config: &Config) -> PlayerAction {
+    |                          ^^^^^^ help: consider prefixing with an underscore: `_config`
+
+warning: unused variable: `config`
+  --> roguelike_main/src/game.rs:26:17
+   |
+26 | pub fn make_orc(config: &Config, x: i32, y :i32) -> Object {
+   |                 ^^^^^^ help: consider prefixing with an underscore: `_config`
+
+warning: unused variable: `config`
+  --> roguelike_main/src/game.rs:38:19
+   |
+38 | pub fn make_troll(config: &Config, x: i32, y :i32) -> Object {
+   |                   ^^^^^^ help: consider prefixing with an underscore: `_config`
+
+warning: unused variable: `config`
+  --> roguelike_main/src/game.rs:50:20
+   |
+50 | pub fn make_kobold(config: &Config, x: i32, y :i32) -> Object {
+   |                    ^^^^^^ help: consider prefixing with an underscore: `_config`
+
+warning: variable does not need to be mutable
+   --> roguelike_main/src/engine/display.rs:330:9
+    |
+330 |     let mut to_draw: Vec<_> =
+    |         ----^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+    Finished dev [unoptimized + debuginfo] target(s) in 2.03s

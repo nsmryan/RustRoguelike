@@ -1,12 +1,13 @@
 use rand::prelude::*;
 
-#[allow(unused_imports)]use tcod::map::{Map as FovMap};
 use tcod::line::*;
 
 use ggez::event::{KeyCode, KeyMods};
 
+use roguelike_core::map::*;
+use roguelike_core::types::*;
+
 use crate::engine::types::*;
-use crate::engine::map::*;
 use crate::engine::ai::*;
 use crate::constants::*;
 use crate::game::*;
@@ -132,7 +133,6 @@ pub fn handle_input(input_action: InputAction,
             (InputAction::RegenerateMap, _) => {
                 let mut rng: SmallRng = SeedableRng::seed_from_u64(2);
                 let (map_regen, _position) = make_map(&mut game_data.objects, config, &mut rng);
-                setup_fov(&mut game_data.fov, &map_regen);
                 game_data.map.tiles = map_regen.tiles;
                 player_action = DidntTakeTurn;
             }
@@ -156,7 +156,7 @@ pub fn handle_input(input_action: InputAction,
                 // anywhere
                 for x in 0..game_data.map.tiles.len() {
                     for y in 0..game_data.map.tiles[0].len() {
-                        game_data.fov.set(x as i32, y as i32, true, true);
+                        game_data.map.set_cell(x as i32, y as i32, true, true);
                     }
                 }
 
@@ -199,7 +199,7 @@ pub fn move_just_before(object_id: ObjectId, objects: &[Object], dx: i32, dy: i3
             break;
         }
 
-        if map.is_blocked(x_pos, y_pos, objects) ||
+        if is_blocked(map, x_pos, y_pos, objects) ||
            map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
                 collided = true;
                 break;
@@ -233,7 +233,7 @@ pub fn check_collision(object_id: ObjectId,
         result = Collision::Wall((x, y), (x, y));
     } else {
         for (x_pos, y_pos) in move_line.into_iter() {
-            if map.is_blocked(x_pos, y_pos, objects) {
+            if is_blocked(map, x_pos, y_pos, objects) {
                 if map[(x_pos, y_pos)].blocked {
                     result = Collision::BlockedTile((x_pos, y_pos), last_pos);
                 } else {
@@ -399,7 +399,7 @@ fn player_move_or_attack(move_action: MoveAction,
     match movement {
         Some(Movement::Attack(new_x, new_y, target_id)) => {
             let (player, target) = mut_two(PLAYER, target_id, objects);
-            player.attack(target, config);
+            player.attack(target);
 
             // if we attack without moving, we lost all our momentum
             if (new_x, new_y) == (objects[PLAYER].x, objects[PLAYER].y)
@@ -478,7 +478,7 @@ pub fn calculate_move(action: MoveAction,
                     Some(momentum) => {
                         // if max momentum, and there is space beyond the wall, than jump over the wall.
                         if momentum.magnitude() == MAX_MOMENTUM &&
-                            !map.is_blocked(tile_x, tile_y, objects) {
+                            !is_blocked(map, tile_x, tile_y, objects) {
                                 movement = Some(Movement::JumpWall(tile_x, tile_y));
                         } else { // otherwise move normally, stopping just before the blocking tile
                             movement = Some(Movement::Move(new_x, new_y));

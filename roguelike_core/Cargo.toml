@@ -1,5 +1,5 @@
 [package]
-name = "roguelike_map"
+name = "roguelike_core"
 version = "0.1.0"
 authors = ["nsmryan <nsmryan@gmail.com>"]
 edition = "2018"

@@ -17,22 +17,6 @@ pub enum GameState {
     Lose,
 }
 
-pub struct GameData {
-    pub map: Map,
-    pub objects: Vec<Object>,
-    pub fov: FovMap,
-}
-
-impl GameData {
-    pub fn new(map: Map, objects: Vec<Object>, fov: FovMap) -> GameData {
-        GameData {
-            map,
-            objects,
-            fov,
-        }
-    }
-}
-
 pub struct GameSettings {
     pub previous_player_position: (i32, i32),
     pub turn_count: usize,
@@ -166,103 +150,6 @@ pub enum Animation {
     Idle(),
 }
 
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Object {
-    pub x: i32,
-    pub y: i32,
-    pub char: char,
-    pub name: String,
-    pub blocks: bool,
-    pub alive: bool,
-    pub fighter: Option<Fighter>,
-    pub ai: Option<Ai>,
-    pub behavior: Option<Behavior>,
-    pub item: Option<Item>,
-    pub momentum: Option<Momentum>,
-    pub movement: Option<Reach>,
-    pub attack: Option<Reach>,
-    pub animation: Option<Animation>,
-}
-
-impl Object {
-    pub fn new(x: i32, y: i32, chr: char, name: &str, blocks: bool) -> Self {
-        Object {
-            x: x,
-            y: y,
-            char: chr,
-            name: name.into(),
-            blocks: blocks,
-            alive: false,
-            fighter: None,
-            ai: None,
-            behavior: None,
-            item: None,        
-            momentum: None,
-            movement: None,
-            attack: None,
-            animation: None,
-        }
-    }
-
-    pub fn pos(&self) -> (i32, i32) {
-        (self.x, self.y)
-    }
-
-    pub fn set_pos(&mut self, x: i32, y: i32) {
-        self.x = x;
-        self.y = y;
-    }
-
-    pub fn distance_to(&self, other: &Object) -> f32 {
-        return self.distance(&Position::new(other.x, other.y));
-    }
-
-    pub fn distance(&self, other: &Position) -> f32 {
-        let dx = other.0 - self.x;
-        let dy = other.1 - self.y;
-        return ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
-    }
-
-    pub fn take_damage(&mut self, damage: i32) {
-        if let Some(fighter) = self.fighter.as_mut() {
-            if damage > 0 {
-                fighter.hp -= damage;
-            }
-        }
-
-        if let Some(fighter) = self.fighter {
-            if fighter.hp <= 0 {
-                self.alive = false;
-                fighter.on_death.callback(self);
-            }
-        }
-    }
-
-    pub fn attack(&mut self, target: &mut Object) {
-        let damage = self.fighter.map_or(0, |f| f.power) - target.fighter.map_or(0, |f| f.defense);
-
-        if damage > 0 {
-            //messages.message(format!("{} attacks {} for {} hit points.", self.name, target.name, damage), WHITE);
-            target.take_damage(damage);
-        } else {
-            //messages.message(format!("{} attacks {} but it has no effect!", self.name, target.name), WHITE);
-        }
-    }
-
-    pub fn heal(&mut self, amount: i32) {
-        if let Some(ref mut fighter) = self.fighter {
-            fighter.hp += amount;
-            if fighter.hp > fighter.max_hp {
-                fighter.hp = fighter.max_hp;
-            }
-        }
-    }
-
-    pub fn make_stone(x: i32, y: i32) -> Object {
-        Object::new(x, y, 'o', "stone", false)
-    }
-}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PatrolDir {
@@ -443,41 +330,7 @@ pub struct Fighter {
     pub hp: i32,
     pub defense: i32,
     pub power: i32,
-    pub on_death: DeathCallback,
 }
-
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum DeathCallback {
-    Player,
-    Monster,
-}
-
-impl DeathCallback {
-    fn callback(self, object: &mut Object) {
-        use DeathCallback::*;
-
-        let callback: fn(&mut Object) = match self {
-            Player => player_death,
-            Monster => monster_death,
-        };
-
-        callback(object);
-    }
-}
-
-pub fn player_death(player: &mut Object) {
-    player.char = '%';
-}
-
-pub fn monster_death(monster: &mut Object) {
-    monster.char = '%';
-    monster.blocks = false;
-    monster.fighter = None;
-    monster.ai = None;
-    monster.name = format!("remains of {}", monster.name);
-}
-
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Momentum {
