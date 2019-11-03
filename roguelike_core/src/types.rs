@@ -6,6 +6,7 @@ use serde_derive::*;
 use num::clamp;
 
 use crate::constants::*;
+use crate::movement::*;
 
 
 pub type ObjectId = usize;
@@ -51,106 +52,6 @@ pub struct MouseState {
     pub pos: (i32, i32),
     pub pressed: (bool, bool, bool),
     pub wheel: f32,
-}
-
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Reach {
-    Single(usize),
-    Diag(usize),
-    Horiz(usize),
-}
-
-impl Reach {
-    pub fn move_with_reach(&self, move_action: &MoveAction) -> Option<Position> {
-        match self {
-            Reach::Single(dist) => {
-                let dist = (*dist) as i32;
-                let neg_dist = dist * -1;
-                match move_action {
-                    MoveAction::Left => Some(Position::from_pair((neg_dist, 0))),
-                    MoveAction::Right => Some(Position::from_pair((dist, 0))),
-                    MoveAction::Up => Some(Position::from_pair((0, neg_dist))),
-                    MoveAction::Down => Some(Position::from_pair((0, dist))),
-                    MoveAction::DownLeft => Some(Position::from_pair((neg_dist, dist))),
-                    MoveAction::DownRight => Some(Position::from_pair((dist, dist))),
-                    MoveAction::UpLeft => Some(Position::from_pair((neg_dist, neg_dist))),
-                    MoveAction::UpRight => Some(Position::from_pair((dist, neg_dist))),
-                    MoveAction::Center => Some(Position::from_pair((0, 0))),
-                }
-            }
-
-            Reach::Diag(dist) => {
-                let dist = (*dist) as i32;
-                let neg_dist = dist * -1;
-                match move_action {
-                    MoveAction::Left => None,
-                    MoveAction::Right => None,
-                    MoveAction::Up => None,
-                    MoveAction::Down => None,
-                    MoveAction::DownLeft => Some(Position::from_pair((neg_dist, dist))),
-                    MoveAction::DownRight => Some(Position::from_pair((dist, dist))),
-                    MoveAction::UpLeft => Some(Position::from_pair((neg_dist, neg_dist))),
-                    MoveAction::UpRight => Some(Position::from_pair((dist, neg_dist))),
-                    MoveAction::Center => Some(Position::from_pair((0, 0))),
-                }
-            }
-
-            Reach::Horiz(dist) => {
-                let dist = (*dist) as i32;
-                let neg_dist = dist * -1;
-                match move_action {
-                    MoveAction::Left => Some(Position::from_pair((neg_dist, 0))),
-                    MoveAction::Right => Some(Position::from_pair((dist, 0))),
-                    MoveAction::Up => Some(Position::from_pair((0, neg_dist))),
-                    MoveAction::Down => Some(Position::from_pair((0, dist))),
-                    MoveAction::DownLeft => None,
-                    MoveAction::DownRight => None,
-                    MoveAction::UpLeft => None,
-                    MoveAction::UpRight => None,
-                    MoveAction::Center => None,
-                }
-            }
-        }
-    }
-
-    pub fn offsets(&self) -> Vec<Position> {
-        match self {
-            Reach::Single(dist) => {
-                let dist = (*dist) as i32;
-                let offsets =
-                    vec!( (0, dist),      (-dist, dist), (-dist,  0),
-                          (-dist, -dist), (0,  -dist),   (dist, -dist),
-                          (dist,  0), (dist, dist));
-                offsets.iter().map(|pair| Position::from_pair(*pair)).collect()
-            },
-
-            Reach::Horiz(dist) => {
-                let dist = (*dist) as i32;
-                let mut offsets = vec!();
-                for dist in 1..dist {
-                    offsets.push((dist, 0));
-                    offsets.push((0, dist));
-                    offsets.push((-1 * dist, 0));
-                    offsets.push((0, -1 * dist));
-                }
-                offsets.iter().map(|pair| Position::from_pair(*pair)).collect()
-            },
-
-
-            Reach::Diag(dist) => {
-                let mut offsets = vec!();
-                let dist = (*dist) as i32;
-                for dist in 1..dist {
-                    offsets.push((dist, dist));
-                    offsets.push((-1 * dist, dist));
-                    offsets.push((dist, -1 * dist));
-                    offsets.push((-1 * dist, -1 * dist));
-                }
-                offsets.iter().map(|pair| Position::from_pair(*pair)).collect()
-            },
-        }
-    }
 }
 
 
@@ -237,49 +138,6 @@ pub enum PlayerAction {
     DidntTakeTurn,
     Exit,
 }
-
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum MoveAction {
-    Left,
-    Right,
-    Up,
-    Down,
-    DownLeft,
-    DownRight,
-    UpLeft,
-    UpRight,
-    Center,
-}
-
-impl MoveAction {
-    pub fn into_move(self) -> (i32, i32) {
-        match self {
-            MoveAction::Left => (-1, 0),
-            MoveAction::Right => (1, 0),
-            MoveAction::Up => (0, -1),
-            MoveAction::Down => (0, 1),
-            MoveAction::DownLeft => (-1, 1),
-            MoveAction::DownRight => (1, 1),
-            MoveAction::UpLeft => (-1, -1),
-            MoveAction::UpRight => (1, -1),
-            MoveAction::Center => (0, 0),
-        }
-    }
-
-    pub fn move_actions() -> Vec<MoveAction> {
-        return vec!(MoveAction::Left,
-                    MoveAction::Right,
-                    MoveAction::Up,
-                    MoveAction::Down,
-                    MoveAction::DownLeft,
-                    MoveAction::DownRight,
-                    MoveAction::UpLeft,
-                    MoveAction::UpRight,
-                    MoveAction::Center);
-    }
-}
-
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Ai {

@@ -1,6 +1,6 @@
 use ggez::event::{KeyCode, KeyMods};
 
-use roguelike_core::types::*;
+use roguelike_core::movement::*;
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
