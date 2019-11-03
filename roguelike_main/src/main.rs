@@ -36,8 +36,8 @@ use ggez::graphics::Image;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
+use roguelike_core::config::*;
 
-use roguelike_engine::config::*;
 use roguelike_engine::plat::*;
 use roguelike_engine::input::*;
 use roguelike_engine::display::*;
@@ -84,8 +84,6 @@ pub fn run_game<F>(mut step: F)
     }
 
 pub fn step_game(game: &mut Game) -> bool {
-    /* Display */
-
     /* Player Action and Animations */
     game.settings.previous_player_position = (game.data.objects[PLAYER].x, game.data.objects[PLAYER].y);
     let player_action;
@@ -140,6 +138,7 @@ pub fn step_game(game: &mut Game) -> bool {
         game.data.objects.extend(new_objects);
     }
 
+    /* Recompute FOV */
     if game.settings.previous_player_position != (game.data.objects[PLAYER].x, game.data.objects[PLAYER].y) {
         game.data.map.compute_fov(game.data.objects[PLAYER].x, game.data.objects[PLAYER].y, FOV_RADIUS);
     }

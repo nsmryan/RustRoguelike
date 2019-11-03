@@ -16,9 +16,9 @@ use roguelike_core::types::*;
 use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
+use roguelike_core::config::*;
 
 use crate::plat::*;
-use crate::config::*;
 use crate::gui::*;
 
 

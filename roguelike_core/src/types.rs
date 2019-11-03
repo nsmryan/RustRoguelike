@@ -5,12 +5,27 @@ use serde_derive::*;
 
 use num::clamp;
 
+use crate::map::*;
 use crate::constants::*;
 use crate::movement::*;
 
 
 pub type ObjectId = usize;
 
+
+pub struct GameData {
+    pub map: Map,
+    pub objects: Vec<Object>,
+}
+
+impl GameData {
+    pub fn new(map: Map, objects: Vec<Object>) -> GameData {
+        GameData {
+            map,
+            objects,
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Default)]
 pub struct Color {
@@ -65,56 +80,6 @@ pub enum Animation {
 pub enum PatrolDir {
     Forward,
     Reverse,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct AwarenessMap {
-    pub weights: Vec<Vec<f32>>,
-    pub alt_weights: Vec<Vec<f32>>,
-    pub width: usize,
-    pub height: usize,
-}
-
-impl AwarenessMap {
-    pub fn new(width: usize, height: usize) -> AwarenessMap {
-        AwarenessMap {
-            weights: vec![vec![0.0; width]; height],
-            alt_weights: vec![vec![0.0; width]; height],
-            width: width,
-            height: height,
-        }
-    }
-
-    pub fn expected_position(&mut self, position: Position) {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                if (x as i32, y as i32) == position.pair() {
-                    self.weights[y][x] = 1.0;
-                } else {
-                    self.weights[y][x] = 0.0;
-                }
-            }
-        }
-    }
-
-    pub fn visible(&mut self, position: Position) {
-        self.weights[position.1 as usize][position.0 as usize] = 0.0;
-    }
-
-    pub fn disperse(&mut self) {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                let potential_positions =
-                    vec![(x + 1, y),     (x + 1, y + 1), (x + 1, y - 1),
-                    (x,     y + 1), (x,     y - 1), (x - 1, y),
-                    (x - 1, y + 1), (x - 1, y - 1)];
-                let _potential_positions =
-                    potential_positions.iter()
-                    .filter(|(x, y)| *x < self.width && *y < self.height)
-                    .filter(|(x, y)| self.weights[*y as usize][*x as usize] > 0.0);
-            }
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

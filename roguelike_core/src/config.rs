@@ -1,4 +1,4 @@
-use roguelike_core::types::*;
+use crate::types::*;
 
 use serde::*;
 use serde_derive::*;

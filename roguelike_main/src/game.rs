@@ -8,8 +8,8 @@ use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
+use roguelike_core::config::*;
 
-use roguelike_engine::config::*;
 use roguelike_engine::input::*;
 
 
@@ -230,20 +230,6 @@ pub fn make_island(map: &mut Map,
     }
 
     return center;
-}
-
-pub struct GameData {
-    pub map: Map,
-    pub objects: Vec<Object>,
-}
-
-impl GameData {
-    pub fn new(map: Map, objects: Vec<Object>) -> GameData {
-        GameData {
-            map,
-            objects,
-        }
-    }
 }
 
 pub fn handle_input(input_action: InputAction,
