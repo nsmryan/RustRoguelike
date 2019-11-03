@@ -13,6 +13,7 @@ extern crate roguelike_core;
 
 mod game;
 mod generation;
+mod throttler;
 
 use std::env;
 use std::path::Path;
@@ -24,8 +25,6 @@ use std::io::Read;
 use std::sync::mpsc::{channel, Receiver};
 
 use rand::prelude::*;
-
-use timer::*;
 
 use rexpaint::*;
 
@@ -45,6 +44,7 @@ use roguelike_engine::display::*;
 
 use game::*;
 use generation::*;
+use throttler::*;
 
 
 /// Check whether the exit condition for the game is met.
@@ -62,34 +62,6 @@ fn exit_condition_met(map: &Map, objects: &[Object]) -> bool {
     let exit_condition = has_goal && on_exit_tile;
 
     return exit_condition;
-}
-
-struct Throttler {
-    guard: Guard,
-    tick_receiver: Receiver<usize>
-}
-
-impl Throttler {
-    pub fn new() -> Throttler {
-        // start game tick timer
-        let timer = Timer::new();
-        let (tick_sender, tick_receiver) = channel();
-        let mut ticks: usize = 0;
-        let guard = 
-            timer.schedule_repeating(chrono::Duration::milliseconds(TIME_BETWEEN_FRAMES_MS), move || {
-                tick_sender.send(ticks).unwrap();
-                ticks += 1;
-            });
-
-        return Throttler {
-            guard,
-            tick_receiver,
-        };
-    }
-
-    pub fn block(&self) {
-        self.tick_receiver.recv().unwrap();
-    }
 }
 
 pub fn step_game(game: &mut Game) -> bool {
