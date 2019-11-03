@@ -17,9 +17,9 @@ use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 
+use crate::engine::plat::*;
 use crate::engine::config::*;
 use crate::engine::gui::*;
-use crate::plat::*;
 
 
 pub struct DisplayState {

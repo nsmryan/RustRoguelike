@@ -14,7 +14,6 @@ extern crate roguelike_core;
 
 mod engine;
 mod game;
-mod plat;
 mod ai;
 
 #[cfg(test)]
@@ -45,11 +44,11 @@ use roguelike_core::types::*;
 use roguelike_core::constants::*;
 
 use engine::config::*;
+use engine::plat::*;
 use engine::input::*;
 use engine::display::*;
 
 use game::*;
-use plat::*;
 use ai::*;
 
 
