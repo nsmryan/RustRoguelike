@@ -64,7 +64,7 @@ pub fn make_map(objects: &mut Vec<Object>, config: &Config, rng: &mut SmallRng) 
 
     map[starting_position.pair()].tile_type = TileType::Empty;
 
-    map.compute_fov();
+    map.update_map();
 
     (map, starting_position)
 }

@@ -265,7 +265,6 @@ pub fn render_map(map: &mut Map,
             let visible = map.is_in_fov(x, y);
 
             let tile = &map.tiles[x as usize][y as usize];
-            let color = tile_color(config, x, y, tile, visible);
 
             let explored = map.tiles[x as usize][y as usize].explored || visible;
 
@@ -283,6 +282,7 @@ pub fn render_map(map: &mut Map,
 
             // if the tile is not empty or water, draw it
             if chr != MAP_EMPTY_CHAR as char && tile.tile_type != TileType::Water {
+                let color = tile_color(config, x, y, tile, visible);
                 draw_char(sprite_batch, chr, x, y, color, area);
             }
 
@@ -388,6 +388,9 @@ pub fn render_all(ctx: &mut Context,
                   map: &mut Map,
                   display_state: &mut DisplayState,
                   config: &Config)  -> GameResult<()> {
+
+    map.compute_fov(objects[PLAYER].x, objects[PLAYER].y, FOV_RADIUS);
+
     graphics::clear(ctx, graphics::BLACK);
 
     let screen_rect = screen_coordinates(ctx);

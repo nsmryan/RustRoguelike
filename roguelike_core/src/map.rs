@@ -143,7 +143,7 @@ impl Map {
                 fov: FovMap::new(width as i32, height as i32),
             };
 
-        map.compute_fov();
+        map.update_map();
 
         return map;
     }
@@ -156,7 +156,7 @@ impl Map {
                 fov: FovMap::new(width as i32, height as i32),
             };
 
-        map.compute_fov();
+        map.update_map();
 
         return map;
     }
@@ -265,7 +265,11 @@ impl Map {
         self.fov.set(x, y, transparent, walkable);
     }
 
-    pub fn compute_fov(&mut self) {
+    pub fn compute_fov(&mut self, x: i32, y: i32, view_radius: i32) {
+        self.fov.compute_fov(x, y, view_radius, true, tcod::map::FovAlgorithm::Basic);
+    }
+
+    pub fn update_map(&mut self) {
         let dims = self.fov.size();
 
         for y in 0..dims.1 {

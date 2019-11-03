@@ -15,6 +15,7 @@ pub const MAP_HEIGHT: i32 = 60;
 
 pub const FOV_LIGHT_WALLS: bool = true;
 pub const TORCH_RADIOUS: i32 = 10;
+pub const FOV_RADIUS: i32 = 10;
 pub const HEAL_AMOUNT: i32 = 4;
 
 pub const ROOM_MAX_SIZE: i32 = 10;

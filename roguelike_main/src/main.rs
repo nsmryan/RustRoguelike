@@ -401,7 +401,7 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map, (i32,
         }
     }
 
-    map.compute_fov();
+    map.update_map();
 
     return (objects, map, player_position);
 }
