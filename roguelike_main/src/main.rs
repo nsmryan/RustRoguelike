@@ -3,7 +3,7 @@
 extern crate ggez;
 extern crate rand;
 extern crate serde;
-#[macro_use]extern crate serde_derive;
+extern crate serde_derive;
 extern crate serde_json;
 extern crate num;
 extern crate timer;
@@ -12,6 +12,7 @@ extern crate rexpaint;
 extern crate roguelike_core;
 
 mod game;
+mod generation;
 
 use std::env;
 use std::path::Path;
@@ -20,7 +21,7 @@ use std::hash::{Hash, Hasher};
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
-use std::sync::mpsc::channel;
+use std::sync::mpsc::{channel, Receiver};
 
 use rand::prelude::*;
 
@@ -43,6 +44,7 @@ use roguelike_engine::input::*;
 use roguelike_engine::display::*;
 
 use game::*;
+use generation::*;
 
 
 /// Check whether the exit condition for the game is met.
@@ -62,25 +64,33 @@ fn exit_condition_met(map: &Map, objects: &[Object]) -> bool {
     return exit_condition;
 }
 
-pub fn run_game<F>(mut step: F)
-    where F: FnMut() -> bool {
+struct Throttler {
+    guard: Guard,
+    tick_receiver: Receiver<usize>
+}
+
+impl Throttler {
+    pub fn new() -> Throttler {
         // start game tick timer
         let timer = Timer::new();
         let (tick_sender, tick_receiver) = channel();
-        let _guard = 
+        let mut ticks: usize = 0;
+        let guard = 
             timer.schedule_repeating(chrono::Duration::milliseconds(TIME_BETWEEN_FRAMES_MS), move || {
-                tick_sender.send(0).unwrap();
+                tick_sender.send(ticks).unwrap();
+                ticks += 1;
             });
 
-        /* main game loop */
-        let mut running = true;
-        while running {
-            /* fps limiting */
-            tick_receiver.recv().unwrap();
-
-            running = step();
-        }
+        return Throttler {
+            guard,
+            tick_receiver,
+        };
     }
+
+    pub fn block(&self) {
+        self.tick_receiver.recv().unwrap();
+    }
+}
 
 pub fn step_game(game: &mut Game) -> bool {
     /* Player Action and Animations */
@@ -524,10 +534,6 @@ fn main() {
         file.read_to_string(&mut config_string).expect("Could not read contents of config.json");
         config = serde_json::from_str(&config_string).expect("Could not parse config.json file!");
     }
-
-    // let engine = GameEngine::new();
-    // let state = Game::new(&args, config).unwrap();
-    // engine.run(state);
 
     let mut window_mode: ggez::conf::WindowMode = Default::default();
     window_mode.width = ((SCREEN_WIDTH - 1) * FONT_WIDTH) as f32;
