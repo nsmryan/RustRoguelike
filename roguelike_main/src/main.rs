@@ -489,9 +489,10 @@ impl EventHandler for Game {
         _x: f32,
         _y: f32,
         ) {
-        mouse_state.pressed = (button == MouseButton::Left,
-                               button == MouseButton::Right,
-                               button == MouseButton::Middle);
+        self.mouse_state.pressed =
+            (button == MouseButton::Left,
+             button == MouseButton::Right,
+             button == MouseButton::Middle);
     }
 
     fn mouse_button_up_event(
@@ -501,7 +502,7 @@ impl EventHandler for Game {
         _x: f32,
         _y: f32,
         ) {
-        mouse_state.pressed = (false, false, false);
+        self.mouse_state.pressed = (false, false, false);
     }
 
     fn key_down_event(
