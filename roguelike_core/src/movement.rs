@@ -1,14 +1,12 @@
 use tcod::line::*;
 
-use roguelike_core::map::*;
-use roguelike_core::types::*;
-
-use crate::ai::*;
+use crate::map::*;
+use crate::types::*;
 use crate::constants::*;
-use crate::game::*;
 
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Collision {
     NoCollision(i32, i32),
     BlockedTile((i32, i32), (i32, i32)),
@@ -226,7 +224,7 @@ pub fn calculate_move(action: MoveAction,
                 match objects[object_id].momentum {
                     Some(momentum) => {
                         // if max momentum, and there is space beyond the wall, than jump over the wall.
-                        if momentum.magnitude() == MAX_MOMENTUM &&
+                        if momentum.at_maximum() &&
                             !is_blocked(map, tile_x, tile_y, objects) {
                                 movement = Some(Movement::JumpWall(tile_x, tile_y));
                         } else { // otherwise move normally, stopping just before the blocking tile
@@ -253,5 +251,30 @@ pub fn calculate_move(action: MoveAction,
     }
 
     return movement;
+}
+
+pub fn is_blocked(map: &Map, x: i32, y: i32, objects: &[Object]) -> bool {
+    if map[(x, y)].blocked {
+        return true;
+    }
+
+    let mut is_blocked = false;
+    for object in objects.iter() {
+        if object.blocks && object.pos() == (x, y) {
+            is_blocked = true;
+            break;
+        }
+    }
+
+    return is_blocked;
+}
+
+pub fn clear_path(map: &Map, start: (i32, i32), end: (i32, i32), objects: &[Object]) -> bool {
+    let line = Line::new((start.0, start.1), (end.0, end.1));
+
+    let path_blocked =
+        line.into_iter().any(|point| is_blocked(map, point.0, point.1, objects));
+
+    return !path_blocked;
 }
 

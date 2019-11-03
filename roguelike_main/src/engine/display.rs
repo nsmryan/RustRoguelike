@@ -14,12 +14,11 @@ use mint::Point2;
 
 use roguelike_core::types::*;
 use roguelike_core::map::*;
+use roguelike_core::constants::*;
+use roguelike_core::movement::*;
 
-use crate::game::*;
 use crate::engine::types::*;
-use crate::movement::calculate_move;
 use crate::imgui_wrapper::*;
-use crate::constants::*;
 use crate::plat::*;
 
 

@@ -12,10 +12,9 @@ use std::time::Instant;
 
 use roguelike_core::types::*;
 use roguelike_core::map::*;
+use roguelike_core::constants::*;
 
 use crate::style::*;
-use crate::constants::*;
-use crate::game::*;
 
 
 pub struct Gui {

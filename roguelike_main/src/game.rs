@@ -6,11 +6,11 @@ use tcod::line::*;
 
 use roguelike_core::map::*;
 use roguelike_core::types::*;
+use roguelike_core::constants::*;
+use roguelike_core::movement::*;
 
 use crate::engine::types::*;
 use crate::engine::input::*;
-use crate::movement::*;
-use crate::constants::*;
 
 
 //if we want to use a character sprite, a potential value is '\u{8B}'
@@ -137,15 +137,16 @@ pub fn make_island(map: &mut Map,
     }
 
     /* random stones */
-    for _ in 0..10 {
-        let pos = pos_in_radius(center.pair(), ISLAND_RADIUS, rng);
+    // TODO removed stones for now
+    //for _ in 0..10 {
+    //    let pos = pos_in_radius(center.pair(), ISLAND_RADIUS, rng);
 
-        if map.is_empty(pos.0, pos.1) {
-            let mut stone = Object::make_stone(config, pos.0, pos.1);
-            stone.item = Some(Item::Stone);
-            objects.push(stone);
-        }
-    }
+    //    if map.is_empty(pos.0, pos.1) {
+    //        let mut stone = Object::make_stone(config, pos.0, pos.1);
+    //        stone.item = Some(Item::Stone);
+    //        objects.push(stone);
+    //    }
+    //}
 
     /* add monsters */
     for _ in 0..0 {
@@ -229,130 +230,6 @@ pub fn make_island(map: &mut Map,
     }
 
     return center;
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Object {
-    pub x: i32,
-    pub y: i32,
-    pub chr: char,
-    pub color: Color,
-    pub name: String,
-    pub blocks: bool,
-    pub alive: bool,
-    pub fighter: Option<Fighter>,
-    pub ai: Option<Ai>,
-    pub behavior: Option<Behavior>,
-    pub item: Option<Item>,
-    pub momentum: Option<Momentum>,
-    pub movement: Option<Reach>,
-    pub attack: Option<Reach>,
-    pub animation: Option<Animation>,
-}
-
-impl Object {
-    pub fn new(x: i32, y: i32, chr: char, color: Color, name: &str, blocks: bool) -> Self {
-        Object {
-            x,
-            y,
-            chr,
-            color,
-            name: name.into(),
-            blocks,
-            alive: false,
-            fighter: None,
-            ai: None,
-            behavior: None,
-            item: None,        
-            momentum: None,
-            movement: None,
-            attack: None,
-            animation: None,
-        }
-    }
-
-    pub fn pos(&self) -> (i32, i32) {
-        (self.x, self.y)
-    }
-
-    pub fn set_pos(&mut self, x: i32, y: i32) {
-        self.x = x;
-        self.y = y;
-    }
-
-    pub fn distance_to(&self, other: &Object) -> f32 {
-        return self.distance(&Position::new(other.x, other.y));
-    }
-
-    pub fn distance(&self, other: &Position) -> f32 {
-        let dx = other.0 - self.x;
-        let dy = other.1 - self.y;
-        return ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
-    }
-
-    pub fn take_damage(&mut self, damage: i32) {
-        if let Some(fighter) = self.fighter.as_mut() {
-            if damage > 0 {
-                fighter.hp -= damage;
-            }
-        }
-
-        if let Some(fighter) = self.fighter {
-            if fighter.hp <= 0 {
-                self.alive = false;
-            }
-        }
-    }
-
-    pub fn attack(&mut self, target: &mut Object) {
-        let damage = self.fighter.map_or(0, |f| f.power) - target.fighter.map_or(0, |f| f.defense);
-
-        if damage > 0 {
-            //messages.message(format!("{} attacks {} for {} hit points.", self.name, target.name, damage), WHITE);
-            target.take_damage(damage);
-        } else {
-            //messages.message(format!("{} attacks {} but it has no effect!", self.name, target.name), WHITE);
-        }
-    }
-
-    pub fn heal(&mut self, amount: i32) {
-        if let Some(ref mut fighter) = self.fighter {
-            fighter.hp += amount;
-            if fighter.hp > fighter.max_hp {
-                fighter.hp = fighter.max_hp;
-            }
-        }
-    }
-
-    pub fn make_stone(config: &Config, x: i32, y: i32) -> Object {
-        Object::new(x, y, 'o', config.color_light_grey, "stone", false)
-    }
-}
-
-// TODO should put in some kind of utilities module
-pub fn is_blocked(map: &Map, x: i32, y: i32, objects: &[Object]) -> bool {
-    if map[(x, y)].blocked {
-        return true;
-    }
-
-    let mut is_blocked = false;
-    for object in objects.iter() {
-        if object.blocks && object.pos() == (x, y) {
-            is_blocked = true;
-            break;
-        }
-    }
-
-    return is_blocked;
-}
-
-pub fn clear_path(map: &Map, start: (i32, i32), end: (i32, i32), objects: &[Object]) -> bool {
-    let line = Line::new((start.0, start.1), (end.0, end.1));
-
-    let path_blocked =
-        line.into_iter().any(|point| is_blocked(map, point.0, point.1, objects));
-
-    return !path_blocked;
 }
 
 pub struct GameData {

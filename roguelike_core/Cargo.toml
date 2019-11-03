@@ -13,6 +13,6 @@ rand = {version = "0.7.0", default-features = false, features = ["small_rng", "s
 
 num = "0.2"
 
-# May want to add this back in to save and restore state
-# serde = "1.0"
-# serde_derive = "1.0"
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"

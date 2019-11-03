@@ -1,14 +1,23 @@
 use std::convert::Into;
+use std::cmp;
 
-use tcod::map::{Map as FovMap};
+use serde_derive::*;
 
 use num::clamp;
 
-use crate::map::*;
+use crate::constants::*;
 
 
 pub type ObjectId = usize;
 
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Default)]
+pub struct Color {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
+}
 
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub enum GameState {
@@ -342,6 +351,10 @@ impl Momentum {
         return self.magnitude() != 0;
     }
 
+    pub fn at_maximum(&self) -> bool {
+        return self.magnitude() == MAX_MOMENTUM;
+    }
+        
     pub fn magnitude(&self) -> i32 {
         if self.mx.abs() > self.my.abs() {
             return self.mx.abs();
@@ -480,3 +493,109 @@ impl Into<(i32, i32)> for Position {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct Object {
+    pub x: i32,
+    pub y: i32,
+    pub chr: char,
+    pub color: Color,
+    pub name: String,
+    pub blocks: bool,
+    pub alive: bool,
+    pub fighter: Option<Fighter>,
+    pub ai: Option<Ai>,
+    pub behavior: Option<Behavior>,
+    pub item: Option<Item>,
+    pub momentum: Option<Momentum>,
+    pub movement: Option<Reach>,
+    pub attack: Option<Reach>,
+    pub animation: Option<Animation>,
+}
+
+impl Object {
+    pub fn new(x: i32, y: i32, chr: char, color: Color, name: &str, blocks: bool) -> Self {
+        Object {
+            x,
+            y,
+            chr,
+            color,
+            name: name.into(),
+            blocks,
+            alive: false,
+            fighter: None,
+            ai: None,
+            behavior: None,
+            item: None,        
+            momentum: None,
+            movement: None,
+            attack: None,
+            animation: None,
+        }
+    }
+
+    pub fn pos(&self) -> (i32, i32) {
+        (self.x, self.y)
+    }
+
+    pub fn set_pos(&mut self, x: i32, y: i32) {
+        self.x = x;
+        self.y = y;
+    }
+
+    pub fn distance_to(&self, other: &Object) -> f32 {
+        return self.distance(&Position::new(other.x, other.y));
+    }
+
+    pub fn distance(&self, other: &Position) -> f32 {
+        let dx = other.0 - self.x;
+        let dy = other.1 - self.y;
+        return ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
+    }
+
+    pub fn take_damage(&mut self, damage: i32) {
+        if let Some(fighter) = self.fighter.as_mut() {
+            if damage > 0 {
+                fighter.hp -= damage;
+            }
+        }
+
+        if let Some(fighter) = self.fighter {
+            if fighter.hp <= 0 {
+                self.alive = false;
+            }
+        }
+    }
+
+    pub fn attack(&mut self, target: &mut Object) {
+        let damage = self.fighter.map_or(0, |f| f.power) - target.fighter.map_or(0, |f| f.defense);
+
+        if damage > 0 {
+            //messages.message(format!("{} attacks {} for {} hit points.", self.name, target.name, damage), WHITE);
+            target.take_damage(damage);
+        } else {
+            //messages.message(format!("{} attacks {} but it has no effect!", self.name, target.name), WHITE);
+        }
+    }
+
+    pub fn heal(&mut self, amount: i32) {
+        if let Some(ref mut fighter) = self.fighter {
+            fighter.hp += amount;
+            if fighter.hp > fighter.max_hp {
+                fighter.hp = fighter.max_hp;
+            }
+        }
+    }
+}
+
+// TODO move to a utlities module
+pub fn mut_two<T>(first_index: usize, second_index: usize, items: &mut [T]) -> (&mut T, &mut T) {
+    assert!(first_index != second_index);
+
+    let split_at_index = cmp::max(first_index, second_index);
+    let (first_slice, second_slice) = items.split_at_mut(split_at_index);
+    if first_index < second_index {
+        (&mut first_slice[first_index], &mut second_slice[0])
+    } else {
+        (&mut second_slice[0], &mut first_slice[second_index])
+    }
+}

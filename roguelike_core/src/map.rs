@@ -1,14 +1,11 @@
 use std::ops::{Index, IndexMut};
 use std::collections::HashSet;
-use std::boxed::Box;
 
 use rand::prelude::*;
 
 use tcod::map::{Map as FovMap};
 use tcod::pathfinding::*;
 use tcod::line::*;
-
-use crate::types::*;
 
 
 #[derive(Clone, Copy, Debug)]
