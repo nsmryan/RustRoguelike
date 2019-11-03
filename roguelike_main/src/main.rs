@@ -12,7 +12,6 @@ extern crate rexpaint;
 extern crate roguelike_core;
 
 mod game;
-mod ai;
 
 use std::env;
 use std::path::Path;
@@ -37,13 +36,13 @@ use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::config::*;
+use roguelike_core::ai::*;
 
 use roguelike_engine::plat::*;
 use roguelike_engine::input::*;
 use roguelike_engine::display::*;
 
 use game::*;
-use ai::*;
 
 
 /// Check whether the exit condition for the game is met.
