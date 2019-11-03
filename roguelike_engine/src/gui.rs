@@ -21,7 +21,6 @@ pub struct Gui {
     pub imgui: imgui::Context,
     pub renderer: Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
     last_frame: Instant,
-    mouse_state: MouseState,
 }
 
 impl Gui {
@@ -60,7 +59,6 @@ impl Gui {
             imgui,
             renderer,
             last_frame: Instant::now(),
-            mouse_state: MouseState::default(),
         }
     }
 
@@ -175,13 +173,5 @@ impl Gui {
 
         self.imgui.io_mut().mouse_wheel = mouse_state.wheel;
         mouse_state.wheel = 0.0;
-    }
-
-    pub fn update_mouse_pos(&mut self, x: f32, y: f32, mouse_state: &mut MouseState) {
-        mouse_state.pos = (x as i32, y as i32);
-    }
-
-    pub fn update_mouse_down(&mut self, pressed: (bool, bool, bool), mouse_state: &mut MouseState) {
-        mouse_state.pressed = pressed;
     }
 }
