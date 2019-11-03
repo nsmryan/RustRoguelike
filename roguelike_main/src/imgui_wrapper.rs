@@ -13,9 +13,9 @@ use std::time::Instant;
 use roguelike_core::types::*;
 use roguelike_core::map::*;
 
-use crate::engine::types::*;
 use crate::style::*;
 use crate::constants::*;
+use crate::game::*;
 
 
 pub struct Gui {

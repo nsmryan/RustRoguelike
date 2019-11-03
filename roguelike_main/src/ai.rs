@@ -4,6 +4,7 @@ use roguelike_core::map::*;
 use roguelike_core::types::*;
 
 use crate::constants::*;
+use crate::game::*;
 use crate::engine::types::*;
 
 
@@ -200,8 +201,7 @@ pub fn basic_ai_take_turn(monster_id: usize,
 
 pub fn ai_take_turn(monster_id: usize,
                     map: &Map,
-                    objects: &mut Vec<Object>,
-                    config: &Config) {
+                    objects: &mut Vec<Object>) {
     let turn: AiTurn;
 
     match objects[monster_id].ai {
@@ -217,15 +217,13 @@ pub fn ai_take_turn(monster_id: usize,
     ai_apply_actions(monster_id,
                      turn,
                      map,
-                     objects,
-                     config);
+                     objects);
 }
 
 pub fn ai_apply_actions(monster_id: usize,
                         turn: AiTurn,
                         map: &Map,
-                        objects: &mut Vec<Object>,
-                        config: &Config) {
+                        objects: &mut Vec<Object>) {
     for action in turn.actions().iter() {
         match action {
             AiAction::Move(pos) => {

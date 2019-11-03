@@ -19,6 +19,7 @@ mod game;
 mod imgui_wrapper;
 mod style;
 mod plat;
+mod ai;
 
 #[cfg(test)]
 mod tests;
@@ -48,12 +49,12 @@ use roguelike_core::types::*;
 
 use engine::types::*;
 use engine::display::*;
-use engine::ai::*;
 
 use constants::*;
 use input::*;
 use game::*;
 use plat::*;
+use ai::*;
 
 
 /// Check whether the exit condition for the game is met.
@@ -133,7 +134,7 @@ pub fn step_game(game: &mut Game) -> bool {
     if game.data.objects[PLAYER].alive && player_action == PlayerAction::TookTurn {
         for id in 1..game.data.objects.len() {
             if game.data.objects[id].ai.is_some() {
-                ai_take_turn(id, &mut game.data.map, &mut game.data.objects, &game.config);
+                ai_take_turn(id, &mut game.data.map, &mut game.data.objects);
             }
         }
     }

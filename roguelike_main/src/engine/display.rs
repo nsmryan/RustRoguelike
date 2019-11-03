@@ -4,12 +4,10 @@ use std::hash::{Hash, Hasher};
 use noise::Perlin;
 use noise::NoiseFn;
 
-use ggez::graphics::{draw, set_canvas, Canvas, Rect, Color,
-                     Drawable, DrawParam, Image, screen_coordinates,
-                     WHITE};
+use ggez::graphics::{Rect, Color as GGEZColor, Drawable, DrawParam,
+                     Image, screen_coordinates };
 use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::graphics;
-use ggez::conf::NumSamples;
 use ggez::{Context, GameResult};
 
 use mint::Point2;
@@ -17,6 +15,7 @@ use mint::Point2;
 use roguelike_core::types::*;
 use roguelike_core::map::*;
 
+use crate::game::*;
 use crate::engine::types::*;
 use crate::input::calculate_move;
 use crate::imgui_wrapper::*;
@@ -27,9 +26,6 @@ use crate::plat::*;
 pub struct DisplayState {
     pub imgui_wrapper: Gui,
     pub font_image: Image,
-    pub background_image: Option<Image>,
-    pub redraw_background: bool,
-    pub map_canvas: Canvas,
     pub sprite_batch: SpriteBatch,
     pub display_overlays: bool,
     pub screen_sections: Plan,
@@ -43,16 +39,14 @@ impl DisplayState {
 
         let map_width_pixels  = (FONT_WIDTH * MAP_WIDTH) as u16;
         let map_height_pixels = (FONT_HEIGHT * MAP_HEIGHT) as u16;
-        DisplayState {
+
+        return DisplayState {
             imgui_wrapper,
             font_image,
-            redraw_background: true,
-            background_image: None,
-            map_canvas: Canvas::new(ctx, map_width_pixels, map_height_pixels, NumSamples::One).unwrap(),
             sprite_batch,
             display_overlays: false,
             screen_sections: Plan::empty(),
-        }
+        };
     }
 }
 
@@ -111,7 +105,7 @@ pub fn draw_movement_overlay(sprite_batch: &mut SpriteBatch,
                              objects: &[Object]) -> Vec<(i32, i32)> {
     let mut added_positions = Vec::new();
 
-    let color = config.color_warm_grey.color();
+    let color = config.color_warm_grey;
 
     if let Some(movement) = objects[id].movement {
         let offsets = movement.offsets();
@@ -140,7 +134,7 @@ pub fn draw_attack_overlay(sprite_batch: &mut SpriteBatch,
                            objects: &[Object]) -> Vec<(i32, i32)> {
     let mut added_positions = Vec::new();
 
-    let color = config.color_warm_grey.color();
+    let color = config.color_warm_grey;
 
     if let Some(attack) = objects[id].attack {
         let offsets = attack.offsets();
@@ -167,10 +161,10 @@ pub fn lerp(first: f32, second: f32, scale: f32) -> f32 {
 
 pub fn lerp_color(color1: Color, color2: Color, scale: f32) -> Color {
     return Color {
-        r: lerp(color1.r, color2.r, scale),
-        g: lerp(color1.g, color2.g, scale),
-        b: lerp(color1.b, color2.b, scale),
-        a: lerp(color1.a, color2.a, scale),
+        r: lerp(color1.r as f32, color2.r as f32, scale) as u8,
+        g: lerp(color1.g as f32, color2.g as f32, scale) as u8,
+        b: lerp(color1.b as f32, color2.b as f32, scale) as u8,
+        a: lerp(color1.a as f32, color2.a as f32, scale) as u8,
     };
 }
 
@@ -180,11 +174,11 @@ pub fn empty_tile_color(config: &Config, x: i32, y: i32, visible: bool) -> Color
     let low_color;
     let high_color;
     if visible {
-        low_color = config.color_tile_blue_light.color();
-        high_color = config.color_tile_blue_dark.color();
+        low_color = config.color_tile_blue_light;
+        high_color = config.color_tile_blue_dark;
     } else {
-        low_color = config.color_tile_blue_dark.color();
-        high_color = config.color_very_dark_blue.color();
+        low_color = config.color_tile_blue_dark;
+        high_color = config.color_very_dark_blue;
     }
     let color =
         lerp_color(low_color,
@@ -198,30 +192,30 @@ pub fn empty_tile_color(config: &Config, x: i32, y: i32, visible: bool) -> Color
 pub fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> Color {
     let color = match (tile.tile_type, visible) {
         (TileType::Wall, true) =>
-            config.color_light_brown.color(),
+            config.color_light_brown,
         (TileType::Wall, false) =>
-            config.color_dark_brown.color(),
+            config.color_dark_brown,
 
         (TileType::Empty, true) =>
-            config.color_light_brown.color(),
+            config.color_light_brown,
 
         (TileType::Empty, false) =>
-            config.color_dark_brown.color(),
+            config.color_dark_brown,
 
         (TileType::Water, true) =>
-            config.color_blueish_grey.color(),
+            config.color_blueish_grey,
         (TileType::Water, false) =>
-            config.color_blueish_grey.color(),
+            config.color_blueish_grey,
 
         (TileType::ShortWall, true) =>
-            config.color_light_brown.color(),
+            config.color_light_brown,
         (TileType::ShortWall, false) =>
-            config.color_dark_brown.color(),
+            config.color_dark_brown,
 
         (TileType::Exit, true) =>
-            config.color_orange.color(),
+            config.color_orange,
         (TileType::Exit, false) =>
-            config.color_red.color(),
+            config.color_red,
     };
 
     return color;
@@ -270,9 +264,9 @@ pub fn render_map(map: &mut Map,
 
             let wall_color;
             if explored {
-                wall_color = config.color_light_brown.color();
+                wall_color = config.color_light_brown;
             } else {
-                wall_color = config.color_dark_brown.color();
+                wall_color = config.color_dark_brown;
             }
 
             let chr = tile.chr.map_or('+', |chr| chr);
@@ -333,7 +327,7 @@ pub fn render_objects(map: &Map,
     // to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
 
     for object in &to_draw {
-        draw_char(sprite_batch, object.char, object.x, object.y, object.color, area);
+        draw_char(sprite_batch, object.chr, object.x, object.y, object.color, area);
     }
 }
 
@@ -344,7 +338,7 @@ pub fn render_overlays(mouse_state: &MouseState,
                        area: &Area,
                        config: &Config) {
     // Draw player action overlay. Could draw arrows to indicate how to reach each location
-    let mut highlight_color = config.color_warm_grey.color();
+    let mut highlight_color = config.color_warm_grey;
     highlight_color.a = config.highlight_alpha;
 
     // Draw player movement overlay
@@ -360,7 +354,7 @@ pub fn render_overlays(mouse_state: &MouseState,
         }
     }
 
-    let mut attack_highlight_color = config.color_red.color();
+    let mut attack_highlight_color = config.color_red;
     attack_highlight_color.a = config.highlight_alpha;
     // Draw monster attack overlay
     let mouse_x = (mouse_state.pos.0 as i32 / FONT_WIDTH) + 1;
@@ -464,6 +458,20 @@ pub fn render_all(ctx: &mut Context,
     Ok(())
 }
 
+pub fn engine_color(color: &Color) -> GGEZColor {
+    GGEZColor::new(color.r as f32 / 256.0,
+                   color.g as f32 / 256.0,
+                   color.b as f32 / 256.0,
+                   color.a as f32 / 256.0)
+}
+
+//pub fn from_color(color: Color) -> ColorConfig {
+//    ColorConfig { r: (color.r * 256.0) as u8,
+//                  g: (color.g * 256.0) as u8,
+//                  b: (color.b * 256.0) as u8,
+//    }
+//}
+
 pub fn draw_char(sprite_batch: &mut SpriteBatch,
                  chr: char,
                  x: i32,
@@ -493,7 +501,7 @@ pub fn draw_char(sprite_batch: &mut SpriteBatch,
             scale: mint::Vector2 { x: scale_x, // - 2.0),
                                    y: scale_y, }, // - 2.0) },
             offset: Point2 { x: 0.0, y: 0.0 },
-            color: color,
+            color: engine_color(&color),
         };
 
     sprite_batch.add(draw_params);

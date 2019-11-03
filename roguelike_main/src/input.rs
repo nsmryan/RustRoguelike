@@ -8,7 +8,7 @@ use roguelike_core::map::*;
 use roguelike_core::types::*;
 
 use crate::engine::types::*;
-use crate::engine::ai::*;
+use crate::ai::*;
 use crate::constants::*;
 use crate::game::*;
 
