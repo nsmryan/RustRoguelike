@@ -1,4 +1,3 @@
-
 pub const CONFIG_FILE_NAME: &str = &"config.json";
 
 pub const FONT_WIDTH: i32 = 16;

@@ -417,4 +417,3 @@ pub fn clear_path(map: &Map, start: (i32, i32), end: (i32, i32), objects: &[Obje
 
     return !path_blocked;
 }
-

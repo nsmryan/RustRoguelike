@@ -22,7 +22,6 @@ pub struct Gui {
     pub renderer: Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
     last_frame: Instant,
     mouse_state: MouseState,
-    show_popup: bool,
 }
 
 impl Gui {
@@ -62,7 +61,6 @@ impl Gui {
             renderer,
             last_frame: Instant::now(),
             mouse_state: MouseState::default(),
-            show_popup: false,
         }
     }
 
@@ -150,10 +148,6 @@ impl Gui {
                 });
         }
 
-        if self.show_popup {
-            ui.open_popup(im_str!("popup"));
-        }
-
         // Render
         let (factory, _, encoder, _, render_target) = graphics::gfx_objects(ctx);
         let draw_data = ui.render();
@@ -189,9 +183,5 @@ impl Gui {
 
     pub fn update_mouse_down(&mut self, pressed: (bool, bool, bool), mouse_state: &mut MouseState) {
         mouse_state.pressed = pressed;
-
-        if pressed.0 {
-            self.show_popup = false;
-        }
     }
 }

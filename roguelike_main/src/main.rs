@@ -8,16 +8,11 @@ extern crate serde_json;
 extern crate num;
 extern crate timer;
 extern crate chrono;
-extern crate mint;
 extern crate rexpaint;
 extern crate roguelike_core;
 
 mod game;
 mod ai;
-
-#[cfg(test)]
-mod tests;
-
 
 use std::env;
 use std::path::Path;
@@ -30,13 +25,13 @@ use std::sync::mpsc::channel;
 
 use rand::prelude::*;
 
-use ggez::event::{self, EventHandler, KeyCode, KeyMods, MouseButton};
-use ggez::{Context, GameResult};
-use ggez::graphics::Image;
-
 use timer::*;
 
 use rexpaint::*;
+
+use ggez::event::{self, EventHandler, KeyCode, KeyMods, MouseButton};
+use ggez::{Context, GameResult};
+use ggez::graphics::Image;
 
 use roguelike_core::map::*;
 use roguelike_core::types::*;
@@ -92,15 +87,8 @@ pub fn step_game(game: &mut Game) -> bool {
     /* Display */
 
     /* Player Action and Animations */
-    // If there is an animation playing, let it finish
     game.settings.previous_player_position = (game.data.objects[PLAYER].x, game.data.objects[PLAYER].y);
     let player_action;
-    // TODO animations removed
-    /*
-    if game.animations.len() > 0 {
-        player_action = PlayerAction::DidntTakeTurn;
-    } else {
-    */
     player_action = handle_input(game.input_action,
                                  &mut game.mouse_state,
                                  &mut game.data,
@@ -153,12 +141,10 @@ pub fn step_game(game: &mut Game) -> bool {
     }
 
     if game.settings.previous_player_position != (game.data.objects[PLAYER].x, game.data.objects[PLAYER].y) {
-        // let player = &game.data.objects[PLAYER];
-        // if game.settings.god_mode {
-            // TODO need to store this somewhere, ideally as part of the player object
-            // let fov_distance = std::cmp::max(SCREEN_WIDTH, SCREEN_HEIGHT);
-        // }
+        game.data.map.compute_fov(game.data.objects[PLAYER].x, game.data.objects[PLAYER].y, FOV_RADIUS);
     }
+
+    game.input_action = InputAction::None;
 
     return false; 
 }
@@ -401,30 +387,6 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map, (i32,
     return (objects, map, player_position);
 }
 
-fn main() {
-    let args = env::args().collect::<Vec<String>>();
-
-    let mut window_mode: ggez::conf::WindowMode = Default::default();
-    window_mode.width = ((SCREEN_WIDTH - 1) * FONT_WIDTH) as f32;
-    window_mode.height = (SCREEN_HEIGHT * FONT_HEIGHT)  as f32;
-
-    let cb = ggez::ContextBuilder::new("Roguelike", "like")
-        .window_mode(window_mode);
-    let (ref mut ctx, event_loop) = &mut cb.build().unwrap();
-
-    let config: Config;
-    {
-        let mut file = File::open("config.json").expect("Could not open/parse config file config.json");
-        let mut config_string = String::new();
-        file.read_to_string(&mut config_string).expect("Could not read contents of config.json");
-        config = serde_json::from_str(&config_string).expect("Could not parse config.json file!");
-    }
-
-    let state = &mut Game::new(ctx, &args, config).unwrap();
-    event::run(ctx, event_loop, state).unwrap();
-}
-
-
 pub struct Game {
     pub config: Config,
 
@@ -442,7 +404,7 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(ctx: &mut Context, args: &Vec<String>, config: Config) -> GameResult<Game> {
+    pub fn new(display_state: DisplayState, args: &Vec<String>, config: Config) -> GameResult<Game> {
         // Create seed for random number generator, either from
         // user input or randomly
         let seed: u64;
@@ -481,19 +443,13 @@ impl Game {
         objects[PLAYER].x = player_x;
         objects[PLAYER].y = player_y;
 
-        let font_image = Image::new(ctx, "/rexpaint16x16.png").unwrap();
-
-        let input_action = InputAction::None;
-
-        let display_state = DisplayState::new(font_image, ctx);
-
         let data = GameData::new(map, objects);
 
         let mut state = Game {
             config,
-            input_action,
+            input_action: InputAction::None,
             data,
-            display_state: display_state,
+            display_state,
             settings: GameSettings::new(previous_player_position, 0, false),
             mouse_state: Default::default(),
             state: GameState::Playing,
@@ -506,12 +462,9 @@ impl Game {
     }
 }
 
-
 impl EventHandler for Game {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         step_game(self);
-
-        self.input_action = InputAction::None;
 
         Ok(())
     }
@@ -565,3 +518,33 @@ impl EventHandler for Game {
     }
 }
 
+fn main() {
+    let args = env::args().collect::<Vec<String>>();
+
+    let config: Config;
+    {
+        let mut file = File::open("config.json").expect("Could not open/parse config file config.json");
+        let mut config_string = String::new();
+        file.read_to_string(&mut config_string).expect("Could not read contents of config.json");
+        config = serde_json::from_str(&config_string).expect("Could not parse config.json file!");
+    }
+
+    // let engine = GameEngine::new();
+    // let state = Game::new(&args, config).unwrap();
+    // engine.run(state);
+
+    let mut window_mode: ggez::conf::WindowMode = Default::default();
+    window_mode.width = ((SCREEN_WIDTH - 1) * FONT_WIDTH) as f32;
+    window_mode.height = (SCREEN_HEIGHT * FONT_HEIGHT)  as f32;
+
+    let cb = ggez::ContextBuilder::new("Roguelike", "like")
+        .window_mode(window_mode);
+    let (ref mut ctx, event_loop) = &mut cb.build().unwrap();
+
+    // TODO move to display in roguelike_engine
+    let font_image = Image::new(ctx, "/rexpaint16x16.png").unwrap();
+    let display_state = DisplayState::new(font_image, ctx);
+
+    let state = &mut Game::new(display_state, &args, config).unwrap();
+    event::run(ctx, event_loop, state).unwrap();
+}

@@ -241,4 +241,3 @@ pub fn ai_apply_actions(monster_id: usize,
         }
     }
 }
-
