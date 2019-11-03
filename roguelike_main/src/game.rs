@@ -9,7 +9,7 @@ use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 
-use crate::engine::types::*;
+use crate::engine::config::*;
 use crate::engine::input::*;
 
 

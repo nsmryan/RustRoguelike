@@ -14,7 +14,7 @@ use roguelike_core::types::*;
 use roguelike_core::map::*;
 use roguelike_core::constants::*;
 
-use crate::style::*;
+use crate::engine::style::*;
 
 
 pub struct Gui {

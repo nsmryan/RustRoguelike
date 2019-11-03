@@ -17,13 +17,13 @@ use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 
-use crate::engine::types::*;
-use crate::imgui_wrapper::*;
+use crate::engine::config::*;
+use crate::engine::gui::*;
 use crate::plat::*;
 
 
 pub struct DisplayState {
-    pub imgui_wrapper: Gui,
+    pub gui: Gui,
     pub font_image: Image,
     pub sprite_batch: SpriteBatch,
     pub display_overlays: bool,
@@ -32,12 +32,12 @@ pub struct DisplayState {
 
 impl DisplayState {
     pub fn new(font_image: Image, ctx: &mut Context) -> DisplayState {
-        let imgui_wrapper = Gui::new(ctx);
+        let gui = Gui::new(ctx);
 
         let sprite_batch = SpriteBatch::new(font_image.clone());
 
         return DisplayState {
-            imgui_wrapper,
+            gui,
             font_image,
             sprite_batch,
             display_overlays: false,
@@ -440,7 +440,7 @@ pub fn render_all(ctx: &mut Context,
 
             "inspector" => {
                 // Render game ui
-                display_state.imgui_wrapper.render(ctx, map, objects, mouse_state, plot.dims(), plot.pos());
+                display_state.gui.render(ctx, map, objects, mouse_state, plot.dims(), plot.pos());
             }
 
             section_name => {

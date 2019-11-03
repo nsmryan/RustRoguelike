@@ -14,8 +14,6 @@ extern crate roguelike_core;
 
 mod engine;
 mod game;
-mod imgui_wrapper;
-mod style;
 mod plat;
 mod ai;
 
@@ -46,7 +44,7 @@ use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 
-use engine::types::*;
+use engine::config::*;
 use engine::input::*;
 use engine::display::*;
 
@@ -530,7 +528,7 @@ impl EventHandler for Game {
     }
 
     fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
-        self.display_state.imgui_wrapper.update_mouse_pos(x, y, &mut self.mouse_state);
+        self.display_state.gui.update_mouse_pos(x, y, &mut self.mouse_state);
     }
 
     fn mouse_button_down_event(
@@ -540,7 +538,7 @@ impl EventHandler for Game {
         _x: f32,
         _y: f32,
         ) {
-        self.display_state.imgui_wrapper.update_mouse_down((
+        self.display_state.gui.update_mouse_down((
                 button == MouseButton::Left,
                 button == MouseButton::Right,
                 button == MouseButton::Middle),
@@ -555,7 +553,7 @@ impl EventHandler for Game {
         _x: f32,
         _y: f32,
         ) {
-        self.display_state.imgui_wrapper.update_mouse_down((false, false, false), &mut self.mouse_state);
+        self.display_state.gui.update_mouse_down((false, false, false), &mut self.mouse_state);
     }
 
     fn key_down_event(
