@@ -12,7 +12,6 @@ extern crate mint;
 extern crate rexpaint;
 extern crate roguelike_core;
 
-mod engine;
 mod game;
 mod ai;
 
@@ -43,10 +42,10 @@ use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 
-use engine::config::*;
-use engine::plat::*;
-use engine::input::*;
-use engine::display::*;
+use roguelike_engine::config::*;
+use roguelike_engine::plat::*;
+use roguelike_engine::input::*;
+use roguelike_engine::display::*;
 
 use game::*;
 use ai::*;

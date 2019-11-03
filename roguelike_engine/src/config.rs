@@ -1,5 +1,8 @@
 use roguelike_core::types::*;
 
+use serde::*;
+use serde_derive::*;
+
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, Default)]
 pub struct Config {

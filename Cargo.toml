@@ -12,4 +12,5 @@ lto = false
 members = [
   "roguelike_core",
   "roguelike_main",
+  "roguelike_engine",
  ]

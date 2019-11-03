@@ -9,8 +9,8 @@ use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 
-use crate::engine::config::*;
-use crate::engine::input::*;
+use roguelike_engine::config::*;
+use roguelike_engine::input::*;
 
 
 //if we want to use a character sprite, a potential value is '\u{8B}'
