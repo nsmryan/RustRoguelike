@@ -7,10 +7,9 @@ use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
+use roguelike_core::generation::*;
 
-use roguelike_engine::input::*;
-
-use crate::generation::*;
+use crate::input::*;
 
 
 pub fn handle_input(input_action: InputAction,

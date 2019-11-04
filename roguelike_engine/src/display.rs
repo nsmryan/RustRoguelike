@@ -31,7 +31,7 @@ pub struct DisplayState {
 }
 
 impl DisplayState {
-    pub fn new(font_image: Image, ctx: &mut Context) -> DisplayState {
+    pub fn new(screen_sections: Plan, font_image: Image, ctx: &mut Context) -> DisplayState {
         let gui = Gui::new(ctx);
 
         let sprite_batch = SpriteBatch::new(font_image.clone());
@@ -41,7 +41,7 @@ impl DisplayState {
             font_image,
             sprite_batch,
             display_overlays: false,
-            screen_sections: Plan::empty(),
+            screen_sections,
         };
     }
 }
