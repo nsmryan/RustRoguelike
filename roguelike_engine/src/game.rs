@@ -6,9 +6,6 @@ use std::hash::{Hash, Hasher};
 
 use rand::prelude::*;
 
-use ggez::{Context, GameResult};
-use ggez::event::{self, EventsLoop, EventHandler, KeyCode, KeyMods, MouseButton};
-
 use roguelike_core::constants::*;
 use roguelike_core::generation::*;
 use roguelike_core::types::*;
@@ -22,14 +19,14 @@ use crate::read_map::*;
 use crate::actions::*;
 
 
-pub struct Game {
+pub struct Game<'a> {
     pub config: Config,
 
     pub input_action: InputAction,
 
     pub mouse_state: MouseState,
 
-    pub display_state: DisplayState,
+    pub display_state: DisplayState<'a>,
 
     pub data: GameData,
 
@@ -38,10 +35,10 @@ pub struct Game {
     pub state: GameState,
 }
 
-impl Game {
+impl<'a> Game<'a> {
     pub fn new(args: &Vec<String>,
                config: Config,
-               display_state: DisplayState) -> GameResult<Game> {
+               display_state: DisplayState<'a>) -> Result<Game<'a>, String> {
         // Create seed for random number generator, either from
         // user input or randomly
         let seed: u64;
@@ -168,23 +165,7 @@ impl Game {
         return false; 
     }
 }
-
-impl EventHandler for Game {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
-        self.step_game();
-
-        Ok(())
-    }
-
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        render_all(ctx,
-                   &mut self.mouse_state,
-                   &self.data.objects,
-                   &mut self.data.map,
-                   &mut self.display_state,
-                   &self.config)
-    }
-
+/*
     fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
         self.mouse_state.pos = (x as i32, y as i32);
     }
@@ -222,6 +203,7 @@ impl EventHandler for Game {
         self.input_action = map_keycode_to_action(keycode, keymods);
     }
 }
+*/
 
 // TODO figure out where to put this. should depend on state
 /// Check whether the exit condition for the game is met.

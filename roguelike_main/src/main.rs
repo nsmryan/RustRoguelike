@@ -29,7 +29,5 @@ fn main() {
         config = serde_json::from_str(&config_string).expect("Could not parse config.json file!");
     }
 
-    let mut engine = Engine::new(&args, config).unwrap();
-
-    engine.run();
+    run(&args, config).unwrap();
 }

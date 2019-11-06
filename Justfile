@@ -1,9 +1,4 @@
 
-deploy:
-  cargo web deploy
-  cd target/deploy/; zip -r ludem_dare_45.zip *
-  cp target/deploy/ludem_dare_45.zip .
-
 start:
   cargo web start
 
@@ -14,16 +9,16 @@ recheck:
   cargo watch -x check
 
 run:
-  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo run --release
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo run
 
 build:
-  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo build --release
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo build
 
 debug-build:
   RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo build
 
 rerun:
-  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo watch -x run --release
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo watch -x run
 
 debug:
-  RUST_BACKTRACE=1 cargo run --release
+  RUST_BACKTRACE=1 cargo run

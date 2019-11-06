@@ -1,4 +1,5 @@
-use ggez::event::{KeyCode, KeyMods};
+use sdl2::keyboard::Keycode;
+use sdl2::keyboard::Mod;
 
 use roguelike_core::movement::*;
 
@@ -17,79 +18,79 @@ pub enum InputAction {
     None,
 }
 
-pub fn map_keycode_to_action(keycode: KeyCode, keymods: KeyMods) -> InputAction {
+pub fn map_keycode_to_action(keycode: Keycode, keymods: Mod) -> InputAction {
     let input_action: InputAction;
 
     match keycode {
-        KeyCode::Key8 | KeyCode::Numpad8 | KeyCode::Up => {
+        Keycode::Kp8 | Keycode::Num8 | Keycode::Up => {
             input_action = InputAction::Move(MoveAction::Up);
         }
 
-        KeyCode::Key6 | KeyCode::Numpad6 | KeyCode::Right => {
+        Keycode::Kp6 | Keycode::Num6 | Keycode::Right => {
             input_action = InputAction::Move(MoveAction::Right);
         }
 
-        KeyCode::Key2 | KeyCode::Numpad2 | KeyCode::Down => {
+        Keycode::Kp2 | Keycode::Num2 | Keycode::Down => {
             input_action = InputAction::Move(MoveAction::Down);
         }
 
-        KeyCode::Key4 | KeyCode::Numpad4 | KeyCode::Left => {
+        Keycode::Kp4 | Keycode::Num4 | Keycode::Left => {
             input_action = InputAction::Move(MoveAction::Left);
         }
 
-        KeyCode::Key7 | KeyCode::Numpad7 => {
+        Keycode::Kp7 | Keycode::Num7 => {
             input_action = InputAction::Move(MoveAction::UpLeft);
         }
 
-        KeyCode::Key9 | KeyCode::Numpad9 => {
+        Keycode::Kp9 | Keycode::Num9 => {
             input_action = InputAction::Move(MoveAction::UpRight);
         }
 
-        KeyCode::Key3 | KeyCode::Numpad3 => {
+        Keycode::Kp3 | Keycode::Num3 => {
             input_action = InputAction::Move(MoveAction::DownRight);
         }
 
-        KeyCode::Key1 | KeyCode::Numpad1 => {
+        Keycode::Kp1 | Keycode::Num1 => {
             input_action = InputAction::Move(MoveAction::DownLeft);
         }
 
-        KeyCode::Key5 | KeyCode::Numpad5 => {
+        Keycode::Kp5 | Keycode::Num5 => {
             input_action = InputAction::Move(MoveAction::Center);
         }
 
-        KeyCode::Return => {
-            if keymods.contains(KeyMods::ALT) {
+        Keycode::Return => {
+            if keymods.intersects(Mod::LALTMOD | Mod::RALTMOD) {
                 input_action = InputAction::FullScreen;
             } else {
                 input_action = InputAction::None;
             }
         }
 
-        KeyCode::G => {
+        Keycode::G => {
             input_action = InputAction::Pickup;
         }
 
-        KeyCode::I => {
+        Keycode::I => {
             input_action = InputAction::Inventory;
         }
 
-        KeyCode::V => {
+        Keycode::V => {
             input_action = InputAction::ExploreAll;
         }
 
-        KeyCode::Escape => {
+        Keycode::Escape => {
             input_action = InputAction::Exit;
         }
 
-        KeyCode::R => {
+        Keycode::R => {
             input_action = InputAction::RegenerateMap;
         }
 
-        KeyCode::Add => {
+        Keycode::Plus => {
             input_action = InputAction::ToggleOverlays;
         }
 
-        KeyCode::T => {
+        Keycode::T => {
             input_action = InputAction::GodMode;
         }
 

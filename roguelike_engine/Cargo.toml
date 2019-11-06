@@ -7,13 +7,15 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ggez = { version = "0.5.1", default-features = false }
+# ggez = { version = "0.5.1", default-features = false }
+# 
+# gfx_core = "*"
+# gfx_device_gl = "*"
+# 
+# imgui = "0.2"
+# imgui-gfx-renderer = "0.2"
 
-gfx_core = "*"
-gfx_device_gl = "*"
-
-imgui = "0.2"
-imgui-gfx-renderer = "0.2"
+sdl2 = { version = "0.32", features = ["image"] }
 
 serde = "1.0"
 serde_json = "1.0"
