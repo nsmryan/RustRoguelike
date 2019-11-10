@@ -14,7 +14,6 @@ use std::fs::File;
 use std::io::Read;
 
 use roguelike_core::config::*;
-use roguelike_engine::game::*;
 use roguelike_engine::*;
 
 

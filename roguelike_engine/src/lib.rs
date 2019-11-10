@@ -10,7 +10,6 @@ use sdl2::image::LoadTexture;
 use sdl2::rect::{Rect, Point};
 
 use roguelike_core::config::*;
-use roguelike_core::constants::*;
 use roguelike_core::types::*;
 
 use crate::display::*;
@@ -60,7 +59,10 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             }
         }
 
-        game.step_game();
+        let exit_game = game.step_game();
+        if exit_game {
+            break;
+        }
 
         game.display_state.canvas.set_draw_color(sdl2::pixels::Color::RGBA(0, 0, 0, 255));
         game.display_state.canvas.clear();
@@ -73,7 +75,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                    &mut game.mouse_state,
                    &game.data.objects,
                    &mut game.data.map,
-                   &game.config);
+                   &game.config)?;
 
         game.display_state.canvas.present();
     }

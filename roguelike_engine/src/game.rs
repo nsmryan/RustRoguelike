@@ -16,7 +16,7 @@ use roguelike_core::map::*;
 use crate::display::*;
 use crate::input::*;
 use crate::read_map::*;
-use crate::actions::*;
+use crate::actions;
 
 
 pub struct Game<'a> {
@@ -96,15 +96,16 @@ impl<'a> Game<'a> {
         /* Player Action and Animations */
         self.settings.previous_player_position = (self.data.objects[PLAYER].x, self.data.objects[PLAYER].y);
         let player_action;
-        player_action = handle_input(self.input_action,
-                                     &mut self.mouse_state,
-                                     &mut self.data,
-                                     &mut self.settings.god_mode,
-                                     &mut self.display_state.display_overlays,
-                                     &self.config);
+        player_action = 
+            actions::handle_input(self.input_action,
+                                  &mut self.mouse_state,
+                                  &mut self.data,
+                                  &mut self.settings.god_mode,
+                                  &mut self.display_state.display_overlays,
+                                  &self.config);
         match player_action {
             PlayerAction::Exit => {
-                return false;
+                return true;
             }
 
             PlayerAction::TookTurn | PlayerAction::TookHalfTurn => {
@@ -122,7 +123,8 @@ impl<'a> Game<'a> {
         /* AI */
         if self.data.objects[PLAYER].alive && player_action == PlayerAction::TookTurn {
             for id in 1..self.data.objects.len() {
-                if self.data.objects[id].ai.is_some() {
+                if self.data.objects[id].ai.is_some() &&
+                   self.data.objects[id].fighter.is_some() {
                     ai_take_turn(id, &mut self.data.map, &mut self.data.objects);
                     if let Some(fighter) = self.data.objects[id].fighter {
                         if fighter.hp <= 0 {
@@ -133,6 +135,16 @@ impl<'a> Game<'a> {
                         }
                     }
                 }
+            }
+        }
+
+        // check is player lost all hp
+        if let Some(fighter) = self.data.objects[PLAYER].fighter {
+            if fighter.hp <= 0 {
+                self.data.objects[PLAYER].alive = false;
+                self.data.objects[PLAYER].chr = '%';
+                self.data.objects[PLAYER].color = self.config.color_red;
+                self.data.objects[PLAYER].fighter = None;
             }
         }
 

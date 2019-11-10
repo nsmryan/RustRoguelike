@@ -479,5 +479,5 @@ pub fn draw_char(display_state: &mut DisplayState,
                                  0.0,
                                  None,
                                  false,
-                                 false);
+                                 false).unwrap();
 }

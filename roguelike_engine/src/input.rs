@@ -66,6 +66,10 @@ pub fn map_keycode_to_action(keycode: Keycode, keymods: Mod) -> InputAction {
             }
         }
 
+        Keycode::Q => {
+            input_action = InputAction::Exit;
+        }
+
         Keycode::G => {
             input_action = InputAction::Pickup;
         }

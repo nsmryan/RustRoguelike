@@ -137,8 +137,9 @@ fn use_item(inventory_id: usize,
     if let Some(item) = inventory[inventory_id].item {
         let on_use = match item {
             Stone => unimplemented!(),
-            Goal => gather_goal,
+            Goal => unimplemented!(), // gather_goal,
         };
+        /*
         match on_use(inventory_id, objects, config) {
             UseResult::UsedUp => {
                 inventory.remove(inventory_id);
@@ -150,15 +151,16 @@ fn use_item(inventory_id: usize,
             UseResult::Keep => {
             }
         }
+        */
     } else {
         // messages.message(format!("The {} cannot be used.", inventory[inventory_id].name), WHITE);
     }
 }
 
-fn gather_goal(_inventory_id: usize, _objects: &mut [Object], _config: &Config) -> UseResult {
+//fn gather_goal(_inventory_id: usize, _objects: &mut [Object], _config: &Config) -> UseResult {
     // messages.message("You've got the goal object! Nice work.", config.color_orange.color());
-    UseResult::Keep
-}
+ //   UseResult::Keep
+//}
 
 fn pick_item_up(object_id: usize,
                 objects: &mut Vec<Object>,
