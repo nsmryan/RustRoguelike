@@ -24,7 +24,7 @@ pub fn handle_input(input_action: InputAction,
 
     let player_alive = game_data.objects[PLAYER].alive;
 
-    if mouse_state.pressed.0 {
+    if mouse_state.left_pressed {
         // TODO add back in with new inventory
         /*
         let mut found_stone = false;
@@ -130,12 +130,12 @@ pub fn handle_input(input_action: InputAction,
 
 fn use_item(inventory_id: usize,
             inventory: &mut Vec<Object>,
-            objects: &mut [Object],
-            config: &Config) {
+            _objects: &mut [Object],
+            _config: &Config) {
     use Item::*;
 
     if let Some(item) = inventory[inventory_id].item {
-        let on_use = match item {
+        let _on_use = match item {
             Stone => unimplemented!(),
             Goal => unimplemented!(), // gather_goal,
         };

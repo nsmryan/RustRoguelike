@@ -8,6 +8,7 @@ pub mod actions;
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
 use sdl2::rect::{Rect, Point};
+use sdl2::mouse::MouseButton;
 
 use roguelike_core::config::*;
 use roguelike_core::types::*;
@@ -36,7 +37,8 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let screen_sections =
         Plan::vert("screen", 0.80, Plan::zone("map"), Plan::zone("inspector"));
 
-    let display_state = DisplayState::new(screen_sections, font_image, canvas);
+    let display_state =
+        DisplayState::new(screen_sections, font_image, canvas);
 
     let mut game = Game::new(args, config, display_state)?;
 
@@ -55,6 +57,29 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     }
                 }
 
+                Event::MouseMotion{x, y, ..} => {
+                    game.mouse_state.x = x;
+                    game.mouse_state.y = y;
+                }
+
+                Event::MouseButtonDown{mouse_btn, ..} => {
+                    match mouse_btn {
+                        MouseButton::Left => game.mouse_state.left_pressed = true,
+                        MouseButton::Middle => game.mouse_state.middle_pressed = true,
+                        MouseButton::Right => game.mouse_state.right_pressed = true,
+                        _ => {},
+                    }
+                }
+
+                Event::MouseButtonUp{mouse_btn, ..} => {
+                    match mouse_btn {
+                        MouseButton::Left => game.mouse_state.left_pressed = false,
+                        MouseButton::Middle => game.mouse_state.middle_pressed = false,
+                        MouseButton::Right => game.mouse_state.right_pressed = false,
+                        _ => {},
+                    }
+                }
+
                 _ => {}
             }
         }
@@ -64,20 +89,11 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             break;
         }
 
-        game.display_state.canvas.set_draw_color(sdl2::pixels::Color::RGBA(0, 0, 0, 255));
-        game.display_state.canvas.clear();
-
-        game.display_state.canvas.set_draw_color(sdl2::pixels::Color::RGBA(120, 40, 0, 255));
-
-        game.display_state.font_image.set_color_mod(120, 40, 0);
-
         render_all(&mut game.display_state,
                    &mut game.mouse_state,
                    &game.data.objects,
                    &mut game.data.map,
                    &game.config)?;
-
-        game.display_state.canvas.present();
     }
 
     return Ok(());

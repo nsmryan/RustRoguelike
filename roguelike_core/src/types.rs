@@ -71,11 +71,13 @@ impl GameSettings {
 }
 
 
-// TODO pressed state should be broken out, not in a tuple
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct MouseState {
-    pub pos: (i32, i32),
-    pub pressed: (bool, bool, bool),
+    pub x: i32,
+    pub y: i32,
+    pub left_pressed: bool,
+    pub middle_pressed: bool,
+    pub right_pressed: bool,
     pub wheel: f32,
 }
 

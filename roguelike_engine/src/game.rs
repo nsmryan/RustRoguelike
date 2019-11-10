@@ -93,6 +93,48 @@ impl<'a> Game<'a> {
     }
 
     pub fn step_game(&mut self) -> bool {
+
+        match self.state {
+            GameState::Playing => {
+                return self.step_playing();
+            }
+
+            GameState::Win => {
+                return self.step_win();
+            }
+
+            GameState::Lose => {
+                return self.step_lose();
+            }
+        }
+    }
+
+    pub fn step_win(&mut self) -> bool {
+
+        match self.input_action {
+            InputAction::Exit => {
+                return true;
+            }
+
+            _ => {},
+        }
+
+        return false;
+    }
+
+    pub fn step_lose(&mut self) -> bool {
+        match self.input_action {
+            InputAction::Exit => {
+                return true;
+            }
+
+            _ => {},
+        }
+
+        return false;
+    }
+
+    pub fn step_playing(&mut self) -> bool {
         /* Player Action and Animations */
         self.settings.previous_player_position = (self.data.objects[PLAYER].x, self.data.objects[PLAYER].y);
         let player_action;
@@ -117,7 +159,7 @@ impl<'a> Game<'a> {
 
         /* Check Exit Condition */
         if exit_condition_met(&self.data.map, &mut self.data.objects) {
-            std::process::exit(0);
+            self.state = GameState::Win;
         }
 
         /* AI */
@@ -145,6 +187,10 @@ impl<'a> Game<'a> {
                 self.data.objects[PLAYER].chr = '%';
                 self.data.objects[PLAYER].color = self.config.color_red;
                 self.data.objects[PLAYER].fighter = None;
+
+                if self.state == GameState::Playing {
+                    self.state = GameState::Lose;
+                }
             }
         }
 
@@ -203,16 +249,6 @@ impl<'a> Game<'a> {
         _y: f32,
         ) {
         self.mouse_state.pressed = (false, false, false);
-    }
-
-    fn key_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        keycode: KeyCode,
-        keymods: KeyMods,
-        _repeat: bool,
-        ) {
-        self.input_action = map_keycode_to_action(keycode, keymods);
     }
 }
 */

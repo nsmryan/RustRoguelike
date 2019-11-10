@@ -345,8 +345,8 @@ pub fn render_overlays(display_state: &mut DisplayState,
     let mut attack_highlight_color = config.color_red;
     attack_highlight_color.a = config.highlight_alpha;
     // Draw monster attack overlay
-    let mouse_x = (mouse_state.pos.0 as i32 / FONT_WIDTH) + 1;
-    let mouse_y = (mouse_state.pos.1 as i32 / FONT_HEIGHT) + 1;
+    let mouse_x = (mouse_state.x as i32 / FONT_WIDTH) + 1;
+    let mouse_y = (mouse_state.y as i32 / FONT_HEIGHT) + 1;
     let object_ids =  get_objects_under_mouse(mouse_x, mouse_y, objects, map);
     for object_id in object_ids.iter() {
         if let Some(reach) = objects[*object_id].attack {
@@ -422,7 +422,7 @@ pub fn render_all(display_state: &mut DisplayState,
             }
 
             "map" => {
-                let ((x_offset, y_offset), _scaler) =
+                let ((_x_offset, _y_offset), _scaler) =
                     plot.fit(map.width() as usize * FONT_WIDTH as usize, map.height() as usize * FONT_HEIGHT as usize);
             }
 
@@ -436,6 +436,8 @@ pub fn render_all(display_state: &mut DisplayState,
             }
         }
     }
+
+    display_state.canvas.present();
 
     Ok(())
 }
@@ -453,10 +455,10 @@ pub fn draw_char(display_state: &mut DisplayState,
     let chr_x = (chr as i32) % FONT_WIDTH;
     let chr_y = (chr as i32) / FONT_HEIGHT;
 
-    let font_part = 1.0 / FONT_WIDTH as f32;
+    let _font_part = 1.0 / FONT_WIDTH as f32;
 
-    let scale_x = (area.font_width as f32)  / (FONT_WIDTH as f32);
-    let scale_y = (area.font_height as f32) / (FONT_HEIGHT as f32);
+    let _scale_x = (area.font_width as f32)  / (FONT_WIDTH as f32);
+    let _scale_y = (area.font_height as f32) / (FONT_HEIGHT as f32);
 
     let src = Rect::new((chr_x * FONT_WIDTH) as i32,
                         (chr_y * FONT_HEIGHT) as i32,
