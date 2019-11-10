@@ -22,7 +22,7 @@ use crate::input::*;
 pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let video = sdl_context.video()?;
-    let window = video.window("Rust Roguelike", 800, 600)
+    let window = video.window("Rust Roguelike", 1000, 800)
         .position_centered().build().map_err(|e| e.to_string())?;
 
     let mut canvas = window.into_canvas()

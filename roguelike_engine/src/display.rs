@@ -455,11 +455,6 @@ pub fn draw_char(display_state: &mut DisplayState,
     let chr_x = (chr as i32) % FONT_WIDTH;
     let chr_y = (chr as i32) / FONT_HEIGHT;
 
-    let _font_part = 1.0 / FONT_WIDTH as f32;
-
-    let _scale_x = (area.font_width as f32)  / (FONT_WIDTH as f32);
-    let _scale_y = (area.font_height as f32) / (FONT_HEIGHT as f32);
-
     let src = Rect::new((chr_x * FONT_WIDTH) as i32,
                         (chr_y * FONT_HEIGHT) as i32,
                         FONT_WIDTH as u32,
@@ -470,11 +465,9 @@ pub fn draw_char(display_state: &mut DisplayState,
                         area.font_width as u32,
                         area.font_height as u32);
 
-    // TODO need to set color mixture
     display_state.font_image.set_color_mod(color.r, color.g, color.b);
     display_state.font_image.set_alpha_mod(color.a);
 
-    //dbg!(area.x_offset, area.y_offset, area.font_width, area.font_height);
     display_state.canvas.copy_ex(&display_state.font_image,
                                  Some(src),
                                  Some(dst),
