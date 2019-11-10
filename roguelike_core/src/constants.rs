@@ -3,8 +3,8 @@ pub const CONFIG_FILE_NAME: &str = &"config.json";
 pub const FONT_WIDTH: i32 = 16;
 pub const FONT_HEIGHT: i32 = 16;
 
-pub const SCREEN_WIDTH: i32 = 80;
-pub const SCREEN_HEIGHT: i32 = 50;
+pub const SCREEN_WIDTH: u32 = 1000;
+pub const SCREEN_HEIGHT: u32 = 800;
 pub const LIMIT_FPS: i32 = 20;
 
 pub const TIME_BETWEEN_FRAMES_MS: i64 = 25;
@@ -32,13 +32,13 @@ pub const MAX_MOMENTUM: i32 = 2;
 
 pub const PLAYER_THROW_DIST: usize = 5;
 
-pub const BAR_WIDTH: i32 = 20;
-pub const PANEL_HEIGHT: i32 = 7;
-pub const PANEL_Y: i32 = SCREEN_HEIGHT - PANEL_HEIGHT;
+pub const BAR_WIDTH: u32 = 20;
+pub const PANEL_HEIGHT: u32 = 7;
+pub const PANEL_Y: u32 = SCREEN_HEIGHT - PANEL_HEIGHT;
 
-pub const MSG_X: i32 = BAR_WIDTH + 2;
-pub const MSG_WIDTH: i32 = SCREEN_WIDTH - BAR_WIDTH - 2;
-pub const MSG_HEIGHT: usize = PANEL_HEIGHT as usize - 1;
+pub const MSG_X: u32 = BAR_WIDTH + 2;
+pub const MSG_WIDTH: u32 = SCREEN_WIDTH - BAR_WIDTH - 2;
+pub const MSG_HEIGHT: u32 = PANEL_HEIGHT - 1;
 
 pub const INVENTORY_WIDTH: i32 = 50;
 

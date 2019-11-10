@@ -345,8 +345,10 @@ pub fn render_overlays(display_state: &mut DisplayState,
     let mut attack_highlight_color = config.color_red;
     attack_highlight_color.a = config.highlight_alpha;
     // Draw monster attack overlay
-    let mouse_x = (mouse_state.x as i32 / FONT_WIDTH) + 1;
-    let mouse_y = (mouse_state.y as i32 / FONT_HEIGHT) + 1;
+    let font_width = (SCREEN_WIDTH / map.width() as u32) as i32;
+    let font_height = (SCREEN_HEIGHT / map.height() as u32) as i32;
+    let mouse_x = mouse_state.x as i32 / font_width;
+    let mouse_y = mouse_state.y as i32 / font_height;
     let object_ids =  get_objects_under_mouse(mouse_x, mouse_y, objects, map);
     for object_id in object_ids.iter() {
         if let Some(reach) = objects[*object_id].attack {
