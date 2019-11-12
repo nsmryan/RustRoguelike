@@ -93,6 +93,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         render_all(&mut game.display_state,
                    &mut game.mouse_state,
                    &mut game.data,
+                   &game.settings,
                    &game.config)?;
     }
 

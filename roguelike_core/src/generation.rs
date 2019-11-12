@@ -1,7 +1,5 @@
 use rand::prelude::*;
 
-use slotmap::dense::*;
-
 use crate::map::*;
 use crate::types::*;
 use crate::constants::*;
@@ -238,7 +236,7 @@ pub fn make_wall_test_map(objects: &mut ObjMap, config: &Config) -> (Map, Positi
         map[pos].left_wall = Wall::ShortWall;
     }
   
-    objects.insert(make_orc(config, 9, 5));
+    objects.insert(make_orc(config, 7, 5));
 
     map.update_map();
 

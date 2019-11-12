@@ -1,5 +1,3 @@
-use slotmap::*;
-
 use crate::map::*;
 use crate::types::*;
 use crate::constants::*;
@@ -32,10 +30,9 @@ impl AiTurn {
 }
 
 
-pub fn location_within_fov(map: &Map, monster_pos: Position, player_pos: Position) -> bool {
-    let within_fov = map.is_in_fov(monster_pos.0, monster_pos.1);
+pub fn location_within_fov(map: &mut Map, monster_pos: Position, player_pos: Position) -> bool {
+    let within_fov = map.is_in_fov(monster_pos.0, monster_pos.1, player_pos.0, player_pos.1, MONSTER_VIEW_DIST);
     let within_sight_range = player_pos.distance(&monster_pos) <= MONSTER_VIEW_DIST;
-    dbg!(within_fov);
 
     return within_fov && within_sight_range;
 }
@@ -61,7 +58,7 @@ pub fn step_towards(start_pos: (i32, i32), target_pos: (i32, i32)) -> (i32, i32)
 
 pub fn ai_attack(monster_handle: ObjectId,
                  target_handle: ObjectId,
-                 data: &GameData) -> AiTurn {
+                 data: &mut GameData) -> AiTurn {
     let (target_x, target_y) = data.objects.get(target_handle).unwrap().pos();
     let mut target_pos = Position::new(target_x, target_y);
 
@@ -94,8 +91,8 @@ pub fn ai_attack(monster_handle: ObjectId,
             let positions: Vec<(i32, i32)> =
                 move_positions
                 .iter()
-                .filter(|(x, y)| data.map.is_in_fov(*x, *y))
-                .filter(|(x, y)| !is_blocked(&data.map, *x, *y, &data.objects))
+                .filter(|(x, y)| data.map.is_in_fov(monster_x, monster_y, *x, *y, MONSTER_VIEW_DIST) &&
+                                 !is_blocked(&data.map, *x, *y, &data.objects))
                 .filter(|new_pos| ai_can_hit_target(**new_pos, (target_x, target_y), &attack).is_some())
                 .map(|pair| *pair)
                 .collect();
@@ -120,7 +117,7 @@ pub fn ai_attack(monster_handle: ObjectId,
 
 pub fn ai_investigate(target_pos_orig: Position, 
                       monster_handle: ObjectId,
-                      data: &GameData) -> AiTurn {
+                      data: &mut GameData) -> AiTurn {
     let player_handle = data.find_player().unwrap();
     let target_pos = target_pos_orig;
     let (player_x, player_y) = data.objects.get(player_handle).unwrap().pos();
@@ -131,7 +128,7 @@ pub fn ai_investigate(target_pos_orig: Position,
     let mut turn: AiTurn = AiTurn::new();
 
                
-    if location_within_fov(&data.map, monster_pos, player_pos) {
+    if location_within_fov(&mut data.map, monster_pos, player_pos) {
         // TODO this causes a turn delay between seeing the player and attacking them
         turn.add(AiAction::StateChange(Behavior::Attacking(player_handle)));
     } else { // the monster can't see the player
@@ -186,7 +183,7 @@ fn ai_take_astar_step(monster_pos: (i32, i32),
 }
 
 pub fn basic_ai_take_turn(monster_handle: ObjectId,
-                          data: &GameData) -> AiTurn {
+                          data: &mut GameData) -> AiTurn {
     let player_handle = data.find_player().unwrap();
     let (monster_x, monster_y) = data.objects[monster_handle].pos();
     let (player_x, player_y) = data.objects[player_handle].pos();
@@ -197,7 +194,7 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
         Some(Behavior::Idle) => {
             let mut turn = AiTurn::new();
 
-            if location_within_fov(&data.map, monster_pos, player_pos) {
+            if location_within_fov(&mut data.map, monster_pos, player_pos) {
                 // TODO will cause a turn between seeing the player and attacking
                 turn.add(AiAction::StateChange(Behavior::Attacking(player_handle)));
             } else if let Some(sound_pos) = data.map[(monster_x, monster_y)].sound {

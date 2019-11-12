@@ -59,12 +59,13 @@ impl Area {
 
 pub fn get_objects_under_mouse(x: i32,
                                y: i32,
-                               data: &GameData) -> Vec<ObjectId> {
+                               data: &mut GameData) -> Vec<ObjectId> {
     let mut object_ids = Vec::new();
 
     for key in data.objects.keys() {
-        if data.objects[key].pos() == (x, y) {
-            if data.map.is_in_fov(x, y) {
+        let pos = data.objects[key].pos();
+        if pos == (x, y) {
+            if data.map.is_in_fov(pos.0, pos.1, x, y, FOV_RADIUS) {
                 object_ids.push(key);
             }
         }
@@ -212,12 +213,19 @@ pub fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool)
 }
 
 pub fn render_background(display_state: &mut DisplayState,
-                         map: &mut Map,
+                         data: &mut GameData,
                          area: &Area,
+                         settings: &GameSettings,
                          config: &Config) {
-    for y in 0..map.height() {
-        for x in 0..map.width() {
-            let visible = map.is_in_fov(x, y);
+    let player_handle = data.find_player().unwrap();
+    let pos = data.objects[player_handle].pos();
+
+    for y in 0..data.map.height() {
+        for x in 0..data.map.width() {
+            let visible =
+                data.map.is_in_fov(pos.0, pos.1, x, y, FOV_RADIUS) ||
+                settings.god_mode;
+
             draw_char(display_state,
                       MAP_EMPTY_CHAR as char,
                       x,
@@ -225,7 +233,7 @@ pub fn render_background(display_state: &mut DisplayState,
                       empty_tile_color(config, x, y, visible),
                       area);
 
-            let tile = &map.tiles[x as usize][y as usize];
+            let tile = &data.map.tiles[x as usize][y as usize];
             if tile.tile_type == TileType::Water {
                 let color = tile_color(config, x, y, tile, visible);
                 let chr = tile.chr.map_or('+', |chr| chr);
@@ -237,20 +245,26 @@ pub fn render_background(display_state: &mut DisplayState,
 }
 
 pub fn render_map(display_state: &mut DisplayState,
-                  map: &mut Map,
+                  data: &mut GameData,
                   area: &Area,
+                  settings: &GameSettings,
                   config: &Config) {
-    let map_width = map.width();
-    let map_height = map.height();
+    let map_width = data.map.width();
+    let map_height = data.map.height();
+
+    let player_handle = data.find_player().unwrap();
+    let player_pos = data.objects[player_handle].pos();
 
     for y in 0..map_height {
         for x in 0..map_width {
             // Render game stuff
-            let visible = map.is_in_fov(x, y);
+            let visible =
+                data.map.is_in_fov(player_pos.0, player_pos.1, x, y, FOV_RADIUS) ||
+                settings.god_mode;
 
-            let tile = &map.tiles[x as usize][y as usize];
+            let tile = &data.map.tiles[x as usize][y as usize];
 
-            let explored = map.tiles[x as usize][y as usize].explored || visible;
+            let explored = data.map.tiles[x as usize][y as usize].explored || visible;
 
             let wall_color;
             if explored {
@@ -284,7 +298,7 @@ pub fn render_map(display_state: &mut DisplayState,
             }
 
             if x + 1 < map_width {
-                let right_tile = &map.tiles[x as usize + 1][y as usize];
+                let right_tile = &data.map.tiles[x as usize + 1][y as usize];
                 if right_tile.left_wall == Wall::ShortWall {
                     draw_char(display_state, MAP_THIN_WALL_RIGHT as char, x, y, wall_color, area);
                 } else if right_tile.left_wall == Wall::TallWall {
@@ -293,7 +307,7 @@ pub fn render_map(display_state: &mut DisplayState,
             }
 
             if y - 1 >= 0 {
-                let above_tile = &map.tiles[x as usize][y as usize - 1];
+                let above_tile = &data.map.tiles[x as usize][y as usize - 1];
                 if above_tile.bottom_wall == Wall::ShortWall {
                     draw_char(display_state, MAP_THIN_WALL_TOP as char, x, y, wall_color, area);
                 } else if above_tile.bottom_wall == Wall::TallWall {
@@ -301,29 +315,34 @@ pub fn render_map(display_state: &mut DisplayState,
                 }
             }
 
-            map.tiles[x as usize][y as usize].explored = explored;
+            data.map.tiles[x as usize][y as usize].explored = explored;
         }
     }
 }
 
 pub fn render_objects(display_state: &mut DisplayState,
-                      data: &GameData,
+                      data: &mut GameData,
+                      settings: &GameSettings,
                       area: &Area) {
-    let to_draw: Vec<_> =
-        data.objects.keys().filter(|key| {
-            data.map.is_in_fov(data.objects[*key].x, data.objects[*key].y)
-        }).collect();
-    // to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
+    let player_handle = data.find_player().unwrap();
+    let player_pos = data.objects[player_handle].pos();
 
-    for key in &to_draw {
-        let object = &data.objects[*key];
-        draw_char(display_state, object.chr, object.x, object.y, object.color, area);
+    for key in data.objects.keys() {
+        if settings.god_mode ||
+           data.map.is_in_fov(player_pos.0,
+                              player_pos.1,
+                              data.objects[key].x,
+                              data.objects[key].y,
+                              FOV_RADIUS) {
+            let object = &data.objects[key];
+            draw_char(display_state, object.chr, object.x, object.y, object.color, area);
+        }
     }
 }
 
 pub fn render_overlays(display_state: &mut DisplayState,
                        mouse_state: &MouseState,
-                       data: &GameData,
+                       data: &mut GameData,
                        area: &Area,
                        config: &Config) {
     let player_handle = data.find_player().unwrap();
@@ -376,6 +395,7 @@ pub fn render_overlays(display_state: &mut DisplayState,
 pub fn render_all(display_state: &mut DisplayState,
                   mouse_state: &mut MouseState,
                   data: &mut GameData,
+                  settings: &GameSettings,
                   config: &Config)  -> Result<(), String> {
 
     let player_handle = data.find_player().unwrap();
@@ -391,17 +411,20 @@ pub fn render_all(display_state: &mut DisplayState,
                          (screen_rect.1 as f32 / data.map.height() as f32) as usize);
 
     render_background(display_state,
-                      &mut data.map,
+                      data,
                       &area,
+                      settings,
                       config);
 
     render_map(display_state,
-               &mut data.map,
+               data,
                &area,
+               settings,
                config);
 
     render_objects(display_state,
                    data,
+                   settings,
                    &area);
 
     render_overlays(display_state,

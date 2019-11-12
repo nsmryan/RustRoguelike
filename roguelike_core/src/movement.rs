@@ -372,15 +372,15 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Pl
 // TODO consider moving into gamedata
 pub fn calculate_move(action: MoveAction,
                       reach: Reach,
-                      handle: ObjectId,
+                      object_id: ObjectId,
                       data: &GameData) -> Option<Movement> {
     let movement: Option<Movement>;
 
-    let (x, y) = data.objects.get(handle).unwrap().pos();
+    let (x, y) = data.objects[object_id].pos();
     if let Some(delta_pos) = reach.move_with_reach(&action) {
         let (dx, dy) = delta_pos.into_pair();
         // check if movement collides with a blocked location or an entity
-        match check_collision(handle, &data.objects, dx, dy, &data.map) {
+        match check_collision(object_id, &data.objects, dx, dy, &data.map) {
             Collision::NoCollision(new_x, new_y) => {
                 // no collision- just move to location
                 movement = Some(Movement::Move(new_x, new_y));
@@ -391,7 +391,7 @@ pub fn calculate_move(action: MoveAction,
             }
 
             Collision::Wall((tile_x, tile_y), (new_x, new_y)) => {
-                match data.objects.get(handle).unwrap().momentum {
+                match data.objects[object_id].momentum {
                     Some(momentum) => {
                         // if max momentum, and there is space beyond the wall, than jump over the wall.
                         if momentum.at_maximum() &&

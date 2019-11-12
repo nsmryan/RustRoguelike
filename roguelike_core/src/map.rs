@@ -9,6 +9,8 @@ use tcod::line::*;
 
 use serde_derive::*;
 
+use crate::constants::*;
+
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum MapLoadConfig {
@@ -144,6 +146,7 @@ pub struct Map {
     pub tiles: Vec<Vec<Tile>>,
     fov: FovMap,
     fov_pos: (i32, i32),
+    fov_radius: i32,
 }
 
 impl Map {
@@ -155,6 +158,7 @@ impl Map {
                 tiles,
                 fov: FovMap::new(width as i32, height as i32),
                 fov_pos: (0, 0),
+                fov_radius: FOV_RADIUS,
             };
 
         map.update_map();
@@ -169,6 +173,7 @@ impl Map {
                 tiles,
                 fov: FovMap::new(width as i32, height as i32),
                 fov_pos: (0, 0),
+                fov_radius: FOV_RADIUS,
             };
 
         map.update_map();
@@ -182,6 +187,7 @@ impl Map {
                 tiles: Vec::new(),
                 fov: FovMap::new(1, 1),
                 fov_pos: (0, 0),
+                fov_radius: FOV_RADIUS,
             };
 
         return map;
@@ -221,19 +227,29 @@ impl Map {
                 break;
             }
 
-            if move_x >= 1 {
-                blocked = self[(x + move_x, y)].left_wall != Wall::Empty;
-            } else if move_x <= -1 {
-                blocked = self[(x, y)].left_wall != Wall::Empty;
-            } 
-            
-            if move_y >= 1 {
-                blocked |= self[(x, y)].bottom_wall != Wall::Empty;
-            } else if move_y <= -1 {
-                blocked |= self[(x, y + move_y)].bottom_wall != Wall::Empty;
-            }
+            if move_x != 0 {
+                // assume moving left
+                let mut left_wall_pos = (x, y);
+                if move_x >= 1 {
+                    left_wall_pos = (x + move_x, y);
+                }
 
-            dbg!(pos, blocked);
+                if self.is_within_bounds(left_wall_pos.0, left_wall_pos.1) {
+                    blocked |= self[left_wall_pos].left_wall != Wall::Empty;
+                }
+            }
+            
+            if move_y != 0 {
+                // assume moving down
+                let mut bottom_wall_pos = (x, y + move_y);
+                if move_y >= 1 {
+                    bottom_wall_pos = (x, y);
+                }
+
+                if self.is_within_bounds(bottom_wall_pos.0, bottom_wall_pos.1) {
+                    blocked |= self[bottom_wall_pos].bottom_wall != Wall::Empty;
+                }
+            }
 
             if blocked {
                 break;
@@ -266,13 +282,17 @@ impl Map {
         return self.tiles[0].len() as i32;
     }
 
-    pub fn is_in_fov(&self, x: i32, y: i32) -> bool {
-        let wall_in_path = self.is_blocked_by_wall(self.fov_pos.0,
-                                                   self.fov_pos.1,
-                                                   x - self.fov_pos.0,
-                                                   y - self.fov_pos.1);
+    pub fn is_in_fov(&mut self, start_x: i32, start_y: i32, end_x: i32, end_y: i32, radius: i32) -> bool {
+        if self.fov_pos != (start_x, start_y) {
+            self.compute_fov(start_x, start_y, radius);
+        }
 
-        return !wall_in_path && self.fov.is_in_fov(x, y);
+        let wall_in_path = self.is_blocked_by_wall(start_x,
+                                                   start_y,
+                                                   end_x - start_x,
+                                                   end_y - start_y);
+
+        return !wall_in_path && self.fov.is_in_fov(end_x, end_y);
     }
 
     // this function is like clear_path, but only looks for terrain, not objects like monsters
@@ -323,6 +343,7 @@ impl Map {
 
     pub fn compute_fov(&mut self, x: i32, y: i32, view_radius: i32) {
         self.fov_pos = (x, y);
+        self.fov_radius = view_radius;
         self.fov.compute_fov(x, y, view_radius, true, tcod::map::FovAlgorithm::Basic);
     }
 
@@ -337,6 +358,8 @@ impl Map {
                              !self.tiles[x as usize][y as usize].blocked);
             }
         }
+
+        self.compute_fov(self.fov_pos.0, self.fov_pos.1, self.fov_radius);
     }
 }
 
@@ -521,6 +544,7 @@ pub fn make_tcod_map(tiles: &Vec<Vec<Tile>>) -> tcod::map::Map {
 
 #[test]
 fn test_fov_blocked_by_wall_right() {
+    let radius = 10;
     let mut map = Map::from_dims(10, 10);
 
     for wall_y_pos in 2..8 {
@@ -531,14 +555,12 @@ fn test_fov_blocked_by_wall_right() {
   
     map.update_map();
 
-    let position = (4, 5);
-    map.compute_fov(position.0, position.1, 7);
-
-    assert!(map.is_in_fov(9, 5) == false);
+    assert!(map.is_in_fov(4, 5, 9, 5, radius) == false);
 }
 
 #[test]
 fn test_fov_blocked_by_wall_left() {
+    let radius = 10;
     let mut map = Map::from_dims(10, 10);
 
     for wall_y_pos in 2..8 {
@@ -549,14 +571,12 @@ fn test_fov_blocked_by_wall_left() {
   
     map.update_map();
 
-    let position = (9, 5);
-    map.compute_fov(position.0, position.1, 7);
-
-    assert!(map.is_in_fov(4, 5) == false);
+    assert!(map.is_in_fov(9, 5, 4, 5, radius) == false);
 }
 
 #[test]
 fn test_fov_blocked_by_wall_up() {
+    let radius = 10;
     let mut map = Map::from_dims(10, 10);
 
     for wall_x_pos in 2..8 {
@@ -567,14 +587,12 @@ fn test_fov_blocked_by_wall_up() {
   
     map.update_map();
 
-    let position = (5, 9);
-    map.compute_fov(position.0, position.1, 7);
-
-    assert!(map.is_in_fov(5, 5) == false);
+    assert!(map.is_in_fov(5, 9, 5, 5, radius) == false);
 }
 
 #[test]
 fn test_fov_blocked_by_wall_down() {
+    let radius = 10;
     let mut map = Map::from_dims(10, 10);
 
     for wall_x_pos in 2..8 {
@@ -585,8 +603,5 @@ fn test_fov_blocked_by_wall_down() {
   
     map.update_map();
 
-    let position = (5, 1);
-    map.compute_fov(position.0, position.1, 7);
-
-    assert!(map.is_in_fov(5, 6) == false);
+    assert!(map.is_in_fov(5, 1, 5, 6, radius) == false);
 }

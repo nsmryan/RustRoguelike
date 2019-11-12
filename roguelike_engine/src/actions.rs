@@ -119,6 +119,7 @@ pub fn handle_input(input_action: InputAction,
                         game_data.map.set_cell(x as i32, y as i32, true, true);
                     }
                 }
+                game_data.map.update_map();
 
                 player_action = TookTurn;
             }
