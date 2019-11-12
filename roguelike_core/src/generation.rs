@@ -1,5 +1,7 @@
 use rand::prelude::*;
 
+use slotmap::dense::*;
+
 use crate::map::*;
 use crate::types::*;
 use crate::constants::*;
@@ -55,8 +57,8 @@ pub fn make_kobold(config: &Config, x: i32, y :i32) -> Object {
     kobold
 }
 
-pub fn make_map(objects: &mut Vec<Object>, config: &Config, rng: &mut SmallRng) -> (Map, Position) {
-    let mut map = Map::with_vec(vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize]);
+pub fn make_map(objects: &mut ObjMap, config: &Config, rng: &mut SmallRng) -> (Map, Position) {
+    let mut map = Map::from_dims(MAP_WIDTH as usize, MAP_HEIGHT as usize);
 
     let starting_position = make_island(&mut map, objects, config, rng);
 
@@ -68,7 +70,7 @@ pub fn make_map(objects: &mut Vec<Object>, config: &Config, rng: &mut SmallRng) 
 }
 
 pub fn make_island(map: &mut Map,
-                   objects: &mut Vec<Object>,
+                   objects: &mut ObjMap,
                    config: &Config,
                    rng: &mut SmallRng) -> Position {
     let center = Position(map.width() / 2, map.height() / 2);
@@ -149,7 +151,7 @@ pub fn make_island(map: &mut Map,
 
             if !is_blocked(map, x, y, objects) {
                 let monster = make_orc(config,x,y);
-                objects.push(monster);
+                objects.insert(monster);
                 break;
             }
         }
@@ -161,7 +163,7 @@ pub fn make_island(map: &mut Map,
 
             if !is_blocked(map, x, y, objects) {
                 let monster = make_kobold(config,x,y);
-                objects.push(monster);
+                objects.insert(monster);
                 break;
             }
         }
@@ -173,7 +175,7 @@ pub fn make_island(map: &mut Map,
 
             if !is_blocked(map, x, y, objects) {
                 let monster = make_troll(config,x,y);
-                objects.push(monster);
+                objects.insert(monster);
                 break;
             }
         }
@@ -185,7 +187,7 @@ pub fn make_island(map: &mut Map,
     if !is_blocked(map, x, y, objects) {
         let mut object = Object::new(x, y, ENTITY_GOAL as char, config.color_red, "goal", false);
         object.item = Some(Item::Goal);
-        objects.push(object);
+        objects.insert(object);
     }
 
     /* add goal object */
@@ -197,7 +199,7 @@ pub fn make_island(map: &mut Map,
     }
     let mut object = Object::new(x, y, ENTITY_GOAL as char, config.color_red, "goal", false);
     object.item = Some(Item::Goal);
-    objects.push(object);
+    objects.insert(object);
 
     /* add exit */
     // find edge of island
@@ -224,5 +226,22 @@ pub fn make_island(map: &mut Map,
     }
 
     return center;
+}
+
+pub fn make_wall_test_map(objects: &mut ObjMap, config: &Config) -> (Map, Position) {
+    let mut map = Map::from_dims(10, 10);
+    let position = (1, 5);
+
+    for wall_y_pos in 2..8 {
+        let pos: (i32, i32) = (5, wall_y_pos);
+        map[pos] = Tile::empty();
+        map[pos].left_wall = Wall::ShortWall;
+    }
+  
+    objects.insert(make_orc(config, 9, 5));
+
+    map.update_map();
+
+    return (map, Position::from_pair(position));
 }
 

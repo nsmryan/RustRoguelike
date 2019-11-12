@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io::BufReader;
 
+use slotmap::dense::*;
+
 use rexpaint::*;
 
 use roguelike_core::constants::*;
@@ -11,13 +13,13 @@ use roguelike_core::config::*;
 
 
 // TODO put this in a separate file
-pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map, (i32, i32)) {
+pub fn read_map_xp(config: &Config, file_name: &str) -> (ObjMap, Map, (i32, i32)) {
     let file = File::open(file_name).unwrap();
     let mut buf_reader = BufReader::new(file);
     let xp = XpFile::read(&mut buf_reader).unwrap();
 
     let mut map = Map::from_dims(xp.layers[0].width, xp.layers[0].height);
-    let mut objects = Vec::new();
+    let mut objects = DenseSlotMap::new();
     let mut player_position = (0, 0);
 
 
@@ -206,11 +208,11 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map, (i32,
                     MAP_LAYER_ENTITIES => {
                         match chr as u8 {
                             ENTITY_ORC => {
-                                objects.push(make_orc(config, x as i32, y as i32));
+                                objects.insert(make_orc(config, x as i32, y as i32));
                             }
 
                             ENTITY_SWIRL_CIRCLE => {
-                                objects.push(make_kobold(config, x as i32, y as i32));
+                                objects.insert(make_kobold(config, x as i32, y as i32));
                             }
 
                             ENTITY_ORB => {
@@ -219,7 +221,7 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (Vec<Object>, Map, (i32,
 
                             ENTITY_GOBLIN => {
                                 // TODO should be different from kobold
-                                objects.push(make_kobold(config, x as i32, y as i32));
+                                objects.insert(make_kobold(config, x as i32, y as i32));
                             }
 
                             MAP_EMPTY => {

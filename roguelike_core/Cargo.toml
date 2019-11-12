@@ -9,6 +9,8 @@ edition = "2018"
 [dependencies]
 tcod = "0.13"
 
+slotmap = "0.4"
+
 rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
 
 num = "0.2"

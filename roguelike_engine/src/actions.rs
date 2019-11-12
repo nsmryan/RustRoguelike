@@ -20,9 +20,11 @@ pub fn handle_input(input_action: InputAction,
                     config: &Config) -> PlayerAction {
     use PlayerAction::*;
 
+    let player_handle = game_data.find_player().unwrap();
+
     let player_action: PlayerAction;
 
-    let player_alive = game_data.objects[PLAYER].alive;
+    let player_alive = game_data.objects.get(player_handle).unwrap().alive;
 
     if mouse_state.left_pressed {
         // TODO add back in with new inventory
@@ -49,8 +51,7 @@ pub fn handle_input(input_action: InputAction,
         match (input_action, player_alive) {
             (InputAction::Move(move_action), true) => {
                 player_action = player_move_or_attack(move_action,
-                                                      &mut game_data.map,
-                                                      &mut game_data.objects);
+                                                      game_data)
             }
 
             (InputAction::FullScreen, _) => {
@@ -59,8 +60,9 @@ pub fn handle_input(input_action: InputAction,
             },
 
             (InputAction::Pickup, true) => {
-                let item_id = game_data.objects.iter().position(|object| {
-                    object.pos() == game_data.objects[PLAYER].pos() && object.item.is_some()
+                let player = &game_data.objects[player_handle];
+                let item_id = game_data.objects.values().position(|object| {
+                    return (object.pos() == player.pos()) && object.item.is_some();
                 });
                 if let Some(_item_id) = item_id {
                     // TODO add back in with new inventory
@@ -100,10 +102,12 @@ pub fn handle_input(input_action: InputAction,
             }
 
             (InputAction::GodMode, true) => {
-                let fighter = game_data.objects[PLAYER].fighter.unwrap();
                 let god_mode_hp = 1000000;
-                game_data.objects[PLAYER].fighter =
-                    Some(Fighter { hp: god_mode_hp, max_hp: god_mode_hp, ..fighter });
+                let handle = game_data.find_player().unwrap();
+                if let Some(ref mut fighter) = game_data.objects[handle].fighter {
+                    fighter.hp = god_mode_hp;
+                    fighter.max_hp = god_mode_hp;
+                }
 
                 // set god mode flag
                 *god_mode = true;
@@ -181,8 +185,8 @@ pub fn throw_stone(pos: (i32, i32),
                    objects: &mut Vec<Object>) {
     let (mx, my) = pos;
 
-    let start_x = objects[PLAYER].x;
-    let start_y = objects[PLAYER].y;
+    let start_x = objects.get(PLAYER).unwrap().x;
+    let start_y = objects.get(PLAYER).unwrap().y;
     let end_x = mx / FONT_WIDTH;
     let end_y = my / FONT_HEIGHT;
     let throw_line = Line::new((start_x, start_y), (end_x, end_y));

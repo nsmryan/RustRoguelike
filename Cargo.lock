@@ -425,6 +425,7 @@ dependencies = [
  "serde 1.0.97 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.97 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slotmap 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tcod 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -441,6 +442,7 @@ dependencies = [
  "serde 1.0.97 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.97 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slotmap 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tcod 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -509,6 +511,11 @@ dependencies = [
  "ryu 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.97 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "slotmap"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "spin"
@@ -626,6 +633,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum serde 1.0.97 (registry+https://github.com/rust-lang/crates.io-index)" = "d46b3dfedb19360a74316866cef04687cd4d6a70df8e6a506c63512790769b72"
 "checksum serde_derive 1.0.97 (registry+https://github.com/rust-lang/crates.io-index)" = "c22a0820adfe2f257b098714323563dd06426502abbbce4f51b72ef544c5027f"
 "checksum serde_json 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)" = "051c49229f282f7c6f3813f8286cc1e3323e8051823fce42c7ea80fe13521704"
+"checksum slotmap 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c46a3482db8f247956e464d783693ece164ca056e6e67563ee5505bdb86452cd"
 "checksum spin 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "44363f6f51401c34e7be73db0db371c04705d35efbe9f7d6082e03a921a32c55"
 "checksum syn 0.15.39 (registry+https://github.com/rust-lang/crates.io-index)" = "b4d960b829a55e56db167e861ddb43602c003c7be0bee1d345021703fac2fb7c"
 "checksum tcod 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4215847dcd550444c334bbdf89a7ddf575eef21e4da86c13f6dfa97400048a59"

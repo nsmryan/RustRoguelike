@@ -1,29 +1,44 @@
 use std::convert::Into;
-use std::cmp;
 
 use serde_derive::*;
 
 use num::clamp;
+
+use slotmap::dense::*;
+use slotmap::DefaultKey;
 
 use crate::map::*;
 use crate::constants::*;
 use crate::movement::*;
 
 
-pub type ObjectId = usize;
+// TODO consider using custom key types to distinguish
+// muliple maps
+pub type ObjectId = DefaultKey;
 
+pub type ObjMap = DenseSlotMap<ObjectId, Object>;
 
 pub struct GameData {
     pub map: Map,
-    pub objects: Vec<Object>,
+    pub objects: ObjMap,
 }
 
 impl GameData {
-    pub fn new(map: Map, objects: Vec<Object>) -> GameData {
+    pub fn new(map: Map, objects: ObjMap) -> GameData {
         GameData {
             map,
             objects,
         }
+    }
+
+    pub fn find_player(&self) -> Option<ObjectId> {
+        for (key, object) in self.objects.iter() {
+            if object.name == "player" {
+                return Some(key);
+            }
+        }
+
+        return None;
     }
 }
 
@@ -129,32 +144,6 @@ pub enum Behavior {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum AiAction {
-    Move((i32, i32)),
-    Attack(ObjectId, (i32, i32)),
-    StateChange(Behavior),
-}
-
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct AiTurn(Vec<AiAction>);
-
-impl AiTurn {
-    pub fn new() -> AiTurn {
-        return AiTurn(Vec::new());
-    }
-
-    pub fn add(&mut self, action: AiAction) {
-        self.0.push(action);
-    }
-
-    pub fn actions(self) -> Vec<AiAction> {
-        return self.0;
-    }
-}
-
-
-#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Fighter {
     pub max_hp: i32,
     pub hp: i32,
@@ -229,28 +218,6 @@ impl Momentum {
         self.my = 0;
     }
 }
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Movement {
-    Move(i32, i32),
-    Attack(i32, i32, ObjectId),
-    Collide(i32, i32),
-    WallKick(i32, i32, i32, i32), // x, y, dir_x, dir_y
-    JumpWall(i32, i32),
-}
-
-impl Movement {
-    pub fn xy(&self) -> (i32, i32) {
-        match self {
-            Movement::Move(x, y) => (*x, *y),
-            Movement::Attack(x, y, _) => (*x, *y),
-            Movement::Collide(x, y) => (*x, *y),
-            Movement::WallKick(x, y, _, _) => (*x, *y),
-            Movement::JumpWall(x, y) => (*x, *y),
-        }
-    }
-}
-
 
 #[derive(Clone, Copy, Debug)]
 pub struct Rect  {
@@ -401,17 +368,6 @@ impl Object {
         }
     }
 
-    pub fn attack(&mut self, target: &mut Object) {
-        let damage = self.fighter.map_or(0, |f| f.power) - target.fighter.map_or(0, |f| f.defense);
-
-        if damage > 0 {
-            //messages.message(format!("{} attacks {} for {} hit points.", self.name, target.name, damage), WHITE);
-            target.take_damage(damage);
-        } else {
-            //messages.message(format!("{} attacks {} but it has no effect!", self.name, target.name), WHITE);
-        }
-    }
-
     pub fn heal(&mut self, amount: i32) {
         if let Some(ref mut fighter) = self.fighter {
             fighter.hp += amount;
@@ -422,15 +378,3 @@ impl Object {
     }
 }
 
-// TODO move to a utlities module
-pub fn mut_two<T>(first_index: usize, second_index: usize, items: &mut [T]) -> (&mut T, &mut T) {
-    assert!(first_index != second_index);
-
-    let split_at_index = cmp::max(first_index, second_index);
-    let (first_slice, second_slice) = items.split_at_mut(split_at_index);
-    if first_index < second_index {
-        (&mut first_slice[first_index], &mut second_slice[0])
-    } else {
-        (&mut second_slice[0], &mut first_slice[second_index])
-    }
-}

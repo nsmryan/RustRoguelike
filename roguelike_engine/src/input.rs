@@ -15,6 +15,7 @@ pub enum InputAction {
     ToggleOverlays,
     GodMode,
     FullScreen,
+    RegenMap,
     None,
 }
 

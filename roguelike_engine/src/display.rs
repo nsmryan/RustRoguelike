@@ -57,13 +57,15 @@ impl Area {
 }
 
 
-pub fn get_objects_under_mouse(x: i32, y: i32, objects: &[Object], map: &Map) -> Vec<ObjectId> {
+pub fn get_objects_under_mouse(x: i32,
+                               y: i32,
+                               data: &GameData) -> Vec<ObjectId> {
     let mut object_ids = Vec::new();
 
-    for object_index in 0..objects.len() {
-        if objects[object_index].pos() == (x, y) {
-            if map.is_in_fov(x, y) {
-                object_ids.push(object_index);
+    for key in data.objects.keys() {
+        if data.objects[key].pos() == (x, y) {
+            if data.map.is_in_fov(x, y) {
+                object_ids.push(key);
             }
         }
     }
@@ -86,24 +88,24 @@ pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
 // it uses a highlight color, which is nice, and 
 // checks for clear paths.
 pub fn draw_movement_overlay(display_state: &mut DisplayState,
-                             map: &Map,
+                             data: &GameData,
                              id: ObjectId,
                              area: &Area,
-                             config: &Config,
-                             objects: &[Object]) -> Vec<(i32, i32)> {
+                             config: &Config) -> Vec<(i32, i32)> {
     let mut added_positions = Vec::new();
 
     let color = config.color_warm_grey;
 
-    if let Some(movement) = objects[id].movement {
+    if let Some(movement) = data.objects[id].movement {
         let offsets = movement.offsets();
         for offset in offsets {
-            let x = objects[id].x as i32 + offset.0;
-            let y = objects[id].y as i32 + offset.1;
+            let x = data.objects[id].x as i32 + offset.0;
+            let y = data.objects[id].y as i32 + offset.1;
 
-            if clear_path(map, (objects[id].x as i32, objects[id].y as i32), 
-                              (x, y),
-                              &objects) {
+            if clear_path(&data.map,
+                          (data.objects[id].x as i32, data.objects[id].y as i32), 
+                          (x, y),
+                          &data.objects) {
                 draw_char(display_state, '.', x, y, color, area);
 
                 added_positions.push((x, y));
@@ -115,24 +117,24 @@ pub fn draw_movement_overlay(display_state: &mut DisplayState,
 }
 
 pub fn draw_attack_overlay(display_state: &mut DisplayState,
-                           map: &Map,
                            id: ObjectId,
                            config: &Config,
                            area: &Area,
-                           objects: &[Object]) -> Vec<(i32, i32)> {
+                           data: &GameData) -> Vec<(i32, i32)> {
     let mut added_positions = Vec::new();
 
     let color = config.color_warm_grey;
 
-    if let Some(attack) = objects[id].attack {
+    if let Some(attack) = data.objects[id].attack {
         let offsets = attack.offsets();
         for offset in offsets {
-            let x = objects[id].x as i32 + offset.0;
-            let y = objects[id].y as i32 + offset.1;
+            let x = data.objects[id].x as i32 + offset.0;
+            let y = data.objects[id].y as i32 + offset.1;
 
-            if clear_path(map, (objects[id].x as i32, objects[id].y as i32), 
-                              (x, y),
-                              &objects) {
+            if clear_path(&data.map,
+                          (data.objects[id].x as i32, data.objects[id].y as i32), 
+                          (x, y),
+                          &data.objects) {
                 draw_char(display_state, 'x', x, y, color, area);
 
                 added_positions.push((x, y));
@@ -305,26 +307,27 @@ pub fn render_map(display_state: &mut DisplayState,
 }
 
 pub fn render_objects(display_state: &mut DisplayState,
-                      map: &Map,
-                      objects: &[Object],
+                      data: &GameData,
                       area: &Area) {
     let to_draw: Vec<_> =
-        objects.iter().filter(|o| {
-            map.is_in_fov(o.x, o.y)
+        data.objects.keys().filter(|key| {
+            data.map.is_in_fov(data.objects[*key].x, data.objects[*key].y)
         }).collect();
     // to_draw.sort_by(|o1, o2| { o1.blocks.cmp(&o2.blocks) });
 
-    for object in &to_draw {
+    for key in &to_draw {
+        let object = &data.objects[*key];
         draw_char(display_state, object.chr, object.x, object.y, object.color, area);
     }
 }
 
 pub fn render_overlays(display_state: &mut DisplayState,
                        mouse_state: &MouseState,
-                       map: &Map,
-                       objects: &[Object],
+                       data: &GameData,
                        area: &Area,
                        config: &Config) {
+    let player_handle = data.find_player().unwrap();
+
     // Draw player action overlay. Could draw arrows to indicate how to reach each location
     let mut highlight_color = config.color_warm_grey;
     highlight_color.a = config.highlight_alpha;
@@ -334,7 +337,11 @@ pub fn render_overlays(display_state: &mut DisplayState,
         // for all movements except staying still
         if *move_action != MoveAction::Center {
             // calculate the move that would occur
-            if let Some(movement) = calculate_move(*move_action, objects[PLAYER].movement.unwrap(), PLAYER, objects, map) {
+            if let Some(movement) =
+                calculate_move(*move_action,
+                               data.objects[player_handle].movement.unwrap(),
+                               player_handle,
+                               data) {
                 // draw a highlight on that square
                 let xy = movement.xy();
                 draw_char(display_state, MAP_EMPTY_CHAR as char, xy.0, xy.1, highlight_color, area);
@@ -345,13 +352,13 @@ pub fn render_overlays(display_state: &mut DisplayState,
     let mut attack_highlight_color = config.color_red;
     attack_highlight_color.a = config.highlight_alpha;
     // Draw monster attack overlay
-    let font_width = (SCREEN_WIDTH / map.width() as u32) as i32;
-    let font_height = (SCREEN_HEIGHT / map.height() as u32) as i32;
+    let font_width = (SCREEN_WIDTH / data.map.width() as u32) as i32;
+    let font_height = (SCREEN_HEIGHT / data.map.height() as u32) as i32;
     let mouse_x = mouse_state.x as i32 / font_width;
     let mouse_y = mouse_state.y as i32 / font_height;
-    let object_ids =  get_objects_under_mouse(mouse_x, mouse_y, objects, map);
+    let object_ids =  get_objects_under_mouse(mouse_x, mouse_y, data);
     for object_id in object_ids.iter() {
-        if let Some(reach) = objects[*object_id].attack {
+        if let Some(reach) = data.objects[*object_id].attack {
             let attack_positions = 
                 reach.offsets()
                      .iter()
@@ -368,37 +375,38 @@ pub fn render_overlays(display_state: &mut DisplayState,
 
 pub fn render_all(display_state: &mut DisplayState,
                   mouse_state: &mut MouseState,
-                  objects: &[Object],
-                  map: &mut Map,
+                  data: &mut GameData,
                   config: &Config)  -> Result<(), String> {
 
-    map.compute_fov(objects[PLAYER].x, objects[PLAYER].y, FOV_RADIUS);
+    let player_handle = data.find_player().unwrap();
+
+    data.map.compute_fov(data.objects[player_handle].x,
+                    data.objects[player_handle].y,
+                    FOV_RADIUS);
 
     let screen_rect = display_state.canvas.output_size()?;
     let area = Area::new(0.0,
                          0.0,
-                         (screen_rect.0 as f32/ map.width() as f32) as usize,
-                         (screen_rect.1 as f32/ map.height() as f32) as usize);
+                         (screen_rect.0 as f32 / data.map.width() as f32) as usize,
+                         (screen_rect.1 as f32 / data.map.height() as f32) as usize);
 
     render_background(display_state,
-                      map,
+                      &mut data.map,
                       &area,
                       config);
 
     render_map(display_state,
-               map,
+               &mut data.map,
                &area,
                config);
 
     render_objects(display_state,
-                   map,
-                   objects,
+                   data,
                    &area);
 
     render_overlays(display_state,
                     mouse_state,
-                    map,
-                    objects,
+                    data,
                     &area,
                     config);
 
@@ -425,7 +433,8 @@ pub fn render_all(display_state: &mut DisplayState,
 
             "map" => {
                 let ((_x_offset, _y_offset), _scaler) =
-                    plot.fit(map.width() as usize * FONT_WIDTH as usize, map.height() as usize * FONT_HEIGHT as usize);
+                    plot.fit(data.map.width() as usize * FONT_WIDTH as usize,
+                             data.map.height() as usize * FONT_HEIGHT as usize);
             }
 
             "inspector" => {

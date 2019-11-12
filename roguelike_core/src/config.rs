@@ -1,6 +1,6 @@
 use crate::types::*;
+use crate::map::*;
 
-use serde::*;
 use serde_derive::*;
 
 
@@ -28,9 +28,9 @@ pub struct Config {
     pub color_soft_green: Color,
     pub color_light_grey: Color,
     pub fov_distance: i32,
-    pub load_map_file: bool,
     pub load_map_file_every_frame: bool,
     pub tile_noise_scaler: f64,
     pub highlight_alpha: u8,
+    pub map_load: MapLoadConfig,
 }
 

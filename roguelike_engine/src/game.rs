@@ -6,6 +6,8 @@ use std::hash::{Hash, Hasher};
 
 use rand::prelude::*;
 
+use slotmap::dense::*;
+
 use roguelike_core::constants::*;
 use roguelike_core::generation::*;
 use roguelike_core::types::*;
@@ -53,31 +55,43 @@ impl<'a> Game<'a> {
 
         let previous_player_position = (-1, -1);
 
-        let mut objects = vec!(make_player(&config));
-
+        let mut objects = DenseSlotMap::with_capacity(INITIAL_OBJECT_CAPACITY);
         let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
 
         let map;
         let player_position;
-        if config.load_map_file {
-            let (new_objects, new_map, mut position) = read_map_xp(&config, "map.xp");
-            objects.extend(new_objects);
-            map = new_map;
-            if position == (0, 0) {
-                position = (map.width() / 2, map.height() / 2);
+        match config.map_load {
+            MapLoadConfig::FromFile => {
+                let (new_objects, new_map, mut position) = read_map_xp(&config, "map.xp");
+                objects.clear();
+                for object in new_objects.values() {
+                    objects.insert(object.clone());
+                }
+                map = new_map;
+                if position == (0, 0) {
+                    position = (map.width() / 2, map.height() / 2);
+                }
+                player_position = position;
             }
-            player_position = position;
-        } else {
-            let (new_map, position) = make_map(&mut objects, &config, &mut rng);
-            map = new_map;
-            player_position = position.into_pair();
-        }
-        let player_x = player_position.0;
-        let player_y = player_position.1;
-        objects[PLAYER].x = player_x;
-        objects[PLAYER].y = player_y;
 
-        let data = GameData::new(map, objects);
+            MapLoadConfig::Random => {
+                let (new_map, position) = make_map(&mut objects, &config, &mut rng);
+                map = new_map;
+                player_position = position.into_pair();
+            }
+
+            MapLoadConfig::TestWall => {
+                let (new_map, position) = make_wall_test_map(&mut objects, &config);
+                map = new_map;
+                player_position = position.into_pair();
+            }
+        }
+
+        let mut data = GameData::new(map, objects);
+
+        let player_handle = data.objects.insert(make_player(&config));
+        data.objects[player_handle].x = player_position.0;
+        data.objects[player_handle].y = player_position.1;
 
         let state = Game {
             config,
@@ -135,8 +149,12 @@ impl<'a> Game<'a> {
     }
 
     pub fn step_playing(&mut self) -> bool {
+        let player_handle = self.data.find_player().unwrap();
+
         /* Player Action and Animations */
-        self.settings.previous_player_position = (self.data.objects[PLAYER].x, self.data.objects[PLAYER].y);
+        self.settings.previous_player_position =
+            (self.data.objects[player_handle].x, self.data.objects[player_handle].y);
+
         let player_action;
         player_action = 
             actions::handle_input(self.input_action,
@@ -158,35 +176,44 @@ impl<'a> Game<'a> {
         }
 
         /* Check Exit Condition */
-        if exit_condition_met(&self.data.map, &mut self.data.objects) {
+        if exit_condition_met(&self.data) {
             self.state = GameState::Win;
         }
 
         /* AI */
-        if self.data.objects[PLAYER].alive && player_action == PlayerAction::TookTurn {
-            for id in 1..self.data.objects.len() {
-                if self.data.objects[id].ai.is_some() &&
-                   self.data.objects[id].fighter.is_some() {
-                    ai_take_turn(id, &mut self.data.map, &mut self.data.objects);
-                    if let Some(fighter) = self.data.objects[id].fighter {
-                        if fighter.hp <= 0 {
-                            self.data.objects[id].alive = false;
-                            self.data.objects[id].chr = '%';
-                            self.data.objects[id].color = self.config.color_red;
-                            self.data.objects[id].fighter = None;
-                        }
+        if self.data.objects[player_handle].alive && player_action == PlayerAction::TookTurn {
+            let mut ai_handles = Vec::new();
+
+            for key in self.data.objects.keys() {
+                if self.data.objects[key].ai.is_some() &&
+                   self.data.objects[key].fighter.is_some() {
+                       ai_handles.push(key);
+                   }
+            }
+
+            for key in ai_handles {
+                ai_take_turn(key, &mut self.data);
+                if let Some(fighter) = self.data.objects[key].fighter {
+                    if fighter.hp <= 0 {
+                        self.data.objects[key].alive = false;
+                        self.data.objects[key].chr = '%';
+                        self.data.objects[key].color = self.config.color_red;
+                        self.data.objects[key].fighter = None;
                     }
                 }
             }
         }
 
         // check is player lost all hp
-        if let Some(fighter) = self.data.objects[PLAYER].fighter {
+        if let Some(fighter) = self.data.objects[player_handle].fighter {
             if fighter.hp <= 0 {
-                self.data.objects[PLAYER].alive = false;
-                self.data.objects[PLAYER].chr = '%';
-                self.data.objects[PLAYER].color = self.config.color_red;
-                self.data.objects[PLAYER].fighter = None;
+                {
+                    let player = self.data.objects.get_mut(player_handle).unwrap();
+                    player.alive = false;
+                    player.chr = '%';
+                    player.color = self.config.color_red;
+                    player.fighter = None;
+                }
 
                 if self.state == GameState::Playing {
                     self.state = GameState::Lose;
@@ -207,15 +234,17 @@ impl<'a> Game<'a> {
         if self.config.load_map_file_every_frame && Path::new("map.xp").exists() {
             let (new_objects, new_map, _) = read_map_xp(&self.config, "map.xp");
             self.data.map = new_map;
-            let player = self.data.objects[0].clone();
             self.data.objects.clear();
-            self.data.objects.push(player);
-            self.data.objects.extend(new_objects);
+            for key in new_objects.keys() {
+                self.data.objects.insert(new_objects[key].clone());
+            }
         }
 
         /* Recompute FOV */
-        if self.settings.previous_player_position != (self.data.objects[PLAYER].x, self.data.objects[PLAYER].y) {
-            self.data.map.compute_fov(self.data.objects[PLAYER].x, self.data.objects[PLAYER].y, FOV_RADIUS);
+        if self.settings.previous_player_position != (self.data.objects.get(player_handle).unwrap().x, self.data.objects.get(player_handle).unwrap().y) {
+            self.data.map.compute_fov(self.data.objects[player_handle].x,
+                                      self.data.objects[player_handle].y,
+                                      FOV_RADIUS);
         }
 
         self.input_action = InputAction::None;
@@ -255,7 +284,7 @@ impl<'a> Game<'a> {
 
 // TODO figure out where to put this. should depend on state
 /// Check whether the exit condition for the game is met.
-fn exit_condition_met(map: &Map, objects: &[Object]) -> bool {
+fn exit_condition_met(data: &GameData) -> bool {
     // loop over objects in inventory, and check whether any
     // are the goal object.
     //let has_goal =
@@ -263,8 +292,9 @@ fn exit_condition_met(map: &Map, objects: &[Object]) -> bool {
     // TODO add back in with new inventory!
     let has_goal = false;
 
-    let player_pos = (objects[PLAYER].x, objects[PLAYER].y);
-    let on_exit_tile = map[player_pos].tile_type == TileType::Exit;
+    let player_handle = data.find_player().unwrap();
+    let player_pos = (data.objects[player_handle].x, data.objects[player_handle].y);
+    let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
 
     let exit_condition = has_goal && on_exit_tile;
 
