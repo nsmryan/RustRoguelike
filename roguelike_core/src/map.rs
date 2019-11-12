@@ -208,7 +208,12 @@ impl Map {
 
         let mut blocked = false;
 
-        for pos in line.into_iter() {
+        // ensure that the starting position is looked at
+        let mut positions = Vec::new();
+        positions.push((start_x, start_y));
+        positions.extend(line.into_iter());
+
+        for pos in positions {
             let (x, y) = pos;
 
             // do not test last position
@@ -227,6 +232,8 @@ impl Map {
             } else if move_y <= -1 {
                 blocked |= self[(x, y + move_y)].bottom_wall != Wall::Empty;
             }
+
+            dbg!(pos, blocked);
 
             if blocked {
                 break;
@@ -260,10 +267,10 @@ impl Map {
     }
 
     pub fn is_in_fov(&self, x: i32, y: i32) -> bool {
-        let wall_in_path = self.is_blocked_by_wall(x,
-                                                   y,
-                                                   self.fov_pos.0 - x,
-                                                   self.fov_pos.1 - y);
+        let wall_in_path = self.is_blocked_by_wall(self.fov_pos.0,
+                                                   self.fov_pos.1,
+                                                   x - self.fov_pos.0,
+                                                   y - self.fov_pos.1);
 
         return !wall_in_path && self.fov.is_in_fov(x, y);
     }
@@ -513,7 +520,7 @@ pub fn make_tcod_map(tiles: &Vec<Vec<Tile>>) -> tcod::map::Map {
 
 
 #[test]
-fn test_fov_blocked_by_wall() {
+fn test_fov_blocked_by_wall_right() {
     let mut map = Map::from_dims(10, 10);
 
     for wall_y_pos in 2..8 {
@@ -527,6 +534,59 @@ fn test_fov_blocked_by_wall() {
     let position = (4, 5);
     map.compute_fov(position.0, position.1, 7);
 
-    assert!(!map.is_in_fov(9, 5));
+    assert!(map.is_in_fov(9, 5) == false);
 }
 
+#[test]
+fn test_fov_blocked_by_wall_left() {
+    let mut map = Map::from_dims(10, 10);
+
+    for wall_y_pos in 2..8 {
+        let pos: (i32, i32) = (5, wall_y_pos);
+        map[pos] = Tile::empty();
+        map[pos].left_wall = Wall::ShortWall;
+    }
+  
+    map.update_map();
+
+    let position = (9, 5);
+    map.compute_fov(position.0, position.1, 7);
+
+    assert!(map.is_in_fov(4, 5) == false);
+}
+
+#[test]
+fn test_fov_blocked_by_wall_up() {
+    let mut map = Map::from_dims(10, 10);
+
+    for wall_x_pos in 2..8 {
+        let pos: (i32, i32) = (wall_x_pos, 5);
+        map[pos] = Tile::empty();
+        map[pos].bottom_wall = Wall::ShortWall;
+    }
+  
+    map.update_map();
+
+    let position = (5, 9);
+    map.compute_fov(position.0, position.1, 7);
+
+    assert!(map.is_in_fov(5, 5) == false);
+}
+
+#[test]
+fn test_fov_blocked_by_wall_down() {
+    let mut map = Map::from_dims(10, 10);
+
+    for wall_x_pos in 2..8 {
+        let pos: (i32, i32) = (wall_x_pos, 5);
+        map[pos] = Tile::empty();
+        map[pos].bottom_wall = Wall::ShortWall;
+    }
+  
+    map.update_map();
+
+    let position = (5, 1);
+    map.compute_fov(position.0, position.1, 7);
+
+    assert!(map.is_in_fov(5, 6) == false);
+}
