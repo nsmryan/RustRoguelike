@@ -215,8 +215,8 @@ impl Collision {
 
 /// Check whether a move, given as an offset from an object's current position,
 /// hits a wall or object.
-pub fn move_valid(handle: ObjectId, objects: &ObjMap, dx: i32, dy: i32, map: &Map) -> bool {
-    return check_collision(handle, objects, dx, dy, map).no_collsion();
+pub fn move_valid(x: i32, y: i32, dx: i32, dy: i32, data: &GameData) -> bool {
+    return check_collision(x, y, dx, dy, data).no_collsion();
 }
 
 pub fn line_inclusive(x: i32, y: i32, dx: i32, dy: i32) -> impl Iterator<Item=(i32, i32)> {
@@ -228,24 +228,23 @@ pub fn line_inclusive(x: i32, y: i32, dx: i32, dy: i32) -> impl Iterator<Item=(i
 }
 
 pub fn move_just_before(handle: ObjectId,
-                        objects: &ObjMap,
                         dx: i32,
                         dy: i32,
-                        map: &Map) -> Option<(i32, i32)> {
-    let x = objects.get(handle).unwrap().x;
-    let y = objects.get(handle).unwrap().y;
+                        data: &GameData) -> Option<(i32, i32)> {
+    let x = data.objects[handle].x;
+    let y = data.objects[handle].y;
     let move_line = Line::new((x, y), (x + dx, y + dy));
 
     let mut pos = None;
     let mut collided = false;
 
     for (x_pos, y_pos) in move_line.into_iter() {
-        if !map.is_within_bounds(x_pos, y_pos) {
+        if !data.map.is_within_bounds(x_pos, y_pos) {
             break;
         }
 
-        if is_blocked(map, x_pos, y_pos, objects) ||
-           map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
+        if is_blocked(x_pos, y_pos, data) ||
+           data.map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
                 collided = true;
                 break;
         }
@@ -262,27 +261,25 @@ pub fn move_just_before(handle: ObjectId,
 
 /// Moves the given object with a given offset, returning the square that it collides with, or None
 /// indicating no collision.
-pub fn check_collision(handle: ObjectId,
-                       objects: &ObjMap,
+pub fn check_collision(x: i32,
+                       y: i32,
                        dx: i32,
                        dy: i32,
-                       map: &Map) -> Collision {
-    let x = objects.get(handle).unwrap().x;
-    let y = objects.get(handle).unwrap().y;
+                       data: &GameData) -> Collision {
     let move_line = Line::new((x, y), (x + dx, y + dy));
 
     let mut last_pos = (x, y);
     let mut result: Collision = Collision::NoCollision(x + dx, y + dy);
 
-    if !map.is_within_bounds(x + dx, y + dy) {
+    if !data.map.is_within_bounds(x + dx, y + dy) {
         result = Collision::Wall((x, y), (x, y));
     } else {
         for (x_pos, y_pos) in move_line.into_iter() {
-            if is_blocked(map, x_pos, y_pos, objects) {
-                if map[(x_pos, y_pos)].blocked {
+            if is_blocked(x_pos, y_pos, data) {
+                if data.map[(x_pos, y_pos)].blocked {
                     result = Collision::BlockedTile((x_pos, y_pos), last_pos);
                 } else {
-                    for (key, object) in objects.iter() {
+                    for (key, object) in data.objects.iter() {
                         if object.pos() == (x_pos, y_pos) {
                             result = Collision::Entity(key, last_pos);
                             break;
@@ -292,7 +289,7 @@ pub fn check_collision(handle: ObjectId,
                 break;
             }
 
-            if map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
+            if data.map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
                 result = Collision::Wall((x_pos + dx, y_pos + dy), (x_pos, y_pos));
                 break;
             }
@@ -380,7 +377,7 @@ pub fn calculate_move(action: MoveAction,
     if let Some(delta_pos) = reach.move_with_reach(&action) {
         let (dx, dy) = delta_pos.into_pair();
         // check if movement collides with a blocked location or an entity
-        match check_collision(object_id, &data.objects, dx, dy, &data.map) {
+        match check_collision(x, y, dx, dy, data) {
             Collision::NoCollision(new_x, new_y) => {
                 // no collision- just move to location
                 movement = Some(Movement::Move(new_x, new_y));
@@ -395,7 +392,7 @@ pub fn calculate_move(action: MoveAction,
                     Some(momentum) => {
                         // if max momentum, and there is space beyond the wall, than jump over the wall.
                         if momentum.at_maximum() &&
-                            !is_blocked(&data.map, tile_x, tile_y, &data.objects) {
+                            !is_blocked(tile_x, tile_y, data) {
                                 movement = Some(Movement::JumpWall(tile_x, tile_y));
                         } else { // otherwise move normally, stopping just before the blocking tile
                             movement = Some(Movement::Move(new_x, new_y));
@@ -423,13 +420,13 @@ pub fn calculate_move(action: MoveAction,
     return movement;
 }
 
-pub fn is_blocked(map: &Map, x: i32, y: i32, objects: &ObjMap) -> bool {
-    if map[(x, y)].blocked {
+pub fn is_blocked(x: i32, y: i32, data: &GameData) -> bool {
+    if data.map[(x, y)].blocked {
         return true;
     }
 
     let mut is_blocked = false;
-    for object in objects.values() {
+    for object in data.objects.values() {
         if object.blocks && object.pos() == (x, y) {
             is_blocked = true;
             break;
@@ -439,11 +436,11 @@ pub fn is_blocked(map: &Map, x: i32, y: i32, objects: &ObjMap) -> bool {
     return is_blocked;
 }
 
-pub fn clear_path(map: &Map, start: (i32, i32), end: (i32, i32), objects: &ObjMap) -> bool {
+pub fn clear_path(start: (i32, i32), end: (i32, i32), data: &GameData) -> bool {
     let line = Line::new((start.0, start.1), (end.0, end.1));
 
     let path_blocked =
-        line.into_iter().any(|point| is_blocked(map, point.0, point.1, objects));
+        line.into_iter().any(|point| is_blocked(point.0, point.1, data));
 
     return !path_blocked;
 }

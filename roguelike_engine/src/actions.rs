@@ -90,8 +90,8 @@ pub fn handle_input(input_action: InputAction,
 
             (InputAction::RegenerateMap, _) => {
                 let mut rng: SmallRng = SeedableRng::seed_from_u64(2);
-                let (map_regen, _position) = make_map(&mut game_data.objects, config, &mut rng);
-                game_data.map.tiles = map_regen.tiles;
+                let (data, _position) = make_map(&mut game_data.objects, config, &mut rng);
+                game_data.map = data.map;
                 player_action = DidntTakeTurn;
             }
 

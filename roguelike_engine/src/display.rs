@@ -103,10 +103,9 @@ pub fn draw_movement_overlay(display_state: &mut DisplayState,
             let x = data.objects[id].x as i32 + offset.0;
             let y = data.objects[id].y as i32 + offset.1;
 
-            if clear_path(&data.map,
-                          (data.objects[id].x as i32, data.objects[id].y as i32), 
+            if clear_path((data.objects[id].x as i32, data.objects[id].y as i32), 
                           (x, y),
-                          &data.objects) {
+                          data) {
                 draw_char(display_state, '.', x, y, color, area);
 
                 added_positions.push((x, y));
@@ -132,10 +131,9 @@ pub fn draw_attack_overlay(display_state: &mut DisplayState,
             let x = data.objects[id].x as i32 + offset.0;
             let y = data.objects[id].y as i32 + offset.1;
 
-            if clear_path(&data.map,
-                          (data.objects[id].x as i32, data.objects[id].y as i32), 
+            if clear_path((data.objects[id].x as i32, data.objects[id].y as i32), 
                           (x, y),
-                          &data.objects) {
+                          data) {
                 draw_char(display_state, 'x', x, y, color, area);
 
                 added_positions.push((x, y));
@@ -409,6 +407,8 @@ pub fn render_all(display_state: &mut DisplayState,
                          0.0,
                          (screen_rect.0 as f32 / data.map.width() as f32) as usize,
                          (screen_rect.1 as f32 / data.map.height() as f32) as usize);
+    dbg!(area.font_width);
+    dbg!(area.font_height);
 
     render_background(display_state,
                       data,

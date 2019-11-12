@@ -40,7 +40,7 @@ pub fn location_within_fov(map: &mut Map, monster_pos: Position, player_pos: Pos
 pub fn move_by(handle: ObjectId, dx: i32, dy: i32, data: &mut GameData) {
     let (x, y) = data.objects.get(handle).unwrap().pos();
 
-    if !is_blocked(&data.map, x + dx, y + dy, &data.objects){
+    if !is_blocked(x + dx, y + dy, data) {
         data.objects.get_mut(handle).unwrap().set_pos(x + dx, y + dy);
     }
 }
@@ -92,7 +92,7 @@ pub fn ai_attack(monster_handle: ObjectId,
                 move_positions
                 .iter()
                 .filter(|(x, y)| data.map.is_in_fov(monster_x, monster_y, *x, *y, MONSTER_VIEW_DIST) &&
-                                 !is_blocked(&data.map, *x, *y, &data.objects))
+                                 !is_blocked(*x, *y, data))
                 .filter(|new_pos| ai_can_hit_target(**new_pos, (target_x, target_y), &attack).is_some())
                 .map(|pair| *pair)
                 .collect();

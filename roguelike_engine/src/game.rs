@@ -75,8 +75,9 @@ impl<'a> Game<'a> {
             }
 
             MapLoadConfig::Random => {
-                let (new_map, position) = make_map(&mut objects, &config, &mut rng);
-                map = new_map;
+                let (game_data, position) = make_map(&mut objects, &config, &mut rng);
+                // TODO consider using objects as well here on regen?
+                map = game_data.map;
                 player_position = position.into_pair();
             }
 

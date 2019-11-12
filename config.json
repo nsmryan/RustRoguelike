@@ -130,6 +130,6 @@
     "load_map_file_every_frame": false,
     "tile_noise_scaler": 4.0,
     "highlight_alpha": 76,
-    "map_load": "TestWall"
+    "map_load": "Random"
 }
 

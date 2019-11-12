@@ -400,7 +400,8 @@ pub fn near_tile_type(map: &Map, position: (i32, i32), tile_type: TileType) -> b
     for offset in neighbor_offsets {
         let neighbor_position = move_by(position, offset);
 
-        if map[neighbor_position].tile_type == tile_type {
+        if map.is_within_bounds(neighbor_position.0, neighbor_position.1) &&
+           map[neighbor_position].tile_type == tile_type {
             near_given_tile = true;
             break;
         }
@@ -438,8 +439,10 @@ pub fn place_line(map: &mut Map, start: (i32, i32), end: (i32, i32), tile: Tile)
     let mut line = Line::new(start, end);
 
     while let Some(pos) = line.step() {
-        map[pos] = tile;
-        positions.push(pos);
+        if map.is_within_bounds(pos.0, pos.1) {
+            map[pos] = tile;
+            positions.push(pos);
+        }
     }
 
     positions
