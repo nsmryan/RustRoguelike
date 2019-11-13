@@ -94,6 +94,9 @@ impl<'a> Game<'a> {
         data.objects[player_handle].x = player_position.0;
         data.objects[player_handle].y = player_position.1;
 
+        let stone_handle = data.objects.insert(make_stone(&config, -1, -1));
+        data.objects[player_handle].inventory.push(stone_handle);
+
         let state = Game {
             config,
             input_action: InputAction::None,

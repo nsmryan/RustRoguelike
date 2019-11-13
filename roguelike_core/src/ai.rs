@@ -37,6 +37,7 @@ pub fn location_within_fov(map: &mut Map, monster_pos: Position, player_pos: Pos
     return within_fov && within_sight_range;
 }
 
+// TODO consider moving to GameData
 pub fn move_by(handle: ObjectId, dx: i32, dy: i32, data: &mut GameData) {
     let (x, y) = data.objects[handle].pos();
 
@@ -190,36 +191,37 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
     let player_pos = Position::new(player_x, player_y);
     let monster_pos = Position::new(monster_x, monster_y);
 
-    match data.objects[monster_handle].behavior {
-        Some(Behavior::Idle) => {
-            let mut turn = AiTurn::new();
+    if data.map.is_within_bounds(monster_pos.0, monster_pos.1) {
+        match data.objects[monster_handle].behavior {
+            Some(Behavior::Idle) => {
+                let mut turn = AiTurn::new();
 
-            if location_within_fov(&mut data.map, monster_pos, player_pos) {
-                // TODO will cause a turn between seeing the player and attacking
-                turn.add(AiAction::StateChange(Behavior::Attacking(player_handle)));
-            } else if let Some(sound_pos) = data.map[(monster_x, monster_y)].sound {
-                let sound_position = Position::from_pair(sound_pos);
-                turn.add(AiAction::StateChange(Behavior::Investigating(sound_position)));
+                if location_within_fov(&mut data.map, monster_pos, player_pos) {
+                    // TODO will cause a turn between seeing the player and attacking
+                    turn.add(AiAction::StateChange(Behavior::Attacking(player_handle)));
+                } else if let Some(sound_pos) = data.map[(monster_x, monster_y)].sound {
+                    let sound_position = Position::from_pair(sound_pos);
+                    turn.add(AiAction::StateChange(Behavior::Investigating(sound_position)));
+                }
+
+                return turn;
             }
 
-            return turn;
-        }
+            Some(Behavior::Investigating(target_pos)) => {
+                return ai_investigate(target_pos, monster_handle, data);
+            }
 
-        Some(Behavior::Investigating(target_pos)) => {
-            ai_investigate(target_pos,
-                           monster_handle,
-                           data)
-        }
+            Some(Behavior::Attacking(object_handle)) => {
+                return ai_attack(monster_handle, object_handle, data);
+            }
 
-        Some(Behavior::Attacking(object_handle)) => {
-            ai_attack(monster_handle,
-                      object_handle,
-                      data)
+            ref behavior => {
+                panic!("Ai behavior {:?} unexpected!", behavior);
+            }
         }
-
-        ref behavior => {
-            panic!("Ai behavior {:?} unexpected!", behavior);
-        }
+    } else {
+        // position outside of map- return empty turn
+        return AiTurn::new();
     }
 }
 

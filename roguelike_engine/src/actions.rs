@@ -132,9 +132,9 @@ pub fn handle_input(input_action: InputAction,
     return player_action;
 }
 
-fn use_item(object_id: ObjectId,
-            item_id: ObjectId,
-            objects: &mut [Object]) {
+fn use_item(_object_id: ObjectId,
+            _item_id: ObjectId,
+            _objects: &mut [Object]) {
     //if let Some(item) = inventory[inventory_id].item {
     //    let _on_use = match item {
     //        Stone => unimplemented!(),

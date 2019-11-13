@@ -128,6 +128,7 @@ impl Plan {
     }
 }
 
+#[derive(Clone, PartialEq, Debug)]
 pub struct Plot {
     pub name: String,
     pub x: usize,

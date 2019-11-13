@@ -40,14 +40,17 @@ impl<'a> DisplayState<'a> {
 
 
 pub struct Area {
-    x_offset: f32,
-    y_offset: f32,
+    x_offset: i32,
+    y_offset: i32,
     font_width: usize,
     font_height: usize,
 }
 
 impl Area {
-    pub fn new(x_offset: f32, y_offset: f32, font_width: usize, font_height: usize) -> Area {
+    pub fn new(x_offset: i32,
+               y_offset: i32,
+               font_width: usize,
+               font_height: usize) -> Area {
         Area { x_offset,
                y_offset,
                font_width,
@@ -210,6 +213,57 @@ pub fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool)
     return color;
 }
 
+pub fn render_inventory(display_state: &mut DisplayState,
+                        data: &mut GameData,
+                        area: &Area, 
+                        config: &Config) {
+
+    // Render header
+    draw_text(display_state,
+              "Inventory".to_string(),
+              0,
+              0,
+              config.color_ice_blue,
+              area);
+
+    let player_handle = data.find_player().unwrap();
+
+    // Render each object's name in inventory
+    let mut y_pos = 2;
+    for obj_id in data.objects[player_handle].inventory.iter() {
+        let obj = &data.objects[*obj_id];
+
+        let color;
+        match obj.item {
+            Some(Item::Stone) => {
+                color = config.color_light_grey;
+            }
+            
+            _ => {
+                color = config.color_mint_green;
+            }
+        }
+
+        // place prompt character
+        draw_char(display_state,
+                  '*',
+                  0,
+                  y_pos,
+                  config.color_ice_blue,
+                  area);
+
+        // place object name
+        draw_text(display_state,
+                  format!(" {}", data.objects[*obj_id].name),
+                  1,
+                  y_pos,
+                  color,
+                  area);
+        
+        y_pos += 1;
+    }
+}
+
 pub fn render_background(display_state: &mut DisplayState,
                          data: &mut GameData,
                          area: &Area,
@@ -326,14 +380,21 @@ pub fn render_objects(display_state: &mut DisplayState,
     let player_pos = data.objects[player_handle].pos();
 
     for key in data.objects.keys() {
-        if settings.god_mode ||
-           data.map.is_in_fov(player_pos.0,
-                              player_pos.1,
-                              data.objects[key].x,
-                              data.objects[key].y,
-                              FOV_RADIUS) {
-            let object = &data.objects[key];
-            draw_char(display_state, object.chr, object.x, object.y, object.color, area);
+        let x = data.objects[key].x;
+        let y = data.objects[key].y;
+
+        if data.map.is_within_bounds(x, y) {
+            let is_in_fov = 
+               data.map.is_in_fov(player_pos.0,
+                                  player_pos.1,
+                                  x,
+                                  y,
+                                  FOV_RADIUS);
+
+           if settings.god_mode || is_in_fov {
+                let object = &data.objects[key];
+                draw_char(display_state, object.chr, object.x, object.y, object.color, area);
+            }
         }
     }
 }
@@ -403,35 +464,11 @@ pub fn render_all(display_state: &mut DisplayState,
                     FOV_RADIUS);
 
     let screen_rect = display_state.canvas.output_size()?;
-    let area = Area::new(0.0,
-                         0.0,
+
+    let area = Area::new(0,
+                         0,
                          (screen_rect.0 as f32 / data.map.width() as f32) as usize,
                          (screen_rect.1 as f32 / data.map.height() as f32) as usize);
-
-    render_background(display_state,
-                      data,
-                      &area,
-                      settings,
-                      config);
-
-    render_map(display_state,
-               data,
-               &area,
-               settings,
-               config);
-
-    render_objects(display_state,
-                   data,
-                   settings,
-                   &area);
-
-    render_overlays(display_state,
-                    mouse_state,
-                    data,
-                    &area,
-                    config);
-
-    let screen_rect = display_state.canvas.logical_size();
 
     let plots = display_state.screen_sections
                              .plot(0,
@@ -439,6 +476,7 @@ pub fn render_all(display_state: &mut DisplayState,
                                    screen_rect.0 as usize,
                                    screen_rect.1 as usize);
     for plot in plots {
+        // TODO add in mouse translation
         // let plot_rect = Rect::new(plot.x as f32, plot.y as f32, plot.width as f32, plot.height as f32);
 
         //if plot.contains(mouse_state.x, mouse_state.y) {
@@ -453,14 +491,29 @@ pub fn render_all(display_state: &mut DisplayState,
             }
 
             "map" => {
-                let ((_x_offset, _y_offset), _scaler) =
+                let ((x_offset, y_offset), scaler) =
                     plot.fit(data.map.width() as usize * FONT_WIDTH as usize,
                              data.map.height() as usize * FONT_HEIGHT as usize);
+
+                let area = Area::new(x_offset as i32,
+                                     y_offset as i32,
+                                     (scaler * FONT_WIDTH as f32) as usize, 
+                                     (scaler * FONT_WIDTH as f32) as usize);
+
+
+                render_background(display_state, data, &area, settings, config);
+
+                render_map(display_state, data, &area, settings, config);
+
+                render_objects(display_state, data, settings, &area);
+
+                render_overlays(display_state, mouse_state, data, &area, config);
+
             }
 
             "inspector" => {
-                // Render game ui
-                // display_state.gui.render(ctx, map, objects, mouse_state, plot.dims(), plot.pos());
+                let area = Area::new(plot.x as i32, plot.y as i32, FONT_WIDTH as usize, FONT_HEIGHT as usize);
+                render_inventory(display_state, data, &area, config);
             }
 
             section_name => {
@@ -478,6 +531,17 @@ pub fn engine_color(color: &Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
 }
 
+pub fn draw_text(display_state: &mut DisplayState,
+                 text: String,
+                 x: i32,
+                 y: i32,
+                 color: Color,
+                 area: &Area) {
+    for (index, chr) in text.chars().enumerate() {
+        draw_char(display_state, chr, x + index as i32, y, color, area);
+    }
+}
+
 pub fn draw_char(display_state: &mut DisplayState,
                  chr: char,
                  x: i32,
@@ -492,8 +556,8 @@ pub fn draw_char(display_state: &mut DisplayState,
                         FONT_WIDTH as u32,
                         FONT_HEIGHT as u32);
 
-    let dst = Rect::new(x * area.font_width as i32,
-                        y * area.font_height as i32,
+    let dst = Rect::new(area.x_offset + x * area.font_width as i32,
+                        area.y_offset + y * area.font_height as i32,
                         area.font_width as u32,
                         area.font_height as u32);
 
@@ -508,3 +572,4 @@ pub fn draw_char(display_state: &mut DisplayState,
                                  false,
                                  false).unwrap();
 }
+

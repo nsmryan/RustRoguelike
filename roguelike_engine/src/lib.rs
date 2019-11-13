@@ -7,11 +7,9 @@ pub mod actions;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
-use sdl2::rect::{Rect, Point};
 use sdl2::mouse::MouseButton;
 
 use roguelike_core::config::*;
-use roguelike_core::types::*;
 use roguelike_core::constants::*;
 
 use crate::display::*;
@@ -26,7 +24,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let window = video.window("Rust Roguelike", SCREEN_WIDTH, SCREEN_HEIGHT)
         .position_centered().build().map_err(|e| e.to_string())?;
 
-    let mut canvas = window.into_canvas()
+    let canvas = window.into_canvas()
         .accelerated().build().map_err(|e| e.to_string())?;
     let texture_creator = canvas.texture_creator();
 

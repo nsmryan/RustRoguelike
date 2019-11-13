@@ -63,7 +63,7 @@ pub fn make_kobold(config: &Config, x: i32, y :i32) -> Object {
 }
 
 pub fn make_stone(config: &Config, x: i32, y :i32) -> Object {
-    let mut stone = Object::new(x, y, '\u{A5}', config.color_orange, "kobold", true);
+    let mut stone = Object::new(x, y, '\u{A5}', config.color_orange, "stone", true);
 
     stone.color = config.color_light_grey;
     stone.item = Some(Item::Stone);
