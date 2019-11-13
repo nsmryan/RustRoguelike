@@ -407,8 +407,6 @@ pub fn render_all(display_state: &mut DisplayState,
                          0.0,
                          (screen_rect.0 as f32 / data.map.width() as f32) as usize,
                          (screen_rect.1 as f32 / data.map.height() as f32) as usize);
-    dbg!(area.font_width);
-    dbg!(area.font_height);
 
     render_background(display_state,
                       data,

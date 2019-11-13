@@ -312,6 +312,7 @@ pub struct Object {
     pub movement: Option<Reach>,
     pub attack: Option<Reach>,
     pub animation: Option<Animation>,
+    pub inventory: Vec<ObjectId>,
 }
 
 impl Object {
@@ -332,6 +333,7 @@ impl Object {
             movement: None,
             attack: None,
             animation: None,
+            inventory: Vec::new(),
         }
     }
 

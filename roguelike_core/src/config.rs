@@ -33,4 +33,3 @@ pub struct Config {
     pub highlight_alpha: u8,
     pub map_load: MapLoadConfig,
 }
-

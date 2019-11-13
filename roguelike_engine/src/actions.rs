@@ -61,12 +61,11 @@ pub fn handle_input(input_action: InputAction,
 
             (InputAction::Pickup, true) => {
                 let player = &game_data.objects[player_handle];
-                let item_id = game_data.objects.values().position(|object| {
-                    return (object.pos() == player.pos()) && object.item.is_some();
-                });
-                if let Some(_item_id) = item_id {
-                    // TODO add back in with new inventory
-                    //pick_item_up(item_id, objects, inventory, config);
+                let item_id = game_data.objects.keys().filter(|key| {
+                    return (game_data.objects[*key].pos() == player.pos()) && game_data.objects[*key].item.is_some();
+                }).next();
+                if let Some(key) = item_id {
+                    pick_item_up(player_handle, key, &mut game_data.objects);
                 }
                 player_action = DidntTakeTurn;
             }
@@ -133,33 +132,30 @@ pub fn handle_input(input_action: InputAction,
     return player_action;
 }
 
-fn use_item(inventory_id: usize,
-            inventory: &mut Vec<Object>,
-            _objects: &mut [Object],
-            _config: &Config) {
-    use Item::*;
+fn use_item(object_id: ObjectId,
+            item_id: ObjectId,
+            objects: &mut [Object]) {
+    //if let Some(item) = inventory[inventory_id].item {
+    //    let _on_use = match item {
+    //        Stone => unimplemented!(),
+    //        Goal => unimplemented!(), // gather_goal,
+    //    };
+    //    /*
+    //    match on_use(inventory_id, objects, config) {
+    //        UseResult::UsedUp => {
+    //            inventory.remove(inventory_id);
+    //        }
+    //        UseResult::Cancelled => {
+    //            // messages.message("Cancelled", WHITE);
+    //        }
 
-    if let Some(item) = inventory[inventory_id].item {
-        let _on_use = match item {
-            Stone => unimplemented!(),
-            Goal => unimplemented!(), // gather_goal,
-        };
-        /*
-        match on_use(inventory_id, objects, config) {
-            UseResult::UsedUp => {
-                inventory.remove(inventory_id);
-            }
-            UseResult::Cancelled => {
-                // messages.message("Cancelled", WHITE);
-            }
-
-            UseResult::Keep => {
-            }
-        }
-        */
-    } else {
-        // messages.message(format!("The {} cannot be used.", inventory[inventory_id].name), WHITE);
-    }
+    //        UseResult::Keep => {
+    //        }
+    //    }
+    //    */
+    //} else {
+    //    // messages.message(format!("The {} cannot be used.", inventory[inventory_id].name), WHITE);
+    //}
 }
 
 //fn gather_goal(_inventory_id: usize, _objects: &mut [Object], _config: &Config) -> UseResult {
@@ -167,17 +163,11 @@ fn use_item(inventory_id: usize,
  //   UseResult::Keep
 //}
 
-fn pick_item_up(object_id: usize,
-                objects: &mut Vec<Object>,
-                inventory: &mut Vec<Object>,
-                _config: &Config) {
-    if inventory.len() >= 26 {
-        // messages.message(format!("Your inventory is full, cannot pick up {}", objects[object_id].name), config.color_red.color());
-    } else {
-        let item = objects.swap_remove(object_id);
-        // messages.message(format!("You picked up a {}!", item.name), config.color_light_green.color());
-        inventory.push(item);
-    }
+fn pick_item_up(object_id: ObjectId,
+                item_id: ObjectId,
+                objects: &mut ObjMap) {
+    objects[object_id].inventory.push(item_id);
+    objects[object_id].set_pos(-1, -1);
 }
 
 pub fn throw_stone(pos: (i32, i32),
@@ -213,4 +203,3 @@ pub fn throw_stone(pos: (i32, i32),
         map[pos].sound = Some((target_x, target_y));
     }
 }
-

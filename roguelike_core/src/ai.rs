@@ -38,10 +38,10 @@ pub fn location_within_fov(map: &mut Map, monster_pos: Position, player_pos: Pos
 }
 
 pub fn move_by(handle: ObjectId, dx: i32, dy: i32, data: &mut GameData) {
-    let (x, y) = data.objects.get(handle).unwrap().pos();
+    let (x, y) = data.objects[handle].pos();
 
     if !is_blocked(x + dx, y + dy, data) {
-        data.objects.get_mut(handle).unwrap().set_pos(x + dx, y + dy);
+        data.objects[handle].set_pos(x + dx, y + dy);
     }
 }
 
@@ -59,25 +59,25 @@ pub fn step_towards(start_pos: (i32, i32), target_pos: (i32, i32)) -> (i32, i32)
 pub fn ai_attack(monster_handle: ObjectId,
                  target_handle: ObjectId,
                  data: &mut GameData) -> AiTurn {
-    let (target_x, target_y) = data.objects.get(target_handle).unwrap().pos();
+    let (target_x, target_y) = data.objects[target_handle].pos();
     let mut target_pos = Position::new(target_x, target_y);
 
-    let (monster_x, monster_y) = data.objects.get(monster_handle).unwrap().pos();
+    let (monster_x, monster_y) = data.objects[monster_handle].pos();
     let monster_pos = Position::new(monster_x, monster_y);
 
     let mut turn: AiTurn = AiTurn::new();
 
     if let Some(hit_pos) =
-        ai_can_hit_target(data.objects.get(monster_handle).unwrap().pos(),
-                          data.objects.get(target_handle).unwrap().pos(),
-                          &data.objects.get(monster_handle).unwrap().attack.unwrap()) {
+        ai_can_hit_target(data.objects[monster_handle].pos(),
+                          data.objects[target_handle].pos(),
+                          &data.objects[monster_handle].attack.unwrap()) {
         turn.add(AiAction::Attack(target_handle, hit_pos));
     } else {
         // check positions that can hit target, filter by FOV, and get the closest.
         // then move to this closest position.
         let mut pos_offset = (0, 0);
         if let (Some(attack), Some(movement)) =
-            (data.objects.get(monster_handle).unwrap().attack, data.objects.get(monster_handle).unwrap().movement) {
+            (data.objects[monster_handle].attack, data.objects[monster_handle].movement) {
             // get all locations they can hit
             let move_positions =
                 MoveAction::move_actions().iter()
@@ -120,10 +120,10 @@ pub fn ai_investigate(target_pos_orig: Position,
                       data: &mut GameData) -> AiTurn {
     let player_handle = data.find_player().unwrap();
     let target_pos = target_pos_orig;
-    let (player_x, player_y) = data.objects.get(player_handle).unwrap().pos();
+    let (player_x, player_y) = data.objects[player_handle].pos();
     let player_pos = Position::new(player_x, player_y);
 
-    let (monster_x, monster_y) = data.objects.get(monster_handle).unwrap().pos();
+    let (monster_x, monster_y) = data.objects[monster_handle].pos();
     let monster_pos = Position::new(monster_x, monster_y);
     let mut turn: AiTurn = AiTurn::new();
 
@@ -226,7 +226,7 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
 pub fn ai_take_turn(monster_handle: ObjectId, data: &mut GameData) {
     let turn: AiTurn;
 
-    match data.objects.get(monster_handle).unwrap().ai {
+    match data.objects[monster_handle].ai {
         Some(Ai::Basic) => {
             turn = basic_ai_take_turn(monster_handle, data);
         }
@@ -265,12 +265,12 @@ pub fn ai_apply_actions(monster_handle: ObjectId,
 }
 
 pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap) {
-    let damage = objects.get(handle).unwrap().fighter.map_or(0, |f| f.power) -
-                 objects.get(other_handle).unwrap().fighter.map_or(0, |f| f.defense);
+    let damage = objects[handle].fighter.map_or(0, |f| f.power) -
+                 objects[other_handle].fighter.map_or(0, |f| f.defense);
 
     if damage > 0 {
         //messages.message(format!("{} attacks {} for {} hit points.", self.name, target.name, damage), WHITE);
-        objects.get_mut(other_handle).unwrap().take_damage(damage);
+        objects[other_handle].take_damage(damage);
     } else {
         //messages.message(format!("{} attacks {} but it has no effect!", self.name, target.name), WHITE);
     }

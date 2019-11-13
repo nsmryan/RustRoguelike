@@ -259,6 +259,7 @@ pub fn move_just_before(handle: ObjectId,
     return pos;
 }
 
+// TODO consider moving to GameData
 /// Moves the given object with a given offset, returning the square that it collides with, or None
 /// indicating no collision.
 pub fn check_collision(x: i32,
@@ -366,7 +367,7 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Pl
     return player_action;
 }
 
-// TODO consider moving into gamedata
+// TODO consider moving to GameData
 pub fn calculate_move(action: MoveAction,
                       reach: Reach,
                       object_id: ObjectId,
@@ -420,6 +421,7 @@ pub fn calculate_move(action: MoveAction,
     return movement;
 }
 
+// TODO consider moving to GameData
 pub fn is_blocked(x: i32, y: i32, data: &GameData) -> bool {
     if data.map[(x, y)].blocked {
         return true;
@@ -436,6 +438,7 @@ pub fn is_blocked(x: i32, y: i32, data: &GameData) -> bool {
     return is_blocked;
 }
 
+// TODO consider moving to GameData
 pub fn clear_path(start: (i32, i32), end: (i32, i32), data: &GameData) -> bool {
     let line = Line::new((start.0, start.1), (end.0, end.1));
 
