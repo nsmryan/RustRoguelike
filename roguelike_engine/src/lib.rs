@@ -61,10 +61,15 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     game.mouse_state.y = y;
                 }
 
-                Event::MouseButtonDown{mouse_btn, ..} => {
+                Event::MouseButtonDown{mouse_btn, x, y, ..} => {
                     match mouse_btn {
-                        MouseButton::Left => game.mouse_state.left_pressed = true,
+                        MouseButton::Left => {
+                            game.mouse_state.left_pressed = true;
+                            game.input_action = InputAction::Click(x, y);
+                        }
+
                         MouseButton::Middle => game.mouse_state.middle_pressed = true,
+
                         MouseButton::Right => game.mouse_state.right_pressed = true,
                         _ => {},
                     }

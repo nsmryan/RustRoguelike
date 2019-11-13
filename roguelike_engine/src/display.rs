@@ -262,6 +262,15 @@ pub fn render_inventory(display_state: &mut DisplayState,
         
         y_pos += 1;
     }
+
+    if data.objects[player_handle].inventory.len() == 0 {
+        draw_text(display_state,
+                  format!("empty"),
+                  1,
+                  y_pos,
+                  config.color_ice_blue,
+                  area);
+    }
 }
 
 pub fn render_background(display_state: &mut DisplayState,
@@ -379,9 +388,9 @@ pub fn render_objects(display_state: &mut DisplayState,
     let player_handle = data.find_player().unwrap();
     let player_pos = data.objects[player_handle].pos();
 
-    for key in data.objects.keys() {
-        let x = data.objects[key].x;
-        let y = data.objects[key].y;
+    for object in data.objects.values_mut() {
+        let x = object.x;
+        let y = object.y;
 
         if data.map.is_within_bounds(x, y) {
             let is_in_fov = 
@@ -392,8 +401,21 @@ pub fn render_objects(display_state: &mut DisplayState,
                                   FOV_RADIUS);
 
            if settings.god_mode || is_in_fov {
-                let object = &data.objects[key];
-                draw_char(display_state, object.chr, object.x, object.y, object.color, area);
+                match object.animation {
+                    Some(Animation::StoneThrow(start, end)) => {
+                        draw_char(display_state, object.chr, start.0, start.1, object.color, area);
+                        if start == end {
+                            object.animation = None;
+                        } else {
+                            let new_start = (start.0 + direction(end.0), start.1 + direction(end.1));
+                            object.animation = Some(Animation::StoneThrow(start, end));
+                        }
+                    }
+
+                    _ => {
+                        draw_char(display_state, object.chr, object.x, object.y, object.color, area);
+                    }
+                }
             }
         }
     }
@@ -460,21 +482,17 @@ pub fn render_all(display_state: &mut DisplayState,
     let player_handle = data.find_player().unwrap();
 
     data.map.compute_fov(data.objects[player_handle].x,
-                    data.objects[player_handle].y,
-                    FOV_RADIUS);
+                         data.objects[player_handle].y,
+                         FOV_RADIUS);
 
     let screen_rect = display_state.canvas.output_size()?;
-
-    let area = Area::new(0,
-                         0,
-                         (screen_rect.0 as f32 / data.map.width() as f32) as usize,
-                         (screen_rect.1 as f32 / data.map.height() as f32) as usize);
 
     let plots = display_state.screen_sections
                              .plot(0,
                                    0,
                                    screen_rect.0 as usize,
                                    screen_rect.1 as usize);
+    display_state.canvas.clear();
     for plot in plots {
         // TODO add in mouse translation
         // let plot_rect = Rect::new(plot.x as f32, plot.y as f32, plot.width as f32, plot.height as f32);

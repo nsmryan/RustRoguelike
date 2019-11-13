@@ -100,6 +100,7 @@ pub struct MouseState {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Animation {
     Idle(),
+    StoneThrow((i32, i32), (i32, i32)),
 }
 
 

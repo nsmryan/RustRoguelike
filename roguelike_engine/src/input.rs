@@ -7,6 +7,7 @@ use roguelike_core::movement::*;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum InputAction {
     Move(MoveAction),
+    Click(i32, i32),
     Pickup,
     Inventory,
     Exit,

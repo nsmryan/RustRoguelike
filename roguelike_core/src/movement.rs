@@ -447,3 +447,11 @@ pub fn clear_path(start: (i32, i32), end: (i32, i32), data: &GameData) -> bool {
 
     return !path_blocked;
 }
+
+pub fn direction(value: i32) -> i32 {
+    if value == 0 {
+        return 0;
+    } else {
+        return value.signum();
+    }
+}
