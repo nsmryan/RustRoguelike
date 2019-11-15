@@ -173,7 +173,7 @@ impl Plot {
     }
 
     pub fn contains(&self, x: usize, y: usize) -> bool {
-        return self.x > x && self.y > y && x < self.x + self.width && y < self.y + self.height;
+        return x >= self.x && y >= self.y && x < (self.x + self.width) && y < (self.y + self.height);
     }
 
     pub fn within(&self, x: usize, y: usize) -> (usize, usize) {

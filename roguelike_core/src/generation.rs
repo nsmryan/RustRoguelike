@@ -68,6 +68,7 @@ pub fn make_stone(config: &Config, x: i32, y :i32) -> Object {
     stone.color = config.color_light_grey;
     stone.item = Some(Item::Stone);
     stone.alive = false;
+    stone.blocks = false;
 
     return stone;
 }

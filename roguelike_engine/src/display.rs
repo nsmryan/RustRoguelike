@@ -21,6 +21,7 @@ pub struct DisplayState<'a> {
     pub font_image: Texture<'a>,
     pub display_overlays: bool,
     pub screen_sections: Plan,
+    pub zones: Vec<Plot>,
     pub canvas: WindowCanvas,
 }
 
@@ -34,6 +35,7 @@ impl<'a> DisplayState<'a> {
             display_overlays: false,
             screen_sections,
             canvas,
+            zones: Vec::new(),
         };
     }
 }
@@ -407,11 +409,13 @@ pub fn render_objects(display_state: &mut DisplayState,
                         if start == end {
                             object.animation = None;
                         } else {
-                            let new_start = (start.0 + direction(end.0), start.1 + direction(end.1));
-                            object.animation = Some(Animation::StoneThrow(start, end));
+                            let new_start = (start.0 + direction(end.0 - start.0),
+                                             start.1 + direction(end.1 - start.1));
+                            object.animation = Some(Animation::StoneThrow(new_start, end));
                         }
                     }
 
+                    // otherwise just draw the objects character (the default)
                     _ => {
                         draw_char(display_state, object.chr, object.x, object.y, object.color, area);
                     }
@@ -492,18 +496,12 @@ pub fn render_all(display_state: &mut DisplayState,
                                    0,
                                    screen_rect.0 as usize,
                                    screen_rect.1 as usize);
+
     display_state.canvas.clear();
-    for plot in plots {
-        // TODO add in mouse translation
-        // let plot_rect = Rect::new(plot.x as f32, plot.y as f32, plot.width as f32, plot.height as f32);
 
-        //if plot.contains(mouse_state.x, mouse_state.y) {
-        //    let (new_x, y_new) = plot.within(mouse_state.x, mouse_state.y);
-        //    mouse_state.x_within = new_x;
-        //    mouse_state.y_within = new_y;
-        //    mouse_state.area_name = plot.name();
-        //}
+    let zones = plots.collect::<Vec<Plot>>();
 
+    for plot in zones.iter() {
         match plot.name.as_str() {
             "screen" => {
             }
@@ -541,6 +539,8 @@ pub fn render_all(display_state: &mut DisplayState,
     }
 
     display_state.canvas.present();
+
+    display_state.zones = zones;
 
     Ok(())
 }

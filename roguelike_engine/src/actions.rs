@@ -22,7 +22,7 @@ pub fn handle_input(input_action: InputAction,
 
     let player_handle = game_data.find_player().unwrap();
     let player_x = game_data.objects[player_handle].x;
-    let player_y = game_data.objects[player_handle].x;
+    let player_y = game_data.objects[player_handle].y;
 
     let player_action: PlayerAction;
 
@@ -103,7 +103,7 @@ pub fn handle_input(input_action: InputAction,
             player_action = TookTurn;
         }
 
-        (InputAction::Click(x, y), _) => {
+        (InputAction::MapClick(_map_loc, map_cell), _) => {
             let mut stone = None;
             let mut stone_index = None;
             for (index, obj_id) in game_data.objects[player_handle].inventory.iter().enumerate() {
@@ -115,13 +115,7 @@ pub fn handle_input(input_action: InputAction,
             }
 
             if let (Some(stone_handle), Some(index)) = (stone, stone_index) {
-                let (mx, my) = (mouse_state.x, mouse_state.y);
-
-                // TODO this does not account for the map section
-                let end_x = mx / FONT_WIDTH;
-                let end_y = my / FONT_HEIGHT;
-                dbg!(end_x, end_y);
-                throw_stone(player_x, player_y, end_x, end_y, *stone_handle, game_data);
+                throw_stone(player_x, player_y, map_cell.0, map_cell.1, *stone_handle, game_data);
 
                 game_data.objects[player_handle].inventory.remove(index);
 
@@ -192,9 +186,8 @@ pub fn throw_stone(start_x: i32,
         throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
 
     data.objects[stone_handle].set_pos(target_x, target_y);
-    data.objects[stone_handle].animation =
-        Some(Animation::StoneThrow(start, end));
 
-    // TODO add sound in
+    data.objects[stone_handle].animation =
+        Some(Animation::StoneThrow(start, (target_x, target_y)));
 }
 

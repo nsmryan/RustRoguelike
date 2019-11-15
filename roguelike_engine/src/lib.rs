@@ -65,7 +65,21 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     match mouse_btn {
                         MouseButton::Left => {
                             game.mouse_state.left_pressed = true;
-                            game.input_action = InputAction::Click(x, y);
+
+                            let in_map =
+                                game.display_state.zones.iter()
+                                                        .filter(|zone| zone.contains(x as usize, y as usize) &&
+                                                                       zone.name == "map")
+                                                        .next();
+
+                            if let Some(map_zone) = in_map {
+                                let map_loc = map_zone.within(x as usize, y as usize);
+                                let map_cell = (((map_loc.0 as f32 / map_zone.width as f32) * (game.data.map.width() as f32)) as i32,
+                                                ((map_loc.1 as f32 / map_zone.height as f32) * (game.data.map.height() as f32)) as i32);
+                                game.input_action =
+                                  InputAction::MapClick((map_loc.0 as i32, map_loc.1 as i32),
+                                                        map_cell);
+                            }
                         }
 
                         MouseButton::Middle => game.mouse_state.middle_pressed = true,
