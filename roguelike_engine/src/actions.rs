@@ -168,7 +168,7 @@ fn pick_item_up(object_id: ObjectId,
                 item_id: ObjectId,
                 objects: &mut ObjMap) {
     objects[object_id].inventory.push(item_id);
-    objects[object_id].set_pos(-1, -1);
+    objects[item_id].set_pos(-1, -1);
 }
 
 pub fn throw_stone(start_x: i32,
