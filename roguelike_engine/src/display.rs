@@ -1,6 +1,8 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
+use slotmap::dense::*;
+
 use noise::Perlin;
 use noise::NoiseFn;
 
@@ -19,6 +21,7 @@ use crate::plat::*;
 
 pub struct DisplayState<'a> {
     pub font_image: Texture<'a>,
+    pub sprites: DenseSlotMap<SpriteKey, SpriteSheet<'a>>,
     pub display_overlays: bool,
     pub screen_sections: Plan,
     pub zones: Vec<Plot>,
@@ -28,14 +31,44 @@ pub struct DisplayState<'a> {
 impl<'a> DisplayState<'a> {
     pub fn new(screen_sections: Plan,
                font_image: Texture<'a>,
+               sprites: DenseSlotMap<SpriteKey, SpriteSheet>,
                canvas: WindowCanvas) -> DisplayState<'a> {
 
         return DisplayState {
             font_image,
+            sprites: DenseSlotMap::new(),
             display_overlays: false,
             screen_sections,
             canvas,
             zones: Vec::new(),
+        };
+    }
+
+    pub fn lookup_sprite(&self, name: String) -> Option<SpriteKey> {
+        for (key, sprite_sheet) in self.sprites.iter() {
+            if sprite_sheet.name == name {
+                return Some(key);
+            }
+        }
+
+        return None;
+    }
+}
+
+
+pub struct SpriteSheet<'a> {
+    pub texture: Texture<'a>,
+    pub name: String,
+    pub num_sprites: usize,
+}
+
+impl<'a> SpriteSheet<'a> {
+    pub fn new(name: String, texture: Texture<'a>) -> SpriteSheet<'a> {
+        let num_sprites = texture.query().width as usize / FONT_WIDTH as usize;
+        return SpriteSheet {
+            texture,
+            name,
+            num_sprites,
         };
     }
 }
@@ -415,6 +448,13 @@ pub fn render_objects(display_state: &mut DisplayState,
                         }
                     }
 
+                    Some(Animation::Idle(animation_handle, sprite_index)) => {
+                        // TODO draw texture rect onto map
+                        //      inc sprite_index
+                        //      check for wrap around
+                        //      either roll over, or set Animation to None
+                    }
+
                     // otherwise just draw the objects character (the default)
                     _ => {
                         draw_char(display_state, object.chr, object.x, object.y, object.color, area);
@@ -558,6 +598,14 @@ pub fn draw_text(display_state: &mut DisplayState,
     for (index, chr) in text.chars().enumerate() {
         draw_char(display_state, chr, x + index as i32, y, color, area);
     }
+}
+
+pub fn draw_sprite(display_state: &mut DisplayState,
+                   x: i32,
+                   y: i32,
+                   color: Color,
+                   area: &Area) {
+    // TODO combine with draw_char
 }
 
 pub fn draw_char(display_state: &mut DisplayState,

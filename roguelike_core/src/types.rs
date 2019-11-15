@@ -18,6 +18,10 @@ pub type ObjectId = DefaultKey;
 
 pub type ObjMap = DenseSlotMap<ObjectId, Object>;
 
+pub type SpriteKey = DefaultKey;
+
+pub type SpriteIndex = usize;
+
 pub struct GameData {
     pub map: Map,
     pub objects: ObjMap,
@@ -99,7 +103,7 @@ pub struct MouseState {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Animation {
-    Idle(),
+    Idle(SpriteKey, SpriteIndex),
     StoneThrow((i32, i32), (i32, i32)),
 }
 

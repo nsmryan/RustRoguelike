@@ -9,12 +9,12 @@ use rand::prelude::*;
 use slotmap::dense::*;
 
 use roguelike_core::constants::*;
-use roguelike_core::generation::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::ai::*;
 use roguelike_core::map::*;
 
+use crate::generation::*;
 use crate::display::*;
 use crate::input::*;
 use crate::read_map::*;
@@ -62,7 +62,7 @@ impl<'a> Game<'a> {
         let player_position;
         match config.map_load {
             MapLoadConfig::FromFile => {
-                let (new_objects, new_map, mut position) = read_map_xp(&config, "map.xp");
+                let (new_objects, new_map, mut position) = read_map_xp(&config, &display_state, "map.xp");
                 objects.clear();
                 for object in new_objects.values() {
                     objects.insert(object.clone());
@@ -75,14 +75,14 @@ impl<'a> Game<'a> {
             }
 
             MapLoadConfig::Random => {
-                let (game_data, position) = make_map(&mut objects, &config, &mut rng);
+                let (game_data, position) = make_map(&mut objects, &config, &display_state, &mut rng);
                 // TODO consider using objects as well here on regen?
                 map = game_data.map;
                 player_position = position.into_pair();
             }
 
             MapLoadConfig::TestWall => {
-                let (new_map, position) = make_wall_test_map(&mut objects, &config);
+                let (new_map, position) = make_wall_test_map(&mut objects, &config, &display_state);
                 map = new_map;
                 player_position = position.into_pair();
             }
@@ -164,8 +164,8 @@ impl<'a> Game<'a> {
             actions::handle_input(self.input_action,
                                   &mut self.mouse_state,
                                   &mut self.data,
+                                  &mut self.display_state,
                                   &mut self.settings.god_mode,
-                                  &mut self.display_state.display_overlays,
                                   &self.config);
         match player_action {
             PlayerAction::Exit => {
@@ -236,7 +236,7 @@ impl<'a> Game<'a> {
         }
 
         if self.config.load_map_file_every_frame && Path::new("map.xp").exists() {
-            let (new_objects, new_map, _) = read_map_xp(&self.config, "map.xp");
+            let (new_objects, new_map, _) = read_map_xp(&self.config, &self.display_state, "map.xp");
             self.data.map = new_map;
             self.data.objects.clear();
             for key in new_objects.keys() {

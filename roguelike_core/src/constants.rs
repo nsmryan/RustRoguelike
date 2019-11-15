@@ -103,13 +103,13 @@ pub const MAP_WALL: u8 = 150;
 
 pub const MAP_ROOK: u8 = 130;
 
-pub const ENTITY_ORC: u8 = 152;
+pub const ENTITY_GOL: u8 = 152;
 pub const ENTITY_POLAXE: u8 = 0x8C;
 pub const ENTITY_CASTLE: u8 = 0x85;
 pub const ENTITY_PLAYER: u8 = 0x40;
 pub const ENTITY_SWIRL_CIRCLE: u8 = 0x15;
 pub const ENTITY_HERO: u8 = 139;
 pub const ENTITY_CLOAK_GUY: u8 = 141;
-pub const ENTITY_GOBLIN: u8 = 165;
+pub const ENTITY_ELF: u8 = 165;
 pub const ENTITY_ORB: u8 = 135;
 pub const ENTITY_GOAL: u8 = 253;

@@ -4,10 +4,14 @@ pub mod input;
 pub mod plat;
 pub mod read_map;
 pub mod actions;
+pub mod generation;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
 use sdl2::mouse::MouseButton;
+
+use slotmap::dense::*;
+use slotmap::DefaultKey;
 
 use roguelike_core::config::*;
 use roguelike_core::constants::*;
@@ -33,16 +37,28 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let font_image = texture_creator.load_texture("rexpaint16x16.png")
         .map_err(|e| e.to_string())?;
 
+    let gol_idle = texture_creator.load_texture("animations/monster1/Gol_Idle.png")
+        .map_err(|e| e.to_string())?;
+
+    let elf_idle = texture_creator.load_texture("animations/monster3/Elf_Idle.png")
+        .map_err(|e| e.to_string())?;
+
+    let mut sprites = DenseSlotMap::new();
+    sprites.insert(SpriteSheet::new("gol_idle".to_string(), gol_idle));
+    sprites.insert(SpriteSheet::new("elf_idle".to_string(), elf_idle));
+
     let screen_sections =
         Plan::vert("screen", 0.80, Plan::zone("map"), Plan::zone("inspector"));
 
     let display_state =
-        DisplayState::new(screen_sections, font_image, canvas);
+        DisplayState::new(screen_sections, font_image, sprites, canvas);
 
     let mut game = Game::new(args, config, display_state)?;
 
+    // Main Game Loop
     let mut running = true;
     while running {
+        // TODO split into function
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit{ .. }=> {

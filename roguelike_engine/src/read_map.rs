@@ -6,14 +6,15 @@ use slotmap::dense::*;
 use rexpaint::*;
 
 use roguelike_core::constants::*;
-use roguelike_core::generation::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
 
+use crate::display::*;
+use crate::generation::*;
 
-// TODO put this in a separate file
-pub fn read_map_xp(config: &Config, file_name: &str) -> (ObjMap, Map, (i32, i32)) {
+
+pub fn read_map_xp(config: &Config, display_state: &DisplayState, file_name: &str) -> (ObjMap, Map, (i32, i32)) {
     let file = File::open(file_name).unwrap();
     let mut buf_reader = BufReader::new(file);
     let xp = XpFile::read(&mut buf_reader).unwrap();
@@ -207,21 +208,21 @@ pub fn read_map_xp(config: &Config, file_name: &str) -> (ObjMap, Map, (i32, i32)
 
                     MAP_LAYER_ENTITIES => {
                         match chr as u8 {
-                            ENTITY_ORC => {
-                                objects.insert(make_orc(config, x as i32, y as i32));
+                            ENTITY_GOL => {
+                                objects.insert(make_gol(config, x as i32, y as i32, display_state));
                             }
 
                             ENTITY_SWIRL_CIRCLE => {
-                                objects.insert(make_kobold(config, x as i32, y as i32));
+                                objects.insert(make_elf(config, x as i32, y as i32));
                             }
 
                             ENTITY_ORB => {
                                 // TODO should be an objective
                             }
 
-                            ENTITY_GOBLIN => {
-                                // TODO should be different from kobold
-                                objects.insert(make_kobold(config, x as i32, y as i32));
+                            ENTITY_ELF => {
+                                // TODO should be different from elf
+                                objects.insert(make_elf(config, x as i32, y as i32));
                             }
 
                             MAP_EMPTY => {

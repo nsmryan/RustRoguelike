@@ -7,16 +7,17 @@ use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::generation::*;
 
 use crate::input::*;
+use crate::display::*;
+use crate::generation::*;
 
 
 pub fn handle_input(input_action: InputAction,
                     mouse_state: &MouseState,
                     game_data: &mut GameData, 
+                    display_state: &mut DisplayState,
                     god_mode: &mut bool,
-                    display_overlays: &mut bool,
                     config: &Config) -> PlayerAction {
     use PlayerAction::*;
 
@@ -69,13 +70,14 @@ pub fn handle_input(input_action: InputAction,
 
         (InputAction::RegenerateMap, _) => {
             let mut rng: SmallRng = SeedableRng::seed_from_u64(2);
-            let (data, _position) = make_map(&mut game_data.objects, config, &mut rng);
+            let (data, _position) =
+                make_map(&mut game_data.objects, config, display_state, &mut rng);
             game_data.map = data.map;
             player_action = DidntTakeTurn;
         }
 
         (InputAction::ToggleOverlays, _) => {
-            *display_overlays = !(*display_overlays);
+            display_state.display_overlays = !(display_state.display_overlays);
 
             player_action = DidntTakeTurn;
         }
