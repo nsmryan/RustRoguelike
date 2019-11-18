@@ -31,6 +31,7 @@ pub struct Config {
     pub load_map_file_every_frame: bool,
     pub tile_noise_scaler: f64,
     pub highlight_alpha: u8,
+    pub grid_alpha: u8,
     pub map_load: MapLoadConfig,
     pub idle_speed: f32,
 }

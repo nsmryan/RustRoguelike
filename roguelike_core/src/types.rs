@@ -59,6 +59,10 @@ impl Color {
         return Color::new(255, 255, 255, 255);
     }
 
+    pub fn black() -> Color {
+        return Color::new(0, 0, 0, 255);
+    }
+
     pub fn new(r: u8, g: u8, b: u8, a: u8) -> Color {
         return Color {r,
                       g,

@@ -130,6 +130,7 @@
     "load_map_file_every_frame": false,
     "tile_noise_scaler": 4.0,
     "highlight_alpha": 76,
+    "grid_alpha": 9,
     "map_load": "FromFile",
     "idle_speed": 0.5
 }

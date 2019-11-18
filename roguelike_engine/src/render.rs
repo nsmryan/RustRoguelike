@@ -4,6 +4,7 @@ use std::hash::{Hash, Hasher};
 use noise::Perlin;
 use noise::NoiseFn;
 
+use sdl2::render::BlendMode;
 use sdl2::rect::Rect;
 use sdl2::pixels::{Color as Sdl2Color};
 
@@ -365,6 +366,13 @@ pub fn render_map(display_state: &mut DisplayState,
             }
 
             data.map.tiles[x as usize][y as usize].explored = explored;
+
+            let outline_color = Color::white();
+            let color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.grid_alpha);
+
+            display_state.canvas.set_blend_mode(BlendMode::Blend);
+            display_state.canvas.set_draw_color(color);
+            display_state.canvas.draw_rect(area.char_rect(x, y));
         }
     }
 }
