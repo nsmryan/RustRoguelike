@@ -72,6 +72,8 @@ impl<'a> Game<'a> {
                     position = (map.width() / 2, map.height() / 2);
                 }
                 player_position = position;
+
+                objects.insert(make_goal(&config, player_position.0 + 1, player_position.1));
             }
 
             MapLoadConfig::Random => {

@@ -2,7 +2,6 @@ use rand::prelude::*;
 
 use tcod::line::*;
 
-use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;

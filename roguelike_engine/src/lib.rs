@@ -5,18 +5,19 @@ pub mod plat;
 pub mod read_map;
 pub mod actions;
 pub mod generation;
+pub mod render;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
 use sdl2::mouse::MouseButton;
 
 use slotmap::dense::*;
-use slotmap::DefaultKey;
 
 use roguelike_core::config::*;
 use roguelike_core::constants::*;
 
 use crate::display::*;
+use crate::render::*;
 use crate::plat::*;
 use crate::game::*;
 use crate::input::*;
