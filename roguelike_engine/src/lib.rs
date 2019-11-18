@@ -38,6 +38,9 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let font_image = texture_creator.load_texture("rexpaint16x16.png")
         .map_err(|e| e.to_string())?;
 
+    let player_idle = texture_creator.load_texture("animations/player/Player_Idle.png")
+        .map_err(|e| e.to_string())?;
+
     let gol_idle = texture_creator.load_texture("animations/monster1/Gol_Idle.png")
         .map_err(|e| e.to_string())?;
 
@@ -45,6 +48,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let mut sprites = DenseSlotMap::new();
+    sprites.insert(SpriteSheet::new("player_idle".to_string(), player_idle));
     sprites.insert(SpriteSheet::new("gol_idle".to_string(), gol_idle));
     sprites.insert(SpriteSheet::new("elf_idle".to_string(), elf_idle));
 
