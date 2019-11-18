@@ -171,6 +171,7 @@ pub fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool)
     return color;
 }
 
+/// Draw an outline and title around an area of the screen
 pub fn draw_placard(display_state: &mut DisplayState,
                     text: String,
                     area: &Area,
@@ -193,13 +194,14 @@ pub fn draw_placard(display_state: &mut DisplayState,
     let mid_char_offset = (area.width / area.font_width) / 2;
     let text_start = (mid_char_offset - half_text) as i32;
     draw_text(display_state,
-              "Inventory".to_string(),
+              text,
               text_start,
               0,
               config.color_dark_blue,
               area);
 }
 
+/// Render an inventory section within the given area
 pub fn render_inventory(display_state: &mut DisplayState,
                         data: &mut GameData,
                         area: &Area, 
@@ -262,6 +264,7 @@ pub fn render_inventory(display_state: &mut DisplayState,
     }
 }
 
+/// render the background files, including water tiles
 pub fn render_background(display_state: &mut DisplayState,
                          data: &mut GameData,
                          area: &Area,
@@ -294,6 +297,7 @@ pub fn render_background(display_state: &mut DisplayState,
 
 }
 
+/// Render the map, with environment and walls
 pub fn render_map(display_state: &mut DisplayState,
                   data: &mut GameData,
                   area: &Area,
@@ -367,6 +371,8 @@ pub fn render_map(display_state: &mut DisplayState,
 
             data.map.tiles[x as usize][y as usize].explored = explored;
 
+
+            // Draw a square around this tile to help distinguish it visually in the grid
             let outline_color = Color::white();
             let color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.grid_alpha);
 
@@ -377,6 +383,7 @@ pub fn render_map(display_state: &mut DisplayState,
     }
 }
 
+/// Render each object in the game, filtering for objects not currently visible
 pub fn render_objects(display_state: &mut DisplayState,
                       data: &mut GameData,
                       settings: &GameSettings,
@@ -517,6 +524,7 @@ pub fn render_all(display_state: &mut DisplayState,
 
     let zones = plots.collect::<Vec<Plot>>();
 
+    // for each screen section, render its contents
     for plot in zones.iter() {
         match plot.name.as_str() {
             "screen" => {
@@ -545,7 +553,7 @@ pub fn render_all(display_state: &mut DisplayState,
 
             }
 
-            "inspector" => {
+            "inventory" => {
                 let area = Area::new(plot.x as i32,
                                      plot.y as i32,
                                      plot.width,
