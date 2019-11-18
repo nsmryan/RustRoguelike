@@ -92,7 +92,7 @@ impl<'a> Game<'a> {
 
         let mut data = GameData::new(map, objects);
 
-        let player_handle = data.objects.insert(make_player(&config));
+        let player_handle = data.objects.insert(make_player(&config, &display_state));
         data.objects[player_handle].x = player_position.0;
         data.objects[player_handle].y = player_position.1;
 
