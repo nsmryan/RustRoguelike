@@ -6,6 +6,9 @@ pub mod read_map;
 pub mod actions;
 pub mod generation;
 pub mod render;
+mod throttler;
+
+use std::time::Duration;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
@@ -21,6 +24,7 @@ use crate::render::*;
 use crate::plat::*;
 use crate::game::*;
 use crate::input::*;
+use crate::throttler::*;
 
 
 pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
@@ -34,6 +38,8 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let texture_creator = canvas.texture_creator();
 
     let mut event_pump = sdl_context.event_pump()?;
+
+    let fps_throttler = Throttler::new(Duration::from_millis(1000 / 30));
 
     let font_image = texture_creator.load_texture("rexpaint16x16.png")
         .map_err(|e| e.to_string())?;
@@ -133,6 +139,8 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                    &mut game.data,
                    &game.settings,
                    &game.config)?;
+
+        fps_throttler.wait();
     }
 
     return Ok(());

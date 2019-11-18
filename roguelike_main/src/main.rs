@@ -7,14 +7,11 @@ extern crate serde_json;
 extern crate num;
 extern crate roguelike_core;
 
-mod throttler;
-
 use std::env;
 use std::fs::File;
 use std::io::Read;
 
-use roguelike_core::config::*;
-use roguelike_engine::*;
+use roguelike_core::config::Config;
 
 
 fn main() {
@@ -28,6 +25,6 @@ fn main() {
         config = serde_json::from_str(&config_string).expect("Could not parse config.json file!");
     }
 
-    run(&args, config).unwrap();
+    roguelike_engine::run(&args, config).unwrap();
 }
 
