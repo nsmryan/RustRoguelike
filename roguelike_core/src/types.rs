@@ -20,7 +20,7 @@ pub type ObjMap = DenseSlotMap<ObjectId, Object>;
 
 pub type SpriteKey = DefaultKey;
 
-pub type SpriteIndex = usize;
+pub type SpriteIndex = f32;
 
 pub struct GameData {
     pub map: Map,

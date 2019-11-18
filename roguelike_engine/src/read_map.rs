@@ -213,7 +213,8 @@ pub fn read_map_xp(config: &Config, display_state: &DisplayState, file_name: &st
                             }
 
                             ENTITY_SWIRL_CIRCLE => {
-                                objects.insert(make_elf(config, x as i32, y as i32));
+                                // TODO should be different from elf
+                                objects.insert(make_elf(config, x as i32, y as i32, display_state));
                             }
 
                             ENTITY_ORB => {
@@ -221,8 +222,7 @@ pub fn read_map_xp(config: &Config, display_state: &DisplayState, file_name: &st
                             }
 
                             ENTITY_ELF => {
-                                // TODO should be different from elf
-                                objects.insert(make_elf(config, x as i32, y as i32));
+                                objects.insert(make_elf(config, x as i32, y as i32, display_state));
                             }
 
                             MAP_EMPTY => {

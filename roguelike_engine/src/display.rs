@@ -1,5 +1,7 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::fmt;
+use std::fmt::Display;
 
 use slotmap::dense::*;
 
@@ -31,12 +33,12 @@ pub struct DisplayState<'a> {
 impl<'a> DisplayState<'a> {
     pub fn new(screen_sections: Plan,
                font_image: Texture<'a>,
-               sprites: DenseSlotMap<SpriteKey, SpriteSheet>,
+               sprites: DenseSlotMap<SpriteKey, SpriteSheet<'a>>,
                canvas: WindowCanvas) -> DisplayState<'a> {
 
         return DisplayState {
             font_image,
-            sprites: DenseSlotMap::new(),
+            sprites,
             display_overlays: false,
             screen_sections,
             canvas,
@@ -74,9 +76,12 @@ impl<'a> SpriteSheet<'a> {
 }
 
 
+#[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Area {
     x_offset: i32,
     y_offset: i32,
+    width: usize,
+    height: usize,
     font_width: usize,
     font_height: usize,
 }
@@ -84,16 +89,26 @@ pub struct Area {
 impl Area {
     pub fn new(x_offset: i32,
                y_offset: i32,
+               width: usize,
+               height: usize,
                font_width: usize,
                font_height: usize) -> Area {
         Area { x_offset,
                y_offset,
+               width,
+               height,
                font_width,
                font_height,
         }
     }
-}
 
+    pub fn char_rect(&self, x: i32, y: i32) -> Rect {
+        return Rect::new(self.x_offset + x * self.font_width as i32,
+                         self.y_offset + y * self.font_height as i32,
+                         self.font_width as u32,
+                         self.font_height as u32);
+    }
+}
 
 pub fn get_objects_under_mouse(x: i32,
                                y: i32,
@@ -248,18 +263,52 @@ pub fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool)
     return color;
 }
 
+pub fn draw_placard(display_state: &mut DisplayState,
+                    text: String,
+                    area: &Area,
+                    config: &Config) {
+    let color = config.color_bone_white;
+    display_state.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+    
+    display_state.canvas.draw_rect(Rect::new(area.x_offset + 5,
+                                             area.y_offset + (area.font_height as i32 / 2),
+                                             area.width as u32 - 10,
+                                             area.height as u32 - 10));
+
+    let half_text = text.len() / 2;
+    let text_offset = (area.width / 2) - (area.font_width * half_text);
+    display_state.canvas.fill_rect(Rect::new(area.x_offset + text_offset as i32,
+                                             area.y_offset,
+                                             (text.len() * area.font_width) as u32,
+                                             area.font_height as u32));
+
+    let mid_char_offset = (area.width / area.font_width) / 2;
+    let text_start = (mid_char_offset - half_text) as i32;
+    draw_text(display_state,
+              "Inventory".to_string(),
+              text_start,
+              0,
+              config.color_dark_blue,
+              area);
+}
+
 pub fn render_inventory(display_state: &mut DisplayState,
                         data: &mut GameData,
                         area: &Area, 
                         config: &Config) {
 
     // Render header
-    draw_text(display_state,
-              "Inventory".to_string(),
-              0,
-              0,
-              config.color_ice_blue,
-              area);
+    draw_placard(display_state,
+                 "Inventory".to_string(),
+                 area,
+                 config);
+
+    //draw_text(display_state,
+    //          "Inventory".to_string(),
+    //          0,
+    //          0,
+    //          config.color_ice_blue,
+    //          area);
 
     let player_handle = data.find_player().unwrap();
 
@@ -282,7 +331,7 @@ pub fn render_inventory(display_state: &mut DisplayState,
         // place prompt character
         draw_char(display_state,
                   '*',
-                  0,
+                  1,
                   y_pos,
                   config.color_ice_blue,
                   area);
@@ -290,7 +339,7 @@ pub fn render_inventory(display_state: &mut DisplayState,
         // place object name
         draw_text(display_state,
                   format!(" {}", data.objects[*obj_id].name),
-                  1,
+                  2,
                   y_pos,
                   color,
                   area);
@@ -419,6 +468,7 @@ pub fn render_map(display_state: &mut DisplayState,
 pub fn render_objects(display_state: &mut DisplayState,
                       data: &mut GameData,
                       settings: &GameSettings,
+                      config: &Config,
                       area: &Area) {
     let player_handle = data.find_player().unwrap();
     let player_pos = data.objects[player_handle].pos();
@@ -448,11 +498,19 @@ pub fn render_objects(display_state: &mut DisplayState,
                         }
                     }
 
-                    Some(Animation::Idle(animation_handle, sprite_index)) => {
-                        // TODO draw texture rect onto map
-                        //      inc sprite_index
-                        //      check for wrap around
-                        //      either roll over, or set Animation to None
+                    Some(Animation::Idle(sprite_key, ref mut sprite_val)) => {
+                        let sprite_index = (*sprite_val) as i32;
+                        draw_sprite(display_state,
+                                    sprite_key,
+                                    sprite_index,
+                                    x,
+                                    y,
+                                    object.color,
+                                    &area);
+                        *sprite_val = *sprite_val + config.idle_speed;
+                        if *sprite_val as usize >= display_state.sprites[sprite_key].num_sprites {
+                            *sprite_val = 0.0;
+                        }
                     }
 
                     // otherwise just draw the objects character (the default)
@@ -537,6 +595,7 @@ pub fn render_all(display_state: &mut DisplayState,
                                    screen_rect.0 as usize,
                                    screen_rect.1 as usize);
 
+    display_state.canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
     display_state.canvas.clear();
 
     let zones = plots.collect::<Vec<Plot>>();
@@ -553,6 +612,8 @@ pub fn render_all(display_state: &mut DisplayState,
 
                 let area = Area::new(x_offset as i32,
                                      y_offset as i32,
+                                     plot.width,
+                                     plot.height,
                                      (scaler * FONT_WIDTH as f32) as usize, 
                                      (scaler * FONT_WIDTH as f32) as usize);
 
@@ -561,14 +622,19 @@ pub fn render_all(display_state: &mut DisplayState,
 
                 render_map(display_state, data, &area, settings, config);
 
-                render_objects(display_state, data, settings, &area);
+                render_objects(display_state, data, settings, config, &area);
 
                 render_overlays(display_state, mouse_state, data, &area, config);
 
             }
 
             "inspector" => {
-                let area = Area::new(plot.x as i32, plot.y as i32, FONT_WIDTH as usize, FONT_HEIGHT as usize);
+                let area = Area::new(plot.x as i32,
+                                     plot.y as i32,
+                                     plot.width,
+                                     plot.height,
+                                     FONT_WIDTH as usize,
+                                     FONT_HEIGHT as usize);
                 render_inventory(display_state, data, &area, config);
             }
 
@@ -601,11 +667,30 @@ pub fn draw_text(display_state: &mut DisplayState,
 }
 
 pub fn draw_sprite(display_state: &mut DisplayState,
+                   sprite_key: SpriteKey,
+                   sprite_index: i32,
                    x: i32,
                    y: i32,
                    color: Color,
                    area: &Area) {
-    // TODO combine with draw_char
+    let src = Rect::new(sprite_index * FONT_WIDTH,
+                        0,
+                        FONT_WIDTH as u32,
+                        FONT_HEIGHT as u32);
+
+    let dst = area.char_rect(x, y);
+
+    display_state.sprites[sprite_key].texture.set_color_mod(color.r, color.g, color.b);
+    display_state.sprites[sprite_key].texture.set_alpha_mod(color.a);
+
+    let sprite = &display_state.sprites[sprite_key].texture;
+    display_state.canvas.copy_ex(sprite,
+                                 Some(src),
+                                 Some(dst),
+                                 0.0,
+                                 None,
+                                 false,
+                                 false).unwrap();
 }
 
 pub fn draw_char(display_state: &mut DisplayState,
@@ -622,10 +707,7 @@ pub fn draw_char(display_state: &mut DisplayState,
                         FONT_WIDTH as u32,
                         FONT_HEIGHT as u32);
 
-    let dst = Rect::new(area.x_offset + x * area.font_width as i32,
-                        area.y_offset + y * area.font_height as i32,
-                        area.font_width as u32,
-                        area.font_height as u32);
+    let dst = area.char_rect(x, y);
 
     display_state.font_image.set_color_mod(color.r, color.g, color.b);
     display_state.font_image.set_alpha_mod(color.a);

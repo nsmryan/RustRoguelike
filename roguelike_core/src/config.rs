@@ -32,4 +32,5 @@ pub struct Config {
     pub tile_noise_scaler: f64,
     pub highlight_alpha: u8,
     pub map_load: MapLoadConfig,
+    pub idle_speed: f32,
 }
