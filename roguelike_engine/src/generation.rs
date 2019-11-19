@@ -7,6 +7,14 @@ use roguelike_core::movement::*;
 use roguelike_core::config::*;
 
 use crate::display::*;
+use crate::read_map::*;
+
+
+pub enum MapGenType {
+    Island,
+    WallTest,
+    FromFile(String),
+}
 
 
 //if we want to use a character sprite, a potential value is '\u{8B}'
@@ -94,20 +102,43 @@ pub fn make_stone(config: &Config, x: i32, y :i32) -> Object {
     return stone;
 }
 
-pub fn make_map(objects: &mut ObjMap,
+pub fn make_map(map_type: &MapGenType,
+                objects: &mut ObjMap,
                 config: &Config,
                 display_state: &DisplayState,
                 rng: &mut SmallRng) -> (GameData, Position) {
-    let mut map = Map::from_dims(MAP_WIDTH as usize, MAP_HEIGHT as usize);
+    let result;
+    match map_type {
+        MapGenType::WallTest => {
+            let (map, player_position) = make_wall_test_map(objects, config, display_state);
+            
+            result = (GameData::new(map, objects.clone()), player_position);
+        }
 
-    let mut data = GameData::new(map, objects.clone());
-    let starting_position = make_island(&mut data, config, display_state, rng);
+        MapGenType::Island => {
+            let mut map = Map::from_dims(MAP_WIDTH as usize, MAP_HEIGHT as usize);
 
-    data.map[starting_position.pair()].tile_type = TileType::Empty;
+            let mut data = GameData::new(map, objects.clone());
+            let starting_position = make_island(&mut data, config, display_state, rng);
 
-    data.map.update_map();
+            data.map[starting_position.pair()].tile_type = TileType::Empty;
 
-    (data, starting_position)
+            data.map.update_map();
+
+            result = (data, starting_position);
+        }
+
+        MapGenType::FromFile(file_name) => {
+            let (new_objects, new_map, player_position) =
+                read_map_xp(config, display_state, &file_name);
+
+            let data = GameData::new(new_map, new_objects);
+
+            result = (data, Position::from_pair(player_position));
+        }
+    }
+
+    return result;
 }
 
 pub fn make_island(data: &mut GameData,

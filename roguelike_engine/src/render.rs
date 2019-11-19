@@ -16,6 +16,7 @@ use roguelike_core::config::*;
 
 use crate::plat::*;
 use crate::display::*;
+use crate::game::*;
 
 
 pub fn get_objects_under_mouse(x: i32,

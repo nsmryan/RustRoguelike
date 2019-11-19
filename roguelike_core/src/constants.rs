@@ -113,3 +113,7 @@ pub const ENTITY_CLOAK_GUY: u8 = 141;
 pub const ENTITY_ELF: u8 = 165;
 pub const ENTITY_ORB: u8 = 135;
 pub const ENTITY_GOAL: u8 = 253;
+
+pub const ARROW_UP: u8 = 30;
+pub const ARROW_DOWN: u8 = 31;
+

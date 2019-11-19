@@ -7,6 +7,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 
+use crate::game::*;
 use crate::input::*;
 use crate::display::*;
 use crate::generation::*;
@@ -15,8 +16,8 @@ use crate::generation::*;
 pub fn handle_input(input_action: InputAction,
                     mouse_state: &MouseState,
                     game_data: &mut GameData, 
+                    settings: &mut GameSettings,
                     display_state: &mut DisplayState,
-                    god_mode: &mut bool,
                     config: &Config) -> PlayerAction {
     use PlayerAction::*;
 
@@ -70,7 +71,7 @@ pub fn handle_input(input_action: InputAction,
         (InputAction::RegenerateMap, _) => {
             let mut rng: SmallRng = SeedableRng::seed_from_u64(2);
             let (data, _position) =
-                make_map(&mut game_data.objects, config, display_state, &mut rng);
+                make_map(&settings.map_type, &mut game_data.objects, config, display_state, &mut rng);
             game_data.map = data.map;
             player_action = DidntTakeTurn;
         }
@@ -90,7 +91,7 @@ pub fn handle_input(input_action: InputAction,
             }
 
             // set god mode flag
-            *god_mode = true;
+            settings.god_mode = true;
 
             // set all tiles to be transparent and walkable. walkable is not current used
             // anywhere

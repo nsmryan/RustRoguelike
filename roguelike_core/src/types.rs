@@ -79,24 +79,6 @@ pub enum GameState {
     Lose,
 }
 
-pub struct GameSettings {
-    pub previous_player_position: (i32, i32),
-    pub turn_count: usize,
-    pub god_mode: bool,
-}
-
-impl GameSettings {
-    pub fn new(previous_player_position: (i32, i32),
-               turn_count: usize,
-               god_mode: bool) -> GameSettings {
-        GameSettings {
-            previous_player_position,
-            turn_count,
-            god_mode,
-        }
-    }
-}
-
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct MouseState {

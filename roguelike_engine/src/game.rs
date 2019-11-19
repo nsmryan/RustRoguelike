@@ -21,6 +21,26 @@ use crate::read_map::*;
 use crate::actions;
 
 
+pub struct GameSettings {
+    pub previous_player_position: (i32, i32),
+    pub turn_count: usize,
+    pub god_mode: bool,
+    pub map_type: MapGenType,
+}
+
+impl GameSettings {
+    pub fn new(previous_player_position: (i32, i32),
+               turn_count: usize,
+               god_mode: bool) -> GameSettings {
+        GameSettings {
+            previous_player_position,
+            turn_count,
+            god_mode,
+            map_type: MapGenType::Island,
+        }
+    }
+}
+
 pub struct Game<'a> {
     pub config: Config,
 
@@ -58,7 +78,7 @@ impl<'a> Game<'a> {
         let mut objects = DenseSlotMap::with_capacity(INITIAL_OBJECT_CAPACITY);
         let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
 
-        let map;
+        let mut map;
         let player_position;
         match config.map_load {
             MapLoadConfig::FromFile => {
@@ -74,10 +94,13 @@ impl<'a> Game<'a> {
                 player_position = position;
 
                 objects.insert(make_goal(&config, player_position.0 + 1, player_position.1));
+                let exit_position = (player_position.0 + 1, player_position.1 - 1);
+                map[exit_position].tile_type = TileType::Exit;
             }
 
             MapLoadConfig::Random => {
-                let (game_data, position) = make_map(&mut objects, &config, &display_state, &mut rng);
+                let (game_data, position) =
+                    make_map(&MapGenType::Island, &mut objects, &config, &display_state, &mut rng);
                 // TODO consider using objects as well here on regen?
                 map = game_data.map;
                 player_position = position.into_pair();
@@ -139,6 +162,20 @@ impl<'a> Game<'a> {
             _ => {},
         }
 
+        let player_handle = self.data.find_player().unwrap();
+
+        let (new_objects, new_map, _) = read_map_xp(&self.config, &self.display_state, "map.xp");
+        self.data.map = new_map;
+        self.data.objects[player_handle].inventory.clear();
+        let player = self.data.objects[player_handle].clone();
+        self.data.objects.clear();
+        self.data.objects.insert(player);
+        for key in new_objects.keys() {
+            self.data.objects.insert(new_objects[key].clone());
+        }
+
+        self.state = GameState::Playing;
+
         return false;
     }
 
@@ -166,8 +203,8 @@ impl<'a> Game<'a> {
             actions::handle_input(self.input_action,
                                   &mut self.mouse_state,
                                   &mut self.data,
+                                  &mut self.settings,
                                   &mut self.display_state,
-                                  &mut self.settings.god_mode,
                                   &self.config);
         match player_action {
             PlayerAction::Exit => {
@@ -240,10 +277,13 @@ impl<'a> Game<'a> {
         if self.config.load_map_file_every_frame && Path::new("map.xp").exists() {
             let (new_objects, new_map, _) = read_map_xp(&self.config, &self.display_state, "map.xp");
             self.data.map = new_map;
+            self.data.objects[player_handle].inventory.clear();
+            let player = self.data.objects[player_handle].clone();
             self.data.objects.clear();
             for key in new_objects.keys() {
                 self.data.objects.insert(new_objects[key].clone());
             }
+            self.data.objects.insert(player);
         }
 
         /* Recompute FOV */
@@ -288,7 +328,6 @@ impl<'a> Game<'a> {
 }
 */
 
-// TODO figure out where to put this. should depend on state
 /// Check whether the exit condition for the game is met.
 fn exit_condition_met(data: &GameData) -> bool {
     // loop over objects in inventory, and check whether any
@@ -296,10 +335,14 @@ fn exit_condition_met(data: &GameData) -> bool {
     //let has_goal =
     //inventory.iter().any(|obj| obj.item.map_or(false, |item| item == Item::Goal));
     // TODO add back in with new inventory!
-    let has_goal = false;
-
     let player_handle = data.find_player().unwrap();
-    let player_pos = (data.objects[player_handle].x, data.objects[player_handle].y);
+
+    let has_goal = 
+        data.objects[player_handle].inventory.iter().any(|item_handle| {
+            data.objects[*item_handle].item == Some(Item::Goal)
+        });
+
+    let player_pos = data.objects[player_handle].pos();
     let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
 
     let exit_condition = has_goal && on_exit_tile;

@@ -131,7 +131,7 @@
     "tile_noise_scaler": 4.0,
     "highlight_alpha": 76,
     "grid_alpha": 9,
-    "map_load": "FromFile",
+    "map_load": "TestWall",
     "idle_speed": 0.5
 }
 

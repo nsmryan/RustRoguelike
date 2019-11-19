@@ -14,7 +14,9 @@ use crate::display::*;
 use crate::generation::*;
 
 
-pub fn read_map_xp(config: &Config, display_state: &DisplayState, file_name: &str) -> (ObjMap, Map, (i32, i32)) {
+pub fn read_map_xp(config: &Config,
+                   display_state: &DisplayState,
+                   file_name: &str) -> (ObjMap, Map, (i32, i32)) {
     let file = File::open(file_name).unwrap();
     let mut buf_reader = BufReader::new(file);
     let xp = XpFile::read(&mut buf_reader).unwrap();
