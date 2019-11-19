@@ -59,7 +59,10 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     sprites.insert(SpriteSheet::new("elf_idle".to_string(), elf_idle));
 
     let screen_sections =
-        Plan::vert("screen", 0.80, Plan::zone("map"), Plan::zone("inventory"));
+        Plan::vert("screen", 0.80, Plan::zone("map"), 
+                   Plan::split_horiz(0.5, Plan::zone("inventory"),
+                                          Plan::zone("info")));
+
 
     let display_state =
         DisplayState::new(screen_sections, font_image, sprites, canvas);

@@ -202,6 +202,55 @@ pub fn draw_placard(display_state: &mut DisplayState,
               area);
 }
 
+pub fn render_info(display_state: &mut DisplayState,
+                   mouse_xy: Option<(usize, usize)>,
+                   data: &mut GameData,
+                   area: &Area, 
+                   config: &Config) {
+    draw_placard(display_state,
+                 "Info".to_string(),
+                 area,
+                 config);
+
+    if let Some(mouse) = mouse_xy {
+        let player_handle = data.find_player().unwrap();
+        let player_x = data.objects[player_handle].x;
+        let player_y = data.objects[player_handle].y;
+
+        let object_ids =
+            get_objects_under_mouse(mouse.0 as i32, mouse.1 as i32, data);
+
+        if let Some(obj_id) = object_ids.first() {
+            let mut y_pos = 1;
+
+            let pos = data.objects[*obj_id].pos();
+
+            if data.map.is_in_fov(player_x, player_y, pos.0, pos.1, FOV_RADIUS) {
+                let color = config.color_warm_grey;
+                draw_text(display_state,
+                          format!(" {}", data.objects[*obj_id].name),
+                          0,
+                          y_pos,
+                          color,
+                          area);
+
+                y_pos += 1;
+
+                if let Some(behave) = data.objects[*obj_id].behavior {
+                    draw_text(display_state,
+                              format!(" {}", behave.description()),
+                              1,
+                              y_pos,
+                              color,
+                              area);
+
+                    y_pos += 1;
+                }
+            }
+        }
+    }
+}
+
 /// Render an inventory section within the given area
 pub fn render_inventory(display_state: &mut DisplayState,
                         data: &mut GameData,
@@ -444,11 +493,13 @@ pub fn render_objects(display_state: &mut DisplayState,
 }
 
 pub fn render_overlays(display_state: &mut DisplayState,
-                       mouse_state: &MouseState,
+                       map_mouse_pos: Option<(usize, usize)>,
                        data: &mut GameData,
                        area: &Area,
                        config: &Config) {
     let player_handle = data.find_player().unwrap();
+    let player_x = data.objects[player_handle].x;
+    let player_y = data.objects[player_handle].y;
 
     // Draw player action overlay. Could draw arrows to indicate how to reach each location
     let mut highlight_color = config.color_warm_grey;
@@ -476,25 +527,28 @@ pub fn render_overlays(display_state: &mut DisplayState,
         }
     }
 
-    let mut attack_highlight_color = config.color_red;
-    attack_highlight_color.a = config.highlight_alpha;
-    // Draw monster attack overlay
-    let font_width = (SCREEN_WIDTH / data.map.width() as u32) as i32;
-    let font_height = (SCREEN_HEIGHT / data.map.height() as u32) as i32;
-    let mouse_x = mouse_state.x as i32 / font_width;
-    let mouse_y = mouse_state.y as i32 / font_height;
-    let object_ids =  get_objects_under_mouse(mouse_x, mouse_y, data);
-    for object_id in object_ids.iter() {
-        if let Some(reach) = data.objects[*object_id].attack {
-            let attack_positions = 
-                reach.offsets()
-                     .iter()
-                     .map(|offset| (mouse_x + offset.0,
-                                    mouse_y + offset.1))
-                     .collect::<Vec<(i32, i32)>>();
+    if let Some(mouse_xy) = map_mouse_pos {
+        let mut attack_highlight_color = config.color_red;
+        attack_highlight_color.a = config.highlight_alpha;
+        // Draw monster attack overlay
+        let object_ids =  get_objects_under_mouse(mouse_xy.0 as i32, mouse_xy.1 as i32, data);
+        for object_id in object_ids.iter() {
+            let pos = data.objects[*object_id].pos();
 
-            for position in attack_positions {
-                draw_char(display_state, MAP_EMPTY_CHAR as char, position.0, position.1, attack_highlight_color, area);
+            if data.map.is_in_fov(player_x, player_y, pos.0, pos.1, FOV_RADIUS) {
+                if let Some(reach) = data.objects[*object_id].attack {
+                    let attack_positions = 
+                        reach.offsets()
+                             .iter()
+                             .map(|offset| (mouse_xy.0 as i32 + offset.0,
+                                            mouse_xy.1 as i32 + offset.1))
+                             .filter(|pos| data.map.is_within_bounds(pos.0, pos.1))
+                             .collect::<Vec<(i32, i32)>>();
+
+                    for position in attack_positions {
+                        draw_char(display_state, MAP_EMPTY_CHAR as char, position.0, position.1, attack_highlight_color, area);
+                    }
+                }
             }
         }
     }
@@ -525,6 +579,20 @@ pub fn render_all(display_state: &mut DisplayState,
 
     let zones = plots.collect::<Vec<Plot>>();
 
+    let mut mouse_map_pos = None;
+    for zone in zones.iter() {
+        if zone.name == "map" && zone.contains(mouse_state.x as usize, mouse_state.y as usize) {
+            let ((x_offset, y_offset), scaler) =
+                zone.fit(data.map.width() as usize * FONT_WIDTH as usize,
+                         data.map.height() as usize * FONT_HEIGHT as usize);
+
+            let mouse_map_xy = zone.within(mouse_state.x as usize, mouse_state.y as usize);
+            let map_x = mouse_map_xy.0 as f32 / (FONT_WIDTH as f32 * scaler);
+            let map_y = mouse_map_xy.1 as f32 / (FONT_HEIGHT as f32 * scaler);
+            mouse_map_pos = Some((map_x as usize, map_y as usize));
+        }
+    }
+
     // for each screen section, render its contents
     for plot in zones.iter() {
         match plot.name.as_str() {
@@ -550,8 +618,7 @@ pub fn render_all(display_state: &mut DisplayState,
 
                 render_objects(display_state, data, settings, config, &area);
 
-                render_overlays(display_state, mouse_state, data, &area, config);
-
+                render_overlays(display_state, mouse_map_pos, data, &area, config);
             }
 
             "inventory" => {
@@ -562,6 +629,16 @@ pub fn render_all(display_state: &mut DisplayState,
                                      FONT_WIDTH as usize,
                                      FONT_HEIGHT as usize);
                 render_inventory(display_state, data, &area, config);
+            }
+
+            "info" => {
+                let area = Area::new(plot.x as i32,
+                                     plot.y as i32,
+                                     plot.width,
+                                     plot.height,
+                                     FONT_WIDTH as usize,
+                                     FONT_HEIGHT as usize);
+                render_info(display_state, mouse_map_pos, data, &area, config);
             }
 
             section_name => {

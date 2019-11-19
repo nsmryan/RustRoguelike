@@ -138,6 +138,16 @@ pub enum Behavior {
     Attacking(ObjectId),
 }
 
+impl Behavior {
+    pub fn description(&self) -> String {
+        match self {
+            Behavior::Idle => "idle".to_string(),
+            Behavior::Investigating(_position) => "investigating".to_string(),
+            Behavior::Attacking(_obj_id) => "attacking".to_string(),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Fighter {
     pub max_hp: i32,
