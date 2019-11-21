@@ -218,6 +218,10 @@ impl Momentum {
         self.my = my;
     }
 
+    pub fn along(&self, dx: i32, dy: i32) -> bool {
+        return (self.mx * dx + self.my * dy) > 0;
+    }
+
     pub fn clear(&mut self) {
         self.mx = 0;
         self.my = 0;

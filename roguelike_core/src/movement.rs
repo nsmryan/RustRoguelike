@@ -334,12 +334,12 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Pl
         }
 
         Some(Movement::Move(x, y)) | Some(Movement::JumpWall(x, y)) => {
-            let (dx, dy) = (x - data.objects.get(player_handle).unwrap().x, y - data.objects.get(player_handle).unwrap().y);
+            let (dx, dy) = (x - data.objects[player_handle].x, y - data.objects[player_handle].y);
 
-            data.objects.get_mut(player_handle).unwrap().set_pos(x, y);
-            let momentum = data.objects.get(player_handle).unwrap().momentum.unwrap();
+            data.objects[player_handle].set_pos(x, y);
+            let momentum = data.objects[player_handle].momentum.unwrap();
 
-            data.objects.get_mut(player_handle).unwrap().momentum.as_mut().map(|momentum| momentum.moved(dx, dy));
+            data.objects[player_handle].momentum.as_mut().map(|momentum| momentum.moved(dx, dy));
 
             if momentum.magnitude() > 1 && !momentum.took_half_turn {
                 player_action = PlayerAction::TookHalfTurn;
@@ -347,12 +347,12 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Pl
                 player_action = PlayerAction::TookTurn;
             }
 
-            data.objects.get_mut(player_handle).unwrap().momentum.as_mut().map(|momentum| momentum.took_half_turn = player_action == PlayerAction::TookHalfTurn);
+            data.objects[player_handle].momentum.as_mut().map(|momentum| momentum.took_half_turn = player_action == PlayerAction::TookHalfTurn);
         }
 
         Some(Movement::WallKick(x, y, dir_x, dir_y)) => {
-            let mut momentum = data.objects.get(player_handle).unwrap().momentum.unwrap();
-            data.objects.get_mut(player_handle).unwrap().set_pos(x, y);
+            let mut momentum = data.objects[player_handle].momentum.unwrap();
+            data.objects[player_handle].set_pos(x, y);
             momentum.set_momentum(dir_x, dir_y);
 
             // TODO could check for enemy and attack
@@ -391,9 +391,11 @@ pub fn calculate_move(action: MoveAction,
             Collision::Wall((tile_x, tile_y), (new_x, new_y)) => {
                 match data.objects[object_id].momentum {
                     Some(momentum) => {
-                        // if max momentum, and there is space beyond the wall, than jump over the wall.
+                        // if max momentum, the momentum is in the same direction as the movement,
+                        // and there is space beyond the wall, than jump over the wall.
                         if momentum.at_maximum() &&
-                            !is_blocked(tile_x, tile_y, data) {
+                           momentum.along(dx, dy) && 
+                           !is_blocked(tile_x, tile_y, data) {
                                 movement = Some(Movement::JumpWall(tile_x, tile_y));
                         } else { // otherwise move normally, stopping just before the blocking tile
                             movement = Some(Movement::Move(new_x, new_y));

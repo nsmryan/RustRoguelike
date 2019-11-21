@@ -246,6 +246,25 @@ pub fn render_info(display_state: &mut DisplayState,
 
                     y_pos += 1;
                 }
+
+                if let Some(momentum) = data.objects[*obj_id].momentum {
+                    draw_text(display_state,
+                              format!("momentum:"),
+                              1,
+                              y_pos,
+                              color,
+                              area);
+
+                    y_pos += 1;
+                    draw_text(display_state,
+                              format!(" {} ({}, {})", momentum.magnitude(), momentum.mx, momentum.my),
+                              1,
+                              y_pos,
+                              color,
+                              area);
+
+                    y_pos += 1;
+                }
             }
         }
     }
