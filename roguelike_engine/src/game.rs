@@ -176,7 +176,8 @@ impl<'a> Game<'a> {
 
         self.state = GameState::Playing;
 
-        return false;
+        // TODO Exit game on win for now
+        return true;
     }
 
     pub fn step_lose(&mut self) -> bool {

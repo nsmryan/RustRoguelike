@@ -546,6 +546,62 @@ pub fn make_tcod_map(tiles: &Vec<Vec<Tile>>) -> tcod::map::Map {
 
 
 #[test]
+fn test_blocked_by_wall_right() {
+    let mut map = Map::from_dims(10, 10);
+
+    let pos: (usize, usize) = (5, 5);
+    map[pos].left_wall = Wall::ShortWall;
+  
+    map.update_map();
+
+    assert!(map.is_blocked_by_wall(4, 5, 1, 0) == true);
+    assert!(map.is_blocked_by_wall(5, 5, 1, 0) == false);
+    assert!(map.is_blocked_by_wall(3, 5, 1, 0) == false);
+}
+
+#[test]
+fn test_blocked_by_wall_up() {
+    let mut map = Map::from_dims(10, 10);
+
+    let pos: (usize, usize) = (5, 5);
+    map[pos].bottom_wall = Wall::ShortWall;
+  
+    map.update_map();
+
+    assert!(map.is_blocked_by_wall(5, 5, 0, 1) == true);
+    assert!(map.is_blocked_by_wall(5, 6, 0, 1) == false);
+    assert!(map.is_blocked_by_wall(5, 4, 0, 1) == false);
+}
+
+#[test]
+fn test_blocked_by_wall_down() {
+    let mut map = Map::from_dims(10, 10);
+
+    let pos: (usize, usize) = (5, 5);
+    map[pos].bottom_wall = Wall::ShortWall;
+  
+    map.update_map();
+
+    assert!(map.is_blocked_by_wall(5, 6, 0, -1) == true);
+    assert!(map.is_blocked_by_wall(5, 5, 0, -1) == false);
+    assert!(map.is_blocked_by_wall(5, 7, 0, -1) == false);
+}
+
+#[test]
+fn test_blocked_by_wall_left() {
+    let mut map = Map::from_dims(10, 10);
+
+    let pos: (usize, usize) = (5, 5);
+    map[pos].left_wall = Wall::ShortWall;
+  
+    map.update_map();
+
+    assert!(map.is_blocked_by_wall(5, 5, -1, 0) == true);
+    assert!(map.is_blocked_by_wall(6, 5, -1, 0) == false);
+    assert!(map.is_blocked_by_wall(4, 5, -1, 0) == false);
+}
+
+#[test]
 fn test_fov_blocked_by_wall_right() {
     let radius = 10;
     let mut map = Map::from_dims(10, 10);
