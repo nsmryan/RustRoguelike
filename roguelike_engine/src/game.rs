@@ -82,7 +82,7 @@ impl<'a> Game<'a> {
         let player_position;
         match config.map_load {
             MapLoadConfig::FromFile => {
-                let (new_objects, new_map, mut position) = read_map_xp(&config, &display_state, "map.xp");
+                let (new_objects, new_map, mut position) = read_map_xp(&config, &display_state, "resources/map.xp");
                 objects.clear();
                 for object in new_objects.values() {
                     objects.insert(object.clone());
@@ -164,7 +164,7 @@ impl<'a> Game<'a> {
 
         let player_handle = self.data.find_player().unwrap();
 
-        let (new_objects, new_map, _) = read_map_xp(&self.config, &self.display_state, "map.xp");
+        let (new_objects, new_map, _) = read_map_xp(&self.config, &self.display_state, "resources/map.xp");
         self.data.map = new_map;
         self.data.objects[player_handle].inventory.clear();
         let player = self.data.objects[player_handle].clone();
@@ -238,10 +238,13 @@ impl<'a> Game<'a> {
                 ai_take_turn(key, &mut self.data);
                 if let Some(fighter) = self.data.objects[key].fighter {
                     if fighter.hp <= 0 {
+                        // NOTE for now, we just remove enemies
                         self.data.objects[key].alive = false;
                         self.data.objects[key].chr = '%';
                         self.data.objects[key].color = self.config.color_red;
                         self.data.objects[key].fighter = None;
+
+                        self.data.objects.remove(key);
                     }
                 }
             }
@@ -274,8 +277,8 @@ impl<'a> Game<'a> {
             _ => (),
         }
 
-        if self.config.load_map_file_every_frame && Path::new("map.xp").exists() {
-            let (new_objects, new_map, _) = read_map_xp(&self.config, &self.display_state, "map.xp");
+        if self.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
+            let (new_objects, new_map, _) = read_map_xp(&self.config, &self.display_state, "resources/map.xp");
             self.data.map = new_map;
             self.data.objects[player_handle].inventory.clear();
             let player = self.data.objects[player_handle].clone();
