@@ -41,7 +41,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
     let fps_throttler = Throttler::new(Duration::from_millis(1000 / 30));
 
-    let font_image = texture_creator.load_texture("rexpaint16x16.png")
+    let font_image = texture_creator.load_texture("resources/rexpaint16x16.png")
         .map_err(|e| e.to_string())?;
 
     let player_idle = texture_creator.load_texture("animations/player/Player_Idle.png")
