@@ -308,7 +308,7 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Pl
     let player_handle = data.find_player().unwrap();
 
     let movement = calculate_move(move_action,
-                                  data.objects.get(player_handle).unwrap().movement.unwrap(),
+                                  data.objects[player_handle].movement.unwrap(),
                                   player_handle,
                                   data);
 
@@ -317,19 +317,19 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Pl
             attack(player_handle, target_handle, &mut data.objects);
 
             // if we attack without moving, we lost all our momentum
-            if (new_x, new_y) == (data.objects.get(player_handle).unwrap().x, data.objects.get(player_handle).unwrap().y)
+            if (new_x, new_y) == (data.objects[player_handle].x, data.objects[player_handle].y)
             {
-                data.objects.get_mut(player_handle).unwrap().momentum.as_mut().map(|momentum| momentum.clear());
+                data.objects[player_handle].momentum.as_mut().map(|momentum| momentum.clear());
             }
 
-            data.objects.get_mut(player_handle).unwrap().set_pos(new_x, new_y);
+            data.objects[player_handle].set_pos(new_x, new_y);
 
             player_action = PlayerAction::TookTurn;
         }
 
         Some(Movement::Collide(x, y)) => {
-            data.objects.get_mut(player_handle).unwrap().set_pos(x, y);
-            data.objects.get_mut(player_handle).unwrap().momentum.unwrap().clear();
+            data.objects[player_handle].set_pos(x, y);
+            data.objects[player_handle].momentum.unwrap().clear();
             player_action = PlayerAction::TookTurn;
         }
 
