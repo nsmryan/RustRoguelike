@@ -274,7 +274,7 @@ pub fn check_collision(x: i32,
         result = Collision::Wall((x, y), (x, y));
     } else if data.map.is_blocked_by_wall(x, y, dx, dy) {
         // TODO this returns the final position, not the position of the wal
-        // maybe need a block_by_wall function which returns this instead of a bool
+        // mayye need a block_by_wall function which returns this instead of a bool
         result = Collision::Wall((x + dx, y + dy), (x, y));
     } else {
         let move_line = Line::new((x, y), (x + dx, y + dy));
@@ -310,8 +310,6 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Pl
                                   data.objects[player_handle].movement.unwrap(),
                                   player_handle,
                                   data);
-
-    dbg!(movement);
 
     match movement {
         Some(Movement::Attack(new_x, new_y, target_handle)) => {

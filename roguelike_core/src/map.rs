@@ -371,14 +371,42 @@ impl Map {
         return circle_positions.iter().map(|pos| *pos).collect();
     }
 
-    // NOTE potentially inefficient- copies whole map and returns all positions
+    pub fn reachable_neighbors(&self, x: i32, y: i32) -> Vec<(i32, i32)> {
+        let neighbors = [(1, 0),  (1, 1),  (0, 1), 
+                         (-1, 1), (-1, 0), (-1, -1),
+                         (0, -1), (1, -1)];
+
+        let mut result = Vec::new();
+
+        for delta in neighbors.iter() {
+            if !self.is_blocked_by_wall(x, y, delta.0, delta.1) {
+                result.push((x + delta.0, y + delta.1));
+            }
+        }
+
+        return result;
+    }
+
     pub fn astar(&self, start: (i32, i32), end: (i32, i32)) -> Vec<(i32, i32)> {
-        let map_copy = make_tcod_map(&self.tiles);
-        let mut astar = AStar::new_from_map(map_copy, 1.5);
+        let result;
 
-        astar.find(start, end);
+        let maybe_results = 
+            astar(&start,
+                  |&pos| self.reachable_neighbors(pos.0, pos.1)
+                              .iter()
+                              .map(|pos| (*pos, 1))
+                              .collect::<Vec<((i32, i32), i32)>>()
+                  ,
+                  |&pos| distance(pos, end) as i32,
+                  |&pos| pos == end);
 
-        return astar.iter().into_iter().collect::<Vec<_>>();
+        if let Some((results, _cost)) = maybe_results {
+            result = results;
+        } else {
+            result = Vec::new();
+        }
+
+        return result;
     }
 
     pub fn set_cell(&mut self, x: i32, y: i32, transparent: bool, walkable: bool) {

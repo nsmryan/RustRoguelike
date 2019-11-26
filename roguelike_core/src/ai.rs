@@ -188,7 +188,7 @@ fn ai_take_astar_step(monster_pos: (i32, i32),
     let astar_iter = map.astar(monster_pos, target_pos);
 
     if astar_iter.len() > 0 {
-        return step_towards(monster_pos, astar_iter[0]);
+        return step_towards(monster_pos, astar_iter[1]);
     } else {
         return (0, 0);
     }
