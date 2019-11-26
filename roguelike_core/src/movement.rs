@@ -267,14 +267,18 @@ pub fn check_collision(x: i32,
                        dx: i32,
                        dy: i32,
                        data: &GameData) -> Collision {
-    let move_line = Line::new((x, y), (x + dx, y + dy));
-
     let mut last_pos = (x, y);
     let mut result: Collision = Collision::NoCollision(x + dx, y + dy);
 
     if !data.map.is_within_bounds(x + dx, y + dy) {
         result = Collision::Wall((x, y), (x, y));
+    } else if data.map.is_blocked_by_wall(x, y, dx, dy) {
+        // TODO this returns the final position, not the position of the wal
+        // maybe need a block_by_wall function which returns this instead of a bool
+        result = Collision::Wall((x + dx, y + dy), (x, y));
     } else {
+        let move_line = Line::new((x, y), (x + dx, y + dy));
+
         for (x_pos, y_pos) in move_line.into_iter() {
             if is_blocked(x_pos, y_pos, data) {
                 if data.map[(x_pos, y_pos)].blocked {
@@ -287,11 +291,6 @@ pub fn check_collision(x: i32,
                         }
                     }
                 }
-                break;
-            }
-
-            if data.map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
-                result = Collision::Wall((x_pos + dx, y_pos + dy), (x_pos, y_pos));
                 break;
             }
 
@@ -311,6 +310,8 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Pl
                                   data.objects[player_handle].movement.unwrap(),
                                   player_handle,
                                   data);
+
+    dbg!(movement);
 
     match movement {
         Some(Movement::Attack(new_x, new_y, target_handle)) => {
@@ -425,6 +426,10 @@ pub fn calculate_move(action: MoveAction,
 
 // TODO consider moving to GameData
 pub fn is_blocked(x: i32, y: i32, data: &GameData) -> bool {
+    if !data.map.is_within_bounds(x, y) {
+        return true;
+    }
+
     if data.map[(x, y)].blocked {
         return true;
     }

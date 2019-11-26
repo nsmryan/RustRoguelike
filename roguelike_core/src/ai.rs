@@ -33,8 +33,12 @@ impl AiTurn {
 pub fn location_within_fov(map: &mut Map, monster_pos: Position, player_pos: Position) -> bool {
     let within_fov = map.is_in_fov(monster_pos.0, monster_pos.1, player_pos.0, player_pos.1, MONSTER_VIEW_DIST);
     let within_sight_range = player_pos.distance(&monster_pos) <= MONSTER_VIEW_DIST;
+    let blocked_by_wall = map.is_blocked_by_wall(monster_pos.0,
+                                                 monster_pos.1,
+                                                 player_pos.0 - monster_pos.0,
+                                                 player_pos.1 - monster_pos.1);
 
-    return within_fov && within_sight_range;
+    return within_fov && within_sight_range && !blocked_by_wall;
 }
 
 // TODO consider moving to GameData
@@ -68,12 +72,16 @@ pub fn ai_attack(monster_handle: ObjectId,
 
     let mut turn: AiTurn = AiTurn::new();
 
+    // if AI can hit their target
     if let Some(hit_pos) =
-        ai_can_hit_target(data.objects[monster_handle].pos(),
+        ai_can_hit_target(&mut data.map, 
+                          data.objects[monster_handle].pos(),
                           data.objects[target_handle].pos(),
                           &data.objects[monster_handle].attack.unwrap()) {
         turn.add(AiAction::Attack(target_handle, hit_pos));
-    } else {
+    } else if data.map.is_blocked_by_wall(monster_x, monster_y, target_x - monster_x, target_y - monster_y) {
+        turn.add(AiAction::StateChange(Behavior::Investigating((target_pos))));
+    } else { // otherwise attempt to move towards their target
         // check positions that can hit target, filter by FOV, and get the closest.
         // then move to this closest position.
         let mut pos_offset = (0, 0);
@@ -92,9 +100,7 @@ pub fn ai_attack(monster_handle: ObjectId,
             let positions: Vec<(i32, i32)> =
                 move_positions
                 .iter()
-                .filter(|(x, y)| data.map.is_in_fov(monster_x, monster_y, *x, *y, MONSTER_VIEW_DIST) &&
-                                 !is_blocked(*x, *y, data))
-                .filter(|new_pos| ai_can_hit_target(**new_pos, (target_x, target_y), &attack).is_some())
+                .filter(|new_pos| ai_can_hit_target(&mut data.map, **new_pos, (target_x, target_y), &attack).is_some())
                 .map(|pair| *pair)
                 .collect();
 
@@ -147,23 +153,29 @@ pub fn ai_investigate(target_pos_orig: Position,
     return turn;
 }
 
-fn ai_can_hit_target(monster_pos: (i32, i32), target_pos: (i32, i32), reach: &Reach) -> Option<(i32, i32)> {
+fn ai_can_hit_target(map: &mut Map,
+                     monster_pos: (i32, i32),
+                     target_pos: (i32, i32),
+                     reach: &Reach) -> Option<(i32, i32)> {
     let (monster_x, monster_y) = monster_pos;
     let (target_x, target_y) = target_pos;
     let mut hit_pos = None;
 
-    // get all locations they can hit
-    let positions: Vec<(i32, i32)> =
-        reach.offsets()
-        .iter()
-        .map(|pos| (pos.0 + monster_x, pos.1 + monster_y))
-        .collect();
+    if location_within_fov(map, Position::from_pair(monster_pos), Position::from_pair(target_pos)) {
 
-    // look through attack positions, in case one hits the target
-    for pos in positions {
-        if target_x == pos.0 && target_y == pos.1 {
-            hit_pos = Some(pos);
-            break;
+            // get all locations they can hit
+            let positions: Vec<(i32, i32)> =
+                reach.offsets()
+                .iter()
+                .map(|pos| (pos.0 + monster_x, pos.1 + monster_y))
+                .collect();
+
+        // look through attack positions, in case one hits the target
+        for pos in positions {
+            if (target_x, target_y) == pos {
+                hit_pos = Some(pos);
+                break;
+            }
         }
     }
 
@@ -175,7 +187,6 @@ fn ai_take_astar_step(monster_pos: (i32, i32),
                       map: &Map) -> (i32, i32) {
     let astar_iter = map.astar(monster_pos, target_pos);
 
-    // let recalculate_when_needed = true;
     if astar_iter.len() > 0 {
         return step_towards(monster_pos, astar_iter[0]);
     } else {

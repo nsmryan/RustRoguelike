@@ -3,6 +3,8 @@ use std::collections::HashSet;
 
 use rand::prelude::*;
 
+use pathfinding::directed::astar::astar;
+
 use tcod::map::{Map as FovMap};
 use tcod::pathfinding::*;
 use tcod::line::*;
@@ -194,6 +196,22 @@ impl Map {
         return map;
     }
 
+    pub fn blocked_left(&self, x: i32, y: i32) -> bool {
+        return self[(x, y)].left_wall != Wall::Empty;
+    }
+
+    pub fn blocked_right(&self, x: i32, y: i32) -> bool {
+        return self.is_within_bounds(x, y) && self[(x + 1, y)].left_wall != Wall::Empty;
+    }
+
+    pub fn blocked_down(&self, x: i32, y: i32) -> bool {
+        return self[(x, y)].bottom_wall != Wall::Empty;
+    }
+
+    pub fn blocked_up(&self, x: i32, y: i32) -> bool {
+        return self.is_within_bounds(x, y) && self[(x, y - 1)].bottom_wall != Wall::Empty;
+    }
+
     pub fn is_blocked_by_wall(&self, start_x: i32, start_y: i32, dx: i32, dy: i32) -> bool {
         let mut blocked = false;
 
@@ -214,6 +232,7 @@ impl Map {
             let (target_x, target_y) = pair[1];
 
             if !self.is_within_bounds(target_x, target_y) {
+                blocked = true;
                 break;
             }
 
@@ -242,36 +261,38 @@ impl Map {
                 }
             } else { // diagonal
                 // check for corners
-                let mut current_space_blocked = false;
-                let mut target_space_blocked = false;
+                let current_space_blocked;
+                let target_space_blocked;
+                let vert_wall;
+                let horiz_wall;
 
                 // down right
                 if move_x > 0 && move_y > 0 {
-                    current_space_blocked = self[(x, y)].bottom_wall != Wall::Empty &&
-                                            self[(x + move_x, y)].left_wall != Wall::Empty;
-                    target_space_blocked = self[(x + move_x, y)].bottom_wall != Wall::Empty &&
-                                           self[(target_x, target_y)].left_wall != Wall::Empty;
+                    current_space_blocked = self.blocked_down(x, y) && self.blocked_right(x, y);
+                    target_space_blocked = self.blocked_up(target_x, target_y) && self.blocked_left(target_x, target_y);
+                    vert_wall = self.blocked_right(x, y) && self.blocked_right(x, target_y);
+                    horiz_wall = self.blocked_down(x, y) && self.blocked_down(target_x, y);
                 // up right
                 } else if move_x > 0 && move_y < 0 {
-                    current_space_blocked = self[(x, y + move_y)].bottom_wall != Wall::Empty &&
-                                            self[(x + move_x, y)].left_wall != Wall::Empty;
-                    target_space_blocked = self[(target_x, target_y)].bottom_wall != Wall::Empty &&
-                                           self[(target_x, target_y)].left_wall != Wall::Empty;
+                    current_space_blocked = self.blocked_up(x, y) && self.blocked_right(x, y);
+                    target_space_blocked  = self.blocked_down(target_x, target_y) && self.blocked_left(target_x, target_y);
+                    vert_wall = self.blocked_right(x, y) && self.blocked_right(x, target_y);
+                    horiz_wall = self.blocked_up(x, y) && self.blocked_up(target_x, y);
                 // down left
                 } else if move_x < 0 && move_y > 0 {
-                    current_space_blocked = self[(x, y)].bottom_wall != Wall::Empty &&
-                                            self[(x, y)].left_wall != Wall::Empty;
-                    target_space_blocked = self[(x + move_x, y)].bottom_wall != Wall::Empty &&
-                                           self[(x, y + move_y)].left_wall != Wall::Empty;
+                    current_space_blocked = self.blocked_down(x, y) && self.blocked_left(x, y);
+                    target_space_blocked  = self.blocked_up(target_x, target_y) && self.blocked_right(target_x, target_y);
+                    vert_wall = self.blocked_left(x, y) && self.blocked_left(x, target_y);
+                    horiz_wall = self.blocked_down(x, y) && self.blocked_down(target_x, y);
                 // up left
                 } else {
-                    current_space_blocked = self[(x, y + move_y)].bottom_wall != Wall::Empty &&
-                                            self[(x, y)].left_wall != Wall::Empty;
-                    target_space_blocked = self[(target_x, target_y)].bottom_wall != Wall::Empty &&
-                                           self[(x, y + move_y)].left_wall != Wall::Empty;
+                    current_space_blocked = self.blocked_left(x, y) && self.blocked_up(x, y);
+                    target_space_blocked  = self.blocked_down(target_x, target_y) && self.blocked_right(target_x, target_y);
+                    vert_wall = self.blocked_left(x, y) && self.blocked_left(x, target_y);
+                    horiz_wall = self.blocked_up(x, y) && self.blocked_up(target_x, y);
                 }
 
-                blocked = current_space_blocked || target_space_blocked;
+                blocked = current_space_blocked || target_space_blocked || vert_wall || horiz_wall;
             }
 
             if blocked {
@@ -350,13 +371,13 @@ impl Map {
         return circle_positions.iter().map(|pos| *pos).collect();
     }
 
+    // NOTE potentially inefficient- copies whole map and returns all positions
     pub fn astar(&self, start: (i32, i32), end: (i32, i32)) -> Vec<(i32, i32)> {
         let map_copy = make_tcod_map(&self.tiles);
         let mut astar = AStar::new_from_map(map_copy, 1.5);
 
         astar.find(start, end);
 
-        // NOTE potentially inefficient
         return astar.iter().into_iter().collect::<Vec<_>>();
     }
 
