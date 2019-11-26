@@ -111,6 +111,12 @@ impl<'a> Game<'a> {
                 map = new_map;
                 player_position = position.into_pair();
             }
+
+            MapLoadConfig::TestCorner => {
+                let (new_map, position) = make_corner_test_map(&mut objects, &config, &display_state);
+                map = new_map;
+                player_position = position.into_pair();
+            }
         }
 
         let mut data = GameData::new(map, objects);

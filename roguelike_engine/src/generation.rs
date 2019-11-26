@@ -13,6 +13,7 @@ use crate::read_map::*;
 pub enum MapGenType {
     Island,
     WallTest,
+    CornerTest,
     FromFile(String),
 }
 
@@ -92,7 +93,7 @@ pub fn make_elf(config: &Config, x: i32, y :i32, display_state: &DisplayState) -
 }
 
 pub fn make_stone(config: &Config, x: i32, y :i32) -> Object {
-    let mut stone = Object::new(x, y, '\u{A5}', config.color_orange, "stone", true);
+    let mut stone = Object::new(x, y, ENTITY_STONE as char, config.color_orange, "stone", true);
 
     stone.color = config.color_light_grey;
     stone.item = Some(Item::Stone);
@@ -110,6 +111,12 @@ pub fn make_map(map_type: &MapGenType,
     let result;
     match map_type {
         MapGenType::WallTest => {
+            let (map, player_position) = make_wall_test_map(objects, config, display_state);
+            
+            result = (GameData::new(map, objects.clone()), player_position);
+        }
+
+        MapGenType::CornerTest => {
             let (map, player_position) = make_wall_test_map(objects, config, display_state);
             
             result = (GameData::new(map, objects.clone()), player_position);
@@ -315,4 +322,32 @@ pub fn make_wall_test_map(objects: &mut ObjMap,
 
     return (map, Position::from_pair(position));
 }
+
+pub fn make_corner_test_map(objects: &mut ObjMap,
+                            config: &Config,
+                            display_state: &DisplayState) -> (Map, Position) {
+    let mut map = Map::from_dims(15, 15);
+    let position = (1, 5);
+
+    let x_pos = 5;
+    let y_start = 2;
+    let y_end = 8;
+    for wall_y_pos in y_start..=y_end {
+        let pos: (i32, i32) = (x_pos, wall_y_pos);
+        map[pos] = Tile::empty();
+        map[pos].left_wall = Wall::ShortWall;
+    }
+    map[(x_pos - 1, y_end)].bottom_wall = Wall::ShortWall;
+    map[(x_pos, y_end)].bottom_wall = Wall::ShortWall;
+    map[(x_pos - 1, y_start - 1)].bottom_wall = Wall::ShortWall;
+    map[(x_pos, y_start - 1)].bottom_wall = Wall::ShortWall;
+
+  
+    objects.insert(make_gol(config, 7, 5, display_state));
+
+    map.update_map();
+
+    return (map, Position::from_pair(position));
+}
+
 

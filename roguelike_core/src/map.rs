@@ -16,6 +16,7 @@ use crate::constants::*;
 pub enum MapLoadConfig {
     Random,
     TestWall,
+    TestCorner,
     FromFile,
 }
 
@@ -194,61 +195,83 @@ impl Map {
     }
 
     pub fn is_blocked_by_wall(&self, start_x: i32, start_y: i32, dx: i32, dy: i32) -> bool {
+        let mut blocked = false;
+
         let (end_x, end_y) = (start_x + dx, start_y + dy);
 
         let line = Line::new((start_x, start_y), (end_x, end_y));
 
-        let move_x;
-        if dx != 0 {
-            move_x = dx.signum();
-        } else {
-            move_x = 0;
-        }
+        let mut move_x;
+        let mut move_y;
 
-        let move_y;
-        if dy != 0 {
-            move_y = dy.signum();
-        } else {
-            move_y = 0;
-        }
-
-        let mut blocked = false;
-
-        // ensure that the starting position is looked at
         let mut positions = Vec::new();
+        // ensure that the starting position is looked at
         positions.push((start_x, start_y));
         positions.extend(line.into_iter());
 
-        for pos in positions {
-            let (x, y) = pos;
+        for pair in positions.windows(2) {
+            let (x, y) = pair[0];
+            let (target_x, target_y) = pair[1];
 
-            // do not test last position
-            if pos == (end_x, end_y) {
+            if !self.is_within_bounds(target_x, target_y) {
                 break;
             }
 
-            if move_x != 0 {
-                // assume moving left
+            move_x = target_x - x;
+            move_y = target_y - y;
+
+            // horizontal
+            if move_y == 0 && move_x != 0 {
                 let mut left_wall_pos = (x, y);
                 if move_x >= 1 {
                     left_wall_pos = (x + move_x, y);
                 }
 
                 if self.is_within_bounds(left_wall_pos.0, left_wall_pos.1) {
-                    blocked |= self[left_wall_pos].left_wall != Wall::Empty;
+                    blocked = self[left_wall_pos].left_wall != Wall::Empty;
                 }
-            }
-            
-            if move_y != 0 {
-                // assume moving down
+            // vertical 
+            } else if move_x == 0 && move_y != 0 {
                 let mut bottom_wall_pos = (x, y + move_y);
                 if move_y >= 1 {
                     bottom_wall_pos = (x, y);
                 }
 
                 if self.is_within_bounds(bottom_wall_pos.0, bottom_wall_pos.1) {
-                    blocked |= self[bottom_wall_pos].bottom_wall != Wall::Empty;
+                    blocked = self[bottom_wall_pos].bottom_wall != Wall::Empty;
                 }
+            } else { // diagonal
+                // check for corners
+                let mut current_space_blocked = false;
+                let mut target_space_blocked = false;
+
+                // down right
+                if move_x > 0 && move_y > 0 {
+                    current_space_blocked = self[(x, y)].bottom_wall != Wall::Empty &&
+                                            self[(x + move_x, y)].left_wall != Wall::Empty;
+                    target_space_blocked = self[(x + move_x, y)].bottom_wall != Wall::Empty &&
+                                           self[(target_x, target_y)].left_wall != Wall::Empty;
+                // up right
+                } else if move_x > 0 && move_y < 0 {
+                    current_space_blocked = self[(x, y + move_y)].bottom_wall != Wall::Empty &&
+                                            self[(x + move_x, y)].left_wall != Wall::Empty;
+                    target_space_blocked = self[(target_x, target_y)].bottom_wall != Wall::Empty &&
+                                           self[(target_x, target_y)].left_wall != Wall::Empty;
+                // down left
+                } else if move_x < 0 && move_y > 0 {
+                    current_space_blocked = self[(x, y)].bottom_wall != Wall::Empty &&
+                                            self[(x, y)].left_wall != Wall::Empty;
+                    target_space_blocked = self[(x + move_x, y)].bottom_wall != Wall::Empty &&
+                                           self[(x, y + move_y)].left_wall != Wall::Empty;
+                // up left
+                } else {
+                    current_space_blocked = self[(x, y + move_y)].bottom_wall != Wall::Empty &&
+                                            self[(x, y)].left_wall != Wall::Empty;
+                    target_space_blocked = self[(target_x, target_y)].bottom_wall != Wall::Empty &&
+                                           self[(x, y + move_y)].left_wall != Wall::Empty;
+                }
+
+                blocked = current_space_blocked || target_space_blocked;
             }
 
             if blocked {

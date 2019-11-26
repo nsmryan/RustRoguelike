@@ -223,6 +223,34 @@ pub fn render_info(display_state: &mut DisplayState,
         if let Some(obj_id) = object_ids.first() {
             let mut y_pos = 1;
 
+            if let Some(fighter) = data.objects[*obj_id].fighter {
+                y_pos += 1;
+
+                let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
+
+                display_state.canvas.set_blend_mode(BlendMode::None);
+                let color = Sdl2Color::RGBA(config.color_red.r, config.color_red.g, config.color_red.b, config.color_red.a);
+                display_state.canvas.set_draw_color(color);
+                let start = area.char_rect(1, y_pos);
+                let width = area.width as u32  - 2 * start.width();
+                let health_rect = Rect::new(start.x,
+                                            start.y,
+                                            (width as f32 * health_percent) as u32,
+                                            start.height());
+                display_state.canvas.fill_rect(health_rect);
+
+                let full_rect = Rect::new(start.x,
+                                            start.y,
+                                            width,
+                                            start.height());
+                let outline_color = Color::white();
+                let color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.color_red.a);
+                display_state.canvas.set_draw_color(color);
+                display_state.canvas.draw_rect(full_rect);
+
+                y_pos += 2;
+            }
+
             let pos = data.objects[*obj_id].pos();
 
             if data.map.is_in_fov(player_x, player_y, pos.0, pos.1, FOV_RADIUS) {
