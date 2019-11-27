@@ -94,6 +94,7 @@ impl<'a> Game<'a> {
                 player_position = position;
 
                 objects.insert(make_goal(&config, player_position.0 + 1, player_position.1));
+                objects.insert(make_mouse(&config, &display_state));
                 let exit_position = (player_position.0 + 1, player_position.1 - 1);
                 map[exit_position].tile_type = TileType::Exit;
             }
@@ -116,6 +117,7 @@ impl<'a> Game<'a> {
                 let (new_map, position) = make_corner_test_map(&mut objects, &config, &display_state);
                 map = new_map;
                 player_position = position.into_pair();
+                objects.insert(make_mouse(&config, &display_state));
             }
         }
 

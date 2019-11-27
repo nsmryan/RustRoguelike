@@ -212,53 +212,6 @@ impl Collision {
     }
 }
 
-
-/// Check whether a move, given as an offset from an object's current position,
-/// hits a wall or object.
-pub fn move_valid(x: i32, y: i32, dx: i32, dy: i32, data: &GameData) -> bool {
-    return check_collision(x, y, dx, dy, data).no_collsion();
-}
-
-pub fn line_inclusive(x: i32, y: i32, dx: i32, dy: i32) -> impl Iterator<Item=(i32, i32)> {
-    let start_loc = (x + (dx.signum() * dx.abs() * -1),
-                     y + (dy.signum() * dy.abs() * -1));
-    let end_loc = (x + dx, y + dy);
-
-    return Line::new(start_loc, end_loc).into_iter();
-}
-
-pub fn move_just_before(handle: ObjectId,
-                        dx: i32,
-                        dy: i32,
-                        data: &GameData) -> Option<(i32, i32)> {
-    let x = data.objects[handle].x;
-    let y = data.objects[handle].y;
-    let move_line = Line::new((x, y), (x + dx, y + dy));
-
-    let mut pos = None;
-    let mut collided = false;
-
-    for (x_pos, y_pos) in move_line.into_iter() {
-        if !data.map.is_within_bounds(x_pos, y_pos) {
-            break;
-        }
-
-        if is_blocked(x_pos, y_pos, data) ||
-           data.map.is_blocked_by_wall(x_pos, y_pos, dx, dy) {
-                collided = true;
-                break;
-        }
-
-        pos = Some((x_pos, y_pos));
-    }
-
-    if !collided {
-        pos = None;
-    }
-
-    return pos;
-}
-
 // TODO consider moving to GameData
 /// Moves the given object with a given offset, returning the square that it collides with, or None
 /// indicating no collision.
@@ -342,11 +295,18 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Pl
 
             if momentum.magnitude() > 1 && !momentum.took_half_turn {
                 player_action = PlayerAction::TookHalfTurn;
+            } else if dx == 0 && dy == 0 {
+                player_action = PlayerAction::DidntTakeTurn;
             } else {
                 player_action = PlayerAction::TookTurn;
             }
 
-            data.objects[player_handle].momentum.as_mut().map(|momentum| momentum.took_half_turn = player_action == PlayerAction::TookHalfTurn);
+            if player_action != PlayerAction::DidntTakeTurn {
+                data.objects[player_handle]
+                    .momentum
+                    .as_mut()
+                    .map(|momentum| momentum.took_half_turn = player_action == PlayerAction::TookHalfTurn);
+            }
         }
 
         Some(Movement::WallKick(x, y, dir_x, dir_y)) => {

@@ -42,6 +42,12 @@ pub fn make_goal(config: &Config, x: i32, y :i32) -> Object {
     return object;
 }
 
+pub fn make_mouse(config: &Config, display_state: &DisplayState) -> Object {
+    let mut mouse = Object::new(-1, -1, ' ', Color::white(), "mouse", false);
+
+    mouse
+}
+
 pub fn make_gol(config: &Config, x: i32, y :i32, display_state: &DisplayState) -> Object {
     let mut gol = Object::new(x, y, '\u{98}', config.color_orange, "gol", true);
 

@@ -132,6 +132,8 @@
     "highlight_alpha": 76,
     "grid_alpha": 9,
     "map_load": "TestCorner",
-    "idle_speed": 0.5
+    "idle_speed": 0.35,
+    "draw_mouse_line": false,
+    "draw_star_path": false
 }
 

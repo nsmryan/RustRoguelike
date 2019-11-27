@@ -44,6 +44,16 @@ impl GameData {
 
         return None;
     }
+
+    pub fn find_mouse(&self) -> Option<ObjectId> {
+        for (key, object) in self.objects.iter() {
+            if object.name == "mouse" {
+                return Some(key);
+            }
+        }
+
+        return None;
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Default)]

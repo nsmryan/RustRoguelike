@@ -1,6 +1,8 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
+use tcod::line::*;
+
 use noise::Perlin;
 use noise::NoiseFn;
 
@@ -26,7 +28,8 @@ pub fn get_objects_under_mouse(x: i32,
 
     for key in data.objects.keys() {
         let pos = data.objects[key].pos();
-        if pos == (x, y) {
+        let is_mouse = data.objects[key].name == "mouse";
+        if !is_mouse && pos == (x, y) {
             if data.map.is_in_fov(pos.0, pos.1, x, y, FOV_RADIUS) {
                 object_ids.push(key);
             }
@@ -574,6 +577,7 @@ pub fn render_overlays(display_state: &mut DisplayState,
         }
     }
 
+    // draw attack position highlights
     if let Some(mouse_xy) = map_mouse_pos {
         let mut attack_highlight_color = config.color_red;
         attack_highlight_color.a = config.highlight_alpha;
@@ -596,6 +600,25 @@ pub fn render_overlays(display_state: &mut DisplayState,
                         draw_char(display_state, MAP_EMPTY_CHAR as char, position.0, position.1, attack_highlight_color, area);
                     }
                 }
+            }
+        }
+    }
+
+    if let Some(mouse_handle) = data.find_mouse() {
+        let mouse_pos = data.objects[mouse_handle].pos();
+        let player_pos = data.objects[player_handle].pos();
+
+        if config.draw_star_path {
+            let path = data.map.astar(player_pos, mouse_pos);
+            for pos in path {
+                draw_char(display_state, MAP_EMPTY_CHAR as char, pos.0, pos.1, highlight_color, area);
+            }
+        }
+
+        if config.draw_mouse_line {
+            let line = Line::new(player_pos, mouse_pos).into_iter();
+            for pos in line {
+                draw_char(display_state, MAP_EMPTY_CHAR as char, pos.0, pos.1, highlight_color, area);
             }
         }
     }
@@ -637,6 +660,10 @@ pub fn render_all(display_state: &mut DisplayState,
             let map_x = mouse_map_xy.0 as f32 / (FONT_WIDTH as f32 * scaler);
             let map_y = mouse_map_xy.1 as f32 / (FONT_HEIGHT as f32 * scaler);
             mouse_map_pos = Some((map_x as usize, map_y as usize));
+
+            if let Some(mouse_handle) = data.find_mouse() {
+                data.objects[mouse_handle].set_pos(map_x as i32, map_y as i32);
+            }
         }
     }
 
