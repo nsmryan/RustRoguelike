@@ -2,6 +2,8 @@ use std::convert::Into;
 
 use serde_derive::*;
 
+use tcod::line::*;
+
 use num::clamp;
 
 use slotmap::dense::*;
@@ -53,6 +55,17 @@ impl GameData {
         }
 
         return None;
+    }
+
+    pub fn clear_path(&self, start: (i32, i32), end: (i32, i32)) -> bool {
+        let line = Line::new((start.0, start.1), (end.0, end.1));
+    
+        let path_blocked =
+            line.into_iter().any(|point| is_blocked(point.0, point.1, self));
+    
+        let (dx, dy) = (end.0 - start.0, end.1 - start.1);
+
+        return !path_blocked && !self.map.is_blocked_by_wall(start.0, start.1, dx, dy);
     }
 }
 

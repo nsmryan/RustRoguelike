@@ -314,6 +314,13 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Pl
             data.objects[player_handle].set_pos(x, y);
             momentum.set_momentum(dir_x, dir_y);
 
+            /*
+            let sprite_handle =
+                display_state.lookup_sprite("player_wall_kick".to_string())
+                             .expect("Could not find sprite 'player_wall_kick'");
+            d,ta.objects[player_handle].animation = Some(sprite_handle);
+            */
+
             // TODO could check for enemy and attack
             player_action = PlayerAction::TookTurn;
         }
@@ -403,16 +410,6 @@ pub fn is_blocked(x: i32, y: i32, data: &GameData) -> bool {
     return is_blocked;
 }
 
-// TODO consider moving to GameData
-pub fn clear_path(start: (i32, i32), end: (i32, i32), data: &GameData) -> bool {
-    let line = Line::new((start.0, start.1), (end.0, end.1));
-
-    let path_blocked =
-        line.into_iter().any(|point| is_blocked(point.0, point.1, data));
-
-    return !path_blocked;
-}
-
 pub fn direction(value: i32) -> i32 {
     if value == 0 {
         return 0;
@@ -420,3 +417,4 @@ pub fn direction(value: i32) -> i32 {
         return value.signum();
     }
 }
+

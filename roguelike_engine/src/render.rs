@@ -50,65 +50,6 @@ pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
     return ((result & 0xFFFFFFFF) as f32) / 4294967295.0;
 }
 
-// TODO merge this with current movement overlay-
-// it uses a highlight color, which is nice, and 
-// checks for clear paths.
-pub fn draw_movement_overlay(display_state: &mut DisplayState,
-                             data: &GameData,
-                             id: ObjectId,
-                             area: &Area,
-                             config: &Config) -> Vec<(i32, i32)> {
-    let mut added_positions = Vec::new();
-
-    let color = config.color_warm_grey;
-
-    if let Some(movement) = data.objects[id].movement {
-        let offsets = movement.offsets();
-        for offset in offsets {
-            let x = data.objects[id].x as i32 + offset.0;
-            let y = data.objects[id].y as i32 + offset.1;
-
-            if clear_path((data.objects[id].x as i32, data.objects[id].y as i32), 
-                          (x, y),
-                          data) {
-                draw_char(display_state, '.', x, y, color, area);
-
-                added_positions.push((x, y));
-            }
-        }
-    }
-
-    return added_positions;
-}
-
-pub fn draw_attack_overlay(display_state: &mut DisplayState,
-                           id: ObjectId,
-                           config: &Config,
-                           area: &Area,
-                           data: &GameData) -> Vec<(i32, i32)> {
-    let mut added_positions = Vec::new();
-
-    let color = config.color_warm_grey;
-
-    if let Some(attack) = data.objects[id].attack {
-        let offsets = attack.offsets();
-        for offset in offsets {
-            let x = data.objects[id].x as i32 + offset.0;
-            let y = data.objects[id].y as i32 + offset.1;
-
-            if clear_path((data.objects[id].x as i32, data.objects[id].y as i32), 
-                          (x, y),
-                          data) {
-                draw_char(display_state, 'x', x, y, color, area);
-
-                added_positions.push((x, y));
-            }
-        }
-    }
-
-    return added_positions;
-}
-
 pub fn lerp(first: f32, second: f32, scale: f32) -> f32 {
     return first + ((second - first) * scale);
 }
@@ -593,7 +534,10 @@ pub fn render_overlays(display_state: &mut DisplayState,
                              .iter()
                              .map(|offset| (mouse_xy.0 as i32 + offset.0,
                                             mouse_xy.1 as i32 + offset.1))
-                             .filter(|pos| data.map.is_within_bounds(pos.0, pos.1))
+                             // filter out positions that are outside of the map, or with no clear
+                             // path from the entity to the reached position
+                             .filter(|pos| data.map.is_within_bounds(pos.0, pos.1) &&
+                                           data.clear_path((mouse_xy.0 as i32, mouse_xy.1 as i32), *pos))
                              .collect::<Vec<(i32, i32)>>();
 
                     for position in attack_positions {
