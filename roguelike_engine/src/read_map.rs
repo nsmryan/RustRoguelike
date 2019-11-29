@@ -61,6 +61,7 @@ pub fn read_map_xp(config: &Config,
                         match chr as u8 {
                             MAP_THIN_WALL_TOP => {
                                 map[(x, y)].chr = Some(chr);
+                                map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM => {
@@ -75,11 +76,13 @@ pub fn read_map_xp(config: &Config,
 
                             MAP_THIN_WALL_RIGHT => {
                                 map[(x, y)].chr = Some(chr);
+                                map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_TOP_LEFT => {
                                 map[(x, y)].chr = Some(chr);
                                 map[(x, y)].left_wall = Wall::ShortWall;
+                                map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM_LEFT => {
@@ -90,16 +93,19 @@ pub fn read_map_xp(config: &Config,
 
                             MAP_THIN_WALL_TOP_RIGHT => {
                                 map[(x, y)].chr = Some(chr);
+                                map[(x, y - 1)].bottom_wall = Wall::ShortWall;
+                                map[(x - 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM_RIGHT => {
                                 map[(x, y)].chr = Some(chr);
                                 map[(x, y)].bottom_wall = Wall::ShortWall;
+                                map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
-
 
                             MAP_THICK_WALL_TOP => {
                                 map[(x, y)].chr = Some(chr);
+                                map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_LEFT => {
@@ -109,6 +115,7 @@ pub fn read_map_xp(config: &Config,
 
                             MAP_THICK_WALL_RIGHT => {
                                 map[(x, y)].chr = Some(chr);
+                                map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM => {
@@ -119,6 +126,7 @@ pub fn read_map_xp(config: &Config,
                             MAP_THICK_WALL_TOP_LEFT => {
                                 map[(x, y)].chr = Some(chr);
                                 map[(x, y)].left_wall = Wall::TallWall;
+                                map[(x, y - 1)].bottom_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM_LEFT => {
@@ -129,11 +137,14 @@ pub fn read_map_xp(config: &Config,
 
                             MAP_THICK_WALL_TOP_RIGHT => {
                                 map[(x, y)].chr = Some(chr);
+                                map[(x, y - 1)].bottom_wall = Wall::TallWall;
+                                map[(x + 1, y)].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM_RIGHT => {
                                 map[(x, y)].chr = Some(chr);
                                 map[(x, y)].bottom_wall = Wall::TallWall;
+                                map[(x + 1, y)].left_wall = Wall::TallWall;
                             }
 
                             MAP_DOT_TOP_LEFT => {

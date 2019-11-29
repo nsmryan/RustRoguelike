@@ -216,11 +216,11 @@ impl<'a> Game<'a> {
                                   &mut self.display_state,
                                   &self.config);
         match player_action {
-            PlayerAction::Exit => {
+            PlayerTurn::Exit => {
                 return true;
             }
 
-            PlayerAction::TookTurn | PlayerAction::TookHalfTurn => {
+            PlayerTurn::TookTurn(_) | PlayerTurn::TookHalfTurn(_) => {
                 self.settings.turn_count += 1;
             }
 
@@ -233,7 +233,7 @@ impl<'a> Game<'a> {
         }
 
         /* AI */
-        if self.data.objects[player_handle].alive && player_action == PlayerAction::TookTurn {
+        if self.data.objects[player_handle].alive && player_action.took_turn() {
             let mut ai_handles = Vec::new();
 
             for key in self.data.objects.keys() {

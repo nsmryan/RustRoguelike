@@ -1,5 +1,7 @@
 use rand::prelude::*;
 
+use sdl2::video::FullscreenType;
+
 use tcod::line::*;
 
 use roguelike_core::types::*;
@@ -18,26 +20,42 @@ pub fn handle_input(input_action: InputAction,
                     game_data: &mut GameData, 
                     settings: &mut GameSettings,
                     display_state: &mut DisplayState,
-                    config: &Config) -> PlayerAction {
+                    config: &Config) -> PlayerTurn {
+    use PlayerTurn::*;
     use PlayerAction::*;
+    use Movement::*;
 
     let player_handle = game_data.find_player().unwrap();
     let player_x = game_data.objects[player_handle].x;
     let player_y = game_data.objects[player_handle].y;
 
-    let player_action: PlayerAction;
+    let player_turn: PlayerTurn;
 
     let player_alive = game_data.objects[player_handle].alive;
 
     match (input_action, player_alive) {
+        // If the player pressed a movement button, attempt to move
         (InputAction::Move(move_action), true) => {
-            player_action = player_move_or_attack(move_action,
-                                                  game_data)
+            player_turn = player_move_or_attack(move_action, game_data);
+
+            // if the player moved, requiring an animation to play, then select the animation
+            match player_turn {
+                TookTurn(PlayerAction::Move(WallKick(x, y, dx, dy))) |
+                TookHalfTurn(PlayerAction::Move(WallKick(x, y, dx, dy))) => {
+                    let sprite_key = display_state.lookup_sprite("player_wall_kick".to_string()).unwrap();
+                    let sprite_index = 0.0;
+                    game_data.objects[player_handle].animation = 
+                        Some(Animation::WallKick(sprite_key, sprite_index, (player_x, player_y), (x, y)));
+                }
+
+                _ => {
+                }
+            }
         }
 
         (InputAction::FullScreen, _) => {
-            // TODO don't know how to do this in ggez...
-            player_action = DidntTakeTurn;
+            // display_state.canvas.into_window().set_fullscreen(FullscreenType::Desktop);
+            player_turn = DidntTakeTurn;
         },
 
         (InputAction::Pickup, true) => {
@@ -48,15 +66,15 @@ pub fn handle_input(input_action: InputAction,
             if let Some(key) = item_id {
                 pick_item_up(player_handle, key, &mut game_data.objects);
             }
-            player_action = DidntTakeTurn;
+            player_turn = DidntTakeTurn;
         }
 
         (InputAction::Inventory, true) => {
-            player_action = DidntTakeTurn;
+            player_turn = DidntTakeTurn;
         }
 
         (InputAction::Exit, _) => {
-            player_action = Exit;
+            player_turn = Exit;
         }
 
         (InputAction::ExploreAll, _) => {
@@ -65,7 +83,7 @@ pub fn handle_input(input_action: InputAction,
                     game_data.map.tiles[x as usize][y as usize].explored = true;
                 }
             }
-            player_action = DidntTakeTurn;
+            player_turn = DidntTakeTurn;
         }
 
         (InputAction::RegenerateMap, _) => {
@@ -73,13 +91,13 @@ pub fn handle_input(input_action: InputAction,
             let (data, _position) =
                 make_map(&settings.map_type, &mut game_data.objects, config, display_state, &mut rng);
             game_data.map = data.map;
-            player_action = DidntTakeTurn;
+            player_turn = DidntTakeTurn;
         }
 
         (InputAction::ToggleOverlays, _) => {
             display_state.display_overlays = !(display_state.display_overlays);
 
-            player_action = DidntTakeTurn;
+            player_turn = DidntTakeTurn;
         }
 
         (InputAction::GodMode, true) => {
@@ -102,7 +120,7 @@ pub fn handle_input(input_action: InputAction,
             }
             game_data.map.update_map();
 
-            player_action = TookTurn;
+            player_turn = DidntTakeTurn;
         }
 
         (InputAction::MapClick(_map_loc, map_cell), _) => {
@@ -121,18 +139,18 @@ pub fn handle_input(input_action: InputAction,
 
                 game_data.objects[player_handle].inventory.remove(index);
 
-                player_action = TookTurn;
+                player_turn = TookTurn(PlayerAction::ThrowStone);
             } else {
-                player_action = DidntTakeTurn;
+                player_turn = DidntTakeTurn;
             }
         }
 
         (_, _) => {
-            player_action = DidntTakeTurn;
+            player_turn = DidntTakeTurn;
         }
     }
 
-    return player_action;
+    return player_turn;
 }
 
 fn use_item(_object_id: ObjectId,

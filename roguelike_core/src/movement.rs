@@ -254,8 +254,10 @@ pub fn check_collision(x: i32,
     return result;
 }
 
-pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> PlayerAction {
-    let player_action: PlayerAction;
+pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> PlayerTurn {
+    use PlayerAction::*;
+
+    let player_action: PlayerTurn;
 
     let player_handle = data.find_player().unwrap();
 
@@ -276,13 +278,13 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Pl
 
             data.objects[player_handle].set_pos(new_x, new_y);
 
-            player_action = PlayerAction::TookTurn;
+            player_action = PlayerTurn::TookTurn(Move(movement.unwrap()));
         }
 
         Some(Movement::Collide(x, y)) => {
             data.objects[player_handle].set_pos(x, y);
             data.objects[player_handle].momentum.unwrap().clear();
-            player_action = PlayerAction::TookTurn;
+            player_action = PlayerTurn::TookTurn(Move(movement.unwrap()));
         }
 
         Some(Movement::Move(x, y)) | Some(Movement::JumpWall(x, y)) => {
@@ -294,18 +296,19 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Pl
             data.objects[player_handle].momentum.as_mut().map(|momentum| momentum.moved(dx, dy));
 
             if momentum.magnitude() > 1 && !momentum.took_half_turn {
-                player_action = PlayerAction::TookHalfTurn;
+                player_action = PlayerTurn::TookHalfTurn(Move(movement.unwrap()));
             } else if dx == 0 && dy == 0 {
-                player_action = PlayerAction::DidntTakeTurn;
+                player_action = PlayerTurn::DidntTakeTurn;
             } else {
-                player_action = PlayerAction::TookTurn;
+                player_action = PlayerTurn::TookTurn(Move(movement.unwrap()));
             }
 
-            if player_action != PlayerAction::DidntTakeTurn {
+            if player_action != PlayerTurn::DidntTakeTurn {
                 data.objects[player_handle]
                     .momentum
                     .as_mut()
-                    .map(|momentum| momentum.took_half_turn = player_action == PlayerAction::TookHalfTurn);
+                    .map(|momentum| momentum.took_half_turn =
+                         player_action == PlayerTurn::TookHalfTurn(Move(movement.unwrap())));
             }
         }
 
@@ -322,11 +325,11 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Pl
             */
 
             // TODO could check for enemy and attack
-            player_action = PlayerAction::TookTurn;
+            player_action = PlayerTurn::TookTurn(Move(movement.unwrap()));
         }
 
         None => {
-            player_action = PlayerAction::DidntTakeTurn;
+            player_action = PlayerTurn::DidntTakeTurn;
         }
     }
 

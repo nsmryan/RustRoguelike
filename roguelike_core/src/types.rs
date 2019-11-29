@@ -117,6 +117,7 @@ pub struct MouseState {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Animation {
     Idle(SpriteKey, SpriteIndex),
+    WallKick(SpriteKey, SpriteIndex, (i32, i32), (i32, i32)),
     StoneThrow((i32, i32), (i32, i32)),
 }
 
@@ -140,13 +141,34 @@ pub enum UseResult {
     Keep,
 }
 
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PlayerAction {
-    TookTurn,
-    TookHalfTurn,
+    Move(Movement),
+    ThrowStone,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PlayerTurn {
+    TookTurn(PlayerAction),
+    TookHalfTurn(PlayerAction),
     DidntTakeTurn,
     Exit,
+}
+
+impl PlayerTurn {
+    pub fn took_turn(&self) -> bool {
+        use PlayerTurn::*;
+
+        match self {
+            TookTurn(_) | TookHalfTurn(_) => {
+                return true
+            }
+
+            _ => {
+                return false
+            }
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

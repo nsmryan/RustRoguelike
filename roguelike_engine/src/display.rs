@@ -1,4 +1,3 @@
-use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
 
 use slotmap::dense::*;
@@ -8,7 +7,6 @@ use sdl2::rect::Rect;
 use sdl2::pixels::{Color as Sdl2Color};
 
 use roguelike_core::types::*;
-use roguelike_core::map::*;
 use roguelike_core::constants::*;
 
 use crate::plat::*;

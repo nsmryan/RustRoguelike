@@ -445,6 +445,7 @@ pub fn render_objects(display_state: &mut DisplayState,
                                   y,
                                   FOV_RADIUS);
 
+           // TODO consider make FOV a setting in map, which is set by god_mode
            if settings.god_mode || is_in_fov {
                 match object.animation {
                     Some(Animation::StoneThrow(start, end)) => {
@@ -465,6 +466,21 @@ pub fn render_objects(display_state: &mut DisplayState,
                                     sprite_index,
                                     x,
                                     y,
+                                    object.color,
+                                    &area);
+                        *sprite_val = *sprite_val + config.idle_speed;
+                        if *sprite_val as usize >= display_state.sprites[sprite_key].num_sprites {
+                            *sprite_val = 0.0;
+                        }
+                    }
+
+                    Some(Animation::WallKick(sprite_key, ref mut sprite_val, start, end)) => {
+                        let sprite_index = (*sprite_val) as i32;
+                        draw_sprite(display_state,
+                                    sprite_key,
+                                    sprite_index,
+                                    end.0,
+                                    end.1,
                                     object.color,
                                     &area);
                         *sprite_val = *sprite_val + config.idle_speed;
