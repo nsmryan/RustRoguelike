@@ -135,13 +135,6 @@ pub enum Item {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum UseResult {
-    UsedUp,
-    Cancelled,
-    Keep,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PlayerAction {
     Move(Movement),
     ThrowStone,

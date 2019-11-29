@@ -212,48 +212,6 @@ impl Collision {
     }
 }
 
-// TODO consider moving to GameData
-/// Moves the given object with a given offset, returning the square that it collides with, or None
-/// indicating no collision.
-pub fn check_collision(x: i32,
-                       y: i32,
-                       dx: i32,
-                       dy: i32,
-                       data: &GameData) -> Collision {
-    let mut last_pos = (x, y);
-    let mut result: Collision = Collision::NoCollision(x + dx, y + dy);
-
-    if !data.map.is_within_bounds(x + dx, y + dy) {
-        result = Collision::Wall((x, y), (x, y));
-    } else if data.map.is_blocked_by_wall(x, y, dx, dy) {
-        // TODO this returns the final position, not the position of the wal
-        // mayye need a block_by_wall function which returns this instead of a bool
-        result = Collision::Wall((x + dx, y + dy), (x, y));
-    } else {
-        let move_line = Line::new((x, y), (x + dx, y + dy));
-
-        for (x_pos, y_pos) in move_line.into_iter() {
-            if is_blocked(x_pos, y_pos, data) {
-                if data.map[(x_pos, y_pos)].blocked {
-                    result = Collision::BlockedTile((x_pos, y_pos), last_pos);
-                } else {
-                    for (key, object) in data.objects.iter() {
-                        if object.pos() == (x_pos, y_pos) {
-                            result = Collision::Entity(key, last_pos);
-                            break;
-                        }
-                    }
-                }
-                break;
-            }
-
-            last_pos = (x_pos, y_pos);
-        }
-    }
-
-    return result;
-}
-
 pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> PlayerTurn {
     use PlayerAction::*;
 
@@ -334,6 +292,48 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Pl
     }
 
     return player_action;
+}
+
+// TODO consider moving to GameData
+/// Moves the given object with a given offset, returning the square that it collides with, or None
+/// indicating no collision.
+pub fn check_collision(x: i32,
+                       y: i32,
+                       dx: i32,
+                       dy: i32,
+                       data: &GameData) -> Collision {
+    let mut last_pos = (x, y);
+    let mut result: Collision = Collision::NoCollision(x + dx, y + dy);
+
+    if !data.map.is_within_bounds(x + dx, y + dy) {
+        result = Collision::Wall((x, y), (x, y));
+    } else if data.map.is_blocked_by_wall(x, y, dx, dy) {
+        // TODO this returns the final position, not the position of the wal
+        // mayye need a block_by_wall function which returns this instead of a bool
+        result = Collision::Wall((x + dx, y + dy), (x, y));
+    } else {
+        let move_line = Line::new((x, y), (x + dx, y + dy));
+
+        for (x_pos, y_pos) in move_line.into_iter() {
+            if is_blocked(x_pos, y_pos, data) {
+                if data.map[(x_pos, y_pos)].blocked {
+                    result = Collision::BlockedTile((x_pos, y_pos), last_pos);
+                } else {
+                    for (key, object) in data.objects.iter() {
+                        if object.pos() == (x_pos, y_pos) {
+                            result = Collision::Entity(key, last_pos);
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+
+            last_pos = (x_pos, y_pos);
+        }
+    }
+
+    return result;
 }
 
 // TODO consider moving to GameData
