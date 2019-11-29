@@ -121,13 +121,6 @@ pub enum Animation {
     StoneThrow((i32, i32), (i32, i32)),
 }
 
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum PatrolDir {
-    Forward,
-    Reverse,
-}
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Item {
     Stone,
