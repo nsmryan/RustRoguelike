@@ -12,6 +12,7 @@ use slotmap::DefaultKey;
 use crate::map::*;
 use crate::constants::*;
 use crate::movement::*;
+use crate::ai::*;
 
 
 // TODO consider using custom key types to distinguish
@@ -127,35 +128,21 @@ pub enum Item {
     Goal,
 }
 
+
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum PlayerAction {
+pub enum Action {
     Move(Movement),
+    Attack(ObjectId, (i32, i32)),
+    StateChange(Behavior),
     ThrowStone,
+    NoAction,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum PlayerTurn {
-    TookTurn(PlayerAction),
-    TookHalfTurn(PlayerAction),
-    DidntTakeTurn,
-    Exit,
+impl Action {
+    pub fn none() -> Action {
+        return Action::NoAction; }
 }
 
-impl PlayerTurn {
-    pub fn took_turn(&self) -> bool {
-        use PlayerTurn::*;
-
-        match self {
-            TookTurn(_) | TookHalfTurn(_) => {
-                return true
-            }
-
-            _ => {
-                return false
-            }
-        }
-    }
-}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Ai {

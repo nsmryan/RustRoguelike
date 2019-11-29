@@ -26,6 +26,7 @@ pub struct GameSettings {
     pub turn_count: usize,
     pub god_mode: bool,
     pub map_type: MapGenType,
+    pub exiting: bool,
 }
 
 impl GameSettings {
@@ -37,6 +38,7 @@ impl GameSettings {
             turn_count,
             god_mode,
             map_type: MapGenType::Island,
+            exiting: false,
         }
     }
 }
@@ -207,24 +209,19 @@ impl<'a> Game<'a> {
         self.settings.previous_player_position =
             (self.data.objects[player_handle].x, self.data.objects[player_handle].y);
 
-        let player_action;
-        player_action = 
+        let player_action =
             actions::handle_input(self.input_action,
                                   &mut self.mouse_state,
                                   &mut self.data,
                                   &mut self.settings,
                                   &mut self.display_state,
                                   &self.config);
-        match player_action {
-            PlayerTurn::Exit => {
-                return true;
-            }
+        if player_action != Action::NoAction {
+            self.settings.turn_count += 1;
+        }
 
-            PlayerTurn::TookTurn(_) | PlayerTurn::TookHalfTurn(_) => {
-                self.settings.turn_count += 1;
-            }
-
-            _ => {}
+        if self.settings.exiting {
+            return true;
         }
 
         /* Check Exit Condition */
@@ -233,7 +230,7 @@ impl<'a> Game<'a> {
         }
 
         /* AI */
-        if self.data.objects[player_handle].alive && player_action.took_turn() {
+        if self.data.objects[player_handle].alive && player_action != Action::NoAction {
             let mut ai_handles = Vec::new();
 
             for key in self.data.objects.keys() {
