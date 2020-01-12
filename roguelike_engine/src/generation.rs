@@ -19,7 +19,7 @@ pub enum MapGenType {
 
 
 //if we want to use a character sprite, a potential value is '\u{8B}'
-pub fn make_player(config: &Config, display_state: &DisplayState) -> Object {
+pub fn make_player(_config: &Config, display_state: &DisplayState) -> Object {
     let mut player = Object::new(0, 0, '@', Color::white(), "player", true);
 
     player.alive = true;
@@ -42,8 +42,8 @@ pub fn make_goal(config: &Config, x: i32, y :i32) -> Object {
     return object;
 }
 
-pub fn make_mouse(config: &Config, display_state: &DisplayState) -> Object {
-    let mut mouse = Object::new(-1, -1, ' ', Color::white(), "mouse", false);
+pub fn make_mouse(_config: &Config, _display_state: &DisplayState) -> Object {
+    let mouse = Object::new(-1, -1, ' ', Color::white(), "mouse", false);
 
     mouse
 }
@@ -129,7 +129,7 @@ pub fn make_map(map_type: &MapGenType,
         }
 
         MapGenType::Island => {
-            let mut map = Map::from_dims(MAP_WIDTH as usize, MAP_HEIGHT as usize);
+            let map = Map::from_dims(MAP_WIDTH as usize, MAP_HEIGHT as usize);
 
             let mut data = GameData::new(map, objects.clone());
             let starting_position = make_island(&mut data, config, display_state, rng);

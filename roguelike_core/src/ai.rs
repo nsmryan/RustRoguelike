@@ -100,7 +100,7 @@ pub fn ai_investigate(target_pos_orig: Position,
                       monster_handle: ObjectId,
                       data: &mut GameData) -> Action {
     let player_handle = data.find_player().unwrap();
-    let target_pos = target_pos_orig;
+    let mut target_pos = target_pos_orig;
     let (player_x, player_y) = data.objects[player_handle].pos();
     let player_pos = Position::new(player_x, player_y);
 
@@ -113,6 +113,12 @@ pub fn ai_investigate(target_pos_orig: Position,
         // TODO this causes a turn delay between seeing the player and attacking them
         turn = Action::StateChange(Behavior::Attacking(player_handle));
     } else { // the monster can't see the player
+        if let Some(sound_id) = data.sound_within_earshot(monster_x, monster_y) {
+            target_pos = Position::new(data.objects[sound_id].x, data.objects[sound_id].y);
+            data.objects[monster_handle].behavior =
+                Some(Behavior::Investigating(target_pos));
+        }
+
         if target_pos == monster_pos { 
             // if the monster reached its target then go back to being idle
             turn = Action::StateChange(Behavior::Idle);
@@ -182,10 +188,10 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
                 let mut turn = Action::none();
 
                 if location_within_fov(&mut data.map, monster_pos, player_pos) {
-                    // TODO will cause a turn between seeing the player and attacking
+                    // NOTE will cause a turn between seeing the player and attacking
                     turn = Action::StateChange(Behavior::Attacking(player_handle));
-                } else if let Some(sound_pos) = data.map[(monster_x, monster_y)].sound {
-                    let sound_position = Position::from_pair(sound_pos);
+                } else if let Some(sound_id) = data.sound_within_earshot(monster_x, monster_y) {
+                    let sound_position = Position::new(data.objects[sound_id].x, data.objects[sound_id].y);
                     turn = Action::StateChange(Behavior::Investigating(sound_position));
                 }
 
@@ -200,7 +206,7 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
                 return ai_attack(monster_handle, object_handle, data);
             }
 
-            ref behavior => {
+            behavior => {
                 panic!("Ai behavior {:?} unexpected!", behavior);
             }
         }

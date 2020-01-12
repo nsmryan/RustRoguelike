@@ -147,8 +147,8 @@ pub fn draw_placard(display_state: &mut DisplayState,
 }
 
 pub fn render_player(display_state: &mut DisplayState,
-                   mouse_xy: Option<(usize, usize)>,
-                   data: &mut GameData,
+                   _mouse_xy: Option<(usize, usize)>,
+                   _data: &mut GameData,
                    area: &Area, 
                    config: &Config) {
     draw_placard(display_state,
@@ -192,7 +192,7 @@ pub fn render_info(display_state: &mut DisplayState,
                                             start.y,
                                             (width as f32 * health_percent) as u32,
                                             start.height());
-                display_state.canvas.fill_rect(health_rect);
+                display_state.canvas.fill_rect(health_rect).unwrap();
 
                 let full_rect = Rect::new(start.x,
                                             start.y,
@@ -201,7 +201,7 @@ pub fn render_info(display_state: &mut DisplayState,
                 let outline_color = Color::white();
                 let color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.color_red.a);
                 display_state.canvas.set_draw_color(color);
-                display_state.canvas.draw_rect(full_rect);
+                display_state.canvas.draw_rect(full_rect).unwrap();
 
                 y_pos += 2;
             }
@@ -245,8 +245,6 @@ pub fn render_info(display_state: &mut DisplayState,
                               y_pos,
                               color,
                               area);
-
-                    y_pos += 1;
                 }
             }
         }
@@ -430,7 +428,7 @@ pub fn render_map(display_state: &mut DisplayState,
 
             display_state.canvas.set_blend_mode(BlendMode::Blend);
             display_state.canvas.set_draw_color(color);
-            display_state.canvas.draw_rect(area.char_rect(x, y));
+            display_state.canvas.draw_rect(area.char_rect(x, y)).unwrap();
         }
     }
 }
@@ -493,7 +491,7 @@ pub fn render_objects(display_state: &mut DisplayState,
                     }
                 }
 
-                Some(Animation::WallKick(sprite_key, ref mut sprite_val, start, end)) => {
+                Some(Animation::WallKick(sprite_key, ref mut sprite_val, _start, end)) => {
                     if settings.god_mode || is_in_fov {
                         let sprite_index = (*sprite_val) as i32;
                         draw_sprite(display_state,
@@ -654,7 +652,7 @@ pub fn render_all(display_state: &mut DisplayState,
     let mut mouse_map_pos = None;
     for zone in zones.iter() {
         if zone.name == "map" && zone.contains(mouse_state.x as usize, mouse_state.y as usize) {
-            let ((x_offset, y_offset), scaler) =
+            let ((_x_offset, _y_offset), scaler) =
                 zone.fit(data.map.width() as usize * FONT_WIDTH as usize,
                          data.map.height() as usize * FONT_HEIGHT as usize);
 

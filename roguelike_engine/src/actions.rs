@@ -7,7 +7,6 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::map::distance;
 use roguelike_core::config::*;
-use roguelike_core::ai::*;
 
 use crate::game::*;
 use crate::input::*;
@@ -16,7 +15,7 @@ use crate::generation::*;
 
 
 pub fn handle_input(input_action: InputAction,
-                    mouse_state: &MouseState,
+                    _mouse_state: &MouseState,
                     game_data: &mut GameData, 
                     settings: &mut GameSettings,
                     display_state: &mut DisplayState,
@@ -39,8 +38,7 @@ pub fn handle_input(input_action: InputAction,
 
             // if the player moved, requiring an animation to play, then select the animation
             match player_turn {
-                Action::Move(WallKick(x, y, dx, dy)) |
-                Action::Move(WallKick(x, y, dx, dy)) => {
+                Action::Move(WallKick(x, y, _dx, _dy)) => {
                     let sprite_key = display_state.lookup_sprite("player_wall_kick".to_string()).unwrap();
                     let sprite_index = 0.0;
                     game_data.objects[player_handle].animation = 

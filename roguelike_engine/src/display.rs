@@ -1,5 +1,3 @@
-use std::hash::Hasher;
-
 use slotmap::dense::*;
 
 use sdl2::render::{Texture, WindowCanvas};

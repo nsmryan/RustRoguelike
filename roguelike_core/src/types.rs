@@ -58,6 +58,16 @@ impl GameData {
         return None;
     }
 
+    pub fn sound_within_earshot(&self, x: i32, y: i32) -> Option<ObjectId> {
+        for (object_id, object) in self.objects.iter() {
+            if object.name == "sound" && distance((x, y), (object.x, object.y)) < SOUND_RADIUS as i32 {
+                return Some(object_id);
+            }
+        }
+
+        return None;
+    }
+
     pub fn clear_path(&self, start: (i32, i32), end: (i32, i32)) -> bool {
         let line = Line::new((start.0, start.1), (end.0, end.1));
     
