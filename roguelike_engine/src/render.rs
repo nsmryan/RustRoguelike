@@ -146,6 +146,17 @@ pub fn draw_placard(display_state: &mut DisplayState,
               area);
 }
 
+pub fn render_player(display_state: &mut DisplayState,
+                   mouse_xy: Option<(usize, usize)>,
+                   data: &mut GameData,
+                   area: &Area, 
+                   config: &Config) {
+    draw_placard(display_state,
+                 "Player".to_string(),
+                 area,
+                 config);
+}
+
 pub fn render_info(display_state: &mut DisplayState,
                    mouse_xy: Option<(usize, usize)>,
                    data: &mut GameData,
@@ -433,6 +444,8 @@ pub fn render_objects(display_state: &mut DisplayState,
     let player_handle = data.find_player().unwrap();
     let player_pos = data.objects[player_handle].pos();
 
+    let mut new_objects = Vec::new();
+
     for object in data.objects.values_mut() {
         let x = object.x;
         let y = object.y;
@@ -446,20 +459,25 @@ pub fn render_objects(display_state: &mut DisplayState,
                                   FOV_RADIUS);
 
            // TODO consider make FOV a setting in map, which is set by god_mode
-           if settings.god_mode || is_in_fov {
-                match object.animation {
-                    Some(Animation::StoneThrow(start, end)) => {
-                        draw_char(display_state, object.chr, start.0, start.1, object.color, area);
-                        if start == end {
-                            object.animation = None;
-                        } else {
-                            let new_start = (start.0 + direction(end.0 - start.0),
-                                             start.1 + direction(end.1 - start.1));
-                            object.animation = Some(Animation::StoneThrow(new_start, end));
-                        }
-                    }
+            match object.animation {
+                Some(Animation::StoneThrow(start, end)) => {
+                    draw_char(display_state, object.chr, start.0, start.1, object.color, area);
+                    if start == end {
+                        object.animation = None;
 
-                    Some(Animation::Idle(sprite_key, ref mut sprite_val)) => {
+                        let mut sound = Object::new(end.0, end.1, ' ' as char, Color::white(), "sound", false);
+                        sound.animation = Some(Animation::Sound(0, STONE_SOUND_RADIUS));
+                        new_objects.push(sound);
+
+                    } else {
+                        let new_start = (start.0 + direction(end.0 - start.0),
+                                         start.1 + direction(end.1 - start.1));
+                        object.animation = Some(Animation::StoneThrow(new_start, end));
+                    }
+                }
+
+                Some(Animation::Idle(sprite_key, ref mut sprite_val)) => {
+                   if settings.god_mode || is_in_fov {
                         let sprite_index = (*sprite_val) as i32;
                         draw_sprite(display_state,
                                     sprite_key,
@@ -473,8 +491,10 @@ pub fn render_objects(display_state: &mut DisplayState,
                             *sprite_val = 0.0;
                         }
                     }
+                }
 
-                    Some(Animation::WallKick(sprite_key, ref mut sprite_val, start, end)) => {
+                Some(Animation::WallKick(sprite_key, ref mut sprite_val, start, end)) => {
+                    if settings.god_mode || is_in_fov {
                         let sprite_index = (*sprite_val) as i32;
                         draw_sprite(display_state,
                                     sprite_key,
@@ -488,14 +508,36 @@ pub fn render_objects(display_state: &mut DisplayState,
                             *sprite_val = 0.0;
                         }
                     }
+                }
 
-                    // otherwise just draw the objects character (the default)
-                    _ => {
-                        draw_char(display_state, object.chr, object.x, object.y, object.color, area);
+                Some(Animation::Sound(ref mut current_radius, max_radius)) => {
+                    let mut highlight_color = config.color_warm_grey;
+                    highlight_color.a = config.sound_alpha;
+
+                    if *current_radius <= max_radius {
+                        *current_radius += 1;
+                        for sound_x in 0..data.map.width() {
+                            for sound_y in 0..data.map.height() {
+                                if distance((x, y), (sound_x, sound_y)) == *current_radius as i32 {
+                                    draw_char(display_state, MAP_EMPTY_CHAR as char, sound_x, sound_y, highlight_color, area);
+                                }
+                            }
+                        }
+                    } else {
+                        // TODO find a way to remove the sound object
                     }
+                }
+
+                // otherwise just draw the objects character (the default)
+                _ => {
+                    draw_char(display_state, object.chr, object.x, object.y, object.color, area);
                 }
             }
         }
+    }
+
+    for obj in new_objects {
+        data.objects.insert(obj);
     }
 }
 
@@ -663,6 +705,16 @@ pub fn render_all(display_state: &mut DisplayState,
                                      FONT_WIDTH as usize,
                                      FONT_HEIGHT as usize);
                 render_inventory(display_state, data, &area, config);
+            }
+
+            "player" => {
+                let area = Area::new(plot.x as i32,
+                                     plot.y as i32,
+                                     plot.width,
+                                     plot.height,
+                                     FONT_WIDTH as usize,
+                                     FONT_HEIGHT as usize);
+                render_player(display_state, mouse_map_pos, data, &area, config);
             }
 
             "info" => {

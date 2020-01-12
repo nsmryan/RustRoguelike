@@ -64,8 +64,9 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
     let screen_sections =
         Plan::vert("screen", 0.80, Plan::zone("map"), 
-                   Plan::split_horiz(0.5, Plan::zone("inventory"),
-                                          Plan::zone("info")));
+                   Plan::split_horiz(0.3, Plan::zone("inventory"),
+                                          Plan::split_horiz(0.5, Plan::zone("player"),
+                                                                 Plan::zone("info"))));
 
 
     let display_state =

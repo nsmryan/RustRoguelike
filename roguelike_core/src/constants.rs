@@ -16,6 +16,8 @@ pub const FOV_LIGHT_WALLS: bool = true;
 pub const TORCH_RADIOUS: i32 = 10;
 pub const FOV_RADIUS: i32 = 10;
 pub const HEAL_AMOUNT: i32 = 4;
+pub const SOUND_RADIUS: usize = 3;
+pub const STONE_SOUND_RADIUS: usize = 5;
 
 pub const ROOM_MAX_SIZE: i32 = 10;
 pub const ROOM_MIN_SIZE: i32 = 6;
@@ -43,8 +45,6 @@ pub const MSG_HEIGHT: u32 = PANEL_HEIGHT - 1;
 pub const INVENTORY_WIDTH: i32 = 50;
 
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
-
-pub const STONE_SOUND_RADIUS: i32 = 5;
 
 pub const ISLAND_RADIUS: i32 = 15;
 pub const ISLAND_NUM_OBSTACLES: i32 = 15;

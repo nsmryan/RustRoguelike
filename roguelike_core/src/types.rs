@@ -120,6 +120,7 @@ pub enum Animation {
     Idle(SpriteKey, SpriteIndex),
     WallKick(SpriteKey, SpriteIndex, (i32, i32), (i32, i32)),
     StoneThrow((i32, i32), (i32, i32)),
+    Sound(usize, usize), // current radius, max radius
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

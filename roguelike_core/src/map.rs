@@ -588,7 +588,7 @@ fn move_by(start: (i32, i32), diff: (i32, i32)) -> (i32, i32) {
 }
 
 // NOTE does not need to be in map- just a distance function
-fn distance(start: (i32, i32), end: (i32, i32)) -> i32 {
+pub fn distance(start: (i32, i32), end: (i32, i32)) -> i32 {
     let diff = (end.0 - start.0, end.1 - start.1);
     return ((diff.0 * diff.0 + diff.1 * diff.1) as f32).sqrt() as i32;
 }

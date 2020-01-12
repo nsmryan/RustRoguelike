@@ -130,10 +130,11 @@
     "load_map_file_every_frame": false,
     "tile_noise_scaler": 4.0,
     "highlight_alpha": 76,
+    "sound_alpha": 86,
     "grid_alpha": 9,
     "map_load": "FromFile",
     "idle_speed": 0.35,
-    "draw_mouse_line": false,
+    "draw_mouse_line": true,
     "draw_star_path": false
 }
 

@@ -5,6 +5,7 @@ use tcod::line::*;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
+use roguelike_core::map::distance;
 use roguelike_core::config::*;
 use roguelike_core::ai::*;
 
@@ -52,6 +53,7 @@ pub fn handle_input(input_action: InputAction,
         }
 
         (InputAction::FullScreen, _) => {
+            // NOTE not implemented
             // display_state.canvas.into_window().set_fullscreen(FullscreenType::Desktop);
             player_turn = Action::none();
         },
@@ -152,37 +154,6 @@ pub fn handle_input(input_action: InputAction,
     return player_turn;
 }
 
-fn use_item(_object_id: ObjectId,
-            _item_id: ObjectId,
-            _objects: &mut [Object]) {
-    //if let Some(item) = inventory[inventory_id].item {
-    //    let _on_use = match item {
-    //        Stone => unimplemented!(),
-    //        Goal => unimplemented!(), // gather_goal,
-    //    };
-    //    /*
-    //    match on_use(inventory_id, objects, config) {
-    //        UseResult::UsedUp => {
-    //            inventory.remove(inventory_id);
-    //        }
-    //        UseResult::Cancelled => {
-    //            // messages.message("Cancelled", WHITE);
-    //        }
-
-    //        UseResult::Keep => {
-    //        }
-    //    }
-    //    */
-    //} else {
-    //    // messages.message(format!("The {} cannot be used.", inventory[inventory_id].name), WHITE);
-    //}
-}
-
-//fn gather_goal(_inventory_id: usize, _objects: &mut [Object], _config: &Config) -> UseResult {
-    // messages.message("You've got the goal object! Nice work.", config.color_orange.color());
- //   UseResult::Keep
-//}
-
 fn pick_item_up(object_id: ObjectId,
                 item_id: ObjectId,
                 objects: &mut ObjMap) {
@@ -200,13 +171,25 @@ pub fn throw_stone(start_x: i32,
     let end = (end_x, end_y);
     let throw_line = Line::new(start, end);
 
+    // TODO draw line to end, and move until radius or hit wall
+
     // get target position in direction of player click
     let (target_x, target_y) =
         throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
 
     data.objects[stone_handle].set_pos(target_x, target_y);
 
+    // Create the stone throw animation
     data.objects[stone_handle].animation =
         Some(Animation::StoneThrow(start, (target_x, target_y)));
+
+    // alert monsters within sound range
+    for obj in data.objects.values_mut() {
+        if distance(obj.pos(), (end_x, end_y)) <  SOUND_RADIUS as i32 {
+            if obj.behavior == Some(Behavior::Idle) {
+                obj.behavior = Some(Behavior::Investigating(Position::from_pair(end)));
+            }
+        }
+    }
 }
 

@@ -244,12 +244,12 @@ impl<'a> Game<'a> {
                 ai_take_turn(key, &mut self.data);
                 if let Some(fighter) = self.data.objects[key].fighter {
                     if fighter.hp <= 0 {
-                        // NOTE for now, we just remove enemies
                         self.data.objects[key].alive = false;
                         self.data.objects[key].chr = '%';
                         self.data.objects[key].color = self.config.color_red;
                         self.data.objects[key].fighter = None;
 
+                        // NOTE for now, we just remove enemies
                         self.data.objects.remove(key);
                     }
                 }

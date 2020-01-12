@@ -20,6 +20,8 @@ pub enum InputAction {
     None,
 }
 
+// TODO input modes where keys are mapped to certain actions.
+//      also effects rendering for the line
 pub fn map_keycode_to_action(keycode: Keycode, keymods: Mod) -> InputAction {
     let input_action: InputAction;
 

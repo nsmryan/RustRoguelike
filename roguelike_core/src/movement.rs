@@ -4,6 +4,7 @@ use tcod::line::*;
 
 use slotmap::dense::*;
 
+use crate::constants::*;
 use crate::map::*;
 use crate::types::*;
 use crate::ai::*;
@@ -248,11 +249,13 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Ac
         Some(Movement::Move(x, y)) | Some(Movement::JumpWall(x, y)) => {
             let (dx, dy) = (x - data.objects[player_handle].x, y - data.objects[player_handle].y);
 
+            // Update position and momentum
             data.objects[player_handle].set_pos(x, y);
             let momentum = data.objects[player_handle].momentum.unwrap();
 
             data.objects[player_handle].momentum.as_mut().map(|momentum| momentum.moved(dx, dy));
 
+            // Resolve half-turn mechanic
             if momentum.magnitude() > 1 && !momentum.took_half_turn {
                 player_action = Move(movement.unwrap());
             } else if dx == 0 && dy == 0 {
@@ -261,12 +264,19 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Ac
                 player_action = Move(movement.unwrap());
             }
 
+            // update half turn flag
             if player_action != Action::NoAction {
                 data.objects[player_handle]
                     .momentum
                     .as_mut()
                     .map(|momentum| momentum.took_half_turn =
                          player_action == Move(movement.unwrap()));
+
+                // Set up sound for movement
+                let momentum_amount = data.objects[player_handle].momentum.unwrap();
+                let mut sound = Object::new(x, y, ' ' as char, Color::white(), "sound", false);
+                sound.animation = Some(Animation::Sound(0, momentum_amount.magnitude() as usize));
+                data.objects.insert(sound);
             }
         }
 
