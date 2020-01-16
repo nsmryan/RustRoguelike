@@ -4,17 +4,6 @@ use crate::constants::*;
 use crate::movement::*;
 
 
-pub fn location_within_fov(map: &mut Map, monster_pos: Position, player_pos: Position) -> bool {
-    let within_fov = map.is_in_fov(monster_pos.0, monster_pos.1, player_pos.0, player_pos.1, MONSTER_VIEW_DIST);
-    let within_sight_range = player_pos.distance(&monster_pos) <= MONSTER_VIEW_DIST;
-    let blocked_by_wall = map.is_blocked_by_wall(monster_pos.0,
-                                                 monster_pos.1,
-                                                 player_pos.0 - monster_pos.0,
-                                                 player_pos.1 - monster_pos.1);
-
-    return within_fov && within_sight_range && !blocked_by_wall;
-}
-
 // TODO consider moving to GameData
 pub fn move_by(handle: ObjectId, dx: i32, dy: i32, data: &mut GameData) {
     let (x, y) = data.objects[handle].pos();
@@ -109,7 +98,7 @@ pub fn ai_investigate(target_pos_orig: Position,
     let mut turn: Action;
 
                
-    if location_within_fov(&mut data.map, monster_pos, player_pos) {
+    if data.map.is_in_fov(monster_x, monster_y, player_x, player_y, MONSTER_VIEW_DIST) {
         // TODO this causes a turn delay between seeing the player and attacking them
         turn = Action::StateChange(Behavior::Attacking(player_handle));
     } else { // the monster can't see the player
@@ -141,7 +130,12 @@ fn ai_can_hit_target(map: &mut Map,
     let (target_x, target_y) = target_pos;
     let mut hit_pos = None;
 
-    if location_within_fov(map, Position::from_pair(monster_pos), Position::from_pair(target_pos)) {
+    let within_fov =
+        map.is_in_fov(monster_x, monster_y,
+                      target_x, target_y,
+                      MONSTER_VIEW_DIST);
+
+    if within_fov {
 
             // get all locations they can hit
             let positions: Vec<(i32, i32)> =
@@ -187,7 +181,7 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
             Some(Behavior::Idle) => {
                 let mut turn = Action::none();
 
-                if location_within_fov(&mut data.map, monster_pos, player_pos) {
+                if data.map.is_in_fov(monster_x, monster_y, player_x, player_y, MONSTER_VIEW_DIST) {
                     // NOTE will cause a turn between seeing the player and attacking
                     turn = Action::StateChange(Behavior::Attacking(player_handle));
                 } else if let Some(sound_id) = data.sound_within_earshot(monster_x, monster_y) {
