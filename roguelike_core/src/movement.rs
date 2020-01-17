@@ -2,10 +2,6 @@ use std::iter::Iterator;
 
 use tcod::line::*;
 
-use slotmap::dense::*;
-
-use crate::constants::*;
-use crate::map::*;
 use crate::types::*;
 use crate::ai::*;
 
@@ -80,21 +76,21 @@ pub enum Reach {
 }
 
 impl Reach {
-    pub fn move_with_reach(&self, move_action: &MoveAction) -> Option<Position> {
+    pub fn move_with_reach(&self, move_action: &MoveAction) -> Option<Pos> {
         match self {
             Reach::Single(dist) => {
                 let dist = (*dist) as i32;
                 let neg_dist = dist * -1;
                 match move_action {
-                    MoveAction::Left => Some(Position::from_pair((neg_dist, 0))),
-                    MoveAction::Right => Some(Position::from_pair((dist, 0))),
-                    MoveAction::Up => Some(Position::from_pair((0, neg_dist))),
-                    MoveAction::Down => Some(Position::from_pair((0, dist))),
-                    MoveAction::DownLeft => Some(Position::from_pair((neg_dist, dist))),
-                    MoveAction::DownRight => Some(Position::from_pair((dist, dist))),
-                    MoveAction::UpLeft => Some(Position::from_pair((neg_dist, neg_dist))),
-                    MoveAction::UpRight => Some(Position::from_pair((dist, neg_dist))),
-                    MoveAction::Center => Some(Position::from_pair((0, 0))),
+                    MoveAction::Left => Some(Pos::from_pair((neg_dist, 0))),
+                    MoveAction::Right => Some(Pos::from_pair((dist, 0))),
+                    MoveAction::Up => Some(Pos::from_pair((0, neg_dist))),
+                    MoveAction::Down => Some(Pos::from_pair((0, dist))),
+                    MoveAction::DownLeft => Some(Pos::from_pair((neg_dist, dist))),
+                    MoveAction::DownRight => Some(Pos::from_pair((dist, dist))),
+                    MoveAction::UpLeft => Some(Pos::from_pair((neg_dist, neg_dist))),
+                    MoveAction::UpRight => Some(Pos::from_pair((dist, neg_dist))),
+                    MoveAction::Center => Some(Pos::from_pair((0, 0))),
                 }
             }
 
@@ -106,11 +102,11 @@ impl Reach {
                     MoveAction::Right => None,
                     MoveAction::Up => None,
                     MoveAction::Down => None,
-                    MoveAction::DownLeft => Some(Position::from_pair((neg_dist, dist))),
-                    MoveAction::DownRight => Some(Position::from_pair((dist, dist))),
-                    MoveAction::UpLeft => Some(Position::from_pair((neg_dist, neg_dist))),
-                    MoveAction::UpRight => Some(Position::from_pair((dist, neg_dist))),
-                    MoveAction::Center => Some(Position::from_pair((0, 0))),
+                    MoveAction::DownLeft => Some(Pos::from_pair((neg_dist, dist))),
+                    MoveAction::DownRight => Some(Pos::from_pair((dist, dist))),
+                    MoveAction::UpLeft => Some(Pos::from_pair((neg_dist, neg_dist))),
+                    MoveAction::UpRight => Some(Pos::from_pair((dist, neg_dist))),
+                    MoveAction::Center => Some(Pos::from_pair((0, 0))),
                 }
             }
 
@@ -118,10 +114,10 @@ impl Reach {
                 let dist = (*dist) as i32;
                 let neg_dist = dist * -1;
                 match move_action {
-                    MoveAction::Left => Some(Position::from_pair((neg_dist, 0))),
-                    MoveAction::Right => Some(Position::from_pair((dist, 0))),
-                    MoveAction::Up => Some(Position::from_pair((0, neg_dist))),
-                    MoveAction::Down => Some(Position::from_pair((0, dist))),
+                    MoveAction::Left => Some(Pos::from_pair((neg_dist, 0))),
+                    MoveAction::Right => Some(Pos::from_pair((dist, 0))),
+                    MoveAction::Up => Some(Pos::from_pair((0, neg_dist))),
+                    MoveAction::Down => Some(Pos::from_pair((0, dist))),
                     MoveAction::DownLeft => None,
                     MoveAction::DownRight => None,
                     MoveAction::UpLeft => None,
@@ -132,7 +128,7 @@ impl Reach {
         }
     }
 
-    pub fn offsets(&self) -> Vec<Position> {
+    pub fn offsets(&self) -> Vec<Pos> {
         match self {
             Reach::Single(dist) => {
                 let dist = (*dist) as i32;
@@ -140,7 +136,7 @@ impl Reach {
                     vec!( (0, dist),      (-dist, dist), (-dist,  0),
                           (-dist, -dist), (0,  -dist),   (dist, -dist),
                           (dist,  0), (dist, dist));
-                offsets.iter().map(|pair| Position::from_pair(*pair)).collect()
+                offsets.iter().map(|pair| Pos::from_pair(*pair)).collect()
             },
 
             Reach::Horiz(dist) => {
@@ -152,7 +148,7 @@ impl Reach {
                     offsets.push((-1 * dist, 0));
                     offsets.push((0, -1 * dist));
                 }
-                offsets.iter().map(|pair| Position::from_pair(*pair)).collect()
+                offsets.iter().map(|pair| Pos::from_pair(*pair)).collect()
             },
 
 
@@ -165,7 +161,7 @@ impl Reach {
                     offsets.push((dist, -1 * dist));
                     offsets.push((-1 * dist, -1 * dist));
                 }
-                offsets.iter().map(|pair| Position::from_pair(*pair)).collect()
+                offsets.iter().map(|pair| Pos::from_pair(*pair)).collect()
             },
         }
     }
@@ -346,7 +342,6 @@ pub fn check_collision(x: i32,
     return result;
 }
 
-// TODO consider moving to GameData
 pub fn calculate_move(action: MoveAction,
                       reach: Reach,
                       object_id: ObjectId,

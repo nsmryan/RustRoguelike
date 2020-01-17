@@ -6,7 +6,6 @@ use rand::prelude::*;
 use pathfinding::directed::astar::astar;
 
 use tcod::map::{Map as FovMap};
-use tcod::pathfinding::*;
 use tcod::line::*;
 
 use serde_derive::*;

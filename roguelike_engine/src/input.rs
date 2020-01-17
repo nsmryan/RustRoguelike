@@ -15,7 +15,6 @@ pub enum InputAction {
     RegenerateMap,
     ToggleOverlays,
     GodMode,
-    FullScreen,
     RegenMap,
     None,
 }
@@ -63,11 +62,7 @@ pub fn map_keycode_to_action(keycode: Keycode, keymods: Mod) -> InputAction {
         }
 
         Keycode::Return => {
-            if keymods.intersects(Mod::LALTMOD | Mod::RALTMOD) {
-                input_action = InputAction::FullScreen;
-            } else {
-                input_action = InputAction::None;
-            }
+            input_action = InputAction::None;
         }
 
         Keycode::Q => {

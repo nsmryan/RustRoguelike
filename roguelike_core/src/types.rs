@@ -12,7 +12,6 @@ use slotmap::DefaultKey;
 use crate::map::*;
 use crate::constants::*;
 use crate::movement::*;
-use crate::ai::*;
 
 
 // TODO consider using custom key types to distinguish
@@ -163,7 +162,7 @@ pub enum Ai {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Behavior {
     Idle,
-    Investigating(Position),
+    Investigating(Pos),
     Attacking(ObjectId),
 }
 
@@ -286,18 +285,18 @@ impl Rect {
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Position(pub i32, pub i32);
+pub struct Pos(pub i32, pub i32);
 
-impl Position {
-    pub fn new(x: i32, y: i32) -> Position {
-        Position(x, y)
+impl Pos {
+    pub fn new(x: i32, y: i32) -> Pos {
+        Pos(x, y)
     }
 
-    pub fn from_pair(pair: (i32, i32)) -> Position {
-        Position::new(pair.0, pair.1)
+    pub fn from_pair(pair: (i32, i32)) -> Pos {
+        Pos::new(pair.0, pair.1)
     }
 
-    pub fn distance(&self, other: &Position) -> i32 {
+    pub fn distance(&self, other: &Pos) -> i32 {
         let dist_i32 = (self.0 - other.0).pow(2) + (self.1 - other.1).pow(2);
         (dist_i32 as f64).sqrt() as i32
     }
@@ -306,20 +305,20 @@ impl Position {
         (self.0, self.1)
     }
 
-    pub fn move_by(&self, dist_x: i32, dist_y: i32) -> Position {
-        Position(self.0 + dist_x, self.1 + dist_y)
+    pub fn move_by(&self, dist_x: i32, dist_y: i32) -> Pos {
+        Pos(self.0 + dist_x, self.1 + dist_y)
     }
 
-    pub fn move_x(&self, dist_x: i32) -> Position {
-        Position(self.0 + dist_x, self.1)
+    pub fn move_x(&self, dist_x: i32) -> Pos {
+        Pos(self.0 + dist_x, self.1)
     }
 
-    pub fn move_y(&self, dist_y: i32) -> Position {
-        Position(self.0, self.1 + dist_y)
+    pub fn move_y(&self, dist_y: i32) -> Pos {
+        Pos(self.0, self.1 + dist_y)
     }
 
-    pub fn add(&self, other: Position) -> Position{
-        Position(self.0 + other.0, self.1 + other.1)
+    pub fn add(&self, other: Pos) -> Pos{
+        Pos(self.0 + other.0, self.1 + other.1)
     }
 
     pub fn into_pair(&self) -> (i32, i32) {
@@ -327,7 +326,7 @@ impl Position {
     }
 }
 
-impl Into<(i32, i32)> for Position {
+impl Into<(i32, i32)> for Pos {
     fn into(self) -> (i32, i32) {
         (self.0, self.1)
     }
@@ -385,10 +384,10 @@ impl Object {
     }
 
     pub fn distance_to(&self, other: &Object) -> f32 {
-        return self.distance(&Position::new(other.x, other.y));
+        return self.distance(&Pos::new(other.x, other.y));
     }
 
-    pub fn distance(&self, other: &Position) -> f32 {
+    pub fn distance(&self, other: &Pos) -> f32 {
         let dx = other.0 - self.x;
         let dy = other.1 - self.y;
         return ((dx.pow(2) + dy.pow(2)) as f32).sqrt();

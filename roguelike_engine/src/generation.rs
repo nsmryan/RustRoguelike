@@ -113,7 +113,7 @@ pub fn make_map(map_type: &MapGenType,
                 objects: &mut ObjMap,
                 config: &Config,
                 display_state: &DisplayState,
-                rng: &mut SmallRng) -> (GameData, Position) {
+                rng: &mut SmallRng) -> (GameData, Pos) {
     let result;
     match map_type {
         MapGenType::WallTest => {
@@ -147,7 +147,7 @@ pub fn make_map(map_type: &MapGenType,
 
             let data = GameData::new(new_map, new_objects);
 
-            result = (data, Position::from_pair(player_position));
+            result = (data, Pos::from_pair(player_position));
         }
     }
 
@@ -157,8 +157,8 @@ pub fn make_map(map_type: &MapGenType,
 pub fn make_island(data: &mut GameData,
                    config: &Config,
                    display_state: &DisplayState,
-                   rng: &mut SmallRng) -> Position {
-    let center = Position(data.map.width() / 2, data.map.height() / 2);
+                   rng: &mut SmallRng) -> Pos {
+    let center = Pos(data.map.width() / 2, data.map.height() / 2);
 
     let mut water_tile_positions = Vec::new();
 
@@ -166,7 +166,7 @@ pub fn make_island(data: &mut GameData,
     // the center has land, the remaining square are filled with water
     for x in 0..data.map.width() {
         for y in 0..data.map.height() {
-            let pos = Position(x, y);
+            let pos = Pos(x, y);
             if pos.distance(&center) <= ISLAND_RADIUS {
                 data.map.tiles[x as usize][y as usize] = Tile::empty();
             } else {
@@ -181,7 +181,7 @@ pub fn make_island(data: &mut GameData,
 
     for _ in 0..ISLAND_NUM_OBSTACLES {
         let rand_pos = random_offset(rng, ISLAND_RADIUS);
-        let pos = Position(center.0 + rand_pos.0, center.1 + rand_pos.1);
+        let pos = Pos(center.0 + rand_pos.0, center.1 + rand_pos.1);
 
         let obstacle = *obstacles.choose(rng).unwrap();
 
@@ -194,7 +194,7 @@ pub fn make_island(data: &mut GameData,
     /* add buildings */
     for _ in 0..rng.gen_range(3, 5) {
         let rand_pos = random_offset(rng, ISLAND_RADIUS);
-        let pos = Position(center.0 + rand_pos.0, center.1 + rand_pos.1);
+        let pos = Pos(center.0 + rand_pos.0, center.1 + rand_pos.1);
         add_obstacle(&mut data.map, pos.pair(), Obstacle::Building, rng);
     }
 
@@ -289,7 +289,7 @@ pub fn make_island(data: &mut GameData,
     let mut edge_positions = Vec::new();
     for x in 0..map_size.0 {
         for y in 0..map_size.1 {
-            let pos = Position::from_pair((x, y));
+            let pos = Pos::from_pair((x, y));
             if !(data.map[(x, y)].tile_type == TileType::Water) &&
                  near_tile_type(&data.map, pos.pair(), TileType::Water) {
                 edge_positions.push(pos);
@@ -312,7 +312,7 @@ pub fn make_island(data: &mut GameData,
 
 pub fn make_wall_test_map(objects: &mut ObjMap,
                           config: &Config,
-                          display_state: &DisplayState) -> (Map, Position) {
+                          display_state: &DisplayState) -> (Map, Pos) {
     let mut map = Map::from_dims(10, 10);
     let position = (1, 5);
 
@@ -326,12 +326,12 @@ pub fn make_wall_test_map(objects: &mut ObjMap,
 
     map.update_map();
 
-    return (map, Position::from_pair(position));
+    return (map, Pos::from_pair(position));
 }
 
 pub fn make_corner_test_map(objects: &mut ObjMap,
                             config: &Config,
-                            display_state: &DisplayState) -> (Map, Position) {
+                            display_state: &DisplayState) -> (Map, Pos) {
     let mut map = Map::from_dims(15, 15);
     let position = (1, 5);
 
@@ -353,7 +353,7 @@ pub fn make_corner_test_map(objects: &mut ObjMap,
 
     map.update_map();
 
-    return (map, Position::from_pair(position));
+    return (map, Pos::from_pair(position));
 }
 
 

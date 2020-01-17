@@ -4,7 +4,6 @@ use crate::constants::*;
 use crate::movement::*;
 
 
-// TODO consider moving to GameData
 pub fn move_by(handle: ObjectId, dx: i32, dy: i32, data: &mut GameData) {
     let (x, y) = data.objects[handle].pos();
 
@@ -28,12 +27,12 @@ pub fn ai_attack(monster_handle: ObjectId,
                  target_handle: ObjectId,
                  data: &mut GameData) -> Action {
     let (target_x, target_y) = data.objects[target_handle].pos();
-    let mut target_pos = Position::new(target_x, target_y);
+    let mut target_pos = Pos::new(target_x, target_y);
 
     let (monster_x, monster_y) = data.objects[monster_handle].pos();
-    let monster_pos = Position::new(monster_x, monster_y);
+    let monster_pos = Pos::new(monster_x, monster_y);
 
-    let mut turn: Action = Action::none();
+    let turn: Action;
 
     // if AI can hit their target
     if let Some(hit_pos) =
@@ -71,8 +70,8 @@ pub fn ai_attack(monster_handle: ObjectId,
             // attack, move to the one closest to their current position.
             if positions.len() > 0 {
                 target_pos = positions.iter()
-                                      .min_by_key(|pos| target_pos.distance(&Position::from_pair(**pos)))
-                                      .map(|pair| Position::from_pair(*pair))
+                                      .min_by_key(|pos| target_pos.distance(&Pos::from_pair(**pos)))
+                                      .map(|pair| Pos::from_pair(*pair))
                                       .unwrap();
             }
 
@@ -85,17 +84,16 @@ pub fn ai_attack(monster_handle: ObjectId,
     return turn;
 }
 
-pub fn ai_investigate(target_pos_orig: Position, 
+pub fn ai_investigate(target_pos_orig: Pos, 
                       monster_handle: ObjectId,
                       data: &mut GameData) -> Action {
     let player_handle = data.find_player().unwrap();
     let mut target_pos = target_pos_orig;
     let (player_x, player_y) = data.objects[player_handle].pos();
-    let player_pos = Position::new(player_x, player_y);
 
     let (monster_x, monster_y) = data.objects[monster_handle].pos();
-    let monster_pos = Position::new(monster_x, monster_y);
-    let mut turn: Action;
+    let monster_pos = Pos::new(monster_x, monster_y);
+    let turn: Action;
 
                
     if data.map.is_in_fov(monster_x, monster_y, player_x, player_y, MONSTER_VIEW_DIST) {
@@ -103,7 +101,7 @@ pub fn ai_investigate(target_pos_orig: Position,
         turn = Action::StateChange(Behavior::Attacking(player_handle));
     } else { // the monster can't see the player
         if let Some(sound_id) = data.sound_within_earshot(monster_x, monster_y) {
-            target_pos = Position::new(data.objects[sound_id].x, data.objects[sound_id].y);
+            target_pos = Pos::new(data.objects[sound_id].x, data.objects[sound_id].y);
             data.objects[monster_handle].behavior =
                 Some(Behavior::Investigating(target_pos));
         }
@@ -136,7 +134,6 @@ fn ai_can_hit_target(map: &mut Map,
                       MONSTER_VIEW_DIST);
 
     if within_fov {
-
             // get all locations they can hit
             let positions: Vec<(i32, i32)> =
                 reach.offsets()
@@ -173,8 +170,7 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
     let player_handle = data.find_player().unwrap();
     let (monster_x, monster_y) = data.objects[monster_handle].pos();
     let (player_x, player_y) = data.objects[player_handle].pos();
-    let player_pos = Position::new(player_x, player_y);
-    let monster_pos = Position::new(monster_x, monster_y);
+    let monster_pos = Pos::new(monster_x, monster_y);
 
     if data.map.is_within_bounds(monster_pos.0, monster_pos.1) {
         match data.objects[monster_handle].behavior {
@@ -185,7 +181,7 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
                     // NOTE will cause a turn between seeing the player and attacking
                     turn = Action::StateChange(Behavior::Attacking(player_handle));
                 } else if let Some(sound_id) = data.sound_within_earshot(monster_x, monster_y) {
-                    let sound_position = Position::new(data.objects[sound_id].x, data.objects[sound_id].y);
+                    let sound_position = Pos::new(data.objects[sound_id].x, data.objects[sound_id].y);
                     turn = Action::StateChange(Behavior::Investigating(sound_position));
                 }
 
@@ -261,12 +257,8 @@ pub fn ai_apply_actions(monster_handle: ObjectId,
 pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap) {
     let damage = objects[handle].fighter.map_or(0, |f| f.power) -
                  objects[other_handle].fighter.map_or(0, |f| f.defense);
-
     if damage > 0 {
-        //messages.message(format!("{} attacks {} for {} hit points.", self.name, target.name, damage), WHITE);
         objects[other_handle].take_damage(damage);
-    } else {
-        //messages.message(format!("{} attacks {} but it has no effect!", self.name, target.name), WHITE);
     }
 }
 

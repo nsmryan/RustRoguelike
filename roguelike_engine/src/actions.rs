@@ -32,6 +32,7 @@ pub fn handle_input(input_action: InputAction,
     let player_alive = game_data.objects[player_handle].alive;
 
     match (input_action, player_alive) {
+        // NOTE needs to move to control handling
         // If the player pressed a movement button, attempt to move
         (InputAction::Move(move_action), true) => {
             player_turn = player_move_or_attack(move_action, game_data);
@@ -50,12 +51,7 @@ pub fn handle_input(input_action: InputAction,
             }
         }
 
-        (InputAction::FullScreen, _) => {
-            // NOTE not implemented
-            // display_state.canvas.into_window().set_fullscreen(FullscreenType::Desktop);
-            player_turn = Action::none();
-        },
-
+        // NOTE needs to move to control handling
         (InputAction::Pickup, true) => {
             let player = &game_data.objects[player_handle];
             let item_id = game_data.objects.keys().filter(|key| {
@@ -122,6 +118,7 @@ pub fn handle_input(input_action: InputAction,
             player_turn = Action::none();
         }
 
+        // NOTE needs to move to control handling
         (InputAction::MapClick(_map_loc, map_cell), _) => {
             let mut stone = None;
             let mut stone_index = None;
@@ -185,7 +182,7 @@ pub fn throw_stone(start_x: i32,
     for obj in data.objects.values_mut() {
         if distance(obj.pos(), (end_x, end_y)) <  SOUND_RADIUS as i32 {
             if obj.behavior == Some(Behavior::Idle) {
-                obj.behavior = Some(Behavior::Investigating(Position::from_pair(end)));
+                obj.behavior = Some(Behavior::Investigating(Pos::from_pair(end)));
             }
         }
     }
