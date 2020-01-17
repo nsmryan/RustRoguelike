@@ -122,13 +122,23 @@ pub fn draw_placard(display_state: &mut DisplayState,
                     area: &Area,
                     config: &Config) {
     let color = config.color_bone_white;
-    display_state.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
     
+    // Draw a black background
+    display_state.canvas.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+    display_state.canvas.fill_rect(Rect::new(area.x_offset + 5,
+                                             area.y_offset + (area.font_height as i32 / 2),
+                                             area.width as u32 - 10,
+                                             area.height as u32 - 10)).unwrap();
+
+    display_state.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+
+    // Draw a thin line around the edges of the placard
     display_state.canvas.draw_rect(Rect::new(area.x_offset + 5,
                                              area.y_offset + (area.font_height as i32 / 2),
                                              area.width as u32 - 10,
                                              area.height as u32 - 10)).unwrap();
 
+    // draw a rectangle around where the placard header text will be placed.
     let half_text = text.len() / 2;
     let text_offset = (area.width / 2) - (area.font_width * half_text);
     display_state.canvas.fill_rect(Rect::new(area.x_offset + text_offset as i32,
@@ -136,6 +146,7 @@ pub fn draw_placard(display_state: &mut DisplayState,
                                              (text.len() * area.font_width) as u32,
                                              area.font_height as u32)).unwrap();
 
+    // Draw header text
     let mid_char_offset = (area.width / area.font_width) / 2;
     let text_start = (mid_char_offset - half_text) as i32;
     draw_text(display_state,
@@ -588,8 +599,8 @@ pub fn render_overlays(display_state: &mut DisplayState,
                     let attack_positions = 
                         reach.offsets()
                              .iter()
-                             .map(|offset| (mouse_xy.0 as i32 + offset.0,
-                                            mouse_xy.1 as i32 + offset.1))
+                             .map(|offset| (mouse_xy.0 as i32 + offset.x,
+                                            mouse_xy.1 as i32 + offset.y))
                              // filter out positions that are outside of the map, or with no clear
                              // path from the entity to the reached position
                              .filter(|pos| data.map.is_within_bounds(pos.0, pos.1) &&

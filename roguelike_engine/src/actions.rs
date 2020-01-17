@@ -182,7 +182,7 @@ pub fn throw_stone(start_x: i32,
     for obj in data.objects.values_mut() {
         if distance(obj.pos(), (end_x, end_y)) <  SOUND_RADIUS as i32 {
             if obj.behavior == Some(Behavior::Idle) {
-                obj.behavior = Some(Behavior::Investigating(Pos::from_pair(end)));
+                obj.behavior = Some(Behavior::Investigating(Pos::from(end)));
             }
         }
     }

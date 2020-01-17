@@ -9,6 +9,8 @@ use num::clamp;
 use slotmap::dense::*;
 use slotmap::DefaultKey;
 
+use euclid::Point2D;
+
 use crate::map::*;
 use crate::constants::*;
 use crate::movement::*;
@@ -57,9 +59,9 @@ impl GameData {
         return None;
     }
 
-    pub fn sound_within_earshot(&self, x: i32, y: i32) -> Option<ObjectId> {
+    pub fn sound_within_earshot(&self, pos: Pos) -> Option<ObjectId> {
         for (object_id, object) in self.objects.iter() {
-            if object.name == "sound" && distance((x, y), (object.x, object.y)) < SOUND_RADIUS as i32 {
+            if object.name == "sound" && distance(pos, Pos::new(object.x, object.y)) < SOUND_RADIUS as i32 {
                 return Some(object_id);
             }
         }
@@ -142,7 +144,7 @@ pub enum Item {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Action {
     Move(Movement),
-    Attack(ObjectId, (i32, i32)),
+    Attack(ObjectId, Pos),
     StateChange(Behavior),
     ThrowStone,
     NoAction,
@@ -284,53 +286,8 @@ impl Rect {
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Pos(pub i32, pub i32);
+pub type Pos = Point2D<i32, ()>;
 
-impl Pos {
-    pub fn new(x: i32, y: i32) -> Pos {
-        Pos(x, y)
-    }
-
-    pub fn from_pair(pair: (i32, i32)) -> Pos {
-        Pos::new(pair.0, pair.1)
-    }
-
-    pub fn distance(&self, other: &Pos) -> i32 {
-        let dist_i32 = (self.0 - other.0).pow(2) + (self.1 - other.1).pow(2);
-        (dist_i32 as f64).sqrt() as i32
-    }
-
-    pub fn pair(&self) -> (i32, i32) {
-        (self.0, self.1)
-    }
-
-    pub fn move_by(&self, dist_x: i32, dist_y: i32) -> Pos {
-        Pos(self.0 + dist_x, self.1 + dist_y)
-    }
-
-    pub fn move_x(&self, dist_x: i32) -> Pos {
-        Pos(self.0 + dist_x, self.1)
-    }
-
-    pub fn move_y(&self, dist_y: i32) -> Pos {
-        Pos(self.0, self.1 + dist_y)
-    }
-
-    pub fn add(&self, other: Pos) -> Pos{
-        Pos(self.0 + other.0, self.1 + other.1)
-    }
-
-    pub fn into_pair(&self) -> (i32, i32) {
-        return (self.0, self.1);
-    }
-}
-
-impl Into<(i32, i32)> for Pos {
-    fn into(self) -> (i32, i32) {
-        (self.0, self.1)
-    }
-}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Object {
@@ -374,8 +331,8 @@ impl Object {
         }
     }
 
-    pub fn pos(&self) -> (i32, i32) {
-        (self.x, self.y)
+    pub fn pos(&self) -> Pos {
+        Pos::new(self.x, self.y)
     }
 
     pub fn set_pos(&mut self, x: i32, y: i32) {
@@ -388,8 +345,8 @@ impl Object {
     }
 
     pub fn distance(&self, other: &Pos) -> f32 {
-        let dx = other.0 - self.x;
-        let dy = other.1 - self.y;
+        let dx = other.x - self.x;
+        let dy = other.y - self.y;
         return ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
     }
 
@@ -415,5 +372,9 @@ impl Object {
             }
         }
     }
+}
+
+pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
+    return ((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)).abs();
 }
 

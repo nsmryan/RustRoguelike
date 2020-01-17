@@ -134,7 +134,7 @@
     "grid_alpha": 9,
     "map_load": "FromFile",
     "idle_speed": 0.35,
-    "draw_mouse_line": true,
+    "draw_mouse_line": false,
     "draw_star_path": false
 }
 

@@ -1,5 +1,6 @@
 use rand::prelude::*;
 
+use roguelike_core::ai::distance;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
@@ -134,7 +135,7 @@ pub fn make_map(map_type: &MapGenType,
             let mut data = GameData::new(map, objects.clone());
             let starting_position = make_island(&mut data, config, display_state, rng);
 
-            data.map[starting_position.pair()].tile_type = TileType::Empty;
+            data.map[starting_position.to_tuple()].tile_type = TileType::Empty;
 
             data.map.update_map();
 
@@ -147,7 +148,7 @@ pub fn make_map(map_type: &MapGenType,
 
             let data = GameData::new(new_map, new_objects);
 
-            result = (data, Pos::from_pair(player_position));
+            result = (data, Pos::from(player_position));
         }
     }
 
@@ -158,7 +159,7 @@ pub fn make_island(data: &mut GameData,
                    config: &Config,
                    display_state: &DisplayState,
                    rng: &mut SmallRng) -> Pos {
-    let center = Pos(data.map.width() / 2, data.map.height() / 2);
+    let center = Pos::new(data.map.width() / 2, data.map.height() / 2);
 
     let mut water_tile_positions = Vec::new();
 
@@ -166,8 +167,8 @@ pub fn make_island(data: &mut GameData,
     // the center has land, the remaining square are filled with water
     for x in 0..data.map.width() {
         for y in 0..data.map.height() {
-            let pos = Pos(x, y);
-            if pos.distance(&center) <= ISLAND_RADIUS {
+            let pos = Pos::new(x, y);
+            if distance(pos, center) <= ISLAND_RADIUS {
                 data.map.tiles[x as usize][y as usize] = Tile::empty();
             } else {
                 data.map.tiles[x as usize][y as usize] = Tile::water();
@@ -181,26 +182,26 @@ pub fn make_island(data: &mut GameData,
 
     for _ in 0..ISLAND_NUM_OBSTACLES {
         let rand_pos = random_offset(rng, ISLAND_RADIUS);
-        let pos = Pos(center.0 + rand_pos.0, center.1 + rand_pos.1);
+        let pos = Pos::new(center.x + rand_pos.0, center.y + rand_pos.1);
 
         let obstacle = *obstacles.choose(rng).unwrap();
 
         // Buildings are generated separately, so don't add them in random generation
         if obstacle != Obstacle::Building {
-            add_obstacle(&mut data.map, pos.pair(), obstacle, rng);
+            add_obstacle(&mut data.map, pos.to_tuple(), obstacle, rng);
         }
     }
 
     /* add buildings */
     for _ in 0..rng.gen_range(3, 5) {
         let rand_pos = random_offset(rng, ISLAND_RADIUS);
-        let pos = Pos(center.0 + rand_pos.0, center.1 + rand_pos.1);
-        add_obstacle(&mut data.map, pos.pair(), Obstacle::Building, rng);
+        let pos = Pos::new(center.x + rand_pos.0, center.y + rand_pos.1);
+        add_obstacle(&mut data.map, pos.to_tuple(), Obstacle::Building, rng);
     }
 
     /* random subtraction */
     for _ in 0..ISLAND_NUM_SUBTRACTIONS_ATTEMPTS {
-        let pos = pos_in_radius(center.pair(), ISLAND_RADIUS, rng);
+        let pos = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
 
         if data.map.tiles[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
             data.map.tiles[pos.0 as usize][pos.1 as usize] = Tile::empty();
@@ -209,7 +210,7 @@ pub fn make_island(data: &mut GameData,
 
     /* random additions */
     for _ in 0..ISLAND_NUM_ADDITION_ATTEMPTS {
-        let pos = pos_in_radius(center.pair(), ISLAND_RADIUS, rng);
+        let pos = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
         let obstacle = *obstacles.choose(rng).unwrap();
 
         if data.map.tiles[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
@@ -219,7 +220,7 @@ pub fn make_island(data: &mut GameData,
 
     /* random stones */
     for _ in 0..10 {
-        let pos = pos_in_radius(center.pair(), ISLAND_RADIUS, rng);
+        let pos = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
 
         if data.map.is_empty(pos.0, pos.1) {
             let mut stone = make_stone(config, pos.0, pos.1);
@@ -231,7 +232,7 @@ pub fn make_island(data: &mut GameData,
     /* add monsters */
     for _ in 0..0 {
         loop {
-            let (x, y) = pos_in_radius(center.pair(), ISLAND_RADIUS, rng);
+            let (x, y) = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
 
             if !is_blocked(x, y, data) {
                 let monster = make_gol(config, x, y, display_state);
@@ -243,7 +244,7 @@ pub fn make_island(data: &mut GameData,
 
     for _ in 0..1 {
         loop {
-            let (x, y) = pos_in_radius(center.pair(), ISLAND_RADIUS, rng);
+            let (x, y) = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
 
             if !is_blocked(x, y, data) {
                 let monster = make_elf(config, x, y, display_state);
@@ -255,7 +256,7 @@ pub fn make_island(data: &mut GameData,
     
     for _ in 0..0 {
         loop {
-            let (x, y) = pos_in_radius(center.pair(), ISLAND_RADIUS, rng);
+            let (x, y) = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
 
             if !is_blocked(x, y, data) {
                 let monster = make_troll(config,x,y);
@@ -275,9 +276,9 @@ pub fn make_island(data: &mut GameData,
     }
 
     /* add goal object */
-    let (mut x, mut y) = pos_in_radius(center.pair(), ISLAND_RADIUS, rng);
+    let (mut x, mut y) = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
     while !data.map.is_empty(x, y) {
-        let pos = pos_in_radius(center.pair(), ISLAND_RADIUS, rng);
+        let pos = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
         x = pos.0;
         y = pos.1;
     }
@@ -289,9 +290,9 @@ pub fn make_island(data: &mut GameData,
     let mut edge_positions = Vec::new();
     for x in 0..map_size.0 {
         for y in 0..map_size.1 {
-            let pos = Pos::from_pair((x, y));
+            let pos = Pos::from((x, y));
             if !(data.map[(x, y)].tile_type == TileType::Water) &&
-                 near_tile_type(&data.map, pos.pair(), TileType::Water) {
+                 near_tile_type(&data.map, pos.to_tuple(), TileType::Water) {
                 edge_positions.push(pos);
             }
         }
@@ -300,7 +301,7 @@ pub fn make_island(data: &mut GameData,
     let edge_pos = edge_positions[rng.gen_range(0, edge_positions.len())];
 
     // make the random edge position the exit
-    data.map.tiles[edge_pos.0 as usize][edge_pos.1 as usize] = Tile::exit();
+    data.map.tiles[edge_pos.x as usize][edge_pos.y as usize] = Tile::exit();
 
     /* Ensure that objects placed outside of the island are removed */
     for pos in water_tile_positions {
@@ -326,7 +327,7 @@ pub fn make_wall_test_map(objects: &mut ObjMap,
 
     map.update_map();
 
-    return (map, Pos::from_pair(position));
+    return (map, Pos::from(position));
 }
 
 pub fn make_corner_test_map(objects: &mut ObjMap,
@@ -353,7 +354,7 @@ pub fn make_corner_test_map(objects: &mut ObjMap,
 
     map.update_map();
 
-    return (map, Pos::from_pair(position));
+    return (map, Pos::from(position));
 }
 
 

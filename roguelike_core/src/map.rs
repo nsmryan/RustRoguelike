@@ -10,6 +10,7 @@ use tcod::line::*;
 
 use serde_derive::*;
 
+use crate::types::*;
 use crate::constants::*;
 
 
@@ -147,7 +148,7 @@ pub enum Wall {
 pub struct Map {
     pub tiles: Vec<Vec<Tile>>,
     fov: FovMap,
-    fov_pos: (i32, i32),
+    fov_pos: Pos,
     fov_radius: i32,
 }
 
@@ -211,19 +212,19 @@ impl Map {
         return self.is_within_bounds(x, y) && self[(x, y - 1)].bottom_wall != Wall::Empty;
     }
 
-    pub fn is_blocked_by_wall(&self, start_x: i32, start_y: i32, dx: i32, dy: i32) -> bool {
+    pub fn is_blocked_by_wall(&self, start_pos: Pos, dx: i32, dy: i32) -> bool {
         let mut blocked = false;
 
-        let (end_x, end_y) = (start_x + dx, start_y + dy);
+        let (end_x, end_y) = (start_pos.x + dx, start_pos.y + dy);
 
-        let line = Line::new((start_x, start_y), (end_x, end_y));
+        let line = Line::new((start_pos.x, start_pos.y), (end_x, end_y));
 
         let mut move_x;
         let mut move_y;
 
         let mut positions = Vec::new();
         // ensure that the starting position is looked at
-        positions.push((start_x, start_y));
+        positions.push((start_pos.x, start_pos.y));
         positions.extend(line.into_iter());
 
         for pair in positions.windows(2) {
@@ -306,9 +307,9 @@ impl Map {
         return self[(x, y)].tile_type == TileType::Empty;
     }
 
-    pub fn is_within_bounds(&self, x: i32, y: i32) -> bool {
-        let x_bounds = x >= 0 && x < self.width();
-        let y_bounds = y >= 0 && y < self.height();
+    pub fn is_within_bounds(&self, pos: Pos) -> bool {
+        let x_bounds = pos.x >= 0 && pos.x < self.width();
+        let y_bounds = pos.y >= 0 && pos.y < self.height();
 
         return x_bounds && y_bounds;
     }
@@ -325,21 +326,20 @@ impl Map {
         return self.tiles[0].len() as i32;
     }
 
-    pub fn is_in_fov(&mut self, start_x: i32, start_y: i32, end_x: i32, end_y: i32, radius: i32) -> bool {
-        if self.fov_pos != (start_x, start_y) {
-            self.compute_fov(start_x, start_y, radius);
+    pub fn is_in_fov(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
+        if self.fov_pos != start_pos {
+            self.compute_fov(start_pos, radius);
         }
 
-        let wall_in_path = self.is_blocked_by_wall(start_x,
-                                                   start_y,
-                                                   end_x - start_x,
-                                                   end_y - start_y);
+        let offset = Pos::new(end_pos.x - start_pos.x,
+                              end_pos.y - start_pos.y);
+        let wall_in_path = self.is_blocked_by_wall(start_pos, offset);
 
-        return !wall_in_path && self.fov.is_in_fov(end_x, end_y);
+        return !wall_in_path && self.fov.is_in_fov(end_pos.x, end_pos.y);
     }
 
     // this function is like clear_path, but only looks for terrain, not objects like monsters
-    pub fn clear_path_obstacles(&self, start: (i32, i32), end: (i32, i32)) -> bool {
+    pub fn clear_path_obstacles(&self, start: Pos, end: Pos) -> bool {
         let line = Line::new((start.0, start.1), (end.0, end.1));
 
         let path_blocked =
@@ -348,7 +348,7 @@ impl Map {
         return !path_blocked;
     }
 
-    pub fn pos_in_radius(&self, start: (i32, i32), radius: i32) -> Vec<(i32, i32)> {
+    pub fn pos_in_radius(&self, start: Pos, radius: i32) -> Vec<Pos> {
         let mut circle_positions = HashSet::new();
 
         // for each position on the edges of a square around the point, with the
@@ -370,7 +370,7 @@ impl Map {
         return circle_positions.iter().map(|pos| *pos).collect();
     }
 
-    pub fn reachable_neighbors(&self, x: i32, y: i32) -> Vec<(i32, i32)> {
+    pub fn reachable_neighbors(&self, x: i32, y: i32) -> Vec<Pos> {
         let neighbors = [(1, 0),  (1, 1),  (0, 1), 
                          (-1, 1), (-1, 0), (-1, -1),
                          (0, -1), (1, -1)];
@@ -386,7 +386,7 @@ impl Map {
         return result;
     }
 
-    pub fn astar(&self, start: (i32, i32), end: (i32, i32)) -> Vec<(i32, i32)> {
+    pub fn astar(&self, start: Pos, end: Pos) -> Vec<Pos> {
         let result;
 
         let maybe_results = 
@@ -394,7 +394,7 @@ impl Map {
                   |&pos| self.reachable_neighbors(pos.0, pos.1)
                               .iter()
                               .map(|pos| (*pos, 1))
-                              .collect::<Vec<((i32, i32), i32)>>()
+                              .collect::<Vec<(Pos, i32)>>()
                   ,
                   |&pos| distance(pos, end) as i32,
                   |&pos| pos == end);
@@ -412,10 +412,10 @@ impl Map {
         self.fov.set(x, y, transparent, walkable);
     }
 
-    pub fn compute_fov(&mut self, x: i32, y: i32, view_radius: i32) {
-        self.fov_pos = (x, y);
+    pub fn compute_fov(&mut self, pos: Pos, view_radius: i32) {
+        self.fov_pos = pos;
         self.fov_radius = view_radius;
-        self.fov.compute_fov(x, y, view_radius, true, tcod::map::FovAlgorithm::Basic);
+        self.fov.compute_fov(pos.x, pos.y, view_radius, true, tcod::map::FovAlgorithm::Basic);
     }
 
     pub fn update_map(&mut self) {
@@ -430,40 +430,26 @@ impl Map {
             }
         }
 
-        self.compute_fov(self.fov_pos.0, self.fov_pos.1, self.fov_radius);
+        self.compute_fov(self.fov_pos.x, self.fov_pos.y, self.fov_radius);
     }
 }
 
-impl Index<(i32, i32)> for Map {
+impl Index<Pos> for Map {
     type Output = Tile;
 
-    fn index(&self, index: (i32, i32)) -> &Tile {
+    fn index(&self, index: Pos) -> &Tile {
         &self.tiles[index.0 as usize][index.1 as usize]
     }
 }
 
-impl Index<(usize, usize)> for Map {
-    type Output = Tile;
-
-    fn index(&self, index: (usize, usize)) -> &Tile {
-        &self.tiles[index.0][index.1]
-    }
-}
-
-impl IndexMut<(i32, i32)> for Map {
-    fn index_mut(&mut self, index: (i32, i32)) -> &mut Tile {
+impl IndexMut<Pos> for Map {
+    fn index_mut(&mut self, index: Pos) -> &mut Tile {
         &mut self.tiles[index.0 as usize][index.1 as usize]
     }
 }
 
-impl IndexMut<(usize, usize)> for Map {
-    fn index_mut(&mut self, index: (usize, usize)) -> &mut Tile {
-        &mut self.tiles[index.0][index.1]
-    }
-}
-
-pub fn near_tile_type(map: &Map, position: (i32, i32), tile_type: TileType) -> bool {
-    let neighbor_offsets: Vec<(i32, i32)>
+pub fn near_tile_type(map: &Map, position: Pos, tile_type: TileType) -> bool {
+    let neighbor_offsets: Vec<Pos>
         = vec!((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1));
 
     let mut near_given_tile = false;
@@ -481,17 +467,17 @@ pub fn near_tile_type(map: &Map, position: (i32, i32), tile_type: TileType) -> b
     return near_given_tile;
 }
 
-pub fn random_offset(rng: &mut SmallRng, radius: i32) -> (i32, i32) {
+pub fn random_offset(rng: &mut SmallRng, radius: i32) -> Pos {
     return (rng.gen_range(-radius, radius),
             rng.gen_range(-radius, radius));
 }
 
-pub fn pos_in_radius(pos: (i32, i32), radius: i32, rng: &mut SmallRng) -> (i32, i32) {
+pub fn pos_in_radius(pos: Pos, radius: i32, rng: &mut SmallRng) -> Pos {
     return (pos.0 + rng.gen_range(-radius, radius),
             pos.1 + rng.gen_range(-radius, radius));
 }
 
-pub fn place_block(map: &mut Map, start: (i32, i32), width: i32, tile: Tile) -> Vec<(i32, i32)> {
+pub fn place_block(map: &mut Map, start: Pos, width: i32, tile: Tile) -> Vec<Pos> {
     let mut positions = Vec::new();
 
     for x in 0..width {
@@ -505,7 +491,7 @@ pub fn place_block(map: &mut Map, start: (i32, i32), width: i32, tile: Tile) -> 
     positions
 }
 
-pub fn place_line(map: &mut Map, start: (i32, i32), end: (i32, i32), tile: Tile) -> Vec<(i32, i32)> {
+pub fn place_line(map: &mut Map, start: Pos, end: Pos, tile: Tile) -> Vec<Pos> {
     let mut positions = Vec::new();
     let mut line = Line::new(start, end);
 
@@ -519,7 +505,7 @@ pub fn place_line(map: &mut Map, start: (i32, i32), end: (i32, i32), tile: Tile)
     positions
 }
 
-pub fn add_obstacle(map: &mut Map, pos: (i32, i32), obstacle: Obstacle, rng: &mut SmallRng) {
+pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut SmallRng) {
     match obstacle {
         Obstacle::Block => {
             map.tiles[pos.0 as usize][pos.1 as usize] = Tile::wall();
@@ -582,21 +568,15 @@ pub fn add_obstacle(map: &mut Map, pos: (i32, i32), obstacle: Obstacle, rng: &mu
     }
 }
 
-fn move_by(start: (i32, i32), diff: (i32, i32)) -> (i32, i32) {
+fn move_by(start: Pos, diff: Pos) -> Pos {
     return (start.0 + diff.0, start.1 + diff.1);
 }
 
-// NOTE does not need to be in map- just a distance function
-pub fn distance(start: (i32, i32), end: (i32, i32)) -> i32 {
-    let diff = (end.0 - start.0, end.1 - start.1);
-    return ((diff.0 * diff.0 + diff.1 * diff.1) as f32).sqrt() as i32;
-}
-
-fn move_y(pos: (i32, i32), offset_y: i32) -> (i32, i32) {
+fn move_y(pos: Pos, offset_y: i32) -> Pos {
     return (pos.0, pos.1 + offset_y);
 }
 
-fn move_x(pos: (i32, i32), offset_x: i32) -> (i32, i32) {
+fn move_x(pos: Pos, offset_x: i32) -> Pos {
     return (pos.0 + offset_x, pos.1);
 }
 
@@ -678,14 +658,14 @@ fn test_fov_blocked_by_wall_right() {
     let mut map = Map::from_dims(10, 10);
 
     for wall_y_pos in 2..8 {
-        let pos: (i32, i32) = (5, wall_y_pos);
+        let pos: Pos = Pos::new(5, wall_y_pos);
         map[pos] = Tile::empty();
         map[pos].left_wall = Wall::ShortWall;
     }
   
     map.update_map();
 
-    assert!(map.is_in_fov(4, 5, 9, 5, radius) == false);
+    assert!(map.is_in_fov(Pos::new(4, 5), Pos::new(9, 5), radius) == false);
 }
 
 #[test]
@@ -694,14 +674,14 @@ fn test_fov_blocked_by_wall_left() {
     let mut map = Map::from_dims(10, 10);
 
     for wall_y_pos in 2..8 {
-        let pos: (i32, i32) = (5, wall_y_pos);
+        let pos: Pos = Pos::new(5, wall_y_pos);
         map[pos] = Tile::empty();
         map[pos].left_wall = Wall::ShortWall;
     }
   
     map.update_map();
 
-    assert!(map.is_in_fov(9, 5, 4, 5, radius) == false);
+    assert!(map.is_in_fov(Pos::new(9, 5), Pos::new(4, 5), radius) == false);
 }
 
 #[test]
@@ -717,7 +697,7 @@ fn test_fov_blocked_by_wall_up() {
   
     map.update_map();
 
-    assert!(map.is_in_fov(5, 9, 5, 5, radius) == false);
+    assert!(map.is_in_fov(Pos::new(5, 9), Pos::new(5, 5), radius) == false);
 }
 
 #[test]
@@ -733,5 +713,5 @@ fn test_fov_blocked_by_wall_down() {
   
     map.update_map();
 
-    assert!(map.is_in_fov(5, 1, 5, 6, radius) == false);
+    assert!(map.is_in_fov(Pos::new(5, 1), Pos::new(5, 6), radius) == false);
 }

@@ -106,19 +106,19 @@ impl<'a> Game<'a> {
                     make_map(&MapGenType::Island, &mut objects, &config, &display_state, &mut rng);
                 // TODO consider using objects as well here on regen?
                 map = game_data.map;
-                player_position = position.into_pair();
+                player_position = position.to_tuple();
             }
 
             MapLoadConfig::TestWall => {
                 let (new_map, position) = make_wall_test_map(&mut objects, &config, &display_state);
                 map = new_map;
-                player_position = position.into_pair();
+                player_position = position.to_tuple();
             }
 
             MapLoadConfig::TestCorner => {
                 let (new_map, position) = make_corner_test_map(&mut objects, &config, &display_state);
                 map = new_map;
-                player_position = position.into_pair();
+                player_position = position.to_tuple();
                 objects.insert(make_mouse(&config, &display_state));
             }
         }

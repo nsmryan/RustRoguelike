@@ -8,21 +8,21 @@ use crate::ai::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Movement {
-    Move(i32, i32),
-    Attack(i32, i32, ObjectId),
+    Move(Pos),
+    Attack(Pos, ObjectId),
     Collide(i32, i32),
     WallKick(i32, i32, i32, i32), // x, y, dir_x, dir_y
-    JumpWall(i32, i32),
+    JumpWall(Pos),
 }
 
 impl Movement {
     pub fn xy(&self) -> (i32, i32) {
         match self {
-            Movement::Move(x, y) => (*x, *y),
-            Movement::Attack(x, y, _) => (*x, *y),
+            Movement::Move(pos) => (pos.x, pos.y),
+            Movement::Attack(pos, _) => (pos.x, pos.y),
             Movement::Collide(x, y) => (*x, *y),
             Movement::WallKick(x, y, _, _) => (*x, *y),
-            Movement::JumpWall(x, y) => (*x, *y),
+            Movement::JumpWall(pos) => (pos.x, pos.y),
         }
     }
 }
@@ -82,15 +82,15 @@ impl Reach {
                 let dist = (*dist) as i32;
                 let neg_dist = dist * -1;
                 match move_action {
-                    MoveAction::Left => Some(Pos::from_pair((neg_dist, 0))),
-                    MoveAction::Right => Some(Pos::from_pair((dist, 0))),
-                    MoveAction::Up => Some(Pos::from_pair((0, neg_dist))),
-                    MoveAction::Down => Some(Pos::from_pair((0, dist))),
-                    MoveAction::DownLeft => Some(Pos::from_pair((neg_dist, dist))),
-                    MoveAction::DownRight => Some(Pos::from_pair((dist, dist))),
-                    MoveAction::UpLeft => Some(Pos::from_pair((neg_dist, neg_dist))),
-                    MoveAction::UpRight => Some(Pos::from_pair((dist, neg_dist))),
-                    MoveAction::Center => Some(Pos::from_pair((0, 0))),
+                    MoveAction::Left => Some(Pos::new(neg_dist, 0)),
+                    MoveAction::Right => Some(Pos::new(dist, 0)),
+                    MoveAction::Up => Some(Pos::new(0, neg_dist)),
+                    MoveAction::Down => Some(Pos::new(0, dist)),
+                    MoveAction::DownLeft => Some(Pos::new(neg_dist, dist)),
+                    MoveAction::DownRight => Some(Pos::new(dist, dist)),
+                    MoveAction::UpLeft => Some(Pos::new(neg_dist, neg_dist)),
+                    MoveAction::UpRight => Some(Pos::new(dist, neg_dist)),
+                    MoveAction::Center => Some(Pos::new(0, 0)),
                 }
             }
 
@@ -102,11 +102,11 @@ impl Reach {
                     MoveAction::Right => None,
                     MoveAction::Up => None,
                     MoveAction::Down => None,
-                    MoveAction::DownLeft => Some(Pos::from_pair((neg_dist, dist))),
-                    MoveAction::DownRight => Some(Pos::from_pair((dist, dist))),
-                    MoveAction::UpLeft => Some(Pos::from_pair((neg_dist, neg_dist))),
-                    MoveAction::UpRight => Some(Pos::from_pair((dist, neg_dist))),
-                    MoveAction::Center => Some(Pos::from_pair((0, 0))),
+                    MoveAction::DownLeft => Some(Pos::new(neg_dist, dist)),
+                    MoveAction::DownRight => Some(Pos::new(dist, dist)),
+                    MoveAction::UpLeft => Some(Pos::new(neg_dist, neg_dist)),
+                    MoveAction::UpRight => Some(Pos::new(dist, neg_dist)),
+                    MoveAction::Center => Some(Pos::new(0, 0)),
                 }
             }
 
@@ -114,10 +114,10 @@ impl Reach {
                 let dist = (*dist) as i32;
                 let neg_dist = dist * -1;
                 match move_action {
-                    MoveAction::Left => Some(Pos::from_pair((neg_dist, 0))),
-                    MoveAction::Right => Some(Pos::from_pair((dist, 0))),
-                    MoveAction::Up => Some(Pos::from_pair((0, neg_dist))),
-                    MoveAction::Down => Some(Pos::from_pair((0, dist))),
+                    MoveAction::Left => Some(Pos::new(neg_dist, 0)),
+                    MoveAction::Right => Some(Pos::new(dist, 0)),
+                    MoveAction::Up => Some(Pos::new(0, neg_dist)),
+                    MoveAction::Down => Some(Pos::new(0, dist)),
                     MoveAction::DownLeft => None,
                     MoveAction::DownRight => None,
                     MoveAction::UpLeft => None,
@@ -136,7 +136,7 @@ impl Reach {
                     vec!( (0, dist),      (-dist, dist), (-dist,  0),
                           (-dist, -dist), (0,  -dist),   (dist, -dist),
                           (dist,  0), (dist, dist));
-                offsets.iter().map(|pair| Pos::from_pair(*pair)).collect()
+                offsets.iter().map(|pair| Pos::from(*pair)).collect()
             },
 
             Reach::Horiz(dist) => {
@@ -148,7 +148,7 @@ impl Reach {
                     offsets.push((-1 * dist, 0));
                     offsets.push((0, -1 * dist));
                 }
-                offsets.iter().map(|pair| Pos::from_pair(*pair)).collect()
+                offsets.iter().map(|pair| Pos::from(*pair)).collect()
             },
 
 
@@ -161,7 +161,7 @@ impl Reach {
                     offsets.push((dist, -1 * dist));
                     offsets.push((-1 * dist, -1 * dist));
                 }
-                offsets.iter().map(|pair| Pos::from_pair(*pair)).collect()
+                offsets.iter().map(|pair| Pos::from(*pair)).collect()
             },
         }
     }
@@ -170,10 +170,10 @@ impl Reach {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Collision {
-    NoCollision(i32, i32),
-    BlockedTile((i32, i32), (i32, i32)),
-    Wall((i32, i32), (i32, i32)),
-    Entity(ObjectId, (i32, i32)),
+    NoCollision(Pos),
+    BlockedTile(Pos, Pos),
+    Wall(Pos, Pos),
+    Entity(ObjectId, Pos),
 }
 
 impl Collision {
@@ -184,24 +184,24 @@ impl Collision {
         }
     }
 
-    pub fn move_location(&self) -> (i32, i32) {
+    pub fn move_location(&self) -> Pos {
         let last_pos;
 
         match *self {
-            Collision::NoCollision(x, y) => {
-                last_pos = (x, y);
+            Collision::NoCollision(pos) => {
+                last_pos = pos
             }
 
-            Collision::BlockedTile(_, (x, y)) => {
-                last_pos = (x, y);
+            Collision::BlockedTile(_, pos) => {
+                last_pos = pos;
             }
 
-            Collision::Wall(_, (x, y)) => {
-                last_pos = (x, y);
+            Collision::Wall(_, pos) => {
+                last_pos = pos;
             }
 
-            Collision::Entity(_, (x, y)) => {
-                last_pos = (x, y);
+            Collision::Entity(_, pos) => {
+                last_pos = pos;
             }
         }
 
@@ -303,30 +303,29 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Ac
 // TODO consider moving to GameData
 /// Moves the given object with a given offset, returning the square that it collides with, or None
 /// indicating no collision.
-pub fn check_collision(x: i32,
-                       y: i32,
+pub fn check_collision(pos: Pos,
                        dx: i32,
                        dy: i32,
                        data: &GameData) -> Collision {
-    let mut last_pos = (x, y);
-    let mut result: Collision = Collision::NoCollision(x + dx, y + dy);
+    let mut last_pos = pos;
+    let mut result: Collision = Collision::NoCollision(pos.x + dx, pos.y + dy);
 
-    if !data.map.is_within_bounds(x + dx, y + dy) {
-        result = Collision::Wall((x, y), (x, y));
-    } else if data.map.is_blocked_by_wall(x, y, dx, dy) {
+    if !data.map.is_within_bounds(Pos::new(pos.x + dx, pos.y + dy)) {
+        result = Collision::Wall(pos, pos);
+    } else if data.map.is_blocked_by_wall(pos, dx, dy) {
         // TODO this returns the final position, not the position of the wal
         // mayye need a block_by_wall function which returns this instead of a bool
-        result = Collision::Wall((x + dx, y + dy), (x, y));
+        result = Collision::Wall((pos.x + dx, pos.y + dy), pos);
     } else {
-        let move_line = Line::new((x, y), (x + dx, y + dy));
+        let move_line = Line::new(pos, (pos.x + dx, pos.y + dy));
 
-        for (x_pos, y_pos) in move_line.into_iter() {
-            if is_blocked(x_pos, y_pos, data) {
+        for pos in move_line.into_iter() {
+            if is_blocked(pos, data) {
                 if data.map[(x_pos, y_pos)].blocked {
-                    result = Collision::BlockedTile((x_pos, y_pos), last_pos);
+                    result = Collision::BlockedTile(pos, last_pos);
                 } else {
                     for (key, object) in data.objects.iter() {
-                        if object.pos() == (x_pos, y_pos) {
+                        if object.pos() == pos {
                             result = Collision::Entity(key, last_pos);
                             break;
                         }
@@ -335,7 +334,7 @@ pub fn check_collision(x: i32,
                 break;
             }
 
-            last_pos = (x_pos, y_pos);
+            last_pos = pos;
         }
     }
 
@@ -348,45 +347,46 @@ pub fn calculate_move(action: MoveAction,
                       data: &GameData) -> Option<Movement> {
     let movement: Option<Movement>;
 
-    let (x, y) = data.objects[object_id].pos();
+    let pos = data.objects[object_id].pos();
+
     if let Some(delta_pos) = reach.move_with_reach(&action) {
-        let (dx, dy) = delta_pos.into_pair();
+        let (dx, dy) = delta_pos.to_tuple();
         // check if movement collides with a blocked location or an entity
-        match check_collision(x, y, dx, dy, data) {
-            Collision::NoCollision(new_x, new_y) => {
+        match check_collision(pos, dx, dy, data) {
+            Collision::NoCollision(new_pos) => {
                 // no collision- just move to location
-                movement = Some(Movement::Move(new_x, new_y));
+                movement = Some(Movement::Move(new_pos));
             }
 
-            Collision::BlockedTile((_tile_x, _tile_y), (new_x, new_y)) => {
-                movement = Some(Movement::Move(new_x, new_y));
+            Collision::BlockedTile(tile_pos, new_pos) => {
+                movement = Some(Movement::Move(new_pos));
             }
 
-            Collision::Wall((tile_x, tile_y), (new_x, new_y)) => {
+            Collision::Wall(tile_pos, new_pos) => {
                 match data.objects[object_id].momentum {
                     Some(momentum) => {
                         // if max momentum, the momentum is in the same direction as the movement,
                         // and there is space beyond the wall, than jump over the wall.
                         if momentum.at_maximum() &&
                            momentum.along(dx, dy) && 
-                           !is_blocked(tile_x, tile_y, data) {
-                                movement = Some(Movement::JumpWall(tile_x, tile_y));
+                           !is_blocked(tile_pos, data) {
+                                movement = Some(Movement::JumpWall(tile_pos));
                         } else { // otherwise move normally, stopping just before the blocking tile
-                            movement = Some(Movement::Move(new_x, new_y));
+                            movement = Some(Movement::Move(new_pos));
                         }
                     },
 
                     None => {
                         // with no momentum, the movement will end just before the blocked location
-                        movement = Some(Movement::Move(x + dx, y + dy));
+                        movement = Some(Movement::Move(Pos::new(x + dx, y + dy)));
                     },
                 }
             }
 
-            Collision::Entity(other_object_id, (new_x, new_y)) => {
+            Collision::Entity(other_object_id, new_pos) => {
                 // record that an attack would occur. if this is not desired, the
                 // calling code will handle this.
-                movement = Some(Movement::Attack(new_x, new_y, other_object_id));
+                movement = Some(Movement::Attack(new_pos, other_object_id));
             }
         }
     } else {
@@ -397,19 +397,18 @@ pub fn calculate_move(action: MoveAction,
     return movement;
 }
 
-// TODO consider moving to GameData
-pub fn is_blocked(x: i32, y: i32, data: &GameData) -> bool {
-    if !data.map.is_within_bounds(x, y) {
+pub fn is_blocked(pos: Pos, data: &GameData) -> bool {
+    if !data.map.is_within_bounds(pos) {
         return true;
     }
 
-    if data.map[(x, y)].blocked {
+    if data.map[pos].blocked {
         return true;
     }
 
     let mut is_blocked = false;
     for object in data.objects.values() {
-        if object.blocks && object.pos() == (x, y) {
+        if object.blocks && object.pos() == pos {
             is_blocked = true;
             break;
         }
