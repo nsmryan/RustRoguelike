@@ -2,6 +2,8 @@ use std::iter::Iterator;
 
 use tcod::line::*;
 
+use euclid::*;
+
 use crate::types::*;
 use crate::ai::*;
 
@@ -10,19 +12,19 @@ use crate::ai::*;
 pub enum Movement {
     Move(Pos),
     Attack(Pos, ObjectId),
-    Collide(i32, i32),
-    WallKick(i32, i32, i32, i32), // x, y, dir_x, dir_y
+    Collide(Pos),
+    WallKick(Pos, i32, i32), // x, y, dir_x, dir_y
     JumpWall(Pos),
 }
 
 impl Movement {
-    pub fn xy(&self) -> (i32, i32) {
+    pub fn xy(&self) -> Pos {
         match self {
-            Movement::Move(pos) => (pos.x, pos.y),
-            Movement::Attack(pos, _) => (pos.x, pos.y),
-            Movement::Collide(x, y) => (*x, *y),
-            Movement::WallKick(x, y, _, _) => (*x, *y),
-            Movement::JumpWall(pos) => (pos.x, pos.y),
+            Movement::Move(pos) => *pos,
+            Movement::Attack(pos, _) => *pos,
+            Movement::Collide(pos) => *pos,
+            Movement::WallKick(pos, _, _) => *pos,
+            Movement::JumpWall(pos) => *pos,
         }
     }
 }
@@ -179,7 +181,7 @@ pub enum Collision {
 impl Collision {
     pub fn no_collsion(&self) -> bool {
         match self {
-            Collision::NoCollision(_, _) => true,
+            Collision::NoCollision(_) => true,
             _ => false,
         }
     }
@@ -222,31 +224,31 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Ac
                                   data);
 
     match movement {
-        Some(Movement::Attack(new_x, new_y, target_handle)) => {
+        Some(Movement::Attack(new_pos, target_handle)) => {
             attack(player_handle, target_handle, &mut data.objects);
 
             // if we attack without moving, we lost all our momentum
-            if (new_x, new_y) == (data.objects[player_handle].x, data.objects[player_handle].y)
-            {
+            if new_pos == data.objects[player_handle].pos() {
                 data.objects[player_handle].momentum.as_mut().map(|momentum| momentum.clear());
             }
 
-            data.objects[player_handle].set_pos(new_x, new_y);
+            data.objects[player_handle].set_pos(new_pos);
 
             player_action = Move(movement.unwrap());
         }
 
-        Some(Movement::Collide(x, y)) => {
-            data.objects[player_handle].set_pos(x, y);
+        Some(Movement::Collide(pos)) => {
+            data.objects[player_handle].set_pos(pos);
             data.objects[player_handle].momentum.unwrap().clear();
             player_action = Move(movement.unwrap());
         }
 
-        Some(Movement::Move(x, y)) | Some(Movement::JumpWall(x, y)) => {
+        Some(Movement::Move(pos)) | Some(Movement::JumpWall(pos)) => {
+            let (x, y) = pos.to_tuple();
             let (dx, dy) = (x - data.objects[player_handle].x, y - data.objects[player_handle].y);
 
             // Update position and momentum
-            data.objects[player_handle].set_pos(x, y);
+            data.objects[player_handle].set_pos(pos);
             let momentum = data.objects[player_handle].momentum.unwrap();
 
             data.objects[player_handle].momentum.as_mut().map(|momentum| momentum.moved(dx, dy));
@@ -276,9 +278,9 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Ac
             }
         }
 
-        Some(Movement::WallKick(x, y, dir_x, dir_y)) => {
+        Some(Movement::WallKick(pos, dir_x, dir_y)) => {
             let mut momentum = data.objects[player_handle].momentum.unwrap();
-            data.objects[player_handle].set_pos(x, y);
+            data.objects[player_handle].set_pos(pos);
             momentum.set_momentum(dir_x, dir_y);
 
             /*
@@ -308,20 +310,21 @@ pub fn check_collision(pos: Pos,
                        dy: i32,
                        data: &GameData) -> Collision {
     let mut last_pos = pos;
-    let mut result: Collision = Collision::NoCollision(pos.x + dx, pos.y + dy);
+    let mut result: Collision = Collision::NoCollision(pos + Vector2D::new(dx, dy));
 
     if !data.map.is_within_bounds(Pos::new(pos.x + dx, pos.y + dy)) {
         result = Collision::Wall(pos, pos);
     } else if data.map.is_blocked_by_wall(pos, dx, dy) {
         // TODO this returns the final position, not the position of the wal
         // mayye need a block_by_wall function which returns this instead of a bool
-        result = Collision::Wall((pos.x + dx, pos.y + dy), pos);
+        result = Collision::Wall(pos + Vector2D::new(dx, dy), pos);
     } else {
-        let move_line = Line::new(pos, (pos.x + dx, pos.y + dy));
+        let move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
 
         for pos in move_line.into_iter() {
+            let pos = Pos::from(pos);
             if is_blocked(pos, data) {
-                if data.map[(x_pos, y_pos)].blocked {
+                if data.map[pos].blocked {
                     result = Collision::BlockedTile(pos, last_pos);
                 } else {
                     for (key, object) in data.objects.iter() {
@@ -378,7 +381,7 @@ pub fn calculate_move(action: MoveAction,
 
                     None => {
                         // with no momentum, the movement will end just before the blocked location
-                        movement = Some(Movement::Move(Pos::new(x + dx, y + dy)));
+                        movement = Some(Movement::Move(Pos::new(pos.x + dx, pos.y + dy)));
                     },
                 }
             }

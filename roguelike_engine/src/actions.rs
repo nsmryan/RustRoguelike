@@ -5,7 +5,6 @@ use tcod::line::*;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
-use roguelike_core::map::distance;
 use roguelike_core::config::*;
 
 use crate::game::*;
@@ -26,6 +25,7 @@ pub fn handle_input(input_action: InputAction,
     let player_handle = game_data.find_player().unwrap();
     let player_x = game_data.objects[player_handle].x;
     let player_y = game_data.objects[player_handle].y;
+    let player_pos = Pos::new(player_x, player_y);
 
     let player_turn: Action;
 
@@ -39,11 +39,11 @@ pub fn handle_input(input_action: InputAction,
 
             // if the player moved, requiring an animation to play, then select the animation
             match player_turn {
-                Action::Move(WallKick(x, y, _dx, _dy)) => {
+                Action::Move(WallKick(pos, _dx, _dy)) => {
                     let sprite_key = display_state.lookup_sprite("player_wall_kick".to_string()).unwrap();
                     let sprite_index = 0.0;
                     game_data.objects[player_handle].animation = 
-                        Some(Animation::WallKick(sprite_key, sprite_index, (player_x, player_y), (x, y)));
+                        Some(Animation::WallKick(sprite_key, sprite_index, player_pos, pos));
                 }
 
                 _ => {
@@ -131,7 +131,7 @@ pub fn handle_input(input_action: InputAction,
             }
 
             if let (Some(stone_handle), Some(index)) = (stone, stone_index) {
-                throw_stone(player_x, player_y, map_cell.0, map_cell.1, *stone_handle, game_data);
+                throw_stone(player_pos, map_cell, *stone_handle, game_data);
 
                 game_data.objects[player_handle].inventory.remove(index);
 
@@ -153,18 +153,14 @@ fn pick_item_up(object_id: ObjectId,
                 item_id: ObjectId,
                 objects: &mut ObjMap) {
     objects[object_id].inventory.push(item_id);
-    objects[item_id].set_pos(-1, -1);
+    objects[item_id].set_xy(-1, -1);
 }
 
-pub fn throw_stone(start_x: i32,
-                   start_y: i32,
-                   end_x: i32,
-                   end_y: i32,
+pub fn throw_stone(start_pos: Pos,
+                   end_pos: Pos,
                    stone_handle: ObjectId,
                    data: &mut GameData) {
-    let start = (start_x, start_y);
-    let end = (end_x, end_y);
-    let throw_line = Line::new(start, end);
+    let throw_line = Line::new(start_pos.to_tuple(), end_pos.to_tuple());
 
     // TODO draw line to end, and move until radius or hit wall
 
@@ -172,17 +168,17 @@ pub fn throw_stone(start_x: i32,
     let (target_x, target_y) =
         throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
 
-    data.objects[stone_handle].set_pos(target_x, target_y);
+    data.objects[stone_handle].set_xy(target_x, target_y);
 
     // Create the stone throw animation
     data.objects[stone_handle].animation =
-        Some(Animation::StoneThrow(start, (target_x, target_y)));
+        Some(Animation::StoneThrow(start_pos, Pos::new(target_x, target_y)));
 
     // alert monsters within sound range
     for obj in data.objects.values_mut() {
-        if distance(obj.pos(), (end_x, end_y)) <  SOUND_RADIUS as i32 {
+        if distance(obj.pos(), end_pos) <  SOUND_RADIUS as i32 {
             if obj.behavior == Some(Behavior::Idle) {
-                obj.behavior = Some(Behavior::Investigating(Pos::from(end)));
+                obj.behavior = Some(Behavior::Investigating(Pos::from(end_pos)));
             }
         }
     }

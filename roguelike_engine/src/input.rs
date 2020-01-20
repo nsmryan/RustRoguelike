@@ -1,13 +1,14 @@
 use sdl2::keyboard::Keycode;
 use sdl2::keyboard::Mod;
 
+use roguelike_core::types::*;
 use roguelike_core::movement::*;
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum InputAction {
     Move(MoveAction),
-    MapClick((i32, i32), (i32, i32)),
+    MapClick(Pos, Pos),
     Pickup,
     Inventory,
     Exit,

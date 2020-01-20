@@ -27,13 +27,15 @@ pub fn read_map_xp(config: &Config,
 
 
     for (layer_index, layer) in xp.layers.iter().enumerate() {
-        let width = layer.width;
-        let height = layer.height;
+        let width = layer.width as i32;
+        let height = layer.height as i32;
 
         for x in 0..width {
             for y in 0..height {
                 let index = y + height * x;
-                let cell = layer.cells[index];
+                let cell = layer.cells[index as usize];
+
+                let pos = Pos::new(x, y);
 
                 let chr = std::char::from_u32(cell.ch).unwrap();
 
@@ -47,8 +49,8 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             MAP_WATER => {
-                                map[(x, y)] = Tile::water();
-                                map[(x, y)].chr = Some(chr);
+                                map[pos] = Tile::water();
+                                map[pos].chr = Some(chr);
                             }
 
                             _ => {
@@ -60,157 +62,157 @@ pub fn read_map_xp(config: &Config,
                     MAP_LAYER_ENVIRONMENT => {
                         match chr as u8 {
                             MAP_THIN_WALL_TOP => {
-                                map[(x, y)].chr = Some(chr);
+                                map[pos].chr = Some(chr);
                                 map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].bottom_wall = Wall::ShortWall;
+                                map[pos].chr = Some(chr);
+                                map[pos].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_LEFT => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].left_wall = Wall::ShortWall;
+                                map[pos].chr = Some(chr);
+                                map[pos].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_RIGHT => {
-                                map[(x, y)].chr = Some(chr);
+                                map[pos].chr = Some(chr);
                                 map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_TOP_LEFT => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].left_wall = Wall::ShortWall;
+                                map[pos].chr = Some(chr);
+                                map[pos].left_wall = Wall::ShortWall;
                                 map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM_LEFT => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].left_wall = Wall::ShortWall;
-                                map[(x, y)].bottom_wall = Wall::ShortWall;
+                                map[pos].chr = Some(chr);
+                                map[pos].left_wall = Wall::ShortWall;
+                                map[pos].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_TOP_RIGHT => {
-                                map[(x, y)].chr = Some(chr);
+                                map[pos].chr = Some(chr);
                                 map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                                 map[(x - 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM_RIGHT => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].bottom_wall = Wall::ShortWall;
+                                map[pos].chr = Some(chr);
+                                map[pos].bottom_wall = Wall::ShortWall;
                                 map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_TOP => {
-                                map[(x, y)].chr = Some(chr);
+                                map[pos].chr = Some(chr);
                                 map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_LEFT => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].left_wall = Wall::TallWall;
+                                map[pos].chr = Some(chr);
+                                map[pos].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_RIGHT => {
-                                map[(x, y)].chr = Some(chr);
+                                map[pos].chr = Some(chr);
                                 map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].bottom_wall = Wall::TallWall;
+                                map[pos].chr = Some(chr);
+                                map[pos].bottom_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_TOP_LEFT => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].left_wall = Wall::TallWall;
+                                map[pos].chr = Some(chr);
+                                map[pos].left_wall = Wall::TallWall;
                                 map[(x, y - 1)].bottom_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM_LEFT => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].bottom_wall = Wall::TallWall;
-                                map[(x, y)].left_wall = Wall::TallWall;
+                                map[pos].chr = Some(chr);
+                                map[pos].bottom_wall = Wall::TallWall;
+                                map[pos].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_TOP_RIGHT => {
-                                map[(x, y)].chr = Some(chr);
+                                map[pos].chr = Some(chr);
                                 map[(x, y - 1)].bottom_wall = Wall::TallWall;
                                 map[(x + 1, y)].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM_RIGHT => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].bottom_wall = Wall::TallWall;
+                                map[pos].chr = Some(chr);
+                                map[pos].bottom_wall = Wall::TallWall;
                                 map[(x + 1, y)].left_wall = Wall::TallWall;
                             }
 
                             MAP_DOT_TOP_LEFT => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].blocked = true;
+                                map[pos].chr = Some(chr);
+                                map[pos].blocked = true;
                             }
 
                             MAP_DOT_TOP_RIGHT => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].blocked = true;
+                                map[pos].chr = Some(chr);
+                                map[pos].blocked = true;
                             }
 
                             MAP_DOT_BOTTOM_LEFT => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].blocked = true;
+                                map[pos].chr = Some(chr);
+                                map[pos].blocked = true;
                             }
 
                             MAP_DOT_BOTTOM_RIGHT => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].blocked = true;
+                                map[pos].chr = Some(chr);
+                                map[pos].blocked = true;
                             }
 
                             MAP_ROOK => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].blocked = true;
+                                map[pos].chr = Some(chr);
+                                map[pos].blocked = true;
                             }
 
                             MAP_DOT_MIDDLE | MAP_ORB => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].blocked = true;
+                                map[pos].chr = Some(chr);
+                                map[pos].blocked = true;
                             }
 
                             MAP_EMPTY => {
-                                map[(x, y)].chr = Some(MAP_EMPTY_CHAR as char);
+                                map[pos].chr = Some(MAP_EMPTY_CHAR as char);
                             }
 
                             MAP_STATUE_1 | MAP_STATUE_2 | MAP_STATUE_3 |
                                 MAP_STATUE_4 | MAP_STATUE_5 | MAP_STATUE_6 => {
-                                    map[(x, y)].chr = Some(chr);
-                                    map[(x, y)].blocked = true;
+                                    map[pos].chr = Some(chr);
+                                    map[pos].blocked = true;
                                 }
 
                             MAP_WIDE_SPIKES| MAP_TALL_SPIKES => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].blocked = true;
+                                map[pos].chr = Some(chr);
+                                map[pos].blocked = true;
                             }
 
                             MAP_WALL => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].blocked = true;
+                                map[pos].chr = Some(chr);
+                                map[pos].blocked = true;
                             }
 
                             ENTITY_HERO => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].blocked = true;
+                                map[pos].chr = Some(chr);
+                                map[pos].blocked = true;
                             }
 
                             ENTITY_CLOAK_GUY => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].blocked = true;
+                                map[pos].chr = Some(chr);
+                                map[pos].blocked = true;
                             }
 
                             // TODO This should be in entity layer...
                             ENTITY_PLAYER => {
-                                map[(x, y)].chr = Some(chr);
-                                map[(x, y)].blocked = true;
+                                map[pos].chr = Some(chr);
+                                map[pos].blocked = true;
                             }
 
                             _ => {
@@ -222,12 +224,12 @@ pub fn read_map_xp(config: &Config,
                     MAP_LAYER_ENTITIES => {
                         match chr as u8 {
                             ENTITY_GOL => {
-                                objects.insert(make_gol(config, x as i32, y as i32, display_state));
+                                objects.insert(make_gol(config, pos, display_state));
                             }
 
                             ENTITY_SWIRL_CIRCLE => {
                                 // TODO should be different from elf
-                                objects.insert(make_elf(config, x as i32, y as i32, display_state));
+                                objects.insert(make_elf(config, pos, display_state));
                             }
 
                             ENTITY_ORB => {
@@ -235,7 +237,7 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_ELF => {
-                                objects.insert(make_elf(config, x as i32, y as i32, display_state));
+                                objects.insert(make_elf(config, pos, display_state));
                             }
 
                             MAP_EMPTY => {

@@ -69,15 +69,16 @@ impl GameData {
         return None;
     }
 
-    pub fn clear_path(&self, start: (i32, i32), end: (i32, i32)) -> bool {
-        let line = Line::new((start.0, start.1), (end.0, end.1));
+    pub fn clear_path(&self, start: Pos, end: Pos) -> bool {
+        let line = Line::new((start.x, start.y), (end.x, end.y));
     
         let path_blocked =
-            line.into_iter().any(|point| is_blocked(point.0, point.1, self));
+            line.into_iter().any(|point| is_blocked(Pos::from(point), self));
     
-        let (dx, dy) = (end.0 - start.0, end.1 - start.1);
+        let (dx, dy) = (end.x - start.x, end.y - start.y);
 
-        return !path_blocked && !self.map.is_blocked_by_wall(start.0, start.1, dx, dy);
+        return !path_blocked &&
+               !self.map.is_blocked_by_wall(start, dx, dy);
     }
 }
 
@@ -129,8 +130,8 @@ pub struct MouseState {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Animation {
     Idle(SpriteKey, SpriteIndex),
-    WallKick(SpriteKey, SpriteIndex, (i32, i32), (i32, i32)),
-    StoneThrow((i32, i32), (i32, i32)),
+    WallKick(SpriteKey, SpriteIndex, Pos, Pos),
+    StoneThrow(Pos, Pos),
     Sound(usize, usize), // current radius, max radius
 }
 
@@ -332,12 +333,17 @@ impl Object {
     }
 
     pub fn pos(&self) -> Pos {
-        Pos::new(self.x, self.y)
+        return Pos::new(self.x, self.y);
     }
 
-    pub fn set_pos(&mut self, x: i32, y: i32) {
+    pub fn set_xy(&mut self, x: i32, y: i32) {
         self.x = x;
         self.y = y;
+    }
+
+    pub fn set_pos(&mut self, pos: Pos) {
+        self.x = pos.x;
+        self.y = pos.y;
     }
 
     pub fn distance_to(&self, other: &Object) -> f32 {

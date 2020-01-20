@@ -8,6 +8,8 @@ use pathfinding::directed::astar::astar;
 use tcod::map::{Map as FovMap};
 use tcod::line::*;
 
+use euclid::*;
+
 use serde_derive::*;
 
 use crate::types::*;
@@ -160,7 +162,7 @@ impl Map {
             Map {
                 tiles,
                 fov: FovMap::new(width as i32, height as i32),
-                fov_pos: (0, 0),
+                fov_pos: Pos::new(0, 0),
                 fov_radius: FOV_RADIUS,
             };
 
@@ -175,7 +177,7 @@ impl Map {
             Map {
                 tiles,
                 fov: FovMap::new(width as i32, height as i32),
-                fov_pos: (0, 0),
+                fov_pos: Pos::new(0, 0),
                 fov_radius: FOV_RADIUS,
             };
 
@@ -189,27 +191,30 @@ impl Map {
             Map {
                 tiles: Vec::new(),
                 fov: FovMap::new(1, 1),
-                fov_pos: (0, 0),
+                fov_pos: Pos::new(0, 0),
                 fov_radius: FOV_RADIUS,
             };
 
         return map;
     }
 
-    pub fn blocked_left(&self, x: i32, y: i32) -> bool {
-        return self[(x, y)].left_wall != Wall::Empty;
+    pub fn blocked_left(&self, pos: Pos) -> bool {
+        return self[pos].left_wall != Wall::Empty;
     }
 
-    pub fn blocked_right(&self, x: i32, y: i32) -> bool {
-        return self.is_within_bounds(x, y) && self[(x + 1, y)].left_wall != Wall::Empty;
+    pub fn blocked_right(&self, pos: Pos) -> bool {
+        let offset = Pos::new(pos.x + 1, pos.y);
+        return self.is_within_bounds(pos) &&
+               self[offset].left_wall != Wall::Empty;
     }
 
-    pub fn blocked_down(&self, x: i32, y: i32) -> bool {
-        return self[(x, y)].bottom_wall != Wall::Empty;
+    pub fn blocked_down(&self, pos: Pos) -> bool {
+        return self[pos].bottom_wall != Wall::Empty;
     }
 
-    pub fn blocked_up(&self, x: i32, y: i32) -> bool {
-        return self.is_within_bounds(x, y) && self[(x, y - 1)].bottom_wall != Wall::Empty;
+    pub fn blocked_up(&self, pos: Pos) -> bool {
+        return self.is_within_bounds(pos) &&
+               self[Pos::new(pos.x, pos.y - 1)].bottom_wall != Wall::Empty;
     }
 
     pub fn is_blocked_by_wall(&self, start_pos: Pos, dx: i32, dy: i32) -> bool {
@@ -219,8 +224,7 @@ impl Map {
 
         let line = Line::new((start_pos.x, start_pos.y), (end_x, end_y));
 
-        let mut move_x;
-        let mut move_y;
+        let mut move_pos;
 
         let mut positions = Vec::new();
         // ensure that the starting position is looked at
@@ -229,34 +233,33 @@ impl Map {
 
         for pair in positions.windows(2) {
             let (x, y) = pair[0];
-            let (target_x, target_y) = pair[1];
+            let target_pos = Pos::from(pair[1]);
 
-            if !self.is_within_bounds(target_x, target_y) {
+            if !self.is_within_bounds(target_pos) {
                 blocked = true;
                 break;
             }
 
-            move_x = target_x - x;
-            move_y = target_y - y;
+            move_pos = target_pos - Vector2D::new(x, y);
 
             // horizontal
-            if move_y == 0 && move_x != 0 {
-                let mut left_wall_pos = (x, y);
-                if move_x >= 1 {
-                    left_wall_pos = (x + move_x, y);
+            if move_pos.y == 0 && move_pos.x != 0 {
+                let mut left_wall_pos = Pos::new(x, y);
+                if move_pos.x >= 1 {
+                    left_wall_pos = Pos::new(x + move_pos.x, y);
                 }
 
-                if self.is_within_bounds(left_wall_pos.0, left_wall_pos.1) {
+                if self.is_within_bounds(left_wall_pos) {
                     blocked = self[left_wall_pos].left_wall != Wall::Empty;
                 }
             // vertical 
-            } else if move_x == 0 && move_y != 0 {
-                let mut bottom_wall_pos = (x, y + move_y);
-                if move_y >= 1 {
-                    bottom_wall_pos = (x, y);
+            } else if move_pos.x == 0 && move_pos.y != 0 {
+                let mut bottom_wall_pos = Pos::new(x, y + move_pos.y);
+                if move_pos.y >= 1 {
+                    bottom_wall_pos = Pos::new(x, y);
                 }
 
-                if self.is_within_bounds(bottom_wall_pos.0, bottom_wall_pos.1) {
+                if self.is_within_bounds(bottom_wall_pos) {
                     blocked = self[bottom_wall_pos].bottom_wall != Wall::Empty;
                 }
             } else { // diagonal
@@ -266,30 +269,34 @@ impl Map {
                 let vert_wall;
                 let horiz_wall;
 
+                let pos = Pos::new(x, y);
+                let x_moved = Pos::new(target_pos.x, y);
+                let y_moved = Pos::new(x, target_pos.y);
+
                 // down right
-                if move_x > 0 && move_y > 0 {
-                    current_space_blocked = self.blocked_down(x, y) && self.blocked_right(x, y);
-                    target_space_blocked = self.blocked_up(target_x, target_y) && self.blocked_left(target_x, target_y);
-                    vert_wall = self.blocked_right(x, y) && self.blocked_right(x, target_y);
-                    horiz_wall = self.blocked_down(x, y) && self.blocked_down(target_x, y);
+                if move_pos.x > 0 && move_pos.y > 0 {
+                    current_space_blocked = self.blocked_down(pos) && self.blocked_right(pos);
+                    target_space_blocked = self.blocked_up(target_pos) && self.blocked_left(target_pos);
+                    vert_wall = self.blocked_right(pos) && self.blocked_right(y_moved);
+                    horiz_wall = self.blocked_down(pos) && self.blocked_down(x_moved);
                 // up right
-                } else if move_x > 0 && move_y < 0 {
-                    current_space_blocked = self.blocked_up(x, y) && self.blocked_right(x, y);
-                    target_space_blocked  = self.blocked_down(target_x, target_y) && self.blocked_left(target_x, target_y);
-                    vert_wall = self.blocked_right(x, y) && self.blocked_right(x, target_y);
-                    horiz_wall = self.blocked_up(x, y) && self.blocked_up(target_x, y);
+                } else if move_pos.x > 0 && move_pos.y < 0 {
+                    current_space_blocked = self.blocked_up(pos) && self.blocked_right(pos);
+                    target_space_blocked  = self.blocked_down(target_pos) && self.blocked_left(target_pos);
+                    vert_wall = self.blocked_right(pos) && self.blocked_right(y_moved);
+                    horiz_wall = self.blocked_up(pos) && self.blocked_up(x_moved);
                 // down left
-                } else if move_x < 0 && move_y > 0 {
-                    current_space_blocked = self.blocked_down(x, y) && self.blocked_left(x, y);
-                    target_space_blocked  = self.blocked_up(target_x, target_y) && self.blocked_right(target_x, target_y);
-                    vert_wall = self.blocked_left(x, y) && self.blocked_left(x, target_y);
-                    horiz_wall = self.blocked_down(x, y) && self.blocked_down(target_x, y);
+                } else if move_pos.x < 0 && move_pos.y > 0 {
+                    current_space_blocked = self.blocked_down(pos) && self.blocked_left(pos);
+                    target_space_blocked  = self.blocked_up(target_pos) && self.blocked_right(target_pos);
+                    vert_wall = self.blocked_left(pos) && self.blocked_left(y_moved);
+                    horiz_wall = self.blocked_down(pos) && self.blocked_down(x_moved);
                 // up left
                 } else {
-                    current_space_blocked = self.blocked_left(x, y) && self.blocked_up(x, y);
-                    target_space_blocked  = self.blocked_down(target_x, target_y) && self.blocked_right(target_x, target_y);
-                    vert_wall = self.blocked_left(x, y) && self.blocked_left(x, target_y);
-                    horiz_wall = self.blocked_up(x, y) && self.blocked_up(target_x, y);
+                    current_space_blocked = self.blocked_left(pos) && self.blocked_up(pos);
+                    target_space_blocked  = self.blocked_down(target_pos) && self.blocked_right(target_pos);
+                    vert_wall = self.blocked_left(pos) && self.blocked_left(y_moved);
+                    horiz_wall = self.blocked_up(pos) && self.blocked_up(x_moved);
                 }
 
                 blocked = current_space_blocked || target_space_blocked || vert_wall || horiz_wall;
@@ -303,8 +310,8 @@ impl Map {
         return blocked;
     }
 
-    pub fn is_empty(&self, x: i32, y: i32) -> bool {
-        return self[(x, y)].tile_type == TileType::Empty;
+    pub fn is_empty(&self, pos: Pos) -> bool {
+        return self[pos].tile_type == TileType::Empty;
     }
 
     pub fn is_within_bounds(&self, pos: Pos) -> bool {
@@ -333,17 +340,17 @@ impl Map {
 
         let offset = Pos::new(end_pos.x - start_pos.x,
                               end_pos.y - start_pos.y);
-        let wall_in_path = self.is_blocked_by_wall(start_pos, offset);
+        let wall_in_path = self.is_blocked_by_wall(start_pos, offset.x, offset.y);
 
         return !wall_in_path && self.fov.is_in_fov(end_pos.x, end_pos.y);
     }
 
     // this function is like clear_path, but only looks for terrain, not objects like monsters
     pub fn clear_path_obstacles(&self, start: Pos, end: Pos) -> bool {
-        let line = Line::new((start.0, start.1), (end.0, end.1));
+        let line = Line::new(start.to_tuple(), end.to_tuple());
 
         let path_blocked =
-            line.into_iter().any(|point| self[point].blocked);
+            line.into_iter().any(|point| self[Pos::from(point)].blocked);
 
         return !path_blocked;
     }
@@ -354,14 +361,15 @@ impl Map {
         // for each position on the edges of a square around the point, with the
         // radius as the distance in x/y, add to a set.
         // duplicates will be removed, leaving only points within the radius.
-        for x in (start.0 - radius)..(start.0 + radius) {
-            for y in (start.1 - radius)..(start.1 + radius) {
-                let line = Line::new(start, (x, y));
+        for x in (start.x - radius)..(start.x + radius) {
+            for y in (start.y - radius)..(start.y + radius) {
+                let line = Line::new(start.to_tuple(), (x, y));
 
                 // get points to the edge of square, filtering for points within the given radius
                 for point in line.into_iter() {
+                    let point = Pos::from(point);
                     if distance(start, point) < radius {
-                        circle_positions.insert(point);
+                        circle_positions.insert(Pos::from(point));
                     }
                 }
             }
@@ -370,7 +378,7 @@ impl Map {
         return circle_positions.iter().map(|pos| *pos).collect();
     }
 
-    pub fn reachable_neighbors(&self, x: i32, y: i32) -> Vec<Pos> {
+    pub fn reachable_neighbors(&self, pos: Pos) -> Vec<Pos> {
         let neighbors = [(1, 0),  (1, 1),  (0, 1), 
                          (-1, 1), (-1, 0), (-1, -1),
                          (0, -1), (1, -1)];
@@ -378,8 +386,8 @@ impl Map {
         let mut result = Vec::new();
 
         for delta in neighbors.iter() {
-            if !self.is_blocked_by_wall(x, y, delta.0, delta.1) {
-                result.push((x + delta.0, y + delta.1));
+            if !self.is_blocked_by_wall(pos, delta.0, delta.1) {
+                result.push(pos + Vector2D::new(delta.0, delta.1));
             }
         }
 
@@ -391,7 +399,7 @@ impl Map {
 
         let maybe_results = 
             astar(&start,
-                  |&pos| self.reachable_neighbors(pos.0, pos.1)
+                  |&pos| self.reachable_neighbors(pos)
                               .iter()
                               .map(|pos| (*pos, 1))
                               .collect::<Vec<(Pos, i32)>>()
@@ -430,7 +438,21 @@ impl Map {
             }
         }
 
-        self.compute_fov(self.fov_pos.x, self.fov_pos.y, self.fov_radius);
+        self.compute_fov(self.fov_pos, self.fov_radius);
+    }
+}
+
+impl Index<(i32, i32)> for Map {
+    type Output = Tile;
+
+    fn index(&self, index: (i32, i32)) -> &Tile {
+        &self.tiles[index.0 as usize][index.1 as usize]
+    }
+}
+
+impl IndexMut<(i32, i32)> for Map {
+    fn index_mut(&mut self, index: (i32, i32)) -> &mut Tile {
+        &mut self.tiles[index.0 as usize][index.1 as usize]
     }
 }
 
@@ -438,26 +460,28 @@ impl Index<Pos> for Map {
     type Output = Tile;
 
     fn index(&self, index: Pos) -> &Tile {
-        &self.tiles[index.0 as usize][index.1 as usize]
+        &self.tiles[index.x as usize][index.y as usize]
     }
 }
 
 impl IndexMut<Pos> for Map {
     fn index_mut(&mut self, index: Pos) -> &mut Tile {
-        &mut self.tiles[index.0 as usize][index.1 as usize]
+        &mut self.tiles[index.x as usize][index.y as usize]
     }
 }
 
+
 pub fn near_tile_type(map: &Map, position: Pos, tile_type: TileType) -> bool {
-    let neighbor_offsets: Vec<Pos>
+    let neighbor_offsets: Vec<(i32, i32)>
         = vec!((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1));
 
     let mut near_given_tile = false;
 
     for offset in neighbor_offsets {
+        let offset = Pos::from(offset);
         let neighbor_position = move_by(position, offset);
 
-        if map.is_within_bounds(neighbor_position.0, neighbor_position.1) &&
+        if map.is_within_bounds(neighbor_position) &&
            map[neighbor_position].tile_type == tile_type {
             near_given_tile = true;
             break;
@@ -468,13 +492,14 @@ pub fn near_tile_type(map: &Map, position: Pos, tile_type: TileType) -> bool {
 }
 
 pub fn random_offset(rng: &mut SmallRng, radius: i32) -> Pos {
-    return (rng.gen_range(-radius, radius),
-            rng.gen_range(-radius, radius));
+    return Pos::new(rng.gen_range(-radius, radius),
+                    rng.gen_range(-radius, radius));
 }
 
 pub fn pos_in_radius(pos: Pos, radius: i32, rng: &mut SmallRng) -> Pos {
-    return (pos.0 + rng.gen_range(-radius, radius),
-            pos.1 + rng.gen_range(-radius, radius));
+    let offset = Vector2D::new(rng.gen_range(-radius, radius),
+                               rng.gen_range(-radius, radius));
+    return pos + offset;
 }
 
 pub fn place_block(map: &mut Map, start: Pos, width: i32, tile: Tile) -> Vec<Pos> {
@@ -482,21 +507,22 @@ pub fn place_block(map: &mut Map, start: Pos, width: i32, tile: Tile) -> Vec<Pos
 
     for x in 0..width {
         for y in 0..width {
-            let pos = (start.0 + x, start.1 + y);
+            let pos = start + Vector2D::new(x, y);
             map[pos] = tile;
             positions.push(pos);
         }
     }
 
-    positions
+    return positions;
 }
 
 pub fn place_line(map: &mut Map, start: Pos, end: Pos, tile: Tile) -> Vec<Pos> {
     let mut positions = Vec::new();
-    let mut line = Line::new(start, end);
+    let mut line = Line::new(start.to_tuple(), end.to_tuple());
 
     while let Some(pos) = line.step() {
-        if map.is_within_bounds(pos.0, pos.1) {
+        let pos = Pos::from(pos);
+        if map.is_within_bounds(pos) {
             map[pos] = tile;
             positions.push(pos);
         }
@@ -508,7 +534,7 @@ pub fn place_line(map: &mut Map, start: Pos, end: Pos, tile: Tile) -> Vec<Pos> {
 pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut SmallRng) {
     match obstacle {
         Obstacle::Block => {
-            map.tiles[pos.0 as usize][pos.1 as usize] = Tile::wall();
+            map.tiles[pos.x as usize][pos.y as usize] = Tile::wall();
         }
 
         Obstacle::Wall => {
@@ -541,14 +567,14 @@ pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut Small
 
             if rng.gen_bool(0.5) {
                 for x in 0..3 {
-                    map.tiles[pos.0 as usize + x][pos.1 as usize] = Tile::wall();
+                    map.tiles[pos.x as usize + x][pos.y as usize] = Tile::wall();
                 }
-                map.tiles[pos.0 as usize][(pos.1 + dir) as usize] = Tile::wall();
+                map.tiles[pos.x as usize][(pos.y + dir) as usize] = Tile::wall();
             } else {
                 for y in 0..3 {
-                    map.tiles[pos.0 as usize][pos.1 as usize + y] = Tile::wall();
+                    map.tiles[pos.x as usize][pos.y as usize + y] = Tile::wall();
                 }
-                map.tiles[(pos.0 + dir) as usize][pos.1 as usize] = Tile::wall();
+                map.tiles[(pos.x + dir) as usize][pos.y as usize] = Tile::wall();
             }
         }
 
@@ -556,10 +582,10 @@ pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut Small
             let size = 2;
 
             let mut positions = vec!();
-            positions.append(&mut place_line(map, move_by(pos, (-size, size)),  move_by(pos, (size,  size)), Tile::wall()));
-            positions.append(&mut place_line(map, move_by(pos, (-size, size)),  move_by(pos, (-size, -size)), Tile::wall()));
-            positions.append(&mut place_line(map, move_by(pos, (-size, -size)), move_by(pos, (size, -size)), Tile::wall()));
-            positions.append(&mut place_line(map, move_by(pos, (size, -size)),  move_by(pos, (size,  size)), Tile::wall()));
+            positions.append(&mut place_line(map, move_by(pos, Pos::new(-size, size)),  move_by(pos, Pos::new(size,  size)), Tile::wall()));
+            positions.append(&mut place_line(map, move_by(pos, Pos::new(-size, size)),  move_by(pos, Pos::new(-size, -size)), Tile::wall()));
+            positions.append(&mut place_line(map, move_by(pos, Pos::new(-size, -size)), move_by(pos, Pos::new(size, -size)), Tile::wall()));
+            positions.append(&mut place_line(map, move_by(pos, Pos::new(size, -size)),  move_by(pos, Pos::new(size,  size)), Tile::wall()));
 
             for _ in 0..rng.gen_range(0, 10) {
                 positions.swap_remove(rng.gen_range(0, positions.len()));
@@ -569,15 +595,15 @@ pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut Small
 }
 
 fn move_by(start: Pos, diff: Pos) -> Pos {
-    return (start.0 + diff.0, start.1 + diff.1);
+    return Pos::new(start.x + diff.x, start.y + diff.y);
 }
 
 fn move_y(pos: Pos, offset_y: i32) -> Pos {
-    return (pos.0, pos.1 + offset_y);
+    return Pos::new(pos.x, pos.y + offset_y);
 }
 
 fn move_x(pos: Pos, offset_x: i32) -> Pos {
-    return (pos.0 + offset_x, pos.1);
+    return Pos::new(pos.x + offset_x, pos.y);
 }
 
 // TODO put in constructor, and in set_fov function

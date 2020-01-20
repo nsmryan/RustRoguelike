@@ -1,6 +1,5 @@
 use rand::prelude::*;
 
-use roguelike_core::ai::distance;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
@@ -36,8 +35,8 @@ pub fn make_player(_config: &Config, display_state: &DisplayState) -> Object {
     player
 }
 
-pub fn make_goal(config: &Config, x: i32, y :i32) -> Object {
-    let mut object = Object::new(x, y, ENTITY_GOAL as char, config.color_red, "goal", false);
+pub fn make_goal(config: &Config, pos: Pos) -> Object {
+    let mut object = Object::new(pos.x, pos.y, ENTITY_GOAL as char, config.color_red, "goal", false);
     object.item = Some(Item::Goal);
 
     return object;
@@ -49,8 +48,8 @@ pub fn make_mouse(_config: &Config, _display_state: &DisplayState) -> Object {
     mouse
 }
 
-pub fn make_gol(config: &Config, x: i32, y :i32, display_state: &DisplayState) -> Object {
-    let mut gol = Object::new(x, y, '\u{98}', config.color_orange, "gol", true);
+pub fn make_gol(config: &Config, pos: Pos, display_state: &DisplayState) -> Object {
+    let mut gol = Object::new(pos.x, pos.y, '\u{98}', config.color_orange, "gol", true);
 
     gol.fighter = Some( Fighter { max_hp: 10, hp: 10, defense: 0, power: 5, } );
     gol.ai = Some(Ai::Basic);
@@ -67,8 +66,8 @@ pub fn make_gol(config: &Config, x: i32, y :i32, display_state: &DisplayState) -
     return gol;
 } 
 
-pub fn make_troll(config: &Config, x: i32, y :i32) -> Object {
-    let mut troll = Object::new(x, y, '\u{15}', config.color_orange, "troll", true);
+pub fn make_troll(config: &Config, pos: Pos) -> Object {
+    let mut troll = Object::new(pos.x, pos.y, '\u{15}', config.color_orange, "troll", true);
 
     troll.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 10, } );
     troll.ai = Some(Ai::Basic);
@@ -81,8 +80,8 @@ pub fn make_troll(config: &Config, x: i32, y :i32) -> Object {
     return troll;
 }
 
-pub fn make_elf(config: &Config, x: i32, y :i32, display_state: &DisplayState) -> Object {
-    let mut elf = Object::new(x, y, '\u{A5}', config.color_orange, "elf", true);
+pub fn make_elf(config: &Config, pos: Pos, display_state: &DisplayState) -> Object {
+    let mut elf = Object::new(pos.x, pos.y, '\u{A5}', config.color_orange, "elf", true);
 
     elf.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, } );
     elf.ai = Some(Ai::Basic);
@@ -99,8 +98,8 @@ pub fn make_elf(config: &Config, x: i32, y :i32, display_state: &DisplayState) -
     return elf;
 }
 
-pub fn make_stone(config: &Config, x: i32, y :i32) -> Object {
-    let mut stone = Object::new(x, y, ENTITY_STONE as char, config.color_orange, "stone", true);
+pub fn make_stone(config: &Config, pos: Pos) -> Object {
+    let mut stone = Object::new(pos.x, pos.y, ENTITY_STONE as char, config.color_orange, "stone", true);
 
     stone.color = config.color_light_grey;
     stone.item = Some(Item::Stone);
@@ -168,6 +167,7 @@ pub fn make_island(data: &mut GameData,
     for x in 0..data.map.width() {
         for y in 0..data.map.height() {
             let pos = Pos::new(x, y);
+
             if distance(pos, center) <= ISLAND_RADIUS {
                 data.map.tiles[x as usize][y as usize] = Tile::empty();
             } else {
@@ -182,48 +182,48 @@ pub fn make_island(data: &mut GameData,
 
     for _ in 0..ISLAND_NUM_OBSTACLES {
         let rand_pos = random_offset(rng, ISLAND_RADIUS);
-        let pos = Pos::new(center.x + rand_pos.0, center.y + rand_pos.1);
+        let pos = Pos::new(center.x + rand_pos.x, center.y + rand_pos.y);
 
         let obstacle = *obstacles.choose(rng).unwrap();
 
         // Buildings are generated separately, so don't add them in random generation
         if obstacle != Obstacle::Building {
-            add_obstacle(&mut data.map, pos.to_tuple(), obstacle, rng);
+            add_obstacle(&mut data.map, pos, obstacle, rng);
         }
     }
 
     /* add buildings */
     for _ in 0..rng.gen_range(3, 5) {
         let rand_pos = random_offset(rng, ISLAND_RADIUS);
-        let pos = Pos::new(center.x + rand_pos.0, center.y + rand_pos.1);
-        add_obstacle(&mut data.map, pos.to_tuple(), Obstacle::Building, rng);
+        let pos = Pos::new(center.x + rand_pos.x, center.y + rand_pos.y);
+        add_obstacle(&mut data.map, pos, Obstacle::Building, rng);
     }
 
     /* random subtraction */
     for _ in 0..ISLAND_NUM_SUBTRACTIONS_ATTEMPTS {
-        let pos = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
+        let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-        if data.map.tiles[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
-            data.map.tiles[pos.0 as usize][pos.1 as usize] = Tile::empty();
+        if data.map[pos].tile_type == TileType::Wall {
+            data.map[pos] = Tile::empty();
         }
     }
 
     /* random additions */
     for _ in 0..ISLAND_NUM_ADDITION_ATTEMPTS {
-        let pos = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
+        let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
         let obstacle = *obstacles.choose(rng).unwrap();
 
-        if data.map.tiles[pos.0 as usize][pos.1 as usize].tile_type == TileType::Wall {
+        if data.map[pos].tile_type == TileType::Wall {
             add_obstacle(&mut data.map, pos, obstacle, rng);
         }
     }
 
     /* random stones */
     for _ in 0..10 {
-        let pos = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
+        let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-        if data.map.is_empty(pos.0, pos.1) {
-            let mut stone = make_stone(config, pos.0, pos.1);
+        if data.map.is_empty(pos) {
+            let mut stone = make_stone(config, pos);
             stone.item = Some(Item::Stone);
             data.objects.insert(stone);
         }
@@ -232,10 +232,10 @@ pub fn make_island(data: &mut GameData,
     /* add monsters */
     for _ in 0..0 {
         loop {
-            let (x, y) = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
+            let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !is_blocked(x, y, data) {
-                let monster = make_gol(config, x, y, display_state);
+            if !is_blocked(pos, data) {
+                let monster = make_gol(config, pos, display_state);
                 data.objects.insert(monster);
                 break;
             }
@@ -244,10 +244,10 @@ pub fn make_island(data: &mut GameData,
 
     for _ in 0..1 {
         loop {
-            let (x, y) = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
+            let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !is_blocked(x, y, data) {
-                let monster = make_elf(config, x, y, display_state);
+            if !is_blocked(pos, data) {
+                let monster = make_elf(config, pos, display_state);
                 data.objects.insert(monster);
                 break;
             }
@@ -256,10 +256,10 @@ pub fn make_island(data: &mut GameData,
     
     for _ in 0..0 {
         loop {
-            let (x, y) = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
+            let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !is_blocked(x, y, data) {
-                let monster = make_troll(config,x,y);
+            if !is_blocked(pos, data) {
+                let monster = make_troll(config, pos);
                 data.objects.insert(monster);
                 break;
             }
@@ -268,21 +268,21 @@ pub fn make_island(data: &mut GameData,
 
     let x = rng.gen_range(0, data.map.width());
     let y = rng.gen_range(0, data.map.height());
+    let pos = Pos::new(x, y);
 
-    if !is_blocked(x, y, data) {
+    if !is_blocked(pos, data) {
         let mut object = Object::new(x, y, ENTITY_GOAL as char, config.color_red, "goal", false);
         object.item = Some(Item::Goal);
         data.objects.insert(object);
     }
 
     /* add goal object */
-    let (mut x, mut y) = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
-    while !data.map.is_empty(x, y) {
-        let pos = pos_in_radius(center.to_tuple(), ISLAND_RADIUS, rng);
-        x = pos.0;
-        y = pos.1;
+    let mut pos = pos_in_radius(center, ISLAND_RADIUS, rng);
+
+    while !data.map.is_empty(pos) {
+        pos = pos_in_radius(center, ISLAND_RADIUS, rng);
     }
-    data.objects.insert(make_goal(&config, x, y));
+    data.objects.insert(make_goal(&config, pos));
 
     /* add exit */
     // find edge of island
@@ -291,8 +291,9 @@ pub fn make_island(data: &mut GameData,
     for x in 0..map_size.0 {
         for y in 0..map_size.1 {
             let pos = Pos::from((x, y));
-            if !(data.map[(x, y)].tile_type == TileType::Water) &&
-                 near_tile_type(&data.map, pos.to_tuple(), TileType::Water) {
+
+            if !(data.map[pos].tile_type == TileType::Water) &&
+                 near_tile_type(&data.map, pos, TileType::Water) {
                 edge_positions.push(pos);
             }
         }
@@ -323,7 +324,7 @@ pub fn make_wall_test_map(objects: &mut ObjMap,
         map[pos].left_wall = Wall::ShortWall;
     }
   
-    objects.insert(make_gol(config, 7, 5, display_state));
+    objects.insert(make_gol(config, Pos::new(7, 5), display_state));
 
     map.update_map();
 
@@ -350,7 +351,7 @@ pub fn make_corner_test_map(objects: &mut ObjMap,
     map[(x_pos, y_start - 1)].bottom_wall = Wall::ShortWall;
 
   
-    objects.insert(make_gol(config, 7, 5, display_state));
+    objects.insert(make_gol(config, Pos::new(7, 5), display_state));
 
     map.update_map();
 

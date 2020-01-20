@@ -95,7 +95,7 @@ impl<'a> Game<'a> {
                 }
                 player_position = position;
 
-                objects.insert(make_goal(&config, player_position.0 + 1, player_position.1));
+                objects.insert(make_goal(&config, Pos::new(player_position.0 + 1, player_position.1)));
                 objects.insert(make_mouse(&config, &display_state));
                 let exit_position = (player_position.0 + 1, player_position.1 - 1);
                 map[exit_position].tile_type = TileType::Exit;
@@ -129,7 +129,7 @@ impl<'a> Game<'a> {
         data.objects[player_handle].x = player_position.0;
         data.objects[player_handle].y = player_position.1;
 
-        let stone_handle = data.objects.insert(make_stone(&config, -1, -1));
+        let stone_handle = data.objects.insert(make_stone(&config, Pos::new(-1, -1)));
         data.objects[player_handle].inventory.push(stone_handle);
 
         let state = Game {
@@ -297,9 +297,8 @@ impl<'a> Game<'a> {
 
         /* Recompute FOV */
         if self.settings.previous_player_position != (self.data.objects.get(player_handle).unwrap().x, self.data.objects.get(player_handle).unwrap().y) {
-            self.data.map.compute_fov(self.data.objects[player_handle].x,
-                                      self.data.objects[player_handle].y,
-                                      FOV_RADIUS);
+            let player_pos = self.data.objects[player_handle].pos();
+            self.data.map.compute_fov(player_pos, FOV_RADIUS);
         }
 
         self.input_action = InputAction::None;

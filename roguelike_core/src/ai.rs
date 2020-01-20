@@ -10,7 +10,7 @@ pub fn move_by(handle: ObjectId, dx: i32, dy: i32, data: &mut GameData) {
     let pos = data.objects[handle].pos();
 
     if !is_blocked(Pos::new(pos.x + dx, pos.y + dy), data) {
-        data.objects[handle].set_pos(pos.x + dx, pos.y + dy);
+        data.objects[handle].set_xy(pos.x + dx, pos.y + dy);
     }
 }
 
@@ -33,7 +33,7 @@ pub fn step_towards(start_pos: Pos, target_pos: Pos) -> Pos {
 pub fn ai_attack(monster_handle: ObjectId,
                  target_handle: ObjectId,
                  data: &mut GameData) -> Action {
-    let target_pos = data.objects[target_handle].pos();
+    let mut target_pos = data.objects[target_handle].pos();
     let monster_pos = data.objects[monster_handle].pos();
 
     let turn: Action;

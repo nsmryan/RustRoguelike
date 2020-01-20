@@ -16,6 +16,7 @@ use sdl2::mouse::MouseButton;
 
 use slotmap::dense::*;
 
+use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::constants::*;
 
@@ -112,8 +113,8 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                                 let map_cell = (((map_loc.0 as f32 / map_zone.width as f32) * (game.data.map.width() as f32)) as i32,
                                                 ((map_loc.1 as f32 / map_zone.height as f32) * (game.data.map.height() as f32)) as i32);
                                 game.input_action =
-                                  InputAction::MapClick((map_loc.0 as i32, map_loc.1 as i32),
-                                                        map_cell);
+                                  InputAction::MapClick(Pos::new(map_loc.0 as i32, map_loc.1 as i32),
+                                                        Pos::new(map_cell.0 as i32, map_cell.1 as i32));
                             }
                         }
 
