@@ -181,6 +181,8 @@ pub fn render_info(display_state: &mut DisplayState,
     if let Some(mouse) = mouse_xy {
         let player_handle = data.find_player().unwrap();
         let player_pos = data.objects[player_handle].pos();
+        let player_x = data.objects[player_handle].x;
+        let player_y = data.objects[player_handle].y;
 
         let object_ids =
             get_objects_under_mouse(mouse, data);
@@ -560,6 +562,8 @@ pub fn render_overlays(display_state: &mut DisplayState,
                        config: &Config) {
     let player_handle = data.find_player().unwrap();
     let player_pos = data.objects[player_handle].pos();
+    let player_x = data.objects[player_handle].x;
+    let player_y = data.objects[player_handle].y;
 
     // Draw player action overlay. Could draw arrows to indicate how to reach each location
     let mut highlight_color = config.color_warm_grey;
