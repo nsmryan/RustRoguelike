@@ -29,6 +29,7 @@ use crate::throttler::*;
 
 
 pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
+    /* Create SDL Context */
     let sdl_context = sdl2::init()?;
     let video = sdl_context.video()?;
     let window = video.window("Rust Roguelike", SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -40,8 +41,10 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
     let mut event_pump = sdl_context.event_pump()?;
 
+    /* Setup FPS Throttling */
     let fps_throttler = Throttler::new(Duration::from_millis(1000 / 30));
 
+    /* Load Textures */
     let font_image = texture_creator.load_texture("resources/rexpaint16x16.png")
         .map_err(|e| e.to_string())?;
 
@@ -63,6 +66,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     sprites.insert(SpriteSheet::new("gol_idle".to_string(), gol_idle));
     sprites.insert(SpriteSheet::new("elf_idle".to_string(), elf_idle));
 
+    /* Create Display Structures */
     let screen_sections =
         Plan::vert("screen", 0.80, Plan::zone("map"), 
                    Plan::split_horiz(0.3, Plan::zone("inventory"),
@@ -75,10 +79,9 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
     let mut game = Game::new(args, config, display_state)?;
 
-    // Main Game Loop
+    /* Main Game Loop */
     let mut running = true;
     while running {
-        // TODO split into function
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit{ .. }=> {

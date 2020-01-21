@@ -381,6 +381,6 @@ impl Object {
 }
 
 pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
-    return ((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)).abs();
+    return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt() as i32;
 }
 
