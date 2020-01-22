@@ -192,17 +192,13 @@ impl<'a> Game<'a> {
 
         self.state = GameState::Playing;
 
-        // TODO Exit game on win for now
+        // NOTE Exit game on win for now
         return GameResult::Stop;
     }
 
     fn step_lose(&mut self) -> GameResult {
-        match self.input_action {
-            InputAction::Exit => {
-                return GameResult::Stop;
-            }
-
-            _ => {},
+        if self.input_action == InputAction::Exit {
+            return GameResult::Stop;
         }
 
         return GameResult::Continue;
@@ -248,6 +244,8 @@ impl<'a> Game<'a> {
 
             for key in ai_handles {
                 ai_take_turn(key, &mut self.data);
+
+                // check if fighter needs to be removed
                 if let Some(fighter) = self.data.objects[key].fighter {
                     if fighter.hp <= 0 {
                         self.data.objects[key].alive = false;
@@ -255,18 +253,17 @@ impl<'a> Game<'a> {
                         self.data.objects[key].color = self.config.color_red;
                         self.data.objects[key].fighter = None;
 
-                        // NOTE for now, we just remove enemies
                         self.data.objects.remove(key);
                     }
                 }
             }
         }
 
-        // check is player lost all hp
+        // check if player lost all hp
         if let Some(fighter) = self.data.objects[player_handle].fighter {
             if fighter.hp <= 0 {
                 {
-                    let player = self.data.objects.get_mut(player_handle).unwrap();
+                    let player = &mut self.data.objects[player_handle];
                     player.alive = false;
                     player.chr = '%';
                     player.color = self.config.color_red;
