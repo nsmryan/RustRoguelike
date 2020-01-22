@@ -101,7 +101,7 @@ impl<'a> Game<'a> {
                 }
                 player_position = position;
 
-                objects.insert(make_goal(&config, Pos::new(player_position.0 + 1, player_position.1)));
+                objects.insert(make_goal(&config, Pos::new(player_position.0 - 1, player_position.1)));
                 objects.insert(make_mouse(&config, &display_state));
                 let exit_position = (player_position.0 + 1, player_position.1 - 1);
                 map[exit_position].tile_type = TileType::Exit;

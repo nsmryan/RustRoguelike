@@ -23,7 +23,7 @@ pub fn handle_input(input_action: InputAction,
     use Movement::*;
 
     let player_handle = game_data.find_player().unwrap();
-    let player_pos = game_data.objects[player_handle].pos()
+    let player_pos = game_data.objects[player_handle].pos();
 
     let player_turn: Action;
 

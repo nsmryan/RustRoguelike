@@ -44,6 +44,72 @@ impl<'a> DisplayState<'a> {
 
         return None;
     }
+
+    pub fn draw_text(&mut self,
+                     text: String,
+                     x: i32,
+                     y: i32,
+                     color: Color,
+                     area: &Area) {
+        for (index, chr) in text.chars().enumerate() {
+            self.draw_char(chr, x + index as i32, y, color, area);
+        }
+    }
+
+    pub fn draw_sprite(&mut self,
+                       sprite_key: SpriteKey,
+                       sprite_index: i32,
+                       x: i32,
+                       y: i32,
+                       color: Color,
+                       area: &Area) {
+        let src = Rect::new(sprite_index * FONT_WIDTH,
+                            0,
+                            FONT_WIDTH as u32,
+                            FONT_HEIGHT as u32);
+
+        let dst = area.char_rect(x, y);
+
+        self.sprites[sprite_key].texture.set_color_mod(color.r, color.g, color.b);
+        self.sprites[sprite_key].texture.set_alpha_mod(color.a);
+
+        let sprite = &self.sprites[sprite_key].texture;
+        self.canvas.copy_ex(sprite,
+                                     Some(src),
+                                     Some(dst),
+                                     0.0,
+                                     None,
+                                     false,
+                                     false).unwrap();
+    }
+
+    pub fn draw_char(&mut self,
+                     chr: char,
+                     x: i32,
+                     y: i32,
+                     color: Color,
+                     area: &Area) {
+        let chr_x = (chr as i32) % FONT_WIDTH;
+        let chr_y = (chr as i32) / FONT_HEIGHT;
+
+        let src = Rect::new((chr_x * FONT_WIDTH) as i32,
+                            (chr_y * FONT_HEIGHT) as i32,
+                            FONT_WIDTH as u32,
+                            FONT_HEIGHT as u32);
+
+        let dst = area.char_rect(x, y);
+
+        self.font_image.set_color_mod(color.r, color.g, color.b);
+        self.font_image.set_alpha_mod(color.a);
+
+        self.canvas.copy_ex(&self.font_image,
+                            Some(src),
+                            Some(dst),
+                            0.0,
+                            None,
+                            false,
+                            false).unwrap();
+    }
 }
 
 
@@ -102,71 +168,5 @@ impl Area {
 
 pub fn engine_color(color: &Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
-}
-
-pub fn draw_text(display_state: &mut DisplayState,
-                 text: String,
-                 x: i32,
-                 y: i32,
-                 color: Color,
-                 area: &Area) {
-    for (index, chr) in text.chars().enumerate() {
-        draw_char(display_state, chr, x + index as i32, y, color, area);
-    }
-}
-
-pub fn draw_sprite(display_state: &mut DisplayState,
-                   sprite_key: SpriteKey,
-                   sprite_index: i32,
-                   x: i32,
-                   y: i32,
-                   color: Color,
-                   area: &Area) {
-    let src = Rect::new(sprite_index * FONT_WIDTH,
-                        0,
-                        FONT_WIDTH as u32,
-                        FONT_HEIGHT as u32);
-
-    let dst = area.char_rect(x, y);
-
-    display_state.sprites[sprite_key].texture.set_color_mod(color.r, color.g, color.b);
-    display_state.sprites[sprite_key].texture.set_alpha_mod(color.a);
-
-    let sprite = &display_state.sprites[sprite_key].texture;
-    display_state.canvas.copy_ex(sprite,
-                                 Some(src),
-                                 Some(dst),
-                                 0.0,
-                                 None,
-                                 false,
-                                 false).unwrap();
-}
-
-pub fn draw_char(display_state: &mut DisplayState,
-                 chr: char,
-                 x: i32,
-                 y: i32,
-                 color: Color,
-                 area: &Area) {
-    let chr_x = (chr as i32) % FONT_WIDTH;
-    let chr_y = (chr as i32) / FONT_HEIGHT;
-
-    let src = Rect::new((chr_x * FONT_WIDTH) as i32,
-                        (chr_y * FONT_HEIGHT) as i32,
-                        FONT_WIDTH as u32,
-                        FONT_HEIGHT as u32);
-
-    let dst = area.char_rect(x, y);
-
-    display_state.font_image.set_color_mod(color.r, color.g, color.b);
-    display_state.font_image.set_alpha_mod(color.a);
-
-    display_state.canvas.copy_ex(&display_state.font_image,
-                                 Some(src),
-                                 Some(dst),
-                                 0.0,
-                                 None,
-                                 false,
-                                 false).unwrap();
 }
 
