@@ -286,6 +286,7 @@ impl<'a> Game<'a> {
             _ => (),
         }
 
+        /* Reload map if configured to do so */
         if self.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
             let (new_objects, new_map, _) = read_map_xp(&self.config, &self.display_state, "resources/map.xp");
             self.data.map = new_map;
