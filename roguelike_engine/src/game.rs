@@ -21,8 +21,14 @@ use crate::read_map::*;
 use crate::actions;
 
 
+#[derive(Copy, Clone, PartialEq)]
+pub enum GameResult {
+    Continue,
+    Stop,
+}
+
 pub struct GameSettings {
-    pub previous_player_position: (i32, i32),
+    pub previous_player_position: Pos,
     pub turn_count: usize,
     pub god_mode: bool,
     pub map_type: MapGenType,
@@ -30,7 +36,7 @@ pub struct GameSettings {
 }
 
 impl GameSettings {
-    pub fn new(previous_player_position: (i32, i32),
+    pub fn new(previous_player_position: Pos,
                turn_count: usize,
                god_mode: bool) -> GameSettings {
         GameSettings {
@@ -75,7 +81,7 @@ impl<'a> Game<'a> {
         }
         println!("Seed: {} (0x{:X})", seed, seed);
 
-        let previous_player_position = (-1, -1);
+        let previous_player_position = Pos::new(-1, -1);
 
         let mut objects = DenseSlotMap::with_capacity(INITIAL_OBJECT_CAPACITY);
         let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
@@ -145,7 +151,7 @@ impl<'a> Game<'a> {
         Ok(state)
     }
 
-    pub fn step_game(&mut self) -> bool {
+    pub fn step_game(&mut self) -> GameResult {
 
         match self.state {
             GameState::Playing => {
@@ -162,11 +168,11 @@ impl<'a> Game<'a> {
         }
     }
 
-    pub fn step_win(&mut self) -> bool {
+    fn step_win(&mut self) -> GameResult {
 
         match self.input_action {
             InputAction::Exit => {
-                return true;
+                return GameResult::Stop;
             }
 
             _ => {},
@@ -187,27 +193,27 @@ impl<'a> Game<'a> {
         self.state = GameState::Playing;
 
         // TODO Exit game on win for now
-        return true;
+        return GameResult::Stop;
     }
 
-    pub fn step_lose(&mut self) -> bool {
+    fn step_lose(&mut self) -> GameResult {
         match self.input_action {
             InputAction::Exit => {
-                return true;
+                return GameResult::Stop;
             }
 
             _ => {},
         }
 
-        return false;
+        return GameResult::Continue;
     }
 
-    pub fn step_playing(&mut self) -> bool {
+    fn step_playing(&mut self) -> GameResult {
         let player_handle = self.data.find_player().unwrap();
 
         /* Player Action and Animations */
         self.settings.previous_player_position =
-            (self.data.objects[player_handle].x, self.data.objects[player_handle].y);
+            self.data.objects[player_handle].pos();
 
         let player_action =
             actions::handle_input(self.input_action,
@@ -221,7 +227,7 @@ impl<'a> Game<'a> {
         }
 
         if self.settings.exiting {
-            return true;
+            return GameResult::Stop;
         }
 
         /* Check Exit Condition */
@@ -296,45 +302,16 @@ impl<'a> Game<'a> {
         }
 
         /* Recompute FOV */
-        if self.settings.previous_player_position != (self.data.objects.get(player_handle).unwrap().x, self.data.objects.get(player_handle).unwrap().y) {
-            let player_pos = self.data.objects[player_handle].pos();
+        let player_pos = self.data.objects[player_handle].pos();
+        if self.settings.previous_player_position != player_pos {
             self.data.map.compute_fov(player_pos, FOV_RADIUS);
         }
 
         self.input_action = InputAction::None;
 
-        return false; 
+        return GameResult::Continue;
     }
 }
-/*
-    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
-        self.mouse_state.pos = (x as i32, y as i32);
-    }
-
-    fn mouse_button_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        button: MouseButton,
-        _x: f32,
-        _y: f32,
-        ) {
-        self.mouse_state.pressed =
-            (button == MouseButton::Left,
-             button == MouseButton::Right,
-             button == MouseButton::Middle);
-    }
-
-    fn mouse_button_up_event(
-        &mut self,
-        _ctx: &mut Context,
-        _button: MouseButton,
-        _x: f32,
-        _y: f32,
-        ) {
-        self.mouse_state.pressed = (false, false, false);
-    }
-}
-*/
 
 /// Check whether the exit condition for the game is met.
 fn exit_condition_met(data: &GameData) -> bool {

@@ -82,6 +82,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     /* Main Game Loop */
     let mut running = true;
     while running {
+        /* Handle Events */
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit{ .. }=> {
@@ -105,6 +106,8 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                         MouseButton::Left => {
                             game.mouse_state.left_pressed = true;
 
+                            // Find the region where the mouse click occurred.
+                            // If the click is within the map, generate a map click event.
                             let in_map =
                                 game.display_state.zones.iter()
                                                         .filter(|zone| zone.contains(x as usize, y as usize) &&
@@ -121,18 +124,33 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                             }
                         }
 
-                        MouseButton::Middle => game.mouse_state.middle_pressed = true,
+                        MouseButton::Middle => {
+                            game.mouse_state.middle_pressed = true;
+                        }
 
-                        MouseButton::Right => game.mouse_state.right_pressed = true,
-                        _ => {},
+                        MouseButton::Right => {
+                            game.mouse_state.right_pressed = true;
+                        }
+
+                        _ => {
+                        },
                     }
                 }
 
                 Event::MouseButtonUp{mouse_btn, ..} => {
                     match mouse_btn {
-                        MouseButton::Left => game.mouse_state.left_pressed = false,
-                        MouseButton::Middle => game.mouse_state.middle_pressed = false,
-                        MouseButton::Right => game.mouse_state.right_pressed = false,
+                        MouseButton::Left => {
+                            game.mouse_state.left_pressed = false;
+                        }
+
+                        MouseButton::Middle => {
+                            game.mouse_state.middle_pressed = false;
+                        }
+
+                        MouseButton::Right => {
+                            game.mouse_state.right_pressed = false;
+                        }
+
                         _ => {},
                     }
                 }
@@ -141,17 +159,20 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             }
         }
 
+        /* Step the Game Forward */
         let exit_game = game.step_game();
-        if exit_game {
-            break;
+        if exit_game == GameResult::Stop {
+            running = false;
         }
 
+        /* Draw the Game to the Screen */
         render_all(&mut game.display_state,
                    &mut game.mouse_state,
                    &mut game.data,
                    &game.settings,
                    &game.config)?;
 
+        /* Wait until the next tick to loop */
         fps_throttler.wait();
     }
 
