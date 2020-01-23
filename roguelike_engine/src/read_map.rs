@@ -228,8 +228,7 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_SWIRL_CIRCLE => {
-                                // TODO should be different from elf
-                                objects.insert(make_pawn(config, pos, display_state));
+                                objects.insert*make_key(config, pos, display_state);
                             }
 
                             ENTITY_ORB => {

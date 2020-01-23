@@ -56,7 +56,7 @@ pub fn make_gol(config: &Config, pos: Pos, display_state: &DisplayState) -> Obje
     gol.behavior = Some(Behavior::Idle);
     gol.color = config.color_light_orange;
     gol.movement = Some(Reach::Single(GOL_MOVE_DISTANCE));
-    gol.attack = Some(Reach::DiagHoriz(GOL_ATTACK_DISTANCE));
+    gol.attack = Some(Reach::Single(GOL_ATTACK_DISTANCE));
     gol.alive = true;
 
     let sprite_handle = display_state.lookup_sprite("gol_idle".to_string())
@@ -74,7 +74,7 @@ pub fn make_spire(config: &Config, pos: Pos) -> Object {
     spire.behavior = Some(Behavior::Idle);
     spire.color = config.color_mint_green;
     spire.movement = Some(Reach::Single(SPIRE_MOVE_DISTANCE));
-    spire.attack = Some(Reach::Diag(SPIRE_ATTACK_DISTANCE));
+    spire.attack = Some(Reach::Single(SPIRE_ATTACK_DISTANCE));
     spire.alive = true;
 
     return spire;
@@ -88,7 +88,25 @@ pub fn make_pawn(config: &Config, pos: Pos, display_state: &DisplayState) -> Obj
     pawn.behavior = Some(Behavior::Idle);
     pawn.color = config.color_ice_blue;
     pawn.movement = Some(Reach::Single(PAWN_MOVE_DISTANCE));
-    pawn.attack = Some(Reach::Single(PAWN_MOVE_DISTANCE));
+    pawn.attack = Some(Reach::Single(PAWN_ATTACK_DISTANCE));
+    pawn.alive = true;
+
+    let sprite_handle = display_state.lookup_sprite("elf_idle".to_string())
+                                     .expect("Could not find sprite 'elf_idle'");
+    pawn.animation = Some(Animation::Idle(sprite_handle, 0.0));
+
+    return pawn;
+}
+
+pub fn make_key(config: &Config, pos: Pos, display_state: &DisplayState) -> Object {
+    let mut pawn = Object::new(pos.x, pos.y, '\u{A5}', config.color_orange, "key", true);
+
+    pawn.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, } );
+    pawn.ai = Some(Ai::Basic);
+    pawn.behavior = Some(Behavior::Idle);
+    pawn.color = config.color_ice_blue;
+    pawn.movement = Some(Reach::Single(KEY_MOVE_DISTANCE));
+    pawn.attack = Some(Reach::Single(KEY_ATTACK_DISTANCE));
     pawn.alive = true;
 
     let sprite_handle = display_state.lookup_sprite("elf_idle".to_string())

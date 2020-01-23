@@ -30,6 +30,10 @@ pub const SPIRE_ATTACK_DISTANCE: usize = 5;
 pub const SPIRE_MOVE_DISTANCE: usize = 1;
 
 pub const PAWN_MOVE_DISTANCE: usize = 1;
+pub const PAWN_ATTACK_DISTANCE: usize = 1;
+
+pub const KEY_ATTACK_DISTANCE: usize = 3;
+pub const KEY_MOVE_DISTANCE: usize = 2;
 
 pub const MAX_MOMENTUM: i32 = 2;
 
