@@ -75,6 +75,7 @@ pub enum Reach {
     Single(usize),
     Diag(usize),
     Horiz(usize),
+    DiagHoriz(usize),
 }
 
 impl Reach {
@@ -127,6 +128,22 @@ impl Reach {
                     MoveAction::Center => None,
                 }
             }
+
+            Reach::DiagHoriz(dist) => {
+                let dist = (*dist) as i32;
+                let neg_dist = dist * -1;
+                match move_action {
+                    MoveAction::Left => Some(Pos::new(neg_dist, 0)),
+                    MoveAction::Right => Some(Pos::new(dist, 0)),
+                    MoveAction::Up => Some(Pos::new(0, neg_dist)),
+                    MoveAction::Down => Some(Pos::new(0, dist)),
+                    MoveAction::DownLeft => Some(Pos::new(neg_dist, dist)),
+                    MoveAction::DownRight => Some(Pos::new(dist, dist)),
+                    MoveAction::UpLeft => Some(Pos::new(neg_dist, neg_dist)),
+                    MoveAction::UpRight => Some(Pos::new(dist, neg_dist)),
+                    MoveAction::Center => Some(Pos::new(0, 0)),
+                }
+            }
         }
     }
 
@@ -164,6 +181,12 @@ impl Reach {
                     offsets.push((-1 * dist, -1 * dist));
                 }
                 offsets.iter().map(|pair| Pos::from(*pair)).collect()
+            },
+
+            Reach::DiagHoriz(dist) => {
+                let mut offs = Reach::Diag(*dist).offsets();
+                offs.extend(Reach::Horiz(*dist).offsets().iter());
+                return offs;
             },
         }
     }

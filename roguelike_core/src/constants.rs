@@ -24,6 +24,12 @@ pub const MAX_MONSTERS: i32 = 15;
 pub const MONSTER_VIEW_DIST: i32 = 6;
 
 pub const GOL_ATTACK_DISTANCE: usize = 5;
+pub const GOL_MOVE_DISTANCE: usize = 1;
+
+pub const SPIRE_ATTACK_DISTANCE: usize = 5;
+pub const SPIRE_MOVE_DISTANCE: usize = 1;
+
+pub const PAWN_MOVE_DISTANCE: usize = 1;
 
 pub const MAX_MOMENTUM: i32 = 2;
 

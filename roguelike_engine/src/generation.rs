@@ -55,8 +55,8 @@ pub fn make_gol(config: &Config, pos: Pos, display_state: &DisplayState) -> Obje
     gol.ai = Some(Ai::Basic);
     gol.behavior = Some(Behavior::Idle);
     gol.color = config.color_light_orange;
-    gol.movement = Some(Reach::Single(1));
-    gol.attack = Some(Reach::Diag(GOL_ATTACK_DISTANCE));
+    gol.movement = Some(Reach::Single(GOL_MOVE_DISTANCE));
+    gol.attack = Some(Reach::DiagHoriz(GOL_ATTACK_DISTANCE));
     gol.alive = true;
 
     let sprite_handle = display_state.lookup_sprite("gol_idle".to_string())
@@ -66,36 +66,36 @@ pub fn make_gol(config: &Config, pos: Pos, display_state: &DisplayState) -> Obje
     return gol;
 } 
 
-pub fn make_troll(config: &Config, pos: Pos) -> Object {
-    let mut troll = Object::new(pos.x, pos.y, '\u{15}', config.color_orange, "troll", true);
+pub fn make_spire(config: &Config, pos: Pos) -> Object {
+    let mut spire = Object::new(pos.x, pos.y, '\u{15}', config.color_orange, "spire", true);
 
-    troll.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 10, } );
-    troll.ai = Some(Ai::Basic);
-    troll.behavior = Some(Behavior::Idle);
-    troll.color = config.color_mint_green;
-    troll.movement = Some(Reach::Single(1));
-    troll.attack = Some(Reach::Diag(4));
-    troll.alive = true;
+    spire.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 10, } );
+    spire.ai = Some(Ai::Basic);
+    spire.behavior = Some(Behavior::Idle);
+    spire.color = config.color_mint_green;
+    spire.movement = Some(Reach::Single(SPIRE_MOVE_DISTANCE));
+    spire.attack = Some(Reach::Diag(SPIRE_ATTACK_DISTANCE));
+    spire.alive = true;
 
-    return troll;
+    return spire;
 }
 
-pub fn make_elf(config: &Config, pos: Pos, display_state: &DisplayState) -> Object {
-    let mut elf = Object::new(pos.x, pos.y, '\u{A5}', config.color_orange, "elf", true);
+pub fn make_pawn(config: &Config, pos: Pos, display_state: &DisplayState) -> Object {
+    let mut pawn = Object::new(pos.x, pos.y, '\u{A5}', config.color_orange, "pawn", true);
 
-    elf.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, } );
-    elf.ai = Some(Ai::Basic);
-    elf.behavior = Some(Behavior::Idle);
-    elf.color = config.color_ice_blue;
-    elf.movement = Some(Reach::Horiz(1));
-    elf.attack = Some(Reach::Horiz(4));
-    elf.alive = true;
+    pawn.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, } );
+    pawn.ai = Some(Ai::Basic);
+    pawn.behavior = Some(Behavior::Idle);
+    pawn.color = config.color_ice_blue;
+    pawn.movement = Some(Reach::Single(PAWN_MOVE_DISTANCE));
+    pawn.attack = Some(Reach::Single(PAWN_MOVE_DISTANCE));
+    pawn.alive = true;
 
     let sprite_handle = display_state.lookup_sprite("elf_idle".to_string())
                                      .expect("Could not find sprite 'elf_idle'");
-    elf.animation = Some(Animation::Idle(sprite_handle, 0.0));
+    pawn.animation = Some(Animation::Idle(sprite_handle, 0.0));
 
-    return elf;
+    return pawn;
 }
 
 pub fn make_stone(config: &Config, pos: Pos) -> Object {
@@ -247,7 +247,7 @@ pub fn make_island(data: &mut GameData,
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
             if !is_blocked(pos, data) {
-                let monster = make_elf(config, pos, display_state);
+                let monster = make_pawn(config, pos, display_state);
                 data.objects.insert(monster);
                 break;
             }
@@ -259,7 +259,7 @@ pub fn make_island(data: &mut GameData,
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
             if !is_blocked(pos, data) {
-                let monster = make_troll(config, pos);
+                let monster = make_spire(config, pos);
                 data.objects.insert(monster);
                 break;
             }
