@@ -82,6 +82,11 @@ impl GameData {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Trap {
+    Spikes,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Default)]
 pub struct Color {
     pub r: u8,
@@ -308,6 +313,7 @@ pub struct Object {
     pub attack: Option<Reach>,
     pub animation: Option<Animation>,
     pub inventory: Vec<ObjectId>,
+    pub trap: Option<Trap>,
 }
 
 impl Object {
@@ -329,6 +335,7 @@ impl Object {
             attack: None,
             animation: None,
             inventory: Vec::new(),
+            trap: None,
         }
     }
 

@@ -8,12 +8,14 @@ use crate::types::*;
 use crate::ai::*;
 
 
+pub type Loudness = usize;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Movement {
     Move(Pos),
     Attack(Pos, ObjectId),
     Collide(Pos),
-    WallKick(Pos, i32, i32), // x, y, dir_x, dir_y
+    WallKick(Pos, i32, i32), // (x, y), dir_x, dir_y
     JumpWall(Pos),
 }
 
@@ -75,7 +77,6 @@ pub enum Reach {
     Single(usize),
     Diag(usize),
     Horiz(usize),
-    DiagHoriz(usize),
 }
 
 impl Reach {
@@ -219,8 +220,9 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Ac
 
     let player_handle = data.find_player().unwrap();
 
+    let player_reach = data.objects[player_handle].movement.unwrap();
     let movement = calculate_move(move_action,
-                                  data.objects[player_handle].movement.unwrap(),
+                                  player_reach,
                                   player_handle,
                                   data);
 

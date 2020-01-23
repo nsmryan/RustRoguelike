@@ -103,6 +103,8 @@ impl<'a> Game<'a> {
 
                 objects.insert(make_goal(&config, Pos::new(player_position.0 - 1, player_position.1)));
                 objects.insert(make_mouse(&config, &display_state));
+                objects.insert(make_spikes(&config, Pos::new(player_position.0, player_position.1 - 2), &display_state));
+
                 let exit_position = (player_position.0 + 1, player_position.1 - 1);
                 map[exit_position].tile_type = TileType::Exit;
                 map[exit_position].chr = Some(MAP_ORB as char);
@@ -256,6 +258,27 @@ impl<'a> Game<'a> {
 
                         self.data.objects.remove(key);
                     }
+                }
+            }
+        }
+
+        /* Traps */
+        let mut traps = Vec::new();
+        for key in self.data.objects.keys() {
+            for other in self.data.objects.keys() {
+                if self.data.objects[key].trap.is_some() && // key is a trap
+                   self.data.objects[other].alive && // entity is alive
+                   self.data.objects[other].fighter.is_some() && // entity is a fighter
+                   self.data.objects[key].pos() == self.data.objects[other].pos() {
+                    traps.push((key, other));
+                }
+            }
+        }
+
+        for (trap, entity) in traps.iter() {
+            match self.data.objects[*trap].trap.unwrap() {
+                Trap::Spikes => {
+                    self.data.objects[*entity].take_damage(SPIKE_DAMAGE);
                 }
             }
         }

@@ -98,6 +98,20 @@ pub fn make_pawn(config: &Config, pos: Pos, display_state: &DisplayState) -> Obj
     return pawn;
 }
 
+pub fn make_spikes(config: &Config, pos: Pos, display_state: &DisplayState) -> Object {
+    let mut spikes = Object::new(pos.x, pos.y, MAP_TALL_SPIKES as char, config.color_ice_blue, "spike", false);
+
+    spikes.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, } );
+    spikes.trap = Some(Trap::Spikes);
+    spikes.color = config.color_ice_blue;
+
+    let sprite_handle = display_state.lookup_sprite("spikes".to_string())
+                                     .expect("Could not find sprite 'spikes'");
+    spikes.animation = Some(Animation::Idle(sprite_handle, 0.0));
+
+    return spikes;
+}
+
 pub fn make_key(config: &Config, pos: Pos, display_state: &DisplayState) -> Object {
     let mut pawn = Object::new(pos.x, pos.y, '\u{A5}', config.color_orange, "key", true);
 

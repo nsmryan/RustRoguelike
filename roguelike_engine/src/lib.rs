@@ -60,11 +60,15 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let elf_idle = texture_creator.load_texture("animations/monster3/Elf_Idle.png")
         .map_err(|e| e.to_string())?;
 
+    let spikes_anim = texture_creator.load_texture("animations/traps/DamageTrap.png")
+        .map_err(|e| e.to_string())?;
+
     let mut sprites = DenseSlotMap::new();
     sprites.insert(SpriteSheet::new("player_wall_kick".to_string(), player_wall_kick));
     sprites.insert(SpriteSheet::new("player_idle".to_string(), player_idle));
     sprites.insert(SpriteSheet::new("gol_idle".to_string(), gol_idle));
     sprites.insert(SpriteSheet::new("elf_idle".to_string(), elf_idle));
+    sprites.insert(SpriteSheet::new("spikes".to_string(), spikes_anim));
 
     /* Create Display Structures */
     let screen_sections =
