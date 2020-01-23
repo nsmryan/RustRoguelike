@@ -56,7 +56,7 @@ pub fn make_gol(config: &Config, pos: Pos, display_state: &DisplayState) -> Obje
     gol.behavior = Some(Behavior::Idle);
     gol.color = config.color_light_orange;
     gol.movement = Some(Reach::Single(1));
-    gol.attack = Some(Reach::Diag(4));
+    gol.attack = Some(Reach::Diag(GOL_ATTACK_DISTANCE));
     gol.alive = true;
 
     let sprite_handle = display_state.lookup_sprite("gol_idle".to_string())

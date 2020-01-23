@@ -105,6 +105,7 @@ impl<'a> Game<'a> {
                 objects.insert(make_mouse(&config, &display_state));
                 let exit_position = (player_position.0 + 1, player_position.1 - 1);
                 map[exit_position].tile_type = TileType::Exit;
+                map[exit_position].chr = Some(MAP_ORB as char);
             }
 
             MapLoadConfig::Random => {

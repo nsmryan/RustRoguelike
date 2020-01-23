@@ -1,39 +1,37 @@
 pub const CONFIG_FILE_NAME: &str = &"config.json";
 
+/* Screen and font */
 pub const FONT_WIDTH: i32 = 16;
 pub const FONT_HEIGHT: i32 = 16;
 
 pub const SCREEN_WIDTH: u32 = 1000;
 pub const SCREEN_HEIGHT: u32 = 800;
-pub const LIMIT_FPS: i32 = 20;
 
+/* FPS */
+pub const LIMIT_FPS: i32 = 20;
 pub const TIME_BETWEEN_FRAMES_MS: i64 = 25;
 
-pub const MAP_WIDTH: i32 = 30;
-pub const MAP_HEIGHT: i32 = 30;
-
-pub const FOV_LIGHT_WALLS: bool = true;
-pub const TORCH_RADIOUS: i32 = 10;
-pub const FOV_RADIUS: i32 = 10;
-pub const HEAL_AMOUNT: i32 = 4;
+/* Sound */
 pub const SOUND_RADIUS: usize = 3;
 pub const STONE_SOUND_RADIUS: usize = 5;
 
-pub const ROOM_MAX_SIZE: i32 = 10;
-pub const ROOM_MIN_SIZE: i32 = 6;
-pub const MAX_ROOMS: i32 = 30;
-pub const MAX_ROOM_ITEMS: i32 = 12;
+/* General Settings */
+pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
 
+/* Monster Settings */
 pub const MAX_MONSTERS: i32 = 15;
 
 pub const MONSTER_VIEW_DIST: i32 = 6;
 
+pub const GOL_ATTACK_DISTANCE: usize = 5;
 
-pub const PLAYER: usize = 0;
 pub const MAX_MOMENTUM: i32 = 2;
 
+/* Player */
+pub const PLAYER: usize = 0;
 pub const PLAYER_THROW_DIST: usize = 5;
 
+/* UI */
 pub const BAR_WIDTH: u32 = 20;
 pub const PANEL_HEIGHT: u32 = 7;
 pub const PANEL_Y: u32 = SCREEN_HEIGHT - PANEL_HEIGHT;
@@ -44,7 +42,12 @@ pub const MSG_HEIGHT: u32 = PANEL_HEIGHT - 1;
 
 pub const INVENTORY_WIDTH: i32 = 50;
 
-pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
+/* Map and View */
+pub const MAP_WIDTH: i32 = 30;
+pub const MAP_HEIGHT: i32 = 30;
+
+pub const FOV_LIGHT_WALLS: bool = true;
+pub const FOV_RADIUS: i32 = 10;
 
 pub const ISLAND_RADIUS: i32 = 15;
 pub const ISLAND_NUM_OBSTACLES: i32 = 15;
