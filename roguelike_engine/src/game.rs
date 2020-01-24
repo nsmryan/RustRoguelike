@@ -6,6 +6,8 @@ use std::hash::{Hash, Hasher};
 
 use rand::prelude::*;
 
+use tcod::line::*;
+
 use slotmap::dense::*;
 
 use roguelike_core::constants::*;
@@ -14,8 +16,10 @@ use roguelike_core::config::*;
 use roguelike_core::ai::*;
 use roguelike_core::map::*;
 
+use crate::actions;
 use crate::generation::*;
 use crate::display::*;
+use crate::input;
 use crate::input::*;
 use crate::read_map::*;
 
@@ -214,14 +218,14 @@ impl<'a> Game<'a> {
             self.data.objects[player_handle].pos();
 
         let player_action =
-            input::handle_input(self.input_action,
-                                &mut self.mouse_state,
-                                &mut self.data,
-                                &mut self.settings,
-                                &mut self.display_state,
-                                &self.config);
+            actions::handle_input(self.input_action,
+                                 &mut self.mouse_state,
+                                 &mut self.data,
+                                 &mut self.settings,
+                                 &mut self.display_state,
+                                 &self.config);
 
-        action::player_apply_action(player_action, &mut self.data);
+        actions::player_apply_action(player_action, &mut self.data);
 
         if player_action != Action::NoAction {
             self.settings.turn_count += 1;
