@@ -1,22 +1,25 @@
-use std::ops::Add;
-
 use crate::map::*;
 use crate::types::*;
 use crate::constants::*;
 use crate::movement::*;
 
 
-pub fn move_by(handle: ObjectId, dx: i32, dy: i32, data: &mut GameData) {
-    let pos = data.objects[handle].pos();
+pub fn ai_take_turn(monster_handle: ObjectId, data: &mut GameData) {
+    let turn: Action;
 
-    if !is_blocked(Pos::new(pos.x + dx, pos.y + dy), data) {
-        data.objects[handle].set_xy(pos.x + dx, pos.y + dy);
+    match data.objects[monster_handle].ai {
+        Some(Ai::Basic) => {
+            turn = basic_ai_take_turn(monster_handle, data);
+        }
+
+        None => {
+            turn = Action::none();
+        }
     }
-}
 
-// TOOD move to a utils module
-pub fn add_pos(pos1: Pos, pos2: Pos) -> Pos {
-    return Pos::new(pos1.x + pos2.x, pos1.y + pos2.y);
+    ai_apply_actions(monster_handle,
+                     turn,
+                     data);
 }
 
 pub fn step_towards(start_pos: Pos, target_pos: Pos) -> Pos {
@@ -44,7 +47,7 @@ pub fn ai_attack(monster_handle: ObjectId,
                           data.objects[monster_handle].pos(),
                           data.objects[target_handle].pos(),
                           &data.objects[monster_handle].attack.unwrap()) {
-        turn = Action::Attack(target_handle, hit_pos);
+        turn = Action::Move(Movement::Attack(hit_pos, target_handle));
     } else if data.map.is_blocked_by_wall(monster_pos, target_pos.x - monster_pos.x, target_pos.y - monster_pos.y) {
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else { // otherwise attempt to move towards their target
@@ -207,24 +210,6 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
     }
 }
 
-pub fn ai_take_turn(monster_handle: ObjectId, data: &mut GameData) {
-    let turn: Action;
-
-    match data.objects[monster_handle].ai {
-        Some(Ai::Basic) => {
-            turn = basic_ai_take_turn(monster_handle, data);
-        }
-
-        None => {
-            turn = Action::none();
-        }
-    }
-
-    ai_apply_actions(monster_handle,
-                     turn,
-                     data);
-}
-
 pub fn ai_apply_actions(monster_handle: ObjectId,
                         turn: Action,
                         data: &mut GameData) {
@@ -232,18 +217,15 @@ pub fn ai_apply_actions(monster_handle: ObjectId,
         Action::Move(movement) => {
             match movement {
                 Movement::Move(pos) => {
-                    move_by(monster_handle, pos.x, pos.y, data);
+                    data.move_by(monster_handle, pos.x, pos.y);
                 }
+
+                Movement::Attack(_pos, target_handle) => {
+                    attack(monster_handle, target_handle, &mut data.objects);
+                },
 
                 _ => panic!("Unexpected movement!"),
             }
-        },
-
-        Action::Attack(target_handle, _pos) => {
-            //let (target, monster) = mut_two(*target_handle, monster_handle, &mut data.objects);
-
-            // apply attack 
-            attack(monster_handle, target_handle, &mut data.objects);
         },
 
         Action::StateChange(behavior) => {
@@ -252,14 +234,6 @@ pub fn ai_apply_actions(monster_handle: ObjectId,
 
         _ => {
         }
-    }
-}
-
-pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap) {
-    let damage = objects[handle].fighter.map_or(0, |f| f.power) -
-                 objects[other_handle].fighter.map_or(0, |f| f.defense);
-    if damage > 0 {
-        objects[other_handle].take_damage(damage);
     }
 }
 

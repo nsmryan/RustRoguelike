@@ -5,7 +5,6 @@ use tcod::line::*;
 use euclid::*;
 
 use crate::types::*;
-use crate::ai::*;
 
 
 pub type Loudness = usize;
@@ -213,21 +212,15 @@ impl Collision {
     }
 }
 
-pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Action {
+pub fn player_move_or_attack(movement: Movement, data: &mut GameData) -> Action {
     use Action::*;
 
     let player_action: Action;
 
     let player_handle = data.find_player().unwrap();
 
-    let player_reach = data.objects[player_handle].movement.unwrap();
-    let movement = calculate_move(move_action,
-                                  player_reach,
-                                  player_handle,
-                                  data);
-
     match movement {
-        Some(Movement::Attack(new_pos, target_handle)) => {
+        Movement::Attack(new_pos, target_handle) => {
             attack(player_handle, target_handle, &mut data.objects);
 
             // if we attack without moving, we lost all our momentum
@@ -237,16 +230,16 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Ac
 
             data.objects[player_handle].set_pos(new_pos);
 
-            player_action = Move(movement.unwrap());
+            player_action = Move(movement);
         }
 
-        Some(Movement::Collide(pos)) => {
+        Movement::Collide(pos) => {
             data.objects[player_handle].set_pos(pos);
             data.objects[player_handle].momentum.unwrap().clear();
-            player_action = Move(movement.unwrap());
+            player_action = Move(movement);
         }
 
-        Some(Movement::Move(pos)) | Some(Movement::JumpWall(pos)) => {
+        Movement::Move(pos) | Movement::JumpWall(pos) => {
             let (x, y) = pos.to_tuple();
             let (dx, dy) = (x - data.objects[player_handle].x, y - data.objects[player_handle].y);
 
@@ -258,11 +251,11 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Ac
 
             // Resolve half-turn mechanic
             if momentum.magnitude() > 1 && !momentum.took_half_turn {
-                player_action = Move(movement.unwrap());
+                player_action = Move(movement);
             } else if dx == 0 && dy == 0 {
                 player_action = Action::none();
             } else {
-                player_action = Move(movement.unwrap());
+                player_action = Move(movement);
             }
 
             // update half turn flag
@@ -271,7 +264,7 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Ac
                     .momentum
                     .as_mut()
                     .map(|momentum| momentum.took_half_turn =
-                         player_action == Move(movement.unwrap()));
+                         player_action == Move(movement));
 
                 // Set up sound for movement
                 let momentum_amount = data.objects[player_handle].momentum.unwrap();
@@ -281,7 +274,7 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Ac
             }
         }
 
-        Some(Movement::WallKick(pos, dir_x, dir_y)) => {
+        Movement::WallKick(pos, dir_x, dir_y) => {
             let mut momentum = data.objects[player_handle].momentum.unwrap();
             data.objects[player_handle].set_pos(pos);
             momentum.set_momentum(dir_x, dir_y);
@@ -294,11 +287,7 @@ pub fn player_move_or_attack(move_action: MoveAction, data: &mut GameData) -> Ac
             */
 
             // TODO could check for enemy and attack
-            player_action = Move(movement.unwrap());
-        }
-
-        None => {
-            player_action = Action::none();
+            player_action = Move(movement);
         }
     }
 
@@ -326,7 +315,7 @@ pub fn check_collision(pos: Pos,
 
         for pos in move_line.into_iter() {
             let pos = Pos::from(pos);
-            if is_blocked(pos, data) {
+            if data.is_blocked(pos) {
                 if data.map[pos].blocked {
                     result = Collision::BlockedTile(pos, last_pos);
                 } else {
@@ -375,7 +364,7 @@ pub fn calculate_move(action: MoveAction,
                         // and there is space beyond the wall, than jump over the wall.
                         if momentum.at_maximum() &&
                            momentum.along(dx, dy) && 
-                           !is_blocked(tile_pos, data) {
+                           !data.is_blocked(tile_pos) {
                                 movement = Some(Movement::JumpWall(tile_pos));
                         } else { // otherwise move normally, stopping just before the blocking tile
                             movement = Some(Movement::Move(new_pos));
@@ -401,26 +390,6 @@ pub fn calculate_move(action: MoveAction,
     }
 
     return movement;
-}
-
-pub fn is_blocked(pos: Pos, data: &GameData) -> bool {
-    if !data.map.is_within_bounds(pos) {
-        return true;
-    }
-
-    if data.map[pos].blocked {
-        return true;
-    }
-
-    let mut is_blocked = false;
-    for object in data.objects.values() {
-        if object.blocks && object.pos() == pos {
-            is_blocked = true;
-            break;
-        }
-    }
-
-    return is_blocked;
 }
 
 pub fn direction(value: i32) -> i32 {

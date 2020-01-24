@@ -73,12 +73,40 @@ impl GameData {
         let line = Line::new((start.x, start.y), (end.x, end.y));
     
         let path_blocked =
-            line.into_iter().any(|point| is_blocked(Pos::from(point), self));
+            line.into_iter().any(|point| self.is_blocked(Pos::from(point)));
     
         let (dx, dy) = (end.x - start.x, end.y - start.y);
 
         return !path_blocked &&
                !self.map.is_blocked_by_wall(start, dx, dy);
+    }
+
+    pub fn move_by(&mut self, handle: ObjectId, dx: i32, dy: i32) {
+        let pos = self.objects[handle].pos();
+
+        if !self.is_blocked(Pos::new(pos.x + dx, pos.y + dy)) {
+            self.objects[handle].set_xy(pos.x + dx, pos.y + dy);
+        }
+    }
+
+    pub fn is_blocked(&self, pos: Pos) -> bool {
+        if !self.map.is_within_bounds(pos) {
+            return true;
+        }
+
+        if self.map[pos].blocked {
+            return true;
+        }
+
+        let mut is_blocked = false;
+        for object in self.objects.values() {
+            if object.blocks && object.pos() == pos {
+                is_blocked = true;
+                break;
+            }
+        }
+
+        return is_blocked;
     }
 }
 
@@ -150,9 +178,9 @@ pub enum Item {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Action {
     Move(Movement),
-    Attack(ObjectId, Pos),
     StateChange(Behavior),
-    ThrowStone,
+    Pickup(ObjectId),
+    ThrowStone(Pos, ObjectId),
     NoAction,
 }
 
@@ -389,5 +417,17 @@ impl Object {
 
 pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
     return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt() as i32;
+}
+
+pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap) {
+    let damage = objects[handle].fighter.map_or(0, |f| f.power) -
+                 objects[other_handle].fighter.map_or(0, |f| f.defense);
+    if damage > 0 {
+        objects[other_handle].take_damage(damage);
+    }
+}
+
+pub fn add_pos(pos1: Pos, pos2: Pos) -> Pos {
+    return Pos::new(pos1.x + pos2.x, pos1.y + pos2.y);
 }
 

@@ -266,7 +266,7 @@ pub fn make_island(data: &mut GameData,
         loop {
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !is_blocked(pos, data) {
+            if !data.is_blocked(pos) {
                 let monster = make_gol(config, pos, display_state);
                 data.objects.insert(monster);
                 break;
@@ -278,7 +278,7 @@ pub fn make_island(data: &mut GameData,
         loop {
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !is_blocked(pos, data) {
+            if !data.is_blocked(pos) {
                 let monster = make_pawn(config, pos, display_state);
                 data.objects.insert(monster);
                 break;
@@ -290,7 +290,7 @@ pub fn make_island(data: &mut GameData,
         loop {
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !is_blocked(pos, data) {
+            if !data.is_blocked(pos) {
                 let monster = make_spire(config, pos);
                 data.objects.insert(monster);
                 break;
@@ -302,7 +302,7 @@ pub fn make_island(data: &mut GameData,
     let y = rng.gen_range(0, data.map.height());
     let pos = Pos::new(x, y);
 
-    if !is_blocked(pos, data) {
+    if !data.is_blocked(pos) {
         let mut object = Object::new(x, y, ENTITY_GOAL as char, config.color_red, "goal", false);
         object.item = Some(Item::Goal);
         data.objects.insert(object);

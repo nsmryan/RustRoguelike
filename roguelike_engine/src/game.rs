@@ -18,7 +18,6 @@ use crate::generation::*;
 use crate::display::*;
 use crate::input::*;
 use crate::read_map::*;
-use crate::actions;
 
 
 #[derive(Copy, Clone, PartialEq)]
@@ -215,21 +214,24 @@ impl<'a> Game<'a> {
             self.data.objects[player_handle].pos();
 
         let player_action =
-            actions::handle_input(self.input_action,
-                                  &mut self.mouse_state,
-                                  &mut self.data,
-                                  &mut self.settings,
-                                  &mut self.display_state,
-                                  &self.config);
+            input::handle_input(self.input_action,
+                                &mut self.mouse_state,
+                                &mut self.data,
+                                &mut self.settings,
+                                &mut self.display_state,
+                                &self.config);
+
+        action::player_apply_action(player_action, &mut self.data);
+
         if player_action != Action::NoAction {
             self.settings.turn_count += 1;
         }
 
+        /* Check Exit Conditions */
         if self.settings.exiting {
             return GameResult::Stop;
         }
 
-        /* Check Exit Condition */
         if exit_condition_met(&self.data) {
             self.state = GameState::Win;
         }
@@ -286,6 +288,7 @@ impl<'a> Game<'a> {
         // check if player lost all hp
         if let Some(fighter) = self.data.objects[player_handle].fighter {
             if fighter.hp <= 0 {
+                // modify player
                 {
                     let player = &mut self.data.objects[player_handle];
                     player.alive = false;
