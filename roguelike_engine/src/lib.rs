@@ -9,6 +9,9 @@ pub mod render;
 mod throttler;
 
 use std::time::Duration;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
@@ -18,7 +21,9 @@ use slotmap::dense::*;
 
 use roguelike_core::types::*;
 use roguelike_core::config::*;
+use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
+use roguelike_core::animation::Effect;
 
 use crate::display::*;
 use crate::render::*;
@@ -26,6 +31,7 @@ use crate::plat::*;
 use crate::game::*;
 use crate::input::*;
 use crate::throttler::*;
+use crate::read_map::read_map_xp;
 
 
 pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
@@ -169,12 +175,59 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             running = false;
         }
 
+        /* Handle Message Log */
+        for msg in game.msg_log.messages.iter() {
+            println!("{}", msg.msg_line(&game.data));
+
+            match msg {
+                Msg::StoneThrow(thrower, stone_id, start, end) => {
+                    game.display_state.play_effect(Effect::Sound(*end, 0, STONE_SOUND_RADIUS));
+                }
+
+                Msg::Moved(object_id, pos) => {
+                    let player_handle = game.data.find_player().unwrap();
+                    if *object_id == player_handle {
+                        game.display_state.play_effect(Effect::Sound(*pos, 0, SOUND_RADIUS));
+                    }
+                }
+
+                _ => {
+                }
+            }
+        }
+        game.msg_log.clear();
+
         /* Draw the Game to the Screen */
         render_all(&mut game.display_state,
                    &mut game.mouse_state,
                    &mut game.data,
                    &game.settings,
                    &game.config)?;
+
+        /* Reload map if configured to do so */
+        if game.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
+            let player_handle = game.data.find_player().unwrap();
+
+            let (new_objects, new_map, _) = read_map_xp(&game.config, &game.display_state, "resources/map.xp");
+            game.data.map = new_map;
+            game.data.objects[player_handle].inventory.clear();
+            let player = game.data.objects[player_handle].clone();
+            game.data.objects.clear();
+            for key in new_objects.keys() {
+                game.data.objects.insert(new_objects[key].clone());
+            }
+            game.data.objects.insert(player);
+        }
+
+        /* Reload Configuration */
+        match File::open("config.json") {
+            Ok(mut file) => {
+                let mut config_string = String::new();
+                file.read_to_string(&mut config_string).expect("Could not read config file!");
+                game.config = serde_json::from_str(&config_string).expect("Could not read JSON- config.json has a parsing error!");
+            }
+            _ => (),
+        }
 
         /* Wait until the next tick to loop */
         fps_throttler.wait();

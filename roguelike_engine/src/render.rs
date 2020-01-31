@@ -15,7 +15,8 @@ use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::animation::Animation;
+use roguelike_core::animation::{Effect, Animation};
+use roguelike_core::utils::distance;
 
 use crate::plat::*;
 use crate::display::*;
@@ -439,6 +440,50 @@ pub fn render_map(display_state: &mut DisplayState,
     }
 }
 
+/// Render each effect currently playing in the game
+/// The strategy here is to copy the effects vector, update all items,
+/// and then remove finished effects from back to front. The
+/// resulting vector of effects is then saved as the new effects vector.
+pub fn render_effects(display_state: &mut DisplayState,
+                      game_data: &mut GameData,
+                      settings: &GameSettings,
+                      config: &Config,
+                      area: &Area) {
+    let mut remove_indices = Vec::new();
+
+    let mut effects = display_state.effects.clone();
+
+    for (index, effect) in effects.iter_mut().enumerate() {
+        match effect {
+            Effect::Sound(pos, ref mut current_radius, max_radius) => {
+                let mut highlight_color = config.color_warm_grey;
+                highlight_color.a = config.sound_alpha;
+
+                if *current_radius < *max_radius {
+                    *current_radius += 1;
+                    for sound_x in 0..game_data.map.width() {
+                        for sound_y in 0..game_data.map.height() {
+                            if distance(Pos::new(pos.x, pos.y), Pos::new(sound_x, sound_y)) == *current_radius as i32 {
+                                display_state.draw_char(MAP_EMPTY_CHAR as char, sound_x, sound_y, highlight_color, area);
+                            }
+                        }
+                    }
+                } else {
+                    remove_indices.push(index);
+                }
+            }
+        }
+    }
+
+    remove_indices.sort();
+    remove_indices.reverse();
+    for index in remove_indices {
+        effects.swap_remove(index);
+    }
+
+    display_state.effects = effects;
+}
+
 /// Render each object in the game, filtering for objects not currently visible
 pub fn render_objects(display_state: &mut DisplayState,
                       data: &mut GameData,
@@ -463,40 +508,36 @@ pub fn render_objects(display_state: &mut DisplayState,
 
            // TODO consider make FOV a setting in map, which is set by god_mode
             match object.animation {
-                Some(Animation::StoneThrow(start, end)) => {
-                    display_state.draw_char(object.chr, start.x, start.y, object.color, area);
-                    if start == end {
-                        object.animation = None;
-
-                        let mut sound = Object::new(end.x, end.y, ' ' as char, Color::white(), "sound", false);
-                        sound.animation = Some(Animation::Sound(0, STONE_SOUND_RADIUS));
-                        new_objects.push(sound);
-
-                    } else {
-                        let new_start = (start.x + direction(end.x - start.x),
-                                         start.y + direction(end.y - start.y));
-                        let new_start_pos = Pos::from(new_start);
-                        object.animation = Some(Animation::StoneThrow(new_start_pos, end));
-                    }
-                }
-
-                Some(Animation::Idle(sprite_key, ref mut sprite_val)) => {
+                Some(Animation::Between(ref mut sprite, ref mut start, end, dist)) => {
                    if settings.god_mode || is_in_fov {
-                        let sprite_index = (*sprite_val) as i32;
-                        display_state.draw_sprite(sprite_key,
-                                                 sprite_index,
-                                                 x,
-                                                 y,
-                                                 object.color,
-                                                 &area);
-                        *sprite_val = *sprite_val + config.idle_speed;
-                        if *sprite_val as usize >= display_state.sprites[sprite_key].num_sprites {
-                            *sprite_val = 0.0;
-                        }
+                       let draw_pos = (start.x + direction(end.x - start.x),
+                                       start.y + direction(end.y - start.y));
+                       let new_start_pos = Pos::from(draw_pos);
+                        display_state.draw_sprite(sprite.sprite_key,
+                                                  sprite.index as i32,
+                                                  new_start_pos.x,
+                                                  new_start_pos.y,
+                                                  object.color,
+                                                  &area);
+                       sprite.step();
+                       *start = new_start_pos;
+                   }
+                }
+
+                Some(Animation::Loop(ref mut sprite)) => {
+                   if settings.god_mode || is_in_fov {
+                        display_state.draw_sprite(sprite.sprite_key,
+                                                  sprite.index as i32,
+                                                  x,
+                                                  y,
+                                                  object.color,
+                                                  &area);
+                        sprite.step();
                     }
                 }
 
-                Some(Animation::WallKick(sprite_key, ref mut sprite_val, _start, end)) => {
+                /*
+                Some(Animation::Then(initial, next) =
                     if settings.god_mode || is_in_fov {
                         let sprite_index = (*sprite_val) as i32;
                         display_state.draw_sprite(sprite_key,
@@ -511,40 +552,7 @@ pub fn render_objects(display_state: &mut DisplayState,
                         }
                     }
                 }
-
-                Some(Animation::Sound(ref mut current_radius, max_radius)) => {
-                    let mut highlight_color = config.color_warm_grey;
-                    highlight_color.a = config.sound_alpha;
-
-                    if *current_radius <= max_radius {
-                        *current_radius += 1;
-                        for sound_x in 0..data.map.width() {
-                            for sound_y in 0..data.map.height() {
-                                if distance(Pos::new(x, y), Pos::new(sound_x, sound_y)) == *current_radius as i32 {
-                                    display_state.draw_char(MAP_EMPTY_CHAR as char, sound_x, sound_y, highlight_color, area);
-                                }
-                            }
-                        }
-                    } else {
-                        // TODO find a way to remove the sound object
-                    }
-                }
-
-                Some(Animation::Attack(sprite_key, ref mut sprite_val)) => {
-                    if settings.god_mode || is_in_fov {
-                        let sprite_index = (*sprite_val) as i32;
-                        display_state.draw_sprite(sprite_key,
-                                                 sprite_index,
-                                                 end.x,
-                                                 end.y,
-                                                 object.color,
-                                                 &area);
-                        *sprite_val = *sprite_val + config.idle_speed;
-                        if *sprite_val as usize >= display_state.sprites[sprite_key].num_sprites {
-                            *sprite_val = 0.0;
-                        }
-                    }
-                }
+                */
 
                 // otherwise just draw the objects character (the default)
                 _ => {
@@ -709,6 +717,8 @@ pub fn render_all(display_state: &mut DisplayState,
                 render_map(display_state, data, &area, settings, config);
 
                 render_objects(display_state, data, settings, config, &area);
+
+                render_effects(display_state, data, settings, config, &area);
 
                 render_overlays(display_state, mouse_map_pos, data, &area, config);
             }

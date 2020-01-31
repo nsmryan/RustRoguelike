@@ -1,12 +1,8 @@
 use sdl2::keyboard::Keycode;
 use sdl2::keyboard::Mod;
 
-use tcod::line::*;
-
 use roguelike_core::types::*;
-use roguelike_core::constants::*;
 use roguelike_core::movement::*;
-use roguelike_core::animation::Animation;
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -108,40 +104,5 @@ pub fn map_keycode_to_action(keycode: Keycode, keymods: Mod) -> InputAction {
     }
 
     return input_action;
-}
-
-pub fn pick_item_up(object_id: ObjectId,
-                    item_id: ObjectId,
-                    objects: &mut ObjMap) {
-    objects[object_id].inventory.push(item_id);
-    objects[item_id].set_xy(-1, -1);
-}
-
-pub fn throw_stone(start_pos: Pos,
-                   end_pos: Pos,
-                   stone_handle: ObjectId,
-                   game_data: &mut GameData) {
-    let throw_line = Line::new(start_pos.to_tuple(), end_pos.to_tuple());
-
-    // TODO draw line to end, and move until radius or hit wall
-
-    // get target position in direction of player click
-    let (target_x, target_y) =
-        throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
-
-    game_data.objects[stone_handle].set_xy(target_x, target_y);
-
-    // Create the stone throw animation
-    game_data.objects[stone_handle].animation =
-        Some(Animation::StoneThrow(start_pos, Pos::new(target_x, target_y)));
-
-    // alert monsters within sound range
-    for obj in game_data.objects.values_mut() {
-        if distance(obj.pos(), end_pos) < SOUND_RADIUS as i32 {
-            if obj.behavior == Some(Behavior::Idle) {
-                obj.behavior = Some(Behavior::Investigating(Pos::from(end_pos)));
-            }
-        }
-    }
 }
 

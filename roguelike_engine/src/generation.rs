@@ -6,6 +6,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::Animation;
+use roguelike_core::utils::distance;
 
 use crate::display::*;
 use crate::read_map::*;
@@ -29,9 +30,9 @@ pub fn make_player(_config: &Config, display_state: &DisplayState) -> Object {
     player.movement = Some(Reach::Single(1));
     player.attack = Some(Reach::Single(1));
 
-    let sprite_handle = display_state.lookup_sprite("player_idle".to_string())
+    let sprite = display_state.new_sprite("player_idle".to_string())
                                      .expect("Could not find sprite 'player_idle'");
-    player.animation = Some(Animation::Idle(sprite_handle, 0.0));
+    player.animation = Some(Animation::Loop(sprite));
 
     player
 }
@@ -60,9 +61,9 @@ pub fn make_gol(config: &Config, pos: Pos, display_state: &DisplayState) -> Obje
     gol.attack = Some(Reach::Single(GOL_ATTACK_DISTANCE));
     gol.alive = true;
 
-    let sprite_handle = display_state.lookup_sprite("gol_idle".to_string())
+    let sprite = display_state.new_sprite("gol_idle".to_string())
                                      .expect("Could not find sprite 'gol_idle'");
-    gol.animation = Some(Animation::Idle(sprite_handle, 0.0));
+    gol.animation = Some(Animation::Loop(sprite));
     
     return gol;
 } 
@@ -92,9 +93,9 @@ pub fn make_pawn(config: &Config, pos: Pos, display_state: &DisplayState) -> Obj
     pawn.attack = Some(Reach::Single(PAWN_ATTACK_DISTANCE));
     pawn.alive = true;
 
-    let sprite_handle = display_state.lookup_sprite("elf_idle".to_string())
+    let sprite = display_state.new_sprite("elf_idle".to_string())
                                      .expect("Could not find sprite 'elf_idle'");
-    pawn.animation = Some(Animation::Idle(sprite_handle, 0.0));
+    pawn.animation = Some(Animation::Loop(sprite));
 
     return pawn;
 }
@@ -106,9 +107,9 @@ pub fn make_spikes(config: &Config, pos: Pos, display_state: &DisplayState) -> O
     spikes.trap = Some(Trap::Spikes);
     spikes.color = config.color_ice_blue;
 
-    let sprite_handle = display_state.lookup_sprite("spikes".to_string())
+    let sprite = display_state.new_sprite("spikes".to_string())
                                      .expect("Could not find sprite 'spikes'");
-    spikes.animation = Some(Animation::Idle(sprite_handle, 0.0));
+    spikes.animation = Some(Animation::Loop(sprite));
 
     return spikes;
 }
@@ -124,9 +125,9 @@ pub fn make_key(config: &Config, pos: Pos, display_state: &DisplayState) -> Obje
     pawn.attack = Some(Reach::Single(KEY_ATTACK_DISTANCE));
     pawn.alive = true;
 
-    let sprite_handle = display_state.lookup_sprite("elf_idle".to_string())
+    let sprite = display_state.new_sprite("elf_idle".to_string())
                                      .expect("Could not find sprite 'elf_idle'");
-    pawn.animation = Some(Animation::Idle(sprite_handle, 0.0));
+    pawn.animation = Some(Animation::Loop(sprite));
 
     return pawn;
 }

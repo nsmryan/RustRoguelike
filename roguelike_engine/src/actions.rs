@@ -1,24 +1,28 @@
 use rand::prelude::*;
 
+use tcod::line::*;
+
 use roguelike_core::config::*;
 use roguelike_core::types::*;
 use roguelike_core::movement;
 use roguelike_core::movement::*;
+use roguelike_core::utils::{distance};
+use roguelike_core::messaging::{Msg, MsgLog};
+use roguelike_core::constants::*;
 
 use crate::game::*;
 use crate::display::*;
 use crate::input::*;
-use crate::input;
 use crate::generation;
 
 
-pub fn player_apply_action(action: Action, game_data: &mut GameData) {
+pub fn player_apply_action(action: Action, game_data: &mut GameData, msg_log: &mut MsgLog) {
     let player_handle = game_data.find_player().unwrap();
     let player_pos = game_data.objects[player_handle].pos();
 
     match action {
         Action::Move(movement) => {
-            movement::player_move_or_attack(movement, game_data);
+            movement::player_move_or_attack(movement, game_data, msg_log);
         }
 
         Action::StateChange(behavior) => {
@@ -27,10 +31,11 @@ pub fn player_apply_action(action: Action, game_data: &mut GameData) {
 
         Action::Pickup(item_id) => {
             pick_item_up(player_handle, item_id, &mut game_data.objects);
+            msg_log.log(Msg::PickedUp(player_handle, item_id));
         }
 
         Action::ThrowStone(throw_pos, stone_handle) => {
-            input::throw_stone(player_pos, throw_pos, stone_handle, game_data);
+            throw_stone(player_handle, stone_handle, player_pos, throw_pos, game_data, msg_log);
         }
 
         Action::NoAction => {
@@ -39,14 +44,10 @@ pub fn player_apply_action(action: Action, game_data: &mut GameData) {
 }
 
 pub fn handle_input(input_action: InputAction,
-                    _mouse_state: &MouseState,
                     game_data: &mut GameData, 
                     settings: &mut GameSettings,
                     display_state: &mut DisplayState,
                     config: &Config) -> Action {
-    use Action::*;
-    use Movement::*;
-
     let player_handle = game_data.find_player().unwrap();
     let player_pos = game_data.objects[player_handle].pos();
 
@@ -153,3 +154,37 @@ pub fn handle_input(input_action: InputAction,
     return player_turn;
 }
 
+pub fn pick_item_up(object_id: ObjectId,
+                    item_id: ObjectId,
+                    objects: &mut ObjMap) {
+    objects[object_id].inventory.push(item_id);
+    objects[item_id].set_xy(-1, -1);
+}
+
+pub fn throw_stone(player_handle: ObjectId,
+                   stone_handle: ObjectId,
+                   start_pos: Pos,
+                   end_pos: Pos,
+                   game_data: &mut GameData,
+                   msg_log: &mut MsgLog) {
+    let throw_line = Line::new(start_pos.to_tuple(), end_pos.to_tuple());
+
+    // get target position in direction of player click
+    let (target_x, target_y) =
+        throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
+
+    game_data.objects[stone_handle].set_xy(target_x, target_y);
+
+    // log the stone throw event
+    let end_pos = Pos::new(target_x, target_y);
+    msg_log.log(Msg::StoneThrow(player_handle, stone_handle, start_pos, end_pos));
+
+    // alert monsters within sound range
+    for obj in game_data.objects.values_mut() {
+        if distance(obj.pos(), end_pos) < SOUND_RADIUS as i32 {
+            if obj.behavior == Some(Behavior::Idle) {
+                obj.behavior = Some(Behavior::Investigating(Pos::from(end_pos)));
+            }
+        }
+    }
+}

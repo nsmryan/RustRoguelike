@@ -1,12 +1,7 @@
-use std::fs::File;
-use std::io::Read;
-use std::path::Path;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use rand::prelude::*;
-
-use tcod::line::*;
 
 use slotmap::dense::*;
 
@@ -15,13 +10,13 @@ use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::ai::*;
 use roguelike_core::map::*;
+use roguelike_core::messaging::{Msg, MsgLog};
 
 use crate::actions;
 use crate::generation::*;
 use crate::display::*;
-use crate::input;
 use crate::input::*;
-use crate::read_map::*;
+use crate::read_map::read_map_xp;
 
 
 #[derive(Copy, Clone, PartialEq)]
@@ -31,23 +26,22 @@ pub enum GameResult {
 }
 
 pub struct GameSettings {
-    pub previous_player_position: Pos,
     pub turn_count: usize,
     pub god_mode: bool,
     pub map_type: MapGenType,
     pub exiting: bool,
+    pub state: GameState,
 }
 
 impl GameSettings {
-    pub fn new(previous_player_position: Pos,
-               turn_count: usize,
+    pub fn new(turn_count: usize,
                god_mode: bool) -> GameSettings {
         GameSettings {
-            previous_player_position,
             turn_count,
             god_mode,
             map_type: MapGenType::Island,
             exiting: false,
+            state: GameState::Playing,
         }
     }
 }
@@ -65,7 +59,7 @@ pub struct Game<'a> {
 
     pub settings: GameSettings,
 
-    pub state: GameState,
+    pub msg_log: MsgLog,
 }
 
 impl<'a> Game<'a> {
@@ -83,8 +77,6 @@ impl<'a> Game<'a> {
             seed = rand::thread_rng().gen();
         }
         println!("Seed: {} (0x{:X})", seed, seed);
-
-        let previous_player_position = Pos::new(-1, -1);
 
         let mut objects = DenseSlotMap::with_capacity(INITIAL_OBJECT_CAPACITY);
         let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
@@ -149,9 +141,9 @@ impl<'a> Game<'a> {
             input_action: InputAction::None,
             data,
             display_state,
-            settings: GameSettings::new(previous_player_position, 0, false),
+            settings: GameSettings::new(0, false),
             mouse_state: Default::default(),
-            state: GameState::Playing,
+            msg_log: MsgLog::new(),
         };
 
         Ok(state)
@@ -159,7 +151,7 @@ impl<'a> Game<'a> {
 
     pub fn step_game(&mut self) -> GameResult {
 
-        match self.state {
+        match self.settings.state {
             GameState::Playing => {
                 return self.step_playing();
             }
@@ -196,7 +188,7 @@ impl<'a> Game<'a> {
             self.data.objects.insert(new_objects[key].clone());
         }
 
-        self.state = GameState::Playing;
+        self.settings.state = GameState::Playing;
 
         // NOTE Exit game on win for now
         return GameResult::Stop;
@@ -213,21 +205,28 @@ impl<'a> Game<'a> {
     fn step_playing(&mut self) -> GameResult {
         let player_handle = self.data.find_player().unwrap();
 
-        /* Player Action and Animations */
-        self.settings.previous_player_position =
-            self.data.objects[player_handle].pos();
+        // clear input action
+        let input = self.input_action;
+        self.input_action = InputAction::None;
 
         let player_action =
-            actions::handle_input(self.input_action,
-                                 &mut self.mouse_state,
-                                 &mut self.data,
-                                 &mut self.settings,
-                                 &mut self.display_state,
-                                 &self.config);
-
-        actions::player_apply_action(player_action, &mut self.data);
+            actions::handle_input(input,
+                                  &mut self.data,
+                                  &mut self.settings,
+                                  &mut self.display_state,
+                                  &self.config);
 
         if player_action != Action::NoAction {
+            step_logic(player_action,
+                       &mut self.data,
+                       &mut self.settings,
+                       &self.config,
+                       &mut self.msg_log);
+
+            if win_condition_met(&self.data) {
+                self.settings.state = GameState::Win;
+            }
+        } else {
             self.settings.turn_count += 1;
         }
 
@@ -236,114 +235,12 @@ impl<'a> Game<'a> {
             return GameResult::Stop;
         }
 
-        if exit_condition_met(&self.data) {
-            self.state = GameState::Win;
-        }
-
-        /* AI */
-        if self.data.objects[player_handle].alive && player_action != Action::NoAction {
-            let mut ai_handles = Vec::new();
-
-            for key in self.data.objects.keys() {
-                if self.data.objects[key].ai.is_some() &&
-                   self.data.objects[key].fighter.is_some() {
-                       ai_handles.push(key);
-                   }
-            }
-
-            for key in ai_handles {
-                ai_take_turn(key, &mut self.data);
-
-                // check if fighter needs to be removed
-                if let Some(fighter) = self.data.objects[key].fighter {
-                    if fighter.hp <= 0 {
-                        self.data.objects[key].alive = false;
-                        self.data.objects[key].chr = '%';
-                        self.data.objects[key].color = self.config.color_red;
-                        self.data.objects[key].fighter = None;
-
-                        self.data.objects.remove(key);
-                    }
-                }
-            }
-        }
-
-        /* Traps */
-        let mut traps = Vec::new();
-        for key in self.data.objects.keys() {
-            for other in self.data.objects.keys() {
-                if self.data.objects[key].trap.is_some() && // key is a trap
-                   self.data.objects[other].alive && // entity is alive
-                   self.data.objects[other].fighter.is_some() && // entity is a fighter
-                   self.data.objects[key].pos() == self.data.objects[other].pos() {
-                    traps.push((key, other));
-                }
-            }
-        }
-
-        for (trap, entity) in traps.iter() {
-            match self.data.objects[*trap].trap.unwrap() {
-                Trap::Spikes => {
-                    self.data.objects[*entity].take_damage(SPIKE_DAMAGE);
-                }
-            }
-        }
-
-        // check if player lost all hp
-        if let Some(fighter) = self.data.objects[player_handle].fighter {
-            if fighter.hp <= 0 {
-                // modify player
-                {
-                    let player = &mut self.data.objects[player_handle];
-                    player.alive = false;
-                    player.chr = '%';
-                    player.color = self.config.color_red;
-                    player.fighter = None;
-                }
-
-                if self.state == GameState::Playing {
-                    self.state = GameState::Lose;
-                }
-            }
-        }
-
-        /* Reload Configuration */
-        match File::open("config.json") {
-            Ok(mut file) => {
-                let mut config_string = String::new();
-                file.read_to_string(&mut config_string).expect("Could not read config file!");
-                self.config = serde_json::from_str(&config_string).expect("Could not read JSON- config.json has a parsing error!");
-            }
-            _ => (),
-        }
-
-        /* Reload map if configured to do so */
-        if self.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
-            let (new_objects, new_map, _) = read_map_xp(&self.config, &self.display_state, "resources/map.xp");
-            self.data.map = new_map;
-            self.data.objects[player_handle].inventory.clear();
-            let player = self.data.objects[player_handle].clone();
-            self.data.objects.clear();
-            for key in new_objects.keys() {
-                self.data.objects.insert(new_objects[key].clone());
-            }
-            self.data.objects.insert(player);
-        }
-
-        /* Recompute FOV */
-        let player_pos = self.data.objects[player_handle].pos();
-        if self.settings.previous_player_position != player_pos {
-            self.data.map.compute_fov(player_pos, FOV_RADIUS);
-        }
-
-        self.input_action = InputAction::None;
-
         return GameResult::Continue;
     }
 }
 
 /// Check whether the exit condition for the game is met.
-fn exit_condition_met(data: &GameData) -> bool {
+fn win_condition_met(data: &GameData) -> bool {
     // loop over objects in inventory, and check whether any
     // are the goal object.
     //let has_goal =
@@ -364,3 +261,92 @@ fn exit_condition_met(data: &GameData) -> bool {
     return exit_condition;
 }
 
+pub fn step_logic(player_action: Action,
+                  game_data: &mut GameData, 
+                  settings: &mut GameSettings,
+                  config: &Config,
+                  msg_log: &mut MsgLog) {
+    let player_handle = game_data.find_player().unwrap();
+
+    let previous_player_position =
+        game_data.objects[player_handle].pos();
+
+    actions::player_apply_action(player_action, game_data, msg_log);
+
+    /* AI */
+    if game_data.objects[player_handle].alive {
+        let mut ai_handles = Vec::new();
+
+        for key in game_data.objects.keys() {
+            if game_data.objects[key].ai.is_some() &&
+               game_data.objects[key].fighter.is_some() {
+
+               ai_handles.push(key);
+           }
+        }
+
+        for key in ai_handles {
+            ai_take_turn(key, game_data, msg_log);
+
+            // check if fighter needs to be removed
+            if let Some(fighter) = game_data.objects[key].fighter {
+                if fighter.hp <= 0 {
+                    game_data.objects[key].alive = false;
+                    game_data.objects[key].chr = '%';
+                    game_data.objects[key].color = config.color_red;
+                    game_data.objects[key].fighter = None;
+
+                    game_data.objects.remove(key);
+                }
+            }
+        }
+    }
+
+    /* Traps */
+    let mut traps = Vec::new();
+    for key in game_data.objects.keys() {
+        for other in game_data.objects.keys() {
+            if game_data.objects[key].trap.is_some() && // key is a trap
+               game_data.objects[other].alive && // entity is alive
+               game_data.objects[other].fighter.is_some() && // entity is a fighter
+               game_data.objects[key].pos() == game_data.objects[other].pos() {
+                traps.push((key, other));
+            }
+        }
+    }
+
+    for (trap, entity) in traps.iter() {
+        match game_data.objects[*trap].trap.unwrap() {
+            Trap::Spikes => {
+                game_data.objects[*entity].take_damage(SPIKE_DAMAGE);
+
+                msg_log.log(Msg::SpikeTrapTriggered(*trap, *entity));
+            }
+        }
+    }
+
+    // TODO move enemy health checks here for trap damage
+
+    // check if player lost all hp
+    if let Some(fighter) = game_data.objects[player_handle].fighter {
+        if fighter.hp <= 0 {
+            // modify player
+            {
+                let player = &mut game_data.objects[player_handle];
+                player.alive = false;
+                player.color = config.color_red;
+                player.fighter = None;
+            }
+
+            if settings.state == GameState::Playing {
+                settings.state = GameState::Lose;
+            }
+        }
+    }
+
+    /* Recompute FOV */
+    let player_pos = game_data.objects[player_handle].pos();
+    if previous_player_position != player_pos {
+        game_data.map.compute_fov(player_pos, FOV_RADIUS);
+    }
+}

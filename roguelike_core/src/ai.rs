@@ -2,9 +2,13 @@ use crate::map::*;
 use crate::types::*;
 use crate::constants::*;
 use crate::movement::*;
+use crate::messaging::*;
+use crate::utils::*;
 
 
-pub fn ai_take_turn(monster_handle: ObjectId, data: &mut GameData) {
+pub fn ai_take_turn(monster_handle: ObjectId,
+                    data: &mut GameData,
+                    msg_log: &mut MsgLog) {
     let turn: Action;
 
     match data.objects[monster_handle].ai {
@@ -19,7 +23,8 @@ pub fn ai_take_turn(monster_handle: ObjectId, data: &mut GameData) {
 
     ai_apply_actions(monster_handle,
                      turn,
-                     data);
+                     data,
+                     msg_log);
 }
 
 pub fn step_towards(start_pos: Pos, target_pos: Pos) -> Pos {
@@ -41,8 +46,11 @@ pub fn ai_attack(monster_handle: ObjectId,
 
     let turn: Action;
 
-    // if AI can hit their target
-    if let Some(hit_pos) =
+    if !data.objects[target_handle].alive {
+        // if the target is still alve
+        turn = Action::StateChange(Behavior::Investigating(target_pos));
+    } else if let Some(hit_pos) =
+        // if AI can hit their target
         ai_can_hit_target(&mut data.map, 
                           data.objects[monster_handle].pos(),
                           data.objects[target_handle].pos(),
@@ -93,23 +101,23 @@ pub fn ai_attack(monster_handle: ObjectId,
 
 pub fn ai_investigate(target_pos_orig: Pos, 
                       monster_handle: ObjectId,
-                      data: &mut GameData) -> Action {
-    let player_handle = data.find_player().unwrap();
+                      game_data: &mut GameData) -> Action {
+    let player_handle = game_data.find_player().unwrap();
 
     let mut target_pos = target_pos_orig;
-    let player_pos = data.objects[player_handle].pos();
-    let monster_pos = data.objects[monster_handle].pos();
+    let player_pos = game_data.objects[player_handle].pos();
+    let monster_pos = game_data.objects[monster_handle].pos();
 
     let turn: Action;
 
                
-    if data.map.is_in_fov(monster_pos, player_pos, MONSTER_VIEW_DIST) {
+    if game_data.map.is_in_fov(monster_pos, player_pos, MONSTER_VIEW_DIST) {
         // TODO this causes a turn delay between seeing the player and attacking them
         turn = Action::StateChange(Behavior::Attacking(player_handle));
     } else { // the monster can't see the player
-        if let Some(sound_id) = data.sound_within_earshot(monster_pos) {
-            target_pos = Pos::new(data.objects[sound_id].x, data.objects[sound_id].y);
-            data.objects[monster_handle].behavior =
+        if let Some(sound_id) = game_data.sound_within_earshot(monster_pos) {
+            target_pos = Pos::new(game_data.objects[sound_id].x, game_data.objects[sound_id].y);
+            game_data.objects[monster_handle].behavior =
                 Some(Behavior::Investigating(target_pos));
         }
 
@@ -118,7 +126,7 @@ pub fn ai_investigate(target_pos_orig: Pos,
             turn = Action::StateChange(Behavior::Idle);
         } else {
             // if the monster has not reached its target, move towards the target.
-            let pos_offset = ai_take_astar_step(monster_pos, target_pos, &data.map);
+            let pos_offset = ai_take_astar_step(monster_pos, target_pos, &game_data.map);
 
             turn = Action::Move(Movement::Move(pos_offset));
         }
@@ -170,22 +178,24 @@ fn ai_take_astar_step(monster_pos: Pos,
     }
 }
 
+// NOTE this function takes a mutable GameData because FOV requires
+// mutation under the hood. It does not otherwise modify the game
 pub fn basic_ai_take_turn(monster_handle: ObjectId,
-                          data: &mut GameData) -> Action {
-    let player_handle = data.find_player().unwrap();
-    let monster_pos = data.objects[monster_handle].pos();
-    let player_pos = data.objects[player_handle].pos();
+                          game_data: &mut GameData) -> Action {
+    let player_handle = game_data.find_player().unwrap();
+    let monster_pos = game_data.objects[monster_handle].pos();
+    let player_pos = game_data.objects[player_handle].pos();
 
-    if data.map.is_within_bounds(monster_pos) {
-        match data.objects[monster_handle].behavior {
+    if game_data.map.is_within_bounds(monster_pos) {
+        match game_data.objects[monster_handle].behavior {
             Some(Behavior::Idle) => {
                 let mut turn = Action::none();
 
-                if data.map.is_in_fov(monster_pos, player_pos, MONSTER_VIEW_DIST) {
+                if game_data.map.is_in_fov(monster_pos, player_pos, MONSTER_VIEW_DIST) {
                     // NOTE will cause a turn between seeing the player and attacking
                     turn = Action::StateChange(Behavior::Attacking(player_handle));
-                } else if let Some(sound_id) = data.sound_within_earshot(monster_pos) {
-                    let sound_position = Pos::new(data.objects[sound_id].x, data.objects[sound_id].y);
+                } else if let Some(sound_id) = game_data.sound_within_earshot(monster_pos) {
+                    let sound_position = Pos::new(game_data.objects[sound_id].x, game_data.objects[sound_id].y);
                     turn = Action::StateChange(Behavior::Investigating(sound_position));
                 }
 
@@ -193,11 +203,11 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
             }
 
             Some(Behavior::Investigating(target_pos)) => {
-                return ai_investigate(target_pos, monster_handle, data);
+                return ai_investigate(target_pos, monster_handle, game_data);
             }
 
             Some(Behavior::Attacking(object_handle)) => {
-                return ai_attack(monster_handle, object_handle, data);
+                return ai_attack(monster_handle, object_handle, game_data);
             }
 
             behavior => {
@@ -212,16 +222,19 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
 
 pub fn ai_apply_actions(monster_handle: ObjectId,
                         turn: Action,
-                        data: &mut GameData) {
+                        game_data: &mut GameData,
+                        msg_log: &mut MsgLog) {
     match turn {
         Action::Move(movement) => {
             match movement {
                 Movement::Move(pos) => {
-                    data.move_by(monster_handle, pos.x, pos.y);
+                    game_data.move_by(monster_handle, pos.x, pos.y);
+
+                    msg_log.log(Msg::Moved(monster_handle, pos));
                 }
 
                 Movement::Attack(_pos, target_handle) => {
-                    attack(monster_handle, target_handle, &mut data.objects);
+                    attack(monster_handle, target_handle, &mut game_data.objects, msg_log);
                 },
 
                 _ => panic!("Unexpected movement!"),
@@ -229,11 +242,12 @@ pub fn ai_apply_actions(monster_handle: ObjectId,
         },
 
         Action::StateChange(behavior) => {
-            data.objects.get_mut(monster_handle).unwrap().behavior = Some(behavior);
+            game_data.objects.get_mut(monster_handle).unwrap().behavior = Some(behavior);
+
+            msg_log.log(Msg::StateChange(monster_handle, behavior));
         },
 
         _ => {
         }
     }
 }
-

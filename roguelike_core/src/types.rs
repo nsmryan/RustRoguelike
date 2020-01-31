@@ -12,13 +12,12 @@ use slotmap::DefaultKey;
 use euclid::Point2D;
 
 use crate::map::*;
+use crate::utils::*;
 use crate::constants::*;
 use crate::movement::*;
 use crate::animation::Animation;
 
 
-// TODO consider using custom key types to distinguish
-// muliple maps
 pub type ObjectId = DefaultKey;
 
 pub type ObjMap = DenseSlotMap<ObjectId, Object>;
@@ -201,10 +200,12 @@ impl Behavior {
     }
 }
 
+pub type Hp = i32;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Fighter {
-    pub max_hp: i32,
-    pub hp: i32,
+    pub max_hp: Hp,
+    pub hp: Hp,
     pub defense: i32,
     pub power: i32,
 }
@@ -403,20 +404,3 @@ impl Object {
         }
     }
 }
-
-pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
-    return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt() as i32;
-}
-
-pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap) {
-    let damage = objects[handle].fighter.map_or(0, |f| f.power) -
-                 objects[other_handle].fighter.map_or(0, |f| f.defense);
-    if damage > 0 {
-        objects[other_handle].take_damage(damage);
-    }
-}
-
-pub fn add_pos(pos1: Pos, pos2: Pos) -> Pos {
-    return Pos::new(pos1.x + pos2.x, pos1.y + pos2.y);
-}
-

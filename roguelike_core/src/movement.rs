@@ -1,11 +1,13 @@
 use std::iter::Iterator;
 
+
 use tcod::line::*;
 
 use euclid::*;
 
 use crate::types::*;
-use crate::animation::Animation;
+use crate::utils::*;
+use crate::messaging::{MsgLog, Msg};
 
 
 pub type Loudness = usize;
@@ -213,7 +215,9 @@ impl Collision {
     }
 }
 
-pub fn player_move_or_attack(movement: Movement, data: &mut GameData) -> Action {
+pub fn player_move_or_attack(movement: Movement,
+                             data: &mut GameData,
+                             msg_log: &mut MsgLog) -> Action {
     use Action::*;
 
     let player_action: Action;
@@ -222,7 +226,7 @@ pub fn player_move_or_attack(movement: Movement, data: &mut GameData) -> Action 
 
     match movement {
         Movement::Attack(new_pos, target_handle) => {
-            attack(player_handle, target_handle, &mut data.objects);
+            attack(player_handle, target_handle, &mut data.objects, msg_log);
 
             // if we attack without moving, we lost all our momentum
             if new_pos == data.objects[player_handle].pos() {
@@ -238,6 +242,8 @@ pub fn player_move_or_attack(movement: Movement, data: &mut GameData) -> Action 
             data.objects[player_handle].set_pos(pos);
             data.objects[player_handle].momentum.unwrap().clear();
             player_action = Move(movement);
+
+            msg_log.log(Msg::Collided(player_handle, pos));
         }
 
         Movement::Move(pos) | Movement::JumpWall(pos) => {
@@ -268,10 +274,17 @@ pub fn player_move_or_attack(movement: Movement, data: &mut GameData) -> Action 
                          player_action == Move(movement));
 
                 // Set up sound for movement
-                let momentum_amount = data.objects[player_handle].momentum.unwrap();
-                let mut sound = Object::new(x, y, ' ' as char, Color::white(), "sound", false);
-                sound.animation = Some(Animation::Sound(0, momentum_amount.magnitude() as usize));
+                let sound = Object::new(x, y, ' ' as char, Color::white(), "sound", false);
+                // TODO ANIMATION
+                //let momentum_amount = data.objects[player_handle].momentum.unwrap();
+                //sound.animation = Some(Animation::Sound(0, momentum_amount.magnitude() as usize));
                 data.objects.insert(sound);
+            }
+
+            if movement == Movement::Move(pos) {
+                msg_log.log(Msg::Moved(player_handle, pos));
+            } else {
+                msg_log.log(Msg::JumpWall(player_handle, pos));
             }
         }
 
@@ -280,15 +293,10 @@ pub fn player_move_or_attack(movement: Movement, data: &mut GameData) -> Action 
             data.objects[player_handle].set_pos(pos);
             momentum.set_momentum(dir_x, dir_y);
 
-            /*
-            let sprite_handle =
-                display_state.lookup_sprite("player_wall_kick".to_string())
-                             .expect("Could not find sprite 'player_wall_kick'");
-            d,ta.objects[player_handle].animation = Some(sprite_handle);
-            */
-
             // TODO could check for enemy and attack
             player_action = Move(movement);
+
+            msg_log.log(Msg::WallKick(player_handle, pos));
         }
     }
 
@@ -354,7 +362,7 @@ pub fn calculate_move(action: MoveAction,
                 movement = Some(Movement::Move(new_pos));
             }
 
-            Collision::BlockedTile(tile_pos, new_pos) => {
+            Collision::BlockedTile(_tile_pos, new_pos) => {
                 movement = Some(Movement::Move(new_pos));
             }
 
@@ -380,9 +388,13 @@ pub fn calculate_move(action: MoveAction,
             }
 
             Collision::Entity(other_object_id, new_pos) => {
-                // record that an attack would occur. if this is not desired, the
-                // calling code will handle this.
-                movement = Some(Movement::Attack(new_pos, other_object_id));
+                if data.objects[other_object_id].alive {
+                    // record that an attack would occur. if this is not desired, the
+                    // calling code will handle this.
+                    movement = Some(Movement::Attack(new_pos, other_object_id));
+                } else {
+                    movement = None;
+                }
             }
         }
     } else {

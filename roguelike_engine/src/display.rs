@@ -6,7 +6,7 @@ use sdl2::pixels::{Color as Sdl2Color};
 
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
-use roguelike_core::animation::{SpriteKey, Animation};
+use roguelike_core::animation::{Effect, SpriteKey, Animation, Sprite};
 
 use crate::plat::*;
 
@@ -18,6 +18,7 @@ pub struct DisplayState<'a> {
     pub screen_sections: Plan,
     pub zones: Vec<Plot>,
     pub canvas: WindowCanvas,
+    pub effects: Vec<Effect>,
 }
 
 impl<'a> DisplayState<'a> {
@@ -33,14 +34,24 @@ impl<'a> DisplayState<'a> {
             screen_sections,
             canvas,
             zones: Vec::new(),
+            effects: Vec::new(),
         };
     }
 
-    pub fn lookup_sprite(&self, name: String) -> Option<SpriteKey> {
+    pub fn lookup_spritekey(&self, name: &String) -> Option<SpriteKey> {
         for (key, sprite_sheet) in self.sprites.iter() {
-            if sprite_sheet.name == name {
+            if sprite_sheet.name == *name {
                 return Some(key);
             }
+        }
+
+        return None;
+    }
+
+    pub fn new_sprite(&self, name: String) -> Option<Sprite> {
+        if let Some(sprite_key) = self.lookup_spritekey(&name) {
+            let max_index = self.sprites[sprite_key].num_sprites;
+            return Some(Sprite::make_sprite(name, sprite_key, max_index as f32));
         }
 
         return None;
@@ -76,12 +87,12 @@ impl<'a> DisplayState<'a> {
 
         let sprite = &self.sprites[sprite_key].texture;
         self.canvas.copy_ex(sprite,
-                                     Some(src),
-                                     Some(dst),
-                                     0.0,
-                                     None,
-                                     false,
-                                     false).unwrap();
+                            Some(src),
+                            Some(dst),
+                            0.0,
+                            None,
+                            false,
+                            false).unwrap();
     }
 
     pub fn draw_char(&mut self,
@@ -110,6 +121,10 @@ impl<'a> DisplayState<'a> {
                             None,
                             false,
                             false).unwrap();
+    }
+
+    pub fn play_effect(&mut self, effect: Effect) {
+        self.effects.push(effect);
     }
 }
 
