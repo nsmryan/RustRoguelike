@@ -1,3 +1,5 @@
+use tcod::line::*;
+
 use crate::types::*;
 use crate::messaging::*;
 
@@ -24,4 +26,10 @@ pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, ms
 
 pub fn add_pos(pos1: Pos, pos2: Pos) -> Pos {
     return Pos::new(pos1.x + pos2.x, pos1.y + pos2.y);
+}
+
+pub fn move_towards(start: Pos, end: Pos, num_blocks: usize) -> Pos {
+    let line = Line::new(start.to_tuple(), end.to_tuple()).into_iter();
+
+    return Pos::from(line.skip(num_blocks).next().unwrap_or(end.to_tuple()));
 }

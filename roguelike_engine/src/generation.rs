@@ -16,12 +16,13 @@ pub enum MapGenType {
     Island,
     WallTest,
     CornerTest,
+    PlayerTest,
     FromFile(String),
 }
 
 
 //if we want to use a character sprite, a potential value is '\u{8B}'
-pub fn make_player(_config: &Config, display_state: &DisplayState) -> Object {
+pub fn make_player(config: &Config, display_state: &DisplayState) -> Object {
     let mut player = Object::new(0, 0, '@', Color::white(), "player", true);
 
     player.alive = true;
@@ -30,7 +31,7 @@ pub fn make_player(_config: &Config, display_state: &DisplayState) -> Object {
     player.movement = Some(Reach::Single(1));
     player.attack = Some(Reach::Single(1));
 
-    let sprite = display_state.new_sprite("player_idle".to_string())
+    let sprite = display_state.new_sprite("player_idle".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'player_idle'");
     player.animation = Some(Animation::Loop(sprite));
 
@@ -61,7 +62,7 @@ pub fn make_gol(config: &Config, pos: Pos, display_state: &DisplayState) -> Obje
     gol.attack = Some(Reach::Single(GOL_ATTACK_DISTANCE));
     gol.alive = true;
 
-    let sprite = display_state.new_sprite("gol_idle".to_string())
+    let sprite = display_state.new_sprite("gol_idle".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'gol_idle'");
     gol.animation = Some(Animation::Loop(sprite));
     
@@ -93,7 +94,7 @@ pub fn make_pawn(config: &Config, pos: Pos, display_state: &DisplayState) -> Obj
     pawn.attack = Some(Reach::Single(PAWN_ATTACK_DISTANCE));
     pawn.alive = true;
 
-    let sprite = display_state.new_sprite("elf_idle".to_string())
+    let sprite = display_state.new_sprite("elf_idle".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'elf_idle'");
     pawn.animation = Some(Animation::Loop(sprite));
 
@@ -107,7 +108,7 @@ pub fn make_spikes(config: &Config, pos: Pos, display_state: &DisplayState) -> O
     spikes.trap = Some(Trap::Spikes);
     spikes.color = config.color_ice_blue;
 
-    let sprite = display_state.new_sprite("spikes".to_string())
+    let sprite = display_state.new_sprite("spikes".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'spikes'");
     spikes.animation = Some(Animation::Loop(sprite));
 
@@ -125,7 +126,7 @@ pub fn make_key(config: &Config, pos: Pos, display_state: &DisplayState) -> Obje
     pawn.attack = Some(Reach::Single(KEY_ATTACK_DISTANCE));
     pawn.alive = true;
 
-    let sprite = display_state.new_sprite("elf_idle".to_string())
+    let sprite = display_state.new_sprite("elf_idle".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'elf_idle'");
     pawn.animation = Some(Animation::Loop(sprite));
 
@@ -158,6 +159,12 @@ pub fn make_map(map_type: &MapGenType,
 
         MapGenType::CornerTest => {
             let (map, player_position) = make_wall_test_map(objects, config, display_state);
+            
+            result = (GameData::new(map, objects.clone()), player_position);
+        }
+
+        MapGenType::PlayerTest => {
+            let (map, player_position) = make_player_test_map(objects, config, display_state);
             
             result = (GameData::new(map, objects.clone()), player_position);
         }
@@ -344,6 +351,27 @@ pub fn make_island(data: &mut GameData,
     }
 
     return center;
+}
+
+pub fn make_player_test_map(objects: &mut ObjMap,
+                          config: &Config,
+                          display_state: &DisplayState) -> (Map, Pos) {
+    let mut map = Map::from_dims(10, 10);
+    let position = (1, 5);
+
+    for wall_y_pos in 2..8 {
+        let pos: (i32, i32) = (5, wall_y_pos);
+        map[pos] = Tile::empty();
+        map[pos].left_wall = Wall::ShortWall;
+    }
+
+    make_stone(config, Pos::new(1, 2));
+    make_stone(config, Pos::new(4, 2));
+    make_stone(config, Pos::new(3, 2));
+  
+    map.update_map();
+
+    return (map, Pos::from(position));
 }
 
 pub fn make_wall_test_map(objects: &mut ObjMap,

@@ -22,6 +22,7 @@ pub enum MapLoadConfig {
     Random,
     TestWall,
     TestCorner,
+    TestPlayer,
     FromFile,
 }
 

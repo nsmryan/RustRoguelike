@@ -119,6 +119,12 @@ impl<'a> Game<'a> {
                 player_position = position.to_tuple();
             }
 
+            MapLoadConfig::TestPlayer => {
+                let (new_map, position) = make_player_test_map(&mut objects, &config, &display_state);
+                map = new_map;
+                player_position = position.to_tuple();
+            }
+
             MapLoadConfig::TestCorner => {
                 let (new_map, position) = make_corner_test_map(&mut objects, &config, &display_state);
                 map = new_map;

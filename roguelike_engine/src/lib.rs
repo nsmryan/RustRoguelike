@@ -48,7 +48,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let mut event_pump = sdl_context.event_pump()?;
 
     /* Setup FPS Throttling */
-    let fps_throttler = Throttler::new(Duration::from_millis(1000 / 30));
+    let fps_throttler = Throttler::new(Duration::from_millis(1000 / config.rate as u64));
 
     /* Load Textures */
     let font_image = texture_creator.load_texture("resources/rexpaint16x16.png")
@@ -74,12 +74,13 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
 
     let mut sprites = DenseSlotMap::new();
-    sprites.insert(SpriteSheet::new("player_wall_kick".to_string(), player_wall_kick));
-    sprites.insert(SpriteSheet::new("player_idle".to_string(), player_idle));
-    sprites.insert(SpriteSheet::new("gol_idle".to_string(), gol_idle));
-    sprites.insert(SpriteSheet::new("elf_idle".to_string(), elf_idle));
-    sprites.insert(SpriteSheet::new("spikes".to_string(), spikes_anim));
-    sprites.insert(SpriteSheet::new("font".to_string(), font_as_sprite));
+    sprites.insert(SpriteSheet::new("player_wall_kick".to_string(), player_wall_kick, 1));
+    sprites.insert(SpriteSheet::new("player_idle".to_string(),      player_idle,      1));
+    sprites.insert(SpriteSheet::new("gol_idle".to_string(),         gol_idle,         1));
+    sprites.insert(SpriteSheet::new("elf_idle".to_string(),         elf_idle,         1));
+    sprites.insert(SpriteSheet::new("spikes".to_string(),           spikes_anim,      1));
+    sprites.insert(SpriteSheet::new("font".to_string(),             font_as_sprite,   16));
+
 
     /* Create Display Structures */
     let screen_sections =
@@ -193,7 +194,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                             .expect("Could not find stone sprite!");
 
                     game.data.objects[*stone_id].animation = 
-                        Some(Animation::Between(stone_sprite, *start, *end));
+                        Some(Animation::Between(stone_sprite, *start, *end, 0.0, config.stone_throw_speed));
                 }
 
                 Msg::Moved(object_id, pos) => {

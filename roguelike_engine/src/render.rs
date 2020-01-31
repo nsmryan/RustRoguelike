@@ -16,7 +16,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Effect, Animation};
-use roguelike_core::utils::distance;
+use roguelike_core::utils::{distance, move_towards};
 
 use crate::plat::*;
 use crate::display::*;
@@ -507,27 +507,26 @@ pub fn render_objects(display_state: &mut DisplayState,
                                   FOV_RADIUS);
 
             match object.animation {
-                Some(Animation::Between(ref mut sprite, ref mut start, end)) => {
+                Some(Animation::Between(ref mut sprite, start, end, ref mut dist, blocks_per_sec)) => {
                    if settings.god_mode || is_in_fov {
-                       let draw_pos = (start.x + direction(end.x - start.x),
-                                       start.y + direction(end.y - start.y));
-                       let new_start_pos = Pos::from(draw_pos);
+                       *dist = *dist + (blocks_per_sec / config.rate as f32);
 
-                       display_state.draw_sprite(sprite.sprite_key,
-                                                 sprite.index as i32,
-                                                 new_start_pos.x,
-                                                 new_start_pos.y,
+                       let num_blocks = *dist as usize;
+
+                       let draw_pos = move_towards(start, end, num_blocks);
+
+                       display_state.draw_sprite(&sprite,
+                                                 draw_pos.x,
+                                                 draw_pos.y,
                                                  object.color,
                                                  &area);
                        sprite.step();
-                       *start = new_start_pos;
                    }
                 }
 
                 Some(Animation::Loop(ref mut sprite)) => {
                    if settings.god_mode || is_in_fov {
-                        display_state.draw_sprite(sprite.sprite_key,
-                                                  sprite.index as i32,
+                        display_state.draw_sprite(&sprite,
                                                   x,
                                                   y,
                                                   object.color,

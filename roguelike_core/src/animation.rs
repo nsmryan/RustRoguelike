@@ -19,6 +19,7 @@ pub struct Sprite {
     pub name: String,
     pub sprite_key: SpriteKey,
     pub index: SpriteIndex,
+    pub start_index: SpriteIndex,
     pub max_index: SpriteIndex,
     pub speed: f32,
 }
@@ -32,18 +33,23 @@ impl Sprite {
         return Sprite { name,
                         sprite_key,
                         index,
+                        start_index: index,
                         max_index,
                         speed,
         };
     }
 
-    pub fn make_sprite(name: String, sprite_key: SpriteKey, max_index: SpriteIndex) -> Sprite {
+    pub fn make_sprite(name: String,
+                       sprite_key: SpriteKey,
+                       max_index: SpriteIndex,
+                       speed: f32) -> Sprite {
         return Sprite {
             name,
             sprite_key,
             max_index,
             index: 0.0,
-            speed: 1.0,
+            start_index: 0.0,
+            speed,
         };
     }
 
@@ -52,7 +58,7 @@ impl Sprite {
     pub fn step(&mut self) -> bool {
         self.index = self.index + self.speed;
         if self.index as usize >= self.max_index as usize {
-            self.index = 0.0;
+            self.index = self.start_index;
             return true;
         }
 
@@ -63,6 +69,6 @@ impl Sprite {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Animation {
     Loop(Sprite),               // play sprite sheet in loop
-    Between(Sprite, Pos, Pos),  // start, end
+    Between(Sprite, Pos, Pos, f32, f32),  // start, end, dist, blocks_per_sec
     //Then(Box<Animation>, Box<Animation>), // play sprite, then transition to next animation
 }

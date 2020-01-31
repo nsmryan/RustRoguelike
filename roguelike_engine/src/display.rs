@@ -48,10 +48,10 @@ impl<'a> DisplayState<'a> {
         return None;
     }
 
-    pub fn new_sprite(&self, name: String) -> Option<Sprite> {
+    pub fn new_sprite(&self, name: String, speed: f32) -> Option<Sprite> {
         if let Some(sprite_key) = self.lookup_spritekey(&name) {
             let max_index = self.sprites[sprite_key].num_sprites;
-            return Some(Sprite::make_sprite(name, sprite_key, max_index as f32));
+            return Some(Sprite::make_sprite(name, sprite_key, max_index as f32, speed));
         }
 
         return None;
@@ -59,7 +59,11 @@ impl<'a> DisplayState<'a> {
 
     pub fn font_sprite(&self, chr: char) -> Option<Sprite> {
         if let Some(sprite_key) = self.lookup_spritekey(&"font".to_string()) {
-            return Some(Sprite::new(format!("{}", chr), sprite_key, chr as i32 as SpriteIndex, 1.0, 0.0));
+            return Some(Sprite::new(format!("{}", chr),
+                                    sprite_key,
+                                    chr as i32 as SpriteIndex,
+                                    chr as i32 as SpriteIndex,
+                                    0.0));
         }
 
         return None;
@@ -77,24 +81,28 @@ impl<'a> DisplayState<'a> {
     }
 
     pub fn draw_sprite(&mut self,
-                       sprite_key: SpriteKey,
-                       sprite_index: i32,
+                       sprite: &Sprite,
                        x: i32,
                        y: i32,
                        color: Color,
                        area: &Area) {
-        let src = Rect::new(sprite_index * FONT_WIDTH,
-                            0,
+        let sprite_sheet = &mut self.sprites[sprite.sprite_key];
+
+        let sprites_per_row = sprite_sheet.sprites_per_row();
+        let sprite_x = (sprite.index as usize) % sprites_per_row;
+        let sprite_y = (sprite.index as usize) / sprites_per_row;
+
+        let src = Rect::new(sprite_x as i32 * FONT_WIDTH,
+                            sprite_y as i32 * FONT_HEIGHT,
                             FONT_WIDTH as u32,
                             FONT_HEIGHT as u32);
 
         let dst = area.char_rect(x, y);
 
-        self.sprites[sprite_key].texture.set_color_mod(color.r, color.g, color.b);
-        self.sprites[sprite_key].texture.set_alpha_mod(color.a);
+        sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
+        sprite_sheet.texture.set_alpha_mod(color.a);
 
-        let sprite = &self.sprites[sprite_key].texture;
-        self.canvas.copy_ex(sprite,
+        self.canvas.copy_ex(&sprite_sheet.texture,
                             Some(src),
                             Some(dst),
                             0.0,
@@ -141,16 +149,24 @@ pub struct SpriteSheet<'a> {
     pub texture: Texture<'a>,
     pub name: String,
     pub num_sprites: usize,
+    pub rows: usize,
 }
 
 impl<'a> SpriteSheet<'a> {
-    pub fn new(name: String, texture: Texture<'a>) -> SpriteSheet<'a> {
-        let num_sprites = texture.query().width as usize / FONT_WIDTH as usize;
+    pub fn new(name: String, texture: Texture<'a>, rows: usize) -> SpriteSheet<'a> {
+        let num_sprites_per_row = texture.query().width as usize / FONT_WIDTH as usize;
+        let num_sprites = num_sprites_per_row * rows;
+
         return SpriteSheet {
             texture,
             name,
             num_sprites,
+            rows,
         };
+    }
+
+    pub fn sprites_per_row(&self) -> usize {
+         return self.num_sprites / self.rows;
     }
 }
 
