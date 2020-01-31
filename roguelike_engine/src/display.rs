@@ -6,6 +6,7 @@ use sdl2::pixels::{Color as Sdl2Color};
 
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
+use roguelike_core::animation::{SpriteKey, Animation};
 
 use crate::plat::*;
 

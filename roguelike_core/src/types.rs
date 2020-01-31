@@ -14,6 +14,7 @@ use euclid::Point2D;
 use crate::map::*;
 use crate::constants::*;
 use crate::movement::*;
+use crate::animation::Animation;
 
 
 // TODO consider using custom key types to distinguish
@@ -21,10 +22,6 @@ use crate::movement::*;
 pub type ObjectId = DefaultKey;
 
 pub type ObjMap = DenseSlotMap<ObjectId, Object>;
-
-pub type SpriteKey = DefaultKey;
-
-pub type SpriteIndex = f32;
 
 pub struct GameData {
     pub map: Map,
@@ -159,14 +156,6 @@ pub struct MouseState {
     pub wheel: f32,
 }
 
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Animation {
-    Idle(SpriteKey, SpriteIndex),
-    WallKick(SpriteKey, SpriteIndex, Pos, Pos),
-    StoneThrow(Pos, Pos),
-    Sound(usize, usize), // current radius, max radius
-}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Item {

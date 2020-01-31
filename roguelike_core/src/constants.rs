@@ -13,7 +13,7 @@ pub const TIME_BETWEEN_FRAMES_MS: i64 = 25;
 
 /* Sound */
 pub const SOUND_RADIUS: usize = 3;
-pub const STONE_SOUND_RADIUS: usize = 5;
+pub const STONE_SOUND_RADIUS: usize = 2;
 
 /* General Settings */
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;

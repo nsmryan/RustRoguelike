@@ -6,6 +6,7 @@ use tcod::line::*;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
+use roguelike_core::animation::Animation;
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -136,7 +137,7 @@ pub fn throw_stone(start_pos: Pos,
 
     // alert monsters within sound range
     for obj in game_data.objects.values_mut() {
-        if distance(obj.pos(), end_pos) <  SOUND_RADIUS as i32 {
+        if distance(obj.pos(), end_pos) < SOUND_RADIUS as i32 {
             if obj.behavior == Some(Behavior::Idle) {
                 obj.behavior = Some(Behavior::Investigating(Pos::from(end_pos)));
             }

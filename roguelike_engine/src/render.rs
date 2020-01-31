@@ -15,6 +15,7 @@ use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
+use roguelike_core::animation::Animation;
 
 use crate::plat::*;
 use crate::display::*;
@@ -526,6 +527,22 @@ pub fn render_objects(display_state: &mut DisplayState,
                         }
                     } else {
                         // TODO find a way to remove the sound object
+                    }
+                }
+
+                Some(Animation::Attack(sprite_key, ref mut sprite_val)) => {
+                    if settings.god_mode || is_in_fov {
+                        let sprite_index = (*sprite_val) as i32;
+                        display_state.draw_sprite(sprite_key,
+                                                 sprite_index,
+                                                 end.x,
+                                                 end.y,
+                                                 object.color,
+                                                 &area);
+                        *sprite_val = *sprite_val + config.idle_speed;
+                        if *sprite_val as usize >= display_state.sprites[sprite_key].num_sprites {
+                            *sprite_val = 0.0;
+                        }
                     }
                 }
 

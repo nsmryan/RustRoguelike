@@ -8,6 +8,7 @@ use roguelike_core::movement::*;
 use crate::game::*;
 use crate::display::*;
 use crate::input::*;
+use crate::input;
 use crate::generation;
 
 
@@ -29,7 +30,7 @@ pub fn player_apply_action(action: Action, game_data: &mut GameData) {
         }
 
         Action::ThrowStone(throw_pos, stone_handle) => {
-            throw_stone(player_pos, throw_pos, stone_handle, game_data);
+            input::throw_stone(player_pos, throw_pos, stone_handle, game_data);
         }
 
         Action::NoAction => {

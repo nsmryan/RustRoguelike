@@ -5,6 +5,7 @@ use tcod::line::*;
 use euclid::*;
 
 use crate::types::*;
+use crate::animation::Animation;
 
 
 pub type Loudness = usize;
