@@ -23,7 +23,7 @@ use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
-use roguelike_core::animation::Effect;
+use roguelike_core::animation::{Effect, Animation};
 
 use crate::display::*;
 use crate::render::*;
@@ -69,12 +69,17 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let spikes_anim = texture_creator.load_texture("animations/traps/DamageTrap.png")
         .map_err(|e| e.to_string())?;
 
+    let font_as_sprite = texture_creator.load_texture("resources/rexpaint16x16.png")
+        .map_err(|e| e.to_string())?;
+
+
     let mut sprites = DenseSlotMap::new();
     sprites.insert(SpriteSheet::new("player_wall_kick".to_string(), player_wall_kick));
     sprites.insert(SpriteSheet::new("player_idle".to_string(), player_idle));
     sprites.insert(SpriteSheet::new("gol_idle".to_string(), gol_idle));
     sprites.insert(SpriteSheet::new("elf_idle".to_string(), elf_idle));
     sprites.insert(SpriteSheet::new("spikes".to_string(), spikes_anim));
+    sprites.insert(SpriteSheet::new("font".to_string(), font_as_sprite));
 
     /* Create Display Structures */
     let screen_sections =
@@ -182,6 +187,13 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             match msg {
                 Msg::StoneThrow(thrower, stone_id, start, end) => {
                     game.display_state.play_effect(Effect::Sound(*end, 0, STONE_SOUND_RADIUS));
+
+                    let stone_sprite =
+                        game.display_state.font_sprite(ENTITY_STONE as char)
+                            .expect("Could not find stone sprite!");
+
+                    game.data.objects[*stone_id].animation = 
+                        Some(Animation::Between(stone_sprite, *start, *end));
                 }
 
                 Msg::Moved(object_id, pos) => {

@@ -506,19 +506,19 @@ pub fn render_objects(display_state: &mut DisplayState,
                                   pos,
                                   FOV_RADIUS);
 
-           // TODO consider make FOV a setting in map, which is set by god_mode
             match object.animation {
-                Some(Animation::Between(ref mut sprite, ref mut start, end, dist)) => {
+                Some(Animation::Between(ref mut sprite, ref mut start, end)) => {
                    if settings.god_mode || is_in_fov {
                        let draw_pos = (start.x + direction(end.x - start.x),
                                        start.y + direction(end.y - start.y));
                        let new_start_pos = Pos::from(draw_pos);
-                        display_state.draw_sprite(sprite.sprite_key,
-                                                  sprite.index as i32,
-                                                  new_start_pos.x,
-                                                  new_start_pos.y,
-                                                  object.color,
-                                                  &area);
+
+                       display_state.draw_sprite(sprite.sprite_key,
+                                                 sprite.index as i32,
+                                                 new_start_pos.x,
+                                                 new_start_pos.y,
+                                                 object.color,
+                                                 &area);
                        sprite.step();
                        *start = new_start_pos;
                    }

@@ -6,7 +6,7 @@ use sdl2::pixels::{Color as Sdl2Color};
 
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
-use roguelike_core::animation::{Effect, SpriteKey, Animation, Sprite};
+use roguelike_core::animation::{Effect, SpriteKey, Animation, Sprite, SpriteIndex};
 
 use crate::plat::*;
 
@@ -52,6 +52,14 @@ impl<'a> DisplayState<'a> {
         if let Some(sprite_key) = self.lookup_spritekey(&name) {
             let max_index = self.sprites[sprite_key].num_sprites;
             return Some(Sprite::make_sprite(name, sprite_key, max_index as f32));
+        }
+
+        return None;
+    }
+
+    pub fn font_sprite(&self, chr: char) -> Option<Sprite> {
+        if let Some(sprite_key) = self.lookup_spritekey(&"font".to_string()) {
+            return Some(Sprite::new(format!("{}", chr), sprite_key, chr as i32 as SpriteIndex, 1.0, 0.0));
         }
 
         return None;

@@ -24,6 +24,19 @@ pub struct Sprite {
 }
 
 impl Sprite {
+    pub fn new(name: String,
+               sprite_key: SpriteKey,
+               index: SpriteIndex,
+               max_index: SpriteIndex,
+               speed: f32) -> Sprite {
+        return Sprite { name,
+                        sprite_key,
+                        index,
+                        max_index,
+                        speed,
+        };
+    }
+
     pub fn make_sprite(name: String, sprite_key: SpriteKey, max_index: SpriteIndex) -> Sprite {
         return Sprite {
             name,
@@ -49,7 +62,7 @@ impl Sprite {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Animation {
-    Loop(Sprite),                         // play sprite sheet in loop
-    Between(Sprite, Pos, Pos, f32),       // start, end, how far between
+    Loop(Sprite),               // play sprite sheet in loop
+    Between(Sprite, Pos, Pos),  // start, end
     //Then(Box<Animation>, Box<Animation>), // play sprite, then transition to next animation
 }
