@@ -73,5 +73,4 @@ pub enum Animation {
     Loop(Sprite),                         // play sprite sheet in loop
     Between(Sprite, Pos, Pos, f32, f32),  // start, end, dist, blocks_per_sec
     PlayEffect(Effect),
-    Then(AnimKey, AnimKey), // play sprite, then transition to next animation
 }

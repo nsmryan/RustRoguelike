@@ -201,15 +201,10 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     let sound_key = game.display_state.play_animation(sound_anim);
                     let loop_key = game.display_state.play_animation(loop_anim);
 
-                    let pair_anim = Animation::Then(stone_key, sound_key);
-                    let anim = game.display_state.play_animation(pair_anim);
-
-                    let anim = Animation::Then(anim, loop_key);
-
-                    let anim_key =
-                        game.display_state.play_animation(anim);
-
-                    game.data.objects[*stone_id].animation = Some(anim_key);
+                    game.data.objects[*stone_id].animation.clear();
+                    game.data.objects[*stone_id].animation.push_back(stone_key);
+                    game.data.objects[*stone_id].animation.push_back(sound_key);
+                    game.data.objects[*stone_id].animation.push_back(loop_key);
                 }
 
                 Msg::Moved(object_id, pos) => {

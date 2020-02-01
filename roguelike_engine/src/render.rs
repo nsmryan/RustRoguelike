@@ -502,8 +502,13 @@ pub fn render_objects(display_state: &mut DisplayState,
                                   pos,
                                   FOV_RADIUS);
 
-            if let Some(anim_key) = data.objects[*object_id].animation {
-                step_animation(anim_key, *object_id, is_in_fov, display_state, data, settings, config, area);
+            if let Some(anim_key) = data.objects[*object_id].animation.get(0) {
+                let done = 
+                    step_animation(*anim_key, *object_id, is_in_fov, display_state, data, settings, config, area);
+
+                if done {
+                    data.objects[*object_id].animation.pop_front();
+                }
             } else {
                 let color = data.objects[*object_id].color;
                 display_state.draw_char(data.objects[*object_id].chr, pos.x, pos.y, color, area);
@@ -556,12 +561,13 @@ pub fn step_animation(anim_key: AnimKey,
                                           color,
                                           &area);
 
-                let sprite_looped = sprite.step();
+                sprite.step();
 
                 display_state.animations[anim_key] =
                    Animation::Loop(*sprite);
 
-                return sprite_looped;
+                // a looping animation never finishes
+                return false;
             }
         }
 
@@ -570,21 +576,6 @@ pub fn step_animation(anim_key: AnimKey,
 
             // true indicates that the animation is finished
             return true;
-        }
-
-        Animation::Then(initial, next) => {
-            let animation_finished =
-                step_animation(initial, object_id, is_in_fov, display_state, data, settings, config, area);
-
-            if animation_finished {
-                data.objects[object_id].animation = Some(next);
-
-                display_state.animations.remove(initial);
-
-                display_state.animations.remove(anim_key);
-            }
-
-            return false;
         }
 
         _ => {

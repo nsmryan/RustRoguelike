@@ -29,6 +29,8 @@ test:
 retest:
   RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo watch -x test
 
+sizes:
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld -Z print-type-sizes" cargo +nightly build
 
 debug:
   RUST_BACKTRACE=1 cargo run

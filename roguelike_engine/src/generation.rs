@@ -36,7 +36,7 @@ pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object 
 
     let anim_key = display_state.play_animation(Animation::Loop(sprite));
 
-    player.animation = Some(anim_key);
+    player.animation.push_front(anim_key);
 
     player
 }
@@ -70,7 +70,7 @@ pub fn make_gol(config: &Config, pos: Pos, display_state: &mut DisplayState) -> 
 
     let anim_key = display_state.play_animation(Animation::Loop(sprite));
 
-    gol.animation = Some(anim_key);
+    gol.animation.push_front(anim_key);
     
     return gol;
 } 
@@ -104,7 +104,7 @@ pub fn make_pawn(config: &Config, pos: Pos, display_state: &mut DisplayState) ->
                                      .expect("Could not find sprite 'elf_idle'");
     let anim_key = display_state.play_animation(Animation::Loop(sprite));
 
-    pawn.animation = Some(anim_key);
+    pawn.animation.push_front(anim_key);
 
     return pawn;
 }
@@ -121,7 +121,7 @@ pub fn make_spikes(config: &Config, pos: Pos, display_state: &mut DisplayState) 
 
     let anim_key = display_state.play_animation(Animation::Loop(sprite));
 
-    spikes.animation = Some(anim_key);
+    spikes.animation.push_front(anim_key);
 
     return spikes;
 }
@@ -142,7 +142,7 @@ pub fn make_key(config: &Config, pos: Pos, display_state: &mut DisplayState) -> 
 
     let anim_key = display_state.play_animation(Animation::Loop(sprite));
 
-    pawn.animation = Some(anim_key);
+    pawn.animation.push_front(anim_key);
 
     return pawn;
 }

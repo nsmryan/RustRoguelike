@@ -1,4 +1,5 @@
 use std::convert::Into;
+use std::collections::VecDeque;
 
 use serde_derive::*;
 
@@ -333,7 +334,7 @@ pub struct Object {
     pub momentum: Option<Momentum>,
     pub movement: Option<Reach>,
     pub attack: Option<Reach>,
-    pub animation: Option<AnimKey>,
+    pub animation: VecDeque<AnimKey>,
     pub inventory: Vec<ObjectId>,
     pub trap: Option<Trap>,
 }
@@ -355,7 +356,7 @@ impl Object {
             momentum: None,
             movement: None,
             attack: None,
-            animation: None,
+            animation: VecDeque::new(),
             inventory: Vec::new(),
             trap: None,
         }
@@ -408,3 +409,4 @@ impl Object {
         }
     }
 }
+
