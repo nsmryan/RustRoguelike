@@ -6,7 +6,7 @@ use sdl2::pixels::{Color as Sdl2Color};
 
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
-use roguelike_core::animation::{Effect, SpriteKey, Animation, Sprite, SpriteIndex};
+use roguelike_core::animation::{AnimKey, Effect, SpriteKey, Animation, Sprite, SpriteIndex};
 
 use crate::plat::*;
 
@@ -19,6 +19,7 @@ pub struct DisplayState<'a> {
     pub zones: Vec<Plot>,
     pub canvas: WindowCanvas,
     pub effects: Vec<Effect>,
+    pub animations: DenseSlotMap<AnimKey, Animation>,
 }
 
 impl<'a> DisplayState<'a> {
@@ -35,6 +36,7 @@ impl<'a> DisplayState<'a> {
             canvas,
             zones: Vec::new(),
             effects: Vec::new(),
+            animations: DenseSlotMap::new(),
         };
     }
 
@@ -137,6 +139,10 @@ impl<'a> DisplayState<'a> {
                             None,
                             false,
                             false).unwrap();
+    }
+
+    pub fn play_animation(&mut self, animation: Animation) -> AnimKey {
+        return self.animations.insert(animation);
     }
 
     pub fn play_effect(&mut self, effect: Effect) {

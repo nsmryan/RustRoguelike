@@ -1,10 +1,12 @@
 
 use slotmap::DefaultKey;
 
-use crate::types::Pos;
+use crate::types::{Name, Pos};
 
 
 pub type SpriteKey = DefaultKey;
+
+pub type AnimKey = DefaultKey;
 
 pub type SpriteIndex = f32;
 
@@ -14,9 +16,9 @@ pub enum Effect {
     Sound(Pos, usize, usize), // center, current radius, max radius
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Sprite {
-    pub name: String,
+    pub name: Name,
     pub sprite_key: SpriteKey,
     pub index: SpriteIndex,
     pub start_index: SpriteIndex,
@@ -30,7 +32,7 @@ impl Sprite {
                index: SpriteIndex,
                max_index: SpriteIndex,
                speed: f32) -> Sprite {
-        return Sprite { name,
+        return Sprite { name: name.into(),
                         sprite_key,
                         index,
                         start_index: index,
@@ -44,7 +46,7 @@ impl Sprite {
                        max_index: SpriteIndex,
                        speed: f32) -> Sprite {
         return Sprite {
-            name,
+            name: name.into(),
             sprite_key,
             max_index,
             index: 0.0,
@@ -66,9 +68,10 @@ impl Sprite {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Animation {
-    Loop(Sprite),               // play sprite sheet in loop
+    Loop(Sprite),                         // play sprite sheet in loop
     Between(Sprite, Pos, Pos, f32, f32),  // start, end, dist, blocks_per_sec
-    //Then(Box<Animation>, Box<Animation>), // play sprite, then transition to next animation
+    PlayEffect(Effect),
+    Then(AnimKey, AnimKey), // play sprite, then transition to next animation
 }

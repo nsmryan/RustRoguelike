@@ -65,7 +65,7 @@ pub struct Game<'a> {
 impl<'a> Game<'a> {
     pub fn new(args: &Vec<String>,
                config: Config,
-               display_state: DisplayState<'a>) -> Result<Game<'a>, String> {
+               mut display_state: DisplayState<'a>) -> Result<Game<'a>, String> {
         // Create seed for random number generator, either from
         // user input or randomly
         let seed: u64;
@@ -85,7 +85,7 @@ impl<'a> Game<'a> {
         let player_position;
         match config.map_load {
             MapLoadConfig::FromFile => {
-                let (new_objects, new_map, mut position) = read_map_xp(&config, &display_state, "resources/map.xp");
+                let (new_objects, new_map, mut position) = read_map_xp(&config, &mut display_state, "resources/map.xp");
                 objects.clear();
                 for object in new_objects.values() {
                     objects.insert(object.clone());
@@ -97,8 +97,8 @@ impl<'a> Game<'a> {
                 player_position = position;
 
                 objects.insert(make_goal(&config, Pos::new(player_position.0 - 1, player_position.1)));
-                objects.insert(make_mouse(&config, &display_state));
-                objects.insert(make_spikes(&config, Pos::new(player_position.0, player_position.1 - 2), &display_state));
+                objects.insert(make_mouse(&config, &mut display_state));
+                objects.insert(make_spikes(&config, Pos::new(player_position.0, player_position.1 - 2), &mut display_state));
 
                 let exit_position = (player_position.0 + 1, player_position.1 - 1);
                 map[exit_position].tile_type = TileType::Exit;
@@ -107,35 +107,35 @@ impl<'a> Game<'a> {
 
             MapLoadConfig::Random => {
                 let (game_data, position) =
-                    make_map(&MapGenType::Island, &mut objects, &config, &display_state, &mut rng);
+                    make_map(&MapGenType::Island, &mut objects, &config, &mut display_state, &mut rng);
                 // TODO consider using objects as well here on regen?
                 map = game_data.map;
                 player_position = position.to_tuple();
             }
 
             MapLoadConfig::TestWall => {
-                let (new_map, position) = make_wall_test_map(&mut objects, &config, &display_state);
+                let (new_map, position) = make_wall_test_map(&mut objects, &config, &mut display_state);
                 map = new_map;
                 player_position = position.to_tuple();
             }
 
             MapLoadConfig::TestPlayer => {
-                let (new_map, position) = make_player_test_map(&mut objects, &config, &display_state);
+                let (new_map, position) = make_player_test_map(&mut objects, &config, &mut display_state);
                 map = new_map;
                 player_position = position.to_tuple();
             }
 
             MapLoadConfig::TestCorner => {
-                let (new_map, position) = make_corner_test_map(&mut objects, &config, &display_state);
+                let (new_map, position) = make_corner_test_map(&mut objects, &config, &mut display_state);
                 map = new_map;
                 player_position = position.to_tuple();
-                objects.insert(make_mouse(&config, &display_state));
+                objects.insert(make_mouse(&config, &mut display_state));
             }
         }
 
         let mut data = GameData::new(map, objects);
 
-        let player_handle = data.objects.insert(make_player(&config, &display_state));
+        let player_handle = data.objects.insert(make_player(&config, &mut display_state));
         data.objects[player_handle].x = player_position.0;
         data.objects[player_handle].y = player_position.1;
 
@@ -184,7 +184,8 @@ impl<'a> Game<'a> {
 
         let player_handle = self.data.find_player().unwrap();
 
-        let (new_objects, new_map, _) = read_map_xp(&self.config, &self.display_state, "resources/map.xp");
+        let (new_objects, new_map, _) =
+            read_map_xp(&self.config, &mut self.display_state, "resources/map.xp");
         self.data.map = new_map;
         self.data.objects[player_handle].inventory.clear();
         let player = self.data.objects[player_handle].clone();

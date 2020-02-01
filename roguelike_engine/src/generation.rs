@@ -22,7 +22,7 @@ pub enum MapGenType {
 
 
 //if we want to use a character sprite, a potential value is '\u{8B}'
-pub fn make_player(config: &Config, display_state: &DisplayState) -> Object {
+pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object {
     let mut player = Object::new(0, 0, '@', Color::white(), "player", true);
 
     player.alive = true;
@@ -33,7 +33,10 @@ pub fn make_player(config: &Config, display_state: &DisplayState) -> Object {
 
     let sprite = display_state.new_sprite("player_idle".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'player_idle'");
-    player.animation = Some(Animation::Loop(sprite));
+
+    let anim_key = display_state.play_animation(Animation::Loop(sprite));
+
+    player.animation = Some(anim_key);
 
     player
 }
@@ -45,13 +48,13 @@ pub fn make_goal(config: &Config, pos: Pos) -> Object {
     return object;
 }
 
-pub fn make_mouse(_config: &Config, _display_state: &DisplayState) -> Object {
+pub fn make_mouse(_config: &Config, _display_state: &mut DisplayState) -> Object {
     let mouse = Object::new(-1, -1, ' ', Color::white(), "mouse", false);
 
     mouse
 }
 
-pub fn make_gol(config: &Config, pos: Pos, display_state: &DisplayState) -> Object {
+pub fn make_gol(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
     let mut gol = Object::new(pos.x, pos.y, '\u{98}', config.color_orange, "gol", true);
 
     gol.fighter = Some( Fighter { max_hp: 10, hp: 10, defense: 0, power: 5, } );
@@ -64,7 +67,10 @@ pub fn make_gol(config: &Config, pos: Pos, display_state: &DisplayState) -> Obje
 
     let sprite = display_state.new_sprite("gol_idle".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'gol_idle'");
-    gol.animation = Some(Animation::Loop(sprite));
+
+    let anim_key = display_state.play_animation(Animation::Loop(sprite));
+
+    gol.animation = Some(anim_key);
     
     return gol;
 } 
@@ -83,7 +89,7 @@ pub fn make_spire(config: &Config, pos: Pos) -> Object {
     return spire;
 }
 
-pub fn make_pawn(config: &Config, pos: Pos, display_state: &DisplayState) -> Object {
+pub fn make_pawn(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
     let mut pawn = Object::new(pos.x, pos.y, '\u{A5}', config.color_orange, "pawn", true);
 
     pawn.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, } );
@@ -96,12 +102,14 @@ pub fn make_pawn(config: &Config, pos: Pos, display_state: &DisplayState) -> Obj
 
     let sprite = display_state.new_sprite("elf_idle".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'elf_idle'");
-    pawn.animation = Some(Animation::Loop(sprite));
+    let anim_key = display_state.play_animation(Animation::Loop(sprite));
+
+    pawn.animation = Some(anim_key);
 
     return pawn;
 }
 
-pub fn make_spikes(config: &Config, pos: Pos, display_state: &DisplayState) -> Object {
+pub fn make_spikes(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
     let mut spikes = Object::new(pos.x, pos.y, MAP_TALL_SPIKES as char, config.color_ice_blue, "spike", false);
 
     spikes.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, } );
@@ -110,12 +118,15 @@ pub fn make_spikes(config: &Config, pos: Pos, display_state: &DisplayState) -> O
 
     let sprite = display_state.new_sprite("spikes".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'spikes'");
-    spikes.animation = Some(Animation::Loop(sprite));
+
+    let anim_key = display_state.play_animation(Animation::Loop(sprite));
+
+    spikes.animation = Some(anim_key);
 
     return spikes;
 }
 
-pub fn make_key(config: &Config, pos: Pos, display_state: &DisplayState) -> Object {
+pub fn make_key(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
     let mut pawn = Object::new(pos.x, pos.y, '\u{A5}', config.color_orange, "key", true);
 
     pawn.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, } );
@@ -127,8 +138,11 @@ pub fn make_key(config: &Config, pos: Pos, display_state: &DisplayState) -> Obje
     pawn.alive = true;
 
     let sprite = display_state.new_sprite("elf_idle".to_string(), config.idle_speed)
-                                     .expect("Could not find sprite 'elf_idle'");
-    pawn.animation = Some(Animation::Loop(sprite));
+                              .expect("Could not find sprite 'elf_idle'");
+
+    let anim_key = display_state.play_animation(Animation::Loop(sprite));
+
+    pawn.animation = Some(anim_key);
 
     return pawn;
 }
@@ -147,7 +161,7 @@ pub fn make_stone(config: &Config, pos: Pos) -> Object {
 pub fn make_map(map_type: &MapGenType,
                 objects: &mut ObjMap,
                 config: &Config,
-                display_state: &DisplayState,
+                display_state: &mut DisplayState,
                 rng: &mut SmallRng) -> (GameData, Pos) {
     let result;
     match map_type {
@@ -197,7 +211,7 @@ pub fn make_map(map_type: &MapGenType,
 
 pub fn make_island(data: &mut GameData,
                    config: &Config,
-                   display_state: &DisplayState,
+                   display_state: &mut DisplayState,
                    rng: &mut SmallRng) -> Pos {
     let center = Pos::new(data.map.width() / 2, data.map.height() / 2);
 
@@ -376,7 +390,7 @@ pub fn make_player_test_map(objects: &mut ObjMap,
 
 pub fn make_wall_test_map(objects: &mut ObjMap,
                           config: &Config,
-                          display_state: &DisplayState) -> (Map, Pos) {
+                          display_state: &mut DisplayState) -> (Map, Pos) {
     let mut map = Map::from_dims(10, 10);
     let position = (1, 5);
 
@@ -395,7 +409,7 @@ pub fn make_wall_test_map(objects: &mut ObjMap,
 
 pub fn make_corner_test_map(objects: &mut ObjMap,
                             config: &Config,
-                            display_state: &DisplayState) -> (Map, Pos) {
+                            display_state: &mut DisplayState) -> (Map, Pos) {
     let mut map = Map::from_dims(15, 15);
     let position = (1, 5);
 

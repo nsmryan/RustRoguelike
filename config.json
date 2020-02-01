@@ -132,11 +132,11 @@
     "highlight_alpha": 76,
     "sound_alpha": 86,
     "grid_alpha": 9,
-    "map_load": "TestPlayer",
+    "map_load": "FromFile",
     "idle_speed": 0.35,
     "draw_mouse_line": false,
     "draw_star_path": false,
     "rate": 30,
-    "stone_throw_speed": 20.0
+    "stone_throw_speed": 30.0
 }
 

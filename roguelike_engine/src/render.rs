@@ -15,7 +15,7 @@ use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::animation::{Effect, Animation};
+use roguelike_core::animation::{Effect, Animation, AnimKey};
 use roguelike_core::utils::{distance, move_towards};
 
 use crate::plat::*;
@@ -493,12 +493,8 @@ pub fn render_objects(display_state: &mut DisplayState,
     let player_handle = data.find_player().unwrap();
     let player_pos = data.objects[player_handle].pos();
 
-    let mut new_objects = Vec::new();
-
-    for object in data.objects.values_mut() {
-        let pos = object.pos();
-        let x = object.x;
-        let y = object.y;
+    for object_id in data.objects.keys().collect::<Vec<ObjectId>>().iter() {
+        let pos = data.objects[*object_id].pos();
 
         if data.map.is_within_bounds(pos) {
             let is_in_fov = 
@@ -506,64 +502,98 @@ pub fn render_objects(display_state: &mut DisplayState,
                                   pos,
                                   FOV_RADIUS);
 
-            match object.animation {
-                Some(Animation::Between(ref mut sprite, start, end, ref mut dist, blocks_per_sec)) => {
-                   if settings.god_mode || is_in_fov {
-                       *dist = *dist + (blocks_per_sec / config.rate as f32);
-
-                       let num_blocks = *dist as usize;
-
-                       let draw_pos = move_towards(start, end, num_blocks);
-
-                       display_state.draw_sprite(&sprite,
-                                                 draw_pos.x,
-                                                 draw_pos.y,
-                                                 object.color,
-                                                 &area);
-                       sprite.step();
-                   }
-                }
-
-                Some(Animation::Loop(ref mut sprite)) => {
-                   if settings.god_mode || is_in_fov {
-                        display_state.draw_sprite(&sprite,
-                                                  x,
-                                                  y,
-                                                  object.color,
-                                                  &area);
-                        sprite.step();
-                    }
-                }
-
-                /*
-                Some(Animation::Then(initial, next) =
-                    if settings.god_mode || is_in_fov {
-                        let sprite_index = (*sprite_val) as i32;
-                        display_state.draw_sprite(sprite_key,
-                                                 sprite_index,
-                                                 end.x,
-                                                 end.y,
-                                                 object.color,
-                                                 &area);
-                        *sprite_val = *sprite_val + config.idle_speed;
-                        if *sprite_val as usize >= display_state.sprites[sprite_key].num_sprites {
-                            *sprite_val = 0.0;
-                        }
-                    }
-                }
-                */
-
-                // otherwise just draw the objects character (the default)
-                _ => {
-                    display_state.draw_char(object.chr, object.x, object.y, object.color, area);
-                }
+            if let Some(anim_key) = data.objects[*object_id].animation {
+                step_animation(anim_key, *object_id, is_in_fov, display_state, data, settings, config, area);
+            } else {
+                let color = data.objects[*object_id].color;
+                display_state.draw_char(data.objects[*object_id].chr, pos.x, pos.y, color, area);
             }
         }
     }
+}
 
-    for obj in new_objects {
-        data.objects.insert(obj);
+pub fn step_animation(anim_key: AnimKey,
+                      object_id: ObjectId,
+                      is_in_fov: bool,
+                      display_state: &mut DisplayState,
+                      data: &mut GameData,
+                      settings: &GameSettings,
+                      config: &Config,
+                      area: &Area) -> bool {
+
+    let pos = data.objects[object_id].pos();
+    let color = data.objects[object_id].color;
+
+    match display_state.animations[anim_key].clone() {
+        Animation::Between(ref mut sprite, start, end, ref mut dist, blocks_per_sec) => {
+           if settings.god_mode || is_in_fov {
+               *dist = *dist + (blocks_per_sec / config.rate as f32);
+
+               let num_blocks = *dist as usize;
+
+               let draw_pos = move_towards(start, end, num_blocks);
+
+               display_state.draw_sprite(sprite,
+                                         draw_pos.x,
+                                         draw_pos.y,
+                                         color,
+                                         &area);
+
+               sprite.step();
+
+               display_state.animations[anim_key] =
+                   Animation::Between(*sprite, start, end, *dist, blocks_per_sec);
+
+               return *dist >= distance(start, end) as f32;
+           }
+        }
+
+        Animation::Loop(ref mut sprite) => {
+           if settings.god_mode || is_in_fov {
+                display_state.draw_sprite(sprite,
+                                          pos.x,
+                                          pos.y,
+                                          color,
+                                          &area);
+
+                let sprite_looped = sprite.step();
+
+                display_state.animations[anim_key] =
+                   Animation::Loop(*sprite);
+
+                return sprite_looped;
+            }
+        }
+
+        Animation::PlayEffect(effect) => {
+            display_state.play_effect(effect);
+
+            // true indicates that the animation is finished
+            return true;
+        }
+
+        Animation::Then(initial, next) => {
+            let animation_finished =
+                step_animation(initial, object_id, is_in_fov, display_state, data, settings, config, area);
+
+            if animation_finished {
+                data.objects[object_id].animation = Some(next);
+
+                display_state.animations.remove(initial);
+
+                display_state.animations.remove(anim_key);
+            }
+
+            return false;
+        }
+
+        _ => {
+            panic!("Attempted to draw an empty animation!?!?!?");
+        }
     }
+
+    // assume animation is 'not finished' if it doesn't return anything
+    return false;
 }
 
 pub fn render_overlays(display_state: &mut DisplayState,

@@ -9,14 +9,18 @@ use num::clamp;
 use slotmap::dense::*;
 use slotmap::DefaultKey;
 
+use symbol::Symbol;
+
 use euclid::Point2D;
 
 use crate::map::*;
 use crate::utils::*;
 use crate::constants::*;
 use crate::movement::*;
-use crate::animation::Animation;
+use crate::animation::AnimKey;
 
+
+pub type Name = Symbol;
 
 pub type ObjectId = DefaultKey;
 
@@ -329,7 +333,7 @@ pub struct Object {
     pub momentum: Option<Momentum>,
     pub movement: Option<Reach>,
     pub attack: Option<Reach>,
-    pub animation: Option<Animation>,
+    pub animation: Option<AnimKey>,
     pub inventory: Vec<ObjectId>,
     pub trap: Option<Trap>,
 }

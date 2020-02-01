@@ -187,14 +187,29 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
             match msg {
                 Msg::StoneThrow(thrower, stone_id, start, end) => {
-                    game.display_state.play_effect(Effect::Sound(*end, 0, STONE_SOUND_RADIUS));
+                    //game.display_state.play_effect(Effect::Sound(*end, 0, STONE_SOUND_RADIUS));
 
                     let stone_sprite =
                         game.display_state.font_sprite(ENTITY_STONE as char)
                             .expect("Could not find stone sprite!");
 
-                    game.data.objects[*stone_id].animation = 
-                        Some(Animation::Between(stone_sprite, *start, *end, 0.0, config.stone_throw_speed));
+                    let stone_anim = Animation::Between(stone_sprite, *start, *end, 0.0, config.stone_throw_speed);
+                    let sound_anim = Animation::PlayEffect(Effect::Sound(*end, 0, SOUND_RADIUS));
+                    let loop_anim = Animation::Loop(stone_sprite);
+
+                    let stone_key = game.display_state.play_animation(stone_anim);
+                    let sound_key = game.display_state.play_animation(sound_anim);
+                    let loop_key = game.display_state.play_animation(loop_anim);
+
+                    let pair_anim = Animation::Then(stone_key, sound_key);
+                    let anim = game.display_state.play_animation(pair_anim);
+
+                    let anim = Animation::Then(anim, loop_key);
+
+                    let anim_key =
+                        game.display_state.play_animation(anim);
+
+                    game.data.objects[*stone_id].animation = Some(anim_key);
                 }
 
                 Msg::Moved(object_id, pos) => {
@@ -221,7 +236,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         if game.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
             let player_handle = game.data.find_player().unwrap();
 
-            let (new_objects, new_map, _) = read_map_xp(&game.config, &game.display_state, "resources/map.xp");
+            let (new_objects, new_map, _) = read_map_xp(&game.config, &mut game.display_state, "resources/map.xp");
             game.data.map = new_map;
             game.data.objects[player_handle].inventory.clear();
             let player = game.data.objects[player_handle].clone();
