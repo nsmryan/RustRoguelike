@@ -272,13 +272,6 @@ pub fn player_move_or_attack(movement: Movement,
                     .as_mut()
                     .map(|momentum| momentum.took_half_turn =
                          player_action == Move(movement));
-
-                // Set up sound for movement
-                let sound = Object::new(x, y, ' ' as char, Color::white(), "sound", false);
-                // TODO ANIMATION
-                //let momentum_amount = data.objects[player_handle].momentum.unwrap();
-                //sound.animation = Some(Animation::Sound(0, momentum_amount.magnitude() as usize));
-                data.objects.insert(sound);
             }
 
             if movement == Movement::Move(pos) {
