@@ -33,4 +33,4 @@ sizes:
   RUSTFLAGS="-C link-arg=-fuse-ld=lld -Z print-type-sizes" cargo +nightly build
 
 debug:
-  RUST_BACKTRACE=1 cargo run
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld" RUST_BACKTRACE=1 cargo run

@@ -182,6 +182,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         }
 
         /* Handle Message Log */
+        let mut to_remove = Vec::new();
         for msg in game.msg_log.messages.iter() {
             println!("{}", msg.msg_line(&game.data));
 
@@ -214,11 +215,21 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     }
                 }
 
+                Msg::Killed(attacker, attacked, damage) => {
+                    if game.data.objects[*attacked].name != "player".to_string() {
+                        to_remove.push(*attacked);
+                    }
+                }
+
                 _ => {
                 }
             }
         }
         game.msg_log.clear();
+
+        for remove in to_remove {
+            game.data.objects.remove(remove);
+        }
 
         /* Draw the Game to the Screen */
         render_all(&mut game.display_state,

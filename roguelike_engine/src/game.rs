@@ -302,8 +302,6 @@ pub fn step_logic(player_action: Action,
                     game_data.objects[key].chr = '%';
                     game_data.objects[key].color = config.color_red;
                     game_data.objects[key].fighter = None;
-
-                    game_data.objects.remove(key);
                 }
             }
         }
