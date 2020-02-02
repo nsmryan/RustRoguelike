@@ -96,7 +96,7 @@ impl<'a> Game<'a> {
                 }
                 player_position = position;
 
-                objects.insert(make_goal(&config, Pos::new(player_position.0 - 1, player_position.1)));
+                objects.insert(make_goal(&config, &mut display_state, Pos::new(player_position.0 - 1, player_position.1)));
                 objects.insert(make_mouse(&config, &mut display_state));
                 objects.insert(make_spikes(&config, Pos::new(player_position.0, player_position.1 - 2), &mut display_state));
 

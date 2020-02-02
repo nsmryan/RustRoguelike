@@ -3,6 +3,8 @@ use std::hash::{Hash, Hasher};
 
 use tcod::line::*;
 
+use symbol::Symbol;
+
 use noise::Perlin;
 use noise::NoiseFn;
 
@@ -231,7 +233,7 @@ pub fn render_info(display_state: &mut DisplayState,
 
                 y_pos += 1;
 
-                if !data.objects[*obj_id].alive {
+                if data.objects[*obj_id].fighter.map_or(false, |fighter| fighter.hp <= 0) {
                     let text_pos = Pos::new(1, y_pos);
                     display_state.draw_text(format!(" {}", "dead"),
                                            text_pos,

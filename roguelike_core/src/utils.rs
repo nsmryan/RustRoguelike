@@ -14,12 +14,12 @@ pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, ms
     if damage > 0 {
         objects[other_handle].take_damage(damage);
 
+        msg_log.log(Msg::Attack(handle, other_handle, damage));
+
         if objects[other_handle].fighter.unwrap().hp <= 0 {
             objects[other_handle].alive = false;
 
             msg_log.log(Msg::Killed(handle, other_handle, damage));
-        } else {
-            msg_log.log(Msg::Attack(handle, other_handle, damage));
         }
     }
 }

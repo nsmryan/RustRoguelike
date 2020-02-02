@@ -29,6 +29,8 @@ noise = { version = "0.6", default-features = false }
 
 rexpaint = "*"
 
+symbol = "0.1"
+
 mint = "0.5.1"
 
 rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }

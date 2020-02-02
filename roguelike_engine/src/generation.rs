@@ -41,9 +41,16 @@ pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object 
     player
 }
 
-pub fn make_goal(config: &Config, pos: Pos) -> Object {
-    let mut object = Object::new(pos.x, pos.y, ENTITY_GOAL as char, config.color_red, "goal", false);
+pub fn make_goal(config: &Config, display_state: &mut DisplayState, pos: Pos) -> Object {
+    let mut object = Object::new(pos.x, pos.y, ENTITY_GOAL as char, config.color_orange, "goal", false);
     object.item = Some(Item::Goal);
+
+    let sprite = display_state.new_sprite("goal".to_string(), config.goal_speed)
+                                     .expect("Could not find sprite 'goal'");
+
+    let anim_key = display_state.play_animation(Animation::Loop(sprite));
+
+    object.animation.push_front(anim_key);
 
     return object;
 }
@@ -337,7 +344,7 @@ pub fn make_island(data: &mut GameData,
     while !data.map.is_empty(pos) {
         pos = pos_in_radius(center, ISLAND_RADIUS, rng);
     }
-    data.objects.insert(make_goal(&config, pos));
+    data.objects.insert(make_goal(&config, display_state, pos));
 
     /* add exit */
     // find edge of island

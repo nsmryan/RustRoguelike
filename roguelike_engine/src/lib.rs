@@ -78,6 +78,9 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let font_as_sprite = texture_creator.load_texture("resources/rexpaint16x16.png")
         .map_err(|e| e.to_string())?;
 
+    let mcmuffin = texture_creator.load_texture("animations/traps/McMuffin.png")
+        .map_err(|e| e.to_string())?;
+
 
     let mut sprites = DenseSlotMap::new();
     sprites.insert(SpriteSheet::new("player_wall_kick".to_string(), player_wall_kick, 1));
@@ -88,6 +91,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     sprites.insert(SpriteSheet::new("elf_idle".to_string(),         elf_idle,         1));
     sprites.insert(SpriteSheet::new("spikes".to_string(),           spikes_anim,      1));
     sprites.insert(SpriteSheet::new("font".to_string(),             font_as_sprite,   16));
+    sprites.insert(SpriteSheet::new("goal".to_string(),             mcmuffin,         1));
 
 
     /* Create Display Structures */
@@ -247,13 +251,13 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                 Msg::Attack(attacker, attacked, damage) => {
                     if game.data.objects[*attacker].name == "player" {
                         let attack_sprite = 
-                            game.display_state.new_sprite("player_attack".to_string(), 1.0)
+                            game.display_state.new_sprite("player_attack".to_string(), config.player_attack_speed)
                                               .unwrap();
                         let attack_anim = Animation::Once(attack_sprite);
                         let attack_key = game.display_state.play_animation(attack_anim);
 
                         let idle_sprite = 
-                            game.display_state.new_sprite("player_idle".to_string(), 1.0)
+                            game.display_state.new_sprite("player_idle".to_string(), config.idle_speed)
                                               .unwrap();
                         let idle_anim = Animation::Loop(idle_sprite);
                         let idle_key = game.display_state.play_animation(idle_anim);
