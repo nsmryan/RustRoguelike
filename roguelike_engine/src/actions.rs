@@ -3,6 +3,7 @@ use rand::prelude::*;
 use tcod::line::*;
 
 use roguelike_core::config::*;
+use roguelike_core::types::Action;
 use roguelike_core::types::*;
 use roguelike_core::movement;
 use roguelike_core::movement::*;
@@ -179,6 +180,4 @@ pub fn throw_stone(player_handle: ObjectId,
     // log the stone throw event
     let end_pos = Pos::new(target_x, target_y);
     msg_log.log(Msg::StoneThrow(player_handle, stone_handle, start_pos, end_pos));
-
-    game_data.objects.insert(generation::make_sound(config, STONE_SOUND_RADIUS, end_pos));
 }

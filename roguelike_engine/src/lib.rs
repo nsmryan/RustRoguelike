@@ -21,9 +21,10 @@ use slotmap::dense::*;
 
 use roguelike_core::types::*;
 use roguelike_core::config::*;
-use roguelike_core::messaging::{Msg, MsgLog};
+use roguelike_core::messaging::Msg;
 use roguelike_core::constants::*;
 use roguelike_core::animation::{Effect, Animation};
+use roguelike_core::movement::Movement;
 
 use crate::display::*;
 use crate::render::*;
@@ -204,6 +205,9 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                         game.display_state.font_sprite(ENTITY_STONE as char)
                             .expect("Could not find stone sprite!");
 
+                    let sound = generation::make_sound(&config, STONE_SOUND_RADIUS, *end, false, &mut game.display_state);
+                    game.data.objects.insert(sound);
+
                     let stone_anim = Animation::Between(stone_sprite, *start, *end, 0.0, config.stone_throw_speed);
                     let sound_anim = Animation::PlayEffect(Effect::Sound(*end, 0, SOUND_RADIUS));
                     let loop_anim = Animation::Loop(stone_sprite);
@@ -218,19 +222,24 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     game.data.objects[*stone_id].animation.push_back(loop_key);
                 }
 
-                Msg::Moved(object_id, pos) => {
+                Msg::Moved(object_id, movement, pos) => {
                     let player_handle = game.data.find_player().unwrap();
                     if *object_id == player_handle {
-                        game.display_state.play_effect(Effect::Sound(*pos, 0, SOUND_RADIUS));
 
-                        let idle_sprite = 
-                            game.display_state.new_sprite("player_idle".to_string(), 1.0)
-                                              .unwrap();
-                        let idle_anim = Animation::Loop(idle_sprite);
-                        let idle_key = game.display_state.play_animation(idle_anim);
+                        if let Movement::Pass(_) = movement {
+                            // this is just to pattern match on movement
+                        } else {
+                            generation::make_sound(&config, SOUND_RADIUS, *pos, true, &mut game.display_state);
 
-                        game.data.objects[player_handle].animation.clear();
-                        game.data.objects[player_handle].animation.push_back(idle_key);
+                            let idle_sprite = 
+                                game.display_state.new_sprite("player_idle".to_string(), 1.0)
+                                                  .unwrap();
+                            let idle_anim = Animation::Loop(idle_sprite);
+                            let idle_key = game.display_state.play_animation(idle_anim);
+
+                            game.data.objects[player_handle].animation.clear();
+                            game.data.objects[player_handle].animation.push_back(idle_key);
+                        }
                     }
                 }
 

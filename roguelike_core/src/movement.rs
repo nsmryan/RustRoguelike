@@ -15,6 +15,7 @@ pub type Loudness = usize;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Movement {
     Move(Pos),
+    Pass(Pos),
     Attack(Pos, ObjectId),
     Collide(Pos),
     WallKick(Pos, i32, i32), // (x, y), dir_x, dir_y
@@ -25,6 +26,7 @@ impl Movement {
     pub fn xy(&self) -> Pos {
         match self {
             Movement::Move(pos) => *pos,
+            Movement::Pass(pos) => *pos,
             Movement::Attack(pos, _) => *pos,
             Movement::Collide(pos) => *pos,
             Movement::WallKick(pos, _, _) => *pos,
@@ -246,6 +248,10 @@ pub fn player_move_or_attack(movement: Movement,
             msg_log.log(Msg::Collided(player_handle, pos));
         }
 
+        Movement::Pass(_pos) => {
+            player_action = Action::none();
+        }
+
         Movement::Move(pos) | Movement::JumpWall(pos) => {
             let (x, y) = pos.to_tuple();
             let (dx, dy) = (x - data.objects[player_handle].x, y - data.objects[player_handle].y);
@@ -259,8 +265,6 @@ pub fn player_move_or_attack(movement: Movement,
             // Resolve half-turn mechanic
             if momentum.magnitude() > 1 && !momentum.took_half_turn {
                 player_action = Move(movement);
-            } else if dx == 0 && dy == 0 {
-                player_action = Action::none();
             } else {
                 player_action = Move(movement);
             }
@@ -275,7 +279,7 @@ pub fn player_move_or_attack(movement: Movement,
             }
 
             if movement == Movement::Move(pos) {
-                msg_log.log(Msg::Moved(player_handle, pos));
+                msg_log.log(Msg::Moved(player_handle, movement, pos));
             } else {
                 msg_log.log(Msg::JumpWall(player_handle, pos));
             }
@@ -352,7 +356,13 @@ pub fn calculate_move(action: MoveAction,
         match check_collision(pos, dx, dy, data) {
             Collision::NoCollision(new_pos) => {
                 // no collision- just move to location
-                movement = Some(Movement::Move(new_pos));
+
+                // if didn't move, pass turn
+                if dx == 0 && dy == 0 {
+                    movement = Some(Movement::Pass(pos));
+                } else {
+                    movement = Some(Movement::Move(new_pos));
+                }
             }
 
             Collision::BlockedTile(_tile_pos, new_pos) => {

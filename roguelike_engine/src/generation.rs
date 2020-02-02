@@ -5,7 +5,7 @@ use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::animation::Animation;
+use roguelike_core::animation::{Effect, Animation};
 use roguelike_core::utils::distance;
 
 use crate::display::*;
@@ -41,10 +41,14 @@ pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object 
     player
 }
 
-pub fn make_sound(config: &Config, radius: usize, pos: Pos) -> Object {
+pub fn make_sound(config: &Config, radius: usize, pos: Pos, play_effect: bool, display_state: &mut DisplayState) -> Object {
     let mut object = Object::new(pos.x, pos.y, ' ', config.color_orange, "sound", false);
 
     object.sound = Some(radius);
+
+    if play_effect {
+        display_state.play_effect(Effect::Sound(pos, 0, radius));
+    }
 
     // sound dissipates after 2 turns to allow monsters to hear each others sounds before removing
     object.count_down = Some(2);

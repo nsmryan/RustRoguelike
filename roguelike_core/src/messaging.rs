@@ -1,4 +1,5 @@
 use crate::types::*;
+use crate::movement::Movement;
 
 
 pub struct MsgLog {
@@ -29,7 +30,7 @@ pub enum Msg {
     StoneThrow(ObjectId, ObjectId, Pos, Pos), // thrower, stone id, start, end
     Attack(ObjectId, ObjectId, Hp), // attacker, attacked, hp lost
     Killed(ObjectId, ObjectId, Hp), // attacker, attacked, hp lost
-    Moved(ObjectId, Pos),
+    Moved(ObjectId, Movement, Pos),
     JumpWall(ObjectId, Pos),
     WallKick(ObjectId, Pos),
     StateChange(ObjectId, Behavior),
@@ -53,7 +54,7 @@ impl Msg {
                                game_data.objects[*item].name.clone());
             }
 
-            Msg::StoneThrow(thrower, stone, start, end) => {
+            Msg::StoneThrow(_thrower, _stone, _start, _end) => {
                 return "Stone throw".to_string();
             }
 
@@ -68,8 +69,12 @@ impl Msg {
                 return "Killed".to_string();
             }
 
-            Msg::Moved(object_id, _pos) => {
-                return format!("{} moved", game_data.objects[*object_id].name);
+            Msg::Moved(object_id, movement, _pos) => {
+                if let Movement::Pass(_) = *movement {
+                    return format!("{} passed their turn", game_data.objects[*object_id].name);
+                } else {
+                    return format!("{} moved", game_data.objects[*object_id].name);
+                }
             }
 
             Msg::JumpWall(_object_id, _pos) => {

@@ -230,7 +230,7 @@ pub fn ai_apply_actions(monster_handle: ObjectId,
                 Movement::Move(pos) => {
                     game_data.move_by(monster_handle, pos.x, pos.y);
 
-                    msg_log.log(Msg::Moved(monster_handle, pos));
+                    msg_log.log(Msg::Moved(monster_handle, movement, pos));
                 }
 
                 Movement::Attack(_pos, target_handle) => {

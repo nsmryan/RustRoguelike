@@ -2,7 +2,7 @@ use sdl2::keyboard::Keycode;
 use sdl2::keyboard::Mod;
 
 use roguelike_core::types::*;
-use roguelike_core::movement::*;
+use roguelike_core::movement::MoveAction;
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
