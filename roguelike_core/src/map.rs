@@ -242,7 +242,7 @@ impl Map {
                 break;
             }
 
-            if self[target_pos].blocked {
+            if self[target_pos].blocked && (x, y) != (end_x, end_y) {
                 blocked = true;
                 break;
             }
