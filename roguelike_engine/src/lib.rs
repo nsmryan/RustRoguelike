@@ -66,6 +66,9 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let gol_idle = texture_creator.load_texture("animations/monster1/Gol_Idle.png")
         .map_err(|e| e.to_string())?;
 
+    let gol_die = texture_creator.load_texture("animations/monster1/Gol_Die.png")
+        .map_err(|e| e.to_string())?;
+
     let elf_idle = texture_creator.load_texture("animations/monster3/Elf_Idle.png")
         .map_err(|e| e.to_string())?;
 
@@ -81,6 +84,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     sprites.insert(SpriteSheet::new("player_idle".to_string(),      player_idle,      1));
     sprites.insert(SpriteSheet::new("player_attack".to_string(),    player_attack,    1));
     sprites.insert(SpriteSheet::new("gol_idle".to_string(),         gol_idle,         1));
+    sprites.insert(SpriteSheet::new("gol_die".to_string(),          gol_die,          1));
     sprites.insert(SpriteSheet::new("elf_idle".to_string(),         elf_idle,         1));
     sprites.insert(SpriteSheet::new("spikes".to_string(),           spikes_anim,      1));
     sprites.insert(SpriteSheet::new("font".to_string(),             font_as_sprite,   16));
@@ -192,8 +196,6 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
             match msg {
                 Msg::StoneThrow(thrower, stone_id, start, end) => {
-                    //game.display_state.play_effect(Effect::Sound(*end, 0, STONE_SOUND_RADIUS));
-
                     let stone_sprite =
                         game.display_state.font_sprite(ENTITY_STONE as char)
                             .expect("Could not find stone sprite!");
@@ -230,7 +232,15 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
                 Msg::Killed(attacker, attacked, damage) => {
                     if game.data.objects[*attacked].name != "player".to_string() {
-                        to_remove.push(*attacked);
+                        game.data.objects[*attacked].animation.clear();
+
+                        if game.data.objects[*attacked].name == "gol".to_string() {
+                            let gol_sprite = game.display_state.new_sprite("gol_die".to_string(), 1.0)
+                                                               .unwrap();
+                            let gol_anim = game.display_state.play_animation(Animation::Once(gol_sprite));
+                            game.data.objects[*attacked].animation.clear();
+                            game.data.objects[*attacked].animation.push_front(gol_anim);
+                        }
                     }
                 }
 

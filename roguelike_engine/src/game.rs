@@ -299,8 +299,9 @@ pub fn step_logic(player_action: Action,
             if let Some(fighter) = game_data.objects[key].fighter {
                 if fighter.hp <= 0 {
                     game_data.objects[key].alive = false;
+                    game_data.objects[key].blocks = false;
                     game_data.objects[key].chr = '%';
-                    game_data.objects[key].color = config.color_red;
+                    //game_data.objects[key].color = config.color_red;
                     game_data.objects[key].fighter = None;
                 }
             }

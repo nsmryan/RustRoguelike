@@ -231,7 +231,15 @@ pub fn render_info(display_state: &mut DisplayState,
 
                 y_pos += 1;
 
-                if let Some(behave) = data.objects[*obj_id].behavior {
+                if !data.objects[*obj_id].alive {
+                    let text_pos = Pos::new(1, y_pos);
+                    display_state.draw_text(format!(" {}", "dead"),
+                                           text_pos,
+                                           color,
+                                           area);
+
+                    y_pos += 1;
+                } else if let Some(behave) = data.objects[*obj_id].behavior {
                     let text_pos = Pos::new(1, y_pos);
                     display_state.draw_text(format!(" {}", behave.description()),
                                            text_pos,
@@ -512,7 +520,7 @@ pub fn render_objects(display_state: &mut DisplayState,
                 if done {
                     data.objects[*object_id].animation.pop_front();
                 }
-            } else {
+            } else if data.objects[*object_id].alive {
                 let color = data.objects[*object_id].color;
                 display_state.draw_char(data.objects[*object_id].chr, pos, color, area);
             }
@@ -646,7 +654,8 @@ pub fn render_overlays(display_state: &mut DisplayState,
         for object_id in object_ids.iter() {
             let pos = data.objects[*object_id].pos();
 
-            if data.map.is_in_fov(player_pos, pos, FOV_RADIUS) {
+            if data.map.is_in_fov(player_pos, pos, FOV_RADIUS) &&
+               data.objects[*object_id].alive {
                 if let Some(reach) = data.objects[*object_id].attack {
                     let attack_positions = 
                         reach.offsets()
