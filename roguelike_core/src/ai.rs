@@ -56,11 +56,14 @@ pub fn ai_attack(monster_handle: ObjectId,
                           data.objects[target_handle].pos(),
                           &data.objects[monster_handle].attack.unwrap()) {
         turn = Action::Move(Movement::Attack(hit_pos, target_handle));
+        dbg!("can hit");
     } else if data.map.is_blocked_by_wall(monster_pos, target_pos.x - monster_pos.x, target_pos.y - monster_pos.y) {
+        dbg!("blocked");
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else { // otherwise attempt to move towards their target
         // check positions that can hit target, filter by FOV, and get the closest.
         // then move to this closest position.
+        dbg!("move towards");
         let mut pos_offset = Pos::new(0, 0);
         if let (Some(attack), Some(movement)) =
             (data.objects[monster_handle].attack, data.objects[monster_handle].movement) {

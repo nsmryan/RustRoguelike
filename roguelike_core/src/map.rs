@@ -242,6 +242,11 @@ impl Map {
                 break;
             }
 
+            if self[target_pos].blocked {
+                blocked = true;
+                break;
+            }
+
             move_pos = target_pos - Vector2D::new(x, y);
 
             // horizontal
