@@ -82,6 +82,18 @@ impl<'a> DisplayState<'a> {
         }
     }
 
+    pub fn draw_text_list(&mut self,
+                          text_list: Vec<String>,
+                          pos: Pos,
+                          color: Color,
+                          area: &Area) {
+        let mut y_pos = 0;
+        for text in text_list {
+            self.draw_text(text, Pos::new(pos.x, pos.y + y_pos), color, area);
+            y_pos += 1;
+        }
+    }
+
     pub fn draw_sprite(&mut self,
                        sprite: &Sprite,
                        pos: Pos,

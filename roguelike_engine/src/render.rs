@@ -174,15 +174,22 @@ pub fn render_player(display_state: &mut DisplayState,
 
     let player_handle = game_data.find_player().unwrap();
 
-    let mut y_pos = 1;
+    let mut list = Vec::new();
 
     let color = config.color_warm_grey;
-    let text_pos = Pos::new(0, y_pos);
+    let text_pos = Pos::new(1, 2);
+
+    list.push(format!("({}, {})", 
+                      game_data.objects[player_handle].x,
+                      game_data.objects[player_handle].y));
+
     let move_mode = game_data.objects[player_handle].move_mode.unwrap();
-    display_state.draw_text(format!(" {}", move_mode.to_string()),
-                           text_pos,
-                           color,
-                           area);
+    list.push(format!("{}", move_mode.to_string()));
+
+    display_state.draw_text_list(list,
+                                 text_pos,
+                                 color,
+                                 area);
 
 }
 
