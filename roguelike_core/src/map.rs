@@ -242,7 +242,9 @@ impl Map {
                 break;
             }
 
-            if self[target_pos].blocked && (x, y) != (end_x, end_y) {
+            // if the position is blocked (a solid tile), but is not the target tile,
+            // then it is blocked. We exclude the final tile as is it not itself blocked.
+            if self[target_pos].blocked && target_pos.to_tuple() != (end_x, end_y) {
                 blocked = true;
                 break;
             }
