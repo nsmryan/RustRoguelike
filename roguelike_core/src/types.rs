@@ -177,8 +177,6 @@ pub enum Action {
     Pickup(ObjectId),
     ThrowStone(Pos, ObjectId),
     Yell,
-    IncreaseMoveMode,
-    DecreaseMoveMode,
     NoAction,
 }
 

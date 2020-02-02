@@ -39,16 +39,6 @@ pub fn player_apply_action(action: Action, game_data: &mut GameData, config: &Co
             throw_stone(player_handle, stone_handle, player_pos, throw_pos, game_data, config, msg_log);
         }
 
-        Action::IncreaseMoveMode => {
-            game_data.objects[player_handle].move_mode = 
-                Some(game_data.objects[player_handle].move_mode.unwrap().increase());
-        }
-
-        Action::DecreaseMoveMode => {
-            game_data.objects[player_handle].move_mode = 
-                Some(game_data.objects[player_handle].move_mode.unwrap().decrease());
-        }
-
         Action::Yell => {
             msg_log.log(Msg::Yell(player_pos));
         }
@@ -119,11 +109,17 @@ pub fn handle_input(input_action: InputAction,
         }
 
         (InputAction::IncreaseMoveMode, true) => {
-            player_turn = Action::IncreaseMoveMode;
+            let player = &mut game_data.objects[player_handle];
+            player.move_mode = player.move_mode.map(|mode| mode.increase());
+
+            player_turn = Action::none();;
         }
 
         (InputAction::DecreaseMoveMode, true) => {
-            player_turn = Action::DecreaseMoveMode;
+            let player = &mut game_data.objects[player_handle];
+            player.move_mode = player.move_mode.map(|mode| mode.decrease());
+
+            player_turn = Action::none();;
         }
 
         (InputAction::Inventory, true) => {
