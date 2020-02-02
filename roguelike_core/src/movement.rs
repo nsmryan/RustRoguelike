@@ -1,5 +1,5 @@
 use std::iter::Iterator;
-
+use std::fmt;
 
 use tcod::line::*;
 
@@ -11,6 +11,41 @@ use crate::messaging::{MsgLog, Msg};
 
 
 pub type Loudness = usize;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum MoveMode {
+    Sneak,
+    Walk,
+    Run,
+}
+
+impl MoveMode {
+    pub fn increase(&self) -> MoveMode {
+        match self {
+            MoveMode::Sneak => MoveMode::Walk,
+            MoveMode::Walk => MoveMode::Run,
+            MoveMode::Run => MoveMode::Run,
+        }
+    }
+
+    pub fn decrease(&self) -> MoveMode {
+        match self {
+            MoveMode::Sneak => MoveMode::Sneak,
+            MoveMode::Walk => MoveMode::Sneak,
+            MoveMode::Run => MoveMode::Walk,
+        }
+    }
+}
+
+impl fmt::Display for MoveMode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MoveMode::Sneak => write!(f, "sneaking"),
+            MoveMode::Walk => write!(f, "walking"),
+            MoveMode::Run => write!(f, "running"),
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Movement {

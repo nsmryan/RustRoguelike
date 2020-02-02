@@ -177,6 +177,8 @@ pub enum Action {
     Pickup(ObjectId),
     ThrowStone(Pos, ObjectId),
     Yell,
+    IncreaseMoveMode,
+    DecreaseMoveMode,
     NoAction,
 }
 
@@ -342,6 +344,7 @@ pub struct Object {
     pub trap: Option<Trap>,
     pub sound: Option<usize>,
     pub count_down: Option<usize>,
+    pub move_mode: Option<MoveMode>,
 }
 
 impl Object {
@@ -366,6 +369,7 @@ impl Object {
             trap: None,
             sound: None,
             count_down: None,
+            move_mode: None,
         }
     }
 

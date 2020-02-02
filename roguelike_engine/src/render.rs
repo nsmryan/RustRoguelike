@@ -163,14 +163,27 @@ pub fn draw_placard(display_state: &mut DisplayState,
 }
 
 pub fn render_player(display_state: &mut DisplayState,
-                   _mouse_xy: Option<Pos>,
-                   _data: &mut GameData,
-                   area: &Area, 
-                   config: &Config) {
+                     _mouse_xy: Option<Pos>,
+                     game_data: &mut GameData,
+                     area: &Area, 
+                     config: &Config) {
     draw_placard(display_state,
                  "Player".to_string(),
                  area,
                  config);
+
+    let player_handle = game_data.find_player().unwrap();
+
+    let mut y_pos = 1;
+
+    let color = config.color_warm_grey;
+    let text_pos = Pos::new(0, y_pos);
+    let move_mode = game_data.objects[player_handle].move_mode.unwrap();
+    display_state.draw_text(format!(" {}", move_mode.to_string()),
+                           text_pos,
+                           color,
+                           area);
+
 }
 
 pub fn render_info(display_state: &mut DisplayState,

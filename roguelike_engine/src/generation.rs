@@ -30,6 +30,7 @@ pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object 
     player.momentum = Some(Default::default());
     player.movement = Some(Reach::Single(1));
     player.attack = Some(Reach::Single(1));
+    player.move_mode = Some(MoveMode::Walk);
 
     let sprite = display_state.new_sprite("player_idle".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'player_idle'");

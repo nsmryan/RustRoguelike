@@ -18,6 +18,8 @@ pub enum InputAction {
     GodMode,
     RegenMap,
     Yell,
+    IncreaseMoveMode,
+    DecreaseMoveMode,
     None,
 }
 
@@ -101,6 +103,14 @@ pub fn map_keycode_to_action(keycode: Keycode, keymods: Mod) -> InputAction {
 
         Keycode::T => {
             input_action = InputAction::GodMode;
+        }
+
+        Keycode::X => {
+            input_action = InputAction::IncreaseMoveMode;
+        }
+
+        Keycode::Z => {
+            input_action = InputAction::DecreaseMoveMode;
         }
 
         _ => {
