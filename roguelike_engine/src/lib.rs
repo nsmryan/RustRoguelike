@@ -232,7 +232,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                             generation::make_sound(&config, SOUND_RADIUS, *pos, true, &mut game.display_state);
 
                             let idle_sprite = 
-                                game.display_state.new_sprite("player_idle".to_string(), 1.0)
+                                game.display_state.new_sprite("player_idle".to_string(), config.idle_speed)
                                                   .unwrap();
                             let idle_anim = Animation::Loop(idle_sprite);
                             let idle_key = game.display_state.play_animation(idle_anim);
