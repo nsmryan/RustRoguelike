@@ -35,6 +35,7 @@ pub enum Msg {
     WallKick(ObjectId, Pos),
     StateChange(ObjectId, Behavior),
     Collided(ObjectId, Pos),
+    Yell(Pos),
 }
 
 impl Msg {
@@ -87,6 +88,10 @@ impl Msg {
 
             Msg::StateChange(_object_id, behavior) => {
                 return format!("Changed state to {:?}", *behavior);
+            }
+
+            Msg::Yell(pos) => {
+                return format!("Yelled");
             }
 
             Msg::Collided(_object_id, _pos) => {

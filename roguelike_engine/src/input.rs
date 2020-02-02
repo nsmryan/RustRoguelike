@@ -17,6 +17,7 @@ pub enum InputAction {
     ToggleOverlays,
     GodMode,
     RegenMap,
+    Yell,
     None,
 }
 
@@ -76,6 +77,10 @@ pub fn map_keycode_to_action(keycode: Keycode, keymods: Mod) -> InputAction {
 
         Keycode::I => {
             input_action = InputAction::Inventory;
+        }
+
+        Keycode::Y => {
+            input_action = InputAction::Yell;
         }
 
         Keycode::V => {

@@ -39,6 +39,10 @@ pub fn player_apply_action(action: Action, game_data: &mut GameData, config: &Co
             throw_stone(player_handle, stone_handle, player_pos, throw_pos, game_data, config, msg_log);
         }
 
+        Action::Yell => {
+            msg_log.log(Msg::Yell(player_pos));
+        }
+
         Action::NoAction => {
         }
     }
@@ -98,6 +102,10 @@ pub fn handle_input(input_action: InputAction,
                 player_turn = Action::ThrowStone(map_cell, *stone_handle);
                 game_data.objects[player_handle].inventory.remove(index);
             }
+        }
+
+        (InputAction::Yell, true) => {
+            player_turn = Action::Yell;
         }
 
         (InputAction::Inventory, true) => {

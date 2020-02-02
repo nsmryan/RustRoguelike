@@ -176,6 +176,7 @@ pub enum Action {
     StateChange(Behavior),
     Pickup(ObjectId),
     ThrowStone(Pos, ObjectId),
+    Yell,
     NoAction,
 }
 

@@ -248,8 +248,9 @@ pub fn player_move_or_attack(movement: Movement,
             msg_log.log(Msg::Collided(player_handle, pos));
         }
 
-        Movement::Pass(_pos) => {
+        Movement::Pass(pos) => {
             player_action = Action::none();
+            msg_log.log(Msg::Moved(player_handle, movement, pos));
         }
 
         Movement::Move(pos) | Movement::JumpWall(pos) => {

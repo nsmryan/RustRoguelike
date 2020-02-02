@@ -243,6 +243,11 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     }
                 }
 
+                Msg::Yell(pos) => {
+                    let sound = generation::make_sound(&config, SOUND_RADIUS, *pos, true, &mut game.display_state);
+                    game.data.objects.insert(sound);
+                }
+
                 Msg::Killed(attacker, attacked, damage) => {
                     if game.data.objects[*attacked].name != "player".to_string() {
                         game.data.objects[*attacked].animation.clear();
