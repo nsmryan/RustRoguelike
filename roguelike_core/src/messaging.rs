@@ -64,27 +64,27 @@ impl Msg {
                                damage);
             }
 
-            Msg::Killed(attacker, attacked, damage) => {
+            Msg::Killed(_attacker, _attacked, _damage) => {
                 return "Killed".to_string();
             }
 
-            Msg::Moved(object_id, pos) => {
+            Msg::Moved(object_id, _pos) => {
                 return format!("{} moved", game_data.objects[*object_id].name);
             }
 
-            Msg::JumpWall(object_id, pos) => {
+            Msg::JumpWall(_object_id, _pos) => {
                 return "Jumped a wall".to_string();
             }
 
-            Msg::WallKick(object_id, pos) => {
+            Msg::WallKick(_object_id, _pos) => {
                 return "Did a wallkick".to_string();
             }
 
-            Msg::StateChange(object_id, behavior) => {
+            Msg::StateChange(_object_id, behavior) => {
                 return format!("Changed state to {:?}", *behavior);
             }
 
-            Msg::Collided(object_id, pos) => {
+            Msg::Collided(_object_id, _pos) => {
                 return "Collided".to_string();
             }
         }

@@ -16,7 +16,7 @@ use crate::input::*;
 use crate::generation;
 
 
-pub fn player_apply_action(action: Action, game_data: &mut GameData, msg_log: &mut MsgLog) {
+pub fn player_apply_action(action: Action, game_data: &mut GameData, config: &Config, msg_log: &mut MsgLog) {
     let player_handle = game_data.find_player().unwrap();
     let player_pos = game_data.objects[player_handle].pos();
 
@@ -35,7 +35,7 @@ pub fn player_apply_action(action: Action, game_data: &mut GameData, msg_log: &m
         }
 
         Action::ThrowStone(throw_pos, stone_handle) => {
-            throw_stone(player_handle, stone_handle, player_pos, throw_pos, game_data, msg_log);
+            throw_stone(player_handle, stone_handle, player_pos, throw_pos, game_data, config, msg_log);
         }
 
         Action::NoAction => {
@@ -166,6 +166,7 @@ pub fn throw_stone(player_handle: ObjectId,
                    start_pos: Pos,
                    end_pos: Pos,
                    game_data: &mut GameData,
+                   config: &Config,
                    msg_log: &mut MsgLog) {
     let throw_line = Line::new(start_pos.to_tuple(), end_pos.to_tuple());
 
@@ -179,12 +180,5 @@ pub fn throw_stone(player_handle: ObjectId,
     let end_pos = Pos::new(target_x, target_y);
     msg_log.log(Msg::StoneThrow(player_handle, stone_handle, start_pos, end_pos));
 
-    // alert monsters within sound range
-    for obj in game_data.objects.values_mut() {
-        if distance(obj.pos(), end_pos) < SOUND_RADIUS as i32 {
-            if obj.behavior == Some(Behavior::Idle) {
-                obj.behavior = Some(Behavior::Investigating(Pos::from(end_pos)));
-            }
-        }
-    }
+    game_data.objects.insert(generation::make_sound(config, STONE_SOUND_RADIUS, end_pos));
 }

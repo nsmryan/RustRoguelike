@@ -41,6 +41,17 @@ pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object 
     player
 }
 
+pub fn make_sound(config: &Config, radius: usize, pos: Pos) -> Object {
+    let mut object = Object::new(pos.x, pos.y, ' ', config.color_orange, "sound", false);
+
+    object.sound = Some(radius);
+
+    // sound dissipates after 2 turns to allow monsters to hear each others sounds before removing
+    object.count_down = Some(2);
+
+    return object;
+}
+
 pub fn make_goal(config: &Config, display_state: &mut DisplayState, pos: Pos) -> Object {
     let mut object = Object::new(pos.x, pos.y, ENTITY_GOAL as char, config.color_orange, "goal", false);
     object.item = Some(Item::Goal);

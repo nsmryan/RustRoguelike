@@ -278,7 +278,7 @@ pub fn step_logic(player_action: Action,
     let previous_player_position =
         game_data.objects[player_handle].pos();
 
-    actions::player_apply_action(player_action, game_data, msg_log);
+    actions::player_apply_action(player_action, game_data, config, msg_log);
 
     /* AI */
     if game_data.objects[player_handle].alive {
@@ -348,6 +348,20 @@ pub fn step_logic(player_action: Action,
                 settings.state = GameState::Lose;
             }
         }
+    }
+
+    let mut to_remove = Vec::new();
+    for (entity_key, entity) in game_data.objects.iter_mut() {
+        if let Some(ref mut count) = entity.count_down {
+            if *count == 0 {
+                to_remove.push(entity_key);
+            } else {
+                *count -= 1;
+            }
+        }
+    }
+    for key in to_remove {
+        game_data.objects.remove(key);
     }
 
     /* Recompute FOV */
