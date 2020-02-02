@@ -73,19 +73,18 @@ impl<'a> DisplayState<'a> {
 
     pub fn draw_text(&mut self,
                      text: String,
-                     x: i32,
-                     y: i32,
+                     pos: Pos,
                      color: Color,
                      area: &Area) {
         for (index, chr) in text.chars().enumerate() {
-            self.draw_char(chr, x + index as i32, y, color, area);
+            let chr_pos = Pos::new(pos.x + index as i32, pos.y);
+            self.draw_char(chr, chr_pos, color, area);
         }
     }
 
     pub fn draw_sprite(&mut self,
                        sprite: &Sprite,
-                       x: i32,
-                       y: i32,
+                       pos: Pos,
                        color: Color,
                        area: &Area) {
         let sprite_sheet = &mut self.sprites[sprite.sprite_key];
@@ -99,7 +98,7 @@ impl<'a> DisplayState<'a> {
                             FONT_WIDTH as u32,
                             FONT_HEIGHT as u32);
 
-        let dst = area.char_rect(x, y);
+        let dst = area.char_rect(pos.x, pos.y);
 
         sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
         sprite_sheet.texture.set_alpha_mod(color.a);
@@ -115,8 +114,7 @@ impl<'a> DisplayState<'a> {
 
     pub fn draw_char(&mut self,
                      chr: char,
-                     x: i32,
-                     y: i32,
+                     pos: Pos,
                      color: Color,
                      area: &Area) {
         let chr_x = (chr as i32) % FONT_WIDTH;
@@ -127,7 +125,7 @@ impl<'a> DisplayState<'a> {
                             FONT_WIDTH as u32,
                             FONT_HEIGHT as u32);
 
-        let dst = area.char_rect(x, y);
+        let dst = area.char_rect(pos.x, pos.y);
 
         self.font_image.set_color_mod(color.r, color.g, color.b);
         self.font_image.set_alpha_mod(color.a);

@@ -151,9 +151,11 @@ pub fn draw_placard(display_state: &mut DisplayState,
     // Draw header text
     let mid_char_offset = (area.width / area.font_width) / 2;
     let text_start = (mid_char_offset - half_text) as i32;
+
+    let text_pos = Pos::new(text_start, 0);
+
     display_state.draw_text(text,
-                           text_start,
-                           0,
+                           text_pos,
                            config.color_dark_blue,
                            area);
 }
@@ -221,18 +223,18 @@ pub fn render_info(display_state: &mut DisplayState,
 
             if data.map.is_in_fov(player_pos, pos, FOV_RADIUS) {
                 let color = config.color_warm_grey;
+                let text_pos = Pos::new(0, y_pos);
                 display_state.draw_text(format!(" {}", data.objects[*obj_id].name),
-                                       0,
-                                       y_pos,
+                                       text_pos,
                                        color,
                                        area);
 
                 y_pos += 1;
 
                 if let Some(behave) = data.objects[*obj_id].behavior {
+                    let text_pos = Pos::new(1, y_pos);
                     display_state.draw_text(format!(" {}", behave.description()),
-                                           1,
-                                           y_pos,
+                                           text_pos,
                                            color,
                                            area);
 
@@ -240,16 +242,15 @@ pub fn render_info(display_state: &mut DisplayState,
                 }
 
                 if let Some(momentum) = data.objects[*obj_id].momentum {
+                    let text_pos = Pos::new(1, y_pos);
                     display_state.draw_text(format!("momentum:"),
-                                           1,
-                                           y_pos,
+                                           text_pos,
                                            color,
                                            area);
 
                     y_pos += 1;
                     display_state.draw_text(format!(" {} ({}, {})", momentum.magnitude(), momentum.mx, momentum.my),
-                                           1,
-                                           y_pos,
+                                           text_pos,
                                            color,
                                            area);
                 }
@@ -294,15 +295,14 @@ pub fn render_inventory(display_state: &mut DisplayState,
 
         // place prompt character
         display_state.draw_char('*',
-                               1,
-                               y_pos,
+                               Pos::new(1, y_pos),
                                config.color_ice_blue,
                                area);
 
         // place object name
+        let text_pos = Pos::new(2, y_pos);
         display_state.draw_text(format!(" {}", data.objects[*obj_id].name),
-                               2,
-                               y_pos,
+                               text_pos,
                                color,
                                area);
         
@@ -310,9 +310,9 @@ pub fn render_inventory(display_state: &mut DisplayState,
     }
 
     if data.objects[player_handle].inventory.len() == 0 {
+        let text_pos = Pos::new(1, y_pos);
         display_state.draw_text(format!("empty"),
-                               1,
-                               y_pos,
+                               text_pos,
                                config.color_ice_blue,
                                area);
     }
@@ -336,8 +336,7 @@ pub fn render_background(display_state: &mut DisplayState,
                 settings.god_mode;
 
             display_state.draw_char(MAP_EMPTY_CHAR as char,
-                                    x,
-                                    y,
+                                    map_pos,
                                     empty_tile_color(config, map_pos, visible),
                                     area);
 
@@ -345,7 +344,7 @@ pub fn render_background(display_state: &mut DisplayState,
             if tile.tile_type == TileType::Water {
                 let color = tile_color(config, x, y, tile, visible);
                 let chr = tile.chr.map_or('+', |chr| chr);
-                display_state.draw_char(chr, x, y, color, area);
+                display_state.draw_char(chr, map_pos, color, area);
             }
         }
     }
@@ -392,37 +391,37 @@ pub fn render_map(display_state: &mut DisplayState,
             // if the tile is not empty or water, draw it
             if chr != MAP_EMPTY_CHAR as char && tile.tile_type != TileType::Water {
                 let color = tile_color(config, x, y, tile, visible);
-                display_state.draw_char(chr, x, y, color, area);
+                display_state.draw_char(chr, pos, color, area);
             }
 
             // finally, draw the between-tile walls appropriate to this tile
             if tile.bottom_wall == Wall::ShortWall {
-                display_state.draw_char(MAP_THIN_WALL_BOTTOM as char, x, y, wall_color, area);
+                display_state.draw_char(MAP_THIN_WALL_BOTTOM as char, pos, wall_color, area);
             } else if tile.bottom_wall == Wall::TallWall {
-                display_state.draw_char(MAP_THICK_WALL_BOTTOM as char, x, y, wall_color, area);
+                display_state.draw_char(MAP_THICK_WALL_BOTTOM as char, pos, wall_color, area);
             }
 
             if tile.left_wall == Wall::ShortWall {
-                display_state.draw_char(MAP_THIN_WALL_LEFT as char, x, y, wall_color, area);
+                display_state.draw_char(MAP_THIN_WALL_LEFT as char, pos, wall_color, area);
             } else if tile.left_wall == Wall::TallWall {
-                display_state.draw_char(MAP_THICK_WALL_LEFT as char, x, y, wall_color, area);
+                display_state.draw_char(MAP_THICK_WALL_LEFT as char, pos, wall_color, area);
             }
 
             if x + 1 < map_width {
                 let right_tile = &data.map.tiles[x as usize + 1][y as usize];
                 if right_tile.left_wall == Wall::ShortWall {
-                    display_state.draw_char(MAP_THIN_WALL_RIGHT as char, x, y, wall_color, area);
+                    display_state.draw_char(MAP_THIN_WALL_RIGHT as char, pos, wall_color, area);
                 } else if right_tile.left_wall == Wall::TallWall {
-                    display_state.draw_char(MAP_THICK_WALL_RIGHT as char, x, y, wall_color, area);
+                    display_state.draw_char(MAP_THICK_WALL_RIGHT as char, pos, wall_color, area);
                 }
             }
 
             if y - 1 >= 0 {
                 let above_tile = &data.map.tiles[x as usize][y as usize - 1];
                 if above_tile.bottom_wall == Wall::ShortWall {
-                    display_state.draw_char(MAP_THIN_WALL_TOP as char, x, y, wall_color, area);
+                    display_state.draw_char(MAP_THIN_WALL_TOP as char, pos, wall_color, area);
                 } else if above_tile.bottom_wall == Wall::TallWall {
-                    display_state.draw_char(MAP_THICK_WALL_TOP as char, x, y, wall_color, area);
+                    display_state.draw_char(MAP_THICK_WALL_TOP as char, pos, wall_color, area);
                 }
             }
 
@@ -463,8 +462,10 @@ pub fn render_effects(display_state: &mut DisplayState,
                     *current_radius += 1;
                     for sound_x in 0..game_data.map.width() {
                         for sound_y in 0..game_data.map.height() {
+                            let sound_pos = Pos::new(sound_x, sound_y);
+
                             if distance(Pos::new(pos.x, pos.y), Pos::new(sound_x, sound_y)) == *current_radius as i32 {
-                                display_state.draw_char(MAP_EMPTY_CHAR as char, sound_x, sound_y, highlight_color, area);
+                                display_state.draw_char(MAP_EMPTY_CHAR as char, sound_pos, highlight_color, area);
                             }
                         }
                     }
@@ -493,9 +494,11 @@ pub fn render_objects(display_state: &mut DisplayState,
     let player_handle = data.find_player().unwrap();
     let player_pos = data.objects[player_handle].pos();
 
+    // step each objects animation
     for object_id in data.objects.keys().collect::<Vec<ObjectId>>().iter() {
         let pos = data.objects[*object_id].pos();
 
+        // only draw if within the map (outside is (-1, -1) like if in inventory).
         if data.map.is_within_bounds(pos) {
             let is_in_fov = 
                data.map.is_in_fov(player_pos,
@@ -511,7 +514,7 @@ pub fn render_objects(display_state: &mut DisplayState,
                 }
             } else {
                 let color = data.objects[*object_id].color;
-                display_state.draw_char(data.objects[*object_id].chr, pos.x, pos.y, color, area);
+                display_state.draw_char(data.objects[*object_id].chr, pos, color, area);
             }
         }
     }
@@ -532,15 +535,13 @@ pub fn step_animation(anim_key: AnimKey,
     match display_state.animations[anim_key].clone() {
         Animation::Between(ref mut sprite, start, end, ref mut dist, blocks_per_sec) => {
            if settings.god_mode || is_in_fov {
-               *dist = *dist + (blocks_per_sec / config.rate as f32);
-
+               *dist = *dist + (blocks_per_sec / config.rate as f32); 
                let num_blocks = *dist as usize;
 
                let draw_pos = move_towards(start, end, num_blocks);
 
                display_state.draw_sprite(sprite,
-                                         draw_pos.x,
-                                         draw_pos.y,
+                                         draw_pos,
                                          color,
                                          &area);
 
@@ -556,8 +557,7 @@ pub fn step_animation(anim_key: AnimKey,
         Animation::Loop(ref mut sprite) => {
            if settings.god_mode || is_in_fov {
                 display_state.draw_sprite(sprite,
-                                          pos.x,
-                                          pos.y,
+                                          pos,
                                           color,
                                           &area);
 
@@ -576,6 +576,22 @@ pub fn step_animation(anim_key: AnimKey,
 
             // true indicates that the animation is finished
             return true;
+        }
+
+        Animation::Once(ref mut sprite) => {
+           if settings.god_mode || is_in_fov {
+                display_state.draw_sprite(sprite,
+                                          pos,
+                                          color,
+                                          &area);
+
+                let sprite_done = sprite.step();
+
+                display_state.animations[anim_key] =
+                   Animation::Once(*sprite);
+
+                return sprite_done;
+            }
         }
 
         _ => {
@@ -615,7 +631,7 @@ pub fn render_overlays(display_state: &mut DisplayState,
                 // don't draw overlay on top of character
                 if xy != data.objects[player_handle].pos()
                 {
-                    display_state.draw_char(MAP_EMPTY_CHAR as char, xy.x, xy.y, highlight_color, area);
+                    display_state.draw_char(MAP_EMPTY_CHAR as char, xy, highlight_color, area);
                 }
             }
         }
@@ -644,7 +660,7 @@ pub fn render_overlays(display_state: &mut DisplayState,
                              .collect::<Vec<Pos>>();
 
                     for position in attack_positions {
-                        display_state.draw_char(MAP_EMPTY_CHAR as char, position.x, position.y, attack_highlight_color, area);
+                        display_state.draw_char(MAP_EMPTY_CHAR as char, position, attack_highlight_color, area);
                     }
                 }
             }
@@ -658,7 +674,7 @@ pub fn render_overlays(display_state: &mut DisplayState,
         if config.draw_star_path {
             let path = data.map.astar(player_pos, mouse_pos);
             for pos in path {
-                display_state.draw_char(MAP_EMPTY_CHAR as char, pos.x, pos.y, highlight_color, area);
+                display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
             }
         }
 
@@ -666,7 +682,7 @@ pub fn render_overlays(display_state: &mut DisplayState,
             let line = Line::new(player_pos.to_tuple(), mouse_pos.to_tuple()).into_iter();
             for pos in line {
                 let pos = Pos::from(pos);
-                display_state.draw_char(MAP_EMPTY_CHAR as char, pos.x, pos.y, highlight_color, area);
+                display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
             }
         }
     }

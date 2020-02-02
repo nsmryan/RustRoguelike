@@ -57,6 +57,9 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let player_idle = texture_creator.load_texture("animations/player/Player_Idle.png")
         .map_err(|e| e.to_string())?;
 
+    let player_attack = texture_creator.load_texture("animations/player/player_attack.png")
+        .map_err(|e| e.to_string())?;
+
     let player_wall_kick = texture_creator.load_texture("animations/player/player_wallkick.png")
         .map_err(|e| e.to_string())?;
 
@@ -76,6 +79,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let mut sprites = DenseSlotMap::new();
     sprites.insert(SpriteSheet::new("player_wall_kick".to_string(), player_wall_kick, 1));
     sprites.insert(SpriteSheet::new("player_idle".to_string(),      player_idle,      1));
+    sprites.insert(SpriteSheet::new("player_attack".to_string(),    player_attack,    1));
     sprites.insert(SpriteSheet::new("gol_idle".to_string(),         gol_idle,         1));
     sprites.insert(SpriteSheet::new("elf_idle".to_string(),         elf_idle,         1));
     sprites.insert(SpriteSheet::new("spikes".to_string(),           spikes_anim,      1));
@@ -212,12 +216,41 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     let player_handle = game.data.find_player().unwrap();
                     if *object_id == player_handle {
                         game.display_state.play_effect(Effect::Sound(*pos, 0, SOUND_RADIUS));
+
+                        let idle_sprite = 
+                            game.display_state.new_sprite("player_idle".to_string(), 1.0)
+                                              .unwrap();
+                        let idle_anim = Animation::Loop(idle_sprite);
+                        let idle_key = game.display_state.play_animation(idle_anim);
+
+                        game.data.objects[player_handle].animation.clear();
+                        game.data.objects[player_handle].animation.push_back(idle_key);
                     }
                 }
 
                 Msg::Killed(attacker, attacked, damage) => {
                     if game.data.objects[*attacked].name != "player".to_string() {
                         to_remove.push(*attacked);
+                    }
+                }
+
+                Msg::Attack(attacker, attacked, damage) => {
+                    if game.data.objects[*attacker].name == "player" {
+                        let attack_sprite = 
+                            game.display_state.new_sprite("player_attack".to_string(), 1.0)
+                                              .unwrap();
+                        let attack_anim = Animation::Once(attack_sprite);
+                        let attack_key = game.display_state.play_animation(attack_anim);
+
+                        let idle_sprite = 
+                            game.display_state.new_sprite("player_idle".to_string(), 1.0)
+                                              .unwrap();
+                        let idle_anim = Animation::Loop(idle_sprite);
+                        let idle_key = game.display_state.play_animation(idle_anim);
+
+                        game.data.objects[*attacker].animation.clear();
+                        game.data.objects[*attacker].animation.push_back(attack_key);
+                        game.data.objects[*attacker].animation.push_back(idle_key);
                     }
                 }
 

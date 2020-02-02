@@ -72,5 +72,6 @@ impl Sprite {
 pub enum Animation {
     Loop(Sprite),                         // play sprite sheet in loop
     Between(Sprite, Pos, Pos, f32, f32),  // start, end, dist, blocks_per_sec
+    Once(Sprite),                         // play sprite once and end
     PlayEffect(Effect),
 }
