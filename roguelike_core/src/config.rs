@@ -33,6 +33,7 @@ pub struct Config {
     pub highlight_alpha: u8,
     pub sound_alpha: u8,
     pub grid_alpha: u8,
+    pub grid_alpha_visible: u8,
     pub map_load: MapLoadConfig,
     pub idle_speed: f32,
     pub draw_mouse_line: bool,

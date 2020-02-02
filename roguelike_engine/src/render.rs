@@ -460,7 +460,12 @@ pub fn render_map(display_state: &mut DisplayState,
 
             // Draw a square around this tile to help distinguish it visually in the grid
             let outline_color = Color::white();
-            let color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.grid_alpha);
+            let color = if visible &&
+                           data.map.tiles[x as usize][y as usize].tile_type != TileType::Water {
+                Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.grid_alpha_visible)
+            } else {
+                Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.grid_alpha)
+            };
 
             display_state.canvas.set_blend_mode(BlendMode::Blend);
             display_state.canvas.set_draw_color(color);
