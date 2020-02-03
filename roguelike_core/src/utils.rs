@@ -4,6 +4,7 @@ use std::hash::{Hash, Hasher};
 use tcod::line::*;
 
 use crate::types::*;
+use crate::movement::{Reach, MoveMode};
 use crate::messaging::*;
 
 
@@ -60,3 +61,18 @@ pub fn lerp_color(color1: Color, color2: Color, scale: f32) -> Color {
     };
 }
 
+pub fn reach_by_mode(move_mode: MoveMode) -> Reach {
+    match move_mode {
+        MoveMode::Sneak => {
+            Reach::Single(1)
+        }
+
+        MoveMode::Walk => {
+            Reach::Single(1)
+        }
+
+        MoveMode::Run => {
+            Reach::Single(2)
+        }
+    }
+}

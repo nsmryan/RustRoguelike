@@ -3,11 +3,11 @@ use rand::prelude::*;
 use tcod::line::*;
 
 use roguelike_core::config::*;
-use roguelike_core::types::Action;
+use roguelike_core::movement::Action;
 use roguelike_core::types::*;
 use roguelike_core::movement;
 use roguelike_core::movement::*;
-use roguelike_core::utils::{distance};
+use roguelike_core::utils::{distance, reach_by_mode};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 
@@ -111,13 +111,16 @@ pub fn handle_input(input_action: InputAction,
         (InputAction::IncreaseMoveMode, true) => {
             let player = &mut game_data.objects[player_handle];
             player.move_mode = player.move_mode.map(|mode| mode.increase());
+            player.movement = Some(reach_by_mode(player.move_mode.unwrap()));
+            
 
-            player_turn = Action::none();;
+            player_turn = Action::none();
         }
 
         (InputAction::DecreaseMoveMode, true) => {
             let player = &mut game_data.objects[player_handle];
             player.move_mode = player.move_mode.map(|mode| mode.decrease());
+            player.movement = Some(reach_by_mode(player.move_mode.unwrap()));
 
             player_turn = Action::none();;
         }

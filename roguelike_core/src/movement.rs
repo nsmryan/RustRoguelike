@@ -13,6 +13,23 @@ use crate::messaging::{MsgLog, Msg};
 pub type Loudness = usize;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Action {
+    Move(Movement),
+    StateChange(Behavior),
+    Pickup(ObjectId),
+    ThrowStone(Pos, ObjectId),
+    Yell,
+    NoAction,
+}
+
+impl Action {
+    pub fn none() -> Action {
+        return Action::NoAction; }
+}
+
+
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum MoveMode {
     Sneak,
     Walk,
@@ -438,7 +455,6 @@ pub fn calculate_move(action: MoveAction,
         }
     } else {
         movement = None;
-
     }
 
     return movement;

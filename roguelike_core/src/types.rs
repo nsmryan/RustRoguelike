@@ -171,22 +171,6 @@ pub enum Item {
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Action {
-    Move(Movement),
-    StateChange(Behavior),
-    Pickup(ObjectId),
-    ThrowStone(Pos, ObjectId),
-    Yell,
-    NoAction,
-}
-
-impl Action {
-    pub fn none() -> Action {
-        return Action::NoAction; }
-}
-
-
-#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Ai {
     Basic,
 }
