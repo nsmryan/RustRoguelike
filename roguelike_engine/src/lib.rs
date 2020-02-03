@@ -24,7 +24,7 @@ use roguelike_core::config::*;
 use roguelike_core::messaging::Msg;
 use roguelike_core::constants::*;
 use roguelike_core::animation::{Effect, Animation};
-use roguelike_core::movement::Movement;
+use roguelike_core::movement::{MoveMode, Movement};
 
 use crate::display::*;
 use crate::render::*;
@@ -227,9 +227,20 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     if *object_id == player_handle {
 
                         if let Movement::Pass(_) = movement {
+                            if game.data.objects[player_handle].move_mode.unwrap() ==
+                               MoveMode::Run {
+                                let player = &mut game.data.objects[player_handle];
+                                player.move_mode = player.move_mode.map(|mode| mode.decrease());
+                            }
                             // this is just to pattern match on movement
                         } else {
-                            generation::make_sound(&config, SOUND_RADIUS, *pos, true, &mut game.display_state);
+                            let sound_radius;
+                            match game.data.objects[player_handle].move_mode.unwrap() {
+                                MoveMode::Sneak => sound_radius = SOUND_RADIUS_SNEAK,
+                                MoveMode::Walk => sound_radius = SOUND_RADIUS_WALK,
+                                MoveMode::Run => sound_radius = SOUND_RADIUS_RUN,
+                            }
+                            generation::make_sound(&config, sound_radius, *pos, true, &mut game.display_state);
 
                             let idle_sprite = 
                                 game.display_state.new_sprite("player_idle".to_string(), config.idle_speed)

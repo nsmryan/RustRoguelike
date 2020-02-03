@@ -179,9 +179,13 @@ pub fn render_player(display_state: &mut DisplayState,
     let color = config.color_warm_grey;
     let text_pos = Pos::new(1, 2);
 
-    list.push(format!("({}, {})", 
+    list.push(format!("position:"));
+
+    list.push(format!(" ({}, {})", 
                       game_data.objects[player_handle].x,
                       game_data.objects[player_handle].y));
+
+    list.push(format!(""));
 
     let move_mode = game_data.objects[player_handle].move_mode.unwrap();
     list.push(format!("{}", move_mode.to_string()));
@@ -460,12 +464,12 @@ pub fn render_map(display_state: &mut DisplayState,
 
             // Draw a square around this tile to help distinguish it visually in the grid
             let outline_color = Color::white();
-            let color = if visible &&
-                           data.map.tiles[x as usize][y as usize].tile_type != TileType::Water {
-                Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.grid_alpha_visible)
+            let color;
+            if visible && data.map.tiles[x as usize][y as usize].tile_type != TileType::Water {
+                color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.grid_alpha_visible);
             } else {
-                Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.grid_alpha)
-            };
+                color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.grid_alpha);
+            }
 
             display_state.canvas.set_blend_mode(BlendMode::Blend);
             display_state.canvas.set_draw_color(color);
