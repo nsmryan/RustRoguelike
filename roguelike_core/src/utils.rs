@@ -1,3 +1,6 @@
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
 use tcod::line::*;
 
 use crate::types::*;
@@ -32,3 +35,28 @@ pub fn move_towards(start: Pos, end: Pos, num_blocks: usize) -> Pos {
 
     return Pos::from(line.skip(num_blocks).next().unwrap_or(end.to_tuple()));
 }
+
+pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
+    let mut hasher = DefaultHasher::new();
+
+    (x as u32).hash(&mut hasher);
+    (y as u32).hash(&mut hasher);
+ 
+    let result: u64 = hasher.finish();
+
+    return ((result & 0xFFFFFFFF) as f32) / 4294967295.0;
+}
+
+pub fn lerp(first: f32, second: f32, scale: f32) -> f32 {
+    return first + ((second - first) * scale);
+}
+
+pub fn lerp_color(color1: Color, color2: Color, scale: f32) -> Color {
+    return Color {
+        r: lerp(color1.r as f32, color2.r as f32, scale) as u8,
+        g: lerp(color1.g as f32, color2.g as f32, scale) as u8,
+        b: lerp(color1.b as f32, color2.b as f32, scale) as u8,
+        a: lerp(color1.a as f32, color2.a as f32, scale) as u8,
+    };
+}
+
