@@ -248,46 +248,30 @@ pub fn render_info(display_state: &mut DisplayState,
             let pos = data.objects[*obj_id].pos();
 
             if data.map.is_in_fov(player_pos, pos, FOV_RADIUS) {
-                let color = config.color_warm_grey;
-                let text_pos = Pos::new(0, y_pos);
-                display_state.draw_text(format!(" {}", data.objects[*obj_id].name),
-                                       text_pos,
-                                       color,
-                                       area);
+                let mut text_list = Vec::new();
 
-                y_pos += 1;
+                let color = config.color_warm_grey;
+                let text_pos = Pos::new(1, y_pos);
+                text_list.push(format!("{}", data.objects[*obj_id].name));
+
+                text_list.push(format!(""));
 
                 if data.objects[*obj_id].fighter.map_or(false, |fighter| fighter.hp <= 0) {
-                    let text_pos = Pos::new(1, y_pos);
-                    display_state.draw_text(format!(" {}", "dead"),
-                                           text_pos,
-                                           color,
-                                           area);
-
-                    y_pos += 1;
+                    text_list.push(format!("{}", "dead"));
                 } else if let Some(behave) = data.objects[*obj_id].behavior {
-                    let text_pos = Pos::new(1, y_pos);
-                    display_state.draw_text(format!(" {}", behave.description()),
-                                           text_pos,
-                                           color,
-                                           area);
-
-                    y_pos += 1;
+                    text_list.push(format!("{}", behave.description()));
                 }
 
                 if let Some(momentum) = data.objects[*obj_id].momentum {
-                    let text_pos = Pos::new(1, y_pos);
-                    display_state.draw_text(format!("momentum:"),
-                                           text_pos,
-                                           color,
-                                           area);
+                    text_list.push(format!("momentum:"));
 
-                    y_pos += 1;
-                    display_state.draw_text(format!(" {} ({}, {})", momentum.magnitude(), momentum.mx, momentum.my),
-                                           text_pos,
-                                           color,
-                                           area);
+                    text_list.push(format!(" {} ({}, {})", momentum.magnitude(), momentum.mx, momentum.my));
                 }
+
+                display_state.draw_text_list(text_list,
+                                             text_pos,
+                                             color,
+                                             area);
             }
         }
     }
