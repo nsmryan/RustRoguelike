@@ -13,8 +13,6 @@ slotmap = "0.4"
 
 rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
 
-num = "0.2"
-
 pathfinding = "2.0"
 
 euclid = "0.20"

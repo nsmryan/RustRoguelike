@@ -195,7 +195,6 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         }
 
         /* Handle Message Log */
-        let mut to_remove = Vec::new();
         for msg in game.msg_log.messages.iter() {
             println!("{}", msg.msg_line(&game.data));
 
@@ -298,10 +297,6 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             }
         }
         game.msg_log.clear();
-
-        for remove in to_remove {
-            game.data.objects.remove(remove);
-        }
 
         /* Draw the Game to the Screen */
         render_all(&mut game.display_state,

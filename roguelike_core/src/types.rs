@@ -5,8 +5,6 @@ use serde_derive::*;
 
 use tcod::line::*;
 
-use num::clamp;
-
 use slotmap::dense::*;
 use slotmap::DefaultKey;
 
@@ -76,28 +74,16 @@ impl GameData {
         let line = Line::new((start.x, start.y), (end.x, end.y));
     
         let path_blocked =
-            line.into_iter().any(|point| self.is_blocked(Pos::from(point)));
+            line.into_iter().any(|point| self.is_blocked_tile(Pos::from(point)));
     
         let (dx, dy) = (end.x - start.x, end.y - start.y);
 
         return !path_blocked &&
-               !self.map.is_blocked_by_wall(start, dx, dy);
+               self.map.is_blocked_by_wall(start, dx, dy).is_none();
     }
 
-    pub fn move_by(&mut self, handle: ObjectId, dx: i32, dy: i32) {
-        let pos = self.objects[handle].pos();
-
-        if !self.is_blocked(Pos::new(pos.x + dx, pos.y + dy)) {
-            self.objects[handle].set_xy(pos.x + dx, pos.y + dy);
-        }
-    }
-
-    pub fn is_blocked(&self, pos: Pos) -> bool {
+    pub fn is_blocked_tile(&self, pos: Pos) -> bool {
         if !self.map.is_within_bounds(pos) {
-            return true;
-        }
-
-        if self.map[pos].blocked {
             return true;
         }
 
@@ -202,78 +188,6 @@ pub struct Fighter {
     pub power: i32,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Momentum {
-    pub mx: i32,
-    pub my: i32,
-    pub took_half_turn: bool,
-    pub max: i32,
-}
-
-impl Default for Momentum {
-    fn default() -> Momentum {
-        Momentum {
-            mx: 0,
-            my: 0,
-            took_half_turn: false,
-            max: 2, // TODO make this configurable
-        }
-    }
-}
-
-impl Momentum {
-    pub fn running(&mut self) -> bool {
-        return self.magnitude() != 0;
-    }
-
-    pub fn at_maximum(&self) -> bool {
-        return self.magnitude() == MAX_MOMENTUM;
-    }
-        
-    pub fn magnitude(&self) -> i32 {
-        if self.mx.abs() > self.my.abs() {
-            return self.mx.abs();
-        } else {
-            return self.my.abs();
-        }
-    }
-
-    pub fn diagonal(&self) -> bool {
-        return self.mx.abs() != 0 && self.my.abs() != 0;
-    }
-
-    pub fn moved(&mut self, dx: i32, dy: i32) {
-        // if the movement is in the opposite direction, and we have some momentum
-        // currently, lose our momentum.
-
-        if self.mx != 0 && dx.signum() != self.mx.signum() {
-            self.mx = 0;
-        } else {
-            self.mx = clamp(self.mx + dx.signum(), -self.max, self.max);
-        }
-
-        if self.my != 0 && dy.signum() != self.my.signum() {
-            self.my = 0;
-        } else {
-            self.my = clamp(self.my + dy.signum(), -self.max, self.max);
-        }
-    }
-
-    pub fn set_momentum(&mut self, mx: i32, my: i32) {
-        self.mx = mx;
-        self.my = my;
-    }
-
-    pub fn along(&self, dx: i32, dy: i32) -> bool {
-        return (self.mx * dx + self.my * dy) > 0;
-    }
-
-    pub fn clear(&mut self) {
-        self.mx = 0;
-        self.my = 0;
-    }
-}
-
 #[derive(Clone, Copy, Debug)]
 pub struct Rect  {
     pub x1: i32,
@@ -318,7 +232,6 @@ pub struct Object {
     pub ai: Option<Ai>,
     pub behavior: Option<Behavior>,
     pub item: Option<Item>,
-    pub momentum: Option<Momentum>,
     pub movement: Option<Reach>,
     pub attack: Option<Reach>,
     pub animation: VecDeque<AnimKey>,
@@ -343,7 +256,6 @@ impl Object {
             ai: None,
             behavior: None,
             item: None,        
-            momentum: None,
             movement: None,
             attack: None,
             animation: VecDeque::new(),

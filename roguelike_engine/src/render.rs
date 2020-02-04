@@ -235,12 +235,6 @@ pub fn render_info(display_state: &mut DisplayState,
                     text_list.push(format!("{}", behave.description()));
                 }
 
-                if let Some(momentum) = data.objects[*obj_id].momentum {
-                    text_list.push(format!("momentum:"));
-
-                    text_list.push(format!(" {} ({}, {})", momentum.magnitude(), momentum.mx, momentum.my));
-                }
-
                 display_state.draw_text_list(text_list,
                                              text_pos,
                                              color,
@@ -441,7 +435,7 @@ pub fn render_map(display_state: &mut DisplayState,
 /// resulting vector of effects is then saved as the new effects vector.
 pub fn render_effects(display_state: &mut DisplayState,
                       game_data: &mut GameData,
-                      settings: &GameSettings,
+                      _settings: &GameSettings,
                       config: &Config,
                       area: &Area) {
     let mut remove_indices = Vec::new();

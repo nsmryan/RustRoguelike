@@ -17,6 +17,37 @@ use crate::utils::*;
 use crate::constants::*;
 
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Blocked {
+    BottomWall(Pos),
+    TopWall(Pos),
+    RightWall(Pos),
+    LeftWall(Pos),
+    BlockedTile(Pos),
+    OutOfBounds(Pos),
+}
+
+impl Blocked {
+    pub fn blocked_pos(&self) -> Pos {
+        match self {
+            Blocked::BottomWall(pos) => *pos,
+            Blocked::TopWall(pos) => *pos,
+            Blocked::RightWall(pos) => *pos,
+            Blocked::LeftWall(pos) => *pos,
+            Blocked::BlockedTile(pos) => *pos,
+            Blocked::OutOfBounds(pos) => *pos,
+        }
+    }
+
+    pub fn blocked_tile(&self) -> bool {
+        match self {
+            Blocked::BlockedTile(_pos) => true,
+
+            _ => false,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum MapLoadConfig {
     Random,
@@ -219,99 +250,114 @@ impl Map {
                self[Pos::new(pos.x, pos.y - 1)].bottom_wall != Wall::Empty;
     }
 
-    pub fn is_blocked_by_wall(&self, start_pos: Pos, dx: i32, dy: i32) -> bool {
-        let mut blocked = false;
+    pub fn is_blocked_by_wall(&self, start_pos: Pos, dx: i32, dy: i32) -> Option<Blocked> {
+        let mut blocked = None;
 
         let (end_x, end_y) = (start_pos.x + dx, start_pos.y + dy);
 
         let line = Line::new((start_pos.x, start_pos.y), (end_x, end_y));
 
-        let mut move_pos;
-
         let mut positions = Vec::new();
-        // ensure that the starting position is looked at
-        positions.push((start_pos.x, start_pos.y));
+        // ensure that the starting position is looked at (could just extend dx/dy by 1)
+        positions.push(start_pos.to_tuple());
         positions.extend(line.into_iter());
 
         for pair in positions.windows(2) {
             let (x, y) = pair[0];
+            let pos = Pos::from(pair[0]);
             let target_pos = Pos::from(pair[1]);
 
+            // if the target position is out of bounds, we are blocked
             if !self.is_within_bounds(target_pos) {
-                blocked = true;
+                blocked = Some(Blocked::OutOfBounds(target_pos));
                 break;
             }
 
-            // if the position is blocked (a solid tile), but is not the target tile,
-            // then it is blocked. We exclude the final tile as is it not itself blocked.
-            if self[target_pos].blocked && target_pos.to_tuple() != (end_x, end_y) {
-                blocked = true;
+            // if moving into a blocked tile, we are blocked
+            if self[target_pos].blocked {
+                blocked = Some(Blocked::BlockedTile(target_pos));
                 break;
             }
 
-            move_pos = target_pos - Vector2D::new(x, y);
+            let move_dir = target_pos - Vector2D::new(x, y);
 
             // horizontal
-            if move_pos.y == 0 && move_pos.x != 0 {
+            if move_dir.y == 0 && move_dir.x != 0 {
                 let mut left_wall_pos = Pos::new(x, y);
-                if move_pos.x >= 1 {
-                    left_wall_pos = Pos::new(x + move_pos.x, y);
-                }
+                if move_dir.x >= 1 {
+                    left_wall_pos = Pos::new(x + move_dir.x, y);
 
-                if self.is_within_bounds(left_wall_pos) {
-                    blocked = self[left_wall_pos].left_wall != Wall::Empty;
+                    if self.is_within_bounds(left_wall_pos) &&
+                       self[left_wall_pos].left_wall != Wall::Empty {
+                       blocked = Some(Blocked::RightWall(pos));
+                    }
+                } else {
+                    if self[left_wall_pos].left_wall != Wall::Empty {
+                       blocked = Some(Blocked::LeftWall(pos));
+                    }
                 }
             // vertical 
-            } else if move_pos.x == 0 && move_pos.y != 0 {
-                let mut bottom_wall_pos = Pos::new(x, y + move_pos.y);
-                if move_pos.y >= 1 {
+            } else if move_dir.x == 0 && move_dir.y != 0 {
+                let mut bottom_wall_pos = Pos::new(x, y + move_dir.y);
+                if move_dir.y >= 1 {
                     bottom_wall_pos = Pos::new(x, y);
-                }
 
-                if self.is_within_bounds(bottom_wall_pos) {
-                    blocked = self[bottom_wall_pos].bottom_wall != Wall::Empty;
+                    if self[bottom_wall_pos].bottom_wall != Wall::Empty {
+                       blocked = Some(Blocked::BottomWall(pos));
+                    }
+                } else {
+                    if self.is_within_bounds(bottom_wall_pos) &&
+                       self[bottom_wall_pos].bottom_wall != Wall::Empty {
+                       blocked = Some(Blocked::TopWall(bottom_wall_pos));
+                    }
                 }
             } else { // diagonal
                 // check for corners
-                let current_space_blocked;
-                let target_space_blocked;
-                let vert_wall;
-                let horiz_wall;
-
-                let pos = Pos::new(x, y);
                 let x_moved = Pos::new(target_pos.x, y);
                 let y_moved = Pos::new(x, target_pos.y);
 
                 // down right
-                if move_pos.x > 0 && move_pos.y > 0 {
-                    current_space_blocked = self.blocked_down(pos) && self.blocked_right(pos);
-                    target_space_blocked = self.blocked_up(target_pos) && self.blocked_left(target_pos);
-                    vert_wall = self.blocked_right(pos) && self.blocked_right(y_moved);
-                    horiz_wall = self.blocked_down(pos) && self.blocked_down(x_moved);
+                if move_dir.x > 0 && move_dir.y > 0 {
+                    // vert
+                    if self.blocked_right(pos) && self.blocked_right(y_moved) {
+                        blocked = Some(Blocked::RightWall(pos));
+                    }
+
+                    // horiz
+                    if self.blocked_down(pos) && self.blocked_down(x_moved) {
+                        blocked = Some(Blocked::BottomWall(pos));
+                    }
                 // up right
-                } else if move_pos.x > 0 && move_pos.y < 0 {
-                    current_space_blocked = self.blocked_up(pos) && self.blocked_right(pos);
-                    target_space_blocked  = self.blocked_down(target_pos) && self.blocked_left(target_pos);
-                    vert_wall = self.blocked_right(pos) && self.blocked_right(y_moved);
-                    horiz_wall = self.blocked_up(pos) && self.blocked_up(x_moved);
+                } else if move_dir.x > 0 && move_dir.y < 0 {
+                    if self.blocked_right(pos) && self.blocked_right(y_moved) {
+                        blocked = Some(Blocked::RightWall(pos));
+                    }
+
+                    if self.blocked_up(pos) && self.blocked_up(x_moved) {
+                        blocked = Some(Blocked::TopWall(pos));
+                    }
                 // down left
-                } else if move_pos.x < 0 && move_pos.y > 0 {
-                    current_space_blocked = self.blocked_down(pos) && self.blocked_left(pos);
-                    target_space_blocked  = self.blocked_up(target_pos) && self.blocked_right(target_pos);
-                    vert_wall = self.blocked_left(pos) && self.blocked_left(y_moved);
-                    horiz_wall = self.blocked_down(pos) && self.blocked_down(x_moved);
+                } else if move_dir.x < 0 && move_dir.y > 0 {
+                    if self.blocked_left(pos) && self.blocked_left(y_moved) {
+                        blocked = Some(Blocked::LeftWall(pos));
+                    }
+
+                    if self.blocked_down(pos) && self.blocked_down(x_moved) {
+                        blocked = Some(Blocked::BottomWall(pos));
+                    }
                 // up left
                 } else {
-                    current_space_blocked = self.blocked_left(pos) && self.blocked_up(pos);
-                    target_space_blocked  = self.blocked_down(target_pos) && self.blocked_right(target_pos);
-                    vert_wall = self.blocked_left(pos) && self.blocked_left(y_moved);
-                    horiz_wall = self.blocked_up(pos) && self.blocked_up(x_moved);
-                }
+                    if self.blocked_left(pos) && self.blocked_left(y_moved) {
+                        blocked = Some(Blocked::LeftWall(pos));
+                    }
 
-                blocked = current_space_blocked || target_space_blocked || vert_wall || horiz_wall;
+                    if self.blocked_up(pos) && self.blocked_up(x_moved) {
+                        blocked = Some(Blocked::TopWall(pos));
+                    }
+                }
             }
 
-            if blocked {
+            if blocked.is_some() {
                 break;
             }
         }
@@ -349,7 +395,13 @@ impl Map {
 
         let offset = Pos::new(end_pos.x - start_pos.x,
                               end_pos.y - start_pos.y);
-        let wall_in_path = self.is_blocked_by_wall(start_pos, offset.x, offset.y);
+        let blocked =
+            self.is_blocked_by_wall(start_pos, offset.x, offset.y);
+
+        let wall_in_path =
+            blocked.map_or(false, |blocked| {
+               !(blocked.blocked_pos() == end_pos && blocked.blocked_tile())
+            });;
 
         return !wall_in_path && self.fov.is_in_fov(end_pos.x, end_pos.y);
     }
@@ -395,7 +447,7 @@ impl Map {
         let mut result = Vec::new();
 
         for delta in neighbors.iter() {
-            if !self.is_blocked_by_wall(pos, delta.0, delta.1) {
+            if self.is_blocked_by_wall(pos, delta.0, delta.1).is_none() {
                 result.push(pos + Vector2D::new(delta.0, delta.1));
             }
         }
@@ -603,88 +655,64 @@ pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut Small
     }
 }
 
-fn move_by(start: Pos, diff: Pos) -> Pos {
-    return Pos::new(start.x + diff.x, start.y + diff.y);
-}
-
-fn move_y(pos: Pos, offset_y: i32) -> Pos {
-    return Pos::new(pos.x, pos.y + offset_y);
-}
-
-fn move_x(pos: Pos, offset_x: i32) -> Pos {
-    return Pos::new(pos.x + offset_x, pos.y);
-}
-
-// TODO put in constructor, and in set_fov function
-pub fn make_tcod_map(tiles: &Vec<Vec<Tile>>) -> tcod::map::Map {
-    let (map_width, map_height) = (tiles.len(), tiles[0].len());
-    let mut map_copy = tcod::map::Map::new(map_width as i32, map_height as i32);
-    for x in 0..map_width {
-        for y in 0..map_height {
-            let transparent = !tiles[x as usize][y as usize].block_sight;
-            let walkable = !tiles[x as usize][y as usize].blocked;
-            map_copy.set(x as i32, y as i32, transparent, walkable);
-        }
-    }
-
-    map_copy
-}
-
-
 #[test]
 fn test_blocked_by_wall_right() {
     let mut map = Map::from_dims(10, 10);
 
-    let pos: (usize, usize) = (5, 5);
+    let pos = Pos::new(5, 5);
     map[pos].left_wall = Wall::ShortWall;
   
     map.update_map();
 
-    assert!(map.is_blocked_by_wall(4, 5, 1, 0) == true);
-    assert!(map.is_blocked_by_wall(5, 5, 1, 0) == false);
-    assert!(map.is_blocked_by_wall(3, 5, 1, 0) == false);
+    let left_of_wall = Pos::new(4, 5);
+    assert!(map.is_blocked_by_wall(left_of_wall, 1, 0) == Some(Blocked::RightWall(left_of_wall)));
+
+    assert!(map.is_blocked_by_wall(pos, 1, 0).is_none());
+
+    let two_left_of_wall = Pos::new(3, 5);
+    assert_eq!(map.is_blocked_by_wall(two_left_of_wall, 1, 0), None);
 }
 
 #[test]
 fn test_blocked_by_wall_up() {
     let mut map = Map::from_dims(10, 10);
 
-    let pos: (usize, usize) = (5, 5);
+    let pos = Pos::new(5, 5);
     map[pos].bottom_wall = Wall::ShortWall;
   
     map.update_map();
 
-    assert!(map.is_blocked_by_wall(5, 5, 0, 1) == true);
-    assert!(map.is_blocked_by_wall(5, 6, 0, 1) == false);
-    assert!(map.is_blocked_by_wall(5, 4, 0, 1) == false);
+    assert_eq!(map.is_blocked_by_wall(Pos::new(5, 6), 0, -1), Some(Blocked::TopWall(pos)));
+    assert!(map.is_blocked_by_wall(Pos::new(5, 5), 0, -1).is_none());
+    assert!(map.is_blocked_by_wall(Pos::new(5, 4), 0, -1).is_none());
 }
 
 #[test]
 fn test_blocked_by_wall_down() {
     let mut map = Map::from_dims(10, 10);
 
-    let pos: (usize, usize) = (5, 5);
+    let pos = Pos::new(5, 5);
     map[pos].bottom_wall = Wall::ShortWall;
   
     map.update_map();
 
-    assert!(map.is_blocked_by_wall(5, 6, 0, -1) == true);
-    assert!(map.is_blocked_by_wall(5, 5, 0, -1) == false);
-    assert!(map.is_blocked_by_wall(5, 7, 0, -1) == false);
+    assert_eq!(map.is_blocked_by_wall(Pos::new(5, 5), 0, 1), Some(Blocked::BottomWall(pos)));
+    assert!(map.is_blocked_by_wall(Pos::new(5, 6), 0, 1).is_none());
+    assert!(map.is_blocked_by_wall(Pos::new(5, 7), 0, 1).is_none());
 }
 
 #[test]
 fn test_blocked_by_wall_left() {
     let mut map = Map::from_dims(10, 10);
 
-    let pos: (usize, usize) = (5, 5);
+    let pos = Pos::new(5, 5);
     map[pos].left_wall = Wall::ShortWall;
   
     map.update_map();
 
-    assert!(map.is_blocked_by_wall(5, 5, -1, 0) == true);
-    assert!(map.is_blocked_by_wall(6, 5, -1, 0) == false);
-    assert!(map.is_blocked_by_wall(4, 5, -1, 0) == false);
+    assert_eq!(map.is_blocked_by_wall(Pos::new(5, 5), -1, 0), Some(Blocked::LeftWall(pos)));
+    assert!(map.is_blocked_by_wall(Pos::new(4, 5), -1, 0).is_none());
+    assert!(map.is_blocked_by_wall(Pos::new(6, 5), -1, 0).is_none());
 }
 
 #[test]

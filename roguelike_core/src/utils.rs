@@ -76,3 +76,27 @@ pub fn reach_by_mode(move_mode: MoveMode) -> Reach {
         }
     }
 }
+
+pub fn clamp<N: Ord>(val: N, min: N, max: N) -> N {
+    if val < min {
+        return min;
+    } else if val > max {
+        return max;
+    } 
+
+    return val;
+}
+
+pub fn move_by(start: Pos, diff: Pos) -> Pos {
+    return Pos::new(start.x + diff.x, start.y + diff.y);
+}
+
+pub fn move_y(pos: Pos, offset_y: i32) -> Pos {
+    return Pos::new(pos.x, pos.y + offset_y);
+}
+
+pub fn move_x(pos: Pos, offset_x: i32) -> Pos {
+    return Pos::new(pos.x + offset_x, pos.y);
+}
+
+

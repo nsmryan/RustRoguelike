@@ -27,7 +27,6 @@ pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object 
 
     player.alive = true;
     player.fighter = Some(Fighter{max_hp: 50, hp: 50, defense: 2, power: 5 });
-    player.momentum = Some(Default::default());
     player.movement = Some(Reach::Single(1));
     player.attack = Some(Reach::Single(1));
     player.move_mode = Some(MoveMode::Walk);
@@ -312,7 +311,7 @@ pub fn make_island(data: &mut GameData,
         loop {
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !data.is_blocked(pos) {
+            if !data.is_blocked_tile(pos) {
                 let monster = make_gol(config, pos, display_state);
                 data.objects.insert(monster);
                 break;
@@ -324,7 +323,7 @@ pub fn make_island(data: &mut GameData,
         loop {
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !data.is_blocked(pos) {
+            if !data.is_blocked_tile(pos) {
                 let monster = make_pawn(config, pos, display_state);
                 data.objects.insert(monster);
                 break;
@@ -336,7 +335,7 @@ pub fn make_island(data: &mut GameData,
         loop {
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !data.is_blocked(pos) {
+            if !data.is_blocked_tile(pos) {
                 let monster = make_spire(config, pos);
                 data.objects.insert(monster);
                 break;
@@ -348,7 +347,7 @@ pub fn make_island(data: &mut GameData,
     let y = rng.gen_range(0, data.map.height());
     let pos = Pos::new(x, y);
 
-    if !data.is_blocked(pos) {
+    if !data.is_blocked_tile(pos) {
         let mut object = Object::new(x, y, ENTITY_GOAL as char, config.color_red, "goal", false);
         object.item = Some(Item::Goal);
         data.objects.insert(object);
@@ -390,9 +389,9 @@ pub fn make_island(data: &mut GameData,
     return center;
 }
 
-pub fn make_player_test_map(objects: &mut ObjMap,
-                          config: &Config,
-                          display_state: &DisplayState) -> (Map, Pos) {
+pub fn make_player_test_map(_objects: &mut ObjMap,
+                            config: &Config,
+                            _display_state: &DisplayState) -> (Map, Pos) {
     let mut map = Map::from_dims(10, 10);
     let position = (1, 5);
 

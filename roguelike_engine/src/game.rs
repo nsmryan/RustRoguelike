@@ -279,7 +279,7 @@ pub fn step_logic(player_action: Action,
     let previous_player_position =
         game_data.objects[player_handle].pos();
 
-    actions::player_apply_action(player_action, game_data, config, msg_log);
+    actions::player_apply_action(player_action, game_data, msg_log);
 
     /* AI */
     if game_data.objects[player_handle].alive {

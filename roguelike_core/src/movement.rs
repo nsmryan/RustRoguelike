@@ -5,6 +5,7 @@ use tcod::line::*;
 
 use euclid::*;
 
+use crate::constants::*;
 use crate::types::*;
 use crate::utils::*;
 use crate::messaging::{MsgLog, Msg};
@@ -228,11 +229,82 @@ impl Reach {
 }
 
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Momentum {
+    pub mx: i32,
+    pub my: i32,
+    pub max: i32,
+}
+
+impl Default for Momentum {
+    fn default() -> Momentum {
+        Momentum {
+            mx: 0,
+            my: 0,
+            max: MAX_MOMENTUM,
+        }
+    }
+}
+
+impl Momentum {
+    pub fn running(&mut self) -> bool {
+        return self.magnitude() != 0;
+    }
+
+    pub fn at_maximum(&self) -> bool {
+        return self.magnitude() == MAX_MOMENTUM;
+    }
+        
+    pub fn magnitude(&self) -> i32 {
+        if self.mx.abs() > self.my.abs() {
+            return self.mx.abs();
+        } else {
+            return self.my.abs();
+        }
+    }
+
+    pub fn diagonal(&self) -> bool {
+        return self.mx.abs() != 0 && self.my.abs() != 0;
+    }
+
+    pub fn moved(&mut self, dx: i32, dy: i32) {
+        // if the movement is in the opposite direction, and we have some momentum
+        // currently, lose our momentum.
+
+        if self.mx != 0 && dx.signum() != self.mx.signum() {
+            self.mx = 0;
+        } else {
+            self.mx = clamp(self.mx + dx.signum(), -self.max, self.max);
+        }
+
+        if self.my != 0 && dy.signum() != self.my.signum() {
+            self.my = 0;
+        } else {
+            self.my = clamp(self.my + dy.signum(), -self.max, self.max);
+        }
+    }
+
+    pub fn set_momentum(&mut self, mx: i32, my: i32) {
+        self.mx = mx;
+        self.my = my;
+    }
+
+    pub fn along(&self, dx: i32, dy: i32) -> bool {
+        return (self.mx * dx + self.my * dy) > 0;
+    }
+
+    pub fn clear(&mut self) {
+        self.mx = 0;
+        self.my = 0;
+    }
+}
+
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Collision {
     NoCollision(Pos),
-    BlockedTile(Pos, Pos),
-    Wall(Pos, Pos),
+    BlockedTile(Pos, Pos), // current position, last position
+    Wall(Pos),
     Entity(ObjectId, Pos),
 }
 
@@ -256,7 +328,7 @@ impl Collision {
                 last_pos = pos;
             }
 
-            Collision::Wall(_, pos) => {
+            Collision::Wall(pos) => {
                 last_pos = pos;
             }
 
@@ -282,11 +354,6 @@ pub fn player_move_or_attack(movement: Movement,
         Movement::Attack(new_pos, target_handle) => {
             attack(player_handle, target_handle, &mut data.objects, msg_log);
 
-            // if we attack without moving, we lost all our momentum
-            if new_pos == data.objects[player_handle].pos() {
-                data.objects[player_handle].momentum.as_mut().map(|momentum| momentum.clear());
-            }
-
             data.objects[player_handle].set_pos(new_pos);
 
             player_action = Move(movement);
@@ -294,7 +361,6 @@ pub fn player_move_or_attack(movement: Movement,
 
         Movement::Collide(pos) => {
             data.objects[player_handle].set_pos(pos);
-            data.objects[player_handle].momentum.unwrap().clear();
             player_action = Move(movement);
 
             msg_log.log(Msg::Collided(player_handle, pos));
@@ -311,25 +377,8 @@ pub fn player_move_or_attack(movement: Movement,
 
             // Update position and momentum
             data.objects[player_handle].set_pos(pos);
-            let momentum = data.objects[player_handle].momentum.unwrap();
 
-            data.objects[player_handle].momentum.as_mut().map(|momentum| momentum.moved(dx, dy));
-
-            // Resolve half-turn mechanic
-            if momentum.magnitude() > 1 && !momentum.took_half_turn {
-                player_action = Move(movement);
-            } else {
-                player_action = Move(movement);
-            }
-
-            // update half turn flag
-            if player_action != Action::NoAction {
-                data.objects[player_handle]
-                    .momentum
-                    .as_mut()
-                    .map(|momentum| momentum.took_half_turn =
-                         player_action == Move(movement));
-            }
+            player_action = Move(movement);
 
             if movement == Movement::Move(pos) {
                 msg_log.log(Msg::Moved(player_handle, movement, pos));
@@ -339,9 +388,7 @@ pub fn player_move_or_attack(movement: Movement,
         }
 
         Movement::WallKick(pos, dir_x, dir_y) => {
-            let mut momentum = data.objects[player_handle].momentum.unwrap();
             data.objects[player_handle].set_pos(pos);
-            momentum.set_momentum(dir_x, dir_y);
 
             // TODO could check for enemy and attack
             player_action = Move(movement);
@@ -363,18 +410,15 @@ pub fn check_collision(pos: Pos,
     let mut last_pos = pos;
     let mut result: Collision = Collision::NoCollision(pos + Vector2D::new(dx, dy));
 
-    if !data.map.is_within_bounds(Pos::new(pos.x + dx, pos.y + dy)) {
-        result = Collision::Wall(pos, pos);
-    } else if data.map.is_blocked_by_wall(pos, dx, dy) {
-        // TODO this returns the final position, not the position of the wal
-        // mayye need a block_by_wall function which returns this instead of a bool
-        result = Collision::Wall(pos + Vector2D::new(dx, dy), pos);
+    if let Some(blocked) = data.map.is_blocked_by_wall(pos, dx, dy) {
+        let block_pos = blocked.blocked_pos();
+        result = Collision::Wall(block_pos);
     } else {
         let move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
 
         for pos in move_line.into_iter() {
             let pos = Pos::from(pos);
-            if data.is_blocked(pos) {
+            if data.is_blocked_tile(pos) {
                 if data.map[pos].blocked {
                     result = Collision::BlockedTile(pos, last_pos);
                 } else {
@@ -422,24 +466,16 @@ pub fn calculate_move(action: MoveAction,
                 movement = Some(Movement::Move(new_pos));
             }
 
-            Collision::Wall(tile_pos, new_pos) => {
-                match data.objects[object_id].momentum {
-                    Some(momentum) => {
-                        // if max momentum, the momentum is in the same direction as the movement,
-                        // and there is space beyond the wall, than jump over the wall.
-                        if momentum.at_maximum() &&
-                           momentum.along(dx, dy) && 
-                           !data.is_blocked(tile_pos) {
-                                movement = Some(Movement::JumpWall(tile_pos));
-                        } else { // otherwise move normally, stopping just before the blocking tile
-                            movement = Some(Movement::Move(new_pos));
-                        }
-                    },
-
-                    None => {
-                        // with no momentum, the movement will end just before the blocked location
-                        movement = Some(Movement::Move(Pos::new(pos.x + dx, pos.y + dy)));
-                    },
+            Collision::Wall(new_pos) => {
+                if data.objects[object_id].move_mode.unwrap() == MoveMode::Run {
+                    if !data.is_blocked_tile(new_pos) {
+                        // TODO likely this does not work anymore
+                        movement = Some(Movement::JumpWall(new_pos));
+                    } else { // otherwise move normally, stopping just before the blocking tile
+                        movement = Some(Movement::Move(new_pos));
+                    }
+                } else {
+                    movement = Some(Movement::Move(new_pos));
                 }
             }
 
