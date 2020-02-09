@@ -323,6 +323,11 @@ impl Map {
                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].bottom_wall));
                     }
 
+                    if self.blocked_right(move_y(pos, -1)) && self.blocked_down(move_x(pos, 1)) {
+                       let blocked_pos = add_pos(pos, Pos::new(-1, 1));
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[blocked_pos].bottom_wall));
+                    }
+
                     if self.blocked_right(pos) && self.blocked_right(y_moved) {
                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_x(pos, 1)].left_wall));
                     }
@@ -334,6 +339,11 @@ impl Map {
                 } else if move_dir.x > 0 && move_dir.y < 0 {
                     if self.blocked_up(pos) && self.blocked_right(pos) {
                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_y(pos, -1)].bottom_wall));
+                    }
+
+                    if self.blocked_up(move_x(pos, 1)) && self.blocked_right(move_y(pos, -1)) {
+                       let blocked_pos = add_pos(pos, Pos::new(1, -1));
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[blocked_pos].bottom_wall));
                     }
 
                     if self.blocked_right(pos) && self.blocked_right(y_moved) {
@@ -349,6 +359,11 @@ impl Map {
                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].left_wall));
                     }
 
+                    if self.blocked_left(move_y(pos, 1)) && self.blocked_down(move_x(pos, -1)) {
+                        let blocked_pos = add_pos(pos, Pos::new(1, -1));
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[blocked_pos].left_wall));
+                    }
+
                     if self.blocked_left(pos) && self.blocked_left(y_moved) {
                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].left_wall));
                     }
@@ -358,6 +373,11 @@ impl Map {
                     }
                 // up left
                 } else {
+                    if self.blocked_left(move_y(pos, -1)) && self.blocked_up(move_x(pos, -1)) {
+                       let blocked_pos = add_pos(pos, Pos::new(-1, -1));
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[blocked_pos].left_wall));
+                    }
+
                     if self.blocked_left(pos) && self.blocked_up(pos) {
                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].left_wall));
                     }
