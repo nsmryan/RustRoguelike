@@ -427,6 +427,11 @@ pub fn make_wall_test_map(objects: &mut ObjMap,
         map[pos] = Tile::empty();
         map[pos].left_wall = Wall::ShortWall;
     }
+    map[(4, 7)].bottom_wall = Wall::ShortWall;
+    map[(4, 1)].bottom_wall = Wall::ShortWall;
+
+    map[(4, 4)].bottom_wall = Wall::ShortWall;
+    map[(5, 4)].bottom_wall = Wall::ShortWall;
   
     objects.insert(make_gol(config, Pos::new(7, 5), display_state));
 

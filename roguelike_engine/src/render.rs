@@ -781,9 +781,15 @@ pub fn render_all(display_state: &mut DisplayState,
     }
 
     if settings.state == GameState::Inventory {
-        let area = Area::new(100, 100, 200, 200, FONT_WIDTH as usize, FONT_HEIGHT as usize);
+        let width: usize = 200;
+        let height: usize = 500;
+        let area = Area::new((SCREEN_WIDTH as i32 / 2) - (width as i32 / 2),
+                             (SCREEN_HEIGHT as i32 / 2) - (height as i32 / 2),
+                             width,
+                             height,
+                             FONT_WIDTH as usize,
+                             FONT_HEIGHT as usize);
 
-        // TODO draw inventory in middle of map
         draw_placard(display_state,
                      "Inventory".to_string(),
                      &area,

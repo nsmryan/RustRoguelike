@@ -417,7 +417,6 @@ pub fn player_move_or_attack(movement: Movement,
     return player_action;
 }
 
-// TODO consider moving to GameData
 /// Moves the given object with a given offset, returning the square that it collides with, or None
 /// indicating no collision.
 pub fn check_collision(pos: Pos,

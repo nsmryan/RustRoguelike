@@ -215,7 +215,10 @@ impl<'a> Game<'a> {
     }
 
     fn step_inventory(&mut self) -> GameResult {
-        actions::handle_input_inventory(self.input_action, &mut self.settings);
+        let input = self.input_action;
+        self.input_action = InputAction::None;
+
+        actions::handle_input_inventory(input, &mut self.settings);
 
         return GameResult::Continue;
     }

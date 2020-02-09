@@ -240,8 +240,9 @@ impl Map {
     }
 
     pub fn blocked_up(&self, pos: Pos) -> bool {
-        return self.is_within_bounds(pos) &&
-               self[Pos::new(pos.x, pos.y - 1)].bottom_wall != Wall::Empty;
+        let offset = Pos::new(pos.x, pos.y - 1);
+        return self.is_within_bounds(offset) &&
+               self[offset].bottom_wall != Wall::Empty;
     }
 
     pub fn is_blocked_by_wall(&self, start_pos: Pos, dx: i32, dy: i32) -> Option<Blocked> {
@@ -279,7 +280,7 @@ impl Map {
 
             // horizontal
             if move_dir.y == 0 && move_dir.x != 0 {
-                let mut left_wall_pos = Pos::new(x, y);
+                let mut left_wall_pos = pos;
                 if move_dir.x >= 1 {
                     left_wall_pos = Pos::new(x + move_dir.x, y);
 
@@ -318,17 +319,23 @@ impl Map {
 
                 // down right
                 if move_dir.x > 0 && move_dir.y > 0 {
-                    // vert
+                    if self.blocked_right(pos) && self.blocked_down(pos) {
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].bottom_wall));
+                    }
+
                     if self.blocked_right(pos) && self.blocked_right(y_moved) {
                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_x(pos, 1)].left_wall));
                     }
 
-                    // horiz
                     if self.blocked_down(pos) && self.blocked_down(x_moved) {
                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].bottom_wall));
                     }
                 // up right
                 } else if move_dir.x > 0 && move_dir.y < 0 {
+                    if self.blocked_up(pos) && self.blocked_right(pos) {
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_y(pos, -1)].bottom_wall);
+                    }
+
                     if self.blocked_right(pos) && self.blocked_right(y_moved) {
                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_x(pos, 1)].left_wall));
                     }
@@ -338,6 +345,10 @@ impl Map {
                     }
                 // down left
                 } else if move_dir.x < 0 && move_dir.y > 0 {
+                    if self.blocked_left(pos) && self.blocked_down(pos) {
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].left_wall));
+                    }
+
                     if self.blocked_left(pos) && self.blocked_left(y_moved) {
                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].left_wall));
                     }
@@ -347,6 +358,10 @@ impl Map {
                     }
                 // up left
                 } else {
+                    if self.blocked_left(pos) && self.blocked_up(pos) {
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].left_wall));
+                    }
+
                     if self.blocked_left(pos) && self.blocked_left(y_moved) {
                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].left_wall));
                     }

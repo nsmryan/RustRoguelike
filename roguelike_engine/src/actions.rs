@@ -53,6 +53,10 @@ pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings) {
             settings.state = GameState::Playing;
         }
 
+        InputAction::Exit => {
+            settings.exiting = true;
+        }
+
         _ => {
         }
     }
