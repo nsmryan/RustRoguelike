@@ -14,7 +14,6 @@ use euclid::Point2D;
 
 use crate::map::*;
 use crate::utils::*;
-use crate::constants::*;
 use crate::movement::*;
 use crate::animation::AnimKey;
 
@@ -135,6 +134,7 @@ pub enum GameState {
     Playing,
     Win,
     Lose,
+    Inventory,
 }
 
 

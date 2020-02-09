@@ -1,7 +1,5 @@
 use tcod::line::*;
 
-use symbol::Symbol;
-
 use noise::Perlin;
 use noise::NoiseFn;
 
@@ -583,10 +581,6 @@ pub fn step_animation(anim_key: AnimKey,
                 return sprite_done;
             }
         }
-
-        _ => {
-            panic!("Attempted to draw an empty animation!?!?!?");
-        }
     }
 
     // assume animation is 'not finished' if it doesn't return anything
@@ -784,6 +778,16 @@ pub fn render_all(display_state: &mut DisplayState,
                 panic!(format!("Unexpected screen section '{}'", section_name));
             }
         }
+    }
+
+    if settings.state == GameState::Inventory {
+        let area = Area::new(100, 100, 200, 200, FONT_WIDTH as usize, FONT_HEIGHT as usize);
+
+        // TODO draw inventory in middle of map
+        draw_placard(display_state,
+                     "Inventory".to_string(),
+                     &area,
+                     config);
     }
 
     display_state.canvas.present();

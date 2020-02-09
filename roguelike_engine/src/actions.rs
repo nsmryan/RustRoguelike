@@ -6,8 +6,7 @@ use roguelike_core::config::*;
 use roguelike_core::movement::Action;
 use roguelike_core::types::*;
 use roguelike_core::movement;
-use roguelike_core::movement::*;
-use roguelike_core::utils::{distance, reach_by_mode};
+use roguelike_core::utils::reach_by_mode;
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 
@@ -26,7 +25,7 @@ pub fn player_apply_action(action: Action, game_data: &mut GameData, msg_log: &m
             movement::player_move_or_attack(movement, game_data, msg_log);
         }
 
-        Action::StateChange(behavior) => {
+        Action::StateChange(_behavior) => {
             panic!("Player tried to change behavior?");
         }
 
@@ -44,6 +43,17 @@ pub fn player_apply_action(action: Action, game_data: &mut GameData, msg_log: &m
         }
 
         Action::NoAction => {
+        }
+    }
+}
+
+pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings) {
+    match input {
+        InputAction::Inventory => {
+            settings.state = GameState::Playing;
+        }
+
+        _ => {
         }
     }
 }
@@ -121,10 +131,11 @@ pub fn handle_input(input_action: InputAction,
             player.move_mode = player.move_mode.map(|mode| mode.decrease());
             player.movement = Some(reach_by_mode(player.move_mode.unwrap()));
 
-            player_turn = Action::none();;
+            player_turn = Action::none();
         }
 
         (InputAction::Inventory, true) => {
+            settings.state = GameState::Inventory;
         }
 
         (InputAction::Exit, _) => {

@@ -392,9 +392,6 @@ pub fn player_move_or_attack(movement: Movement,
         }
 
         Movement::Move(pos) | Movement::JumpWall(pos) => {
-            let (x, y) = pos.to_tuple();
-            let (dx, dy) = (x - data.objects[player_handle].x, y - data.objects[player_handle].y);
-
             // Update position and momentum
             data.objects[player_handle].set_pos(pos);
 
@@ -407,7 +404,7 @@ pub fn player_move_or_attack(movement: Movement,
             }
         }
 
-        Movement::WallKick(pos, dir_x, dir_y) => {
+        Movement::WallKick(pos, _dir_x, _dir_y) => {
             data.objects[player_handle].set_pos(pos);
 
             // TODO could check for enemy and attack

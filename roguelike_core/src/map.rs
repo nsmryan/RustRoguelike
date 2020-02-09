@@ -401,7 +401,7 @@ impl Map {
         let wall_in_path =
             blocked.map_or(false, |blocked| {
                !(blocked.end_pos == end_pos && blocked.blocked_tile)
-            });;
+            });
 
         return !wall_in_path && self.fov.is_in_fov(end_pos.x, end_pos.y);
     }

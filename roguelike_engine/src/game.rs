@@ -170,6 +170,10 @@ impl<'a> Game<'a> {
             GameState::Lose => {
                 return self.step_lose();
             }
+
+            GameState::Inventory => {
+                return self.step_inventory();
+            }
         }
     }
 
@@ -210,9 +214,13 @@ impl<'a> Game<'a> {
         return GameResult::Continue;
     }
 
-    fn step_playing(&mut self) -> GameResult {
-        let player_handle = self.data.find_player().unwrap();
+    fn step_inventory(&mut self) -> GameResult {
+        actions::handle_input_inventory(self.input_action, &mut self.settings);
 
+        return GameResult::Continue;
+    }
+
+    fn step_playing(&mut self) -> GameResult {
         // clear input action
         let input = self.input_action;
         self.input_action = InputAction::None;

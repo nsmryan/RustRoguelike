@@ -90,7 +90,7 @@ impl Msg {
                 return format!("Changed state to {:?}", *behavior);
             }
 
-            Msg::Yell(pos) => {
+            Msg::Yell(_pos) => {
                 return format!("Yelled");
             }
 

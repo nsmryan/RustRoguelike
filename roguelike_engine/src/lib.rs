@@ -114,23 +114,23 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         /* Handle Events */
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit{ .. }=> {
+                Event::Quit {..}=> {
                     running = false;
                 }
 
-                Event::KeyDown{keycode, keymod, ..} => {
+                Event::KeyUp {keycode, keymod, ..} => {
                     if let Some(keycode) = keycode {
                         game.input_action =
                             map_keycode_to_action(keycode, keymod);
                     }
                 }
 
-                Event::MouseMotion{x, y, ..} => {
+                Event::MouseMotion {x, y, ..} => {
                     game.mouse_state.x = x;
                     game.mouse_state.y = y;
                 }
 
-                Event::MouseButtonDown{mouse_btn, x, y, ..} => {
+                Event::MouseButtonDown {mouse_btn, x, y, ..} => {
                     match mouse_btn {
                         MouseButton::Left => {
                             game.mouse_state.left_pressed = true;
@@ -166,7 +166,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     }
                 }
 
-                Event::MouseButtonUp{mouse_btn, ..} => {
+                Event::MouseButtonUp {mouse_btn, ..} => {
                     match mouse_btn {
                         MouseButton::Left => {
                             game.mouse_state.left_pressed = false;
@@ -199,7 +199,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             println!("msg: {}", msg.msg_line(&game.data));
 
             match msg {
-                Msg::StoneThrow(thrower, stone_id, start, end) => {
+                Msg::StoneThrow(_thrower, stone_id, start, end) => {
                     let stone_sprite =
                         game.display_state.font_sprite(ENTITY_STONE as char)
                             .expect("Could not find stone sprite!");
@@ -258,7 +258,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     game.data.objects.insert(sound);
                 }
 
-                Msg::Killed(attacker, attacked, damage) => {
+                Msg::Killed(_attacker, attacked, _damage) => {
                     if game.data.objects[*attacked].name != "player".to_string() {
                         game.data.objects[*attacked].animation.clear();
 
@@ -272,7 +272,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     }
                 }
 
-                Msg::Attack(attacker, attacked, damage) => {
+                Msg::Attack(attacker, _attacked, _damage) => {
                     if game.data.objects[*attacker].name == "player" {
                         let attack_sprite = 
                             game.display_state.new_sprite("player_attack".to_string(), config.player_attack_speed)
