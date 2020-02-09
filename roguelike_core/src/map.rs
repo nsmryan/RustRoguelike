@@ -333,7 +333,7 @@ impl Map {
                 // up right
                 } else if move_dir.x > 0 && move_dir.y < 0 {
                     if self.blocked_up(pos) && self.blocked_right(pos) {
-                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_y(pos, -1)].bottom_wall);
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_y(pos, -1)].bottom_wall));
                     }
 
                     if self.blocked_right(pos) && self.blocked_right(y_moved) {
