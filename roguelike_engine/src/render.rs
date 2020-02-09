@@ -781,7 +781,7 @@ pub fn render_all(display_state: &mut DisplayState,
     }
 
     if settings.state == GameState::Inventory {
-        let width: usize = 200;
+        let width: usize = 300;
         let height: usize = 500;
         let area = Area::new((SCREEN_WIDTH as i32 / 2) - (width as i32 / 2),
                              (SCREEN_HEIGHT as i32 / 2) - (height as i32 / 2),
@@ -790,10 +790,7 @@ pub fn render_all(display_state: &mut DisplayState,
                              FONT_WIDTH as usize,
                              FONT_HEIGHT as usize);
 
-        draw_placard(display_state,
-                     "Inventory".to_string(),
-                     &area,
-                     config);
+        render_inventory(display_state, data, &area, config);
     }
 
     display_state.canvas.present();
