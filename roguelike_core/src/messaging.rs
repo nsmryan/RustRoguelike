@@ -36,6 +36,7 @@ pub enum Msg {
     StateChange(ObjectId, Behavior),
     Collided(ObjectId, Pos),
     Yell(Pos),
+    GameState(GameState),
 }
 
 impl Msg {
@@ -96,6 +97,22 @@ impl Msg {
 
             Msg::Collided(_object_id, _pos) => {
                 return "Collided".to_string();
+            }
+
+            Msg::GameState(game_state) => {
+                match game_state {
+                    GameState::Inventory => {
+                        return "Opened Inventory".to_string();
+                    }
+
+                    GameState::Playing => {
+                        return "Closed Inventory".to_string();
+                    }
+
+                    _ => {
+                        panic!();
+                    }
+                }
             }
         }
     }

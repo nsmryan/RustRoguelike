@@ -218,7 +218,7 @@ impl<'a> Game<'a> {
         let input = self.input_action;
         self.input_action = InputAction::None;
 
-        actions::handle_input_inventory(input, &mut self.settings);
+        actions::handle_input_inventory(input, &mut self.settings, &mut self.msg_log);
 
         return GameResult::Continue;
     }
@@ -233,6 +233,7 @@ impl<'a> Game<'a> {
                                   &mut self.data,
                                   &mut self.settings,
                                   &mut self.display_state,
+                                  &mut self.msg_log,
                                   &self.config);
 
         if player_action != Action::NoAction {

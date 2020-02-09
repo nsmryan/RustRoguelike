@@ -47,10 +47,13 @@ pub fn player_apply_action(action: Action, game_data: &mut GameData, msg_log: &m
     }
 }
 
-pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings) {
+pub fn handle_input_inventory(input: InputAction,
+                              settings: &mut GameSettings,
+                              msg_log: &mut MsgLog) {
     match input {
         InputAction::Inventory => {
             settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
         }
 
         InputAction::Exit => {
@@ -66,6 +69,7 @@ pub fn handle_input(input_action: InputAction,
                     game_data: &mut GameData, 
                     settings: &mut GameSettings,
                     display_state: &mut DisplayState,
+                    msg_log: &mut MsgLog,
                     config: &Config) -> Action {
     let player_handle = game_data.find_player().unwrap();
 
@@ -140,6 +144,7 @@ pub fn handle_input(input_action: InputAction,
 
         (InputAction::Inventory, true) => {
             settings.state = GameState::Inventory;
+            msg_log.log(Msg::GameState(settings.state));
         }
 
         (InputAction::Exit, _) => {

@@ -129,7 +129,7 @@ impl Color {
     }
 }
 
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum GameState {
     Playing,
     Win,
