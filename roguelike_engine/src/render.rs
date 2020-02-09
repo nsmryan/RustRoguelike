@@ -606,9 +606,9 @@ pub fn render_overlays(display_state: &mut DisplayState,
     highlight_color.a = config.highlight_alpha;
 
     // Draw player movement overlay
-    for move_action in MoveAction::move_actions().iter() {
+    for move_action in Direction::move_actions().iter() {
         // for all movements except staying still
-        if *move_action != MoveAction::Center {
+        if *move_action != Direction::Center {
             // calculate the move that would occur
             if let Some(movement) =
                 calculate_move(*move_action,

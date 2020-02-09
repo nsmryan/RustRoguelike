@@ -401,6 +401,12 @@ pub fn make_player_test_map(_objects: &mut ObjMap,
         map[pos].left_wall = Wall::ShortWall;
     }
 
+    for wall_x_pos in 3..7 {
+        let pos: (i32, i32) = (wall_x_pos, 5);
+        map[pos] = Tile::empty();
+        map[pos].bottom_wall = Wall::ShortWall;
+    }
+
     make_stone(config, Pos::new(1, 2));
     make_stone(config, Pos::new(4, 2));
     make_stone(config, Pos::new(3, 2));

@@ -14,37 +14,31 @@ use serde_derive::*;
 
 use crate::types::*;
 use crate::utils::*;
+use crate::movement::Direction;
 use crate::constants::*;
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Blocked {
-    BottomWall(Pos),
-    TopWall(Pos),
-    RightWall(Pos),
-    LeftWall(Pos),
-    BlockedTile(Pos),
-    OutOfBounds(Pos),
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct Blocked {
+    pub start_pos: Pos,
+    pub end_pos: Pos,
+    pub direction: Direction,
+    pub blocked_tile: bool,
+    pub wall_type: Wall,
 }
 
 impl Blocked {
-    pub fn blocked_pos(&self) -> Pos {
-        match self {
-            Blocked::BottomWall(pos) => *pos,
-            Blocked::TopWall(pos) => *pos,
-            Blocked::RightWall(pos) => *pos,
-            Blocked::LeftWall(pos) => *pos,
-            Blocked::BlockedTile(pos) => *pos,
-            Blocked::OutOfBounds(pos) => *pos,
-        }
-    }
-
-    pub fn blocked_tile(&self) -> bool {
-        match self {
-            Blocked::BlockedTile(_pos) => true,
-
-            _ => false,
-        }
+    pub fn new(start_pos: Pos,
+               end_pos: Pos,
+               direction: Direction,
+               blocked_tile: bool,
+               wall_type: Wall) -> Blocked {
+        return Blocked { start_pos,
+                         end_pos,
+                         direction,
+                         blocked_tile,
+                         wall_type,
+        };
     }
 }
 
@@ -257,6 +251,8 @@ impl Map {
 
         let line = Line::new((start_pos.x, start_pos.y), (end_x, end_y));
 
+        let dir = Direction::from_dxy(dx, dy);
+
         let mut positions = Vec::new();
         // ensure that the starting position is looked at (could just extend dx/dy by 1)
         positions.push(start_pos.to_tuple());
@@ -269,13 +265,13 @@ impl Map {
 
             // if the target position is out of bounds, we are blocked
             if !self.is_within_bounds(target_pos) {
-                blocked = Some(Blocked::OutOfBounds(target_pos));
+                blocked = Some(Blocked::new(pos, target_pos, dir, true, Wall::Empty));
                 break;
             }
 
             // if moving into a blocked tile, we are blocked
             if self[target_pos].blocked {
-                blocked = Some(Blocked::BlockedTile(target_pos));
+                blocked = Some(Blocked::new(pos, target_pos, dir, true, Wall::Empty));
                 break;
             }
 
@@ -287,28 +283,32 @@ impl Map {
                 if move_dir.x >= 1 {
                     left_wall_pos = Pos::new(x + move_dir.x, y);
 
+                    let wall_type = self[left_wall_pos].left_wall;
                     if self.is_within_bounds(left_wall_pos) &&
-                       self[left_wall_pos].left_wall != Wall::Empty {
-                       blocked = Some(Blocked::RightWall(pos));
+                       wall_type != Wall::Empty {
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, wall_type));
                     }
                 } else {
-                    if self[left_wall_pos].left_wall != Wall::Empty {
-                       blocked = Some(Blocked::LeftWall(pos));
+                    let wall_type = self[left_wall_pos].left_wall;
+                    if wall_type != Wall::Empty {
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, wall_type));
                     }
                 }
             // vertical 
             } else if move_dir.x == 0 && move_dir.y != 0 {
                 let mut bottom_wall_pos = Pos::new(x, y + move_dir.y);
                 if move_dir.y >= 1 {
-                    bottom_wall_pos = Pos::new(x, y);
+                    bottom_wall_pos = pos;
 
-                    if self[bottom_wall_pos].bottom_wall != Wall::Empty {
-                       blocked = Some(Blocked::BottomWall(pos));
+                    let wall_type = self[bottom_wall_pos].bottom_wall;
+                    if wall_type != Wall::Empty {
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, wall_type));
                     }
                 } else {
+                    let wall_type = self[bottom_wall_pos].bottom_wall;
                     if self.is_within_bounds(bottom_wall_pos) &&
-                       self[bottom_wall_pos].bottom_wall != Wall::Empty {
-                       blocked = Some(Blocked::TopWall(bottom_wall_pos));
+                       wall_type != Wall::Empty {
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, wall_type));
                     }
                 }
             } else { // diagonal
@@ -320,39 +320,39 @@ impl Map {
                 if move_dir.x > 0 && move_dir.y > 0 {
                     // vert
                     if self.blocked_right(pos) && self.blocked_right(y_moved) {
-                        blocked = Some(Blocked::RightWall(pos));
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_x(pos, 1)].left_wall));
                     }
 
                     // horiz
                     if self.blocked_down(pos) && self.blocked_down(x_moved) {
-                        blocked = Some(Blocked::BottomWall(pos));
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].bottom_wall));
                     }
                 // up right
                 } else if move_dir.x > 0 && move_dir.y < 0 {
                     if self.blocked_right(pos) && self.blocked_right(y_moved) {
-                        blocked = Some(Blocked::RightWall(pos));
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_x(pos, 1)].left_wall));
                     }
 
                     if self.blocked_up(pos) && self.blocked_up(x_moved) {
-                        blocked = Some(Blocked::TopWall(pos));
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_y(pos, -1)].bottom_wall));
                     }
                 // down left
                 } else if move_dir.x < 0 && move_dir.y > 0 {
                     if self.blocked_left(pos) && self.blocked_left(y_moved) {
-                        blocked = Some(Blocked::LeftWall(pos));
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].left_wall));
                     }
 
                     if self.blocked_down(pos) && self.blocked_down(x_moved) {
-                        blocked = Some(Blocked::BottomWall(pos));
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].bottom_wall));
                     }
                 // up left
                 } else {
                     if self.blocked_left(pos) && self.blocked_left(y_moved) {
-                        blocked = Some(Blocked::LeftWall(pos));
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].left_wall));
                     }
 
                     if self.blocked_up(pos) && self.blocked_up(x_moved) {
-                        blocked = Some(Blocked::TopWall(pos));
+                       blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_y(pos, -1)].bottom_wall));
                     }
                 }
             }
@@ -400,7 +400,7 @@ impl Map {
 
         let wall_in_path =
             blocked.map_or(false, |blocked| {
-               !(blocked.blocked_pos() == end_pos && blocked.blocked_tile())
+               !(blocked.end_pos == end_pos && blocked.blocked_tile)
             });;
 
         return !wall_in_path && self.fov.is_in_fov(end_pos.x, end_pos.y);

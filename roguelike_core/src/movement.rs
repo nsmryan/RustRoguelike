@@ -8,6 +8,7 @@ use euclid::*;
 use crate::constants::*;
 use crate::types::*;
 use crate::utils::*;
+use crate::map::{Wall, Blocked};
 use crate::messaging::{MsgLog, Msg};
 
 
@@ -88,8 +89,8 @@ impl Movement {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum MoveAction {
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Direction {
     Left,
     Right,
     Up,
@@ -101,31 +102,55 @@ pub enum MoveAction {
     Center,
 }
 
-impl MoveAction {
-    pub fn into_move(self) -> (i32, i32) {
-        match self {
-            MoveAction::Left => (-1, 0),
-            MoveAction::Right => (1, 0),
-            MoveAction::Up => (0, -1),
-            MoveAction::Down => (0, 1),
-            MoveAction::DownLeft => (-1, 1),
-            MoveAction::DownRight => (1, 1),
-            MoveAction::UpLeft => (-1, -1),
-            MoveAction::UpRight => (1, -1),
-            MoveAction::Center => (0, 0),
+impl Direction {
+    pub fn from_dxy(dx: i32, dy: i32) -> Direction {
+        if dx == 0 && dy == 0 {
+            Direction::Center
+        } else if dx == 0 && dy < 0 {
+            Direction::Up
+        } else if dx == 0 && dy > 0 {
+            Direction::Down
+        } else if dx > 0 && dy == 0 {
+            Direction::Left
+        } else if dx < 0 && dy == 0 {
+            Direction::Right
+        } else if dx > 0 && dy > 0 {
+            Direction::DownRight
+        } else if dx > 0 && dy < 0 {
+            Direction::UpRight
+        } else if dx < 0 && dy > 0 {
+            Direction::DownLeft
+        } else if dx < 0 && dy < 0 {
+            Direction::UpLeft
+        } else {
+            panic!(format!("Direction should not exist {:?}", (dx, dy)));
         }
     }
 
-    pub fn move_actions() -> Vec<MoveAction> {
-        return vec!(MoveAction::Left,
-                    MoveAction::Right,
-                    MoveAction::Up,
-                    MoveAction::Down,
-                    MoveAction::DownLeft,
-                    MoveAction::DownRight,
-                    MoveAction::UpLeft,
-                    MoveAction::UpRight,
-                    MoveAction::Center);
+    pub fn into_move(self) -> (i32, i32) {
+        match self {
+            Direction::Left => (-1, 0),
+            Direction::Right => (1, 0),
+            Direction::Up => (0, -1),
+            Direction::Down => (0, 1),
+            Direction::DownLeft => (-1, 1),
+            Direction::DownRight => (1, 1),
+            Direction::UpLeft => (-1, -1),
+            Direction::UpRight => (1, -1),
+            Direction::Center => (0, 0),
+        }
+    }
+
+    pub fn move_actions() -> Vec<Direction> {
+        return vec!(Direction::Left,
+                    Direction::Right,
+                    Direction::Up,
+                    Direction::Down,
+                    Direction::DownLeft,
+                    Direction::DownRight,
+                    Direction::UpLeft,
+                    Direction::UpRight,
+                    Direction::Center);
     }
 }
 
@@ -137,21 +162,21 @@ pub enum Reach {
 }
 
 impl Reach {
-    pub fn move_with_reach(&self, move_action: &MoveAction) -> Option<Pos> {
+    pub fn move_with_reach(&self, move_action: &Direction) -> Option<Pos> {
         match self {
             Reach::Single(dist) => {
                 let dist = (*dist) as i32;
                 let neg_dist = dist * -1;
                 match move_action {
-                    MoveAction::Left => Some(Pos::new(neg_dist, 0)),
-                    MoveAction::Right => Some(Pos::new(dist, 0)),
-                    MoveAction::Up => Some(Pos::new(0, neg_dist)),
-                    MoveAction::Down => Some(Pos::new(0, dist)),
-                    MoveAction::DownLeft => Some(Pos::new(neg_dist, dist)),
-                    MoveAction::DownRight => Some(Pos::new(dist, dist)),
-                    MoveAction::UpLeft => Some(Pos::new(neg_dist, neg_dist)),
-                    MoveAction::UpRight => Some(Pos::new(dist, neg_dist)),
-                    MoveAction::Center => Some(Pos::new(0, 0)),
+                    Direction::Left => Some(Pos::new(neg_dist, 0)),
+                    Direction::Right => Some(Pos::new(dist, 0)),
+                    Direction::Up => Some(Pos::new(0, neg_dist)),
+                    Direction::Down => Some(Pos::new(0, dist)),
+                    Direction::DownLeft => Some(Pos::new(neg_dist, dist)),
+                    Direction::DownRight => Some(Pos::new(dist, dist)),
+                    Direction::UpLeft => Some(Pos::new(neg_dist, neg_dist)),
+                    Direction::UpRight => Some(Pos::new(dist, neg_dist)),
+                    Direction::Center => Some(Pos::new(0, 0)),
                 }
             }
 
@@ -159,15 +184,15 @@ impl Reach {
                 let dist = (*dist) as i32;
                 let neg_dist = dist * -1;
                 match move_action {
-                    MoveAction::Left => None,
-                    MoveAction::Right => None,
-                    MoveAction::Up => None,
-                    MoveAction::Down => None,
-                    MoveAction::DownLeft => Some(Pos::new(neg_dist, dist)),
-                    MoveAction::DownRight => Some(Pos::new(dist, dist)),
-                    MoveAction::UpLeft => Some(Pos::new(neg_dist, neg_dist)),
-                    MoveAction::UpRight => Some(Pos::new(dist, neg_dist)),
-                    MoveAction::Center => Some(Pos::new(0, 0)),
+                    Direction::Left => None,
+                    Direction::Right => None,
+                    Direction::Up => None,
+                    Direction::Down => None,
+                    Direction::DownLeft => Some(Pos::new(neg_dist, dist)),
+                    Direction::DownRight => Some(Pos::new(dist, dist)),
+                    Direction::UpLeft => Some(Pos::new(neg_dist, neg_dist)),
+                    Direction::UpRight => Some(Pos::new(dist, neg_dist)),
+                    Direction::Center => Some(Pos::new(0, 0)),
                 }
             }
 
@@ -175,15 +200,15 @@ impl Reach {
                 let dist = (*dist) as i32;
                 let neg_dist = dist * -1;
                 match move_action {
-                    MoveAction::Left => Some(Pos::new(neg_dist, 0)),
-                    MoveAction::Right => Some(Pos::new(dist, 0)),
-                    MoveAction::Up => Some(Pos::new(0, neg_dist)),
-                    MoveAction::Down => Some(Pos::new(0, dist)),
-                    MoveAction::DownLeft => None,
-                    MoveAction::DownRight => None,
-                    MoveAction::UpLeft => None,
-                    MoveAction::UpRight => None,
-                    MoveAction::Center => None,
+                    Direction::Left => Some(Pos::new(neg_dist, 0)),
+                    Direction::Right => Some(Pos::new(dist, 0)),
+                    Direction::Up => Some(Pos::new(0, neg_dist)),
+                    Direction::Down => Some(Pos::new(0, dist)),
+                    Direction::DownLeft => None,
+                    Direction::DownRight => None,
+                    Direction::UpLeft => None,
+                    Direction::UpRight => None,
+                    Direction::Center => None,
                 }
             }
         }
@@ -303,8 +328,7 @@ impl Momentum {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Collision {
     NoCollision(Pos),
-    BlockedTile(Pos, Pos), // current position, last position
-    Wall(Pos),
+    Blocked(Blocked),
     Entity(ObjectId, Pos),
 }
 
@@ -324,12 +348,8 @@ impl Collision {
                 last_pos = pos
             }
 
-            Collision::BlockedTile(_, pos) => {
-                last_pos = pos;
-            }
-
-            Collision::Wall(pos) => {
-                last_pos = pos;
+            Collision::Blocked(blocked) => {
+                last_pos = blocked.start_pos;
             }
 
             Collision::Entity(_, pos) => {
@@ -411,22 +431,21 @@ pub fn check_collision(pos: Pos,
     let mut result: Collision = Collision::NoCollision(pos + Vector2D::new(dx, dy));
 
     if let Some(blocked) = data.map.is_blocked_by_wall(pos, dx, dy) {
-        let block_pos = blocked.blocked_pos();
-        result = Collision::Wall(block_pos);
+        result = Collision::Blocked(blocked);
     } else {
+        // must be within bounds, not blocked by a blocking tile, and not blocked by a wall.
+        // therefore we just have to check for blocking by an entity
         let move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
 
         for pos in move_line.into_iter() {
             let pos = Pos::from(pos);
+
             if data.is_blocked_tile(pos) {
-                if data.map[pos].blocked {
-                    result = Collision::BlockedTile(pos, last_pos);
-                } else {
-                    for (key, object) in data.objects.iter() {
-                        if object.pos() == pos {
-                            result = Collision::Entity(key, last_pos);
-                            break;
-                        }
+                // NOTE this re-checks all entities, which are already checked by is_blocked_tile
+                for (key, object) in data.objects.iter() {
+                    if object.pos() == pos {
+                        result = Collision::Entity(key, last_pos);
+                        break;
                     }
                 }
                 break;
@@ -439,7 +458,7 @@ pub fn check_collision(pos: Pos,
     return result;
 }
 
-pub fn calculate_move(action: MoveAction,
+pub fn calculate_move(action: Direction,
                       reach: Reach,
                       object_id: ObjectId,
                       data: &GameData) -> Option<Movement> {
@@ -462,20 +481,15 @@ pub fn calculate_move(action: MoveAction,
                 }
             }
 
-            Collision::BlockedTile(_tile_pos, new_pos) => {
-                movement = Some(Movement::Move(new_pos));
-            }
-
-            Collision::Wall(new_pos) => {
+            Collision::Blocked(blocked) => {
                 if data.objects[object_id].move_mode.unwrap() == MoveMode::Run {
-                    if !data.is_blocked_tile(new_pos) {
-                        // TODO likely this does not work anymore
-                        movement = Some(Movement::JumpWall(new_pos));
+                    if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
+                        movement = Some(Movement::JumpWall(blocked.end_pos));
                     } else { // otherwise move normally, stopping just before the blocking tile
-                        movement = Some(Movement::Move(new_pos));
+                        movement = Some(Movement::Move(blocked.start_pos));
                     }
                 } else {
-                    movement = Some(Movement::Move(new_pos));
+                    movement = Some(Movement::Move(blocked.start_pos));
                 }
             }
 

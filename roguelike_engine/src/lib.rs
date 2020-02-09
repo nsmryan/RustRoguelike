@@ -196,7 +196,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
         /* Handle Message Log */
         for msg in game.msg_log.messages.iter() {
-            println!("{}", msg.msg_line(&game.data));
+            println!("msg: {}", msg.msg_line(&game.data));
 
             match msg {
                 Msg::StoneThrow(thrower, stone_id, start, end) => {

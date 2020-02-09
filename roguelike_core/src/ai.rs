@@ -52,8 +52,8 @@ pub fn ai_attack(monster_handle: ObjectId,
     } else if let Some(hit_pos) =
         // if AI can hit their target
         ai_can_hit_target(&mut data.map, 
-                          data.objects[monster_handle].pos(),
-                          data.objects[target_handle].pos(),
+                          monster_pos,
+                          target_pos,
                           &data.objects[monster_handle].attack.unwrap()) {
         turn = Action::Move(Movement::Attack(hit_pos, target_handle));
     } else if data.map.is_blocked_by_wall(monster_pos, target_pos.x - monster_pos.x, target_pos.y - monster_pos.y).is_some() {
@@ -66,12 +66,13 @@ pub fn ai_attack(monster_handle: ObjectId,
             (data.objects[monster_handle].attack, data.objects[monster_handle].movement) {
             // get all locations they can hit
             let move_positions =
-                MoveAction::move_actions().iter()
-                                          .map(|move_action| movement.move_with_reach(move_action))
-                                          .filter_map(|mov| mov)
-                                          .map(|mov| add_pos(mov, monster_pos))
-                                          .filter(|mov| data.map.is_within_bounds(*mov))
-                                          .collect::<Vec<Pos>>();
+                Direction::move_actions().iter()
+                                         .map(|move_action| movement.move_with_reach(move_action))
+                                         .filter_map(|mov| mov)
+                                         .map(|pos| add_pos(pos, monster_pos))
+                                         .filter(|pos| data.map.is_within_bounds(*pos))
+                                         .filter(|pos| data.is_blocked_tile(*pos))
+                                         .collect::<Vec<Pos>>();
 
             // filter locations that are blocked or out of sight
             let positions: Vec<Pos> =
@@ -90,7 +91,7 @@ pub fn ai_attack(monster_handle: ObjectId,
                                       .unwrap();
             }
 
-            pos_offset = ai_take_astar_step(monster_pos, target_pos, &data.map);
+            pos_offset = ai_take_astar_step(monster_pos, target_pos, &data);
         }
 
         turn = Action::Move(Movement::Move(pos_offset));
@@ -126,7 +127,7 @@ pub fn ai_investigate(target_pos_orig: Pos,
             turn = Action::StateChange(Behavior::Idle);
         } else {
             // if the monster has not reached its target, move towards the target.
-            let pos_offset = ai_take_astar_step(monster_pos, target_pos, &game_data.map);
+            let pos_offset = ai_take_astar_step(monster_pos, target_pos, &game_data);
 
             turn = Action::Move(Movement::Move(pos_offset));
         }
@@ -168,10 +169,10 @@ fn ai_can_hit_target(map: &mut Map,
 
 fn ai_take_astar_step(monster_pos: Pos,
                       target_pos: Pos,
-                      map: &Map) -> Pos {
-    let astar_iter = map.astar(monster_pos, target_pos);
+                      game_data: &GameData) -> Pos {
+    let astar_iter = game_data.map.astar(monster_pos, target_pos);
 
-    if astar_iter.len() > 0 {
+    if astar_iter.len() > 1 && !game_data.is_blocked_tile(astar_iter[1]) {
         return step_towards(monster_pos, astar_iter[1]);
     } else {
         return Pos::new(0, 0);
@@ -227,8 +228,10 @@ pub fn ai_apply_actions(monster_handle: ObjectId,
     match turn {
         Action::Move(movement) => {
             match movement {
-                Movement::Move(pos) => {
-                    game_data.objects[monster_handle].set_pos(pos);
+                Movement::Move(pos_offset) => {
+                    let pos = game_data.objects[monster_handle].pos();
+
+                    game_data.objects[monster_handle].set_pos(add_pos(pos, pos_offset));
 
                     msg_log.log(Msg::Moved(monster_handle, movement, pos));
                 }

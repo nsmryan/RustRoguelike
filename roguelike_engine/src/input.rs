@@ -2,12 +2,12 @@ use sdl2::keyboard::Keycode;
 use sdl2::keyboard::Mod;
 
 use roguelike_core::types::*;
-use roguelike_core::movement::MoveAction;
+use roguelike_core::movement::Direction;
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum InputAction {
-    Move(MoveAction),
+    Move(Direction),
     MapClick(Pos, Pos),
     Pickup,
     Inventory,
@@ -30,39 +30,39 @@ pub fn map_keycode_to_action(keycode: Keycode, keymods: Mod) -> InputAction {
 
     match keycode {
         Keycode::Kp8 | Keycode::Num8 | Keycode::Up => {
-            input_action = InputAction::Move(MoveAction::Up);
+            input_action = InputAction::Move(Direction::Up);
         }
 
         Keycode::Kp6 | Keycode::Num6 | Keycode::Right => {
-            input_action = InputAction::Move(MoveAction::Right);
+            input_action = InputAction::Move(Direction::Right);
         }
 
         Keycode::Kp2 | Keycode::Num2 | Keycode::Down => {
-            input_action = InputAction::Move(MoveAction::Down);
+            input_action = InputAction::Move(Direction::Down);
         }
 
         Keycode::Kp4 | Keycode::Num4 | Keycode::Left => {
-            input_action = InputAction::Move(MoveAction::Left);
+            input_action = InputAction::Move(Direction::Left);
         }
 
         Keycode::Kp7 | Keycode::Num7 => {
-            input_action = InputAction::Move(MoveAction::UpLeft);
+            input_action = InputAction::Move(Direction::UpLeft);
         }
 
         Keycode::Kp9 | Keycode::Num9 => {
-            input_action = InputAction::Move(MoveAction::UpRight);
+            input_action = InputAction::Move(Direction::UpRight);
         }
 
         Keycode::Kp3 | Keycode::Num3 => {
-            input_action = InputAction::Move(MoveAction::DownRight);
+            input_action = InputAction::Move(Direction::DownRight);
         }
 
         Keycode::Kp1 | Keycode::Num1 => {
-            input_action = InputAction::Move(MoveAction::DownLeft);
+            input_action = InputAction::Move(Direction::DownLeft);
         }
 
         Keycode::Kp5 | Keycode::Num5 => {
-            input_action = InputAction::Move(MoveAction::Center);
+            input_action = InputAction::Move(Direction::Center);
         }
 
         Keycode::Return => {
