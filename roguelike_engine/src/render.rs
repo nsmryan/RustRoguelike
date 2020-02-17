@@ -451,13 +451,19 @@ pub fn render_effects(display_state: &mut DisplayState,
 
                 if *current_radius < *max_radius {
                     *current_radius += 1;
+                    let mut sound_targets = Vec::new();
                     for sound_x in 0..game_data.map.width() {
                         for sound_y in 0..game_data.map.height() {
                             let sound_pos = Pos::new(sound_x, sound_y);
-
                             if distance(Pos::new(pos.x, pos.y), Pos::new(sound_x, sound_y)) == *current_radius as i32 {
-                                display_state.draw_char(MAP_EMPTY_CHAR as char, sound_pos, highlight_color, area);
+                                sound_targets.push(sound_pos);
                             }
+                        }
+                    }
+
+                    for sound_target in sound_targets.iter() {
+                        if let Some(sound_pos) = game_data.map.astar(*pos, *sound_target).iter().skip(*current_radius).next() {
+                            display_state.draw_char(MAP_EMPTY_CHAR as char, *sound_pos, highlight_color, area);
                         }
                     }
                 } else {
