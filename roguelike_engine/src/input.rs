@@ -20,6 +20,7 @@ pub enum InputAction {
     Yell,
     IncreaseMoveMode,
     DecreaseMoveMode,
+    SelectItem(usize),
     None,
 }
 
@@ -109,6 +110,46 @@ pub fn map_keycode_to_action(keycode: Keycode, _keymods: Mod) -> InputAction {
 
         Keycode::Z => {
             input_action = InputAction::DecreaseMoveMode;
+        }
+
+        Keycode::Num0 => {
+            input_action = InputAction::SelectItem(0);
+        }
+
+        Keycode::Num1 => {
+            input_action = InputAction::SelectItem(1);
+        }
+
+        Keycode::Num2 => {
+            input_action = InputAction::SelectItem(2);
+        }
+
+        Keycode::Num3 => {
+            input_action = InputAction::SelectItem(3);
+        }
+
+        Keycode::Num4 => {
+            input_action = InputAction::SelectItem(4);
+        }
+
+        Keycode::Num5 => {
+            input_action = InputAction::SelectItem(5);
+        }
+
+        Keycode::Num6 => {
+            input_action = InputAction::SelectItem(6);
+        }
+
+        Keycode::Num7 => {
+            input_action = InputAction::SelectItem(7);
+        }
+
+        Keycode::Num8 => {
+            input_action = InputAction::SelectItem(8);
+        }
+
+        Keycode::Num9 => {
+            input_action = InputAction::SelectItem(9);
         }
 
         _ => {

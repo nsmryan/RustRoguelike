@@ -36,4 +36,3 @@ mint = "0.5.1"
 rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
 
 roguelike_core = { path = "../roguelike_core" }
-

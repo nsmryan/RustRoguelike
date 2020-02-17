@@ -32,6 +32,7 @@ pub struct GameSettings {
     pub map_type: MapGenType,
     pub exiting: bool,
     pub state: GameState,
+    pub draw_throw_overlay: bool,
 }
 
 impl GameSettings {
@@ -43,6 +44,7 @@ impl GameSettings {
             map_type: MapGenType::Island,
             exiting: false,
             state: GameState::Playing,
+            draw_throw_overlay: false,
         }
     }
 }
@@ -174,6 +176,10 @@ impl<'a> Game<'a> {
             GameState::Inventory => {
                 return self.step_inventory();
             }
+
+            GameState::Throwing => {
+                return self.step_throwing();
+            }
         }
     }
 
@@ -218,7 +224,18 @@ impl<'a> Game<'a> {
         let input = self.input_action;
         self.input_action = InputAction::None;
 
-        actions::handle_input_inventory(input, &mut self.settings, &mut self.msg_log);
+        actions::handle_input_inventory(input, &mut self.data, &mut self.settings, &mut self.msg_log);
+
+        return GameResult::Continue;
+    }
+
+    fn step_throwing(&mut self) -> GameResult {
+        let input = self.input_action;
+        self.input_action = InputAction::None;
+
+        self.settings.draw_throw_overlay = true;
+
+        actions::handle_input_throwing(input, &mut self.data, &mut self.settings, &mut self.msg_log);
 
         return GameResult::Continue;
     }

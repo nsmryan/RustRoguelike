@@ -48,8 +48,45 @@ pub fn player_apply_action(action: Action, game_data: &mut GameData, msg_log: &m
 }
 
 pub fn handle_input_inventory(input: InputAction,
+                              game_data: &mut GameData,
                               settings: &mut GameSettings,
                               msg_log: &mut MsgLog) {
+    let player_handle = game_data.find_player().unwrap();
+
+    match input {
+        InputAction::Inventory => {
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        InputAction::SelectItem(item_index) => {
+            if item_index < game_data.objects[player_handle].inventory.len() {
+                let item_key = game_data.objects[player_handle].inventory[item_index];
+                if game_data.objects[item_key].name == "stone" {
+                    settings.state = GameState::Throwing;
+                    msg_log.log(Msg::GameState(settings.state));
+                }
+            }
+            // if item index is not in the player's inventory, do nothing
+        }
+
+        InputAction::Exit => {
+            settings.exiting = true;
+        }
+
+        _ => {
+        }
+    }
+}
+
+pub fn handle_input_throwing(input: InputAction,
+                             game_data: &mut GameData, 
+                             settings: &mut GameSettings,
+                             msg_log: &mut MsgLog) {
+    let player_handle = game_data.find_player().unwrap();
+
+    let mut player_turn: Action = Action::none();
+
     match input {
         InputAction::Inventory => {
             settings.state = GameState::Playing;
@@ -58,6 +95,30 @@ pub fn handle_input_inventory(input: InputAction,
 
         InputAction::Exit => {
             settings.exiting = true;
+        }
+
+        InputAction::MapClick(_map_loc, map_cell) => {
+            let mut stone = None;
+            let mut stone_index = None;
+            for (index, obj_id) in game_data.objects[player_handle].inventory.iter().enumerate() {
+                if let Some(Item::Stone) = game_data.objects[*obj_id].item {
+                    stone = Some(obj_id);
+                    stone_index = Some(index);
+                    break;
+                }
+            }
+
+            if let (Some(stone_handle), Some(index)) = (stone, stone_index) {
+                player_turn = Action::ThrowStone(map_cell, *stone_handle);
+                game_data.objects[player_handle].inventory.remove(index);
+
+                // turn off throwing overlay
+                settings.draw_throw_overlay = false;
+
+                // exit throwing state
+                settings.state = GameState::Playing;
+                msg_log.log(Msg::GameState(settings.state));
+            }
         }
 
         _ => {
@@ -105,20 +166,7 @@ pub fn handle_input(input_action: InputAction,
         }
 
         (InputAction::MapClick(_map_loc, map_cell), _) => {
-            let mut stone = None;
-            let mut stone_index = None;
-            for (index, obj_id) in game_data.objects[player_handle].inventory.iter().enumerate() {
-                if let Some(Item::Stone) = game_data.objects[*obj_id].item {
-                    stone = Some(obj_id);
-                    stone_index = Some(index);
-                    break;
-                }
-            }
-
-            if let (Some(stone_handle), Some(index)) = (stone, stone_index) {
-                player_turn = Action::ThrowStone(map_cell, *stone_handle);
-                game_data.objects[player_handle].inventory.remove(index);
-            }
+            player_turn = Action::none();
         }
 
         (InputAction::Yell, true) => {

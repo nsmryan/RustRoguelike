@@ -258,6 +258,7 @@ pub fn render_inventory(display_state: &mut DisplayState,
 
     // Render each object's name in inventory
     let mut y_pos = 2;
+    let mut item_index = 0;
     for obj_id in data.objects[player_handle].inventory.iter() {
         let obj = &data.objects[*obj_id];
 
@@ -277,7 +278,7 @@ pub fn render_inventory(display_state: &mut DisplayState,
         }
 
         // place prompt character
-        display_state.draw_char('*',
+        display_state.draw_char(('0' as u8 + item_index) as char,
                                Pos::new(1, y_pos),
                                config.color_ice_blue,
                                area);
@@ -290,6 +291,8 @@ pub fn render_inventory(display_state: &mut DisplayState,
                                area);
         
         y_pos += 1;
+
+        item_index += 1;
     }
 
     if data.objects[player_handle].inventory.len() == 0 {
@@ -590,6 +593,7 @@ pub fn step_animation(anim_key: AnimKey,
 pub fn render_overlays(display_state: &mut DisplayState,
                        map_mouse_pos: Option<Pos>,
                        data: &mut GameData,
+                       settings: &GameSettings,
                        area: &Area,
                        config: &Config) {
     let player_handle = data.find_player().unwrap();
@@ -652,6 +656,7 @@ pub fn render_overlays(display_state: &mut DisplayState,
         }
     }
 
+    // draw mouse path overlays
     if let Some(mouse_handle) = data.find_mouse() {
         let mouse_pos = data.objects[mouse_handle].pos();
         let player_pos = data.objects[player_handle].pos();
@@ -663,11 +668,15 @@ pub fn render_overlays(display_state: &mut DisplayState,
             }
         }
 
-        if config.draw_mouse_line {
-            let line = Line::new(player_pos.to_tuple(), mouse_pos.to_tuple()).into_iter();
-            for pos in line {
-                let pos = Pos::from(pos);
-                display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
+        if config.draw_mouse_line || settings.draw_throw_overlay {
+            // mouse pos at 0, 0 occurs when the mouse has not moved since startup.
+            // this may cause a weirdness on the corner of the map
+            if mouse_pos != Pos::new(0, 0) {
+                let line = Line::new(player_pos.to_tuple(), mouse_pos.to_tuple()).into_iter();
+                for pos in line {
+                    let pos = Pos::from(pos);
+                    display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
+                }
             }
         }
     }
@@ -741,7 +750,7 @@ pub fn render_all(display_state: &mut DisplayState,
 
                 render_effects(display_state, data, settings, config, &area);
 
-                render_overlays(display_state, mouse_map_pos, data, &area, config);
+                render_overlays(display_state, mouse_map_pos, data, settings, &area, config);
             }
 
             "inventory" => {

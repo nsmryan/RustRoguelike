@@ -109,6 +109,10 @@ impl Msg {
                         return "Closed Inventory".to_string();
                     }
 
+                    GameState::Throwing => {
+                        return "Throwing item".to_string();
+                    }
+
                     _ => {
                         panic!();
                     }
