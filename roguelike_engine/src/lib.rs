@@ -189,8 +189,9 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         }
 
         /* Step the Game Forward */
-        let exit_game = game.step_game();
-        if exit_game == GameResult::Stop {
+        let game_result = game.step_game();
+
+        if game_result == GameResult::Stop {
             running = false;
         }
 

@@ -238,6 +238,14 @@ impl<'a> Game<'a> {
         let player_action = actions::handle_input_throwing(input, &mut self.data, &mut self.settings, &mut self.msg_log);
         actions::player_apply_action(player_action, &mut self.data, &mut self.msg_log);
 
+        if player_action != Action::NoAction {
+            step_logic(player_action,
+                       &mut self.data,
+                       &mut self.settings,
+                       &self.config,
+                       &mut self.msg_log);
+        }
+
         return GameResult::Continue;
     }
 
