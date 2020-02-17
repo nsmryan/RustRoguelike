@@ -98,19 +98,23 @@ pub fn handle_input_throwing(input: InputAction,
         }
 
         InputAction::MapClick(_map_loc, map_cell) => {
+            // NOTE this does not use the selected item, it just finds the first stone
             let mut stone = None;
             let mut stone_index = None;
             for (index, obj_id) in game_data.objects[player_handle].inventory.iter().enumerate() {
                 if let Some(Item::Stone) = game_data.objects[*obj_id].item {
-                    stone = Some(obj_id);
+                    stone = Some(*obj_id);
                     stone_index = Some(index);
                     break;
                 }
             }
 
             if let (Some(stone_handle), Some(index)) = (stone, stone_index) {
-                player_turn = Action::ThrowStone(map_cell, *stone_handle);
+                player_turn = Action::ThrowStone(map_cell, stone_handle);
                 game_data.objects[player_handle].inventory.remove(index);
+
+                let player_pos = game_data.objects[player_handle].pos();
+                msg_log.log(Msg::StoneThrow(player_handle, stone_handle, player_pos, map_cell));
 
                 // turn off throwing overlay
                 settings.draw_throw_overlay = false;
