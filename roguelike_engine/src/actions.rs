@@ -82,7 +82,7 @@ pub fn handle_input_inventory(input: InputAction,
 pub fn handle_input_throwing(input: InputAction,
                              game_data: &mut GameData, 
                              settings: &mut GameSettings,
-                             msg_log: &mut MsgLog) {
+                             msg_log: &mut MsgLog) -> Action {
     let player_handle = game_data.find_player().unwrap();
 
     let mut player_turn: Action = Action::none();
@@ -113,9 +113,6 @@ pub fn handle_input_throwing(input: InputAction,
                 player_turn = Action::ThrowStone(map_cell, stone_handle);
                 game_data.objects[player_handle].inventory.remove(index);
 
-                let player_pos = game_data.objects[player_handle].pos();
-                msg_log.log(Msg::StoneThrow(player_handle, stone_handle, player_pos, map_cell));
-
                 // turn off throwing overlay
                 settings.draw_throw_overlay = false;
 
@@ -128,6 +125,8 @@ pub fn handle_input_throwing(input: InputAction,
         _ => {
         }
     }
+
+    return player_turn;
 }
 
 pub fn handle_input(input_action: InputAction,

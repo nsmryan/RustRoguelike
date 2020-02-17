@@ -525,9 +525,7 @@ pub fn step_animation(anim_key: AnimKey,
 
     match display_state.animations[anim_key].clone() {
         Animation::Between(ref mut sprite, start, end, ref mut dist, blocks_per_sec) => {
-           dbg!();
            if settings.god_mode || is_in_fov {
-               dbg!();
                *dist = *dist + (blocks_per_sec / config.rate as f32); 
                let num_blocks = *dist as usize;
 
