@@ -30,6 +30,10 @@ pub fn map_keycode_to_action(keycode: Keycode,
     let input_action: InputAction;
 
     match keycode {
+        Keycode::Kp0 | Keycode::Num0 => {
+            input_action = InputAction::SelectItem(0);
+        }
+
         Keycode::Kp8 | Keycode::Num8 | Keycode::Up => {
             if game_state == GameState::Inventory {
                 input_action = InputAction::SelectItem(8);

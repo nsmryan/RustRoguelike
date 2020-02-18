@@ -9,6 +9,7 @@ use roguelike_core::movement;
 use roguelike_core::utils::reach_by_mode;
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
+use roguelike_core::map::{Aoe, AoeEffect};
 
 use crate::game::*;
 use crate::display::*;
@@ -34,8 +35,8 @@ pub fn player_apply_action(action: Action, game_data: &mut GameData, msg_log: &m
             msg_log.log(Msg::PickedUp(player_handle, item_id));
         }
 
-        Action::ThrowStone(throw_pos, stone_handle) => {
-            throw_stone(player_handle, stone_handle, player_pos, throw_pos, game_data, msg_log);
+        Action::ThrowStone(throw_pos, stone_index) => {
+            throw_stone(player_handle, stone_index, player_pos, throw_pos, game_data, msg_log);
         }
 
         Action::Yell => {
@@ -110,8 +111,7 @@ pub fn handle_input_throwing(input: InputAction,
             }
 
             if let (Some(stone_handle), Some(index)) = (stone, stone_index) {
-                player_turn = Action::ThrowStone(map_cell, stone_handle);
-                game_data.objects[player_handle].inventory.remove(index);
+                player_turn = Action::ThrowStone(map_cell, index);
 
                 // turn off throwing overlay
                 settings.draw_throw_overlay = false;
@@ -258,20 +258,30 @@ pub fn pick_item_up(object_id: ObjectId,
 }
 
 pub fn throw_stone(player_handle: ObjectId,
-                   stone_handle: ObjectId,
+                   stone_index: usize,
                    start_pos: Pos,
                    end_pos: Pos,
                    game_data: &mut GameData,
                    msg_log: &mut MsgLog) {
+    let stone_handle =
+        game_data.objects[player_handle].inventory.remove(stone_index);
+
     let throw_line = Line::new(start_pos.to_tuple(), end_pos.to_tuple());
 
     // get target position in direction of player click
-    let (target_x, target_y) =
-        throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
+    let mut end_pos =
+        Pos::from(throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap());
 
-    game_data.objects[stone_handle].set_xy(target_x, target_y);
+    let pos_diff = end_pos - start_pos;
+    if let Some(blocked) = game_data.map.is_blocked_by_wall(start_pos, pos_diff.x, pos_diff.y) {
+        // the start pos of the blocked struct is the last reached position
+        end_pos = blocked.start_pos;
+    }
+
+    game_data.objects[stone_handle].set_pos(end_pos);
+
+    let sound_aoe = game_data.map.aoe(AoeEffect::Sound, end_pos, SOUND_RADIUS_STONE);
 
     // log the stone throw event
-    let end_pos = Pos::new(target_x, target_y);
     msg_log.log(Msg::StoneThrow(player_handle, stone_handle, start_pos, end_pos));
 }

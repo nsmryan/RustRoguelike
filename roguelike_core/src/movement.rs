@@ -19,7 +19,7 @@ pub enum Action {
     Move(Movement),
     StateChange(Behavior),
     Pickup(ObjectId),
-    ThrowStone(Pos, ObjectId),
+    ThrowStone(Pos, usize), // end position, inventory index
     Yell,
     NoAction,
 }

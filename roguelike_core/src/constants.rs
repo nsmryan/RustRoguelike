@@ -16,7 +16,7 @@ pub const SOUND_RADIUS: usize = 3;
 pub const SOUND_RADIUS_SNEAK: usize = 1;
 pub const SOUND_RADIUS_WALK: usize = 3;
 pub const SOUND_RADIUS_RUN: usize = 5;
-pub const STONE_SOUND_RADIUS: usize = 2;
+pub const SOUND_RADIUS_STONE: usize = 2;
 
 /* General Settings */
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
