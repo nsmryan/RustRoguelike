@@ -89,7 +89,7 @@ impl Movement {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd)]
 pub enum Direction {
     Left,
     Right,
@@ -325,7 +325,7 @@ impl Momentum {
 }
 
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Collision {
     NoCollision(Pos),
     Blocked(Blocked),

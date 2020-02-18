@@ -168,7 +168,7 @@ pub fn handle_input(input_action: InputAction,
             }
         }
 
-        (InputAction::MapClick(_map_loc, map_cell), _) => {
+        (InputAction::MapClick(_map_loc, _map_cell), _) => {
             player_turn = Action::none();
         }
 

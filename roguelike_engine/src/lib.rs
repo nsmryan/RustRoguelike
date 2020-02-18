@@ -121,7 +121,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                 Event::KeyUp {keycode, keymod, ..} => {
                     if let Some(keycode) = keycode {
                         game.input_action =
-                            map_keycode_to_action(keycode, keymod);
+                            map_keycode_to_action(keycode, keymod, game.settings.state);
                     }
                 }
 

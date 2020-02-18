@@ -24,44 +24,82 @@ pub enum InputAction {
     None,
 }
 
-pub fn map_keycode_to_action(keycode: Keycode, _keymods: Mod) -> InputAction {
+pub fn map_keycode_to_action(keycode: Keycode,
+                             _keymods: Mod,
+                             game_state: GameState) -> InputAction {
     let input_action: InputAction;
 
     match keycode {
         Keycode::Kp8 | Keycode::Num8 | Keycode::Up => {
-            input_action = InputAction::Move(Direction::Up);
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(8);
+            } else {
+                input_action = InputAction::Move(Direction::Up);
+            }
         }
 
         Keycode::Kp6 | Keycode::Num6 | Keycode::Right => {
-            input_action = InputAction::Move(Direction::Right);
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(6);
+            } else {
+                input_action = InputAction::Move(Direction::Right);
+            }
         }
 
         Keycode::Kp2 | Keycode::Num2 | Keycode::Down => {
-            input_action = InputAction::Move(Direction::Down);
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(2);
+            } else {
+                input_action = InputAction::Move(Direction::Down);
+            }
         }
 
         Keycode::Kp4 | Keycode::Num4 | Keycode::Left => {
-            input_action = InputAction::Move(Direction::Left);
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(4);
+            } else {
+                input_action = InputAction::Move(Direction::Left);
+            }
         }
 
         Keycode::Kp7 | Keycode::Num7 => {
-            input_action = InputAction::Move(Direction::UpLeft);
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(7);
+            } else {
+                input_action = InputAction::Move(Direction::UpLeft);
+            }
         }
 
         Keycode::Kp9 | Keycode::Num9 => {
-            input_action = InputAction::Move(Direction::UpRight);
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(9);
+            } else {
+                input_action = InputAction::Move(Direction::UpRight);
+            }
         }
 
         Keycode::Kp3 | Keycode::Num3 => {
-            input_action = InputAction::Move(Direction::DownRight);
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(3);
+            } else {
+                input_action = InputAction::Move(Direction::DownRight);
+            }
         }
 
         Keycode::Kp1 | Keycode::Num1 => {
-            input_action = InputAction::Move(Direction::DownLeft);
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(1);
+            } else {
+                input_action = InputAction::Move(Direction::DownLeft);
+            }
         }
 
         Keycode::Kp5 | Keycode::Num5 => {
-            input_action = InputAction::Move(Direction::Center);
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(5);
+            } else {
+                input_action = InputAction::Move(Direction::Center);
+            }
         }
 
         Keycode::Return => {
@@ -110,46 +148,6 @@ pub fn map_keycode_to_action(keycode: Keycode, _keymods: Mod) -> InputAction {
 
         Keycode::Z => {
             input_action = InputAction::DecreaseMoveMode;
-        }
-
-        Keycode::Num0 => {
-            input_action = InputAction::SelectItem(0);
-        }
-
-        Keycode::Num1 => {
-            input_action = InputAction::SelectItem(1);
-        }
-
-        Keycode::Num2 => {
-            input_action = InputAction::SelectItem(2);
-        }
-
-        Keycode::Num3 => {
-            input_action = InputAction::SelectItem(3);
-        }
-
-        Keycode::Num4 => {
-            input_action = InputAction::SelectItem(4);
-        }
-
-        Keycode::Num5 => {
-            input_action = InputAction::SelectItem(5);
-        }
-
-        Keycode::Num6 => {
-            input_action = InputAction::SelectItem(6);
-        }
-
-        Keycode::Num7 => {
-            input_action = InputAction::SelectItem(7);
-        }
-
-        Keycode::Num8 => {
-            input_action = InputAction::SelectItem(8);
-        }
-
-        Keycode::Num9 => {
-            input_action = InputAction::SelectItem(9);
         }
 
         _ => {
