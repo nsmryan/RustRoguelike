@@ -280,8 +280,6 @@ pub fn throw_stone(player_handle: ObjectId,
 
     game_data.objects[stone_handle].set_pos(end_pos);
 
-    let sound_aoe = game_data.map.aoe(AoeEffect::Sound, end_pos, SOUND_RADIUS_STONE);
-
     // log the stone throw event
     msg_log.log(Msg::StoneThrow(player_handle, stone_handle, start_pos, end_pos));
 }

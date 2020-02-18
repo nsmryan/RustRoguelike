@@ -25,8 +25,8 @@ pub enum AoeEffect {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Aoe {
-    effect: AoeEffect,
-    positions: Vec<Vec<Pos>>,
+    pub effect: AoeEffect,
+    pub positions: Vec<Vec<Pos>>,
 }
 
 impl Aoe {
@@ -560,7 +560,7 @@ impl Map {
     }
 
     pub fn aoe(&self, aoe_effect: AoeEffect, pos: Pos, radius: usize) -> Aoe {
-        let mut effect_targets: Vec<Vec<Pos>> = vec![Vec::new(); radius];
+        let mut effect_targets: Vec<Vec<Pos>> = vec![Vec::new(); radius + 1];
 
         for effect_x in 0..self.width() {
             for effect_y in 0..self.height() {
@@ -572,7 +572,7 @@ impl Map {
             }
         }
 
-        let mut aoe_dists = vec![Vec::new(); radius];
+        let mut aoe_dists = vec![Vec::new(); radius + 1];
         for (dist, positions) in effect_targets.iter().enumerate() {
             for cur_pos in positions {
                 if let Some(walk_pos) = self.astar(pos, *cur_pos).iter().skip(dist).next() {

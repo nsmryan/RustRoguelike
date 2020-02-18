@@ -41,14 +41,10 @@ pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object 
     player
 }
 
-pub fn make_sound(config: &Config, radius: usize, pos: Pos, play_effect: bool, display_state: &mut DisplayState) -> Object {
+pub fn make_sound(config: &Config, pos: Pos, sound_pos: Pos) -> Object {
     let mut object = Object::new(pos.x, pos.y, ' ', config.color_orange, "sound", false);
 
-    object.sound = Some(radius);
-
-    if play_effect {
-        display_state.play_effect(Effect::Sound(pos, 0, radius));
-    }
+    object.sound = Some(sound_pos);
 
     // sound dissipates after 2 turns to allow monsters to hear each others sounds before removing
     object.count_down = Some(2);

@@ -445,29 +445,21 @@ pub fn render_effects(display_state: &mut DisplayState,
 
     for (index, effect) in effects.iter_mut().enumerate() {
         match effect {
-            Effect::Sound(pos, ref mut current_radius, max_radius) => {
+            Effect::Sound(sound_aoe, sound_dt) => {
                 let mut highlight_color = config.color_warm_grey;
                 highlight_color.a = config.sound_alpha;
 
-                if *current_radius < *max_radius {
-                    *current_radius += 1;
-                    let mut sound_targets = Vec::new();
-                    for sound_x in 0..game_data.map.width() {
-                        for sound_y in 0..game_data.map.height() {
-                            let sound_pos = Pos::new(sound_x, sound_y);
-                            if distance(Pos::new(pos.x, pos.y), Pos::new(sound_x, sound_y)) == *current_radius as i32 {
-                                sound_targets.push(sound_pos);
-                            }
-                        }
+                for (dist, dist_positions) in sound_aoe.positions.iter().enumerate() {
+                    for pos in dist_positions.iter() {
+                        // TODO fade in and out according to distance
+                        display_state.draw_char(MAP_EMPTY_CHAR as char, *pos, highlight_color, area);
                     }
+                }
 
-                    for sound_target in sound_targets.iter() {
-                        if let Some(sound_pos) = game_data.map.astar(*pos, *sound_target).iter().skip(*current_radius).next() {
-                            display_state.draw_char(MAP_EMPTY_CHAR as char, *sound_pos, highlight_color, area);
-                        }
-                    }
-                } else {
+                if *sound_dt > SOUND_EFFECT_TIMEOUT {
                     remove_indices.push(index);
+                } else {
+                    *sound_dt += 1.0 / TIME_BETWEEN_FRAMES_MS as f32;
                 }
             }
         }

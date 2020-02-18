@@ -236,7 +236,6 @@ impl<'a> Game<'a> {
         self.settings.draw_throw_overlay = true;
 
         let player_action = actions::handle_input_throwing(input, &mut self.data, &mut self.settings, &mut self.msg_log);
-        actions::player_apply_action(player_action, &mut self.data, &mut self.msg_log);
 
         if player_action != Action::NoAction {
             step_logic(player_action,

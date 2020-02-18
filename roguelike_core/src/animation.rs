@@ -2,6 +2,7 @@
 use slotmap::DefaultKey;
 
 use crate::types::{Name, Pos};
+use crate::map::Aoe;
 
 
 pub type SpriteKey = DefaultKey;
@@ -11,9 +12,9 @@ pub type AnimKey = DefaultKey;
 pub type SpriteIndex = f32;
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Effect {
-    Sound(Pos, usize, usize), // center, current radius, max radius
+    Sound(Aoe, f32), // area of effect, time since start
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -68,7 +69,7 @@ impl Sprite {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Animation {
     Loop(Sprite),                         // play sprite sheet in loop
     Between(Sprite, Pos, Pos, f32, f32),  // start, end, dist, blocks_per_sec

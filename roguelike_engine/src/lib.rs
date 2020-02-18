@@ -20,6 +20,7 @@ use sdl2::mouse::MouseButton;
 use slotmap::dense::*;
 
 use roguelike_core::types::*;
+use roguelike_core::map::{Aoe, AoeEffect};
 use roguelike_core::config::*;
 use roguelike_core::messaging::Msg;
 use roguelike_core::constants::*;
@@ -201,15 +202,22 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
             match msg {
                 Msg::StoneThrow(_thrower, stone_id, start, end) => {
+                    // lay down sound objects on all tiles which can hear the sound.
+                    // these dissapate with a count_down
+                    let sound_aoe = game.data.map.aoe(AoeEffect::Sound, *end, SOUND_RADIUS_STONE);
+                    for dist_positions in sound_aoe.positions.iter() {
+                        for pos in dist_positions.iter() {
+                            let sound = generation::make_sound(&game.config, *pos, *end);
+                            game.data.objects.insert(sound);
+                        }
+                    }
+
                     let stone_sprite =
                         game.display_state.font_sprite(ENTITY_STONE as char)
                             .expect("Could not find stone sprite!");
 
-                    let sound = generation::make_sound(&config, SOUND_RADIUS_STONE, *end, false, &mut game.display_state);
-                    game.data.objects.insert(sound);
-
                     let stone_anim = Animation::Between(stone_sprite, *start, *end, 0.0, config.stone_throw_speed);
-                    let sound_anim = Animation::PlayEffect(Effect::Sound(*end, 0, SOUND_RADIUS));
+                    let sound_anim = Animation::PlayEffect(Effect::Sound(sound_aoe, 0.0));
                     let loop_anim = Animation::Loop(stone_sprite);
 
                     let stone_key = game.display_state.play_animation(stone_anim);
@@ -240,7 +248,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                                 MoveMode::Walk => sound_radius = SOUND_RADIUS_WALK,
                                 MoveMode::Run => sound_radius = SOUND_RADIUS_RUN,
                             }
-                            generation::make_sound(&config, sound_radius, *pos, true, &mut game.display_state);
+                            // TODO movement does not lay down sound objects from AOE!
 
                             let idle_sprite = 
                                 game.display_state.new_sprite("player_idle".to_string(), config.idle_speed)
@@ -255,8 +263,12 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                 }
 
                 Msg::Yell(pos) => {
-                    let sound = generation::make_sound(&config, SOUND_RADIUS, *pos, true, &mut game.display_state);
-                    game.data.objects.insert(sound);
+                    // TODO yelling does not lay down sound objects correctly here-
+                    // need to place within AOE
+                    // the animation effect is also not played
+                    //let sound =
+                    //    generation::make_sound(&config, *pos, &game.data.map);
+                    //game.data.objects.insert(sound);
                 }
 
                 Msg::Killed(_attacker, attacked, _damage) => {

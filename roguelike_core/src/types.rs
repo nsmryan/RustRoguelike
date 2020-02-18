@@ -59,10 +59,8 @@ impl GameData {
 
     pub fn sound_within_earshot(&self, pos: Pos) -> Option<ObjectId> {
         for (object_id, object) in self.objects.iter() {
-            if let Some(radius) = object.sound {
-                if distance(pos, Pos::new(object.x, object.y)) < radius as i32 {
+            if let Some(sound_pos) = object.sound {
                     return Some(object_id);
-                }
             }
         }
 
@@ -238,7 +236,7 @@ pub struct Object {
     pub animation: VecDeque<AnimKey>,
     pub inventory: Vec<ObjectId>,
     pub trap: Option<Trap>,
-    pub sound: Option<usize>,
+    pub sound: Option<Pos>, // source position
     pub count_down: Option<usize>,
     pub move_mode: Option<MoveMode>,
 }
