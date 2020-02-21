@@ -8,7 +8,7 @@ pub mod generation;
 pub mod render;
 mod throttler;
 
-use std::time::Duration;
+use std::time::{Instant, Duration};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;

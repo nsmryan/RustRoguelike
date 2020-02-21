@@ -49,14 +49,14 @@ impl GameSettings {
     }
 }
 
-pub struct Game<'a> {
+pub struct Game {
     pub config: Config,
 
     pub input_action: InputAction,
 
     pub mouse_state: MouseState,
 
-    pub display_state: DisplayState<'a>,
+    pub display_state: DisplayState,
 
     pub data: GameData,
 
@@ -65,10 +65,10 @@ pub struct Game<'a> {
     pub msg_log: MsgLog,
 }
 
-impl<'a> Game<'a> {
+impl Game {
     pub fn new(args: &Vec<String>,
                config: Config,
-               mut display_state: DisplayState<'a>) -> Result<Game<'a>, String> {
+               mut display_state: DisplayState) -> Result<Game, String> {
         // Create seed for random number generator, either from
         // user input or randomly
         let seed: u64;

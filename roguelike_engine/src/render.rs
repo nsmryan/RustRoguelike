@@ -1,3 +1,8 @@
+use std::time::{Instant, Duration};
+use std::cell::RefCell;
+
+use once_cell::unsync::OnceCell;
+
 use tcod::line::*;
 
 use noise::Perlin;
@@ -313,28 +318,57 @@ pub fn render_background(display_state: &mut DisplayState,
     let player_handle = data.find_player().unwrap();
     let pos = data.objects[player_handle].pos();
 
-    for y in 0..data.map.height() {
-        for x in 0..data.map.width() {
-            let map_pos = Pos::new(x, y);
+    if let Some(background) = &mut display_state.background {
+        let src = area.get_rect();
 
-            let visible =
-                data.map.is_in_fov(pos, map_pos, FOV_RADIUS) ||
-                settings.god_mode;
+        let dst = area.get_rect();
 
-            display_state.draw_char(MAP_EMPTY_CHAR as char,
-                                    map_pos,
-                                    empty_tile_color(config, map_pos, visible),
-                                    area);
+        display_state.canvas
+                     .copy_ex(background,
+                              Some(src),
+                              Some(dst),
+                              0.0,
+                              None,
+                              false,
+                              false).unwrap();
+    } else {
+        let pixel_format = display_state.texture_creator.default_pixel_format();
 
-            let tile = &data.map.tiles[x as usize][y as usize];
-            if tile.tile_type == TileType::Water {
-                let color = tile_color(config, x, y, tile, visible);
-                let chr = tile.chr.map_or('+', |chr| chr);
-                display_state.draw_char(chr, map_pos, color, area);
+        let mut background =
+            display_state.texture_creator
+                         .create_texture_target(pixel_format,
+                                                area.width as u32,
+                                                area.height as u32).unwrap();
+
+        let (canvas, font_image) = (&mut display_state.canvas, &mut display_state.font_image);
+        canvas.with_texture_canvas(&mut background, |canvas| {
+            for y in 0..data.map.height() {
+                for x in 0..data.map.width() {
+                    let map_pos = Pos::new(x, y);
+
+                    let visible =
+                        data.map.is_in_fov(pos, map_pos, FOV_RADIUS) ||
+                        settings.god_mode;
+
+                    draw_char(canvas,
+                              font_image,
+                              MAP_EMPTY_CHAR as char,
+                              map_pos,
+                              empty_tile_color(config, map_pos, visible),
+                              area);
+
+                    let tile = &data.map.tiles[x as usize][y as usize];
+                    if tile.tile_type == TileType::Water {
+                        let color = tile_color(config, x, y, tile, visible);
+                        let chr = tile.chr.map_or('+', |chr| chr);
+                        draw_char(canvas, font_image, chr, map_pos, color, area);
+                    }
+                }
             }
-        }
-    }
+        });
 
+        display_state.background = Some(background);
+    }
 }
 
 /// Render the map, with environment and walls

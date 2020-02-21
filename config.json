@@ -133,7 +133,7 @@
     "sound_alpha": 86,
     "grid_alpha": 8,
     "grid_alpha_visible": 30,
-    "map_load": "TestWall",
+    "map_load": "FromFile",
     "idle_speed": 0.35,
     "draw_mouse_line": false,
     "draw_star_path": false,

@@ -9,7 +9,6 @@ use roguelike_core::movement;
 use roguelike_core::utils::reach_by_mode;
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
-use roguelike_core::map::{Aoe, AoeEffect};
 
 use crate::game::*;
 use crate::display::*;

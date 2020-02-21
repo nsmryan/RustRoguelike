@@ -11,6 +11,9 @@ recheck:
 run:
   RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo run
 
+release:
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo run --release
+
 build:
   RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo build
 

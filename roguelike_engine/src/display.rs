@@ -1,6 +1,7 @@
 use slotmap::dense::*;
 
-use sdl2::render::{Texture, WindowCanvas};
+use sdl2::render::{Texture, WindowCanvas, TextureCreator};
+use sdl2::video::WindowContext;
 use sdl2::rect::Rect;
 use sdl2::pixels::{Color as Sdl2Color};
 
@@ -11,23 +12,26 @@ use roguelike_core::animation::{AnimKey, Effect, SpriteKey, Animation, Sprite, S
 use crate::plat::*;
 
 
-pub struct DisplayState<'a> {
-    pub font_image: Texture<'a>,
-    pub sprites: DenseSlotMap<SpriteKey, SpriteSheet<'a>>,
+pub struct DisplayState {
+    pub font_image: Texture,
+    pub sprites: DenseSlotMap<SpriteKey, SpriteSheet>,
     pub display_overlays: bool,
     pub screen_sections: Plan,
     pub zones: Vec<Plot>,
     pub canvas: WindowCanvas,
     pub effects: Vec<Effect>,
     pub animations: DenseSlotMap<AnimKey, Animation>,
+    pub background: Option<Texture>,
+    pub texture_creator: TextureCreator<WindowContext>,
 }
 
-impl<'a> DisplayState<'a> {
+impl DisplayState {
     pub fn new(screen_sections: Plan,
-               font_image: Texture<'a>,
-               sprites: DenseSlotMap<SpriteKey, SpriteSheet<'a>>,
-               canvas: WindowCanvas) -> DisplayState<'a> {
+               font_image: Texture,
+               sprites: DenseSlotMap<SpriteKey, SpriteSheet>,
+               canvas: WindowCanvas) -> DisplayState {
 
+        let texture_creator = canvas.texture_creator();
         return DisplayState {
             font_image,
             sprites,
@@ -37,6 +41,8 @@ impl<'a> DisplayState<'a> {
             zones: Vec::new(),
             effects: Vec::new(),
             animations: DenseSlotMap::new(),
+            background: None,
+            texture_creator,
         };
     }
 
@@ -161,15 +167,15 @@ impl<'a> DisplayState<'a> {
 }
 
 
-pub struct SpriteSheet<'a> {
-    pub texture: Texture<'a>,
+pub struct SpriteSheet {
+    pub texture: Texture,
     pub name: String,
     pub num_sprites: usize,
     pub rows: usize,
 }
 
-impl<'a> SpriteSheet<'a> {
-    pub fn new(name: String, texture: Texture<'a>, rows: usize) -> SpriteSheet<'a> {
+impl SpriteSheet {
+    pub fn new(name: String, texture: Texture, rows: usize) -> SpriteSheet {
         let num_sprites_per_row = texture.query().width as usize / FONT_WIDTH as usize;
         let num_sprites = num_sprites_per_row * rows;
 
@@ -219,6 +225,13 @@ impl Area {
                          self.font_width as u32,
                          self.font_height as u32);
     }
+
+    pub fn get_rect(&self) -> Rect {
+        return Rect::new(self.x_offset,
+                         self.y_offset,
+                         self.width as u32,
+                         self.height as u32);
+    }
 }
 
 
@@ -226,3 +239,30 @@ pub fn engine_color(color: &Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
 }
 
+pub fn draw_char(canvas: &mut WindowCanvas,
+                 font_image: &mut Texture,
+                 chr: char,
+                 pos: Pos,
+                 color: Color,
+                 area: &Area) {
+    let chr_x = (chr as i32) % FONT_WIDTH;
+    let chr_y = (chr as i32) / FONT_HEIGHT;
+
+    let src = Rect::new((chr_x * FONT_WIDTH) as i32,
+                        (chr_y * FONT_HEIGHT) as i32,
+                        FONT_WIDTH as u32,
+                        FONT_HEIGHT as u32);
+
+    let dst = area.char_rect(pos.x, pos.y);
+
+    font_image.set_color_mod(color.r, color.g, color.b);
+    font_image.set_alpha_mod(color.a);
+
+    canvas.copy_ex(font_image,
+                   Some(src),
+                   Some(dst),
+                   0.0,
+                   None,
+                   false,
+                   false).unwrap();
+}
