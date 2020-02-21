@@ -204,12 +204,10 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                 Msg::StoneThrow(_thrower, stone_id, start, end) => {
                     // lay down sound objects on all tiles which can hear the sound.
                     // these dissapate with a count_down
-                    let sound_aoe = game.data.map.aoe(AoeEffect::Sound, *end, SOUND_RADIUS_STONE);
-                    for dist_positions in sound_aoe.positions.iter() {
-                        for pos in dist_positions.iter() {
-                            let sound = generation::make_sound(&game.config, *pos, *end);
-                            game.data.objects.insert(sound);
-                        }
+                    let sound_aoe = game.data.map.aoe_fill(AoeEffect::Sound, *end, SOUND_RADIUS_STONE);
+                    for pos in sound_aoe.positions() {
+                        let sound = generation::make_sound(&game.config, pos, *end);
+                        game.data.objects.insert(sound);
                     }
 
                     let stone_sprite =
@@ -248,7 +246,6 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                                 MoveMode::Walk => sound_radius = SOUND_RADIUS_WALK,
                                 MoveMode::Run => sound_radius = SOUND_RADIUS_RUN,
                             }
-                            // TODO movement does not lay down sound objects from AOE!
 
                             let idle_sprite = 
                                 game.display_state.new_sprite("player_idle".to_string(), config.idle_speed)
@@ -258,17 +255,32 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
                             game.data.objects[player_handle].animation.clear();
                             game.data.objects[player_handle].animation.push_back(idle_key);
+
+                            // add sound for movement
+                            let sound_aoe = game.data.map.aoe_fill(AoeEffect::Sound, *pos, sound_radius);
+                            for sound_pos in sound_aoe.positions() {
+                                let sound = generation::make_sound(&game.config, sound_pos, *pos);
+                                game.data.objects.insert(sound);
+                            }
+
+                            let sound_effect = Effect::Sound(sound_aoe, 0.0);
+                            let sound_key = game.display_state.play_effect(sound_effect);
                         }
                     }
                 }
 
                 Msg::Yell(pos) => {
-                    // TODO yelling does not lay down sound objects correctly here-
-                    // need to place within AOE
-                    // the animation effect is also not played
-                    //let sound =
-                    //    generation::make_sound(&config, *pos, &game.data.map);
-                    //game.data.objects.insert(sound);
+                    let player_handle = game.data.find_player().unwrap();
+                    let player_pos = game.data.objects[player_handle].pos();
+
+                    let sound_aoe = game.data.map.aoe_fill(AoeEffect::Sound, player_pos, SOUND_RADIUS_YELL);
+                    for pos in sound_aoe.positions() {
+                        let sound = generation::make_sound(&game.config, pos, player_pos);
+                        game.data.objects.insert(sound);
+                    }
+
+                    let sound_effect = Effect::Sound(sound_aoe, 0.0);
+                    let sound_key = game.display_state.play_effect(sound_effect);
                 }
 
                 Msg::Killed(_attacker, attacked, _damage) => {

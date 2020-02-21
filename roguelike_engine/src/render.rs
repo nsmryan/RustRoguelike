@@ -447,19 +447,24 @@ pub fn render_effects(display_state: &mut DisplayState,
         match effect {
             Effect::Sound(sound_aoe, sound_dt) => {
                 let mut highlight_color = config.color_warm_grey;
-                highlight_color.a = config.sound_alpha;
 
+                let radius = sound_aoe.positions.len();
+                let sound_interval = SOUND_EFFECT_TIMEOUT / radius as f32;
+                let cur_dist = *sound_dt / sound_interval;
                 for (dist, dist_positions) in sound_aoe.positions.iter().enumerate() {
+                    highlight_color.a =
+                        config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
+
                     for pos in dist_positions.iter() {
                         // TODO fade in and out according to distance
                         display_state.draw_char(MAP_EMPTY_CHAR as char, *pos, highlight_color, area);
                     }
                 }
 
-                if *sound_dt > SOUND_EFFECT_TIMEOUT {
+                if *sound_dt >= SOUND_EFFECT_TIMEOUT {
                     remove_indices.push(index);
                 } else {
-                    *sound_dt += 1.0 / TIME_BETWEEN_FRAMES_MS as f32;
+                    *sound_dt += 1.0 / config.rate as f32;
                 }
             }
         }

@@ -18,7 +18,7 @@ impl Throttler {
         let tick_length = tick_length;
         let mut tick_error = Duration::from_secs(0);
 
-        let thread = thread::spawn(move ||{
+        let thread = thread::spawn(move || {
             loop {
                 let sleep_time =
                     tick_length.checked_sub(tick_error)

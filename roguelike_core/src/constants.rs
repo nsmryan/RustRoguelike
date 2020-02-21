@@ -7,17 +7,15 @@ pub const FONT_HEIGHT: i32 = 16;
 pub const SCREEN_WIDTH: u32 = 1000;
 pub const SCREEN_HEIGHT: u32 = 800;
 
-/* FPS */
-pub const TIME_BETWEEN_FRAMES_MS: i64 = 25;
-
 /* Sound */
 pub const SOUND_RADIUS: usize = 3;
 pub const SOUND_RADIUS_SNEAK: usize = 1;
 pub const SOUND_RADIUS_WALK: usize = 3;
 pub const SOUND_RADIUS_RUN: usize = 5;
 pub const SOUND_RADIUS_STONE: usize = 2;
+pub const SOUND_RADIUS_YELL: usize = 3;
 
-pub const SOUND_EFFECT_TIMEOUT: f32 = 1.0;
+pub const SOUND_EFFECT_TIMEOUT: f32 = 0.04;
 
 /* General Settings */
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;

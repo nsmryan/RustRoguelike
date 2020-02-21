@@ -57,10 +57,10 @@ impl GameData {
         return None;
     }
 
-    pub fn sound_within_earshot(&self, pos: Pos) -> Option<ObjectId> {
+    pub fn sound_within_earshot(&self, pos: Pos) -> Option<Pos> {
         for (object_id, object) in self.objects.iter() {
-            if let Some(sound_pos) = object.sound {
-                    return Some(object_id);
+            if object.sound.is_some() {
+                return object.sound;
             }
         }
 

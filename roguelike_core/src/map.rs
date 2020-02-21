@@ -36,6 +36,18 @@ impl Aoe {
             positions,
         };
     }
+
+    pub fn positions(&self) -> Vec<Pos> {
+        let mut positions = Vec::new();
+
+        for pos_vec in self.positions.iter() {
+            for pos in pos_vec.iter() {
+                positions.push(*pos);
+            }
+        }
+
+        return positions;
+    }
 }
 
 /// This structure describes a movement between two
@@ -559,7 +571,7 @@ impl Map {
         self.compute_fov(self.fov_pos, self.fov_radius);
     }
 
-    pub fn aoe(&self, aoe_effect: AoeEffect, pos: Pos, radius: usize) -> Aoe {
+    pub fn aoe_fill(&self, aoe_effect: AoeEffect, pos: Pos, radius: usize) -> Aoe {
         let mut effect_targets: Vec<Vec<Pos>> = vec![Vec::new(); radius + 1];
 
         for effect_x in 0..self.width() {
