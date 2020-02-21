@@ -209,7 +209,6 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                         let sound = generation::make_sound(&game.config, pos, *end);
                         game.data.objects.insert(sound);
                     }
-
                     let stone_sprite =
                         game.display_state.font_sprite(ENTITY_STONE as char)
                             .expect("Could not find stone sprite!");
