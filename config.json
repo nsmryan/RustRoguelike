@@ -133,11 +133,11 @@
     "sound_alpha": 86,
     "grid_alpha": 8,
     "grid_alpha_visible": 30,
-    "map_load": "FromFile",
+    "map_load": "TestWall",
     "idle_speed": 0.35,
     "draw_mouse_line": false,
     "draw_star_path": false,
-    "rate": 50,
+    "rate": 30,
     "stone_throw_speed": 30.0,
     "goal_speed": 0.8,
     "player_attack_speed": 2.0
