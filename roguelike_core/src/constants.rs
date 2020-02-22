@@ -13,9 +13,6 @@ pub const SOUND_RADIUS_SNEAK: usize = 1;
 pub const SOUND_RADIUS_WALK: usize = 3;
 pub const SOUND_RADIUS_RUN: usize = 5;
 pub const SOUND_RADIUS_STONE: usize = 2;
-pub const SOUND_RADIUS_YELL: usize = 3;
-
-pub const SOUND_EFFECT_TIMEOUT: f32 = 0.3;
 
 /* General Settings */
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;

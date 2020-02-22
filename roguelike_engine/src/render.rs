@@ -483,19 +483,18 @@ pub fn render_effects(display_state: &mut DisplayState,
                 let mut highlight_color = config.color_warm_grey;
 
                 let radius = sound_aoe.positions.len();
-                let sound_interval = SOUND_EFFECT_TIMEOUT / radius as f32;
+                let sound_interval = config.sound_timeout / radius as f32;
                 let cur_dist = *sound_dt / sound_interval;
                 for (dist, dist_positions) in sound_aoe.positions.iter().enumerate() {
                     highlight_color.a =
                         config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
 
                     for pos in dist_positions.iter() {
-                        // TODO fade in and out according to distance
                         display_state.draw_char(MAP_EMPTY_CHAR as char, *pos, highlight_color, area);
                     }
                 }
 
-                if *sound_dt >= SOUND_EFFECT_TIMEOUT {
+                if *sound_dt >= config.sound_timeout {
                     remove_indices.push(index);
                 } else {
                     *sound_dt += 1.0 / config.rate as f32;
@@ -637,7 +636,7 @@ pub fn render_overlays(display_state: &mut DisplayState,
     let player_pos = data.objects[player_handle].pos();
 
     // Draw player action overlay. Could draw arrows to indicate how to reach each location
-    let mut highlight_color = config.color_warm_grey;
+    let mut highlight_color: Color = config.color_warm_grey;
     highlight_color.a = config.highlight_alpha;
 
     // Draw player movement overlay
@@ -651,12 +650,12 @@ pub fn render_overlays(display_state: &mut DisplayState,
                                player_handle,
                                data) {
                 // draw a highlight on that square
-                let xy = movement.xy();
+                let xy: Pos = movement.xy();
 
                 // don't draw overlay on top of character
                 if xy != data.objects[player_handle].pos()
                 {
-                    display_state.draw_char(MAP_EMPTY_CHAR as char, xy, highlight_color, area);
+                    display_state.draw_tile_outline(xy, area, highlight_color);
                 }
             }
         }

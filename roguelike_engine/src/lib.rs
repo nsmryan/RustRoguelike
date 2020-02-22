@@ -272,7 +272,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     let player_handle = game.data.find_player().unwrap();
                     let player_pos = game.data.objects[player_handle].pos();
 
-                    let sound_aoe = game.data.map.aoe_fill(AoeEffect::Sound, player_pos, SOUND_RADIUS_YELL);
+                    let sound_aoe = game.data.map.aoe_fill(AoeEffect::Sound, player_pos, config.player_yell_radius);
                     for pos in sound_aoe.positions() {
                         let sound = generation::make_sound(&game.config, pos, player_pos);
                         game.data.objects.insert(sound);

@@ -42,4 +42,6 @@ pub struct Config {
     pub stone_throw_speed: f32,
     pub goal_speed: f32,
     pub player_attack_speed: f32,
+    pub sound_timeout: f32,
+    pub player_yell_radius: usize,
 }

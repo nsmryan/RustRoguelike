@@ -571,13 +571,13 @@ impl Map {
         self.compute_fov(self.fov_pos, self.fov_radius);
     }
 
-    pub fn aoe_fill(&self, aoe_effect: AoeEffect, pos: Pos, radius: usize) -> Aoe {
+    pub fn aoe_fill(&self, aoe_effect: AoeEffect, start: Pos, radius: usize) -> Aoe {
         let mut effect_targets: Vec<Vec<Pos>> = vec![Vec::new(); radius + 1];
 
         for effect_x in 0..self.width() {
             for effect_y in 0..self.height() {
                 let effect_pos = Pos::new(effect_x, effect_y);
-                let dist = distance(Pos::new(pos.x, pos.y), Pos::new(effect_x, effect_y));
+                let dist = distance(Pos::new(start.x, start.y), Pos::new(effect_x, effect_y));
                 if dist > 0 && dist <= radius as i32 {
                     effect_targets[dist as usize].push(effect_pos);
                 }
@@ -587,10 +587,17 @@ impl Map {
         let mut aoe_dists = vec![Vec::new(); radius + 1];
         for (dist, positions) in effect_targets.iter().enumerate() {
             for cur_pos in positions {
-                if let Some(walk_pos) = self.astar(pos, *cur_pos).iter().skip(dist).next() {
-                    if !aoe_dists[dist].contains(walk_pos) {
-                        aoe_dists[dist].push(*walk_pos);
-                    }
+                
+                let dt = *cur_pos - start;
+                let is_blocked = self.is_blocked_by_wall(start, dt.x, dt.y).is_some();
+                let effective_radius = if is_blocked {
+                    radius - 1
+                } else {
+                    radius
+                };
+                if self.astar(start, *cur_pos).len() <= effective_radius &&
+                   !aoe_dists[dist].contains(cur_pos) {
+                    aoe_dists[dist].push(*cur_pos);
                 }
             }
         }
