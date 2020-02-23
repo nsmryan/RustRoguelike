@@ -337,38 +337,23 @@ impl Momentum {
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Collision {
-    NoCollision(Pos),
-    Blocked(Blocked),
-    Entity(ObjectId, Pos), //hit entity
+pub struct MoveResult {
+    entity: Option<ObjectId>,
+    blocked: Option<Blocked>,
+    move_pos: Pos,
 }
 
-impl Collision {
-    pub fn no_collsion(&self) -> bool {
-        match self {
-            Collision::NoCollision(_) => true,
-            _ => false,
-        }
+impl MoveResult {
+    pub fn with_pos(pos: Pos) -> MoveResult {
+        return MoveResult {
+            entity: None,
+            blocked: None,
+            move_pos: pos
+        };
     }
 
-    pub fn move_location(&self) -> Pos {
-        let last_pos;
-
-        match *self {
-            Collision::NoCollision(pos) => {
-                last_pos = pos
-            }
-
-            Collision::Blocked(blocked) => {
-                last_pos = blocked.start_pos;
-            }
-
-            Collision::Entity(_, pos) => {
-                last_pos = pos;
-            }
-        }
-
-        return last_pos;
+    pub fn no_collsion(&self) -> bool {
+        return self.blocked.is_none() && self.entity.is_none();
     }
 }
 
@@ -433,26 +418,37 @@ pub fn player_move_or_attack(movement: Movement,
 pub fn check_collision(pos: Pos,
                        dx: i32,
                        dy: i32,
-                       data: &GameData) -> Collision {
+                       data: &GameData) -> MoveResult {
     let mut last_pos = pos;
-    let mut result: Collision = Collision::NoCollision(pos + Vector2D::new(dx, dy));
+    let mut result: MoveResult =
+        MoveResult::with_pos(pos + Vector2D::new(dx, dy));
 
     if let Some(blocked) = data.map.is_blocked_by_wall(pos, dx, dy) {
-        result = Collision::Blocked(blocked);
-    } else {
-        // must be within bounds, not blocked by a blocking tile, and not blocked by a wall.
-        // therefore we just have to check for blocking by an entity
-        let mut move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
+        result.blocked = Some(blocked);
+        result.move_pos = blocked.start_pos;
+    } 
 
-        for line_tuple in move_line {
-            let line_pos = Pos::from(line_tuple);
+    // check for collision with an enitity
+    let mut move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
 
-            if let Some(key) = data.is_blocked_tile(line_pos) {
-                return Collision::Entity(key, last_pos);
-            }
+    for line_tuple in move_line {
+        let line_pos = Pos::from(line_tuple);
 
-            last_pos = pos;
+        if let Some(key) = data.is_blocked_tile(line_pos) {
+            result.move_pos = last_pos;
+            result.entity = Some(key);
+            break;
         }
+
+        // if we are blocked by a wall, and the current position is at that blocked
+        // position, we don't need to continue the search
+        if let Some(blocked) = result.blocked {
+            if line_pos == blocked.start_pos {
+                break;
+            }
+        }
+
+        last_pos = pos;
     }
 
     return result;
@@ -469,19 +465,36 @@ pub fn calculate_move(action: Direction,
     if let Some(delta_pos) = reach.move_with_reach(&action) {
         let (dx, dy) = delta_pos.to_tuple();
         // check if movement collides with a blocked location or an entity
-        match check_collision(pos, dx, dy, data) {
-            Collision::NoCollision(new_pos) => {
-                // no collision- just move to location
+        let move_result = check_collision(pos, dx, dy, data);
 
-                // if didn't move, pass turn
-                if dx == 0 && dy == 0 {
-                    movement = Some(Movement::Pass(pos));
+        match (move_result.blocked, move_result.entity) {
+            // both blocked by wall and by entity
+            (Some(blocked), Some(entity)) => {
+                let entity_pos = data.objects[entity].pos();
+
+                // if the entity position is the same as the
+                // square we were going to move to, we can attack
+                if (entity_pos == blocked.start_pos) {
+                    movement = Some(Movement::Attack(move_result.move_pos, entity));
                 } else {
-                    movement = Some(Movement::Move(new_pos));
+                    // cannot jump over wall, and can't attack entity
+                    movement = Some(Movement::Move(move_result.move_pos));
                 }
             }
 
-            Collision::Blocked(blocked) => {
+            // blocked by entity only
+            (None, Some(entity)) => {
+                if data.objects[entity].alive {
+                    // record that an attack would occur. If this is not desired, the
+                    // calling code will handle this.
+                    movement = Some(Movement::Attack(move_result.move_pos, entity));
+                } else {
+                    movement = None;
+                }
+            }
+
+            // blocked by wall only
+            (Some(blocked), None) => {
                 if data.objects[object_id].move_mode.unwrap() == MoveMode::Run {
                     if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
                         movement = Some(Movement::JumpWall(blocked.end_pos));
@@ -493,17 +506,13 @@ pub fn calculate_move(action: Direction,
                 }
             }
 
-            Collision::Entity(other_object_id, new_pos) => {
-                if data.objects[other_object_id].alive {
-                    // record that an attack would occur. if this is not desired, the
-                    // calling code will handle this.
-                    movement = Some(Movement::Attack(new_pos, other_object_id));
-                } else {
-                    movement = None;
-                }
+            // not blocked at all
+            (None, None) => {
+                movement = Some(Movement::Move(move_result.move_pos));
             }
         }
     } else {
+        // movement is not valid given the mover's reach- reject movement by return None
         movement = None;
     }
 

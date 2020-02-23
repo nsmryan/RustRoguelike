@@ -13,7 +13,6 @@ use symbol::Symbol;
 use euclid::Point2D;
 
 use crate::map::*;
-use crate::utils::*;
 use crate::movement::*;
 use crate::animation::AnimKey;
 
