@@ -682,8 +682,13 @@ pub fn render_overlays(display_state: &mut DisplayState,
                                                     mouse_xy.y as i32 + offset.y))
                              // filter out positions that are outside of the map, or with no clear
                              // path from the entity to the reached position
-                             .filter(|pos| data.map.is_within_bounds(*pos) &&
-                                           data.clear_path(mouse_xy, *pos))
+                             .filter(|pos| {
+                                 let in_bounds = data.map.is_within_bounds(*pos);
+                                 let clear = data.clear_path(mouse_xy, *pos);
+                                 // check for player position so it gets highligted, even
+                                 // though the player causes 'clear_path' to fail.
+                                 return in_bounds && (clear || *pos == player_pos);
+                             })
                              .collect::<Vec<Pos>>();
 
                     for position in attack_positions {

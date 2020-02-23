@@ -215,6 +215,8 @@ impl Reach {
     }
 
     pub fn offsets(&self) -> Vec<Pos> {
+        let end_points: Vec<Pos>;
+
         match self {
             Reach::Single(dist) => {
                 let dist = (*dist) as i32;
@@ -222,7 +224,7 @@ impl Reach {
                     vec!( (0, dist),      (-dist, dist), (-dist,  0),
                           (-dist, -dist), (0,  -dist),   (dist, -dist),
                           (dist,  0), (dist, dist));
-                offsets.iter().map(|pair| Pos::from(*pair)).collect()
+                end_points = offsets.iter().map(|pair| Pos::from(*pair)).collect();
             },
 
             Reach::Horiz(dist) => {
@@ -234,7 +236,7 @@ impl Reach {
                     offsets.push((-1 * dist, 0));
                     offsets.push((0, -1 * dist));
                 }
-                offsets.iter().map(|pair| Pos::from(*pair)).collect()
+                end_points = offsets.iter().map(|pair| Pos::from(*pair)).collect();
             },
 
 
@@ -247,9 +249,18 @@ impl Reach {
                     offsets.push((dist, -1 * dist));
                     offsets.push((-1 * dist, -1 * dist));
                 }
-                offsets.iter().map(|pair| Pos::from(*pair)).collect()
+                end_points = offsets.iter().map(|pair| Pos::from(*pair)).collect();
             },
         }
+
+        let mut offsets = Vec::new();
+        for end in end_points {
+            for pos in Line::new((0, 0), end.to_tuple()) {
+                offsets.push(Pos::from(pos));
+            }
+        }
+
+        return offsets;
     }
 }
 
