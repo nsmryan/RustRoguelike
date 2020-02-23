@@ -14,7 +14,6 @@ pub enum InputAction {
     Exit,
     ExploreAll,
     RegenerateMap,
-    ToggleOverlays,
     GodMode,
     RegenMap,
     Yell,
@@ -136,10 +135,6 @@ pub fn map_keycode_to_action(keycode: Keycode,
 
         Keycode::R => {
             input_action = InputAction::RegenerateMap;
-        }
-
-        Keycode::Plus => {
-            input_action = InputAction::ToggleOverlays;
         }
 
         Keycode::T => {

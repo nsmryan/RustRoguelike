@@ -15,7 +15,6 @@ use crate::plat::*;
 pub struct DisplayState {
     pub font_image: Texture,
     pub sprites: DenseSlotMap<SpriteKey, SpriteSheet>,
-    pub display_overlays: bool,
     pub screen_sections: Plan,
     pub zones: Vec<Plot>,
     pub canvas: WindowCanvas,
@@ -35,7 +34,6 @@ impl DisplayState {
         return DisplayState {
             font_image,
             sprites,
-            display_overlays: false,
             screen_sections,
             canvas,
             zones: Vec::new(),

@@ -109,7 +109,7 @@ pub fn handle_input_throwing(input: InputAction,
                 }
             }
 
-            if let (Some(stone_handle), Some(index)) = (stone, stone_index) {
+            if let (Some(_stone_handle), Some(index)) = (stone, stone_index) {
                 player_turn = Action::ThrowStone(map_cell, index);
 
                 // turn off throwing overlay
@@ -214,11 +214,6 @@ pub fn handle_input(input_action: InputAction,
             let (data, _position) =
                 generation::make_map(&settings.map_type, &mut game_data.objects, config, display_state, &mut rng);
             game_data.map = data.map;
-        }
-
-        (InputAction::ToggleOverlays, _) => {
-            display_state.display_overlays = !(display_state.display_overlays);
-
         }
 
         (InputAction::GodMode, true) => {

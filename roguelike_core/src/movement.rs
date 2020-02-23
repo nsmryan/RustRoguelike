@@ -7,7 +7,7 @@ use euclid::*;
 
 use crate::constants::*;
 use crate::types::*;
-use crate::utils::{attack, push_attack, clamp};
+use crate::utils::{push_attack, clamp};
 use crate::map::{Wall, Blocked};
 use crate::messaging::{MsgLog, Msg};
 
@@ -367,7 +367,7 @@ pub fn player_move_or_attack(movement: Movement,
     let player_handle = data.find_player().unwrap();
 
     match movement {
-        Movement::Attack(new_pos, target_handle) => {
+        Movement::Attack(_new_pos, target_handle) => {
             push_attack(player_handle, target_handle, data, msg_log);
 
             player_action = Move(movement);
@@ -427,7 +427,7 @@ pub fn check_collision(pos: Pos,
     } 
 
     // check for collision with an enitity
-    let mut move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
+    let move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
 
     for line_tuple in move_line {
         let line_pos = Pos::from(line_tuple);
@@ -472,7 +472,7 @@ pub fn calculate_move(action: Direction,
 
                 // if the entity position is the same as the
                 // square we were going to move to, we can attack
-                if (entity_pos == blocked.start_pos) {
+                if entity_pos == blocked.start_pos {
                     movement = Some(Movement::Attack(move_result.move_pos, entity));
                 } else {
                     // cannot jump over wall, and can't attack entity

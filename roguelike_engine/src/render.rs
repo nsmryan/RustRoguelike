@@ -1,8 +1,3 @@
-use std::time::{Instant, Duration};
-use std::cell::RefCell;
-
-use once_cell::unsync::OnceCell;
-
 use tcod::line::*;
 
 use noise::Perlin;
@@ -365,7 +360,7 @@ pub fn render_background(display_state: &mut DisplayState,
                     }
                 }
             }
-        });
+        }).unwrap();
 
         display_state.background = Some(background);
     }

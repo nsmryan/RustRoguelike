@@ -5,13 +5,14 @@ use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::animation::{Effect, Animation};
+use roguelike_core::animation::Animation;
 use roguelike_core::utils::distance;
 
 use crate::display::*;
 use crate::read_map::*;
 
 
+#[derive(Clone, PartialEq)]
 pub enum MapGenType {
     Island,
     WallTest,

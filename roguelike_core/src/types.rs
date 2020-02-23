@@ -57,7 +57,7 @@ impl GameData {
     }
 
     pub fn sound_within_earshot(&self, pos: Pos) -> Option<Pos> {
-        for (object_id, object) in self.objects.iter() {
+        for (_object_id, object) in self.objects.iter() {
             if object.pos() == pos && object.sound.is_some() {
                 return object.sound;
             }

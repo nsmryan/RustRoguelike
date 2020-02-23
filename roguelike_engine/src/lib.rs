@@ -8,7 +8,7 @@ pub mod generation;
 pub mod render;
 mod throttler;
 
-use std::time::{Instant, Duration};
+use std::time::Duration;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -20,7 +20,7 @@ use sdl2::mouse::MouseButton;
 use slotmap::dense::*;
 
 use roguelike_core::types::*;
-use roguelike_core::map::{Aoe, AoeEffect};
+use roguelike_core::map::AoeEffect;
 use roguelike_core::config::*;
 use roguelike_core::messaging::Msg;
 use roguelike_core::constants::*;
@@ -263,12 +263,12 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                             }
 
                             let sound_effect = Effect::Sound(sound_aoe, 0.0);
-                            let sound_key = game.display_state.play_effect(sound_effect);
+                            game.display_state.play_effect(sound_effect);
                         }
                     }
                 }
 
-                Msg::Yell(pos) => {
+                Msg::Yell(_pos) => {
                     let player_handle = game.data.find_player().unwrap();
                     let player_pos = game.data.objects[player_handle].pos();
 
@@ -279,7 +279,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     }
 
                     let sound_effect = Effect::Sound(sound_aoe, 0.0);
-                    let sound_key = game.display_state.play_effect(sound_effect);
+                    game.display_state.play_effect(sound_effect);
                 }
 
                 Msg::Killed(_attacker, attacked, _damage) => {

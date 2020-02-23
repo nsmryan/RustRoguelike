@@ -26,6 +26,7 @@ pub enum GameResult {
     Stop,
 }
 
+#[derive(Clone, PartialEq)]
 pub struct GameSettings {
     pub turn_count: usize,
     pub god_mode: bool,
