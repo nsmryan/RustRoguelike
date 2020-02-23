@@ -490,7 +490,9 @@ pub fn render_effects(display_state: &mut DisplayState,
                         config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
 
                     for pos in dist_positions.iter() {
-                        display_state.draw_char(MAP_EMPTY_CHAR as char, *pos, highlight_color, area);
+                        if !game_data.map[*pos].blocked {
+                            display_state.draw_char(MAP_EMPTY_CHAR as char, *pos, highlight_color, area);
+                        }
                     }
                 }
 
@@ -637,7 +639,7 @@ pub fn render_overlays(display_state: &mut DisplayState,
 
     // Draw player action overlay. Could draw arrows to indicate how to reach each location
     let mut highlight_color: Color = config.color_warm_grey;
-    highlight_color.a = config.highlight_alpha;
+    highlight_color.a = config.highlight_player_move;
 
     // Draw player movement overlay
     for move_action in Direction::move_actions().iter() {
@@ -664,7 +666,7 @@ pub fn render_overlays(display_state: &mut DisplayState,
     // draw attack position highlights
     if let Some(mouse_xy) = map_mouse_pos {
         let mut attack_highlight_color = config.color_red;
-        attack_highlight_color.a = config.highlight_alpha;
+        attack_highlight_color.a = config.highlight_attack;
         // Draw monster attack overlay
         let object_ids =  get_objects_under_mouse(mouse_xy, data);
         for object_id in object_ids.iter() {
