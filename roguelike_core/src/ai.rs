@@ -71,7 +71,7 @@ pub fn ai_attack(monster_handle: ObjectId,
                                          .filter_map(|mov| mov)
                                          .map(|pos| add_pos(pos, monster_pos))
                                          .filter(|pos| data.map.is_within_bounds(*pos))
-                                         .filter(|pos| data.is_blocked_tile(*pos))
+                                         .filter(|pos| data.is_blocked_tile(*pos).is_some())
                                          .collect::<Vec<Pos>>();
 
             // filter locations that are blocked or out of sight
@@ -172,7 +172,7 @@ fn ai_take_astar_step(monster_pos: Pos,
                       game_data: &GameData) -> Pos {
     let astar_iter = game_data.map.astar(monster_pos, target_pos);
 
-    if astar_iter.len() > 1 && !game_data.is_blocked_tile(astar_iter[1]) {
+    if astar_iter.len() > 1 && !game_data.is_blocked_tile(astar_iter[1]).is_some() {
         return step_towards(monster_pos, astar_iter[1]);
     } else {
         return Pos::new(0, 0);

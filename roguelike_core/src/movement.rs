@@ -329,7 +329,7 @@ impl Momentum {
 pub enum Collision {
     NoCollision(Pos),
     Blocked(Blocked),
-    Entity(ObjectId, Pos),
+    Entity(ObjectId, Pos), //hit entity
 }
 
 impl Collision {
@@ -431,20 +431,13 @@ pub fn check_collision(pos: Pos,
     } else {
         // must be within bounds, not blocked by a blocking tile, and not blocked by a wall.
         // therefore we just have to check for blocking by an entity
-        let move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
+        let mut move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
 
-        for pos in move_line.into_iter() {
-            let pos = Pos::from(pos);
+        for line_tuple in move_line {
+            let line_pos = Pos::from(line_tuple);
 
-            if data.is_blocked_tile(pos) {
-                // NOTE this re-checks all entities, which are already checked by is_blocked_tile
-                for (key, object) in data.objects.iter() {
-                    if object.pos() == pos {
-                        result = Collision::Entity(key, last_pos);
-                        break;
-                    }
-                }
-                break;
+            if let Some(key) = data.is_blocked_tile(line_pos) {
+                return Collision::Entity(key, last_pos);
             }
 
             last_pos = pos;

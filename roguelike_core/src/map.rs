@@ -208,6 +208,16 @@ pub enum Wall {
     TallWall,
 }
 
+impl Wall {
+    pub fn no_wall(&self) -> bool {
+        match self {
+            Wall::Empty => true,
+            Wall::ShortWall => false,
+            Wall::TallWall => false,
+        }
+    }
+}
+
 pub struct Map {
     pub tiles: Vec<Vec<Tile>>,
     fov: FovMap,
@@ -469,7 +479,9 @@ impl Map {
 
         let wall_in_path =
             blocked.map_or(false, |blocked| {
-                !(blocked.end_pos == end_pos && blocked.blocked_tile)
+                let not_at_end = blocked.end_pos == end_pos;
+                let visible_wall = blocked.blocked_tile && !blocked.wall_type.no_wall();
+                return !(not_at_end && visible_wall);
             });
 
         return !wall_in_path && self.fov.is_in_fov(end_pos.x, end_pos.y);
@@ -591,7 +603,7 @@ impl Map {
                 let dt = *cur_pos - start;
                 let is_blocked = self.is_blocked_by_wall(start, dt.x, dt.y).is_some();
                 let effective_radius = if is_blocked {
-                    radius - 1
+                    radius - 2
                 } else {
                     radius
                 };

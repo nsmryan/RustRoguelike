@@ -71,7 +71,8 @@ impl GameData {
         let line = Line::new((start.x, start.y), (end.x, end.y));
     
         let path_blocked =
-            line.into_iter().any(|point| self.is_blocked_tile(Pos::from(point)));
+            line.into_iter().any(|point|
+                                 self.is_blocked_tile(Pos::from(point)).is_some());
     
         let (dx, dy) = (end.x - start.x, end.y - start.y);
 
@@ -79,20 +80,14 @@ impl GameData {
                self.map.is_blocked_by_wall(start, dx, dy).is_none();
     }
 
-    pub fn is_blocked_tile(&self, pos: Pos) -> bool {
-        if !self.map.is_within_bounds(pos) {
-            return true;
-        }
-
-        let mut is_blocked = false;
-        for object in self.objects.values() {
+    pub fn is_blocked_tile(&self, pos: Pos) -> Option<ObjectId> {
+        for (key, object) in self.objects.iter() {
             if object.blocks && object.pos() == pos {
-                is_blocked = true;
-                break;
+                return Some(key);
             }
         }
 
-        return is_blocked;
+        return None;
     }
 }
 

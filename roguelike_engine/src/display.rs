@@ -158,9 +158,15 @@ impl DisplayState {
     }
 
     pub fn draw_tile_outline(&mut self, pos: Pos, area: &Area, color: Color) {
-        let tile_rect = area.char_rect(pos.x, pos.y);
         self.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
-        self.canvas.draw_rect(tile_rect).unwrap();
+
+        let tile_rect = area.char_rect(pos.x, pos.y);
+
+        let inner_rect = Rect::new(tile_rect.x() + 1,
+                                   tile_rect.y + 1,
+                                   tile_rect.width() - 1,
+                                   tile_rect.height() - 1);
+        self.canvas.draw_rect(inner_rect).unwrap();
     }
 
     pub fn play_animation(&mut self, animation: Animation) -> AnimKey {
