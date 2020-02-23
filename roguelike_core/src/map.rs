@@ -290,8 +290,6 @@ impl Map {
     }
 
     pub fn is_blocked_by_wall(&self, start_pos: Pos, dx: i32, dy: i32) -> Option<Blocked> {
-        let mut blocked = None;
-
         let (end_x, end_y) = (start_pos.x + dx, start_pos.y + dy);
 
         let line = Line::new((start_pos.x, start_pos.y), (end_x, end_y));
@@ -303,21 +301,25 @@ impl Map {
         positions.push(start_pos.to_tuple());
         positions.extend(line.into_iter());
 
+        let mut blocked;
+        let mut found_blocker = false;
         for pair in positions.windows(2) {
             let (x, y) = pair[0];
             let pos = Pos::from(pair[0]);
             let target_pos = Pos::from(pair[1]);
 
+            blocked = Blocked::new(pos, target_pos, dir, false, Wall::Empty);
+
             // if the target position is out of bounds, we are blocked
             if !self.is_within_bounds(target_pos) {
-                blocked = Some(Blocked::new(pos, target_pos, dir, true, Wall::Empty));
-                break;
+                blocked.blocked_tile = true;
+                found_blocker = true;
             }
 
             // if moving into a blocked tile, we are blocked
             if self[target_pos].blocked {
-                blocked = Some(Blocked::new(pos, target_pos, dir, true, Wall::Empty));
-                break;
+                blocked.blocked_tile = true;
+                found_blocker = true;
             }
 
             let move_dir = target_pos - Vector2D::new(x, y);
@@ -331,12 +333,14 @@ impl Map {
                     let wall_type = self[left_wall_pos].left_wall;
                     if self.is_within_bounds(left_wall_pos) &&
                         wall_type != Wall::Empty {
-                            blocked = Some(Blocked::new(pos, target_pos, dir, false, wall_type));
+                            blocked.wall_type = wall_type;
+                            found_blocker = true;
                         }
                 } else {
                     let wall_type = self[left_wall_pos].left_wall;
                     if wall_type != Wall::Empty {
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, wall_type));
+                        blocked.wall_type = wall_type;
+                        found_blocker = true;
                     }
                 }
                 // vertical 
@@ -347,13 +351,15 @@ impl Map {
 
                     let wall_type = self[bottom_wall_pos].bottom_wall;
                     if wall_type != Wall::Empty {
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, wall_type));
+                        blocked.wall_type = wall_type;
+                        found_blocker = true;
                     }
                 } else {
                     let wall_type = self[bottom_wall_pos].bottom_wall;
                     if self.is_within_bounds(bottom_wall_pos) &&
                         wall_type != Wall::Empty {
-                            blocked = Some(Blocked::new(pos, target_pos, dir, false, wall_type));
+                            blocked.wall_type = wall_type;
+                            found_blocker = true;
                         }
                 }
             } else { // diagonal
@@ -364,84 +370,100 @@ impl Map {
                 // down right
                 if move_dir.x > 0 && move_dir.y > 0 {
                     if self.blocked_right(pos) && self.blocked_down(pos) {
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].bottom_wall));
+                        blocked.wall_type = self[pos].bottom_wall;
+                        found_blocker = true;
                     }
 
                     if self.blocked_right(move_y(pos, -1)) && self.blocked_down(move_x(pos, 1)) {
                         let blocked_pos = add_pos(pos, Pos::new(-1, 1));
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[blocked_pos].bottom_wall));
+                        blocked.wall_type = self[blocked_pos].bottom_wall;
+                        found_blocker = true;
                     }
 
                     if self.blocked_right(pos) && self.blocked_right(y_moved) {
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_x(pos, 1)].left_wall));
+                        blocked.wall_type = self[move_x(pos, 1)].left_wall;
+                        found_blocker = true;
                     }
 
                     if self.blocked_down(pos) && self.blocked_down(x_moved) {
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].bottom_wall));
+                        blocked.wall_type = self[pos].bottom_wall;
+                        found_blocker = true;
                     }
                     // up right
                 } else if move_dir.x > 0 && move_dir.y < 0 {
                     if self.blocked_up(pos) && self.blocked_right(pos) {
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_y(pos, -1)].bottom_wall));
+                        blocked.wall_type = self[move_y(pos, -1)].bottom_wall;
+                        found_blocker = true;
                     }
 
                     if self.blocked_up(move_x(pos, 1)) && self.blocked_right(move_y(pos, -1)) {
                         let blocked_pos = add_pos(pos, Pos::new(1, -1));
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[blocked_pos].bottom_wall));
+                        blocked.wall_type = self[blocked_pos].bottom_wall;
+                        found_blocker = true;
                     }
 
                     if self.blocked_right(pos) && self.blocked_right(y_moved) {
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_x(pos, 1)].left_wall));
+                        blocked.wall_type = self[move_x(pos, 1)].left_wall;
+                        found_blocker = true;
                     }
 
                     if self.blocked_up(pos) && self.blocked_up(x_moved) {
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_y(pos, -1)].bottom_wall));
+                        blocked.wall_type = self[move_y(pos, -1)].bottom_wall;
+                        found_blocker = true;
                     }
                     // down left
                 } else if move_dir.x < 0 && move_dir.y > 0 {
                     if self.blocked_left(pos) && self.blocked_down(pos) {
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].left_wall));
+                        blocked.wall_type = self[pos].left_wall;
+                        found_blocker = true;
                     }
 
                     if self.blocked_left(move_y(pos, 1)) && self.blocked_down(move_x(pos, -1)) {
                         let blocked_pos = add_pos(pos, Pos::new(1, -1));
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[blocked_pos].left_wall));
+                        blocked.wall_type = self[blocked_pos].left_wall;
+                        found_blocker = true;
                     }
 
                     if self.blocked_left(pos) && self.blocked_left(y_moved) {
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].left_wall));
+                        blocked.wall_type = self[pos].left_wall;
+                        found_blocker = true;
                     }
 
                     if self.blocked_down(pos) && self.blocked_down(x_moved) {
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].bottom_wall));
+                        blocked.wall_type = self[pos].bottom_wall;
+                        found_blocker = true;
                     }
                     // up left
                 } else {
                     if self.blocked_left(move_y(pos, -1)) && self.blocked_up(move_x(pos, -1)) {
                         let blocked_pos = add_pos(pos, Pos::new(-1, -1));
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[blocked_pos].left_wall));
+                        blocked.wall_type = self[blocked_pos].left_wall;
+                        found_blocker = true;
                     }
 
                     if self.blocked_left(pos) && self.blocked_up(pos) {
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].left_wall));
+                        blocked.wall_type = self[pos].left_wall;
+                        found_blocker = true;
                     }
 
                     if self.blocked_left(pos) && self.blocked_left(y_moved) {
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[pos].left_wall));
+                        blocked.wall_type = self[pos].left_wall;
+                        found_blocker = true;
                     }
 
                     if self.blocked_up(pos) && self.blocked_up(x_moved) {
-                        blocked = Some(Blocked::new(pos, target_pos, dir, false, self[move_y(pos, -1)].bottom_wall));
+                        blocked.wall_type = self[move_y(pos, -1)].bottom_wall;
+                        found_blocker = true;
                     }
                 }
             }
 
-            if blocked.is_some() {
-                break;
+            if found_blocker {
+                return Some(blocked);
             }
         }
 
-        return blocked;
+        return None;
     }
 
     pub fn is_empty(&self, pos: Pos) -> bool {
@@ -479,9 +501,9 @@ impl Map {
 
         let wall_in_path =
             blocked.map_or(false, |blocked| {
-                let not_at_end = blocked.end_pos == end_pos;
-                let visible_wall = blocked.blocked_tile && !blocked.wall_type.no_wall();
-                return !(not_at_end && visible_wall);
+                let at_end = blocked.end_pos == end_pos;
+                let visible_wall = blocked.blocked_tile && blocked.wall_type.no_wall();
+                return !(at_end && visible_wall);
             });
 
         return !wall_in_path && self.fov.is_in_fov(end_pos.x, end_pos.y);

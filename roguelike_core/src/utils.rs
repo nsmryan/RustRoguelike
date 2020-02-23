@@ -22,11 +22,13 @@ pub fn push_attack(handle: ObjectId, other_handle: ObjectId, data: &mut GameData
 
     let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
 
-    if data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() {
+    if data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() ||
+       data.is_blocked_tile(past_pos).is_some() {
         // if blocked by wall, kill entity and take their space
         data.objects[handle].set_pos(other_pos);
 
         data.objects[other_handle].alive = false;
+        data.objects[other_handle].blocks = false;
         let damage = data.objects[other_handle]
                          .fighter
                          .expect("Attacked a non-fighter?")
@@ -49,6 +51,7 @@ pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, ms
         msg_log.log(Msg::Attack(handle, other_handle, damage));
         if objects[other_handle].fighter.unwrap().hp <= 0 {
             objects[other_handle].alive = false;
+            objects[other_handle].blocks = false;
 
             msg_log.log(Msg::Killed(handle, other_handle, damage));
         }
