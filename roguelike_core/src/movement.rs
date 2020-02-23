@@ -7,7 +7,7 @@ use euclid::*;
 
 use crate::constants::*;
 use crate::types::*;
-use crate::utils::*;
+use crate::utils::{attack, push_attack, clamp};
 use crate::map::{Wall, Blocked};
 use crate::messaging::{MsgLog, Msg};
 
@@ -368,9 +368,7 @@ pub fn player_move_or_attack(movement: Movement,
 
     match movement {
         Movement::Attack(new_pos, target_handle) => {
-            attack(player_handle, target_handle, &mut data.objects, msg_log);
-
-            data.objects[player_handle].set_pos(new_pos);
+            push_attack(player_handle, target_handle, data, msg_log);
 
             player_action = Move(movement);
         }

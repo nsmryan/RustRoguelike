@@ -12,6 +12,34 @@ pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
     return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt() as i32;
 }
 
+pub fn push_attack(handle: ObjectId, other_handle: ObjectId, data: &mut GameData, msg_log: &mut MsgLog) {
+    let pos = data.objects[handle].pos();
+    let other_pos = data.objects[other_handle].pos();
+    let diff = other_pos - pos;
+
+    let x_diff = diff.x.signum();
+    let y_diff = diff.y.signum();
+
+    let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
+
+    if data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() {
+        // if blocked by wall, kill entity and take their space
+        data.objects[handle].set_pos(other_pos);
+
+        data.objects[other_handle].alive = false;
+        let damage = data.objects[other_handle]
+                         .fighter
+                         .expect("Attacked a non-fighter?")
+                         .hp;
+
+        msg_log.log(Msg::Killed(handle, other_handle, damage));
+    } else {
+        // if not blocked, push the other entity, taking their space
+        data.objects[other_handle].set_pos(past_pos);
+        data.objects[handle].set_pos(other_pos);
+    }
+}
+
 pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, msg_log: &mut MsgLog) {
     let damage = objects[handle].fighter.map_or(0, |f| f.power) -
                  objects[other_handle].fighter.map_or(0, |f| f.defense);
@@ -98,5 +126,4 @@ pub fn move_y(pos: Pos, offset_y: i32) -> Pos {
 pub fn move_x(pos: Pos, offset_x: i32) -> Pos {
     return Pos::new(pos.x + offset_x, pos.y);
 }
-
 
