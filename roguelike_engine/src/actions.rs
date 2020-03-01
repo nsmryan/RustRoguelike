@@ -231,7 +231,7 @@ pub fn handle_input(input_action: InputAction,
             // anywhere
             for x in 0..game_data.map.tiles.len() {
                 for y in 0..game_data.map.tiles[0].len() {
-                    game_data.map.set_cell(x as i32, y as i32, true, true);
+                    game_data.map.set_cell(x as i32, y as i32, true);
                 }
             }
             game_data.map.update_map();

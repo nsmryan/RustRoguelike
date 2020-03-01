@@ -1,5 +1,7 @@
 use rand::prelude::*;
 
+use serde::{Serialize, Deserialize};
+
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
@@ -12,7 +14,7 @@ use crate::display::*;
 use crate::read_map::*;
 
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum MapGenType {
     Island,
     WallTest,

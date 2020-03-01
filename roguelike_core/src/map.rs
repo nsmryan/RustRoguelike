@@ -5,8 +5,9 @@ use rand::prelude::*;
 
 use pathfinding::directed::astar::astar;
 
-use tcod::map::{Map as FovMap};
 use tcod::line::*;
+
+use doryen_fov::{MapData, FovAlgorithm, FovRestrictive};
 
 use euclid::*;
 
@@ -91,7 +92,7 @@ impl Default for MapLoadConfig {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Tile {
     pub blocked: bool,
     pub block_sight: bool,
@@ -174,7 +175,7 @@ impl Tile {
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum TileType {
     Empty,
     ShortWall,
@@ -201,7 +202,7 @@ impl Obstacle {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub enum Wall {
     Empty,
     ShortWall,
@@ -218,9 +219,10 @@ impl Wall {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Map {
     pub tiles: Vec<Vec<Tile>>,
-    fov: FovMap,
+    fov: MapData,
     fov_pos: Pos,
     fov_radius: i32,
 }
@@ -232,7 +234,7 @@ impl Map {
         let mut map =
             Map {
                 tiles,
-                fov: FovMap::new(width as i32, height as i32),
+                fov: MapData::new(width, height),
                 fov_pos: Pos::new(0, 0),
                 fov_radius: FOV_RADIUS,
             };
@@ -247,7 +249,7 @@ impl Map {
         let mut map =
             Map {
                 tiles,
-                fov: FovMap::new(width as i32, height as i32),
+                fov: MapData::new(width, height),
                 fov_pos: Pos::new(0, 0),
                 fov_radius: FOV_RADIUS,
             };
@@ -261,7 +263,7 @@ impl Map {
         let map =
             Map {
                 tiles: Vec::new(),
-                fov: FovMap::new(1, 1),
+                fov: MapData::new(1, 1),
                 fov_pos: Pos::new(0, 0),
                 fov_radius: FOV_RADIUS,
             };
@@ -506,7 +508,10 @@ impl Map {
                 return !(at_end && visible_wall);
             });
 
-        return !wall_in_path && self.fov.is_in_fov(end_pos.x, end_pos.y);
+        let is_visible =
+            self.fov.is_in_fov(end_pos.x as usize, end_pos.y as usize);
+
+        return !wall_in_path && is_visible;
     }
 
     // this function is like clear_path, but only looks for terrain, not objects like monsters
@@ -580,25 +585,27 @@ impl Map {
         return result;
     }
 
-    pub fn set_cell(&mut self, x: i32, y: i32, transparent: bool, walkable: bool) {
-        self.fov.set(x, y, transparent, walkable);
+    pub fn set_cell(&mut self, x: i32, y: i32, transparent: bool) {
+        self.fov.set_transparent(x as usize, y as usize, transparent);
     }
 
     pub fn compute_fov(&mut self, pos: Pos, view_radius: i32) {
         self.fov_pos = pos;
         self.fov_radius = view_radius;
-        self.fov.compute_fov(pos.x, pos.y, view_radius, true, tcod::map::FovAlgorithm::Basic);
+        FovRestrictive::new().compute_fov(&mut self.fov,
+                                          pos.x as usize,
+                                          pos.y as usize,
+                                          view_radius as usize,
+                                          true);
     }
 
     pub fn update_map(&mut self) {
-        let dims = self.fov.size();
+        let dims = (self.width(), self.height());
 
         for y in 0..dims.1 {
             for x in 0..dims.0 {
-                self.fov.set(x,
-                             y,
-                             !self.tiles[x as usize][y as usize].block_sight,
-                             !self.tiles[x as usize][y as usize].blocked);
+                let transparent = !self.tiles[x as usize][y as usize].block_sight;
+                self.fov.set_transparent(x as usize, y as usize, transparent);
             }
         }
 

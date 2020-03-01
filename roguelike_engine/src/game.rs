@@ -5,6 +5,8 @@ use rand::prelude::*;
 
 use slotmap::dense::*;
 
+use serde::{Serialize, Deserialize};
+
 use roguelike_core::constants::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
@@ -20,13 +22,13 @@ use crate::input::*;
 use crate::read_map::read_map_xp;
 
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum GameResult {
     Continue,
     Stop,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct GameSettings {
     pub turn_count: usize,
     pub god_mode: bool,

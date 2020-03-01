@@ -1,7 +1,7 @@
 use std::convert::Into;
 use std::collections::VecDeque;
 
-use serde_derive::*;
+use serde::{Serialize, Deserialize};
 
 use tcod::line::*;
 
@@ -121,7 +121,7 @@ impl Color {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+#[derive(Debug, Eq, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub enum GameState {
     Playing,
     Win,
