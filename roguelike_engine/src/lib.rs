@@ -19,8 +19,10 @@ use sdl2::mouse::MouseButton;
 
 use slotmap::dense::*;
 
+use walkdir::WalkDir;
+
 use roguelike_core::types::*;
-use roguelike_core::map::AoeEffect;
+use roguelike_core::map;
 use roguelike_core::config::*;
 use roguelike_core::messaging::Msg;
 use roguelike_core::constants::*;
@@ -95,10 +97,26 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     sprites.insert(SpriteSheet::new("font".to_string(),             font_as_sprite,   16));
     sprites.insert(SpriteSheet::new("goal".to_string(),             mcmuffin,         1));
 
+    // load any animations in the autoload directory.
+    for entry in WalkDir::new("animations/autoload/") {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        if let Ok(metadata) = entry.metadata() {
+            if metadata.is_file() {
+                let file_name = entry.file_name().to_string_lossy().to_string();
+                println!("{}", file_name);
+
+                let sprite =
+                    texture_creator.load_texture(path).map_err(|e| e.to_string())?;
+
+                sprites.insert(SpriteSheet::new(file_name, sprite, 1));
+            }
+        }
+    }
 
     /* Create Display Structures */
     let screen_sections =
-        Plan::vert("screen", 0.80, Plan::zone("map"), 
+        Plan::vert("screen", 0.80, Plan::zone("map"),
                    Plan::split_horiz(0.3, Plan::zone("inventory"),
                                           Plan::split_horiz(0.5, Plan::zone("player"),
                                                                  Plan::zone("info"))));
@@ -204,7 +222,9 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                 Msg::StoneThrow(_thrower, stone_id, start, end) => {
                     // lay down sound objects on all tiles which can hear the sound.
                     // these dissapate with a count_down
-                    let sound_aoe = game.data.map.aoe_fill(AoeEffect::Sound, *end, SOUND_RADIUS_STONE);
+                    let sound_aoe =
+                        game.data.map.aoe_fill(map::AoeEffect::Sound, *end, SOUND_RADIUS_STONE);
+
                     for pos in sound_aoe.positions() {
                         let sound = generation::make_sound(&game.config, pos, *end);
                         game.data.objects.insert(sound);
@@ -246,7 +266,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                                 MoveMode::Run => sound_radius = SOUND_RADIUS_RUN,
                             }
 
-                            let idle_sprite = 
+                            let idle_sprite =
                                 game.display_state.new_sprite("player_idle".to_string(), config.idle_speed)
                                                   .unwrap();
                             let idle_anim = Animation::Loop(idle_sprite);
@@ -256,7 +276,8 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                             game.data.objects[player_handle].animation.push_back(idle_key);
 
                             // add sound for movement
-                            let sound_aoe = game.data.map.aoe_fill(AoeEffect::Sound, *pos, sound_radius);
+                            let sound_aoe =
+                                game.data.map.aoe_fill(map::AoeEffect::Sound, *pos, sound_radius);
                             for sound_pos in sound_aoe.positions() {
                                 let sound = generation::make_sound(&game.config, sound_pos, *pos);
                                 game.data.objects.insert(sound);
@@ -272,7 +293,8 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     let player_handle = game.data.find_player().unwrap();
                     let player_pos = game.data.objects[player_handle].pos();
 
-                    let sound_aoe = game.data.map.aoe_fill(AoeEffect::Sound, player_pos, config.player_yell_radius);
+                    let sound_aoe =
+                        game.data.map.aoe_fill(map::AoeEffect::Sound, player_pos, config.player_yell_radius);
                     for pos in sound_aoe.positions() {
                         let sound = generation::make_sound(&game.config, pos, player_pos);
                         game.data.objects.insert(sound);
@@ -298,13 +320,13 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
                 Msg::Attack(attacker, _attacked, _damage) => {
                     if game.data.objects[*attacker].name == "player" {
-                        let attack_sprite = 
+                        let attack_sprite =
                             game.display_state.new_sprite("player_attack".to_string(), config.player_attack_speed)
                                               .unwrap();
                         let attack_anim = Animation::Once(attack_sprite);
                         let attack_key = game.display_state.play_animation(attack_anim);
 
-                        let idle_sprite = 
+                        let idle_sprite =
                             game.display_state.new_sprite("player_idle".to_string(), config.idle_speed)
                                               .unwrap();
                         let idle_anim = Animation::Loop(idle_sprite);
