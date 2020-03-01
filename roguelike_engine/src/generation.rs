@@ -7,7 +7,7 @@ use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::animation::Animation;
+use roguelike_core::animation::{Animation, Sprite};
 use roguelike_core::utils::distance;
 
 use crate::display::*;
@@ -21,6 +21,7 @@ pub enum MapGenType {
     CornerTest,
     PlayerTest,
     FromFile(String),
+    Animations,
 }
 
 
@@ -225,6 +226,12 @@ pub fn make_map(map_type: &MapGenType,
 
             result = (data, Pos::from(player_position));
         }
+
+        MapGenType::Animations => {
+            let (map, player_position) = make_player_test_map(objects, config, display_state);
+            
+            result = (GameData::new(map, objects.clone()), player_position);
+        }
     }
 
     return result;
@@ -413,6 +420,39 @@ pub fn make_player_test_map(_objects: &mut ObjMap,
     map.update_map();
 
     return (map, Pos::from(position));
+}
+
+pub fn make_animations_map(objects: &mut ObjMap,
+                           config: &Config,
+                           display_state: &mut DisplayState) -> (Map, Pos) {
+    let num_animations = display_state.sprites.len() as i32;
+
+    let dims = (num_animations as f32).sqrt() as usize + 1;
+
+    let mut map = Map::from_dims(dims, dims);
+
+    let mut index: i32 = 0;
+    for sprite_key in display_state.sprites.keys().collect::<Vec<_>>().iter() {
+        let x = index % dims as i32;
+        let y = index / dims as i32;
+
+        let num_sprites = display_state.sprites[*sprite_key].num_sprites;
+
+        let mut obj = Object::new(x, y, ' ', Color::white(), "obj", false);
+
+        let sprite =
+            Sprite::make_sprite("".to_string(), *sprite_key, num_sprites as f32, config.idle_speed);
+        let anim_key = display_state.play_animation(Animation::Loop(sprite));
+        obj.animation.push_front(anim_key);
+
+        objects.insert(obj);
+
+        index += 1;
+    }
+
+    map.update_map();
+
+    return (map, Pos::from((dims as i32 - 1, dims as i32 - 1)));
 }
 
 pub fn make_wall_test_map(objects: &mut ObjMap,

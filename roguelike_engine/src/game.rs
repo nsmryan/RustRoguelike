@@ -137,6 +137,12 @@ impl Game {
                 player_position = position.to_tuple();
                 objects.insert(make_mouse(&config, &mut display_state));
             }
+
+            MapLoadConfig::Animations => {
+                let (new_map, position) = make_animations_map(&mut objects, &config, &mut display_state);
+                map = new_map;
+                player_position = position.to_tuple();
+            }
         }
 
         let mut data = GameData::new(map, objects);

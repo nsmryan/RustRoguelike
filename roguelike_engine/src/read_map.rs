@@ -216,7 +216,8 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             _ => {
-                                panic!(format!("Unexpected character {} in environment layer!", chr as u8));
+                                map[pos].chr = Some(chr);
+                                map[pos].blocked = true;
                             }
                         }
                     }

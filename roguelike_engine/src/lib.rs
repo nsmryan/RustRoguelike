@@ -102,9 +102,8 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         let entry = entry.unwrap();
         let path = entry.path();
         if let Ok(metadata) = entry.metadata() {
-            if metadata.is_file() {
+            if metadata.is_file() && path.ends_with(".png") {
                 let file_name = entry.file_name().to_string_lossy().to_string();
-                println!("{}", file_name);
 
                 let sprite =
                     texture_creator.load_texture(path).map_err(|e| e.to_string())?;

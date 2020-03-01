@@ -84,6 +84,7 @@ pub enum MapLoadConfig {
     TestCorner,
     TestPlayer,
     FromFile,
+    Animations,
 }
 
 impl Default for MapLoadConfig {
@@ -315,7 +316,10 @@ impl Map {
             // if the target position is out of bounds, we are blocked
             if !self.is_within_bounds(target_pos) {
                 blocked.blocked_tile = true;
-                found_blocker = true;
+
+                // continueing to check after finding an out-of-bounds
+                // position results in a panic, so stop now.
+                return Some(blocked);
             }
 
             // if moving into a blocked tile, we are blocked
