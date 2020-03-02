@@ -134,7 +134,7 @@
     "sound_alpha": 86,
     "grid_alpha": 8,
     "grid_alpha_visible": 30,
-    "map_load": "Animations",
+    "map_load": "FromFile",
     "idle_speed": 0.35,
     "draw_mouse_line": false,
     "draw_star_path": false,
@@ -144,5 +144,7 @@
     "player_attack_speed": 2.0,
     "sound_timeout": 0.5,
     "player_yell_radius": 4
+
+
 }
 
