@@ -29,7 +29,8 @@ pub fn get_objects_under_mouse(mouse_pos: Pos,
         let is_mouse = data.objects[key].name == "mouse";
 
         if !is_mouse && mouse_pos == pos {
-            if data.map.is_in_fov(pos, mouse_pos, FOV_RADIUS) {
+            if data.objects[key].alive &&
+               data.map.is_in_fov(pos, mouse_pos, FOV_RADIUS) {
                 object_ids.push(key);
             }
         }
@@ -452,7 +453,8 @@ pub fn render_map(display_state: &mut DisplayState,
             }
 
             if config.fog_of_war && !data.map[pos].explored {
-                let black = Color::black();
+                let mut black = Color::black();
+                black.a /= 2;
                 display_state.draw_char(MAP_EMPTY_CHAR as char, pos, black, area);
             }
 

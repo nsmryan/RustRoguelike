@@ -316,6 +316,8 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                             game.data.objects[*attacked].animation.push_front(gol_anim);
                         }
                     }
+
+                    game.data.objects[*attacked].needs_removal = true;
                 }
 
                 Msg::Attack(attacker, _attacked, _damage) => {
@@ -365,6 +367,21 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                 game.data.objects.insert(new_objects[key].clone());
             }
             game.data.objects.insert(player);
+        }
+
+        /* Remove objects are awaiting removal */
+        {
+            let mut removals = Vec::new();
+            for key in game.data.objects.keys() {
+                if game.data.objects[key].needs_removal &&
+                   game.data.objects[key].animation.len() == 0 {
+                       removals.push(key);
+                   }
+            }
+
+            for key in removals {
+               game.data.objects.remove(key);
+            }
         }
 
         /* Reload Configuration */

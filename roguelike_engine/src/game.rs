@@ -333,8 +333,8 @@ pub fn step_logic(player_action: Action,
 
         for key in game_data.objects.keys() {
             if game_data.objects[key].ai.is_some() &&
+               game_data.objects[key].alive        &&
                game_data.objects[key].fighter.is_some() {
-
                ai_handles.push(key);
            }
         }

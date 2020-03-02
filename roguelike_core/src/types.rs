@@ -233,6 +233,7 @@ pub struct Object {
     pub sound: Option<Pos>, // source position
     pub count_down: Option<usize>,
     pub move_mode: Option<MoveMode>,
+    pub needs_removal: bool,
 }
 
 impl Object {
@@ -257,6 +258,7 @@ impl Object {
             sound: None,
             count_down: None,
             move_mode: None,
+            needs_removal: false,
         }
     }
 
