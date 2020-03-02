@@ -4,7 +4,7 @@ use crate::map::*;
 use serde_derive::*;
 
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Config {
     pub color_dark_brown: Color,
     pub color_medium_brown: Color,
@@ -36,6 +36,7 @@ pub struct Config {
     pub grid_alpha: u8,
     pub grid_alpha_visible: u8,
     pub map_load: MapLoadConfig,
+    pub map_file: String,
     pub idle_speed: f32,
     pub draw_mouse_line: bool,
     pub draw_star_path: bool,

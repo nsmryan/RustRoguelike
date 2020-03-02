@@ -125,7 +125,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let display_state =
         DisplayState::new(screen_sections, font_image, sprites, canvas);
 
-    let mut game = Game::new(args, config, display_state)?;
+    let mut game = Game::new(args, config.clone(), display_state)?;
 
     /* Main Game Loop */
     let mut running = true;
@@ -355,7 +355,8 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         if game.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
             let player_handle = game.data.find_player().unwrap();
 
-            let (new_objects, new_map, _) = read_map_xp(&game.config, &mut game.display_state, "resources/map.xp");
+            let map_file = format!("resources/{}", game.config.map_file);
+            let (new_objects, new_map, _) = read_map_xp(&game.config, &mut game.display_state, &map_file);
             game.data.map = new_map;
             game.data.objects[player_handle].inventory.clear();
             let player = game.data.objects[player_handle].clone();
