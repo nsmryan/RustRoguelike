@@ -30,7 +30,11 @@ pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object 
     let mut player = Object::new(0, 0, '@', Color::white(), "player", true);
 
     player.alive = true;
-    player.fighter = Some(Fighter{max_hp: 50, hp: 50, defense: 2, power: 5 });
+    player.fighter =
+        Some(Fighter { max_hp: config.player_health,
+                       hp: config.player_health,
+                       defense: 2,
+                       power: 5 });
     player.movement = Some(Reach::Single(1));
     player.attack = Some(Reach::Single(1));
     player.move_mode = Some(MoveMode::Walk);

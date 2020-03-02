@@ -103,12 +103,10 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         let path = entry.path();
         let file_name = entry.file_name().to_string_lossy().to_string();
         if let Ok(metadata) = entry.metadata() {
-            println!("{:?} ends with png {}", path, file_name.ends_with("png"));
             if metadata.is_file() && file_name.ends_with("png") {
                 let sprite =
                     texture_creator.load_texture(path).map_err(|e| e.to_string())?;
 
-                println!("{}", file_name);
                 sprites.insert(SpriteSheet::new(file_name, sprite, 1));
             }
         }

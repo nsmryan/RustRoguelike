@@ -9,7 +9,7 @@ pub const SCREEN_HEIGHT: u32 = 800;
 
 /* Sound */
 pub const SOUND_RADIUS: usize = 3;
-pub const SOUND_RADIUS_SNEAK: usize = 1;
+pub const SOUND_RADIUS_SNEAK: usize = 2;
 pub const SOUND_RADIUS_WALK: usize = 3;
 pub const SOUND_RADIUS_RUN: usize = 5;
 pub const SOUND_RADIUS_STONE: usize = 2;

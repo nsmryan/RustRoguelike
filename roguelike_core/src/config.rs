@@ -47,4 +47,5 @@ pub struct Config {
     pub sound_timeout: f32,
     pub player_yell_radius: usize,
     pub fog_of_war: bool,
+    pub player_health: i32,
 }

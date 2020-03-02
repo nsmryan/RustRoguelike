@@ -635,7 +635,7 @@ impl Map {
                 
                 let dt = *cur_pos - start;
                 let is_blocked = self.is_blocked_by_wall(start, dt.x, dt.y).is_some();
-                let effective_radius = if is_blocked {
+                let effective_radius = if is_blocked && radius > 2 {
                     radius - 2
                 } else {
                     radius
