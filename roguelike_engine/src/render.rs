@@ -387,9 +387,11 @@ pub fn render_map(display_state: &mut DisplayState,
                 data.map.is_in_fov(player_pos, pos, FOV_RADIUS) ||
                 settings.god_mode;
 
-            let tile = &data.map.tiles[x as usize][y as usize];
+            data.map[pos].explored |= visible;
 
-            let explored = data.map.tiles[x as usize][y as usize].explored || visible;
+            let tile = &data.map[pos];
+
+            let explored = data.map[pos].explored || visible;
 
             let wall_color;
             if explored {
@@ -440,16 +442,18 @@ pub fn render_map(display_state: &mut DisplayState,
                 }
             }
 
-            data.map.tiles[x as usize][y as usize].explored = explored;
-
-
             // Draw a square around this tile to help distinguish it visually in the grid
             let outline_color = Color::white();
             let color;
-            if visible && data.map.tiles[x as usize][y as usize].tile_type != TileType::Water {
+            if visible && data.map[pos].tile_type != TileType::Water {
                 color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.grid_alpha_visible);
             } else {
                 color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.grid_alpha);
+            }
+
+            if config.fog_of_war && !data.map[pos].explored {
+                let black = Color::black();
+                display_state.draw_char(MAP_EMPTY_CHAR as char, pos, black, area);
             }
 
             display_state.canvas.set_blend_mode(BlendMode::Blend);

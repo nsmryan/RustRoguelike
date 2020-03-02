@@ -144,8 +144,7 @@
     "goal_speed": 0.5,
     "player_attack_speed": 2.0,
     "sound_timeout": 0.5,
-    "player_yell_radius": 4
-
-
+    "player_yell_radius": 4,
+    "fog_of_war": true
 }
 
