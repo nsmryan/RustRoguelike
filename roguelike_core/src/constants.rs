@@ -128,6 +128,7 @@ pub const ENTITY_ELF: u8 = 165;
 pub const ENTITY_ORB: u8 = 135;
 pub const ENTITY_GOAL: u8 = 253;
 pub const ENTITY_STONE: u8 = 249;
+pub const ENTITY_DAGGER: u8 = 247;
 
 pub const ARROW_RIGHT: u8 = 16;
 pub const ARROW_LEFT: u8 = 17;

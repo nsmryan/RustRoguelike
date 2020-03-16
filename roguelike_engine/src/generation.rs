@@ -61,6 +61,14 @@ pub fn make_sound(config: &Config, pos: Pos, sound_pos: Pos) -> Object {
     return object;
 }
 
+pub fn make_dagger(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
+    let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_DAGGER as char, config.color_orange, "dagger", false);
+
+    object.item = Some(Item::Dagger);
+
+    return object;
+}
+
 pub fn make_goal(config: &Config, display_state: &mut DisplayState, pos: Pos) -> Object {
     let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_GOAL as char, config.color_orange, "goal", false);
     object.item = Some(Item::Goal);
@@ -178,9 +186,8 @@ pub fn make_key(config: &Config, pos: Pos, display_state: &mut DisplayState) -> 
 }
 
 pub fn make_stone(config: &Config, pos: Pos) -> Object {
-    let mut stone = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_STONE as char, config.color_orange, "stone", true);
+    let mut stone = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_STONE as char, config.color_light_grey, "stone", true);
 
-    stone.color = config.color_light_grey;
     stone.item = Some(Item::Stone);
     stone.alive = false;
     stone.blocks = false;

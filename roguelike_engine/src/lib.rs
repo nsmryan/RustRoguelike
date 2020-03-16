@@ -135,6 +135,8 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     running = false;
                 }
 
+                // TODO handle key down for toggle overlay
+                // then keyup clears
                 Event::KeyUp {keycode, keymod, ..} => {
                     if let Some(keycode) = keycode {
                         game.input_action =

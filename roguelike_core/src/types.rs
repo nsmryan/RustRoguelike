@@ -148,6 +148,7 @@ pub struct MouseState {
 pub enum Item {
     Stone,
     Goal,
+    Dagger,
 }
 
 
