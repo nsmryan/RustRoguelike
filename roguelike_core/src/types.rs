@@ -234,6 +234,7 @@ pub struct Object {
     pub count_down: Option<usize>,
     pub move_mode: Option<MoveMode>,
     pub needs_removal: bool,
+    pub direction: Option<Cardinal>,
 }
 
 impl Object {
@@ -259,6 +260,7 @@ impl Object {
             count_down: None,
             move_mode: None,
             needs_removal: false,
+            direction: None,
         }
     }
 
@@ -274,6 +276,15 @@ impl Object {
     pub fn set_pos(&mut self, pos: Pos) {
         self.x = pos.x;
         self.y = pos.y;
+    }
+
+    pub fn move_to(&mut self, pos: Pos) {
+        let self_pos = self.pos();
+        let diff_x = pos.x - self_pos.x;
+        let diff_y = pos.y - self_pos.y;
+
+        self.direction = Cardinal::from_dxy(self.direction, diff_x, diff_y).or(self.direction);
+        self.set_pos(pos);
     }
 
     pub fn distance_to(&self, other: &Object) -> f32 {
@@ -296,15 +307,6 @@ impl Object {
         if let Some(fighter) = self.fighter {
             if fighter.hp <= 0 {
                 self.alive = false;
-            }
-        }
-    }
-
-    pub fn heal(&mut self, amount: i32) {
-        if let Some(ref mut fighter) = self.fighter {
-            fighter.hp += amount;
-            if fighter.hp > fighter.max_hp {
-                fighter.hp = fighter.max_hp;
             }
         }
     }

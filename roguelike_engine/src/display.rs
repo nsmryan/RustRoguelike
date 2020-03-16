@@ -8,6 +8,7 @@ use sdl2::pixels::{Color as Sdl2Color};
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::animation::{AnimKey, Effect, SpriteKey, Animation, Sprite, SpriteIndex};
+use roguelike_core::movement::{Cardinal};
 
 use crate::plat::*;
 
@@ -128,11 +129,12 @@ impl DisplayState {
                             false).unwrap();
     }
 
-    pub fn draw_char(&mut self,
-                     chr: char,
-                     pos: Pos,
-                     color: Color,
-                     area: &Area) {
+    pub fn draw_char_with_rotation(&mut self,
+                                   chr: char,
+                                   pos: Pos,
+                                   color: Color,
+                                   area: &Area,
+                                   angle: f64) {
         let chr_x = (chr as i32) % FONT_WIDTH;
         let chr_y = (chr as i32) / FONT_HEIGHT;
 
@@ -149,11 +151,59 @@ impl DisplayState {
         self.canvas.copy_ex(&self.font_image,
                             Some(src),
                             Some(dst),
-                            0.0,
+                            angle,
                             None,
                             false,
                             false).unwrap();
     }
+    pub fn draw_char(&mut self,
+                     chr: char,
+                     pos: Pos,
+                     color: Color,
+                     area: &Area) {
+        self.draw_char_with_rotation(chr, pos, color, area, 0.0);
+    }
+
+    pub fn draw_tile_edge(&mut self, pos: Pos, area: &Area, color: Color, dir: Cardinal) {
+        self.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+
+        let tile_rect = area.char_rect(pos.x, pos.y);
+        let width = 5;
+
+        let side_rect;
+        match dir {
+            Cardinal::Up => {
+                side_rect = Rect::new(tile_rect.x() + 1,
+                                      tile_rect.y + 2,
+                                      tile_rect.width() - 1,
+                                      width);
+            }
+
+            Cardinal::Down => {
+                side_rect = Rect::new(tile_rect.x() + 1,
+                                      tile_rect.y + tile_rect.height() as i32 - 2,
+                                      tile_rect.width() - 1,
+                                      width);
+            }
+
+            Cardinal::Left => {
+                side_rect = Rect::new(tile_rect.x() + 2,
+                                      tile_rect.y + 1,
+                                      width,
+                                      tile_rect.height());
+            }
+
+            Cardinal::Right => {
+                side_rect = Rect::new(tile_rect.x() + tile_rect.width() as i32 - 2,
+                                      tile_rect.y + 1,
+                                      width,
+                                      tile_rect.height());
+            }
+        }
+
+        self.canvas.fill_rect(side_rect).unwrap();
+    }
+
 
     pub fn draw_tile_outline(&mut self, pos: Pos, area: &Area, color: Color) {
         self.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));

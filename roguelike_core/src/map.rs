@@ -515,7 +515,9 @@ impl Map {
         let is_visible =
             self.fov.is_in_fov(end_pos.x as usize, end_pos.y as usize);
 
-        return !wall_in_path && is_visible;
+        let within_radius = distance(start_pos, end_pos) < radius;
+
+        return !wall_in_path && is_visible && within_radius;
     }
 
     // this function is like clear_path, but only looks for terrain, not objects like monsters

@@ -90,6 +90,47 @@ impl Movement {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd)]
+pub enum Cardinal {
+    Up,
+    Down,
+    Left,
+    Right
+}
+
+impl Cardinal {
+    pub fn from_dxy(last: Option<Cardinal>, dx: i32, dy: i32) -> Option<Cardinal> {
+        if dx == 0 && dy == 0 {
+            None
+        } else if dx == 0 && dy < 0 {
+            Some(Cardinal::Up)
+        } else if dx == 0 && dy > 0 {
+            Some(Cardinal::Down)
+        } else if dx > 0 && dy == 0 {
+            Some(Cardinal::Right)
+        } else if dx < 0 && dy == 0 {
+            Some(Cardinal::Left)
+        } else {
+            if let Some(dir) = last {
+                if dx > 0 && dy > 0 {
+                    Some(Cardinal::Right)
+                } else if dx > 0 && dy < 0 {
+                    Some(Cardinal::Right)
+                } else if dx < 0 && dy > 0 {
+                    Some(Cardinal::Left)
+                } else if dx < 0 && dy < 0 {
+                    Some(Cardinal::Left)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        }
+    }
+}
+
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd)]
 pub enum Direction {
     Left,
     Right,
@@ -374,7 +415,7 @@ pub fn player_move_or_attack(movement: Movement,
         }
 
         Movement::Collide(pos) => {
-            data.objects[player_handle].set_pos(pos);
+            data.objects[player_handle].move_to(pos);
             player_action = Move(movement);
 
             msg_log.log(Msg::Collided(player_handle, pos));
@@ -387,7 +428,7 @@ pub fn player_move_or_attack(movement: Movement,
 
         Movement::Move(pos) | Movement::JumpWall(pos) => {
             // Update position and momentum
-            data.objects[player_handle].set_pos(pos);
+            data.objects[player_handle].move_to(pos);
 
             player_action = Move(movement);
 
@@ -399,7 +440,7 @@ pub fn player_move_or_attack(movement: Movement,
         }
 
         Movement::WallKick(pos, _dir_x, _dir_y) => {
-            data.objects[player_handle].set_pos(pos);
+            data.objects[player_handle].move_to(pos);
 
             // TODO could check for enemy and attack
             player_action = Move(movement);

@@ -235,6 +235,10 @@ impl Game {
 
         actions::handle_input_inventory(input, &mut self.data, &mut self.settings, &mut self.msg_log);
 
+        if self.settings.exiting {
+            return GameResult::Stop;
+        }
+
         return GameResult::Continue;
     }
 
@@ -252,6 +256,10 @@ impl Game {
                        &mut self.settings,
                        &self.config,
                        &mut self.msg_log);
+        }
+
+        if self.settings.exiting {
+            return GameResult::Stop;
         }
 
         return GameResult::Continue;
@@ -284,7 +292,6 @@ impl Game {
             self.settings.turn_count += 1;
         }
 
-        /* Check Exit Conditions */
         if self.settings.exiting {
             return GameResult::Stop;
         }

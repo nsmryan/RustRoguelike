@@ -33,7 +33,7 @@ pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object 
     player.fighter =
         Some(Fighter { max_hp: config.player_health,
                        hp: config.player_health,
-                       defense: 2,
+                       defense: 0,
                        power: 5 });
     player.movement = Some(Reach::Single(1));
     player.attack = Some(Reach::Single(1));
@@ -83,12 +83,12 @@ pub fn make_mouse(_config: &Config, _display_state: &mut DisplayState) -> Object
 pub fn make_gol(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
     let mut gol = Object::new(pos.x, pos.y, '\u{98}', config.color_orange, "gol", true);
 
-    gol.fighter = Some( Fighter { max_hp: 10, hp: 10, defense: 0, power: 5, } );
+    gol.fighter = Some( Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, } );
     gol.ai = Some(Ai::Basic);
     gol.behavior = Some(Behavior::Idle);
     gol.color = config.color_light_orange;
     gol.movement = Some(Reach::Single(GOL_MOVE_DISTANCE));
-    gol.attack = Some(Reach::Single(GOL_ATTACK_DISTANCE));
+    gol.attack = Some(Reach::Diag(GOL_ATTACK_DISTANCE));
     gol.alive = true;
 
     let sprite = display_state.new_sprite("gol_idle".to_string(), config.idle_speed)
@@ -104,7 +104,7 @@ pub fn make_gol(config: &Config, pos: Pos, display_state: &mut DisplayState) -> 
 pub fn make_spire(config: &Config, pos: Pos) -> Object {
     let mut spire = Object::new(pos.x, pos.y, '\u{15}', config.color_orange, "spire", true);
 
-    spire.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 10, } );
+    spire.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, } );
     spire.ai = Some(Ai::Basic);
     spire.behavior = Some(Behavior::Idle);
     spire.color = config.color_mint_green;
@@ -118,7 +118,7 @@ pub fn make_spire(config: &Config, pos: Pos) -> Object {
 pub fn make_pawn(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
     let mut pawn = Object::new(pos.x, pos.y, '\u{A5}', config.color_orange, "pawn", true);
 
-    pawn.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, } );
+    pawn.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, } );
     pawn.ai = Some(Ai::Basic);
     pawn.behavior = Some(Behavior::Idle);
     pawn.color = config.color_ice_blue;

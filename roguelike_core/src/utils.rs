@@ -25,7 +25,7 @@ pub fn push_attack(handle: ObjectId, other_handle: ObjectId, data: &mut GameData
     if data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() ||
        data.is_blocked_tile(past_pos).is_some() {
         // if blocked by wall, kill entity and take their space
-        data.objects[handle].set_pos(other_pos);
+        data.objects[handle].move_to(other_pos);
 
         data.objects[other_handle].alive = false;
         data.objects[other_handle].blocks = false;
@@ -38,7 +38,7 @@ pub fn push_attack(handle: ObjectId, other_handle: ObjectId, data: &mut GameData
     } else {
         // if not blocked, push the other entity, taking their space
         data.objects[other_handle].set_pos(past_pos);
-        data.objects[handle].set_pos(other_pos);
+        data.objects[handle].move_to(other_pos);
     }
 }
 
@@ -60,6 +60,10 @@ pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, ms
 
 pub fn add_pos(pos1: Pos, pos2: Pos) -> Pos {
     return Pos::new(pos1.x + pos2.x, pos1.y + pos2.y);
+}
+
+pub fn sub_pos(pos1: Pos, pos2: Pos) -> Pos {
+    return Pos::new(pos1.x - pos2.x, pos1.y - pos2.y);
 }
 
 pub fn move_towards(start: Pos, end: Pos, num_blocks: usize) -> Pos {

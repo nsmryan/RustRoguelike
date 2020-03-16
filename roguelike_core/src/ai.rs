@@ -225,18 +225,25 @@ pub fn ai_apply_actions(monster_handle: ObjectId,
                         turn: Action,
                         game_data: &mut GameData,
                         msg_log: &mut MsgLog) {
+    let pos = game_data.objects[monster_handle].pos();
+
     match turn {
         Action::Move(movement) => {
             match movement {
                 Movement::Move(pos_offset) => {
-                    let pos = game_data.objects[monster_handle].pos();
-
-                    game_data.objects[monster_handle].set_pos(add_pos(pos, pos_offset));
+                    game_data.objects[monster_handle].move_to(add_pos(pos, pos_offset));
 
                     msg_log.log(Msg::Moved(monster_handle, movement, pos));
                 }
 
-                Movement::Attack(_pos, target_handle) => {
+                Movement::Attack(attack_pos, target_handle) => {
+                    let dir = game_data.objects[monster_handle].direction;
+
+                    let pos_diff = sub_pos(attack_pos, pos);
+
+                    game_data.objects[monster_handle].direction =
+                        Cardinal::from_dxy(dir, pos_diff.x, pos_diff.y).or(dir);
+
                     attack(monster_handle, target_handle, &mut game_data.objects, msg_log);
                 },
 

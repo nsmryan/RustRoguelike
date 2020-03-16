@@ -20,118 +20,131 @@ use crate::display::*;
 use crate::game::*;
 
 
-pub fn get_objects_under_mouse(mouse_pos: Pos,
-                               data: &mut GameData) -> Vec<ObjectId> {
-    let mut object_ids = Vec::new();
+pub fn render_all(display_state: &mut DisplayState,
+                  mouse_state: &mut MouseState,
+                  data: &mut GameData,
+                  settings: &GameSettings,
+                  config: &Config)  -> Result<(), String> {
 
-    for key in data.objects.keys() {
-        let pos = data.objects[key].pos();
-        let is_mouse = data.objects[key].name == "mouse";
+    let player_handle = data.find_player().unwrap();
 
-        if !is_mouse && mouse_pos == pos {
-            if data.objects[key].alive &&
-               data.map.is_in_fov(pos, mouse_pos, FOV_RADIUS) {
-                object_ids.push(key);
+    data.map.compute_fov(data.objects[player_handle].pos(), FOV_RADIUS);
+
+    let screen_rect = display_state.canvas.output_size()?;
+
+    let plots = display_state.screen_sections
+                             .plot(0,
+                                   0,
+                                   screen_rect.0 as usize,
+                                   screen_rect.1 as usize);
+
+    display_state.canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
+    display_state.canvas.clear();
+
+    let zones = plots.collect::<Vec<Plot>>();
+
+    let mut mouse_map_pos = None;
+    for zone in zones.iter() {
+        if zone.name == "map" && zone.contains(mouse_state.x as usize, mouse_state.y as usize) {
+            let ((_x_offset, _y_offset), scaler) =
+                zone.fit(data.map.width() as usize * FONT_WIDTH as usize,
+                         data.map.height() as usize * FONT_HEIGHT as usize);
+
+            let mouse_map_xy = zone.within(mouse_state.x as usize, mouse_state.y as usize);
+            let map_x = mouse_map_xy.0 as f32 / (FONT_WIDTH as f32 * scaler);
+            let map_y = mouse_map_xy.1 as f32 / (FONT_HEIGHT as f32 * scaler);
+            mouse_map_pos = Some(Pos::new(map_x as i32, map_y as i32));
+
+            if let Some(mouse_handle) = data.find_mouse() {
+                data.objects[mouse_handle].set_xy(map_x as i32, map_y as i32);
             }
         }
     }
 
-    return object_ids;
-}
+    // for each screen section, render its contents
+    for plot in zones.iter() {
+        match plot.name.as_str() {
+            "screen" => {
+            }
 
-pub fn empty_tile_color(config: &Config, pos: Pos, visible: bool) -> Color {
-    let perlin = Perlin::new();
+            "map" => {
+                let ((x_offset, y_offset), scaler) =
+                    plot.fit(data.map.width() as usize * FONT_WIDTH as usize,
+                             data.map.height() as usize * FONT_HEIGHT as usize);
 
-    let low_color;
-    let high_color;
-    if visible {
-        low_color = config.color_tile_blue_light;
-        high_color = config.color_tile_blue_dark;
-    } else {
-        low_color = config.color_tile_blue_dark;
-        high_color = config.color_very_dark_blue;
+                let area = Area::new(x_offset as i32,
+                                     y_offset as i32,
+                                     plot.width,
+                                     plot.height,
+                                     (scaler * FONT_WIDTH as f32) as usize, 
+                                     (scaler * FONT_WIDTH as f32) as usize);
+
+
+                render_background(display_state, data, &area, settings, config);
+
+                render_map(display_state, data, &area, settings, config);
+
+                render_objects(display_state, data, settings, config, &area);
+
+                render_effects(display_state, data, settings, config, &area);
+
+                render_overlays(display_state, mouse_map_pos, data, settings, &area, config);
+            }
+
+            "inventory" => {
+                let area = Area::new(plot.x as i32,
+                                     plot.y as i32,
+                                     plot.width,
+                                     plot.height,
+                                     FONT_WIDTH as usize,
+                                     FONT_HEIGHT as usize);
+                render_inventory(display_state, data, &area, config);
+            }
+
+            "player" => {
+                let area = Area::new(plot.x as i32,
+                                     plot.y as i32,
+                                     plot.width,
+                                     plot.height,
+                                     FONT_WIDTH as usize,
+                                     FONT_HEIGHT as usize);
+                render_player(display_state, mouse_map_pos, data, &area, config);
+            }
+
+            "info" => {
+                let area = Area::new(plot.x as i32,
+                                     plot.y as i32,
+                                     plot.width,
+                                     plot.height,
+                                     FONT_WIDTH as usize,
+                                     FONT_HEIGHT as usize);
+                render_info(display_state, mouse_map_pos, data, &area, config);
+            }
+
+            section_name => {
+                panic!(format!("Unexpected screen section '{}'", section_name));
+            }
+        }
     }
-    let color =
-        lerp_color(low_color,
-                   high_color,
-                   perlin.get([pos.x as f64 / config.tile_noise_scaler,
-                               pos.y as f64 / config.tile_noise_scaler]) as f32);
 
-   return color;
-}
+    if settings.state == GameState::Inventory {
+        let width: usize = 300;
+        let height: usize = 500;
+        let area = Area::new((SCREEN_WIDTH as i32 / 2) - (width as i32 / 2),
+                             (SCREEN_HEIGHT as i32 / 2) - (height as i32 / 2),
+                             width,
+                             height,
+                             FONT_WIDTH as usize,
+                             FONT_HEIGHT as usize);
 
-pub fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> Color {
-    let color = match (tile.tile_type, visible) {
-        (TileType::Wall, true) =>
-            config.color_light_brown,
-        (TileType::Wall, false) =>
-            config.color_dark_brown,
+        render_inventory(display_state, data, &area, config);
+    }
 
-        (TileType::Empty, true) =>
-            config.color_light_brown,
+    display_state.canvas.present();
 
-        (TileType::Empty, false) =>
-            config.color_dark_brown,
+    display_state.zones = zones;
 
-        (TileType::Water, true) =>
-            config.color_blueish_grey,
-        (TileType::Water, false) =>
-            config.color_blueish_grey,
-
-        (TileType::ShortWall, true) =>
-            config.color_light_brown,
-        (TileType::ShortWall, false) =>
-            config.color_dark_brown,
-
-        (TileType::Exit, true) =>
-            config.color_orange,
-        (TileType::Exit, false) =>
-            config.color_red,
-    };
-
-    return color;
-}
-
-/// Draw an outline and title around an area of the screen
-pub fn draw_placard(display_state: &mut DisplayState,
-                    text: String,
-                    area: &Area,
-                    config: &Config) {
-    let color = config.color_bone_white;
-    
-    // Draw a black background
-    display_state.canvas.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
-    display_state.canvas.fill_rect(Rect::new(area.x_offset + 5,
-                                             area.y_offset + (area.font_height as i32 / 2),
-                                             area.width as u32 - 10,
-                                             area.height as u32 - 10)).unwrap();
-
-    display_state.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
-
-    // Draw a thin line around the edges of the placard
-    display_state.canvas.draw_rect(Rect::new(area.x_offset + 5,
-                                             area.y_offset + (area.font_height as i32 / 2),
-                                             area.width as u32 - 10,
-                                             area.height as u32 - 10)).unwrap();
-
-    // draw a rectangle around where the placard header text will be placed.
-    let half_text = text.len() / 2;
-    let text_offset = (area.width / 2) - (area.font_width * half_text);
-    display_state.canvas.fill_rect(Rect::new(area.x_offset + text_offset as i32,
-                                             area.y_offset,
-                                             (text.len() * area.font_width) as u32,
-                                             area.font_height as u32)).unwrap();
-
-    // Draw header text
-    let mid_char_offset = (area.width / area.font_width) / 2;
-    let text_start = (mid_char_offset - half_text) as i32;
-
-    let text_pos = Pos::new(text_start, 0);
-
-    display_state.draw_text(text,
-                           text_pos,
-                           config.color_dark_blue,
-                           area);
+    Ok(())
 }
 
 pub fn render_player(display_state: &mut DisplayState,
@@ -390,16 +403,16 @@ pub fn render_map(display_state: &mut DisplayState,
 
             data.map[pos].explored |= visible;
 
-            let tile = &data.map[pos];
-
             let explored = data.map[pos].explored || visible;
 
-            let wall_color;
-            if explored {
-                wall_color = config.color_light_brown;
-            } else {
-                wall_color = config.color_dark_brown;
-            }
+            let tile = &data.map[pos];
+
+            let wall_color =
+                if explored {
+                    config.color_light_brown
+                } else {
+                    config.color_dark_brown
+                };
 
             let chr = tile.chr.map_or('+', |chr| chr);
 
@@ -445,12 +458,13 @@ pub fn render_map(display_state: &mut DisplayState,
 
             // Draw a square around this tile to help distinguish it visually in the grid
             let outline_color = Color::white();
-            let color;
+            let alpha;
             if visible && data.map[pos].tile_type != TileType::Water {
-                color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.grid_alpha_visible);
+                alpha = config.grid_alpha_visible;
             } else {
-                color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.grid_alpha);
+                alpha = config.grid_alpha;
             }
+            let color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, alpha);
 
             if config.fog_of_war && !data.map[pos].explored {
                 let mut black = Color::black();
@@ -458,6 +472,7 @@ pub fn render_map(display_state: &mut DisplayState,
                 display_state.draw_char(MAP_EMPTY_CHAR as char, pos, black, area);
             }
 
+            // draw an outline around the tile
             display_state.canvas.set_blend_mode(BlendMode::Blend);
             display_state.canvas.set_draw_color(color);
             display_state.canvas.draw_rect(area.char_rect(x, y)).unwrap();
@@ -664,6 +679,14 @@ pub fn render_overlays(display_state: &mut DisplayState,
         }
     }
 
+    // draw direction overlays
+    for object_id in data.objects.keys().collect::<Vec<ObjectId>>().iter() {
+        let pos = data.objects[*object_id].pos();
+        if let Some(dir) = data.objects[*object_id].direction {
+            display_state.draw_tile_edge(pos, area, highlight_color, dir);
+        }
+    }
+
     // draw attack position highlights
     if let Some(mouse_xy) = map_mouse_pos {
         let mut attack_highlight_color = config.color_red;
@@ -726,134 +749,121 @@ pub fn render_overlays(display_state: &mut DisplayState,
     }
 }
 
-pub fn render_all(display_state: &mut DisplayState,
-                  mouse_state: &mut MouseState,
-                  data: &mut GameData,
-                  settings: &GameSettings,
-                  config: &Config)  -> Result<(), String> {
-
-    let player_handle = data.find_player().unwrap();
-
-    data.map.compute_fov(data.objects[player_handle].pos(), FOV_RADIUS);
-
-    let screen_rect = display_state.canvas.output_size()?;
-
-    let plots = display_state.screen_sections
-                             .plot(0,
-                                   0,
-                                   screen_rect.0 as usize,
-                                   screen_rect.1 as usize);
-
-    display_state.canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
-    display_state.canvas.clear();
-
-    let zones = plots.collect::<Vec<Plot>>();
-
-    let mut mouse_map_pos = None;
-    for zone in zones.iter() {
-        if zone.name == "map" && zone.contains(mouse_state.x as usize, mouse_state.y as usize) {
-            let ((_x_offset, _y_offset), scaler) =
-                zone.fit(data.map.width() as usize * FONT_WIDTH as usize,
-                         data.map.height() as usize * FONT_HEIGHT as usize);
-
-            let mouse_map_xy = zone.within(mouse_state.x as usize, mouse_state.y as usize);
-            let map_x = mouse_map_xy.0 as f32 / (FONT_WIDTH as f32 * scaler);
-            let map_y = mouse_map_xy.1 as f32 / (FONT_HEIGHT as f32 * scaler);
-            mouse_map_pos = Some(Pos::new(map_x as i32, map_y as i32));
-
-            if let Some(mouse_handle) = data.find_mouse() {
-                data.objects[mouse_handle].set_xy(map_x as i32, map_y as i32);
-            }
-        }
-    }
-
-    // for each screen section, render its contents
-    for plot in zones.iter() {
-        match plot.name.as_str() {
-            "screen" => {
-            }
-
-            "map" => {
-                let ((x_offset, y_offset), scaler) =
-                    plot.fit(data.map.width() as usize * FONT_WIDTH as usize,
-                             data.map.height() as usize * FONT_HEIGHT as usize);
-
-                let area = Area::new(x_offset as i32,
-                                     y_offset as i32,
-                                     plot.width,
-                                     plot.height,
-                                     (scaler * FONT_WIDTH as f32) as usize, 
-                                     (scaler * FONT_WIDTH as f32) as usize);
-
-
-                render_background(display_state, data, &area, settings, config);
-
-                render_map(display_state, data, &area, settings, config);
-
-                render_objects(display_state, data, settings, config, &area);
-
-                render_effects(display_state, data, settings, config, &area);
-
-                render_overlays(display_state, mouse_map_pos, data, settings, &area, config);
-            }
-
-            "inventory" => {
-                let area = Area::new(plot.x as i32,
-                                     plot.y as i32,
-                                     plot.width,
-                                     plot.height,
-                                     FONT_WIDTH as usize,
-                                     FONT_HEIGHT as usize);
-                render_inventory(display_state, data, &area, config);
-            }
-
-            "player" => {
-                let area = Area::new(plot.x as i32,
-                                     plot.y as i32,
-                                     plot.width,
-                                     plot.height,
-                                     FONT_WIDTH as usize,
-                                     FONT_HEIGHT as usize);
-                render_player(display_state, mouse_map_pos, data, &area, config);
-            }
-
-            "info" => {
-                let area = Area::new(plot.x as i32,
-                                     plot.y as i32,
-                                     plot.width,
-                                     plot.height,
-                                     FONT_WIDTH as usize,
-                                     FONT_HEIGHT as usize);
-                render_info(display_state, mouse_map_pos, data, &area, config);
-            }
-
-            section_name => {
-                panic!(format!("Unexpected screen section '{}'", section_name));
-            }
-        }
-    }
-
-    if settings.state == GameState::Inventory {
-        let width: usize = 300;
-        let height: usize = 500;
-        let area = Area::new((SCREEN_WIDTH as i32 / 2) - (width as i32 / 2),
-                             (SCREEN_HEIGHT as i32 / 2) - (height as i32 / 2),
-                             width,
-                             height,
-                             FONT_WIDTH as usize,
-                             FONT_HEIGHT as usize);
-
-        render_inventory(display_state, data, &area, config);
-    }
-
-    display_state.canvas.present();
-
-    display_state.zones = zones;
-
-    Ok(())
-}
-
 pub fn engine_color(color: &Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
+}
+
+pub fn get_objects_under_mouse(mouse_pos: Pos,
+                               data: &mut GameData) -> Vec<ObjectId> {
+    let mut object_ids = Vec::new();
+
+    for key in data.objects.keys() {
+        let pos = data.objects[key].pos();
+        let is_mouse = data.objects[key].name == "mouse";
+
+        if !is_mouse && mouse_pos == pos {
+            if data.objects[key].alive &&
+               data.map.is_in_fov(pos, mouse_pos, FOV_RADIUS) {
+                object_ids.push(key);
+            }
+        }
+    }
+
+    return object_ids;
+}
+
+pub fn empty_tile_color(config: &Config, pos: Pos, visible: bool) -> Color {
+    let perlin = Perlin::new();
+
+    let low_color;
+    let high_color;
+    if visible {
+        low_color = config.color_tile_blue_light;
+        high_color = config.color_tile_blue_dark;
+    } else {
+        low_color = config.color_tile_blue_dark;
+        high_color = config.color_very_dark_blue;
+    }
+    let color =
+        lerp_color(low_color,
+                   high_color,
+                   perlin.get([pos.x as f64 / config.tile_noise_scaler,
+                               pos.y as f64 / config.tile_noise_scaler]) as f32);
+
+   return color;
+}
+
+pub fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> Color {
+    let color = match (tile.tile_type, visible) {
+        (TileType::Wall, true) =>
+            config.color_light_brown,
+        (TileType::Wall, false) =>
+            config.color_dark_brown,
+
+        (TileType::Empty, true) =>
+            config.color_light_brown,
+
+        (TileType::Empty, false) =>
+            config.color_dark_brown,
+
+        (TileType::Water, true) =>
+            config.color_blueish_grey,
+        (TileType::Water, false) =>
+            config.color_blueish_grey,
+
+        (TileType::ShortWall, true) =>
+            config.color_light_brown,
+        (TileType::ShortWall, false) =>
+            config.color_dark_brown,
+
+        (TileType::Exit, true) =>
+            config.color_orange,
+        (TileType::Exit, false) =>
+            config.color_red,
+    };
+
+    return color;
+}
+
+/// Draw an outline and title around an area of the screen
+pub fn draw_placard(display_state: &mut DisplayState,
+                    text: String,
+                    area: &Area,
+                    config: &Config) {
+    let color = config.color_bone_white;
+    
+    // Draw a black background
+    display_state.canvas.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+    display_state.canvas.fill_rect(Rect::new(area.x_offset + 5,
+                                             area.y_offset + (area.font_height as i32 / 2),
+                                             area.width as u32 - 10,
+                                             area.height as u32 - 10)).unwrap();
+
+    display_state.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+
+    // Draw a thin line around the edges of the placard
+    display_state.canvas.draw_rect(Rect::new(area.x_offset + 5,
+                                             area.y_offset + (area.font_height as i32 / 2),
+                                             area.width as u32 - 10,
+                                             area.height as u32 - 10)).unwrap();
+
+    // draw a rectangle around where the placard header text will be placed.
+    let half_text = text.len() / 2;
+    let text_offset = (area.width / 2) - (area.font_width * half_text);
+    display_state.canvas.fill_rect(Rect::new(area.x_offset + text_offset as i32,
+                                             area.y_offset,
+                                             (text.len() * area.font_width) as u32,
+                                             area.font_height as u32)).unwrap();
+
+    // Draw header text
+    let mid_char_offset = (area.width / area.font_width) / 2;
+    let text_start = (mid_char_offset - half_text) as i32;
+
+    let text_pos = Pos::new(text_start, 0);
+
+    display_state.draw_text(text,
+                           text_pos,
+                           config.color_dark_blue,
+                           area);
 }
 
