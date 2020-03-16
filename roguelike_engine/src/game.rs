@@ -421,6 +421,6 @@ pub fn step_logic(player_action: Action,
     /* Recompute FOV */
     let player_pos = game_data.objects[player_handle].pos();
     if previous_player_position != player_pos {
-        game_data.map.compute_fov(player_pos, FOV_RADIUS);
+        game_data.map.compute_fov(player_pos, PLAYER_FOV_RADIUS);
     }
 }

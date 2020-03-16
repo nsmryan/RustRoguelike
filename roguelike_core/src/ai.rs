@@ -112,7 +112,7 @@ pub fn ai_investigate(target_pos_orig: Pos,
     let turn: Action;
 
                
-    if game_data.map.is_in_fov(monster_pos, player_pos, MONSTER_VIEW_DIST) {
+    if game_data.map.is_in_fov(monster_pos, player_pos, MONSTER_FOV_RADIUS) {
         // TODO this causes a turn delay between seeing the player and attacking them
         turn = Action::StateChange(Behavior::Attacking(player_handle));
     } else { // the monster can't see the player
@@ -145,7 +145,7 @@ fn ai_can_hit_target(map: &mut Map,
     let within_fov =
         map.is_in_fov(monster_pos,
                       target_pos,
-                      MONSTER_VIEW_DIST);
+                      MONSTER_FOV_RADIUS);
 
     if within_fov {
             // get all locations they can hit
@@ -192,7 +192,7 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
             Some(Behavior::Idle) => {
                 let mut turn = Action::none();
 
-                if game_data.map.is_in_fov(monster_pos, player_pos, MONSTER_VIEW_DIST) {
+                if game_data.map.is_in_fov(monster_pos, player_pos, MONSTER_FOV_RADIUS) {
                     // NOTE will cause a turn between seeing the player and attacking
                     turn = Action::StateChange(Behavior::Attacking(player_handle));
                 } else if let Some(sound_pos) = game_data.sound_within_earshot(monster_pos) {
@@ -241,6 +241,7 @@ pub fn ai_apply_actions(monster_handle: ObjectId,
 
                     let pos_diff = sub_pos(attack_pos, pos);
 
+                    // ensure that attacking changes the orientation of an entity
                     game_data.objects[monster_handle].direction =
                         Cardinal::from_dxy(dir, pos_diff.x, pos_diff.y).or(dir);
 

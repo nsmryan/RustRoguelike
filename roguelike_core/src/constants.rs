@@ -20,7 +20,7 @@ pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
 /* Monster Settings */
 pub const MAX_MONSTERS: i32 = 15;
 
-pub const MONSTER_VIEW_DIST: i32 = 6;
+pub const MONSTER_FOV_RADIUS: i32 = 6;
 
 pub const GOL_ATTACK_DISTANCE: usize = 5;
 pub const GOL_MOVE_DISTANCE: usize = 1;
@@ -41,6 +41,7 @@ pub const SPIKE_DAMAGE: i32 = 5;
 /* Player */
 pub const PLAYER: usize = 0;
 pub const PLAYER_THROW_DIST: usize = 5;
+pub const PLAYER_FOV_RADIUS: i32 = 10;
 
 /* UI */
 pub const BAR_WIDTH: u32 = 20;
@@ -58,7 +59,6 @@ pub const MAP_WIDTH: i32 = 30;
 pub const MAP_HEIGHT: i32 = 30;
 
 pub const FOV_LIGHT_WALLS: bool = true;
-pub const FOV_RADIUS: i32 = 10;
 
 pub const ISLAND_RADIUS: i32 = 15;
 pub const ISLAND_NUM_OBSTACLES: i32 = 15;

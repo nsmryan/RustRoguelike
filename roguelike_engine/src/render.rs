@@ -28,7 +28,7 @@ pub fn render_all(display_state: &mut DisplayState,
 
     let player_handle = data.find_player().unwrap();
 
-    data.map.compute_fov(data.objects[player_handle].pos(), FOV_RADIUS);
+    data.map.compute_fov(data.objects[player_handle].pos(), PLAYER_FOV_RADIUS);
 
     let screen_rect = display_state.canvas.output_size()?;
 
@@ -149,7 +149,7 @@ pub fn render_all(display_state: &mut DisplayState,
 
 pub fn render_player(display_state: &mut DisplayState,
                      _mouse_xy: Option<Pos>,
-                     game_data: &mut GameData,
+                     data: &mut GameData,
                      area: &Area, 
                      config: &Config) {
     draw_placard(display_state,
@@ -157,22 +157,28 @@ pub fn render_player(display_state: &mut DisplayState,
                  area,
                  config);
 
-    let player_handle = game_data.find_player().unwrap();
+    let player_handle = data.find_player().unwrap();
 
     let mut list = Vec::new();
 
     let color = config.color_warm_grey;
-    let text_pos = Pos::new(1, 2);
+    let text_pos = Pos::new(1, 4);
+
+    if let Some(fighter) = data.objects[player_handle].fighter {
+        let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
+
+        render_bar(display_state, health_percent, 2, config.color_red, Color::white(), area);
+    }
 
     list.push(format!("position:"));
 
     list.push(format!(" ({}, {})", 
-                      game_data.objects[player_handle].x,
-                      game_data.objects[player_handle].y));
+                      data.objects[player_handle].x,
+                      data.objects[player_handle].y));
 
     list.push(format!(""));
 
-    let move_mode = game_data.objects[player_handle].move_mode.unwrap();
+    let move_mode = data.objects[player_handle].move_mode.unwrap();
     list.push(format!("{}", move_mode.to_string()));
 
     display_state.draw_text_list(list,
@@ -204,31 +210,13 @@ pub fn render_info(display_state: &mut DisplayState,
 
             let pos = data.objects[*obj_id].pos();
 
-            if data.map.is_in_fov(player_pos, pos, FOV_RADIUS) {
+            if data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) {
                 if let Some(fighter) = data.objects[*obj_id].fighter {
                     y_pos += 1;
 
                     let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
 
-                    display_state.canvas.set_blend_mode(BlendMode::None);
-                    let color = Sdl2Color::RGBA(config.color_red.r, config.color_red.g, config.color_red.b, config.color_red.a);
-                    display_state.canvas.set_draw_color(color);
-                    let start = area.char_rect(1, y_pos);
-                    let width = area.width as u32  - 2 * start.width();
-                    let health_rect = Rect::new(start.x,
-                                                start.y,
-                                                (width as f32 * health_percent) as u32,
-                                                start.height());
-                    display_state.canvas.fill_rect(health_rect).unwrap();
-
-                    let full_rect = Rect::new(start.x,
-                                              start.y,
-                                              width,
-                                              start.height());
-                    let outline_color = Color::white();
-                    let color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, config.color_red.a);
-                    display_state.canvas.set_draw_color(color);
-                    display_state.canvas.draw_rect(full_rect).unwrap();
+                    render_bar(display_state, health_percent, y_pos, config.color_red, Color::white(), area);
 
                     y_pos += 2;
                 }
@@ -356,7 +344,7 @@ pub fn render_background(display_state: &mut DisplayState,
                     let map_pos = Pos::new(x, y);
 
                     let visible =
-                        data.map.is_in_fov(pos, map_pos, FOV_RADIUS) ||
+                        data.map.is_in_fov(pos, map_pos, PLAYER_FOV_RADIUS) ||
                         settings.god_mode;
 
                     draw_char(canvas,
@@ -398,7 +386,7 @@ pub fn render_map(display_state: &mut DisplayState,
 
             // Render game stuff
             let visible =
-                data.map.is_in_fov(player_pos, pos, FOV_RADIUS) ||
+                data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) ||
                 settings.god_mode;
 
             data.map[pos].explored |= visible;
@@ -548,7 +536,7 @@ pub fn render_objects(display_state: &mut DisplayState,
             let is_in_fov = 
                data.map.is_in_fov(player_pos,
                                   pos,
-                                  FOV_RADIUS);
+                                  PLAYER_FOV_RADIUS);
 
             if let Some(anim_key) = data.objects[*object_id].animation.get(0) {
                 let done = 
@@ -696,7 +684,7 @@ pub fn render_overlays(display_state: &mut DisplayState,
         for object_id in object_ids.iter() {
             let pos = data.objects[*object_id].pos();
 
-            if data.map.is_in_fov(player_pos, pos, FOV_RADIUS) &&
+            if data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
                data.objects[*object_id].alive {
                 if let Some(reach) = data.objects[*object_id].attack {
                     let attack_positions = 
@@ -763,7 +751,7 @@ pub fn get_objects_under_mouse(mouse_pos: Pos,
 
         if !is_mouse && mouse_pos == pos {
             if data.objects[key].alive &&
-               data.map.is_in_fov(pos, mouse_pos, FOV_RADIUS) {
+               data.map.is_in_fov(pos, mouse_pos, PLAYER_FOV_RADIUS) {
                 object_ids.push(key);
             }
         }
@@ -867,3 +855,29 @@ pub fn draw_placard(display_state: &mut DisplayState,
                            area);
 }
 
+pub fn render_bar(display_state: &mut DisplayState,
+                  percent: f32,
+                  y_pos: i32,
+                  fg_color: Color,
+                  bg_color: Color,
+                  area: &Area) {
+    display_state.canvas.set_blend_mode(BlendMode::None);
+    let color = Sdl2Color::RGBA(fg_color.r, fg_color.g, fg_color.b, fg_color.a);
+    display_state.canvas.set_draw_color(color);
+    let start = area.char_rect(1, y_pos);
+    let width = area.width as u32  - 2 * start.width();
+    let health_rect = Rect::new(start.x,
+                                start.y,
+                                (width as f32 * percent) as u32,
+                                start.height());
+    display_state.canvas.fill_rect(health_rect).unwrap();
+
+    let full_rect = Rect::new(start.x,
+                              start.y,
+                              width,
+                              start.height());
+    let outline_color = Color::white();
+    let color = Sdl2Color::RGBA(bg_color.r, bg_color.g, bg_color.b, bg_color.a);
+    display_state.canvas.set_draw_color(color);
+    display_state.canvas.draw_rect(full_rect).unwrap();
+}

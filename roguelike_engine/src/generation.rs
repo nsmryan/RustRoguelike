@@ -27,7 +27,7 @@ pub enum MapGenType {
 
 //if we want to use a character sprite, a potential value is '\u{8B}'
 pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object {
-    let mut player = Object::new(0, 0, '@', Color::white(), "player", true);
+    let mut player = Object::new(0, 0, ObjType::Player, '@', Color::white(), "player", true);
 
     player.alive = true;
     player.fighter =
@@ -50,7 +50,7 @@ pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object 
 }
 
 pub fn make_sound(config: &Config, pos: Pos, sound_pos: Pos) -> Object {
-    let mut object = Object::new(pos.x, pos.y, ' ', config.color_orange, "sound", false);
+    let mut object = Object::new(pos.x, pos.y, ObjType::Other, ' ', config.color_orange, "sound", false);
 
     object.sound = Some(sound_pos);
 
@@ -61,7 +61,7 @@ pub fn make_sound(config: &Config, pos: Pos, sound_pos: Pos) -> Object {
 }
 
 pub fn make_goal(config: &Config, display_state: &mut DisplayState, pos: Pos) -> Object {
-    let mut object = Object::new(pos.x, pos.y, ENTITY_GOAL as char, config.color_orange, "goal", false);
+    let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_GOAL as char, config.color_orange, "goal", false);
     object.item = Some(Item::Goal);
 
     let sprite = display_state.new_sprite("goal".to_string(), config.goal_speed)
@@ -75,13 +75,13 @@ pub fn make_goal(config: &Config, display_state: &mut DisplayState, pos: Pos) ->
 }
 
 pub fn make_mouse(_config: &Config, _display_state: &mut DisplayState) -> Object {
-    let mouse = Object::new(-1, -1, ' ', Color::white(), "mouse", false);
+    let mouse = Object::new(-1, -1, ObjType::Other, ' ', Color::white(), "mouse", false);
 
     mouse
 }
 
 pub fn make_gol(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
-    let mut gol = Object::new(pos.x, pos.y, '\u{98}', config.color_orange, "gol", true);
+    let mut gol = Object::new(pos.x, pos.y, ObjType::Enemy, '\u{98}', config.color_orange, "gol", true);
 
     gol.fighter = Some( Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, } );
     gol.ai = Some(Ai::Basic);
@@ -102,7 +102,7 @@ pub fn make_gol(config: &Config, pos: Pos, display_state: &mut DisplayState) -> 
 } 
 
 pub fn make_spire(config: &Config, pos: Pos) -> Object {
-    let mut spire = Object::new(pos.x, pos.y, '\u{15}', config.color_orange, "spire", true);
+    let mut spire = Object::new(pos.x, pos.y, ObjType::Enemy, '\u{15}', config.color_orange, "spire", true);
 
     spire.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, } );
     spire.ai = Some(Ai::Basic);
@@ -116,7 +116,7 @@ pub fn make_spire(config: &Config, pos: Pos) -> Object {
 }
 
 pub fn make_pawn(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
-    let mut pawn = Object::new(pos.x, pos.y, '\u{A5}', config.color_orange, "pawn", true);
+    let mut pawn = Object::new(pos.x, pos.y, ObjType::Enemy, '\u{A5}', config.color_orange, "pawn", true);
 
     pawn.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, } );
     pawn.ai = Some(Ai::Basic);
@@ -136,7 +136,7 @@ pub fn make_pawn(config: &Config, pos: Pos, display_state: &mut DisplayState) ->
 }
 
 pub fn make_spikes(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
-    let mut spikes = Object::new(pos.x, pos.y, MAP_TALL_SPIKES as char, config.color_ice_blue, "spike", false);
+    let mut spikes = Object::new(pos.x, pos.y, ObjType::Enemy, MAP_TALL_SPIKES as char, config.color_ice_blue, "spike", false);
 
     spikes.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, } );
     spikes.trap = Some(Trap::Spikes);
@@ -153,7 +153,7 @@ pub fn make_spikes(config: &Config, pos: Pos, display_state: &mut DisplayState) 
 }
 
 pub fn make_key(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
-    let mut pawn = Object::new(pos.x, pos.y, '\u{A5}', config.color_orange, "key", true);
+    let mut pawn = Object::new(pos.x, pos.y, ObjType::Item, '\u{A5}', config.color_orange, "key", true);
 
     pawn.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, } );
     pawn.ai = Some(Ai::Basic);
@@ -174,7 +174,7 @@ pub fn make_key(config: &Config, pos: Pos, display_state: &mut DisplayState) -> 
 }
 
 pub fn make_stone(config: &Config, pos: Pos) -> Object {
-    let mut stone = Object::new(pos.x, pos.y, ENTITY_STONE as char, config.color_orange, "stone", true);
+    let mut stone = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_STONE as char, config.color_orange, "stone", true);
 
     stone.color = config.color_light_grey;
     stone.item = Some(Item::Stone);
@@ -358,9 +358,8 @@ pub fn make_island(data: &mut GameData,
     let pos = Pos::new(x, y);
 
     if !data.is_blocked_tile(pos).is_some()  {
-        let mut object = Object::new(x, y, ENTITY_GOAL as char, config.color_red, "goal", false);
-        object.item = Some(Item::Goal);
-        data.objects.insert(object);
+        let goal = make_goal(config, display_state, Pos::new(x, y));
+        data.objects.insert(goal);
     }
 
     /* add goal object */
@@ -442,7 +441,7 @@ pub fn make_animations_map(objects: &mut ObjMap,
 
         let num_sprites = display_state.sprites[*sprite_key].num_sprites;
 
-        let mut obj = Object::new(x, y, ' ', Color::white(), "obj", false);
+        let mut obj = Object::new(x, y, ObjType::Other, ' ', Color::white(), "obj", false);
 
         let sprite =
             Sprite::make_sprite("".to_string(), *sprite_key, num_sprites as f32, config.idle_speed);

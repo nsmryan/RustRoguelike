@@ -15,7 +15,7 @@ use serde_derive::*;
 
 use crate::types::*;
 use crate::utils::*;
-use crate::movement::Direction;
+use crate::movement::{Direction, Cardinal};
 use crate::constants::*;
 
 
@@ -237,7 +237,7 @@ impl Map {
                 tiles,
                 fov: MapData::new(width, height),
                 fov_pos: Pos::new(0, 0),
-                fov_radius: FOV_RADIUS,
+                fov_radius: PLAYER_FOV_RADIUS,
             };
 
         map.update_map();
@@ -252,7 +252,7 @@ impl Map {
                 tiles,
                 fov: MapData::new(width, height),
                 fov_pos: Pos::new(0, 0),
-                fov_radius: FOV_RADIUS,
+                fov_radius: PLAYER_FOV_RADIUS,
             };
 
         map.update_map();
@@ -266,7 +266,7 @@ impl Map {
                 tiles: Vec::new(),
                 fov: MapData::new(1, 1),
                 fov_pos: Pos::new(0, 0),
-                fov_radius: FOV_RADIUS,
+                fov_radius: PLAYER_FOV_RADIUS,
             };
 
         return map;
@@ -493,6 +493,22 @@ impl Map {
 
     pub fn height(&self) -> i32 {
         return self.tiles[0].len() as i32;
+    }
+
+    pub fn is_in_fov_direction(&mut self, start_pos: Pos, end_pos: Pos, radius: i32, dir: Cardinal) -> bool {
+        if start_pos == end_pos {
+            return true;
+        } else if self.is_in_fov(start_pos, end_pos, radius) {
+            let pos_diff = sub_pos(end_pos, start_pos);
+            let x_sig = pos_diff.x.signum();
+            let y_sig = pos_diff.y.signum();
+
+            if x_sig == dir.x_signum() || y_sig == dir.y_signum() {
+                return true;
+            }
+        }
+            
+        return false;
     }
 
     pub fn is_in_fov(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {

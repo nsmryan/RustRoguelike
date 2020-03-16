@@ -15,6 +15,7 @@ use euclid::Point2D;
 use crate::map::*;
 use crate::movement::*;
 use crate::animation::AnimKey;
+use crate::constants::*;
 
 
 pub type Name = Symbol;
@@ -208,6 +209,14 @@ impl Rect {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ObjType {
+    Player,
+    Enemy,
+    Item,
+    Other,
+}
+
 
 pub type Pos = Point2D<i32, ()>;
 
@@ -217,6 +226,7 @@ pub struct Object {
     pub x: i32,
     pub y: i32,
     pub chr: char,
+    pub typ: ObjType,
     pub color: Color,
     pub name: String,
     pub blocks: bool,
@@ -238,10 +248,11 @@ pub struct Object {
 }
 
 impl Object {
-    pub fn new(x: i32, y: i32, chr: char, color: Color, name: &str, blocks: bool) -> Self {
+    pub fn new(x: i32, y: i32, typ: ObjType, chr: char, color: Color, name: &str, blocks: bool) -> Self {
         Object {
             x,
             y,
+            typ,
             chr,
             color,
             name: name.into(),
@@ -309,6 +320,21 @@ impl Object {
                 self.alive = false;
             }
         }
+    }
+
+    pub fn is_in_fov(&self, map: &mut Map, other_pos: Pos) -> bool {
+        let pos = self.pos();
+
+        let radius = match self.typ {
+            ObjType::Enemy => MONSTER_FOV_RADIUS,
+            ObjType::Player => PLAYER_FOV_RADIUS,
+            _ => panic!(format!("Tried to see with object of type {:?}", self.typ)),
+        };
+
+        if map.is_in_fov(pos, other_pos, radius) {
+        }
+
+        return false;
     }
 }
 

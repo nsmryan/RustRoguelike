@@ -7,7 +7,7 @@ use euclid::*;
 
 use crate::constants::*;
 use crate::types::*;
-use crate::utils::{push_attack, clamp};
+use crate::utils::{push_attack, clamp, sub_pos};
 use crate::map::{Wall, Blocked};
 use crate::messaging::{MsgLog, Msg};
 
@@ -110,6 +110,8 @@ impl Cardinal {
         } else if dx < 0 && dy == 0 {
             Some(Cardinal::Left)
         } else {
+            // NOTE this makes diagonal moves always create a certain facing.
+            // could use previous position as well.
             if let Some(dir) = last {
                 if dx > 0 && dy > 0 {
                     Some(Cardinal::Right)
@@ -125,6 +127,24 @@ impl Cardinal {
             } else {
                 None
             }
+        }
+    }
+
+    pub fn x_signum(&self) -> i32 {
+        match self {
+            Cardinal::Up => 0,
+            Cardinal::Down => 0,
+            Cardinal::Left => -1,
+            Cardinal::Right => 1,
+        }
+    }
+
+    pub fn y_signum(&self) -> i32 {
+        match self {
+            Cardinal::Up => -1,
+            Cardinal::Down => 1,
+            Cardinal::Left => 0,
+            Cardinal::Right => 0,
         }
     }
 }
@@ -408,7 +428,7 @@ pub fn player_move_or_attack(movement: Movement,
     let player_handle = data.find_player().unwrap();
 
     match movement {
-        Movement::Attack(_new_pos, target_handle) => {
+        Movement::Attack(attack_pos, target_handle) => {
             push_attack(player_handle, target_handle, data, msg_log);
 
             player_action = Move(movement);
