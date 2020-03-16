@@ -16,6 +16,7 @@ use crate::map::*;
 use crate::movement::*;
 use crate::animation::AnimKey;
 use crate::constants::*;
+use crate::utils::*;
 
 
 pub type Name = Symbol;
@@ -331,7 +332,10 @@ impl Object {
             _ => panic!(format!("Tried to see with object of type {:?}", self.typ)),
         };
 
-        if map.is_in_fov(pos, other_pos, radius) {
+        if let Some(dir) = self.direction {
+            if map.is_in_fov_direction(pos, other_pos, radius, dir) {
+                return true;
+            }
         }
 
         return false;

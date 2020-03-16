@@ -668,10 +668,28 @@ pub fn render_overlays(display_state: &mut DisplayState,
     }
 
     // draw direction overlays
+    let mut direction_color = config.color_light_orange;
+    direction_color.a /= 2;
     for object_id in data.objects.keys().collect::<Vec<ObjectId>>().iter() {
         let pos = data.objects[*object_id].pos();
-        if let Some(dir) = data.objects[*object_id].direction {
-            display_state.draw_tile_edge(pos, area, highlight_color, dir);
+
+        if pos.x == -1 && pos.y == -1 {
+            continue;
+        }
+
+        if data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) {
+            if let Some(dir) = data.objects[*object_id].direction {
+                // display_state.draw_tile_edge(pos, area, direction_color, dir);
+
+                let rotation = match dir {
+                    Cardinal::Up => -90.0,
+                    Cardinal::Down => 90.0,
+                    Cardinal::Right => 0.0,
+                    Cardinal::Left => 180.0,
+                };
+
+                display_state.draw_char_with_rotation(ARROW_RIGHT as char, pos, direction_color, area, rotation);
+            }
         }
     }
 

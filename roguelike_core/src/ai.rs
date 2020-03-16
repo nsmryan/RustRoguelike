@@ -51,8 +51,8 @@ pub fn ai_attack(monster_handle: ObjectId,
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else if let Some(hit_pos) =
         // if AI can hit their target
-        ai_can_hit_target(&mut data.map, 
-                          monster_pos,
+        ai_can_hit_target(data, 
+                          monster_handle,
                           target_pos,
                           &data.objects[monster_handle].attack.unwrap()) {
         turn = Action::Move(Movement::Attack(hit_pos, target_handle));
@@ -75,10 +75,16 @@ pub fn ai_attack(monster_handle: ObjectId,
                                          .collect::<Vec<Pos>>();
 
             // filter locations that are blocked or out of sight
+            // NOTE hack to get positions to work out...
             let positions: Vec<Pos> =
                 move_positions
                 .iter()
-                .filter(|new_pos| ai_can_hit_target(&mut data.map, **new_pos, target_pos, &attack).is_some())
+                .filter(|new_pos| {
+                    data.objects[monster_handle].set_pos(**new_pos);
+                    let can_hit = ai_can_hit_target(data, monster_handle, target_pos, &attack).is_some();
+                    data.objects[monster_handle].set_pos(monster_pos);
+                    return can_hit;
+                })
                 .map(|pair| *pair)
                 .collect();
 
@@ -112,7 +118,7 @@ pub fn ai_investigate(target_pos_orig: Pos,
     let turn: Action;
 
                
-    if game_data.map.is_in_fov(monster_pos, player_pos, MONSTER_FOV_RADIUS) {
+    if game_data.objects[monster_handle].is_in_fov(&mut game_data.map, player_pos) {
         // TODO this causes a turn delay between seeing the player and attacking them
         turn = Action::StateChange(Behavior::Attacking(player_handle));
     } else { // the monster can't see the player
@@ -136,16 +142,15 @@ pub fn ai_investigate(target_pos_orig: Pos,
     return turn;
 }
 
-fn ai_can_hit_target(map: &mut Map,
-                     monster_pos: Pos,
+fn ai_can_hit_target(data: &mut GameData,
+                     monster_handle: ObjectId,
                      target_pos: Pos,
                      reach: &Reach) -> Option<Pos> {
     let mut hit_pos = None;
+    let monster_pos = data.objects[monster_handle].pos();
 
     let within_fov =
-        map.is_in_fov(monster_pos,
-                      target_pos,
-                      MONSTER_FOV_RADIUS);
+        data.objects[monster_handle].is_in_fov(&mut data.map, target_pos);
 
     if within_fov {
             // get all locations they can hit
@@ -192,7 +197,7 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
             Some(Behavior::Idle) => {
                 let mut turn = Action::none();
 
-                if game_data.map.is_in_fov(monster_pos, player_pos, MONSTER_FOV_RADIUS) {
+                if game_data.objects[monster_handle].is_in_fov(&mut game_data.map, player_pos) {
                     // NOTE will cause a turn between seeing the player and attacking
                     turn = Action::StateChange(Behavior::Attacking(player_handle));
                 } else if let Some(sound_pos) = game_data.sound_within_earshot(monster_pos) {

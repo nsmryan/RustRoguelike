@@ -26,7 +26,8 @@ pub enum Action {
 
 impl Action {
     pub fn none() -> Action {
-        return Action::NoAction; }
+        return Action::NoAction;
+    }
 }
 
 

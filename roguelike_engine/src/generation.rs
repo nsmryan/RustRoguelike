@@ -38,6 +38,7 @@ pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object 
     player.movement = Some(Reach::Single(1));
     player.attack = Some(Reach::Single(1));
     player.move_mode = Some(MoveMode::Walk);
+    player.direction = Some(Cardinal::Up);
 
     let sprite = display_state.new_sprite("player_idle".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'player_idle'");
@@ -90,6 +91,7 @@ pub fn make_gol(config: &Config, pos: Pos, display_state: &mut DisplayState) -> 
     gol.movement = Some(Reach::Single(GOL_MOVE_DISTANCE));
     gol.attack = Some(Reach::Diag(GOL_ATTACK_DISTANCE));
     gol.alive = true;
+    gol.direction = Some(Cardinal::Up);
 
     let sprite = display_state.new_sprite("gol_idle".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'gol_idle'");
@@ -111,6 +113,7 @@ pub fn make_spire(config: &Config, pos: Pos) -> Object {
     spire.movement = Some(Reach::Single(SPIRE_MOVE_DISTANCE));
     spire.attack = Some(Reach::Single(SPIRE_ATTACK_DISTANCE));
     spire.alive = true;
+    spire.direction = Some(Cardinal::Up);
 
     return spire;
 }
@@ -125,6 +128,7 @@ pub fn make_pawn(config: &Config, pos: Pos, display_state: &mut DisplayState) ->
     pawn.movement = Some(Reach::Single(PAWN_MOVE_DISTANCE));
     pawn.attack = Some(Reach::Single(PAWN_ATTACK_DISTANCE));
     pawn.alive = true;
+    pawn.direction = Some(Cardinal::Up);
 
     let sprite = display_state.new_sprite("elf_idle".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'elf_idle'");

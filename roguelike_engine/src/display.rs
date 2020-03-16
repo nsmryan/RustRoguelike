@@ -196,7 +196,7 @@ impl DisplayState {
             Cardinal::Right => {
                 side_rect = Rect::new(tile_rect.x() + tile_rect.width() as i32 - 2,
                                       tile_rect.y + 1,
-                                      width,
+                                      10,
                                       tile_rect.height());
             }
         }
