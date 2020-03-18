@@ -151,7 +151,7 @@ pub fn handle_input(input_action: InputAction,
                                          player_handle,
                                          game_data);
 
-
+            // if moved, walked into enemy, and holding a dagger, then attack
             if let Some(movement) = maybe_movement {
                 player_turn = Action::Move(movement);
             }
@@ -188,6 +188,18 @@ pub fn handle_input(input_action: InputAction,
             let player = &mut game_data.objects[player_handle];
             player.move_mode = player.move_mode.map(|mode| mode.decrease());
             player.movement = Some(reach_by_mode(player.move_mode.unwrap()));
+
+            player_turn = Action::none();
+        }
+
+        (InputAction::OverlayOn, _) => {
+            settings.overlay = true;
+
+            player_turn = Action::none();
+        }
+
+        (InputAction::OverlayOff, _) => {
+            settings.overlay = false;
 
             player_turn = Action::none();
         }

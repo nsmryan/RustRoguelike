@@ -7,7 +7,7 @@ use euclid::*;
 
 use crate::constants::*;
 use crate::types::*;
-use crate::utils::{push_attack, clamp, sub_pos};
+use crate::utils::{push_attack, attack, clamp, sub_pos};
 use crate::map::{Wall, Blocked};
 use crate::messaging::{MsgLog, Msg};
 
@@ -27,6 +27,10 @@ pub enum Action {
 impl Action {
     pub fn none() -> Action {
         return Action::NoAction;
+    }
+
+    pub fn is_none(&self) -> bool {
+        return *self == Action::NoAction;
     }
 }
 
@@ -72,6 +76,7 @@ pub enum Movement {
     Move(Pos),
     Pass(Pos),
     Attack(Pos, ObjectId),
+    Push(Pos, ObjectId),
     Collide(Pos),
     WallKick(Pos, i32, i32), // (x, y), dir_x, dir_y
     JumpWall(Pos),
@@ -83,6 +88,7 @@ impl Movement {
             Movement::Move(pos) => *pos,
             Movement::Pass(pos) => *pos,
             Movement::Attack(pos, _) => *pos,
+            Movement::Push(pos, _) => *pos,
             Movement::Collide(pos) => *pos,
             Movement::WallKick(pos, _, _) => *pos,
             Movement::JumpWall(pos) => *pos,
@@ -113,7 +119,7 @@ impl Cardinal {
         } else {
             // NOTE this makes diagonal moves always create a certain facing.
             // could use previous position as well.
-            if let Some(dir) = last {
+            if let Some(_dir) = last {
                 if dx > 0 && dy > 0 {
                     Some(Cardinal::Right)
                 } else if dx > 0 && dy < 0 {
@@ -429,8 +435,14 @@ pub fn player_move_or_attack(movement: Movement,
     let player_handle = data.find_player().unwrap();
 
     match movement {
-        Movement::Attack(attack_pos, target_handle) => {
+        Movement::Push(_attack_pos, target_handle) => {
             push_attack(player_handle, target_handle, data, msg_log);
+
+            player_action = Move(movement);
+        }
+
+        Movement::Attack(_attack_pos, target_handle) => {
+            attack(player_handle, target_handle, &mut data.objects, msg_log);
 
             player_action = Move(movement);
         }
@@ -532,10 +544,15 @@ pub fn calculate_move(action: Direction,
             (Some(blocked), Some(entity)) => {
                 let entity_pos = data.objects[entity].pos();
 
-                // if the entity position is the same as the
-                // square we were going to move to, we can attack
-                if entity_pos == blocked.start_pos {
+                // this is not generic- uses ObjType::Enemy
+                if data.objects[entity].typ == ObjType::Enemy &&
+                   data.holds(object_id, Item::Dagger) {
                     movement = Some(Movement::Attack(move_result.move_pos, entity));
+                } else if entity_pos == blocked.start_pos {
+                    // if the entity position is the same as the
+                    // square we were going to move to, we can attack
+                    // NOTE if we walk into a blocking, non-enemy entity we would still push it
+                    movement = Some(Movement::Push(move_result.move_pos, entity));
                 } else {
                     // cannot jump over wall, and can't attack entity
                     movement = Some(Movement::Move(move_result.move_pos));
@@ -544,10 +561,13 @@ pub fn calculate_move(action: Direction,
 
             // blocked by entity only
             (None, Some(entity)) => {
-                if data.objects[entity].alive {
+                if data.objects[entity].typ == ObjType::Enemy &&
+                   data.holds(object_id, Item::Dagger) {
+                    movement = Some(Movement::Attack(move_result.move_pos, entity));
+                } else if data.objects[entity].alive {
                     // record that an attack would occur. If this is not desired, the
                     // calling code will handle this.
-                    movement = Some(Movement::Attack(move_result.move_pos, entity));
+                    movement = Some(Movement::Push(move_result.move_pos, entity));
                 } else {
                     movement = None;
                 }

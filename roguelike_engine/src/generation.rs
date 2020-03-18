@@ -488,6 +488,9 @@ pub fn make_wall_test_map(objects: &mut ObjMap,
   
     objects.insert(make_gol(config, Pos::new(7, 5), display_state));
 
+    let dagger = make_dagger(config, Pos::new(position.0, position.1), display_state);
+    objects.insert(dagger);
+
     map.update_map();
 
     return (map, Pos::from(position));

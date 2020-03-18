@@ -36,6 +36,7 @@ pub struct GameSettings {
     pub exiting: bool,
     pub state: GameState,
     pub draw_throw_overlay: bool,
+    pub overlay: bool,
 }
 
 impl GameSettings {
@@ -48,6 +49,7 @@ impl GameSettings {
             exiting: false,
             state: GameState::Playing,
             draw_throw_overlay: false,
+            overlay: false,
         }
     }
 }

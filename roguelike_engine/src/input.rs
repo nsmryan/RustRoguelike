@@ -6,6 +6,12 @@ use roguelike_core::movement::Direction;
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+pub enum KeyDirection {
+    Down,
+    Up
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum InputAction {
     Move(Direction),
     MapClick(Pos, Pos),
@@ -19,13 +25,15 @@ pub enum InputAction {
     Yell,
     IncreaseMoveMode,
     DecreaseMoveMode,
+    OverlayOn,
+    OverlayOff,
     SelectItem(usize),
     None,
 }
 
-pub fn map_keycode_to_action(keycode: Keycode,
-                             _keymods: Mod,
-                             game_state: GameState) -> InputAction {
+pub fn keyup_to_action(keycode: Keycode,
+                       _keymods: Mod,
+                       game_state: GameState) -> InputAction {
     let input_action: InputAction;
 
     match keycode {
@@ -149,6 +157,10 @@ pub fn map_keycode_to_action(keycode: Keycode,
             input_action = InputAction::DecreaseMoveMode;
         }
 
+        Keycode::Space => {
+            input_action = InputAction::OverlayOff;
+        }
+
         _ => {
             input_action = InputAction::None;
         }
@@ -157,3 +169,20 @@ pub fn map_keycode_to_action(keycode: Keycode,
     return input_action;
 }
 
+pub fn keydown_to_action(keycode: Keycode,
+                         _keymods: Mod,
+                         game_state: GameState) -> InputAction {
+    let input_action: InputAction;
+
+    match keycode {
+        Keycode::Space => {
+            input_action = InputAction::OverlayOn;
+        }
+
+        _ => {
+            input_action = InputAction::None;
+        }
+    }
+
+    return input_action;
+}

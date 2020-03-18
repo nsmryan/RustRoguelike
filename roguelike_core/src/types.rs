@@ -90,6 +90,44 @@ impl GameData {
 
         return None;
     }
+
+    pub fn walked_into(&self, start_pos: Pos, end_pos: Pos, look_ahead: i32) -> Option<ObjectId> {
+        let pos_diff = sub_pos(end_pos, start_pos);
+        let x_dir = if pos_diff.x == 0 {
+            0
+        } else {
+            pos_diff.x.signum()
+        };
+
+        let y_dir = if pos_diff.y == 0 {
+            0
+        } else {
+            pos_diff.y.signum()
+        };
+
+        if self.map.is_blocked_by_wall(end_pos, x_dir * look_ahead, y_dir * look_ahead).is_some() {
+            return None;
+        } else {
+            let move_pos = (end_pos.x + x_dir * look_ahead,
+                            end_pos.y + y_dir * look_ahead);
+            let line = Line::new((end_pos.x, end_pos.y), move_pos);
+
+            for pos in line {
+                let maybe_id = self.is_blocked_tile(Pos::new(pos.0, pos.1));
+                if maybe_id.is_some() {
+                    return maybe_id;
+                }
+            }
+
+            return None;
+        }
+    }
+
+    pub fn holds(&self, obj_id: ObjectId, item: Item) -> bool {
+        return self.objects[obj_id].inventory.iter().any(|item_id| {
+            self.objects[*item_id].item == Some(item)
+        });
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
