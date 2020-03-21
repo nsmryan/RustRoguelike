@@ -122,10 +122,12 @@ pub fn ai_investigate(target_pos_orig: Pos,
         // TODO this causes a turn delay between seeing the player and attacking them
         turn = Action::StateChange(Behavior::Attacking(player_handle));
     } else { // the monster can't see the player
-        if let Some(sound_pos) = game_data.sound_within_earshot(monster_pos) {
-            target_pos = Pos::new(sound_pos.x, sound_pos.y);
+        // TODO AI reached here - heard sound, but needs to face position so they can see the
+        // player
+        // SOUND POSITIONS SET IN LIB SHOULD USE ORIGIN, NOT CURRENT POSITION!
+        if let Some(Message::Sound(entity_id, pos)) = game_data.objects[monster_handle].heard_sound() {
             game_data.objects[monster_handle].behavior =
-                Some(Behavior::Investigating(target_pos));
+                Some(Behavior::Investigating(pos));
         }
 
         if target_pos == monster_pos { 
@@ -200,9 +202,10 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
                 if game_data.objects[monster_handle].is_in_fov(&mut game_data.map, player_pos) {
                     // NOTE will cause a turn between seeing the player and attacking
                     turn = Action::StateChange(Behavior::Attacking(player_handle));
-                } else if let Some(sound_pos) = game_data.sound_within_earshot(monster_pos) {
-                    let sound_position = Pos::new(sound_pos.x, sound_pos.y);
-                    turn = Action::StateChange(Behavior::Investigating(sound_position));
+                } else if let Some(Message::Sound(entity_id, pos)) = game_data.objects[monster_handle].heard_sound() {
+                    turn = Action::StateChange(Behavior::Investigating(pos));
+                } else if let Some(Message::Attack(entity_id)) = game_data.objects[monster_handle].was_attacked() {
+                    turn = Action::StateChange(Behavior::Attacking(entity_id));
                 }
 
                 return turn;

@@ -503,8 +503,6 @@ impl Map {
             let x_sig = pos_diff.x.signum();
             let y_sig = pos_diff.y.signum();
 
-            dbg!(x_sig == dir.x_signum(), y_sig == dir.y_signum());
-
             if (x_sig == dir.x_signum() && x_sig != 0) || (y_sig == dir.y_signum() && y_sig != 0) {
                 return true;
             }

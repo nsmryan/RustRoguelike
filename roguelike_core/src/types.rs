@@ -58,15 +58,16 @@ impl GameData {
         return None;
     }
 
-    pub fn sound_within_earshot(&self, pos: Pos) -> Option<Pos> {
-        for (_object_id, object) in self.objects.iter() {
-            if object.pos() == pos && object.sound.is_some() {
-                return object.sound;
-            }
-        }
+    // TODO remove
+    //pub fn sound_within_earshot(&self, pos: Pos) -> Option<Pos> {
+    //    for (_object_id, object) in self.objects.iter() {
+    //        if object.pos() == pos && object.sound.is_some() {
+    //            return object.sound;
+    //        }
+    //    }
 
-        return None;
-    }
+    //    return None;
+    //}
 
     pub fn clear_path(&self, start: Pos, end: Pos) -> bool {
         let line = Line::new((start.x, start.y), (end.x, end.y));
@@ -127,6 +128,14 @@ impl GameData {
         return self.objects[obj_id].inventory.iter().any(|item_id| {
             self.objects[*item_id].item == Some(item)
         });
+    }
+
+    pub fn sound_at(&mut self, cause_id: ObjectId, sound_pos: Pos, source_pos: Pos) {
+        for (obj_id, obj) in self.objects.iter_mut() {
+            if obj.pos() == sound_pos && obj_id != cause_id {
+                obj.messages.push(Message::Sound(cause_id, source_pos));
+            }
+        }
     }
 }
 
@@ -260,6 +269,11 @@ pub enum ObjType {
 
 pub type Pos = Point2D<i32, ()>;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Message {
+    Sound(ObjectId, Pos),
+    Attack(ObjectId),
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Object {
@@ -285,6 +299,7 @@ pub struct Object {
     pub move_mode: Option<MoveMode>,
     pub needs_removal: bool,
     pub direction: Option<Cardinal>,
+    pub messages: Vec<Message>,
 }
 
 impl Object {
@@ -312,6 +327,7 @@ impl Object {
             move_mode: None,
             needs_removal: false,
             direction: None,
+            messages: Vec::new(),
         }
     }
 
@@ -378,6 +394,22 @@ impl Object {
         }
 
         return false;
+    }
+
+    pub fn was_attacked(&mut self) -> Option<Message> {
+        if let Some(index) = self.messages.iter().position(|msg| matches!(msg, Message::Attack(_))) {
+            return Some(self.messages.remove(index));
+        } else {
+            return None;
+        }
+    }
+
+    pub fn heard_sound(&mut self) -> Option<Message> {
+        if let Some(index) = self.messages.iter().position(|msg| matches!(msg, Message::Sound(_, _))) {
+            return Some(self.messages.remove(index));
+        } else {
+            return None;
+        }
     }
 }
 

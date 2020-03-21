@@ -39,6 +39,8 @@ pub fn push_attack(handle: ObjectId, other_handle: ObjectId, data: &mut GameData
         // if not blocked, push the other entity, taking their space
         data.objects[other_handle].set_pos(past_pos);
         data.objects[handle].move_to(other_pos);
+
+        data.objects[other_handle].messages.push(Message::Attack(handle));
     }
 }
 
@@ -55,6 +57,9 @@ pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, ms
 
             msg_log.log(Msg::Killed(handle, other_handle, damage));
         }
+
+        let pos = objects[handle].pos();
+        objects[other_handle].messages.push(Message::Attack(handle));
     }
 }
 

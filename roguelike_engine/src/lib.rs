@@ -230,9 +230,8 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     let sound_aoe =
                         game.data.map.aoe_fill(map::AoeEffect::Sound, *end, SOUND_RADIUS_STONE);
 
-                    for pos in sound_aoe.positions() {
-                        let sound = generation::make_sound(&game.config, pos, *end);
-                        game.data.objects.insert(sound);
+                    for sound_pos in sound_aoe.positions() {
+                        game.data.sound_at(*stone_id, sound_pos, *end);
                     }
                     let stone_sprite =
                         game.display_state.font_sprite(ENTITY_STONE as char)
@@ -284,8 +283,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                             let sound_aoe =
                                 game.data.map.aoe_fill(map::AoeEffect::Sound, *pos, sound_radius);
                             for sound_pos in sound_aoe.positions() {
-                                let sound = generation::make_sound(&game.config, sound_pos, *pos);
-                                game.data.objects.insert(sound);
+                                game.data.sound_at(*object_id, sound_pos, *pos);
                             }
 
                             let sound_effect = Effect::Sound(sound_aoe, 0.0);
@@ -295,14 +293,14 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                 }
 
                 Msg::Yell(_pos) => {
+                    // NOTE this assumes that only the player yells
                     let player_handle = game.data.find_player().unwrap();
                     let player_pos = game.data.objects[player_handle].pos();
 
                     let sound_aoe =
                         game.data.map.aoe_fill(map::AoeEffect::Sound, player_pos, config.player_yell_radius);
-                    for pos in sound_aoe.positions() {
-                        let sound = generation::make_sound(&game.config, pos, player_pos);
-                        game.data.objects.insert(sound);
+                    for sound_pos in sound_aoe.positions() {
+                        game.data.sound_at(player_handle, sound_pos, player_pos);
                     }
 
                     let sound_effect = Effect::Sound(sound_aoe, 0.0);
