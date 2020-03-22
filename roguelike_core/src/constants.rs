@@ -127,7 +127,7 @@ pub const ENTITY_CLOAK_GUY: u8 = 141;
 pub const ENTITY_ELF: u8 = 165;
 pub const ENTITY_ORB: u8 = 135;
 pub const ENTITY_GOAL: u8 = 253;
-pub const ENTITY_STONE: u8 = 249;
+pub const ENTITY_STONE: u8 = 244;
 pub const ENTITY_DAGGER: u8 = 247;
 
 pub const ARROW_RIGHT: u8 = 16;
