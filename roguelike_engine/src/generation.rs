@@ -50,19 +50,14 @@ pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object 
     player
 }
 
-pub fn make_sound(config: &Config, pos: Pos, sound_pos: Pos) -> Object {
-    let mut object = Object::new(pos.x, pos.y, ObjType::Other, ' ', config.color_orange, "sound", false);
-
-    object.sound = Some(sound_pos);
-
-    // sound dissipates after 2 turns to allow monsters to hear each others sounds before removing
-    object.count_down = Some(2);
+pub fn make_column(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
+    let object = Object::new(pos.x, pos.y, ObjType::Column, MAP_COLUMN as char, config.color_light_grey, "column", true);
 
     return object;
 }
 
 pub fn make_dagger(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
-    let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_DAGGER as char, config.color_orange, "dagger", false);
+    let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_DAGGER as char, config.color_light_grey, "dagger", false);
 
     object.item = Some(Item::Dagger);
 

@@ -313,6 +313,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     if game.data.objects[*attacked].name != "player".to_string() {
                         game.data.objects[*attacked].animation.clear();
 
+                        // TODO this is specific to gols- need to generalize sprite use
                         if game.data.objects[*attacked].name == "gol".to_string() {
                             let gol_sprite = game.display_state.new_sprite("gol_die".to_string(), 1.0)
                                                                .unwrap();

@@ -267,6 +267,7 @@ pub enum ObjType {
     Player,
     Enemy,
     Item,
+    Column,
     Other,
 }
 

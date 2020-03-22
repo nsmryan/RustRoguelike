@@ -61,6 +61,11 @@ pub fn read_map_xp(config: &Config,
 
                     MAP_LAYER_ENVIRONMENT => {
                         match chr as u8 {
+                            MAP_COLUMN => {
+                                let col = make_column(config, pos, display_state);
+                                objects.insert(col);
+                            }
+
                             MAP_THIN_WALL_TOP => {
                                 map[pos].chr = Some(chr);
                                 map[(x, y - 1)].bottom_wall = Wall::ShortWall;

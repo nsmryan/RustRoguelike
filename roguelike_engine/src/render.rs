@@ -205,11 +205,13 @@ pub fn render_info(display_state: &mut DisplayState,
         let object_ids =
             get_objects_under_mouse(mouse, data);
 
+        // only display first object
         if let Some(obj_id) = object_ids.first() {
             let mut y_pos = 1;
 
             let pos = data.objects[*obj_id].pos();
 
+            // only display things in the player's FOV
             if data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) {
                 if let Some(fighter) = data.objects[*obj_id].fighter {
                     y_pos += 1;
@@ -549,7 +551,7 @@ pub fn render_objects(display_state: &mut DisplayState,
                 if done {
                     data.objects[*object_id].animation.pop_front();
                 }
-            } else if data.objects[*object_id].alive {
+            } else {
                 let color = data.objects[*object_id].color;
                 display_state.draw_char(data.objects[*object_id].chr, pos, color, area);
             }
@@ -773,8 +775,7 @@ pub fn get_objects_under_mouse(mouse_pos: Pos,
         let is_mouse = data.objects[key].name == "mouse";
 
         if !is_mouse && mouse_pos == pos {
-            if data.objects[key].alive &&
-               data.map.is_in_fov(pos, mouse_pos, PLAYER_FOV_RADIUS) {
+            if data.map.is_in_fov(pos, mouse_pos, PLAYER_FOV_RADIUS) {
                 object_ids.push(key);
             }
         }

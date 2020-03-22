@@ -100,7 +100,6 @@ pub fn handle_input_throwing(input: InputAction,
         }
 
         InputAction::MapClick(_map_loc, map_cell) => {
-            // TODO this does not use the selected item, it just finds the first item
             let mut item =
                 game_data.objects[player_handle]
                          .selected_item

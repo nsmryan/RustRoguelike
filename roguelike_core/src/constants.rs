@@ -81,6 +81,9 @@ pub const MAP_STATUE_4: u8 = 133;
 pub const MAP_STATUE_5: u8 = 132;
 pub const MAP_STATUE_6: u8 = 151;
 
+pub const MAP_COLUMN: u8 = 42;
+pub const MAP_RUBBLE: u8 = 15;
+
 pub const MAP_TALL_SPIKES: u8 = 136;
 pub const MAP_WIDE_SPIKES: u8 = 137;
 

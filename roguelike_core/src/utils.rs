@@ -44,6 +44,18 @@ pub fn push_attack(handle: ObjectId, other_handle: ObjectId, data: &mut GameData
     }
 }
 
+pub fn crush(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, msg_log: &mut MsgLog) {
+    let damage = objects[other_handle].fighter.map_or(0, |f| f.hp);
+    if damage > 0 {
+        objects[other_handle].take_damage(damage);
+
+        objects[other_handle].alive = false;
+        objects[other_handle].blocks = false;
+
+        msg_log.log(Msg::Killed(handle, other_handle, damage));
+    }
+}
+
 pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, msg_log: &mut MsgLog) {
     let damage = objects[handle].fighter.map_or(0, |f| f.power) -
                  objects[other_handle].fighter.map_or(0, |f| f.defense);
