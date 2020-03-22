@@ -700,39 +700,36 @@ pub fn render_overlays(display_state: &mut DisplayState,
     }
 
     // draw attack position highlights
+    if let Some(mouse_xy) = map_mouse_pos {
+        // Draw monster attack overlay
+        let object_ids =  get_objects_under_mouse(mouse_xy, data);
+        for object_id in object_ids.iter() {
+            let pos = data.objects[*object_id].pos();
+
+            if data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
+               data.objects[*object_id].alive {
+               render_attack_overlay(display_state,
+                                     *object_id,
+                                     data,
+                                     config,
+                                     area);
+            }
+        }
+    }
+
     if settings.overlay {
-        if let Some(mouse_xy) = map_mouse_pos {
-            let mut attack_highlight_color = config.color_red;
-            attack_highlight_color.a = config.highlight_attack;
-            // Draw monster attack overlay
-            let object_ids =  get_objects_under_mouse(mouse_xy, data);
-            for object_id in object_ids.iter() {
-                let pos = data.objects[*object_id].pos();
+        let keys = data.objects.keys().collect::<Vec<ObjectId>>();
+        for object_id in keys {
+            let pos = data.objects[object_id].pos();
 
-                if data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
-                   data.objects[*object_id].alive {
-                    if let Some(reach) = data.objects[*object_id].attack {
-                        let attack_positions = 
-                            reach.offsets()
-                                 .iter()
-                                 .map(|offset| Pos::new(mouse_xy.x as i32 + offset.x,
-                                                        mouse_xy.y as i32 + offset.y))
-                                 // filter out positions that are outside of the map, or with no clear
-                                 // path from the entity to the reached position
-                                 .filter(|pos| {
-                                     let in_bounds = data.map.is_within_bounds(*pos);
-                                     let clear = data.clear_path(mouse_xy, *pos);
-                                     // check for player position so it gets highligted, even
-                                     // though the player causes 'clear_path' to fail.
-                                     return in_bounds && (clear || *pos == player_pos);
-                                 })
-                                 .collect::<Vec<Pos>>();
-
-                        for position in attack_positions {
-                            display_state.draw_char(MAP_EMPTY_CHAR as char, position, attack_highlight_color, area);
-                        }
-                    }
-                }
+            if data.map.is_within_bounds(pos) &&
+               data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
+               data.objects[object_id].alive {
+               render_attack_overlay(display_state,
+                                     object_id,
+                                     data,
+                                     config,
+                                     area);
             }
         }
     }
@@ -906,4 +903,40 @@ pub fn render_bar(display_state: &mut DisplayState,
     let color = Sdl2Color::RGBA(bg_color.r, bg_color.g, bg_color.b, bg_color.a);
     display_state.canvas.set_draw_color(color);
     display_state.canvas.draw_rect(full_rect).unwrap();
+}
+
+fn render_attack_overlay(display_state: &mut DisplayState,
+                         object_id: ObjectId,
+                         data: &mut GameData,
+                         config: &Config,
+                         area: &Area) {
+    let player_handle = data.find_player().unwrap();
+    let player_pos = data.objects[player_handle].pos();
+
+    let object_pos = data.objects[object_id].pos();
+
+    let mut attack_highlight_color = config.color_red;
+    attack_highlight_color.a = config.highlight_attack;
+
+    if let Some(reach) = data.objects[object_id].attack {
+        let attack_positions = 
+            reach.offsets()
+                 .iter()
+                 .map(|offset| Pos::new(object_pos.x as i32 + offset.x,
+                                        object_pos.y as i32 + offset.y))
+                 // filter out positions that are outside of the map, or with no clear
+                 // path from the entity to the reached position
+                 .filter(|pos| {
+                     let in_bounds = data.map.is_within_bounds(*pos);
+                     let clear = data.clear_path(object_pos, *pos);
+                     // check for player position so it gets highligted, even
+                     // though the player causes 'clear_path' to fail.
+                     return in_bounds && (clear || *pos == player_pos);
+                 })
+                 .collect::<Vec<Pos>>();
+
+        for position in attack_positions {
+            display_state.draw_char(MAP_EMPTY_CHAR as char, position, attack_highlight_color, area);
+        }
+    }
 }
