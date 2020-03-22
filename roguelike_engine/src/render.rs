@@ -448,7 +448,11 @@ pub fn render_map(display_state: &mut DisplayState,
             let outline_color = Color::white();
             let alpha;
             if visible && data.map[pos].tile_type != TileType::Water {
-                alpha = config.grid_alpha_visible;
+                if settings.overlay {
+                    alpha = config.grid_alpha_overlay;
+                } else {
+                    alpha = config.grid_alpha_visible;
+                }
             } else {
                 alpha = config.grid_alpha;
             }
