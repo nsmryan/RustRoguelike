@@ -41,7 +41,7 @@ pub struct Config {
     pub draw_mouse_line: bool,
     pub draw_star_path: bool,
     pub rate: usize,
-    pub stone_throw_speed: f32,
+    pub item_throw_speed: f32,
     pub goal_speed: f32,
     pub player_attack_speed: f32,
     pub sound_timeout: f32,

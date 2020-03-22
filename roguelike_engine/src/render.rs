@@ -646,22 +646,24 @@ pub fn render_overlays(display_state: &mut DisplayState,
     highlight_color.a = config.highlight_player_move;
 
     // Draw player movement overlay
-    for move_action in Direction::move_actions().iter() {
-        // for all movements except staying still
-        if *move_action != Direction::Center {
-            // calculate the move that would occur
-            if let Some(movement) =
-                calculate_move(*move_action,
-                               data.objects[player_handle].movement.unwrap(),
-                               player_handle,
-                               data) {
-                // draw a highlight on that square
-                let xy: Pos = movement.xy();
+    if settings.overlay {
+        for move_action in Direction::move_actions().iter() {
+            // for all movements except staying still
+            if *move_action != Direction::Center {
+                // calculate the move that would occur
+                if let Some(movement) =
+                    calculate_move(*move_action,
+                                   data.objects[player_handle].movement.unwrap(),
+                                   player_handle,
+                                   data) {
+                    // draw a highlight on that square
+                    let xy: Pos = movement.xy();
 
-                // don't draw overlay on top of character
-                if xy != data.objects[player_handle].pos()
-                {
-                    display_state.draw_tile_outline(xy, area, highlight_color);
+                    // don't draw overlay on top of character
+                    if xy != data.objects[player_handle].pos()
+                    {
+                        display_state.draw_tile_outline(xy, area, highlight_color);
+                    }
                 }
             }
         }
@@ -694,35 +696,37 @@ pub fn render_overlays(display_state: &mut DisplayState,
     }
 
     // draw attack position highlights
-    if let Some(mouse_xy) = map_mouse_pos {
-        let mut attack_highlight_color = config.color_red;
-        attack_highlight_color.a = config.highlight_attack;
-        // Draw monster attack overlay
-        let object_ids =  get_objects_under_mouse(mouse_xy, data);
-        for object_id in object_ids.iter() {
-            let pos = data.objects[*object_id].pos();
+    if settings.overlay {
+        if let Some(mouse_xy) = map_mouse_pos {
+            let mut attack_highlight_color = config.color_red;
+            attack_highlight_color.a = config.highlight_attack;
+            // Draw monster attack overlay
+            let object_ids =  get_objects_under_mouse(mouse_xy, data);
+            for object_id in object_ids.iter() {
+                let pos = data.objects[*object_id].pos();
 
-            if data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
-               data.objects[*object_id].alive {
-                if let Some(reach) = data.objects[*object_id].attack {
-                    let attack_positions = 
-                        reach.offsets()
-                             .iter()
-                             .map(|offset| Pos::new(mouse_xy.x as i32 + offset.x,
-                                                    mouse_xy.y as i32 + offset.y))
-                             // filter out positions that are outside of the map, or with no clear
-                             // path from the entity to the reached position
-                             .filter(|pos| {
-                                 let in_bounds = data.map.is_within_bounds(*pos);
-                                 let clear = data.clear_path(mouse_xy, *pos);
-                                 // check for player position so it gets highligted, even
-                                 // though the player causes 'clear_path' to fail.
-                                 return in_bounds && (clear || *pos == player_pos);
-                             })
-                             .collect::<Vec<Pos>>();
+                if data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
+                   data.objects[*object_id].alive {
+                    if let Some(reach) = data.objects[*object_id].attack {
+                        let attack_positions = 
+                            reach.offsets()
+                                 .iter()
+                                 .map(|offset| Pos::new(mouse_xy.x as i32 + offset.x,
+                                                        mouse_xy.y as i32 + offset.y))
+                                 // filter out positions that are outside of the map, or with no clear
+                                 // path from the entity to the reached position
+                                 .filter(|pos| {
+                                     let in_bounds = data.map.is_within_bounds(*pos);
+                                     let clear = data.clear_path(mouse_xy, *pos);
+                                     // check for player position so it gets highligted, even
+                                     // though the player causes 'clear_path' to fail.
+                                     return in_bounds && (clear || *pos == player_pos);
+                                 })
+                                 .collect::<Vec<Pos>>();
 
-                    for position in attack_positions {
-                        display_state.draw_char(MAP_EMPTY_CHAR as char, position, attack_highlight_color, area);
+                        for position in attack_positions {
+                            display_state.draw_char(MAP_EMPTY_CHAR as char, position, attack_highlight_color, area);
+                        }
                     }
                 }
             }

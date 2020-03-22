@@ -7,7 +7,7 @@ use euclid::*;
 
 use crate::constants::*;
 use crate::types::*;
-use crate::utils::{push_attack, attack, clamp, sub_pos};
+use crate::utils::{stab, push_attack, attack, clamp, sub_pos, next_pos};
 use crate::map::{Wall, Blocked};
 use crate::messaging::{MsgLog, Msg};
 
@@ -19,7 +19,7 @@ pub enum Action {
     Move(Movement),
     StateChange(Behavior),
     Pickup(ObjectId),
-    ThrowStone(Pos, usize), // end position, inventory index
+    ThrowItem(Pos, usize), // end position, inventory index
     Yell,
     NoAction,
 }
@@ -76,6 +76,7 @@ pub enum Movement {
     Move(Pos),
     Pass(Pos),
     Attack(Pos, ObjectId),
+    Stab(Pos, ObjectId),
     Push(Pos, ObjectId),
     Collide(Pos),
     WallKick(Pos, i32, i32), // (x, y), dir_x, dir_y
@@ -88,6 +89,7 @@ impl Movement {
             Movement::Move(pos) => *pos,
             Movement::Pass(pos) => *pos,
             Movement::Attack(pos, _) => *pos,
+            Movement::Stab(pos, _) => *pos,
             Movement::Push(pos, _) => *pos,
             Movement::Collide(pos) => *pos,
             Movement::WallKick(pos, _, _) => *pos,
@@ -447,6 +449,21 @@ pub fn player_move_or_attack(movement: Movement,
             player_action = Move(movement);
         }
 
+        Movement::Stab(attack_pos, target_handle) => {
+            // if enemy is aware of the enemy, just attack
+            if data.objects[target_handle].behavior.map_or(false, |beh| beh.is_aware()) {
+                attack(player_handle, target_handle, &mut data.objects, msg_log);
+            } else {
+                // otherwise enemy is not aware, so stab them
+                stab(player_handle, target_handle, &mut data.objects, msg_log);
+
+            }
+
+            data.objects[player_handle].move_to(attack_pos);
+
+            player_action = Move(movement);
+        }
+
         Movement::Collide(pos) => {
             data.objects[player_handle].move_to(pos);
             player_action = Move(movement);
@@ -534,6 +551,7 @@ pub fn calculate_move(action: Direction,
 
     let pos = data.objects[object_id].pos();
 
+    // get the location we would move to given the input action
     if let Some(delta_pos) = reach.move_with_reach(&action) {
         let (dx, dy) = delta_pos.to_tuple();
         // check if movement collides with a blocked location or an entity
@@ -544,7 +562,7 @@ pub fn calculate_move(action: Direction,
             (Some(blocked), Some(entity)) => {
                 let entity_pos = data.objects[entity].pos();
 
-                // this is not generic- uses ObjType::Enemy
+                // NOTE this is not generic- uses ObjType::Enemy
                 if data.objects[entity].typ == ObjType::Enemy &&
                    data.holds(object_id, Item::Dagger) {
                     movement = Some(Movement::Attack(move_result.move_pos, entity));
@@ -588,7 +606,17 @@ pub fn calculate_move(action: Direction,
 
             // not blocked at all
             (None, None) => {
-                movement = Some(Movement::Move(move_result.move_pos));
+                let next_pos = next_pos(pos, delta_pos);
+                if let Some(other_id) = data.is_blocked_tile(next_pos) {
+                    if data.objects[other_id].typ == ObjType::Enemy &&
+                       data.holds(object_id, Item::Dagger) {
+                       movement = Some(Movement::Stab(move_result.move_pos, other_id));
+                   } else {
+                      movement = Some(Movement::Move(move_result.move_pos));
+                   }
+                } else {
+                  movement = Some(Movement::Move(move_result.move_pos));
+                }
             }
         }
     } else {

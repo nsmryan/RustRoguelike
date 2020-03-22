@@ -125,7 +125,7 @@ pub fn ai_investigate(target_pos_orig: Pos,
         // TODO AI reached here - heard sound, but needs to face position so they can see the
         // player
         // SOUND POSITIONS SET IN LIB SHOULD USE ORIGIN, NOT CURRENT POSITION!
-        if let Some(Message::Sound(entity_id, pos)) = game_data.objects[monster_handle].heard_sound() {
+        if let Some(Message::Sound(_entity_id, pos)) = game_data.objects[monster_handle].heard_sound() {
             game_data.objects[monster_handle].behavior =
                 Some(Behavior::Investigating(pos));
         }

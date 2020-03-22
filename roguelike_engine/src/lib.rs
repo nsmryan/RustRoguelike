@@ -224,31 +224,33 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             println!("msg: {}", msg.msg_line(&game.data));
 
             match msg {
-                Msg::StoneThrow(_thrower, stone_id, start, end) => {
+                Msg::ItemThrow(_thrower, item_id, start, end) => {
                     // lay down sound objects on all tiles which can hear the sound.
                     // these dissapate with a count_down
                     let sound_aoe =
                         game.data.map.aoe_fill(map::AoeEffect::Sound, *end, SOUND_RADIUS_STONE);
 
                     for sound_pos in sound_aoe.positions() {
-                        game.data.sound_at(*stone_id, sound_pos, *end);
+                        game.data.sound_at(*item_id, sound_pos, *end);
                     }
-                    let stone_sprite =
-                        game.display_state.font_sprite(ENTITY_STONE as char)
-                            .expect("Could not find stone sprite!");
 
-                    let stone_anim = Animation::Between(stone_sprite, *start, *end, 0.0, config.stone_throw_speed);
-                    let sound_anim = Animation::PlayEffect(Effect::Sound(sound_aoe, 0.0));
-                    let loop_anim = Animation::Loop(stone_sprite);
+                    let chr = game.data.objects[*item_id].chr;
+                    let item_sprite =
+                        game.display_state.font_sprite(chr)
+                            .expect("Could not find item sprite!");
 
-                    let stone_key = game.display_state.play_animation(stone_anim);
-                    let sound_key = game.display_state.play_animation(sound_anim);
+                    let move_anim = Animation::Between(item_sprite, *start, *end, 0.0, config.item_throw_speed);
+                    let item_anim = Animation::PlayEffect(Effect::Sound(sound_aoe, 0.0));
+                    let loop_anim = Animation::Loop(item_sprite);
+
+                    let move_key = game.display_state.play_animation(move_anim);
+                    let item_key = game.display_state.play_animation(item_anim);
                     let loop_key = game.display_state.play_animation(loop_anim);
 
-                    game.data.objects[*stone_id].animation.clear();
-                    game.data.objects[*stone_id].animation.push_back(stone_key);
-                    game.data.objects[*stone_id].animation.push_back(sound_key);
-                    game.data.objects[*stone_id].animation.push_back(loop_key);
+                    game.data.objects[*item_id].animation.clear();
+                    game.data.objects[*item_id].animation.push_back(move_key);
+                    game.data.objects[*item_id].animation.push_back(item_key);
+                    game.data.objects[*item_id].animation.push_back(loop_key);
                 }
 
                 Msg::Moved(object_id, movement, pos) => {

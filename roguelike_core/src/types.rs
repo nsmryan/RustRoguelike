@@ -219,6 +219,10 @@ impl Behavior {
             Behavior::Attacking(_obj_id) => "attacking".to_string(),
         }
     }
+
+    pub fn is_aware(&self) -> bool {
+        return matches!(self, Behavior::Attacking(_));
+    }
 }
 
 pub type Hp = i32;
@@ -300,6 +304,7 @@ pub struct Object {
     pub needs_removal: bool,
     pub direction: Option<Cardinal>,
     pub messages: Vec<Message>,
+    pub selected_item: Option<ObjectId>,
 }
 
 impl Object {
@@ -328,6 +333,7 @@ impl Object {
             needs_removal: false,
             direction: None,
             messages: Vec::new(),
+            selected_item: None,
         }
     }
 

@@ -34,8 +34,8 @@ pub fn player_apply_action(action: Action, game_data: &mut GameData, msg_log: &m
             msg_log.log(Msg::PickedUp(player_handle, item_id));
         }
 
-        Action::ThrowStone(throw_pos, stone_index) => {
-            throw_stone(player_handle, stone_index, player_pos, throw_pos, game_data, msg_log);
+        Action::ThrowItem(throw_pos, item_index) => {
+            throw_item(player_handle, item_index, player_pos, throw_pos, game_data, msg_log);
         }
 
         Action::Yell => {
@@ -62,10 +62,12 @@ pub fn handle_input_inventory(input: InputAction,
         InputAction::SelectItem(item_index) => {
             if item_index < game_data.objects[player_handle].inventory.len() {
                 let item_key = game_data.objects[player_handle].inventory[item_index];
-                if game_data.objects[item_key].name == "stone" {
-                    settings.state = GameState::Throwing;
-                    msg_log.log(Msg::GameState(settings.state));
-                }
+
+                game_data.objects[player_handle].selected_item =
+                    Some(item_key);
+
+                settings.state = GameState::Throwing;
+                msg_log.log(Msg::GameState(settings.state));
             }
             // if item index is not in the player's inventory, do nothing
         }
@@ -98,19 +100,20 @@ pub fn handle_input_throwing(input: InputAction,
         }
 
         InputAction::MapClick(_map_loc, map_cell) => {
-            // NOTE this does not use the selected item, it just finds the first stone
-            let mut stone = None;
-            let mut stone_index = None;
-            for (index, obj_id) in game_data.objects[player_handle].inventory.iter().enumerate() {
-                if let Some(Item::Stone) = game_data.objects[*obj_id].item {
-                    stone = Some(*obj_id);
-                    stone_index = Some(index);
-                    break;
-                }
-            }
+            // TODO this does not use the selected item, it just finds the first item
+            let mut item =
+                game_data.objects[player_handle]
+                         .selected_item
+                         .expect("No item selected when throwing!");
 
-            if let (Some(_stone_handle), Some(index)) = (stone, stone_index) {
-                player_turn = Action::ThrowStone(map_cell, index);
+            let mut item_index =
+                game_data.objects[player_handle]
+                         .inventory
+                         .iter()
+                         .position(|obj_id| *obj_id == item);
+
+            if let Some(index) = item_index {
+                player_turn = Action::ThrowItem(map_cell, index);
 
                 // turn off throwing overlay
                 settings.draw_throw_overlay = false;
@@ -118,6 +121,8 @@ pub fn handle_input_throwing(input: InputAction,
                 // exit throwing state
                 settings.state = GameState::Playing;
                 msg_log.log(Msg::GameState(settings.state));
+            } else {
+                panic!("Thrown item not found in inventory!");
             }
         }
 
@@ -263,14 +268,14 @@ pub fn pick_item_up(object_id: ObjectId,
     objects[item_id].set_xy(-1, -1);
 }
 
-pub fn throw_stone(player_handle: ObjectId,
-                   stone_index: usize,
-                   start_pos: Pos,
-                   end_pos: Pos,
-                   game_data: &mut GameData,
-                   msg_log: &mut MsgLog) {
-    let stone_handle =
-        game_data.objects[player_handle].inventory.remove(stone_index);
+pub fn throw_item(player_handle: ObjectId,
+                  item_index: usize,
+                  start_pos: Pos,
+                  end_pos: Pos,
+                  game_data: &mut GameData,
+                  msg_log: &mut MsgLog) {
+    let item_handle =
+        game_data.objects[player_handle].inventory.remove(item_index);
 
     let throw_line = Line::new(start_pos.to_tuple(), end_pos.to_tuple());
 
@@ -284,8 +289,8 @@ pub fn throw_stone(player_handle: ObjectId,
         end_pos = blocked.start_pos;
     }
 
-    game_data.objects[stone_handle].set_pos(end_pos);
+    game_data.objects[item_handle].set_pos(end_pos);
 
-    // log the stone throw event
-    msg_log.log(Msg::StoneThrow(player_handle, stone_handle, start_pos, end_pos));
+    // log the item throw event
+    msg_log.log(Msg::ItemThrow(player_handle, item_handle, start_pos, end_pos));
 }

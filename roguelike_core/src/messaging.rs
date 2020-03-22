@@ -27,7 +27,7 @@ pub enum Msg {
     SpikeTrapTriggered(ObjectId, ObjectId), // trap, entity
     PlayerDeath,
     PickedUp(ObjectId, ObjectId), // entity, item id
-    StoneThrow(ObjectId, ObjectId, Pos, Pos), // thrower, stone id, start, end
+    ItemThrow(ObjectId, ObjectId, Pos, Pos), // thrower, stone id, start, end
     Attack(ObjectId, ObjectId, Hp), // attacker, attacked, hp lost
     Killed(ObjectId, ObjectId, Hp), // attacker, attacked, hp lost
     Moved(ObjectId, Movement, Pos),
@@ -56,8 +56,8 @@ impl Msg {
                                game_data.objects[*item].name.clone());
             }
 
-            Msg::StoneThrow(_thrower, _stone, _start, _end) => {
-                return "Stone throw".to_string();
+            Msg::ItemThrow(_thrower, _item, _start, _end) => {
+                return "Item throw".to_string();
             }
 
             Msg::Attack(attacker, attacked, damage) => {

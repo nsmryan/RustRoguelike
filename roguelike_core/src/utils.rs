@@ -58,8 +58,24 @@ pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, ms
             msg_log.log(Msg::Killed(handle, other_handle, damage));
         }
 
-        let pos = objects[handle].pos();
         objects[other_handle].messages.push(Message::Attack(handle));
+    }
+}
+
+pub fn stab(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, msg_log: &mut MsgLog) {
+    let damage = objects[other_handle].fighter.map_or(0, |f| f.hp);
+
+    if damage != 0 {
+        msg_log.log(Msg::Attack(handle, other_handle, damage));
+
+        objects[other_handle].alive = false;
+        objects[other_handle].blocks = false;
+
+        msg_log.log(Msg::Killed(handle, other_handle, damage));
+
+        objects[other_handle].messages.push(Message::Attack(handle));
+    } else {
+        panic!("Stabbed an enemy with no hp?");
     }
 }
 
@@ -139,3 +155,16 @@ pub fn move_x(pos: Pos, offset_x: i32) -> Pos {
     return Pos::new(pos.x + offset_x, pos.y);
 }
 
+pub fn next_pos(pos: Pos, delta_pos: Pos) -> Pos {
+    let mut next_pos = add_pos(pos, delta_pos);
+
+    if delta_pos.x != 0 {
+        next_pos.x += delta_pos.x.signum();
+    }
+
+    if delta_pos.y != 0 {
+        next_pos.y += delta_pos.y.signum();
+    }
+
+    return next_pos;
+}
