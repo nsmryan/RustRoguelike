@@ -313,13 +313,12 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     if game.data.objects[*attacked].name != "player".to_string() {
                         game.data.objects[*attacked].animation.clear();
 
-                        // TODO this is specific to gols- need to generalize sprite use
-                        if game.data.objects[*attacked].name == "gol".to_string() {
-                            let gol_sprite = game.display_state.new_sprite("gol_die".to_string(), 1.0)
-                                                               .unwrap();
-                            let gol_anim = game.display_state.play_animation(Animation::Once(gol_sprite));
+                        let sprite_name = format!("{}_die", game.data.objects[*attacked].name);
+                        let maybe_sprite = game.display_state.new_sprite(sprite_name, 1.0);
+                        if let Some(sprite) = maybe_sprite {
+                            let anim = game.display_state.play_animation(Animation::Once(sprite));
                             game.data.objects[*attacked].animation.clear();
-                            game.data.objects[*attacked].animation.push_front(gol_anim);
+                            game.data.objects[*attacked].animation.push_front(anim);
                         }
                     }
 
