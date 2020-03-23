@@ -369,6 +369,23 @@ impl Object {
         self.set_pos(pos);
     }
 
+    pub fn move_next_to(&mut self, pos: Pos) {
+        let self_pos = self.pos();
+        let mut diff_x = pos.x - self_pos.x;
+        let mut diff_y = pos.y - self_pos.y;
+
+        if diff_x != 0 {
+            diff_x -= diff_x.signum();
+        }
+
+        if diff_y != 0 {
+            diff_y -= diff_y.signum();
+        }
+
+        self.direction = Cardinal::from_dxy(self.direction, diff_x, diff_y).or(self.direction);
+        self.set_pos(Pos::new(self.x + diff_x, self.y + diff_y));
+    }
+
     pub fn distance_to(&self, other: &Object) -> f32 {
         return self.distance(&Pos::new(other.x, other.y));
     }

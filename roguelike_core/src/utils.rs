@@ -57,6 +57,9 @@ pub fn crush(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, msg
 }
 
 pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, msg_log: &mut MsgLog) {
+    let other_pos = objects[other_handle].pos();
+    objects[handle].move_next_to(other_pos);
+
     let damage = objects[handle].fighter.map_or(0, |f| f.power) -
                  objects[other_handle].fighter.map_or(0, |f| f.defense);
     if damage > 0 {
