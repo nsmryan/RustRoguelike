@@ -16,7 +16,9 @@ use crate::input::*;
 use crate::generation;
 
 
-pub fn player_apply_action(action: Action, game_data: &mut GameData, msg_log: &mut MsgLog) {
+pub fn player_apply_action(action: Action,
+                           game_data: &mut GameData,
+                           msg_log: &mut MsgLog) {
     let player_handle = game_data.find_player().unwrap();
     let player_pos = game_data.objects[player_handle].pos();
 

@@ -476,6 +476,9 @@ pub fn player_move_or_attack(movement: Movement,
     Movement::Attack(_attack_pos, target_handle) => {
         attack(player_handle, target_handle, &mut data.objects, msg_log);
 
+        let target_pos = data.objects[target_handle].pos();
+        data.objects[player_handle].move_next_to(target_pos);
+
         player_action = Move(movement);
     }
 
@@ -507,15 +510,20 @@ pub fn player_move_or_attack(movement: Movement,
     }
 
     Movement::Move(pos) | Movement::JumpWall(pos) => {
-        // Update position and momentum
-        data.objects[player_handle].move_to(pos);
+        let player_pos = data.objects[player_handle].pos();
 
-        player_action = Move(movement);
+        if player_pos != pos {
+            data.objects[player_handle].move_to(pos);
 
-        if movement == Movement::Move(pos) {
-            msg_log.log(Msg::Moved(player_handle, movement, pos));
+            player_action = Move(movement);
+
+            if movement == Movement::Move(pos) {
+                msg_log.log(Msg::Moved(player_handle, movement, pos));
+            } else {
+                msg_log.log(Msg::JumpWall(player_handle, pos));
+            }
         } else {
-            msg_log.log(Msg::JumpWall(player_handle, pos));
+            player_action = NoAction;
         }
     }
 
@@ -577,81 +585,88 @@ pub fn calculate_move(action: Direction,
                   reach: Reach,
                   object_id: ObjectId,
                   data: &GameData) -> Option<Movement> {
-let movement: Option<Movement>;
+    let mut movement: Option<Movement>;
 
-let pos = data.objects[object_id].pos();
+    let pos = data.objects[object_id].pos();
 
-// get the location we would move to given the input action
-if let Some(delta_pos) = reach.move_with_reach(&action) {
-    let (dx, dy) = delta_pos.to_tuple();
-    // check if movement collides with a blocked location or an entity
-    let move_result = check_collision(pos, dx, dy, data);
+    // get the location we would move to given the input action
+    if let Some(delta_pos) = reach.move_with_reach(&action) {
+        let (dx, dy) = delta_pos.to_tuple();
 
-    match (move_result.blocked, move_result.entity) {
-        // both blocked by wall and by entity
-        (Some(blocked), Some(entity)) => {
-            let entity_pos = data.objects[entity].pos();
+        // check if movement collides with a blocked location or an entity
+        let move_result = check_collision(pos, dx, dy, data);
 
-            // NOTE this is not generic- uses ObjType::Enemy
-            if data.objects[entity].typ == ObjType::Enemy &&
-               data.holds(object_id, Item::Dagger) {
-                movement = Some(Movement::Attack(move_result.move_pos, entity));
-            } else if entity_pos == blocked.start_pos {
-                // if the entity position is the same as the
-                // square we were going to move to, we can attack
-                // NOTE if we walk into a blocking, non-enemy entity we would still push it
-                movement = Some(Movement::Push(move_result.move_pos, entity));
-                } else {
-                    // cannot jump over wall, and can't attack entity
-                    movement = Some(Movement::Move(move_result.move_pos));
-                }
-            }
+        match (move_result.blocked, move_result.entity) {
+            // both blocked by wall and by entity
+            (Some(blocked), Some(entity)) => {
+                let entity_pos = data.objects[entity].pos();
 
-            // blocked by entity only
-            (None, Some(entity)) => {
+                // NOTE this is not generic- uses ObjType::Enemy
                 if data.objects[entity].typ == ObjType::Enemy &&
                    data.holds(object_id, Item::Dagger) {
                     movement = Some(Movement::Attack(move_result.move_pos, entity));
-                } else if data.objects[entity].blocks {
-                    // record that an attack would occur. If this is not desired, the
-                    // calling code will handle this.
-                    movement = Some(Movement::Push(add_pos(pos, delta_pos), entity));
-                } else {
-                    movement = Some(Movement::Move(move_result.move_pos));
+                } else if entity_pos == blocked.start_pos {
+                    // if the entity position is the same as the
+                    // square we were going to move to, we can attack
+                    // NOTE if we walk into a blocking, non-enemy entity we would still push it
+                    movement = Some(Movement::Push(move_result.move_pos, entity));
+                    } else {
+                        // cannot jump over wall, and can't attack entity
+                        movement = Some(Movement::Move(move_result.move_pos));
+                    }
                 }
-            }
 
-            // blocked by wall only
-            (Some(blocked), None) => {
-                if data.objects[object_id].move_mode.unwrap() == MoveMode::Run {
-                    if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
-                        movement = Some(Movement::JumpWall(blocked.end_pos));
-                    } else { // otherwise move normally, stopping just before the blocking tile
+                // blocked by entity only
+                (None, Some(entity)) => {
+                    if data.objects[entity].typ == ObjType::Enemy &&
+                       data.holds(object_id, Item::Dagger) {
+                        movement = Some(Movement::Attack(move_result.move_pos, entity));
+                    } else if data.objects[entity].blocks {
+                        // record that an attack would occur. If this is not desired, the
+                        // calling code will handle this.
+                        movement = Some(Movement::Push(add_pos(pos, delta_pos), entity));
+                    } else {
+                        movement = Some(Movement::Move(move_result.move_pos));
+                    }
+                }
+
+                // blocked by wall only
+                (Some(blocked), None) => {
+                    if data.objects[object_id].move_mode.unwrap() == MoveMode::Run {
+                        if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
+                            movement = Some(Movement::JumpWall(blocked.end_pos));
+                        } else { // otherwise move normally, stopping just before the blocking tile
+                            movement = Some(Movement::Move(blocked.start_pos));
+                        }
+                    } else {
                         movement = Some(Movement::Move(blocked.start_pos));
                     }
-                } else {
-                    movement = Some(Movement::Move(blocked.start_pos));
                 }
-            }
 
-            // not blocked at all
-            (None, None) => {
-                let next_pos = next_pos(pos, delta_pos);
-                if let Some(other_id) = data.is_blocked_tile(next_pos) {
-                    if data.objects[other_id].typ == ObjType::Enemy &&
-                       data.holds(object_id, Item::Dagger) {
-                       movement = Some(Movement::Stab(move_result.move_pos, other_id));
-                   } else {
+                // not blocked at all
+                (None, None) => {
+                    let next_pos = next_pos(pos, delta_pos);
+                    if let Some(other_id) = data.is_blocked_tile(next_pos) {
+                        if data.objects[other_id].typ == ObjType::Enemy &&
+                           data.holds(object_id, Item::Dagger) {
+                           movement = Some(Movement::Stab(move_result.move_pos, other_id));
+                       } else {
+                          movement = Some(Movement::Move(move_result.move_pos));
+                       }
+                    } else {
                       movement = Some(Movement::Move(move_result.move_pos));
-                   }
-                } else {
-                  movement = Some(Movement::Move(move_result.move_pos));
+                    }
                 }
             }
-        }
     } else {
         // movement is not valid given the mover's reach- reject movement by return None
         movement = None;
+    }
+
+    if let Some(Movement::Move(new_pos)) = movement {
+        if new_pos == pos {
+            movement = None;
+        }
     }
 
     return movement;
