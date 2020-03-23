@@ -44,6 +44,10 @@ pub fn player_apply_action(action: Action,
             msg_log.log(Msg::Yell(player_pos));
         }
 
+        Action::Pass => {
+            msg_log.log(Msg::Pass());
+        }
+
         Action::NoAction => {
         }
     }
@@ -150,16 +154,20 @@ pub fn handle_input(input_action: InputAction,
         (InputAction::Move(move_action), true) => {
             let player_handle = game_data.find_player().unwrap();
 
-            let player_reach = game_data.objects[player_handle].movement.unwrap();
-            let maybe_movement = 
-                movement::calculate_move(move_action,
-                                         player_reach,
-                                         player_handle,
-                                         game_data);
+            if move_action == movement::Direction::Center {
+                player_turn = Action::Pass;
+            } else {
+                let player_reach = game_data.objects[player_handle].movement.unwrap();
+                let maybe_movement = 
+                    movement::calculate_move(move_action,
+                                             player_reach,
+                                             player_handle,
+                                             game_data);
 
-            // if moved, walked into enemy, and holding a dagger, then attack
-            if let Some(movement) = maybe_movement {
-                player_turn = Action::Move(movement);
+                // if moved, walked into enemy, and holding a dagger, then attack
+                if let Some(movement) = maybe_movement {
+                    player_turn = Action::Move(movement);
+                }
             }
         }
 
