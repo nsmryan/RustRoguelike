@@ -5,7 +5,7 @@ extern crate rand;
 extern crate roguelike_core;
 extern crate serde;
 extern crate serde_derive;
-extern crate serde_json;
+extern crate serde_yaml;
 
 use std::env;
 use std::fs::File;
@@ -19,11 +19,11 @@ fn main() {
     let config: Config;
     {
         let mut file =
-            File::open("config.json").expect("Could not open/parse config file config.json");
+            File::open("config.yaml").expect("Could not open/parse config file config.yaml");
         let mut config_string = String::new();
         file.read_to_string(&mut config_string)
-            .expect("Could not read contents of config.json");
-        config = serde_json::from_str(&config_string).expect("Could not parse config.json file!");
+            .expect("Could not read contents of config.yaml");
+        config = serde_yaml::from_str(&config_string).expect("Could not parse config.yaml file!");
     }
 
     roguelike_engine::run(&args, config).unwrap();

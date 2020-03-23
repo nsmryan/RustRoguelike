@@ -12,12 +12,15 @@ use std::time::Duration;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use std::io::Write;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
 use sdl2::mouse::MouseButton;
 
 use slotmap::dense::*;
+
+use serde_yaml;
 
 use walkdir::WalkDir;
 
@@ -377,13 +380,15 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         }
 
         /* Reload Configuration */
-        match File::open("config.json") {
-            Ok(mut file) => {
-                let mut config_string = String::new();
-                file.read_to_string(&mut config_string).expect("Could not read config file!");
-                game.config = serde_json::from_str(&config_string).expect("Could not read JSON- config.json has a parsing error!");
-            }
-            _ => (),
+        if let Ok(mut file) = File::open("config.yaml") {
+            let mut config_string = String::new();
+            file.read_to_string(&mut config_string).expect("Could not read config file!");
+            game.config = serde_yaml::from_str(&config_string).expect("Could not read JSON- config.json has a parsing error!");
+
+            //let config_yaml = serde_yaml::to_string(&game.config).expect("didn't serialize");
+            //println!("{}", config_yaml);
+            //let mut file = File::create("config.yaml").unwrap();
+            //file.write(&config_yaml.as_bytes());
         }
 
         /* Wait until the next tick to loop */
