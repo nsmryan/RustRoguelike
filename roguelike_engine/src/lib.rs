@@ -22,7 +22,6 @@ use slotmap::dense::*;
 use walkdir::WalkDir;
 
 use roguelike_core::types::*;
-use roguelike_core::map;
 use roguelike_core::config::*;
 use roguelike_core::messaging::Msg;
 use roguelike_core::constants::*;
@@ -138,7 +137,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                 Event::KeyDown {keycode, keymod, ..} => {
                     if let Some(keycode) = keycode {
                         game.input_action =
-                            keydown_to_action(keycode, keymod, game.settings.state);
+                            keydown_to_action(keycode, keymod);
                     }
                 }
 
@@ -224,15 +223,12 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             println!("msg: {}", msg.msg_line(&game.data));
 
             match msg {
-                Msg::ItemThrow(_thrower, item_id, start, end) => {
+                Msg::ItemThrow(thrower, item_id, start, end) => {
+                    // NOTE the radius here is the stone radius, regardless of item type
+
                     // lay down sound objects on all tiles which can hear the sound.
                     // these dissapate with a count_down
-                    let sound_aoe =
-                        game.data.map.aoe_fill(map::AoeEffect::Sound, *end, SOUND_RADIUS_STONE);
-
-                    for sound_pos in sound_aoe.positions() {
-                        game.data.sound_at(*item_id, sound_pos, *end);
-                    }
+                    let sound_aoe = game.data.sound_at(*thrower, *end, SOUND_RADIUS_STONE);
 
                     let chr = game.data.objects[*item_id].chr;
                     let item_sprite =
@@ -257,7 +253,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     let player_handle = game.data.find_player().unwrap();
                     if *object_id == player_handle {
 
-                        if let Movement::Pass(_) = movement {
+                        if matches!(movement, Movement::Pass(_)) {
                             if game.data.objects[player_handle].move_mode.unwrap() ==
                                MoveMode::Run {
                                 let player = &mut game.data.objects[player_handle];
@@ -282,11 +278,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                             game.data.objects[player_handle].animation.push_back(idle_key);
 
                             // add sound for movement
-                            let sound_aoe =
-                                game.data.map.aoe_fill(map::AoeEffect::Sound, *pos, sound_radius);
-                            for sound_pos in sound_aoe.positions() {
-                                game.data.sound_at(*object_id, sound_pos, *pos);
-                            }
+                            let sound_aoe = game.data.sound_at(*object_id, *pos, sound_radius);
 
                             let sound_effect = Effect::Sound(sound_aoe, 0.0);
                             game.display_state.play_effect(sound_effect);
@@ -294,16 +286,11 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     }
                 }
 
-                Msg::Yell(_pos) => {
+                Msg::Yell(pos) => {
                     // NOTE this assumes that only the player yells
                     let player_handle = game.data.find_player().unwrap();
-                    let player_pos = game.data.objects[player_handle].pos();
 
-                    let sound_aoe =
-                        game.data.map.aoe_fill(map::AoeEffect::Sound, player_pos, config.player_yell_radius);
-                    for sound_pos in sound_aoe.positions() {
-                        game.data.sound_at(player_handle, sound_pos, player_pos);
-                    }
+                    let sound_aoe = game.data.sound_at(player_handle, *pos, config.player_yell_radius);
 
                     let sound_effect = Effect::Sound(sound_aoe, 0.0);
                     game.display_state.play_effect(sound_effect);

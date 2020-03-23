@@ -130,18 +130,26 @@ impl GameData {
         });
     }
 
-    pub fn sound_at(&mut self, cause_id: ObjectId, sound_pos: Pos, source_pos: Pos) {
-        for (obj_id, obj) in self.objects.iter_mut() {
-            if obj.pos() == sound_pos && obj_id != cause_id {
-                obj.messages.push(Message::Sound(cause_id, source_pos));
+    pub fn sound_at(&mut self, cause_id: ObjectId, source_pos: Pos, radius: usize) -> Aoe {
+        let sound_aoe =
+            self.map.aoe_fill(AoeEffect::Sound, source_pos, radius);
+
+        for sound_pos in sound_aoe.positions() {
+            for (obj_id, obj) in self.objects.iter_mut() {
+                if obj.pos() == sound_pos && obj_id != cause_id {
+                    obj.messages.push(Message::Sound(cause_id, source_pos));
+                }
             }
         }
+
+        return sound_aoe;
     }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Trap {
     Spikes,
+    Sound,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Default)]

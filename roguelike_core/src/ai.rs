@@ -1,6 +1,4 @@
-use crate::map::*;
 use crate::types::*;
-use crate::constants::*;
 use crate::movement::*;
 use crate::messaging::*;
 use crate::utils::*;
@@ -111,7 +109,7 @@ pub fn ai_investigate(target_pos_orig: Pos,
                       game_data: &mut GameData) -> Action {
     let player_handle = game_data.find_player().unwrap();
 
-    let mut target_pos = target_pos_orig;
+    let target_pos = target_pos_orig;
     let player_pos = game_data.objects[player_handle].pos();
     let monster_pos = game_data.objects[monster_handle].pos();
 
@@ -202,7 +200,7 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
                 if game_data.objects[monster_handle].is_in_fov(&mut game_data.map, player_pos) {
                     // NOTE will cause a turn between seeing the player and attacking
                     turn = Action::StateChange(Behavior::Attacking(player_handle));
-                } else if let Some(Message::Sound(entity_id, pos)) = game_data.objects[monster_handle].heard_sound() {
+                } else if let Some(Message::Sound(_entity_id, pos)) = game_data.objects[monster_handle].heard_sound() {
                     turn = Action::StateChange(Behavior::Investigating(pos));
                 } else if let Some(Message::Attack(entity_id)) = game_data.objects[monster_handle].was_attacked() {
                     turn = Action::StateChange(Behavior::Attacking(entity_id));

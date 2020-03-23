@@ -685,7 +685,8 @@ pub fn render_overlays(display_state: &mut DisplayState,
             continue;
         }
 
-        if data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) {
+        if data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
+           data.objects[*object_id].alive {
             if let Some(dir) = data.objects[*object_id].direction {
                 // display_state.draw_tile_edge(pos, area, direction_color, dir);
 
@@ -900,7 +901,6 @@ pub fn render_bar(display_state: &mut DisplayState,
                               start.y,
                               width,
                               start.height());
-    let outline_color = Color::white();
     let color = Sdl2Color::RGBA(bg_color.r, bg_color.g, bg_color.b, bg_color.a);
     display_state.canvas.set_draw_color(color);
     display_state.canvas.draw_rect(full_rect).unwrap();

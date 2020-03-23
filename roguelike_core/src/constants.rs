@@ -12,7 +12,7 @@ pub const SOUND_RADIUS: usize = 3;
 pub const SOUND_RADIUS_SNEAK: usize = 2;
 pub const SOUND_RADIUS_WALK: usize = 3;
 pub const SOUND_RADIUS_RUN: usize = 5;
-pub const SOUND_RADIUS_STONE: usize = 2;
+pub const SOUND_RADIUS_STONE: usize = 3;
 
 /* General Settings */
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
@@ -132,6 +132,7 @@ pub const ENTITY_ORB: u8 = 135;
 pub const ENTITY_GOAL: u8 = 253;
 pub const ENTITY_STONE: u8 = 244;
 pub const ENTITY_DAGGER: u8 = 247;
+pub const ENTITY_TRAP_SOUND: u8 = 83; // char S
 
 pub const ARROW_RIGHT: u8 = 16;
 pub const ARROW_LEFT: u8 = 17;

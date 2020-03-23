@@ -50,13 +50,13 @@ pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object 
     player
 }
 
-pub fn make_column(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
+pub fn make_column(config: &Config, pos: Pos) -> Object {
     let object = Object::new(pos.x, pos.y, ObjType::Column, MAP_COLUMN as char, config.color_light_grey, "column", true);
 
     return object;
 }
 
-pub fn make_dagger(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
+pub fn make_dagger(config: &Config, pos: Pos) -> Object {
     let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_DAGGER as char, config.color_light_grey, "dagger", false);
 
     object.item = Some(Item::Dagger);
@@ -142,12 +142,18 @@ pub fn make_pawn(config: &Config, pos: Pos, display_state: &mut DisplayState) ->
     return pawn;
 }
 
+pub fn make_trap_sound(config: &Config, pos: Pos) -> Object {
+    let mut sound = Object::new(pos.x, pos.y, ObjType::Enemy, ENTITY_TRAP_SOUND as char, config.color_ice_blue, "soudn", false);
+
+    sound.trap = Some(Trap::Sound);
+
+    return sound;
+}
+
 pub fn make_spikes(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
     let mut spikes = Object::new(pos.x, pos.y, ObjType::Enemy, MAP_TALL_SPIKES as char, config.color_ice_blue, "spike", false);
 
-    spikes.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, } );
     spikes.trap = Some(Trap::Spikes);
-    spikes.color = config.color_ice_blue;
 
     let sprite = display_state.new_sprite("spikes".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'spikes'");
@@ -483,7 +489,7 @@ pub fn make_wall_test_map(objects: &mut ObjMap,
   
     objects.insert(make_gol(config, Pos::new(7, 5), display_state));
 
-    let dagger = make_dagger(config, Pos::new(position.0, position.1), display_state);
+    let dagger = make_dagger(config, Pos::new(position.0, position.1));
     objects.insert(dagger);
 
     map.update_map();

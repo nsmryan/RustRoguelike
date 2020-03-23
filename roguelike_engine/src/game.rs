@@ -107,9 +107,9 @@ impl Game {
                 objects.insert(make_goal(&config, &mut display_state, Pos::new(player_position.0 - 1, player_position.1)));
                 objects.insert(make_mouse(&config, &mut display_state));
                 objects.insert(make_spikes(&config, Pos::new(player_position.0, player_position.1 - 2), &mut display_state));
-                objects.insert(make_dagger(&config, Pos::new(player_position.0, player_position.1 - 3), &mut display_state));
-                objects.insert(make_dagger(&config, Pos::new(player_position.0 + 1, player_position.1 - 2), &mut display_state));
-                objects.insert(make_dagger(&config, Pos::new(player_position.0 + 2, player_position.1 - 2), &mut display_state));
+                objects.insert(make_dagger(&config, Pos::new(player_position.0, player_position.1 - 3)));
+                objects.insert(make_dagger(&config, Pos::new(player_position.0 + 1, player_position.1 - 2)));
+                objects.insert(make_dagger(&config, Pos::new(player_position.0 + 2, player_position.1 - 2)));
 
                 let exit_position = (player_position.0 + 1, player_position.1 - 1);
                 map[exit_position].tile_type = TileType::Exit;
@@ -390,6 +390,10 @@ pub fn step_logic(player_action: Action,
                 game_data.objects[*entity].take_damage(SPIKE_DAMAGE);
 
                 msg_log.log(Msg::SpikeTrapTriggered(*trap, *entity));
+            }
+
+            Trap::Sound => {
+                msg_log.log(Msg::SoundTrapTriggered(*trap, *entity));
             }
         }
     }

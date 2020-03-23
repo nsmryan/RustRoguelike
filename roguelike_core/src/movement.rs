@@ -445,7 +445,7 @@ pub fn player_move_or_attack(movement: Movement,
             // if there is a path to the next tile, move it.
             let diff = sub_pos(attack_pos, pos);
             let blocked =
-                data.map.is_blocked_by_wall(pos, diff.x, diff.y); 
+                data.map.is_blocked_by_wall(attack_pos, diff.x, diff.y); 
 
             if blocked == None {
                 data.objects[player_handle].move_to(attack_pos);
@@ -468,8 +468,8 @@ pub fn player_move_or_attack(movement: Movement,
             player_action = Move(movement);
         } else {
             dbg!(data.objects[target_handle].typ);
-            panic!("What did you push?");
             player_action = NoAction;
+            panic!("What did you push?");
         }
     }
 

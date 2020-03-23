@@ -170,8 +170,7 @@ pub fn keyup_to_action(keycode: Keycode,
 }
 
 pub fn keydown_to_action(keycode: Keycode,
-                         _keymods: Mod,
-                         game_state: GameState) -> InputAction {
+                         _keymods: Mod) -> InputAction {
     let input_action: InputAction;
 
     match keycode {

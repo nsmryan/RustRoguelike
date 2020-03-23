@@ -100,12 +100,12 @@ pub fn handle_input_throwing(input: InputAction,
         }
 
         InputAction::MapClick(_map_loc, map_cell) => {
-            let mut item =
+            let item =
                 game_data.objects[player_handle]
                          .selected_item
                          .expect("No item selected when throwing!");
 
-            let mut item_index =
+            let item_index =
                 game_data.objects[player_handle]
                          .inventory
                          .iter()

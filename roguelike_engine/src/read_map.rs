@@ -62,7 +62,7 @@ pub fn read_map_xp(config: &Config,
                     MAP_LAYER_ENVIRONMENT => {
                         match chr as u8 {
                             MAP_COLUMN => {
-                                let col = make_column(config, pos, display_state);
+                                let col = make_column(config, pos);
                                 objects.insert(col);
                             }
 

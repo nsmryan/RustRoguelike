@@ -24,6 +24,7 @@ impl MsgLog {
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Msg {
+    SoundTrapTriggered(ObjectId, ObjectId), // trap, entity
     SpikeTrapTriggered(ObjectId, ObjectId), // trap, entity
     PlayerDeath,
     PickedUp(ObjectId, ObjectId), // entity, item id
@@ -42,6 +43,10 @@ pub enum Msg {
 impl Msg {
     pub fn msg_line(&self, game_data: &GameData) -> String {
         match self {
+            Msg::SoundTrapTriggered(_trap, _entity) => {
+                return "Sound trap triggered".to_string();
+            }
+
             Msg::SpikeTrapTriggered(_trap, _entity) => {
                 return "Spike trap triggered".to_string();
             }
