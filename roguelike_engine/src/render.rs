@@ -651,30 +651,6 @@ pub fn render_overlays(display_state: &mut DisplayState,
     let mut highlight_color: Color = config.color_warm_grey;
     highlight_color.a = config.highlight_player_move;
 
-    // Draw player movement overlay
-    if settings.overlay {
-        for move_action in Direction::move_actions().iter() {
-            // for all movements except staying still
-            if *move_action != Direction::Center {
-                // calculate the move that would occur
-                if let Some(movement) =
-                    calculate_move(*move_action,
-                                   data.objects[player_handle].movement.unwrap(),
-                                   player_handle,
-                                   data) {
-                    // draw a highlight on that square
-                    let xy: Pos = movement.xy();
-
-                    // don't draw overlay on top of character
-                    if xy != data.objects[player_handle].pos()
-                    {
-                        display_state.draw_tile_outline(xy, area, highlight_color);
-                    }
-                }
-            }
-        }
-    }
-
     // draw direction overlays
     let mut direction_color = config.color_light_orange;
     direction_color.a /= 2;
@@ -761,6 +737,31 @@ pub fn render_overlays(display_state: &mut DisplayState,
             }
         }
     }
+
+    // Draw player movement overlay
+    if settings.overlay {
+        for move_action in Direction::move_actions().iter() {
+            // for all movements except staying still
+            if *move_action != Direction::Center {
+                // calculate the move that would occur
+                if let Some(movement) =
+                    calculate_move(*move_action,
+                                   data.objects[player_handle].movement.unwrap(),
+                                   player_handle,
+                                   data) {
+                    // draw a highlight on that square
+                    let xy: Pos = movement.xy();
+
+                    // don't draw overlay on top of character
+                    if xy != data.objects[player_handle].pos()
+                    {
+                        display_state.draw_tile_outline(xy, area, highlight_color);
+                    }
+                }
+            }
+        }
+    }
+
 }
 
 pub fn engine_color(color: &Color) -> Sdl2Color {
