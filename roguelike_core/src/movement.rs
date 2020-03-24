@@ -10,6 +10,7 @@ use crate::types::*;
 use crate::utils::{crush, stab, push_attack, attack, clamp, sub_pos, add_pos, next_pos};
 use crate::map::{Wall, Blocked};
 use crate::messaging::{MsgLog, Msg};
+use crate::ai::Behavior;
 
 
 pub type Loudness = usize;

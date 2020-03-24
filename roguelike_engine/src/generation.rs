@@ -2,6 +2,7 @@ use rand::prelude::*;
 
 use serde::{Serialize, Deserialize};
 
+use roguelike_core::ai::{Behavior, Ai};
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;

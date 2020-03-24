@@ -1,5 +1,6 @@
 use crate::types::*;
 use crate::movement::Movement;
+use crate::ai::Behavior;
 
 
 pub struct MsgLog {

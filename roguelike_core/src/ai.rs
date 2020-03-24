@@ -4,6 +4,32 @@ use crate::messaging::*;
 use crate::utils::*;
 
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Ai {
+    Basic,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Behavior {
+    Idle,
+    Investigating(Pos),
+    Attacking(ObjectId),
+}
+
+impl Behavior {
+    pub fn description(&self) -> String {
+        match self {
+            Behavior::Idle => "idle".to_string(),
+            Behavior::Investigating(_position) => "investigating".to_string(),
+            Behavior::Attacking(_obj_id) => "attacking".to_string(),
+        }
+    }
+
+    pub fn is_aware(&self) -> bool {
+        return matches!(self, Behavior::Attacking(_));
+    }
+}
+
 pub fn ai_take_turn(monster_handle: ObjectId,
                     data: &mut GameData,
                     msg_log: &mut MsgLog) {
