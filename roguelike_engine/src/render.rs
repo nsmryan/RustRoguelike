@@ -454,10 +454,12 @@ fn render_map(game: &mut Game, area: &Area) {
             }
             let color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, alpha);
 
-            if game.config.fog_of_war && !game.data.map[pos].explored {
-                let mut black = Color::black();
-                black.a /= 2;
-                game.display_state.draw_char(MAP_EMPTY_CHAR as char, pos, black, area);
+            if game.config.fog_of_war && !visible {
+                let mut blackout_color = Color::black();
+                if game.data.map[pos].explored {
+                    blackout_color.a /= 2;
+                }
+                game.display_state.draw_char(MAP_EMPTY_CHAR as char, pos, blackout_color, area);
             }
 
             // draw an outline around the tile
