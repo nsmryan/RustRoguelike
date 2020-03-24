@@ -303,3 +303,4 @@ pub fn throw_item(player_handle: ObjectId,
     // log the item throw event
     msg_log.log(Msg::ItemThrow(player_handle, item_handle, start_pos, end_pos));
 }
+

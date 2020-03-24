@@ -326,3 +326,4 @@ pub fn draw_char(canvas: &mut WindowCanvas,
                    false,
                    false).unwrap();
 }
+

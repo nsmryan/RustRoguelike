@@ -51,3 +51,4 @@ impl Throttler {
         self.tick_receiver.recv().unwrap();
     }
 }
+

@@ -917,3 +917,4 @@ fn render_attack_overlay(game: &mut Game,
         }
     }
 }
+

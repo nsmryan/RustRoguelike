@@ -437,3 +437,4 @@ pub fn step_logic(player_action: Action,
         game_data.map.compute_fov(player_pos, PLAYER_FOV_RADIUS);
     }
 }
+
