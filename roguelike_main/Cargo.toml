@@ -13,6 +13,11 @@ serde_yaml = "0.8"
 serde_derive = "1.0"
 num = "0.2"
 
+sdl2 = { version = "0.32", features = ["image", "unsafe_textures"] }
+
+slotmap = "0.4"
+
+walkdir = "2"
 
 roguelike_core = { path = "../roguelike_core" }
 roguelike_engine = { path = "../roguelike_engine" }
