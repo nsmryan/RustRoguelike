@@ -20,43 +20,40 @@ use crate::display::*;
 use crate::game::*;
 
 
-pub fn render_all(display_state: &mut DisplayState,
-                  mouse_state: &mut MouseState,
-                  data: &mut GameData,
-                  settings: &GameSettings,
-                  config: &Config)  -> Result<(), String> {
+pub fn render_all(game: &mut Game)  -> Result<(), String> {
 
-    let player_handle = data.find_player().unwrap();
+    let player_handle = game.data.find_player().unwrap();
 
-    data.map.compute_fov(data.objects[player_handle].pos(), PLAYER_FOV_RADIUS);
+    game.data.map.compute_fov(game.data.objects[player_handle].pos(), PLAYER_FOV_RADIUS);
 
-    let screen_rect = display_state.canvas.output_size()?;
+    let screen_rect = game.display_state.canvas.output_size()?;
 
-    let plots = display_state.screen_sections
-                             .plot(0,
-                                   0,
-                                   screen_rect.0 as usize,
-                                   screen_rect.1 as usize);
+    let plots = game.display_state
+                    .screen_sections
+                    .plot(0,
+                          0,
+                          screen_rect.0 as usize,
+                          screen_rect.1 as usize);
 
-    display_state.canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
-    display_state.canvas.clear();
+    game.display_state.canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
+    game.display_state.canvas.clear();
 
     let zones = plots.collect::<Vec<Plot>>();
 
     let mut mouse_map_pos = None;
     for zone in zones.iter() {
-        if zone.name == "map" && zone.contains(mouse_state.x as usize, mouse_state.y as usize) {
+        if zone.name == "map" && zone.contains(game.mouse_state.x as usize, game.mouse_state.y as usize) {
             let ((_x_offset, _y_offset), scaler) =
-                zone.fit(data.map.width() as usize * FONT_WIDTH as usize,
-                         data.map.height() as usize * FONT_HEIGHT as usize);
+                zone.fit(game.data.map.width() as usize * FONT_WIDTH as usize,
+                         game.data.map.height() as usize * FONT_HEIGHT as usize);
 
-            let mouse_map_xy = zone.within(mouse_state.x as usize, mouse_state.y as usize);
+            let mouse_map_xy = zone.within(game.mouse_state.x as usize, game.mouse_state.y as usize);
             let map_x = mouse_map_xy.0 as f32 / (FONT_WIDTH as f32 * scaler);
             let map_y = mouse_map_xy.1 as f32 / (FONT_HEIGHT as f32 * scaler);
             mouse_map_pos = Some(Pos::new(map_x as i32, map_y as i32));
 
-            if let Some(mouse_handle) = data.find_mouse() {
-                data.objects[mouse_handle].set_xy(map_x as i32, map_y as i32);
+            if let Some(mouse_handle) = game.data.find_mouse() {
+                game.data.objects[mouse_handle].set_xy(map_x as i32, map_y as i32);
             }
         }
     }
@@ -69,8 +66,8 @@ pub fn render_all(display_state: &mut DisplayState,
 
             "map" => {
                 let ((x_offset, y_offset), scaler) =
-                    plot.fit(data.map.width() as usize * FONT_WIDTH as usize,
-                             data.map.height() as usize * FONT_HEIGHT as usize);
+                    plot.fit(game.data.map.width() as usize * FONT_WIDTH as usize,
+                             game.data.map.height() as usize * FONT_HEIGHT as usize);
 
                 let area = Area::new(x_offset as i32,
                                      y_offset as i32,
@@ -80,15 +77,15 @@ pub fn render_all(display_state: &mut DisplayState,
                                      (scaler * FONT_WIDTH as f32) as usize);
 
 
-                render_background(display_state, data, &area, settings, config);
+                render_background(game, &area);
 
-                render_map(display_state, data, &area, settings, config);
+                render_map(game, &area);
 
-                render_objects(display_state, data, settings, config, &area);
+                render_objects(game, &area);
 
-                render_effects(display_state, data, settings, config, &area);
+                render_effects(game, &area);
 
-                render_overlays(display_state, mouse_map_pos, data, settings, &area, config);
+                render_overlays(game, mouse_map_pos, &area);
             }
 
             "inventory" => {
@@ -98,7 +95,7 @@ pub fn render_all(display_state: &mut DisplayState,
                                      plot.height,
                                      FONT_WIDTH as usize,
                                      FONT_HEIGHT as usize);
-                render_inventory(display_state, data, &area, config);
+                render_inventory(game, &area);
             }
 
             "player" => {
@@ -108,7 +105,7 @@ pub fn render_all(display_state: &mut DisplayState,
                                      plot.height,
                                      FONT_WIDTH as usize,
                                      FONT_HEIGHT as usize);
-                render_player(display_state, mouse_map_pos, data, &area, config);
+                render_player(game, &area);
             }
 
             "info" => {
@@ -118,7 +115,7 @@ pub fn render_all(display_state: &mut DisplayState,
                                      plot.height,
                                      FONT_WIDTH as usize,
                                      FONT_HEIGHT as usize);
-                render_info(display_state, mouse_map_pos, data, &area, config);
+                render_info(game, mouse_map_pos, &area);
             }
 
             section_name => {
@@ -127,7 +124,7 @@ pub fn render_all(display_state: &mut DisplayState,
         }
     }
 
-    if settings.state == GameState::Inventory {
+    if game.settings.state == GameState::Inventory {
         let width: usize = 300;
         let height: usize = 500;
         let area = Area::new((SCREEN_WIDTH as i32 / 2) - (width as i32 / 2),
@@ -137,159 +134,153 @@ pub fn render_all(display_state: &mut DisplayState,
                              FONT_WIDTH as usize,
                              FONT_HEIGHT as usize);
 
-        render_inventory(display_state, data, &area, config);
+        render_inventory(game, &area);
     }
 
-    display_state.canvas.present();
+    game.display_state.canvas.present();
 
-    display_state.zones = zones;
+    game.display_state.zones = zones;
 
     Ok(())
 }
 
-pub fn render_player(display_state: &mut DisplayState,
-                     _mouse_xy: Option<Pos>,
-                     data: &mut GameData,
-                     area: &Area, 
-                     config: &Config) {
-    draw_placard(display_state,
+fn render_player(game: &mut Game, area: &Area) {
+    draw_placard(&mut game.display_state,
                  "Player".to_string(),
                  area,
-                 config);
+                 &game.config);
 
-    let player_handle = data.find_player().unwrap();
+    let player_handle = game.data.find_player().unwrap();
 
     let mut list = Vec::new();
 
-    let color = config.color_warm_grey;
+    let color = game.config.color_warm_grey;
     let text_pos = Pos::new(1, 4);
 
-    if let Some(fighter) = data.objects[player_handle].fighter {
+    if let Some(fighter) = game.data.objects[player_handle].fighter {
         let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
 
-        render_bar(display_state, health_percent, 2, config.color_red, Color::white(), area);
+        render_bar(&mut game.display_state, health_percent, 2, game.config.color_red, Color::white(), area);
     }
 
     list.push(format!("position:"));
 
     list.push(format!(" ({}, {})", 
-                      data.objects[player_handle].x,
-                      data.objects[player_handle].y));
+                      game.data.objects[player_handle].x,
+                      game.data.objects[player_handle].y));
 
     list.push(format!(""));
 
-    let move_mode = data.objects[player_handle].move_mode.unwrap();
+    let move_mode = game.data.objects[player_handle].move_mode.unwrap();
     list.push(format!("{}", move_mode.to_string()));
 
-    display_state.draw_text_list(list,
-                                 text_pos,
-                                 color,
-                                 area);
+    game.display_state.draw_text_list(list,
+                                      text_pos,
+                                      color,
+                                      area);
 
 }
 
-pub fn render_info(display_state: &mut DisplayState,
-                   mouse_xy: Option<Pos>,
-                   data: &mut GameData,
-                   area: &Area, 
-                   config: &Config) {
-    draw_placard(display_state,
+fn render_info(game: &mut Game,
+               mouse_xy: Option<Pos>,
+               area: &Area) {
+    draw_placard(&mut game.display_state,
                  "Info".to_string(),
                  area,
-                 config);
+                 &game.config);
 
     if let Some(mouse) = mouse_xy {
-        let player_handle = data.find_player().unwrap();
-        let player_pos = data.objects[player_handle].pos();
+        let player_handle = game.data.find_player().unwrap();
+        let player_pos = game.data.objects[player_handle].pos();
 
         let object_ids =
-            get_objects_under_mouse(mouse, data);
+            get_objects_under_mouse(mouse, &mut game.data);
 
         // only display first object
         if let Some(obj_id) = object_ids.first() {
             let mut y_pos = 1;
 
-            let pos = data.objects[*obj_id].pos();
+            let pos = game.data.objects[*obj_id].pos();
 
             // only display things in the player's FOV
-            if data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) {
-                if let Some(fighter) = data.objects[*obj_id].fighter {
+            if game.data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) {
+                if let Some(fighter) = game.data.objects[*obj_id].fighter {
                     y_pos += 1;
 
                     let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
 
-                    render_bar(display_state, health_percent, y_pos, config.color_red, Color::white(), area);
+                    render_bar(&mut game.display_state,
+                               health_percent,
+                               y_pos,
+                               game.config.color_red,
+                               Color::white(), area);
 
                     y_pos += 2;
                 }
 
                 let mut text_list = Vec::new();
 
-                let color = config.color_warm_grey;
+                let color = game.config.color_warm_grey;
                 let text_pos = Pos::new(1, y_pos);
-                text_list.push(format!("{}", data.objects[*obj_id].name));
+                text_list.push(format!("{}", game.data.objects[*obj_id].name));
 
                 text_list.push(format!(""));
 
-                if data.objects[*obj_id].fighter.map_or(false, |fighter| fighter.hp <= 0) {
+                if game.data.objects[*obj_id].fighter.map_or(false, |fighter| fighter.hp <= 0) {
                     text_list.push(format!("{}", "dead"));
-                } else if let Some(behave) = data.objects[*obj_id].behavior {
+                } else if let Some(behave) = game.data.objects[*obj_id].behavior {
                     text_list.push(format!("{}", behave.description()));
                 }
 
-                display_state.draw_text_list(text_list,
-                                             text_pos,
-                                             color,
-                                             area);
+                game.display_state.draw_text_list(text_list,
+                                                  text_pos,
+                                                  color,
+                                                  area);
             }
         }
     }
 }
 
 /// Render an inventory section within the given area
-pub fn render_inventory(display_state: &mut DisplayState,
-                        data: &mut GameData,
-                        area: &Area, 
-                        config: &Config) {
-
+fn render_inventory(game: &mut Game, area: &Area) {
     // Render header
-    draw_placard(display_state,
+    draw_placard(&mut game.display_state,
                  "Inventory".to_string(),
                  area,
-                 config);
+                 &game.config);
 
-    let player_handle = data.find_player().unwrap();
+    let player_handle = game.data.find_player().unwrap();
 
     // Render each object's name in inventory
     let mut y_pos = 2;
     let mut item_index = 0;
-    for obj_id in data.objects[player_handle].inventory.iter() {
-        let obj = &data.objects[*obj_id];
+    for obj_id in game.data.objects[player_handle].inventory.iter() {
+        let obj = &game.data.objects[*obj_id];
 
         let color;
         match obj.item {
             Some(Item::Stone) => {
-                color = config.color_light_grey;
+                color = game.config.color_light_grey;
             }
 
             Some(Item::Goal) => {
-                color = config.color_red;
+                color = game.config.color_red;
             }
             
             _ => {
-                color = config.color_mint_green;
+                color = game.config.color_mint_green;
             }
         }
 
         // place prompt character
-        display_state.draw_char(('0' as u8 + item_index) as char,
+        game.display_state.draw_char(('0' as u8 + item_index) as char,
                                Pos::new(1, y_pos),
-                               config.color_ice_blue,
+                               game.config.color_ice_blue,
                                area);
 
         // place object name
         let text_pos = Pos::new(2, y_pos);
-        display_state.draw_text(format!(" {}", data.objects[*obj_id].name),
+        game.display_state.draw_text(format!(" {}", game.data.objects[*obj_id].name),
                                text_pos,
                                color,
                                area);
@@ -299,88 +290,91 @@ pub fn render_inventory(display_state: &mut DisplayState,
         item_index += 1;
     }
 
-    if data.objects[player_handle].inventory.len() == 0 {
+    if game.data.objects[player_handle].inventory.len() == 0 {
         let text_pos = Pos::new(1, y_pos);
-        display_state.draw_text(format!("empty"),
+        game.display_state.draw_text(format!("empty"),
                                text_pos,
-                               config.color_ice_blue,
+                               game.config.color_ice_blue,
                                area);
     }
 }
 
 /// render the background files, including water tiles
-pub fn render_background(display_state: &mut DisplayState,
-                         data: &mut GameData,
-                         area: &Area,
-                         settings: &GameSettings,
-                         config: &Config) {
-    let player_handle = data.find_player().unwrap();
-    let pos = data.objects[player_handle].pos();
+fn render_background(game: &mut Game, area: &Area) {
+    let player_handle = game.data.find_player().unwrap();
+    let pos = game.data.objects[player_handle].pos();
 
-    if let Some(background) = &mut display_state.background {
+    if let Some(background) = &mut game.display_state.background {
         let src = area.get_rect();
 
         let dst = area.get_rect();
 
-        display_state.canvas
-                     .copy_ex(background,
-                              Some(src),
-                              Some(dst),
-                              0.0,
-                              None,
-                              false,
-                              false).unwrap();
+        game.display_state
+            .canvas
+            .copy_ex(background,
+                     Some(src),
+                     Some(dst),
+                     0.0,
+                     None,
+                     false,
+                     false).unwrap();
     } else {
-        let pixel_format = display_state.texture_creator.default_pixel_format();
+        let pixel_format = game.display_state.texture_creator.default_pixel_format();
 
         let mut background =
-            display_state.texture_creator
-                         .create_texture_target(pixel_format,
-                                                area.width as u32,
-                                                area.height as u32).unwrap();
+            game.display_state
+                .texture_creator
+                .create_texture_target(pixel_format,
+                                       area.width as u32,
+                                       area.height as u32).unwrap();
 
-        let (canvas, font_image) = (&mut display_state.canvas, &mut display_state.font_image);
-        canvas.with_texture_canvas(&mut background, |canvas| {
-            for y in 0..data.map.height() {
-                for x in 0..data.map.width() {
-                    let map_pos = Pos::new(x, y);
+        {
+            // unpack fields to prevent borrowing issues
+            let (canvas, font_image, map, settings, config) =
+                (&mut game.display_state.canvas,
+                 &mut game.display_state.font_image,
+                 &mut game.data.map,
+                 &game.settings,
+                 &game.config);
 
-                    let visible =
-                        data.map.is_in_fov(pos, map_pos, PLAYER_FOV_RADIUS) ||
-                        settings.god_mode;
+            canvas.with_texture_canvas(&mut background, |canvas| {
+                for y in 0..map.height() {
+                    for x in 0..map.width() {
+                        let map_pos = Pos::new(x, y);
 
-                    draw_char(canvas,
-                              font_image,
-                              MAP_EMPTY_CHAR as char,
-                              map_pos,
-                              empty_tile_color(config, map_pos, visible),
-                              area);
+                        let visible =
+                            map.is_in_fov(pos, map_pos, PLAYER_FOV_RADIUS) ||
+                            settings.god_mode;
 
-                    let tile = &data.map.tiles[x as usize][y as usize];
-                    if tile.tile_type == TileType::Water {
-                        let color = tile_color(config, x, y, tile, visible);
-                        let chr = tile.chr.map_or('+', |chr| chr);
-                        draw_char(canvas, font_image, chr, map_pos, color, area);
+                        draw_char(canvas,
+                                  font_image,
+                                  MAP_EMPTY_CHAR as char,
+                                  map_pos,
+                                  empty_tile_color(&config, map_pos, visible),
+                                  area);
+
+                        let tile = &map.tiles[x as usize][y as usize];
+                        if tile.tile_type == TileType::Water {
+                            let color = tile_color(&config, x, y, tile, visible);
+                            let chr = tile.chr.map_or('+', |chr| chr);
+                            draw_char(canvas, font_image, chr, map_pos, color, area);
+                        }
                     }
                 }
-            }
-        }).unwrap();
+            }).unwrap();
+        }
 
-        display_state.background = Some(background);
+        game.display_state.background = Some(background);
     }
 }
 
 /// Render the map, with environment and walls
-pub fn render_map(display_state: &mut DisplayState,
-                  data: &mut GameData,
-                  area: &Area,
-                  settings: &GameSettings,
-                  config: &Config) {
-    let map_width = data.map.width();
-    let map_height = data.map.height();
+fn render_map(game: &mut Game, area: &Area) {
+    let map_width = game.data.map.width();
+    let map_height = game.data.map.height();
 
-    let player_handle = data.find_player().unwrap();
-    let player_pos = data.objects[player_handle].pos();
+    let player_handle = game.data.find_player().unwrap();
+    let player_pos = game.data.objects[player_handle].pos();
 
     for y in 0..map_height {
         for x in 0..map_width {
@@ -388,20 +382,20 @@ pub fn render_map(display_state: &mut DisplayState,
 
             // Render game stuff
             let visible =
-                data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) ||
-                settings.god_mode;
+                game.data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) ||
+                game.settings.god_mode;
 
-            data.map[pos].explored |= visible;
+            game.data.map[pos].explored |= visible;
 
-            let explored = data.map[pos].explored || visible;
+            let explored = game.data.map[pos].explored || visible;
 
-            let tile = &data.map[pos];
+            let tile = &game.data.map[pos];
 
             let wall_color =
                 if explored {
-                    config.color_light_brown
+                    game.config.color_light_brown
                 } else {
-                    config.color_dark_brown
+                    game.config.color_dark_brown
                 };
 
             let chr = tile.chr.map_or('+', |chr| chr);
@@ -411,65 +405,65 @@ pub fn render_map(display_state: &mut DisplayState,
 
             // if the tile is not empty or water, draw it
             if chr != MAP_EMPTY_CHAR as char && tile.tile_type != TileType::Water {
-                let color = tile_color(config, x, y, tile, visible);
-                display_state.draw_char(chr, pos, color, area);
+                let color = tile_color(&game.config, x, y, tile, visible);
+                game.display_state.draw_char(chr, pos, color, area);
             }
 
             // finally, draw the between-tile walls appropriate to this tile
             if tile.bottom_wall == Wall::ShortWall {
-                display_state.draw_char(MAP_THIN_WALL_BOTTOM as char, pos, wall_color, area);
+                game.display_state.draw_char(MAP_THIN_WALL_BOTTOM as char, pos, wall_color, area);
             } else if tile.bottom_wall == Wall::TallWall {
-                display_state.draw_char(MAP_THICK_WALL_BOTTOM as char, pos, wall_color, area);
+                game.display_state.draw_char(MAP_THICK_WALL_BOTTOM as char, pos, wall_color, area);
             }
 
             if tile.left_wall == Wall::ShortWall {
-                display_state.draw_char(MAP_THIN_WALL_LEFT as char, pos, wall_color, area);
+                game.display_state.draw_char(MAP_THIN_WALL_LEFT as char, pos, wall_color, area);
             } else if tile.left_wall == Wall::TallWall {
-                display_state.draw_char(MAP_THICK_WALL_LEFT as char, pos, wall_color, area);
+                game.display_state.draw_char(MAP_THICK_WALL_LEFT as char, pos, wall_color, area);
             }
 
             if x + 1 < map_width {
-                let right_tile = &data.map.tiles[x as usize + 1][y as usize];
+                let right_tile = &game.data.map.tiles[x as usize + 1][y as usize];
                 if right_tile.left_wall == Wall::ShortWall {
-                    display_state.draw_char(MAP_THIN_WALL_RIGHT as char, pos, wall_color, area);
+                    game.display_state.draw_char(MAP_THIN_WALL_RIGHT as char, pos, wall_color, area);
                 } else if right_tile.left_wall == Wall::TallWall {
-                    display_state.draw_char(MAP_THICK_WALL_RIGHT as char, pos, wall_color, area);
+                    game.display_state.draw_char(MAP_THICK_WALL_RIGHT as char, pos, wall_color, area);
                 }
             }
 
             if y - 1 >= 0 {
-                let above_tile = &data.map.tiles[x as usize][y as usize - 1];
+                let above_tile = &game.data.map.tiles[x as usize][y as usize - 1];
                 if above_tile.bottom_wall == Wall::ShortWall {
-                    display_state.draw_char(MAP_THIN_WALL_TOP as char, pos, wall_color, area);
+                    game.display_state.draw_char(MAP_THIN_WALL_TOP as char, pos, wall_color, area);
                 } else if above_tile.bottom_wall == Wall::TallWall {
-                    display_state.draw_char(MAP_THICK_WALL_TOP as char, pos, wall_color, area);
+                    game.display_state.draw_char(MAP_THICK_WALL_TOP as char, pos, wall_color, area);
                 }
             }
 
             // Draw a square around this tile to help distinguish it visually in the grid
             let outline_color = Color::white();
             let alpha;
-            if visible && data.map[pos].tile_type != TileType::Water {
-                if settings.overlay {
-                    alpha = config.grid_alpha_overlay;
+            if visible && game.data.map[pos].tile_type != TileType::Water {
+                if game.settings.overlay {
+                    alpha = game.config.grid_alpha_overlay;
                 } else {
-                    alpha = config.grid_alpha_visible;
+                    alpha = game.config.grid_alpha_visible;
                 }
             } else {
-                alpha = config.grid_alpha;
+                alpha = game.config.grid_alpha;
             }
             let color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, alpha);
 
-            if config.fog_of_war && !data.map[pos].explored {
+            if game.config.fog_of_war && !game.data.map[pos].explored {
                 let mut black = Color::black();
                 black.a /= 2;
-                display_state.draw_char(MAP_EMPTY_CHAR as char, pos, black, area);
+                game.display_state.draw_char(MAP_EMPTY_CHAR as char, pos, black, area);
             }
 
             // draw an outline around the tile
-            display_state.canvas.set_blend_mode(BlendMode::Blend);
-            display_state.canvas.set_draw_color(color);
-            display_state.canvas.draw_rect(area.char_rect(x, y)).unwrap();
+            game.display_state.canvas.set_blend_mode(BlendMode::Blend);
+            game.display_state.canvas.set_draw_color(color);
+            game.display_state.canvas.draw_rect(area.char_rect(x, y)).unwrap();
         }
     }
 }
@@ -478,38 +472,34 @@ pub fn render_map(display_state: &mut DisplayState,
 /// The strategy here is to copy the effects vector, update all items,
 /// and then remove finished effects from back to front. The
 /// resulting vector of effects is then saved as the new effects vector.
-pub fn render_effects(display_state: &mut DisplayState,
-                      game_data: &mut GameData,
-                      _settings: &GameSettings,
-                      config: &Config,
-                      area: &Area) {
+fn render_effects(game: &mut Game, area: &Area) {
     let mut remove_indices = Vec::new();
 
-    let mut effects = display_state.effects.clone();
+    let mut effects = game.display_state.effects.clone();
 
     for (index, effect) in effects.iter_mut().enumerate() {
         match effect {
             Effect::Sound(sound_aoe, sound_dt) => {
-                let mut highlight_color = config.color_warm_grey;
+                let mut highlight_color = game.config.color_warm_grey;
 
                 let radius = sound_aoe.positions.len();
-                let sound_interval = config.sound_timeout / radius as f32;
+                let sound_interval = game.config.sound_timeout / radius as f32;
                 let cur_dist = *sound_dt / sound_interval;
                 for (dist, dist_positions) in sound_aoe.positions.iter().enumerate() {
                     highlight_color.a =
-                        config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
+                        game.config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
 
                     for pos in dist_positions.iter() {
-                        if !game_data.map[*pos].blocked {
-                            display_state.draw_char(MAP_EMPTY_CHAR as char, *pos, highlight_color, area);
+                        if !game.data.map[*pos].blocked {
+                            game.display_state.draw_char(MAP_EMPTY_CHAR as char, *pos, highlight_color, area);
                         }
                     }
                 }
 
-                if *sound_dt >= config.sound_timeout {
+                if *sound_dt >= game.config.sound_timeout {
                     remove_indices.push(index);
                 } else {
-                    *sound_dt += 1.0 / config.rate as f32;
+                    *sound_dt += 1.0 / game.config.rate as f32;
                 }
             }
         }
@@ -521,45 +511,39 @@ pub fn render_effects(display_state: &mut DisplayState,
         effects.swap_remove(index);
     }
 
-    display_state.effects = effects;
+    game.display_state.effects = effects;
 }
 
 /// Render each object in the game, filtering for objects not currently visible
-pub fn render_objects(display_state: &mut DisplayState,
-                      data: &mut GameData,
-                      settings: &GameSettings,
-                      config: &Config,
-                      area: &Area) {
-    let player_handle = data.find_player().unwrap();
-    let player_pos = data.objects[player_handle].pos();
+fn render_objects(game: &mut Game, area: &Area) {
+    let player_handle = game.data.find_player().unwrap();
+    let player_pos = game.data.objects[player_handle].pos();
 
     // step each objects animation
-    for object_id in data.objects.keys().collect::<Vec<ObjectId>>().iter() {
-        let pos = data.objects[*object_id].pos();
+    for object_id in game.data.objects.keys().collect::<Vec<ObjectId>>().iter() {
+        let pos = game.data.objects[*object_id].pos();
 
         // only draw if within the map (outside is (-1, -1) like if in inventory).
-        if data.map.is_within_bounds(pos) {
+        if game.data.map.is_within_bounds(pos) {
             let is_in_fov = 
-               data.map.is_in_fov(player_pos,
-                                  pos,
-                                  PLAYER_FOV_RADIUS);
+               game.data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS);
 
-            if let Some(anim_key) = data.objects[*object_id].animation.get(0) {
+            if let Some(anim_key) = game.data.objects[*object_id].animation.get(0) {
                 let done = 
-                    step_animation(*anim_key, *object_id, is_in_fov, display_state, data, settings, config, area);
+                    step_animation(*anim_key, *object_id, is_in_fov, &mut game.display_state, &mut game.data, &game.settings, &game.config, area);
 
                 if done {
-                    data.objects[*object_id].animation.pop_front();
+                    game.data.objects[*object_id].animation.pop_front();
                 }
             } else {
-                let color = data.objects[*object_id].color;
-                display_state.draw_char(data.objects[*object_id].chr, pos, color, area);
+                let color = game.data.objects[*object_id].color;
+                game.display_state.draw_char(game.data.objects[*object_id].chr, pos, color, area);
             }
         }
     }
 }
 
-pub fn step_animation(anim_key: AnimKey,
+fn step_animation(anim_key: AnimKey,
                       object_id: ObjectId,
                       is_in_fov: bool,
                       display_state: &mut DisplayState,
@@ -638,32 +622,29 @@ pub fn step_animation(anim_key: AnimKey,
     return false;
 }
 
-pub fn render_overlays(display_state: &mut DisplayState,
-                       map_mouse_pos: Option<Pos>,
-                       data: &mut GameData,
-                       settings: &GameSettings,
-                       area: &Area,
-                       config: &Config) {
-    let player_handle = data.find_player().unwrap();
-    let player_pos = data.objects[player_handle].pos();
+fn render_overlays(game: &mut Game,
+                   map_mouse_pos: Option<Pos>,
+                   area: &Area) {
+    let player_handle = game.data.find_player().unwrap();
+    let player_pos = game.data.objects[player_handle].pos();
 
     // Draw player action overlay. Could draw arrows to indicate how to reach each location
-    let mut highlight_color: Color = config.color_warm_grey;
-    highlight_color.a = config.highlight_player_move;
+    let mut highlight_color: Color = game.config.color_warm_grey;
+    highlight_color.a = game.config.highlight_player_move;
 
     // draw direction overlays
-    let mut direction_color = config.color_light_orange;
+    let mut direction_color = game.config.color_light_orange;
     direction_color.a /= 2;
-    for object_id in data.objects.keys().collect::<Vec<ObjectId>>().iter() {
-        let pos = data.objects[*object_id].pos();
+    for object_id in game.data.objects.keys().collect::<Vec<ObjectId>>().iter() {
+        let pos = game.data.objects[*object_id].pos();
 
         if pos.x == -1 && pos.y == -1 {
             continue;
         }
 
-        if data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
-           data.objects[*object_id].alive {
-            if let Some(dir) = data.objects[*object_id].direction {
+        if game.data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
+           game.data.objects[*object_id].alive {
+            if let Some(dir) = game.data.objects[*object_id].direction {
                 // display_state.draw_tile_edge(pos, area, direction_color, dir);
 
                 let rotation = match dir {
@@ -673,7 +654,7 @@ pub fn render_overlays(display_state: &mut DisplayState,
                     Cardinal::Left => 180.0,
                 };
 
-                display_state.draw_char_with_rotation(ARROW_RIGHT as char, pos, direction_color, area, rotation);
+                game.display_state.draw_char_with_rotation(ARROW_RIGHT as char, pos, direction_color, area, rotation);
             }
         }
     }
@@ -681,81 +662,77 @@ pub fn render_overlays(display_state: &mut DisplayState,
     // draw attack position highlights
     if let Some(mouse_xy) = map_mouse_pos {
         // Draw monster attack overlay
-        let object_ids =  get_objects_under_mouse(mouse_xy, data);
+        let object_ids = get_objects_under_mouse(mouse_xy, &mut game.data);
         for object_id in object_ids.iter() {
-            let pos = data.objects[*object_id].pos();
+            let pos = game.data.objects[*object_id].pos();
 
-            if data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
-               data.objects[*object_id].alive {
-               render_attack_overlay(display_state,
+            if game.data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
+               game.data.objects[*object_id].alive {
+               render_attack_overlay(game,
                                      *object_id,
-                                     data,
-                                     config,
                                      area);
             }
         }
     }
 
-    if settings.overlay {
-        let keys = data.objects.keys().collect::<Vec<ObjectId>>();
+    if game.settings.overlay {
+        let keys = game.data.objects.keys().collect::<Vec<ObjectId>>();
         for object_id in keys {
-            let pos = data.objects[object_id].pos();
+            let pos = game.data.objects[object_id].pos();
 
-            if data.map.is_within_bounds(pos) &&
-               data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
-               data.objects[object_id].alive {
-               render_attack_overlay(display_state,
+            if game.data.map.is_within_bounds(pos) &&
+               game.data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
+               game.data.objects[object_id].alive {
+               render_attack_overlay(game,
                                      object_id,
-                                     data,
-                                     config,
                                      area);
             }
         }
     }
 
     // draw mouse path overlays
-    if let Some(mouse_handle) = data.find_mouse() {
-        let mouse_pos = data.objects[mouse_handle].pos();
-        let player_pos = data.objects[player_handle].pos();
+    if let Some(mouse_handle) = game.data.find_mouse() {
+        let mouse_pos = game.data.objects[mouse_handle].pos();
+        let player_pos = game.data.objects[player_handle].pos();
 
-        if config.draw_star_path {
-            let path = data.map.astar(player_pos, mouse_pos);
+        if game.config.draw_star_path {
+            let path = game.data.map.astar(player_pos, mouse_pos);
             for pos in path {
-                display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
+                game.display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
             }
         }
 
-        if config.draw_mouse_line || settings.draw_throw_overlay {
+        if game.config.draw_mouse_line || game.settings.draw_throw_overlay {
             // mouse pos at 0, 0 occurs when the mouse has not moved since startup.
             // this may cause a weirdness on the corner of the map
             if mouse_pos != Pos::new(0, 0) {
                 let line = Line::new(player_pos.to_tuple(), mouse_pos.to_tuple()).into_iter();
                 for pos in line {
                     let pos = Pos::from(pos);
-                    display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
+                    game.display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
                 }
             }
         }
     }
 
     // Draw player movement overlay
-    if settings.overlay {
+    if game.settings.overlay {
         for move_action in Direction::move_actions().iter() {
             // for all movements except staying still
             if *move_action != Direction::Center {
                 // calculate the move that would occur
                 if let Some(movement) =
                     calculate_move(*move_action,
-                                   data.objects[player_handle].movement.unwrap(),
+                                   game.data.objects[player_handle].movement.unwrap(),
                                    player_handle,
-                                   data) {
+                                   &mut game.data) {
                     // draw a highlight on that square
                     let xy: Pos = movement.xy();
 
                     // don't draw overlay on top of character
-                    if xy != data.objects[player_handle].pos()
+                    if xy != game.data.objects[player_handle].pos()
                     {
-                        display_state.draw_tile_outline(xy, area, highlight_color);
+                        game.display_state.draw_tile_outline(xy, area, highlight_color);
                     }
                 }
             }
@@ -764,12 +741,12 @@ pub fn render_overlays(display_state: &mut DisplayState,
 
 }
 
-pub fn engine_color(color: &Color) -> Sdl2Color {
+fn engine_color(color: &Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
 }
 
-pub fn get_objects_under_mouse(mouse_pos: Pos,
-                               data: &mut GameData) -> Vec<ObjectId> {
+fn get_objects_under_mouse(mouse_pos: Pos,
+                           data: &mut GameData) -> Vec<ObjectId> {
     let mut object_ids = Vec::new();
 
     for key in data.objects.keys() {
@@ -786,7 +763,7 @@ pub fn get_objects_under_mouse(mouse_pos: Pos,
     return object_ids;
 }
 
-pub fn empty_tile_color(config: &Config, pos: Pos, visible: bool) -> Color {
+fn empty_tile_color(config: &Config, pos: Pos, visible: bool) -> Color {
     let perlin = Perlin::new();
 
     let low_color;
@@ -807,7 +784,7 @@ pub fn empty_tile_color(config: &Config, pos: Pos, visible: bool) -> Color {
    return color;
 }
 
-pub fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> Color {
+fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> Color {
     let color = match (tile.tile_type, visible) {
         (TileType::Wall, true) =>
             config.color_light_brown,
@@ -840,10 +817,10 @@ pub fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool)
 }
 
 /// Draw an outline and title around an area of the screen
-pub fn draw_placard(display_state: &mut DisplayState,
-                    text: String,
-                    area: &Area,
-                    config: &Config) {
+fn draw_placard(display_state: &mut DisplayState,
+                text: String,
+                area: &Area,
+                config: &Config) {
     let color = config.color_bone_white;
     
     // Draw a black background
@@ -881,12 +858,12 @@ pub fn draw_placard(display_state: &mut DisplayState,
                            area);
 }
 
-pub fn render_bar(display_state: &mut DisplayState,
-                  percent: f32,
-                  y_pos: i32,
-                  fg_color: Color,
-                  bg_color: Color,
-                  area: &Area) {
+fn render_bar(display_state: &mut DisplayState,
+              percent: f32,
+              y_pos: i32,
+              fg_color: Color,
+              bg_color: Color,
+              area: &Area) {
     display_state.canvas.set_blend_mode(BlendMode::None);
     let color = Sdl2Color::RGBA(fg_color.r, fg_color.g, fg_color.b, fg_color.a);
     display_state.canvas.set_draw_color(color);
@@ -907,20 +884,18 @@ pub fn render_bar(display_state: &mut DisplayState,
     display_state.canvas.draw_rect(full_rect).unwrap();
 }
 
-fn render_attack_overlay(display_state: &mut DisplayState,
+fn render_attack_overlay(game: &mut Game,
                          object_id: ObjectId,
-                         data: &mut GameData,
-                         config: &Config,
                          area: &Area) {
-    let player_handle = data.find_player().unwrap();
-    let player_pos = data.objects[player_handle].pos();
+    let player_handle = game.data.find_player().unwrap();
+    let player_pos = game.data.objects[player_handle].pos();
 
-    let object_pos = data.objects[object_id].pos();
+    let object_pos = game.data.objects[object_id].pos();
 
-    let mut attack_highlight_color = config.color_red;
-    attack_highlight_color.a = config.highlight_attack;
+    let mut attack_highlight_color = game.config.color_red;
+    attack_highlight_color.a = game.config.highlight_attack;
 
-    if let Some(reach) = data.objects[object_id].attack {
+    if let Some(reach) = game.data.objects[object_id].attack {
         let attack_positions = 
             reach.offsets()
                  .iter()
@@ -929,8 +904,8 @@ fn render_attack_overlay(display_state: &mut DisplayState,
                  // filter out positions that are outside of the map, or with no clear
                  // path from the entity to the reached position
                  .filter(|pos| {
-                     let in_bounds = data.map.is_within_bounds(*pos);
-                     let clear = data.clear_path(object_pos, *pos);
+                     let in_bounds = game.data.map.is_within_bounds(*pos);
+                     let clear = game.data.clear_path(object_pos, *pos);
                      // check for player position so it gets highligted, even
                      // though the player causes 'clear_path' to fail.
                      return in_bounds && (clear || *pos == player_pos);
@@ -938,7 +913,7 @@ fn render_attack_overlay(display_state: &mut DisplayState,
                  .collect::<Vec<Pos>>();
 
         for position in attack_positions {
-            display_state.draw_char(MAP_EMPTY_CHAR as char, position, attack_highlight_color, area);
+            game.display_state.draw_char(MAP_EMPTY_CHAR as char, position, attack_highlight_color, area);
         }
     }
 }

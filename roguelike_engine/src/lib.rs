@@ -342,11 +342,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         game.msg_log.clear();
 
         /* Draw the Game to the Screen */
-        render_all(&mut game.display_state,
-                   &mut game.mouse_state,
-                   &mut game.data,
-                   &game.settings,
-                   &game.config)?;
+        render_all(&mut game)?;
 
         /* Reload map if configured to do so */
         if game.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
