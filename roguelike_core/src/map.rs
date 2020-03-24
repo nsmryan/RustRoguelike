@@ -831,7 +831,8 @@ fn test_blocked_by_wall_right() {
     map.update_map();
 
     let left_of_wall = Pos::new(4, 5);
-    assert!(map.is_blocked_by_wall(left_of_wall, 1, 0) == Some(Blocked::RightWall(left_of_wall)));
+    let blocked = map.is_blocked_by_wall(left_of_wall, 1, 0);
+    assert_eq!(blocked.map(|b| b.wall_type == Wall::ShortWall), Some(true));
 
     assert!(map.is_blocked_by_wall(pos, 1, 0).is_none());
 
@@ -848,7 +849,8 @@ fn test_blocked_by_wall_up() {
   
     map.update_map();
 
-    assert_eq!(map.is_blocked_by_wall(Pos::new(5, 6), 0, -1), Some(Blocked::TopWall(pos)));
+    let blocked = map.is_blocked_by_wall(Pos::new(5, 6), 0, -1);
+    assert_eq!(blocked.map(|b| b.wall_type), Some(Wall::ShortWall));
     assert!(map.is_blocked_by_wall(Pos::new(5, 5), 0, -1).is_none());
     assert!(map.is_blocked_by_wall(Pos::new(5, 4), 0, -1).is_none());
 }
@@ -862,7 +864,8 @@ fn test_blocked_by_wall_down() {
   
     map.update_map();
 
-    assert_eq!(map.is_blocked_by_wall(Pos::new(5, 5), 0, 1), Some(Blocked::BottomWall(pos)));
+    let blocked = map.is_blocked_by_wall(Pos::new(5, 5), 0, 1);
+    assert_eq!(blocked.map(|b| b.wall_type), Some(Wall::ShortWall));
     assert!(map.is_blocked_by_wall(Pos::new(5, 6), 0, 1).is_none());
     assert!(map.is_blocked_by_wall(Pos::new(5, 7), 0, 1).is_none());
 }
@@ -876,7 +879,8 @@ fn test_blocked_by_wall_left() {
   
     map.update_map();
 
-    assert_eq!(map.is_blocked_by_wall(Pos::new(5, 5), -1, 0), Some(Blocked::LeftWall(pos)));
+    let blocked = map.is_blocked_by_wall(Pos::new(5, 5), -1, 0);
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
     assert!(map.is_blocked_by_wall(Pos::new(4, 5), -1, 0).is_none());
     assert!(map.is_blocked_by_wall(Pos::new(6, 5), -1, 0).is_none());
 }
