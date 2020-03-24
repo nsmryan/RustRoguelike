@@ -50,3 +50,4 @@ pub struct Config {
     pub fog_of_war: bool,
     pub player_health: i32,
 }
+

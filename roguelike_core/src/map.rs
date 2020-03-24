@@ -944,3 +944,4 @@ fn test_fov_blocked_by_wall_down() {
 
     assert!(map.is_in_fov(Pos::new(5, 1), Pos::new(5, 6), radius) == false);
 }
+

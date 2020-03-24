@@ -76,3 +76,4 @@ pub enum Animation {
     Once(Sprite),                         // play sprite once and end
     PlayEffect(Effect),
 }
+

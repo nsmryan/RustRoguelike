@@ -180,3 +180,4 @@ pub fn next_pos(pos: Pos, delta_pos: Pos) -> Pos {
 
     return next_pos;
 }
+
