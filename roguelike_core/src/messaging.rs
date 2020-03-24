@@ -26,6 +26,7 @@ impl MsgLog {
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Msg {
     Pass(),
+    Crushed(Pos, ObjType),
     SoundTrapTriggered(ObjectId, ObjectId), // trap, entity
     SpikeTrapTriggered(ObjectId, ObjectId), // trap, entity
     PlayerDeath,
@@ -45,6 +46,10 @@ pub enum Msg {
 impl Msg {
     pub fn msg_line(&self, game_data: &GameData) -> String {
         match self {
+            Msg::Crushed(_pos, _obj_type) => {
+                return "An object has been crushed".to_string();
+            }
+
             Msg::Pass() => {
                 return "Player passed their turn".to_string();
             }

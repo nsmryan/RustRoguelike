@@ -6,7 +6,6 @@ use std::fs::File;
 use std::time::Duration;
 use std::io::Read;
 use std::path::Path;
-//use std::io::Write;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
@@ -19,7 +18,7 @@ use serde_yaml;
 use walkdir::WalkDir;
 
 use roguelike_core::types::*;
-//use roguelike_core::config::*;
+use roguelike_core::config::Config;
 use roguelike_core::messaging::Msg;
 use roguelike_core::constants::*;
 use roguelike_core::animation::{Effect, Animation};
@@ -32,8 +31,8 @@ use roguelike_engine::game::*;
 use roguelike_engine::input::*;
 use roguelike_engine::throttler::*;
 use roguelike_engine::read_map::read_map_xp;
+use roguelike_engine::generation::make_rubble;
 
-use roguelike_core::config::Config;
 
 
 fn main() {
@@ -238,6 +237,10 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             println!("msg: {}", msg.msg_line(&game.data));
 
             match msg {
+                Msg::Crushed(pos, obj_type) => {
+                    game.data.objects.insert(make_rubble(&game.config, *pos));
+                }
+
                 Msg::ItemThrow(thrower, item_id, start, end) => {
                     // NOTE the radius here is the stone radius, regardless of item type
 
@@ -322,6 +325,10 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                             game.data.objects[*attacked].animation.clear();
                             game.data.objects[*attacked].animation.push_front(anim);
                         }
+
+                        let pos = game.data.objects[*attacked].pos();
+
+                        game.data.objects.insert(make_rubble(&game.config, pos));
                     }
 
                     game.data.objects[*attacked].needs_removal = true;

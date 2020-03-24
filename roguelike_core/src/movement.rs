@@ -452,16 +452,15 @@ pub fn player_move_or_attack(movement: Movement,
             if blocked == None {
                 data.objects[player_handle].move_to(attack_pos);
 
-                dbg!(pos, attack_pos, next_pos);
-                data.objects[target_handle].move_to(next_pos);
-                data.objects[target_handle].chr = MAP_RUBBLE as char;
-                data.objects[target_handle].blocks = false;
+                data.objects.remove(target_handle);
 
                 if let Some(hit_entity) = data.is_blocked_tile(next_pos) {
                     crush(target_handle, hit_entity, &mut data.objects, msg_log);
                 }
 
                 player_action = Move(movement);
+
+                msg_log.log(Msg::Crushed(next_pos, ObjType::Column));
             } else {
                 player_action = NoAction;
             }
