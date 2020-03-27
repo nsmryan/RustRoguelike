@@ -13,6 +13,7 @@ pub const SOUND_RADIUS_SNEAK: usize = 2;
 pub const SOUND_RADIUS_WALK: usize = 3;
 pub const SOUND_RADIUS_RUN: usize = 5;
 pub const SOUND_RADIUS_STONE: usize = 3;
+pub const SOUND_RADIUS_MONSTER_MOVE: usize = 7;
 
 /* General Settings */
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
@@ -20,7 +21,7 @@ pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
 /* Monster Settings */
 pub const MAX_MONSTERS: i32 = 15;
 
-pub const MONSTER_FOV_RADIUS: i32 = 6;
+pub const MONSTER_FOV_RADIUS: i32 = 7;
 
 pub const GOL_ATTACK_DISTANCE: usize = 5;
 pub const GOL_MOVE_DISTANCE: usize = 1;

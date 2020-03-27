@@ -457,7 +457,7 @@ fn render_map(game: &mut Game, area: &Area) {
             if game.config.fog_of_war && !visible {
                 let mut blackout_color = Color::black();
                 if game.data.map[pos].explored {
-                    blackout_color.a /= 2;
+                    blackout_color.a = game.config.explored_alpha
                 }
                 game.display_state.draw_char(MAP_EMPTY_CHAR as char, pos, blackout_color, area);
             }
@@ -481,6 +481,18 @@ fn render_effects(game: &mut Game, area: &Area) {
 
     for (index, effect) in effects.iter_mut().enumerate() {
         match effect {
+            Effect::HeardSomething(pos, created_turn) => {
+                game.display_state.draw_char(ENTITY_ELF as char,
+                                             *pos,
+                                             game.config.color_warm_grey,
+                                             area);
+
+                if *created_turn != game.settings.turn_count {
+                    dbg!(*created_turn, game.settings.turn_count);
+                    remove_indices.push(index);
+                }
+            }
+
             Effect::Sound(sound_aoe, sound_dt) => {
                 let mut highlight_color = game.config.color_warm_grey;
 
@@ -491,8 +503,11 @@ fn render_effects(game: &mut Game, area: &Area) {
                     highlight_color.a =
                         game.config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
 
+                    let player_handle = game.data.find_player().unwrap();
+                    let player_pos = game.data.objects[player_handle].pos();
                     for pos in dist_positions.iter() {
-                        if !game.data.map[*pos].blocked {
+                        if !game.data.map[*pos].blocked &&
+                           game.data.map.is_in_fov(player_pos, *pos, PLAYER_FOV_RADIUS) {
                             game.display_state.draw_char(MAP_EMPTY_CHAR as char, *pos, highlight_color, area);
                         }
                     }
@@ -532,14 +547,23 @@ fn render_objects(game: &mut Game, area: &Area) {
 
             if let Some(anim_key) = game.data.objects[*object_id].animation.get(0) {
                 let done = 
-                    step_animation(*anim_key, *object_id, is_in_fov, &mut game.display_state, &mut game.data, &game.settings, &game.config, area);
+                    step_animation(*anim_key,
+                                   *object_id,
+                                   is_in_fov,
+                                   &mut game.display_state,
+                                   &mut game.data,
+                                   &game.settings,
+                                   &game.config,
+                                   area);
 
                 if done {
                     game.data.objects[*object_id].animation.pop_front();
                 }
             } else {
-                let color = game.data.objects[*object_id].color;
-                game.display_state.draw_char(game.data.objects[*object_id].chr, pos, color, area);
+                if is_in_fov {
+                    let color = game.data.objects[*object_id].color;
+                    game.display_state.draw_char(game.data.objects[*object_id].chr, pos, color, area);
+                }
             }
         }
     }

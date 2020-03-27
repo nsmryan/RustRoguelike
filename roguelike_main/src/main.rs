@@ -278,7 +278,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                                 player.move_mode = player.move_mode.map(|mode| mode.decrease());
                             }
                             // this is just to pattern match on movement
-                        } else {
+                        } else { // monster moved
                             let sound_radius;
                             match game.data.objects[player_handle].move_mode.unwrap() {
                                 MoveMode::Sneak => sound_radius = SOUND_RADIUS_SNEAK,
@@ -301,6 +301,11 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                             let sound_effect = Effect::Sound(sound_aoe, 0.0);
                             game.display_state.play_effect(sound_effect);
                         }
+                    } else {
+                        let sound_aoe = game.data.sound_at(*object_id, *pos, SOUND_RADIUS_MONSTER_MOVE);
+
+                        let sound_effect = Effect::Sound(sound_aoe, 0.0);
+                        game.display_state.play_effect(sound_effect);
                     }
                 }
 
@@ -378,6 +383,23 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             }
             game.data.objects.insert(player);
         }
+
+        /* Process Player Messages */
+        let player_handle = game.data.find_player().unwrap();
+        for message in game.data.objects[player_handle].messages.iter() {
+            if let Message::Sound(obj_id, pos) = message {
+                if *obj_id == player_handle {
+                    panic!("Player sent themselves a message?")
+                }
+
+                let player_pos = game.data.objects[player_handle].pos();
+                if !game.data.map.is_in_fov(player_pos, *pos, PLAYER_FOV_RADIUS) {
+                    let heard = Effect::HeardSomething(*pos, game.settings.turn_count);
+                    game.display_state.effects.push(heard);
+                }
+            }
+        }
+        game.data.objects[player_handle].messages.clear();
 
         /* Remove objects are awaiting removal */
         {

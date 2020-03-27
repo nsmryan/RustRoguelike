@@ -49,5 +49,6 @@ pub struct Config {
     pub player_yell_radius: usize,
     pub fog_of_war: bool,
     pub player_health: i32,
+    pub explored_alpha: u8,
 }
 

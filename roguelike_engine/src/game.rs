@@ -297,7 +297,6 @@ impl Game {
             if win_condition_met(&self.data) {
                 self.settings.state = GameState::Win;
             }
-        } else {
             self.settings.turn_count += 1;
         }
 

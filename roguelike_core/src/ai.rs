@@ -263,9 +263,10 @@ pub fn ai_apply_actions(monster_handle: ObjectId,
         Action::Move(movement) => {
             match movement {
                 Movement::Move(pos_offset) => {
-                    game_data.objects[monster_handle].move_to(add_pos(pos, pos_offset));
+                    let new_pos = add_pos(pos, pos_offset);
+                    game_data.objects[monster_handle].move_to(new_pos);
 
-                    msg_log.log(Msg::Moved(monster_handle, movement, pos));
+                    msg_log.log(Msg::Moved(monster_handle, movement, new_pos));
                 }
 
                 Movement::Attack(attack_pos, target_handle) => {
