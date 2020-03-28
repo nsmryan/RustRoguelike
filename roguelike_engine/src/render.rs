@@ -404,9 +404,13 @@ fn render_map(game: &mut Game, area: &Area) {
             // draw_char(display_state, MAP_EMPTY_CHAR as char, x, y, empty_tile_color(config, x, y, visible));
 
             // if the tile is not empty or water, draw it
+            let color = tile_color(&game.config, x, y, tile, visible);
             if chr != MAP_EMPTY_CHAR as char && tile.tile_type != TileType::Water {
-                let color = tile_color(&game.config, x, y, tile, visible);
                 game.display_state.draw_char(chr, pos, color, area);
+            }
+
+            if tile.surface == Surface::Rubble {
+                game.display_state.draw_char(MAP_RUBBLE as char, pos, color, area);
             }
 
             // finally, draw the between-tile walls appropriate to this tile

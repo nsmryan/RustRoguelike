@@ -251,7 +251,6 @@ pub enum ObjType {
     Enemy,
     Item,
     Column,
-    Rubble,
     Other,
 }
 

@@ -18,6 +18,7 @@ use serde_yaml;
 use walkdir::WalkDir;
 
 use roguelike_core::types::*;
+use roguelike_core::map::Surface;
 use roguelike_core::config::Config;
 use roguelike_core::messaging::Msg;
 use roguelike_core::constants::*;
@@ -31,8 +32,6 @@ use roguelike_engine::game::*;
 use roguelike_engine::input::*;
 use roguelike_engine::throttler::*;
 use roguelike_engine::read_map::read_map_xp;
-use roguelike_engine::generation::make_rubble;
-
 
 
 fn main() {
@@ -238,7 +237,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
             match msg {
                 Msg::Crushed(pos, obj_type) => {
-                    game.data.objects.insert(make_rubble(&game.config, *pos));
+                    game.data.map[*pos].surface = Surface::Rubble;
                 }
 
                 Msg::ItemThrow(thrower, item_id, start, end) => {
@@ -279,11 +278,15 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                             }
                             // this is just to pattern match on movement
                         } else { // monster moved
-                            let sound_radius;
+                            let mut sound_radius;
                             match game.data.objects[player_handle].move_mode.unwrap() {
                                 MoveMode::Sneak => sound_radius = SOUND_RADIUS_SNEAK,
                                 MoveMode::Walk => sound_radius = SOUND_RADIUS_WALK,
                                 MoveMode::Run => sound_radius = SOUND_RADIUS_RUN,
+                            }
+
+                            if game.data.map[*pos].surface == Surface::Rubble {
+                                sound_radius += config.sound_rubble_radius;
                             }
 
                             let idle_sprite =
@@ -333,7 +336,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
                         let pos = game.data.objects[*attacked].pos();
 
-                        game.data.objects.insert(make_rubble(&game.config, pos));
+                        game.data.map[pos].surface = Surface::Rubble;
                     }
 
                     game.data.objects[*attacked].needs_removal = true;

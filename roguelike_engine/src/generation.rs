@@ -57,12 +57,6 @@ pub fn make_column(config: &Config, pos: Pos) -> Object {
     return object;
 }
 
-pub fn make_rubble(config: &Config, pos: Pos) -> Object {
-    let object = Object::new(pos.x, pos.y, ObjType::Rubble, MAP_RUBBLE as char, config.color_light_grey, "rubble", false);
-
-    return object;
-}
-
 pub fn make_dagger(config: &Config, pos: Pos) -> Object {
     let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_DAGGER as char, config.color_light_grey, "dagger", false);
 

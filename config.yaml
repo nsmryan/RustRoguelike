@@ -127,3 +127,4 @@ player_yell_radius: 4
 fog_of_war: true
 player_health: 300
 explored_alpha: 150
+sound_rubble_radius: 1

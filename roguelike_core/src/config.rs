@@ -50,5 +50,6 @@ pub struct Config {
     pub fog_of_war: bool,
     pub player_health: i32,
     pub explored_alpha: u8,
+    pub sound_rubble_radius: usize,
 }
 

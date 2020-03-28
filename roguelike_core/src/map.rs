@@ -94,6 +94,12 @@ impl Default for MapLoadConfig {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum Surface {
+    Floor,
+    Rubble,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Tile {
     pub blocked: bool,
     pub block_sight: bool,
@@ -103,6 +109,7 @@ pub struct Tile {
     pub bottom_wall: Wall,
     pub left_wall: Wall,
     pub chr: Option<char>,
+    pub surface: Surface,
 }
 
 impl Tile {
@@ -115,6 +122,7 @@ impl Tile {
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
         chr: Some(' '),
+        surface: Surface::Floor,
         }
     }
 
@@ -127,6 +135,7 @@ impl Tile {
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
         chr: Some(' '),
+        surface: Surface::Floor,
         }
     }
 
@@ -143,6 +152,7 @@ impl Tile {
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
         chr: chr,
+        surface: Surface::Floor,
         }
     }
 
@@ -159,6 +169,7 @@ impl Tile {
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
         chr: chr,
+        surface: Surface::Floor,
         }
     }
 
@@ -171,6 +182,7 @@ impl Tile {
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
         chr: None,
+        surface: Surface::Floor,
         }
     }
 }
