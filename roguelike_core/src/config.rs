@@ -51,5 +51,6 @@ pub struct Config {
     pub player_health: i32,
     pub explored_alpha: u8,
     pub sound_rubble_radius: usize,
+    pub sound_radius_crushed: usize
 }
 

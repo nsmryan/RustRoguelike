@@ -460,7 +460,7 @@ pub fn player_move_or_attack(movement: Movement,
 
                 player_action = Move(movement);
 
-                msg_log.log(Msg::Crushed(next_pos, ObjType::Column));
+                msg_log.log(Msg::Crushed(player_handle, next_pos, ObjType::Column));
             } else {
                 player_action = NoAction;
             }
