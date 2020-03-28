@@ -562,10 +562,6 @@ impl Map {
                         return true;
                     }
                 }
-
-                Direction::Center => {
-                    panic!("Does this happen? Should you see in all directions?");
-                }
             }
         }
             
@@ -573,6 +569,10 @@ impl Map {
     }
 
     pub fn is_in_fov(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
+        if start_pos == end_pos {
+            return true;
+        }
+
         if self.fov_pos != start_pos {
             self.compute_fov(start_pos, radius);
         }

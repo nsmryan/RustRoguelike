@@ -236,7 +236,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             println!("msg: {}", msg.msg_line(&game.data));
 
             match msg {
-                Msg::Crushed(object_id, pos, obj_type) => {
+                Msg::Crushed(object_id, pos, _obj_type) => {
                     game.data.map[*pos].surface = Surface::Rubble;
 
                     let sound_aoe = game.data.sound_at(*object_id, *pos, config.sound_radius_crushed);

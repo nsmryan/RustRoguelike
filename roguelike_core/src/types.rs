@@ -340,7 +340,10 @@ impl Object {
         let diff_x = pos.x - self_pos.x;
         let diff_y = pos.y - self_pos.y;
 
-        self.direction = Some(Direction::from_dxy(diff_x, diff_y));
+        if self_pos != pos {
+            self.direction = Some(Direction::from_dxy(diff_x, diff_y));
+        }
+
         self.set_pos(pos);
     }
 

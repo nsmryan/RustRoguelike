@@ -171,13 +171,12 @@ pub enum Direction {
     DownRight,
     UpLeft,
     UpRight,
-    Center,
 }
 
 impl Direction {
     pub fn from_dxy(dx: i32, dy: i32) -> Direction {
         if dx == 0 && dy == 0 {
-            Direction::Center
+            panic!("Hmmmm. This maybe shouldn't have happened");
         } else if dx == 0 && dy < 0 {
             Direction::Up
         } else if dx == 0 && dy > 0 {
@@ -209,7 +208,6 @@ impl Direction {
             Direction::DownRight => (1, 1),
             Direction::UpLeft => (-1, -1),
             Direction::UpRight => (1, -1),
-            Direction::Center => (0, 0),
         }
     }
 
@@ -221,8 +219,7 @@ impl Direction {
                     Direction::DownLeft,
                     Direction::DownRight,
                     Direction::UpLeft,
-                    Direction::UpRight,
-                    Direction::Center);
+                    Direction::UpRight);
     }
 }
 
@@ -248,7 +245,6 @@ impl Reach {
                     Direction::DownRight => Some(Pos::new(dist, dist)),
                     Direction::UpLeft => Some(Pos::new(neg_dist, neg_dist)),
                     Direction::UpRight => Some(Pos::new(dist, neg_dist)),
-                    Direction::Center => Some(Pos::new(0, 0)),
                 }
             }
 
@@ -264,7 +260,6 @@ impl Reach {
                     Direction::DownRight => Some(Pos::new(dist, dist)),
                     Direction::UpLeft => Some(Pos::new(neg_dist, neg_dist)),
                     Direction::UpRight => Some(Pos::new(dist, neg_dist)),
-                    Direction::Center => Some(Pos::new(0, 0)),
                 }
             }
 
@@ -280,7 +275,6 @@ impl Reach {
                     Direction::DownRight => None,
                     Direction::UpLeft => None,
                     Direction::UpRight => None,
-                    Direction::Center => None,
                 }
             }
         }

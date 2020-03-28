@@ -151,23 +151,23 @@ pub fn handle_input(input_action: InputAction,
     let player_alive = game_data.objects[player_handle].alive;
 
     match (input_action, player_alive) {
+        (InputAction::Pass, true) => {
+            player_turn = Action::Pass;
+        }
+
         (InputAction::Move(move_action), true) => {
             let player_handle = game_data.find_player().unwrap();
 
-            if move_action == movement::Direction::Center {
-                player_turn = Action::Pass;
-            } else {
-                let player_reach = game_data.objects[player_handle].movement.unwrap();
-                let maybe_movement = 
-                    movement::calculate_move(move_action,
-                                             player_reach,
-                                             player_handle,
-                                             game_data);
+            let player_reach = game_data.objects[player_handle].movement.unwrap();
+            let maybe_movement = 
+                movement::calculate_move(move_action,
+                                         player_reach,
+                                         player_handle,
+                                         game_data);
 
-                // if moved, walked into enemy, and holding a dagger, then attack
-                if let Some(movement) = maybe_movement {
-                    player_turn = Action::Move(movement);
-                }
+            // if moved, walked into enemy, and holding a dagger, then attack
+            if let Some(movement) = maybe_movement {
+                player_turn = Action::Move(movement);
             }
         }
 

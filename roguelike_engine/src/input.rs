@@ -14,6 +14,7 @@ pub enum KeyDirection {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum InputAction {
     Move(Direction),
+    Pass,
     MapClick(Pos, Pos),
     Pickup,
     Inventory,
@@ -109,7 +110,7 @@ pub fn keyup_to_action(keycode: Keycode,
             if game_state == GameState::Inventory {
                 input_action = InputAction::SelectItem(5);
             } else {
-                input_action = InputAction::Move(Direction::Center);
+                input_action = InputAction::Pass;
             }
         }
 

@@ -668,7 +668,7 @@ fn render_overlays(game: &mut Game,
                 let y_diff = y - player_pos.y;
 
                 if x_diff.abs() < 5 && y_diff.abs() < 5 {
-                    let res: i8 = (x_diff as i8 - y_diff as i8);
+                    let res: i8 = x_diff as i8 - y_diff as i8;
                     if res <= 0 {
                         game.display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_green, area);
                     } else {
@@ -686,11 +686,8 @@ fn render_overlays(game: &mut Game,
         for y in 0..map_height {
             for x in 0..map_width {
                 let pos = Pos::new(x, y);
-                let x_diff = x - player_pos.x;
-                let y_diff = y - player_pos.y;
 
                 let dir = game.data.objects[player_handle].direction.unwrap();
-                dbg!(dir);
                 let is_in_fov =
                     game.data.map.is_in_fov_direction(player_pos,
                                                       pos,
@@ -731,7 +728,6 @@ fn render_overlays(game: &mut Game,
                     Direction::DownRight => 45.0,
                     Direction::UpLeft => -135.0,
                     Direction::UpRight => -45.0,
-                    Direction::Center => 0.0,
                 };
 
                 game.display_state.draw_char_with_rotation(ARROW_RIGHT as char, pos, direction_color, area, rotation);
@@ -799,21 +795,19 @@ fn render_overlays(game: &mut Game,
     if game.settings.overlay {
         for move_action in Direction::move_actions().iter() {
             // for all movements except staying still
-            if *move_action != Direction::Center {
-                // calculate the move that would occur
-                if let Some(movement) =
-                    calculate_move(*move_action,
-                                   game.data.objects[player_handle].movement.unwrap(),
-                                   player_handle,
-                                   &mut game.data) {
-                    // draw a highlight on that square
-                    let xy: Pos = movement.xy();
+            // calculate the move that would occur
+            if let Some(movement) =
+                calculate_move(*move_action,
+                               game.data.objects[player_handle].movement.unwrap(),
+                               player_handle,
+                               &mut game.data) {
+                // draw a highlight on that square
+                let xy: Pos = movement.xy();
 
-                    // don't draw overlay on top of character
-                    if xy != game.data.objects[player_handle].pos()
-                    {
-                        game.display_state.draw_tile_outline(xy, area, highlight_color);
-                    }
+                // don't draw overlay on top of character
+                if xy != game.data.objects[player_handle].pos()
+                {
+                    game.display_state.draw_tile_outline(xy, area, highlight_color);
                 }
             }
         }
@@ -821,9 +815,9 @@ fn render_overlays(game: &mut Game,
 
 }
 
-fn engine_color(color: &Color) -> Sdl2Color {
-    return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
-}
+//fn engine_color(color: &Color) -> Sdl2Color {
+//    return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
+//}
 
 fn get_objects_under_mouse(mouse_pos: Pos,
                            data: &mut GameData) -> Vec<ObjectId> {
