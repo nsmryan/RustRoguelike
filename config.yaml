@@ -113,7 +113,7 @@ sound_alpha: 86
 grid_alpha: 8
 grid_alpha_visible: 30
 grid_alpha_overlay: 150
-map_load: TestWall
+map_load: FromFile
 map_file: map.xp
 idle_speed: 0.3499999940395355
 draw_mouse_line: false
@@ -129,3 +129,4 @@ player_health: 300
 explored_alpha: 150
 sound_rubble_radius: 1
 sound_radius_crushed: 3
+overlay_directions: false

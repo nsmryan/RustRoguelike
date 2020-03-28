@@ -286,7 +286,7 @@ pub struct Object {
     pub count_down: Option<usize>,
     pub move_mode: Option<MoveMode>,
     pub needs_removal: bool,
-    pub direction: Option<Cardinal>,
+    pub direction: Option<Direction>,
     pub messages: Vec<Message>,
     pub selected_item: Option<ObjectId>,
 }
@@ -315,7 +315,7 @@ impl Object {
             count_down: None,
             move_mode: None,
             needs_removal: false,
-            direction: Some(Cardinal::Up),
+            direction: Some(Direction::Up),
             messages: Vec::new(),
             selected_item: None,
         }
@@ -340,7 +340,7 @@ impl Object {
         let diff_x = pos.x - self_pos.x;
         let diff_y = pos.y - self_pos.y;
 
-        self.direction = Cardinal::from_dxy(self.direction, diff_x, diff_y).or(self.direction);
+        self.direction = Some(Direction::from_dxy(diff_x, diff_y));
         self.set_pos(pos);
     }
 
@@ -357,7 +357,7 @@ impl Object {
             diff_y -= diff_y.signum();
         }
 
-        self.direction = Cardinal::from_dxy(self.direction, diff_x, diff_y).or(self.direction);
+        self.direction = Some(Direction::from_dxy(diff_x, diff_y));
         self.set_pos(Pos::new(self.x + diff_x, self.y + diff_y));
     }
 

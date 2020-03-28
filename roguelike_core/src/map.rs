@@ -507,7 +507,7 @@ impl Map {
         return self.tiles[0].len() as i32;
     }
 
-    pub fn is_in_fov_direction(&mut self, start_pos: Pos, end_pos: Pos, radius: i32, dir: Cardinal) -> bool {
+    pub fn is_in_fov_direction(&mut self, start_pos: Pos, end_pos: Pos, radius: i32, dir: Direction) -> bool {
         if start_pos == end_pos {
             return true;
         } else if self.is_in_fov(start_pos, end_pos, radius) {
@@ -518,28 +518,54 @@ impl Map {
             dbg!(x_sig, y_sig);
 
             match dir {
-                Cardinal::Up => {
+                Direction::Up => {
                     if y_sig < 1 {
                         return true;
                     }
                 }
 
-                Cardinal::Down => {
+                Direction::Down => {
                     if y_sig > -1 {
                         return true;
                     }
                 }
 
-                Cardinal::Left => {
+                Direction::Left => {
                     if x_sig < 1 {
                         return true;
                     }
                 }
 
-                Cardinal::Right => {
+                Direction::Right => {
                     if x_sig > -1 {
                         return true;
                     }
+                }
+                Direction::DownLeft => {
+                    if x_sig > -1 && x_sig > 1 {
+                        return true;
+                    }
+                }
+
+                Direction::DownRight => {
+                    if y_sig > -1 && x_sig > -1 {
+                        return true;
+                    }
+                }
+
+                Direction::UpLeft => {
+                    if y_sig < 1 && x_sig < 1 {
+                        return true;
+                    }
+                }
+
+                Direction::UpRight => {
+                    if y_sig < 1 && x_sig > -1 {
+                        return true;
+                    }
+                }
+
+                Direction::Center => {
                 }
             }
         }

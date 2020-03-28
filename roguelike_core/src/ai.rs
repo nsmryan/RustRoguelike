@@ -276,7 +276,7 @@ pub fn ai_apply_actions(monster_handle: ObjectId,
 
                     // ensure that attacking changes the orientation of an entity
                     game_data.objects[monster_handle].direction =
-                        Cardinal::from_dxy(dir, pos_diff.x, pos_diff.y).or(dir);
+                        Some(Direction::from_dxy(pos_diff.x, pos_diff.y));
 
                     attack(monster_handle, target_handle, &mut game_data.objects, msg_log);
                 },

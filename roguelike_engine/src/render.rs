@@ -658,6 +658,32 @@ fn render_overlays(game: &mut Game,
     let player_handle = game.data.find_player().unwrap();
     let player_pos = game.data.objects[player_handle].pos();
 
+    if game.config.overlay_directions {
+        let map_width = game.data.map.width();
+        let map_height = game.data.map.height();
+        for y in 0..map_height {
+            for x in 0..map_width {
+                let pos = Pos::new(x, y);
+                let x_diff = x - player_pos.x;
+                let y_diff = y - player_pos.y;
+
+                // up right is (x_diff - y_diff) > 0
+                // down left is (-1 * (x_diff - y_diff)) > 0
+                // up left is (-1 * (x_diff + y_diff)) > 0
+                // down right is (x_diff + y_diff) > 0
+                if x_diff.abs() < 5 && y_diff.abs() < 5 {
+                    let res: i8 = 1 * (x_diff as i8 + y_diff as i8);
+                    if res < 0 {
+                        game.display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_green, area);
+                    } else {
+                        game.display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_grey, area);
+                    }
+                    game.display_state.draw_char(('0' as u8 + res.abs() as u8) as char, pos, game.config.color_red, area);
+                }
+            }
+        }
+    }
+
     // Draw player action overlay. Could draw arrows to indicate how to reach each location
     let mut highlight_color: Color = game.config.color_warm_grey;
     highlight_color.a = game.config.highlight_player_move;
@@ -678,10 +704,15 @@ fn render_overlays(game: &mut Game,
                 // display_state.draw_tile_edge(pos, area, direction_color, dir);
 
                 let rotation = match dir {
-                    Cardinal::Up => -90.0,
-                    Cardinal::Down => 90.0,
-                    Cardinal::Right => 0.0,
-                    Cardinal::Left => 180.0,
+                    Direction::Up => -90.0,
+                    Direction::Down => 90.0,
+                    Direction::Right => 0.0,
+                    Direction::Left => 180.0,
+                    Direction::DownLeft => 135.0,
+                    Direction::DownRight => 45.0,
+                    Direction::UpLeft => -135.0,
+                    Direction::UpRight => -45.0,
+                    Direction::Center => 0.0,
                 };
 
                 game.display_state.draw_char_with_rotation(ARROW_RIGHT as char, pos, direction_color, area, rotation);
