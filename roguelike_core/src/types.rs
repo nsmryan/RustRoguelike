@@ -315,7 +315,7 @@ impl Object {
             count_down: None,
             move_mode: None,
             needs_removal: false,
-            direction: None,
+            direction: Some(Cardinal::Up),
             messages: Vec::new(),
             selected_item: None,
         }

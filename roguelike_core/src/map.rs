@@ -515,8 +515,32 @@ impl Map {
             let x_sig = pos_diff.x.signum();
             let y_sig = pos_diff.y.signum();
 
-            if (x_sig == dir.x_signum() && x_sig != 0) || (y_sig == dir.y_signum() && y_sig != 0) {
-                return true;
+            dbg!(x_sig, y_sig);
+
+            match dir {
+                Cardinal::Up => {
+                    if y_sig < 1 {
+                        return true;
+                    }
+                }
+
+                Cardinal::Down => {
+                    if y_sig > -1 {
+                        return true;
+                    }
+                }
+
+                Cardinal::Left => {
+                    if x_sig < 1 {
+                        return true;
+                    }
+                }
+
+                Cardinal::Right => {
+                    if x_sig > -1 {
+                        return true;
+                    }
+                }
             }
         }
             
