@@ -183,9 +183,9 @@ impl Direction {
         } else if dx == 0 && dy > 0 {
             Direction::Down
         } else if dx > 0 && dy == 0 {
-            Direction::Left
-        } else if dx < 0 && dy == 0 {
             Direction::Right
+        } else if dx < 0 && dy == 0 {
+            Direction::Left
         } else if dx > 0 && dy > 0 {
             Direction::DownRight
         } else if dx > 0 && dy < 0 {

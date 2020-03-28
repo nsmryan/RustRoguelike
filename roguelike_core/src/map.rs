@@ -515,8 +515,6 @@ impl Map {
             let x_sig = pos_diff.x.signum();
             let y_sig = pos_diff.y.signum();
 
-            dbg!(x_sig, y_sig);
-
             match dir {
                 Direction::Up => {
                     if y_sig < 1 {
@@ -542,30 +540,31 @@ impl Map {
                     }
                 }
                 Direction::DownLeft => {
-                    if x_sig > -1 && x_sig > 1 {
+                    if pos_diff.x - pos_diff.y < 0 {
                         return true;
                     }
                 }
 
                 Direction::DownRight => {
-                    if y_sig > -1 && x_sig > -1 {
+                    if pos_diff.x + pos_diff.y >= 0 {
                         return true;
                     }
                 }
 
                 Direction::UpLeft => {
-                    if y_sig < 1 && x_sig < 1 {
+                    if pos_diff.x + pos_diff.y <= 0 {
                         return true;
                     }
                 }
 
                 Direction::UpRight => {
-                    if y_sig < 1 && x_sig > -1 {
+                    if pos_diff.x - pos_diff.y > 0 {
                         return true;
                     }
                 }
 
                 Direction::Center => {
+                    panic!("Does this happen? Should you see in all directions?");
                 }
             }
         }

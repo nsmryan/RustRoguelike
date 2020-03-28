@@ -667,18 +667,37 @@ fn render_overlays(game: &mut Game,
                 let x_diff = x - player_pos.x;
                 let y_diff = y - player_pos.y;
 
-                // up right is (x_diff - y_diff) > 0
-                // down left is (-1 * (x_diff - y_diff)) > 0
-                // up left is (-1 * (x_diff + y_diff)) > 0
-                // down right is (x_diff + y_diff) > 0
                 if x_diff.abs() < 5 && y_diff.abs() < 5 {
-                    let res: i8 = 1 * (x_diff as i8 + y_diff as i8);
-                    if res < 0 {
+                    let res: i8 = (x_diff as i8 - y_diff as i8);
+                    if res <= 0 {
                         game.display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_green, area);
                     } else {
                         game.display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_grey, area);
                     }
                     game.display_state.draw_char(('0' as u8 + res.abs() as u8) as char, pos, game.config.color_red, area);
+                }
+            }
+        }
+    }
+
+    if game.config.overlay_player_fov {
+        let map_width = game.data.map.width();
+        let map_height = game.data.map.height();
+        for y in 0..map_height {
+            for x in 0..map_width {
+                let pos = Pos::new(x, y);
+                let x_diff = x - player_pos.x;
+                let y_diff = y - player_pos.y;
+
+                let dir = game.data.objects[player_handle].direction.unwrap();
+                dbg!(dir);
+                let is_in_fov =
+                    game.data.map.is_in_fov_direction(player_pos,
+                                                      pos,
+                                                      PLAYER_FOV_RADIUS,
+                                                      dir);
+                if is_in_fov {
+                    game.display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_green, area);
                 }
             }
         }

@@ -53,5 +53,6 @@ pub struct Config {
     pub sound_rubble_radius: usize,
     pub sound_radius_crushed: usize,
     pub overlay_directions: bool,
+    pub overlay_player_fov: bool,
 }
 
