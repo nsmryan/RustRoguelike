@@ -347,7 +347,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     game.data.objects[*attacked].needs_removal = true;
                 }
 
-                Msg::Attack(attacker, _attacked, _damage) => {
+                Msg::Attack(attacker, attacked, _damage) => {
                     if game.data.objects[*attacker].name == "player" {
                         let attack_sprite =
                             game.display_state.new_sprite("player_attack".to_string(), config.player_attack_speed)
@@ -365,6 +365,12 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                         game.data.objects[*attacker].animation.push_back(attack_key);
                         game.data.objects[*attacker].animation.push_back(idle_key);
                     }
+
+                    let pos = game.data.objects[*attacked].pos();
+                    let sound_aoe = game.data.sound_at(*attacker, pos, config.sound_radius_attack);
+
+                    let sound_effect = Effect::Sound(sound_aoe, 0.0);
+                    game.display_state.play_effect(sound_effect);
                 }
 
                 _ => {

@@ -3,6 +3,7 @@ use std::hash::{Hash, Hasher};
 
 use tcod::line::*;
 
+use crate::ai::Behavior;
 use crate::types::*;
 use crate::movement::{Reach, MoveMode};
 use crate::messaging::*;
@@ -184,7 +185,8 @@ pub fn next_pos(pos: Pos, delta_pos: Pos) -> Pos {
 pub fn can_stab(data: &GameData, entity: ObjectId, target: ObjectId) -> bool {
     // NOTE this is not generic- uses ObjType::Enemy
     return data.objects[target].typ == ObjType::Enemy &&
-           data.holds(entity, Item::Dagger);
+           data.holds(entity, Item::Dagger) &&
+           !matches!(data.objects[target].behavior, Some(Behavior::Attacking(_)));
 }
 
 pub fn dxy(start_pos: Pos, end_pos: Pos) -> (i32, i32) {
@@ -192,6 +194,10 @@ pub fn dxy(start_pos: Pos, end_pos: Pos) -> (i32, i32) {
 }
 
 pub fn move_next_to(start_pos: Pos, end_pos: Pos) -> Pos {
+    if distance(start_pos, end_pos) <= 1 {
+        return start_pos;
+    }
+
     let mut line = Line::new(start_pos.to_tuple(), end_pos.to_tuple()).into_iter();
 
     let mut second_to_last = line.next().unwrap();
@@ -207,7 +213,7 @@ pub fn move_next_to(start_pos: Pos, end_pos: Pos) -> Pos {
 
 #[test]
 pub fn test_move_next_to() {
-    assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(5, 5)), Pos(4, 4));
-    assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(1, 1)), Pos(0, 0));
-    assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(-5, -5)), Pos(-4, -4));
+    assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(5, 5)), Pos::new(4, 4));
+    assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(1, 1)), Pos::new(0, 0));
+    assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(-5, -5)), Pos::new(-4, -4));
 }

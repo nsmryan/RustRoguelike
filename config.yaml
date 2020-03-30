@@ -129,5 +129,6 @@ player_health: 3
 explored_alpha: 150
 sound_rubble_radius: 1
 sound_radius_crushed: 3
+sound_radius_attack: 3
 overlay_directions: false
 overlay_player_fov: false
