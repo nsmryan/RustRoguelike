@@ -37,7 +37,6 @@ impl Action {
 }
 
 
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum MoveMode {
     Sneak,
@@ -545,12 +544,14 @@ pub fn player_move_or_attack(movement: Movement,
                 stab(player_handle, target_handle, &mut data.objects, msg_log);
             }
 
-            //let dagger_ix =
-            //    data.objects[player_handle]
-            //        .inventory
-            //        .iter()
-            //        .position(|item| data.objects[*item].
-            //data.objects[player_handle].inventory.
+            // dagger is one use only- remove it from inventory
+            let dagger_ix =
+                data.objects[player_handle]
+                    .inventory
+                    .iter()
+                    .position(|item| data.objects[*item].item == Some(Item::Dagger))
+                    .expect("Stabbed without a dagger!");
+            data.objects[player_handle].inventory.remove(dagger_ix);
 
             data.objects[player_handle].move_to(movement.pos);
 
@@ -575,7 +576,7 @@ pub fn check_collision(pos: Pos,
         MoveResult::with_pos(pos + Vector2D::new(dx, dy));
 
     // if no movement occurs, no need to check walls and entities.
-    if dx != 0 || dy != 0 {
+    if !(dx == 0 && dy == 0) {
         if let Some(blocked) = data.map.is_blocked_by_wall(pos, dx, dy) {
             result.blocked = Some(blocked);
             result.move_pos = blocked.start_pos;
