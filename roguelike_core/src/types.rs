@@ -205,6 +205,7 @@ pub enum Item {
     Stone,
     Goal,
     Dagger,
+    Shield,
 }
 
 

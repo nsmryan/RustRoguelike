@@ -1,5 +1,5 @@
 use crate::types::*;
-use crate::movement::{Movement, MoveType};
+use crate::movement::{Movement, MoveType, MoveMode};
 use crate::ai::Behavior;
 
 
@@ -41,6 +41,8 @@ pub enum Msg {
     Collided(ObjectId, Pos),
     Yell(Pos),
     GameState(GameState),
+    MoveMode(MoveMode),
+    TriedRunWithShield,
 }
 
 impl Msg {
@@ -133,6 +135,26 @@ impl Msg {
                         panic!();
                     }
                 }
+            }
+
+            Msg::MoveMode(move_mode) => {
+                match move_mode {
+                    MoveMode::Sneak => {
+                        return "Sneaking".to_string();
+                    }
+
+                    MoveMode::Walk => {
+                        return "Walking".to_string();
+                    }
+
+                    MoveMode::Run => {
+                        return "Running".to_string();
+                    }
+                }
+            }
+
+            Msg::TriedRunWithShield => {
+                return "Can't run with shield!".to_string();
             }
         }
     }

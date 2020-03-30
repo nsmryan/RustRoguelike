@@ -282,7 +282,7 @@ pub fn ai_apply_actions(monster_handle: ObjectId,
                     game_data.objects[monster_handle].direction =
                         Direction::from_dxy(pos_diff.x, pos_diff.y);
 
-                    attack(monster_handle, target_handle, &mut game_data.objects, msg_log);
+                    attack(monster_handle, target_handle, game_data, msg_log);
                 },
 
                 _ => panic!("Unexpected movement!"),

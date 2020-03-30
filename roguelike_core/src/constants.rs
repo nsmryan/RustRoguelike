@@ -133,6 +133,7 @@ pub const ENTITY_ORB: u8 = 135;
 pub const ENTITY_GOAL: u8 = 253;
 pub const ENTITY_STONE: u8 = 244;
 pub const ENTITY_DAGGER: u8 = 247;
+pub const ENTITY_SHIELD: u8 = 255;
 pub const ENTITY_TRAP_SOUND: u8 = 83; // char S
 
 pub const ARROW_RIGHT: u8 = 16;

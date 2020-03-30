@@ -190,10 +190,20 @@ pub fn handle_input(input_action: InputAction,
         }
 
         (InputAction::IncreaseMoveMode, true) => {
+            let holding_shield = game_data.holds(player_handle, Item::Shield);
             let player = &mut game_data.objects[player_handle];
-            player.move_mode = player.move_mode.map(|mode| mode.increase());
-            player.movement = Some(reach_by_mode(player.move_mode.unwrap()));
-            
+
+            let move_mode = player.move_mode.expect("Player should have a move mode");
+            let new_move_mode = move_mode.increase();
+
+            if new_move_mode == movement::MoveMode::Run && holding_shield {
+                msg_log.log(Msg::TriedRunWithShield);
+            } else {
+                player.movement = Some(reach_by_mode(player.move_mode.unwrap()));
+                player.move_mode = Some(new_move_mode);
+
+                msg_log.log(Msg::MoveMode(new_move_mode));
+            }
 
             player_turn = Action::none();
         }

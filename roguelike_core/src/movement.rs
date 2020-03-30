@@ -526,7 +526,7 @@ pub fn player_move_or_attack(movement: Movement,
         }
 
         Some(Attack::Attack(target_handle)) => {
-            attack(player_handle, target_handle, &mut data.objects, msg_log);
+            attack(player_handle, target_handle, data, msg_log);
 
             let target_pos = data.objects[target_handle].pos();
             data.objects[player_handle].move_next_to(target_pos);

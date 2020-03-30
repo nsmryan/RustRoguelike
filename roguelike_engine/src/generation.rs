@@ -65,6 +65,14 @@ pub fn make_dagger(config: &Config, pos: Pos) -> Object {
     return object;
 }
 
+pub fn make_shield(config: &Config, pos: Pos) -> Object {
+    let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_SHIELD as char, config.color_light_grey, "shield", false);
+
+    object.item = Some(Item::Shield);
+
+    return object;
+}
+
 pub fn make_goal(config: &Config, display_state: &mut DisplayState, pos: Pos) -> Object {
     let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_GOAL as char, config.color_orange, "goal", false);
     object.item = Some(Item::Goal);

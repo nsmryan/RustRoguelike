@@ -13,9 +13,9 @@ pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
     return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt() as i32;
 }
 
-pub fn push_attack(handle: ObjectId, other_handle: ObjectId, data: &mut GameData, msg_log: &mut MsgLog) {
+pub fn push_attack(handle: ObjectId, target: ObjectId, data: &mut GameData, msg_log: &mut MsgLog) {
     let pos = data.objects[handle].pos();
-    let other_pos = data.objects[other_handle].pos();
+    let other_pos = data.objects[target].pos();
     let diff = other_pos - pos;
 
     let x_diff = diff.x.signum();
@@ -28,65 +28,84 @@ pub fn push_attack(handle: ObjectId, other_handle: ObjectId, data: &mut GameData
         // if blocked by wall, kill entity and take their space
         data.objects[handle].move_to(other_pos);
 
-        data.objects[other_handle].alive = false;
-        data.objects[other_handle].blocks = false;
-        let damage = data.objects[other_handle]
+        data.objects[target].alive = false;
+        data.objects[target].blocks = false;
+        let damage = data.objects[target]
                          .fighter
                          .expect("Attacked a non-fighter?")
                          .hp;
 
-        msg_log.log(Msg::Killed(handle, other_handle, damage));
+        msg_log.log(Msg::Killed(handle, target, damage));
     } else {
         // if not blocked, push the other entity, taking their space
-        data.objects[other_handle].set_pos(past_pos);
+        data.objects[target].set_pos(past_pos);
         data.objects[handle].move_to(other_pos);
 
-        data.objects[other_handle].messages.push(Message::Attack(handle));
+        data.objects[target].messages.push(Message::Attack(handle));
     }
 }
 
-pub fn crush(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, msg_log: &mut MsgLog) {
-    let damage = objects[other_handle].fighter.map_or(0, |f| f.hp);
+pub fn crush(handle: ObjectId, target: ObjectId, objects: &mut ObjMap, msg_log: &mut MsgLog) {
+    let damage = objects[target].fighter.map_or(0, |f| f.hp);
     if damage > 0 {
-        objects[other_handle].take_damage(damage);
+        objects[target].take_damage(damage);
 
-        objects[other_handle].alive = false;
-        objects[other_handle].blocks = false;
+        objects[target].alive = false;
+        objects[target].blocks = false;
 
-        msg_log.log(Msg::Killed(handle, other_handle, damage));
+        msg_log.log(Msg::Killed(handle, target, damage));
     }
 }
 
-pub fn attack(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, msg_log: &mut MsgLog) {
-    let damage = objects[handle].fighter.map_or(0, |f| f.power) -
-                 objects[other_handle].fighter.map_or(0, |f| f.defense);
-    if damage > 0 {
-        objects[other_handle].take_damage(damage);
+pub fn attack(handle: ObjectId, target: ObjectId, data: &mut GameData, msg_log: &mut MsgLog) {
+    if data.holds(target, Item::Shield) {
+        let pos = data.objects[handle].pos();
+        let other_pos = data.objects[target].pos();
+        let diff = other_pos - pos;
 
-        msg_log.log(Msg::Attack(handle, other_handle, damage));
-        if objects[other_handle].fighter.unwrap().hp <= 0 {
-            objects[other_handle].alive = false;
-            objects[other_handle].blocks = false;
+        let x_diff = diff.x.signum();
+        let y_diff = diff.y.signum();
 
-            msg_log.log(Msg::Killed(handle, other_handle, damage));
+        let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
+
+        if !data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() &&
+           !data.is_blocked_tile(past_pos).is_some() {
+            data.objects[target].set_pos(past_pos);
+            data.objects[handle].move_to(other_pos);
+
+            data.objects[target].messages.push(Message::Attack(handle));
         }
+    } else {
+        let damage = data.objects[handle].fighter.map_or(0, |f| f.power) -
+                     data.objects[target].fighter.map_or(0, |f| f.defense);
+        if damage > 0 {
+            data.objects[target].take_damage(damage);
 
-        objects[other_handle].messages.push(Message::Attack(handle));
+            msg_log.log(Msg::Attack(handle, target, damage));
+            if data.objects[target].fighter.unwrap().hp <= 0 {
+                data.objects[target].alive = false;
+                data.objects[target].blocks = false;
+
+                msg_log.log(Msg::Killed(handle, target, damage));
+            }
+
+            data.objects[target].messages.push(Message::Attack(handle));
+        }
     }
 }
 
-pub fn stab(handle: ObjectId, other_handle: ObjectId, objects: &mut ObjMap, msg_log: &mut MsgLog) {
-    let damage = objects[other_handle].fighter.map_or(0, |f| f.hp);
+pub fn stab(handle: ObjectId, target: ObjectId, objects: &mut ObjMap, msg_log: &mut MsgLog) {
+    let damage = objects[target].fighter.map_or(0, |f| f.hp);
 
     if damage != 0 {
-        msg_log.log(Msg::Attack(handle, other_handle, damage));
+        msg_log.log(Msg::Attack(handle, target, damage));
 
-        objects[other_handle].alive = false;
-        objects[other_handle].blocks = false;
+        objects[target].alive = false;
+        objects[target].blocks = false;
 
-        msg_log.log(Msg::Killed(handle, other_handle, damage));
+        msg_log.log(Msg::Killed(handle, target, damage));
 
-        objects[other_handle].messages.push(Message::Attack(handle));
+        objects[target].messages.push(Message::Attack(handle));
     } else {
         panic!("Stabbed an enemy with no hp?");
     }
