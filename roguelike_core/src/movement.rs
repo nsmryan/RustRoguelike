@@ -536,14 +536,21 @@ pub fn player_move_or_attack(movement: Movement,
         }
 
         Some(Attack::Stab(target_handle)) => {
-            // if enemy is aware of the enemy, just attack
+            // if enemy is aware of the enemy, just push instead
             if data.objects[target_handle].behavior.map_or(false, |beh| beh.is_aware()) {
-                attack(player_handle, target_handle, &mut data.objects, msg_log);
+                push_attack(player_handle, target_handle, data, msg_log);
+                panic!("This shouldn't actually be possible- stabbing a aware enemy");
             } else {
                 // otherwise enemy is not aware, so stab them
                 stab(player_handle, target_handle, &mut data.objects, msg_log);
-
             }
+
+            //let dagger_ix =
+            //    data.objects[player_handle]
+            //        .inventory
+            //        .iter()
+            //        .position(|item| data.objects[*item].
+            //data.objects[player_handle].inventory.
 
             data.objects[player_handle].move_to(movement.pos);
 
@@ -567,32 +574,35 @@ pub fn check_collision(pos: Pos,
     let mut result: MoveResult =
         MoveResult::with_pos(pos + Vector2D::new(dx, dy));
 
-    if let Some(blocked) = data.map.is_blocked_by_wall(pos, dx, dy) {
-        result.blocked = Some(blocked);
-        result.move_pos = blocked.start_pos;
-    } 
+    // if no movement occurs, no need to check walls and entities.
+    if dx != 0 || dy != 0 {
+        if let Some(blocked) = data.map.is_blocked_by_wall(pos, dx, dy) {
+            result.blocked = Some(blocked);
+            result.move_pos = blocked.start_pos;
+        } 
 
-    // check for collision with an enitity
-    let move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
+        // check for collision with an enitity
+        let move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
 
-    for line_tuple in move_line {
-        let line_pos = Pos::from(line_tuple);
+        for line_tuple in move_line {
+            let line_pos = Pos::from(line_tuple);
 
-        if let Some(key) = data.is_blocked_tile(line_pos) {
-            result.move_pos = last_pos;
-            result.entity = Some(key);
-            break;
-        }
-
-        // if we are blocked by a wall, and the current position is at that blocked
-        // position, we don't need to continue the search
-        if let Some(blocked) = result.blocked {
-            if line_pos == blocked.start_pos {
+            if let Some(key) = data.is_blocked_tile(line_pos) {
+                result.move_pos = last_pos;
+                result.entity = Some(key);
                 break;
             }
-        }
 
-        last_pos = pos;
+            // if we are blocked by a wall, and the current position is at that blocked
+            // position, we don't need to continue the search
+            if let Some(blocked) = result.blocked {
+                if line_pos == blocked.start_pos {
+                    break;
+                }
+            }
+
+            last_pos = pos;
+        }
     }
 
     return result;
