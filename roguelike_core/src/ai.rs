@@ -71,7 +71,6 @@ pub fn ai_attack(monster_handle: ObjectId,
     let turn: Action;
 
     if !data.objects[target_handle].alive {
-        // if the target is still alve
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else if let Some(hit_pos) =
         // if AI can hit their target
@@ -143,6 +142,7 @@ pub fn ai_investigate(target_pos_orig: Pos,
 
                
     if game_data.objects[monster_handle].is_in_fov(&mut game_data.map, player_pos) {
+        game_data.objects[monster_handle].face(player_pos);
         // TODO this causes a turn delay between seeing the player and attacking them
         turn = Action::StateChange(Behavior::Attacking(player_handle));
     } else { // the monster can't see the player
@@ -224,11 +224,14 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
                 let mut turn = Action::none();
 
                 if game_data.objects[monster_handle].is_in_fov(&mut game_data.map, player_pos) {
+                    game_data.objects[monster_handle].face(player_pos);
                     // NOTE will cause a turn between seeing the player and attacking
                     turn = Action::StateChange(Behavior::Attacking(player_handle));
                 } else if let Some(Message::Sound(_entity_id, pos)) = game_data.objects[monster_handle].heard_sound() {
+                    game_data.objects[monster_handle].face(player_pos);
                     turn = Action::StateChange(Behavior::Investigating(pos));
                 } else if let Some(Message::Attack(entity_id)) = game_data.objects[monster_handle].was_attacked() {
+                    game_data.objects[monster_handle].face(player_pos);
                     turn = Action::StateChange(Behavior::Attacking(entity_id));
                 }
 

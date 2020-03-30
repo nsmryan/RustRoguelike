@@ -421,5 +421,10 @@ impl Object {
             return None;
         }
     }
+
+    pub fn face(&mut self, face_pos: Pos) {
+        let diff_pos = sub_pos(face_pos, self.pos());
+        self.direction = Some(Direction::from_dxy(diff_pos.x, diff_pos.y));
+    }
 }
 
