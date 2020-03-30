@@ -664,13 +664,14 @@ pub fn calculate_move(action: Direction,
                 if can_stab(data, object_id, entity) {
                     let attack = Attack::Stab(entity);
                     movement = Some(Movement::attack(move_result.move_pos, MoveType::Move, attack));
+                    dbg!();
                 } else if data.objects[entity].blocks {
-                    // record that an attack would occur. If this is not desired, the
-                    // calling code will handle this.
                     let attack = Attack::Push(entity);
                     movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
+                    dbg!();
                 } else {
                     movement = Some(Movement::move_to(move_result.move_pos, MoveType::Move));
+                    dbg!();
                 }
             }
 
@@ -727,7 +728,7 @@ pub fn calculate_move(action: Direction,
     }
 
     if let Some(moved) = movement {
-        if moved.pos == pos {
+        if moved.attack == None && moved.pos == pos {
             movement = None;
         }
     }
