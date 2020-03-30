@@ -78,7 +78,8 @@ pub fn ai_attack(monster_handle: ObjectId,
                           monster_handle,
                           target_pos,
                           &data.objects[monster_handle].attack.unwrap()) {
-        turn = Action::Move(Movement::Attack(hit_pos, target_handle));
+        let attack = Attack::Attack(target_handle);
+        turn = Action::Move(Movement::attack(hit_pos, MoveType::Move, attack));
     } else if data.map.is_blocked_by_wall(monster_pos, target_pos.x - monster_pos.x, target_pos.y - monster_pos.y).is_some() {
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else { // otherwise attempt to move towards their target
@@ -123,7 +124,7 @@ pub fn ai_attack(monster_handle: ObjectId,
             pos_offset = ai_take_astar_step(monster_pos, target_pos, &data);
         }
 
-        turn = Action::Move(Movement::Move(pos_offset));
+        turn = Action::Move(Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move));
     }
 
     return turn;
@@ -161,7 +162,8 @@ pub fn ai_investigate(target_pos_orig: Pos,
             // if the monster has not reached its target, move towards the target.
             let pos_offset = ai_take_astar_step(monster_pos, target_pos, &game_data);
 
-            turn = Action::Move(Movement::Move(pos_offset));
+            let movement = Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move);
+            turn = Action::Move(movement);
         }
     }
 
@@ -264,22 +266,21 @@ pub fn ai_apply_actions(monster_handle: ObjectId,
 
     match turn {
         Action::Move(movement) => {
-            match movement {
-                Movement::Move(pos_offset) => {
-                    let new_pos = add_pos(pos, pos_offset);
-                    game_data.objects[monster_handle].move_to(new_pos);
+            match movement.attack {
+                None => {
+                    game_data.objects[monster_handle].move_to(movement.pos);
 
-                    msg_log.log(Msg::Moved(monster_handle, movement, new_pos));
+                    msg_log.log(Msg::Moved(monster_handle, movement, movement.pos));
                 }
 
-                Movement::Attack(attack_pos, target_handle) => {
+                Some(Attack::Attack(target_handle)) => {
                     let dir = game_data.objects[monster_handle].direction;
 
-                    let pos_diff = sub_pos(attack_pos, pos);
+                    let pos_diff = sub_pos(movement.pos, pos);
 
                     // ensure that attacking changes the orientation of an entity
                     game_data.objects[monster_handle].direction =
-                        Some(Direction::from_dxy(pos_diff.x, pos_diff.y));
+                        Direction::from_dxy(pos_diff.x, pos_diff.y);
 
                     attack(monster_handle, target_handle, &mut game_data.objects, msg_log);
                 },

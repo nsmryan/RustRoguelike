@@ -802,12 +802,10 @@ fn render_overlays(game: &mut Game,
                                player_handle,
                                &mut game.data) {
                 // draw a highlight on that square
-                let xy: Pos = movement.xy();
-
                 // don't draw overlay on top of character
-                if xy != game.data.objects[player_handle].pos()
+                if movement.pos != game.data.objects[player_handle].pos()
                 {
-                    game.display_state.draw_tile_outline(xy, area, highlight_color);
+                    game.display_state.draw_tile_outline(movement.pos, area, highlight_color);
                 }
             }
         }

@@ -23,7 +23,7 @@ use roguelike_core::config::Config;
 use roguelike_core::messaging::Msg;
 use roguelike_core::constants::*;
 use roguelike_core::animation::{Effect, Animation};
-use roguelike_core::movement::{MoveMode, Movement};
+use roguelike_core::movement::{MoveMode, Movement, MoveType};
 
 use roguelike_engine::display::*;
 use roguelike_engine::render::*;
@@ -275,7 +275,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     let player_handle = game.data.find_player().unwrap();
                     if *object_id == player_handle {
 
-                        if matches!(movement, Movement::Pass(_)) {
+                        if matches!(movement.typ, MoveType::Pass) {
                             if game.data.objects[player_handle].move_mode.unwrap() ==
                                MoveMode::Run {
                                 let player = &mut game.data.objects[player_handle];

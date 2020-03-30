@@ -181,3 +181,33 @@ pub fn next_pos(pos: Pos, delta_pos: Pos) -> Pos {
     return next_pos;
 }
 
+pub fn can_stab(data: &GameData, entity: ObjectId, target: ObjectId) -> bool {
+    // NOTE this is not generic- uses ObjType::Enemy
+    return data.objects[target].typ == ObjType::Enemy &&
+           data.holds(entity, Item::Dagger);
+}
+
+pub fn dxy(start_pos: Pos, end_pos: Pos) -> (i32, i32) {
+    return (end_pos.x - start_pos.x, end_pos.y - start_pos.y);
+}
+
+pub fn move_next_to(start_pos: Pos, end_pos: Pos) -> Pos {
+    let mut line = Line::new(start_pos.to_tuple(), end_pos.to_tuple()).into_iter();
+
+    let mut second_to_last = line.next().unwrap();
+
+    while let Some(pos) = line.next() {
+        if pos != end_pos.to_tuple() {
+            second_to_last = pos;
+        }
+    }
+
+    return Pos::from(second_to_last);
+}
+
+#[test]
+pub fn test_move_next_to() {
+    assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(5, 5)), Pos(4, 4));
+    assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(1, 1)), Pos(0, 0));
+    assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(-5, -5)), Pos(-4, -4));
+}

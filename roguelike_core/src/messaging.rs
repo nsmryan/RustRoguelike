@@ -1,5 +1,5 @@
 use crate::types::*;
-use crate::movement::Movement;
+use crate::movement::{Movement, MoveType};
 use crate::ai::Behavior;
 
 
@@ -88,7 +88,7 @@ impl Msg {
             }
 
             Msg::Moved(object_id, movement, _pos) => {
-                if let Movement::Pass(_) = *movement {
+                if let MoveType::Pass = movement.typ {
                     return format!("{} passed their turn", game_data.objects[*object_id].name);
                 } else {
                     return format!("{} moved", game_data.objects[*object_id].name);

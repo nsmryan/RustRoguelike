@@ -7,7 +7,7 @@ use euclid::*;
 
 use crate::constants::*;
 use crate::types::*;
-use crate::utils::{crush, stab, push_attack, attack, clamp, sub_pos, add_pos, next_pos};
+use crate::utils::*;
 use crate::map::{Wall, Blocked};
 use crate::messaging::{MsgLog, Msg};
 use crate::ai::Behavior;
@@ -74,31 +74,46 @@ impl fmt::Display for MoveMode {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Movement {
-    Move(Pos),
-    Pass(Pos),
-    Attack(Pos, ObjectId),
-    Stab(Pos, ObjectId),
-    Push(Pos, ObjectId),
-    Collide(Pos),
-    WallKick(Pos, i32, i32), // (x, y), dir_x, dir_y
-    JumpWall(Pos),
+pub enum Attack {
+    Attack(ObjectId),
+    Push(ObjectId),
+    Stab(ObjectId),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum MoveType {
+    Move,
+    Pass,
+    JumpWall,
+    WallKick(i32, i32),
+    Collide,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Movement {
+    pub pos: Pos,
+    pub typ: MoveType,
+    pub attack: Option<Attack>,
 }
 
 impl Movement {
-    pub fn xy(&self) -> Pos {
-        match self {
-            Movement::Move(pos) => *pos,
-            Movement::Pass(pos) => *pos,
-            Movement::Attack(pos, _) => *pos,
-            Movement::Stab(pos, _) => *pos,
-            Movement::Push(pos, _) => *pos,
-            Movement::Collide(pos) => *pos,
-            Movement::WallKick(pos, _, _) => *pos,
-            Movement::JumpWall(pos) => *pos,
-        }
+    pub fn move_to(pos: Pos, typ: MoveType) -> Movement {
+        return Movement {
+            pos,
+            typ,
+            attack: None,
+        };
+    }
+
+    pub fn attack(pos: Pos, typ: MoveType, attack: Attack) -> Movement {
+        return Movement {
+            pos,
+            typ,
+            attack: Some(attack),
+        };
     }
 }
+
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd)]
 pub enum Cardinal {
@@ -174,25 +189,25 @@ pub enum Direction {
 }
 
 impl Direction {
-    pub fn from_dxy(dx: i32, dy: i32) -> Direction {
+    pub fn from_dxy(dx: i32, dy: i32) -> Option<Direction> {
         if dx == 0 && dy == 0 {
-            panic!("Hmmmm. This maybe shouldn't have happened");
+            None
         } else if dx == 0 && dy < 0 {
-            Direction::Up
+            Some(Direction::Up)
         } else if dx == 0 && dy > 0 {
-            Direction::Down
+            Some(Direction::Down)
         } else if dx > 0 && dy == 0 {
-            Direction::Right
+            Some(Direction::Right)
         } else if dx < 0 && dy == 0 {
-            Direction::Left
+            Some(Direction::Left)
         } else if dx > 0 && dy > 0 {
-            Direction::DownRight
+            Some(Direction::DownRight)
         } else if dx > 0 && dy < 0 {
-            Direction::UpRight
+            Some(Direction::UpRight)
         } else if dx < 0 && dy > 0 {
-            Direction::DownLeft
+            Some(Direction::DownLeft)
         } else if dx < 0 && dy < 0 {
-            Direction::UpLeft
+            Some(Direction::UpLeft)
         } else {
             panic!(format!("Direction should not exist {:?}", (dx, dy)));
         }
@@ -432,148 +447,155 @@ pub fn player_move_or_attack(movement: Movement,
 
     let player_handle = data.find_player().unwrap();
 
-    match movement {
-    Movement::Push(attack_pos, target_handle) => {
-        if data.objects[target_handle].typ == ObjType::Column {
-            let pos = data.objects[player_handle].pos();
-                let next_pos = next_pos(pos, sub_pos(attack_pos, pos));
+    match movement.attack {
+        None => {
+            match movement.typ {
+                MoveType::Collide => {
+                    data.objects[player_handle].move_to(movement.pos);
+                    player_action = Move(movement);
 
-            // if there is a path to the next tile, move it.
-            let diff = sub_pos(attack_pos, pos);
-            let blocked =
-                data.map.is_blocked_by_wall(attack_pos, diff.x, diff.y); 
-
-            if blocked == None {
-                data.objects[player_handle].move_to(attack_pos);
-
-                data.objects.remove(target_handle);
-
-                if let Some(hit_entity) = data.is_blocked_tile(next_pos) {
-                    crush(target_handle, hit_entity, &mut data.objects, msg_log);
+                    msg_log.log(Msg::Collided(player_handle, movement.pos));
                 }
 
+                MoveType::Pass => {
+                    player_action = Action::none();
+                    msg_log.log(Msg::Moved(player_handle, movement, movement.pos));
+                }
+
+                MoveType::Move | MoveType::JumpWall => {
+                    let player_pos = data.objects[player_handle].pos();
+
+                    if player_pos != movement.pos {
+                        data.objects[player_handle].move_to(movement.pos);
+
+                        player_action = Move(movement);
+
+                        if movement.typ == MoveType::Move {
+                            msg_log.log(Msg::Moved(player_handle, movement, movement.pos));
+                        } else {
+                            msg_log.log(Msg::JumpWall(player_handle, movement.pos));
+                        }
+                    } else {
+                        player_action = NoAction;
+                    }
+                }
+
+                MoveType::WallKick(_dir_x, _dir_y) => {
+                    data.objects[player_handle].move_to(movement.pos);
+
+                    // TODO could check for enemy and attack
+                    player_action = Move(movement);
+
+                    msg_log.log(Msg::WallKick(player_handle, movement.pos));
+                }
+            }
+        }
+
+        Some(Attack::Push(target_handle)) => {
+            if data.objects[target_handle].typ == ObjType::Column {
+                let pos = data.objects[player_handle].pos();
+                    let next_pos = next_pos(pos, sub_pos(movement.pos, pos));
+
+                // if there is a path to the next tile, move it.
+                let diff = sub_pos(movement.pos, pos);
+                let blocked =
+                    data.map.is_blocked_by_wall(movement.pos, diff.x, diff.y); 
+
+                if blocked == None {
+                    data.objects[player_handle].move_to(movement.pos);
+
+                    data.objects.remove(target_handle);
+
+                    if let Some(hit_entity) = data.is_blocked_tile(next_pos) {
+                        crush(target_handle, hit_entity, &mut data.objects, msg_log);
+                    }
+
+                    player_action = Move(movement);
+
+                    msg_log.log(Msg::Crushed(player_handle, next_pos, ObjType::Column));
+                } else {
+                    player_action = NoAction;
+                }
+            } else if data.objects[target_handle].alive {
+                push_attack(player_handle, target_handle, data, msg_log);
                 player_action = Move(movement);
-
-                msg_log.log(Msg::Crushed(player_handle, next_pos, ObjType::Column));
             } else {
+                dbg!(data.objects[target_handle].typ);
                 player_action = NoAction;
+                panic!("What did you push?");
             }
-        } else if data.objects[target_handle].alive {
-            push_attack(player_handle, target_handle, data, msg_log);
-            player_action = Move(movement);
-        } else {
-            dbg!(data.objects[target_handle].typ);
-            player_action = NoAction;
-            panic!("What did you push?");
         }
-    }
 
-    Movement::Attack(_attack_pos, target_handle) => {
-        attack(player_handle, target_handle, &mut data.objects, msg_log);
-
-        let target_pos = data.objects[target_handle].pos();
-        data.objects[player_handle].move_next_to(target_pos);
-
-        player_action = Move(movement);
-    }
-
-    Movement::Stab(attack_pos, target_handle) => {
-        // if enemy is aware of the enemy, just attack
-        if data.objects[target_handle].behavior.map_or(false, |beh| beh.is_aware()) {
+        Some(Attack::Attack(target_handle)) => {
             attack(player_handle, target_handle, &mut data.objects, msg_log);
-        } else {
-            // otherwise enemy is not aware, so stab them
-            stab(player_handle, target_handle, &mut data.objects, msg_log);
 
-        }
-
-        data.objects[player_handle].move_to(attack_pos);
-
-        player_action = Move(movement);
-    }
-
-    Movement::Collide(pos) => {
-        data.objects[player_handle].move_to(pos);
-        player_action = Move(movement);
-
-        msg_log.log(Msg::Collided(player_handle, pos));
-    }
-
-    Movement::Pass(pos) => {
-        player_action = Action::none();
-        msg_log.log(Msg::Moved(player_handle, movement, pos));
-    }
-
-    Movement::Move(pos) | Movement::JumpWall(pos) => {
-        let player_pos = data.objects[player_handle].pos();
-
-        if player_pos != pos {
-            data.objects[player_handle].move_to(pos);
+            let target_pos = data.objects[target_handle].pos();
+            data.objects[player_handle].move_next_to(target_pos);
 
             player_action = Move(movement);
+        }
 
-            if movement == Movement::Move(pos) {
-                msg_log.log(Msg::Moved(player_handle, movement, pos));
+        Some(Attack::Stab(target_handle)) => {
+            // if enemy is aware of the enemy, just attack
+            if data.objects[target_handle].behavior.map_or(false, |beh| beh.is_aware()) {
+                attack(player_handle, target_handle, &mut data.objects, msg_log);
             } else {
-                msg_log.log(Msg::JumpWall(player_handle, pos));
+                // otherwise enemy is not aware, so stab them
+                stab(player_handle, target_handle, &mut data.objects, msg_log);
+
             }
-        } else {
-            player_action = NoAction;
+
+            data.objects[player_handle].move_to(movement.pos);
+
+            player_action = Move(movement);
         }
     }
 
-    Movement::WallKick(pos, _dir_x, _dir_y) => {
-        data.objects[player_handle].move_to(pos);
-
-        // TODO could check for enemy and attack
-        player_action = Move(movement);
-
-        msg_log.log(Msg::WallKick(player_handle, pos));
-    }
-}
-
-return player_action;
+    return player_action;
 }
 
 /// Moves the given object with a given offset, returning the square that it collides with, or None
 /// indicating no collision.
+/// NOTE if the movement carries multiple tiles, then the resulting MoveResult can report that
+/// there is a blocking wall, and on a different location a blocking entity. These are checked
+/// separately.
 pub fn check_collision(pos: Pos,
-                   dx: i32,
-                   dy: i32,
-                   data: &GameData) -> MoveResult {
-let mut last_pos = pos;
-let mut result: MoveResult =
-    MoveResult::with_pos(pos + Vector2D::new(dx, dy));
+                       dx: i32,
+                       dy: i32,
+                       data: &GameData) -> MoveResult {
+    let mut last_pos = pos;
+    let mut result: MoveResult =
+        MoveResult::with_pos(pos + Vector2D::new(dx, dy));
 
-if let Some(blocked) = data.map.is_blocked_by_wall(pos, dx, dy) {
-    result.blocked = Some(blocked);
-    result.move_pos = blocked.start_pos;
-} 
+    if let Some(blocked) = data.map.is_blocked_by_wall(pos, dx, dy) {
+        result.blocked = Some(blocked);
+        result.move_pos = blocked.start_pos;
+    } 
 
-// check for collision with an enitity
-let move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
+    // check for collision with an enitity
+    let move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
 
-for line_tuple in move_line {
-    let line_pos = Pos::from(line_tuple);
+    for line_tuple in move_line {
+        let line_pos = Pos::from(line_tuple);
 
-    if let Some(key) = data.is_blocked_tile(line_pos) {
-        result.move_pos = last_pos;
-        result.entity = Some(key);
-        break;
-    }
-
-    // if we are blocked by a wall, and the current position is at that blocked
-    // position, we don't need to continue the search
-    if let Some(blocked) = result.blocked {
-        if line_pos == blocked.start_pos {
+        if let Some(key) = data.is_blocked_tile(line_pos) {
+            result.move_pos = last_pos;
+            result.entity = Some(key);
             break;
         }
+
+        // if we are blocked by a wall, and the current position is at that blocked
+        // position, we don't need to continue the search
+        if let Some(blocked) = result.blocked {
+            if line_pos == blocked.start_pos {
+                break;
+            }
+        }
+
+        last_pos = pos;
     }
 
-    last_pos = pos;
-}
-
-return result;
+    return result;
 }
 
 pub fn calculate_move(action: Direction,
@@ -596,70 +618,116 @@ pub fn calculate_move(action: Direction,
             (Some(blocked), Some(entity)) => {
                 let entity_pos = data.objects[entity].pos();
 
-                // NOTE this is not generic- uses ObjType::Enemy
-                if data.objects[entity].typ == ObjType::Enemy &&
-                   data.holds(object_id, Item::Dagger) {
-                    movement = Some(Movement::Attack(move_result.move_pos, entity));
-                } else if entity_pos == blocked.start_pos {
-                    // if the entity position is the same as the
-                    // square we were going to move to, we can attack
-                    // NOTE if we walk into a blocking, non-enemy entity we would still push it
-                    movement = Some(Movement::Push(move_result.move_pos, entity));
-                    } else {
-                        // cannot jump over wall, and can't attack entity
-                        movement = Some(Movement::Move(move_result.move_pos));
-                    }
-                }
+                let entity_dist = distance(pos, entity_pos);
+                let wall_dist = distance(pos, blocked.start_pos);
 
-                // blocked by entity only
-                (None, Some(entity)) => {
-                    if data.objects[entity].typ == ObjType::Enemy &&
-                       data.holds(object_id, Item::Dagger) {
-                        movement = Some(Movement::Attack(move_result.move_pos, entity));
-                    } else if data.objects[entity].blocks {
-                        // record that an attack would occur. If this is not desired, the
-                        // calling code will handle this.
-                        movement = Some(Movement::Push(add_pos(pos, delta_pos), entity));
-                    } else {
-                        movement = Some(Movement::Move(move_result.move_pos));
-                    }
-                }
-
-                // blocked by wall only
-                (Some(blocked), None) => {
+                if entity_dist < wall_dist {
+                    let attack =
+                        if can_stab(data, object_id, entity) {
+                            Attack::Stab(entity)
+                        } else {
+                            Attack::Push(entity)
+                        };
+                    let move_pos = move_next_to(pos, entity_pos);
+                    movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
+                } else if entity_dist > wall_dist {
+                    // wall is first
+                    let mut jumped_wall = false;
                     if data.objects[object_id].move_mode.unwrap() == MoveMode::Run {
                         if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
-                            movement = Some(Movement::JumpWall(blocked.end_pos));
-                        } else { // otherwise move normally, stopping just before the blocking tile
-                            movement = Some(Movement::Move(blocked.start_pos));
-                        }
-                    } else {
-                        movement = Some(Movement::Move(blocked.start_pos));
+                            jumped_wall = true;
+                        } 
                     }
-                }
 
-                // not blocked at all
-                (None, None) => {
-                    let next_pos = next_pos(pos, delta_pos);
-                    if let Some(other_id) = data.is_blocked_tile(next_pos) {
-                        if data.objects[other_id].typ == ObjType::Enemy &&
-                           data.holds(object_id, Item::Dagger) {
-                           movement = Some(Movement::Stab(move_result.move_pos, other_id));
-                       } else {
-                          movement = Some(Movement::Move(move_result.move_pos));
-                       }
+                    if jumped_wall {
+                        let attack =
+                            if can_stab(data, object_id, entity) {
+                                Attack::Stab(entity)
+                            } else {
+                                Attack::Push(entity)
+                            };
+                        let move_pos = move_next_to(pos, entity_pos);
+                        movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
                     } else {
-                      movement = Some(Movement::Move(move_result.move_pos));
+                        // can't jump the wall- just move up to it.
+                        movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
                     }
+                } else {
+                    // entity and wall are together
+                    // move up to the wall- we can't jump it or attack through it
+                    movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
                 }
             }
+
+            // blocked by entity only
+            (None, Some(entity)) => {
+                if can_stab(data, object_id, entity) {
+                    let attack = Attack::Stab(entity);
+                    movement = Some(Movement::attack(move_result.move_pos, MoveType::Move, attack));
+                } else if data.objects[entity].blocks {
+                    // record that an attack would occur. If this is not desired, the
+                    // calling code will handle this.
+                    let attack = Attack::Push(entity);
+                    movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
+                } else {
+                    movement = Some(Movement::move_to(move_result.move_pos, MoveType::Move));
+                }
+            }
+
+            // blocked by wall only
+            (Some(blocked), None) => {
+                let mut jumped_wall = false;
+
+                if data.objects[object_id].move_mode.unwrap() == MoveMode::Run {
+                    if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
+                        jumped_wall = true;
+                    } 
+                }
+
+                if jumped_wall {
+                    // if we jump the wall, we have to recheck for collisions for the
+                    // remaining move distance.
+                    let (dx, dy) = dxy(blocked.end_pos, add_pos(pos, delta_pos));
+                    let next_move_result = check_collision(blocked.end_pos, dx, dy, data);
+                    let new_pos = next_move_result.move_pos;
+
+                    movement = Some(Movement::move_to(new_pos, MoveType::JumpWall));
+
+                    let next_pos = next_pos(pos, delta_pos);
+                    if let Some(other_id) = data.is_blocked_tile(next_pos) {
+                        if can_stab(data, object_id, other_id) {
+                           let attack = Attack::Stab(other_id);
+                           movement = Some(Movement::attack(new_pos, MoveType::JumpWall, attack));
+                       }
+                    }
+                } else {
+                    // else move up to the wall (start_pos is just before the colliding tile)
+                    movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
+                }
+            }
+
+            // not blocked at all
+            (None, None) => {
+                let next_pos = next_pos(pos, delta_pos);
+                if let Some(other_id) = data.is_blocked_tile(next_pos) {
+                    if can_stab(data, object_id, other_id) {
+                       let attack = Attack::Stab(other_id);
+                       movement = Some(Movement::attack(move_result.move_pos, MoveType::Move, attack));
+                   } else {
+                      movement = Some(Movement::move_to(move_result.move_pos, MoveType::Move));
+                   }
+                } else {
+                  movement = Some(Movement::move_to(move_result.move_pos, MoveType::Move));
+                }
+            }
+        }
     } else {
         // movement is not valid given the mover's reach- reject movement by return None
         movement = None;
     }
 
-    if let Some(Movement::Move(new_pos)) = movement {
-        if new_pos == pos {
+    if let Some(moved) = movement {
+        if moved.pos == pos {
             movement = None;
         }
     }

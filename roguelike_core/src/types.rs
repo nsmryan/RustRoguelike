@@ -341,7 +341,7 @@ impl Object {
         let diff_y = pos.y - self_pos.y;
 
         if self_pos != pos {
-            self.direction = Some(Direction::from_dxy(diff_x, diff_y));
+            self.direction = Direction::from_dxy(diff_x, diff_y);
         }
 
         self.set_pos(pos);
@@ -360,7 +360,7 @@ impl Object {
             diff_y -= diff_y.signum();
         }
 
-        self.direction = Some(Direction::from_dxy(diff_x, diff_y));
+        self.direction = Direction::from_dxy(diff_x, diff_y);
         self.set_pos(Pos::new(self.x + diff_x, self.y + diff_y));
     }
 
@@ -424,7 +424,7 @@ impl Object {
 
     pub fn face(&mut self, face_pos: Pos) {
         let diff_pos = sub_pos(face_pos, self.pos());
-        self.direction = Some(Direction::from_dxy(diff_pos.x, diff_pos.y));
+        self.direction = Direction::from_dxy(diff_pos.x, diff_pos.y);
     }
 }
 
