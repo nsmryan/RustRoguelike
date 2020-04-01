@@ -1,0 +1,27 @@
+[package]
+name = "roguelike_core"
+version = "0.1.0"
+authors = ["nsmryan <nsmryan@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tcod = "0.13"
+
+doryen-fov = { version = "0.1.4", git = "https://github.com/nsmryan/doryen-fov", branch = "optional_serde", features = ["serde"] }
+
+
+slotmap = "0.4"
+
+rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
+
+pathfinding = "2.0"
+
+euclid = { version = "0.20", features = ["serde"] }
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_derive = "1.0"
+
+symbol = "0.1"

@@ -1,0 +1,23 @@
+[package]
+name = "roguelike_main"
+version = "0.1.0"
+authors = ["nsmryan <nsmryan@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+tcod = "0.13"
+
+rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
+serde = "1.0"
+serde_yaml = "0.8"
+serde_derive = "1.0"
+num = "0.2"
+
+sdl2 = { version = "0.32", features = ["image", "unsafe_textures"] }
+
+slotmap = "0.4"
+
+walkdir = "2"
+
+roguelike_core = { path = "../roguelike_core" }
+roguelike_engine = { path = "../roguelike_engine" }

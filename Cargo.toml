@@ -1,0 +1,16 @@
+[profile.dev]
+opt-level = 0
+debug = true
+lto = false
+
+[profile.release]
+opt-level = 1
+debug = false
+lto = false
+
+[workspace]
+members = [
+  "roguelike_core",
+  "roguelike_main",
+  "roguelike_engine",
+ ]
