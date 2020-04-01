@@ -86,7 +86,8 @@ pub fn ai_attack(monster_handle: ObjectId,
         turn = Action::Move(Movement::attack(hit_pos, MoveType::Move, attack));
     } else if data.map.is_blocked_by_wall(monster_pos, target_pos.x - monster_pos.x, target_pos.y - monster_pos.y).is_some() {
         turn = Action::StateChange(Behavior::Investigating(target_pos));
-    } else { // otherwise attempt to move towards their target
+    } else { 
+        // otherwise attempt to move towards their target
         // check positions that can hit target, filter by FOV, and get the closest.
         // then move to this closest position.
         let mut pos_offset = Pos::new(0, 0);
@@ -99,7 +100,7 @@ pub fn ai_attack(monster_handle: ObjectId,
                                          .filter_map(|mov| mov)
                                          .map(|pos| add_pos(pos, monster_pos))
                                          .filter(|pos| data.map.is_within_bounds(*pos))
-                                         .filter(|pos| data.is_blocked_tile(*pos).is_some())
+                                         .filter(|pos| data.is_blocked_tile(*pos).is_none())
                                          .collect::<Vec<Pos>>();
 
             // filter locations that are blocked or out of sight
