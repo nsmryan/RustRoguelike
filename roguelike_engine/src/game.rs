@@ -355,7 +355,7 @@ pub fn step_logic(player_action: Action,
         }
 
         for key in ai_handles {
-            ai_take_turn(key, game_data, msg_log);
+            ai_take_turn(key, game_data, config, msg_log);
 
             // check if fighter needs to be removed
             if let Some(fighter) = game_data.objects[key].fighter {

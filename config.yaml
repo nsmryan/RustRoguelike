@@ -132,3 +132,5 @@ sound_radius_crushed: 3
 sound_radius_attack: 3
 overlay_directions: false
 overlay_player_fov: false
+fov_radius_monster: 6
+fov_radius_player: 10

@@ -55,5 +55,7 @@ pub struct Config {
     pub sound_radius_attack: usize,
     pub overlay_directions: bool,
     pub overlay_player_fov: bool,
+    pub fov_radius_monster: i32,
+    pub fov_radius_player: i32,
 }
 

@@ -18,6 +18,7 @@ use crate::movement::*;
 use crate::animation::AnimKey;
 use crate::constants::*;
 use crate::utils::*;
+use crate::config::Config;
 
 
 pub type Name = Symbol;
@@ -389,12 +390,12 @@ impl Object {
         }
     }
 
-    pub fn is_in_fov(&self, map: &mut Map, other_pos: Pos) -> bool {
+    pub fn is_in_fov(&self, map: &mut Map, other_pos: Pos, config: &Config) -> bool {
         let pos = self.pos();
 
-        let radius = match self.typ {
-            ObjType::Enemy => MONSTER_FOV_RADIUS,
-            ObjType::Player => PLAYER_FOV_RADIUS,
+        let radius: i32 = match self.typ {
+            ObjType::Enemy => config.fov_radius_monster,
+            ObjType::Player => config.fov_radius_player,
             _ => panic!(format!("Tried to see with object of type {:?}", self.typ)),
         };
 

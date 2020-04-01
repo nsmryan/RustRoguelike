@@ -2,6 +2,7 @@ use crate::types::*;
 use crate::movement::*;
 use crate::messaging::*;
 use crate::utils::*;
+use crate::config::Config;
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -32,12 +33,13 @@ impl Behavior {
 
 pub fn ai_take_turn(monster_handle: ObjectId,
                     data: &mut GameData,
+                    config: &Config,
                     msg_log: &mut MsgLog) {
     let turn: Action;
 
     match data.objects[monster_handle].ai {
         Some(Ai::Basic) => {
-            turn = basic_ai_take_turn(monster_handle, data);
+            turn = basic_ai_take_turn(monster_handle, data, config);
         }
 
         None => {
@@ -64,7 +66,8 @@ pub fn step_towards(start_pos: Pos, target_pos: Pos) -> Pos {
 
 pub fn ai_attack(monster_handle: ObjectId,
                  target_handle: ObjectId,
-                 data: &mut GameData) -> Action {
+                 data: &mut GameData,
+                 config: &Config) -> Action {
     let mut target_pos = data.objects[target_handle].pos();
     let monster_pos = data.objects[monster_handle].pos();
 
@@ -77,7 +80,8 @@ pub fn ai_attack(monster_handle: ObjectId,
         ai_can_hit_target(data, 
                           monster_handle,
                           target_pos,
-                          &data.objects[monster_handle].attack.unwrap()) {
+                          &data.objects[monster_handle].attack.unwrap(),
+                          config) {
         let attack = Attack::Attack(target_handle);
         turn = Action::Move(Movement::attack(hit_pos, MoveType::Move, attack));
     } else if data.map.is_blocked_by_wall(monster_pos, target_pos.x - monster_pos.x, target_pos.y - monster_pos.y).is_some() {
@@ -105,7 +109,7 @@ pub fn ai_attack(monster_handle: ObjectId,
                 .iter()
                 .filter(|new_pos| {
                     data.objects[monster_handle].set_pos(**new_pos);
-                    let can_hit = ai_can_hit_target(data, monster_handle, target_pos, &attack).is_some();
+                    let can_hit = ai_can_hit_target(data, monster_handle, target_pos, &attack, config).is_some();
                     data.objects[monster_handle].set_pos(monster_pos);
                     return can_hit;
                 })
@@ -132,7 +136,8 @@ pub fn ai_attack(monster_handle: ObjectId,
 
 pub fn ai_investigate(target_pos_orig: Pos, 
                       monster_handle: ObjectId,
-                      game_data: &mut GameData) -> Action {
+                      game_data: &mut GameData,
+                      config: &Config) -> Action {
     let player_handle = game_data.find_player().unwrap();
 
     let target_pos = target_pos_orig;
@@ -142,7 +147,7 @@ pub fn ai_investigate(target_pos_orig: Pos,
     let turn: Action;
 
                
-    if game_data.objects[monster_handle].is_in_fov(&mut game_data.map, player_pos) {
+    if game_data.objects[monster_handle].is_in_fov(&mut game_data.map, player_pos, config) {
         game_data.objects[monster_handle].face(player_pos);
         // TODO this causes a turn delay between seeing the player and attacking them
         turn = Action::StateChange(Behavior::Attacking(player_handle));
@@ -173,12 +178,13 @@ pub fn ai_investigate(target_pos_orig: Pos,
 fn ai_can_hit_target(data: &mut GameData,
                      monster_handle: ObjectId,
                      target_pos: Pos,
-                     reach: &Reach) -> Option<Pos> {
+                     reach: &Reach,
+                     config: &Config) -> Option<Pos> {
     let mut hit_pos = None;
     let monster_pos = data.objects[monster_handle].pos();
 
     let within_fov =
-        data.objects[monster_handle].is_in_fov(&mut data.map, target_pos);
+        data.objects[monster_handle].is_in_fov(&mut data.map, target_pos, config);
 
     if within_fov {
             // get all locations they can hit
@@ -215,7 +221,8 @@ fn ai_take_astar_step(monster_pos: Pos,
 // NOTE this function takes a mutable GameData because FOV requires
 // mutation under the hood. It does not otherwise modify the game
 pub fn basic_ai_take_turn(monster_handle: ObjectId,
-                          game_data: &mut GameData) -> Action {
+                          game_data: &mut GameData,
+                          config: &Config) -> Action {
     let player_handle = game_data.find_player().unwrap();
     let monster_pos = game_data.objects[monster_handle].pos();
     let player_pos = game_data.objects[player_handle].pos();
@@ -225,7 +232,7 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
             Some(Behavior::Idle) => {
                 let mut turn = Action::none();
 
-                if game_data.objects[monster_handle].is_in_fov(&mut game_data.map, player_pos) {
+                if game_data.objects[monster_handle].is_in_fov(&mut game_data.map, player_pos, config) {
                     game_data.objects[monster_handle].face(player_pos);
                     // NOTE will cause a turn between seeing the player and attacking
                     turn = Action::StateChange(Behavior::Attacking(player_handle));
@@ -241,11 +248,11 @@ pub fn basic_ai_take_turn(monster_handle: ObjectId,
             }
 
             Some(Behavior::Investigating(target_pos)) => {
-                return ai_investigate(target_pos, monster_handle, game_data);
+                return ai_investigate(target_pos, monster_handle, game_data, config);
             }
 
             Some(Behavior::Attacking(object_handle)) => {
-                return ai_attack(monster_handle, object_handle, game_data);
+                return ai_attack(monster_handle, object_handle, game_data, config);
             }
 
             behavior => {
