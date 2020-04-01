@@ -309,6 +309,10 @@ impl Map {
 
         let line = Line::new((start_pos.x, start_pos.y), (end_x, end_y));
 
+        if dx == 0 && dy == 0 {
+            return None;
+        }
+
         let dir = Direction::from_dxy(dx, dy).expect("Check for blocking wall with no movement?");
 
         let mut positions = Vec::new();
