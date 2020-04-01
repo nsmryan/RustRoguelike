@@ -658,6 +658,7 @@ fn render_overlays(game: &mut Game,
     let player_handle = game.data.find_player().unwrap();
     let player_pos = game.data.objects[player_handle].pos();
 
+    // render a grid of numbers if enabled
     if game.config.overlay_directions {
         let map_width = game.data.map.width();
         let map_height = game.data.map.height();
@@ -680,6 +681,7 @@ fn render_overlays(game: &mut Game,
         }
     }
 
+    // render FOV if enabled
     if game.config.overlay_player_fov {
         let map_width = game.data.map.width();
         let map_height = game.data.map.height();
@@ -978,9 +980,10 @@ fn render_attack_overlay(game: &mut Game,
                  .filter(|pos| {
                      let in_bounds = game.data.map.is_within_bounds(*pos);
                      let clear = game.data.clear_path(object_pos, *pos);
+                     let player_can_see = game.data.map.is_in_fov(player_pos, *pos, PLAYER_FOV_RADIUS);
                      // check for player position so it gets highligted, even
                      // though the player causes 'clear_path' to fail.
-                     return in_bounds && (clear || *pos == player_pos);
+                     return player_can_see && in_bounds && (clear || *pos == player_pos);
                  })
                  .collect::<Vec<Pos>>();
 
