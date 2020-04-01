@@ -13,34 +13,47 @@ pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
     return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt() as i32;
 }
 
-pub fn push_attack(handle: ObjectId, target: ObjectId, data: &mut GameData, msg_log: &mut MsgLog) {
-    let pos = data.objects[handle].pos();
-    let other_pos = data.objects[target].pos();
-    let diff = other_pos - pos;
+pub fn pos_mag(pos: Pos) -> i32 {
+    return distance(Pos::new(0, 0), pos);
+}
 
-    let x_diff = diff.x.signum();
-    let y_diff = diff.y.signum();
+pub fn push_attack(handle: ObjectId, target: ObjectId, delta_pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
+    let mut killed = false;
+    let mut damage = 0;
 
-    let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
+    for _ in 0..pos_mag(delta_pos) {
+        let pos = data.objects[handle].pos();
+        let other_pos = data.objects[target].pos();
+        let diff = other_pos - pos;
 
-    if data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() ||
-       data.is_blocked_tile(past_pos).is_some() {
-        // if blocked by wall, kill entity and take their space
-        data.objects[handle].move_to(other_pos);
+        let x_diff = diff.x.signum();
+        let y_diff = diff.y.signum();
 
-        data.objects[target].alive = false;
-        data.objects[target].blocks = false;
-        let damage = data.objects[target]
+        let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
+
+        if data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() ||
+           data.is_blocked_tile(past_pos).is_some() {
+            // if blocked by wall, kill entity and take their space
+            data.objects[handle].move_to(other_pos);
+
+            data.objects[target].alive = false;
+            data.objects[target].blocks = false;
+            damage = data.objects[target]
                          .fighter
                          .expect("Attacked a non-fighter?")
                          .hp;
 
+            killed = true;
+        } else {
+            // if not blocked, push the other entity, taking their space
+            data.objects[target].set_pos(past_pos);
+            data.objects[handle].move_to(other_pos);
+        }
+    }
+
+    if killed {
         msg_log.log(Msg::Killed(handle, target, damage));
     } else {
-        // if not blocked, push the other entity, taking their space
-        data.objects[target].set_pos(past_pos);
-        data.objects[handle].move_to(other_pos);
-
         data.objects[target].messages.push(Message::Attack(handle));
     }
 }

@@ -281,8 +281,6 @@ pub fn ai_apply_actions(monster_handle: ObjectId,
                 }
 
                 Some(Attack::Attack(target_handle)) => {
-                    let dir = game_data.objects[monster_handle].direction;
-
                     let pos_diff = sub_pos(movement.pos, pos);
 
                     // ensure that attacking changes the orientation of an entity

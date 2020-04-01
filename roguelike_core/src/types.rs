@@ -16,7 +16,6 @@ use crate::ai::{Ai, Behavior};
 use crate::map::*;
 use crate::movement::*;
 use crate::animation::AnimKey;
-use crate::constants::*;
 use crate::utils::*;
 use crate::config::Config;
 

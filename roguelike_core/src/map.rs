@@ -15,7 +15,7 @@ use serde_derive::*;
 
 use crate::types::*;
 use crate::utils::*;
-use crate::movement::{Direction, Cardinal};
+use crate::movement::Direction;
 use crate::constants::*;
 
 

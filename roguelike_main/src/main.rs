@@ -23,7 +23,7 @@ use roguelike_core::config::Config;
 use roguelike_core::messaging::Msg;
 use roguelike_core::constants::*;
 use roguelike_core::animation::{Effect, Animation};
-use roguelike_core::movement::{MoveMode, Movement, MoveType};
+use roguelike_core::movement::{MoveMode, MoveType};
 
 use roguelike_engine::display::*;
 use roguelike_engine::render::*;

@@ -74,9 +74,9 @@ impl fmt::Display for MoveMode {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Attack {
-    Attack(ObjectId),
-    Push(ObjectId),
-    Stab(ObjectId),
+    Attack(ObjectId), // target_id
+    Push(ObjectId, Pos), //target_id, delta_pos
+    Stab(ObjectId), // target_id
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -490,7 +490,7 @@ pub fn player_move_or_attack(movement: Movement,
             }
         }
 
-        Some(Attack::Push(target_handle)) => {
+        Some(Attack::Push(target_handle, delta_pos)) => {
             if data.objects[target_handle].typ == ObjType::Column {
                 let pos = data.objects[player_handle].pos();
                     let next_pos = next_pos(pos, sub_pos(movement.pos, pos));
@@ -516,11 +516,11 @@ pub fn player_move_or_attack(movement: Movement,
                     player_action = NoAction;
                 }
             } else if data.objects[target_handle].alive {
-                push_attack(player_handle, target_handle, data, msg_log);
+                push_attack(player_handle, target_handle, delta_pos, data, msg_log);
                 player_action = Move(movement);
             } else {
                 dbg!(data.objects[target_handle].typ);
-                player_action = NoAction;
+                //player_action = NoAction;
                 panic!("What did you push?");
             }
         }
@@ -537,7 +537,6 @@ pub fn player_move_or_attack(movement: Movement,
         Some(Attack::Stab(target_handle)) => {
             // if enemy is aware of the enemy, just push instead
             if data.objects[target_handle].behavior.map_or(false, |beh| beh.is_aware()) {
-                push_attack(player_handle, target_handle, data, msg_log);
                 panic!("This shouldn't actually be possible- stabbing a aware enemy");
             } else {
                 // otherwise enemy is not aware, so stab them
@@ -610,9 +609,9 @@ pub fn check_collision(pos: Pos,
 }
 
 pub fn calculate_move(action: Direction,
-                  reach: Reach,
-                  object_id: ObjectId,
-                  data: &GameData) -> Option<Movement> {
+                      reach: Reach,
+                      object_id: ObjectId,
+                      data: &GameData) -> Option<Movement> {
     let mut movement: Option<Movement>;
 
     let pos = data.objects[object_id].pos();
@@ -637,7 +636,7 @@ pub fn calculate_move(action: Direction,
                         if can_stab(data, object_id, entity) {
                             Attack::Stab(entity)
                         } else {
-                            Attack::Push(entity)
+                            Attack::Push(entity, delta_pos)
                         };
                     let move_pos = move_next_to(pos, entity_pos);
                     movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
@@ -655,7 +654,7 @@ pub fn calculate_move(action: Direction,
                             if can_stab(data, object_id, entity) {
                                 Attack::Stab(entity)
                             } else {
-                                Attack::Push(entity)
+                                Attack::Push(entity, delta_pos)
                             };
                         let move_pos = move_next_to(pos, entity_pos);
                         movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
@@ -677,7 +676,7 @@ pub fn calculate_move(action: Direction,
                     movement = Some(Movement::attack(move_result.move_pos, MoveType::Move, attack));
                     dbg!();
                 } else if data.objects[entity].blocks {
-                    let attack = Attack::Push(entity);
+                    let attack = Attack::Push(entity, delta_pos);
                     movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
                     dbg!();
                 } else {
