@@ -253,6 +253,26 @@ pub fn read_map_xp(config: &Config,
                                 player_position = (x as i32, y as i32);
                             }
 
+                            ENTITY_DAGGER => {
+                                let dagger = make_dagger(config, Pos::new(x, y));
+                                objects.insert(dagger);
+                            }
+
+                            ENTITY_GOAL => {
+                                let goal = make_goal(config, display_state, Pos::new(x, y));
+                                objects.insert(goal);
+                            }
+
+                            ENTITY_STONE => {
+                                let stone = make_stone(config, Pos::new(x, y));
+                                objects.insert(stone);
+                            }
+
+                            ENTITY_SHIELD => {
+                                let shield = make_shield(config, Pos::new(x, y));
+                                objects.insert(shield);
+                            }
+
                             _ => {
                                 panic!(format!("Unexpected character {} in entities layer!", chr as u8));
                             }

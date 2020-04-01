@@ -42,7 +42,7 @@ pub struct GameSettings {
 impl GameSettings {
     pub fn new(turn_count: usize,
                god_mode: bool) -> GameSettings {
-        GameSettings {
+        return GameSettings {
             turn_count,
             god_mode,
             map_type: MapGenType::Island,
@@ -50,7 +50,7 @@ impl GameSettings {
             state: GameState::Playing,
             draw_throw_overlay: false,
             overlay: false,
-        }
+        };
     }
 }
 
@@ -169,7 +169,7 @@ impl Game {
             msg_log: MsgLog::new(),
         };
 
-        Ok(state)
+        return Ok(state);
     }
 
     pub fn step_game(&mut self) -> GameResult {
@@ -199,18 +199,15 @@ impl Game {
 
     fn step_win(&mut self) -> GameResult {
 
-        match self.input_action {
-            InputAction::Exit => {
-                return GameResult::Stop;
-            }
-
-            _ => {},
+        if matches!(self.input_action, InputAction::Exit) {
+            return GameResult::Stop;
         }
 
         let player_handle = self.data.find_player().unwrap();
 
         let (new_objects, new_map, _) =
             read_map_xp(&self.config, &mut self.display_state, "resources/map.xp");
+
         self.data.map = new_map;
         self.data.objects[player_handle].inventory.clear();
         let player = self.data.objects[player_handle].clone();
