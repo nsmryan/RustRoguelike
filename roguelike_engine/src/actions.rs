@@ -199,8 +199,8 @@ pub fn handle_input(input_action: InputAction,
             if new_move_mode == movement::MoveMode::Run && holding_shield {
                 msg_log.log(Msg::TriedRunWithShield);
             } else {
-                player.movement = Some(reach_by_mode(player.move_mode.unwrap()));
                 player.move_mode = Some(new_move_mode);
+                player.movement = Some(reach_by_mode(player.move_mode.unwrap()));
 
                 msg_log.log(Msg::MoveMode(new_move_mode));
             }
