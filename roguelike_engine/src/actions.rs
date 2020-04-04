@@ -78,6 +78,11 @@ pub fn handle_input_inventory(input: InputAction,
             // if item index is not in the player's inventory, do nothing
         }
 
+        InputAction::Esc => {
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
         InputAction::Exit => {
             settings.exiting = true;
         }
@@ -103,6 +108,12 @@ pub fn handle_input_throwing(input: InputAction,
 
         InputAction::Exit => {
             settings.exiting = true;
+        }
+
+        InputAction::Esc => {
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
+            settings.draw_throw_overlay = false;
         }
 
         InputAction::MapClick(_map_loc, map_cell) => {

@@ -17,6 +17,14 @@ pub fn pos_mag(pos: Pos) -> i32 {
     return distance(Pos::new(0, 0), pos);
 }
 
+pub fn signedness(value: i32) -> i32 {
+    if value == 0 {
+        return 0;
+    } else {
+        return value.signum();
+    }
+}
+
 pub fn push_attack(handle: ObjectId, target: ObjectId, delta_pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
     let mut killed = false;
     let mut damage = 0;
@@ -26,8 +34,8 @@ pub fn push_attack(handle: ObjectId, target: ObjectId, delta_pos: Pos, data: &mu
         let other_pos = data.objects[target].pos();
         let diff = other_pos - pos;
 
-        let x_diff = diff.x.signum();
-        let y_diff = diff.y.signum();
+        let x_diff = signedness(diff.x);
+        let y_diff = signedness(diff.y);
 
         let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
 

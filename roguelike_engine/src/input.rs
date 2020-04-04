@@ -19,6 +19,7 @@ pub enum InputAction {
     Pickup,
     Inventory,
     Exit,
+    Esc,
     ExploreAll,
     RegenerateMap,
     GodMode,
@@ -139,7 +140,7 @@ pub fn keyup_to_action(keycode: Keycode,
         }
 
         Keycode::Escape => {
-            input_action = InputAction::Exit;
+            input_action = InputAction::Esc;
         }
 
         Keycode::R => {
