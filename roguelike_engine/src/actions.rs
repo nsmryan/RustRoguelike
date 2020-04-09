@@ -201,7 +201,7 @@ pub fn handle_input(input_action: InputAction,
         }
 
         (InputAction::IncreaseMoveMode, true) => {
-            let holding_shield = game_data.holds(player_handle, Item::Shield);
+            let holding_shield = game_data.using(player_handle, Item::Shield);
             let player = &mut game_data.objects[player_handle];
 
             let move_mode = player.move_mode.expect("Player should have a move mode");
@@ -256,6 +256,18 @@ pub fn handle_input(input_action: InputAction,
             }
         }
 
+        (InputAction::SwapPrimaryItem, _) => {
+            if item_primary_at(player_handle, &mut game_data.objects, 0) &&
+               item_primary_at(player_handle, &mut game_data.objects, 1) {
+                   let temp_id = game_data.objects[player_handle].inventory[0];
+
+                   game_data.objects[player_handle].inventory[0] = 
+                       game_data.objects[player_handle].inventory[1];
+
+                   game_data.objects[player_handle].inventory[1] = temp_id;
+           }
+        }
+
         (InputAction::RegenerateMap, _) => {
             let mut rng: SmallRng = SeedableRng::seed_from_u64(2);
             let (data, _position) =
@@ -291,10 +303,47 @@ pub fn handle_input(input_action: InputAction,
     return player_turn;
 }
 
+fn item_primary_at(object_id: ObjectId, objects: &mut ObjMap, index: usize) -> bool {
+    let inv_len = objects[object_id].inventory.len();
+
+    if inv_len <= index {
+        return false;
+    }
+
+    let item_id = objects[object_id].inventory[index];
+    let is_primary =
+        objects[item_id].item.unwrap().class() == ItemClass::Primary;
+
+    return is_primary;
+}
+
 pub fn pick_item_up(object_id: ObjectId,
                     item_id: ObjectId,
                     objects: &mut ObjMap) {
-    objects[object_id].inventory.push(item_id);
+    let pickup_class = objects[item_id].item.unwrap().class();
+
+    match pickup_class {
+        ItemClass::Primary => {
+            if item_primary_at(object_id, objects, 0) &&
+               item_primary_at(object_id, objects, 1) {
+                let first_item_id = objects[object_id].inventory[0];
+
+                let old_primary = objects[object_id].inventory[0];
+
+                objects[object_id].inventory[0] = item_id;
+
+                let obj_pos = objects[object_id].pos();
+                objects[old_primary].set_pos(obj_pos);
+            } else {
+                objects[object_id].inventory.push_front(item_id);
+            }
+        }
+
+        ItemClass::Secondary => {
+            objects[object_id].inventory.push_back(item_id);
+        }
+    }
+
     objects[item_id].set_xy(-1, -1);
 }
 
@@ -305,7 +354,7 @@ pub fn throw_item(player_handle: ObjectId,
                   game_data: &mut GameData,
                   msg_log: &mut MsgLog) {
     let item_handle =
-        game_data.objects[player_handle].inventory.remove(item_index);
+        game_data.objects[player_handle].inventory.remove(item_index).unwrap();
 
     let throw_line = Line::new(start_pos.to_tuple(), end_pos.to_tuple());
 

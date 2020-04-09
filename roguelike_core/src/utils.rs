@@ -79,7 +79,7 @@ pub fn crush(handle: ObjectId, target: ObjectId, objects: &mut ObjMap, msg_log: 
 }
 
 pub fn attack(handle: ObjectId, target: ObjectId, data: &mut GameData, msg_log: &mut MsgLog) {
-    if data.holds(target, Item::Shield) {
+    if data.using(target, Item::Shield) {
         let pos = data.objects[handle].pos();
         let other_pos = data.objects[target].pos();
         let diff = other_pos - pos;
@@ -225,7 +225,7 @@ pub fn next_pos(pos: Pos, delta_pos: Pos) -> Pos {
 pub fn can_stab(data: &GameData, entity: ObjectId, target: ObjectId) -> bool {
     // NOTE this is not generic- uses ObjType::Enemy
     return data.objects[target].typ == ObjType::Enemy &&
-           data.holds(entity, Item::Dagger) &&
+           data.using(entity, Item::Dagger) &&
            !matches!(data.objects[target].behavior, Some(Behavior::Attacking(_)));
 }
 

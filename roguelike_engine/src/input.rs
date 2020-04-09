@@ -17,6 +17,7 @@ pub enum InputAction {
     Pass,
     MapClick(Pos, Pos),
     Pickup,
+    SwapPrimaryItem,
     Inventory,
     Exit,
     Esc,
@@ -144,7 +145,7 @@ pub fn keyup_to_action(keycode: Keycode,
         }
 
         Keycode::R => {
-            input_action = InputAction::RegenerateMap;
+            input_action = InputAction::SwapPrimaryItem;
         }
 
         Keycode::T => {

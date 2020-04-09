@@ -125,10 +125,12 @@ impl GameData {
         }
     }
 
-    pub fn holds(&self, obj_id: ObjectId, item: Item) -> bool {
-        return self.objects[obj_id].inventory.iter().any(|item_id| {
-            self.objects[*item_id].item == Some(item)
-        });
+    pub fn using(&self, obj_id: ObjectId, item: Item) -> bool {
+        if let Some(item_id) = self.objects[obj_id].inventory.get(0) {
+            return self.objects[*item_id].item == Some(item);
+        } else {
+            return false;
+        }
     }
 
     pub fn sound_at(&mut self, cause_id: ObjectId, source_pos: Pos, radius: usize) -> Aoe {
@@ -208,6 +210,23 @@ pub enum Item {
     Shield,
 }
 
+impl Item {
+    pub fn class(&self) -> ItemClass {
+        match self {
+            Item::Stone => ItemClass::Secondary,
+            Item::Goal => ItemClass::Secondary,
+            Item::Dagger => ItemClass::Primary,
+            Item::Shield => ItemClass::Primary,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ItemClass {
+    Primary,
+    Secondary,
+}
+
 
 pub type Hp = i32;
 
@@ -281,7 +300,7 @@ pub struct Object {
     pub movement: Option<Reach>,
     pub attack: Option<Reach>,
     pub animation: VecDeque<AnimKey>,
-    pub inventory: Vec<ObjectId>,
+    pub inventory: VecDeque<ObjectId>,
     pub trap: Option<Trap>,
     pub sound: Option<Pos>, // source position
     pub count_down: Option<usize>,
@@ -310,7 +329,7 @@ impl Object {
             movement: None,
             attack: None,
             animation: VecDeque::new(),
-            inventory: Vec::new(),
+            inventory: VecDeque::new(),
             trap: None,
             sound: None,
             count_down: None,

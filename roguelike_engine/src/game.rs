@@ -157,7 +157,7 @@ impl Game {
         data.objects[player_handle].y = player_position.1;
 
         let stone_handle = data.objects.insert(make_stone(&config, Pos::new(-1, -1)));
-        data.objects[player_handle].inventory.push(stone_handle);
+        data.objects[player_handle].inventory.push_back(stone_handle);
 
         let state = Game {
             config,
