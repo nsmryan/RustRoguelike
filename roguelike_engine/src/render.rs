@@ -13,7 +13,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Effect, Animation, AnimKey};
-use roguelike_core::utils::{distance, move_towards, lerp_color};
+use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color};
 
 use crate::plat::*;
 use crate::display::*;
@@ -254,7 +254,9 @@ fn render_inventory(game: &mut Game, area: &Area) {
     // Render each object's name in inventory
     let mut y_pos = 2;
     let mut item_index = 0;
-    for obj_id in game.data.objects[player_handle].inventory.iter() {
+    let item_ids = game.data.objects[player_handle].inventory.clone();
+
+    for (index, obj_id) in item_ids.iter().enumerate() {
         let obj = &game.data.objects[*obj_id];
 
         let color;
@@ -280,10 +282,17 @@ fn render_inventory(game: &mut Game, area: &Area) {
 
         // place object name
         let text_pos = Pos::new(2, y_pos);
-        game.display_state.draw_text(format!(" {}", game.data.objects[*obj_id].name),
-                               text_pos,
-                               color,
-                               area);
+        let item_marker =
+            if index == 0 && item_primary_at(player_handle, &mut game.data.objects, 0) {
+                "*"
+            } else {
+                ""
+            };
+        let item_text = format!(" {} {}", game.data.objects[*obj_id].name, item_marker);
+        game.display_state.draw_text(item_text,
+                                     text_pos,
+                                     color,
+                                     area);
         
         y_pos += 1;
 

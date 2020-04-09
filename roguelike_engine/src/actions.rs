@@ -6,7 +6,7 @@ use roguelike_core::config::*;
 use roguelike_core::movement::Action;
 use roguelike_core::types::*;
 use roguelike_core::movement;
-use roguelike_core::utils::reach_by_mode;
+use roguelike_core::utils::{reach_by_mode, item_primary_at};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 
@@ -182,6 +182,13 @@ pub fn handle_input(input_action: InputAction,
             }
         }
 
+        (InputAction::DropItem, true) => {
+            if let Some(item_id) = game_data.objects[player_handle].inventory.remove(0) {
+               let player_pos = game_data.objects[player_handle].pos();
+               game_data.objects[item_id].set_pos(player_pos);
+            }
+        }
+
         (InputAction::Pickup, true) => {
             let player = &game_data.objects[player_handle];
             let item_id = game_data.objects.keys().filter(|key| {
@@ -301,20 +308,6 @@ pub fn handle_input(input_action: InputAction,
     }
 
     return player_turn;
-}
-
-fn item_primary_at(object_id: ObjectId, objects: &mut ObjMap, index: usize) -> bool {
-    let inv_len = objects[object_id].inventory.len();
-
-    if inv_len <= index {
-        return false;
-    }
-
-    let item_id = objects[object_id].inventory[index];
-    let is_primary =
-        objects[item_id].item.unwrap().class() == ItemClass::Primary;
-
-    return is_primary;
 }
 
 pub fn pick_item_up(object_id: ObjectId,

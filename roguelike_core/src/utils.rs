@@ -132,6 +132,20 @@ pub fn stab(handle: ObjectId, target: ObjectId, objects: &mut ObjMap, msg_log: &
     }
 }
 
+pub fn item_primary_at(object_id: ObjectId, objects: &mut ObjMap, index: usize) -> bool {
+    let inv_len = objects[object_id].inventory.len();
+
+    if inv_len <= index {
+        return false;
+    }
+
+    let item_id = objects[object_id].inventory[index];
+    let is_primary =
+        objects[item_id].item.unwrap().class() == ItemClass::Primary;
+
+    return is_primary;
+}
+
 pub fn add_pos(pos1: Pos, pos2: Pos) -> Pos {
     return Pos::new(pos1.x + pos2.x, pos1.y + pos2.y);
 }
