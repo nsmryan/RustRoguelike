@@ -144,7 +144,7 @@ pub fn keyup_to_action(keycode: Keycode,
             input_action = InputAction::Esc;
         }
 
-        Keycode::R => {
+        Keycode::Tab => {
             input_action = InputAction::SwapPrimaryItem;
         }
 
