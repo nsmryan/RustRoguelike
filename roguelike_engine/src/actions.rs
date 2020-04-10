@@ -19,8 +19,8 @@ use crate::generation;
 pub fn player_apply_action(action: Action,
                            game_data: &mut GameData,
                            msg_log: &mut MsgLog) {
-    let player_handle = game_data.find_player().unwrap();
-    let player_pos = game_data.objects[player_handle].pos();
+    let player_id = game_data.find_player().unwrap();
+    let player_pos = game_data.objects[player_id].pos();
 
     match action {
         Action::Move(movement) => {
@@ -32,12 +32,12 @@ pub fn player_apply_action(action: Action,
         }
 
         Action::Pickup(item_id) => {
-            pick_item_up(player_handle, item_id, &mut game_data.objects);
-            msg_log.log(Msg::PickedUp(player_handle, item_id));
+            pick_item_up(player_id, item_id, &mut game_data.objects);
+            msg_log.log(Msg::PickedUp(player_id, item_id));
         }
 
         Action::ThrowItem(throw_pos, item_index) => {
-            throw_item(player_handle, item_index, player_pos, throw_pos, game_data, msg_log);
+            throw_item(player_id, item_index, player_pos, throw_pos, game_data, msg_log);
         }
 
         Action::Yell => {
@@ -57,7 +57,7 @@ pub fn handle_input_inventory(input: InputAction,
                               game_data: &mut GameData,
                               settings: &mut GameSettings,
                               msg_log: &mut MsgLog) {
-    let player_handle = game_data.find_player().unwrap();
+    let player_id = game_data.find_player().unwrap();
 
     match input {
         InputAction::Inventory => {
@@ -66,10 +66,10 @@ pub fn handle_input_inventory(input: InputAction,
         }
 
         InputAction::SelectItem(item_index) => {
-            if item_index < game_data.objects[player_handle].inventory.len() {
-                let item_key = game_data.objects[player_handle].inventory[item_index];
+            if item_index < game_data.objects[player_id].inventory.len() {
+                let item_key = game_data.objects[player_id].inventory[item_index];
 
-                game_data.objects[player_handle].selected_item =
+                game_data.objects[player_id].selected_item =
                     Some(item_key);
 
                 settings.state = GameState::Throwing;
@@ -96,7 +96,7 @@ pub fn handle_input_throwing(input: InputAction,
                              game_data: &mut GameData, 
                              settings: &mut GameSettings,
                              msg_log: &mut MsgLog) -> Action {
-    let player_handle = game_data.find_player().unwrap();
+    let player_id = game_data.find_player().unwrap();
 
     let mut player_turn: Action = Action::none();
 
@@ -118,12 +118,12 @@ pub fn handle_input_throwing(input: InputAction,
 
         InputAction::MapClick(_map_loc, map_cell) => {
             let item =
-                game_data.objects[player_handle]
+                game_data.objects[player_id]
                          .selected_item
                          .expect("No item selected when throwing!");
 
             let item_index =
-                game_data.objects[player_handle]
+                game_data.objects[player_id]
                          .inventory
                          .iter()
                          .position(|obj_id| *obj_id == item);
@@ -155,11 +155,11 @@ pub fn handle_input(input_action: InputAction,
                     display_state: &mut DisplayState,
                     msg_log: &mut MsgLog,
                     config: &Config) -> Action {
-    let player_handle = game_data.find_player().unwrap();
+    let player_id = game_data.find_player().unwrap();
 
     let mut player_turn: Action = Action::none();
 
-    let player_alive = game_data.objects[player_handle].alive;
+    let player_alive = game_data.objects[player_id].alive;
 
     match (input_action, player_alive) {
         (InputAction::Pass, true) => {
@@ -167,13 +167,13 @@ pub fn handle_input(input_action: InputAction,
         }
 
         (InputAction::Move(move_action), true) => {
-            let player_handle = game_data.find_player().unwrap();
+            let player_id = game_data.find_player().unwrap();
 
-            let player_reach = game_data.objects[player_handle].movement.unwrap();
+            let player_reach = game_data.objects[player_id].movement.unwrap();
             let maybe_movement = 
                 movement::calculate_move(move_action,
                                          player_reach,
-                                         player_handle,
+                                         player_id,
                                          game_data);
 
             // if moved, walked into enemy, and holding a dagger, then attack
@@ -183,14 +183,14 @@ pub fn handle_input(input_action: InputAction,
         }
 
         (InputAction::DropItem, true) => {
-            if let Some(item_id) = game_data.objects[player_handle].inventory.remove(0) {
-               let player_pos = game_data.objects[player_handle].pos();
+            if let Some(item_id) = game_data.objects[player_id].inventory.remove(0) {
+               let player_pos = game_data.objects[player_id].pos();
                game_data.objects[item_id].set_pos(player_pos);
             }
         }
 
         (InputAction::Pickup, true) => {
-            let player = &game_data.objects[player_handle];
+            let player = &game_data.objects[player_id];
             let item_id = game_data.objects.keys().filter(|key| {
                 return (game_data.objects[*key].pos() == player.pos()) && game_data.objects[*key].item.is_some();
             }).next();
@@ -208,8 +208,8 @@ pub fn handle_input(input_action: InputAction,
         }
 
         (InputAction::IncreaseMoveMode, true) => {
-            let holding_shield = game_data.using(player_handle, Item::Shield);
-            let player = &mut game_data.objects[player_handle];
+            let holding_shield = game_data.using(player_id, Item::Shield);
+            let player = &mut game_data.objects[player_id];
 
             let move_mode = player.move_mode.expect("Player should have a move mode");
             let new_move_mode = move_mode.increase();
@@ -227,7 +227,7 @@ pub fn handle_input(input_action: InputAction,
         }
 
         (InputAction::DecreaseMoveMode, true) => {
-            let player = &mut game_data.objects[player_handle];
+            let player = &mut game_data.objects[player_id];
             player.move_mode = player.move_mode.map(|mode| mode.decrease());
             player.movement = Some(reach_by_mode(player.move_mode.unwrap()));
 
@@ -264,14 +264,14 @@ pub fn handle_input(input_action: InputAction,
         }
 
         (InputAction::SwapPrimaryItem, _) => {
-            if item_primary_at(player_handle, &mut game_data.objects, 0) &&
-               item_primary_at(player_handle, &mut game_data.objects, 1) {
-                   let temp_id = game_data.objects[player_handle].inventory[0];
+            if item_primary_at(player_id, &mut game_data.objects, 0) &&
+               item_primary_at(player_id, &mut game_data.objects, 1) {
+                   let temp_id = game_data.objects[player_id].inventory[0];
 
-                   game_data.objects[player_handle].inventory[0] = 
-                       game_data.objects[player_handle].inventory[1];
+                   game_data.objects[player_id].inventory[0] = 
+                       game_data.objects[player_id].inventory[1];
 
-                   game_data.objects[player_handle].inventory[1] = temp_id;
+                   game_data.objects[player_id].inventory[1] = temp_id;
            }
         }
 
@@ -340,14 +340,14 @@ pub fn pick_item_up(object_id: ObjectId,
     objects[item_id].set_xy(-1, -1);
 }
 
-pub fn throw_item(player_handle: ObjectId,
+pub fn throw_item(player_id: ObjectId,
                   item_index: usize,
                   start_pos: Pos,
                   end_pos: Pos,
                   game_data: &mut GameData,
                   msg_log: &mut MsgLog) {
-    let item_handle =
-        game_data.objects[player_handle].inventory.remove(item_index).unwrap();
+    let item_id =
+        game_data.objects[player_id].inventory.remove(item_index).unwrap();
 
     let throw_line = Line::new(start_pos.to_tuple(), end_pos.to_tuple());
 
@@ -361,9 +361,9 @@ pub fn throw_item(player_handle: ObjectId,
         end_pos = blocked.start_pos;
     }
 
-    game_data.objects[item_handle].set_pos(end_pos);
+    game_data.objects[item_id].set_pos(end_pos);
 
     // log the item throw event
-    msg_log.log(Msg::ItemThrow(player_handle, item_handle, start_pos, end_pos));
+    msg_log.log(Msg::ItemThrow(player_id, item_id, start_pos, end_pos));
 }
 

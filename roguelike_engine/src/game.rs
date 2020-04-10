@@ -152,12 +152,12 @@ impl Game {
 
         let mut data = GameData::new(map, objects);
 
-        let player_handle = data.objects.insert(make_player(&config, &mut display_state));
-        data.objects[player_handle].x = player_position.0;
-        data.objects[player_handle].y = player_position.1;
+        let player_id = data.objects.insert(make_player(&config, &mut display_state));
+        data.objects[player_id].x = player_position.0;
+        data.objects[player_id].y = player_position.1;
 
-        let stone_handle = data.objects.insert(make_stone(&config, Pos::new(-1, -1)));
-        data.objects[player_handle].inventory.push_back(stone_handle);
+        let stone_id = data.objects.insert(make_stone(&config, Pos::new(-1, -1)));
+        data.objects[player_id].inventory.push_back(stone_id);
 
         let state = Game {
             config,
@@ -203,14 +203,14 @@ impl Game {
             return GameResult::Stop;
         }
 
-        let player_handle = self.data.find_player().unwrap();
+        let player_id = self.data.find_player().unwrap();
 
         let (new_objects, new_map, _) =
             read_map_xp(&self.config, &mut self.display_state, "resources/map.xp");
 
         self.data.map = new_map;
-        self.data.objects[player_handle].inventory.clear();
-        let player = self.data.objects[player_handle].clone();
+        self.data.objects[player_id].inventory.clear();
+        let player = self.data.objects[player_id].clone();
         self.data.objects.clear();
         self.data.objects.insert(player);
         for key in new_objects.keys() {
@@ -312,14 +312,14 @@ fn win_condition_met(data: &GameData) -> bool {
     //let has_goal =
     //inventory.iter().any(|obj| obj.item.map_or(false, |item| item == Item::Goal));
     // TODO add back in with new inventory!
-    let player_handle = data.find_player().unwrap();
+    let player_id = data.find_player().unwrap();
 
     let has_goal = 
-        data.objects[player_handle].inventory.iter().any(|item_handle| {
-            data.objects[*item_handle].item == Some(Item::Goal)
+        data.objects[player_id].inventory.iter().any(|item_id| {
+            data.objects[*item_id].item == Some(Item::Goal)
         });
 
-    let player_pos = data.objects[player_handle].pos();
+    let player_pos = data.objects[player_id].pos();
     let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
 
     let exit_condition = has_goal && on_exit_tile;
@@ -332,26 +332,26 @@ pub fn step_logic(player_action: Action,
                   settings: &mut GameSettings,
                   config: &Config,
                   msg_log: &mut MsgLog) {
-    let player_handle = game_data.find_player().unwrap();
+    let player_id = game_data.find_player().unwrap();
 
     let previous_player_position =
-        game_data.objects[player_handle].pos();
+        game_data.objects[player_id].pos();
 
     actions::player_apply_action(player_action, game_data, msg_log);
 
     /* AI */
-    if game_data.objects[player_handle].alive {
-        let mut ai_handles = Vec::new();
+    if game_data.objects[player_id].alive {
+        let mut ai_id = Vec::new();
 
         for key in game_data.objects.keys() {
             if game_data.objects[key].ai.is_some() &&
                game_data.objects[key].alive        &&
                game_data.objects[key].fighter.is_some() {
-               ai_handles.push(key);
+               ai_id.push(key);
            }
         }
 
-        for key in ai_handles {
+        for key in ai_id {
             ai_take_turn(key, game_data, config, msg_log);
 
             // check if fighter needs to be removed
@@ -397,11 +397,11 @@ pub fn step_logic(player_action: Action,
     // TODO move enemy health checks here for trap damage
 
     // check if player lost all hp
-    if let Some(fighter) = game_data.objects[player_handle].fighter {
+    if let Some(fighter) = game_data.objects[player_id].fighter {
         if fighter.hp <= 0 {
             // modify player
             {
-                let player = &mut game_data.objects[player_handle];
+                let player = &mut game_data.objects[player_id];
                 player.alive = false;
                 player.color = config.color_red;
                 player.fighter = None;
@@ -428,7 +428,7 @@ pub fn step_logic(player_action: Action,
     }
 
     /* Recompute FOV */
-    let player_pos = game_data.objects[player_handle].pos();
+    let player_pos = game_data.objects[player_id].pos();
     if previous_player_position != player_pos {
         game_data.map.compute_fov(player_pos, PLAYER_FOV_RADIUS);
     }

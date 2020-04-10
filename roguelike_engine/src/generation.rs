@@ -9,7 +9,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Animation, Sprite};
-use roguelike_core::utils::distance;
+use roguelike_core::utils::{rand_from_pos, distance};
 
 use crate::display::*;
 use crate::read_map::*;
@@ -103,7 +103,7 @@ pub fn make_gol(config: &Config, pos: Pos, display_state: &mut DisplayState) -> 
     gol.movement = Some(Reach::Single(GOL_MOVE_DISTANCE));
     gol.attack = Some(Reach::Diag(GOL_ATTACK_DISTANCE));
     gol.alive = true;
-    gol.direction = Some(Direction::Up);
+    gol.direction = Some(Direction::from_f32(rand_from_pos(pos)));
 
     let sprite = display_state.new_sprite("gol_idle".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'gol_idle'");
@@ -140,7 +140,7 @@ pub fn make_pawn(config: &Config, pos: Pos, display_state: &mut DisplayState) ->
     pawn.movement = Some(Reach::Single(PAWN_MOVE_DISTANCE));
     pawn.attack = Some(Reach::Single(PAWN_ATTACK_DISTANCE));
     pawn.alive = true;
-    pawn.direction = Some(Direction::Up);
+    pawn.direction = Some(Direction::from_f32(rand_from_pos(pos)));
 
     let sprite = display_state.new_sprite("elf_idle".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'elf_idle'");

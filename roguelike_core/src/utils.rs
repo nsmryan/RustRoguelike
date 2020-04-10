@@ -160,6 +160,10 @@ pub fn move_towards(start: Pos, end: Pos, num_blocks: usize) -> Pos {
     return Pos::from(line.skip(num_blocks).next().unwrap_or(end.to_tuple()));
 }
 
+pub fn rand_from_pos(pos: Pos) -> f32 {
+    return rand_from_x_y(pos.x, pos.y);
+}
+
 pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
     let mut hasher = DefaultHasher::new();
 

@@ -22,9 +22,9 @@ use crate::game::*;
 
 pub fn render_all(game: &mut Game)  -> Result<(), String> {
 
-    let player_handle = game.data.find_player().unwrap();
+    let player_id = game.data.find_player().unwrap();
 
-    game.data.map.compute_fov(game.data.objects[player_handle].pos(), PLAYER_FOV_RADIUS);
+    game.data.map.compute_fov(game.data.objects[player_id].pos(), PLAYER_FOV_RADIUS);
 
     let screen_rect = game.display_state.canvas.output_size()?;
 
@@ -52,8 +52,8 @@ pub fn render_all(game: &mut Game)  -> Result<(), String> {
             let map_y = mouse_map_xy.1 as f32 / (FONT_HEIGHT as f32 * scaler);
             mouse_map_pos = Some(Pos::new(map_x as i32, map_y as i32));
 
-            if let Some(mouse_handle) = game.data.find_mouse() {
-                game.data.objects[mouse_handle].set_xy(map_x as i32, map_y as i32);
+            if let Some(mouse_id) = game.data.find_mouse() {
+                game.data.objects[mouse_id].set_xy(map_x as i32, map_y as i32);
             }
         }
     }
@@ -150,14 +150,14 @@ fn render_player(game: &mut Game, area: &Area) {
                  area,
                  &game.config);
 
-    let player_handle = game.data.find_player().unwrap();
+    let player_id = game.data.find_player().unwrap();
 
     let mut list = Vec::new();
 
     let color = game.config.color_warm_grey;
     let text_pos = Pos::new(1, 4);
 
-    if let Some(fighter) = game.data.objects[player_handle].fighter {
+    if let Some(fighter) = game.data.objects[player_id].fighter {
         let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
 
         render_bar(&mut game.display_state, health_percent, 2, game.config.color_red, Color::white(), area);
@@ -166,12 +166,12 @@ fn render_player(game: &mut Game, area: &Area) {
     list.push(format!("position:"));
 
     list.push(format!(" ({}, {})", 
-                      game.data.objects[player_handle].x,
-                      game.data.objects[player_handle].y));
+                      game.data.objects[player_id].x,
+                      game.data.objects[player_id].y));
 
     list.push(format!(""));
 
-    let move_mode = game.data.objects[player_handle].move_mode.unwrap();
+    let move_mode = game.data.objects[player_id].move_mode.unwrap();
     list.push(format!("{}", move_mode.to_string()));
 
     game.display_state.draw_text_list(list,
@@ -190,8 +190,8 @@ fn render_info(game: &mut Game,
                  &game.config);
 
     if let Some(mouse) = mouse_xy {
-        let player_handle = game.data.find_player().unwrap();
-        let player_pos = game.data.objects[player_handle].pos();
+        let player_id = game.data.find_player().unwrap();
+        let player_pos = game.data.objects[player_id].pos();
 
         let object_ids =
             get_objects_under_mouse(mouse, &mut game.data);
@@ -249,12 +249,12 @@ fn render_inventory(game: &mut Game, area: &Area) {
                  area,
                  &game.config);
 
-    let player_handle = game.data.find_player().unwrap();
+    let player_id = game.data.find_player().unwrap();
 
     // Render each object's name in inventory
     let mut y_pos = 2;
     let mut item_index = 0;
-    let item_ids = game.data.objects[player_handle].inventory.clone();
+    let item_ids = game.data.objects[player_id].inventory.clone();
 
     for (index, obj_id) in item_ids.iter().enumerate() {
         let obj = &game.data.objects[*obj_id];
@@ -283,7 +283,7 @@ fn render_inventory(game: &mut Game, area: &Area) {
         // place object name
         let text_pos = Pos::new(2, y_pos);
         let item_marker =
-            if index == 0 && item_primary_at(player_handle, &mut game.data.objects, 0) {
+            if index == 0 && item_primary_at(player_id, &mut game.data.objects, 0) {
                 "*"
             } else {
                 ""
@@ -299,7 +299,7 @@ fn render_inventory(game: &mut Game, area: &Area) {
         item_index += 1;
     }
 
-    if game.data.objects[player_handle].inventory.len() == 0 {
+    if game.data.objects[player_id].inventory.len() == 0 {
         let text_pos = Pos::new(1, y_pos);
         game.display_state.draw_text(format!("empty"),
                                text_pos,
@@ -310,8 +310,8 @@ fn render_inventory(game: &mut Game, area: &Area) {
 
 /// render the background files, including water tiles
 fn render_background(game: &mut Game, area: &Area) {
-    let player_handle = game.data.find_player().unwrap();
-    let pos = game.data.objects[player_handle].pos();
+    let player_id = game.data.find_player().unwrap();
+    let pos = game.data.objects[player_id].pos();
 
     if let Some(background) = &mut game.display_state.background {
         let src = area.get_rect();
@@ -382,8 +382,8 @@ fn render_map(game: &mut Game, area: &Area) {
     let map_width = game.data.map.width();
     let map_height = game.data.map.height();
 
-    let player_handle = game.data.find_player().unwrap();
-    let player_pos = game.data.objects[player_handle].pos();
+    let player_id = game.data.find_player().unwrap();
+    let player_pos = game.data.objects[player_id].pos();
 
     for y in 0..map_height {
         for x in 0..map_width {
@@ -516,8 +516,8 @@ fn render_effects(game: &mut Game, area: &Area) {
                     highlight_color.a =
                         game.config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
 
-                    let player_handle = game.data.find_player().unwrap();
-                    let player_pos = game.data.objects[player_handle].pos();
+                    let player_id = game.data.find_player().unwrap();
+                    let player_pos = game.data.objects[player_id].pos();
                     for pos in dist_positions.iter() {
                         if !game.data.map[*pos].blocked &&
                            game.data.map.is_in_fov(player_pos, *pos, PLAYER_FOV_RADIUS) {
@@ -546,8 +546,8 @@ fn render_effects(game: &mut Game, area: &Area) {
 
 /// Render each object in the game, filtering for objects not currently visible
 fn render_objects(game: &mut Game, area: &Area) {
-    let player_handle = game.data.find_player().unwrap();
-    let player_pos = game.data.objects[player_handle].pos();
+    let player_id = game.data.find_player().unwrap();
+    let player_pos = game.data.objects[player_id].pos();
 
     // step each objects animation
     for object_id in game.data.objects.keys().collect::<Vec<ObjectId>>().iter() {
@@ -664,8 +664,8 @@ fn step_animation(anim_key: AnimKey,
 fn render_overlays(game: &mut Game,
                    map_mouse_pos: Option<Pos>,
                    area: &Area) {
-    let player_handle = game.data.find_player().unwrap();
-    let player_pos = game.data.objects[player_handle].pos();
+    let player_id = game.data.find_player().unwrap();
+    let player_pos = game.data.objects[player_id].pos();
 
     // render a grid of numbers if enabled
     if game.config.overlay_directions {
@@ -698,7 +698,7 @@ fn render_overlays(game: &mut Game,
             for x in 0..map_width {
                 let pos = Pos::new(x, y);
 
-                let dir = game.data.objects[player_handle].direction.unwrap();
+                let dir = game.data.objects[player_id].direction.unwrap();
                 let is_in_fov =
                     game.data.map.is_in_fov_direction(player_pos,
                                                       pos,
@@ -716,7 +716,7 @@ fn render_overlays(game: &mut Game,
     highlight_color.a = game.config.highlight_player_move;
 
     // draw direction overlays
-    let mut direction_color = game.config.color_light_orange;
+    let mut direction_color = game.config.color_soft_green;
     direction_color.a /= 2;
     for object_id in game.data.objects.keys().collect::<Vec<ObjectId>>().iter() {
         let pos = game.data.objects[*object_id].pos();
@@ -778,9 +778,9 @@ fn render_overlays(game: &mut Game,
     }
 
     // draw mouse path overlays
-    if let Some(mouse_handle) = game.data.find_mouse() {
-        let mouse_pos = game.data.objects[mouse_handle].pos();
-        let player_pos = game.data.objects[player_handle].pos();
+    if let Some(mouse_id) = game.data.find_mouse() {
+        let mouse_pos = game.data.objects[mouse_id].pos();
+        let player_pos = game.data.objects[player_id].pos();
 
         if game.config.draw_star_path {
             let path = game.data.map.astar(player_pos, mouse_pos);
@@ -809,12 +809,12 @@ fn render_overlays(game: &mut Game,
             // calculate the move that would occur
             if let Some(movement) =
                 calculate_move(*move_action,
-                               game.data.objects[player_handle].movement.unwrap(),
-                               player_handle,
+                               game.data.objects[player_id].movement.unwrap(),
+                               player_id,
                                &mut game.data) {
                 // draw a highlight on that square
                 // don't draw overlay on top of character
-                if movement.pos != game.data.objects[player_handle].pos()
+                if movement.pos != game.data.objects[player_id].pos()
                 {
                     game.display_state.draw_tile_outline(movement.pos, area, highlight_color);
                 }
@@ -970,8 +970,8 @@ fn render_bar(display_state: &mut DisplayState,
 fn render_attack_overlay(game: &mut Game,
                          object_id: ObjectId,
                          area: &Area) {
-    let player_handle = game.data.find_player().unwrap();
-    let player_pos = game.data.objects[player_handle].pos();
+    let player_id = game.data.find_player().unwrap();
+    let player_pos = game.data.objects[player_id].pos();
 
     let object_pos = game.data.objects[object_id].pos();
 

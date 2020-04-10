@@ -235,6 +235,12 @@ impl Direction {
                     Direction::UpLeft,
                     Direction::UpRight);
     }
+
+    pub fn from_f32(flt: f32) -> Direction {
+        let index = (flt * 8.0) as usize;
+        let dirs = Direction::move_actions();
+        return dirs[index];
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -444,35 +450,35 @@ pub fn player_move_or_attack(movement: Movement,
 
     let player_action: Action;
 
-    let player_handle = data.find_player().unwrap();
+    let player_id = data.find_player().unwrap();
 
     match movement.attack {
         None => {
             match movement.typ {
                 MoveType::Collide => {
-                    data.objects[player_handle].move_to(movement.pos);
+                    data.objects[player_id].move_to(movement.pos);
                     player_action = Move(movement);
 
-                    msg_log.log(Msg::Collided(player_handle, movement.pos));
+                    msg_log.log(Msg::Collided(player_id, movement.pos));
                 }
 
                 MoveType::Pass => {
                     player_action = Action::none();
-                    msg_log.log(Msg::Moved(player_handle, movement, movement.pos));
+                    msg_log.log(Msg::Moved(player_id, movement, movement.pos));
                 }
 
                 MoveType::Move | MoveType::JumpWall => {
-                    let player_pos = data.objects[player_handle].pos();
+                    let player_pos = data.objects[player_id].pos();
 
                     if player_pos != movement.pos {
-                        data.objects[player_handle].move_to(movement.pos);
+                        data.objects[player_id].move_to(movement.pos);
 
                         player_action = Move(movement);
 
                         if movement.typ == MoveType::Move {
-                            msg_log.log(Msg::Moved(player_handle, movement, movement.pos));
+                            msg_log.log(Msg::Moved(player_id, movement, movement.pos));
                         } else {
-                            msg_log.log(Msg::JumpWall(player_handle, movement.pos));
+                            msg_log.log(Msg::JumpWall(player_id, movement.pos));
                         }
                     } else {
                         player_action = NoAction;
@@ -480,19 +486,19 @@ pub fn player_move_or_attack(movement: Movement,
                 }
 
                 MoveType::WallKick(_dir_x, _dir_y) => {
-                    data.objects[player_handle].move_to(movement.pos);
+                    data.objects[player_id].move_to(movement.pos);
 
                     // TODO could check for enemy and attack
                     player_action = Move(movement);
 
-                    msg_log.log(Msg::WallKick(player_handle, movement.pos));
+                    msg_log.log(Msg::WallKick(player_id, movement.pos));
                 }
             }
         }
 
-        Some(Attack::Push(target_handle, delta_pos)) => {
-            if data.objects[target_handle].typ == ObjType::Column {
-                let pos = data.objects[player_handle].pos();
+        Some(Attack::Push(target_id, delta_pos)) => {
+            if data.objects[target_id].typ == ObjType::Column {
+                let pos = data.objects[player_id].pos();
                     let next_pos = next_pos(pos, sub_pos(movement.pos, pos));
 
                 // if there is a path to the next tile, move it.
@@ -501,58 +507,58 @@ pub fn player_move_or_attack(movement: Movement,
                     data.map.is_blocked_by_wall(movement.pos, diff.x, diff.y); 
 
                 if blocked == None {
-                    data.objects[player_handle].move_to(movement.pos);
+                    data.objects[player_id].move_to(movement.pos);
 
-                    data.objects.remove(target_handle);
+                    data.objects.remove(target_id);
 
                     if let Some(hit_entity) = data.is_blocked_tile(next_pos) {
-                        crush(target_handle, hit_entity, &mut data.objects, msg_log);
+                        crush(target_id, hit_entity, &mut data.objects, msg_log);
                     }
 
                     player_action = Move(movement);
 
-                    msg_log.log(Msg::Crushed(player_handle, next_pos, ObjType::Column));
+                    msg_log.log(Msg::Crushed(player_id, next_pos, ObjType::Column));
                 } else {
                     player_action = NoAction;
                 }
-            } else if data.objects[target_handle].alive {
-                push_attack(player_handle, target_handle, delta_pos, data, msg_log);
+            } else if data.objects[target_id].alive {
+                push_attack(player_id, target_id, delta_pos, data, msg_log);
                 player_action = Move(movement);
             } else {
-                dbg!(data.objects[target_handle].typ);
+                dbg!(data.objects[target_id].typ);
                 //player_action = NoAction;
                 panic!("What did you push?");
             }
         }
 
-        Some(Attack::Attack(target_handle)) => {
-            attack(player_handle, target_handle, data, msg_log);
+        Some(Attack::Attack(target_id)) => {
+            attack(player_id, target_id, data, msg_log);
 
-            let target_pos = data.objects[target_handle].pos();
-            data.objects[player_handle].move_next_to(target_pos);
+            let target_pos = data.objects[target_id].pos();
+            data.objects[player_id].move_next_to(target_pos);
 
             player_action = Move(movement);
         }
 
-        Some(Attack::Stab(target_handle)) => {
+        Some(Attack::Stab(target_id)) => {
             // if enemy is aware of the enemy, just push instead
-            if data.objects[target_handle].behavior.map_or(false, |beh| beh.is_aware()) {
+            if data.objects[target_id].behavior.map_or(false, |beh| beh.is_aware()) {
                 panic!("This shouldn't actually be possible- stabbing a aware enemy");
             } else {
                 // otherwise enemy is not aware, so stab them
-                stab(player_handle, target_handle, &mut data.objects, msg_log);
+                stab(player_id, target_id, &mut data.objects, msg_log);
             }
 
             // dagger is one use only- remove it from inventory
             let dagger_ix =
-                data.objects[player_handle]
+                data.objects[player_id]
                     .inventory
                     .iter()
                     .position(|item| data.objects[*item].item == Some(Item::Dagger))
                     .expect("Stabbed without a dagger!");
-            data.objects[player_handle].inventory.remove(dagger_ix);
+            data.objects[player_id].inventory.remove(dagger_ix);
 
-            data.objects[player_handle].move_to(movement.pos);
+            data.objects[player_id].move_to(movement.pos);
 
             player_action = Move(movement);
         }
