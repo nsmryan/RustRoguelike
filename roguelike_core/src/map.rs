@@ -97,6 +97,7 @@ impl Default for MapLoadConfig {
 pub enum Surface {
     Floor,
     Rubble,
+    Grass,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

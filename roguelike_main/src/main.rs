@@ -292,6 +292,8 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
                             if game.data.map[*pos].surface == Surface::Rubble {
                                 sound_radius += config.sound_rubble_radius;
+                            } else if game.data.map[*pos].surface == Surface::Grass {
+                                sound_radius -= config.sound_grass_radius;
                             }
 
                             let idle_sprite =

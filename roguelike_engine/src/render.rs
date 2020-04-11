@@ -418,8 +418,17 @@ fn render_map(game: &mut Game, area: &Area) {
                 game.display_state.draw_char(chr, pos, color, area);
             }
 
-            if tile.surface == Surface::Rubble {
-                game.display_state.draw_char(MAP_RUBBLE as char, pos, color, area);
+            match tile.surface {
+                Surface::Rubble => {
+                    game.display_state.draw_char(MAP_RUBBLE as char, pos, color, area);
+                }
+
+                Surface::Grass => {
+                    game.display_state.draw_char(MAP_RUBBLE as char, pos, game.config.color_light_green, area);
+                }
+
+                Surface::Floor => {
+                }
             }
 
             // finally, draw the between-tile walls appropriate to this tile
