@@ -284,7 +284,7 @@ fn render_inventory(game: &mut Game, area: &Area) {
         let text_pos = Pos::new(2, y_pos);
         let item_marker =
             if index == 0 && item_primary_at(player_id, &mut game.data.objects, 0) {
-                "*"
+                "<"
             } else {
                 ""
             };
@@ -530,7 +530,7 @@ fn render_effects(game: &mut Game, area: &Area) {
                     for pos in dist_positions.iter() {
                         if !game.data.map[*pos].blocked &&
                            game.data.map.is_in_fov(player_pos, *pos, PLAYER_FOV_RADIUS) {
-                            game.display_state.draw_char(MAP_EMPTY_CHAR as char, *pos, highlight_color, area);
+                           game.display_state.highlight_tile(*pos, highlight_color, area);
                         }
                     }
                 }

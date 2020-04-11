@@ -1,10 +1,12 @@
 use slotmap::dense::*;
 
-use sdl2::render::{Texture, WindowCanvas, TextureCreator};
+use sdl2::render::{Canvas, Texture, WindowCanvas, TextureCreator};
 use sdl2::video::WindowContext;
-use sdl2::rect::Rect;
-use sdl2::pixels::{Color as Sdl2Color};
+use sdl2::rect::{Rect};
+use sdl2::pixels::{Color as Sdl2Color, PixelFormatEnum};
+use sdl2::surface::Surface;
 
+use roguelike_core::utils::lerp;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::animation::{AnimKey, Effect, SpriteKey, Animation, Sprite, SpriteIndex};
@@ -32,6 +34,7 @@ impl DisplayState {
                canvas: WindowCanvas) -> DisplayState {
 
         let texture_creator = canvas.texture_creator();
+
         return DisplayState {
             font_image,
             sprites,
@@ -163,6 +166,17 @@ impl DisplayState {
                      area: &Area) {
         self.draw_char_with_rotation(chr, pos, color, area, 0.0);
     }
+
+    pub fn highlight_tile(&mut self,
+                          pos: Pos,
+                          color: Color,
+                          area: &Area) {
+        self.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+
+        let dst_rect = area.char_rect(pos.x, pos.y);
+        self.canvas.fill_rect(dst_rect);
+    }
+
 
     pub fn draw_tile_edge(&mut self, pos: Pos, area: &Area, color: Color, dir: Cardinal) {
         self.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
