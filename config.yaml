@@ -104,6 +104,11 @@ color_light_grey:
   g: 132
   b: 132
   a: 255
+color_console:
+  r: 0x76
+  g: 0x30
+  b: 0
+  a: 200
 fov_distance: 10
 load_map_file_every_frame: false
 tile_noise_scaler: 4.0
@@ -120,8 +125,10 @@ draw_mouse_line: false
 draw_star_path: false
 rate: 30
 item_throw_speed: 30.0
-goal_speed: 0.5
+key_speed: 0.5
 player_attack_speed: 2.0
+player_vault_sprite_speed: 2.0
+player_vault_move_speed: 2.0
 sound_timeout: 0.5
 player_yell_radius: 4
 fog_of_war: true
@@ -134,4 +141,6 @@ sound_radius_attack: 3
 overlay_directions: false
 overlay_player_fov: false
 fov_radius_monster: 6
-fov_radius_player: 10
+fov_radius_player: 6
+console_max_height: 200
+console_speed: 1.0

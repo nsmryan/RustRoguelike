@@ -32,6 +32,7 @@ pub enum InputAction {
     OverlayOn,
     OverlayOff,
     SelectItem(usize),
+    ToggleConsole,
     None,
 }
 
@@ -167,6 +168,10 @@ pub fn keyup_to_action(keycode: Keycode,
 
         Keycode::Space => {
             input_action = InputAction::OverlayOff;
+        }
+
+        Keycode::Backquote => {
+            input_action = InputAction::ToggleConsole;
         }
 
         _ => {

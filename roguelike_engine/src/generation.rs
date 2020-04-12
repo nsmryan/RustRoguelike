@@ -73,12 +73,12 @@ pub fn make_shield(config: &Config, pos: Pos) -> Object {
     return object;
 }
 
-pub fn make_goal(config: &Config, display_state: &mut DisplayState, pos: Pos) -> Object {
-    let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_GOAL as char, config.color_orange, "goal", false);
+pub fn make_key(config: &Config, display_state: &mut DisplayState, pos: Pos) -> Object {
+    let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_KEY as char, config.color_orange, "key", false);
     object.item = Some(Item::Goal);
 
-    let sprite = display_state.new_sprite("goal".to_string(), config.goal_speed)
-                                     .expect("Could not find sprite 'goal'");
+    let sprite = display_state.new_sprite("key".to_string(), config.key_speed)
+                                     .expect("Could not find sprite 'key'");
 
     let anim_key = display_state.play_animation(Animation::Loop(sprite));
 
@@ -174,25 +174,12 @@ pub fn make_spikes(config: &Config, pos: Pos, display_state: &mut DisplayState) 
     return spikes;
 }
 
-pub fn make_key(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
-    let mut pawn = Object::new(pos.x, pos.y, ObjType::Item, '\u{A5}', config.color_orange, "key", true);
+pub fn make_exit(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
+    let mut exit = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_EXIT as char, config.color_orange, "exit", false);
 
-    pawn.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 1, power: 5, } );
-    pawn.ai = Some(Ai::Basic);
-    pawn.behavior = Some(Behavior::Idle);
-    pawn.color = config.color_ice_blue;
-    pawn.movement = Some(Reach::Single(KEY_MOVE_DISTANCE));
-    pawn.attack = Some(Reach::Single(KEY_ATTACK_DISTANCE));
-    pawn.alive = true;
+    exit.color = config.color_ice_blue;
 
-    let sprite = display_state.new_sprite("elf_idle".to_string(), config.idle_speed)
-                              .expect("Could not find sprite 'elf_idle'");
-
-    let anim_key = display_state.play_animation(Animation::Loop(sprite));
-
-    pawn.animation.push_front(anim_key);
-
-    return pawn;
+    return exit;
 }
 
 pub fn make_stone(config: &Config, pos: Pos) -> Object {
@@ -379,17 +366,17 @@ pub fn make_island(data: &mut GameData,
     let pos = Pos::new(x, y);
 
     if !data.is_blocked_tile(pos).is_some()  {
-        let goal = make_goal(config, display_state, Pos::new(x, y));
-        data.objects.insert(goal);
+        let key = make_key(config, display_state, Pos::new(x, y));
+        data.objects.insert(key);
     }
 
-    /* add goal object */
+    /* add key object */
     let mut pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
     while !data.map.is_empty(pos) {
         pos = pos_in_radius(center, ISLAND_RADIUS, rng);
     }
-    data.objects.insert(make_goal(&config, display_state, pos));
+    data.objects.insert(make_key(&config, display_state, pos));
 
     /* add exit */
     // find edge of island

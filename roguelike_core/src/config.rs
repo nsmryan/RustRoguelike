@@ -27,6 +27,7 @@ pub struct Config {
     pub color_warm_grey: Color,
     pub color_soft_green: Color,
     pub color_light_grey: Color,
+    pub color_console: Color,
     pub fov_distance: i32,
     pub load_map_file_every_frame: bool,
     pub tile_noise_scaler: f64,
@@ -43,8 +44,10 @@ pub struct Config {
     pub draw_star_path: bool,
     pub rate: usize,
     pub item_throw_speed: f32,
-    pub goal_speed: f32,
+    pub key_speed: f32,
     pub player_attack_speed: f32,
+    pub player_vault_sprite_speed: f32,
+    pub player_vault_move_speed: f32,
     pub sound_timeout: f32,
     pub player_yell_radius: usize,
     pub fog_of_war: bool,
@@ -58,5 +61,7 @@ pub struct Config {
     pub overlay_player_fov: bool,
     pub fov_radius_monster: i32,
     pub fov_radius_player: i32,
+    pub console_max_height: u32,
+    pub console_speed: f32,
 }
 

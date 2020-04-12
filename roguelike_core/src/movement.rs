@@ -478,7 +478,7 @@ pub fn player_move_or_attack(movement: Movement,
                         if movement.typ == MoveType::Move {
                             msg_log.log(Msg::Moved(player_id, movement, movement.pos));
                         } else {
-                            msg_log.log(Msg::JumpWall(player_id, movement.pos));
+                            msg_log.log(Msg::JumpWall(player_id, player_pos, movement.pos));
                         }
                     } else {
                         player_action = NoAction;

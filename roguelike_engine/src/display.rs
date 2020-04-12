@@ -1,10 +1,9 @@
 use slotmap::dense::*;
 
-use sdl2::render::{Canvas, Texture, WindowCanvas, TextureCreator};
+use sdl2::render::{Texture, WindowCanvas, TextureCreator};
 use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
-use sdl2::pixels::{Color as Sdl2Color, PixelFormatEnum};
-use sdl2::surface::Surface;
+use sdl2::pixels::{Color as Sdl2Color};
 
 use roguelike_core::utils::lerp;
 use roguelike_core::types::*;
@@ -174,7 +173,7 @@ impl DisplayState {
         self.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
         let dst_rect = area.char_rect(pos.x, pos.y);
-        self.canvas.fill_rect(dst_rect);
+        self.canvas.fill_rect(dst_rect).unwrap();
     }
 
 

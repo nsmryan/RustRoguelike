@@ -7,6 +7,8 @@ use slotmap::dense::*;
 
 use serde::{Serialize, Deserialize};
 
+use sdl2::keyboard::Keycode;
+
 use roguelike_core::constants::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
@@ -14,12 +16,14 @@ use roguelike_core::ai::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::movement::Action;
+use roguelike_core::utils::{clampf, lerp};
 
 use crate::actions;
 use crate::generation::*;
 use crate::display::*;
 use crate::input::*;
 use crate::read_map::read_map_xp;
+use crate::console::Console;
 
 
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
@@ -37,6 +41,8 @@ pub struct GameSettings {
     pub state: GameState,
     pub draw_throw_overlay: bool,
     pub overlay: bool,
+    pub console: bool,
+    pub time: f32,
 }
 
 impl GameSettings {
@@ -50,6 +56,8 @@ impl GameSettings {
             state: GameState::Playing,
             draw_throw_overlay: false,
             overlay: false,
+            console: false,
+            time: 0.0,
         };
     }
 }
@@ -58,6 +66,9 @@ pub struct Game {
     pub config: Config,
 
     pub input_action: InputAction,
+
+    // TODO consider combining into input_action
+    pub keycode: Option<(KeyDirection, Keycode)>,
 
     pub mouse_state: MouseState,
 
@@ -68,6 +79,8 @@ pub struct Game {
     pub settings: GameSettings,
 
     pub msg_log: MsgLog,
+
+    pub console: Console,
 }
 
 impl Game {
@@ -90,7 +103,7 @@ impl Game {
         let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
 
         let mut map;
-        let player_position;
+        let mut player_position: (i32, i32);
         match config.map_load {
             MapLoadConfig::FromFile => {
                 let (new_objects, new_map, mut position) = read_map_xp(&config, &mut display_state, "resources/map.xp");
@@ -104,15 +117,7 @@ impl Game {
                 }
                 player_position = position;
 
-                objects.insert(make_goal(&config, &mut display_state, Pos::new(player_position.0 - 1, player_position.1)));
-                objects.insert(make_spikes(&config, Pos::new(player_position.0, player_position.1 - 2), &mut display_state));
-                objects.insert(make_shield(&config, Pos::new(player_position.0 + 2, player_position.1 - 1)));
-
-                map[Pos::new(player_position.0, player_position.1 - 1)].surface = Surface::Grass;
-
-                let exit_position = (player_position.0 + 1, player_position.1 - 1);
-                map[exit_position].tile_type = TileType::Exit;
-                map[exit_position].chr = Some(MAP_ORB as char);
+                objects.insert(make_mouse(&config, &mut display_state));
             }
 
             MapLoadConfig::Random => {
@@ -166,12 +171,15 @@ impl Game {
             settings: GameSettings::new(0, false),
             mouse_state: Default::default(),
             msg_log: MsgLog::new(),
+            console: Console::new(),
+            keycode: None,
         };
 
         return Ok(state);
     }
 
-    pub fn step_game(&mut self) -> GameResult {
+    pub fn step_game(&mut self, dt: f32) -> GameResult {
+        self.settings.time += dt;
 
         match self.settings.state {
             GameState::Playing => {
@@ -192,6 +200,10 @@ impl Game {
 
             GameState::Throwing => {
                 return self.step_throwing();
+            }
+
+            GameState::Console => {
+                return self.step_console();
             }
         }
     }
@@ -270,18 +282,35 @@ impl Game {
         return GameResult::Continue;
     }
 
-    fn step_playing(&mut self) -> GameResult {
-        // clear input action
+    fn step_console(&mut self) -> GameResult {
         let input = self.input_action;
         self.input_action = InputAction::None;
 
+        let time_since_open = self.settings.time - self.console.time_at_open;
+        let lerp_amount = clampf(time_since_open / self.config.console_speed, 0.0, 1.0);
+        self.console.height = lerp(self.console.height as f32,
+                                   self.config.console_max_height as f32,
+                                   lerp_amount) as u32;
+        if (self.console.height as i32 - self.config.console_max_height as i32).abs() < 2 {
+            self.console.height = self.config.console_max_height;
+        }
+
+        if let Some((dir, code)) = self.keycode {
+            actions::handle_input_console(input,
+                                          dir,
+                                          code,
+                                          &mut self.console,
+                                          &mut self.data,
+                                          &mut self.settings,
+                                          &mut self.msg_log);
+        }
+
+        return GameResult::Continue;
+    }
+
+    fn step_playing(&mut self) -> GameResult {
         let player_action =
-            actions::handle_input(input,
-                                  &mut self.data,
-                                  &mut self.settings,
-                                  &mut self.display_state,
-                                  &mut self.msg_log,
-                                  &self.config);
+            actions::handle_input(self);
 
         if player_action != Action::NoAction {
             step_logic(player_action,
@@ -300,6 +329,8 @@ impl Game {
             return GameResult::Stop;
         }
 
+        self.input_action = InputAction::None;
+
         return GameResult::Continue;
     }
 }
@@ -307,13 +338,13 @@ impl Game {
 /// Check whether the exit condition for the game is met.
 fn win_condition_met(data: &GameData) -> bool {
     // loop over objects in inventory, and check whether any
-    // are the goal object.
-    //let has_goal =
+    // are the key object.
+    //let has_key =
     //inventory.iter().any(|obj| obj.item.map_or(false, |item| item == Item::Goal));
     // TODO add back in with new inventory!
     let player_id = data.find_player().unwrap();
 
-    let has_goal = 
+    let has_key = 
         data.objects[player_id].inventory.iter().any(|item_id| {
             data.objects[*item_id].item == Some(Item::Goal)
         });
@@ -321,7 +352,7 @@ fn win_condition_met(data: &GameData) -> bool {
     let player_pos = data.objects[player_id].pos();
     let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
 
-    let exit_condition = has_goal && on_exit_tile;
+    let exit_condition = has_key && on_exit_tile;
 
     return exit_condition;
 }
@@ -429,7 +460,7 @@ pub fn step_logic(player_action: Action,
     /* Recompute FOV */
     let player_pos = game_data.objects[player_id].pos();
     if previous_player_position != player_pos {
-        game_data.map.compute_fov(player_pos, PLAYER_FOV_RADIUS);
+        game_data.map.compute_fov(player_pos, config.fov_radius_player);
     }
 }
 

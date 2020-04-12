@@ -21,8 +21,6 @@ pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
 /* Monster Settings */
 pub const MAX_MONSTERS: i32 = 15;
 
-pub const MONSTER_FOV_RADIUS: i32 = 6;
-
 pub const GOL_ATTACK_DISTANCE: usize = 5;
 pub const GOL_MOVE_DISTANCE: usize = 1;
 
@@ -41,7 +39,6 @@ pub const SPIKE_DAMAGE: i32 = 5;
 
 /* Player */
 pub const PLAYER_THROW_DIST: usize = 5;
-pub const PLAYER_FOV_RADIUS: i32 = 10;
 
 /* UI */
 pub const BAR_WIDTH: u32 = 20;
@@ -123,17 +120,17 @@ pub const MAP_ROOK: u8 = 130;
 pub const ENTITY_GOL: u8 = 152;
 pub const ENTITY_POLAXE: u8 = 0x8C;
 pub const ENTITY_CASTLE: u8 = 0x85;
-pub const ENTITY_PLAYER: u8 = 0x40;
-pub const ENTITY_SWIRL_CIRCLE: u8 = 0x15;
-pub const ENTITY_HERO: u8 = 139;
+pub const ENTITY_PLAYER: u8 = 139;
+pub const ENTITY_EXIT: u8 = 135;
 pub const ENTITY_CLOAK_GUY: u8 = 141;
 pub const ENTITY_ELF: u8 = 165;
 pub const ENTITY_ORB: u8 = 135;
-pub const ENTITY_GOAL: u8 = 253;
+pub const ENTITY_KEY: u8 = 235;
 pub const ENTITY_STONE: u8 = 244;
 pub const ENTITY_DAGGER: u8 = 247;
 pub const ENTITY_SHIELD: u8 = 255;
 pub const ENTITY_TRAP_SOUND: u8 = 83; // char S
+pub const ENTITY_SPIKE_TRAP: u8 = 136;
 
 pub const ARROW_RIGHT: u8 = 16;
 pub const ARROW_LEFT: u8 = 17;
