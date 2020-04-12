@@ -52,6 +52,14 @@ pub fn read_map_xp(config: &Config,
                                 map[pos].chr = Some(chr);
                             }
 
+                            MAP_RUBBLE => {
+                                map[pos].surface = Surface::Rubble;
+                            }
+
+                            MAP_GRASS => {
+                                map[pos].surface = Surface::Grass;
+                            }
+
                             _ => {
                                 panic!(format!("Unexpected character {} in ground layer!", chr as u8));
                             }
