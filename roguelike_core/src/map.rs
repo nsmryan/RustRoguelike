@@ -250,7 +250,7 @@ impl Map {
                 tiles,
                 fov: MapData::new(width, height),
                 fov_pos: Pos::new(0, 0),
-                fov_radius: PLAYER_FOV_RADIUS,
+                fov_radius: 1,
             };
 
         map.update_map();
@@ -265,7 +265,7 @@ impl Map {
                 tiles,
                 fov: MapData::new(width, height),
                 fov_pos: Pos::new(0, 0),
-                fov_radius: PLAYER_FOV_RADIUS,
+                fov_radius: 1,
             };
 
         map.update_map();
@@ -279,7 +279,7 @@ impl Map {
                 tiles: Vec::new(),
                 fov: MapData::new(1, 1),
                 fov_pos: Pos::new(0, 0),
-                fov_radius: PLAYER_FOV_RADIUS,
+                fov_radius: 1,
             };
 
         return map;
@@ -599,7 +599,9 @@ impl Map {
 
         let within_radius = distance(start_pos, end_pos) < radius;
 
-        return !wall_in_path && is_visible && within_radius;
+        let is_in_fov = !wall_in_path && is_visible && within_radius;
+
+        return is_in_fov;
     }
 
     // this function is like clear_path, but only looks for terrain, not objects like monsters

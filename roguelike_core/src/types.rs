@@ -41,7 +41,7 @@ impl GameData {
 
     pub fn find_player(&self) -> Option<ObjectId> {
         for (key, object) in self.objects.iter() {
-            if object.name == "player" {
+            if object.typ == ObjType::Player {
                 return Some(key);
             }
         }
@@ -58,17 +58,6 @@ impl GameData {
 
         return None;
     }
-
-    // TODO remove
-    //pub fn sound_within_earshot(&self, pos: Pos) -> Option<Pos> {
-    //    for (_object_id, object) in self.objects.iter() {
-    //        if object.pos() == pos && object.sound.is_some() {
-    //            return object.sound;
-    //        }
-    //    }
-
-    //    return None;
-    //}
 
     pub fn clear_path(&self, start: Pos, end: Pos) -> bool {
         let line = Line::new((start.x, start.y), (end.x, end.y));
@@ -188,6 +177,7 @@ pub enum GameState {
     Lose,
     Inventory,
     Throwing,
+    Console,
 }
 
 

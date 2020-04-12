@@ -25,7 +25,6 @@ pub fn read_map_xp(config: &Config,
     let mut objects = DenseSlotMap::new();
     let mut player_position = (0, 0);
 
-
     for (layer_index, layer) in xp.layers.iter().enumerate() {
         let width = layer.width as i32;
         let height = layer.height as i32;
@@ -204,18 +203,7 @@ pub fn read_map_xp(config: &Config,
                                 map[pos].blocked = true;
                             }
 
-                            ENTITY_HERO => {
-                                map[pos].chr = Some(chr);
-                                map[pos].blocked = true;
-                            }
-
                             ENTITY_CLOAK_GUY => {
-                                map[pos].chr = Some(chr);
-                                map[pos].blocked = true;
-                            }
-
-                            // TODO This should be in entity layer...
-                            ENTITY_PLAYER => {
                                 map[pos].chr = Some(chr);
                                 map[pos].blocked = true;
                             }
@@ -229,16 +217,16 @@ pub fn read_map_xp(config: &Config,
 
                     MAP_LAYER_ENTITIES => {
                         match chr as u8 {
+                            ENTITY_PLAYER => {
+                                player_position = (x as i32, y as i32);
+                            }
+
                             ENTITY_GOL => {
                                 objects.insert(make_gol(config, pos, display_state));
                             }
 
-                            ENTITY_SWIRL_CIRCLE => {
-                                objects.insert(make_key(config, pos, display_state));
-                            }
-
-                            ENTITY_ORB => {
-                                // TODO should be an objective
+                            ENTITY_EXIT => {
+                                objects.insert(make_exit(config, pos, display_state));
                             }
 
                             ENTITY_ELF => {
@@ -249,7 +237,12 @@ pub fn read_map_xp(config: &Config,
                                 // Nothing to do here...
                             }
 
+                            MAP_EXIT => {
+                                map[pos].tile_type = TileType::Exit;
+                            }
+
                             ENTITY_PLAYER => {
+                                panic!();
                                 player_position = (x as i32, y as i32);
                             }
 
@@ -258,9 +251,9 @@ pub fn read_map_xp(config: &Config,
                                 objects.insert(dagger);
                             }
 
-                            ENTITY_GOAL => {
-                                let goal = make_goal(config, display_state, Pos::new(x, y));
-                                objects.insert(goal);
+                            ENTITY_KEY => {
+                                let key = make_key(config, display_state, Pos::new(x, y));
+                                objects.insert(key);
                             }
 
                             ENTITY_STONE => {
@@ -271,6 +264,10 @@ pub fn read_map_xp(config: &Config,
                             ENTITY_SHIELD => {
                                 let shield = make_shield(config, Pos::new(x, y));
                                 objects.insert(shield);
+                            }
+
+                            ENTITY_SPIKE_TRAP => {
+                                objects.insert(make_spikes(config, pos, display_state));
                             }
 
                             _ => {

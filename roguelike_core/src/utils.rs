@@ -214,6 +214,16 @@ pub fn clamp<N: Ord>(val: N, min: N, max: N) -> N {
     return val;
 }
 
+pub fn clampf(val: f32, min: f32, max: f32) -> f32 {
+    if val < min {
+        return min;
+    } else if val > max {
+        return max;
+    } 
+
+    return val;
+}
+
 pub fn move_by(start: Pos, diff: Pos) -> Pos {
     return Pos::new(start.x + diff.x, start.y + diff.y);
 }

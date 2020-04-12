@@ -35,7 +35,7 @@ pub enum Msg {
     Attack(ObjectId, ObjectId, Hp), // attacker, attacked, hp lost
     Killed(ObjectId, ObjectId, Hp), // attacker, attacked, hp lost
     Moved(ObjectId, Movement, Pos),
-    JumpWall(ObjectId, Pos),
+    JumpWall(ObjectId, Pos, Pos), // current pos, new pos
     WallKick(ObjectId, Pos),
     StateChange(ObjectId, Behavior),
     Collided(ObjectId, Pos),
@@ -97,7 +97,7 @@ impl Msg {
                 }
             }
 
-            Msg::JumpWall(_object_id, _pos) => {
+            Msg::JumpWall(_object_id, _start, _end) => {
                 return "Jumped a wall".to_string();
             }
 

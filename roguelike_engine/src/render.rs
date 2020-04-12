@@ -24,7 +24,7 @@ pub fn render_all(game: &mut Game)  -> Result<(), String> {
 
     let player_id = game.data.find_player().unwrap();
 
-    game.data.map.compute_fov(game.data.objects[player_id].pos(), PLAYER_FOV_RADIUS);
+    game.data.map.compute_fov(game.data.objects[player_id].pos(), game.config.fov_radius_player);
 
     let screen_rect = game.display_state.canvas.output_size()?;
 
@@ -137,11 +137,48 @@ pub fn render_all(game: &mut Game)  -> Result<(), String> {
         render_inventory(game, &area);
     }
 
+    if game.settings.state == GameState::Console {
+        render_console(game);
+    }
+
     game.display_state.canvas.present();
 
     game.display_state.zones = zones;
 
     Ok(())
+}
+
+fn render_console(game: &mut Game) {
+    let color = game.config.color_console;
+    let color = Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
+    game.display_state.canvas.set_draw_color(color);
+
+    let console_rect =
+        Rect::new(0, (SCREEN_HEIGHT - game.console.height) as i32, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
+    game.display_state.canvas.fill_rect(console_rect).unwrap();
+
+    let color = Sdl2Color::RGBA(255, 255, 255, 255);
+    game.display_state.canvas.set_draw_color(color);
+
+    let line_width = 1;
+
+    let top_line_rect =
+        Rect::new(0, (SCREEN_HEIGHT - game.console.height) as i32, SCREEN_WIDTH, line_width);
+    game.display_state.canvas.fill_rect(top_line_rect).unwrap();
+
+    let bottom_line_rect =
+        Rect::new(0, SCREEN_HEIGHT as i32 - line_width as i32, SCREEN_WIDTH, line_width);
+    game.display_state.canvas.fill_rect(bottom_line_rect).unwrap();
+
+    let left_line_rect =
+        Rect::new(0, (SCREEN_HEIGHT - game.console.height) as i32, line_width, game.console.height);
+    game.display_state.canvas.fill_rect(left_line_rect).unwrap();
+
+    let right_line_rect =
+        Rect::new(SCREEN_WIDTH as i32 - line_width as i32, (SCREEN_HEIGHT - game.console.height) as i32, line_width, game.console.height);
+    game.display_state.canvas.fill_rect(right_line_rect).unwrap();
+
+    //game.display_state.draw_text
 }
 
 fn render_player(game: &mut Game, area: &Area) {
@@ -194,7 +231,7 @@ fn render_info(game: &mut Game,
         let player_pos = game.data.objects[player_id].pos();
 
         let object_ids =
-            get_objects_under_mouse(mouse, &mut game.data);
+            get_objects_under_mouse(mouse, &mut game.data, &game.config);
 
         // only display first object
         if let Some(obj_id) = object_ids.first() {
@@ -203,7 +240,7 @@ fn render_info(game: &mut Game,
             let pos = game.data.objects[*obj_id].pos();
 
             // only display things in the player's FOV
-            if game.data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) {
+            if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) {
                 if let Some(fighter) = game.data.objects[*obj_id].fighter {
                     y_pos += 1;
 
@@ -352,7 +389,7 @@ fn render_background(game: &mut Game, area: &Area) {
                         let map_pos = Pos::new(x, y);
 
                         let visible =
-                            map.is_in_fov(pos, map_pos, PLAYER_FOV_RADIUS) ||
+                            map.is_in_fov(pos, map_pos, config.fov_radius_player) ||
                             settings.god_mode;
 
                         draw_char(canvas,
@@ -391,7 +428,7 @@ fn render_map(game: &mut Game, area: &Area) {
 
             // Render game stuff
             let visible =
-                game.data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) ||
+                game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) ||
                 game.settings.god_mode;
 
             game.data.map[pos].explored |= visible;
@@ -529,7 +566,7 @@ fn render_effects(game: &mut Game, area: &Area) {
                     let player_pos = game.data.objects[player_id].pos();
                     for pos in dist_positions.iter() {
                         if !game.data.map[*pos].blocked &&
-                           game.data.map.is_in_fov(player_pos, *pos, PLAYER_FOV_RADIUS) {
+                           game.data.map.is_in_fov(player_pos, *pos, game.config.fov_radius_player) {
                            game.display_state.highlight_tile(*pos, highlight_color, area);
                         }
                     }
@@ -565,7 +602,7 @@ fn render_objects(game: &mut Game, area: &Area) {
         // only draw if within the map (outside is (-1, -1) like if in inventory).
         if game.data.map.is_within_bounds(pos) {
             let is_in_fov = 
-               game.data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS);
+               game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player);
 
             if let Some(anim_key) = game.data.objects[*object_id].animation.get(0) {
                 let done = 
@@ -711,7 +748,7 @@ fn render_overlays(game: &mut Game,
                 let is_in_fov =
                     game.data.map.is_in_fov_direction(player_pos,
                                                       pos,
-                                                      PLAYER_FOV_RADIUS,
+                                                      game.config.fov_radius_player,
                                                       dir);
                 if is_in_fov {
                     game.display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_green, area);
@@ -734,7 +771,7 @@ fn render_overlays(game: &mut Game,
             continue;
         }
 
-        if game.data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
+        if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
            game.data.objects[*object_id].alive {
             if let Some(dir) = game.data.objects[*object_id].direction {
                 // display_state.draw_tile_edge(pos, area, direction_color, dir);
@@ -758,11 +795,11 @@ fn render_overlays(game: &mut Game,
     // draw attack position highlights
     if let Some(mouse_xy) = map_mouse_pos {
         // Draw monster attack overlay
-        let object_ids = get_objects_under_mouse(mouse_xy, &mut game.data);
+        let object_ids = get_objects_under_mouse(mouse_xy, &mut game.data, &game.config);
         for object_id in object_ids.iter() {
             let pos = game.data.objects[*object_id].pos();
 
-            if game.data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
+            if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
                game.data.objects[*object_id].alive {
                render_attack_overlay(game,
                                      *object_id,
@@ -777,7 +814,7 @@ fn render_overlays(game: &mut Game,
             let pos = game.data.objects[object_id].pos();
 
             if game.data.map.is_within_bounds(pos) &&
-               game.data.map.is_in_fov(player_pos, pos, PLAYER_FOV_RADIUS) &&
+               game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
                game.data.objects[object_id].alive {
                render_attack_overlay(game,
                                      object_id,
@@ -833,12 +870,9 @@ fn render_overlays(game: &mut Game,
 
 }
 
-//fn engine_color(color: &Color) -> Sdl2Color {
-//    return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
-//}
-
 fn get_objects_under_mouse(mouse_pos: Pos,
-                           data: &mut GameData) -> Vec<ObjectId> {
+                           data: &mut GameData,
+                           config: &Config) -> Vec<ObjectId> {
     let mut object_ids = Vec::new();
 
     for key in data.objects.keys() {
@@ -846,7 +880,7 @@ fn get_objects_under_mouse(mouse_pos: Pos,
         let is_mouse = data.objects[key].name == "mouse";
 
         if !is_mouse && mouse_pos == pos {
-            if data.map.is_in_fov(pos, mouse_pos, PLAYER_FOV_RADIUS) {
+            if data.map.is_in_fov(pos, mouse_pos, config.fov_radius_player) {
                 object_ids.push(key);
             }
         }
@@ -956,6 +990,8 @@ fn render_bar(display_state: &mut DisplayState,
               fg_color: Color,
               bg_color: Color,
               area: &Area) {
+    let blend_mode = display_state.canvas.blend_mode();
+
     display_state.canvas.set_blend_mode(BlendMode::None);
     let color = Sdl2Color::RGBA(fg_color.r, fg_color.g, fg_color.b, fg_color.a);
     display_state.canvas.set_draw_color(color);
@@ -974,6 +1010,8 @@ fn render_bar(display_state: &mut DisplayState,
     let color = Sdl2Color::RGBA(bg_color.r, bg_color.g, bg_color.b, bg_color.a);
     display_state.canvas.set_draw_color(color);
     display_state.canvas.draw_rect(full_rect).unwrap();
+
+    display_state.canvas.set_blend_mode(blend_mode);
 }
 
 fn render_attack_overlay(game: &mut Game,
@@ -998,7 +1036,7 @@ fn render_attack_overlay(game: &mut Game,
                  .filter(|pos| {
                      let in_bounds = game.data.map.is_within_bounds(*pos);
                      let clear = game.data.clear_path(object_pos, *pos);
-                     let player_can_see = game.data.map.is_in_fov(player_pos, *pos, PLAYER_FOV_RADIUS);
+                     let player_can_see = game.data.map.is_in_fov(player_pos, *pos, game.config.fov_radius_player);
                      // check for player position so it gets highligted, even
                      // though the player causes 'clear_path' to fail.
                      return player_can_see && in_bounds && (clear || *pos == player_pos);

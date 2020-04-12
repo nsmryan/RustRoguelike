@@ -2,6 +2,8 @@ use rand::prelude::*;
 
 use tcod::line::*;
 
+use sdl2::keyboard::Keycode;
+
 use roguelike_core::config::*;
 use roguelike_core::movement::Action;
 use roguelike_core::types::*;
@@ -14,6 +16,7 @@ use crate::game::*;
 use crate::display::*;
 use crate::input::*;
 use crate::generation;
+use crate::console::Console;
 
 
 pub fn player_apply_action(action: Action,
@@ -49,6 +52,30 @@ pub fn player_apply_action(action: Action,
         }
 
         Action::NoAction => {
+        }
+    }
+}
+
+pub fn handle_input_console(input: InputAction,
+                            direction: KeyDirection,
+                            keycode: Keycode,
+                            console: &mut Console,
+                            game_data: &mut GameData,
+                            settings: &mut GameSettings,
+                            msg_log: &mut MsgLog) {
+    match input {
+        InputAction::ToggleConsole => {
+            settings.state = GameState::Playing;
+        }
+
+        InputAction::Exit => {
+            settings.exiting = true;
+        }
+
+        _ => {
+            if direction == KeyDirection::Down {
+                console.key(keycode);
+            }
         }
     }
 }
@@ -149,32 +176,27 @@ pub fn handle_input_throwing(input: InputAction,
     return player_turn;
 }
 
-pub fn handle_input(input_action: InputAction,
-                    game_data: &mut GameData, 
-                    settings: &mut GameSettings,
-                    display_state: &mut DisplayState,
-                    msg_log: &mut MsgLog,
-                    config: &Config) -> Action {
-    let player_id = game_data.find_player().unwrap();
+pub fn handle_input(game: &mut Game) -> Action {
+    let player_id = game.data.find_player().unwrap();
 
     let mut player_turn: Action = Action::none();
 
-    let player_alive = game_data.objects[player_id].alive;
+    let player_alive = game.data.objects[player_id].alive;
 
-    match (input_action, player_alive) {
+    match (game.input_action, player_alive) {
         (InputAction::Pass, true) => {
             player_turn = Action::Pass;
         }
 
         (InputAction::Move(move_action), true) => {
-            let player_id = game_data.find_player().unwrap();
+            let player_id = game.data.find_player().unwrap();
 
-            let player_reach = game_data.objects[player_id].movement.unwrap();
+            let player_reach = game.data.objects[player_id].movement.unwrap();
             let maybe_movement = 
                 movement::calculate_move(move_action,
                                          player_reach,
                                          player_id,
-                                         game_data);
+                                         &mut game.data);
 
             // if moved, walked into enemy, and holding a dagger, then attack
             if let Some(movement) = maybe_movement {
@@ -183,16 +205,16 @@ pub fn handle_input(input_action: InputAction,
         }
 
         (InputAction::DropItem, true) => {
-            if let Some(item_id) = game_data.objects[player_id].inventory.remove(0) {
-               let player_pos = game_data.objects[player_id].pos();
-               game_data.objects[item_id].set_pos(player_pos);
+            if let Some(item_id) = game.data.objects[player_id].inventory.remove(0) {
+               let player_pos = game.data.objects[player_id].pos();
+               game.data.objects[item_id].set_pos(player_pos);
             }
         }
 
         (InputAction::Pickup, true) => {
-            let player = &game_data.objects[player_id];
-            let item_id = game_data.objects.keys().filter(|key| {
-                return (game_data.objects[*key].pos() == player.pos()) && game_data.objects[*key].item.is_some();
+            let player = &game.data.objects[player_id];
+            let item_id = game.data.objects.keys().filter(|key| {
+                return (game.data.objects[*key].pos() == player.pos()) && game.data.objects[*key].item.is_some();
             }).next();
             if let Some(key) = item_id {
                 player_turn = Action::Pickup(key);
@@ -208,26 +230,26 @@ pub fn handle_input(input_action: InputAction,
         }
 
         (InputAction::IncreaseMoveMode, true) => {
-            let holding_shield = game_data.using(player_id, Item::Shield);
-            let player = &mut game_data.objects[player_id];
+            let holding_shield = game.data.using(player_id, Item::Shield);
+            let player = &mut game.data.objects[player_id];
 
             let move_mode = player.move_mode.expect("Player should have a move mode");
             let new_move_mode = move_mode.increase();
 
             if new_move_mode == movement::MoveMode::Run && holding_shield {
-                msg_log.log(Msg::TriedRunWithShield);
+                game.msg_log.log(Msg::TriedRunWithShield);
             } else {
                 player.move_mode = Some(new_move_mode);
                 player.movement = Some(reach_by_mode(player.move_mode.unwrap()));
 
-                msg_log.log(Msg::MoveMode(new_move_mode));
+                game.msg_log.log(Msg::MoveMode(new_move_mode));
             }
 
             player_turn = Action::none();
         }
 
         (InputAction::DecreaseMoveMode, true) => {
-            let player = &mut game_data.objects[player_id];
+            let player = &mut game.data.objects[player_id];
             player.move_mode = player.move_mode.map(|mode| mode.decrease());
             player.movement = Some(reach_by_mode(player.move_mode.unwrap()));
 
@@ -235,72 +257,86 @@ pub fn handle_input(input_action: InputAction,
         }
 
         (InputAction::OverlayOn, _) => {
-            settings.overlay = true;
+            game.settings.overlay = true;
 
             player_turn = Action::none();
         }
 
         (InputAction::OverlayOff, _) => {
-            settings.overlay = false;
+            game.settings.overlay = false;
 
             player_turn = Action::none();
         }
 
         (InputAction::Inventory, true) => {
-            settings.state = GameState::Inventory;
-            msg_log.log(Msg::GameState(settings.state));
+            game.settings.state = GameState::Inventory;
+            game.msg_log.log(Msg::GameState(game.settings.state));
         }
 
         (InputAction::Exit, _) => {
-            settings.exiting = true;
+            game.settings.exiting = true;
         }
 
         (InputAction::ExploreAll, _) => {
-            for x in 0..game_data.map.width() {
-                for y in 0..game_data.map.height() {
-                    game_data.map.tiles[x as usize][y as usize].explored = true;
+            for x in 0..game.data.map.width() {
+                for y in 0..game.data.map.height() {
+                    game.data.map.tiles[x as usize][y as usize].explored = true;
                 }
             }
         }
 
         (InputAction::SwapPrimaryItem, _) => {
-            if item_primary_at(player_id, &mut game_data.objects, 0) &&
-               item_primary_at(player_id, &mut game_data.objects, 1) {
-                   let temp_id = game_data.objects[player_id].inventory[0];
+            if item_primary_at(player_id, &mut game.data.objects, 0) &&
+               item_primary_at(player_id, &mut game.data.objects, 1) {
+                   let temp_id = game.data.objects[player_id].inventory[0];
 
-                   game_data.objects[player_id].inventory[0] = 
-                       game_data.objects[player_id].inventory[1];
+                   game.data.objects[player_id].inventory[0] = 
+                       game.data.objects[player_id].inventory[1];
 
-                   game_data.objects[player_id].inventory[1] = temp_id;
+                   game.data.objects[player_id].inventory[1] = temp_id;
            }
         }
 
         (InputAction::RegenerateMap, _) => {
             let mut rng: SmallRng = SeedableRng::seed_from_u64(2);
             let (data, _position) =
-                generation::make_map(&settings.map_type, &mut game_data.objects, config, display_state, &mut rng);
-            game_data.map = data.map;
+                generation::make_map(&game.settings.map_type,
+                                     &mut game.data.objects,
+                                     &game.config,
+                                     &mut game.display_state,
+                                     &mut rng);
+            game.data.map = data.map;
         }
 
         (InputAction::GodMode, true) => {
             let god_mode_hp = 1000000;
-            let handle = game_data.find_player().unwrap();
-            if let Some(ref mut fighter) = game_data.objects[handle].fighter {
+            let handle = game.data.find_player().unwrap();
+            if let Some(ref mut fighter) = game.data.objects[handle].fighter {
                 fighter.hp = god_mode_hp;
                 fighter.max_hp = god_mode_hp;
             }
 
             // set god mode flag
-            settings.god_mode = true;
+            game.settings.god_mode = true;
 
             // set all tiles to be transparent and walkable. walkable is not current used
             // anywhere
-            for x in 0..game_data.map.tiles.len() {
-                for y in 0..game_data.map.tiles[0].len() {
-                    game_data.map.set_cell(x as i32, y as i32, true);
+            for x in 0..game.data.map.tiles.len() {
+                for y in 0..game.data.map.tiles[0].len() {
+                    game.data.map.set_cell(x as i32, y as i32, true);
                 }
             }
-            game_data.map.update_map();
+            game.data.map.update_map();
+        }
+
+        (InputAction::ToggleConsole, _) => {
+            if game.settings.state == GameState::Console {
+                game.settings.state = GameState::Playing;
+            } else {
+                game.console.time_at_open = game.settings.time;
+                game.console.height = 0;
+                game.settings.state = GameState::Console;
+            }
         }
 
         (_, _) => {

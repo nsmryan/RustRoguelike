@@ -2,8 +2,7 @@
 
 use std::env;
 use std::fs::File;
-
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use std::io::Read;
 use std::path::Path;
 
@@ -76,6 +75,9 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let player_attack = texture_creator.load_texture("animations/player/player_attack.png")
         .map_err(|e| e.to_string())?;
 
+    let player_vault = texture_creator.load_texture("animations/player/player_vault.png")
+        .map_err(|e| e.to_string())?;
+
     let player_wall_kick = texture_creator.load_texture("animations/player/player_wallkick.png")
         .map_err(|e| e.to_string())?;
 
@@ -102,12 +104,13 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     sprites.insert(SpriteSheet::new("player_wall_kick".to_string(), player_wall_kick, 1));
     sprites.insert(SpriteSheet::new("player_idle".to_string(),      player_idle,      1));
     sprites.insert(SpriteSheet::new("player_attack".to_string(),    player_attack,    1));
+    sprites.insert(SpriteSheet::new("player_vault".to_string(),     player_vault,     1));
     sprites.insert(SpriteSheet::new("gol_idle".to_string(),         gol_idle,         1));
     sprites.insert(SpriteSheet::new("gol_die".to_string(),          gol_die,          1));
     sprites.insert(SpriteSheet::new("elf_idle".to_string(),         elf_idle,         1));
     sprites.insert(SpriteSheet::new("spikes".to_string(),           spikes_anim,      1));
     sprites.insert(SpriteSheet::new("font".to_string(),             font_as_sprite,   16));
-    sprites.insert(SpriteSheet::new("goal".to_string(),             mcmuffin,         1));
+    sprites.insert(SpriteSheet::new("key".to_string(),              mcmuffin,         1));
 
     // load any animations in the autoload directory.
     for entry in WalkDir::new("animations/autoload/") {
@@ -137,9 +140,14 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
     let mut game = Game::new(args, config.clone(), display_state)?;
 
+    let start_time = Instant::now();
+    let mut frame_time = Instant::now();
+
     /* Main Game Loop */
     let mut running = true;
     while running {
+        let tick_start = Instant::now();
+
         /* Handle Events */
         for event in event_pump.poll_iter() {
             match event {
@@ -149,6 +157,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
                 Event::KeyDown {keycode, keymod, ..} => {
                     if let Some(keycode) = keycode {
+                        game.keycode = Some((KeyDirection::Down, keycode));
                         game.input_action =
                             keydown_to_action(keycode, keymod);
                     }
@@ -156,6 +165,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
                 Event::KeyUp {keycode, keymod, ..} => {
                     if let Some(keycode) = keycode {
+                        game.keycode = Some((KeyDirection::Up, keycode));
                         game.input_action =
                             keyup_to_action(keycode, keymod, game.settings.state);
                     }
@@ -225,7 +235,9 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         }
 
         /* Step the Game Forward */
-        let game_result = game.step_game();
+        let dt = Instant::now().duration_since(frame_time);
+        let game_result = game.step_game(dt.as_secs_f32());
+        frame_time = Instant::now();
 
         if game_result == GameResult::Stop {
             running = false;
@@ -330,7 +342,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                 }
 
                 Msg::Killed(_attacker, attacked, _damage) => {
-                    if game.data.objects[*attacked].name != "player".to_string() {
+                    if game.data.objects[*attacked].typ != ObjType::Player {
                         game.data.objects[*attacked].animation.clear();
 
                         let sprite_name = format!("{}_die", game.data.objects[*attacked].name);
@@ -350,7 +362,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                 }
 
                 Msg::Attack(attacker, attacked, _damage) => {
-                    if game.data.objects[*attacker].name == "player" {
+                    if game.data.objects[*attacker].typ == ObjType::Player {
                         let attack_sprite =
                             game.display_state.new_sprite("player_attack".to_string(), config.player_attack_speed)
                                               .unwrap();
@@ -375,6 +387,26 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     game.display_state.play_effect(sound_effect);
                 }
 
+                Msg::JumpWall(jumper, start, end) => {
+                    if game.data.objects[*jumper].typ == ObjType::Player {
+                        let jump_sprite =
+                            game.display_state.new_sprite("player_vault".to_string(), config.player_vault_sprite_speed)
+                                              .unwrap();
+                        let jump_anim = Animation::Between(jump_sprite, *start, *end, 0.0, config.player_vault_move_speed);
+                        let jump_key = game.display_state.play_animation(jump_anim);
+
+                        let idle_sprite =
+                            game.display_state.new_sprite("player_idle".to_string(), config.idle_speed)
+                                              .unwrap();
+                        let idle_anim = Animation::Loop(idle_sprite);
+                        let idle_key = game.display_state.play_animation(idle_anim);
+
+                        game.data.objects[*jumper].animation.clear();
+                        game.data.objects[*jumper].animation.push_back(jump_key);
+                        game.data.objects[*jumper].animation.push_back(idle_key);
+                    }
+                }
+
                 _ => {
                 }
             }
@@ -389,14 +421,15 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             let player_handle = game.data.find_player().unwrap();
 
             let map_file = format!("resources/{}", game.config.map_file);
-            let (new_objects, new_map, _) = read_map_xp(&game.config, &mut game.display_state, &map_file);
+            let (new_objects, new_map, player_position) = read_map_xp(&game.config, &mut game.display_state, &map_file);
             game.data.map = new_map;
             game.data.objects[player_handle].inventory.clear();
-            let player = game.data.objects[player_handle].clone();
+            let mut player = game.data.objects[player_handle].clone();
             game.data.objects.clear();
             for key in new_objects.keys() {
                 game.data.objects.insert(new_objects[key].clone());
             }
+            player.set_pos(Pos::from(player_position));
             game.data.objects.insert(player);
         }
 
@@ -409,7 +442,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                 }
 
                 let player_pos = game.data.objects[player_handle].pos();
-                if !game.data.map.is_in_fov(player_pos, *pos, PLAYER_FOV_RADIUS) {
+                if !game.data.map.is_in_fov(player_pos, *pos, game.config.fov_radius_player) {
                     let heard = Effect::HeardSomething(*pos, game.settings.turn_count);
                     game.display_state.effects.push(heard);
                 }
