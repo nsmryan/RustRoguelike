@@ -57,8 +57,7 @@ pub fn player_apply_action(action: Action,
 }
 
 pub fn handle_input_console(input: InputAction,
-                            direction: KeyDirection,
-                            keycode: Keycode,
+                            key_input: &mut Vec<(KeyDirection, Keycode)>,
                             console: &mut Console,
                             game_data: &mut GameData,
                             settings: &mut GameSettings,
@@ -73,8 +72,8 @@ pub fn handle_input_console(input: InputAction,
         }
 
         _ => {
-            if direction == KeyDirection::Down {
-                console.key(keycode);
+            for (dir, key) in key_input.iter() {
+                console.eval(*key, *dir, game_data);
             }
         }
     }

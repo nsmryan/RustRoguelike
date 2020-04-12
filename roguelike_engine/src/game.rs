@@ -67,8 +67,7 @@ pub struct Game {
 
     pub input_action: InputAction,
 
-    // TODO consider combining into input_action
-    pub keycode: Option<(KeyDirection, Keycode)>,
+    pub key_input: Vec<(KeyDirection, Keycode)>,
 
     pub mouse_state: MouseState,
 
@@ -172,7 +171,7 @@ impl Game {
             mouse_state: Default::default(),
             msg_log: MsgLog::new(),
             console: Console::new(),
-            keycode: None,
+            key_input: Vec::new(),
         };
 
         return Ok(state);
@@ -295,10 +294,9 @@ impl Game {
             self.console.height = self.config.console_max_height;
         }
 
-        if let Some((dir, code)) = self.keycode {
+        if self.key_input.len() > 0 {
             actions::handle_input_console(input,
-                                          dir,
-                                          code,
+                                          &mut self.key_input,
                                           &mut self.console,
                                           &mut self.data,
                                           &mut self.settings,

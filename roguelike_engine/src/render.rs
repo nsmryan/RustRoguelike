@@ -162,8 +162,10 @@ fn render_console(game: &mut Game) {
 
     let line_width = 1;
 
+    let y_offset = (SCREEN_HEIGHT - game.console.height) as i32;
+
     let top_line_rect =
-        Rect::new(0, (SCREEN_HEIGHT - game.console.height) as i32, SCREEN_WIDTH, line_width);
+        Rect::new(0, y_offset, SCREEN_WIDTH, line_width);
     game.display_state.canvas.fill_rect(top_line_rect).unwrap();
 
     let bottom_line_rect =
@@ -171,14 +173,33 @@ fn render_console(game: &mut Game) {
     game.display_state.canvas.fill_rect(bottom_line_rect).unwrap();
 
     let left_line_rect =
-        Rect::new(0, (SCREEN_HEIGHT - game.console.height) as i32, line_width, game.console.height);
+        Rect::new(0, y_offset, line_width, game.console.height);
     game.display_state.canvas.fill_rect(left_line_rect).unwrap();
 
     let right_line_rect =
-        Rect::new(SCREEN_WIDTH as i32 - line_width as i32, (SCREEN_HEIGHT - game.console.height) as i32, line_width, game.console.height);
+        Rect::new(SCREEN_WIDTH as i32 - line_width as i32, y_offset, line_width, game.console.height);
     game.display_state.canvas.fill_rect(right_line_rect).unwrap();
 
-    //game.display_state.draw_text
+    let console_area = 
+        Area::new(0, y_offset, SCREEN_WIDTH as usize, y_offset as usize, FONT_WIDTH as usize, FONT_HEIGHT as usize);
+
+    game.display_state.draw_char('>',
+                                 Pos::new(0, 0),
+                                 Color::white(),
+                                 &console_area);
+    game.display_state.draw_text(game.console.input.clone(),
+                                 Pos::new(1, 0),
+                                 Color::white(),
+                                 &console_area);
+
+    let mut y_pos = 1;
+    for output in game.console.output.iter() {
+        game.display_state.draw_text(output.clone(),
+                                     Pos::new(0, y_pos),
+                                     Color::white(),
+                                     &console_area);
+        y_pos += 1;
+    }
 }
 
 fn render_player(game: &mut Game, area: &Area) {
