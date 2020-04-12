@@ -245,27 +245,18 @@ pub fn read_map_xp(config: &Config,
                                 // Nothing to do here...
                             }
 
-                            MAP_EXIT => {
-                                map[pos].tile_type = TileType::Exit;
-                            }
-
-                            ENTITY_PLAYER => {
-                                panic!();
-                                player_position = (x as i32, y as i32);
-                            }
-
                             ENTITY_DAGGER => {
-                                let dagger = make_dagger(config, Pos::new(x, y));
+                                let dagger = make_dagger(config, pos);
                                 objects.insert(dagger);
                             }
 
                             ENTITY_KEY => {
-                                let key = make_key(config, display_state, Pos::new(x, y));
+                                let key = make_key(config, display_state, pos);
                                 objects.insert(key);
                             }
 
                             ENTITY_STONE => {
-                                let stone = make_stone(config, Pos::new(x, y));
+                                let stone = make_stone(config, pos);
                                 objects.insert(stone);
                             }
 
