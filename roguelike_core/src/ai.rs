@@ -150,17 +150,12 @@ pub fn ai_investigate(target_pos_orig: Pos,
     let player_pos = game_data.objects[player_id].pos();
     let monster_pos = game_data.objects[monster_id].pos();
 
-    let turn: Action;
-
+    let mut turn: Action;
                
     if game_data.objects[monster_id].is_in_fov(&mut game_data.map, player_pos, config) {
         game_data.objects[monster_id].face(player_pos);
-        // TODO this causes a turn delay between seeing the player and attacking them
         turn = Action::StateChange(Behavior::Attacking(player_id));
     } else { // the monster can't see the player
-        // TODO AI reached here - heard sound, but needs to face position so they can see the
-        // player
-        // SOUND POSITIONS SET IN LIB SHOULD USE ORIGIN, NOT CURRENT POSITION!
         if let Some(Message::Sound(_entity_id, pos)) = game_data.objects[monster_id].heard_sound() {
             game_data.objects[monster_id].behavior =
                 Some(Behavior::Investigating(pos));
@@ -175,6 +170,13 @@ pub fn ai_investigate(target_pos_orig: Pos,
 
             let movement = Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move);
             turn = Action::Move(movement);
+        }
+    }
+
+    // if the monster moved, but didn't go anywhere, they forfeit their turn
+    if let Action::Move(movement) = turn {
+        if movement.pos == monster_pos {
+            turn = Action::NoAction;
         }
     }
 

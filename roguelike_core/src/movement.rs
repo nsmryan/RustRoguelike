@@ -534,8 +534,7 @@ pub fn player_move_or_attack(movement: Movement,
         Some(Attack::Attack(target_id)) => {
             attack(player_id, target_id, data, msg_log);
 
-            let target_pos = data.objects[target_id].pos();
-            data.objects[player_id].move_next_to(target_pos);
+            data.objects[player_id].set_pos(movement.pos);
 
             player_action = Move(movement);
         }
