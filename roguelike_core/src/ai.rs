@@ -35,11 +35,16 @@ pub fn ai_take_turn(monster_id: ObjectId,
                     data: &mut GameData,
                     config: &Config,
                     msg_log: &mut MsgLog) {
-    let turn: Action;
+    let mut turn: Action;
 
     match data.objects[monster_id].ai {
         Some(Ai::Basic) => {
             turn = basic_ai_take_turn(monster_id, data, config);
+
+            // if the AI changes state, allow it to take an action as well
+            if matches!(turn, Action::StateChange(_)) {
+                turn = basic_ai_take_turn(monster_id, data, config);
+            }
         }
 
         None => {
