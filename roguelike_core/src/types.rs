@@ -69,8 +69,9 @@ impl GameData {
     
         let (dx, dy) = (end.x - start.x, end.y - start.y);
 
-        return !path_blocked &&
-               self.map.is_blocked_by_wall(start, dx, dy).is_none();
+        let blocked_by_wall = self.map.is_blocked_by_wall(start, dx, dy).is_some();
+        return !path_blocked && !blocked_by_wall;
+               
     }
 
     pub fn is_blocked_tile(&self, pos: Pos) -> Option<ObjectId> {

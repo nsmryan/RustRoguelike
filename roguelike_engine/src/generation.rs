@@ -483,7 +483,7 @@ pub fn make_wall_test_map(objects: &mut ObjMap,
     map[(4, 4)].bottom_wall = Wall::ShortWall;
     map[(5, 4)].bottom_wall = Wall::ShortWall;
   
-    objects.insert(make_gol(config, Pos::new(7, 5), display_state));
+    objects.insert(make_gol(config, Pos::new(6, 5), display_state));
 
     let dagger = make_dagger(config, Pos::new(position.0, position.1));
     objects.insert(dagger);

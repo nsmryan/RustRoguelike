@@ -604,8 +604,7 @@ impl Map {
         return is_in_fov;
     }
 
-    // this function is like clear_path, but only looks for terrain, not objects like monsters
-    pub fn clear_path_obstacles(&self, start: Pos, end: Pos) -> bool {
+    pub fn path_clear_of_obstacles(&self, start: Pos, end: Pos) -> bool {
         let line = Line::new(start.to_tuple(), end.to_tuple());
 
         let path_blocked =

@@ -173,10 +173,14 @@ pub fn ai_investigate(target_pos_orig: Pos,
         }
     }
 
-    // if the monster moved, but didn't go anywhere, they forfeit their turn
+    // if the monster moved, but didn't go anywhere, they stop investigating
     if let Action::Move(movement) = turn {
         if movement.pos == monster_pos {
-            turn = Action::NoAction;
+            // NOTE this causes monster to give up whenever they can't reach their goal.
+            // the problem is that this might happen in a long corridor, for example, where
+            // you might want them to keep trying for a while in case there is a monster
+            // in front of them.
+            turn = Action::StateChange(Behavior::Idle);
         }
     }
 
@@ -194,7 +198,9 @@ fn ai_can_hit_target(data: &mut GameData,
     let within_fov =
         data.objects[monster_id].is_in_fov(&mut data.map, target_pos, config);
 
-    if within_fov {
+    let clear_path = data.clear_path(monster_pos, target_pos);
+
+    if within_fov && clear_path {
             // get all locations they can hit
             let positions: Vec<Pos> =
                 reach.offsets()
