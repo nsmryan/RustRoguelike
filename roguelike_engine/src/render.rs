@@ -187,14 +187,14 @@ fn render_console(game: &mut Game) {
                                  Pos::new(0, 0),
                                  Color::white(),
                                  &console_area);
-    game.display_state.draw_text(game.console.input.clone(),
+    game.display_state.draw_text(&game.console.input.clone(),
                                  Pos::new(1, 0),
                                  Color::white(),
                                  &console_area);
 
     let mut y_pos = 1;
     for output in game.console.output.iter() {
-        game.display_state.draw_text(output.clone(),
+        game.display_state.draw_text(&output.clone(),
                                      Pos::new(0, y_pos),
                                      Color::white(),
                                      &console_area);
@@ -232,7 +232,7 @@ fn render_player(game: &mut Game, area: &Area) {
     let move_mode = game.data.objects[player_id].move_mode.unwrap();
     list.push(format!("{}", move_mode.to_string()));
 
-    game.display_state.draw_text_list(list,
+    game.display_state.draw_text_list(&list,
                                       text_pos,
                                       color,
                                       area);
@@ -248,16 +248,31 @@ fn render_info(game: &mut Game,
                  &game.config);
 
     if let Some(mouse) = mouse_xy {
+        let color = game.config.color_warm_grey;
+
         let player_id = game.data.find_player().unwrap();
         let player_pos = game.data.objects[player_id].pos();
 
         let object_ids =
             get_objects_under_mouse(mouse, &mut game.data, &game.config);
 
+        let mut y_pos = 1;
+
+        let mut text_list = Vec::new();
+
+        text_list.push(format!("({:>2},{:>2})", mouse.x, mouse.y));
+
+        let text_pos = Pos::new(1, y_pos);
+        game.display_state.draw_text_list(&text_list,
+                                          text_pos,
+                                          color,
+                                          area);
+        text_list.clear();
+
+        y_pos += 1;
+
         // only display first object
         if let Some(obj_id) = object_ids.first() {
-            let mut y_pos = 1;
-
             let pos = game.data.objects[*obj_id].pos();
 
             // only display things in the player's FOV
@@ -276,10 +291,6 @@ fn render_info(game: &mut Game,
                     y_pos += 2;
                 }
 
-                let mut text_list = Vec::new();
-
-                let color = game.config.color_warm_grey;
-                let text_pos = Pos::new(1, y_pos);
                 text_list.push(format!("{}", game.data.objects[*obj_id].name));
 
                 text_list.push(format!(""));
@@ -289,13 +300,24 @@ fn render_info(game: &mut Game,
                 } else if let Some(behave) = game.data.objects[*obj_id].behavior {
                     text_list.push(format!("{}", behave.description()));
                 }
-
-                game.display_state.draw_text_list(text_list,
-                                                  text_pos,
-                                                  color,
-                                                  area);
             }
         }
+
+        let text_pos = Pos::new(1, y_pos);
+        game.display_state.draw_text_list(&text_list,
+                                          text_pos,
+                                          color,
+                                          area);
+        text_list.clear();
+
+        y_pos = 10;
+        let text_pos = Pos::new(1, y_pos);
+        text_list.push(format!("Surface is"));
+        text_list.push(format!("{:?}",  game.data.map[mouse].surface));
+        game.display_state.draw_text_list(&text_list,
+                                          text_pos,
+                                          color,
+                                          area);
     }
 }
 
@@ -347,7 +369,7 @@ fn render_inventory(game: &mut Game, area: &Area) {
                 ""
             };
         let item_text = format!(" {} {}", game.data.objects[*obj_id].name, item_marker);
-        game.display_state.draw_text(item_text,
+        game.display_state.draw_text(&item_text,
                                      text_pos,
                                      color,
                                      area);
@@ -359,7 +381,7 @@ fn render_inventory(game: &mut Game, area: &Area) {
 
     if game.data.objects[player_id].inventory.len() == 0 {
         let text_pos = Pos::new(1, y_pos);
-        game.display_state.draw_text(format!("empty"),
+        game.display_state.draw_text(&format!("empty"),
                                text_pos,
                                game.config.color_ice_blue,
                                area);
@@ -999,7 +1021,7 @@ fn draw_placard(display_state: &mut DisplayState,
 
     let text_pos = Pos::new(text_start, 0);
 
-    display_state.draw_text(text,
+    display_state.draw_text(&text,
                            text_pos,
                            config.color_dark_blue,
                            area);

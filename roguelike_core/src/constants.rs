@@ -35,7 +35,7 @@ pub const KEY_MOVE_DISTANCE: usize = 2;
 
 pub const MAX_MOMENTUM: i32 = 2;
 
-pub const SPIKE_DAMAGE: i32 = 5;
+pub const SPIKE_DAMAGE: i32 = 20;
 
 /* Player */
 pub const PLAYER_THROW_DIST: usize = 5;

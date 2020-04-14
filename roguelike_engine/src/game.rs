@@ -122,10 +122,10 @@ impl Game {
             }
 
             MapLoadConfig::Random => {
-                let (game_data, position) =
+                let (data, position) =
                     make_map(&MapGenType::Island, &mut objects, &config, &mut display_state, &mut rng);
                 // TODO consider using objects as well here on regen?
-                map = game_data.map;
+                map = data.map;
                 player_position = position.to_tuple();
             }
 
@@ -360,40 +360,40 @@ fn win_condition_met(data: &GameData) -> bool {
 }
 
 pub fn step_logic(player_action: Action,
-                  game_data: &mut GameData, 
+                  data: &mut GameData, 
                   settings: &mut GameSettings,
                   config: &Config,
                   msg_log: &mut MsgLog) {
-    let player_id = game_data.find_player().unwrap();
+    let player_id = data.find_player().unwrap();
 
     let previous_player_position =
-        game_data.objects[player_id].pos();
+        data.objects[player_id].pos();
 
-    actions::player_apply_action(player_action, game_data, msg_log);
+    actions::player_apply_action(player_action, data, msg_log);
 
     /* AI */
-    if game_data.objects[player_id].alive {
+    if data.objects[player_id].alive {
         let mut ai_id = Vec::new();
 
-        for key in game_data.objects.keys() {
-            if game_data.objects[key].ai.is_some() &&
-               game_data.objects[key].alive        &&
-               game_data.objects[key].fighter.is_some() {
+        for key in data.objects.keys() {
+            if data.objects[key].ai.is_some() &&
+               data.objects[key].alive        &&
+               data.objects[key].fighter.is_some() {
                ai_id.push(key);
            }
         }
 
         for key in ai_id {
-            ai_take_turn(key, game_data, config, msg_log);
+            ai_take_turn(key, data, config, msg_log);
 
             // check if fighter needs to be removed
-            if let Some(fighter) = game_data.objects[key].fighter {
+            if let Some(fighter) = data.objects[key].fighter {
                 if fighter.hp <= 0 {
-                    game_data.objects[key].alive = false;
-                    game_data.objects[key].blocks = false;
-                    game_data.objects[key].chr = '%';
-                    //game_data.objects[key].color = config.color_red;
-                    game_data.objects[key].fighter = None;
+                    data.objects[key].alive = false;
+                    data.objects[key].blocks = false;
+                    data.objects[key].chr = '%';
+                    //data.objects[key].color = config.color_red;
+                    data.objects[key].fighter = None;
                 }
             }
         }
@@ -401,23 +401,32 @@ pub fn step_logic(player_action: Action,
 
     /* Traps */
     let mut traps = Vec::new();
-    for key in game_data.objects.keys() {
-        for other in game_data.objects.keys() {
-            if game_data.objects[key].trap.is_some() && // key is a trap
-               game_data.objects[other].alive && // entity is alive
-               game_data.objects[other].fighter.is_some() && // entity is a fighter
-               game_data.objects[key].pos() == game_data.objects[other].pos() {
+    for key in data.objects.keys() {
+        for other in data.objects.keys() {
+            if data.objects[key].trap.is_some() && // key is a trap
+               data.objects[other].alive && // entity is alive
+               data.objects[other].fighter.is_some() && // entity is a fighter
+               data.objects[key].pos() == data.objects[other].pos() {
                 traps.push((key, other));
             }
         }
     }
 
     for (trap, entity) in traps.iter() {
-        match game_data.objects[*trap].trap.unwrap() {
+        match data.objects[*trap].trap.unwrap() {
             Trap::Spikes => {
-                game_data.objects[*entity].take_damage(SPIKE_DAMAGE);
+                data.objects[*entity].take_damage(SPIKE_DAMAGE);
 
                 msg_log.log(Msg::SpikeTrapTriggered(*trap, *entity));
+
+                if data.objects[*entity].fighter.unwrap().hp <= 0 {
+                    data.objects[*entity].alive = false;
+                    data.objects[*entity].blocks = false;
+
+                    msg_log.log(Msg::Killed(*trap, *entity, SPIKE_DAMAGE));
+                }
+
+                data.objects[*trap].needs_removal = true;
             }
 
             Trap::Sound => {
@@ -426,14 +435,12 @@ pub fn step_logic(player_action: Action,
         }
     }
 
-    // TODO move enemy health checks here for trap damage
-
     // check if player lost all hp
-    if let Some(fighter) = game_data.objects[player_id].fighter {
+    if let Some(fighter) = data.objects[player_id].fighter {
         if fighter.hp <= 0 {
             // modify player
             {
-                let player = &mut game_data.objects[player_id];
+                let player = &mut data.objects[player_id];
                 player.alive = false;
                 player.color = config.color_red;
                 player.fighter = None;
@@ -446,7 +453,7 @@ pub fn step_logic(player_action: Action,
     }
 
     let mut to_remove = Vec::new();
-    for (entity_key, entity) in game_data.objects.iter_mut() {
+    for (entity_key, entity) in data.objects.iter_mut() {
         if let Some(ref mut count) = entity.count_down {
             if *count == 0 {
                 to_remove.push(entity_key);
@@ -454,15 +461,19 @@ pub fn step_logic(player_action: Action,
                 *count -= 1;
             }
         }
+
+        if entity.needs_removal {
+            to_remove.push(entity_key);
+        }
     }
     for key in to_remove {
-        game_data.objects.remove(key);
+        data.objects.remove(key);
     }
 
     /* Recompute FOV */
-    let player_pos = game_data.objects[player_id].pos();
+    let player_pos = data.objects[player_id].pos();
     if previous_player_position != player_pos {
-        game_data.map.compute_fov(player_pos, config.fov_radius_player);
+        data.map.compute_fov(player_pos, config.fov_radius_player);
     }
 }
 

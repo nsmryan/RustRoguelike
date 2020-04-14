@@ -79,7 +79,7 @@ impl DisplayState {
     }
 
     pub fn draw_text(&mut self,
-                     text: String,
+                     text: &String,
                      pos: Pos,
                      color: Color,
                      area: &Area) {
@@ -90,12 +90,12 @@ impl DisplayState {
     }
 
     pub fn draw_text_list(&mut self,
-                          text_list: Vec<String>,
+                          text_list: &Vec<String>,
                           pos: Pos,
                           color: Color,
                           area: &Area) {
         let mut y_pos = 0;
-        for text in text_list {
+        for text in text_list.iter() {
             self.draw_text(text, Pos::new(pos.x, pos.y + y_pos), color, area);
             y_pos += 1;
         }

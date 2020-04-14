@@ -408,6 +408,9 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                     }
                 }
 
+                Msg::SpikeTrapTriggered(trap, entity) => {
+                }
+
                 _ => {
                 }
             }
