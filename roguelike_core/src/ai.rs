@@ -198,7 +198,9 @@ fn ai_can_hit_target(data: &mut GameData,
     let within_fov =
         data.objects[monster_id].is_in_fov(&mut data.map, target_pos, config);
 
-    let clear_path = data.clear_path(monster_pos, target_pos);
+    // check that there is a clear path right up to the target position
+    let next_to_tile = move_next_to(monster_pos, target_pos);
+    let clear_path = data.clear_path(monster_pos, next_to_tile);
 
     if within_fov && clear_path {
             // get all locations they can hit
