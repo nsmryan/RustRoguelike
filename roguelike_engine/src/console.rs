@@ -1,20 +1,42 @@
 use sdl2::keyboard::Keycode;
 
 use roguelike_core::types::*;
+use roguelike_core::messaging::*;
+use roguelike_core::config::*;
 
+use crate::display::*;
 use crate::input::KeyDirection;
+use crate::generation::*;
+use crate::game::GameSettings;
 
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Command {
-    ListEntities,
+    ListIds,
+    SetXY,
+    PlayerSee,
+    PlayerXY,
+    RenderMap,
+    ListCommands,
+    Gol,
+    Elf,
+    Quit,
     UnknownCommand,
 }
 
 impl Command {
     pub fn from_str(command_str: &str) -> Command {
         match command_str {
-            "list-entities" => Command::ListEntities,
+            "list-ids" => Command::ListIds,
+            "set-xy" => Command::SetXY,
+            "player-see" => Command::PlayerSee,
+            "player-xy" => Command::PlayerXY,
+            "render-map" => Command::RenderMap,
+            "help" => Command::ListCommands,
+            "list" => Command::ListCommands,
+            "gol" => Command::Gol,
+            "elf" => Command::Elf,
+            "quit" => Command::Quit,
             _ => Command::UnknownCommand,
         }
     }
@@ -45,10 +67,13 @@ impl Console {
     pub fn eval(&mut self,
                 key: Keycode,
                 dir: KeyDirection,
-                data: &mut GameData) {
-
-        if let Some((command, args)) = self.key(key, dir) {
-            self.execute(command, args, data);
+                data: &mut GameData,
+                display_state: &mut DisplayState,
+                settings: &mut GameSettings,
+                config: &Config,
+                msg_log: &mut MsgLog) {
+        if let Some((command, mut args)) = self.key(key, dir) {
+            self.execute(command, &mut args, data, display_state, settings, config, msg_log);
         }
     }
 
@@ -120,14 +145,131 @@ impl Console {
         return command;
     }
 
-    pub fn execute(&mut self, command: Command, args: Vec<String>, data: &mut GameData) {
+    pub fn execute(&mut self,
+                   command: Command,
+                   args: &mut Vec<String>,
+                   data: &mut GameData,
+                   display_state: &mut DisplayState,
+                   settings: &mut GameSettings,
+                   config: &Config,
+                   msg_log: &mut MsgLog) {
+        self.output.clear();
+
         match command {
-            Command::ListEntities => {
-                self.output.push("listing entities:".to_string());
+            Command::ListIds => {
+                let mut line = String::new();
+                let mut count = 0;
+                let combine = 2;
+                for entity in data.objects.values() {
+                    line.push_str(&format!("{:>3}: at ({:>2}, {:>2}) {:<16}", entity.id, entity.x, entity.y, entity.name));
+
+                    count += 1;
+
+                    if count == combine {
+                        self.output.push(line.clone());
+                        line.clear();
+                        count = 0;
+                    }
+                }
+            }
+
+            Command::SetXY => {
+                let y = args.pop().unwrap().parse::<i32>().unwrap();
+                let x = args.pop().unwrap().parse::<i32>().unwrap();
+                let id = args.pop().unwrap().parse::<u32>().unwrap();
+
+                let mut entity_key = None;
+                for (key, entity) in data.objects.iter() {
+                    if entity.id == id {
+                        entity_key = Some(key);
+                    }
+                }
+
+                if let Some(key) = entity_key {
+                    data.objects[key].set_xy(x, y);
+                    self.output.push(format!("{} moved to ({}, {})", id, x, y));
+                } else {
+                    self.output.push(format!("Id {} not found!", id));
+                }
+            }
+
+            Command::PlayerSee => {
+                let y = args.pop().unwrap().parse::<i32>().unwrap();
+                let x = args.pop().unwrap().parse::<i32>().unwrap();
+
+                let player = data.find_player().unwrap();
+
+                let player_pos = data.objects[player].pos();
+                let can_see = data.map.is_in_fov(player_pos, Pos::new(x, y), config.fov_radius_player);
+
+                if can_see {
+                    self.output.push(format!("yes"));
+                } else {
+                    self.output.push(format!("no"));
+                }
+            }
+
+            Command::PlayerXY => {
+                let y = args.pop().unwrap().parse::<i32>().unwrap();
+                let x = args.pop().unwrap().parse::<i32>().unwrap();
+
+                let player = data.find_player().unwrap();
+
+                data.objects[player].set_xy(x, y);
+                self.output.push(format!("Player at ({}, {})", x, y));
+            }
+
+            Command::RenderMap => {
+                let setting = args.pop().unwrap();
+
+                if setting == "on" {
+                    settings.render_map = true;
+                } else if setting == "off" {
+                    settings.render_map = false;
+                } else {
+                    self.output.push(format!("Expected 'on' or 'off', got '{}'", setting));
+                }
+            }
+
+            Command::ListCommands => {
+                self.output.push(format!("list-ids"));
+                self.output.push(format!("set-xy id x y"));
+                self.output.push(format!("player-see x y"));
+                self.output.push(format!("render-map (on|off)"));
+                self.output.push(format!("player-xy x y"));
+                self.output.push(format!("gol x y"));
+                self.output.push(format!("elf x y"));
+                self.output.push(format!("list"));
+                self.output.push(format!("help"));
+                self.output.push(format!("quit"));
+            }
+
+            Command::Gol => {
+                let y = args.pop().unwrap().parse::<i32>().unwrap();
+                let x = args.pop().unwrap().parse::<i32>().unwrap();
+
+                let gol = make_gol(config, Pos::new(x, y), display_state);
+                self.output.push(format!("Added gol at ({}, {}), id = {}", x, y, gol.id));
+
+                data.objects.insert(gol);
+            }
+
+            Command::Elf => {
+                let y = args.pop().unwrap().parse::<i32>().unwrap();
+                let x = args.pop().unwrap().parse::<i32>().unwrap();
+
+                let elf = make_elf(config, Pos::new(x, y), display_state);
+                self.output.push(format!("Added elf at ({}, {}), id = {}", x, y, elf.id));
+
+                data.objects.insert(elf);
+            }
+
+            Command::Quit => {
+                settings.exiting = true;
             }
 
             Command::UnknownCommand => {
-                self.output.push("unknown command:".to_string());
+                self.output.push("unknown command".to_string());
             }
         }
     }

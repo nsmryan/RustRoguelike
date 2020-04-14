@@ -238,7 +238,7 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_ELF => {
-                                objects.insert(make_pawn(config, pos, display_state));
+                                objects.insert(make_elf(config, pos, display_state));
                             }
 
                             MAP_EMPTY => {

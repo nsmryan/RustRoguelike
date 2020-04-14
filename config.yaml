@@ -142,5 +142,5 @@ overlay_directions: false
 overlay_player_fov: false
 fov_radius_monster: 6
 fov_radius_player: 6
-console_max_height: 200
+console_max_height: 400
 console_speed: 1.0

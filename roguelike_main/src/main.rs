@@ -240,7 +240,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         let game_result = game.step_game(dt.as_secs_f32());
         frame_time = Instant::now();
 
-        if game_result == GameResult::Stop {
+        if game_result == GameResult::Stop || game.settings.exiting {
             running = false;
         }
 

@@ -60,20 +60,18 @@ pub fn handle_input_console(input: InputAction,
                             key_input: &mut Vec<(KeyDirection, Keycode)>,
                             console: &mut Console,
                             game_data: &mut GameData,
+                            display_state: &mut DisplayState,
                             settings: &mut GameSettings,
+                            config: &Config,
                             msg_log: &mut MsgLog) {
     match input {
         InputAction::ToggleConsole => {
             settings.state = GameState::Playing;
         }
 
-        InputAction::Exit => {
-            settings.exiting = true;
-        }
-
         _ => {
             for (dir, key) in key_input.iter() {
-                console.eval(*key, *dir, game_data);
+                console.eval(*key, *dir, game_data, display_state, settings, config, msg_log);
             }
         }
     }

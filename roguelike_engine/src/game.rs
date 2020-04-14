@@ -43,6 +43,7 @@ pub struct GameSettings {
     pub overlay: bool,
     pub console: bool,
     pub time: f32,
+    pub render_map: bool,
 }
 
 impl GameSettings {
@@ -58,6 +59,7 @@ impl GameSettings {
             overlay: false,
             console: false,
             time: 0.0,
+            render_map: true,
         };
     }
 }
@@ -102,7 +104,7 @@ impl Game {
         let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
 
         let mut map;
-        let mut player_position: (i32, i32);
+        let player_position: (i32, i32);
         match config.map_load {
             MapLoadConfig::FromFile => {
                 let (new_objects, new_map, mut position) = read_map_xp(&config, &mut display_state, "resources/map.xp");
@@ -299,7 +301,9 @@ impl Game {
                                           &mut self.key_input,
                                           &mut self.console,
                                           &mut self.data,
+                                          &mut self.display_state,
                                           &mut self.settings,
+                                          &self.config,
                                           &mut self.msg_log);
         }
 

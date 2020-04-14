@@ -24,8 +24,6 @@ pub fn render_all(game: &mut Game)  -> Result<(), String> {
 
     let player_id = game.data.find_player().unwrap();
 
-    game.data.map.compute_fov(game.data.objects[player_id].pos(), game.config.fov_radius_player);
-
     let screen_rect = game.display_state.canvas.output_size()?;
 
     let plots = game.display_state
@@ -77,15 +75,17 @@ pub fn render_all(game: &mut Game)  -> Result<(), String> {
                                      (scaler * FONT_WIDTH as f32) as usize);
 
 
-                render_background(game, &area);
+                if game.settings.render_map {
+                    render_background(game, &area);
 
-                render_map(game, &area);
+                    render_map(game, &area);
 
-                render_objects(game, &area);
+                    render_objects(game, &area);
 
-                render_effects(game, &area);
+                    render_effects(game, &area);
 
-                render_overlays(game, mouse_map_pos, &area);
+                    render_overlays(game, mouse_map_pos, &area);
+                }
             }
 
             "inventory" => {

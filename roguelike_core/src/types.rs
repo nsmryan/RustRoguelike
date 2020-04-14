@@ -1,5 +1,6 @@
 use std::convert::Into;
 use std::collections::VecDeque;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 use serde::{Serialize, Deserialize};
 
@@ -273,8 +274,11 @@ pub enum Message {
     Attack(ObjectId),
 }
 
+static OBJECT_ID_COUNT: AtomicU32 = AtomicU32::new(0);
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Object {
+    pub id: u32,
     pub x: i32,
     pub y: i32,
     pub chr: char,
@@ -303,7 +307,10 @@ pub struct Object {
 
 impl Object {
     pub fn new(x: i32, y: i32, typ: ObjType, chr: char, color: Color, name: &str, blocks: bool) -> Self {
+        let id = OBJECT_ID_COUNT.fetch_add(1, Ordering::SeqCst);
+
         Object {
+            id,
             x,
             y,
             typ,

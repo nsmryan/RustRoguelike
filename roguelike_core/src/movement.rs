@@ -684,10 +684,8 @@ pub fn calculate_move(action: Direction,
                 } else if data.objects[entity].blocks {
                     let attack = Attack::Push(entity, delta_pos);
                     movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
-                    dbg!();
                 } else {
                     movement = Some(Movement::move_to(move_result.move_pos, MoveType::Move));
-                    dbg!();
                 }
             }
 

@@ -130,25 +130,25 @@ pub fn make_spire(config: &Config, pos: Pos) -> Object {
     return spire;
 }
 
-pub fn make_pawn(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
-    let mut pawn = Object::new(pos.x, pos.y, ObjType::Enemy, '\u{A5}', config.color_orange, "pawn", true);
+pub fn make_elf(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
+    let mut elf = Object::new(pos.x, pos.y, ObjType::Enemy, '\u{A5}', config.color_orange, "elf", true);
 
-    pawn.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, } );
-    pawn.ai = Some(Ai::Basic);
-    pawn.behavior = Some(Behavior::Idle);
-    pawn.color = config.color_ice_blue;
-    pawn.movement = Some(Reach::Single(PAWN_MOVE_DISTANCE));
-    pawn.attack = Some(Reach::Single(PAWN_ATTACK_DISTANCE));
-    pawn.alive = true;
-    pawn.direction = Some(Direction::from_f32(rand_from_pos(pos)));
+    elf.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, } );
+    elf.ai = Some(Ai::Basic);
+    elf.behavior = Some(Behavior::Idle);
+    elf.color = config.color_ice_blue;
+    elf.movement = Some(Reach::Single(PAWN_MOVE_DISTANCE));
+    elf.attack = Some(Reach::Single(PAWN_ATTACK_DISTANCE));
+    elf.alive = true;
+    elf.direction = Some(Direction::from_f32(rand_from_pos(pos)));
 
     let sprite = display_state.new_sprite("elf_idle".to_string(), config.idle_speed)
                                      .expect("Could not find sprite 'elf_idle'");
     let anim_key = display_state.play_animation(Animation::Loop(sprite));
 
-    pawn.animation.push_front(anim_key);
+    elf.animation.push_front(anim_key);
 
-    return pawn;
+    return elf;
 }
 
 pub fn make_trap_sound(config: &Config, pos: Pos) -> Object {
@@ -342,7 +342,7 @@ pub fn make_island(data: &mut GameData,
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
             if !data.is_blocked_tile(pos).is_some()  {
-                let monster = make_pawn(config, pos, display_state);
+                let monster = make_elf(config, pos, display_state);
                 data.objects.insert(monster);
                 break;
             }
