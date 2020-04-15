@@ -40,7 +40,7 @@ pub fn push_attack(handle: ObjectId, target: ObjectId, delta_pos: Pos, data: &mu
         let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
 
         if data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() ||
-           data.is_blocked_tile(past_pos).is_some() {
+           data.has_blocking_entity(past_pos).is_some() {
             // if blocked by wall, kill entity and take their space
             data.objects[handle].move_to(other_pos);
 
@@ -90,7 +90,7 @@ pub fn attack(handle: ObjectId, target: ObjectId, data: &mut GameData, msg_log: 
         let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
 
         if !data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() &&
-           !data.is_blocked_tile(past_pos).is_some() {
+           !data.has_blocking_entity(past_pos).is_some() {
             data.objects[target].set_pos(past_pos);
             data.objects[handle].move_to(other_pos);
 

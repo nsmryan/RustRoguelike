@@ -206,7 +206,7 @@ pub fn make_map(map_type: &MapGenType,
         }
 
         MapGenType::CornerTest => {
-            let (map, player_position) = make_wall_test_map(objects, config, display_state);
+            let (map, player_position) = make_corner_test_map(objects, config, display_state);
             
             result = (GameData::new(map, objects.clone()), player_position);
         }
@@ -329,7 +329,7 @@ pub fn make_island(data: &mut GameData,
         loop {
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !data.is_blocked_tile(pos).is_some()  {
+            if !data.has_blocking_entity(pos).is_some()  {
                 let monster = make_gol(config, pos, display_state);
                 data.objects.insert(monster);
                 break;
@@ -341,7 +341,7 @@ pub fn make_island(data: &mut GameData,
         loop {
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !data.is_blocked_tile(pos).is_some()  {
+            if !data.has_blocking_entity(pos).is_some()  {
                 let monster = make_elf(config, pos, display_state);
                 data.objects.insert(monster);
                 break;
@@ -353,7 +353,7 @@ pub fn make_island(data: &mut GameData,
         loop {
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !data.is_blocked_tile(pos).is_some() {
+            if !data.has_blocking_entity(pos).is_some() {
                 let monster = make_spire(config, pos);
                 data.objects.insert(monster);
                 break;
@@ -365,7 +365,7 @@ pub fn make_island(data: &mut GameData,
     let y = rng.gen_range(0, data.map.height());
     let pos = Pos::new(x, y);
 
-    if !data.is_blocked_tile(pos).is_some()  {
+    if !data.has_blocking_entity(pos).is_some()  {
         let key = make_key(config, display_state, Pos::new(x, y));
         data.objects.insert(key);
     }
@@ -511,6 +511,11 @@ pub fn make_corner_test_map(objects: &mut ObjMap,
     map[(x_pos, y_end)].bottom_wall = Wall::ShortWall;
     map[(x_pos - 1, y_start - 1)].bottom_wall = Wall::ShortWall;
     map[(x_pos, y_start - 1)].bottom_wall = Wall::ShortWall;
+
+    map[(position.0 + 1, position.1 + 2)].bottom_wall = Wall::ShortWall;
+    map[(position.0 + 2, position.1 + 2)].blocked = true;
+    map[(position.0 + 2, position.1 + 2)].block_sight = true;
+    map[(position.0 + 2, position.1 + 2)].chr = Some(MAP_WALL as char);
 
   
     objects.insert(make_gol(config, Pos::new(7, 5), display_state));

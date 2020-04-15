@@ -15,8 +15,6 @@ use crate::messaging::{MsgLog, Msg};
 use crate::ai::Behavior;
 
 
-pub type Loudness = usize;
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Action {
     Move(Movement),
@@ -137,8 +135,6 @@ impl Cardinal {
         } else if dx < 0 && dy == 0 {
             Some(Cardinal::Left)
         } else {
-            // NOTE this makes diagonal moves always create a certain facing.
-            // could use previous position as well.
             if let Some(_dir) = last {
                 if dx > 0 && dy > 0 {
                     Some(Cardinal::Right)
@@ -513,7 +509,7 @@ pub fn player_move_or_attack(movement: Movement,
 
                     data.objects.remove(target_id);
 
-                    if let Some(hit_entity) = data.is_blocked_tile(next_pos) {
+                    if let Some(hit_entity) = data.has_blocking_entity(next_pos) {
                         crush(target_id, hit_entity, &mut data.objects, msg_log);
                     }
 
@@ -594,7 +590,7 @@ pub fn check_collision(pos: Pos,
         for line_tuple in move_line {
             let line_pos = Pos::from(line_tuple);
 
-            if let Some(key) = data.is_blocked_tile(line_pos) {
+            if let Some(key) = data.has_blocking_entity(line_pos) {
                 result.move_pos = last_pos;
                 result.entity = Some(key);
                 break;
@@ -710,7 +706,7 @@ pub fn calculate_move(action: Direction,
                     movement = Some(Movement::move_to(new_pos, MoveType::JumpWall));
 
                     let next_pos = next_pos(pos, delta_pos);
-                    if let Some(other_id) = data.is_blocked_tile(next_pos) {
+                    if let Some(other_id) = data.has_blocking_entity(next_pos) {
                         if can_stab(data, object_id, other_id) {
                            let attack = Attack::Stab(other_id);
                            movement = Some(Movement::attack(new_pos, MoveType::JumpWall, attack));
@@ -725,7 +721,7 @@ pub fn calculate_move(action: Direction,
             // not blocked at all
             (None, None) => {
                 let next_pos = next_pos(pos, delta_pos);
-                if let Some(other_id) = data.is_blocked_tile(next_pos) {
+                if let Some(other_id) = data.has_blocking_entity(next_pos) {
                     if can_stab(data, object_id, other_id) {
                        let attack = Attack::Stab(other_id);
                        movement = Some(Movement::attack(move_result.move_pos, MoveType::Move, attack));

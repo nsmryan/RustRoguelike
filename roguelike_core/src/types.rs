@@ -65,7 +65,7 @@ impl GameData {
     
         let path_blocked =
             line.into_iter().any(|point|
-                                 self.is_blocked_tile(Pos::from(point)).is_some());
+                                 self.has_blocking_entity(Pos::from(point)).is_some());
     
         let (dx, dy) = (end.x - start.x, end.y - start.y);
 
@@ -74,7 +74,7 @@ impl GameData {
                
     }
 
-    pub fn is_blocked_tile(&self, pos: Pos) -> Option<ObjectId> {
+    pub fn has_blocking_entity(&self, pos: Pos) -> Option<ObjectId> {
         for (key, object) in self.objects.iter() {
             if object.blocks && object.pos() == pos {
                 return Some(key);
@@ -106,7 +106,7 @@ impl GameData {
             let line = Line::new((end_pos.x, end_pos.y), move_pos);
 
             for pos in line {
-                let maybe_id = self.is_blocked_tile(Pos::new(pos.0, pos.1));
+                let maybe_id = self.has_blocking_entity(Pos::new(pos.0, pos.1));
                 if maybe_id.is_some() {
                     return maybe_id;
                 }
