@@ -1,3 +1,5 @@
+use serde::{Serialize, Deserialize};
+
 use crate::types::*;
 use crate::movement::*;
 use crate::messaging::*;
@@ -5,7 +7,7 @@ use crate::utils::*;
 use crate::config::Config;
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Ai {
     Basic,
 }

@@ -20,6 +20,8 @@ pub enum Command {
     ListCommands,
     Gol,
     Elf,
+    PlayerHp,
+    Clear,
     Quit,
     UnknownCommand,
 }
@@ -36,6 +38,8 @@ impl Command {
             "list" => Command::ListCommands,
             "gol" => Command::Gol,
             "elf" => Command::Elf,
+            "player-hp" => Command::PlayerHp,
+            "clear" => Command::Clear,
             "quit" => Command::Quit,
             _ => Command::UnknownCommand,
         }
@@ -239,6 +243,8 @@ impl Console {
                 self.output.push(format!("player-xy x y"));
                 self.output.push(format!("gol x y"));
                 self.output.push(format!("elf x y"));
+                self.output.push(format!("player-hp (amount)"));
+                self.output.push(format!("clear"));
                 self.output.push(format!("list"));
                 self.output.push(format!("help"));
                 self.output.push(format!("quit"));
@@ -262,6 +268,19 @@ impl Console {
                 self.output.push(format!("Added elf at ({}, {}), id = {}", x, y, elf.id));
 
                 data.objects.insert(elf);
+            }
+
+            Command::PlayerHp => {
+                let hp = args.pop().unwrap().parse::<i32>().unwrap();
+
+                let player = data.find_player().unwrap();
+                data.objects[player].fighter.unwrap().hp = hp;
+
+                self.output.push(format!("Player HP set to {}", hp));
+            }
+
+            Command::Clear => {
+                self.output.clear();
             }
 
             Command::Quit => {

@@ -587,12 +587,13 @@ impl Map {
         let blocked =
             self.is_blocked_by_wall(start_pos, offset.x, offset.y);
 
-        let wall_in_path =
-            blocked.map_or(false, |blocked| {
-                let at_end = blocked.end_pos == end_pos;
-                let visible_wall = blocked.blocked_tile && blocked.wall_type.no_wall();
-                return !(at_end && visible_wall);
-            });
+        let mut wall_in_path = false;
+        if let Some(blocked) = blocked {
+            let at_end = blocked.end_pos == end_pos;
+            let no_wall = blocked.wall_type.no_wall();
+            let visible_wall = blocked.blocked_tile && no_wall;
+            wall_in_path = !(at_end && visible_wall);
+        }
 
         let is_visible =
             self.fov.is_in_fov(end_pos.x as usize, end_pos.y as usize);

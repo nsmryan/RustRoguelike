@@ -5,6 +5,8 @@ use tcod::line::*;
 
 use euclid::*;
 
+use serde::{Serialize, Deserialize};
+
 use crate::constants::*;
 use crate::types::*;
 use crate::utils::*;
@@ -37,7 +39,7 @@ impl Action {
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum MoveMode {
     Sneak,
     Walk,
@@ -175,7 +177,7 @@ impl Cardinal {
 }
 
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub enum Direction {
     Left,
     Right,
@@ -243,7 +245,7 @@ impl Direction {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Reach {
     Single(usize),
     Diag(usize),

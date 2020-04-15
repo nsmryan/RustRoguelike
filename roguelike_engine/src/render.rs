@@ -212,7 +212,7 @@ fn render_player(game: &mut Game, area: &Area) {
 
     let mut list = Vec::new();
 
-    let color = game.config.color_warm_grey;
+    let color = game.config.color_soft_green;
     let text_pos = Pos::new(1, 4);
 
     if let Some(fighter) = game.data.objects[player_id].fighter {
@@ -248,7 +248,7 @@ fn render_info(game: &mut Game,
                  &game.config);
 
     if let Some(mouse) = mouse_xy {
-        let color = game.config.color_warm_grey;
+        let color = game.config.color_soft_green;
 
         let player_id = game.data.find_player().unwrap();
         let player_pos = game.data.objects[player_id].pos();
@@ -1010,9 +1010,9 @@ fn draw_placard(display_state: &mut DisplayState,
     // draw a rectangle around where the placard header text will be placed.
     let half_text = text.len() / 2;
     let text_offset = (area.width / 2) - (area.font_width * half_text);
-    display_state.canvas.fill_rect(Rect::new(area.x_offset + text_offset as i32,
+    display_state.canvas.fill_rect(Rect::new(area.x_offset + text_offset as i32 - 3,
                                              area.y_offset,
-                                             (text.len() * area.font_width) as u32,
+                                             (text.len() * area.font_width) as u32 + 2,
                                              area.font_height as u32)).unwrap();
 
     // Draw header text

@@ -140,7 +140,7 @@ impl GameData {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Trap {
     Spikes,
     Sound,
@@ -194,7 +194,7 @@ pub struct MouseState {
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Item {
     Stone,
     Goal,
@@ -222,7 +222,7 @@ pub enum ItemClass {
 
 pub type Hp = i32;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Fighter {
     pub max_hp: Hp,
     pub hp: Hp,
@@ -257,7 +257,7 @@ impl Rect {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ObjType {
     Player,
     Enemy,
@@ -277,6 +277,11 @@ pub enum Message {
 
 static OBJECT_ID_COUNT: AtomicU32 = AtomicU32::new(0);
 
+// TODO consider replacing this with BTreeMaps
+// game.data.objects[handle].x would become
+// game.data.objects.x.get(handle) or
+// game.data.objects.x(handle) or
+// game.data.objects.get_x(handle) with an Option<T> and T variant
 #[derive(Clone, Debug, PartialEq)]
 pub struct Object {
     pub id: u32,
