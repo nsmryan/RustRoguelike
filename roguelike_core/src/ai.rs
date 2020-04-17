@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 
+use crate::constants::*;
 use crate::types::*;
 use crate::movement::*;
 use crate::messaging::*;
@@ -63,12 +64,8 @@ pub fn ai_take_turn(monster_id: ObjectId,
 pub fn step_towards(start_pos: Pos, target_pos: Pos) -> Pos {
     let dx = target_pos.x - start_pos.x;
     let dy = target_pos.y - start_pos.y;
-    let distance = ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
-
-    let dx = (dx as f32 / distance).round() as i32;
-    let dy = (dy as f32 / distance).round() as i32;
-
-    return Pos::new(dx, dy);
+    let delta_pos = Pos::new(signedness(dx), signedness(dy));
+    return delta_pos;
 }
 
 pub fn ai_attack(monster_id: ObjectId,
@@ -93,50 +90,79 @@ pub fn ai_attack(monster_id: ObjectId,
         turn = Action::Move(Movement::attack(hit_pos, MoveType::Move, attack));
     } else if data.map.is_blocked_by_wall(monster_pos, target_pos.x - monster_pos.x, target_pos.y - monster_pos.y).is_some() {
         turn = Action::StateChange(Behavior::Investigating(target_pos));
-    } else { 
-        // otherwise attempt to move towards their target
-        // check positions that can hit target, filter by FOV, and get the closest.
-        // then move to this closest position.
+    } else {
+        let mut new_pos = monster_pos;
+
         let mut pos_offset = Pos::new(0, 0);
         if let (Some(attack), Some(movement)) =
             (data.objects[monster_id].attack, data.objects[monster_id].movement) {
-            // get all locations they can hit
-            let move_positions =
-                Direction::move_actions().iter()
-                                         .map(|move_action| movement.move_with_reach(move_action))
-                                         .filter_map(|mov| mov)
-                                         .map(|pos| add_pos(pos, monster_pos))
-                                         .filter(|pos| data.map.is_within_bounds(*pos))
-                                         .filter(|pos| data.has_blocking_entity(*pos).is_none())
-                                         .collect::<Vec<Pos>>();
 
-            // filter locations that are blocked or out of sight
-            // NOTE hack to get positions to work out...
-            let positions: Vec<Pos> =
-                move_positions
-                .iter()
-                .filter(|new_pos| {
-                    data.objects[monster_id].set_pos(**new_pos);
+            let mut potential_move_targets = Vec::new();
+
+            let direction = data.objects[monster_id].direction;
+            for move_action in Direction::move_actions() {
+                for attack_offset in attack.attacks_with_reach(&move_action) {
+                    let attackable_pos = add_pos(target_pos, attack_offset);
+
+                    if attackable_pos == monster_pos {
+                        continue;
+                    }
+
+                    data.objects[monster_id].set_pos(attackable_pos);
+                    data.objects[monster_id].face(target_pos);
                     let can_hit = ai_can_hit_target(data, monster_id, target_pos, &attack, config).is_some();
-                    data.objects[monster_id].set_pos(monster_pos);
-                    return can_hit;
-                })
-                .map(|pair| *pair)
-                .collect();
 
-            // if there are any options to move to that will allow the monster to
-            // attack, move to the one closest to their current position.
-            if positions.len() > 0 {
-                target_pos = positions.iter()
-                                      .min_by_key(|pos| distance(target_pos, Pos::from(**pos)))
-                                      .map(|pair| Pos::from(*pair))
-                                      .unwrap();
+                    dbg!(attackable_pos, can_hit);
+                    if can_hit {
+                        potential_move_targets.push(attackable_pos);
+                    }
+                }
+            }
+            data.objects[monster_id].set_pos(monster_pos);
+            data.objects[monster_id].direction = direction;
+
+            let mut targets = potential_move_targets.iter();
+            if let Some(first_target) = targets.next() {
+                let mut best_target = first_target;
+
+                let path = data.path_between(monster_pos, *best_target, movement);
+                let mut best_dist = path.len();
+
+                let large_dist = (MAP_WIDTH + MAP_HEIGHT) as usize;
+                if best_dist == 0 {
+                    best_dist = large_dist;
+                }
+
+                for move_target in targets {
+                    let path = data.path_between(monster_pos, *move_target, movement);
+                    let path_length = path.len();
+                    dbg!(move_target, path_length);
+                        
+                    if path_length > 0 && (path_length < best_dist || best_dist == large_dist) {
+                        best_dist = path_length;
+                        best_target = move_target;
+                    }
+                }
+
+                if best_dist > 0 && best_dist != large_dist {
+                    new_pos = *best_target;
+                }
+
+                dbg!(best_target, best_dist);
             }
 
-            pos_offset = ai_take_astar_step(monster_pos, target_pos, &data);
+            dbg!(new_pos);
+
+            pos_offset = ai_take_astar_step(monster_pos, new_pos, &data);
         }
 
-        turn = Action::Move(Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move));
+        dbg!(pos_offset);
+
+        if pos_mag(pos_offset) > 0 {
+            turn = Action::Move(Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move));
+        } else {
+            turn = Action::NoAction;
+        }
     }
 
     return turn;
@@ -197,6 +223,11 @@ fn ai_can_hit_target(data: &mut GameData,
     let mut hit_pos = None;
     let monster_pos = data.objects[monster_id].pos();
 
+    // don't allow hitting from the same tile...
+    if target_pos == monster_pos {
+        return None;
+    }
+
     let within_fov =
         data.objects[monster_id].is_in_fov(&mut data.map, target_pos, config);
 
@@ -205,12 +236,12 @@ fn ai_can_hit_target(data: &mut GameData,
     let clear_path = data.clear_path(monster_pos, next_to_tile);
 
     if within_fov && clear_path {
-            // get all locations they can hit
-            let positions: Vec<Pos> =
-                reach.offsets()
-                .iter()
-                .map(|pos| Pos::new(pos.x + monster_pos.x, pos.y + monster_pos.y))
-                .collect();
+        // get all locations they can hit
+        let positions: Vec<Pos> =
+            reach.offsets()
+            .iter()
+            .map(|pos| Pos::new(pos.x + monster_pos.x, pos.y + monster_pos.y))
+            .collect();
 
         // look through attack positions, in case one hits the target
         for pos in positions {
@@ -226,10 +257,11 @@ fn ai_can_hit_target(data: &mut GameData,
 
 fn ai_take_astar_step(monster_pos: Pos,
                       target_pos: Pos,
-                      game_data: &GameData) -> Pos {
-    let astar_iter = game_data.map.astar(monster_pos, target_pos);
+                      data: &GameData,
+                      reach: Reach) -> Pos {
+    let path = data.path_between(monster_pos, *best_target, reach);
 
-    if astar_iter.len() > 1 && !game_data.has_blocking_entity(astar_iter[1]).is_some() {
+    if astar_iter.len() > 1 {
         return step_towards(monster_pos, astar_iter[1]);
     } else {
         return Pos::new(0, 0);
@@ -295,15 +327,16 @@ pub fn ai_apply_actions(monster_id: ObjectId,
                 None => {
                     game_data.objects[monster_id].move_to(movement.pos);
 
+                    if let Some(Behavior::Attacking(target_id)) = game_data.objects[monster_id].behavior {
+                        let target_pos = game_data.objects[target_id].pos();
+                        game_data.objects[monster_id].face(target_pos);
+                    }
+
                     msg_log.log(Msg::Moved(monster_id, movement, movement.pos));
                 }
 
                 Some(Attack::Attack(target_id)) => {
                     let pos_diff = sub_pos(movement.pos, pos);
-
-                    // ensure that attacking changes the orientation of an entity
-                    game_data.objects[monster_id].direction =
-                        Direction::from_dxy(pos_diff.x, pos_diff.y);
 
                     attack(monster_id, target_id, game_data, msg_log);
                 },

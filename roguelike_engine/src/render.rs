@@ -990,7 +990,7 @@ fn draw_placard(display_state: &mut DisplayState,
                 text: String,
                 area: &Area,
                 config: &Config) {
-    let color = config.color_bone_white;
+    let color = config.color_mint_green;
     
     // Draw a black background
     display_state.canvas.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));

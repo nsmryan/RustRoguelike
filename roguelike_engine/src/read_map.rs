@@ -234,7 +234,7 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_EXIT => {
-                                objects.insert(make_exit(config, pos, display_state));
+                                objects.insert(make_exit(config, pos));
                             }
 
                             ENTITY_ELF => {

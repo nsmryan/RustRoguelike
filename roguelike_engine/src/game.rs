@@ -103,7 +103,7 @@ impl Game {
         let mut objects = DenseSlotMap::with_capacity(INITIAL_OBJECT_CAPACITY);
         let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
 
-        let mut map;
+        let map;
         let player_position: (i32, i32);
         match config.map_load {
             MapLoadConfig::FromFile => {

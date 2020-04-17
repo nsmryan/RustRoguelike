@@ -249,6 +249,38 @@ pub enum Reach {
 }
 
 impl Reach {
+    pub fn new() -> Reach {
+        return Reach::Single(1);
+    }
+
+    pub fn dist(&self) -> usize {
+        match self {
+            Reach::Single(dist) => *dist,
+            Reach::Diag(dist) => *dist,
+            Reach::Horiz(dist) => *dist,
+        }
+    }
+
+    pub fn with_dist(&self, dist: usize) -> Reach {
+        match self {
+            Reach::Single(_) => Reach::Single(dist),
+            Reach::Diag(_) => Reach::Diag(dist),
+            Reach::Horiz(_) => Reach::Horiz(dist),
+        }
+    }
+
+    pub fn attacks_with_reach(&self, move_action: &Direction) -> Vec<Pos> {
+        let mut positions = Vec::new();
+
+        if let Some(pos) = self.move_with_reach(move_action) {
+            for pos in Line::new((0, 0), pos.to_tuple()) {
+                positions.push(Pos::from(pos));
+            }
+        }
+
+        return positions;
+    }
+
     pub fn move_with_reach(&self, move_action: &Direction) -> Option<Pos> {
         match self {
             Reach::Single(dist) => {

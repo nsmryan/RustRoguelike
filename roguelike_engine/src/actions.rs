@@ -352,8 +352,6 @@ pub fn pick_item_up(object_id: ObjectId,
         ItemClass::Primary => {
             if item_primary_at(object_id, objects, 0) &&
                item_primary_at(object_id, objects, 1) {
-                let first_item_id = objects[object_id].inventory[0];
-
                 let old_primary = objects[object_id].inventory[0];
 
                 objects[object_id].inventory[0] = item_id;

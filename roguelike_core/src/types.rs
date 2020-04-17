@@ -4,6 +4,8 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use serde::{Serialize, Deserialize};
 
+use pathfinding::directed::astar::astar;
+
 use tcod::line::*;
 
 use slotmap::dense::*;
@@ -38,6 +40,38 @@ impl GameData {
             map,
             objects,
         }
+    }
+
+    pub fn path_between(&self, start: Pos, end: Pos, reach: Reach) -> Vec<Pos> {
+        let result;
+
+        let maybe_results = 
+            astar(&start,
+                  |&pos| {
+                      // NOTE this allocation could be avoided with an Iterable
+                      let mut next_positions = Vec::new();
+
+                      for direction in Direction::move_actions() {
+                          for offset in reach.move_with_reach(&direction) {
+                              let next_pos = add_pos(pos, offset);
+                              if self.clear_path(pos, next_pos) {
+                                  next_positions.push((next_pos, 1));
+                              }
+                          }
+                      }
+
+                      return next_positions;
+                  },
+                  |&pos| distance(pos, end) as i32,
+                  |&pos| pos == end);
+
+        if let Some((results, _cost)) = maybe_results {
+            result = results;
+        } else {
+            result = Vec::new();
+        }
+
+        return result;
     }
 
     pub fn find_player(&self) -> Option<ObjectId> {

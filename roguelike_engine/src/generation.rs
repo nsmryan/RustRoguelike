@@ -174,7 +174,7 @@ pub fn make_spikes(config: &Config, pos: Pos, display_state: &mut DisplayState) 
     return spikes;
 }
 
-pub fn make_exit(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
+pub fn make_exit(config: &Config, pos: Pos) -> Object {
     let mut exit = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_EXIT as char, config.color_orange, "exit", false);
 
     exit.color = config.color_ice_blue;

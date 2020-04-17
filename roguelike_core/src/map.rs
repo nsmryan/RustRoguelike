@@ -673,10 +673,11 @@ impl Map {
 
         let maybe_results = 
             astar(&start,
-                  |&pos| self.reachable_neighbors(pos)
-                  .iter()
-                  .map(|pos| (*pos, 1))
-                  .collect::<Vec<(Pos, i32)>>()
+                  |&pos|
+                  self.reachable_neighbors(pos)
+                      .iter()
+                      .map(|pos| (*pos, 1))
+                      .collect::<Vec<(Pos, i32)>>()
                   ,
                   |&pos| distance(pos, end) as i32,
                   |&pos| pos == end);
@@ -1030,5 +1031,24 @@ fn test_fov_blocked_by_wall_down() {
     map.update_map();
 
     assert!(map.is_in_fov(Pos::new(5, 1), Pos::new(5, 6), radius) == false);
+}
+
+#[test]
+fn test_blocked_by_wall() {
+    let radius = 10;
+    let mut map = Map::from_dims(10, 10);
+
+    map[(5, 5)] = Tile::water();
+  
+    map.update_map();
+
+    assert!(map.is_blocked_by_wall(Pos::new(4, 5), 1, 0).is_some());
+    assert!(map.is_blocked_by_wall(Pos::new(4, 5), 3, 0).is_some());
+    assert!(map.is_blocked_by_wall(Pos::new(3, 5), 3, 0).is_some());
+
+    assert!(map.is_blocked_by_wall(Pos::new(6, 5), -1, 0).is_some());
+
+    assert!(map.is_blocked_by_wall(Pos::new(5, 6), 0, -1).is_some());
+    assert!(map.is_blocked_by_wall(Pos::new(5, 4), 0, 1).is_some());
 }
 
