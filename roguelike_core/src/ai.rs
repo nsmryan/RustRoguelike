@@ -153,7 +153,7 @@ pub fn ai_attack(monster_id: ObjectId,
 
             dbg!(new_pos);
 
-            pos_offset = ai_take_astar_step(monster_pos, new_pos, &data, movement);
+            pos_offset = ai_take_astar_step(monster_id, new_pos, &data);
         }
 
         dbg!(pos_offset);
@@ -194,7 +194,7 @@ pub fn ai_investigate(target_pos_orig: Pos,
             turn = Action::StateChange(Behavior::Idle);
         } else {
             // if the monster has not reached its target, move towards the target.
-            let pos_offset = ai_take_astar_step(monster_pos, target_pos, &game_data, movement);
+            let pos_offset = ai_take_astar_step(monster_id, target_pos, &game_data);
 
             let movement = Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move);
             turn = Action::Move(movement);
@@ -255,14 +255,16 @@ fn ai_can_hit_target(data: &mut GameData,
     return hit_pos;
 }
 
-fn ai_take_astar_step(monster_pos: Pos,
+fn ai_take_astar_step(monster_id: ObjectId,
                       target_pos: Pos,
-                      data: &GameData,
-                      reach: Reach) -> Pos {
-    let path = data.path_between(monster_pos, *best_target, reach);
+                      data: &GameData) -> Pos {
+    let reach = data.objects[monster_id].movement.unwrap();
+    let monster_pos = data.objects[monster_id].pos();
 
-    if astar_iter.len() > 1 {
-        return step_towards(monster_pos, astar_iter[1]);
+    let path = data.path_between(monster_pos, target_pos, reach);
+
+    if path.len() > 1 {
+        return step_towards(monster_pos, path[1]);
     } else {
         return Pos::new(0, 0);
     }
