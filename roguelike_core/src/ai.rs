@@ -153,7 +153,7 @@ pub fn ai_attack(monster_id: ObjectId,
 
             dbg!(new_pos);
 
-            pos_offset = ai_take_astar_step(monster_pos, new_pos, &data);
+            pos_offset = ai_take_astar_step(monster_pos, new_pos, &data, movement);
         }
 
         dbg!(pos_offset);
@@ -194,7 +194,7 @@ pub fn ai_investigate(target_pos_orig: Pos,
             turn = Action::StateChange(Behavior::Idle);
         } else {
             // if the monster has not reached its target, move towards the target.
-            let pos_offset = ai_take_astar_step(monster_pos, target_pos, &game_data);
+            let pos_offset = ai_take_astar_step(monster_pos, target_pos, &game_data, movement);
 
             let movement = Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move);
             turn = Action::Move(movement);
