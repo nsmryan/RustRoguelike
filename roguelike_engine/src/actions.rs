@@ -5,7 +5,7 @@ use tcod::line::*;
 use sdl2::keyboard::Keycode;
 
 use roguelike_core::config::*;
-use roguelike_core::movement::Action;
+use roguelike_core::movement::{Direction, Action};
 use roguelike_core::types::*;
 use roguelike_core::movement;
 use roguelike_core::utils::{reach_by_mode, item_primary_at};
@@ -14,10 +14,40 @@ use roguelike_core::constants::*;
 
 use crate::game::*;
 use crate::display::*;
-use crate::input::*;
 use crate::generation;
 use crate::console::Console;
 
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum KeyDirection {
+    Down,
+    Up
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum InputAction {
+    Move(Direction),
+    Pass,
+    MapClick(Pos, Pos),
+    Pickup,
+    DropItem,
+    SwapPrimaryItem,
+    Inventory,
+    Exit,
+    Esc,
+    ExploreAll,
+    RegenerateMap,
+    GodMode,
+    RegenMap,
+    Yell,
+    IncreaseMoveMode,
+    DecreaseMoveMode,
+    OverlayOn,
+    OverlayOff,
+    SelectItem(usize),
+    ToggleConsole,
+    None,
+}
 
 pub fn player_apply_action(action: Action,
                            game_data: &mut GameData,

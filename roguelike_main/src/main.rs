@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+mod throttler;
 
 use std::env;
 use std::fs::File;
@@ -9,6 +10,9 @@ use std::path::Path;
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
 use sdl2::mouse::MouseButton;
+use sdl2::keyboard::{Mod, Keycode};
+use sdl2::render::{TextureCreator};
+use sdl2::video::WindowContext;
 
 use slotmap::dense::*;
 
@@ -21,16 +25,17 @@ use roguelike_core::map::Surface;
 use roguelike_core::config::Config;
 use roguelike_core::messaging::Msg;
 use roguelike_core::constants::*;
-use roguelike_core::animation::{Effect, Animation};
-use roguelike_core::movement::{MoveMode, MoveType};
+use roguelike_core::animation::{SpriteKey, Effect, Animation};
+use roguelike_core::movement::{Direction, MoveMode, MoveType};
 
 use roguelike_engine::display::*;
 use roguelike_engine::render::*;
 use roguelike_engine::plat::*;
 use roguelike_engine::game::*;
-use roguelike_engine::input::*;
-use roguelike_engine::throttler::*;
+use roguelike_engine::actions::*;
 use roguelike_engine::read_map::read_map_xp;
+
+use crate::throttler::*;
 
 
 fn main() {
@@ -66,66 +71,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let fps_throttler = Throttler::new(Duration::from_millis(1000 / config.rate as u64));
 
     /* Load Textures */
-    let font_image = texture_creator.load_texture("resources/rexpaint16x16.png")
-        .map_err(|e| e.to_string())?;
-
-    let player_idle = texture_creator.load_texture("animations/player/Player_Idle.png")
-        .map_err(|e| e.to_string())?;
-
-    let player_attack = texture_creator.load_texture("animations/player/player_attack.png")
-        .map_err(|e| e.to_string())?;
-
-    let player_vault = texture_creator.load_texture("animations/player/player_vault.png")
-        .map_err(|e| e.to_string())?;
-
-    let player_wall_kick = texture_creator.load_texture("animations/player/player_wallkick.png")
-        .map_err(|e| e.to_string())?;
-
-    let gol_idle = texture_creator.load_texture("animations/monster1/Gol_Idle.png")
-        .map_err(|e| e.to_string())?;
-
-    let gol_die = texture_creator.load_texture("animations/monster1/Gol_Die.png")
-        .map_err(|e| e.to_string())?;
-
-    let elf_idle = texture_creator.load_texture("animations/monster3/Elf_Idle.png")
-        .map_err(|e| e.to_string())?;
-
-    let spikes_anim = texture_creator.load_texture("animations/traps/DamageTrap.png")
-        .map_err(|e| e.to_string())?;
-
-    let font_as_sprite = texture_creator.load_texture("resources/rexpaint16x16.png")
-        .map_err(|e| e.to_string())?;
-
-    let mcmuffin = texture_creator.load_texture("animations/traps/McMuffin.png")
-        .map_err(|e| e.to_string())?;
-
-
-    let mut sprites = DenseSlotMap::new();
-    sprites.insert(SpriteSheet::new("player_wall_kick".to_string(), player_wall_kick, 1));
-    sprites.insert(SpriteSheet::new("player_idle".to_string(),      player_idle,      1));
-    sprites.insert(SpriteSheet::new("player_attack".to_string(),    player_attack,    1));
-    sprites.insert(SpriteSheet::new("player_vault".to_string(),     player_vault,     1));
-    sprites.insert(SpriteSheet::new("gol_idle".to_string(),         gol_idle,         1));
-    sprites.insert(SpriteSheet::new("gol_die".to_string(),          gol_die,          1));
-    sprites.insert(SpriteSheet::new("elf_idle".to_string(),         elf_idle,         1));
-    sprites.insert(SpriteSheet::new("spikes".to_string(),           spikes_anim,      1));
-    sprites.insert(SpriteSheet::new("font".to_string(),             font_as_sprite,   16));
-    sprites.insert(SpriteSheet::new("key".to_string(),              mcmuffin,         1));
-
-    // load any animations in the autoload directory.
-    for entry in WalkDir::new("animations/autoload/") {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        let file_name = entry.file_name().to_string_lossy().to_string();
-        if let Ok(metadata) = entry.metadata() {
-            if metadata.is_file() && file_name.ends_with("png") {
-                let sprite =
-                    texture_creator.load_texture(path).map_err(|e| e.to_string())?;
-
-                sprites.insert(SpriteSheet::new(file_name, sprite, 1));
-            }
-        }
-    }
+    let sprites = LoadSprites(&texture_creator);
 
     /* Create Display Structures */
     let screen_sections =
@@ -134,6 +80,8 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                                           Plan::split_horiz(0.5, Plan::zone("player"),
                                                                  Plan::zone("info"))));
 
+    let font_image = texture_creator.load_texture("resources/rexpaint16x16.png")
+        .expect("Could not load texture!");
 
     let display_state =
         DisplayState::new(screen_sections, font_image, sprites, canvas);
@@ -244,6 +192,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             running = false;
         }
 
+        /* TODO move this inside the engine */
         /* Handle Message Log */
         for msg in game.msg_log.messages.iter() {
             println!("msg: {}", msg.msg_line(&game.data));
@@ -417,6 +366,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         }
         game.msg_log.clear();
 
+        /* TODO move rendering code outside of the engine */
         /* Draw the Game to the Screen */
         render_all(&mut game)?;
 
@@ -437,6 +387,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             game.data.objects.insert(player);
         }
 
+        /* TODO move inside the engine */
         /* Process Player Messages */
         let player_handle = game.data.find_player().unwrap();
         for message in game.data.objects[player_handle].messages.iter() {
@@ -454,6 +405,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         }
         game.data.objects[player_handle].messages.clear();
 
+        /* TODO move inside the engine */
         /* Remove objects are awaiting removal */
         {
             let mut removals = Vec::new();
@@ -474,11 +426,6 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             let mut config_string = String::new();
             file.read_to_string(&mut config_string).expect("Could not read config file!");
             game.config = serde_yaml::from_str(&config_string).expect("Could not read JSON- config.json has a parsing error!");
-
-            //let config_yaml = serde_yaml::to_string(&game.config).expect("didn't serialize");
-            //println!("{}", config_yaml);
-            //let mut file = File::create("config.yaml").unwrap();
-            //file.write(&config_yaml.as_bytes());
         }
 
         /* Wait until the next tick to loop */
@@ -488,3 +435,229 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     return Ok(());
 }
 
+pub fn keyup_to_action(keycode: Keycode,
+                       _keymods: Mod,
+                       game_state: GameState) -> InputAction {
+    let input_action: InputAction;
+
+    match keycode {
+        Keycode::Kp0 | Keycode::Num0 => {
+            input_action = InputAction::SelectItem(0);
+        }
+
+        Keycode::Kp8 | Keycode::Num8 | Keycode::Up => {
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(8);
+            } else {
+                input_action = InputAction::Move(Direction::Up);
+            }
+        }
+
+        Keycode::Kp6 | Keycode::Num6 | Keycode::Right => {
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(6);
+            } else {
+                input_action = InputAction::Move(Direction::Right);
+            }
+        }
+
+        Keycode::Kp2 | Keycode::Num2 | Keycode::Down => {
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(2);
+            } else {
+                input_action = InputAction::Move(Direction::Down);
+            }
+        }
+
+        Keycode::Kp4 | Keycode::Num4 | Keycode::Left => {
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(4);
+            } else {
+                input_action = InputAction::Move(Direction::Left);
+            }
+        }
+
+        Keycode::Kp7 | Keycode::Num7 => {
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(7);
+            } else {
+                input_action = InputAction::Move(Direction::UpLeft);
+            }
+        }
+
+        Keycode::Kp9 | Keycode::Num9 => {
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(9);
+            } else {
+                input_action = InputAction::Move(Direction::UpRight);
+            }
+        }
+
+        Keycode::Kp3 | Keycode::Num3 => {
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(3);
+            } else {
+                input_action = InputAction::Move(Direction::DownRight);
+            }
+        }
+
+        Keycode::Kp1 | Keycode::Num1 => {
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(1);
+            } else {
+                input_action = InputAction::Move(Direction::DownLeft);
+            }
+        }
+
+        Keycode::Kp5 | Keycode::Num5 => {
+            if game_state == GameState::Inventory {
+                input_action = InputAction::SelectItem(5);
+            } else {
+                input_action = InputAction::Pass;
+            }
+        }
+
+        Keycode::Return => {
+            input_action = InputAction::None;
+        }
+
+        Keycode::Q => {
+            input_action = InputAction::Exit;
+        }
+
+        Keycode::G => {
+            input_action = InputAction::Pickup;
+        }
+
+        Keycode::D => {
+            input_action = InputAction::DropItem;
+        }
+
+        Keycode::I => {
+            input_action = InputAction::Inventory;
+        }
+
+        Keycode::Y => {
+            input_action = InputAction::Yell;
+        }
+
+        Keycode::V => {
+            input_action = InputAction::ExploreAll;
+        }
+
+        Keycode::Escape => {
+            input_action = InputAction::Esc;
+        }
+
+        Keycode::Tab => {
+            input_action = InputAction::SwapPrimaryItem;
+        }
+
+        Keycode::T => {
+            input_action = InputAction::GodMode;
+        }
+
+        Keycode::X => {
+            input_action = InputAction::IncreaseMoveMode;
+        }
+
+        Keycode::Z => {
+            input_action = InputAction::DecreaseMoveMode;
+        }
+
+        Keycode::Space => {
+            input_action = InputAction::OverlayOff;
+        }
+
+        Keycode::Backquote => {
+            input_action = InputAction::ToggleConsole;
+        }
+
+        _ => {
+            input_action = InputAction::None;
+        }
+    }
+
+    return input_action;
+}
+
+pub fn keydown_to_action(keycode: Keycode,
+                         _keymods: Mod) -> InputAction {
+    let input_action: InputAction;
+
+    match keycode {
+        Keycode::Space => {
+            input_action = InputAction::OverlayOn;
+        }
+
+        _ => {
+            input_action = InputAction::None;
+        }
+    }
+
+    return input_action;
+}
+
+fn LoadSprites(texture_creator: &TextureCreator<WindowContext>) -> DenseSlotMap<SpriteKey, SpriteSheet> {
+    let font_image = texture_creator.load_texture("resources/rexpaint16x16.png")
+        .expect("Could not load texture!");
+
+    let player_idle = texture_creator.load_texture("animations/player/Player_Idle.png")
+        .expect("Could not load texture!");
+
+    let player_attack = texture_creator.load_texture("animations/player/player_attack.png")
+        .expect("Could not load texture!");
+
+    let player_vault = texture_creator.load_texture("animations/player/player_vault.png")
+        .expect("Could not load texture!");
+
+    let player_wall_kick = texture_creator.load_texture("animations/player/player_wallkick.png")
+        .expect("Could not load texture!");
+
+    let gol_idle = texture_creator.load_texture("animations/monster1/Gol_Idle.png")
+        .expect("Could not load texture!");
+
+    let gol_die = texture_creator.load_texture("animations/monster1/Gol_Die.png")
+        .expect("Could not load texture!");
+
+    let elf_idle = texture_creator.load_texture("animations/monster3/Elf_Idle.png")
+        .expect("Could not load texture!");
+
+    let spikes_anim = texture_creator.load_texture("animations/traps/DamageTrap.png")
+        .expect("Could not load texture!");
+
+    let font_as_sprite = texture_creator.load_texture("resources/rexpaint16x16.png")
+        .expect("Could not load texture!");
+
+    let mcmuffin = texture_creator.load_texture("animations/traps/McMuffin.png")
+        .expect("Could not load texture!");
+
+    let mut sprites = DenseSlotMap::new();
+    sprites.insert(SpriteSheet::new("player_wall_kick".to_string(), player_wall_kick, 1));
+    sprites.insert(SpriteSheet::new("player_idle".to_string(),      player_idle,      1));
+    sprites.insert(SpriteSheet::new("player_attack".to_string(),    player_attack,    1));
+    sprites.insert(SpriteSheet::new("player_vault".to_string(),     player_vault,     1));
+    sprites.insert(SpriteSheet::new("gol_idle".to_string(),         gol_idle,         1));
+    sprites.insert(SpriteSheet::new("gol_die".to_string(),          gol_die,          1));
+    sprites.insert(SpriteSheet::new("elf_idle".to_string(),         elf_idle,         1));
+    sprites.insert(SpriteSheet::new("spikes".to_string(),           spikes_anim,      1));
+    sprites.insert(SpriteSheet::new("font".to_string(),             font_as_sprite,   16));
+    sprites.insert(SpriteSheet::new("key".to_string(),              mcmuffin,         1));
+
+    // load any animations in the autoload directory.
+    for entry in WalkDir::new("animations/autoload/") {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        let file_name = entry.file_name().to_string_lossy().to_string();
+        if let Ok(metadata) = entry.metadata() {
+            if metadata.is_file() && file_name.ends_with("png") {
+                let sprite =
+                    texture_creator.load_texture(path).expect("Could not load texture!");
+
+                sprites.insert(SpriteSheet::new(file_name, sprite, 1));
+            }
+        }
+    }
+
+    return sprites;
+}

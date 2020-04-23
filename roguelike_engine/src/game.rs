@@ -15,13 +15,13 @@ use roguelike_core::config::*;
 use roguelike_core::ai::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
-use roguelike_core::movement::Action;
+use roguelike_core::movement::{Direction, Action};
 use roguelike_core::utils::{clampf, lerp};
 
 use crate::actions;
+use crate::actions::{InputAction, KeyDirection};
 use crate::generation::*;
 use crate::display::*;
-use crate::input::*;
 use crate::read_map::read_map_xp;
 use crate::console::Console;
 

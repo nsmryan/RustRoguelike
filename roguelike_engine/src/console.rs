@@ -5,7 +5,7 @@ use roguelike_core::messaging::*;
 use roguelike_core::config::*;
 
 use crate::display::*;
-use crate::input::KeyDirection;
+use crate::actions::KeyDirection;
 use crate::generation::*;
 use crate::game::GameSettings;
 
