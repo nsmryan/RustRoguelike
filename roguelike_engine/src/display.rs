@@ -5,7 +5,6 @@ use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{Color as Sdl2Color};
 
-use roguelike_core::utils::lerp;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::animation::{AnimKey, Effect, SpriteKey, Animation, Sprite, SpriteIndex};

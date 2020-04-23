@@ -15,7 +15,7 @@ use roguelike_core::config::*;
 use roguelike_core::ai::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
-use roguelike_core::movement::{Direction, Action};
+use roguelike_core::movement::Action;
 use roguelike_core::utils::{clampf, lerp};
 
 use crate::actions;

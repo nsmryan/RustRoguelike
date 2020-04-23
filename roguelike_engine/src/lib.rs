@@ -5,4 +5,5 @@ pub mod read_map;
 pub mod actions;
 pub mod generation;
 pub mod render;
+pub mod resolve;
 pub mod console;
