@@ -77,13 +77,13 @@ pub fn make_key(config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
     return object;
 }
 
-pub fn make_mouse(_config: &Config, _display_state: &mut DisplayState) -> Object {
+pub fn make_mouse(_config: &Config) -> Object {
     let mouse = Object::new(-1, -1, ObjType::Other, ' ', Color::white(), "mouse", false);
 
     mouse
 }
 
-pub fn make_gol(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
+pub fn make_gol(config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
     let mut gol = Object::new(pos.x, pos.y, ObjType::Enemy, '\u{98}', config.color_orange, "gol", true);
 
     gol.fighter = Some( Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, } );
@@ -95,12 +95,7 @@ pub fn make_gol(config: &Config, pos: Pos, display_state: &mut DisplayState) -> 
     gol.alive = true;
     gol.direction = Some(Direction::from_f32(rand_from_pos(pos)));
 
-    let sprite = display_state.new_sprite("gol_idle".to_string(), config.idle_speed)
-                                     .expect("Could not find sprite 'gol_idle'");
-
-    let anim_key = display_state.play_animation(Animation::Loop(sprite));
-
-    gol.animation.push_front(anim_key);
+    msg_log.log(Msg::SpawnedObject(gol.id));
     
     return gol;
 } 
@@ -120,7 +115,7 @@ pub fn make_spire(config: &Config, pos: Pos) -> Object {
     return spire;
 }
 
-pub fn make_elf(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
+pub fn make_elf(config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
     let mut elf = Object::new(pos.x, pos.y, ObjType::Enemy, '\u{A5}', config.color_orange, "elf", true);
 
     elf.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, } );
@@ -132,11 +127,7 @@ pub fn make_elf(config: &Config, pos: Pos, display_state: &mut DisplayState) -> 
     elf.alive = true;
     elf.direction = Some(Direction::from_f32(rand_from_pos(pos)));
 
-    let sprite = display_state.new_sprite("elf_idle".to_string(), config.idle_speed)
-                                     .expect("Could not find sprite 'elf_idle'");
-    let anim_key = display_state.play_animation(Animation::Loop(sprite));
-
-    elf.animation.push_front(anim_key);
+    msg_log.log(Msg::SpawnedObject(elf.id));
 
     return elf;
 }
@@ -149,17 +140,12 @@ pub fn make_trap_sound(config: &Config, pos: Pos) -> Object {
     return sound;
 }
 
-pub fn make_spikes(config: &Config, pos: Pos, display_state: &mut DisplayState) -> Object {
+pub fn make_spikes(config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
     let mut spikes = Object::new(pos.x, pos.y, ObjType::Enemy, MAP_TALL_SPIKES as char, config.color_ice_blue, "spike", false);
 
     spikes.trap = Some(Trap::Spikes);
 
-    let sprite = display_state.new_sprite("spikes".to_string(), config.idle_speed)
-                                     .expect("Could not find sprite 'spikes'");
-
-    let anim_key = display_state.play_animation(Animation::Loop(sprite));
-
-    spikes.animation.push_front(anim_key);
+    msg_log.log(Msg::SpawnedObject(spikes.id));
 
     return spikes;
 }
@@ -191,19 +177,19 @@ pub fn make_map(map_type: &MapGenType,
     let result;
     match map_type {
         MapGenType::WallTest => {
-            let (map, player_position) = make_wall_test_map(objects, config, display_state);
+            let (map, player_position) = make_wall_test_map(objects, config, msg_log);
             
             result = (GameData::new(map, objects.clone()), player_position);
         }
 
         MapGenType::CornerTest => {
-            let (map, player_position) = make_corner_test_map(objects, config, display_state);
+            let (map, player_position) = make_corner_test_map(objects, config, msg_log);
             
             result = (GameData::new(map, objects.clone()), player_position);
         }
 
         MapGenType::PlayerTest => {
-            let (map, player_position) = make_player_test_map(objects, config, display_state);
+            let (map, player_position) = make_player_test_map(objects, config);
             
             result = (GameData::new(map, objects.clone()), player_position);
         }
@@ -212,7 +198,7 @@ pub fn make_map(map_type: &MapGenType,
             let map = Map::from_dims(MAP_WIDTH as usize, MAP_HEIGHT as usize);
 
             let mut data = GameData::new(map, objects.clone());
-            let starting_position = make_island(&mut data, config, display_state, msg_log, rng);
+            let starting_position = make_island(&mut data, config, msg_log, rng);
 
             data.map[starting_position.to_tuple()].tile_type = TileType::Empty;
 
@@ -223,7 +209,7 @@ pub fn make_map(map_type: &MapGenType,
 
         MapGenType::FromFile(file_name) => {
             let (new_objects, new_map, player_position) =
-                read_map_xp(config, display_state, msg_log, &file_name);
+                read_map_xp(config, msg_log, &file_name);
 
             let data = GameData::new(new_map, new_objects);
 
@@ -231,7 +217,7 @@ pub fn make_map(map_type: &MapGenType,
         }
 
         MapGenType::Animations => {
-            let (map, player_position) = make_player_test_map(objects, config, display_state);
+            let (map, player_position) = make_player_test_map(objects, config);
             
             result = (GameData::new(map, objects.clone()), player_position);
         }
@@ -242,7 +228,6 @@ pub fn make_map(map_type: &MapGenType,
 
 pub fn make_island(data: &mut GameData,
                    config: &Config,
-                   display_state: &mut DisplayState,
                    msg_log: &mut MsgLog,
                    rng: &mut SmallRng) -> Pos {
     let center = Pos::new(data.map.width() / 2, data.map.height() / 2);
@@ -322,7 +307,7 @@ pub fn make_island(data: &mut GameData,
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
             if !data.has_blocking_entity(pos).is_some()  {
-                let monster = make_gol(config, pos, display_state);
+                let monster = make_gol(config, pos, msg_log);
                 data.objects.insert(monster);
                 break;
             }
@@ -334,7 +319,7 @@ pub fn make_island(data: &mut GameData,
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
             if !data.has_blocking_entity(pos).is_some()  {
-                let monster = make_elf(config, pos, display_state);
+                let monster = make_elf(config, pos, msg_log);
                 data.objects.insert(monster);
                 break;
             }
@@ -399,8 +384,7 @@ pub fn make_island(data: &mut GameData,
 }
 
 pub fn make_player_test_map(_objects: &mut ObjMap,
-                            config: &Config,
-                            _display_state: &DisplayState) -> (Map, Pos) {
+                            config: &Config) -> (Map, Pos) {
     let mut map = Map::from_dims(10, 10);
     let position = (1, 5);
 
@@ -460,7 +444,7 @@ pub fn make_animations_map(objects: &mut ObjMap,
 
 pub fn make_wall_test_map(objects: &mut ObjMap,
                           config: &Config,
-                          display_state: &mut DisplayState) -> (Map, Pos) {
+                          msg_log: &mut MsgLog) -> (Map, Pos) {
     let mut map = Map::from_dims(10, 10);
     let position = (1, 5);
 
@@ -475,7 +459,7 @@ pub fn make_wall_test_map(objects: &mut ObjMap,
     map[(4, 4)].bottom_wall = Wall::ShortWall;
     map[(5, 4)].bottom_wall = Wall::ShortWall;
   
-    objects.insert(make_gol(config, Pos::new(6, 5), display_state));
+    objects.insert(make_gol(config, Pos::new(6, 5), msg_log));
 
     let dagger = make_dagger(config, Pos::new(position.0, position.1));
     objects.insert(dagger);
@@ -487,7 +471,7 @@ pub fn make_wall_test_map(objects: &mut ObjMap,
 
 pub fn make_corner_test_map(objects: &mut ObjMap,
                             config: &Config,
-                            display_state: &mut DisplayState) -> (Map, Pos) {
+                            msg_log: &mut MsgLog) -> (Map, Pos) {
     let mut map = Map::from_dims(15, 15);
     let position = (1, 5);
 
@@ -510,7 +494,7 @@ pub fn make_corner_test_map(objects: &mut ObjMap,
     map[(position.0 + 2, position.1 + 2)].chr = Some(MAP_WALL as char);
 
   
-    objects.insert(make_gol(config, Pos::new(7, 5), display_state));
+    objects.insert(make_gol(config, Pos::new(7, 5), msg_log));
 
     map.update_map();
 

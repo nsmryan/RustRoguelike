@@ -16,7 +16,6 @@ use crate::generation::*;
 
 
 pub fn read_map_xp(config: &Config,
-                   display_state: &mut DisplayState,
                    msg_log: &mut MsgLog,
                    file_name: &str) -> (ObjMap, Map, (i32, i32)) {
     let file = File::open(file_name).unwrap();
@@ -232,7 +231,7 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_GOL => {
-                                objects.insert(make_gol(config, pos, display_state));
+                                objects.insert(make_gol(config, pos, msg_log));
                             }
 
                             ENTITY_EXIT => {
@@ -240,7 +239,7 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_ELF => {
-                                objects.insert(make_elf(config, pos, display_state));
+                                objects.insert(make_elf(config, pos, msg_log));
                             }
 
                             MAP_EMPTY => {
@@ -268,7 +267,7 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_SPIKE_TRAP => {
-                                objects.insert(make_spikes(config, pos, display_state));
+                                objects.insert(make_spikes(config, pos, msg_log));
                             }
 
                             _ => {

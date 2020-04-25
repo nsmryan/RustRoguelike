@@ -203,6 +203,26 @@ pub fn resolve_messages(game: &mut Game) {
 
                     game.data.objects[obj_id].animation.push_front(anim_key);
 
+                } else if game.data.objects[obj_id].name == "spike" {
+                    let sprite = game.display_state.new_sprite("spikes".to_string(), game.config.idle_speed)
+                                                     .expect("Could not find sprite 'spikes'");
+
+                    let anim_key = game.display_state.play_animation(Animation::Loop(sprite));
+
+                    game.data.objects[obj_id].animation.push_front(anim_key);
+                } else if game.data.objects[obj_id].name == "elf" {
+                    let sprite = game.display_state.new_sprite("elf_idle".to_string(), game.config.idle_speed)
+                                                     .expect("Could not find sprite 'elf_idle'");
+                    let anim_key = game.display_state.play_animation(Animation::Loop(sprite));
+
+                    game.data.objects[obj_id].animation.push_front(anim_key);
+                } else if game.data.objects[obj_id].name == "gol" {
+                    let sprite = game.display_state.new_sprite("gol_idle".to_string(), game.config.idle_speed)
+                                                     .expect("Could not find sprite 'gol_idle'");
+
+                    let anim_key = game.display_state.play_animation(Animation::Loop(sprite));
+
+                    game.data.objects[obj_id].animation.push_front(anim_key);
                 }
             }
 

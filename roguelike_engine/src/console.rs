@@ -254,7 +254,7 @@ impl Console {
                 let y = args.pop().unwrap().parse::<i32>().unwrap();
                 let x = args.pop().unwrap().parse::<i32>().unwrap();
 
-                let gol = make_gol(config, Pos::new(x, y), display_state);
+                let gol = make_gol(config, Pos::new(x, y), msg_log);
                 self.output.push(format!("Added gol at ({}, {}), id = {}", x, y, gol.id));
 
                 data.objects.insert(gol);
@@ -264,7 +264,7 @@ impl Console {
                 let y = args.pop().unwrap().parse::<i32>().unwrap();
                 let x = args.pop().unwrap().parse::<i32>().unwrap();
 
-                let elf = make_elf(config, Pos::new(x, y), display_state);
+                let elf = make_elf(config, Pos::new(x, y), msg_log);
                 self.output.push(format!("Added elf at ({}, {}), id = {}", x, y, elf.id));
 
                 data.objects.insert(elf);

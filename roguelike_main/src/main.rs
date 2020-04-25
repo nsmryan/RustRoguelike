@@ -203,7 +203,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             let player_handle = game.data.find_player().unwrap();
 
             let map_file = format!("resources/{}", game.config.map_file);
-            let (new_objects, new_map, player_position) = read_map_xp(&game.config, &mut game.display_state, &mut game.msg_log, &map_file);
+            let (new_objects, new_map, player_position) = read_map_xp(&game.config, &mut game.msg_log, &map_file);
             game.data.map = new_map;
             game.data.objects[player_handle].inventory.clear();
             let mut player = game.data.objects[player_handle].clone();

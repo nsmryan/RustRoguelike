@@ -112,7 +112,6 @@ pub fn ai_attack(monster_id: ObjectId,
                     data.objects[monster_id].face(target_pos);
                     let can_hit = ai_can_hit_target(data, monster_id, target_pos, &attack, config).is_some();
 
-                    dbg!(attackable_pos, can_hit);
                     if can_hit {
                         potential_move_targets.push(attackable_pos);
                     }
@@ -136,7 +135,6 @@ pub fn ai_attack(monster_id: ObjectId,
                 for move_target in targets {
                     let path = data.path_between(monster_pos, *move_target, movement);
                     let path_length = path.len();
-                    dbg!(move_target, path_length);
                         
                     if path_length > 0 && (path_length < best_dist || best_dist == large_dist) {
                         best_dist = path_length;
@@ -148,15 +146,10 @@ pub fn ai_attack(monster_id: ObjectId,
                     new_pos = *best_target;
                 }
 
-                dbg!(best_target, best_dist);
             }
-
-            dbg!(new_pos);
 
             pos_offset = ai_take_astar_step(monster_id, new_pos, &data);
         }
-
-        dbg!(pos_offset);
 
         if pos_mag(pos_offset) > 0 {
             turn = Action::Move(Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move));

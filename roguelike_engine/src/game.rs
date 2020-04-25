@@ -110,7 +110,7 @@ impl Game {
         match config.map_load {
             MapLoadConfig::FromFile => {
                 let (new_objects, new_map, mut position) =
-                    read_map_xp(&config, &mut display_state, &mut msg_log, "resources/map.xp");
+                    read_map_xp(&config, &mut msg_log, "resources/map.xp");
                 objects.clear();
                 for object in new_objects.values() {
                     objects.insert(object.clone());
@@ -121,7 +121,7 @@ impl Game {
                 }
                 player_position = position;
 
-                objects.insert(make_mouse(&config, &mut display_state));
+                objects.insert(make_mouse(&config));
             }
 
             MapLoadConfig::Random => {
@@ -133,22 +133,22 @@ impl Game {
             }
 
             MapLoadConfig::TestWall => {
-                let (new_map, position) = make_wall_test_map(&mut objects, &config, &mut display_state);
+                let (new_map, position) = make_wall_test_map(&mut objects, &config, &mut msg_log);
                 map = new_map;
                 player_position = position.to_tuple();
             }
 
             MapLoadConfig::TestPlayer => {
-                let (new_map, position) = make_player_test_map(&mut objects, &config, &mut display_state);
+                let (new_map, position) = make_player_test_map(&mut objects, &config);
                 map = new_map;
                 player_position = position.to_tuple();
             }
 
             MapLoadConfig::TestCorner => {
-                let (new_map, position) = make_corner_test_map(&mut objects, &config, &mut display_state);
+                let (new_map, position) = make_corner_test_map(&mut objects, &config, &mut msg_log);
                 map = new_map;
                 player_position = position.to_tuple();
-                objects.insert(make_mouse(&config, &mut display_state));
+                objects.insert(make_mouse(&config));
             }
 
             MapLoadConfig::Animations => {
@@ -221,7 +221,7 @@ impl Game {
         let player_id = self.data.find_player().unwrap();
 
         let (new_objects, new_map, _) =
-            read_map_xp(&self.config, &mut self.display_state, &mut self.msg_log, "resources/map.xp");
+            read_map_xp(&self.config, &mut self.msg_log, "resources/map.xp");
 
         self.data.map = new_map;
         self.data.objects[player_id].inventory.clear();
