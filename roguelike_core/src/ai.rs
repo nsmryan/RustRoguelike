@@ -37,7 +37,7 @@ impl Behavior {
 pub fn ai_take_turn(monster_id: ObjectId,
                     data: &mut GameData,
                     config: &Config,
-                    msg_log: &mut MsgLog) {
+                    msg_log: &mut MsgLog) -> Action{
     let mut turn: Action;
 
     match data.objects[monster_id].ai {
@@ -55,10 +55,7 @@ pub fn ai_take_turn(monster_id: ObjectId,
         }
     }
 
-    ai_apply_actions(monster_id,
-                     turn,
-                     data,
-                     msg_log);
+    return turn;
 }
 
 pub fn step_towards(start_pos: Pos, target_pos: Pos) -> Pos {
@@ -310,10 +307,10 @@ pub fn basic_ai_take_turn(monster_id: ObjectId,
     }
 }
 
-pub fn ai_apply_actions(monster_id: ObjectId,
-                        turn: Action,
-                        game_data: &mut GameData,
-                        msg_log: &mut MsgLog) {
+pub fn ai_apply_action(monster_id: ObjectId,
+                       turn: Action,
+                       game_data: &mut GameData,
+                       msg_log: &mut MsgLog) {
     let pos = game_data.objects[monster_id].pos();
 
     match turn {

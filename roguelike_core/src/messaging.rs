@@ -14,7 +14,12 @@ impl MsgLog {
     pub fn new() -> MsgLog {
         return MsgLog {
             messages: VecDeque::new(),
+            turn_messages: VecDeque::new(),
         };
+    }
+
+    pub fn pop(&mut self) -> Option<Msg> {
+        return self.messages.pop_front();
     }
 
     pub fn log(&mut self, msg: Msg) {

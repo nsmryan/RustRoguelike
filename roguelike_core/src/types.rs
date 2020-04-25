@@ -355,6 +355,7 @@ pub struct Object {
     pub direction: Option<Direction>,
     pub messages: Vec<Message>,
     pub selected_item: Option<ObjectId>,
+    pub action: Option<Action>,
 }
 
 impl Object {
@@ -387,6 +388,7 @@ impl Object {
             direction: Some(Direction::Up),
             messages: Vec::new(),
             selected_item: None,
+            action: None,
         }
     }
 

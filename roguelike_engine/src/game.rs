@@ -113,7 +113,9 @@ impl Game {
                     read_map_xp(&config, &mut msg_log, "resources/map.xp");
                 objects.clear();
                 for object in new_objects.values() {
-                    objects.insert(object.clone());
+                    let new_obj = object.clone();
+                    msg_log.log(Msg::SpawnedObject(new_obj.id));
+                    objects.insert(new_obj);
                 }
                 map = new_map;
                 if position == (0, 0) {
@@ -185,8 +187,6 @@ impl Game {
     pub fn step_game(&mut self, dt: f32) -> GameResult {
         self.settings.time += dt;
 
-        self.msg_log.clear();
-
         match self.settings.state {
             GameState::Playing => {
                 return self.step_playing();
@@ -231,7 +231,9 @@ impl Game {
         self.data.objects.clear();
         self.data.objects.insert(player);
         for key in new_objects.keys() {
-            self.data.objects.insert(new_objects[key].clone());
+            let new_obj = self.data.objects[key].clone();
+            self.msg_log.log(Msg::SpawnedObject(new_obj.id));
+            self.data.objects.insert(new_obj);
         }
 
         self.settings.state = GameState::Playing;
@@ -371,7 +373,7 @@ pub fn step_logic(player_action: Action,
     let previous_player_position =
         data.objects[player_id].pos();
 
-    actions::player_apply_action(player_action, data, msg_log);
+    data.objects[player_id].action = Some(player_action);
 
     /* AI */
     if data.objects[player_id].alive {
@@ -385,28 +387,39 @@ pub fn step_logic(player_action: Action,
            }
         }
 
-        for key in ai_id {
-            ai_take_turn(key, data, config, msg_log);
+        for key in ai_id.iter() {
+            data.objects[*key].action = Some(ai_take_turn(*key, data, config, msg_log));
+        }
 
-            // check if fighter needs to be removed
-            if let Some(fighter) = data.objects[key].fighter {
-                if fighter.hp <= 0 {
-                    data.objects[key].alive = false;
-                    data.objects[key].blocks = false;
-                    data.objects[key].chr = '%';
-                    //data.objects[key].color = config.color_red;
-                    data.objects[key].fighter = None;
+        actions::player_apply_action(player_action, data, msg_log);
+        // TODO call resolve_messages
+
+        for key in ai_id {
+            if let Some(action) = data.objects[key].action {
+                ai_apply_action(key, action, data, msg_log);
+                // TODO call resolve_messages
+
+                // check if fighter needs to be removed
+                if let Some(fighter) = data.objects[key].fighter {
+                    if fighter.hp <= 0 {
+                        data.objects[key].alive = false;
+                        data.objects[key].blocks = false;
+                        data.objects[key].chr = '%';
+                        data.objects[key].fighter = None;
+                    }
                 }
             }
         }
     }
 
+    // TODO this should be part of message resolution, in case movement occurs over a trap
+    // during a series of actions
     /* Traps */
     let mut traps = Vec::new();
     for key in data.objects.keys() {
         for other in data.objects.keys() {
-            if data.objects[key].trap.is_some() && // key is a trap
-               data.objects[other].alive && // entity is alive
+            if data.objects[key].trap.is_some()      && // key is a trap
+               data.objects[other].alive             && // entity is alive
                data.objects[other].fighter.is_some() && // entity is a fighter
                data.objects[key].pos() == data.objects[other].pos() {
                 traps.push((key, other));
@@ -455,6 +468,8 @@ pub fn step_logic(player_action: Action,
     }
 
     let mut to_remove = Vec::new();
+
+    // perform count down
     for (entity_key, entity) in data.objects.iter_mut() {
         if let Some(ref mut count) = entity.count_down {
             if *count == 0 {
@@ -464,10 +479,13 @@ pub fn step_logic(player_action: Action,
             }
         }
 
-        if entity.needs_removal {
+        if entity.needs_removal &&
+           entity.animation.len() == 0 {
             to_remove.push(entity_key);
         }
     }
+
+    // remove objects waiting removal
     for key in to_remove {
         data.objects.remove(key);
     }

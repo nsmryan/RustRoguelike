@@ -12,7 +12,7 @@ use crate::read_map::read_map_xp;
 
 pub fn resolve_messages(game: &mut Game) {
     /* Handle Message Log */
-    while let Some(msg) = game.msg_log.messages.pop_front() {
+    while let Some(msg) = game.msg_log.pop() {
         let msg_line = msg.msg_line(&game.data);
         if msg_line.len() > 0 {
             println!("msg: {}", msg_line);
