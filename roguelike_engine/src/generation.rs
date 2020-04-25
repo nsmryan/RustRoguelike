@@ -7,6 +7,7 @@ use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
+use roguelike_core::messaging::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Animation, Sprite};
 use roguelike_core::utils::{rand_from_pos, distance};
@@ -26,8 +27,7 @@ pub enum MapGenType {
 }
 
 
-//if we want to use a character sprite, a potential value is '\u{8B}'
-pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object {
+pub fn make_player(config: &Config, msg_log: &mut MsgLog) -> Object {
     let mut player = Object::new(0, 0, ObjType::Player, '@', Color::white(), "player", true);
 
     player.alive = true;
@@ -41,12 +41,7 @@ pub fn make_player(config: &Config, display_state: &mut DisplayState) -> Object 
     player.move_mode = Some(MoveMode::Walk);
     player.direction = Some(Direction::Up);
 
-    let sprite = display_state.new_sprite("player_idle".to_string(), config.idle_speed)
-                                     .expect("Could not find sprite 'player_idle'");
-
-    let anim_key = display_state.play_animation(Animation::Loop(sprite));
-
-    player.animation.push_front(anim_key);
+    msg_log.log(Msg::SpawnedObject(player.id));
 
     player
 }

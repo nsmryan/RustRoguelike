@@ -103,6 +103,8 @@ impl Game {
         let mut objects = DenseSlotMap::with_capacity(INITIAL_OBJECT_CAPACITY);
         let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
 
+        let mut msg_log = MsgLog::new();
+
         let map;
         let player_position: (i32, i32);
         match config.map_load {
@@ -157,7 +159,7 @@ impl Game {
 
         let mut data = GameData::new(map, objects);
 
-        let player_id = data.objects.insert(make_player(&config, &mut display_state));
+        let player_id = data.objects.insert(make_player(&config, &mut msg_log));
         data.objects[player_id].x = player_position.0;
         data.objects[player_id].y = player_position.1;
 
@@ -171,7 +173,7 @@ impl Game {
             display_state,
             settings: GameSettings::new(0, false),
             mouse_state: Default::default(),
-            msg_log: MsgLog::new(),
+            msg_log,
             console: Console::new(),
             key_input: Vec::new(),
         };
@@ -341,9 +343,6 @@ impl Game {
 fn win_condition_met(data: &GameData) -> bool {
     // loop over objects in inventory, and check whether any
     // are the key object.
-    //let has_key =
-    //inventory.iter().any(|obj| obj.item.map_or(false, |item| item == Item::Goal));
-    // TODO add back in with new inventory!
     let player_id = data.find_player().unwrap();
 
     let has_key = 

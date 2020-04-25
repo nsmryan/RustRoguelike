@@ -180,7 +180,7 @@ impl Console {
             Command::SetXY => {
                 let y = args.pop().unwrap().parse::<i32>().unwrap();
                 let x = args.pop().unwrap().parse::<i32>().unwrap();
-                let id = args.pop().unwrap().parse::<u32>().unwrap();
+                let id = args.pop().unwrap().parse::<u64>().unwrap();
 
                 let mut entity_key = None;
                 for (key, entity) in data.objects.iter() {

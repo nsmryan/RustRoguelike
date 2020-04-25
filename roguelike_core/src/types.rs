@@ -1,6 +1,6 @@
 use std::convert::Into;
 use std::collections::VecDeque;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::{Serialize, Deserialize};
 
@@ -28,6 +28,8 @@ pub type Name = Symbol;
 pub type ObjectId = DefaultKey;
 
 pub type ObjMap = DenseSlotMap<ObjectId, Object>;
+
+pub type EntityId = u64;
 
 pub struct GameData {
     pub map: Map,
@@ -77,6 +79,16 @@ impl GameData {
     pub fn find_player(&self) -> Option<ObjectId> {
         for (key, object) in self.objects.iter() {
             if object.typ == ObjType::Player {
+                return Some(key);
+            }
+        }
+
+        return None;
+    }
+
+    pub fn find_entity(&self, id: EntityId) -> Option<ObjectId> {
+        for (key, object) in self.objects.iter() {
+            if object.id == id {
                 return Some(key);
             }
         }
@@ -158,19 +170,18 @@ impl GameData {
         }
     }
 
-    pub fn sound_at(&mut self, cause_id: ObjectId, source_pos: Pos, radius: usize) -> Aoe {
-        let sound_aoe =
-            self.map.aoe_fill(AoeEffect::Sound, source_pos, radius);
+    pub fn within_aoe(&mut self, aoe: &Aoe) -> Vec<ObjectId> {
+        let mut within = Vec::new();
 
-        for sound_pos in sound_aoe.positions() {
+        for pos in aoe.positions() {
             for (obj_id, obj) in self.objects.iter_mut() {
-                if obj.pos() == sound_pos && obj_id != cause_id {
-                    obj.messages.push(Message::Sound(cause_id, source_pos));
+                if obj.pos() == pos {
+                    within.push(obj_id);
                 }
             }
         }
 
-        return sound_aoe;
+        return within;
     }
 }
 
@@ -309,16 +320,17 @@ pub enum Message {
     Attack(ObjectId),
 }
 
-static OBJECT_ID_COUNT: AtomicU32 = AtomicU32::new(0);
+static OBJECT_ID_COUNT: AtomicU64 = AtomicU64::new(0);
 
 // TODO consider replacing this with BTreeMaps
 // game.data.objects[handle].x would become
 // game.data.objects.x.get(handle) or
 // game.data.objects.x(handle) or
+// game.data.objects.x[handle] or
 // game.data.objects.get_x(handle) with an Option<T> and T variant
 #[derive(Clone, Debug, PartialEq)]
 pub struct Object {
-    pub id: u32,
+    pub id: EntityId,
     pub x: i32,
     pub y: i32,
     pub chr: char,

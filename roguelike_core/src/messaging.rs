@@ -1,21 +1,27 @@
+use std::collections::VecDeque;
+
 use crate::types::*;
 use crate::movement::{Movement, MoveType, MoveMode};
 use crate::ai::Behavior;
 
 
 pub struct MsgLog {
-    pub messages: Vec<Msg>,
+    pub messages: VecDeque<Msg>,
 }
 
 impl MsgLog {
     pub fn new() -> MsgLog {
         return MsgLog {
-            messages: Vec::new(),
+            messages: VecDeque::new(),
         };
     }
 
     pub fn log(&mut self, msg: Msg) {
-        self.messages.push(msg);
+        self.messages.push_back(msg);
+    }
+
+    pub fn log_front(&mut self, msg: Msg) {
+        self.messages.push_front(msg);
     }
 
     pub fn clear(&mut self) {
@@ -27,6 +33,7 @@ impl MsgLog {
 pub enum Msg {
     Pass(),
     Crushed(ObjectId, Pos, ObjType), // object that did the crushing, position, type that was crushed
+    Sound(ObjectId, Pos, usize, bool), // object causing sound, location, radius, whether animation will play
     SoundTrapTriggered(ObjectId, ObjectId), // trap, entity
     SpikeTrapTriggered(ObjectId, ObjectId), // trap, entity
     PlayerDeath,
@@ -43,6 +50,7 @@ pub enum Msg {
     GameState(GameState),
     MoveMode(MoveMode),
     TriedRunWithShield,
+    SpawnedObject(EntityId),
 }
 
 impl Msg {
@@ -50,6 +58,10 @@ impl Msg {
         match self {
             Msg::Crushed(_obj_id, _pos, _obj_type) => {
                 return "An object has been crushed".to_string();
+            }
+
+            Msg::Sound(_obj_id, _pos, _radius, _animate) => {
+                return "".to_string();
             }
 
             Msg::Pass() => {
@@ -155,6 +167,10 @@ impl Msg {
 
             Msg::TriedRunWithShield => {
                 return "Can't run with shield!".to_string();
+            }
+
+            Msg::SpawnedObject(entity_id) => {
+                return "".to_string();
             }
         }
     }
