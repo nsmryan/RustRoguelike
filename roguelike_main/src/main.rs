@@ -194,8 +194,15 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
         resolve_messages(&mut game);
 
+        // TODO consider moving this within an update function for the display system
+        for msg in game.msg_log.turn_messages.iter() {
+            game.display_state.process_message(*msg, &mut game.data, &game.config);
+        }
+
         /* Draw the Game to the Screen */
         render_all(&mut game)?;
+
+        game.msg_log.clear();
 
         /* Reload map if configured to do so */
         if game.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {

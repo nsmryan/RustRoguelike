@@ -7,8 +7,11 @@ use sdl2::pixels::{Color as Sdl2Color};
 
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
+use roguelike_core::config::*;
+use roguelike_core::messaging::*;
+use roguelike_core::map::*;
 use roguelike_core::animation::{AnimKey, Effect, SpriteKey, Animation, Sprite, SpriteIndex};
-use roguelike_core::movement::{Cardinal};
+use roguelike_core::movement::{Cardinal, MoveType};
 
 use crate::plat::*;
 
@@ -236,6 +239,155 @@ impl DisplayState {
     pub fn play_effect(&mut self, effect: Effect) {
         self.effects.push(effect);
     }
+
+    pub fn process_message(&mut self, msg: Msg, data: &mut GameData, config: &Config) {
+        match msg {
+            Msg::Sound(cause_id, source_pos, radius, should_animate) => {
+                if should_animate {
+                    // NOTE this is a duplicate computation, also done in logic message processing
+                    let sound_aoe =
+                        data.map.aoe_fill(AoeEffect::Sound, source_pos, radius);
+
+                    let sound_effect = Effect::Sound(sound_aoe, 0.0);
+                    self.play_effect(sound_effect);
+                }
+            }
+
+            Msg::ItemThrow(thrower, item_id, start, end) => {
+                let sound_aoe = data.map.aoe_fill(AoeEffect::Sound, end, SOUND_RADIUS_STONE);
+
+                let chr = data.objects[item_id].chr;
+                let item_sprite =
+                    self.font_sprite(chr)
+                        .expect("Could not find item sprite!");
+
+                let move_anim = Animation::Between(item_sprite, start, end, 0.0, config.item_throw_speed);
+                let item_anim = Animation::PlayEffect(Effect::Sound(sound_aoe, 0.0));
+                let loop_anim = Animation::Loop(item_sprite);
+
+                let move_key = self.play_animation(move_anim);
+                let item_key = self.play_animation(item_anim);
+                let loop_key = self.play_animation(loop_anim);
+
+                data.objects[item_id].animation.clear();
+                data.objects[item_id].animation.push_back(move_key);
+                data.objects[item_id].animation.push_back(item_key);
+                data.objects[item_id].animation.push_back(loop_key);
+            }
+
+            Msg::Moved(object_id, movement, pos) => {
+                let player_handle = data.find_player().unwrap();
+                if object_id == player_handle && !matches!(movement.typ, MoveType::Pass) {
+                    let idle_sprite =
+                        self.new_sprite("player_idle".to_string(), config.idle_speed)
+                                          .unwrap();
+                    let idle_anim = Animation::Loop(idle_sprite);
+                    let idle_key = self.play_animation(idle_anim);
+
+                    data.objects[player_handle].animation.clear();
+                    data.objects[player_handle].animation.push_back(idle_key);
+                }
+            }
+
+            Msg::Killed(_attacker, attacked, _damage) => {
+                if data.objects[attacked].typ != ObjType::Player {
+                    data.objects[attacked].animation.clear();
+
+                    let sprite_name = format!("{}_die", data.objects[attacked].name);
+                    let maybe_sprite = self.new_sprite(sprite_name, 1.0);
+                    if let Some(sprite) = maybe_sprite {
+                        let anim = self.play_animation(Animation::Once(sprite));
+                        data.objects[attacked].animation.clear();
+                        data.objects[attacked].animation.push_front(anim);
+                    }
+                }
+            }
+
+            Msg::Attack(attacker, attacked, _damage) => {
+                if data.objects[attacker].typ == ObjType::Player {
+                    let attack_sprite =
+                        self.new_sprite("player_attack".to_string(), config.player_attack_speed)
+                                          .unwrap();
+                    let attack_anim = Animation::Once(attack_sprite);
+                    let attack_key = self.play_animation(attack_anim);
+
+                    let idle_sprite =
+                        self.new_sprite("player_idle".to_string(), config.idle_speed)
+                                          .unwrap();
+                    let idle_anim = Animation::Loop(idle_sprite);
+                    let idle_key = self.play_animation(idle_anim);
+
+                    data.objects[attacker].animation.clear();
+                    data.objects[attacker].animation.push_back(attack_key);
+                    data.objects[attacker].animation.push_back(idle_key);
+                }
+            }
+
+            Msg::JumpWall(jumper, start, end) => {
+                if data.objects[jumper].typ == ObjType::Player {
+                    let jump_sprite =
+                        self.new_sprite("player_vault".to_string(), config.player_vault_sprite_speed)
+                                          .unwrap();
+                    let jump_anim = Animation::Between(jump_sprite, start, end, 0.0, config.player_vault_move_speed);
+                    let jump_key = self.play_animation(jump_anim);
+
+                    let idle_sprite =
+                        self.new_sprite("player_idle".to_string(), config.idle_speed)
+                                          .unwrap();
+                    let idle_anim = Animation::Loop(idle_sprite);
+                    let idle_key = self.play_animation(idle_anim);
+
+                    data.objects[jumper].animation.clear();
+                    data.objects[jumper].animation.push_back(jump_key);
+                    data.objects[jumper].animation.push_back(idle_key);
+                }
+            }
+
+            Msg::SpawnedObject(entity_id) => {
+                let obj_id = data.find_entity(entity_id).unwrap();
+
+                if data.objects[obj_id].typ == ObjType::Player {
+                    let sprite = self.new_sprite("player_idle".to_string(), config.idle_speed)
+                                                    .expect("Could not find sprite 'player_idle'");
+
+                    let anim_key = self.play_animation(Animation::Loop(sprite));
+
+                    data.objects[obj_id].animation.push_front(anim_key);
+                } else if data.objects[obj_id].name == "key" {
+                    let sprite = self.new_sprite("key".to_string(), config.key_speed)
+                                                     .expect("Could not find sprite 'key'");
+
+                    let anim_key = self.play_animation(Animation::Loop(sprite));
+
+                    data.objects[obj_id].animation.push_front(anim_key);
+
+                } else if data.objects[obj_id].name == "spike" {
+                    let sprite = self.new_sprite("spikes".to_string(), config.idle_speed)
+                                                     .expect("Could not find sprite 'spikes'");
+
+                    let anim_key = self.play_animation(Animation::Loop(sprite));
+
+                    data.objects[obj_id].animation.push_front(anim_key);
+                } else if data.objects[obj_id].name == "elf" {
+                    let sprite =  self.new_sprite("elf_idle".to_string(), config.idle_speed)
+                                                     .expect("Could not find sprite 'elf_idle'");
+                    let anim_key = self.play_animation(Animation::Loop(sprite));
+
+                    data.objects[obj_id].animation.push_front(anim_key);
+                } else if data.objects[obj_id].name == "gol" {
+                    let sprite = self.new_sprite("gol_idle".to_string(), config.idle_speed)
+                                                     .expect("Could not find sprite 'gol_idle'");
+
+                    let anim_key = self.play_animation(Animation::Loop(sprite));
+
+                    data.objects[obj_id].animation.push_front(anim_key);
+                }
+            }
+
+            _ => {
+            }
+        }
+    }
 }
 
 
@@ -338,4 +490,3 @@ pub fn draw_char(canvas: &mut WindowCanvas,
                    false,
                    false).unwrap();
 }
-
