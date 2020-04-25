@@ -194,7 +194,6 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
         resolve_messages(&mut game);
 
-        /* TODO move rendering code outside of the engine */
         /* Draw the Game to the Screen */
         render_all(&mut game)?;
 
