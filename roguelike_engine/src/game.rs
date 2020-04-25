@@ -126,7 +126,7 @@ impl Game {
 
             MapLoadConfig::Random => {
                 let (data, position) =
-                    make_map(&MapGenType::Island, &mut objects, &config, &mut display_state, &mut msg_log, &mut rng);
+                    make_map(&MapGenType::Island, &mut objects, &config, &mut msg_log, &mut rng);
                 // TODO consider using objects as well here on regen?
                 map = data.map;
                 player_position = position.to_tuple();
@@ -184,6 +184,8 @@ impl Game {
 
     pub fn step_game(&mut self, dt: f32) -> GameResult {
         self.settings.time += dt;
+
+        self.msg_log.clear();
 
         match self.settings.state {
             GameState::Playing => {

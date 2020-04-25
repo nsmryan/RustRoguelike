@@ -330,7 +330,6 @@ pub fn handle_input(game: &mut Game) -> Action {
                 generation::make_map(&game.settings.map_type,
                                      &mut game.data.objects,
                                      &game.config,
-                                     &mut game.display_state,
                                      &mut game.msg_log,
                                      &mut rng);
             game.data.map = data.map;

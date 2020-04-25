@@ -247,20 +247,5 @@ pub fn resolve_messages(game: &mut Game) {
         }
     }
     game.data.objects[player_handle].messages.clear();
-
-    /* Remove objects are awaiting removal */
-    {
-        let mut removals = Vec::new();
-        for key in game.data.objects.keys() {
-            if game.data.objects[key].needs_removal &&
-               game.data.objects[key].animation.len() == 0 {
-                   removals.push(key);
-               }
-        }
-
-        for key in removals {
-           game.data.objects.remove(key);
-        }
-    }
 }
 

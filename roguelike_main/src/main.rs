@@ -194,6 +194,22 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
         resolve_messages(&mut game);
 
+        // TODO this should be in the engine
+        /* Remove objects are awaiting removal */
+        {
+            let mut removals = Vec::new();
+            for key in game.data.objects.keys() {
+                if game.data.objects[key].needs_removal &&
+                   game.data.objects[key].animation.len() == 0 {
+                       removals.push(key);
+                   }
+            }
+
+            for key in removals {
+               game.data.objects.remove(key);
+            }
+        }
+
         /* Draw the Game to the Screen */
         render_all(&mut game)?;
 

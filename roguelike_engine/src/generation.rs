@@ -171,7 +171,6 @@ pub fn make_stone(config: &Config, pos: Pos) -> Object {
 pub fn make_map(map_type: &MapGenType,
                 objects: &mut ObjMap,
                 config: &Config,
-                display_state: &mut DisplayState,
                 msg_log: &mut MsgLog,
                 rng: &mut SmallRng) -> (GameData, Pos) {
     let result;

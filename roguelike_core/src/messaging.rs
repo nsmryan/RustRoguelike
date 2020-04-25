@@ -7,6 +7,7 @@ use crate::ai::Behavior;
 
 pub struct MsgLog {
     pub messages: VecDeque<Msg>,
+    pub turn_messages: VecDeque<Msg>,
 }
 
 impl MsgLog {
@@ -18,14 +19,17 @@ impl MsgLog {
 
     pub fn log(&mut self, msg: Msg) {
         self.messages.push_back(msg);
+        self.turn_messages.push_back(msg);
     }
 
     pub fn log_front(&mut self, msg: Msg) {
         self.messages.push_front(msg);
+        self.turn_messages.push_front(msg);
     }
 
     pub fn clear(&mut self) {
         self.messages.clear();
+        self.turn_messages.clear();
     }
 }
 
