@@ -24,6 +24,7 @@ use crate::generation::*;
 use crate::display::*;
 use crate::read_map::read_map_xp;
 use crate::console::Console;
+use crate::resolve::resolve_messages;
 
 
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
@@ -392,12 +393,12 @@ pub fn step_logic(player_action: Action,
         }
 
         actions::player_apply_action(player_action, data, msg_log);
-        // TODO call resolve_messages
+        resolve_messages(data, msg_log, settings, config);
 
         for key in ai_id {
             if let Some(action) = data.objects[key].action {
                 ai_apply_action(key, action, data, msg_log);
-                // TODO call resolve_messages
+                resolve_messages(data, msg_log, settings, config);
 
                 // check if fighter needs to be removed
                 if let Some(fighter) = data.objects[key].fighter {

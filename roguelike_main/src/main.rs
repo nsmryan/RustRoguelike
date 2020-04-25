@@ -192,8 +192,6 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
             running = false;
         }
 
-        resolve_messages(&mut game);
-
         // TODO consider moving this within an update function for the display system
         for msg in game.msg_log.turn_messages.iter() {
             game.display_state.process_message(*msg, &mut game.data, &game.config);
