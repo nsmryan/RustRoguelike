@@ -34,6 +34,7 @@ pub fn resolve_messages(game: &mut Game) {
 
                 for obj_id in who_heard {
                     if obj_id != cause_id {
+                        // TODO replace with an Alerted message
                         game.data.objects[obj_id].messages.push(Message::Sound(cause_id, source_pos));
                     }
                 }
@@ -185,14 +186,24 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::SpawnedObject(entity_id) => {
-                let player_id = game.data.find_entity(entity_id).unwrap();
+                let obj_id = game.data.find_entity(entity_id).unwrap();
 
-                let sprite = game.display_state.new_sprite("player_idle".to_string(), game.config.idle_speed)
-                                                .expect("Could not find sprite 'player_idle'");
+                if game.data.objects[obj_id].typ == ObjType::Player {
+                    let sprite = game.display_state.new_sprite("player_idle".to_string(), game.config.idle_speed)
+                                                    .expect("Could not find sprite 'player_idle'");
 
-                let anim_key = game.display_state.play_animation(Animation::Loop(sprite));
+                    let anim_key = game.display_state.play_animation(Animation::Loop(sprite));
 
-                game.data.objects[player_id].animation.push_front(anim_key);
+                    game.data.objects[obj_id].animation.push_front(anim_key);
+                } else if game.data.objects[obj_id].name == "key" {
+                    let sprite = game.display_state.new_sprite("key".to_string(), game.config.key_speed)
+                                                     .expect("Could not find sprite 'key'");
+
+                    let anim_key = game.display_state.play_animation(Animation::Loop(sprite));
+
+                    game.data.objects[obj_id].animation.push_front(anim_key);
+
+                }
             }
 
             _ => {

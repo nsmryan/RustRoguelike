@@ -68,16 +68,11 @@ pub fn make_shield(config: &Config, pos: Pos) -> Object {
     return object;
 }
 
-pub fn make_key(config: &Config, display_state: &mut DisplayState, pos: Pos) -> Object {
+pub fn make_key(config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
     let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_KEY as char, config.color_orange, "key", false);
     object.item = Some(Item::Goal);
 
-    let sprite = display_state.new_sprite("key".to_string(), config.key_speed)
-                                     .expect("Could not find sprite 'key'");
-
-    let anim_key = display_state.play_animation(Animation::Loop(sprite));
-
-    object.animation.push_front(anim_key);
+    msg_log.log(Msg::SpawnedObject(object.id));
 
     return object;
 }
@@ -191,6 +186,7 @@ pub fn make_map(map_type: &MapGenType,
                 objects: &mut ObjMap,
                 config: &Config,
                 display_state: &mut DisplayState,
+                msg_log: &mut MsgLog,
                 rng: &mut SmallRng) -> (GameData, Pos) {
     let result;
     match map_type {
@@ -216,7 +212,7 @@ pub fn make_map(map_type: &MapGenType,
             let map = Map::from_dims(MAP_WIDTH as usize, MAP_HEIGHT as usize);
 
             let mut data = GameData::new(map, objects.clone());
-            let starting_position = make_island(&mut data, config, display_state, rng);
+            let starting_position = make_island(&mut data, config, display_state, msg_log, rng);
 
             data.map[starting_position.to_tuple()].tile_type = TileType::Empty;
 
@@ -227,7 +223,7 @@ pub fn make_map(map_type: &MapGenType,
 
         MapGenType::FromFile(file_name) => {
             let (new_objects, new_map, player_position) =
-                read_map_xp(config, display_state, &file_name);
+                read_map_xp(config, display_state, msg_log, &file_name);
 
             let data = GameData::new(new_map, new_objects);
 
@@ -247,6 +243,7 @@ pub fn make_map(map_type: &MapGenType,
 pub fn make_island(data: &mut GameData,
                    config: &Config,
                    display_state: &mut DisplayState,
+                   msg_log: &mut MsgLog,
                    rng: &mut SmallRng) -> Pos {
     let center = Pos::new(data.map.width() / 2, data.map.height() / 2);
 
@@ -361,7 +358,7 @@ pub fn make_island(data: &mut GameData,
     let pos = Pos::new(x, y);
 
     if !data.has_blocking_entity(pos).is_some()  {
-        let key = make_key(config, display_state, Pos::new(x, y));
+        let key = make_key(config, Pos::new(x, y), msg_log);
         data.objects.insert(key);
     }
 
@@ -371,7 +368,7 @@ pub fn make_island(data: &mut GameData,
     while !data.map.is_empty(pos) {
         pos = pos_in_radius(center, ISLAND_RADIUS, rng);
     }
-    data.objects.insert(make_key(&config, display_state, pos));
+    data.objects.insert(make_key(&config, pos, msg_log));
 
     /* add exit */
     // find edge of island

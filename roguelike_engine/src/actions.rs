@@ -331,6 +331,7 @@ pub fn handle_input(game: &mut Game) -> Action {
                                      &mut game.data.objects,
                                      &game.config,
                                      &mut game.display_state,
+                                     &mut game.msg_log,
                                      &mut rng);
             game.data.map = data.map;
         }

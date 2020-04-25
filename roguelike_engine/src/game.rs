@@ -109,7 +109,8 @@ impl Game {
         let player_position: (i32, i32);
         match config.map_load {
             MapLoadConfig::FromFile => {
-                let (new_objects, new_map, mut position) = read_map_xp(&config, &mut display_state, "resources/map.xp");
+                let (new_objects, new_map, mut position) =
+                    read_map_xp(&config, &mut display_state, &mut msg_log, "resources/map.xp");
                 objects.clear();
                 for object in new_objects.values() {
                     objects.insert(object.clone());
@@ -125,7 +126,7 @@ impl Game {
 
             MapLoadConfig::Random => {
                 let (data, position) =
-                    make_map(&MapGenType::Island, &mut objects, &config, &mut display_state, &mut rng);
+                    make_map(&MapGenType::Island, &mut objects, &config, &mut display_state, &mut msg_log, &mut rng);
                 // TODO consider using objects as well here on regen?
                 map = data.map;
                 player_position = position.to_tuple();
@@ -220,7 +221,7 @@ impl Game {
         let player_id = self.data.find_player().unwrap();
 
         let (new_objects, new_map, _) =
-            read_map_xp(&self.config, &mut self.display_state, "resources/map.xp");
+            read_map_xp(&self.config, &mut self.display_state, &mut self.msg_log, "resources/map.xp");
 
         self.data.map = new_map;
         self.data.objects[player_id].inventory.clear();

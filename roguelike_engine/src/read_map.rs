@@ -6,6 +6,7 @@ use slotmap::dense::*;
 use rexpaint::*;
 
 use roguelike_core::constants::*;
+use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
@@ -16,6 +17,7 @@ use crate::generation::*;
 
 pub fn read_map_xp(config: &Config,
                    display_state: &mut DisplayState,
+                   msg_log: &mut MsgLog,
                    file_name: &str) -> (ObjMap, Map, (i32, i32)) {
     let file = File::open(file_name).unwrap();
     let mut buf_reader = BufReader::new(file);
@@ -251,7 +253,7 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_KEY => {
-                                let key = make_key(config, display_state, pos);
+                                let key = make_key(config, pos, msg_log);
                                 objects.insert(key);
                             }
 
