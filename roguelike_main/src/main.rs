@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 mod throttler;
 mod render;
+mod console;
 
 use std::env;
 use std::fs::File;
@@ -37,6 +38,7 @@ use roguelike_engine::resolve::resolve_messages;
 
 use crate::throttler::*;
 use crate::render::*;
+use crate::console::*;
 
 
 fn main() {

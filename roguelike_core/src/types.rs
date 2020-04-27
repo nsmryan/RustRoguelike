@@ -224,7 +224,6 @@ pub enum GameState {
     Lose,
     Inventory,
     Throwing,
-    Console,
 }
 
 

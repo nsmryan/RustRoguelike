@@ -15,7 +15,6 @@ use roguelike_core::constants::*;
 use crate::game::*;
 use crate::display::*;
 use crate::generation;
-use crate::console::Console;
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -86,26 +85,26 @@ pub fn player_apply_action(action: Action,
     }
 }
 
-pub fn handle_input_console(input: InputAction,
-                            key_input: &mut Vec<(KeyDirection, Keycode)>,
-                            console: &mut Console,
-                            game_data: &mut GameData,
-                            display_state: &mut DisplayState,
-                            settings: &mut GameSettings,
-                            config: &Config,
-                            msg_log: &mut MsgLog) {
-    match input {
-        InputAction::ToggleConsole => {
-            settings.state = GameState::Playing;
-        }
-
-        _ => {
-            for (dir, key) in key_input.iter() {
-                console.eval(*key, *dir, game_data, display_state, settings, config, msg_log);
-            }
-        }
-    }
-}
+//pub fn handle_input_console(input: InputAction,
+//                            key_input: &mut Vec<(KeyDirection, Keycode)>,
+//                            console: &mut Console,
+//                            game_data: &mut GameData,
+//                            display_state: &mut DisplayState,
+//                            settings: &mut GameSettings,
+//                            config: &Config,
+//                            msg_log: &mut MsgLog) {
+//    match input {
+//        InputAction::ToggleConsole => {
+//            settings.state = GameState::Playing;
+//        }
+//
+//        _ => {
+//            for (dir, key) in key_input.iter() {
+//                console.eval(*key, *dir, game_data, display_state, settings, config, msg_log);
+//            }
+//        }
+//    }
+//}
 
 pub fn handle_input_inventory(input: InputAction,
                               game_data: &mut GameData,
@@ -356,14 +355,16 @@ pub fn handle_input(game: &mut Game) -> Action {
             game.data.map.update_map();
         }
 
+        // TODO console
         (InputAction::ToggleConsole, _) => {
-            if game.settings.state == GameState::Console {
-                game.settings.state = GameState::Playing;
-            } else {
-                game.console.time_at_open = game.settings.time;
-                game.console.height = 0;
-                game.settings.state = GameState::Console;
-            }
+            // TODO console
+            //if game.settings.state == GameState::Console {
+            //    game.settings.state = GameState::Playing;
+            //} else {
+            //    //game.console.time_at_open = game.settings.time;
+            //    //game.console.height = 0;
+            //    //game.settings.state = GameState::Console;
+            //}
         }
 
         (_, _) => {

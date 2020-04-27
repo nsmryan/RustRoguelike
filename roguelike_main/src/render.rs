@@ -137,9 +137,10 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
         render_inventory(display_state, game, &area);
     }
 
-    if game.settings.state == GameState::Console {
-        render_console(display_state, game);
-    }
+    // TODO console
+    //if game.settings.state == GameState::Console {
+    //    render_console(display_state, game);
+    //}
 
     display_state.canvas.present();
 
@@ -148,59 +149,60 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
     Ok(())
 }
 
-fn render_console(display_state: &mut DisplayState, game: &mut Game) {
-    let color = game.config.color_console;
-    let color = Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
-    display_state.canvas.set_draw_color(color);
-
-    let console_rect =
-        Rect::new(0, (SCREEN_HEIGHT - game.console.height) as i32, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
-    display_state.canvas.fill_rect(console_rect).unwrap();
-
-    let color = Sdl2Color::RGBA(255, 255, 255, 255);
-    display_state.canvas.set_draw_color(color);
-
-    let line_width = 1;
-
-    let y_offset = (SCREEN_HEIGHT - game.console.height) as i32;
-
-    let top_line_rect =
-        Rect::new(0, y_offset, SCREEN_WIDTH, line_width);
-    display_state.canvas.fill_rect(top_line_rect).unwrap();
-
-    let bottom_line_rect =
-        Rect::new(0, SCREEN_HEIGHT as i32 - line_width as i32, SCREEN_WIDTH, line_width);
-    display_state.canvas.fill_rect(bottom_line_rect).unwrap();
-
-    let left_line_rect =
-        Rect::new(0, y_offset, line_width, game.console.height);
-    display_state.canvas.fill_rect(left_line_rect).unwrap();
-
-    let right_line_rect =
-        Rect::new(SCREEN_WIDTH as i32 - line_width as i32, y_offset, line_width, game.console.height);
-    display_state.canvas.fill_rect(right_line_rect).unwrap();
-
-    let console_area = 
-        Area::new(0, y_offset, SCREEN_WIDTH as usize, y_offset as usize, FONT_WIDTH as usize, FONT_HEIGHT as usize);
-
-    display_state.draw_char('>',
-                            Pos::new(0, 0),
-                            Color::white(),
-                            &console_area);
-    display_state.draw_text(&game.console.input.clone(),
-                            Pos::new(1, 0),
-                            Color::white(),
-                            &console_area);
-
-    let mut y_pos = 1;
-    for output in game.console.output.iter() {
-        display_state.draw_text(&output.clone(),
-                                Pos::new(0, y_pos),
-                                Color::white(),
-                                &console_area);
-        y_pos += 1;
-    }
-}
+// TODO console
+//fn render_console(display_state: &mut DisplayState, game: &mut Game) {
+//    let color = game.config.color_console;
+//    let color = Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
+//    display_state.canvas.set_draw_color(color);
+//
+//    let console_rect =
+//        Rect::new(0, (SCREEN_HEIGHT - game.console.height) as i32, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
+//    display_state.canvas.fill_rect(console_rect).unwrap();
+//
+//    let color = Sdl2Color::RGBA(255, 255, 255, 255);
+//    display_state.canvas.set_draw_color(color);
+//
+//    let line_width = 1;
+//
+//    let y_offset = (SCREEN_HEIGHT - game.console.height) as i32;
+//
+//    let top_line_rect =
+//        Rect::new(0, y_offset, SCREEN_WIDTH, line_width);
+//    display_state.canvas.fill_rect(top_line_rect).unwrap();
+//
+//    let bottom_line_rect =
+//        Rect::new(0, SCREEN_HEIGHT as i32 - line_width as i32, SCREEN_WIDTH, line_width);
+//    display_state.canvas.fill_rect(bottom_line_rect).unwrap();
+//
+//    let left_line_rect =
+//        Rect::new(0, y_offset, line_width, game.console.height);
+//    display_state.canvas.fill_rect(left_line_rect).unwrap();
+//
+//    let right_line_rect =
+//        Rect::new(SCREEN_WIDTH as i32 - line_width as i32, y_offset, line_width, game.console.height);
+//    display_state.canvas.fill_rect(right_line_rect).unwrap();
+//
+//    let console_area = 
+//        Area::new(0, y_offset, SCREEN_WIDTH as usize, y_offset as usize, FONT_WIDTH as usize, FONT_HEIGHT as usize);
+//
+//    display_state.draw_char('>',
+//                            Pos::new(0, 0),
+//                            Color::white(),
+//                            &console_area);
+//    display_state.draw_text(&game.console.input.clone(),
+//                            Pos::new(1, 0),
+//                            Color::white(),
+//                            &console_area);
+//
+//    let mut y_pos = 1;
+//    for output in game.console.output.iter() {
+//        display_state.draw_text(&output.clone(),
+//                                Pos::new(0, y_pos),
+//                                Color::white(),
+//                                &console_area);
+//        y_pos += 1;
+//    }
+//}
 
 fn render_player(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
     draw_placard(display_state,

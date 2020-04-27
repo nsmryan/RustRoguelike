@@ -4,10 +4,10 @@ use roguelike_core::types::*;
 use roguelike_core::messaging::*;
 use roguelike_core::config::*;
 
-use crate::display::*;
-use crate::actions::KeyDirection;
-use crate::generation::*;
-use crate::game::GameSettings;
+use roguelike_engine::actions::KeyDirection;
+use roguelike_engine::generation::*;
+use roguelike_engine::game::GameSettings;
+use roguelike_engine::display::*;
 
 
 #[derive(Clone, Copy, PartialEq, Debug)]

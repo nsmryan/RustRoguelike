@@ -23,7 +23,6 @@ use crate::actions::{InputAction, KeyDirection};
 use crate::generation::*;
 use crate::display::*;
 use crate::read_map::read_map_xp;
-use crate::console::Console;
 use crate::resolve::resolve_messages;
 
 
@@ -79,8 +78,6 @@ pub struct Game {
     pub settings: GameSettings,
 
     pub msg_log: MsgLog,
-
-    pub console: Console,
 }
 
 impl Game {
@@ -168,7 +165,6 @@ impl Game {
             settings: GameSettings::new(0, false),
             mouse_state: Default::default(),
             msg_log,
-            console: Console::new(),
             key_input: Vec::new(),
         };
 
@@ -197,10 +193,6 @@ impl Game {
 
             GameState::Throwing => {
                 return self.step_throwing();
-            }
-
-            GameState::Console => {
-                return self.step_console();
             }
         }
     }
@@ -281,33 +273,33 @@ impl Game {
         return GameResult::Continue;
     }
 
-    fn step_console(&mut self) -> GameResult {
-        let input = self.input_action;
-        self.input_action = InputAction::None;
-
-        let time_since_open = self.settings.time - self.console.time_at_open;
-        let lerp_amount = clampf(time_since_open / self.config.console_speed, 0.0, 1.0);
-        self.console.height = lerp(self.console.height as f32,
-                                   self.config.console_max_height as f32,
-                                   lerp_amount) as u32;
-        if (self.console.height as i32 - self.config.console_max_height as i32).abs() < 2 {
-            self.console.height = self.config.console_max_height;
-        }
-
-        if self.key_input.len() > 0 {
-            // TODO add console back in
-            //actions::handle_input_console(input,
-            //                              &mut self.key_input,
-            //                              &mut self.console,
-            //                              &mut self.data,
-            //                              &mut self.display_state,
-            //                              &mut self.settings,
-            //                              &self.config,
-            //                              &mut self.msg_log);
-        }
-
-        return GameResult::Continue;
-    }
+//    fn step_console(&mut self) -> GameResult {
+//        let input = self.input_action;
+//        self.input_action = InputAction::None;
+//
+//        let time_since_open = self.settings.time - self.console.time_at_open;
+//        let lerp_amount = clampf(time_since_open / self.config.console_speed, 0.0, 1.0);
+//        self.console.height = lerp(self.console.height as f32,
+//                                   self.config.console_max_height as f32,
+//                                   lerp_amount) as u32;
+//        if (self.console.height as i32 - self.config.console_max_height as i32).abs() < 2 {
+//            self.console.height = self.config.console_max_height;
+//        }
+//
+//        if self.key_input.len() > 0 {
+//            // TODO add console back in
+//            //actions::handle_input_console(input,
+//            //                              &mut self.key_input,
+//            //                              &mut self.console,
+//            //                              &mut self.data,
+//            //                              &mut self.display_state,
+//            //                              &mut self.settings,
+//            //                              &self.config,
+//            //                              &mut self.msg_log);
+//        }
+//
+//        return GameResult::Continue;
+//    }
 
     fn step_playing(&mut self) -> GameResult {
         let player_action =
