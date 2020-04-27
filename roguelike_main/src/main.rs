@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 mod throttler;
+mod render;
 
 use std::env;
 use std::fs::File;
@@ -28,7 +29,6 @@ use roguelike_core::animation::SpriteKey;
 use roguelike_core::movement::Direction;
 
 use roguelike_engine::display::*;
-use roguelike_engine::render::*;
 use roguelike_engine::plat::*;
 use roguelike_engine::game::*;
 use roguelike_engine::actions::*;
@@ -36,6 +36,7 @@ use roguelike_engine::read_map::read_map_xp;
 use roguelike_engine::resolve::resolve_messages;
 
 use crate::throttler::*;
+use crate::render::*;
 
 
 fn main() {
@@ -83,10 +84,10 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     let font_image = texture_creator.load_texture("resources/rexpaint16x16.png")
         .expect("Could not load texture!");
 
-    let display_state =
+    let mut display_state =
         DisplayState::new(screen_sections, font_image, sprites, canvas);
 
-    let mut game = Game::new(args, config.clone(), display_state)?;
+    let mut game = Game::new(args, config.clone())?;
 
     let start_time = Instant::now();
     let mut frame_time = Instant::now();
@@ -133,10 +134,10 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
                             // Find the region where the mouse click occurred.
                             // If the click is within the map, generate a map click event.
                             let in_map =
-                                game.display_state.zones.iter()
-                                                        .filter(|zone| zone.contains(x as usize, y as usize) &&
-                                                                       zone.name == "map")
-                                                        .next();
+                                display_state.zones.iter()
+                                                   .filter(|zone| zone.contains(x as usize, y as usize) &&
+                                                                  zone.name == "map")
+                                                   .next();
 
                             if let Some(map_zone) = in_map {
                                 let map_loc = map_zone.within(x as usize, y as usize);
@@ -194,11 +195,11 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
         // TODO consider moving this within an update function for the display system
         for msg in game.msg_log.turn_messages.iter() {
-            game.display_state.process_message(*msg, &mut game.data, &game.config);
+            display_state.process_message(*msg, &mut game.data, &game.config);
         }
 
         /* Draw the Game to the Screen */
-        render_all(&mut game)?;
+        render_all(&mut display_state, &mut game)?;
 
         game.msg_log.clear();
 

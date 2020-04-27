@@ -84,7 +84,6 @@ pub enum MapLoadConfig {
     TestCorner,
     TestPlayer,
     FromFile,
-    Animations,
 }
 
 impl Default for MapLoadConfig {

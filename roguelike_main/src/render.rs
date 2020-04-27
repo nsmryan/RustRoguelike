@@ -15,26 +15,26 @@ use roguelike_core::config::*;
 use roguelike_core::animation::{Effect, Animation, AnimKey};
 use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color};
 
-use crate::plat::*;
-use crate::display::*;
-use crate::game::*;
+use roguelike_engine::plat::*;
+use roguelike_engine::display::*;
+use roguelike_engine::game::*;
 
 
-pub fn render_all(game: &mut Game)  -> Result<(), String> {
+pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<(), String> {
 
     let player_id = game.data.find_player().unwrap();
 
-    let screen_rect = game.display_state.canvas.output_size()?;
+    let screen_rect = display_state.canvas.output_size()?;
 
-    let plots = game.display_state
+    let plots = display_state
                     .screen_sections
                     .plot(0,
                           0,
                           screen_rect.0 as usize,
                           screen_rect.1 as usize);
 
-    game.display_state.canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
-    game.display_state.canvas.clear();
+    display_state.canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
+    display_state.canvas.clear();
 
     let zones = plots.collect::<Vec<Plot>>();
 
@@ -76,15 +76,15 @@ pub fn render_all(game: &mut Game)  -> Result<(), String> {
 
 
                 if game.settings.render_map {
-                    render_background(game, &area);
+                    render_background(display_state, game, &area);
 
-                    render_map(game, &area);
+                    render_map(display_state, game, &area);
 
-                    render_objects(game, &area);
+                    render_objects(display_state, game, &area);
 
-                    render_effects(game, &area);
+                    render_effects(display_state, game, &area);
 
-                    render_overlays(game, mouse_map_pos, &area);
+                    render_overlays(display_state, game, mouse_map_pos, &area);
                 }
             }
 
@@ -95,7 +95,7 @@ pub fn render_all(game: &mut Game)  -> Result<(), String> {
                                      plot.height,
                                      FONT_WIDTH as usize,
                                      FONT_HEIGHT as usize);
-                render_inventory(game, &area);
+                render_inventory(display_state, game, &area);
             }
 
             "player" => {
@@ -105,7 +105,7 @@ pub fn render_all(game: &mut Game)  -> Result<(), String> {
                                      plot.height,
                                      FONT_WIDTH as usize,
                                      FONT_HEIGHT as usize);
-                render_player(game, &area);
+                render_player(display_state, game, &area);
             }
 
             "info" => {
@@ -115,7 +115,7 @@ pub fn render_all(game: &mut Game)  -> Result<(), String> {
                                      plot.height,
                                      FONT_WIDTH as usize,
                                      FONT_HEIGHT as usize);
-                render_info(game, mouse_map_pos, &area);
+                render_info(display_state, game, mouse_map_pos, &area);
             }
 
             section_name => {
@@ -134,31 +134,31 @@ pub fn render_all(game: &mut Game)  -> Result<(), String> {
                              FONT_WIDTH as usize,
                              FONT_HEIGHT as usize);
 
-        render_inventory(game, &area);
+        render_inventory(display_state, game, &area);
     }
 
     if game.settings.state == GameState::Console {
-        render_console(game);
+        render_console(display_state, game);
     }
 
-    game.display_state.canvas.present();
+    display_state.canvas.present();
 
-    game.display_state.zones = zones;
+    display_state.zones = zones;
 
     Ok(())
 }
 
-fn render_console(game: &mut Game) {
+fn render_console(display_state: &mut DisplayState, game: &mut Game) {
     let color = game.config.color_console;
     let color = Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
-    game.display_state.canvas.set_draw_color(color);
+    display_state.canvas.set_draw_color(color);
 
     let console_rect =
         Rect::new(0, (SCREEN_HEIGHT - game.console.height) as i32, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
-    game.display_state.canvas.fill_rect(console_rect).unwrap();
+    display_state.canvas.fill_rect(console_rect).unwrap();
 
     let color = Sdl2Color::RGBA(255, 255, 255, 255);
-    game.display_state.canvas.set_draw_color(color);
+    display_state.canvas.set_draw_color(color);
 
     let line_width = 1;
 
@@ -166,44 +166,44 @@ fn render_console(game: &mut Game) {
 
     let top_line_rect =
         Rect::new(0, y_offset, SCREEN_WIDTH, line_width);
-    game.display_state.canvas.fill_rect(top_line_rect).unwrap();
+    display_state.canvas.fill_rect(top_line_rect).unwrap();
 
     let bottom_line_rect =
         Rect::new(0, SCREEN_HEIGHT as i32 - line_width as i32, SCREEN_WIDTH, line_width);
-    game.display_state.canvas.fill_rect(bottom_line_rect).unwrap();
+    display_state.canvas.fill_rect(bottom_line_rect).unwrap();
 
     let left_line_rect =
         Rect::new(0, y_offset, line_width, game.console.height);
-    game.display_state.canvas.fill_rect(left_line_rect).unwrap();
+    display_state.canvas.fill_rect(left_line_rect).unwrap();
 
     let right_line_rect =
         Rect::new(SCREEN_WIDTH as i32 - line_width as i32, y_offset, line_width, game.console.height);
-    game.display_state.canvas.fill_rect(right_line_rect).unwrap();
+    display_state.canvas.fill_rect(right_line_rect).unwrap();
 
     let console_area = 
         Area::new(0, y_offset, SCREEN_WIDTH as usize, y_offset as usize, FONT_WIDTH as usize, FONT_HEIGHT as usize);
 
-    game.display_state.draw_char('>',
-                                 Pos::new(0, 0),
-                                 Color::white(),
-                                 &console_area);
-    game.display_state.draw_text(&game.console.input.clone(),
-                                 Pos::new(1, 0),
-                                 Color::white(),
-                                 &console_area);
+    display_state.draw_char('>',
+                            Pos::new(0, 0),
+                            Color::white(),
+                            &console_area);
+    display_state.draw_text(&game.console.input.clone(),
+                            Pos::new(1, 0),
+                            Color::white(),
+                            &console_area);
 
     let mut y_pos = 1;
     for output in game.console.output.iter() {
-        game.display_state.draw_text(&output.clone(),
-                                     Pos::new(0, y_pos),
-                                     Color::white(),
-                                     &console_area);
+        display_state.draw_text(&output.clone(),
+                                Pos::new(0, y_pos),
+                                Color::white(),
+                                &console_area);
         y_pos += 1;
     }
 }
 
-fn render_player(game: &mut Game, area: &Area) {
-    draw_placard(&mut game.display_state,
+fn render_player(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
+    draw_placard(display_state,
                  "Player".to_string(),
                  area,
                  &game.config);
@@ -218,7 +218,7 @@ fn render_player(game: &mut Game, area: &Area) {
     if let Some(fighter) = game.data.objects[player_id].fighter {
         let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
 
-        render_bar(&mut game.display_state, health_percent, 2, game.config.color_red, Color::white(), area);
+        render_bar(display_state, health_percent, 2, game.config.color_red, Color::white(), area);
     }
 
     list.push(format!("position:"));
@@ -232,17 +232,18 @@ fn render_player(game: &mut Game, area: &Area) {
     let move_mode = game.data.objects[player_id].move_mode.unwrap();
     list.push(format!("{}", move_mode.to_string()));
 
-    game.display_state.draw_text_list(&list,
+    display_state.draw_text_list(&list,
                                       text_pos,
                                       color,
                                       area);
 
 }
 
-fn render_info(game: &mut Game,
+fn render_info(display_state: &mut DisplayState,
+               game: &mut Game,
                mouse_xy: Option<Pos>,
                area: &Area) {
-    draw_placard(&mut game.display_state,
+    draw_placard(display_state,
                  "Info".to_string(),
                  area,
                  &game.config);
@@ -263,10 +264,10 @@ fn render_info(game: &mut Game,
         text_list.push(format!("({:>2},{:>2})", mouse.x, mouse.y));
 
         let text_pos = Pos::new(1, y_pos);
-        game.display_state.draw_text_list(&text_list,
-                                          text_pos,
-                                          color,
-                                          area);
+        display_state.draw_text_list(&text_list,
+                                     text_pos,
+                                     color,
+                                     area);
         text_list.clear();
 
         y_pos += 1;
@@ -282,7 +283,7 @@ fn render_info(game: &mut Game,
 
                     let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
 
-                    render_bar(&mut game.display_state,
+                    render_bar(display_state,
                                health_percent,
                                y_pos,
                                game.config.color_red,
@@ -304,27 +305,27 @@ fn render_info(game: &mut Game,
         }
 
         let text_pos = Pos::new(1, y_pos);
-        game.display_state.draw_text_list(&text_list,
-                                          text_pos,
-                                          color,
-                                          area);
+        display_state.draw_text_list(&text_list,
+                                     text_pos,
+                                     color,
+                                     area);
         text_list.clear();
 
         y_pos = 10;
         let text_pos = Pos::new(1, y_pos);
         text_list.push(format!("Surface is"));
         text_list.push(format!("{:?}",  game.data.map[mouse].surface));
-        game.display_state.draw_text_list(&text_list,
-                                          text_pos,
-                                          color,
-                                          area);
+        display_state.draw_text_list(&text_list,
+                                     text_pos,
+                                     color,
+                                     area);
     }
 }
 
 /// Render an inventory section within the given area
-fn render_inventory(game: &mut Game, area: &Area) {
+fn render_inventory(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
     // Render header
-    draw_placard(&mut game.display_state,
+    draw_placard(display_state,
                  "Inventory".to_string(),
                  area,
                  &game.config);
@@ -355,10 +356,10 @@ fn render_inventory(game: &mut Game, area: &Area) {
         }
 
         // place prompt character
-        game.display_state.draw_char(('0' as u8 + item_index) as char,
-                               Pos::new(1, y_pos),
-                               game.config.color_ice_blue,
-                               area);
+        display_state.draw_char(('0' as u8 + item_index) as char,
+                                Pos::new(1, y_pos),
+                                game.config.color_ice_blue,
+                                area);
 
         // place object name
         let text_pos = Pos::new(2, y_pos);
@@ -369,10 +370,10 @@ fn render_inventory(game: &mut Game, area: &Area) {
                 ""
             };
         let item_text = format!(" {} {}", game.data.objects[*obj_id].name, item_marker);
-        game.display_state.draw_text(&item_text,
-                                     text_pos,
-                                     color,
-                                     area);
+        display_state.draw_text(&item_text,
+                                text_pos,
+                                color,
+                                area);
         
         y_pos += 1;
 
@@ -381,26 +382,26 @@ fn render_inventory(game: &mut Game, area: &Area) {
 
     if game.data.objects[player_id].inventory.len() == 0 {
         let text_pos = Pos::new(1, y_pos);
-        game.display_state.draw_text(&format!("empty"),
-                               text_pos,
-                               game.config.color_ice_blue,
-                               area);
+        display_state.draw_text(&format!("empty"),
+                                text_pos,
+                                game.config.color_ice_blue,
+                                area);
     }
 }
 
 /// render the background files, including water tiles
-fn render_background(game: &mut Game, area: &Area) {
+fn render_background(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
     let player_id = game.data.find_player().unwrap();
     let pos = game.data.objects[player_id].pos();
 
-    if let Some(background) = &mut game.display_state.background {
+    if let Some(background) = &display_state.background {
         let src = area.get_rect();
 
         let dst = area.get_rect();
 
-        game.display_state
+        display_state
             .canvas
-            .copy_ex(background,
+            .copy_ex(&background,
                      Some(src),
                      Some(dst),
                      0.0,
@@ -408,10 +409,10 @@ fn render_background(game: &mut Game, area: &Area) {
                      false,
                      false).unwrap();
     } else {
-        let pixel_format = game.display_state.texture_creator.default_pixel_format();
+        let pixel_format = display_state.texture_creator.default_pixel_format();
 
         let mut background =
-            game.display_state
+            display_state
                 .texture_creator
                 .create_texture_target(pixel_format,
                                        area.width as u32,
@@ -420,8 +421,8 @@ fn render_background(game: &mut Game, area: &Area) {
         {
             // unpack fields to prevent borrowing issues
             let (canvas, font_image, map, settings, config) =
-                (&mut game.display_state.canvas,
-                 &mut game.display_state.font_image,
+                (&mut display_state.canvas,
+                 &mut display_state.font_image,
                  &mut game.data.map,
                  &game.settings,
                  &game.config);
@@ -453,12 +454,12 @@ fn render_background(game: &mut Game, area: &Area) {
             }).unwrap();
         }
 
-        game.display_state.background = Some(background);
+        display_state.background = Some(background);
     }
 }
 
 /// Render the map, with environment and walls
-fn render_map(game: &mut Game, area: &Area) {
+fn render_map(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
     let map_width = game.data.map.width();
     let map_height = game.data.map.height();
 
@@ -495,16 +496,16 @@ fn render_map(game: &mut Game, area: &Area) {
             // if the tile is not empty or water, draw it
             let color = tile_color(&game.config, x, y, tile, visible);
             if chr != MAP_EMPTY_CHAR as char && tile.tile_type != TileType::Water {
-                game.display_state.draw_char(chr, pos, color, area);
+                display_state.draw_char(chr, pos, color, area);
             }
 
             match tile.surface {
                 Surface::Rubble => {
-                    game.display_state.draw_char(MAP_RUBBLE as char, pos, color, area);
+                    display_state.draw_char(MAP_RUBBLE as char, pos, color, area);
                 }
 
                 Surface::Grass => {
-                    game.display_state.draw_char(MAP_RUBBLE as char, pos, game.config.color_light_green, area);
+                    display_state.draw_char(MAP_RUBBLE as char, pos, game.config.color_light_green, area);
                 }
 
                 Surface::Floor => {
@@ -513,32 +514,32 @@ fn render_map(game: &mut Game, area: &Area) {
 
             // finally, draw the between-tile walls appropriate to this tile
             if tile.bottom_wall == Wall::ShortWall {
-                game.display_state.draw_char(MAP_THIN_WALL_BOTTOM as char, pos, wall_color, area);
+                display_state.draw_char(MAP_THIN_WALL_BOTTOM as char, pos, wall_color, area);
             } else if tile.bottom_wall == Wall::TallWall {
-                game.display_state.draw_char(MAP_THICK_WALL_BOTTOM as char, pos, wall_color, area);
+                display_state.draw_char(MAP_THICK_WALL_BOTTOM as char, pos, wall_color, area);
             }
 
             if tile.left_wall == Wall::ShortWall {
-                game.display_state.draw_char(MAP_THIN_WALL_LEFT as char, pos, wall_color, area);
+                display_state.draw_char(MAP_THIN_WALL_LEFT as char, pos, wall_color, area);
             } else if tile.left_wall == Wall::TallWall {
-                game.display_state.draw_char(MAP_THICK_WALL_LEFT as char, pos, wall_color, area);
+                display_state.draw_char(MAP_THICK_WALL_LEFT as char, pos, wall_color, area);
             }
 
             if x + 1 < map_width {
                 let right_tile = &game.data.map.tiles[x as usize + 1][y as usize];
                 if right_tile.left_wall == Wall::ShortWall {
-                    game.display_state.draw_char(MAP_THIN_WALL_RIGHT as char, pos, wall_color, area);
+                    display_state.draw_char(MAP_THIN_WALL_RIGHT as char, pos, wall_color, area);
                 } else if right_tile.left_wall == Wall::TallWall {
-                    game.display_state.draw_char(MAP_THICK_WALL_RIGHT as char, pos, wall_color, area);
+                    display_state.draw_char(MAP_THICK_WALL_RIGHT as char, pos, wall_color, area);
                 }
             }
 
             if y - 1 >= 0 {
                 let above_tile = &game.data.map.tiles[x as usize][y as usize - 1];
                 if above_tile.bottom_wall == Wall::ShortWall {
-                    game.display_state.draw_char(MAP_THIN_WALL_TOP as char, pos, wall_color, area);
+                    display_state.draw_char(MAP_THIN_WALL_TOP as char, pos, wall_color, area);
                 } else if above_tile.bottom_wall == Wall::TallWall {
-                    game.display_state.draw_char(MAP_THICK_WALL_TOP as char, pos, wall_color, area);
+                    display_state.draw_char(MAP_THICK_WALL_TOP as char, pos, wall_color, area);
                 }
             }
 
@@ -561,13 +562,13 @@ fn render_map(game: &mut Game, area: &Area) {
                 if game.data.map[pos].explored {
                     blackout_color.a = game.config.explored_alpha
                 }
-                game.display_state.draw_char(MAP_EMPTY_CHAR as char, pos, blackout_color, area);
+                display_state.draw_char(MAP_EMPTY_CHAR as char, pos, blackout_color, area);
             }
 
             // draw an outline around the tile
-            game.display_state.canvas.set_blend_mode(BlendMode::Blend);
-            game.display_state.canvas.set_draw_color(color);
-            game.display_state.canvas.draw_rect(area.char_rect(x, y)).unwrap();
+            display_state.canvas.set_blend_mode(BlendMode::Blend);
+            display_state.canvas.set_draw_color(color);
+            display_state.canvas.draw_rect(area.char_rect(x, y)).unwrap();
         }
     }
 }
@@ -576,15 +577,15 @@ fn render_map(game: &mut Game, area: &Area) {
 /// The strategy here is to copy the effects vector, update all items,
 /// and then remove finished effects from back to front. The
 /// resulting vector of effects is then saved as the new effects vector.
-fn render_effects(game: &mut Game, area: &Area) {
+fn render_effects(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
     let mut remove_indices = Vec::new();
 
-    let mut effects = game.display_state.effects.clone();
+    let mut effects = display_state.effects.clone();
 
     for (index, effect) in effects.iter_mut().enumerate() {
         match effect {
             Effect::HeardSomething(pos, created_turn) => {
-                game.display_state.draw_char(ENTITY_ELF as char,
+                display_state.draw_char(ENTITY_ELF as char,
                                              *pos,
                                              game.config.color_warm_grey,
                                              area);
@@ -610,7 +611,7 @@ fn render_effects(game: &mut Game, area: &Area) {
                     for pos in dist_positions.iter() {
                         if !game.data.map[*pos].blocked &&
                            game.data.map.is_in_fov(player_pos, *pos, game.config.fov_radius_player) {
-                           game.display_state.highlight_tile(*pos, highlight_color, area);
+                           display_state.highlight_tile(*pos, highlight_color, area);
                         }
                     }
                 }
@@ -630,11 +631,11 @@ fn render_effects(game: &mut Game, area: &Area) {
         effects.swap_remove(index);
     }
 
-    game.display_state.effects = effects;
+    display_state.effects = effects;
 }
 
 /// Render each object in the game, filtering for objects not currently visible
-fn render_objects(game: &mut Game, area: &Area) {
+fn render_objects(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.objects[player_id].pos();
 
@@ -652,7 +653,7 @@ fn render_objects(game: &mut Game, area: &Area) {
                     step_animation(*anim_key,
                                    *object_id,
                                    is_in_fov,
-                                   &mut game.display_state,
+                                   display_state,
                                    &mut game.data,
                                    &game.settings,
                                    &game.config,
@@ -664,7 +665,7 @@ fn render_objects(game: &mut Game, area: &Area) {
             } else {
                 if is_in_fov {
                     let color = game.data.objects[*object_id].color;
-                    game.display_state.draw_char(game.data.objects[*object_id].chr, pos, color, area);
+                    display_state.draw_char(game.data.objects[*object_id].chr, pos, color, area);
                 }
             }
         }
@@ -750,7 +751,8 @@ fn step_animation(anim_key: AnimKey,
     return false;
 }
 
-fn render_overlays(game: &mut Game,
+fn render_overlays(display_state: &mut DisplayState, 
+                   game: &mut Game,
                    map_mouse_pos: Option<Pos>,
                    area: &Area) {
     let player_id = game.data.find_player().unwrap();
@@ -769,11 +771,11 @@ fn render_overlays(game: &mut Game,
                 if x_diff.abs() < 5 && y_diff.abs() < 5 {
                     let res: i8 = x_diff as i8 - y_diff as i8;
                     if res <= 0 {
-                        game.display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_green, area);
+                        display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_green, area);
                     } else {
-                        game.display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_grey, area);
+                        display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_grey, area);
                     }
-                    game.display_state.draw_char(('0' as u8 + res.abs() as u8) as char, pos, game.config.color_red, area);
+                    display_state.draw_char(('0' as u8 + res.abs() as u8) as char, pos, game.config.color_red, area);
                 }
             }
         }
@@ -794,7 +796,7 @@ fn render_overlays(game: &mut Game,
                                                       game.config.fov_radius_player,
                                                       dir);
                 if is_in_fov {
-                    game.display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_green, area);
+                    display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_green, area);
                 }
             }
         }
@@ -830,7 +832,7 @@ fn render_overlays(game: &mut Game,
                     Direction::UpRight => -45.0,
                 };
 
-                game.display_state.draw_char_with_rotation(ARROW_RIGHT as char, pos, direction_color, area, rotation);
+                display_state.draw_char_with_rotation(ARROW_RIGHT as char, pos, direction_color, area, rotation);
             }
         }
     }
@@ -844,7 +846,8 @@ fn render_overlays(game: &mut Game,
 
             if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
                game.data.objects[*object_id].alive {
-               render_attack_overlay(game,
+               render_attack_overlay(display_state,
+                                     game,
                                      *object_id,
                                      area);
             }
@@ -859,7 +862,8 @@ fn render_overlays(game: &mut Game,
             if game.data.map.is_within_bounds(pos) &&
                game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
                game.data.objects[object_id].alive {
-               render_attack_overlay(game,
+               render_attack_overlay(display_state,
+                                     game,
                                      object_id,
                                      area);
             }
@@ -874,7 +878,7 @@ fn render_overlays(game: &mut Game,
         if game.config.draw_star_path {
             let path = game.data.map.astar(player_pos, mouse_pos);
             for pos in path {
-                game.display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
+                display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
             }
         }
 
@@ -885,7 +889,7 @@ fn render_overlays(game: &mut Game,
                 let line = Line::new(player_pos.to_tuple(), mouse_pos.to_tuple()).into_iter();
                 for pos in line {
                     let pos = Pos::from(pos);
-                    game.display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
+                    display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
                 }
             }
         }
@@ -905,7 +909,7 @@ fn render_overlays(game: &mut Game,
                 // don't draw overlay on top of character
                 if movement.pos != game.data.objects[player_id].pos()
                 {
-                    game.display_state.draw_tile_outline(movement.pos, area, highlight_color);
+                    display_state.draw_tile_outline(movement.pos, area, highlight_color);
                 }
             }
         }
@@ -1057,7 +1061,8 @@ fn render_bar(display_state: &mut DisplayState,
     display_state.canvas.set_blend_mode(blend_mode);
 }
 
-fn render_attack_overlay(game: &mut Game,
+fn render_attack_overlay(display_state: &mut DisplayState,
+                         game: &mut Game,
                          object_id: ObjectId,
                          area: &Area) {
     let player_id = game.data.find_player().unwrap();
@@ -1087,7 +1092,7 @@ fn render_attack_overlay(game: &mut Game,
                  .collect::<Vec<Pos>>();
 
         for position in attack_positions {
-            game.display_state.draw_char(MAP_EMPTY_CHAR as char, position, attack_highlight_color, area);
+            display_state.draw_char(MAP_EMPTY_CHAR as char, position, attack_highlight_color, area);
         }
     }
 }

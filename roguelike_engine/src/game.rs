@@ -74,8 +74,6 @@ pub struct Game {
 
     pub mouse_state: MouseState,
 
-    pub display_state: DisplayState,
-
     pub data: GameData,
 
     pub settings: GameSettings,
@@ -87,8 +85,7 @@ pub struct Game {
 
 impl Game {
     pub fn new(args: &Vec<String>,
-               config: Config,
-               mut display_state: DisplayState) -> Result<Game, String> {
+               config: Config) -> Result<Game, String> {
         // Create seed for random number generator, either from
         // user input or randomly
         let seed: u64;
@@ -153,12 +150,6 @@ impl Game {
                 player_position = position.to_tuple();
                 objects.insert(make_mouse(&config));
             }
-
-            MapLoadConfig::Animations => {
-                let (new_map, position) = make_animations_map(&mut objects, &config, &mut display_state);
-                map = new_map;
-                player_position = position.to_tuple();
-            }
         }
 
         let mut data = GameData::new(map, objects);
@@ -174,7 +165,6 @@ impl Game {
             config,
             input_action: InputAction::None,
             data,
-            display_state,
             settings: GameSettings::new(0, false),
             mouse_state: Default::default(),
             msg_log,
@@ -305,14 +295,15 @@ impl Game {
         }
 
         if self.key_input.len() > 0 {
-            actions::handle_input_console(input,
-                                          &mut self.key_input,
-                                          &mut self.console,
-                                          &mut self.data,
-                                          &mut self.display_state,
-                                          &mut self.settings,
-                                          &self.config,
-                                          &mut self.msg_log);
+            // TODO add console back in
+            //actions::handle_input_console(input,
+            //                              &mut self.key_input,
+            //                              &mut self.console,
+            //                              &mut self.data,
+            //                              &mut self.display_state,
+            //                              &mut self.settings,
+            //                              &self.config,
+            //                              &mut self.msg_log);
         }
 
         return GameResult::Continue;

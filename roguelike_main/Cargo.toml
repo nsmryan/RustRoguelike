@@ -19,5 +19,7 @@ slotmap = "0.4"
 
 walkdir = "2"
 
+noise = { version = "0.6", default-features = false }
+
 roguelike_core = { path = "../roguelike_core" }
 roguelike_engine = { path = "../roguelike_engine" }
