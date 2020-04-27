@@ -13,7 +13,7 @@ use roguelike_core::map::*;
 use roguelike_core::animation::{AnimKey, Effect, SpriteKey, Animation, Sprite, SpriteIndex};
 use roguelike_core::movement::{Cardinal, MoveType};
 
-use crate::plat::*;
+use roguelike_engine::plat::*;
 
 
 pub struct DisplayState {

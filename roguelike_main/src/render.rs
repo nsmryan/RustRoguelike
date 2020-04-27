@@ -16,8 +16,9 @@ use roguelike_core::animation::{Effect, Animation, AnimKey};
 use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color};
 
 use roguelike_engine::plat::*;
-use roguelike_engine::display::*;
 use roguelike_engine::game::*;
+
+use crate::display::*;
 
 
 pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<(), String> {

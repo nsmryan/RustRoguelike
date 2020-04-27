@@ -7,7 +7,8 @@ use roguelike_core::config::*;
 use roguelike_engine::actions::KeyDirection;
 use roguelike_engine::generation::*;
 use roguelike_engine::game::GameSettings;
-use roguelike_engine::display::*;
+
+use crate::display::*;
 
 
 #[derive(Clone, Copy, PartialEq, Debug)]

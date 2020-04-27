@@ -2,6 +2,7 @@
 mod throttler;
 mod render;
 mod console;
+mod display;
 
 use std::env;
 use std::fs::File;
@@ -29,7 +30,6 @@ use roguelike_core::constants::*;
 use roguelike_core::animation::SpriteKey;
 use roguelike_core::movement::Direction;
 
-use roguelike_engine::display::*;
 use roguelike_engine::plat::*;
 use roguelike_engine::game::*;
 use roguelike_engine::actions::*;
@@ -39,6 +39,7 @@ use roguelike_engine::resolve::resolve_messages;
 use crate::throttler::*;
 use crate::render::*;
 use crate::console::*;
+use crate::display::*;
 
 
 fn main() {

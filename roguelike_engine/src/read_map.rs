@@ -11,7 +11,6 @@ use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
 
-use crate::display::*;
 use crate::generation::*;
 
 

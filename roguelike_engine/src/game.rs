@@ -21,7 +21,6 @@ use roguelike_core::utils::{clampf, lerp};
 use crate::actions;
 use crate::actions::{InputAction, KeyDirection};
 use crate::generation::*;
-use crate::display::*;
 use crate::read_map::read_map_xp;
 use crate::resolve::resolve_messages;
 

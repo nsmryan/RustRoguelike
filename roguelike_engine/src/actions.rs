@@ -13,7 +13,6 @@ use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 
 use crate::game::*;
-use crate::display::*;
 use crate::generation;
 
 
