@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 
 use rand::prelude::*;
 
-use slotmap::dense::*;
+//use slotmap::dense::*;
 
 use serde::{Serialize, Deserialize};
 
@@ -94,7 +94,7 @@ impl Game {
         }
         println!("Seed: {} (0x{:X})", seed, seed);
 
-        let mut objects = DenseSlotMap::with_capacity(INITIAL_OBJECT_CAPACITY);
+        let mut entities = DenseSlotMap::with_capacity(INITIAL_OBJECT_CAPACITY);
         let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
 
         let mut msg_log = MsgLog::new();
@@ -105,11 +105,11 @@ impl Game {
             MapLoadConfig::FromFile => {
                 let (new_objects, new_map, mut position) =
                     read_map_xp(&config, &mut msg_log, "resources/map.xp");
-                objects.clear();
+                entities.clear();
                 for object in new_objects.values() {
                     let new_obj = object.clone();
                     msg_log.log(Msg::SpawnedObject(new_obj.id));
-                    objects.insert(new_obj);
+                    entities.insert(new_obj);
                 }
                 map = new_map;
                 if position == (0, 0) {
@@ -117,7 +117,7 @@ impl Game {
                 }
                 player_position = position;
 
-                objects.insert(make_mouse(&config));
+                make_mouse(&mut entities, &config);
             }
 
             MapLoadConfig::Random => {
@@ -144,18 +144,18 @@ impl Game {
                 let (new_map, position) = make_corner_test_map(&mut objects, &config, &mut msg_log);
                 map = new_map;
                 player_position = position.to_tuple();
-                objects.insert(make_mouse(&config));
+                make_mouse(&mut entities, &config);
             }
         }
 
         let mut data = GameData::new(map, objects);
 
-        let player_id = data.objects.insert(make_player(&config, &mut msg_log));
+        let player_id = make_player(&mut data.entities, &config, &mut msg_log);
         data.objects[player_id].x = player_position.0;
         data.objects[player_id].y = player_position.1;
 
-        let stone_id = data.objects.insert(make_stone(&config, Pos::new(-1, -1)));
-        data.objects[player_id].inventory.push_back(stone_id);
+        let stone_id = make_stone(&mut data.entities, &config, Pos::new(-1, -1));
+        data.entities.inventory[player_id].push_back(stone_id);
 
         let state = Game {
             config,
@@ -215,7 +215,7 @@ impl Game {
         for key in new_objects.keys() {
             let new_obj = self.data.objects[key].clone();
             self.msg_log.log(Msg::SpawnedObject(new_obj.id));
-            self.data.objects.insert(new_obj);
+            self.data.entities.insert(new_obj);
         }
 
         self.settings.state = GameState::Playing;
@@ -334,11 +334,11 @@ fn win_condition_met(data: &GameData) -> bool {
     let player_id = data.find_player().unwrap();
 
     let has_key = 
-        data.objects[player_id].inventory.iter().any(|item_id| {
-            data.objects[*item_id].item == Some(Item::Goal)
+        data.entities.inventory[&player_id].iter().any(|item_id| {
+            data.entities.item.get(item_id) == Some(&Item::Goal)
         });
 
-    let player_pos = data.objects[player_id].pos();
+    let player_pos = data.entities.pos[&player_id];
     let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
 
     let exit_condition = has_key && on_exit_tile;
@@ -354,41 +354,41 @@ pub fn step_logic(player_action: Action,
     let player_id = data.find_player().unwrap();
 
     let previous_player_position =
-        data.objects[player_id].pos();
+        data.entities.pos[&player_id];
 
-    data.objects[player_id].action = Some(player_action);
+    data.entities[&player_id].action = player_action;
 
     /* AI */
-    if data.objects[player_id].alive {
+    if data.entities.alive[&player_id] {
         let mut ai_id = Vec::new();
 
-        for key in data.objects.keys() {
-            if data.objects[key].ai.is_some() &&
-               data.objects[key].alive        &&
-               data.objects[key].fighter.is_some() {
+        for key in data.entities.ids.iter() {
+            if data.entities.ai.get(key).is_some() &&
+               data.entities.alive[key]            &&
+               data.entities.fighter.get(key).is_some() {
                ai_id.push(key);
            }
         }
 
         for key in ai_id.iter() {
-            data.objects[*key].action = Some(ai_take_turn(*key, data, config, msg_log));
+            data.entities.action[*key] = ai_take_turn(**key, data, config, msg_log);
         }
 
         actions::player_apply_action(player_action, data, msg_log);
         resolve_messages(data, msg_log, settings, config);
 
         for key in ai_id {
-            if let Some(action) = data.objects[key].action {
-                ai_apply_action(key, action, data, msg_log);
+            if let Some(action) = data.entities.action.get(key) {
+                ai_apply_action(*key, *action, data, msg_log);
                 resolve_messages(data, msg_log, settings, config);
 
                 // check if fighter needs to be removed
-                if let Some(fighter) = data.objects[key].fighter {
+                if let Some(fighter) = data.entities.fighter.get(key) {
                     if fighter.hp <= 0 {
-                        data.objects[key].alive = false;
-                        data.objects[key].blocks = false;
-                        data.objects[key].chr = '%';
-                        data.objects[key].fighter = None;
+                        data.entities.alive[key] = false;
+                        data.entities.blocks[key] = false;
+                        data.entities.chr[key] = '%';
+                        data.entities.fighter.remove(key);
                     }
                 }
             }
@@ -399,49 +399,47 @@ pub fn step_logic(player_action: Action,
     // during a series of actions
     /* Traps */
     let mut traps = Vec::new();
-    for key in data.objects.keys() {
-        for other in data.objects.keys() {
-            if data.objects[key].trap.is_some()      && // key is a trap
-               data.objects[other].alive             && // entity is alive
-               data.objects[other].fighter.is_some() && // entity is a fighter
-               data.objects[key].pos() == data.objects[other].pos() {
+    for key in data.entities.ids.iter() {
+        for other in data.entities.ids.iter() {
+            if data.entities.trap.get(key).is_some()      && // key is a trap
+               data.entities.alive[other]             && // entity is alive
+               data.entities.fighter.get(other).is_some() && // entity is a fighter
+               data.entities.pos[key] == data.entities.pos[other] {
                 traps.push((key, other));
             }
         }
     }
 
     for (trap, entity) in traps.iter() {
-        match data.objects[*trap].trap.unwrap() {
+        match data.entities.trap[*trap] {
             Trap::Spikes => {
-                data.objects[*entity].take_damage(SPIKE_DAMAGE);
+                data.entities.take_damage(**entity, SPIKE_DAMAGE);
 
-                msg_log.log(Msg::SpikeTrapTriggered(*trap, *entity));
+                msg_log.log(Msg::SpikeTrapTriggered(**trap, **entity));
 
-                if data.objects[*entity].fighter.unwrap().hp <= 0 {
-                    data.objects[*entity].alive = false;
-                    data.objects[*entity].blocks = false;
+                if data.entities.fighter[*entity].hp <= 0 {
+                    data.entities.alive[*entity] = false;
+                    data.entities.blocks[*entity] = false;
 
-                    msg_log.log(Msg::Killed(*trap, *entity, SPIKE_DAMAGE));
+                    msg_log.log(Msg::Killed(**trap, **entity, SPIKE_DAMAGE));
                 }
 
-                data.objects[*trap].needs_removal = true;
+                data.entities.needs_removal[*trap] = true;
             }
 
             Trap::Sound => {
-                msg_log.log(Msg::SoundTrapTriggered(*trap, *entity));
+                msg_log.log(Msg::SoundTrapTriggered(**trap, **entity));
             }
         }
     }
 
     // check if player lost all hp
-    if let Some(fighter) = data.objects[player_id].fighter {
+    if let Some(fighter) = data.entities.fighter.get(&player_id) {
         if fighter.hp <= 0 {
             // modify player
             {
-                let player = &mut data.objects[player_id];
-                player.alive = false;
-                player.color = config.color_red;
-                player.fighter = None;
+                data.entities.alive[&player_id] = false;
+                data.entities.color[&player_id] = config.color_red;
             }
 
             if settings.state == GameState::Playing {
@@ -453,28 +451,28 @@ pub fn step_logic(player_action: Action,
     let mut to_remove = Vec::new();
 
     // perform count down
-    for (entity_key, entity) in data.objects.iter_mut() {
-        if let Some(ref mut count) = entity.count_down {
-            if *count == 0 {
+    for entity_id in data.entities.ids.iter() {
+        if let Some(ref mut count) = data.entities.count_down.get(entity_id) {
+            if **count == 0 {
                 to_remove.push(entity_key);
             } else {
-                *count -= 1;
+                **count -= 1;
             }
         }
 
-        if entity.needs_removal &&
-           entity.animation.len() == 0 {
+        if data.entities.needs_removal[entity_id] &&
+           data.entities.animation[entity_id].len() == 0 {
             to_remove.push(entity_key);
         }
     }
 
     // remove objects waiting removal
     for key in to_remove {
-        data.objects.remove(key);
+        data.entities.remove(key);
     }
 
     /* Recompute FOV */
-    let player_pos = data.objects[player_id].pos();
+    let player_pos = data.entities.pos[&player_id];
     if previous_player_position != player_pos {
         data.map.compute_fov(player_pos, config.fov_radius_player);
     }

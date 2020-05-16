@@ -17,7 +17,7 @@ pub enum Ai {
 pub enum Behavior {
     Idle,
     Investigating(Pos),
-    Attacking(ObjectId),
+    Attacking(EntityId),
 }
 
 impl Behavior {
@@ -34,13 +34,13 @@ impl Behavior {
     }
 }
 
-pub fn ai_take_turn(monster_id: ObjectId,
+pub fn ai_take_turn(monster_id: EntityId,
                     data: &mut GameData,
                     config: &Config,
-                    msg_log: &mut MsgLog) -> Action{
+                    msg_log: &mut MsgLog) -> Action {
     let mut turn: Action;
 
-    match data.objects[monster_id].ai {
+    match data.entities.ai.get(&monster_id) {
         Some(Ai::Basic) => {
             turn = basic_ai_take_turn(monster_id, data, config);
 
@@ -52,6 +52,8 @@ pub fn ai_take_turn(monster_id: ObjectId,
 
         None => {
             turn = Action::none();
+            // TODO if this does not occur, simplify this function
+            panic!("AI didn't have an ai entry!");
         }
     }
 
@@ -65,23 +67,25 @@ pub fn step_towards(start_pos: Pos, target_pos: Pos) -> Pos {
     return delta_pos;
 }
 
-pub fn ai_attack(monster_id: ObjectId,
-                 target_id: ObjectId,
+pub fn ai_attack(monster_id: EntityId,
+                 target_id: EntityId,
                  data: &mut GameData,
                  config: &Config) -> Action {
-    let mut target_pos = data.objects[target_id].pos();
-    let monster_pos = data.objects[monster_id].pos();
+    let mut target_pos = data.entities.pos[&target_id];
+    let monster_pos = data.entities.pos[&monster_id];
 
     let turn: Action;
 
-    if !data.objects[target_id].alive {
+    let attack_reach = data.entities.attack[&monster_id];
+
+    if !data.entities.alive[&target_id] {
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else if let Some(hit_pos) =
         // if AI can hit their target
         ai_can_hit_target(data, 
                           monster_id,
                           target_pos,
-                          &data.objects[monster_id].attack.unwrap(),
+                          &attack_reach,
                           config) {
         let attack = Attack::Attack(target_id);
         turn = Action::Move(Movement::attack(hit_pos, MoveType::Move, attack));
@@ -91,12 +95,12 @@ pub fn ai_attack(monster_id: ObjectId,
         let mut new_pos = monster_pos;
 
         let mut pos_offset = Pos::new(0, 0);
-        if let (Some(attack), Some(movement)) =
-            (data.objects[monster_id].attack, data.objects[monster_id].movement) {
+        if let (attack, movement) =
+            (data.entities.attack[&monster_id], data.entities.movement[&monster_id]) {
 
             let mut potential_move_targets = Vec::new();
 
-            let direction = data.objects[monster_id].direction;
+            let direction = data.entities.direction[&monster_id];
             for move_action in Direction::move_actions() {
                 for attack_offset in attack.attacks_with_reach(&move_action) {
                     let attackable_pos = add_pos(target_pos, attack_offset);
@@ -105,8 +109,8 @@ pub fn ai_attack(monster_id: ObjectId,
                         continue;
                     }
 
-                    data.objects[monster_id].set_pos(attackable_pos);
-                    data.objects[monster_id].face(target_pos);
+                    data.entities.set_pos(monster_id, attackable_pos);
+                    data.entities.face(monster_id, target_pos);
                     let can_hit = ai_can_hit_target(data, monster_id, target_pos, &attack, config).is_some();
 
                     if can_hit {
@@ -114,8 +118,8 @@ pub fn ai_attack(monster_id: ObjectId,
                     }
                 }
             }
-            data.objects[monster_id].set_pos(monster_pos);
-            data.objects[monster_id].direction = direction;
+            data.entities.set_pos(monster_id, monster_pos);
+            data.entities.direction[&monster_id] = direction;
 
             let mut targets = potential_move_targets.iter();
             if let Some(first_target) = targets.next() {
@@ -159,24 +163,24 @@ pub fn ai_attack(monster_id: ObjectId,
 }
 
 pub fn ai_investigate(target_pos_orig: Pos, 
-                      monster_id: ObjectId,
+                      monster_id: EntityId,
                       game_data: &mut GameData,
                       config: &Config) -> Action {
     let player_id = game_data.find_player().unwrap();
 
     let target_pos = target_pos_orig;
-    let player_pos = game_data.objects[player_id].pos();
-    let monster_pos = game_data.objects[monster_id].pos();
+    let player_pos = game_data.entities.pos[&player_id];
+    let monster_pos = game_data.entities.pos[&monster_id];
 
     let mut turn: Action;
                
-    if game_data.objects[monster_id].is_in_fov(&mut game_data.map, player_pos, config) {
-        game_data.objects[monster_id].face(player_pos);
+    if game_data.entities.is_in_fov(monster_id, &mut game_data.map, player_pos, config) {
+        game_data.entities.face(monster_id, player_pos);
         turn = Action::StateChange(Behavior::Attacking(player_id));
     } else { // the monster can't see the player
-        if let Some(Message::Sound(_entity_id, pos)) = game_data.objects[monster_id].heard_sound() {
-            game_data.objects[monster_id].behavior =
-                Some(Behavior::Investigating(pos));
+        if let Some(Message::Sound(_entity_id, pos)) = game_data.entities.heard_sound(monster_id) {
+            game_data.entities.behavior[&monster_id] =
+                Behavior::Investigating(pos);
         }
 
         if target_pos == monster_pos { 
@@ -206,12 +210,12 @@ pub fn ai_investigate(target_pos_orig: Pos,
 }
 
 fn ai_can_hit_target(data: &mut GameData,
-                     monster_id: ObjectId,
+                     monster_id: EntityId,
                      target_pos: Pos,
                      reach: &Reach,
                      config: &Config) -> Option<Pos> {
     let mut hit_pos = None;
-    let monster_pos = data.objects[monster_id].pos();
+    let monster_pos = data.entities.pos[&monster_id];
 
     // don't allow hitting from the same tile...
     if target_pos == monster_pos {
@@ -219,7 +223,7 @@ fn ai_can_hit_target(data: &mut GameData,
     }
 
     let within_fov =
-        data.objects[monster_id].is_in_fov(&mut data.map, target_pos, config);
+        data.entities.is_in_fov(monster_id, &mut data.map, target_pos, config);
 
     // check that there is a clear path right up to the target position
     let next_to_tile = move_next_to(monster_pos, target_pos);
@@ -245,11 +249,11 @@ fn ai_can_hit_target(data: &mut GameData,
     return hit_pos;
 }
 
-fn ai_take_astar_step(monster_id: ObjectId,
+fn ai_take_astar_step(monster_id: EntityId,
                       target_pos: Pos,
                       data: &GameData) -> Pos {
-    let reach = data.objects[monster_id].movement.unwrap();
-    let monster_pos = data.objects[monster_id].pos();
+    let reach = data.entities.movement[&monster_id];
+    let monster_pos = data.entities.pos[&monster_id];
 
     let path = data.path_between(monster_pos, target_pos, reach);
 
@@ -262,43 +266,39 @@ fn ai_take_astar_step(monster_id: ObjectId,
 
 // NOTE this function takes a mutable GameData because FOV requires
 // mutation under the hood. It does not otherwise modify the game
-pub fn basic_ai_take_turn(monster_id: ObjectId,
+pub fn basic_ai_take_turn(monster_id: EntityId,
                           game_data: &mut GameData,
                           config: &Config) -> Action {
     let player_id = game_data.find_player().unwrap();
-    let monster_pos = game_data.objects[monster_id].pos();
-    let player_pos = game_data.objects[player_id].pos();
+    let monster_pos = game_data.entities.pos[&monster_id];
+    let player_pos = game_data.entities.pos[&player_id];
 
     if game_data.map.is_within_bounds(monster_pos) {
-        match game_data.objects[monster_id].behavior {
-            Some(Behavior::Idle) => {
+        match game_data.entities.behavior[&monster_id] {
+            Behavior::Idle => {
                 let mut turn = Action::none();
 
-                if game_data.objects[monster_id].is_in_fov(&mut game_data.map, player_pos, config) {
-                    game_data.objects[monster_id].face(player_pos);
+                if game_data.entities.is_in_fov(monster_id, &mut game_data.map, player_pos, config) {
+                    game_data.entities.face(monster_id, player_pos);
                     // NOTE will cause a turn between seeing the player and attacking
                     turn = Action::StateChange(Behavior::Attacking(player_id));
-                } else if let Some(Message::Sound(_entity_id, pos)) = game_data.objects[monster_id].heard_sound() {
-                    game_data.objects[monster_id].face(player_pos);
+                } else if let Some(Message::Sound(_entity_id, pos)) = game_data.entities.heard_sound(monster_id) {
+                    game_data.entities.face(monster_id, player_pos);
                     turn = Action::StateChange(Behavior::Investigating(pos));
-                } else if let Some(Message::Attack(entity_id)) = game_data.objects[monster_id].was_attacked() {
-                    game_data.objects[monster_id].face(player_pos);
+                } else if let Some(Message::Attack(entity_id)) = game_data.entities.was_attacked(monster_id) {
+                    game_data.entities.face(monster_id, player_pos);
                     turn = Action::StateChange(Behavior::Attacking(entity_id));
                 }
 
                 return turn;
             }
 
-            Some(Behavior::Investigating(target_pos)) => {
+            Behavior::Investigating(target_pos) => {
                 return ai_investigate(target_pos, monster_id, game_data, config);
             }
 
-            Some(Behavior::Attacking(object_id)) => {
+            Behavior::Attacking(object_id) => {
                 return ai_attack(monster_id, object_id, game_data, config);
-            }
-
-            behavior => {
-                panic!("Ai behavior {:?} unexpected!", behavior);
             }
         }
     } else {
@@ -307,21 +307,21 @@ pub fn basic_ai_take_turn(monster_id: ObjectId,
     }
 }
 
-pub fn ai_apply_action(monster_id: ObjectId,
+pub fn ai_apply_action(monster_id: EntityId,
                        turn: Action,
                        game_data: &mut GameData,
                        msg_log: &mut MsgLog) {
-    let pos = game_data.objects[monster_id].pos();
+    let pos = game_data.entities.pos[&monster_id];
 
     match turn {
         Action::Move(movement) => {
             match movement.attack {
                 None => {
-                    game_data.objects[monster_id].move_to(movement.pos);
+                    game_data.entities.move_to(monster_id, movement.pos);
 
-                    if let Some(Behavior::Attacking(target_id)) = game_data.objects[monster_id].behavior {
-                        let target_pos = game_data.objects[target_id].pos();
-                        game_data.objects[monster_id].face(target_pos);
+                    if let Some(Behavior::Attacking(target_id)) = game_data.entities.behavior.get(&monster_id) {
+                        let target_pos = game_data.entities.pos[target_id];
+                        game_data.entities.face(monster_id, target_pos);
                     }
 
                     msg_log.log(Msg::Moved(monster_id, movement, movement.pos));
@@ -338,7 +338,7 @@ pub fn ai_apply_action(monster_id: ObjectId,
         },
 
         Action::StateChange(behavior) => {
-            game_data.objects.get_mut(monster_id).unwrap().behavior = Some(behavior);
+            game_data.entities.behavior[&monster_id] = behavior;
 
             msg_log.log(Msg::StateChange(monster_id, behavior));
         },

@@ -41,20 +41,20 @@ impl MsgLog {
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Msg {
     Pass(),
-    Crushed(ObjectId, Pos, ObjType), // object that did the crushing, position, type that was crushed
-    Sound(ObjectId, Pos, usize, bool), // object causing sound, location, radius, whether animation will play
-    SoundTrapTriggered(ObjectId, ObjectId), // trap, entity
-    SpikeTrapTriggered(ObjectId, ObjectId), // trap, entity
+    Crushed(EntityId, Pos, ObjType), // object that did the crushing, position, type that was crushed
+    Sound(EntityId, Pos, usize, bool), // object causing sound, location, radius, whether animation will play
+    SoundTrapTriggered(EntityId, EntityId), // trap, entity
+    SpikeTrapTriggered(EntityId, EntityId), // trap, entity
     PlayerDeath,
-    PickedUp(ObjectId, ObjectId), // entity, item id
-    ItemThrow(ObjectId, ObjectId, Pos, Pos), // thrower, stone id, start, end
-    Attack(ObjectId, ObjectId, Hp), // attacker, attacked, hp lost
-    Killed(ObjectId, ObjectId, Hp), // attacker, attacked, hp lost
-    Moved(ObjectId, Movement, Pos),
-    JumpWall(ObjectId, Pos, Pos), // current pos, new pos
-    WallKick(ObjectId, Pos),
-    StateChange(ObjectId, Behavior),
-    Collided(ObjectId, Pos),
+    PickedUp(EntityId, EntityId), // entity, item id
+    ItemThrow(EntityId, EntityId, Pos, Pos), // thrower, stone id, start, end
+    Attack(EntityId, EntityId, Hp), // attacker, attacked, hp lost
+    Killed(EntityId, EntityId, Hp), // attacker, attacked, hp lost
+    Moved(EntityId, Movement, Pos),
+    JumpWall(EntityId, Pos, Pos), // current pos, new pos
+    WallKick(EntityId, Pos),
+    StateChange(EntityId, Behavior),
+    Collided(EntityId, Pos),
     Yell(Pos),
     GameState(GameState),
     MoveMode(MoveMode),
@@ -91,8 +91,8 @@ impl Msg {
 
             Msg::PickedUp(entity, item) => {
                 return format!("{} picked up a {}",
-                               game_data.objects[*entity].name,
-                               game_data.objects[*item].name.clone());
+                               game_data.entities.name[entity].clone(),
+                               game_data.entities.name[item].clone());
             }
 
             Msg::ItemThrow(_thrower, _item, _start, _end) => {
@@ -101,8 +101,8 @@ impl Msg {
 
             Msg::Attack(attacker, attacked, damage) => {
                 return format!("{} attacked {} for {} damage",
-                               game_data.objects[*attacker].name,
-                               game_data.objects[*attacked].name,
+                               game_data.entities.name[attacker],
+                               game_data.entities.name[attacked],
                                damage);
             }
 
@@ -112,9 +112,9 @@ impl Msg {
 
             Msg::Moved(object_id, movement, _pos) => {
                 if let MoveType::Pass = movement.typ {
-                    return format!("{} passed their turn", game_data.objects[*object_id].name);
+                    return format!("{} passed their turn", game_data.entities.name[object_id]);
                 } else {
-                    return format!("{} moved", game_data.objects[*object_id].name);
+                    return format!("{} moved", game_data.entities.name[object_id]);
                 }
             }
 

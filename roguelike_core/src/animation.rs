@@ -1,13 +1,11 @@
 
-use slotmap::DefaultKey;
-
 use crate::types::{Name, Pos};
 use crate::map::Aoe;
 
 
-pub type SpriteKey = DefaultKey;
+pub type SpriteKey = i64;
 
-pub type AnimKey = DefaultKey;
+pub type AnimKey = i64;
 
 pub type SpriteIndex = f32;
 

@@ -26,7 +26,7 @@ pub enum MapGenType {
 }
 
 
-pub fn make_player(config: &Config, msg_log: &mut MsgLog) -> Object {
+pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLog) -> Object {
     let mut player = Object::new(0, 0, ObjType::Player, '@', Color::white(), "player", true);
 
     player.alive = true;
@@ -45,21 +45,21 @@ pub fn make_player(config: &Config, msg_log: &mut MsgLog) -> Object {
     player
 }
 
-pub fn make_column(config: &Config, pos: Pos) -> Object {
+pub fn make_column(entities: &mut Entities, config: &Config, pos: Pos) -> Object {
     let object = Object::new(pos.x, pos.y, ObjType::Column, MAP_COLUMN as char, config.color_light_grey, "column", true);
 
     return object;
 }
 
-pub fn make_dagger(config: &Config, pos: Pos) -> Object {
-    let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_DAGGER as char, config.color_light_grey, "dagger", false);
+pub fn make_dagger(entities: &mut Entities, config: &Config, pos: Pos) -> Object {
+    let object = entities::create_entity(pos.x, pos.y, ObjType::Item, ENTITY_DAGGER as char, config.color_light_grey, "dagger", false);
 
-    object.item = Some(Item::Dagger);
+    entities.item[object] = Item::Dagger;
 
     return object;
 }
 
-pub fn make_shield(config: &Config, pos: Pos) -> Object {
+pub fn make_shield(entities: &mut Entities, config: &Config, pos: Pos) -> Object {
     let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_SHIELD as char, config.color_light_grey, "shield", false);
 
     object.item = Some(Item::Shield);
@@ -67,71 +67,70 @@ pub fn make_shield(config: &Config, pos: Pos) -> Object {
     return object;
 }
 
-pub fn make_key(config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
-    let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_KEY as char, config.color_orange, "key", false);
-    object.item = Some(Item::Goal);
+pub fn make_key(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let key = entities::create_entity(pos.x, pos.y, ObjType::Item, ENTITY_KEY as char, config.color_orange, "key", false); object.item = Some(Item::Goal);
 
-    msg_log.log(Msg::SpawnedObject(object.id));
+    msg_log.log(Msg::SpawnedObject(key));
 
-    return object;
+    return key;
 }
 
-pub fn make_mouse(_config: &Config) -> Object {
+pub fn make_mouse(entities: &mut Entities, _config: &Config) -> Object {
     let mouse = Object::new(-1, -1, ObjType::Other, ' ', Color::white(), "mouse", false);
 
     mouse
 }
 
-pub fn make_gol(config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
-    let mut gol = Object::new(pos.x, pos.y, ObjType::Enemy, '\u{98}', config.color_orange, "gol", true);
+pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
+    let gol = entities::create_entities(pos.x, pos.y, ObjType::Enemy, '\u{98}', config.color_orange, "gol", true);
 
-    gol.fighter = Some( Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, } );
-    gol.ai = Some(Ai::Basic);
-    gol.behavior = Some(Behavior::Idle);
-    gol.color = config.color_light_orange;
-    gol.movement = Some(Reach::Single(GOL_MOVE_DISTANCE));
-    gol.attack = Some(Reach::Diag(GOL_ATTACK_DISTANCE));
-    gol.alive = true;
-    gol.direction = Some(Direction::from_f32(rand_from_pos(pos)));
+    entities.fighter[gol] = Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, };
+    entities.ai[gol] = Ai::Basic;
+    entities.behavior[gol] = Behavior::Idle;
+    entities.color[gol] = config.color_light_orange;
+    entities.movement[gol] = Reach::Single(GOL_MOVE_DISTANCE);
+    entities.attack[gol] = Reach::Diag(GOL_ATTACK_DISTANCE);
+    entities.alive[gol] = true;
+    entities.direction[gol] = Direction::from_f32(rand_from_pos(pos));
 
-    msg_log.log(Msg::SpawnedObject(gol.id));
+    msg_log.log(Msg::SpawnedObject(*gol));
     
     return gol;
 } 
 
-pub fn make_spire(config: &Config, pos: Pos) -> Object {
-    let mut spire = Object::new(pos.x, pos.y, ObjType::Enemy, '\u{15}', config.color_orange, "spire", true);
+pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos) -> Object {
+    let spire = entities::create_entity(pos.x, pos.y, ObjType::Enemy, '\u{15}', config.color_orange, "spire", true);
 
-    spire.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, } );
-    spire.ai = Some(Ai::Basic);
-    spire.behavior = Some(Behavior::Idle);
-    spire.color = config.color_mint_green;
-    spire.movement = Some(Reach::Single(SPIRE_MOVE_DISTANCE));
-    spire.attack = Some(Reach::Single(SPIRE_ATTACK_DISTANCE));
-    spire.alive = true;
-    spire.direction = Some(Direction::Up);
+    entities.fighter[spire] = Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, };
+    entities.ai[spire] = Ai::Basic;
+    entities.behavior[spire] = Behavior::Idle;
+    entities.color[spire] = config.color_mint_green;
+    entities.movement[spire] = Reach::Single(SPIRE_MOVE_DISTANCE);
+    entities.attack[spire] = Reach::Single(SPIRE_ATTACK_DISTANCE);
+    entities.alive[spire] = true;
+    entities.direction[spire] = Direction::Up;
 
     return spire;
 }
 
-pub fn make_elf(config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
-    let mut elf = Object::new(pos.x, pos.y, ObjType::Enemy, '\u{A5}', config.color_orange, "elf", true);
+pub fn make_elf(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
+    let elf = entities::create_entity(pos.x, pos.y, ObjType::Enemy, '\u{A5}', config.color_orange, "elf", true);
 
-    elf.fighter = Some( Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, } );
-    elf.ai = Some(Ai::Basic);
-    elf.behavior = Some(Behavior::Idle);
-    elf.color = config.color_ice_blue;
-    elf.movement = Some(Reach::Single(PAWN_MOVE_DISTANCE));
-    elf.attack = Some(Reach::Single(PAWN_ATTACK_DISTANCE));
-    elf.alive = true;
-    elf.direction = Some(Direction::from_f32(rand_from_pos(pos)));
+    entities.fighter[eld] = Some( Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, } );
+    entities.ai[eld] = Some(Ai::Basic);
+    entities.behavior[eld] = Some(Behavior::Idle);
+    entities.color[eld] = config.color_ice_blue;
+    entities.movement[eld] = Some(Reach::Single(PAWN_MOVE_DISTANCE));
+    entities.attack[eld] = Some(Reach::Single(PAWN_ATTACK_DISTANCE));
+    entities.alive[eld] = true;
+    entities.direction[eld] = Some(Direction::from_f32(rand_from_pos(pos)));
 
-    msg_log.log(Msg::SpawnedObject(elf.id));
+    msg_log.log(Msg::SpawnedObject(elf));
 
     return elf;
 }
 
-pub fn make_trap_sound(config: &Config, pos: Pos) -> Object {
+pub fn make_trap_sound(entities: &mut Entities, config: &Config, pos: Pos) -> Object {
     let mut sound = Object::new(pos.x, pos.y, ObjType::Enemy, ENTITY_TRAP_SOUND as char, config.color_ice_blue, "soudn", false);
 
     sound.trap = Some(Trap::Sound);
@@ -139,7 +138,7 @@ pub fn make_trap_sound(config: &Config, pos: Pos) -> Object {
     return sound;
 }
 
-pub fn make_spikes(config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
+pub fn make_spikes(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
     let mut spikes = Object::new(pos.x, pos.y, ObjType::Enemy, MAP_TALL_SPIKES as char, config.color_ice_blue, "spike", false);
 
     spikes.trap = Some(Trap::Spikes);
@@ -149,7 +148,7 @@ pub fn make_spikes(config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
     return spikes;
 }
 
-pub fn make_exit(config: &Config, pos: Pos) -> Object {
+pub fn make_exit(entities: &mut Entities, config: &Config, pos: Pos) -> Object {
     let mut exit = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_EXIT as char, config.color_orange, "exit", false);
 
     exit.color = config.color_ice_blue;
@@ -157,12 +156,12 @@ pub fn make_exit(config: &Config, pos: Pos) -> Object {
     return exit;
 }
 
-pub fn make_stone(config: &Config, pos: Pos) -> Object {
-    let mut stone = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_STONE as char, config.color_light_grey, "stone", true);
+pub fn make_stone(entities: &mut Entities, config: &Config, pos: Pos) -> Object {
+    let stone = entities::create_entity(pos.x, pos.y, ObjType::Item, ENTITY_STONE as char, config.color_light_grey, "stone", true);
 
-    stone.item = Some(Item::Stone);
-    stone.alive = false;
-    stone.blocks = false;
+    entities.item[stone] = Item::Stone;
+    entities.alive[stone] = false;
+    entities.blocks[stone] = false;
 
     return stone;
 }
@@ -293,9 +292,7 @@ pub fn make_island(data: &mut GameData,
         let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
         if data.map.is_empty(pos) {
-            let mut stone = make_stone(config, pos);
-            stone.item = Some(Item::Stone);
-            data.objects.insert(stone);
+            make_stone(&mut data.entities, config, pos);
         }
     }
 
@@ -305,8 +302,7 @@ pub fn make_island(data: &mut GameData,
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
             if !data.has_blocking_entity(pos).is_some()  {
-                let monster = make_gol(config, pos, msg_log);
-                data.objects.insert(monster);
+                make_gol(&mut data.entities, config, pos, msg_log);
                 break;
             }
         }
@@ -317,8 +313,7 @@ pub fn make_island(data: &mut GameData,
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
             if !data.has_blocking_entity(pos).is_some()  {
-                let monster = make_elf(config, pos, msg_log);
-                data.objects.insert(monster);
+                make_elf(&mut data.entities, config, pos, msg_log);
                 break;
             }
         }
@@ -329,8 +324,7 @@ pub fn make_island(data: &mut GameData,
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
             if !data.has_blocking_entity(pos).is_some() {
-                let monster = make_spire(config, pos);
-                data.objects.insert(monster);
+                make_spire(&mut data.entities, config, pos);
                 break;
             }
         }
@@ -341,8 +335,7 @@ pub fn make_island(data: &mut GameData,
     let pos = Pos::new(x, y);
 
     if !data.has_blocking_entity(pos).is_some()  {
-        let key = make_key(config, Pos::new(x, y), msg_log);
-        data.objects.insert(key);
+        make_key(&mut data.entities, config, Pos::new(x, y), msg_log);
     }
 
     /* add key object */
@@ -351,7 +344,7 @@ pub fn make_island(data: &mut GameData,
     while !data.map.is_empty(pos) {
         pos = pos_in_radius(center, ISLAND_RADIUS, rng);
     }
-    data.objects.insert(make_key(&config, pos, msg_log));
+    make_key(&mut data.entities, &config, pos, msg_log);
 
     /* add exit */
     // find edge of island
@@ -398,9 +391,9 @@ pub fn make_player_test_map(_objects: &mut ObjMap,
         map[pos].bottom_wall = Wall::ShortWall;
     }
 
-    make_stone(config, Pos::new(1, 2));
-    make_stone(config, Pos::new(4, 2));
-    make_stone(config, Pos::new(3, 2));
+    make_stone(objects, config, Pos::new(1, 2));
+    make_stone(objects, config, Pos::new(4, 2));
+    make_stone(objects, config, Pos::new(3, 2));
   
     map.update_map();
 
@@ -424,10 +417,9 @@ pub fn make_wall_test_map(objects: &mut ObjMap,
     map[(4, 4)].bottom_wall = Wall::ShortWall;
     map[(5, 4)].bottom_wall = Wall::ShortWall;
   
-    objects.insert(make_gol(config, Pos::new(6, 5), msg_log));
+    make_gol(objects, config, Pos::new(6, 5), msg_log);
 
-    let dagger = make_dagger(config, Pos::new(position.0, position.1));
-    objects.insert(dagger);
+    make_dagger(objects, config, Pos::new(position.0, position.1));
 
     map.update_map();
 
@@ -459,7 +451,7 @@ pub fn make_corner_test_map(objects: &mut ObjMap,
     map[(position.0 + 2, position.1 + 2)].chr = Some(MAP_WALL as char);
 
   
-    objects.insert(make_gol(config, Pos::new(7, 5), msg_log));
+    make_gol(objects, config, Pos::new(7, 5), msg_log);
 
     map.update_map();
 

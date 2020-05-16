@@ -22,7 +22,7 @@ pub fn read_map_xp(config: &Config,
     let xp = XpFile::read(&mut buf_reader).unwrap();
 
     let mut map = Map::from_dims(xp.layers[0].width, xp.layers[0].height);
-    let mut objects = DenseSlotMap::new();
+    let mut objects = Entities::new();
     let mut player_position = (0, 0);
 
     for (layer_index, layer) in xp.layers.iter().enumerate() {
@@ -69,8 +69,7 @@ pub fn read_map_xp(config: &Config,
                     MAP_LAYER_ENVIRONMENT => {
                         match chr as u8 {
                             MAP_COLUMN => {
-                                let col = make_column(config, pos);
-                                objects.insert(col);
+                                make_column(&mut objects, config, pos);
                             }
 
                             MAP_THIN_WALL_TOP => {
@@ -230,15 +229,15 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_GOL => {
-                                objects.insert(make_gol(config, pos, msg_log));
+                                make_gol(&mut objects, config, pos, msg_log);
                             }
 
                             ENTITY_EXIT => {
-                                objects.insert(make_exit(config, pos));
+                                make_exit(&mut objects, config, pos);
                             }
 
                             ENTITY_ELF => {
-                                objects.insert(make_elf(config, pos, msg_log));
+                                make_elf(&mut objects, config, pos, msg_log);
                             }
 
                             MAP_EMPTY => {
@@ -246,27 +245,23 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_DAGGER => {
-                                let dagger = make_dagger(config, pos);
-                                objects.insert(dagger);
+                                make_dagger(&mut objects, config, pos);
                             }
 
                             ENTITY_KEY => {
-                                let key = make_key(config, pos, msg_log);
-                                objects.insert(key);
+                                make_key(&mut objects, config, pos, msg_log);
                             }
 
                             ENTITY_STONE => {
-                                let stone = make_stone(config, pos);
-                                objects.insert(stone);
+                                make_stone(&mut objects, config, pos);
                             }
 
                             ENTITY_SHIELD => {
-                                let shield = make_shield(config, Pos::new(x, y));
-                                objects.insert(shield);
+                                make_shield(&mut objects, config, Pos::new(x, y));
                             }
 
                             ENTITY_SPIKE_TRAP => {
-                                objects.insert(make_spikes(config, pos, msg_log));
+                                make_spikes(&mut objects, config, pos, msg_log);
                             }
 
                             _ => {

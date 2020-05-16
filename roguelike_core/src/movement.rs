@@ -19,7 +19,7 @@ use crate::ai::Behavior;
 pub enum Action {
     Move(Movement),
     StateChange(Behavior),
-    Pickup(ObjectId),
+    Pickup(EntityId),
     ThrowItem(Pos, usize), // end position, inventory index
     Pass,
     Yell,
@@ -74,9 +74,9 @@ impl fmt::Display for MoveMode {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Attack {
-    Attack(ObjectId), // target_id
-    Push(ObjectId, Pos), //target_id, delta_pos
-    Stab(ObjectId), // target_id
+    Attack(EntityId), // target_id
+    Push(EntityId, Pos), //target_id, delta_pos
+    Stab(EntityId), // target_id
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -454,7 +454,7 @@ impl Momentum {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MoveResult {
-    entity: Option<ObjectId>,
+    entity: Option<EntityId>,
     blocked: Option<Blocked>,
     move_pos: Pos,
 }
@@ -486,7 +486,7 @@ pub fn player_move_or_attack(movement: Movement,
         None => {
             match movement.typ {
                 MoveType::Collide => {
-                    data.objects[player_id].move_to(movement.pos);
+                    data.entities.move_to(player_id, movement.pos);
                     player_action = Move(movement);
 
                     msg_log.log(Msg::Collided(player_id, movement.pos));
@@ -498,10 +498,10 @@ pub fn player_move_or_attack(movement: Movement,
                 }
 
                 MoveType::Move | MoveType::JumpWall => {
-                    let player_pos = data.objects[player_id].pos();
+                    let player_pos = data.entities.pos[&player_id];
 
                     if player_pos != movement.pos {
-                        data.objects[player_id].move_to(movement.pos);
+                        data.entities.move_to(player_id, movement.pos);
 
                         player_action = Move(movement);
 
@@ -516,7 +516,7 @@ pub fn player_move_or_attack(movement: Movement,
                 }
 
                 MoveType::WallKick(_dir_x, _dir_y) => {
-                    data.objects[player_id].move_to(movement.pos);
+                    data.entities.move_to(player_id, movement.pos);
 
                     // TODO could check for enemy and attack
                     player_action = Move(movement);
@@ -527,8 +527,8 @@ pub fn player_move_or_attack(movement: Movement,
         }
 
         Some(Attack::Push(target_id, delta_pos)) => {
-            if data.objects[target_id].typ == ObjType::Column {
-                let pos = data.objects[player_id].pos();
+            if data.entities.typ[&target_id] == ObjType::Column {
+                let pos = data.entities.pos[&player_id];
                     let next_pos = next_pos(pos, sub_pos(movement.pos, pos));
 
                 // if there is a path to the next tile, move it.
@@ -537,12 +537,12 @@ pub fn player_move_or_attack(movement: Movement,
                     data.map.is_blocked_by_wall(movement.pos, diff.x, diff.y); 
 
                 if blocked == None {
-                    data.objects[player_id].move_to(movement.pos);
+                    data.entities.move_to(player_id, movement.pos);
 
-                    data.objects.remove(target_id);
+                    data.remove_entity(target_id);
 
                     if let Some(hit_entity) = data.has_blocking_entity(next_pos) {
-                        crush(target_id, hit_entity, &mut data.objects, msg_log);
+                        crush(target_id, hit_entity, &mut data.entities, msg_log);
                     }
 
                     player_action = Move(movement);
@@ -551,11 +551,11 @@ pub fn player_move_or_attack(movement: Movement,
                 } else {
                     player_action = NoAction;
                 }
-            } else if data.objects[target_id].alive {
+            } else if data.entities.alive[&target_id] {
                 push_attack(player_id, target_id, delta_pos, data, msg_log);
                 player_action = Move(movement);
             } else {
-                dbg!(data.objects[target_id].typ);
+                dbg!(data.entities.typ[&target_id]);
                 //player_action = NoAction;
                 panic!("What did you push?");
             }
@@ -564,30 +564,30 @@ pub fn player_move_or_attack(movement: Movement,
         Some(Attack::Attack(target_id)) => {
             attack(player_id, target_id, data, msg_log);
 
-            data.objects[player_id].set_pos(movement.pos);
+            data.entities.set_pos(player_id, movement.pos);
 
             player_action = Move(movement);
         }
 
         Some(Attack::Stab(target_id)) => {
             // if enemy is aware of the enemy, just push instead
-            if data.objects[target_id].behavior.map_or(false, |beh| beh.is_aware()) {
+            if data.entities.behavior.get(&target_id).map_or(false, |beh| beh.is_aware()) {
                 panic!("This shouldn't actually be possible- stabbing a aware enemy");
             } else {
                 // otherwise enemy is not aware, so stab them
-                stab(player_id, target_id, &mut data.objects, msg_log);
+                stab(player_id, target_id, &mut data.entities, msg_log);
             }
 
             // dagger is one use only- remove it from inventory
             let dagger_ix =
-                data.objects[player_id]
-                    .inventory
+                data.entities
+                    .inventory[&player_id]
                     .iter()
-                    .position(|item| data.objects[*item].item == Some(Item::Dagger))
+                    .position(|item| data.entities.item[item] == Item::Dagger)
                     .expect("Stabbed without a dagger!");
-            data.objects[player_id].inventory.remove(dagger_ix);
+            data.entities.inventory[&player_id].remove(dagger_ix);
 
-            data.objects[player_id].move_to(movement.pos);
+            data.entities.move_to(player_id, movement.pos);
 
             player_action = Move(movement);
         }
@@ -645,11 +645,11 @@ pub fn check_collision(pos: Pos,
 
 pub fn calculate_move(action: Direction,
                       reach: Reach,
-                      object_id: ObjectId,
+                      entity_id: EntityId,
                       data: &GameData) -> Option<Movement> {
     let mut movement: Option<Movement>;
 
-    let pos = data.objects[object_id].pos();
+    let pos = data.entities.pos[&entity_id];
 
     // get the location we would move to given the input action
     if let Some(delta_pos) = reach.move_with_reach(&action) {
@@ -661,14 +661,14 @@ pub fn calculate_move(action: Direction,
         match (move_result.blocked, move_result.entity) {
             // both blocked by wall and by entity
             (Some(blocked), Some(entity)) => {
-                let entity_pos = data.objects[entity].pos();
+                let entity_pos = data.entities.pos[&entity];
 
                 let entity_dist = distance(pos, entity_pos);
                 let wall_dist = distance(pos, blocked.start_pos);
 
                 if entity_dist < wall_dist {
                     let attack =
-                        if can_stab(data, object_id, entity) {
+                        if can_stab(data, entity_id, entity) {
                             Attack::Stab(entity)
                         } else {
                             Attack::Push(entity, delta_pos)
@@ -678,7 +678,7 @@ pub fn calculate_move(action: Direction,
                 } else if entity_dist > wall_dist {
                     // wall is first
                     let mut jumped_wall = false;
-                    if data.objects[object_id].move_mode.unwrap() == MoveMode::Run {
+                    if data.entities.move_mode[&entity_id] == MoveMode::Run {
                         if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
                             jumped_wall = true;
                         } 
@@ -686,7 +686,7 @@ pub fn calculate_move(action: Direction,
 
                     if jumped_wall {
                         let attack =
-                            if can_stab(data, object_id, entity) {
+                            if can_stab(data, entity_id, entity) {
                                 Attack::Stab(entity)
                             } else {
                                 Attack::Push(entity, delta_pos)
@@ -706,11 +706,11 @@ pub fn calculate_move(action: Direction,
 
             // blocked by entity only
             (None, Some(entity)) => {
-                if can_stab(data, object_id, entity) {
+                if can_stab(data, entity_id, entity) {
                     let attack = Attack::Stab(entity);
                     movement = Some(Movement::attack(move_result.move_pos, MoveType::Move, attack));
                     dbg!();
-                } else if data.objects[entity].blocks {
+                } else if data.entities.blocks[&entity] {
                     let attack = Attack::Push(entity, delta_pos);
                     movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
                 } else {
@@ -722,7 +722,7 @@ pub fn calculate_move(action: Direction,
             (Some(blocked), None) => {
                 let mut jumped_wall = false;
 
-                if data.objects[object_id].move_mode.unwrap() == MoveMode::Run {
+                if data.entities.move_mode[&entity_id] == MoveMode::Run {
                     if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
                         jumped_wall = true;
                     } 
@@ -739,7 +739,7 @@ pub fn calculate_move(action: Direction,
 
                     let next_pos = next_pos(pos, delta_pos);
                     if let Some(other_id) = data.has_blocking_entity(next_pos) {
-                        if can_stab(data, object_id, other_id) {
+                        if can_stab(data, entity_id, other_id) {
                            let attack = Attack::Stab(other_id);
                            movement = Some(Movement::attack(new_pos, MoveType::JumpWall, attack));
                        }
@@ -754,7 +754,7 @@ pub fn calculate_move(action: Direction,
             (None, None) => {
                 let next_pos = next_pos(pos, delta_pos);
                 if let Some(other_id) = data.has_blocking_entity(next_pos) {
-                    if can_stab(data, object_id, other_id) {
+                    if can_stab(data, entity_id, other_id) {
                        let attack = Attack::Stab(other_id);
                        movement = Some(Movement::attack(move_result.move_pos, MoveType::Move, attack));
                    } else {

@@ -35,7 +35,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                 for obj_id in who_heard {
                     if obj_id != cause_id {
                         // TODO replace with an Alerted message
-                        data.objects[obj_id].messages.push(Message::Sound(cause_id, source_pos));
+                        data.entities.messages[&obj_id].push(Message::Sound(cause_id, source_pos));
                     }
                 }
             }
@@ -51,15 +51,14 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                 if object_id == player_handle {
 
                     if matches!(movement.typ, MoveType::Pass) {
-                        if data.objects[player_handle].move_mode.unwrap() ==
+                        if data.entities.move_mode[&player_handle] ==
                            MoveMode::Run {
-                            let player = &mut data.objects[player_handle];
-                            player.move_mode = player.move_mode.map(|mode| mode.decrease());
+                            data.entities.move_mode[&player_handle].decrease();
                         }
                         // this is just to pattern match on movement
                     } else { // monster moved
                         let mut sound_radius;
-                        match data.objects[player_handle].move_mode.unwrap() {
+                        match data.entities.move_mode[&player_handle] {
                             MoveMode::Sneak => sound_radius = SOUND_RADIUS_SNEAK,
                             MoveMode::Walk => sound_radius = SOUND_RADIUS_WALK,
                             MoveMode::Run => sound_radius = SOUND_RADIUS_RUN,
@@ -86,17 +85,17 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
-                if data.objects[attacked].typ != ObjType::Player {
-                    let pos = data.objects[attacked].pos();
+                if data.entities.typ[&attacked] != ObjType::Player {
+                    let pos = data.entities.pos[&attacked];
 
                     data.map[pos].surface = Surface::Rubble;
                 }
 
-                data.objects[attacked].needs_removal = true;
+                data.entities.needs_removal[&attacked] = true;
             }
 
             Msg::Attack(attacker, attacked, _damage) => {
-                let pos = data.objects[attacked].pos();
+                let pos = data.entities.pos[&attacked];
                 msg_log.log_front(Msg::Sound(attacker, pos, config.sound_radius_attack, true)); 
             }
 
@@ -107,13 +106,13 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
 
     /* Process Player Messages */
     let player_handle = data.find_player().unwrap();
-    for message in data.objects[player_handle].messages.iter() {
+    for message in data.entities.messages[&player_handle].iter() {
         if let Message::Sound(obj_id, pos) = message {
             if *obj_id == player_handle {
                 panic!("Player sent themselves a message?")
             }
 
-            let player_pos = data.objects[player_handle].pos();
+            let player_pos = data.entities.pos[&player_handle];
             if !data.map.is_in_fov(player_pos, *pos, config.fov_radius_player) {
                 let heard = Effect::HeardSomething(*pos, settings.turn_count);
                 // TODO move to somewhere else?
@@ -121,6 +120,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
             }
         }
     }
-    data.objects[player_handle].messages.clear();
+    data.entities.messages[&player_handle].clear();
 }
 

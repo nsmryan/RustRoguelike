@@ -25,13 +25,13 @@ pub fn signedness(value: i32) -> i32 {
     }
 }
 
-pub fn push_attack(handle: ObjectId, target: ObjectId, delta_pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
+pub fn push_attack(handle: EntityId, target: EntityId, delta_pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
     let mut killed = false;
     let mut damage = 0;
 
     for _ in 0..pos_mag(delta_pos) {
-        let pos = data.objects[handle].pos();
-        let other_pos = data.objects[target].pos();
+        let pos = data.entities.pos[&handle];
+        let other_pos = data.entities.pos[&target];
         let diff = other_pos - pos;
 
         let x_diff = signedness(diff.x);
@@ -42,46 +42,43 @@ pub fn push_attack(handle: ObjectId, target: ObjectId, delta_pos: Pos, data: &mu
         if data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() ||
            data.has_blocking_entity(past_pos).is_some() {
             // if blocked by wall, kill entity and take their space
-            data.objects[handle].move_to(other_pos);
+            data.entities.move_to(handle, other_pos);
 
-            data.objects[target].alive = false;
-            data.objects[target].blocks = false;
-            damage = data.objects[target]
-                         .fighter
-                         .expect("Attacked a non-fighter?")
-                         .hp;
+            data.entities.alive[&target] = false;
+            data.entities.blocks[&target] = false;
+            damage = data.entities.fighter[&target].hp;
 
             killed = true;
         } else {
             // if not blocked, push the other entity, taking their space
-            data.objects[target].set_pos(past_pos);
-            data.objects[handle].move_to(other_pos);
+            data.entities.set_pos(target, past_pos);
+            data.entities.move_to(handle, other_pos);
         }
     }
 
     if killed {
         msg_log.log(Msg::Killed(handle, target, damage));
     } else {
-        data.objects[target].messages.push(Message::Attack(handle));
+        data.entities.messages[&target].push(Message::Attack(handle));
     }
 }
 
-pub fn crush(handle: ObjectId, target: ObjectId, objects: &mut ObjMap, msg_log: &mut MsgLog) {
-    let damage = objects[target].fighter.map_or(0, |f| f.hp);
+pub fn crush(handle: EntityId, target: EntityId, entities: &mut Entities, msg_log: &mut MsgLog) {
+    let damage = entities.fighter.get(&target).map_or(0, |f| f.hp);
     if damage > 0 {
-        objects[target].take_damage(damage);
+        entities.take_damage(target, damage);
 
-        objects[target].alive = false;
-        objects[target].blocks = false;
+        entities.alive[&target] = false;
+        entities.blocks[&target] = false;
 
         msg_log.log(Msg::Killed(handle, target, damage));
     }
 }
 
-pub fn attack(handle: ObjectId, target: ObjectId, data: &mut GameData, msg_log: &mut MsgLog) {
+pub fn attack(handle: EntityId, target: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
     if data.using(target, Item::Shield) {
-        let pos = data.objects[handle].pos();
-        let other_pos = data.objects[target].pos();
+        let pos = data.entities.pos[&handle];
+        let other_pos = data.entities.pos[&target];
         let diff = other_pos - pos;
 
         let x_diff = diff.x.signum();
@@ -91,57 +88,57 @@ pub fn attack(handle: ObjectId, target: ObjectId, data: &mut GameData, msg_log: 
 
         if !data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() &&
            !data.has_blocking_entity(past_pos).is_some() {
-            data.objects[target].set_pos(past_pos);
-            data.objects[handle].move_to(other_pos);
+            data.entities.set_pos(target, past_pos);
+            data.entities.move_to(handle, other_pos);
 
-            data.objects[target].messages.push(Message::Attack(handle));
+            data.entities.messages[&target].push(Message::Attack(handle));
         }
     } else {
-        let damage = data.objects[handle].fighter.map_or(0, |f| f.power) -
-                     data.objects[target].fighter.map_or(0, |f| f.defense);
+        let damage = data.entities.fighter.get(&handle).map_or(0, |f| f.power) -
+                     data.entities.fighter.get(&target).map_or(0, |f| f.defense);
         if damage > 0 {
-            data.objects[target].take_damage(damage);
+            data.entities.take_damage(target, damage);
 
             msg_log.log(Msg::Attack(handle, target, damage));
-            if data.objects[target].fighter.unwrap().hp <= 0 {
-                data.objects[target].alive = false;
-                data.objects[target].blocks = false;
+            if data.entities.fighter[&target].hp <= 0 {
+                data.entities.alive[&target] = false;
+                data.entities.blocks[&target] = false;
 
                 msg_log.log(Msg::Killed(handle, target, damage));
             }
 
-            data.objects[target].messages.push(Message::Attack(handle));
+            data.entities.messages[&target].push(Message::Attack(handle));
         }
     }
 }
 
-pub fn stab(handle: ObjectId, target: ObjectId, objects: &mut ObjMap, msg_log: &mut MsgLog) {
-    let damage = objects[target].fighter.map_or(0, |f| f.hp);
+pub fn stab(handle: EntityId, target: EntityId, entities: &mut Entities, msg_log: &mut MsgLog) {
+    let damage = entities.fighter.get(&target).map_or(0, |f| f.hp);
 
     if damage != 0 {
         msg_log.log(Msg::Attack(handle, target, damage));
 
-        objects[target].alive = false;
-        objects[target].blocks = false;
+        entities.alive[&target] = false;
+        entities.blocks[&target] = false;
 
         msg_log.log(Msg::Killed(handle, target, damage));
 
-        objects[target].messages.push(Message::Attack(handle));
+        entities.messages[&target].push(Message::Attack(handle));
     } else {
         panic!("Stabbed an enemy with no hp?");
     }
 }
 
-pub fn item_primary_at(object_id: ObjectId, objects: &mut ObjMap, index: usize) -> bool {
-    let inv_len = objects[object_id].inventory.len();
+pub fn item_primary_at(entity_id: EntityId, entities: &mut Entities, index: usize) -> bool {
+    let inv_len = entities.inventory[&entity_id].len();
 
     if inv_len <= index {
         return false;
     }
 
-    let item_id = objects[object_id].inventory[index];
+    let item_id = entities.inventory[&entity_id][index];
     let is_primary =
-        objects[item_id].item.unwrap().class() == ItemClass::Primary;
+        entities.item[&item_id].class() == ItemClass::Primary;
 
     return is_primary;
 }
@@ -250,11 +247,11 @@ pub fn next_pos(pos: Pos, delta_pos: Pos) -> Pos {
     return next_pos;
 }
 
-pub fn can_stab(data: &GameData, entity: ObjectId, target: ObjectId) -> bool {
+pub fn can_stab(data: &GameData, entity: EntityId, target: EntityId) -> bool {
     // NOTE this is not generic- uses ObjType::Enemy
-    return data.objects[target].typ == ObjType::Enemy &&
+    return data.entities.typ[&target] == ObjType::Enemy &&
            data.using(entity, Item::Dagger) &&
-           !matches!(data.objects[target].behavior, Some(Behavior::Attacking(_)));
+           !matches!(data.entities.behavior.get(&target), Some(Behavior::Attacking(_)));
 }
 
 pub fn dxy(start_pos: Pos, end_pos: Pos) -> (i32, i32) {
