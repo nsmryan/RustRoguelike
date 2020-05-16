@@ -1,8 +1,6 @@
 use std::fs::File;
 use std::io::BufReader;
 
-use slotmap::dense::*;
-
 use rexpaint::*;
 
 use roguelike_core::constants::*;
@@ -15,14 +13,14 @@ use crate::generation::*;
 
 
 pub fn read_map_xp(config: &Config,
+                   entities: &mut Entities,
                    msg_log: &mut MsgLog,
-                   file_name: &str) -> (ObjMap, Map, (i32, i32)) {
+                   file_name: &str) -> (Map, (i32, i32)) {
     let file = File::open(file_name).unwrap();
     let mut buf_reader = BufReader::new(file);
     let xp = XpFile::read(&mut buf_reader).unwrap();
 
     let mut map = Map::from_dims(xp.layers[0].width, xp.layers[0].height);
-    let mut objects = Entities::new();
     let mut player_position = (0, 0);
 
     for (layer_index, layer) in xp.layers.iter().enumerate() {
@@ -69,7 +67,7 @@ pub fn read_map_xp(config: &Config,
                     MAP_LAYER_ENVIRONMENT => {
                         match chr as u8 {
                             MAP_COLUMN => {
-                                make_column(&mut objects, config, pos);
+                                make_column(entities, config, pos);
                             }
 
                             MAP_THIN_WALL_TOP => {
@@ -229,15 +227,15 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_GOL => {
-                                make_gol(&mut objects, config, pos, msg_log);
+                                make_gol(entities, config, pos, msg_log);
                             }
 
                             ENTITY_EXIT => {
-                                make_exit(&mut objects, config, pos);
+                                make_exit(entities, config, pos);
                             }
 
                             ENTITY_ELF => {
-                                make_elf(&mut objects, config, pos, msg_log);
+                                make_elf(entities, config, pos, msg_log);
                             }
 
                             MAP_EMPTY => {
@@ -245,23 +243,23 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_DAGGER => {
-                                make_dagger(&mut objects, config, pos);
+                                make_dagger(entities, config, pos);
                             }
 
                             ENTITY_KEY => {
-                                make_key(&mut objects, config, pos, msg_log);
+                                make_key(entities, config, pos, msg_log);
                             }
 
                             ENTITY_STONE => {
-                                make_stone(&mut objects, config, pos);
+                                make_stone(entities, config, pos);
                             }
 
                             ENTITY_SHIELD => {
-                                make_shield(&mut objects, config, Pos::new(x, y));
+                                make_shield(entities, config, Pos::new(x, y));
                             }
 
                             ENTITY_SPIKE_TRAP => {
-                                make_spikes(&mut objects, config, pos, msg_log);
+                                make_spikes(entities, config, pos, msg_log);
                             }
 
                             _ => {
@@ -280,6 +278,6 @@ pub fn read_map_xp(config: &Config,
 
     map.update_map();
 
-    return (objects, map, player_position);
+    return (map, player_position);
 }
 

@@ -26,175 +26,177 @@ pub enum MapGenType {
 }
 
 
-pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLog) -> Object {
-    let mut player = Object::new(0, 0, ObjType::Player, '@', Color::white(), "player", true);
+pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLog) -> EntityId {
+    let player = entities.create_entity(0, 0, ObjType::Player, '@', Color::white(), "player", true);
 
-    player.alive = true;
-    player.fighter =
-        Some(Fighter { max_hp: config.player_health,
-                       hp: config.player_health,
-                       defense: 0,
-                       power: 5 });
-    player.movement = Some(Reach::Single(1));
-    player.attack = Some(Reach::Single(1));
-    player.move_mode = Some(MoveMode::Walk);
-    player.direction = Some(Direction::Up);
+    entities.alive[&player] = true;
+    entities.fighter[&player] =
+        Fighter { max_hp: config.player_health,
+                  hp: config.player_health,
+                  defense: 0,
+                  power: 5 };
+    entities.movement[&player] = Reach::Single(1);
+    entities.attack[&player] = Reach::Single(1);
+    entities.move_mode[&player] = MoveMode::Walk;
+    entities.direction[&player] = Direction::Up;
 
-    msg_log.log(Msg::SpawnedObject(player.id));
+    msg_log.log(Msg::SpawnedObject(player));
 
-    player
+    return player;
 }
 
-pub fn make_column(entities: &mut Entities, config: &Config, pos: Pos) -> Object {
-    let object = Object::new(pos.x, pos.y, ObjType::Column, MAP_COLUMN as char, config.color_light_grey, "column", true);
+pub fn make_column(entities: &mut Entities, config: &Config, pos: Pos) -> EntityId {
+    let object = entities.create_entity(pos.x, pos.y, ObjType::Column, MAP_COLUMN as char, config.color_light_grey, "column", true);
 
     return object;
 }
 
-pub fn make_dagger(entities: &mut Entities, config: &Config, pos: Pos) -> Object {
-    let object = entities::create_entity(pos.x, pos.y, ObjType::Item, ENTITY_DAGGER as char, config.color_light_grey, "dagger", false);
+pub fn make_dagger(entities: &mut Entities, config: &Config, pos: Pos) -> EntityId {
+    let object = entities.create_entity(pos.x, pos.y, ObjType::Item, ENTITY_DAGGER as char, config.color_light_grey, "dagger", false);
 
-    entities.item[object] = Item::Dagger;
+    entities.item[&object] = Item::Dagger;
 
     return object;
 }
 
-pub fn make_shield(entities: &mut Entities, config: &Config, pos: Pos) -> Object {
-    let mut object = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_SHIELD as char, config.color_light_grey, "shield", false);
+pub fn make_shield(entities: &mut Entities, config: &Config, pos: Pos) -> EntityId {
+    let object = entities.create_entity(pos.x, pos.y, ObjType::Item, ENTITY_SHIELD as char, config.color_light_grey, "shield", false);
 
-    object.item = Some(Item::Shield);
+    entities.item[&object] = Item::Shield;
 
     return object;
 }
 
 pub fn make_key(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let key = entities::create_entity(pos.x, pos.y, ObjType::Item, ENTITY_KEY as char, config.color_orange, "key", false); object.item = Some(Item::Goal);
+    let key = entities.create_entity(pos.x, pos.y, ObjType::Item, ENTITY_KEY as char, config.color_orange, "key", false);
+    
+    entities.item[&key] = Item::Goal;
 
     msg_log.log(Msg::SpawnedObject(key));
 
     return key;
 }
 
-pub fn make_mouse(entities: &mut Entities, _config: &Config) -> Object {
-    let mouse = Object::new(-1, -1, ObjType::Other, ' ', Color::white(), "mouse", false);
+pub fn make_mouse(entities: &mut Entities, _config: &Config) -> EntityId {
+    let mouse = entities.create_entity(-1, -1, ObjType::Other, ' ', Color::white(), "mouse", false);
 
     mouse
 }
 
-pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
-    let gol = entities::create_entities(pos.x, pos.y, ObjType::Enemy, '\u{98}', config.color_orange, "gol", true);
+pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let gol = entities.create_entity(pos.x, pos.y, ObjType::Enemy, '\u{98}', config.color_orange, "gol", true);
 
-    entities.fighter[gol] = Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, };
-    entities.ai[gol] = Ai::Basic;
-    entities.behavior[gol] = Behavior::Idle;
-    entities.color[gol] = config.color_light_orange;
-    entities.movement[gol] = Reach::Single(GOL_MOVE_DISTANCE);
-    entities.attack[gol] = Reach::Diag(GOL_ATTACK_DISTANCE);
-    entities.alive[gol] = true;
-    entities.direction[gol] = Direction::from_f32(rand_from_pos(pos));
+    entities.fighter[&gol] = Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, };
+    entities.ai[&gol] = Ai::Basic;
+    entities.behavior[&gol] = Behavior::Idle;
+    entities.color[&gol] = config.color_light_orange;
+    entities.movement[&gol] = Reach::Single(GOL_MOVE_DISTANCE);
+    entities.attack[&gol] = Reach::Diag(GOL_ATTACK_DISTANCE);
+    entities.alive[&gol] = true;
+    entities.direction[&gol] = Direction::from_f32(rand_from_pos(pos));
 
-    msg_log.log(Msg::SpawnedObject(*gol));
+    msg_log.log(Msg::SpawnedObject(gol));
     
     return gol;
 } 
 
-pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos) -> Object {
-    let spire = entities::create_entity(pos.x, pos.y, ObjType::Enemy, '\u{15}', config.color_orange, "spire", true);
+pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos) -> EntityId {
+    let spire = entities.create_entity(pos.x, pos.y, ObjType::Enemy, '\u{15}', config.color_orange, "spire", true);
 
-    entities.fighter[spire] = Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, };
-    entities.ai[spire] = Ai::Basic;
-    entities.behavior[spire] = Behavior::Idle;
-    entities.color[spire] = config.color_mint_green;
-    entities.movement[spire] = Reach::Single(SPIRE_MOVE_DISTANCE);
-    entities.attack[spire] = Reach::Single(SPIRE_ATTACK_DISTANCE);
-    entities.alive[spire] = true;
-    entities.direction[spire] = Direction::Up;
+    entities.fighter[&spire] = Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, };
+    entities.ai[&spire] = Ai::Basic;
+    entities.behavior[&spire] = Behavior::Idle;
+    entities.color[&spire] = config.color_mint_green;
+    entities.movement[&spire] = Reach::Single(SPIRE_MOVE_DISTANCE);
+    entities.attack[&spire] = Reach::Single(SPIRE_ATTACK_DISTANCE);
+    entities.alive[&spire] = true;
+    entities.direction[&spire] = Direction::Up;
 
     return spire;
 }
 
-pub fn make_elf(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
-    let elf = entities::create_entity(pos.x, pos.y, ObjType::Enemy, '\u{A5}', config.color_orange, "elf", true);
+pub fn make_elf(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let elf = entities.create_entity(pos.x, pos.y, ObjType::Enemy, '\u{A5}', config.color_orange, "elf", true);
 
-    entities.fighter[eld] = Some( Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, } );
-    entities.ai[eld] = Some(Ai::Basic);
-    entities.behavior[eld] = Some(Behavior::Idle);
-    entities.color[eld] = config.color_ice_blue;
-    entities.movement[eld] = Some(Reach::Single(PAWN_MOVE_DISTANCE));
-    entities.attack[eld] = Some(Reach::Single(PAWN_ATTACK_DISTANCE));
-    entities.alive[eld] = true;
-    entities.direction[eld] = Some(Direction::from_f32(rand_from_pos(pos)));
+    entities.fighter[&elf] = Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, };
+    entities.ai[&elf] = Ai::Basic;
+    entities.behavior[&elf] = Behavior::Idle;
+    entities.color[&elf] = config.color_ice_blue;
+    entities.movement[&elf] = Reach::Single(PAWN_MOVE_DISTANCE);
+    entities.attack[&elf] = Reach::Single(PAWN_ATTACK_DISTANCE);
+    entities.alive[&elf] = true;
+    entities.direction[&elf] = Direction::from_f32(rand_from_pos(pos));
 
     msg_log.log(Msg::SpawnedObject(elf));
 
     return elf;
 }
 
-pub fn make_trap_sound(entities: &mut Entities, config: &Config, pos: Pos) -> Object {
-    let mut sound = Object::new(pos.x, pos.y, ObjType::Enemy, ENTITY_TRAP_SOUND as char, config.color_ice_blue, "soudn", false);
+pub fn make_trap_sound(entities: &mut Entities, config: &Config, pos: Pos) -> EntityId {
+    let mut sound = entities.create_entity(pos.x, pos.y, ObjType::Enemy, ENTITY_TRAP_SOUND as char, config.color_ice_blue, "soudn", false);
 
-    sound.trap = Some(Trap::Sound);
+    entities.trap[&sound] = Trap::Sound;
 
     return sound;
 }
 
-pub fn make_spikes(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> Object {
-    let mut spikes = Object::new(pos.x, pos.y, ObjType::Enemy, MAP_TALL_SPIKES as char, config.color_ice_blue, "spike", false);
+pub fn make_spikes(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let mut spikes = entities.create_entity(pos.x, pos.y, ObjType::Enemy, MAP_TALL_SPIKES as char, config.color_ice_blue, "spike", false);
 
-    spikes.trap = Some(Trap::Spikes);
+    entities.trap[&spikes] = Trap::Spikes;
 
-    msg_log.log(Msg::SpawnedObject(spikes.id));
+    msg_log.log(Msg::SpawnedObject(spikes));
 
     return spikes;
 }
 
-pub fn make_exit(entities: &mut Entities, config: &Config, pos: Pos) -> Object {
-    let mut exit = Object::new(pos.x, pos.y, ObjType::Item, ENTITY_EXIT as char, config.color_orange, "exit", false);
+pub fn make_exit(entities: &mut Entities, config: &Config, pos: Pos) -> EntityId {
+    let mut exit = entities.create_entity(pos.x, pos.y, ObjType::Item, ENTITY_EXIT as char, config.color_orange, "exit", false);
 
-    exit.color = config.color_ice_blue;
+    entities.color[&exit] = config.color_ice_blue;
 
     return exit;
 }
 
-pub fn make_stone(entities: &mut Entities, config: &Config, pos: Pos) -> Object {
-    let stone = entities::create_entity(pos.x, pos.y, ObjType::Item, ENTITY_STONE as char, config.color_light_grey, "stone", true);
+pub fn make_stone(entities: &mut Entities, config: &Config, pos: Pos) -> EntityId {
+    let stone = entities.create_entity(pos.x, pos.y, ObjType::Item, ENTITY_STONE as char, config.color_light_grey, "stone", true);
 
-    entities.item[stone] = Item::Stone;
-    entities.alive[stone] = false;
-    entities.blocks[stone] = false;
+    entities.item[&stone] = Item::Stone;
+    entities.alive[&stone] = false;
+    entities.blocks[&stone] = false;
 
     return stone;
 }
 
 pub fn make_map(map_type: &MapGenType,
-                objects: &mut ObjMap,
+                entities: &mut Entities,
                 config: &Config,
                 msg_log: &mut MsgLog,
                 rng: &mut SmallRng) -> (GameData, Pos) {
     let result;
     match map_type {
         MapGenType::WallTest => {
-            let (map, player_position) = make_wall_test_map(objects, config, msg_log);
+            let (map, player_position) = make_wall_test_map(entities, config, msg_log);
             
-            result = (GameData::new(map, objects.clone()), player_position);
+            result = (GameData::new(map, entities.clone()), player_position);
         }
 
         MapGenType::CornerTest => {
-            let (map, player_position) = make_corner_test_map(objects, config, msg_log);
+            let (map, player_position) = make_corner_test_map(entities, config, msg_log);
             
-            result = (GameData::new(map, objects.clone()), player_position);
+            result = (GameData::new(map, entities.clone()), player_position);
         }
 
         MapGenType::PlayerTest => {
-            let (map, player_position) = make_player_test_map(objects, config);
+            let (map, player_position) = make_player_test_map(entities, config);
             
-            result = (GameData::new(map, objects.clone()), player_position);
+            result = (GameData::new(map, entities.clone()), player_position);
         }
 
         MapGenType::Island => {
             let map = Map::from_dims(MAP_WIDTH as usize, MAP_HEIGHT as usize);
 
-            let mut data = GameData::new(map, objects.clone());
+            let mut data = GameData::new(map, entities.clone());
             let starting_position = make_island(&mut data, config, msg_log, rng);
 
             data.map[starting_position.to_tuple()].tile_type = TileType::Empty;
@@ -205,18 +207,19 @@ pub fn make_map(map_type: &MapGenType,
         }
 
         MapGenType::FromFile(file_name) => {
-            let (new_objects, new_map, player_position) =
-                read_map_xp(config, msg_log, &file_name);
+            let mut entities = Entities::new();
+            let (new_map, player_position) =
+                read_map_xp(config, &mut entities, msg_log, &file_name);
 
-            let data = GameData::new(new_map, new_objects);
+            let data = GameData::new(new_map, entities);
 
             result = (data, Pos::from(player_position));
         }
 
         MapGenType::Animations => {
-            let (map, player_position) = make_player_test_map(objects, config);
+            let (map, player_position) = make_player_test_map(entities, config);
             
-            result = (GameData::new(map, objects.clone()), player_position);
+            result = (GameData::new(map, entities.clone()), player_position);
         }
     }
 
@@ -374,7 +377,7 @@ pub fn make_island(data: &mut GameData,
     return center;
 }
 
-pub fn make_player_test_map(_objects: &mut ObjMap,
+pub fn make_player_test_map(entities: &mut Entities,
                             config: &Config) -> (Map, Pos) {
     let mut map = Map::from_dims(10, 10);
     let position = (1, 5);
@@ -391,16 +394,16 @@ pub fn make_player_test_map(_objects: &mut ObjMap,
         map[pos].bottom_wall = Wall::ShortWall;
     }
 
-    make_stone(objects, config, Pos::new(1, 2));
-    make_stone(objects, config, Pos::new(4, 2));
-    make_stone(objects, config, Pos::new(3, 2));
+    make_stone(entities, config, Pos::new(1, 2));
+    make_stone(entities, config, Pos::new(4, 2));
+    make_stone(entities, config, Pos::new(3, 2));
   
     map.update_map();
 
     return (map, Pos::from(position));
 }
 
-pub fn make_wall_test_map(objects: &mut ObjMap,
+pub fn make_wall_test_map(entities: &mut Entities,
                           config: &Config,
                           msg_log: &mut MsgLog) -> (Map, Pos) {
     let mut map = Map::from_dims(10, 10);
@@ -417,16 +420,16 @@ pub fn make_wall_test_map(objects: &mut ObjMap,
     map[(4, 4)].bottom_wall = Wall::ShortWall;
     map[(5, 4)].bottom_wall = Wall::ShortWall;
   
-    make_gol(objects, config, Pos::new(6, 5), msg_log);
+    make_gol(entities, config, Pos::new(6, 5), msg_log);
 
-    make_dagger(objects, config, Pos::new(position.0, position.1));
+    make_dagger(entities, config, Pos::new(position.0, position.1));
 
     map.update_map();
 
     return (map, Pos::from(position));
 }
 
-pub fn make_corner_test_map(objects: &mut ObjMap,
+pub fn make_corner_test_map(entities: &mut Entities,
                             config: &Config,
                             msg_log: &mut MsgLog) -> (Map, Pos) {
     let mut map = Map::from_dims(15, 15);
@@ -451,7 +454,7 @@ pub fn make_corner_test_map(objects: &mut ObjMap,
     map[(position.0 + 2, position.1 + 2)].chr = Some(MAP_WALL as char);
 
   
-    make_gol(objects, config, Pos::new(7, 5), msg_log);
+    make_gol(entities, config, Pos::new(7, 5), msg_log);
 
     map.update_map();
 

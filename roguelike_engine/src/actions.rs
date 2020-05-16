@@ -274,8 +274,11 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::DecreaseMoveMode, true) => {
-            game.data.entities.move_mode[&player_id] = game.data.entities.move_mode[&player_id].decrease();
-            game.data.entities.movement[&player_id] = reach_by_mode(entities.move_mode[&player_id]);
+            game.data.entities.move_mode[&player_id] =
+                game.data.entities.move_mode[&player_id].decrease();
+
+            game.data.entities.movement[&player_id] =
+                reach_by_mode(game.data.entities.move_mode[&player_id]);
 
             player_turn = Action::none();
         }
@@ -335,7 +338,7 @@ pub fn handle_input(game: &mut Game) -> Action {
         (InputAction::GodMode, true) => {
             let god_mode_hp = 1000000;
             let handle = game.data.find_player().unwrap();
-            if let Some(ref mut fighter) = game.data.entities.fighter.get(&handle) {
+            if let Some(ref mut fighter) = game.data.entities.fighter.get_mut(&handle) {
                 fighter.hp = god_mode_hp;
                 fighter.max_hp = god_mode_hp;
             }
@@ -379,8 +382,8 @@ pub fn pick_item_up(entity_id: EntityId,
 
     match pickup_class {
         ItemClass::Primary => {
-            if item_primary_at(entity_id, objects, 0) &&
-               item_primary_at(entity_id, objects, 1) {
+            if item_primary_at(entity_id, entities, 0) &&
+               item_primary_at(entity_id, entities, 1) {
                 let old_primary = entities.inventory[&entity_id][0];
 
                 entities.inventory[&entity_id][0] = item_id;
@@ -393,11 +396,11 @@ pub fn pick_item_up(entity_id: EntityId,
         }
 
         ItemClass::Secondary => {
-            objects.inventory[object_id].push_back(item_id);
+            entities.inventory[&entity_id].push_back(item_id);
         }
     }
 
-    objects[item_id].set_xy(-1, -1);
+    entities.set_xy(item_id, -1, -1);
 }
 
 pub fn throw_item(player_id: EntityId,

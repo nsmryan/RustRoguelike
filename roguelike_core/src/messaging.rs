@@ -60,6 +60,7 @@ pub enum Msg {
     MoveMode(MoveMode),
     TriedRunWithShield,
     SpawnedObject(EntityId),
+    ChangeLevel(),
 }
 
 impl Msg {
@@ -179,6 +180,10 @@ impl Msg {
             }
 
             Msg::SpawnedObject(entity_id) => {
+                return "".to_string();
+            }
+
+            Msg::ChangeLevel() => {
                 return "".to_string();
             }
         }

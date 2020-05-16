@@ -16,7 +16,6 @@ use roguelike_core::ai::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::movement::Action;
-use roguelike_core::utils::{clampf, lerp};
 
 use crate::actions;
 use crate::actions::{InputAction, KeyDirection};
@@ -94,7 +93,7 @@ impl Game {
         }
         println!("Seed: {} (0x{:X})", seed, seed);
 
-        let mut entities = DenseSlotMap::with_capacity(INITIAL_OBJECT_CAPACITY);
+        let mut entities = Entities::new();
         let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
 
         let mut msg_log = MsgLog::new();
@@ -103,13 +102,10 @@ impl Game {
         let player_position: (i32, i32);
         match config.map_load {
             MapLoadConfig::FromFile => {
-                let (new_objects, new_map, mut position) =
-                    read_map_xp(&config, &mut msg_log, "resources/map.xp");
-                entities.clear();
-                for object in new_objects.values() {
-                    let new_obj = object.clone();
-                    msg_log.log(Msg::SpawnedObject(new_obj.id));
-                    entities.insert(new_obj);
+                let (new_map, mut position) =
+                    read_map_xp(&config, &mut entities, &mut msg_log, "resources/map.xp");
+                for key in entities.ids.iter() {
+                    msg_log.log(Msg::SpawnedObject(*key));
                 }
                 map = new_map;
                 if position == (0, 0) {
@@ -122,40 +118,39 @@ impl Game {
 
             MapLoadConfig::Random => {
                 let (data, position) =
-                    make_map(&MapGenType::Island, &mut objects, &config, &mut msg_log, &mut rng);
+                    make_map(&MapGenType::Island, &mut entities, &config, &mut msg_log, &mut rng);
                 // TODO consider using objects as well here on regen?
                 map = data.map;
                 player_position = position.to_tuple();
             }
 
             MapLoadConfig::TestWall => {
-                let (new_map, position) = make_wall_test_map(&mut objects, &config, &mut msg_log);
+                let (new_map, position) = make_wall_test_map(&mut entities, &config, &mut msg_log);
                 map = new_map;
                 player_position = position.to_tuple();
             }
 
             MapLoadConfig::TestPlayer => {
-                let (new_map, position) = make_player_test_map(&mut objects, &config);
+                let (new_map, position) = make_player_test_map(&mut entities, &config);
                 map = new_map;
                 player_position = position.to_tuple();
             }
 
             MapLoadConfig::TestCorner => {
-                let (new_map, position) = make_corner_test_map(&mut objects, &config, &mut msg_log);
+                let (new_map, position) = make_corner_test_map(&mut entities, &config, &mut msg_log);
                 map = new_map;
                 player_position = position.to_tuple();
                 make_mouse(&mut entities, &config);
             }
         }
 
-        let mut data = GameData::new(map, objects);
+        let mut data = GameData::new(map, entities);
 
         let player_id = make_player(&mut data.entities, &config, &mut msg_log);
-        data.objects[player_id].x = player_position.0;
-        data.objects[player_id].y = player_position.1;
+        data.entities.pos[&player_id] = Pos::new(player_position.0,  player_position.1);
 
         let stone_id = make_stone(&mut data.entities, &config, Pos::new(-1, -1));
-        data.entities.inventory[player_id].push_back(stone_id);
+        data.entities.inventory[&player_id].push_back(stone_id);
 
         let state = Game {
             config,
@@ -204,18 +199,15 @@ impl Game {
 
         let player_id = self.data.find_player().unwrap();
 
-        let (new_objects, new_map, _) =
-            read_map_xp(&self.config, &mut self.msg_log, "resources/map.xp");
+        self.msg_log.log(Msg::ChangeLevel());
+
+        self.data.entities.clear();
+        let (new_map, _) =
+            read_map_xp(&self.config, &mut self.data.entities, &mut self.msg_log, "resources/map.xp");
 
         self.data.map = new_map;
-        self.data.objects[player_id].inventory.clear();
-        let player = self.data.objects[player_id].clone();
-        self.data.objects.clear();
-        self.data.objects.insert(player);
-        for key in new_objects.keys() {
-            let new_obj = self.data.objects[key].clone();
-            self.msg_log.log(Msg::SpawnedObject(new_obj.id));
-            self.data.entities.insert(new_obj);
+        for key in self.data.entities.ids.iter() {
+            self.msg_log.log(Msg::SpawnedObject(*key));
         }
 
         self.settings.state = GameState::Playing;
@@ -356,39 +348,39 @@ pub fn step_logic(player_action: Action,
     let previous_player_position =
         data.entities.pos[&player_id];
 
-    data.entities[&player_id].action = player_action;
+    data.entities.action[&player_id] = player_action;
 
     /* AI */
     if data.entities.alive[&player_id] {
-        let mut ai_id = Vec::new();
+        let mut ai_id: Vec<EntityId> = Vec::new();
 
         for key in data.entities.ids.iter() {
             if data.entities.ai.get(key).is_some() &&
                data.entities.alive[key]            &&
                data.entities.fighter.get(key).is_some() {
-               ai_id.push(key);
+               ai_id.push(*key);
            }
         }
 
         for key in ai_id.iter() {
-            data.entities.action[*key] = ai_take_turn(**key, data, config, msg_log);
+            data.entities.action[key] = ai_take_turn(*key, data, config, msg_log);
         }
 
         actions::player_apply_action(player_action, data, msg_log);
         resolve_messages(data, msg_log, settings, config);
 
         for key in ai_id {
-            if let Some(action) = data.entities.action.get(key) {
-                ai_apply_action(*key, *action, data, msg_log);
+            if let Some(action) = data.entities.action.get(&key) {
+                ai_apply_action(key, *action, data, msg_log);
                 resolve_messages(data, msg_log, settings, config);
 
                 // check if fighter needs to be removed
-                if let Some(fighter) = data.entities.fighter.get(key) {
+                if let Some(fighter) = data.entities.fighter.get(&key) {
                     if fighter.hp <= 0 {
-                        data.entities.alive[key] = false;
-                        data.entities.blocks[key] = false;
-                        data.entities.chr[key] = '%';
-                        data.entities.fighter.remove(key);
+                        data.entities.alive[&key] = false;
+                        data.entities.blocks[&key] = false;
+                        data.entities.chr[&key] = '%';
+                        data.entities.fighter.remove(&key);
                     }
                 }
             }
@@ -398,37 +390,37 @@ pub fn step_logic(player_action: Action,
     // TODO this should be part of message resolution, in case movement occurs over a trap
     // during a series of actions
     /* Traps */
-    let mut traps = Vec::new();
+    let mut traps: Vec<(EntityId, EntityId)> = Vec::new();
     for key in data.entities.ids.iter() {
         for other in data.entities.ids.iter() {
             if data.entities.trap.get(key).is_some()      && // key is a trap
                data.entities.alive[other]             && // entity is alive
                data.entities.fighter.get(other).is_some() && // entity is a fighter
                data.entities.pos[key] == data.entities.pos[other] {
-                traps.push((key, other));
+                traps.push((*key, *other));
             }
         }
     }
 
     for (trap, entity) in traps.iter() {
-        match data.entities.trap[*trap] {
+        match data.entities.trap[trap] {
             Trap::Spikes => {
-                data.entities.take_damage(**entity, SPIKE_DAMAGE);
+                data.entities.take_damage(*entity, SPIKE_DAMAGE);
 
-                msg_log.log(Msg::SpikeTrapTriggered(**trap, **entity));
+                msg_log.log(Msg::SpikeTrapTriggered(*trap, *entity));
 
-                if data.entities.fighter[*entity].hp <= 0 {
-                    data.entities.alive[*entity] = false;
-                    data.entities.blocks[*entity] = false;
+                if data.entities.fighter[entity].hp <= 0 {
+                    data.entities.alive[entity] = false;
+                    data.entities.blocks[entity] = false;
 
-                    msg_log.log(Msg::Killed(**trap, **entity, SPIKE_DAMAGE));
+                    msg_log.log(Msg::Killed(*trap, *entity, SPIKE_DAMAGE));
                 }
 
-                data.entities.needs_removal[*trap] = true;
+                data.entities.needs_removal[trap] = true;
             }
 
             Trap::Sound => {
-                msg_log.log(Msg::SoundTrapTriggered(**trap, **entity));
+                msg_log.log(Msg::SoundTrapTriggered(*trap, *entity));
             }
         }
     }
@@ -448,13 +440,13 @@ pub fn step_logic(player_action: Action,
         }
     }
 
-    let mut to_remove = Vec::new();
+    let mut to_remove: Vec<EntityId> = Vec::new();
 
     // perform count down
     for entity_id in data.entities.ids.iter() {
-        if let Some(ref mut count) = data.entities.count_down.get(entity_id) {
+        if let Some(ref mut count) = data.entities.count_down.get_mut(entity_id) {
             if **count == 0 {
-                to_remove.push(entity_key);
+                to_remove.push(*entity_id);
             } else {
                 **count -= 1;
             }
@@ -462,13 +454,13 @@ pub fn step_logic(player_action: Action,
 
         if data.entities.needs_removal[entity_id] &&
            data.entities.animation[entity_id].len() == 0 {
-            to_remove.push(entity_key);
+            to_remove.push(*entity_id);
         }
     }
 
     // remove objects waiting removal
     for key in to_remove {
-        data.entities.remove(key);
+        data.entities.remove(&key);
     }
 
     /* Recompute FOV */

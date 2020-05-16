@@ -412,39 +412,9 @@ impl Entities {
         self.needs_removal.remove(entity_id);
         self.messages.remove(entity_id);
     }
-}
 
-impl Entities {
     pub fn new() -> Entities {
         return Default::default();
-        // TODO should be able to remove this
-        //return Entities {
-        //    id: Vec::new(),
-        //    pos: BTreeMap::new(),
-        //    typ: BTreeMap::new(),
-        //    chr: BTreeMap::new(),
-        //    color: BTreeMap::new(),
-        //    name: BTreeMap::new(),
-        //    blocks: BTreeMap::new(),
-        //    alive: BTreeMap::new(),
-        //    fighter: BTreeMap::new(),
-        //    ai: BTreeMap::new(),
-        //    behavior: BTreeMap::new(),
-        //    item: BTreeMap::new(),
-        //    movement: BTreeMap::new(),
-        //    attack: BTreeMap::new(),
-        //    animation: BTreeMap::new(),
-        //    inventory: BTreeMap::new(),
-        //    trap: BTreeMap::new(),
-        //    sound: BTreeMap::new(),
-        //    count_down: BTreeMap::new(),
-        //    move_mode: BTreeMap::new(),
-        //    needs_removal: BTreeMap::new(),
-        //    direction: BTreeMap::new(),
-        //    messages: BTreeMap::new(),
-        //    selected_item: BTreeMap::new(),
-        //    action: BTreeMap::new(),
-        //}
     }
 
     pub fn clear(&mut self) {
