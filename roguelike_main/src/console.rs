@@ -165,8 +165,12 @@ impl Console {
                 let mut line = String::new();
                 let mut count = 0;
                 let combine = 2;
-                for entity in data.entities.values() {
-                    line.push_str(&format!("{:>3}: at ({:>2}, {:>2}) {:<16}", entity.id, entity.x, entity.y, entity.name));
+                for entity_id in data.entities.ids.iter() {
+                    line.push_str(&format!("{:>3}: at ({:>2}, {:>2}) {:<16}",
+                                           entity_id,
+                                           data.entities.pos[entity_id].x,
+                                           data.entities.pos[entity_id].y,
+                                           data.entities.name[entity_id]));
 
                     count += 1;
 
@@ -185,7 +189,7 @@ impl Console {
 
                 let mut entity_key = None;
                 for key in data.entities.ids.iter() {
-                    if entity.id == id {
+                    if *key == id {
                         entity_key = Some(key);
                     }
                 }

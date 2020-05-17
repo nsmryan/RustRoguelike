@@ -17,7 +17,7 @@ use sdl2::keyboard::{Mod, Keycode};
 use sdl2::render::{TextureCreator};
 use sdl2::video::WindowContext;
 
-use slotmap::dense::*;
+use indexmap::map::IndexMap;
 
 use serde_yaml;
 
@@ -74,9 +74,6 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     /* Setup FPS Throttling */
     let fps_throttler = Throttler::new(Duration::from_millis(1000 / config.rate as u64));
 
-    /* Load Textures */
-    let sprites = load_sprites(&texture_creator);
-
     /* Create Display Structures */
     let screen_sections =
         Plan::vert("screen", 0.80, Plan::zone("map"),
@@ -88,7 +85,10 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         .expect("Could not load texture!");
 
     let mut display_state =
-        DisplayState::new(screen_sections, font_image, sprites, canvas);
+        DisplayState::new(screen_sections, font_image, canvas);
+
+    /* Load Textures */
+    let sprites = load_sprites(&texture_creator, &mut display_state);
 
     let mut game = Game::new(args, config.clone())?;
 
@@ -208,19 +208,16 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
 
         /* Reload map if configured to do so */
         if game.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
-            let player_handle = game.data.find_player().unwrap();
+            let player = game.data.find_player().unwrap();
 
             let map_file = format!("resources/{}", game.config.map_file);
+            game.data.entities.clear();
             let (new_map, player_position) = read_map_xp(&game.config, &mut game.data.entities, &mut game.msg_log, &map_file);
             game.data.map = new_map;
-            game.data.entities.inventory[&player_handle].clear();
-            let mut player = game.data.entities[&player_handle].clone();
-            game.data.entities.clear();
-            for key in new_objects.keys() {
-                let new_obj = new_objects[key].clone();
-                game.msg_log.log(Msg::SpawnedObject(new_obj));
+            for key in game.data.entities.ids.iter() {
+                game.msg_log.log(Msg::SpawnedObject(*key));
             }
-            player.set_pos(Pos::from(player_position));
+            game.data.entities.set_pos(player, Pos::from(player_position));
             game.msg_log.log(Msg::SpawnedObject(player));
         }
 
@@ -401,7 +398,8 @@ pub fn keydown_to_action(keycode: Keycode,
     return input_action;
 }
 
-fn load_sprites(texture_creator: &TextureCreator<WindowContext>) -> IndexMap<SpriteKey, SpriteSheet> {
+fn load_sprites(texture_creator: &TextureCreator<WindowContext>,
+                display_state: &mut DisplayState) {
     let font_image = texture_creator.load_texture("resources/rexpaint16x16.png")
         .expect("Could not load texture!");
 
@@ -435,17 +433,16 @@ fn load_sprites(texture_creator: &TextureCreator<WindowContext>) -> IndexMap<Spr
     let mcmuffin = texture_creator.load_texture("animations/traps/McMuffin.png")
         .expect("Could not load texture!");
 
-    let mut sprites = DenseSlotMap::new();
-    sprites.insert(SpriteSheet::new("player_wall_kick".to_string(), player_wall_kick, 1));
-    sprites.insert(SpriteSheet::new("player_idle".to_string(),      player_idle,      1));
-    sprites.insert(SpriteSheet::new("player_attack".to_string(),    player_attack,    1));
-    sprites.insert(SpriteSheet::new("player_vault".to_string(),     player_vault,     1));
-    sprites.insert(SpriteSheet::new("gol_idle".to_string(),         gol_idle,         1));
-    sprites.insert(SpriteSheet::new("gol_die".to_string(),          gol_die,          1));
-    sprites.insert(SpriteSheet::new("elf_idle".to_string(),         elf_idle,         1));
-    sprites.insert(SpriteSheet::new("spikes".to_string(),           spikes_anim,      1));
-    sprites.insert(SpriteSheet::new("font".to_string(),             font_as_sprite,   16));
-    sprites.insert(SpriteSheet::new("key".to_string(),              mcmuffin,         1));
+    display_state.add_sprite(SpriteSheet::new("player_wall_kick".to_string(), player_wall_kick, 1));
+    display_state.add_sprite(SpriteSheet::new("player_idle".to_string(),      player_idle,      1));
+    display_state.add_sprite(SpriteSheet::new("player_attack".to_string(),    player_attack,    1));
+    display_state.add_sprite(SpriteSheet::new("player_vault".to_string(),     player_vault,     1));
+    display_state.add_sprite(SpriteSheet::new("gol_idle".to_string(),         gol_idle,         1));
+    display_state.add_sprite(SpriteSheet::new("gol_die".to_string(),          gol_die,          1));
+    display_state.add_sprite(SpriteSheet::new("elf_idle".to_string(),         elf_idle,         1));
+    display_state.add_sprite(SpriteSheet::new("spikes".to_string(),           spikes_anim,      1));
+    display_state.add_sprite(SpriteSheet::new("font".to_string(),             font_as_sprite,   16));
+    display_state.add_sprite(SpriteSheet::new("key".to_string(),              mcmuffin,         1));
 
     // load any animations in the autoload directory.
     for entry in WalkDir::new("animations/autoload/") {
@@ -457,10 +454,8 @@ fn load_sprites(texture_creator: &TextureCreator<WindowContext>) -> IndexMap<Spr
                 let sprite =
                     texture_creator.load_texture(path).expect("Could not load texture!");
 
-                sprites.insert(SpriteSheet::new(file_name, sprite, 1));
+                display_state.add_sprite(SpriteSheet::new(file_name, sprite, 1));
             }
         }
     }
-
-    return sprites;
 }

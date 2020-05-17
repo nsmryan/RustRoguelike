@@ -277,11 +277,11 @@ fn render_info(display_state: &mut DisplayState,
 
         // only display first object
         if let Some(obj_id) = object_ids.first() {
-            let pos = game.data.entities.pos[*obj_id];
+            let pos = game.data.entities.pos[obj_id];
 
             // only display things in the player's FOV
             if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) {
-                if let Some(fighter) = game.data.entities.fighter[obj_id] {
+                if let Some(fighter) = game.data.entities.fighter.get(obj_id) {
                     y_pos += 1;
 
                     let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
@@ -295,13 +295,13 @@ fn render_info(display_state: &mut DisplayState,
                     y_pos += 2;
                 }
 
-                text_list.push(format!("{}", game.data.entities[obj_id].name));
+                text_list.push(format!("{}", game.data.entities.name[obj_id]));
 
                 text_list.push(format!(""));
 
-                if game.data.entities.fighter.get_mut(*obj_id).map_or(false, |fighter| fighter.hp <= 0) {
+                if game.data.entities.fighter.get_mut(obj_id).map_or(false, |fighter| fighter.hp <= 0) {
                     text_list.push(format!("{}", "dead"));
-                } else if let Some(behave) = game.data.entities.behavior[*obj_id] {
+                } else if let Some(behave) = game.data.entities.behavior.get(obj_id) {
                     text_list.push(format!("{}", behave.description()));
                 }
             }
@@ -641,15 +641,15 @@ fn render_objects(display_state: &mut DisplayState, game: &mut Game, area: &Area
     let player_pos = game.data.entities.pos[&player_id];
 
     // step each objects animation
-    for object_id in game.data.entities.ids.iter().collect::<Vec<ObjectId>>().iter() {
-        let pos = game.data.entities.pos[*object_id];
+    for object_id in game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>().iter() {
+        let pos = game.data.entities.pos[object_id];
 
         // only draw if within the map (outside is (-1, -1) like if in inventory).
         if game.data.map.is_within_bounds(pos) {
             let is_in_fov = 
                game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player);
 
-            if let Some(anim_key) = game.data.entities.animation[*object_id].get(0) {
+            if let Some(anim_key) = game.data.entities.animation[object_id].get(0) {
                 let done = 
                     step_animation(*anim_key,
                                    *object_id,
@@ -661,12 +661,12 @@ fn render_objects(display_state: &mut DisplayState, game: &mut Game, area: &Area
                                    area);
 
                 if done {
-                    game.data.entities.animation[*object_id].pop_front();
+                    game.data.entities.animation[object_id].pop_front();
                 }
             } else {
                 if is_in_fov {
-                    let color = game.data.entities.color[*object_id];
-                    display_state.draw_char(game.data.entities.chr[*object_id], pos, color, area);
+                    let color = game.data.entities.color[object_id];
+                    display_state.draw_char(game.data.entities.chr[object_id], pos, color, area);
                 }
             }
         }
@@ -674,7 +674,7 @@ fn render_objects(display_state: &mut DisplayState, game: &mut Game, area: &Area
 }
 
 fn step_animation(anim_key: AnimKey,
-                      object_id: ObjectId,
+                      object_id: EntityId,
                       is_in_fov: bool,
                       display_state: &mut DisplayState,
                       data: &mut GameData,
@@ -682,10 +682,10 @@ fn step_animation(anim_key: AnimKey,
                       config: &Config,
                       area: &Area) -> bool {
 
-    let pos = data.entities.pos[object_id];
-    let color = data.entities.color[object_id];
+    let pos = data.entities.pos[&object_id];
+    let color = data.entities.color[&object_id];
 
-    match display_state.animations[anim_key].clone() {
+    match display_state.animations[&anim_key].clone() {
         Animation::Between(ref mut sprite, start, end, ref mut dist, blocks_per_sec) => {
            if settings.god_mode || is_in_fov {
                *dist = *dist + (blocks_per_sec / config.rate as f32); 
@@ -700,7 +700,7 @@ fn step_animation(anim_key: AnimKey,
 
                sprite.step();
 
-               display_state.animations[anim_key] =
+               display_state.animations[&anim_key] =
                    Animation::Between(*sprite, start, end, *dist, blocks_per_sec);
 
                return *dist >= distance(start, end) as f32;
@@ -716,7 +716,7 @@ fn step_animation(anim_key: AnimKey,
 
                 sprite.step();
 
-                display_state.animations[anim_key] =
+                display_state.animations[&anim_key] =
                    Animation::Loop(*sprite);
 
                 // a looping animation never finishes
@@ -740,7 +740,7 @@ fn step_animation(anim_key: AnimKey,
 
                 let sprite_done = sprite.step();
 
-                display_state.animations[anim_key] =
+                display_state.animations[&anim_key] =
                    Animation::Once(*sprite);
 
                 return sprite_done;
@@ -810,16 +810,16 @@ fn render_overlays(display_state: &mut DisplayState,
     // draw direction overlays
     let mut direction_color = game.config.color_soft_green;
     direction_color.a /= 2;
-    for object_id in game.data.entities.ids.iter().collect::<Vec<ObjectId>>().iter() {
-        let pos = game.data.entities.pos[*object_id];
+    for object_id in game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>().iter() {
+        let pos = game.data.entities.pos[object_id];
 
         if pos.x == -1 && pos.y == -1 {
             continue;
         }
 
         if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
-           game.data.entities.alive[*object_id] {
-            if let Some(dir) = game.data.entities.direction[*object_id] {
+           game.data.entities.alive[object_id] {
+            if let Some(dir) = game.data.entities.direction.get(object_id) {
                 // display_state.draw_tile_edge(pos, area, direction_color, dir);
 
                 let rotation = match dir {
@@ -843,10 +843,10 @@ fn render_overlays(display_state: &mut DisplayState,
         // Draw monster attack overlay
         let object_ids = get_objects_under_mouse(mouse_xy, &mut game.data, &game.config);
         for object_id in object_ids.iter() {
-            let pos = game.data.entities.pos[*object_id];
+            let pos = game.data.entities.pos[object_id];
 
             if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
-               game.data.entities.alive[*object_id] {
+               game.data.entities.alive[object_id] {
                render_attack_overlay(display_state,
                                      game,
                                      *object_id,
@@ -856,13 +856,13 @@ fn render_overlays(display_state: &mut DisplayState,
     }
 
     if game.settings.overlay {
-        let keys = game.data.entities.ids.iter().collect::<Vec<ObjectId>>();
+        let keys = game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>();
         for object_id in keys {
-            let pos = game.data.entities.pos[object_id];
+            let pos = game.data.entities.pos[&object_id];
 
             if game.data.map.is_within_bounds(pos) &&
                game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
-               game.data.entities.alive[object_id] {
+               game.data.entities.alive[&object_id] {
                render_attack_overlay(display_state,
                                      game,
                                      object_id,
@@ -919,8 +919,8 @@ fn render_overlays(display_state: &mut DisplayState,
 
 fn get_objects_under_mouse(mouse_pos: Pos,
                            data: &mut GameData,
-                           config: &Config) -> Vec<ObjectId> {
-    let mut object_ids = Vec::new();
+                           config: &Config) -> Vec<EntityId> {
+    let mut object_ids: Vec<EntityId> = Vec::new();
 
     for key in data.entities.ids.iter() {
         let pos = data.entities.pos[key];
@@ -928,7 +928,7 @@ fn get_objects_under_mouse(mouse_pos: Pos,
 
         if !is_mouse && mouse_pos == pos {
             if data.map.is_in_fov(pos, mouse_pos, config.fov_radius_player) {
-                object_ids.push(key);
+                object_ids.push(*key);
             }
         }
     }
@@ -1063,17 +1063,17 @@ fn render_bar(display_state: &mut DisplayState,
 
 fn render_attack_overlay(display_state: &mut DisplayState,
                          game: &mut Game,
-                         object_id: ObjectId,
+                         object_id: EntityId,
                          area: &Area) {
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
-    let object_pos = game.data.entities.pos[object_id];
+    let object_pos = game.data.entities.pos[&object_id];
 
     let mut attack_highlight_color = game.config.color_red;
     attack_highlight_color.a = game.config.highlight_attack;
 
-    if let Some(reach) = game.data.entities.attack[object_id] {
+    if let Some(reach) = game.data.entities.attack.get(&object_id) {
         let attack_positions = 
             reach.offsets()
                  .iter()

@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use rand::prelude::*;
 
 use serde::{Serialize, Deserialize};
@@ -29,16 +31,17 @@ pub enum MapGenType {
 pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLog) -> EntityId {
     let player = entities.create_entity(0, 0, ObjType::Player, '@', Color::white(), "player", true);
 
-    entities.alive[&player] = true;
-    entities.fighter[&player] =
+    entities.alive.insert(player,  true);
+    entities.fighter.insert(player,
         Fighter { max_hp: config.player_health,
                   hp: config.player_health,
                   defense: 0,
-                  power: 5 };
-    entities.movement[&player] = Reach::Single(1);
-    entities.attack[&player] = Reach::Single(1);
-    entities.move_mode[&player] = MoveMode::Walk;
-    entities.direction[&player] = Direction::Up;
+                  power: 5 });
+    entities.movement.insert(player,  Reach::Single(1));
+    entities.attack.insert(player,  Reach::Single(1));
+    entities.move_mode.insert(player,  MoveMode::Walk);
+    entities.direction.insert(player,  Direction::Up);
+    entities.inventory.insert(player,  VecDeque::new());
 
     msg_log.log(Msg::SpawnedObject(player));
 
@@ -54,7 +57,7 @@ pub fn make_column(entities: &mut Entities, config: &Config, pos: Pos) -> Entity
 pub fn make_dagger(entities: &mut Entities, config: &Config, pos: Pos) -> EntityId {
     let object = entities.create_entity(pos.x, pos.y, ObjType::Item, ENTITY_DAGGER as char, config.color_light_grey, "dagger", false);
 
-    entities.item[&object] = Item::Dagger;
+    entities.item.insert(object,  Item::Dagger);
 
     return object;
 }
@@ -62,7 +65,7 @@ pub fn make_dagger(entities: &mut Entities, config: &Config, pos: Pos) -> Entity
 pub fn make_shield(entities: &mut Entities, config: &Config, pos: Pos) -> EntityId {
     let object = entities.create_entity(pos.x, pos.y, ObjType::Item, ENTITY_SHIELD as char, config.color_light_grey, "shield", false);
 
-    entities.item[&object] = Item::Shield;
+    entities.item.insert(object,  Item::Shield);
 
     return object;
 }
@@ -70,7 +73,7 @@ pub fn make_shield(entities: &mut Entities, config: &Config, pos: Pos) -> Entity
 pub fn make_key(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let key = entities.create_entity(pos.x, pos.y, ObjType::Item, ENTITY_KEY as char, config.color_orange, "key", false);
     
-    entities.item[&key] = Item::Goal;
+    entities.item.insert(key,  Item::Goal);
 
     msg_log.log(Msg::SpawnedObject(key));
 
@@ -86,14 +89,14 @@ pub fn make_mouse(entities: &mut Entities, _config: &Config) -> EntityId {
 pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let gol = entities.create_entity(pos.x, pos.y, ObjType::Enemy, '\u{98}', config.color_orange, "gol", true);
 
-    entities.fighter[&gol] = Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, };
-    entities.ai[&gol] = Ai::Basic;
-    entities.behavior[&gol] = Behavior::Idle;
-    entities.color[&gol] = config.color_light_orange;
-    entities.movement[&gol] = Reach::Single(GOL_MOVE_DISTANCE);
-    entities.attack[&gol] = Reach::Diag(GOL_ATTACK_DISTANCE);
-    entities.alive[&gol] = true;
-    entities.direction[&gol] = Direction::from_f32(rand_from_pos(pos));
+    entities.fighter.insert(gol,  Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, });
+    entities.ai.insert(gol,  Ai::Basic);
+    entities.behavior.insert(gol,  Behavior::Idle);
+    entities.color.insert(gol,  config.color_light_orange);
+    entities.movement.insert(gol,  Reach::Single(GOL_MOVE_DISTANCE));
+    entities.attack.insert(gol,  Reach::Diag(GOL_ATTACK_DISTANCE));
+    entities.alive.insert(gol,  true);
+    entities.direction.insert(gol,  Direction::from_f32(rand_from_pos(pos)));
 
     msg_log.log(Msg::SpawnedObject(gol));
     
@@ -103,14 +106,14 @@ pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
 pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos) -> EntityId {
     let spire = entities.create_entity(pos.x, pos.y, ObjType::Enemy, '\u{15}', config.color_orange, "spire", true);
 
-    entities.fighter[&spire] = Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, };
-    entities.ai[&spire] = Ai::Basic;
-    entities.behavior[&spire] = Behavior::Idle;
-    entities.color[&spire] = config.color_mint_green;
-    entities.movement[&spire] = Reach::Single(SPIRE_MOVE_DISTANCE);
-    entities.attack[&spire] = Reach::Single(SPIRE_ATTACK_DISTANCE);
-    entities.alive[&spire] = true;
-    entities.direction[&spire] = Direction::Up;
+    entities.fighter.insert(spire,  Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, });
+    entities.ai.insert(spire,  Ai::Basic);
+    entities.behavior.insert(spire,  Behavior::Idle);
+    entities.color.insert(spire,  config.color_mint_green);
+    entities.movement.insert(spire,  Reach::Single(SPIRE_MOVE_DISTANCE));
+    entities.attack.insert(spire,  Reach::Single(SPIRE_ATTACK_DISTANCE));
+    entities.alive.insert(spire,  true);
+    entities.direction.insert(spire,  Direction::Up);
 
     return spire;
 }
@@ -118,14 +121,14 @@ pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos) -> EntityI
 pub fn make_elf(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let elf = entities.create_entity(pos.x, pos.y, ObjType::Enemy, '\u{A5}', config.color_orange, "elf", true);
 
-    entities.fighter[&elf] = Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, };
-    entities.ai[&elf] = Ai::Basic;
-    entities.behavior[&elf] = Behavior::Idle;
-    entities.color[&elf] = config.color_ice_blue;
-    entities.movement[&elf] = Reach::Single(PAWN_MOVE_DISTANCE);
-    entities.attack[&elf] = Reach::Single(PAWN_ATTACK_DISTANCE);
-    entities.alive[&elf] = true;
-    entities.direction[&elf] = Direction::from_f32(rand_from_pos(pos));
+    entities.fighter.insert(elf,  Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, });
+    entities.ai.insert(elf,  Ai::Basic);
+    entities.behavior.insert(elf,  Behavior::Idle);
+    entities.color.insert(elf,  config.color_ice_blue);
+    entities.movement.insert(elf,  Reach::Single(PAWN_MOVE_DISTANCE));
+    entities.attack.insert(elf,  Reach::Single(PAWN_ATTACK_DISTANCE));
+    entities.alive.insert(elf,  true);
+    entities.direction.insert(elf,  Direction::from_f32(rand_from_pos(pos)));
 
     msg_log.log(Msg::SpawnedObject(elf));
 
@@ -135,7 +138,7 @@ pub fn make_elf(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
 pub fn make_trap_sound(entities: &mut Entities, config: &Config, pos: Pos) -> EntityId {
     let mut sound = entities.create_entity(pos.x, pos.y, ObjType::Enemy, ENTITY_TRAP_SOUND as char, config.color_ice_blue, "soudn", false);
 
-    entities.trap[&sound] = Trap::Sound;
+    entities.trap.insert(sound,  Trap::Sound);
 
     return sound;
 }
@@ -143,7 +146,7 @@ pub fn make_trap_sound(entities: &mut Entities, config: &Config, pos: Pos) -> En
 pub fn make_spikes(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let mut spikes = entities.create_entity(pos.x, pos.y, ObjType::Enemy, MAP_TALL_SPIKES as char, config.color_ice_blue, "spike", false);
 
-    entities.trap[&spikes] = Trap::Spikes;
+    entities.trap.insert(spikes,  Trap::Spikes);
 
     msg_log.log(Msg::SpawnedObject(spikes));
 
@@ -153,7 +156,7 @@ pub fn make_spikes(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
 pub fn make_exit(entities: &mut Entities, config: &Config, pos: Pos) -> EntityId {
     let mut exit = entities.create_entity(pos.x, pos.y, ObjType::Item, ENTITY_EXIT as char, config.color_orange, "exit", false);
 
-    entities.color[&exit] = config.color_ice_blue;
+    entities.color.insert(exit,  config.color_ice_blue);
 
     return exit;
 }
@@ -161,9 +164,9 @@ pub fn make_exit(entities: &mut Entities, config: &Config, pos: Pos) -> EntityId
 pub fn make_stone(entities: &mut Entities, config: &Config, pos: Pos) -> EntityId {
     let stone = entities.create_entity(pos.x, pos.y, ObjType::Item, ENTITY_STONE as char, config.color_light_grey, "stone", true);
 
-    entities.item[&stone] = Item::Stone;
-    entities.alive[&stone] = false;
-    entities.blocks[&stone] = false;
+    entities.item.insert(stone,  Item::Stone);
+    entities.alive.insert(stone,  false);
+    entities.blocks.insert(stone,  false);
 
     return stone;
 }

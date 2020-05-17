@@ -434,6 +434,10 @@ impl Entities {
         self.blocks.insert(id, blocks);
         self.alive.insert(id, false);
         self.direction.insert(id, Direction::Up);
+        self.animation.insert(id,  VecDeque::new());
+        self.action.insert(id,  Action::NoAction);
+        self.messages.insert(id,  Vec::new());
+        self.needs_removal.insert(id,  false);
 
         return id;
     }

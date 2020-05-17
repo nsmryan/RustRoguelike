@@ -3,6 +3,8 @@ use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{Color as Sdl2Color};
 
+use indexmap::map::IndexMap;
+
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::config::*;
@@ -16,12 +18,14 @@ use roguelike_engine::plat::*;
 
 pub struct DisplayState {
     pub font_image: Texture,
-    pub sprites: DenseSlotMap<SpriteKey, SpriteSheet>,
+    pub sprites: IndexMap<SpriteKey, SpriteSheet>,
+    pub next_sprite_key: i64,
     pub screen_sections: Plan,
     pub zones: Vec<Plot>,
     pub canvas: WindowCanvas,
     pub effects: Vec<Effect>,
-    pub animations: DenseSlotMap<AnimKey, Animation>,
+    pub animations: IndexMap<AnimKey, Animation>,
+    pub next_anim_key: i64,
     pub background: Option<Texture>,
     pub texture_creator: TextureCreator<WindowContext>,
 }
@@ -29,28 +33,35 @@ pub struct DisplayState {
 impl DisplayState {
     pub fn new(screen_sections: Plan,
                font_image: Texture,
-               sprites: DenseSlotMap<SpriteKey, SpriteSheet>,
                canvas: WindowCanvas) -> DisplayState {
 
         let texture_creator = canvas.texture_creator();
 
         return DisplayState {
             font_image,
-            sprites,
+            sprites: IndexMap::new(),
+            next_sprite_key: 0,
             screen_sections,
             canvas,
             zones: Vec::new(),
             effects: Vec::new(),
-            animations: DenseSlotMap::new(),
+            animations: IndexMap::new(),
+            next_anim_key: 0,
             background: None,
             texture_creator,
         };
     }
 
+    pub fn add_sprite(&mut self, sprite_sheet: SpriteSheet) {
+        let sprite_key = self.next_sprite_key;
+        self.next_sprite_key += 1;
+        self.sprites.insert(sprite_key, sprite_sheet);
+    }
+
     pub fn lookup_spritekey(&self, name: &String) -> Option<SpriteKey> {
         for (key, sprite_sheet) in self.sprites.iter() {
             if sprite_sheet.name == *name {
-                return Some(key);
+                return Some(*key);
             }
         }
 
@@ -59,7 +70,7 @@ impl DisplayState {
 
     pub fn new_sprite(&self, name: String, speed: f32) -> Option<Sprite> {
         if let Some(sprite_key) = self.lookup_spritekey(&name) {
-            let max_index = self.sprites[sprite_key].num_sprites;
+            let max_index = self.sprites[&sprite_key].num_sprites;
             return Some(Sprite::make_sprite(name, sprite_key, max_index as f32, speed));
         }
 
@@ -106,7 +117,7 @@ impl DisplayState {
                        pos: Pos,
                        color: Color,
                        area: &Area) {
-        let sprite_sheet = &mut self.sprites[sprite.sprite_key];
+        let sprite_sheet = &mut self.sprites[&sprite.sprite_key];
 
         let sprites_per_row = sprite_sheet.sprites_per_row();
         let sprite_x = (sprite.index as usize) % sprites_per_row;
@@ -231,7 +242,10 @@ impl DisplayState {
     }
 
     pub fn play_animation(&mut self, animation: Animation) -> AnimKey {
-        return self.animations.insert(animation);
+        let anim_key = self.next_anim_key;
+        self.next_anim_key += 1;
+        self.animations.insert(anim_key, animation);
+        return anim_key;
     }
 
     pub fn play_effect(&mut self, effect: Effect) {
@@ -342,43 +356,41 @@ impl DisplayState {
             }
 
             Msg::SpawnedObject(entity_id) => {
-                let obj_id = data.find_entity(entity_id).unwrap();
-
-                if data.entities.typ[obj_id] == ObjType::Player {
+                if data.entities.typ[&entity_id] == ObjType::Player {
                     let sprite = self.new_sprite("player_idle".to_string(), config.idle_speed)
                                                     .expect("Could not find sprite 'player_idle'");
 
                     let anim_key = self.play_animation(Animation::Loop(sprite));
 
-                    data.entities.animation[obj_id].push_front(anim_key);
-                } else if data.entities.name[obj_id] == "key" {
+                    data.entities.animation[&entity_id].push_front(anim_key);
+                } else if data.entities.name[&entity_id] == "key" {
                     let sprite = self.new_sprite("key".to_string(), config.key_speed)
                                                      .expect("Could not find sprite 'key'");
 
                     let anim_key = self.play_animation(Animation::Loop(sprite));
 
-                    data.entities.animation[obj_id].push_front(anim_key);
+                    data.entities.animation[&entity_id].push_front(anim_key);
 
-                } else if data.entities.name[obj_id] == "spike" {
+                } else if data.entities.name[&entity_id] == "spike" {
                     let sprite = self.new_sprite("spikes".to_string(), config.idle_speed)
                                                      .expect("Could not find sprite 'spikes'");
 
                     let anim_key = self.play_animation(Animation::Loop(sprite));
 
-                    data.entities.animation[obj_id].push_front(anim_key);
-                } else if data.entities.name[obj_id] == "elf" {
+                    data.entities.animation[&entity_id].push_front(anim_key);
+                } else if data.entities.name[&entity_id] == "elf" {
                     let sprite =  self.new_sprite("elf_idle".to_string(), config.idle_speed)
                                                      .expect("Could not find sprite 'elf_idle'");
                     let anim_key = self.play_animation(Animation::Loop(sprite));
 
-                    data.entities.animation[obj_id].push_front(anim_key);
-                } else if data.entities.name[obj_id] == "gol" {
+                    data.entities.animation[&entity_id].push_front(anim_key);
+                } else if data.entities.name[&entity_id] == "gol" {
                     let sprite = self.new_sprite("gol_idle".to_string(), config.idle_speed)
                                                      .expect("Could not find sprite 'gol_idle'");
 
                     let anim_key = self.play_animation(Animation::Loop(sprite));
 
-                    data.entities.animation[obj_id].push_front(anim_key);
+                    data.entities.animation[&entity_id].push_front(anim_key);
                 }
             }
 
