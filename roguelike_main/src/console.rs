@@ -191,7 +191,7 @@ impl Console {
                 }
 
                 if let Some(key) = entity_key {
-                    data.entities.set_xy(key, x, y);
+                    data.entities.set_xy(*key, x, y);
                     self.output.push(format!("{} moved to ({}, {})", id, x, y));
                 } else {
                     self.output.push(format!("Id {} not found!", id));
@@ -256,7 +256,7 @@ impl Console {
                 let x = args.pop().unwrap().parse::<i32>().unwrap();
 
                 let gol = make_gol(&mut data.entities, config, Pos::new(x, y), msg_log);
-                self.output.push(format!("Added gol at ({}, {}), id = {}", x, y, gol.id));
+                self.output.push(format!("Added gol at ({}, {}), id = {}", x, y, gol));
             }
 
             Command::Elf => {
@@ -264,7 +264,7 @@ impl Console {
                 let x = args.pop().unwrap().parse::<i32>().unwrap();
 
                 let elf = make_elf(&mut data.entities, config, Pos::new(x, y), msg_log);
-                self.output.push(format!("Added elf at ({}, {}), id = {}", x, y, elf.id));
+                self.output.push(format!("Added elf at ({}, {}), id = {}", x, y, elf));
             }
 
             Command::PlayerHp => {
