@@ -403,7 +403,7 @@ pub fn keydown_to_action(keycode: Keycode,
     return input_action;
 }
 
-fn load_sprites(texture_creator: &TextureCreator<WindowContext>) -> DenseSlotMap<SpriteKey, SpriteSheet> {
+fn load_sprites(texture_creator: &TextureCreator<WindowContext>) -> IndexMap<SpriteKey, SpriteSheet> {
     let font_image = texture_creator.load_texture("resources/rexpaint16x16.png")
         .expect("Could not load texture!");
 

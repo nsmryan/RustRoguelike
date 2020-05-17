@@ -165,7 +165,7 @@ impl Console {
                 let mut line = String::new();
                 let mut count = 0;
                 let combine = 2;
-                for entity in data.objects.values() {
+                for entity in data.entities.values() {
                     line.push_str(&format!("{:>3}: at ({:>2}, {:>2}) {:<16}", entity.id, entity.x, entity.y, entity.name));
 
                     count += 1;
@@ -184,14 +184,14 @@ impl Console {
                 let id = args.pop().unwrap().parse::<u64>().unwrap();
 
                 let mut entity_key = None;
-                for (key, entity) in data.objects.iter() {
+                for key in data.entities.ids.iter() {
                     if entity.id == id {
                         entity_key = Some(key);
                     }
                 }
 
                 if let Some(key) = entity_key {
-                    data.objects[key].set_xy(x, y);
+                    data.entities.set_xy(key, x, y);
                     self.output.push(format!("{} moved to ({}, {})", id, x, y));
                 } else {
                     self.output.push(format!("Id {} not found!", id));
@@ -204,7 +204,7 @@ impl Console {
 
                 let player = data.find_player().unwrap();
 
-                let player_pos = data.objects[player].pos();
+                let player_pos = data.entities.pos[&player];
                 let can_see = data.map.is_in_fov(player_pos, Pos::new(x, y), config.fov_radius_player);
 
                 if can_see {
@@ -220,7 +220,7 @@ impl Console {
 
                 let player = data.find_player().unwrap();
 
-                data.objects[player].set_xy(x, y);
+                data.entities.set_xy(player, x, y);
                 self.output.push(format!("Player at ({}, {})", x, y));
             }
 
@@ -255,27 +255,23 @@ impl Console {
                 let y = args.pop().unwrap().parse::<i32>().unwrap();
                 let x = args.pop().unwrap().parse::<i32>().unwrap();
 
-                let gol = make_gol(config, Pos::new(x, y), msg_log);
+                let gol = make_gol(&mut data.entities, config, Pos::new(x, y), msg_log);
                 self.output.push(format!("Added gol at ({}, {}), id = {}", x, y, gol.id));
-
-                data.objects.insert(gol);
             }
 
             Command::Elf => {
                 let y = args.pop().unwrap().parse::<i32>().unwrap();
                 let x = args.pop().unwrap().parse::<i32>().unwrap();
 
-                let elf = make_elf(config, Pos::new(x, y), msg_log);
+                let elf = make_elf(&mut data.entities, config, Pos::new(x, y), msg_log);
                 self.output.push(format!("Added elf at ({}, {}), id = {}", x, y, elf.id));
-
-                data.objects.insert(elf);
             }
 
             Command::PlayerHp => {
                 let hp = args.pop().unwrap().parse::<i32>().unwrap();
 
                 let player = data.find_player().unwrap();
-                data.objects[player].fighter.unwrap().hp = hp;
+                data.entities.fighter[&player].hp = hp;
 
                 self.output.push(format!("Player HP set to {}", hp));
             }
