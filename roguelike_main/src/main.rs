@@ -9,6 +9,8 @@ use std::fs::File;
 use std::time::{Duration, Instant};
 use std::io::Read;
 use std::path::Path;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
@@ -17,9 +19,9 @@ use sdl2::keyboard::{Mod, Keycode};
 use sdl2::render::{TextureCreator};
 use sdl2::video::WindowContext;
 
-use indexmap::map::IndexMap;
+use rand::prelude::*;
 
-use serde_yaml;
+use indexmap::map::IndexMap;
 
 use walkdir::WalkDir;
 
@@ -45,20 +47,22 @@ use crate::display::*;
 fn main() {
     let args = env::args().collect::<Vec<String>>();
 
-    let config: Config;
-    {
-        let mut file =
-            File::open("config.yaml").expect("Could not open/parse config file config.yaml");
-        let mut config_string = String::new();
-        file.read_to_string(&mut config_string)
-            .expect("Could not read contents of config.yaml");
-        config = serde_yaml::from_str(&config_string).expect("Could not parse config.yaml file!");
+    let seed: u64;
+    if args.len() > 1 {
+        let mut hasher = DefaultHasher::new();
+        args[1].hash(&mut hasher);
+        seed = hasher.finish();
+    } else {
+        seed = rand::thread_rng().gen();
     }
+    println!("Seed: {} (0x{:X})", seed, seed);
 
-    run(&args, config).unwrap();
+    run(seed).unwrap();
 }
 
-pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
+pub fn run(seed: u64) -> Result<(), String> {
+    let config = Config::from_file("config.yaml");
+
     /* Create SDL Context */
     let sdl_context = sdl2::init()?;
     let video = sdl_context.video()?;
@@ -90,7 +94,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
     /* Load Textures */
     let sprites = load_sprites(&texture_creator, &mut display_state);
 
-    let mut game = Game::new(args, config.clone())?;
+    let mut game = Game::new(seed, config.clone())?;
 
     let start_time = Instant::now();
     let mut frame_time = Instant::now();
@@ -222,11 +226,7 @@ pub fn run(args: &Vec<String>, config: Config) -> Result<(), String> {
         }
 
         /* Reload Configuration */
-        if let Ok(mut file) = File::open("config.yaml") {
-            let mut config_string = String::new();
-            file.read_to_string(&mut config_string).expect("Could not read config file!");
-            game.config = serde_yaml::from_str(&config_string).expect("Could not read JSON- config.json has a parsing error!");
-        }
+        game.config = Config::from_file("config.yaml");
 
         /* Wait until the next tick to loop */
         fps_throttler.wait();
@@ -459,3 +459,4 @@ fn load_sprites(texture_creator: &TextureCreator<WindowContext>,
         }
     }
 }
+

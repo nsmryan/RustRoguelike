@@ -1,7 +1,11 @@
+use std::fs::File;
+use std::io::Read;
+
 use crate::types::*;
 use crate::map::*;
 
 use serde_derive::*;
+use serde_yaml;
 
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -65,3 +69,15 @@ pub struct Config {
     pub console_speed: f32,
 }
 
+impl Config {
+    pub fn from_file(file_name: &str) -> Config {
+        let mut file =
+            File::open(file_name).expect(&format!("Could not open/parse config file {}", file_name));
+        let mut config_string = String::new();
+        file.read_to_string(&mut config_string)
+            .expect(&format!("Could not read contents of {}", file_name));
+        let config = serde_yaml::from_str(&config_string).expect(&format!("Could not parse {} file!", file_name));
+
+        return config
+    }
+}

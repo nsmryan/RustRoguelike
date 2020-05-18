@@ -3,8 +3,6 @@ use std::hash::{Hash, Hasher};
 
 use rand::prelude::*;
 
-//use slotmap::dense::*;
-
 use serde::{Serialize, Deserialize};
 
 use sdl2::keyboard::Keycode;
@@ -79,20 +77,7 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(args: &Vec<String>,
-               config: Config) -> Result<Game, String> {
-        // Create seed for random number generator, either from
-        // user input or randomly
-        let seed: u64;
-        if args.len() > 1 {
-            let mut hasher = DefaultHasher::new();
-            args[1].hash(&mut hasher);
-            seed = hasher.finish();
-        } else {
-            seed = rand::thread_rng().gen();
-        }
-        println!("Seed: {} (0x{:X})", seed, seed);
-
+    pub fn new(seed: u64, config: Config) -> Result<Game, String> {
         let mut entities = Entities::new();
         let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
 
