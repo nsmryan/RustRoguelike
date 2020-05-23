@@ -15,10 +15,10 @@ use roguelike_core::config::*;
 use roguelike_core::animation::{Effect, Animation, AnimKey};
 use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color};
 
-use roguelike_engine::plat::*;
 use roguelike_engine::game::*;
 
 use crate::display::*;
+use crate::plat::*;
 
 
 pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<(), String> {
@@ -447,7 +447,7 @@ fn render_background(display_state: &mut DisplayState, game: &mut Game, area: &A
                         let tile = &map.tiles[x as usize][y as usize];
                         if tile.tile_type == TileType::Water {
                             let color = tile_color(&config, x, y, tile, visible);
-                            let chr = tile.chr.map_or('+', |chr| chr);
+                            let chr = tile.chr;
                             draw_char(canvas, font_image, chr, map_pos, color, area);
                         }
                     }
@@ -489,7 +489,7 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
                     game.config.color_dark_brown
                 };
 
-            let chr = tile.chr.map_or('+', |chr| chr);
+            let chr = tile.chr;
 
             // draw empty tile first, in case there is transparency in the character
             // draw_char(display_state, MAP_EMPTY_CHAR as char, x, y, empty_tile_color(config, x, y, visible));

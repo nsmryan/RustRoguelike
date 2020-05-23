@@ -13,4 +13,5 @@ members = [
   "roguelike_core",
   "roguelike_main",
   "roguelike_engine",
+  "roguelike_lib",
  ]

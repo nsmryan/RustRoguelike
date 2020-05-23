@@ -1,5 +1,4 @@
 pub mod game;
-pub mod plat;
 pub mod read_map;
 pub mod actions;
 pub mod generation;

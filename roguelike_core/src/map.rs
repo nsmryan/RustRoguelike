@@ -105,10 +105,9 @@ pub struct Tile {
     pub block_sight: bool,
     pub explored: bool,
     pub tile_type: TileType,
-    pub sound: Option<(i32, i32)>,
     pub bottom_wall: Wall,
     pub left_wall: Wall,
-    pub chr: Option<char>,
+    pub chr: char,
     pub surface: Surface,
 }
 
@@ -118,10 +117,9 @@ impl Tile {
         block_sight: false,
         explored: false,
         tile_type: TileType::Empty,
-        sound: None,
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
-        chr: Some(' '),
+        chr: ' ',
         surface: Surface::Floor,
         }
     }
@@ -131,24 +129,22 @@ impl Tile {
         block_sight: false,
         explored: false,
         tile_type: TileType::Water,
-        sound: None,
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
-        chr: Some(' '),
+        chr: ' ',
         surface: Surface::Floor,
         }
     }
 
     pub fn wall() -> Self {
-        return Tile::wall_with(None);
+        return Tile::wall_with(' ');
     }
 
-    pub fn wall_with(chr: Option<char>) -> Self {
+    pub fn wall_with(chr: char) -> Self {
         Tile { blocked: true,
         block_sight: true,
         explored: false,
         tile_type: TileType::Wall,
-        sound: None,
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
         chr: chr,
@@ -157,15 +153,14 @@ impl Tile {
     }
 
     pub fn short_wall() -> Self {
-        return Tile::short_wall_with(None);
+        return Tile::short_wall_with(' ');
     }
 
-    pub fn short_wall_with(chr: Option<char>) -> Self {
+    pub fn short_wall_with(chr: char) -> Self {
         Tile { blocked: true,
         block_sight: false,
         explored: false,
         tile_type: TileType::ShortWall,
-        sound: None,
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
         chr: chr,
@@ -178,10 +173,9 @@ impl Tile {
         block_sight: false,
         explored: false,
         tile_type: TileType::Exit,
-        sound: None,
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
-        chr: None,
+        chr: ' ',
         surface: Surface::Floor,
         }
     }

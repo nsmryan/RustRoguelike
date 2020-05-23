@@ -47,7 +47,7 @@ pub fn read_map_xp(config: &Config,
 
                             MAP_WATER => {
                                 map[pos] = Tile::water();
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                             }
 
                             MAP_RUBBLE => {
@@ -71,150 +71,150 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             MAP_THIN_WALL_TOP => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_LEFT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_RIGHT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_TOP_LEFT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].left_wall = Wall::ShortWall;
                                 map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM_LEFT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].left_wall = Wall::ShortWall;
                                 map[pos].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_TOP_RIGHT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                                 map[(x - 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM_RIGHT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].bottom_wall = Wall::ShortWall;
                                 map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_TOP => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_LEFT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_RIGHT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].bottom_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_TOP_LEFT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].left_wall = Wall::TallWall;
                                 map[(x, y - 1)].bottom_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM_LEFT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].bottom_wall = Wall::TallWall;
                                 map[pos].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_TOP_RIGHT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[(x, y - 1)].bottom_wall = Wall::TallWall;
                                 map[(x + 1, y)].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM_RIGHT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].bottom_wall = Wall::TallWall;
                                 map[(x + 1, y)].left_wall = Wall::TallWall;
                             }
 
                             MAP_DOT_TOP_LEFT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].blocked = true;
                             }
 
                             MAP_DOT_TOP_RIGHT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].blocked = true;
                             }
 
                             MAP_DOT_BOTTOM_LEFT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].blocked = true;
                             }
 
                             MAP_DOT_BOTTOM_RIGHT => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].blocked = true;
                             }
 
                             MAP_ROOK => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].blocked = true;
                             }
 
                             MAP_DOT_MIDDLE | MAP_ORB => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].blocked = true;
                             }
 
                             MAP_EMPTY => {
-                                map[pos].chr = Some(MAP_EMPTY_CHAR as char);
+                                map[pos].chr = MAP_EMPTY_CHAR as char;
                             }
 
                             MAP_STATUE_1 | MAP_STATUE_2 | MAP_STATUE_3 |
                                 MAP_STATUE_4 | MAP_STATUE_5 | MAP_STATUE_6 => {
-                                    map[pos].chr = Some(chr);
+                                    map[pos].chr = chr;
                                     map[pos].blocked = true;
                                 }
 
                             MAP_WIDE_SPIKES| MAP_TALL_SPIKES => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].blocked = true;
                             }
 
                             MAP_WALL => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].blocked = true;
                             }
 
                             ENTITY_CLOAK_GUY => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].blocked = true;
                             }
 
                             _ => {
-                                map[pos].chr = Some(chr);
+                                map[pos].chr = chr;
                                 map[pos].blocked = true;
                             }
                         }

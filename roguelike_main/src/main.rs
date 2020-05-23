@@ -3,11 +3,10 @@ mod throttler;
 mod render;
 mod console;
 mod display;
+mod plat;
 
 use std::env;
-use std::fs::File;
 use std::time::{Duration, Instant};
-use std::io::Read;
 use std::path::Path;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -21,8 +20,6 @@ use sdl2::video::WindowContext;
 
 use rand::prelude::*;
 
-use indexmap::map::IndexMap;
-
 use walkdir::WalkDir;
 
 use roguelike_core::types::*;
@@ -32,7 +29,6 @@ use roguelike_core::constants::*;
 use roguelike_core::animation::SpriteKey;
 use roguelike_core::movement::Direction;
 
-use roguelike_engine::plat::*;
 use roguelike_engine::game::*;
 use roguelike_engine::actions::*;
 use roguelike_engine::read_map::read_map_xp;
@@ -42,6 +38,7 @@ use crate::throttler::*;
 use crate::render::*;
 use crate::console::*;
 use crate::display::*;
+use crate::plat::*;
 
 
 fn main() {
