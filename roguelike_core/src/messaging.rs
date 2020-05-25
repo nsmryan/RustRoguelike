@@ -61,7 +61,7 @@ pub enum Msg {
     GameState(GameState),
     MoveMode(MoveMode),
     TriedRunWithShield,
-    SpawnedObject(EntityId),
+    SpawnedObject(EntityId, ObjType, Pos),
     ChangeLevel(),
 }
 
@@ -181,7 +181,7 @@ impl Msg {
                 return "Can't run with shield!".to_string();
             }
 
-            Msg::SpawnedObject(entity_id) => {
+            Msg::SpawnedObject(entity_id, _typ, _pos) => {
                 return "".to_string();
             }
 

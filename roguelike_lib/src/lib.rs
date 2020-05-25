@@ -18,7 +18,7 @@ use roguelike_core::ai::*;
 use roguelike_core::movement::*;
 
 use roguelike_engine::game::*;
-use roguelike_engine::read_map::read_map_xp;
+use roguelike_engine::make_map::read_map_xp;
 use roguelike_engine::resolve::resolve_messages;
 
 

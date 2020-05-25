@@ -15,7 +15,7 @@ use roguelike_core::movement::Action;
 use crate::actions;
 use crate::actions::{InputAction, KeyDirection};
 use crate::generation::*;
-use crate::read_map::read_map_xp;
+use crate::make_map::read_map_xp;
 use crate::resolve::resolve_messages;
 
 
@@ -89,7 +89,7 @@ impl Game {
         let player_id = make_player(&mut data.entities, &config, &mut msg_log);
         data.entities.pos[&player_id] = Pos::new(-1, -1);
 
-        let stone_id = make_stone(&mut data.entities, &config, Pos::new(-1, -1));
+        let stone_id = make_stone(&mut data.entities, &config, Pos::new(-1, -1), &mut msg_log);
         data.entities.inventory[&player_id].push_back(stone_id);
 
         let state = Game {
@@ -147,9 +147,6 @@ impl Game {
             read_map_xp(&self.config, &mut self.data.entities, &mut self.msg_log, "resources/map.xp");
 
         self.data.map = new_map;
-        for key in self.data.entities.ids.iter() {
-            self.msg_log.log(Msg::SpawnedObject(*key));
-        }
 
         self.settings.state = GameState::Playing;
 

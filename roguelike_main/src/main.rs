@@ -40,7 +40,7 @@ use roguelike_core::map::MapLoadConfig;
 use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
 use roguelike_engine::actions::*;
-use roguelike_engine::read_map::read_map_xp;
+use roguelike_engine::make_map::{make_map, read_map_xp};
 use roguelike_engine::resolve::resolve_messages;
 
 use crate::throttler::*;
@@ -108,54 +108,14 @@ pub fn run(seed: u64) -> Result<(), String> {
 
     let mut game = Game::new(seed, config.clone())?;
 
-    let map;
-    let player_position: Pos;
-    match config.map_load {
-        MapLoadConfig::FromFile => {
-            let (new_map, mut position) =
-                read_map_xp(&config, &mut game.data.entities, &mut game.msg_log, "resources/map.xp");
-            map = new_map;
-            if position == (0, 0) {
-                position = (map.width() / 2, map.height() / 2);
-            }
-            player_position = Pos::from(position);
-        }
+    let (map, player_position) = make_map(&config.map_load, &mut game);
 
-        MapLoadConfig::Random => {
-            let (data, position) =
-                make_map(&MapGenType::Island, &mut game.data.entities, &config, &mut game.msg_log, &mut game.rng);
-            // TODO consider using objects as well here on regen?
-            map = data.map;
-            player_position = Pos::from(position);
-        }
-
-        MapLoadConfig::TestWall => {
-            let (new_map, position) = make_wall_test_map(&mut game.data.entities, &config, &mut game.msg_log);
-            map = new_map;
-            player_position = Pos::from(position);
-        }
-
-        MapLoadConfig::TestPlayer => {
-            let (new_map, position) = make_player_test_map(&mut game.data.entities, &config);
-            map = new_map;
-            player_position = Pos::from(position);
-        }
-
-        MapLoadConfig::TestCorner => {
-            let (new_map, position) = make_corner_test_map(&mut game.data.entities, &config, &mut game.msg_log);
-            map = new_map;
-            player_position = Pos::from(position);
-        }
-    }
     game.data.map = map;
 
     let player_id = game.data.find_player().unwrap();
     game.data.entities.pos[&player_id] = player_position;
 
-    make_mouse(&mut game.data.entities, &config);
-    for key in game.data.entities.ids.iter() {
-        game.msg_log.log(Msg::SpawnedObject(*key));
-    }
+    make_mouse(&mut game.data.entities, &config, &mut game.msg_log);
 
     let start_time = Instant::now();
     let mut frame_time = Instant::now();
@@ -287,11 +247,7 @@ pub fn run(seed: u64) -> Result<(), String> {
             game.data.entities.clear();
             let (new_map, player_position) = read_map_xp(&game.config, &mut game.data.entities, &mut game.msg_log, &map_file);
             game.data.map = new_map;
-            for key in game.data.entities.ids.iter() {
-                game.msg_log.log(Msg::SpawnedObject(*key));
-            }
             game.data.entities.set_pos(player, Pos::from(player_position));
-            game.msg_log.log(Msg::SpawnedObject(player));
         }
 
         /* Reload Configuration */

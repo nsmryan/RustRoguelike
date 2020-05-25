@@ -355,7 +355,7 @@ impl DisplayState {
                 }
             }
 
-            Msg::SpawnedObject(entity_id) => {
+            Msg::SpawnedObject(entity_id, _typ, _pos) => {
                 if data.entities.typ[&entity_id] == ObjType::Player {
                     let sprite = self.new_sprite("player_idle".to_string(), config.idle_speed)
                                                     .expect("Could not find sprite 'player_idle'");

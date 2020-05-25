@@ -12,7 +12,7 @@ use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 
 use crate::game::*;
-use crate::generation;
+use crate::make_map;
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -325,13 +325,9 @@ pub fn handle_input(game: &mut Game) -> Action {
 
         (InputAction::RegenerateMap, _) => {
             let mut rng: SmallRng = SeedableRng::seed_from_u64(2);
-            let (data, _position) =
-                generation::make_map(&game.settings.map_type,
-                                     &mut game.data.entities,
-                                     &game.config,
-                                     &mut game.msg_log,
-                                     &mut rng);
-            game.data.map = data.map;
+            let (map, _position) =
+                make_map::make_map(&game.config.map_load.clone(), game);
+            game.data.map = map;
         }
 
         (InputAction::GodMode, true) => {

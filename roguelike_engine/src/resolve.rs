@@ -7,7 +7,7 @@ use roguelike_core::movement::{MoveMode, MoveType};
 use roguelike_core::config::*;
 
 use crate::game::*;
-use crate::read_map::read_map_xp;
+use crate::make_map::read_map_xp;
 
 
 pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mut GameSettings, config: &Config) {
