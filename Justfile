@@ -37,3 +37,6 @@ sizes:
 
 debug:
   RUSTFLAGS="-C link-arg=-fuse-ld=lld" RUST_BACKTRACE=1 cargo run
+
+flame:
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo flamegraph

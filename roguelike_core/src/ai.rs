@@ -13,11 +13,17 @@ pub enum Ai {
     Basic,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Behavior {
     Idle,
     Investigating(Pos),
     Attacking(EntityId),
+}
+
+impl Default for Behavior {
+    fn default() -> Behavior {
+        return Behavior::Idle;
+    }
 }
 
 impl Behavior {

@@ -1,6 +1,3 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-
 use rand::prelude::*;
 
 use serde::{Serialize, Deserialize};
@@ -74,6 +71,8 @@ pub struct Game {
     pub settings: GameSettings,
 
     pub msg_log: MsgLog,
+
+    pub rng: SmallRng,
 }
 
 impl Game {
@@ -83,56 +82,12 @@ impl Game {
 
         let mut msg_log = MsgLog::new();
 
-        let map;
-        let player_position: (i32, i32);
-        match config.map_load {
-            MapLoadConfig::FromFile => {
-                let (new_map, mut position) =
-                    read_map_xp(&config, &mut entities, &mut msg_log, "resources/map.xp");
-                for key in entities.ids.iter() {
-                    msg_log.log(Msg::SpawnedObject(*key));
-                }
-                map = new_map;
-                if position == (0, 0) {
-                    position = (map.width() / 2, map.height() / 2);
-                }
-                player_position = position;
-
-                make_mouse(&mut entities, &config);
-            }
-
-            MapLoadConfig::Random => {
-                let (data, position) =
-                    make_map(&MapGenType::Island, &mut entities, &config, &mut msg_log, &mut rng);
-                // TODO consider using objects as well here on regen?
-                map = data.map;
-                player_position = position.to_tuple();
-            }
-
-            MapLoadConfig::TestWall => {
-                let (new_map, position) = make_wall_test_map(&mut entities, &config, &mut msg_log);
-                map = new_map;
-                player_position = position.to_tuple();
-            }
-
-            MapLoadConfig::TestPlayer => {
-                let (new_map, position) = make_player_test_map(&mut entities, &config);
-                map = new_map;
-                player_position = position.to_tuple();
-            }
-
-            MapLoadConfig::TestCorner => {
-                let (new_map, position) = make_corner_test_map(&mut entities, &config, &mut msg_log);
-                map = new_map;
-                player_position = position.to_tuple();
-                make_mouse(&mut entities, &config);
-            }
-        }
+        let map = Map::empty();
 
         let mut data = GameData::new(map, entities);
 
         let player_id = make_player(&mut data.entities, &config, &mut msg_log);
-        data.entities.pos[&player_id] = Pos::new(player_position.0,  player_position.1);
+        data.entities.pos[&player_id] = Pos::new(-1, -1);
 
         let stone_id = make_stone(&mut data.entities, &config, Pos::new(-1, -1));
         data.entities.inventory[&player_id].push_back(stone_id);
@@ -145,6 +100,7 @@ impl Game {
             mouse_state: Default::default(),
             msg_log,
             key_input: Vec::new(),
+            rng: rng,
         };
 
         return Ok(state);

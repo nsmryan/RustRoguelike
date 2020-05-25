@@ -6,6 +6,7 @@ mod display;
 mod plat;
 
 use std::env;
+use std::fs;
 use std::time::{Duration, Instant};
 use std::path::Path;
 use std::collections::hash_map::DefaultHasher;
@@ -22,14 +23,22 @@ use rand::prelude::*;
 
 use walkdir::WalkDir;
 
+use serde_json;
+
+use log::LevelFilter;
+use simple_logging;
+use logging_timer::timer;
+
 use roguelike_core::types::*;
 use roguelike_core::config::Config;
 use roguelike_core::messaging::Msg;
 use roguelike_core::constants::*;
 use roguelike_core::animation::SpriteKey;
 use roguelike_core::movement::Direction;
+use roguelike_core::map::MapLoadConfig;
 
 use roguelike_engine::game::*;
+use roguelike_engine::generation::*;
 use roguelike_engine::actions::*;
 use roguelike_engine::read_map::read_map_xp;
 use roguelike_engine::resolve::resolve_messages;
@@ -39,6 +48,9 @@ use crate::render::*;
 use crate::console::*;
 use crate::display::*;
 use crate::plat::*;
+
+
+const CONFIG_NAME: &str = "config.yaml";
 
 
 fn main() {
@@ -54,11 +66,14 @@ fn main() {
     }
     println!("Seed: {} (0x{:X})", seed, seed);
 
+    simple_logging::log_to_file("game.log", LevelFilter::Debug);
+
     run(seed).unwrap();
 }
 
 pub fn run(seed: u64) -> Result<(), String> {
-    let config = Config::from_file("config.yaml");
+    let config = Config::from_file(CONFIG_NAME);
+    let mut config_modified_time = fs::metadata(CONFIG_NAME).unwrap().modified().unwrap();
 
     /* Create SDL Context */
     let sdl_context = sdl2::init()?;
@@ -93,14 +108,64 @@ pub fn run(seed: u64) -> Result<(), String> {
 
     let mut game = Game::new(seed, config.clone())?;
 
+    let map;
+    let player_position: Pos;
+    match config.map_load {
+        MapLoadConfig::FromFile => {
+            let (new_map, mut position) =
+                read_map_xp(&config, &mut game.data.entities, &mut game.msg_log, "resources/map.xp");
+            map = new_map;
+            if position == (0, 0) {
+                position = (map.width() / 2, map.height() / 2);
+            }
+            player_position = Pos::from(position);
+        }
+
+        MapLoadConfig::Random => {
+            let (data, position) =
+                make_map(&MapGenType::Island, &mut game.data.entities, &config, &mut game.msg_log, &mut game.rng);
+            // TODO consider using objects as well here on regen?
+            map = data.map;
+            player_position = Pos::from(position);
+        }
+
+        MapLoadConfig::TestWall => {
+            let (new_map, position) = make_wall_test_map(&mut game.data.entities, &config, &mut game.msg_log);
+            map = new_map;
+            player_position = Pos::from(position);
+        }
+
+        MapLoadConfig::TestPlayer => {
+            let (new_map, position) = make_player_test_map(&mut game.data.entities, &config);
+            map = new_map;
+            player_position = Pos::from(position);
+        }
+
+        MapLoadConfig::TestCorner => {
+            let (new_map, position) = make_corner_test_map(&mut game.data.entities, &config, &mut game.msg_log);
+            map = new_map;
+            player_position = Pos::from(position);
+        }
+    }
+    game.data.map = map;
+
+    let player_id = game.data.find_player().unwrap();
+    game.data.entities.pos[&player_id] = player_position;
+
+    make_mouse(&mut game.data.entities, &config);
+    for key in game.data.entities.ids.iter() {
+        game.msg_log.log(Msg::SpawnedObject(*key));
+    }
+
     let start_time = Instant::now();
     let mut frame_time = Instant::now();
 
     /* Main Game Loop */
     let mut running = true;
     while running {
-        let tick_start = Instant::now();
+        let loop_timer = timer!("GAME_LOOP");
 
+        let input_timer = timer!("INPUT");
         /* Handle Events */
         game.key_input.clear();
         for event in event_pump.poll_iter() {
@@ -187,16 +252,20 @@ pub fn run(seed: u64) -> Result<(), String> {
                 _ => {}
             }
         }
+        drop(input_timer);
 
         /* Step the Game Forward */
+        let logic_timer = timer!("LOGIC");
         let dt = Instant::now().duration_since(frame_time);
         let game_result = game.step_game(dt.as_secs_f32());
         frame_time = Instant::now();
+        drop(logic_timer);
 
         if game_result == GameResult::Stop || game.settings.exiting {
             running = false;
         }
 
+        let display_timer = timer!("DISPLAY");
         // TODO consider moving this within an update function for the display system
         for msg in game.msg_log.turn_messages.iter() {
             display_state.process_message(*msg, &mut game.data, &game.config);
@@ -205,9 +274,12 @@ pub fn run(seed: u64) -> Result<(), String> {
         /* Draw the Game to the Screen */
         render_all(&mut display_state, &mut game)?;
 
+        drop(display_timer);
+
         game.msg_log.clear();
 
         /* Reload map if configured to do so */
+        let config_timer = timer!("CONFIG");
         if game.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
             let player = game.data.find_player().unwrap();
 
@@ -223,10 +295,17 @@ pub fn run(seed: u64) -> Result<(), String> {
         }
 
         /* Reload Configuration */
-        game.config = Config::from_file("config.yaml");
+        let current_config_modified_time = fs::metadata(CONFIG_NAME).unwrap().modified().unwrap();
+        if current_config_modified_time != config_modified_time {
+            config_modified_time = current_config_modified_time;
+            game.config = Config::from_file(CONFIG_NAME);
+        }
+        drop(config_timer);
 
         /* Wait until the next tick to loop */
+        let wait_timer = timer!("WAIT");
         fps_throttler.wait();
+        drop(wait_timer);
     }
 
     return Ok(());

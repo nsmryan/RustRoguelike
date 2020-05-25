@@ -44,6 +44,12 @@ pub enum MoveMode {
     Run,
 }
 
+impl Default for MoveMode {
+    fn default() -> MoveMode {
+        return MoveMode::Walk;
+    }
+}
+
 impl MoveMode {
     pub fn increase(&self) -> MoveMode {
         match self {
@@ -72,14 +78,14 @@ impl fmt::Display for MoveMode {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Attack {
     Attack(EntityId), // target_id
     Push(EntityId, Pos), //target_id, delta_pos
     Stab(EntityId), // target_id
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum MoveType {
     Move,
     Pass,
@@ -88,11 +94,21 @@ pub enum MoveType {
     Collide,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Movement {
     pub pos: Pos,
     pub typ: MoveType,
     pub attack: Option<Attack>,
+}
+
+impl Default for Movement {
+    fn default() -> Movement {
+        return Movement {
+            pos: Pos::new(0, 0),
+            typ: MoveType::Pass,
+            attack: None,
+        };
+    }
 }
 
 impl Movement {

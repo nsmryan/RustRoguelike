@@ -23,6 +23,9 @@ symbol = "0.1"
 
 mint = "0.5.1"
 
+log = "0.4"
+simple-logging = "2.0"
+
 rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
 
 roguelike_core = { path = "../roguelike_core" }

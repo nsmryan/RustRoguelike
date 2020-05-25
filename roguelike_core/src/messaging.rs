@@ -1,5 +1,7 @@
 use std::collections::VecDeque;
 
+use serde::{Serialize, Deserialize};
+
 use crate::types::*;
 use crate::movement::{Movement, MoveType, MoveMode};
 use crate::ai::Behavior;
@@ -38,7 +40,7 @@ impl MsgLog {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub enum Msg {
     Pass(),
     Crushed(EntityId, Pos, ObjType), // object that did the crushing, position, type that was crushed

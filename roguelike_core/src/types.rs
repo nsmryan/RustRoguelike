@@ -120,7 +120,7 @@ impl GameData {
         return None;
     }
 
-    pub fn walked_into(&self, start_pos: Pos, end_pos: Pos, look_ahead: i32) -> Option<EntityId> {
+    pub fn walked_into(&mut self, start_pos: Pos, end_pos: Pos, look_ahead: i32) -> Option<EntityId> {
         let pos_diff = sub_pos(end_pos, start_pos);
         let x_dir = if pos_diff.x == 0 {
             0
@@ -246,6 +246,12 @@ pub enum GameState {
     Throwing,
 }
 
+impl Default for GameState {
+    fn default() -> GameState {
+        return GameState::Playing;
+    }
+}
+
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct MouseState {
@@ -328,6 +334,12 @@ pub enum ObjType {
     Item,
     Column,
     Other,
+}
+
+impl Default for ObjType {
+    fn default() -> ObjType {
+        return ObjType::Other;
+    }
 }
 
 

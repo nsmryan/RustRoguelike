@@ -1,11 +1,16 @@
 use std::ops::{Index, IndexMut};
 use std::collections::HashSet;
+use std::iter;
 
 use rand::prelude::*;
 
 use pathfinding::directed::astar::astar;
 
 use tcod::line::*;
+
+use smallvec::SmallVec;
+
+use itertools::Itertools;
 
 use doryen_fov::{MapData, FovAlgorithm, FovRestrictive};
 
@@ -333,17 +338,14 @@ impl Map {
 
         let dir = Direction::from_dxy(dx, dy).expect("Check for blocking wall with no movement?");
 
-        let mut positions = Vec::new();
-        // ensure that the starting position is looked at (could just extend dx/dy by 1)
-        positions.push(start_pos.to_tuple());
-        positions.extend(line.into_iter());
+        let positions = iter::once(start_pos.to_tuple()).chain(line.into_iter());
 
         let mut blocked;
         let mut found_blocker = false;
-        for pair in positions.windows(2) {
-            let (x, y) = pair[0];
-            let pos = Pos::from(pair[0]);
-            let target_pos = Pos::from(pair[1]);
+        for (start, end) in positions.tuple_windows() {
+            let (x, y) = start;
+            let pos = Pos::from(start);
+            let target_pos = Pos::from(end);
 
             blocked = Blocked::new(pos, target_pos, dir, false, Wall::Empty);
 
@@ -645,12 +647,12 @@ impl Map {
         return circle_positions.iter().map(|pos| *pos).collect();
     }
 
-    pub fn reachable_neighbors(&self, pos: Pos) -> Vec<Pos> {
+    pub fn reachable_neighbors(&self, pos: Pos) -> SmallVec<[Pos; 8]> {
         let neighbors = [(1, 0),  (1, 1),  (0, 1), 
         (-1, 1), (-1, 0), (-1, -1),
         (0, -1), (1, -1)];
 
-        let mut result = Vec::new();
+        let mut result = SmallVec::new();
 
         for delta in neighbors.iter() {
             if self.is_blocked_by_wall(pos, delta.0, delta.1).is_none() {
@@ -670,13 +672,13 @@ impl Map {
                   self.reachable_neighbors(pos)
                       .iter()
                       .map(|pos| (*pos, 1))
-                      .collect::<Vec<(Pos, i32)>>()
+                      .collect::<SmallVec<[(Pos, i32); 8]>>()
                   ,
                   |&pos| distance(pos, end) as i32,
                   |&pos| pos == end);
 
         if let Some((results, _cost)) = maybe_results {
-            result = results;
+            result = results.iter().map(|p| *p).collect::<Vec<Pos>>();
         } else {
             result = Vec::new();
         }
@@ -824,7 +826,7 @@ pub fn place_line(map: &mut Map, start: Pos, end: Pos, tile: Tile) -> Vec<Pos> {
     let mut positions = Vec::new();
     let mut line = Line::new(start.to_tuple(), end.to_tuple());
 
-    while let Some(pos) = line.step() {
+    while let Some(pos) = Line::step(&mut line) {
         let pos = Pos::from(pos);
         if map.is_within_bounds(pos) {
             map[pos] = tile;

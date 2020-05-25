@@ -2,9 +2,8 @@ use rand::prelude::*;
 
 use tcod::line::*;
 
-use sdl2::keyboard::Keycode;
+//use sdl2::keyboard::Keycode;
 
-use roguelike_core::config::*;
 use roguelike_core::movement::{Direction, Action};
 use roguelike_core::types::*;
 use roguelike_core::movement;
