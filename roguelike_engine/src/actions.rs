@@ -2,7 +2,7 @@ use rand::prelude::*;
 
 use tcod::line::*;
 
-//use sdl2::keyboard::Keycode;
+use serde::{Serialize, Deserialize};
 
 use roguelike_core::movement::{Direction, Action};
 use roguelike_core::types::*;
@@ -21,7 +21,7 @@ pub enum KeyDirection {
     Up
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum InputAction {
     Move(Direction),
     Pass,
@@ -278,6 +278,8 @@ pub fn handle_input(game: &mut Game) -> Action {
 
             game.data.entities.movement[&player_id] =
                 reach_by_mode(game.data.entities.move_mode[&player_id]);
+
+            game.msg_log.log(Msg::MoveMode(game.data.entities.move_mode[&player_id]));
 
             player_turn = Action::none();
         }

@@ -1,9 +1,6 @@
 #![allow(dead_code)]
 
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 use std::boxed::Box;
-use std::default::Default;
 use std::mem;
 use std::ffi::CStr;
 
@@ -15,41 +12,21 @@ use simple_logging;
 use roguelike_core::types::*;
 use roguelike_core::config::Config;
 use roguelike_core::messaging::Msg;
-use roguelike_core::ai::*;
 use roguelike_core::movement::*;
 use roguelike_core::map::*;
 
 use roguelike_engine::game::*;
 use roguelike_engine::make_map::read_map_xp;
 use roguelike_engine::resolve::resolve_messages;
+use roguelike_engine::actions::*;
 
 
 // TODO pass map back and forth
 
 
-/*
-#[repr(packed(1))]
-#[derive(PartialEq, Copy, Clone, Default)]
-pub struct FfiMsg {
-    msg_id: u16,
-    entity_id: EntityId,
-    other_id: EntityId,
-    first_pos: Pos,
-    second_pos: Pos,
-    obj_type: ObjType,
-    behavior: Behavior,
-    move_mode: MoveMode,
-    game_state: GameState,
-    movement: Movement,
-    hp: Hp,
-    radius: usize,
-    animate: bool,
-}
-*/
-
 #[no_mangle]
 pub extern "C" fn create_game(seed: u64, config_name: *mut i8, map_name: *mut i8) -> *mut Game {
-    simple_logging::log_to_file("game.log", LevelFilter::Trace);
+    simple_logging::log_to_file("game.log", LevelFilter::Trace).unwrap();
 
     trace!("creating game");
 
@@ -110,9 +87,12 @@ pub extern "C" fn read_message(game_ptr: *mut Game, msg_len: *mut i32) -> *mut u
             let mut msg_str = serde_json::to_string(&msg).unwrap();
 
             let mut msg_vec: Vec<u8> = msg_str.into_bytes();
+            msg_vec.push(0);
             *msg_len = msg_vec.len() as i32;
             msg_ptr = msg_vec.as_mut_ptr();
 
+            // TODO this is leaking memory- consider re-using the memory each time,
+            // or copying it to a provided Unity byte[].
             mem::forget(msg_vec);
         }
     }
@@ -124,12 +104,25 @@ pub extern "C" fn read_message(game_ptr: *mut Game, msg_len: *mut i32) -> *mut u
 }
 
 #[no_mangle]
-pub extern "C" fn step_game(game_ptr: *mut Game) {
+pub extern "C" fn step_game(game_ptr: *mut Game, input: *mut i8) {
     trace!("stepping game");
     let mut game: Box<Game>;
     unsafe {
         game = Box::from_raw(game_ptr);
     }
+
+    trace!("parsing input");
+    let mut input_action: InputAction = InputAction::None;
+    unsafe {
+        let input_cstr = CStr::from_ptr(input);
+        if let Ok(parsed_action) = serde_json::from_str(&input_cstr.to_str().unwrap()) {
+            input_action = parsed_action;
+            trace!("input parsed {:?}", parsed_action);
+        } else {
+            trace!("Received unparsable input {:?}", input_cstr);
+        }
+    }
+    game.input_action = input_action;
 
     trace!("calling step_game");
     let game_result = game.step_game(0.1);
