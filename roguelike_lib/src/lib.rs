@@ -72,10 +72,8 @@ pub extern "C" fn create_game(seed: u64, config_name: *mut i8, map_name: *mut i8
         let map_str = map_cstr.to_str().unwrap();
         trace!("loading map {}", map_str);
 
-        let (map, pos) = read_map_xp(&game.config, &mut game.data.entities, &mut game.msg_log, map_str);
+        let pos = read_map_xp(&game.config, &mut game.data, &mut game.msg_log, map_str);
 
-        // TODO merge this into creating the map
-        game.data.map = map;
         let player_id = game.data.find_player().unwrap();
         game.data.entities.pos[&player_id] = Pos::from(pos);
     }

@@ -143,10 +143,8 @@ impl Game {
         self.msg_log.log(Msg::ChangeLevel());
 
         self.data.entities.clear();
-        let (new_map, _) =
-            read_map_xp(&self.config, &mut self.data.entities, &mut self.msg_log, "resources/map.xp");
-
-        self.data.map = new_map;
+        let _player_pos =
+            read_map_xp(&self.config, &mut self.data, &mut self.msg_log, "resources/map.xp");
 
         self.settings.state = GameState::Playing;
 

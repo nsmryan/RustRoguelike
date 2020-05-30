@@ -243,8 +243,7 @@ pub fn run(seed: u64) -> Result<(), String> {
 
             let map_file = format!("resources/{}", game.config.map_file);
             game.data.entities.clear();
-            let (new_map, player_position) = read_map_xp(&game.config, &mut game.data.entities, &mut game.msg_log, &map_file);
-            game.data.map = new_map;
+            let player_position = read_map_xp(&game.config, &mut game.data, &mut game.msg_log, &map_file);
             game.data.entities.set_pos(player, Pos::from(player_position));
         }
 
