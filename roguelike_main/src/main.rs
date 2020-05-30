@@ -108,9 +108,7 @@ pub fn run(seed: u64) -> Result<(), String> {
 
     let mut game = Game::new(seed, config.clone())?;
 
-    let (map, player_position) = make_map(&config.map_load, &mut game);
-
-    game.data.map = map;
+    let player_position = make_map(&config.map_load, &mut game);
 
     let player_id = game.data.find_player().unwrap();
     game.data.entities.pos[&player_id] = player_position;

@@ -5,6 +5,7 @@ use std::hash::{Hash, Hasher};
 use std::boxed::Box;
 use std::default::Default;
 use std::mem;
+use std::ffi::CStr;
 
 use serde_json;
 
@@ -16,6 +17,7 @@ use roguelike_core::config::Config;
 use roguelike_core::messaging::Msg;
 use roguelike_core::ai::*;
 use roguelike_core::movement::*;
+use roguelike_core::map::*;
 
 use roguelike_engine::game::*;
 use roguelike_engine::make_map::read_map_xp;
@@ -25,6 +27,7 @@ use roguelike_engine::resolve::resolve_messages;
 // TODO pass map back and forth
 
 
+/*
 #[repr(packed(1))]
 #[derive(PartialEq, Copy, Clone, Default)]
 pub struct FfiMsg {
@@ -42,20 +45,40 @@ pub struct FfiMsg {
     radius: usize,
     animate: bool,
 }
+*/
 
 #[no_mangle]
-pub extern "C" fn create_game(seed: u64) -> *mut Game {
+pub extern "C" fn create_game(seed: u64, config_name: *mut i8, map_name: *mut i8) -> *mut Game {
     simple_logging::log_to_file("game.log", LevelFilter::Trace);
 
     trace!("creating game");
 
-    trace!("loading config");
-    // TODO add config loading back in
-    //let config = Config::from_file("config.yaml");
-    let config = Config::default();
+    let config: Config;
+    unsafe {
+        let config_cstr = CStr::from_ptr(config_name);
+        trace!("config string");
+        let config_str = config_cstr.to_str().unwrap().to_owned();
+        trace!("loading config {}", config_str);
+        config = Config::from_file(&config_str);
+    }
 
     trace!("game new");
-    let game: Box<Game> = Box::new(Game::new(seed, config).unwrap());
+    let mut game: Box<Game> = Box::new(Game::new(seed, config).unwrap());
+
+    let  map: Map;
+    unsafe {
+        let map_cstr = CStr::from_ptr(map_name);
+        trace!("map string");
+        let map_str = map_cstr.to_str().unwrap();
+        trace!("loading map {}", map_str);
+
+        let (map, pos) = read_map_xp(&game.config, &mut game.data.entities, &mut game.msg_log, map_str);
+
+        // TODO merge this into creating the map
+        game.data.map = map;
+        let player_id = game.data.find_player().unwrap();
+        game.data.entities.pos[&player_id] = Pos::from(pos);
+    }
 
     let raw_ptr = Box::into_raw(game);
 
@@ -80,6 +103,8 @@ pub extern "C" fn read_message(game_ptr: *mut Game, msg_len: *mut i32) -> *mut u
     let mut msg_ptr: *mut u8 = std::ptr::null_mut();
 
     unsafe {
+        *msg_len = 0;
+
         game = Box::from_raw(game_ptr);
 
         trace!("creating message");
@@ -115,94 +140,8 @@ pub extern "C" fn step_game(game_ptr: *mut Game) {
     /* Reload Configuration */
     //game.config = Config::from_file("config.yaml");
 
-    //return game_result;
     mem::forget(game);
+
+    // TODO should probably return a game result
 }
 
-/*
-        match msg {
-            Msg::Pass() => {
-                out_msg.msg_id = 1;
-            }
-
-            Msg::Crushed(entity_id, pos, obj_type) => {
-                out_msg.msg_id = 2;
-            }
-
-            Msg::Sound(entity_id, pos, radius, should_animate) => {
-                out_msg.msg_id = 3;
-            }
-
-            Msg::SoundTrapTriggered(entity_id, other_id) => {
-                out_msg.msg_id = 4;
-            }
-
-            Msg::SpikeTrapTriggered(entity_id, other_id) => {
-                out_msg.msg_id = 5;
-            }
-
-            Msg::PlayerDeath => {
-                out_msg.msg_id = 6;
-            }
-
-            Msg::PickedUp(entity_id, other_id) => {
-                out_msg.msg_id = 7;
-            }
-
-            Msg::ItemThrow(entity_id, other_id, start, end) => {
-                out_msg.msg_id = 8;
-            }
-
-            Msg::Attack(entity_id, other_id, hp) => {
-                out_msg.msg_id = 9;
-            }
-
-            Msg::Killed(entity_id, other_id, hp) => {
-                out_msg.msg_id = 10;
-            }
-
-            Msg::Moved(entity_id, movement, pos) => {
-                out_msg.msg_id = 11;
-            }
-
-            Msg::JumpWall(entity_id, start, end) => {
-                out_msg.msg_id = 12;
-            }
-
-            Msg::WallKick(entity_id, pos) => {
-                out_msg.msg_id = 13;
-            }
-
-            Msg::StateChange(entity_id, behavior) => {
-                out_msg.msg_id = 13;
-            }
-
-            Msg::Collided(entity_id, pos) => {
-                out_msg.msg_id = 14;
-            }
-            
-            Msg::Yell(pos) => {
-                out_msg.msg_id = 15;
-            }
-
-            Msg::GameState(game_state) => {
-                out_msg.msg_id = 16;
-            }
-
-            Msg::MoveMode(move_mode) => {
-                out_msg.msg_id = 17;
-            }
-
-            Msg::TriedRunWithShield => {
-                out_msg.msg_id = 18;
-            }
-
-            Msg::SpawnedObject(entity_id) => {
-                out_msg.msg_id = 19;
-            }
-
-            Msg::ChangeLevel() => {
-                out_msg.msg_id = 20;
-            }
-        }
-*/
