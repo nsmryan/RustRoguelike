@@ -448,7 +448,7 @@ fn render_background(display_state: &mut DisplayState, game: &mut Game, area: &A
                         if tile.tile_type == TileType::Water {
                             let color = tile_color(&config, x, y, tile, visible);
                             let chr = tile.chr;
-                            draw_char(canvas, font_image, chr, map_pos, color, area);
+                            draw_char(canvas, font_image, chr as char, map_pos, color, area);
                         }
                     }
                 }
@@ -496,8 +496,8 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
 
             // if the tile is not empty or water, draw it
             let color = tile_color(&game.config, x, y, tile, visible);
-            if chr != MAP_EMPTY_CHAR as char && tile.tile_type != TileType::Water {
-                display_state.draw_char(chr, pos, color, area);
+            if chr != MAP_EMPTY_CHAR && tile.tile_type != TileType::Water {
+                display_state.draw_char(chr as char, pos, color, area);
             }
 
             match tile.surface {

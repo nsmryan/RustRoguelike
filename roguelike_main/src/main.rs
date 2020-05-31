@@ -21,9 +21,9 @@ use sdl2::video::WindowContext;
 
 use rand::prelude::*;
 
-use walkdir::WalkDir;
+use memoffset::*;
 
-use serde_json;
+use walkdir::WalkDir;
 
 use log::LevelFilter;
 use simple_logging;
@@ -31,9 +31,7 @@ use logging_timer::timer;
 
 use roguelike_core::types::*;
 use roguelike_core::config::Config;
-use roguelike_core::messaging::Msg;
 use roguelike_core::constants::*;
-use roguelike_core::animation::SpriteKey;
 use roguelike_core::movement::Direction;
 use roguelike_core::map::MapLoadConfig;
 
@@ -67,6 +65,16 @@ fn main() {
     println!("Seed: {} (0x{:X})", seed, seed);
 
     simple_logging::log_to_file("game.log", LevelFilter::Debug);
+
+    println!("sizeof(Tile) = {}", std::mem::size_of::<roguelike_core::map::Tile>());
+    println!("offset blocked {}", offset_of!(roguelike_core::map::Tile, blocked));
+    println!("offset block_sight {}", offset_of!(roguelike_core::map::Tile, block_sight));
+    println!("offset explored {}", offset_of!(roguelike_core::map::Tile, explored));
+    println!("offset tile_type {}", offset_of!(roguelike_core::map::Tile, tile_type));
+    println!("offset bottom_wall {}", offset_of!(roguelike_core::map::Tile, bottom_wall));
+    println!("offset left_wall {}", offset_of!(roguelike_core::map::Tile, left_wall));
+    println!("offset chr {}", offset_of!(roguelike_core::map::Tile, chr));
+    println!("offset surface {}", offset_of!(roguelike_core::map::Tile, surface));
 
     run(seed).unwrap();
 }

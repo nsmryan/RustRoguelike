@@ -472,7 +472,7 @@ pub fn make_corner_test_map(entities: &mut Entities,
     map[(position.0 + 1, position.1 + 2)].bottom_wall = Wall::ShortWall;
     map[(position.0 + 2, position.1 + 2)].blocked = true;
     map[(position.0 + 2, position.1 + 2)].block_sight = true;
-    map[(position.0 + 2, position.1 + 2)].chr = MAP_WALL as char;
+    map[(position.0 + 2, position.1 + 2)].chr = MAP_WALL;
 
   
     make_gol(entities, config, Pos::new(7, 5), msg_log);

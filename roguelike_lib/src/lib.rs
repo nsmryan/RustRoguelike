@@ -72,10 +72,46 @@ pub extern "C" fn destroy_game(game_ptr: *mut Game) {
 }
 
 #[no_mangle]
-pub extern "C" fn read_message(game_ptr: *mut Game, msg_len: *mut i32) -> *mut u8 {
-    trace!("read_message {:?}", game_ptr);
+pub extern "C" fn alloc_buffer(buf_len: i32) -> *mut u8 {
+    trace!("allocating {} bytes", buf_len);
+
+    let layout = std::alloc::Layout::from_size_align(buf_len as usize, 1).unwrap();
+
+    let ptr;
+    unsafe {
+        ptr = std::alloc::alloc(layout);
+    }
+
+    trace!("ptr = {:?}", ptr);
+
+    return ptr;
+    //let mut vec = Vec::with_capacity(buf_len as usize);
+
+    //let ptr = vec.as_mut_ptr();
+    //trace!("allocated {:?}", ptr);
+    //mem::forget(vec);
+
+    //unsafe {
+    //    *ptr = 199;
+    //}
+
+    //return ptr;
+}
+
+#[no_mangle]
+pub extern "C" fn free_buffer(ptr: *mut u8, buf_len: i32) {
+    unsafe {
+        let layout = std::alloc::Layout::from_size_align(buf_len as usize, 1).unwrap();
+        std::alloc::dealloc(ptr, layout);
+        //Vec::from_raw_parts(ptr, 0, buf_len as usize);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn read_message(game_ptr: *mut Game, msg_ptr: *mut u8, msg_len: *mut i32) {
+    trace!("read_message {:?}, to {:?}", game_ptr, msg_ptr);
+
     let mut game: Box<Game>;
-    let mut msg_ptr: *mut u8 = std::ptr::null_mut();
 
     unsafe {
         *msg_len = 0;
@@ -87,20 +123,51 @@ pub extern "C" fn read_message(game_ptr: *mut Game, msg_len: *mut i32) -> *mut u
             let mut msg_str = serde_json::to_string(&msg).unwrap();
 
             let mut msg_vec: Vec<u8> = msg_str.into_bytes();
-            msg_vec.push(0);
-            *msg_len = msg_vec.len() as i32;
-            msg_ptr = msg_vec.as_mut_ptr();
 
-            // TODO this is leaking memory- consider re-using the memory each time,
-            // or copying it to a provided Unity byte[].
-            mem::forget(msg_vec);
+            trace!("filling message");
+            for index in 0..msg_vec.len() {
+                trace!("index {} = {}", index, msg_vec[index]);
+                *msg_ptr.offset(index as isize) = msg_vec[index];
+            }
+            trace!("copied");
+            *msg_ptr.offset(msg_vec.len() as isize) = 0;
+
+            *msg_len = msg_vec.len() as i32 + 1;
         }
     }
     trace!("read message done");
 
     mem::forget(game);
+}
 
-    return msg_ptr;
+#[no_mangle]
+pub extern "C" fn read_map(game_ptr: *mut Game, map: *mut Tile, width: *mut i32, height: *mut i32) {
+    trace!("reading map");
+
+    let mut game: Box<Game>;
+    unsafe {
+        game = Box::from_raw(game_ptr);
+
+        if (*width != game.data.map.width() || *height != game.data.map.height()) {
+            trace!("width = {}, height = {}", game.data.map.width(), game.data.map.height());
+            *width = game.data.map.width();
+            *height = game.data.map.height();
+            trace!("assigned");
+        } else {
+            trace!("getting tiles");
+            for x in 0..game.data.map.width() {
+                for y in 0..game.data.map.height() {
+                    let offset = x + y * game.data.map.width();
+                    *map.offset(offset as isize) =
+                        game.data.map[Pos::new(x, y)];
+                }
+            }
+        }
+    }
+
+    mem::forget(game);
+
+    trace!("map read done");
 }
 
 #[no_mangle]

@@ -105,6 +105,7 @@ pub enum Surface {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[repr(C, packed)]
 pub struct Tile {
     pub blocked: bool,
     pub block_sight: bool,
@@ -112,7 +113,7 @@ pub struct Tile {
     pub tile_type: TileType,
     pub bottom_wall: Wall,
     pub left_wall: Wall,
-    pub chr: char,
+    pub chr: u8,
     pub surface: Surface,
 }
 
@@ -124,7 +125,7 @@ impl Tile {
         tile_type: TileType::Empty,
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
-        chr: ' ',
+        chr: ' ' as u8,
         surface: Surface::Floor,
         }
     }
@@ -136,7 +137,7 @@ impl Tile {
         tile_type: TileType::Water,
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
-        chr: ' ',
+        chr: ' ' as u8,
         surface: Surface::Floor,
         }
     }
@@ -152,7 +153,7 @@ impl Tile {
         tile_type: TileType::Wall,
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
-        chr: chr,
+        chr: chr as u8,
         surface: Surface::Floor,
         }
     }
@@ -168,7 +169,7 @@ impl Tile {
         tile_type: TileType::ShortWall,
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
-        chr: chr,
+        chr: chr as u8,
         surface: Surface::Floor,
         }
     }
@@ -180,7 +181,7 @@ impl Tile {
         tile_type: TileType::Exit,
         bottom_wall: Wall::Empty,
         left_wall: Wall::Empty,
-        chr: ' ',
+        chr: ' ' as u8,
         surface: Surface::Floor,
         }
     }
