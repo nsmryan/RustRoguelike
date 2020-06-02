@@ -158,8 +158,11 @@ pub extern "C" fn read_map(game_ptr: *mut Game, map: *mut Tile, width: *mut i32,
             for x in 0..game.data.map.width() {
                 for y in 0..game.data.map.height() {
                     let offset = x + y * game.data.map.width();
-                    *map.offset(offset as isize) =
-                        game.data.map[Pos::new(x, y)];
+                    let tile = game.data.map[(x, y)];
+                    trace!("tile({}, {}) = {:?}", x, y, tile);
+                    *map.offset(offset as isize) = tile;
+                    let tile = *map.offset(offset as isize);
+                    trace!("*tile({}, {}) = {:?}", x, y, tile);
                 }
             }
         }
