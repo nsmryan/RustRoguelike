@@ -141,10 +141,11 @@ pub extern "C" fn read_message(game_ptr: *mut Game, msg_ptr: *mut u8, msg_len: *
 }
 
 #[no_mangle]
-pub extern "C" fn read_map(game_ptr: *mut Game, map: *mut Tile, width: *mut i32, height: *mut i32) {
+pub extern "C" fn read_map(game_ptr: *mut Game, width: *mut i32, height: *mut i32) -> *mut Tile {
     trace!("reading map");
 
     let mut game: Box<Game>;
+    let mut tile_buf = std::ptr::null_mut();
     unsafe {
         game = Box::from_raw(game_ptr);
 
@@ -155,22 +156,37 @@ pub extern "C" fn read_map(game_ptr: *mut Game, map: *mut Tile, width: *mut i32,
             trace!("assigned");
         } else {
             trace!("getting tiles");
+
+            let count = *height * *width;
+            let temp_buf = alloc_buffer(count * std::mem::size_of::<Tile>() as i32);
+            tile_buf = temp_buf.cast::<Tile>();
+
             for x in 0..game.data.map.width() {
                 for y in 0..game.data.map.height() {
                     let offset = x + y * game.data.map.width();
                     let tile = game.data.map[(x, y)];
-                    trace!("tile({}, {}) = {:?}", x, y, tile);
-                    *map.offset(offset as isize) = tile;
-                    let tile = *map.offset(offset as isize);
-                    trace!("*tile({}, {}) = {:?}", x, y, tile);
+                    *tile_buf.offset(offset as isize) = tile;
                 }
             }
+
+            //for x in 0..game.data.map.width() {
+            //    for y in 0..game.data.map.height() {
+            //        let offset = x + y * game.data.map.width();
+            //        let tile = game.data.map[(x, y)];
+            //        trace!("tile({}, {}) = {:?}", x, y, tile);
+            //        *map.offset(offset as isize) = tile;
+            //        let tile = *map.offset(offset as isize);
+            //        trace!("*tile({}, {}) = {:?}", x, y, tile);
+            //    }
+            //}
         }
     }
 
     mem::forget(game);
 
     trace!("map read done");
+
+    return tile_buf;
 }
 
 #[no_mangle]
