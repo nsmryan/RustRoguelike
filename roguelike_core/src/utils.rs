@@ -90,6 +90,10 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: 
         data.entities.alive[&target] = false;
         data.entities.blocks[&target] = false;
 
+        data.entities.take_damage(target, HAMMER_DAMAGE);
+        data.entities.messages[&target].push(Message::Attack(entity));
+
+        // NOTE assumes that this kills the enemy
         msg_log.log(Msg::Killed(entity, target, HAMMER_DAMAGE));
 
         let hit_pos = data.entities.pos[&target];

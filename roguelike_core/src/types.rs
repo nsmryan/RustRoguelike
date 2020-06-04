@@ -153,11 +153,13 @@ impl GameData {
     }
 
     pub fn using(&self, entity_id: EntityId, item: Item) -> bool {
-        if let Some(item_id) = self.entities.inventory[&entity_id].get(0) {
-            return self.entities.item[item_id] == item;
-        } else {
-            return false;
+        if let Some(inventory) = self.entities.inventory.get(&entity_id) {
+            if let Some(item_id) = inventory.get(0) {
+                return self.entities.item[item_id] == item;
+            }
         }
+
+        return false;
     }
 
     pub fn within_aoe(&mut self, aoe: &Aoe) -> Vec<EntityId> {

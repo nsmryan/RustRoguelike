@@ -44,22 +44,24 @@ pub fn ai_take_turn(monster_id: EntityId,
                     data: &mut GameData,
                     config: &Config,
                     msg_log: &mut MsgLog) -> Action {
-    let mut turn: Action;
+    let mut turn: Action = Action::NoAction;
 
-    match data.entities.ai.get(&monster_id) {
-        Some(Ai::Basic) => {
-            turn = basic_ai_take_turn(monster_id, data, config);
-
-            // if the AI changes state, allow it to take an action as well
-            if matches!(turn, Action::StateChange(_)) {
+    if data.entities.alive[&monster_id] {
+        match data.entities.ai.get(&monster_id) {
+            Some(Ai::Basic) => {
                 turn = basic_ai_take_turn(monster_id, data, config);
-            }
-        }
 
-        None => {
-            turn = Action::none();
-            // TODO if this does not occur, simplify this function
-            panic!("AI didn't have an ai entry!");
+                // if the AI changes state, allow it to take an action as well
+                if matches!(turn, Action::StateChange(_)) {
+                    turn = basic_ai_take_turn(monster_id, data, config);
+                }
+            }
+
+            None => {
+                turn = Action::none();
+                // TODO if this does not occur, simplify this function
+                panic!("AI didn't have an ai entry!");
+            }
         }
     }
 
@@ -318,6 +320,10 @@ pub fn ai_apply_action(monster_id: EntityId,
                        game_data: &mut GameData,
                        msg_log: &mut MsgLog) {
     let pos = game_data.entities.pos[&monster_id];
+
+    if !game_data.entities.alive[&monster_id] {
+        return;
+    }
 
     match turn {
         Action::Move(movement) => {
