@@ -24,6 +24,7 @@ pub enum Action {
     Pass,
     Yell,
     NoAction,
+    UseItem,
 }
 
 impl Action {

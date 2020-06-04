@@ -58,7 +58,7 @@ impl Aoe {
 
 /// This structure describes a movement between two
 /// tiles that was blocked due to a wall or blocked tile.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Blocked {
     pub start_pos: Pos,
     pub end_pos: Pos,

@@ -7,6 +7,9 @@ pub const FONT_HEIGHT: i32 = 16;
 pub const SCREEN_WIDTH: u32 = 1000;
 pub const SCREEN_HEIGHT: u32 = 800;
 
+pub const INVENTORY_WIDTH: usize = 300;
+pub const INVENTORY_HEIGHT: usize = 500;
+
 /* Sound */
 pub const SOUND_RADIUS: usize = 3;
 pub const SOUND_RADIUS_SNEAK: usize = 2;
@@ -36,6 +39,7 @@ pub const KEY_MOVE_DISTANCE: usize = 2;
 pub const MAX_MOMENTUM: i32 = 2;
 
 pub const SPIKE_DAMAGE: i32 = 20;
+pub const HAMMER_DAMAGE: i32 = 40;
 
 /* Player */
 pub const PLAYER_THROW_DIST: usize = 5;
@@ -48,8 +52,6 @@ pub const PANEL_Y: u32 = SCREEN_HEIGHT - PANEL_HEIGHT;
 pub const MSG_X: u32 = BAR_WIDTH + 2;
 pub const MSG_WIDTH: u32 = SCREEN_WIDTH - BAR_WIDTH - 2;
 pub const MSG_HEIGHT: u32 = PANEL_HEIGHT - 1;
-
-pub const INVENTORY_WIDTH: i32 = 50;
 
 /* Map and View */
 pub const MAP_WIDTH: i32 = 30;
@@ -130,6 +132,7 @@ pub const ENTITY_KEY: u8 = 235;
 pub const ENTITY_STONE: u8 = 244;
 pub const ENTITY_DAGGER: u8 = 247;
 pub const ENTITY_SHIELD: u8 = 255;
+pub const ENTITY_HAMMER: u8 = 251;
 pub const ENTITY_TRAP_SOUND: u8 = 83; // char S
 pub const ENTITY_SPIKE_TRAP: u8 = 136;
 

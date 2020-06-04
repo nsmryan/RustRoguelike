@@ -244,6 +244,7 @@ pub enum GameState {
     Lose,
     Inventory,
     Throwing,
+    Interact,
 }
 
 impl Default for GameState {
@@ -270,6 +271,7 @@ pub enum Item {
     Goal,
     Dagger,
     Shield,
+    Hammer,
 }
 
 impl Item {
@@ -279,6 +281,7 @@ impl Item {
             Item::Goal => ItemClass::Secondary,
             Item::Dagger => ItemClass::Primary,
             Item::Shield => ItemClass::Primary,
+            Item::Hammer => ItemClass::Primary,
         }
     }
 }

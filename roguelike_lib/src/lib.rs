@@ -120,19 +120,18 @@ pub extern "C" fn read_message(game_ptr: *mut Game, msg_ptr: *mut u8, msg_len: *
 
         trace!("creating message");
         if let Some(msg) = game.msg_log.turn_messages.pop_front() {
-            let mut msg_str = serde_json::to_string(&msg).unwrap();
+            let msg_str = serde_json::to_string(&msg).unwrap();
 
             let mut msg_vec: Vec<u8> = msg_str.into_bytes();
 
-            trace!("filling message");
             for index in 0..msg_vec.len() {
-                trace!("index {} = {}", index, msg_vec[index]);
                 *msg_ptr.offset(index as isize) = msg_vec[index];
             }
             trace!("copied");
             *msg_ptr.offset(msg_vec.len() as isize) = 0;
 
             *msg_len = msg_vec.len() as i32 + 1;
+            trace!("msg_len = {}", *msg_len);
         }
     }
     trace!("read message done");

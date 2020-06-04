@@ -5,6 +5,7 @@ use roguelike_core::constants::*;
 use roguelike_core::animation::{Effect, Animation};
 use roguelike_core::movement::{MoveMode, MoveType};
 use roguelike_core::config::*;
+use roguelike_core::utils::*;
 
 use crate::game::*;
 use crate::make_map::read_map_xp;
@@ -97,6 +98,42 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
             Msg::Attack(attacker, attacked, _damage) => {
                 let pos = data.entities.pos[&attacked];
                 msg_log.log_front(Msg::Sound(attacker, pos, config.sound_radius_attack, true)); 
+            }
+
+            Msg::HammerSwing(entity, pos) => {
+                let entity_pos = data.entities.pos[&entity];
+
+                // can't swing at yourself
+                if (entity_pos != pos) {
+                    let pos_diff = sub_pos(pos, entity_pos);
+
+                    if let Some(hit_entity) = data.has_blocking_entity(pos) {
+                        // we hit another entity!
+                        msg_log.log_front(Msg::HammerHitEntity(entity, hit_entity));
+                    } else if let Some(blocked) = data.map.is_blocked_by_wall(entity_pos, pos_diff.x, pos_diff.y) {
+                        msg_log.log_front(Msg::HammerHitWall(entity, blocked));
+                    }
+                }
+            }
+
+            Msg::HammerHitEntity(entity, hit_entity) => {
+                attack(entity, hit_entity, data, msg_log);
+            }
+
+            Msg::HammerHitWall(entity, blocked) => {
+                let hit_pos = blocked.end_pos;
+                if data.map[hit_pos].blocked {
+                    if data.map[hit_pos].surface == Surface::Floor {
+                        data.map[hit_pos].surface = Surface::Rubble;
+                    }
+
+                    data.map[hit_pos].blocked = false;
+                    data.map[hit_pos].chr = ' ' as u8;
+
+                    msg_log.log_front(Msg::Sound(entity, blocked.end_pos, config.sound_radius_attack, true)); 
+                }
+
+                //NOTE ignore between-wall tiles
             }
 
             _ => {

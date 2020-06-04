@@ -33,6 +33,7 @@ pub struct GameSettings {
     pub exiting: bool,
     pub state: GameState,
     pub draw_throw_overlay: bool,
+    pub draw_interact_overlay: bool,
     pub overlay: bool,
     pub console: bool,
     pub time: f32,
@@ -49,6 +50,7 @@ impl GameSettings {
             exiting: false,
             state: GameState::Playing,
             draw_throw_overlay: false,
+            draw_interact_overlay: false,
             overlay: false,
             console: false,
             time: 0.0,
@@ -129,6 +131,10 @@ impl Game {
             GameState::Throwing => {
                 return self.step_throwing();
             }
+
+            GameState::Interact => {
+                return self.step_interact();
+            }
         }
     }
 
@@ -181,6 +187,33 @@ impl Game {
 
         let player_action =
             actions::handle_input_throwing(input,
+                                           &mut self.data,
+                                           &mut self.settings,
+                                           &mut self.msg_log);
+
+        if player_action != Action::NoAction {
+            step_logic(player_action,
+                       &mut self.data,
+                       &mut self.settings,
+                       &self.config,
+                       &mut self.msg_log);
+        }
+
+        if self.settings.exiting {
+            return GameResult::Stop;
+        }
+
+        return GameResult::Continue;
+    }
+
+    fn step_interact(&mut self) -> GameResult {
+        let input = self.input_action;
+        self.input_action = InputAction::None;
+
+        self.settings.draw_interact_overlay = true;
+
+        let player_action =
+            actions::handle_input_interact(input,
                                            &mut self.data,
                                            &mut self.settings,
                                            &mut self.msg_log);
@@ -302,6 +335,8 @@ pub fn step_logic(player_action: Action,
             data.entities.action[key] = ai_take_turn(*key, data, config, msg_log);
         }
 
+        // TODO consider making all player actions into messages
+        // and resolving them that way
         actions::player_apply_action(player_action, data, msg_log);
         resolve_messages(data, msg_log, settings, config);
 

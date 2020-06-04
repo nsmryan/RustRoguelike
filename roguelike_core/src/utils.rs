@@ -4,6 +4,8 @@ use std::hash::{Hash, Hasher};
 use tcod::line::*;
 
 use crate::ai::Behavior;
+use crate::constants::{HAMMER_DAMAGE};
+use crate::map::{Surface};
 use crate::types::*;
 use crate::movement::{Reach, MoveMode};
 use crate::messaging::*;
@@ -23,6 +25,14 @@ pub fn signedness(value: i32) -> i32 {
     } else {
         return value.signum();
     }
+}
+
+pub fn in_direction_of(start: Pos, end: Pos) -> Pos {
+    let dpos = sub_pos(end, start);
+    let dx = signedness(dpos.x);
+    let dy = signedness(dpos.y);
+
+    return add_pos(start, Pos::new(dx, dy));
 }
 
 pub fn push_attack(handle: EntityId, target: EntityId, delta_pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
@@ -75,9 +85,20 @@ pub fn crush(handle: EntityId, target: EntityId, entities: &mut Entities, msg_lo
     }
 }
 
-pub fn attack(handle: EntityId, target: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
-    if data.using(target, Item::Shield) {
-        let pos = data.entities.pos[&handle];
+pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
+    if data.using(entity, Item::Hammer) {
+        data.entities.alive[&target] = false;
+        data.entities.blocks[&target] = false;
+
+        msg_log.log(Msg::Killed(entity, target, HAMMER_DAMAGE));
+
+        let hit_pos = data.entities.pos[&target];
+        // NOTE this creates rubble even if the player somehow is hit by a hammer...
+        if data.map[hit_pos].surface == Surface::Floor {
+            data.map[hit_pos].surface = Surface::Rubble;
+        }
+    } else if data.using(target, Item::Shield) {
+        let pos = data.entities.pos[&entity];
         let other_pos = data.entities.pos[&target];
         let diff = other_pos - pos;
 
@@ -89,25 +110,26 @@ pub fn attack(handle: EntityId, target: EntityId, data: &mut GameData, msg_log: 
         if !data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() &&
            !data.has_blocking_entity(past_pos).is_some() {
             data.entities.set_pos(target, past_pos);
-            data.entities.move_to(handle, other_pos);
+            data.entities.move_to(entity, other_pos);
 
-            data.entities.messages[&target].push(Message::Attack(handle));
+            data.entities.messages[&target].push(Message::Attack(entity));
         }
     } else {
-        let damage = data.entities.fighter.get(&handle).map_or(0, |f| f.power) -
+        let damage = data.entities.fighter.get(&entity).map_or(0, |f| f.power) -
                      data.entities.fighter.get(&target).map_or(0, |f| f.defense);
         if damage > 0 {
             data.entities.take_damage(target, damage);
 
-            msg_log.log(Msg::Attack(handle, target, damage));
+            msg_log.log(Msg::Attack(entity, target, damage));
+            // TODO consider moving this to the Attack msg
             if data.entities.fighter[&target].hp <= 0 {
                 data.entities.alive[&target] = false;
                 data.entities.blocks[&target] = false;
 
-                msg_log.log(Msg::Killed(handle, target, damage));
+                msg_log.log(Msg::Killed(entity, target, damage));
             }
 
-            data.entities.messages[&target].push(Message::Attack(handle));
+            data.entities.messages[&target].push(Message::Attack(entity));
         }
     }
 }
@@ -285,3 +307,15 @@ pub fn test_move_next_to() {
     assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(5, 0)), Pos::new(4, 0));
 }
 
+#[test]
+pub fn test_in_direction_of() {
+    let start = Pos::new(1, 1);
+
+    assert_eq!(in_direction_of(start, Pos::new(0, 0)), Pos::new(0, 0));
+    assert_eq!(in_direction_of(start, Pos::new(10, 10)), Pos::new(2, 2));
+    assert_eq!(in_direction_of(start, Pos::new(10, 1)), Pos::new(2, 1));
+    assert_eq!(in_direction_of(start, Pos::new(1, 10)), Pos::new(1, 2));
+    assert_eq!(in_direction_of(start, Pos::new(1, -10)), Pos::new(1, 0));
+    assert_eq!(in_direction_of(start, Pos::new(-10, 1)), Pos::new(0, 1));
+    assert_eq!(in_direction_of(start, Pos::new(-10, -10)), Pos::new(0, 0));
+}

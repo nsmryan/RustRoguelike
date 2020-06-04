@@ -13,7 +13,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Effect, Animation, AnimKey};
-use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color};
+use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, in_direction_of};
 
 use roguelike_engine::game::*;
 
@@ -126,12 +126,10 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
     }
 
     if game.settings.state == GameState::Inventory {
-        let width: usize = 300;
-        let height: usize = 500;
-        let area = Area::new((SCREEN_WIDTH as i32 / 2) - (width as i32 / 2),
-                             (SCREEN_HEIGHT as i32 / 2) - (height as i32 / 2),
-                             width,
-                             height,
+        let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
+                             (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
+                             INVENTORY_WIDTH,
+                             INVENTORY_HEIGHT,
                              FONT_WIDTH as usize,
                              FONT_HEIGHT as usize);
 
@@ -151,59 +149,61 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
 }
 
 // TODO console
-//fn render_console(display_state: &mut DisplayState, game: &mut Game) {
-//    let color = game.config.color_console;
-//    let color = Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
-//    display_state.canvas.set_draw_color(color);
-//
-//    let console_rect =
-//        Rect::new(0, (SCREEN_HEIGHT - game.console.height) as i32, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
-//    display_state.canvas.fill_rect(console_rect).unwrap();
-//
-//    let color = Sdl2Color::RGBA(255, 255, 255, 255);
-//    display_state.canvas.set_draw_color(color);
-//
-//    let line_width = 1;
-//
-//    let y_offset = (SCREEN_HEIGHT - game.console.height) as i32;
-//
-//    let top_line_rect =
-//        Rect::new(0, y_offset, SCREEN_WIDTH, line_width);
-//    display_state.canvas.fill_rect(top_line_rect).unwrap();
-//
-//    let bottom_line_rect =
-//        Rect::new(0, SCREEN_HEIGHT as i32 - line_width as i32, SCREEN_WIDTH, line_width);
-//    display_state.canvas.fill_rect(bottom_line_rect).unwrap();
-//
-//    let left_line_rect =
-//        Rect::new(0, y_offset, line_width, game.console.height);
-//    display_state.canvas.fill_rect(left_line_rect).unwrap();
-//
-//    let right_line_rect =
-//        Rect::new(SCREEN_WIDTH as i32 - line_width as i32, y_offset, line_width, game.console.height);
-//    display_state.canvas.fill_rect(right_line_rect).unwrap();
-//
-//    let console_area = 
-//        Area::new(0, y_offset, SCREEN_WIDTH as usize, y_offset as usize, FONT_WIDTH as usize, FONT_HEIGHT as usize);
-//
-//    display_state.draw_char('>',
-//                            Pos::new(0, 0),
-//                            Color::white(),
-//                            &console_area);
-//    display_state.draw_text(&game.console.input.clone(),
-//                            Pos::new(1, 0),
-//                            Color::white(),
-//                            &console_area);
-//
-//    let mut y_pos = 1;
-//    for output in game.console.output.iter() {
-//        display_state.draw_text(&output.clone(),
-//                                Pos::new(0, y_pos),
-//                                Color::white(),
-//                                &console_area);
-//        y_pos += 1;
-//    }
-//}
+/*
+fn render_console(display_state: &mut DisplayState, game: &mut Game) {
+    let color = game.config.color_console;
+    let color = Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
+    display_state.canvas.set_draw_color(color);
+
+    let console_rect =
+        Rect::new(0, (SCREEN_HEIGHT - game.console.height) as i32, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
+    display_state.canvas.fill_rect(console_rect).unwrap();
+
+    let color = Sdl2Color::RGBA(255, 255, 255, 255);
+    display_state.canvas.set_draw_color(color);
+
+    let line_width = 1;
+
+    let y_offset = (SCREEN_HEIGHT - game.console.height) as i32;
+
+    let top_line_rect =
+        Rect::new(0, y_offset, SCREEN_WIDTH, line_width);
+    display_state.canvas.fill_rect(top_line_rect).unwrap();
+
+    let bottom_line_rect =
+        Rect::new(0, SCREEN_HEIGHT as i32 - line_width as i32, SCREEN_WIDTH, line_width);
+    display_state.canvas.fill_rect(bottom_line_rect).unwrap();
+
+    let left_line_rect =
+        Rect::new(0, y_offset, line_width, game.console.height);
+    display_state.canvas.fill_rect(left_line_rect).unwrap();
+
+    let right_line_rect =
+        Rect::new(SCREEN_WIDTH as i32 - line_width as i32, y_offset, line_width, game.console.height);
+    display_state.canvas.fill_rect(right_line_rect).unwrap();
+
+    let console_area = 
+        Area::new(0, y_offset, SCREEN_WIDTH as usize, y_offset as usize, FONT_WIDTH as usize, FONT_HEIGHT as usize);
+
+    display_state.draw_char('>',
+                            Pos::new(0, 0),
+                            Color::white(),
+                            &console_area);
+    display_state.draw_text(&game.console.input.clone(),
+                            Pos::new(1, 0),
+                            Color::white(),
+                            &console_area);
+
+    let mut y_pos = 1;
+    for output in game.console.output.iter() {
+        display_state.draw_text(&output.clone(),
+                                Pos::new(0, y_pos),
+                                Color::white(),
+                                &console_area);
+        y_pos += 1;
+    }
+}
+*/
 
 fn render_player(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
     draw_placard(display_state,
@@ -892,6 +892,16 @@ fn render_overlays(display_state: &mut DisplayState,
                     let pos = Pos::from(pos);
                     display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
                 }
+            }
+        }
+
+        if game.settings.draw_interact_overlay {
+            // mouse pos at 0, 0 occurs when the mouse has not moved since startup.
+            // this may cause a weirdness on the corner of the map
+            if mouse_pos != Pos::new(0, 0) {
+                let use_pos = in_direction_of(player_pos, mouse_pos);
+
+                display_state.draw_char(MAP_EMPTY_CHAR as char, use_pos, highlight_color, area);
             }
         }
     }

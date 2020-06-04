@@ -33,7 +33,7 @@ use roguelike_core::types::*;
 use roguelike_core::config::Config;
 use roguelike_core::constants::*;
 use roguelike_core::movement::Direction;
-use roguelike_core::map::MapLoadConfig;
+use roguelike_core::utils::{add_pos};
 
 use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
@@ -49,6 +49,7 @@ use crate::plat::*;
 
 
 const CONFIG_NAME: &str = "config.yaml";
+const LOG_LEVEL: LevelFilter = LevelFilter::Info;
 
 
 fn main() {
@@ -64,17 +65,7 @@ fn main() {
     }
     println!("Seed: {} (0x{:X})", seed, seed);
 
-    simple_logging::log_to_file("game.log", LevelFilter::Debug);
-
-    println!("sizeof(Tile) = {}", std::mem::size_of::<roguelike_core::map::Tile>());
-    println!("offset blocked {}", offset_of!(roguelike_core::map::Tile, blocked));
-    println!("offset block_sight {}", offset_of!(roguelike_core::map::Tile, block_sight));
-    println!("offset explored {}", offset_of!(roguelike_core::map::Tile, explored));
-    println!("offset tile_type {}", offset_of!(roguelike_core::map::Tile, tile_type));
-    println!("offset bottom_wall {}", offset_of!(roguelike_core::map::Tile, bottom_wall));
-    println!("offset left_wall {}", offset_of!(roguelike_core::map::Tile, left_wall));
-    println!("offset chr {}", offset_of!(roguelike_core::map::Tile, chr));
-    println!("offset surface {}", offset_of!(roguelike_core::map::Tile, surface));
+    simple_logging::log_to_file("game.log", LOG_LEVEL);
 
     run(seed).unwrap();
 }
@@ -116,12 +107,13 @@ pub fn run(seed: u64) -> Result<(), String> {
 
     let mut game = Game::new(seed, config.clone())?;
 
-    let player_position = make_map(&config.map_load, &mut game);
+    let player_pos = make_map(&config.map_load, &mut game);
 
     let player_id = game.data.find_player().unwrap();
-    game.data.entities.pos[&player_id] = player_position;
+    game.data.entities.pos[&player_id] = player_pos;
 
     make_mouse(&mut game.data.entities, &config, &mut game.msg_log);
+    make_hammer(&mut game.data.entities, &config, add_pos(player_pos, Pos::new(-1, 0)),  &mut game.msg_log);
 
     let start_time = Instant::now();
     let mut frame_time = Instant::now();
@@ -251,8 +243,8 @@ pub fn run(seed: u64) -> Result<(), String> {
 
             let map_file = format!("resources/{}", game.config.map_file);
             game.data.entities.clear();
-            let player_position = read_map_xp(&game.config, &mut game.data, &mut game.msg_log, &map_file);
-            game.data.entities.set_pos(player, Pos::from(player_position));
+            let player_pos = read_map_xp(&game.config, &mut game.data, &mut game.msg_log, &map_file);
+            game.data.entities.set_pos(player, Pos::from(player_pos));
         }
 
         /* Reload Configuration */
@@ -408,6 +400,10 @@ pub fn keyup_to_action(keycode: Keycode,
 
         Keycode::Backquote => {
             input_action = InputAction::ToggleConsole;
+        }
+
+        Keycode::U => {
+            input_action = InputAction::UseItem;
         }
 
         _ => {

@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 use serde::{Serialize, Deserialize};
 
 use crate::types::*;
+use crate::map::*;
 use crate::movement::{Movement, MoveType, MoveMode};
 use crate::ai::Behavior;
 
@@ -62,6 +63,9 @@ pub enum Msg {
     MoveMode(MoveMode),
     TriedRunWithShield,
     SpawnedObject(EntityId, ObjType, Pos),
+    HammerSwing(EntityId, Pos), // entity, position swung at
+    HammerHitEntity(EntityId, EntityId), // entity, hit entity
+    HammerHitWall(EntityId, Blocked),
     ChangeLevel(),
 }
 
@@ -113,23 +117,23 @@ impl Msg {
                 return "Killed".to_string();
             }
 
-            Msg::Moved(object_id, movement, _pos) => {
+            Msg::Moved(entity, movement, _pos) => {
                 if let MoveType::Pass = movement.typ {
-                    return format!("{} passed their turn", game_data.entities.name[object_id]);
+                    return format!("{} passed their turn", game_data.entities.name[entity]);
                 } else {
-                    return format!("{} moved", game_data.entities.name[object_id]);
+                    return format!("{} moved", game_data.entities.name[entity]);
                 }
             }
 
-            Msg::JumpWall(_object_id, _start, _end) => {
+            Msg::JumpWall(_entity, _start, _end) => {
                 return "Jumped a wall".to_string();
             }
 
-            Msg::WallKick(_object_id, _pos) => {
+            Msg::WallKick(_entity, _pos) => {
                 return "Did a wallkick".to_string();
             }
 
-            Msg::StateChange(_object_id, behavior) => {
+            Msg::StateChange(_entity, behavior) => {
                 return format!("Changed state to {:?}", *behavior);
             }
 
@@ -137,7 +141,7 @@ impl Msg {
                 return format!("Yelled");
             }
 
-            Msg::Collided(_object_id, _pos) => {
+            Msg::Collided(_entity, _pos) => {
                 return "Collided".to_string();
             }
 
@@ -183,6 +187,20 @@ impl Msg {
 
             Msg::SpawnedObject(entity_id, _typ, _pos) => {
                 return "".to_string();
+            }
+
+            Msg::HammerSwing(entity, _pos) => {
+                return format!("{} swung their hammer", game_data.entities.name[entity]);
+            }
+
+            Msg::HammerHitEntity(entity, _pos) => {
+                let entity_name = &game_data.entities.name[entity];
+                let hit_entity_name = &game_data.entities.name[entity];
+                return format!("{} hit {} with their hammer", entity_name, hit_entity_name);
+            }
+
+            Msg::HammerHitWall(entity, blocked) => {
+                return format!("{} hit a wall with their hammer", game_data.entities.name[entity]);
             }
 
             Msg::ChangeLevel() => {

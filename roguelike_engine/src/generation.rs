@@ -65,6 +65,16 @@ pub fn make_dagger(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
     return object;
 }
 
+pub fn make_hammer(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let object = entities.create_entity(pos.x, pos.y, ObjType::Item, ENTITY_HAMMER as char, config.color_light_grey, "hammer", false);
+
+    entities.item.insert(object,  Item::Hammer);
+
+    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos));
+
+    return object;
+}
+
 pub fn make_shield(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let object = entities.create_entity(pos.x, pos.y, ObjType::Item, ENTITY_SHIELD as char, config.color_light_grey, "shield", false);
 

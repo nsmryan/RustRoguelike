@@ -4,12 +4,15 @@ use tcod::line::*;
 
 use serde::{Serialize, Deserialize};
 
+use log::info;
+
 use roguelike_core::movement::{Direction, Action};
 use roguelike_core::types::*;
 use roguelike_core::movement;
 use roguelike_core::utils::{reach_by_mode, item_primary_at};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
+use roguelike_core::utils::*;
 
 use crate::game::*;
 use crate::make_map;
@@ -43,6 +46,7 @@ pub enum InputAction {
     OverlayOff,
     SelectItem(usize),
     ToggleConsole,
+    UseItem,
     None,
 }
 
@@ -76,6 +80,10 @@ pub fn player_apply_action(action: Action,
 
         Action::Pass => {
             msg_log.log(Msg::Pass());
+        }
+
+        // no implementation- all handling is done in messages
+        Action::UseItem => {
         }
 
         Action::NoAction => {
@@ -200,6 +208,61 @@ pub fn handle_input_throwing(input: InputAction,
     return player_turn;
 }
 
+pub fn handle_input_interact(input: InputAction,
+                             game_data: &mut GameData, 
+                             settings: &mut GameSettings,
+                             msg_log: &mut MsgLog) -> Action {
+    let player_id = game_data.find_player().unwrap();
+
+    let mut player_turn: Action = Action::none();
+
+    match input {
+        InputAction::Inventory => {
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        InputAction::Exit => {
+            settings.exiting = true;
+        }
+
+        InputAction::Esc => {
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
+            settings.draw_interact_overlay = false;
+        }
+
+        InputAction::MapClick(_map_loc, map_cell) => {
+            info!("Mouse clicked {}", map_cell);
+            let player_pos = game_data.entities.pos[&player_id];
+
+            let dpos = sub_pos(map_cell, player_pos);
+            let dx = signedness(dpos.x);
+            let dy = signedness(dpos.y);
+
+            let use_pos = add_pos(player_pos, Pos::new(dx, dy));
+
+            let using_hammer = game_data.using(player_id, Item::Hammer);
+
+            if using_hammer {
+                msg_log.log(Msg::HammerSwing(player_id, use_pos));
+
+                // exit interaction state
+                settings.state = GameState::Playing;
+                msg_log.log(Msg::GameState(settings.state));
+                settings.draw_interact_overlay = false;
+
+                player_turn = Action::UseItem;
+            }
+        }
+
+        _ => {
+        }
+    }
+
+    return player_turn;
+}
+
 pub fn handle_input(game: &mut Game) -> Action {
     let player_id = game.data.find_player().unwrap();
 
@@ -256,11 +319,12 @@ pub fn handle_input(game: &mut Game) -> Action {
 
         (InputAction::IncreaseMoveMode, true) => {
             let holding_shield = game.data.using(player_id, Item::Shield);
+            let holding_hammer = game.data.using(player_id, Item::Hammer);
 
             let move_mode = game.data.entities.move_mode.get(&player_id).expect("Player should have a move mode");
             let new_move_mode = move_mode.increase();
 
-            if new_move_mode == movement::MoveMode::Run && holding_shield {
+            if new_move_mode == movement::MoveMode::Run && (holding_shield || holding_hammer) {
                 game.msg_log.log(Msg::TriedRunWithShield);
             } else {
                 game.data.entities.move_mode[&player_id] = new_move_mode;
@@ -361,6 +425,15 @@ pub fn handle_input(game: &mut Game) -> Action {
             //    //game.console.height = 0;
             //    //game.settings.state = GameState::Console;
             //}
+        }
+
+        (InputAction::UseItem, _) => {
+            let holding_hammer = game.data.using(player_id, Item::Hammer);
+
+            if holding_hammer {
+                game.settings.state = GameState::Interact;
+                game.msg_log.log(Msg::GameState(game.settings.state));
+            }
         }
 
         (_, _) => {
