@@ -1,3 +1,5 @@
+use log::trace;
+
 use roguelike_core::types::*;
 use roguelike_core::map::{Surface, AoeEffect};
 use roguelike_core::messaging::{MsgLog, Msg};
@@ -27,6 +29,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
             }
 
             Msg::Sound(cause_id, source_pos, radius, _should_animate) => {
+                trace!("sound {} {}", cause_id, source_pos);
                 let sound_aoe =
                     data.map.aoe_fill(AoeEffect::Sound, source_pos, radius);
 
@@ -102,11 +105,10 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
 
             Msg::HammerSwing(entity, pos) => {
                 let entity_pos = data.entities.pos[&entity];
+                let pos_diff = sub_pos(pos, entity_pos);
 
-                // can't swing at yourself
-                if (entity_pos != pos) {
-                    let pos_diff = sub_pos(pos, entity_pos);
-
+                // can't swing at yourself, and can't swing diagonally
+                if is_ordinal(pos_diff) {
                     if let Some(hit_entity) = data.has_blocking_entity(pos) {
                         // we hit another entity!
                         msg_log.log_front(Msg::HammerHitEntity(entity, hit_entity));

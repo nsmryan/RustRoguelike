@@ -35,6 +35,11 @@ pub fn in_direction_of(start: Pos, end: Pos) -> Pos {
     return add_pos(start, Pos::new(dx, dy));
 }
 
+pub fn is_ordinal(delta: Pos) -> bool {
+    return (delta.x == 0 && delta.y != 0) || 
+           (delta.y == 0 && delta.x != 0);
+}
+
 pub fn push_attack(handle: EntityId, target: EntityId, delta_pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
     let mut killed = false;
     let mut damage = 0;

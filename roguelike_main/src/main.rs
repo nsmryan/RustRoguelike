@@ -21,8 +21,6 @@ use sdl2::video::WindowContext;
 
 use rand::prelude::*;
 
-use memoffset::*;
-
 use walkdir::WalkDir;
 
 use log::LevelFilter;
@@ -39,17 +37,16 @@ use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
 use roguelike_engine::actions::*;
 use roguelike_engine::make_map::{make_map, read_map_xp};
-use roguelike_engine::resolve::resolve_messages;
 
 use crate::throttler::*;
 use crate::render::*;
-use crate::console::*;
+//use crate::console::*;
 use crate::display::*;
 use crate::plat::*;
 
 
 const CONFIG_NAME: &str = "config.yaml";
-const LOG_LEVEL: LevelFilter = LevelFilter::Info;
+const LOG_LEVEL: LevelFilter = LevelFilter::Trace;
 
 
 fn main() {
@@ -65,7 +62,7 @@ fn main() {
     }
     println!("Seed: {} (0x{:X})", seed, seed);
 
-    simple_logging::log_to_file("game.log", LOG_LEVEL);
+    simple_logging::log_to_file("game.log", LOG_LEVEL).unwrap();
 
     run(seed).unwrap();
 }
@@ -103,7 +100,7 @@ pub fn run(seed: u64) -> Result<(), String> {
         DisplayState::new(screen_sections, font_image, canvas);
 
     /* Load Textures */
-    let sprites = load_sprites(&texture_creator, &mut display_state);
+    load_sprites(&texture_creator, &mut display_state);
 
     let mut game = Game::new(seed, config.clone())?;
 
@@ -115,7 +112,6 @@ pub fn run(seed: u64) -> Result<(), String> {
     make_mouse(&mut game.data.entities, &config, &mut game.msg_log);
     make_hammer(&mut game.data.entities, &config, add_pos(player_pos, Pos::new(-1, 0)),  &mut game.msg_log);
 
-    let start_time = Instant::now();
     let mut frame_time = Instant::now();
 
     /* Main Game Loop */

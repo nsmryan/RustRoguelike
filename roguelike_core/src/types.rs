@@ -111,9 +111,11 @@ impl GameData {
     }
 
     pub fn has_blocking_entity(&self, pos: Pos) -> Option<EntityId> {
-        for key in self.entities.ids.iter() {
-            if self.entities.blocks[key] && self.entities.pos[key] == pos {
-                return Some(*key);
+        for (key, other_pos) in self.entities.pos.iter() {
+            if *other_pos == pos {
+                if self.entities.blocks[key] {
+                    return Some(*key);
+                }
             }
         }
 

@@ -113,7 +113,8 @@ pub fn ai_attack(monster_id: EntityId,
                 for attack_offset in attack.attacks_with_reach(&move_action) {
                     let attackable_pos = add_pos(target_pos, attack_offset);
 
-                    if attackable_pos == monster_pos {
+                    if attackable_pos == monster_pos ||
+                       !data.map.is_within_bounds(attackable_pos) {
                         continue;
                     }
 

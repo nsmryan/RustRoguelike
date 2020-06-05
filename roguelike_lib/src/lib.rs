@@ -122,7 +122,7 @@ pub extern "C" fn read_message(game_ptr: *mut Game, msg_ptr: *mut u8, msg_len: *
         if let Some(msg) = game.msg_log.turn_messages.pop_front() {
             let msg_str = serde_json::to_string(&msg).unwrap();
 
-            let mut msg_vec: Vec<u8> = msg_str.into_bytes();
+            let msg_vec: Vec<u8> = msg_str.into_bytes();
 
             for index in 0..msg_vec.len() {
                 *msg_ptr.offset(index as isize) = msg_vec[index];
@@ -148,7 +148,7 @@ pub extern "C" fn read_map(game_ptr: *mut Game, width: *mut i32, height: *mut i3
     unsafe {
         game = Box::from_raw(game_ptr);
 
-        if (*width != game.data.map.width() || *height != game.data.map.height()) {
+        if *width != game.data.map.width() || *height != game.data.map.height() {
             trace!("width = {}, height = {}", game.data.map.width(), game.data.map.height());
             *width = game.data.map.width();
             *height = game.data.map.height();
@@ -209,8 +209,8 @@ pub extern "C" fn step_game(game_ptr: *mut Game, input: *mut i8) {
     }
     game.input_action = input_action;
 
-    trace!("calling step_game");
-    let game_result = game.step_game(0.1);
+    //trace!("calling step_game");
+    //let game_result = game.step_game(0.1);
     trace!("finished step_game");
 
     /* Reload Configuration */

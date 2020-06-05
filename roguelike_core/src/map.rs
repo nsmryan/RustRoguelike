@@ -12,6 +12,8 @@ use smallvec::SmallVec;
 
 use itertools::Itertools;
 
+use log::trace;
+
 use doryen_fov::{MapData, FovAlgorithm, FovRestrictive};
 
 use euclid::*;
@@ -286,7 +288,7 @@ impl Map {
 
     pub fn blocked_left(&self, pos: Pos) -> bool {
         let offset = Pos::new(pos.x - 1, pos.y);
-        if !self.is_within_bounds(offset) {
+        if !self.is_within_bounds(offset) || !self.is_within_bounds(pos) {
             return true;
         }
 
@@ -297,7 +299,7 @@ impl Map {
 
     pub fn blocked_right(&self, pos: Pos) -> bool {
         let offset = Pos::new(pos.x + 1, pos.y);
-        if !self.is_within_bounds(pos) {
+        if !self.is_within_bounds(pos) || !self.is_within_bounds(pos) { 
             return true;
         }
 
@@ -308,7 +310,7 @@ impl Map {
 
     pub fn blocked_down(&self, pos: Pos) -> bool {
         let offset = Pos::new(pos.x, pos.y + 1);
-        if !self.is_within_bounds(pos) {
+        if !self.is_within_bounds(pos) || !self.is_within_bounds(pos) {
             return true;
         }
 
@@ -319,7 +321,7 @@ impl Map {
 
     pub fn blocked_up(&self, pos: Pos) -> bool {
         let offset = Pos::new(pos.x, pos.y - 1);
-        if !self.is_within_bounds(pos) {
+        if !self.is_within_bounds(pos) || !self.is_within_bounds(pos) {
             return true;
         }
 
@@ -329,13 +331,13 @@ impl Map {
     }
 
     pub fn is_blocked_by_wall(&self, start_pos: Pos, dx: i32, dy: i32) -> Option<Blocked> {
-        let (end_x, end_y) = (start_pos.x + dx, start_pos.y + dy);
-
-        let line = Line::new((start_pos.x, start_pos.y), (end_x, end_y));
-
         if dx == 0 && dy == 0 {
             return None;
         }
+
+        let (end_x, end_y) = (start_pos.x + dx, start_pos.y + dy);
+
+        let line = Line::new((start_pos.x, start_pos.y), (end_x, end_y));
 
         let dir = Direction::from_dxy(dx, dy).expect("Check for blocking wall with no movement?");
 
@@ -589,6 +591,15 @@ impl Map {
             return true;
         }
 
+        if !self.is_within_bounds(start_pos) || !self.is_within_bounds(end_pos) {
+            return false;
+        }
+
+        let within_radius = distance(start_pos, end_pos) < radius;
+        if !within_radius {
+            return false;
+        }
+
         if self.fov_pos != start_pos {
             self.compute_fov(start_pos, radius);
         }
@@ -609,9 +620,7 @@ impl Map {
         let is_visible =
             self.fov.is_in_fov(end_pos.x as usize, end_pos.y as usize);
 
-        let within_radius = distance(start_pos, end_pos) < radius;
-
-        let is_in_fov = !wall_in_path && is_visible && within_radius;
+        let is_in_fov = !wall_in_path && is_visible;
 
         return is_in_fov;
     }
@@ -664,29 +673,6 @@ impl Map {
         return result;
     }
 
-    pub fn astar(&self, start: Pos, end: Pos) -> Vec<Pos> {
-        let result;
-
-        let maybe_results = 
-            astar(&start,
-                  |&pos|
-                  self.reachable_neighbors(pos)
-                      .iter()
-                      .map(|pos| (*pos, 1))
-                      .collect::<SmallVec<[(Pos, i32); 8]>>()
-                  ,
-                  |&pos| distance(pos, end) as i32,
-                  |&pos| pos == end);
-
-        if let Some((results, _cost)) = maybe_results {
-            result = results.iter().map(|p| *p).collect::<Vec<Pos>>();
-        } else {
-            result = Vec::new();
-        }
-
-        return result;
-    }
-
     pub fn set_cell(&mut self, x: i32, y: i32, transparent: bool) {
         self.fov.set_transparent(x as usize, y as usize, transparent);
     }
@@ -715,12 +701,14 @@ impl Map {
     }
 
     pub fn aoe_fill(&self, aoe_effect: AoeEffect, start: Pos, radius: usize) -> Aoe {
+        trace!("aoe_fill {} {}", start, radius);
+
         let mut effect_targets: Vec<Vec<Pos>> = vec![Vec::new(); radius + 1];
 
         for effect_x in 0..self.width() {
             for effect_y in 0..self.height() {
                 let effect_pos = Pos::new(effect_x, effect_y);
-                let dist = distance(Pos::new(start.x, start.y), Pos::new(effect_x, effect_y));
+                let dist = distance(start, effect_pos);
                 if dist > 0 && dist <= radius as i32 {
                     effect_targets[dist as usize].push(effect_pos);
                 }
@@ -732,13 +720,22 @@ impl Map {
             for cur_pos in positions {
                 
                 let dt = *cur_pos - start;
+
+                // if a direct line is blocked by a wall, lower the radius of the AOE effect
                 let is_blocked = self.is_blocked_by_wall(start, dt.x, dt.y).is_some();
                 let effective_radius = if is_blocked && radius > 2 {
                     radius - 2
                 } else {
                     radius
                 };
-                if self.astar(start, *cur_pos).len() <= effective_radius &&
+
+                let dist = distance(start, *cur_pos) as usize;
+
+                // if the distance to the cell is greater then the radius, short circuit calling
+                // astar.
+                // otherwise use astar to see if there is a short path to the target
+                if dist <= effective_radius &&
+                   astar_cost(self, start, *cur_pos, Some(effective_radius as i32)) <= effective_radius &&
                    !aoe_dists[dist].contains(cur_pos) {
                     aoe_dists[dist].push(*cur_pos);
                 }
@@ -899,6 +896,55 @@ pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut Small
             }
         }
     }
+}
+
+// return only the cost to avoid a vec allocation
+pub fn astar_cost(map: &Map, start: Pos, end: Pos, max_dist: Option<i32>) -> usize {
+    trace!("astar_cost {} {}", start, end);
+
+    let maybe_results = 
+        astar(&start,
+              |&pos| astar_neighbors(map, start, pos, max_dist),
+              |&pos| distance(pos, end) as i32,
+              |&pos| pos == end);
+
+    if let Some((results, _cost)) = maybe_results {
+        return results.len();
+    }
+
+    return 0;
+}
+
+pub fn astar_path(map: &Map, start: Pos, end: Pos, max_dist: Option<i32>) -> Vec<Pos> {
+    let result;
+
+    trace!("astar_path {} {}", start, end);
+
+    let maybe_results = 
+        astar(&start,
+              |&pos| astar_neighbors(map, start, pos, max_dist),
+              |&pos| distance(pos, end) as i32,
+              |&pos| pos == end);
+
+    if let Some((results, _cost)) = maybe_results {
+        result = results.iter().map(|p| *p).collect::<Vec<Pos>>();
+    } else {
+        result = Vec::new();
+    }
+
+    return result;
+}
+
+fn astar_neighbors(map: &Map, start: Pos, pos: Pos, max_dist: Option<i32>) -> SmallVec<[(Pos, i32); 8]> {
+      if let Some(max_dist) = max_dist {
+          if distance(start, pos) > max_dist {
+              return SmallVec::new();
+          }
+      }
+      map.reachable_neighbors(pos)
+         .iter()
+         .map(|pos| (*pos, 1))
+         .collect::<SmallVec<[(Pos, i32); 8]>>()
 }
 
 #[test]

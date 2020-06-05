@@ -236,15 +236,15 @@ pub fn handle_input_interact(input: InputAction,
             info!("Mouse clicked {}", map_cell);
             let player_pos = game_data.entities.pos[&player_id];
 
-            let dpos = sub_pos(map_cell, player_pos);
-            let dx = signedness(dpos.x);
-            let dy = signedness(dpos.y);
+            let pos_diff = sub_pos(map_cell, player_pos);
+            let dx = signedness(pos_diff.x);
+            let dy = signedness(pos_diff.y);
 
             let use_pos = add_pos(player_pos, Pos::new(dx, dy));
 
             let using_hammer = game_data.using(player_id, Item::Hammer);
 
-            if using_hammer {
+            if using_hammer && is_ordinal(Pos::new(dx, dy)) {
                 msg_log.log(Msg::HammerSwing(player_id, use_pos));
 
                 // exit interaction state

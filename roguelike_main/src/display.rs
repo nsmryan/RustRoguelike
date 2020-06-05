@@ -254,7 +254,7 @@ impl DisplayState {
 
     pub fn process_message(&mut self, msg: Msg, data: &mut GameData, config: &Config) {
         match msg {
-            Msg::Sound(cause_id, source_pos, radius, should_animate) => {
+            Msg::Sound(_cause_id, source_pos, radius, should_animate) => {
                 if should_animate {
                     // NOTE this is a duplicate computation, also done in logic message processing
                     let sound_aoe =
@@ -265,7 +265,7 @@ impl DisplayState {
                 }
             }
 
-            Msg::ItemThrow(thrower, item_id, start, end) => {
+            Msg::ItemThrow(_thrower, item_id, start, end) => {
                 let sound_aoe = data.map.aoe_fill(AoeEffect::Sound, end, SOUND_RADIUS_STONE);
 
                 let chr = data.entities.chr[&item_id];
@@ -287,7 +287,7 @@ impl DisplayState {
                 data.entities.animation[&item_id].push_back(loop_key);
             }
 
-            Msg::Moved(object_id, movement, pos) => {
+            Msg::Moved(object_id, movement, _pos) => {
                 let player_handle = data.find_player().unwrap();
                 if object_id == player_handle && !matches!(movement.typ, MoveType::Pass) {
                     let idle_sprite =
@@ -315,7 +315,7 @@ impl DisplayState {
                 }
             }
 
-            Msg::Attack(attacker, attacked, _damage) => {
+            Msg::Attack(attacker, _attacked, _damage) => {
                 if data.entities.typ[&attacker] == ObjType::Player {
                     let attack_sprite =
                         self.new_sprite("player_attack".to_string(), config.player_attack_speed)

@@ -22,9 +22,6 @@ use crate::plat::*;
 
 
 pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<(), String> {
-
-    let player_id = game.data.find_player().unwrap();
-
     let screen_rect = display_state.canvas.output_size()?;
 
     let plots = display_state
@@ -877,7 +874,8 @@ fn render_overlays(display_state: &mut DisplayState,
         let player_pos = game.data.entities.pos[&player_id];
 
         if game.config.draw_star_path {
-            let path = game.data.map.astar(player_pos, mouse_pos);
+            // get a path to the mouse path, regardless of distance
+            let path = astar_path(&game.data.map, player_pos, mouse_pos, None);
             for pos in path {
                 display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
             }

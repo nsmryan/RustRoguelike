@@ -155,7 +155,7 @@ pub fn make_elf(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
 }
 
 pub fn make_trap_sound(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let mut sound = entities.create_entity(pos.x, pos.y, ObjType::Enemy, ENTITY_TRAP_SOUND as char, config.color_ice_blue, "soudn", false);
+    let sound = entities.create_entity(pos.x, pos.y, ObjType::Enemy, ENTITY_TRAP_SOUND as char, config.color_ice_blue, "soudn", false);
 
     entities.trap.insert(sound,  Trap::Sound);
 
@@ -165,7 +165,7 @@ pub fn make_trap_sound(entities: &mut Entities, config: &Config, pos: Pos, msg_l
 }
 
 pub fn make_spikes(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let mut spikes = entities.create_entity(pos.x, pos.y, ObjType::Enemy, MAP_TALL_SPIKES as char, config.color_ice_blue, "spike", false);
+    let spikes = entities.create_entity(pos.x, pos.y, ObjType::Enemy, MAP_TALL_SPIKES as char, config.color_ice_blue, "spike", false);
 
     entities.trap.insert(spikes,  Trap::Spikes);
 
@@ -175,7 +175,7 @@ pub fn make_spikes(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
 }
 
 pub fn make_exit(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let mut exit = entities.create_entity(pos.x, pos.y, ObjType::Item, ENTITY_EXIT as char, config.color_orange, "exit", false);
+    let exit = entities.create_entity(pos.x, pos.y, ObjType::Item, ENTITY_EXIT as char, config.color_orange, "exit", false);
 
     entities.color.insert(exit,  config.color_ice_blue);
 
