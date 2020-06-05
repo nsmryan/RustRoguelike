@@ -119,7 +119,16 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
             }
 
             Msg::HammerHitEntity(entity, hit_entity) => {
-                attack(entity, hit_entity, data, msg_log);
+                let first = data.entities.pos[&entity];
+                let second = data.entities.pos[&hit_entity];
+                push_attack(entity, hit_entity, sub_pos(first, second), false, data, msg_log);
+
+                // TODO this is repeated in push_attack, and likely elsewhere
+                data.entities.alive[&hit_entity] = false;
+                data.entities.blocks[&hit_entity] = false;
+                let damage = data.entities.fighter[&hit_entity].hp;
+
+                msg_log.log(Msg::Killed(entity, hit_entity, damage));
             }
 
             Msg::HammerHitWall(entity, blocked) => {

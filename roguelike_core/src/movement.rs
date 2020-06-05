@@ -485,7 +485,7 @@ impl MoveResult {
         };
     }
 
-    pub fn no_collsion(&self) -> bool {
+    pub fn no_collision(&self) -> bool {
         return self.blocked.is_none() && self.entity.is_none();
     }
 }
@@ -569,7 +569,7 @@ pub fn player_move_or_attack(movement: Movement,
                     player_action = NoAction;
                 }
             } else if data.entities.alive[&target_id] {
-                push_attack(player_id, target_id, delta_pos, data, msg_log);
+                push_attack(player_id, target_id, delta_pos, true, data, msg_log);
                 player_action = Move(movement);
             } else {
                 dbg!(data.entities.typ[&target_id]);

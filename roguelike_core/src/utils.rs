@@ -7,7 +7,7 @@ use crate::ai::Behavior;
 use crate::constants::{HAMMER_DAMAGE};
 use crate::map::{Surface};
 use crate::types::*;
-use crate::movement::{Reach, MoveMode};
+use crate::movement::{Reach, MoveMode, check_collision};
 use crate::messaging::*;
 
 
@@ -40,7 +40,12 @@ pub fn is_ordinal(delta: Pos) -> bool {
            (delta.y == 0 && delta.x != 0);
 }
 
-pub fn push_attack(handle: EntityId, target: EntityId, delta_pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
+pub fn push_attack(handle: EntityId,
+                   target: EntityId,
+                   delta_pos: Pos,
+                   move_into: bool,
+                   data: &mut GameData,
+                   msg_log: &mut MsgLog) {
     let mut killed = false;
     let mut damage = 0;
 
@@ -52,22 +57,27 @@ pub fn push_attack(handle: EntityId, target: EntityId, delta_pos: Pos, data: &mu
         let x_diff = signedness(diff.x);
         let y_diff = signedness(diff.y);
 
+        let move_result = check_collision(other_pos, x_diff, y_diff, data);
+
         let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
 
-        if data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() ||
-           data.has_blocking_entity(past_pos).is_some() {
-            // if blocked by wall, kill entity and take their space
+        if move_into {
             data.entities.move_to(handle, other_pos);
+        }
 
+        if move_result.no_collision() {
+            // if not blocked, push the other entity, taking their space
+            data.entities.set_pos(target, past_pos);
+        } else {
+            // otherwise crush them against the wall/entity
             data.entities.alive[&target] = false;
             data.entities.blocks[&target] = false;
             damage = data.entities.fighter[&target].hp;
 
             killed = true;
-        } else {
-            // if not blocked, push the other entity, taking their space
-            data.entities.set_pos(target, past_pos);
-            data.entities.move_to(handle, other_pos);
+
+            // once we crush an entity, we lose the rest of the move
+            break;
         }
     }
 
