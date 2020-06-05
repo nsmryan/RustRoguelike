@@ -128,8 +128,7 @@ pub fn handle_input_inventory(input: InputAction,
             if item_index < game_data.entities.inventory[&player_id].len() {
                 let item_key = game_data.entities.inventory[&player_id][item_index];
 
-                game_data.entities.selected_item[&player_id] =
-                    item_key;
+                game_data.entities.selected_item.insert(player_id, item_key);
 
                 settings.state = GameState::Throwing;
                 msg_log.log(Msg::GameState(settings.state));
