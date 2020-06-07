@@ -185,7 +185,7 @@ impl Msg {
                 return "Can't run with shield!".to_string();
             }
 
-            Msg::SpawnedObject(entity_id, _typ, _pos) => {
+            Msg::SpawnedObject(_entity_id, _typ, _pos) => {
                 return "".to_string();
             }
 
@@ -199,7 +199,7 @@ impl Msg {
                 return format!("{} hit {} with their hammer", entity_name, hit_entity_name);
             }
 
-            Msg::HammerHitWall(entity, blocked) => {
+            Msg::HammerHitWall(entity, _blocked) => {
                 return format!("{} hit a wall with their hammer", game_data.entities.name[entity]);
             }
 

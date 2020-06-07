@@ -4,16 +4,14 @@ use roguelike_core::types::*;
 use roguelike_core::map::{Surface, AoeEffect};
 use roguelike_core::messaging::{MsgLog, Msg};
 use roguelike_core::constants::*;
-use roguelike_core::animation::{Effect, Animation};
 use roguelike_core::movement::{MoveMode, MoveType};
 use roguelike_core::config::*;
 use roguelike_core::utils::*;
 
 use crate::game::*;
-use crate::make_map::read_map_xp;
 
 
-pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mut GameSettings, config: &Config) {
+pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &mut GameSettings, config: &Config) {
     /* Handle Message Log */
     while let Some(msg) = msg_log.pop() {
         let msg_line = msg.msg_line(data);
@@ -44,7 +42,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                 }
             }
 
-            Msg::ItemThrow(thrower, item_id, start, end) => {
+            Msg::ItemThrow(thrower, _item_id, _start, end) => {
                 // NOTE the radius here is the stone radius, regardless of item type
 
                 msg_log.log_front(Msg::Sound(thrower, end, SOUND_RADIUS_STONE, false));
@@ -162,7 +160,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
 
             let player_pos = data.entities.pos[&player_handle];
             if !data.map.is_in_fov(player_pos, *pos, config.fov_radius_player) {
-                let heard = Effect::HeardSomething(*pos, settings.turn_count);
+                //let heard = Effect::HeardSomething(*pos, settings.turn_count);
                 // TODO move to somewhere else?
                 //display_state.effects.push(heard);
             }

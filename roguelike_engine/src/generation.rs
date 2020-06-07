@@ -13,8 +13,6 @@ use roguelike_core::messaging::*;
 use roguelike_core::config::*;
 use roguelike_core::utils::{rand_from_pos, distance};
 
-use crate::make_map::*;
-
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum MapGenType {

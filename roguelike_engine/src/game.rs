@@ -79,8 +79,8 @@ pub struct Game {
 
 impl Game {
     pub fn new(seed: u64, config: Config) -> Result<Game, String> {
-        let mut entities = Entities::new();
-        let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
+        let entities = Entities::new();
+        let rng: SmallRng = SeedableRng::seed_from_u64(seed);
 
         let mut msg_log = MsgLog::new();
 
@@ -143,8 +143,6 @@ impl Game {
         if matches!(self.input_action, InputAction::Exit) {
             return GameResult::Stop;
         }
-
-        let player_id = self.data.find_player().unwrap();
 
         self.msg_log.log(Msg::ChangeLevel());
 

@@ -117,7 +117,7 @@ pub fn run(seed: u64) -> Result<(), String> {
     /* Main Game Loop */
     let mut running = true;
     while running {
-        let loop_timer = timer!("GAME_LOOP");
+        let _loop_timer = timer!("GAME_LOOP");
 
         let input_timer = timer!("INPUT");
         /* Handle Events */
@@ -429,9 +429,6 @@ pub fn keydown_to_action(keycode: Keycode,
 
 fn load_sprites(texture_creator: &TextureCreator<WindowContext>,
                 display_state: &mut DisplayState) {
-    let font_image = texture_creator.load_texture("resources/rexpaint16x16.png")
-        .expect("Could not load texture!");
-
     let player_idle = texture_creator.load_texture("animations/player/Player_Idle.png")
         .expect("Could not load texture!");
 

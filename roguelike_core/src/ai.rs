@@ -43,7 +43,7 @@ impl Behavior {
 pub fn ai_take_turn(monster_id: EntityId,
                     data: &mut GameData,
                     config: &Config,
-                    msg_log: &mut MsgLog) -> Action {
+                    _msg_log: &mut MsgLog) -> Action {
     let mut turn: Action = Action::NoAction;
 
     if data.entities.alive[&monster_id] {
@@ -58,7 +58,6 @@ pub fn ai_take_turn(monster_id: EntityId,
             }
 
             None => {
-                turn = Action::none();
                 // TODO if this does not occur, simplify this function
                 panic!("AI didn't have an ai entry!");
             }
@@ -79,7 +78,7 @@ pub fn ai_attack(monster_id: EntityId,
                  target_id: EntityId,
                  data: &mut GameData,
                  config: &Config) -> Action {
-    let mut target_pos = data.entities.pos[&target_id];
+    let target_pos = data.entities.pos[&target_id];
     let monster_pos = data.entities.pos[&monster_id];
 
     let turn: Action;
@@ -103,63 +102,61 @@ pub fn ai_attack(monster_id: EntityId,
         let mut new_pos = monster_pos;
 
         let mut pos_offset = Pos::new(0, 0);
-        if let (attack, movement) =
-            (data.entities.attack[&monster_id], data.entities.movement[&monster_id]) {
+        let (attack, movement) =
+            (data.entities.attack[&monster_id], data.entities.movement[&monster_id]);
 
-            let mut potential_move_targets = Vec::new();
+        let mut potential_move_targets = Vec::new();
 
-            let direction = data.entities.direction[&monster_id];
-            for move_action in Direction::move_actions() {
-                for attack_offset in attack.attacks_with_reach(&move_action) {
-                    let attackable_pos = add_pos(target_pos, attack_offset);
+        let direction = data.entities.direction[&monster_id];
+        for move_action in Direction::move_actions() {
+            for attack_offset in attack.attacks_with_reach(&move_action) {
+                let attackable_pos = add_pos(target_pos, attack_offset);
 
-                    if attackable_pos == monster_pos ||
-                       !data.map.is_within_bounds(attackable_pos) {
-                        continue;
-                    }
+                if attackable_pos == monster_pos ||
+                   !data.map.is_within_bounds(attackable_pos) {
+                    continue;
+                }
 
-                    data.entities.set_pos(monster_id, attackable_pos);
-                    data.entities.face(monster_id, target_pos);
-                    let can_hit = ai_can_hit_target(data, monster_id, target_pos, &attack, config).is_some();
+                data.entities.set_pos(monster_id, attackable_pos);
+                data.entities.face(monster_id, target_pos);
+                let can_hit = ai_can_hit_target(data, monster_id, target_pos, &attack, config).is_some();
 
-                    if can_hit {
-                        potential_move_targets.push(attackable_pos);
-                    }
+                if can_hit {
+                    potential_move_targets.push(attackable_pos);
                 }
             }
-            data.entities.set_pos(monster_id, monster_pos);
-            data.entities.direction[&monster_id] = direction;
-
-            let mut targets = potential_move_targets.iter();
-            if let Some(first_target) = targets.next() {
-                let mut best_target = first_target;
-
-                let path = data.path_between(monster_pos, *best_target, movement);
-                let mut best_dist = path.len();
-
-                let large_dist = (MAP_WIDTH + MAP_HEIGHT) as usize;
-                if best_dist == 0 {
-                    best_dist = large_dist;
-                }
-
-                for move_target in targets {
-                    let path = data.path_between(monster_pos, *move_target, movement);
-                    let path_length = path.len();
-                        
-                    if path_length > 0 && (path_length < best_dist || best_dist == large_dist) {
-                        best_dist = path_length;
-                        best_target = move_target;
-                    }
-                }
-
-                if best_dist > 0 && best_dist != large_dist {
-                    new_pos = *best_target;
-                }
-
-            }
-
-            pos_offset = ai_take_astar_step(monster_id, new_pos, &data);
         }
+        data.entities.set_pos(monster_id, monster_pos);
+        data.entities.direction[&monster_id] = direction;
+
+        let mut targets = potential_move_targets.iter();
+        if let Some(first_target) = targets.next() {
+            let mut best_target = first_target;
+
+            let path = data.path_between(monster_pos, *best_target, movement);
+            let mut best_dist = path.len();
+
+            let large_dist = (MAP_WIDTH + MAP_HEIGHT) as usize;
+            if best_dist == 0 {
+                best_dist = large_dist;
+            }
+
+            for move_target in targets {
+                let path = data.path_between(monster_pos, *move_target, movement);
+                let path_length = path.len();
+                    
+                if path_length > 0 && (path_length < best_dist || best_dist == large_dist) {
+                    best_dist = path_length;
+                    best_target = move_target;
+                }
+            }
+
+            if best_dist > 0 && best_dist != large_dist {
+                new_pos = *best_target;
+            }
+        }
+
+        pos_offset = ai_take_astar_step(monster_id, new_pos, &data);
 
         if pos_mag(pos_offset) > 0 {
             turn = Action::Move(Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move));
@@ -320,8 +317,6 @@ pub fn ai_apply_action(monster_id: EntityId,
                        turn: Action,
                        game_data: &mut GameData,
                        msg_log: &mut MsgLog) {
-    let pos = game_data.entities.pos[&monster_id];
-
     if !game_data.entities.alive[&monster_id] {
         return;
     }
@@ -341,8 +336,6 @@ pub fn ai_apply_action(monster_id: EntityId,
                 }
 
                 Some(Attack::Attack(target_id)) => {
-                    let pos_diff = sub_pos(movement.pos, pos);
-
                     attack(monster_id, target_id, game_data, msg_log);
                 },
 

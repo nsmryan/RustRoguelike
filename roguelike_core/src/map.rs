@@ -716,7 +716,7 @@ impl Map {
         }
 
         let mut aoe_dists = vec![Vec::new(); radius + 1];
-        for (dist, positions) in effect_targets.iter().enumerate() {
+        for (_dist, positions) in effect_targets.iter().enumerate() {
             for cur_pos in positions {
                 
                 let dt = *cur_pos - start;

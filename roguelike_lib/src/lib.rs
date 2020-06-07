@@ -11,13 +11,10 @@ use simple_logging;
 
 use roguelike_core::types::*;
 use roguelike_core::config::Config;
-use roguelike_core::messaging::Msg;
-use roguelike_core::movement::*;
 use roguelike_core::map::*;
 
 use roguelike_engine::game::*;
 use roguelike_engine::make_map::read_map_xp;
-use roguelike_engine::resolve::resolve_messages;
 use roguelike_engine::actions::*;
 
 
@@ -42,7 +39,6 @@ pub extern "C" fn create_game(seed: u64, config_name: *mut i8, map_name: *mut i8
     trace!("game new");
     let mut game: Box<Game> = Box::new(Game::new(seed, config).unwrap());
 
-    let  map: Map;
     unsafe {
         let map_cstr = CStr::from_ptr(map_name);
         trace!("map string");
@@ -143,7 +139,7 @@ pub extern "C" fn read_message(game_ptr: *mut Game, msg_ptr: *mut u8, msg_len: *
 pub extern "C" fn read_map(game_ptr: *mut Game, width: *mut i32, height: *mut i32) -> *mut Tile {
     trace!("reading map");
 
-    let mut game: Box<Game>;
+    let game: Box<Game>;
     let mut tile_buf = std::ptr::null_mut();
     unsafe {
         game = Box::from_raw(game_ptr);

@@ -1,5 +1,3 @@
-use rand::prelude::*;
-
 use tcod::line::*;
 
 use serde::{Serialize, Deserialize};
@@ -389,7 +387,6 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::RegenerateMap, _) => {
-            let mut rng: SmallRng = SeedableRng::seed_from_u64(2);
             let _position = make_map::make_map(&game.config.map_load.clone(), game);
         }
 
@@ -451,8 +448,6 @@ pub fn pick_item_up(entity_id: EntityId,
         ItemClass::Primary => {
             if item_primary_at(entity_id, entities, 0) &&
                item_primary_at(entity_id, entities, 1) {
-                let old_primary = entities.inventory[&entity_id][0];
-
                 entities.inventory[&entity_id][0] = item_id;
 
                 let obj_pos = entities.pos[&entity_id];
