@@ -292,7 +292,7 @@ fn render_info(display_state: &mut DisplayState,
                     y_pos += 2;
                 }
 
-                text_list.push(format!("{}", game.data.entities.name[obj_id]));
+                text_list.push(format!("{:?}", game.data.entities.name[obj_id]));
 
                 text_list.push(format!(""));
 
@@ -367,7 +367,7 @@ fn render_inventory(display_state: &mut DisplayState, game: &mut Game, area: &Ar
             } else {
                 ""
             };
-        let item_text = format!(" {} {}", game.data.entities.name[obj_id], item_marker);
+        let item_text = format!(" {:?} {}", game.data.entities.name[obj_id], item_marker);
         display_state.draw_text(&item_text,
                                 text_pos,
                                 color,
@@ -933,7 +933,7 @@ fn get_entity_under_mouse(mouse_pos: Pos,
 
     for key in data.entities.ids.iter() {
         let pos = data.entities.pos[key];
-        let is_mouse = data.entities.name[key] == "mouse";
+        let is_mouse = data.entities.name[key] == EntityName::Mouse;
         let removing = data.entities.needs_removal[key];
 
         if !removing && !is_mouse && mouse_pos == pos {

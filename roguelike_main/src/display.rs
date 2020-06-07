@@ -302,10 +302,10 @@ impl DisplayState {
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
-                if data.entities.typ[&attacked] != ObjType::Player {
+                if data.entities.typ[&attacked] != EntityType::Player {
                     data.entities.animation[&attacked].clear();
 
-                    let sprite_name = format!("{}_die", data.entities.name[&attacked]);
+                    let sprite_name = format!("{:?}_die", data.entities.name[&attacked]);
                     let maybe_sprite = self.new_sprite(sprite_name, 1.0);
                     if let Some(sprite) = maybe_sprite {
                         let anim = self.play_animation(Animation::Once(sprite));
@@ -316,7 +316,7 @@ impl DisplayState {
             }
 
             Msg::Attack(attacker, _attacked, _damage) => {
-                if data.entities.typ[&attacker] == ObjType::Player {
+                if data.entities.typ[&attacker] == EntityType::Player {
                     let attack_sprite =
                         self.new_sprite("player_attack".to_string(), config.player_attack_speed)
                                           .unwrap();
@@ -336,7 +336,7 @@ impl DisplayState {
             }
 
             Msg::JumpWall(jumper, start, end) => {
-                if data.entities.typ[&jumper] == ObjType::Player {
+                if data.entities.typ[&jumper] == EntityType::Player {
                     let jump_sprite =
                         self.new_sprite("player_vault".to_string(), config.player_vault_sprite_speed)
                                           .unwrap();
@@ -355,15 +355,15 @@ impl DisplayState {
                 }
             }
 
-            Msg::SpawnedObject(entity_id, _typ, _pos) => {
-                if data.entities.typ[&entity_id] == ObjType::Player {
+            Msg::SpawnedObject(entity_id, _typ, _pos, _name) => {
+                if data.entities.typ[&entity_id] == EntityType::Player {
                     let sprite = self.new_sprite("player_idle".to_string(), config.idle_speed)
                                                     .expect("Could not find sprite 'player_idle'");
 
                     let anim_key = self.play_animation(Animation::Loop(sprite));
 
                     data.entities.animation[&entity_id].push_front(anim_key);
-                } else if data.entities.name[&entity_id] == "key" {
+                } else if data.entities.name[&entity_id] == EntityName::Key {
                     let sprite = self.new_sprite("key".to_string(), config.key_speed)
                                                      .expect("Could not find sprite 'key'");
 
@@ -371,20 +371,20 @@ impl DisplayState {
 
                     data.entities.animation[&entity_id].push_front(anim_key);
 
-                } else if data.entities.name[&entity_id] == "spike" {
+                } else if data.entities.name[&entity_id] == EntityName::Spike {
                     let sprite = self.new_sprite("spikes".to_string(), config.idle_speed)
                                                      .expect("Could not find sprite 'spikes'");
 
                     let anim_key = self.play_animation(Animation::Loop(sprite));
 
                     data.entities.animation[&entity_id].push_front(anim_key);
-                } else if data.entities.name[&entity_id] == "elf" {
+                } else if data.entities.name[&entity_id] == EntityName::Pawn {
                     let sprite =  self.new_sprite("elf_idle".to_string(), config.idle_speed)
                                                      .expect("Could not find sprite 'elf_idle'");
                     let anim_key = self.play_animation(Animation::Loop(sprite));
 
                     data.entities.animation[&entity_id].push_front(anim_key);
-                } else if data.entities.name[&entity_id] == "gol" {
+                } else if data.entities.name[&entity_id] == EntityName::Gol {
                     let sprite = self.new_sprite("gol_idle".to_string(), config.idle_speed)
                                                      .expect("Could not find sprite 'gol_idle'");
 

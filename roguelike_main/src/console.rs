@@ -166,7 +166,7 @@ impl Console {
                 let mut count = 0;
                 let combine = 2;
                 for entity_id in data.entities.ids.iter() {
-                    line.push_str(&format!("{:>3}: at ({:>2}, {:>2}) {:<16}",
+                    line.push_str(&format!("{:>3}: at ({:>2}, {:>2}) {:<16?}",
                                            entity_id,
                                            data.entities.pos[entity_id].x,
                                            data.entities.pos[entity_id].y,

@@ -289,8 +289,8 @@ pub fn next_pos(pos: Pos, delta_pos: Pos) -> Pos {
 }
 
 pub fn can_stab(data: &GameData, entity: EntityId, target: EntityId) -> bool {
-    // NOTE this is not generic- uses ObjType::Enemy
-    return data.entities.typ[&target] == ObjType::Enemy &&
+    // NOTE this is not generic- uses EntityType::Enemy
+    return data.entities.typ[&target] == EntityType::Enemy &&
            data.using(entity, Item::Dagger) &&
            !matches!(data.entities.behavior.get(&target), Some(Behavior::Attacking(_)));
 }

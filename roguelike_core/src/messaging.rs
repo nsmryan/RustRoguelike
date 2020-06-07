@@ -44,7 +44,7 @@ impl MsgLog {
 #[derive(Copy, Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub enum Msg {
     Pass(),
-    Crushed(EntityId, Pos, ObjType), // object that did the crushing, position, type that was crushed
+    Crushed(EntityId, Pos, EntityType), // object that did the crushing, position, type that was crushed
     Sound(EntityId, Pos, usize, bool), // object causing sound, location, radius, whether animation will play
     SoundTrapTriggered(EntityId, EntityId), // trap, entity
     SpikeTrapTriggered(EntityId, EntityId), // trap, entity
@@ -62,7 +62,7 @@ pub enum Msg {
     GameState(GameState),
     MoveMode(MoveMode),
     TriedRunWithShield,
-    SpawnedObject(EntityId, ObjType, Pos),
+    SpawnedObject(EntityId, EntityType, Pos, EntityName),
     HammerSwing(EntityId, Pos), // entity, position swung at
     HammerHitEntity(EntityId, EntityId), // entity, hit entity
     HammerHitWall(EntityId, Blocked),
@@ -97,7 +97,7 @@ impl Msg {
             }
 
             Msg::PickedUp(entity, item) => {
-                return format!("{} picked up a {}",
+                return format!("{:?} picked up a {:?}",
                                game_data.entities.name[entity].clone(),
                                game_data.entities.name[item].clone());
             }
@@ -107,7 +107,7 @@ impl Msg {
             }
 
             Msg::Attack(attacker, attacked, damage) => {
-                return format!("{} attacked {} for {} damage",
+                return format!("{:?} attacked {:?} for {} damage",
                                game_data.entities.name[attacker],
                                game_data.entities.name[attacked],
                                damage);
@@ -119,9 +119,9 @@ impl Msg {
 
             Msg::Moved(entity, movement, _pos) => {
                 if let MoveType::Pass = movement.typ {
-                    return format!("{} passed their turn", game_data.entities.name[entity]);
+                    return format!("{:?} passed their turn", game_data.entities.name[entity]);
                 } else {
-                    return format!("{} moved", game_data.entities.name[entity]);
+                    return format!("{:?} moved", game_data.entities.name[entity]);
                 }
             }
 
@@ -185,22 +185,22 @@ impl Msg {
                 return "Can't run with shield!".to_string();
             }
 
-            Msg::SpawnedObject(_entity_id, _typ, _pos) => {
+            Msg::SpawnedObject(_entity_id, _typ, _pos, _name) => {
                 return "".to_string();
             }
 
             Msg::HammerSwing(entity, _pos) => {
-                return format!("{} swung their hammer", game_data.entities.name[entity]);
+                return format!("{:?} swung their hammer", game_data.entities.name[entity]);
             }
 
             Msg::HammerHitEntity(entity, _pos) => {
                 let entity_name = &game_data.entities.name[entity];
                 let hit_entity_name = &game_data.entities.name[entity];
-                return format!("{} hit {} with their hammer", entity_name, hit_entity_name);
+                return format!("{:?} hit {:?} with their hammer", entity_name, hit_entity_name);
             }
 
             Msg::HammerHitWall(entity, _blocked) => {
-                return format!("{} hit a wall with their hammer", game_data.entities.name[entity]);
+                return format!("{:?} hit a wall with their hammer", game_data.entities.name[entity]);
             }
 
             Msg::ChangeLevel() => {

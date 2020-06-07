@@ -101,7 +101,7 @@ pub fn ai_attack(monster_id: EntityId,
     } else {
         let mut new_pos = monster_pos;
 
-        let mut pos_offset = Pos::new(0, 0);
+        let pos_offset;
         let (attack, movement) =
             (data.entities.attack[&monster_id], data.entities.movement[&monster_id]);
 

@@ -2,6 +2,7 @@ use std::convert::Into;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::default::Default;
+use std::fmt;
 
 use serde::{Serialize, Deserialize};
 
@@ -79,7 +80,7 @@ impl GameData {
 
     pub fn find_player(&self) -> Option<EntityId> {
         for (key, typ) in self.entities.typ.iter() {
-            if *typ == ObjType::Player {
+            if *typ == EntityType::Player {
                 return Some(*key);
             }
         }
@@ -89,7 +90,7 @@ impl GameData {
 
     pub fn find_mouse(&self) -> Option<EntityId> {
         for (key, name) in self.entities.name.iter() {
-            if name == "mouse" {
+            if *name == EntityName::Mouse {
                 return Some(*key);
             }
         }
@@ -335,7 +336,32 @@ impl Rect {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum ObjType {
+pub enum EntityName {
+    Player,
+    Gol,
+    Pawn,
+    Column,
+    Key,
+    Sound,
+    Exit,
+    Dagger,
+    Hammer,
+    Shield,
+    Spire,
+    Spike,
+    Stone,
+    Mouse,
+    Other,
+}
+
+impl Default for EntityName {
+    fn default() -> EntityName {
+        return EntityName::Other;
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum EntityType {
     Player,
     Enemy,
     Item,
@@ -343,9 +369,9 @@ pub enum ObjType {
     Other,
 }
 
-impl Default for ObjType {
-    fn default() -> ObjType {
-        return ObjType::Other;
+impl Default for EntityType {
+    fn default() -> EntityType {
+        return EntityType::Other;
     }
 }
 
@@ -371,7 +397,7 @@ pub struct Entities {
     pub ids: Vec<EntityId>,
     pub pos: CompStore<Pos>,
     pub chr: CompStore<char>,
-    pub name: CompStore<String>,
+    pub name: CompStore<EntityName>,
     pub fighter: CompStore<Fighter>,
     pub ai: CompStore<Ai>,
     pub behavior: CompStore<Behavior>,
@@ -392,7 +418,7 @@ pub struct Entities {
     // TODO not sure about keeping these ones, or packaging into larger ones
     pub alive: CompStore<bool>,
     pub sound: CompStore<Pos>, // source position
-    pub typ: CompStore<ObjType>,
+    pub typ: CompStore<EntityType>,
     pub color: CompStore<Color>,
     pub blocks: CompStore<bool>,
     pub needs_removal: CompStore<bool>,
@@ -441,7 +467,7 @@ impl Entities {
     }
 
     // TODO consider simplifying this and allowing these fields to be set
-    pub fn create_entity(&mut self, x: i32, y: i32, typ: ObjType, chr: char, color: Color, name: &str, blocks: bool) -> EntityId {
+    pub fn create_entity(&mut self, x: i32, y: i32, typ: EntityType, chr: char, color: Color, name: EntityName, blocks: bool) -> EntityId {
         let id = OBJECT_ID_COUNT.fetch_add(1, Ordering::SeqCst);
         self.ids.push(id);
 
@@ -449,7 +475,7 @@ impl Entities {
         self.typ.insert(id, typ);
         self.chr.insert(id, chr);
         self.color.insert(id, color);
-        self.name.insert(id, name.into());
+        self.name.insert(id, name);
         self.blocks.insert(id, blocks);
         self.alive.insert(id, false);
         self.direction.insert(id, Direction::Up);
@@ -533,8 +559,8 @@ impl Entities {
         let pos = self.pos[&entity_id];
 
         let radius: i32 = match self.typ[&entity_id] {
-            ObjType::Enemy => config.fov_radius_monster,
-            ObjType::Player => config.fov_radius_player,
+            EntityType::Enemy => config.fov_radius_monster,
+            EntityType::Player => config.fov_radius_player,
             _ => panic!(format!("Tried to see with object of type {:?}", self.typ)),
         };
 

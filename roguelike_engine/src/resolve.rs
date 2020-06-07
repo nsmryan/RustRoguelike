@@ -87,7 +87,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
-                if data.entities.typ[&attacked] != ObjType::Player {
+                if data.entities.typ[&attacked] != EntityType::Player {
                     let pos = data.entities.pos[&attacked];
 
                     data.map[pos].surface = Surface::Rubble;

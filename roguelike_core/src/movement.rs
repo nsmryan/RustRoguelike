@@ -544,7 +544,7 @@ pub fn player_move_or_attack(movement: Movement,
         }
 
         Some(Attack::Push(target_id, delta_pos)) => {
-            if data.entities.typ[&target_id] == ObjType::Column {
+            if data.entities.typ[&target_id] == EntityType::Column {
                 let pos = data.entities.pos[&player_id];
                     let next_pos = next_pos(pos, sub_pos(movement.pos, pos));
 
@@ -564,7 +564,7 @@ pub fn player_move_or_attack(movement: Movement,
 
                     player_action = Move(movement);
 
-                    msg_log.log(Msg::Crushed(player_id, next_pos, ObjType::Column));
+                    msg_log.log(Msg::Crushed(player_id, next_pos, EntityType::Column));
                 } else {
                     player_action = NoAction;
                 }
