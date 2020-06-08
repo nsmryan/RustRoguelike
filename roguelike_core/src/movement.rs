@@ -5,6 +5,8 @@ use tcod::line::*;
 
 use euclid::*;
 
+use log::{error};
+
 use serde::{Serialize, Deserialize};
 
 use crate::constants::*;
@@ -15,7 +17,7 @@ use crate::messaging::{MsgLog, Msg};
 use crate::ai::Behavior;
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Action {
     Move(Movement),
     StateChange(Behavior),
@@ -23,8 +25,9 @@ pub enum Action {
     ThrowItem(Pos, usize), // end position, inventory index
     Pass,
     Yell,
-    NoAction,
     UseItem,
+    // TODO consider just using Option<Action> instead
+    NoAction,
 }
 
 impl Action {
@@ -492,10 +495,8 @@ impl MoveResult {
 
 pub fn player_move_or_attack(movement: Movement,
                              data: &mut GameData,
-                             msg_log: &mut MsgLog) -> Action {
+                             msg_log: &mut MsgLog) {
     use Action::*;
-
-    let player_action: Action;
 
     let player_id = data.find_player().unwrap();
 
@@ -504,39 +505,22 @@ pub fn player_move_or_attack(movement: Movement,
             match movement.typ {
                 MoveType::Collide => {
                     data.entities.move_to(player_id, movement.pos);
-                    player_action = Move(movement);
 
                     msg_log.log(Msg::Collided(player_id, movement.pos));
                 }
 
                 MoveType::Pass => {
-                    player_action = Action::none();
                     msg_log.log(Msg::Moved(player_id, movement, movement.pos));
                 }
 
                 MoveType::Move | MoveType::JumpWall => {
-                    let player_pos = data.entities.pos[&player_id];
-
-                    if player_pos != movement.pos {
-                        data.entities.move_to(player_id, movement.pos);
-
-                        player_action = Move(movement);
-
-                        if movement.typ == MoveType::Move {
-                            msg_log.log(Msg::Moved(player_id, movement, movement.pos));
-                        } else {
-                            msg_log.log(Msg::JumpWall(player_id, player_pos, movement.pos));
-                        }
-                    } else {
-                        player_action = NoAction;
-                    }
+                    // TODO moved to resolve msgs...
                 }
 
                 MoveType::WallKick(_dir_x, _dir_y) => {
                     data.entities.move_to(player_id, movement.pos);
 
                     // TODO could check for enemy and attack
-                    player_action = Move(movement);
 
                     msg_log.log(Msg::WallKick(player_id, movement.pos));
                 }
@@ -562,28 +546,18 @@ pub fn player_move_or_attack(movement: Movement,
                         crush(target_id, hit_entity, &mut data.entities, msg_log);
                     }
 
-                    player_action = Move(movement);
-
                     msg_log.log(Msg::Crushed(player_id, next_pos, EntityType::Column));
-                } else {
-                    player_action = NoAction;
                 }
             } else if data.entities.alive[&target_id] {
                 push_attack(player_id, target_id, delta_pos, true, data, msg_log);
-                player_action = Move(movement);
             } else {
-                dbg!(data.entities.typ[&target_id]);
-                //player_action = NoAction;
+                error!("{:?}", data.entities.typ[&target_id]);
                 panic!("What did you push?");
             }
         }
 
-        Some(Attack::Attack(target_id)) => {
-            attack(player_id, target_id, data, msg_log);
-
-            data.entities.set_pos(player_id, movement.pos);
-
-            player_action = Move(movement);
+        Some(Attack::Attack(_target_id)) => {
+            // TODO moved to resolve msgs...
         }
 
         Some(Attack::Stab(target_id)) => {
@@ -605,12 +579,8 @@ pub fn player_move_or_attack(movement: Movement,
             data.entities.inventory[&player_id].remove(dagger_ix);
 
             data.entities.move_to(player_id, movement.pos);
-
-            player_action = Move(movement);
         }
     }
-
-    return player_action;
 }
 
 /// Moves the given object with a given offset, returning the square that it collides with, or None

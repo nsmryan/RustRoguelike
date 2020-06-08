@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::types::*;
 use crate::map::*;
-use crate::movement::{Movement, MoveType, MoveMode};
+use crate::movement::{Movement, MoveType, MoveMode, Action};
 use crate::ai::Behavior;
 
 
@@ -67,6 +67,7 @@ pub enum Msg {
     HammerHitEntity(EntityId, EntityId), // entity, hit entity
     HammerHitWall(EntityId, Blocked),
     ChangeLevel(),
+    Action(EntityId, Action),
 }
 
 impl Msg {
@@ -74,10 +75,6 @@ impl Msg {
         match self {
             Msg::Crushed(_obj_id, _pos, _obj_type) => {
                 return "An object has been crushed".to_string();
-            }
-
-            Msg::Sound(_obj_id, _pos, _radius, _animate) => {
-                return "".to_string();
             }
 
             Msg::Pass() => {
@@ -185,10 +182,6 @@ impl Msg {
                 return "Can't run with shield!".to_string();
             }
 
-            Msg::SpawnedObject(_entity_id, _typ, _pos, _name) => {
-                return "".to_string();
-            }
-
             Msg::HammerSwing(entity, _pos) => {
                 return format!("{:?} swung their hammer", game_data.entities.name[entity]);
             }
@@ -203,7 +196,7 @@ impl Msg {
                 return format!("{:?} hit a wall with their hammer", game_data.entities.name[entity]);
             }
 
-            Msg::ChangeLevel() => {
+            _ => {
                 return "".to_string();
             }
         }

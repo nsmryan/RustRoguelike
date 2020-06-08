@@ -86,6 +86,7 @@ pub fn ai_attack(monster_id: EntityId,
     let attack_reach = data.entities.attack[&monster_id];
 
     if !data.entities.alive[&target_id] {
+        // if AI target is no longer alive
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else if let Some(hit_pos) =
         // if AI can hit their target
@@ -97,8 +98,10 @@ pub fn ai_attack(monster_id: EntityId,
         let attack = Attack::Attack(target_id);
         turn = Action::Move(Movement::attack(hit_pos, MoveType::Move, attack));
     } else if data.map.is_blocked_by_wall(monster_pos, target_pos.x - monster_pos.x, target_pos.y - monster_pos.y).is_some() {
+        // path to target is blocked by a wall- investigate the last known position
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else {
+        // can see target, but can't hit them. try to move to a position where we can hit them
         let mut new_pos = monster_pos;
 
         let pos_offset;
@@ -107,6 +110,7 @@ pub fn ai_attack(monster_id: EntityId,
 
         let mut potential_move_targets = Vec::new();
 
+        // check all movement options in case one lets us hit the target
         let direction = data.entities.direction[&monster_id];
         for move_action in Direction::move_actions() {
             for attack_offset in attack.attacks_with_reach(&move_action) {
@@ -129,6 +133,7 @@ pub fn ai_attack(monster_id: EntityId,
         data.entities.set_pos(monster_id, monster_pos);
         data.entities.direction[&monster_id] = direction;
 
+        // look through all potential positions for the shortest path
         let mut targets = potential_move_targets.iter();
         if let Some(first_target) = targets.next() {
             let mut best_target = first_target;
@@ -156,6 +161,7 @@ pub fn ai_attack(monster_id: EntityId,
             }
         }
 
+        // step towards the closest location that lets us hit the target
         pos_offset = ai_take_astar_step(monster_id, new_pos, &data);
 
         if pos_mag(pos_offset) > 0 {
@@ -322,25 +328,8 @@ pub fn ai_apply_action(monster_id: EntityId,
     }
 
     match turn {
-        Action::Move(movement) => {
-            match movement.attack {
-                None => {
-                    game_data.entities.move_to(monster_id, movement.pos);
-
-                    if let Some(Behavior::Attacking(target_id)) = game_data.entities.behavior.get(&monster_id) {
-                        let target_pos = game_data.entities.pos[target_id];
-                        game_data.entities.face(monster_id, target_pos);
-                    }
-
-                    msg_log.log(Msg::Moved(monster_id, movement, movement.pos));
-                }
-
-                Some(Attack::Attack(target_id)) => {
-                    attack(monster_id, target_id, game_data, msg_log);
-                },
-
-                _ => panic!("Unexpected movement!"),
-            }
+        Action::Move(_movement) => {
+            // NOTE moved to resolving messages...
         },
 
         Action::StateChange(behavior) => {

@@ -317,7 +317,7 @@ pub fn step_logic(player_action: Action,
 
     data.entities.action[&player_id] = player_action;
 
-    /* AI */
+    /* Actions */
     if data.entities.alive[&player_id] {
         let mut ai_id: Vec<EntityId> = Vec::new();
 
@@ -330,17 +330,17 @@ pub fn step_logic(player_action: Action,
         }
 
         for key in ai_id.iter() {
-            data.entities.action[key] = ai_take_turn(*key, data, config, msg_log);
+           data.entities.action[key] = ai_take_turn(*key, data, config, msg_log);
         }
 
-        // TODO consider making all player actions into messages
-        // and resolving them that way
         actions::player_apply_action(player_action, data, msg_log);
+        msg_log.log(Msg::Action(player_id, player_action));
         resolve_messages(data, msg_log, settings, config);
 
         for key in ai_id {
-            if let Some(action) = data.entities.action.get(&key) {
-                ai_apply_action(key, *action, data, msg_log);
+            if let Some(action) = data.entities.action.get(&key).map(|v| *v) {
+                ai_apply_action(key, action, data, msg_log);
+                msg_log.log(Msg::Action(key, action));
                 resolve_messages(data, msg_log, settings, config);
 
                 // check if fighter needs to be removed
@@ -357,7 +357,7 @@ pub fn step_logic(player_action: Action,
     }
 
     // TODO this should be part of message resolution, in case movement occurs over a trap
-    // during a series of actions
+    // during a series of actions. Could add to the Moved message to check for new positions
     /* Traps */
     let mut traps: Vec<(EntityId, EntityId)> = Vec::new();
     for key in data.entities.ids.iter() {
