@@ -58,7 +58,7 @@ pub enum Msg {
     WallKick(EntityId, Pos),
     StateChange(EntityId, Behavior),
     Collided(EntityId, Pos),
-    Yell(Pos),
+    Yell(EntityId, Pos),
     GameState(GameState),
     MoveMode(MoveMode),
     TriedRunWithShield,
@@ -71,7 +71,7 @@ pub enum Msg {
 }
 
 impl Msg {
-    pub fn msg_line(&self, game_data: &GameData) -> String {
+    pub fn msg_line(&self, data: &GameData) -> String {
         match self {
             Msg::Crushed(_obj_id, _pos, _obj_type) => {
                 return "An object has been crushed".to_string();
@@ -95,8 +95,8 @@ impl Msg {
 
             Msg::PickedUp(entity, item) => {
                 return format!("{:?} picked up a {:?}",
-                               game_data.entities.name[entity].clone(),
-                               game_data.entities.name[item].clone());
+                               data.entities.name[entity].clone(),
+                               data.entities.name[item].clone());
             }
 
             Msg::ItemThrow(_thrower, _item, _start, _end) => {
@@ -105,8 +105,8 @@ impl Msg {
 
             Msg::Attack(attacker, attacked, damage) => {
                 return format!("{:?} attacked {:?} for {} damage",
-                               game_data.entities.name[attacker],
-                               game_data.entities.name[attacked],
+                               data.entities.name[attacker],
+                               data.entities.name[attacked],
                                damage);
             }
 
@@ -116,9 +116,9 @@ impl Msg {
 
             Msg::Moved(entity, movement, _pos) => {
                 if let MoveType::Pass = movement.typ {
-                    return format!("{:?} passed their turn", game_data.entities.name[entity]);
+                    return format!("{:?} passed their turn", data.entities.name[entity]);
                 } else {
-                    return format!("{:?} moved", game_data.entities.name[entity]);
+                    return format!("{:?} moved", data.entities.name[entity]);
                 }
             }
 
@@ -134,8 +134,8 @@ impl Msg {
                 return format!("Changed state to {:?}", *behavior);
             }
 
-            Msg::Yell(_pos) => {
-                return format!("Yelled");
+            Msg::Yell(entity, _pos) => {
+                return format!("{:?} yelled", data.entities.name[entity]);
             }
 
             Msg::Collided(_entity, _pos) => {
@@ -183,17 +183,17 @@ impl Msg {
             }
 
             Msg::HammerSwing(entity, _pos) => {
-                return format!("{:?} swung their hammer", game_data.entities.name[entity]);
+                return format!("{:?} swung their hammer", data.entities.name[entity]);
             }
 
             Msg::HammerHitEntity(entity, _pos) => {
-                let entity_name = &game_data.entities.name[entity];
-                let hit_entity_name = &game_data.entities.name[entity];
+                let entity_name = &data.entities.name[entity];
+                let hit_entity_name = &data.entities.name[entity];
                 return format!("{:?} hit {:?} with their hammer", entity_name, hit_entity_name);
             }
 
             Msg::HammerHitWall(entity, _blocked) => {
-                return format!("{:?} hit a wall with their hammer", game_data.entities.name[entity]);
+                return format!("{:?} hit a wall with their hammer", data.entities.name[entity]);
             }
 
             _ => {

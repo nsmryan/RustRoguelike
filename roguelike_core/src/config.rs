@@ -53,7 +53,7 @@ pub struct Config {
     pub player_vault_sprite_speed: f32,
     pub player_vault_move_speed: f32,
     pub sound_timeout: f32,
-    pub player_yell_radius: usize,
+    pub yell_radius: usize,
     pub fog_of_war: bool,
     pub player_health: i32,
     pub explored_alpha: u8,

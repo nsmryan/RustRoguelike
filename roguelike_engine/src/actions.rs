@@ -73,7 +73,7 @@ pub fn player_apply_action(action: Action,
         }
 
         Action::Yell => {
-            msg_log.log(Msg::Yell(player_pos));
+            msg_log.log(Msg::Yell(player_id, player_pos));
         }
 
         Action::Pass => {

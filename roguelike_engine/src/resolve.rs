@@ -54,12 +54,14 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::Moved(entity_id, movement, pos) => {
+                // if running, but didn't move any squares, then decrease speed
                 if matches!(movement.typ, MoveType::Pass) {
                     if matches!(data.entities.move_mode.get(&entity_id), Some(MoveMode::Run)) {
                         data.entities.move_mode[&entity_id].decrease();
                     }
                 }
 
+                // make a noise based on how fast the entity is moving and the terrain
                 if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {
                     let mut sound_radius;
 
@@ -81,11 +83,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 }
             }
 
-            Msg::Yell(pos) => {
-                // NOTE this assumes that only the player yells
-                let player_id = data.find_player().unwrap();
-
-                msg_log.log_front(Msg::Sound(player_id, pos, config.player_yell_radius, true));
+            Msg::Yell(entity_id, pos) => {
+                msg_log.log_front(Msg::Sound(entity_id, pos, config.yell_radius, true));
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
@@ -148,18 +147,55 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::Action(entity_id, action) => {
+                let entity_pos = data.entities.pos[&entity_id];
+
                 if let Action::Move(movement) = action {
-                    // TODO also handle stab and push
-                    if let Some(Attack::Attack(target_id)) = movement.attack {
-                        // TODO consider moving to Attack message
-                        attack(entity_id, target_id, data, msg_log);
+                    if let Some(attack_field) = movement.attack {
+                        match attack_field {
+                            Attack::Attack(target_id) => {
+                                // TODO consider moving to Attack message
+                                attack(entity_id, target_id, data, msg_log);
+                            }
+
+                            Attack::Stab(target_id) => {
+                                stab(entity_id, target_id, &mut data.entities, msg_log);
+
+                                if data.using(entity_id, Item::Dagger) {
+                                    data.used_up_item(entity_id);
+                                }
+
+                                if entity_pos != movement.pos {
+                                    data.entities.move_to(entity_id, movement.pos);
+                                    msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                                }
+                            }
+
+                            // TODO also handle stab and push
+                            _ => {
+                            }
+                        }
 
                         // set pos in case we moved in order to attack
                         data.entities.set_pos(entity_id, movement.pos);
                     } else if movement.attack.is_none() {
-                        let entity_pos = data.entities.pos[&entity_id];
-
                         match movement.typ {
+                            MoveType::Collide => {
+                                data.entities.move_to(entity_id, movement.pos);
+
+                                msg_log.log(Msg::Collided(entity_id, movement.pos));
+                            }
+
+                            MoveType::Pass => {
+                                msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                            }
+
+                            MoveType::WallKick(_dir_x, _dir_y) => {
+                                data.entities.move_to(entity_id, movement.pos);
+
+                                // TODO could check for enemy and attack
+                                msg_log.log(Msg::WallKick(entity_id, movement.pos));
+                            }
+
                             MoveType::Move | MoveType::JumpWall => {
                                 if entity_pos != movement.pos {
                                     data.entities.move_to(entity_id, movement.pos);
@@ -172,12 +208,9 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                                 }
                                 // else the movement does not change our position, so do nothing
                             }
-                            
-                            _ => {
-                                // TODO add remaining enum variants
-                            }
                         }
 
+                        // if entity is attacking, face their target after the move
                         if let Some(Behavior::Attacking(target_id)) = data.entities.behavior.get(&entity_id) {
                             let target_pos = data.entities.pos[target_id];
                             data.entities.face(entity_id, target_pos);

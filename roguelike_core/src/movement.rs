@@ -502,29 +502,7 @@ pub fn player_move_or_attack(movement: Movement,
 
     match movement.attack {
         None => {
-            match movement.typ {
-                MoveType::Collide => {
-                    data.entities.move_to(player_id, movement.pos);
-
-                    msg_log.log(Msg::Collided(player_id, movement.pos));
-                }
-
-                MoveType::Pass => {
-                    msg_log.log(Msg::Moved(player_id, movement, movement.pos));
-                }
-
-                MoveType::Move | MoveType::JumpWall => {
-                    // TODO moved to resolve msgs...
-                }
-
-                MoveType::WallKick(_dir_x, _dir_y) => {
-                    data.entities.move_to(player_id, movement.pos);
-
-                    // TODO could check for enemy and attack
-
-                    msg_log.log(Msg::WallKick(player_id, movement.pos));
-                }
-            }
+            // TODO moved to resolve msgs...
         }
 
         Some(Attack::Push(target_id, delta_pos)) => {
@@ -561,24 +539,7 @@ pub fn player_move_or_attack(movement: Movement,
         }
 
         Some(Attack::Stab(target_id)) => {
-            // if enemy is aware of the enemy, just push instead
-            if data.entities.behavior.get(&target_id).map_or(false, |beh| beh.is_aware()) {
-                panic!("This shouldn't actually be possible- stabbing a aware enemy");
-            } else {
-                // otherwise enemy is not aware, so stab them
-                stab(player_id, target_id, &mut data.entities, msg_log);
-            }
-
-            // dagger is one use only- remove it from inventory
-            let dagger_ix =
-                data.entities
-                    .inventory[&player_id]
-                    .iter()
-                    .position(|item| data.entities.item[item] == Item::Dagger)
-                    .expect("Stabbed without a dagger!");
-            data.entities.inventory[&player_id].remove(dagger_ix);
-
-            data.entities.move_to(player_id, movement.pos);
+            // TODO moved to resolve msgs...
         }
     }
 }

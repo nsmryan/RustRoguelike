@@ -165,6 +165,20 @@ impl GameData {
         return false;
     }
 
+    pub fn used_up_item(&mut self, entity_id: EntityId) {
+        let mut option_item_id = None;
+        if let Some(inventory) = self.entities.inventory.get_mut(&entity_id) {
+            if let Some(item_id) = inventory.get(0) {
+                option_item_id = Some(*item_id);
+            }
+        }
+
+        if let Some(item_id) = option_item_id {
+            self.remove_entity(item_id);
+            self.entities.inventory[&entity_id].remove(0);
+        }
+    }
+
     pub fn within_aoe(&mut self, aoe: &Aoe) -> Vec<EntityId> {
         let mut within = Vec::new();
 
