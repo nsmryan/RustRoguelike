@@ -318,6 +318,10 @@ pub fn step_logic(player_action: Action,
     data.entities.action[&player_id] = player_action;
 
     /* Actions */
+    actions::player_apply_action(player_action, data, msg_log);
+    msg_log.log(Msg::Action(player_id, player_action));
+    resolve_messages(data, msg_log, settings, config);
+
     if data.entities.alive[&player_id] {
         let mut ai_id: Vec<EntityId> = Vec::new();
 
@@ -332,10 +336,6 @@ pub fn step_logic(player_action: Action,
         for key in ai_id.iter() {
            data.entities.action[key] = ai_take_turn(*key, data, config, msg_log);
         }
-
-        actions::player_apply_action(player_action, data, msg_log);
-        msg_log.log(Msg::Action(player_id, player_action));
-        resolve_messages(data, msg_log, settings, config);
 
         for key in ai_id {
             if let Some(action) = data.entities.action.get(&key).map(|v| *v) {

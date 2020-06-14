@@ -123,38 +123,6 @@ impl GameData {
         return None;
     }
 
-    pub fn walked_into(&mut self, start_pos: Pos, end_pos: Pos, look_ahead: i32) -> Option<EntityId> {
-        let pos_diff = sub_pos(end_pos, start_pos);
-        let x_dir = if pos_diff.x == 0 {
-            0
-        } else {
-            pos_diff.x.signum()
-        };
-
-        let y_dir = if pos_diff.y == 0 {
-            0
-        } else {
-            pos_diff.y.signum()
-        };
-
-        if self.map.is_blocked_by_wall(end_pos, x_dir * look_ahead, y_dir * look_ahead).is_some() {
-            return None;
-        } else {
-            let move_pos = (end_pos.x + x_dir * look_ahead,
-                            end_pos.y + y_dir * look_ahead);
-            let line = Line::new((end_pos.x, end_pos.y), move_pos);
-
-            for pos in line {
-                let maybe_id = self.has_blocking_entity(Pos::new(pos.0, pos.1));
-                if maybe_id.is_some() {
-                    return maybe_id;
-                }
-            }
-
-            return None;
-        }
-    }
-
     pub fn using(&self, entity_id: EntityId, item: Item) -> bool {
         if let Some(inventory) = self.entities.inventory.get(&entity_id) {
             if let Some(item_id) = inventory.get(0) {

@@ -333,6 +333,7 @@ pub fn ai_apply_action(monster_id: EntityId,
         },
 
         Action::StateChange(behavior) => {
+            // TODO may as well move this to the state change message
             game_data.entities.behavior[&monster_id] = behavior;
 
             msg_log.log(Msg::StateChange(monster_id, behavior));

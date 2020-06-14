@@ -500,48 +500,7 @@ pub fn player_move_or_attack(movement: Movement,
 
     let player_id = data.find_player().unwrap();
 
-    match movement.attack {
-        None => {
-            // TODO moved to resolve msgs...
-        }
-
-        Some(Attack::Push(target_id, delta_pos)) => {
-            if data.entities.typ[&target_id] == EntityType::Column {
-                let pos = data.entities.pos[&player_id];
-                    let next_pos = next_pos(pos, sub_pos(movement.pos, pos));
-
-                // if there is a path to the next tile, move it.
-                let diff = sub_pos(movement.pos, pos);
-                let blocked =
-                    data.map.is_blocked_by_wall(movement.pos, diff.x, diff.y); 
-
-                if blocked == None {
-                    data.entities.move_to(player_id, movement.pos);
-
-                    data.remove_entity(target_id);
-
-                    if let Some(hit_entity) = data.has_blocking_entity(next_pos) {
-                        crush(target_id, hit_entity, &mut data.entities, msg_log);
-                    }
-
-                    msg_log.log(Msg::Crushed(player_id, next_pos, EntityType::Column));
-                }
-            } else if data.entities.alive[&target_id] {
-                push_attack(player_id, target_id, delta_pos, true, data, msg_log);
-            } else {
-                error!("{:?}", data.entities.typ[&target_id]);
-                panic!("What did you push?");
-            }
-        }
-
-        Some(Attack::Attack(_target_id)) => {
-            // TODO moved to resolve msgs...
-        }
-
-        Some(Attack::Stab(target_id)) => {
-            // TODO moved to resolve msgs...
-        }
-    }
+    // TODO moved to resolve msgs...
 }
 
 /// Moves the given object with a given offset, returning the square that it collides with, or None

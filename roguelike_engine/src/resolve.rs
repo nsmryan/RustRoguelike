@@ -1,4 +1,4 @@
-use log::trace;
+use log::{trace, error};
 
 use roguelike_core::types::*;
 use roguelike_core::ai::{Behavior};
@@ -117,6 +117,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 }
             }
 
+            // TODO Consider making this a Push message, splitting out that code from Action as
+            // well
             Msg::HammerHitEntity(entity, hit_entity) => {
                 let first = data.entities.pos[&entity];
                 let second = data.entities.pos[&hit_entity];
@@ -149,6 +151,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             Msg::Action(entity_id, action) => {
                 let entity_pos = data.entities.pos[&entity_id];
 
+                // TODO add remaining variants, and move AI state change to here.
+                // likely need to split this into a separate function, as it is getting long
                 if let Action::Move(movement) = action {
                     if let Some(attack_field) = movement.attack {
                         match attack_field {
@@ -170,8 +174,33 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                                 }
                             }
 
-                            // TODO also handle stab and push
-                            _ => {
+                            Attack::Push(target_id, delta_pos) => {
+                                if data.entities.typ[&target_id] == EntityType::Column {
+                                    let pos = data.entities.pos[&entity_id];
+                                        let next_pos = next_pos(pos, sub_pos(movement.pos, pos));
+
+                                    // if there is a path to the next tile, move it.
+                                    let diff = sub_pos(movement.pos, pos);
+                                    let blocked =
+                                        data.map.is_blocked_by_wall(movement.pos, diff.x, diff.y); 
+
+                                    if blocked == None {
+                                        data.entities.move_to(entity_id, movement.pos);
+
+                                        data.remove_entity(target_id);
+
+                                        if let Some(hit_entity) = data.has_blocking_entity(next_pos) {
+                                            crush(target_id, hit_entity, &mut data.entities, msg_log);
+                                        }
+
+                                        msg_log.log(Msg::Crushed(entity_id, next_pos, EntityType::Column));
+                                    }
+                                } else if data.entities.alive[&target_id] {
+                                    push_attack(entity_id, target_id, delta_pos, true, data, msg_log);
+                                } else {
+                                    error!("Tried to push entity {:?}, which was not valid!", data.entities.typ[&target_id]);
+                                    panic!("What did you push? Check the game log!");
+                                }
                             }
                         }
 
@@ -197,13 +226,20 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                             }
 
                             MoveType::Move | MoveType::JumpWall => {
+                                // TODO what about if the entity is moved (say, pushed)? shouldn't
+                                // do the move at all, likely
                                 if entity_pos != movement.pos {
-                                    data.entities.move_to(entity_id, movement.pos);
+                                    if data.clear_path(entity_pos, movement.pos) {
+                                        data.entities.move_to(entity_id, movement.pos);
 
-                                    if movement.typ == MoveType::Move {
-                                        msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                                        if movement.typ == MoveType::Move {
+                                            msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                                        } else {
+                                            msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
+                                        }
                                     } else {
-                                        msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
+                                        // TODO move towards position, perhaps emitting a Collide
+                                        // message.
                                     }
                                 }
                                 // else the movement does not change our position, so do nothing
