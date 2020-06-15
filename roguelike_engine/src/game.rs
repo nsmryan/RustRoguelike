@@ -339,7 +339,6 @@ pub fn step_logic(player_action: Action,
 
         for key in ai_id {
             if let Some(action) = data.entities.action.get(&key).map(|v| *v) {
-                ai_apply_action(key, action, data, msg_log);
                 msg_log.log(Msg::Action(key, action));
                 resolve_messages(data, msg_log, settings, config);
 

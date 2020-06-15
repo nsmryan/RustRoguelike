@@ -319,28 +319,3 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
     }
 }
 
-pub fn ai_apply_action(monster_id: EntityId,
-                       turn: Action,
-                       game_data: &mut GameData,
-                       msg_log: &mut MsgLog) {
-    if !game_data.entities.alive[&monster_id] {
-        return;
-    }
-
-    match turn {
-        Action::Move(_movement) => {
-            // NOTE moved to resolving messages...
-        },
-
-        Action::StateChange(behavior) => {
-            // TODO may as well move this to the state change message
-            game_data.entities.behavior[&monster_id] = behavior;
-
-            msg_log.log(Msg::StateChange(monster_id, behavior));
-        },
-
-        _ => {
-        }
-    }
-}
-

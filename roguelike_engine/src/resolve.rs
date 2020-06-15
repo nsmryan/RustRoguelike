@@ -252,7 +252,13 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                             data.entities.face(entity_id, target_pos);
                         }
                     }
+                } else if let Action::StateChange(behavior) = action {
+                    msg_log.log(Msg::StateChange(entity_id, behavior));
                 }
+            }
+
+            Msg::StateChange(entity_id, behavior) => {
+                data.entities.behavior[&entity_id] = behavior;
             }
 
             _ => {
