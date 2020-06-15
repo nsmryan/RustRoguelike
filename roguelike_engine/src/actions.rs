@@ -55,36 +55,32 @@ pub fn player_apply_action(action: Action,
     let player_pos = game_data.entities.pos[&player_id];
 
     match action {
-        Action::Move(movement) => {
-            movement::player_move_or_attack(movement, game_data, msg_log);
-        }
-
         Action::StateChange(_behavior) => {
             panic!("Player tried to change behavior?");
         }
 
         Action::Pickup(item_id) => {
+            // TODO move this to the Action msg instead
             pick_item_up(player_id, item_id, &mut game_data.entities);
             msg_log.log(Msg::PickedUp(player_id, item_id));
         }
 
         Action::ThrowItem(throw_pos, item_index) => {
+            // TODO move this to the Action msg instead
             throw_item(player_id, item_index, player_pos, throw_pos, game_data, msg_log);
         }
 
         Action::Yell => {
+            // TODO move this to the Action msg instead
             msg_log.log(Msg::Yell(player_id, player_pos));
         }
 
         Action::Pass => {
+            // TODO move this to the Action msg instead
             msg_log.log(Msg::Pass());
         }
 
-        // no implementation- all handling is done in messages
-        Action::UseItem => {
-        }
-
-        Action::NoAction => {
+        _ => {
         }
     }
 }

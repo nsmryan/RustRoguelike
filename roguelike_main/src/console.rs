@@ -154,7 +154,7 @@ impl Console {
                    command: Command,
                    args: &mut Vec<String>,
                    data: &mut GameData,
-                   display_state: &mut DisplayState,
+                   _display_state: &mut DisplayState,
                    settings: &mut GameSettings,
                    config: &Config,
                    msg_log: &mut MsgLog) {
@@ -190,12 +190,12 @@ impl Console {
                 let mut entity_key = None;
                 for key in data.entities.ids.iter() {
                     if *key == id {
-                        entity_key = Some(key);
+                        entity_key = Some(*key);
                     }
                 }
 
                 if let Some(key) = entity_key {
-                    data.entities.set_xy(*key, x, y);
+                    data.entities.set_xy(key, x, y);
                     self.output.push(format!("{} moved to ({}, {})", id, x, y));
                 } else {
                     self.output.push(format!("Id {} not found!", id));

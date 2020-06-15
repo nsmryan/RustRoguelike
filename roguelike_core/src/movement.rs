@@ -5,15 +5,12 @@ use tcod::line::*;
 
 use euclid::*;
 
-use log::{error};
-
 use serde::{Serialize, Deserialize};
 
 use crate::constants::*;
 use crate::types::*;
 use crate::utils::*;
 use crate::map::{Wall, Blocked};
-use crate::messaging::{MsgLog, Msg};
 use crate::ai::Behavior;
 
 
@@ -493,17 +490,7 @@ impl MoveResult {
     }
 }
 
-pub fn player_move_or_attack(movement: Movement,
-                             data: &mut GameData,
-                             msg_log: &mut MsgLog) {
-    use Action::*;
-
-    let player_id = data.find_player().unwrap();
-
-    // TODO moved to resolve msgs...
-}
-
-/// Moves the given object with a given offset, returning the square that it collides with, or None
+// Moves the given object with a given offset, returning the square that it collides with, or None
 /// indicating no collision.
 /// NOTE if the movement carries multiple tiles, then the resulting MoveResult can report that
 /// there is a blocking wall, and on a different location a blocking entity. These are checked
@@ -551,7 +538,7 @@ pub fn check_collision(pos: Pos,
 }
 
 pub fn entity_move_not_blocked(entity_id: EntityId, move_pos: Pos, delta_pos: Pos, data: &GameData) -> Option<Movement> {
-    let mut movement: Option<Movement>;
+    let movement: Option<Movement>;
 
     let pos = data.entities.pos[&entity_id];
 
@@ -607,7 +594,7 @@ pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked:
 }
 
 pub fn entity_move_blocked_by_entity(entity_id: EntityId, other_id: EntityId, move_pos: Pos, delta_pos: Pos, data: &GameData) -> Option<Movement> {
-    let mut movement: Option<Movement>;
+    let movement: Option<Movement>;
 
     let pos = data.entities.pos[&entity_id];
     if can_stab(data, entity_id, other_id) {
@@ -624,7 +611,7 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId, other_id: EntityId, mo
 }
 
 pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: EntityId, blocked: &Blocked, delta_pos: Pos, data: &GameData) -> Option<Movement> {
-    let mut movement: Option<Movement>;
+    let movement: Option<Movement>;
 
     let entity_pos = data.entities.pos[&other_id];
     let pos = data.entities.pos[&entity_id];

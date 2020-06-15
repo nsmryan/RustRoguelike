@@ -49,7 +49,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 msg_log.log_front(Msg::Sound(thrower, end, SOUND_RADIUS_STONE, false));
             }
 
-            Msg::JumpWall(entity_id, start, end) => {
+            Msg::JumpWall(entity_id, _start, end) => {
                     msg_log.log_front(Msg::Sound(entity_id, end, SOUND_RADIUS_RUN, true));
             }
 
