@@ -48,43 +48,6 @@ pub enum InputAction {
     None,
 }
 
-pub fn player_apply_action(action: Action,
-                           game_data: &mut GameData,
-                           msg_log: &mut MsgLog) {
-    let player_id = game_data.find_player().unwrap();
-    let player_pos = game_data.entities.pos[&player_id];
-
-    match action {
-        Action::StateChange(_behavior) => {
-            panic!("Player tried to change behavior?");
-        }
-
-        Action::Pickup(item_id) => {
-            // TODO move this to the Action msg instead
-            pick_item_up(player_id, item_id, &mut game_data.entities);
-            msg_log.log(Msg::PickedUp(player_id, item_id));
-        }
-
-        Action::ThrowItem(throw_pos, item_index) => {
-            // TODO move this to the Action msg instead
-            throw_item(player_id, item_index, player_pos, throw_pos, game_data, msg_log);
-        }
-
-        Action::Yell => {
-            // TODO move this to the Action msg instead
-            msg_log.log(Msg::Yell(player_id, player_pos));
-        }
-
-        Action::Pass => {
-            // TODO move this to the Action msg instead
-            msg_log.log(Msg::Pass());
-        }
-
-        _ => {
-        }
-    }
-}
-
 //pub fn handle_input_console(input: InputAction,
 //                            key_input: &mut Vec<(KeyDirection, Keycode)>,
 //                            console: &mut Console,
@@ -181,7 +144,12 @@ pub fn handle_input_throwing(input: InputAction,
                          .position(|obj_id| *obj_id == *item);
 
             if let Some(index) = item_index {
-                player_turn = Action::ThrowItem(map_cell, index);
+                let item_id =
+                    game_data.entities
+                             .inventory[&player_id]
+                             .remove(index)
+                             .unwrap();
+                player_turn = Action::ThrowItem(map_cell, item_id);
 
                 // turn off throwing overlay
                 settings.draw_throw_overlay = false;
@@ -462,14 +430,11 @@ pub fn pick_item_up(entity_id: EntityId,
 }
 
 pub fn throw_item(player_id: EntityId,
-                  item_index: usize,
+                  item_id: EntityId,
                   start_pos: Pos,
                   end_pos: Pos,
                   game_data: &mut GameData,
                   msg_log: &mut MsgLog) {
-    let item_id =
-        game_data.entities.inventory[&player_id].remove(item_index).unwrap();
-
     let throw_line = Line::new(start_pos.to_tuple(), end_pos.to_tuple());
 
     // get target position in direction of player click

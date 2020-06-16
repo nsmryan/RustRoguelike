@@ -10,6 +10,7 @@ use roguelike_core::config::*;
 use roguelike_core::utils::*;
 
 use crate::game::*;
+use crate::actions::{throw_item, pick_item_up};
 
 
 pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &mut GameSettings, config: &Config) {
@@ -43,10 +44,11 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 }
             }
 
-            Msg::ItemThrow(thrower, _item_id, _start, end) => {
-                // NOTE the radius here is the stone radius, regardless of item type
+            Msg::ItemThrow(entity_id, item_id, start, end) => {
+                throw_item(entity_id, item_id, start, end, data, msg_log);
 
-                msg_log.log_front(Msg::Sound(thrower, end, SOUND_RADIUS_STONE, false));
+                // NOTE the radius here is the stone radius, regardless of item type
+                msg_log.log_front(Msg::Sound(entity_id, end, SOUND_RADIUS_STONE, false));
             }
 
             Msg::JumpWall(entity_id, _start, end) => {
@@ -157,7 +159,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     if let Some(attack_field) = movement.attack {
                         match attack_field {
                             Attack::Attack(target_id) => {
-                                // TODO consider moving to Attack message
                                 attack(entity_id, target_id, data, msg_log);
                             }
 
@@ -204,8 +205,9 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                             }
                         }
 
+                        // TODO this is causing monsters to move into the player
                         // set pos in case we moved in order to attack
-                        data.entities.set_pos(entity_id, movement.pos);
+                        //data.entities.set_pos(entity_id, movement.pos);
                     } else if movement.attack.is_none() {
                         match movement.typ {
                             MoveType::Collide => {
@@ -254,7 +256,19 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     }
                 } else if let Action::StateChange(behavior) = action {
                     msg_log.log(Msg::StateChange(entity_id, behavior));
+                } else if let Action::Yell = action {
+                    msg_log.log(Msg::Yell(entity_id, entity_pos));
+                } else if let Action::Pass = action {
+                    msg_log.log(Msg::Pass());
+                } else if let Action::ThrowItem(throw_pos, item_id) = action {
+                    msg_log.log(Msg::ItemThrow(entity_id, item_id, entity_pos, throw_pos));
+                } else if let Action::Pickup(item_id) = action {
+                    msg_log.log(Msg::PickedUp(entity_id, item_id));
                 }
+            }
+
+            Msg::PickedUp(entity_id, item_id) => {
+                pick_item_up(entity_id, item_id, &mut data.entities);
             }
 
             Msg::StateChange(entity_id, behavior) => {

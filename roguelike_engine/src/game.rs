@@ -318,7 +318,6 @@ pub fn step_logic(player_action: Action,
     data.entities.action[&player_id] = player_action;
 
     /* Actions */
-    actions::player_apply_action(player_action, data, msg_log);
     msg_log.log(Msg::Action(player_id, player_action));
     resolve_messages(data, msg_log, settings, config);
 
