@@ -274,10 +274,8 @@ impl Game {
         let input = self.input_action;
         self.input_action = InputAction::None;
 
-        // TODO make this a more generic selection overlay
         self.settings.draw_selection_overlay = true;
 
-        // TODO implement selection handling
         let player_action =
             actions::handle_input_selection(input,
                                            &mut self.data,

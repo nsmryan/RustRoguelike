@@ -126,6 +126,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::Attack(attacker, attacked, _damage) => {
+                // TODO move attack function here, and remove push Msg::Attack in attack function
                 let pos = data.entities.pos[&attacked];
                 msg_log.log_front(Msg::Sound(attacker, pos, config.sound_radius_attack, true)); 
             }
@@ -226,10 +227,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                                 }
                             }
                         }
-
-                        // TODO this is causing monsters to move into the player
-                        // set pos in case we moved in order to attack
-                        //data.entities.set_pos(entity_id, movement.pos);
                     } else if movement.attack.is_none() {
                         match movement.typ {
                             MoveType::Collide => {
@@ -250,8 +247,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                             }
 
                             MoveType::Move | MoveType::JumpWall => {
-                                // TODO what about if the entity is moved (say, pushed)? shouldn't
-                                // do the move at all, likely
+                                // TODO what about if the entity is moved (say, pushed)?
+                                // should check for this, and no do the move at all, likely
                                 if entity_pos != movement.pos {
                                     if data.clear_path(entity_pos, movement.pos) {
                                         data.entities.move_to(entity_id, movement.pos);
@@ -261,9 +258,12 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                                         } else {
                                             msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
                                         }
+                                    } else if movement.typ == MoveType::JumpWall {
+                                        // no clear path to moved position
+                                        data.entities.move_to(entity_id, movement.pos);
                                     } else {
                                         // TODO move towards position, perhaps emitting a Collide
-                                        // message.
+                                        // message. This is likely causing the jump wall issue!
                                     }
                                 }
                                 // else the movement does not change our position, so do nothing

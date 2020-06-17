@@ -58,7 +58,6 @@ pub fn ai_take_turn(monster_id: EntityId,
             }
 
             None => {
-                // TODO if this does not occur, simplify this function
                 panic!("AI didn't have an ai entry!");
             }
         }
