@@ -45,7 +45,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::ItemThrow(entity_id, item_id, start, end) => {
-                throw_item(entity_id, item_id, start, end, data, msg_log);
+                throw_item(entity_id, item_id, start, end, data);
 
                 // NOTE the radius here is the stone radius, regardless of item type
                 msg_log.log_front(Msg::Sound(entity_id, end, SOUND_RADIUS_STONE, false));
@@ -144,7 +144,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
 
             // TODO Consider making this a Push message, splitting out that code from Action as well
             Msg::HammerHitEntity(entity, hit_entity) => {
-                dbg!(entity, hit_entity);
                 let first = data.entities.pos[&entity];
                 let second = data.entities.pos[&hit_entity];
                 push_attack(entity, hit_entity, sub_pos(first, second), false, data, msg_log);

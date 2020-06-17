@@ -4,14 +4,13 @@ use serde::{Serialize, Deserialize};
 
 use sdl2::keyboard::Keycode;
 
-use roguelike_core::constants::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::ai::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::movement::{Action, Reach};
-use roguelike_core::utils::{move_towards, distance, add_pos, signedness, sub_pos};
+use roguelike_core::utils::{move_towards, distance};
 
 use crate::actions;
 use crate::actions::{InputAction, KeyDirection};
@@ -87,7 +86,7 @@ impl Selection {
     }
 
     pub fn selected_pos(&self, pos: Pos, selected: Pos, fov_radius: i32, data: &mut GameData) -> Option<Pos> {
-        let mut maybe_selected_pos: Option<Pos> = None;
+        let mut maybe_selected_pos: Option<Pos>;
 
         match self.typ {
             SelectionType::WithinReach(reach) => {

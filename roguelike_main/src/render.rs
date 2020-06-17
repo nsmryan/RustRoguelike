@@ -13,7 +13,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Effect, Animation, AnimKey};
-use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, in_direction_of};
+use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color};
 
 use roguelike_engine::game::*;
 

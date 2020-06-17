@@ -10,7 +10,6 @@ use roguelike_core::movement;
 use roguelike_core::utils::{reach_by_mode, item_primary_at};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
-use roguelike_core::utils::*;
 use roguelike_core::config::Config;
 
 use crate::game::*;
@@ -363,12 +362,11 @@ pub fn pick_item_up(entity_id: EntityId,
     entities.set_xy(item_id, -1, -1);
 }
 
-pub fn throw_item(player_id: EntityId,
+pub fn throw_item(_player_id: EntityId,
                   item_id: EntityId,
                   start_pos: Pos,
                   end_pos: Pos,
-                  game_data: &mut GameData,
-                  msg_log: &mut MsgLog) {
+                  game_data: &mut GameData) {
     let throw_line = Line::new(start_pos.to_tuple(), end_pos.to_tuple());
 
     // get target position in direction of player click
