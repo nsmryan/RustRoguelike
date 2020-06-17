@@ -61,6 +61,7 @@ pub struct Config {
     pub sound_grass_radius: usize,
     pub sound_radius_crushed: usize,
     pub sound_radius_attack: usize,
+    pub sound_radius_trap: usize,
     pub overlay_directions: bool,
     pub overlay_player_fov: bool,
     pub fov_radius_monster: i32,

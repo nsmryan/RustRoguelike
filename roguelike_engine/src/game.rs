@@ -354,44 +354,7 @@ pub fn step_logic(player_action: Action,
         }
     }
 
-    // TODO this should be part of message resolution, in case movement occurs over a trap
-    // during a series of actions. Could add to the Moved message to check for new positions
-    /* Traps */
-    let mut traps: Vec<(EntityId, EntityId)> = Vec::new();
-    for key in data.entities.ids.iter() {
-        for other in data.entities.ids.iter() {
-            if data.entities.trap.get(key).is_some()      && // key is a trap
-               data.entities.alive[other]             && // entity is alive
-               data.entities.fighter.get(other).is_some() && // entity is a fighter
-               data.entities.pos[key] == data.entities.pos[other] {
-                traps.push((*key, *other));
-            }
-        }
-    }
-
-    for (trap, entity) in traps.iter() {
-        match data.entities.trap[trap] {
-            Trap::Spikes => {
-                data.entities.take_damage(*entity, SPIKE_DAMAGE);
-
-                msg_log.log(Msg::SpikeTrapTriggered(*trap, *entity));
-
-                if data.entities.fighter[entity].hp <= 0 {
-                    data.entities.alive[entity] = false;
-                    data.entities.blocks[entity] = false;
-
-                    msg_log.log(Msg::Killed(*trap, *entity, SPIKE_DAMAGE));
-                }
-
-                data.entities.needs_removal[trap] = true;
-            }
-
-            Trap::Sound => {
-                msg_log.log(Msg::SoundTrapTriggered(*trap, *entity));
-            }
-        }
-    }
-
+    // TODO this shouldn't be necessary- it should be part of msg handling
     // check if player lost all hp
     if let Some(fighter) = data.entities.fighter.get(&player_id) {
         if fighter.hp <= 0 {

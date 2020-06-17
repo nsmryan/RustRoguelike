@@ -83,6 +83,32 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 } else {
                     msg_log.log_front(Msg::Sound(entity_id, pos, SOUND_RADIUS_MONSTER_MOVE, true));
                 }
+
+                // get a list of triggered traps
+                let mut traps: Vec<EntityId> = Vec::new();
+                for key in data.entities.ids.iter() {
+                    if data.entities.trap.get(key).is_some()          && // key is a trap
+                       data.entities.alive[&entity_id]                 && // entity is alive
+                       data.entities.fighter.get(&entity_id).is_some() && // entity is a fighter
+                       data.entities.pos[key] == data.entities.pos[&entity_id] {
+                        traps.push(*key);
+                    }
+                }
+
+                // Check if the entity hit a trap
+                for trap in traps.iter() {
+                    match data.entities.trap[trap] {
+                        Trap::Spikes => {
+                            msg_log.log(Msg::SpikeTrapTriggered(*trap, entity_id));
+                            data.entities.needs_removal[trap] = true;
+                        }
+
+                        Trap::Sound => {
+                            msg_log.log(Msg::SoundTrapTriggered(*trap, entity_id));
+                            data.entities.needs_removal[trap] = true;
+                        }
+                    }
+                }
             }
 
             Msg::Yell(entity_id, pos) => {
@@ -273,6 +299,24 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
 
             Msg::StateChange(entity_id, behavior) => {
                 data.entities.behavior[&entity_id] = behavior;
+            }
+
+            Msg::SpikeTrapTriggered(trap, entity_id) => {
+                data.entities.take_damage(entity_id, SPIKE_DAMAGE);
+
+                if data.entities.fighter[&entity_id].hp <= 0 {
+                    data.entities.alive[&entity_id] = false;
+                    data.entities.blocks[&entity_id] = false;
+
+                    msg_log.log(Msg::Killed(trap, entity_id, SPIKE_DAMAGE));
+                }
+            }
+
+            Msg::SoundTrapTriggered(trap, entity) => {
+                let source_pos = data.entities.pos[&trap];
+
+                // the triggering entity is considered the source of the sound
+                Msg::Sound(entity, source_pos, config.sound_radius_trap, true);
             }
 
             _ => {
