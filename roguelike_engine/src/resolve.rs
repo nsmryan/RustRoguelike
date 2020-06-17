@@ -290,6 +290,12 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     msg_log.log(Msg::ItemThrow(entity_id, item_id, entity_pos, throw_pos));
                 } else if let Action::Pickup(item_id) = action {
                     msg_log.log(Msg::PickedUp(entity_id, item_id));
+                } else if let Action::UseItem(pos) = action {
+                    let holding_hammer = data.using(entity_id, Item::Hammer);
+
+                    if holding_hammer {
+                        msg_log.log(Msg::HammerSwing(entity_id, pos));
+                    }
                 }
             }
 

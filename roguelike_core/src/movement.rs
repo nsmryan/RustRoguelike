@@ -22,7 +22,7 @@ pub enum Action {
     ThrowItem(Pos, EntityId), // end position, item id
     Pass,
     Yell,
-    UseItem,
+    UseItem(Pos), // item used towards position, or just player pos
     // TODO consider just using Option<Action> instead
     NoAction,
 }
@@ -113,6 +113,14 @@ impl Default for Movement {
 }
 
 impl Movement {
+    pub fn new(pos: Pos, typ: MoveType, attack: Option<Attack>) -> Movement {
+        return Movement {
+            pos,
+            typ,
+            attack,
+        };
+    }
+
     pub fn move_to(pos: Pos, typ: MoveType) -> Movement {
         return Movement {
             pos,
@@ -286,6 +294,21 @@ impl Reach {
         }
     }
 
+    pub fn closest_to(&self, pos: Pos, other: Pos) -> Pos {
+        let offsets = self.offsets();
+
+        let mut closest: Pos = *offsets.get(0).expect(&format!("Reach had 0 options {:?}?", self));
+
+        for offset in offsets {
+            let other_pos = add_pos(pos, offset);
+            if distance(other, other_pos) < distance(other, closest) {
+                closest = other_pos;
+            }
+        }
+
+        return closest;
+    }
+
     pub fn attacks_with_reach(&self, move_action: &Direction) -> Vec<Pos> {
         let mut positions = Vec::new();
 
@@ -363,7 +386,7 @@ impl Reach {
             Reach::Horiz(dist) => {
                 let dist = (*dist) as i32;
                 let mut offsets = vec!();
-                for dist in 1..dist {
+                for dist in 1..=dist {
                     offsets.push((dist, 0));
                     offsets.push((0, dist));
                     offsets.push((-1 * dist, 0));
@@ -376,7 +399,7 @@ impl Reach {
             Reach::Diag(dist) => {
                 let mut offsets = vec!();
                 let dist = (*dist) as i32;
-                for dist in 1..dist {
+                for dist in 1..=dist {
                     offsets.push((dist, dist));
                     offsets.push((-1 * dist, dist));
                     offsets.push((dist, -1 * dist));
@@ -397,6 +420,44 @@ impl Reach {
     }
 }
 
+#[test]
+pub fn test_reach_offsets_horiz() {
+    let horiz = Reach::Horiz(1);
+    let offsets = horiz.offsets();
+
+    let expected_pos =
+        vec!((1, 0), (-1, 0), (0, 1), (0, -1)).iter()
+                                              .map(|p| Pos::from(*p))
+                                              .collect::<Vec<Pos>>();
+    assert!(offsets.iter().all(|p| expected_pos.iter().any(|other| other == p)));
+}
+
+#[test]
+pub fn test_reach_offsets_diag() {
+    let horiz = Reach::Diag(1);
+    let offsets = horiz.offsets();
+
+    let expected_pos =
+        vec!((1, 1), (-1, 1), (1, -1), (-1, -1)).iter()
+                                              .map(|p| Pos::from(*p))
+                                              .collect::<Vec<Pos>>();
+    assert!(offsets.iter().all(|p| expected_pos.iter().any(|other| other == p)));
+}
+
+#[test]
+pub fn test_reach_offsets_single() {
+    let horiz = Reach::Single(1);
+    let offsets = horiz.offsets();
+
+    let expected_pos_vec =
+        vec!((1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1));
+
+    let expected_pos = expected_pos_vec.iter()
+                                       .map(|p| Pos::from(*p))
+                                       .collect::<Vec<Pos>>();
+
+    assert!(offsets.iter().all(|p| expected_pos.iter().any(|other| other == p)));
+}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Momentum {

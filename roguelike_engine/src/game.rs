@@ -10,7 +10,8 @@ use roguelike_core::config::*;
 use roguelike_core::ai::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
-use roguelike_core::movement::Action;
+use roguelike_core::movement::{Action, Reach};
+use roguelike_core::utils::{move_towards, distance, add_pos, signedness, sub_pos};
 
 use crate::actions;
 use crate::actions::{InputAction, KeyDirection};
@@ -26,18 +27,113 @@ pub enum GameResult {
 }
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
+pub enum SelectionAction {
+    Throw,
+    Hammer,
+}
+
+impl SelectionAction {
+    pub fn action_from_pos(&self, pos: Pos, data: &GameData) -> Action {
+        let action: Action;
+
+        match self {
+            Throw => {
+                let player_id = data.find_player().unwrap();
+                action = Action::ThrowItem(pos, player_id);
+            }
+
+            Hammer => {
+                action = Action::UseItem(pos);
+            }
+        }
+
+        return action;
+    }
+}
+
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+pub enum SelectionType {
+    WithinReach(Reach),
+    WithinRadius(usize),
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+pub struct Selection {
+    typ: SelectionType,
+    action: SelectionAction,
+    // TODO consider adding:
+    // SelectionFilter enum with Entity/Wall/Empty/Any
+    // position to selection will have to check available positions and find one that matches
+    // the filter
+}
+
+impl Default for Selection {
+    fn default() -> Selection {
+        return Selection::new(SelectionType::WithinRadius(0), SelectionAction::Throw);
+    }
+}
+
+impl Selection {
+    pub fn new(typ: SelectionType, action: SelectionAction) -> Self {
+        return Selection {
+            typ,
+            action,
+        };
+    }
+
+    pub fn selected_pos(&self, pos: Pos, selected: Pos, data: &GameData) -> Option<Pos> {
+        let mut maybe_selected_pos: Option<Pos> = None;
+
+        match self.typ {
+            SelectionType::WithinReach(reach) => {
+                let selected_pos = reach.closest_to(pos, selected);
+
+                maybe_selected_pos = Some(selected_pos);
+            }
+
+            SelectionType::WithinRadius(radius) => {
+                let selected_pos: Pos;
+                if distance(selected, pos) as usize <= radius {
+                    selected_pos = selected;
+                } else {
+                    selected_pos = move_towards(pos, selected, radius);
+                }
+
+                maybe_selected_pos = Some(selected_pos);
+            }
+        }
+
+        return maybe_selected_pos;
+    }
+
+    pub fn select(&self, pos: Pos, selected: Pos, data: &GameData) -> Option<Action> {
+        let maybe_selected_pos: Option<Pos> = self.selected_pos(pos, selected, data);
+
+        if let Some(selected_pos) = maybe_selected_pos {
+            return Some(self.action.action_from_pos(selected_pos, data));
+        } else {
+            return None;
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct GameSettings {
     pub turn_count: usize,
     pub god_mode: bool,
     pub map_type: MapGenType,
     pub exiting: bool,
     pub state: GameState,
+    // TODO remove these two- subsumed by selection overlay
     pub draw_throw_overlay: bool,
     pub draw_interact_overlay: bool,
+    pub draw_selection_overlay: bool,
     pub overlay: bool,
     pub console: bool,
     pub time: f32,
     pub render_map: bool,
+    pub selection: Selection,
 }
 
 impl GameSettings {
@@ -51,29 +147,24 @@ impl GameSettings {
             state: GameState::Playing,
             draw_throw_overlay: false,
             draw_interact_overlay: false,
+            draw_selection_overlay: false,
             overlay: false,
             console: false,
             time: 0.0,
             render_map: true,
+            selection: Selection::default(),
         };
     }
 }
 
 pub struct Game {
     pub config: Config,
-
     pub input_action: InputAction,
-
     pub key_input: Vec<(KeyDirection, Keycode)>,
-
     pub mouse_state: MouseState,
-
     pub data: GameData,
-
     pub settings: GameSettings,
-
     pub msg_log: MsgLog,
-
     pub rng: SmallRng,
 }
 
@@ -128,12 +219,17 @@ impl Game {
                 return self.step_inventory();
             }
 
+            // TODO remove throwing and interact
             GameState::Throwing => {
                 return self.step_throwing();
             }
 
             GameState::Interact => {
                 return self.step_interact();
+            }
+
+            GameState::Selection => {
+                return self.step_selection();
             }
         }
     }
@@ -212,6 +308,35 @@ impl Game {
 
         let player_action =
             actions::handle_input_interact(input,
+                                           &mut self.data,
+                                           &mut self.settings,
+                                           &mut self.msg_log);
+
+        if player_action != Action::NoAction {
+            step_logic(player_action,
+                       &mut self.data,
+                       &mut self.settings,
+                       &self.config,
+                       &mut self.msg_log);
+        }
+
+        if self.settings.exiting {
+            return GameResult::Stop;
+        }
+
+        return GameResult::Continue;
+    }
+
+    fn step_selection(&mut self) -> GameResult {
+        let input = self.input_action;
+        self.input_action = InputAction::None;
+
+        // TODO make this a more generic selection overlay
+        self.settings.draw_selection_overlay = true;
+
+        // TODO implement selection handling
+        let player_action =
+            actions::handle_input_selection(input,
                                            &mut self.data,
                                            &mut self.settings,
                                            &mut self.msg_log);

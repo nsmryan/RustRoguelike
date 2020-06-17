@@ -230,6 +230,7 @@ pub enum GameState {
     Inventory,
     Throwing,
     Interact,
+    Selection,
 }
 
 impl Default for GameState {

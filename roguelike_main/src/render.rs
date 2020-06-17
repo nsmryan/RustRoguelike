@@ -882,7 +882,7 @@ fn render_overlays(display_state: &mut DisplayState,
             }
         }
 
-        if game.config.draw_mouse_line || game.settings.draw_throw_overlay {
+        if game.config.draw_mouse_line {
             // mouse pos at 0, 0 occurs when the mouse has not moved since startup.
             // this may cause a weirdness on the corner of the map
             if mouse_pos != Pos::new(0, 0) {
@@ -894,13 +894,15 @@ fn render_overlays(display_state: &mut DisplayState,
             }
         }
 
-        if game.settings.draw_interact_overlay {
+        if game.settings.draw_selection_overlay {
             // mouse pos at 0, 0 occurs when the mouse has not moved since startup.
             // this may cause a weirdness on the corner of the map
             if mouse_pos != Pos::new(0, 0) {
-                let use_pos = in_direction_of(player_pos, mouse_pos);
+                let selected_pos = game.settings.selection.selected_pos(player_pos, mouse_pos, &game.data);
 
-                display_state.draw_char(MAP_EMPTY_CHAR as char, use_pos, highlight_color, area);
+                if let Some(pos) = selected_pos {
+                    display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
+                }
             }
         }
     }

@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 
 use log::info;
 
-use roguelike_core::movement::{Direction, Action};
+use roguelike_core::movement::{Direction, Action, Reach};
 use roguelike_core::types::*;
 use roguelike_core::movement;
 use roguelike_core::utils::{reach_by_mode, item_primary_at};
@@ -179,7 +179,7 @@ pub fn handle_input_interact(input: InputAction,
 
     match input {
         InputAction::Inventory => {
-            settings.state = GameState::Playing;
+            settings.state = GameState::Inventory;
             msg_log.log(Msg::GameState(settings.state));
         }
 
@@ -213,7 +213,51 @@ pub fn handle_input_interact(input: InputAction,
                 msg_log.log(Msg::GameState(settings.state));
                 settings.draw_interact_overlay = false;
 
-                player_turn = Action::UseItem;
+                // TODO remove this code- selection now handles this part
+                //player_turn = Action::UseItem;
+            }
+        }
+
+        _ => {
+        }
+    }
+
+    return player_turn;
+}
+
+pub fn handle_input_selection(input: InputAction,
+                              data: &mut GameData, 
+                              settings: &mut GameSettings,
+                              msg_log: &mut MsgLog) -> Action {
+    let player_id = data.find_player().unwrap();
+
+    let mut player_turn: Action = Action::none();
+
+    match input {
+        InputAction::Inventory => {
+            settings.state = GameState::Inventory;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        InputAction::Exit => {
+            settings.exiting = true;
+        }
+
+        InputAction::Esc => {
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
+            settings.draw_selection_overlay = false;
+        }
+
+        InputAction::MapClick(_map_loc, map_cell) => {
+            let player_pos = data.entities.pos[&player_id];
+
+            if let Some(action) = settings.selection.select(player_pos, map_cell, data) {
+                // exit selection state
+                settings.state = GameState::Playing;
+                msg_log.log(Msg::GameState(settings.state));
+                settings.draw_selection_overlay = false;
+                player_turn = action;
             }
         }
 
@@ -391,7 +435,10 @@ pub fn handle_input(game: &mut Game) -> Action {
             let holding_hammer = game.data.using(player_id, Item::Hammer);
 
             if holding_hammer {
-                game.settings.state = GameState::Interact;
+                game.settings.state = GameState::Selection;
+                let reach = Reach::Horiz(1);
+                game.settings.selection =
+                    Selection::new(SelectionType::WithinReach(reach), SelectionAction::Hammer);
                 game.msg_log.log(Msg::GameState(game.settings.state));
             }
         }
@@ -448,8 +495,5 @@ pub fn throw_item(player_id: EntityId,
     }
 
     game_data.entities.set_pos(item_id, end_pos);
-
-    // log the item throw event
-    msg_log.log(Msg::ItemThrow(player_id, item_id, start_pos, end_pos));
 }
 
