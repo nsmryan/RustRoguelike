@@ -134,20 +134,17 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 let entity_pos = data.entities.pos[&entity];
                 let pos_diff = sub_pos(pos, entity_pos);
 
-                // can't swing at yourself, and can't swing diagonally
-                if is_ordinal(pos_diff) {
-                    if let Some(hit_entity) = data.has_blocking_entity(pos) {
-                        // we hit another entity!
-                        msg_log.log_front(Msg::HammerHitEntity(entity, hit_entity));
-                    } else if let Some(blocked) = data.map.is_blocked_by_wall(entity_pos, pos_diff.x, pos_diff.y) {
-                        msg_log.log_front(Msg::HammerHitWall(entity, blocked));
-                    }
+                if let Some(hit_entity) = data.has_blocking_entity(pos) {
+                    // we hit another entity!
+                    msg_log.log_front(Msg::HammerHitEntity(entity, hit_entity));
+                } else if let Some(blocked) = data.map.is_blocked_by_wall(entity_pos, pos_diff.x, pos_diff.y) {
+                    msg_log.log_front(Msg::HammerHitWall(entity, blocked));
                 }
             }
 
-            // TODO Consider making this a Push message, splitting out that code from Action as
-            // well
+            // TODO Consider making this a Push message, splitting out that code from Action as well
             Msg::HammerHitEntity(entity, hit_entity) => {
+                dbg!(entity, hit_entity);
                 let first = data.entities.pos[&entity];
                 let second = data.entities.pos[&hit_entity];
                 push_attack(entity, hit_entity, sub_pos(first, second), false, data, msg_log);

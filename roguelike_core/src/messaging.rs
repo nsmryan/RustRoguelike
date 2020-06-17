@@ -149,11 +149,11 @@ impl Msg {
                     }
 
                     GameState::Playing => {
-                        return "Closed Inventory".to_string();
+                        return "".to_string();
                     }
 
-                    GameState::Throwing => {
-                        return "Throwing item".to_string();
+                    GameState::Selection => {
+                        return "Selecting a location".to_string();
                     }
 
                     _ => {
@@ -186,9 +186,9 @@ impl Msg {
                 return format!("{:?} swung their hammer", data.entities.name[entity]);
             }
 
-            Msg::HammerHitEntity(entity, _pos) => {
+            Msg::HammerHitEntity(entity, hit_entity) => {
                 let entity_name = &data.entities.name[entity];
-                let hit_entity_name = &data.entities.name[entity];
+                let hit_entity_name = &data.entities.name[hit_entity];
                 return format!("{:?} hit {:?} with their hammer", entity_name, hit_entity_name);
             }
 

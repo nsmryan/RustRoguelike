@@ -20,13 +20,13 @@ use crate::make_map::read_map_xp;
 use crate::resolve::resolve_messages;
 
 
-#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum GameResult {
     Continue,
     Stop,
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum SelectionAction {
     Throw,
     Hammer,
@@ -37,12 +37,14 @@ impl SelectionAction {
         let action: Action;
 
         match self {
-            Throw => {
+            SelectionAction::Throw => {
                 let player_id = data.find_player().unwrap();
-                action = Action::ThrowItem(pos, player_id);
+                let item_id =
+                    data.entities.selected_item.get(&player_id).expect("Throwing an item, but nothing selected!");
+                action = Action::ThrowItem(pos, *item_id);
             }
 
-            Hammer => {
+            SelectionAction::Hammer => {
                 action = Action::UseItem(pos);
             }
         }
@@ -52,16 +54,17 @@ impl SelectionAction {
 }
 
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum SelectionType {
     WithinReach(Reach),
     WithinRadius(usize),
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Selection {
-    typ: SelectionType,
-    action: SelectionAction,
+    pub typ: SelectionType,
+    pub action: SelectionAction,
+    pub only_visible: bool,
     // TODO consider adding:
     // SelectionFilter enum with Entity/Wall/Empty/Any
     // position to selection will have to check available positions and find one that matches
@@ -79,10 +82,11 @@ impl Selection {
         return Selection {
             typ,
             action,
+            only_visible: false,
         };
     }
 
-    pub fn selected_pos(&self, pos: Pos, selected: Pos, data: &GameData) -> Option<Pos> {
+    pub fn selected_pos(&self, pos: Pos, selected: Pos, fov_radius: i32, data: &mut GameData) -> Option<Pos> {
         let mut maybe_selected_pos: Option<Pos> = None;
 
         match self.typ {
@@ -104,11 +108,19 @@ impl Selection {
             }
         }
 
+        if self.only_visible {
+            if let Some(selected_pos) = maybe_selected_pos {
+                if !data.map.is_in_fov(pos, selected_pos, fov_radius) {
+                    maybe_selected_pos = None;
+                }
+            }
+        }
+
         return maybe_selected_pos;
     }
 
-    pub fn select(&self, pos: Pos, selected: Pos, data: &GameData) -> Option<Action> {
-        let maybe_selected_pos: Option<Pos> = self.selected_pos(pos, selected, data);
+    pub fn select(&self, pos: Pos, selected: Pos, fov_radius: i32, data: &mut GameData) -> Option<Action> {
+        let maybe_selected_pos: Option<Pos> = self.selected_pos(pos, selected, fov_radius, data);
 
         if let Some(selected_pos) = maybe_selected_pos {
             return Some(self.action.action_from_pos(selected_pos, data));
@@ -125,9 +137,6 @@ pub struct GameSettings {
     pub map_type: MapGenType,
     pub exiting: bool,
     pub state: GameState,
-    // TODO remove these two- subsumed by selection overlay
-    pub draw_throw_overlay: bool,
-    pub draw_interact_overlay: bool,
     pub draw_selection_overlay: bool,
     pub overlay: bool,
     pub console: bool,
@@ -145,8 +154,6 @@ impl GameSettings {
             map_type: MapGenType::Island,
             exiting: false,
             state: GameState::Playing,
-            draw_throw_overlay: false,
-            draw_interact_overlay: false,
             draw_selection_overlay: false,
             overlay: false,
             console: false,
@@ -219,15 +226,6 @@ impl Game {
                 return self.step_inventory();
             }
 
-            // TODO remove throwing and interact
-            GameState::Throwing => {
-                return self.step_throwing();
-            }
-
-            GameState::Interact => {
-                return self.step_interact();
-            }
-
             GameState::Selection => {
                 return self.step_selection();
             }
@@ -273,60 +271,6 @@ impl Game {
         return GameResult::Continue;
     }
 
-    fn step_throwing(&mut self) -> GameResult {
-        let input = self.input_action;
-        self.input_action = InputAction::None;
-
-        self.settings.draw_throw_overlay = true;
-
-        let player_action =
-            actions::handle_input_throwing(input,
-                                           &mut self.data,
-                                           &mut self.settings,
-                                           &mut self.msg_log);
-
-        if player_action != Action::NoAction {
-            step_logic(player_action,
-                       &mut self.data,
-                       &mut self.settings,
-                       &self.config,
-                       &mut self.msg_log);
-        }
-
-        if self.settings.exiting {
-            return GameResult::Stop;
-        }
-
-        return GameResult::Continue;
-    }
-
-    fn step_interact(&mut self) -> GameResult {
-        let input = self.input_action;
-        self.input_action = InputAction::None;
-
-        self.settings.draw_interact_overlay = true;
-
-        let player_action =
-            actions::handle_input_interact(input,
-                                           &mut self.data,
-                                           &mut self.settings,
-                                           &mut self.msg_log);
-
-        if player_action != Action::NoAction {
-            step_logic(player_action,
-                       &mut self.data,
-                       &mut self.settings,
-                       &self.config,
-                       &mut self.msg_log);
-        }
-
-        if self.settings.exiting {
-            return GameResult::Stop;
-        }
-
-        return GameResult::Continue;
-    }
-
     fn step_selection(&mut self) -> GameResult {
         let input = self.input_action;
         self.input_action = InputAction::None;
@@ -339,6 +283,7 @@ impl Game {
             actions::handle_input_selection(input,
                                            &mut self.data,
                                            &mut self.settings,
+                                           &self.config,
                                            &mut self.msg_log);
 
         if player_action != Action::NoAction {

@@ -898,7 +898,8 @@ fn render_overlays(display_state: &mut DisplayState,
             // mouse pos at 0, 0 occurs when the mouse has not moved since startup.
             // this may cause a weirdness on the corner of the map
             if mouse_pos != Pos::new(0, 0) {
-                let selected_pos = game.settings.selection.selected_pos(player_pos, mouse_pos, &game.data);
+                let selected_pos =
+                    game.settings.selection.selected_pos(player_pos, mouse_pos, game.config.fov_radius_player, &mut game.data);
 
                 if let Some(pos) = selected_pos {
                     display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);

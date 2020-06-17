@@ -11,6 +11,7 @@ use roguelike_core::utils::{reach_by_mode, item_primary_at};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::utils::*;
+use roguelike_core::config::Config;
 
 use crate::game::*;
 use crate::make_map;
@@ -70,10 +71,10 @@ pub enum InputAction {
 //}
 
 pub fn handle_input_inventory(input: InputAction,
-                              game_data: &mut GameData,
+                              data: &mut GameData,
                               settings: &mut GameSettings,
                               msg_log: &mut MsgLog) {
-    let player_id = game_data.find_player().unwrap();
+    let player_id = data.find_player().unwrap();
 
     match input {
         InputAction::Inventory => {
@@ -82,12 +83,15 @@ pub fn handle_input_inventory(input: InputAction,
         }
 
         InputAction::SelectItem(item_index) => {
-            if item_index < game_data.entities.inventory[&player_id].len() {
-                let item_key = game_data.entities.inventory[&player_id][item_index];
+            if item_index < data.entities.inventory[&player_id].len() {
+                let item_key = data.entities.inventory[&player_id][item_index];
 
-                game_data.entities.selected_item.insert(player_id, item_key);
+                data.entities.selected_item.insert(player_id, item_key);
 
-                settings.state = GameState::Throwing;
+                settings.state = GameState::Selection;
+                settings.selection =
+                    Selection::new(SelectionType::WithinRadius(PLAYER_THROW_DIST), SelectionAction::Throw);
+                settings.selection.only_visible = true;
                 msg_log.log(Msg::GameState(settings.state));
             }
             // if item index is not in the player's inventory, do nothing
@@ -107,127 +111,10 @@ pub fn handle_input_inventory(input: InputAction,
     }
 }
 
-pub fn handle_input_throwing(input: InputAction,
-                             game_data: &mut GameData, 
-                             settings: &mut GameSettings,
-                             msg_log: &mut MsgLog) -> Action {
-    let player_id = game_data.find_player().unwrap();
-
-    let mut player_turn: Action = Action::none();
-
-    match input {
-        InputAction::Inventory => {
-            settings.state = GameState::Playing;
-            msg_log.log(Msg::GameState(settings.state));
-        }
-
-        InputAction::Exit => {
-            settings.exiting = true;
-        }
-
-        InputAction::Esc => {
-            settings.state = GameState::Playing;
-            msg_log.log(Msg::GameState(settings.state));
-            settings.draw_throw_overlay = false;
-        }
-
-        InputAction::MapClick(_map_loc, map_cell) => {
-            let item =
-                game_data.entities
-                         .selected_item.get(&player_id)
-                         .expect("No item selected when throwing!");
-
-            let item_index =
-                game_data.entities
-                         .inventory[&player_id]
-                         .iter()
-                         .position(|obj_id| *obj_id == *item);
-
-            if let Some(index) = item_index {
-                let item_id =
-                    game_data.entities
-                             .inventory[&player_id]
-                             .remove(index)
-                             .unwrap();
-                player_turn = Action::ThrowItem(map_cell, item_id);
-
-                // turn off throwing overlay
-                settings.draw_throw_overlay = false;
-
-                // exit throwing state
-                settings.state = GameState::Playing;
-                msg_log.log(Msg::GameState(settings.state));
-            } else {
-                panic!("Thrown item not found in inventory!");
-            }
-        }
-
-        _ => {
-        }
-    }
-
-    return player_turn;
-}
-
-pub fn handle_input_interact(input: InputAction,
-                             game_data: &mut GameData, 
-                             settings: &mut GameSettings,
-                             msg_log: &mut MsgLog) -> Action {
-    let player_id = game_data.find_player().unwrap();
-
-    let mut player_turn: Action = Action::none();
-
-    match input {
-        InputAction::Inventory => {
-            settings.state = GameState::Inventory;
-            msg_log.log(Msg::GameState(settings.state));
-        }
-
-        InputAction::Exit => {
-            settings.exiting = true;
-        }
-
-        InputAction::Esc => {
-            settings.state = GameState::Playing;
-            msg_log.log(Msg::GameState(settings.state));
-            settings.draw_interact_overlay = false;
-        }
-
-        InputAction::MapClick(_map_loc, map_cell) => {
-            info!("Mouse clicked {}", map_cell);
-            let player_pos = game_data.entities.pos[&player_id];
-
-            let pos_diff = sub_pos(map_cell, player_pos);
-            let dx = signedness(pos_diff.x);
-            let dy = signedness(pos_diff.y);
-
-            let use_pos = add_pos(player_pos, Pos::new(dx, dy));
-
-            let using_hammer = game_data.using(player_id, Item::Hammer);
-
-            if using_hammer && is_ordinal(Pos::new(dx, dy)) {
-                msg_log.log(Msg::HammerSwing(player_id, use_pos));
-
-                // exit interaction state
-                settings.state = GameState::Playing;
-                msg_log.log(Msg::GameState(settings.state));
-                settings.draw_interact_overlay = false;
-
-                // TODO remove this code- selection now handles this part
-                //player_turn = Action::UseItem;
-            }
-        }
-
-        _ => {
-        }
-    }
-
-    return player_turn;
-}
-
 pub fn handle_input_selection(input: InputAction,
                               data: &mut GameData, 
                               settings: &mut GameSettings,
+                              config: &Config,
                               msg_log: &mut MsgLog) -> Action {
     let player_id = data.find_player().unwrap();
 
@@ -252,7 +139,7 @@ pub fn handle_input_selection(input: InputAction,
         InputAction::MapClick(_map_loc, map_cell) => {
             let player_pos = data.entities.pos[&player_id];
 
-            if let Some(action) = settings.selection.select(player_pos, map_cell, data) {
+            if let Some(action) = settings.selection.select(player_pos, map_cell, config.fov_radius_player, data) {
                 // exit selection state
                 settings.state = GameState::Playing;
                 msg_log.log(Msg::GameState(settings.state));

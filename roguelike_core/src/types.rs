@@ -228,8 +228,6 @@ pub enum GameState {
     Win,
     Lose,
     Inventory,
-    Throwing,
-    Interact,
     Selection,
 }
 

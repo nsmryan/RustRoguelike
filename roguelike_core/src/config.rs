@@ -32,7 +32,6 @@ pub struct Config {
     pub color_soft_green: Color,
     pub color_light_grey: Color,
     pub color_console: Color,
-    pub fov_distance: i32,
     pub load_map_file_every_frame: bool,
     pub tile_noise_scaler: f64,
     pub highlight_player_move: u8,
