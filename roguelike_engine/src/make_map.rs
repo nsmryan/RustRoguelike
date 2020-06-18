@@ -15,10 +15,16 @@ use crate::generation::*;
 use crate::game::*;
 
 
-pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) -> Pos {
+pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     let player_position: Pos;
 
     match map_load_config {
+        MapLoadConfig::Empty => {
+            let new_map = Map::from_dims(10, 10);
+            game.data.map = new_map;
+            player_position = Pos::new(0, 0);
+        }
+
         MapLoadConfig::FromFile => {
             let mut position =
                 read_map_xp(&game.config, &mut game.data, &mut game.msg_log, "resources/map.xp");
@@ -53,7 +59,8 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) -> Pos {
         }
     }
 
-    return player_position;
+    let player_id = game.data.find_player().unwrap();
+    game.data.entities.pos[&player_id] = player_position;
 }
 
 pub fn read_map_xp(config: &Config,

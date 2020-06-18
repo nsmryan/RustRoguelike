@@ -490,4 +490,3 @@ pub fn make_corner_test_map(entities: &mut Entities,
     return (map, Pos::from(position));
 }
 
-

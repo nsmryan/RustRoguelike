@@ -87,6 +87,7 @@ impl Blocked {
 pub enum MapLoadConfig {
     Random,
     TestWall,
+    Empty,
     TestCorner,
     TestPlayer,
     FromFile,

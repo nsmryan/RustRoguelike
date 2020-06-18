@@ -11,12 +11,17 @@ use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::movement::{Action, Reach};
 use roguelike_core::utils::{move_towards, distance};
+#[cfg(test)]
+use roguelike_core::movement::*;
+
 
 use crate::actions;
 use crate::actions::{InputAction, KeyDirection};
 use crate::generation::*;
 use crate::make_map::read_map_xp;
 use crate::resolve::resolve_messages;
+#[cfg(test)]
+use crate::make_map::*;
 
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
@@ -467,3 +472,34 @@ pub fn step_logic(player_action: Action,
     }
 }
 
+#[test]
+pub fn test_game_step() {
+    let mut config = Config::from_file("../config.yaml");
+    config.map_load = MapLoadConfig::Empty;
+    let mut game = Game::new(0, config.clone()).unwrap();
+
+    let player_id = game.data.find_player().unwrap();
+    make_map(&MapLoadConfig::Empty, &mut game);
+    let player_pos = game.data.entities.pos[&player_id];
+    assert_eq!(Pos::new(0, 0), player_pos);
+
+    game.input_action = InputAction::Move(Direction::Right);
+    game.step_game(0.1);
+    let player_pos = game.data.entities.pos[&player_id];
+    assert_eq!(Pos::new(1, 0), player_pos);
+
+    game.input_action = InputAction::Move(Direction::Down);
+    game.step_game(0.1);
+    let player_pos = game.data.entities.pos[&player_id];
+    assert_eq!(Pos::new(1, 1), player_pos);
+
+    game.input_action = InputAction::Move(Direction::Left);
+    game.step_game(0.1);
+    let player_pos = game.data.entities.pos[&player_id];
+    assert_eq!(Pos::new(0, 1), player_pos);
+
+    game.input_action = InputAction::Move(Direction::Up);
+    game.step_game(0.1);
+    let player_pos = game.data.entities.pos[&player_id];
+    assert_eq!(Pos::new(0, 0), player_pos);
+}
