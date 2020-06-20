@@ -7,7 +7,7 @@ use crate::ai::Behavior;
 use crate::constants::{HAMMER_DAMAGE};
 use crate::map::{Surface};
 use crate::types::*;
-use crate::movement::{Reach, MoveMode, check_collision};
+use crate::movement::{Reach, MoveMode, check_collision, MoveType, Movement};
 use crate::messaging::*;
 
 
@@ -63,11 +63,17 @@ pub fn push_attack(handle: EntityId,
 
         if move_into {
             data.entities.move_to(handle, other_pos);
+
+            let movement = Movement::new(past_pos, MoveType::Move, None);
+            msg_log.log(Msg::Moved(target, movement, past_pos));
         }
 
         if move_result.no_collision() {
             // if not blocked, push the other entity, taking their space
             data.entities.set_pos(target, past_pos);
+
+            let movement = Movement::new(past_pos, MoveType::Move, None);
+            msg_log.log(Msg::Moved(target, movement, past_pos));
         } else {
             // otherwise crush them against the wall/entity
             data.entities.alive[&target] = false;
@@ -81,6 +87,7 @@ pub fn push_attack(handle: EntityId,
         }
     }
 
+    msg_log.log(Msg::Pushed(handle, target));
     if killed {
         msg_log.log(Msg::Killed(handle, target, damage));
     } else {

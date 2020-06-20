@@ -20,7 +20,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
 
     match map_load_config {
         MapLoadConfig::TestMap => {
-            game.data.map = Map::from_dims(10, 10);
+            game.data.map = Map::from_dims(11, 12);
             make_test_map(game);
             player_position = Pos::new(0, 0);
         }

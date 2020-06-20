@@ -290,13 +290,16 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
                 let mut turn = Action::none();
 
                 if game_data.entities.is_in_fov(monster_id, &mut game_data.map, player_pos, config) {
+                    dbg!();
                     game_data.entities.face(monster_id, player_pos);
                     // NOTE will cause a turn between seeing the player and attacking
                     turn = Action::StateChange(Behavior::Attacking(player_id));
                 } else if let Some(Message::Sound(_entity_id, pos)) = game_data.entities.heard_sound(monster_id) {
+                    dbg!();
                     game_data.entities.face(monster_id, player_pos);
                     turn = Action::StateChange(Behavior::Investigating(pos));
                 } else if let Some(Message::Attack(entity_id)) = game_data.entities.was_attacked(monster_id) {
+                    dbg!();
                     game_data.entities.face(monster_id, player_pos);
                     turn = Action::StateChange(Behavior::Attacking(entity_id));
                 }

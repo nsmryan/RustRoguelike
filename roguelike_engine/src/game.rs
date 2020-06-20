@@ -382,6 +382,8 @@ pub fn step_logic(player_action: Action,
                   settings: &mut GameSettings,
                   config: &Config,
                   msg_log: &mut MsgLog) {
+    msg_log.clear();
+
     let player_id = data.find_player().unwrap();
 
     let previous_player_position =
@@ -515,6 +517,14 @@ pub fn test_game_map() {
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(0, 0), player_pos);
 
+    let pawn = game.data.entities.ids.iter().find(|id| {
+        game.data.entities.name.get(*id) == Some(&EntityName::Pawn)
+    });
+
+    let spikes = game.data.entities.ids.iter().find(|id| {
+        game.data.entities.name.get(*id) == Some(&EntityName::Spike)
+    });
+
     let mut test_move = |game: &mut Game, dir, pos| {
         game.input_action = InputAction::Move(dir);
         game.step_game(0.1);
@@ -526,6 +536,17 @@ pub fn test_game_map() {
         game.input_action = action;
         game.step_game(0.1);
     };
+
+    // make sure move modes work, to avoid errors further on
+    assert_eq!(MoveMode::Walk, game.data.entities.move_mode[&player_id]);
+    input(&mut game, InputAction::DecreaseMoveMode);
+    assert_eq!(MoveMode::Sneak, game.data.entities.move_mode[&player_id]);
+    input(&mut game, InputAction::IncreaseMoveMode);
+    assert_eq!(MoveMode::Walk, game.data.entities.move_mode[&player_id]);
+    input(&mut game, InputAction::IncreaseMoveMode);
+    assert_eq!(MoveMode::Run, game.data.entities.move_mode[&player_id]);
+    input(&mut game, InputAction::DecreaseMoveMode);
+    assert_eq!(MoveMode::Walk, game.data.entities.move_mode[&player_id]);
 
     // walk around a bit
     test_move(&mut game, Direction::Right, (1, 0));
@@ -543,5 +564,42 @@ pub fn test_game_map() {
     test_move(&mut game, Direction::Up,    (0, 0));
     input(&mut game, InputAction::IncreaseMoveMode);
     test_move(&mut game, Direction::Down,  (0, 2));
+
+    // run into wall
+    test_move(&mut game, Direction::Right,  (2, 2));
+    test_move(&mut game, Direction::Right,  (2, 2));
+    input(&mut game, InputAction::DecreaseMoveMode);
+    test_move(&mut game, Direction::Right,  (2, 2));
+    test_move(&mut game, Direction::Left,   (1, 2));
+    input(&mut game, InputAction::IncreaseMoveMode);
+    test_move(&mut game, Direction::Right,  (2, 2));
+
+    input(&mut game, InputAction::DecreaseMoveMode);
+    test_move(&mut game, Direction::Down,  (2, 3));
+    // hits left wall, doesn't move
+    test_move(&mut game, Direction::Left,  (2, 3));
+    input(&mut game, InputAction::IncreaseMoveMode);
+    // jumps over wall
+    test_move(&mut game, Direction::Left,  (1, 3));
+    // jumps back over wall
+    test_move(&mut game, Direction::Right, (2, 3));
+
+    // trigger a trap by pushing a monster into it
+    input(&mut game, InputAction::DecreaseMoveMode);
+    input(&mut game, InputAction::DecreaseMoveMode);
+    test_move(&mut game, Direction::Down, (2, 4));
+    test_move(&mut game, Direction::Down, (2, 5));
+    test_move(&mut game, Direction::Down, (2, 6));
+    test_move(&mut game, Direction::Down, (2, 7));
+    test_move(&mut game, Direction::Down, (2, 8));
+    test_move(&mut game, Direction::Down, (2, 9));
+
+    assert!(game.msg_log.turn_messages.iter().any(|msg| {
+        matches!(msg, Msg::SpikeTrapTriggered(spike, pawn))
+    }));
+
+    assert!(game.msg_log.turn_messages.iter().any(|msg| {
+        matches!(msg, Msg::Killed(spike, pawn, _))
+    }));
 }
 

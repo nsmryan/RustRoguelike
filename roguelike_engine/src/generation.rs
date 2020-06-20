@@ -450,16 +450,24 @@ pub fn make_test_map(game: &mut Game) {
     // move down works- left wall is next to player
     game.data.map[(2, 3)].left_wall = Wall::ShortWall;
 
-    // start walking
-    // move right does not work due to wall
-    // start running
-    // move right works, gets to (3,3)
-    // move left works, gets to (2, 3)
-    // start walking
-    // move left to (1, 3)
-    // start running
-    // move right to (3,3)
-    game.data.map[(3, 3)].left_wall = Wall::ShortWall;
+    // add walls -- --
+    //             v
+    //             s
+    //
+    //where v is a monster facing down,
+    //s is a spike trap.
+    //make sure that the trap triggers and hurts the monster
+    game.data.map[(0, 8)].blocked = true;
+    game.data.map[(0, 8)].tile_type = TileType::Wall;
+    game.data.map[(1, 8)].blocked = true;
+    game.data.map[(1, 8)].tile_type = TileType::Wall;
+    game.data.map[(3, 8)].blocked = true;
+    game.data.map[(3, 8)].tile_type = TileType::Wall;
+
+    let elf = make_elf(&mut game.data.entities, &game.config, Pos::new(2, 9), &mut game.msg_log);
+    game.data.entities.direction[&elf] = Direction::Down;
+    make_spikes(&mut game.data.entities, &game.config, Pos::new(2, 10), &mut game.msg_log);
+
 
     // could add surface testing- sounds are loud on rubble, soft on grass
     
@@ -470,7 +478,7 @@ pub fn make_test_map(game: &mut Game) {
 pub fn make_wall_test_map(entities: &mut Entities,
                           config: &Config,
                           msg_log: &mut MsgLog) -> (Map, Pos) {
-    let mut map = Map::from_dims(10, 10);
+    let mut map = Map::from_dims(11, 11);
     let position = (1, 5);
 
     for wall_y_pos in 2..8 {
