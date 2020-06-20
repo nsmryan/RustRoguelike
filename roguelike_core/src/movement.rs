@@ -631,11 +631,14 @@ pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked:
     }
 
     if jumped_wall {
+        // TODO remove when confirmed that this is not desired
         // if we jump the wall, we have to recheck for collisions for the
         // remaining move distance.
-        let (dx, dy) = dxy(blocked.end_pos, add_pos(pos, delta_pos));
-        let next_move_result = check_collision(blocked.end_pos, dx, dy, data);
-        let new_pos = next_move_result.move_pos;
+        //let (dx, dy) = dxy(blocked.end_pos, add_pos(pos, delta_pos));
+        //let next_move_result = check_collision(blocked.end_pos, dx, dy, data);
+        //let new_pos = next_move_result.move_pos;
+
+        let new_pos = blocked.end_pos;
 
         movement = Some(Movement::move_to(new_pos, MoveType::JumpWall));
 

@@ -503,3 +503,45 @@ pub fn test_game_step() {
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(0, 0), player_pos);
 }
+
+#[test]
+pub fn test_game_map() {
+    let mut config = Config::from_file("../config.yaml");
+    config.map_load = MapLoadConfig::TestMap;
+    let mut game = Game::new(0, config.clone()).unwrap();
+
+    let player_id = game.data.find_player().unwrap();
+    make_map(&MapLoadConfig::TestMap, &mut game);
+    let player_pos = game.data.entities.pos[&player_id];
+    assert_eq!(Pos::new(0, 0), player_pos);
+
+    let mut test_move = |game: &mut Game, dir, pos| {
+        game.input_action = InputAction::Move(dir);
+        game.step_game(0.1);
+        let player_pos = game.data.entities.pos[&player_id];
+        assert_eq!(Pos::from(pos), player_pos);
+    };
+
+    let mut input = |game: &mut Game, action| {
+        game.input_action = action;
+        game.step_game(0.1);
+    };
+
+    // walk around a bit
+    test_move(&mut game, Direction::Right, (1, 0));
+    test_move(&mut game, Direction::Down,  (1, 1));
+    test_move(&mut game, Direction::Left,  (0, 1));
+
+    // hit short wall below us
+    test_move(&mut game, Direction::Down,  (0, 1));
+
+    // test out short wall jumping
+    input(&mut game, InputAction::IncreaseMoveMode);
+    test_move(&mut game, Direction::Down,  (0, 2));
+    test_move(&mut game, Direction::Up,    (0, 1));
+    input(&mut game, InputAction::DecreaseMoveMode);
+    test_move(&mut game, Direction::Up,    (0, 0));
+    input(&mut game, InputAction::IncreaseMoveMode);
+    test_move(&mut game, Direction::Down,  (0, 2));
+}
+

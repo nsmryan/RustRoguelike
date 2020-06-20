@@ -13,6 +13,8 @@ use roguelike_core::messaging::*;
 use roguelike_core::config::*;
 use roguelike_core::utils::{rand_from_pos, distance};
 
+use crate::game::*;
+
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum MapGenType {
@@ -430,6 +432,39 @@ pub fn make_player_test_map(entities: &mut Entities,
     map.update_map();
 
     return (map, Pos::from(position));
+}
+
+pub fn make_test_map(game: &mut Game) {
+    //right down left should work
+    //down will hit wall
+    //running should jump over wall
+    //back up should also work
+    //up then down should jump over wall
+    game.data.map[(0, 1)].bottom_wall = Wall::ShortWall;
+
+    // right hit wall, moves to (2,2)
+    // right again hit wall, doesn't move player
+    game.data.map[(3, 2)].blocked = true;
+    game.data.map[(3, 2)].tile_type = TileType::Wall;
+
+    // move down works- left wall is next to player
+    game.data.map[(2, 3)].left_wall = Wall::ShortWall;
+
+    // start walking
+    // move right does not work due to wall
+    // start running
+    // move right works, gets to (3,3)
+    // move left works, gets to (2, 3)
+    // start walking
+    // move left to (1, 3)
+    // start running
+    // move right to (3,3)
+    game.data.map[(3, 3)].left_wall = Wall::ShortWall;
+
+    // could add surface testing- sounds are loud on rubble, soft on grass
+    
+    // could add monsters and check their facing, tracking player,
+    // attacking, item use, etc
 }
 
 pub fn make_wall_test_map(entities: &mut Entities,

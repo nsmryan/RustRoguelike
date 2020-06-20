@@ -86,6 +86,7 @@ impl Blocked {
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum MapLoadConfig {
     Random,
+    TestMap,
     TestWall,
     Empty,
     TestCorner,

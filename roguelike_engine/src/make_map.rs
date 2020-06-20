@@ -19,6 +19,12 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     let player_position: Pos;
 
     match map_load_config {
+        MapLoadConfig::TestMap => {
+            game.data.map = Map::from_dims(10, 10);
+            make_test_map(game);
+            player_position = Pos::new(0, 0);
+        }
+
         MapLoadConfig::Empty => {
             let new_map = Map::from_dims(10, 10);
             game.data.map = new_map;
