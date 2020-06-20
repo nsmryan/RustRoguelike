@@ -216,7 +216,12 @@ fn render_player(display_state: &mut DisplayState, game: &mut Game, area: &Area)
     let text_pos = Pos::new(1, 4);
 
     if let Some(fighter) = game.data.entities.fighter.get(&player_id) {
-        let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
+        let hp = if fighter.hp > 0 {
+            fighter.hp
+        } else {
+            0
+        };
+        let health_percent = hp as f32 / fighter.max_hp as f32;
 
         render_bar(display_state, health_percent, 2, game.config.color_red, Color::white(), area);
     }
