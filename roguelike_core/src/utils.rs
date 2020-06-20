@@ -296,9 +296,12 @@ pub fn next_pos(pos: Pos, delta_pos: Pos) -> Pos {
 }
 
 pub fn can_stab(data: &GameData, entity: EntityId, target: EntityId) -> bool {
+    let entity_pos = data.entities.pos[&entity];
+    let target_pos = data.entities.pos[&target];
     // NOTE this is not generic- uses EntityType::Enemy
     return data.entities.typ[&target] == EntityType::Enemy &&
            data.using(entity, Item::Dagger) &&
+           data.clear_path(entity_pos, target_pos) &&
            !matches!(data.entities.behavior.get(&target), Some(Behavior::Attacking(_)));
 }
 

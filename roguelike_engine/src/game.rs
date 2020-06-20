@@ -508,6 +508,7 @@ pub fn test_game_step() {
 
 #[test]
 pub fn test_game_map() {
+    // Create Game and Map
     let mut config = Config::from_file("../config.yaml");
     config.map_load = MapLoadConfig::TestMap;
     let mut game = Game::new(0, config.clone()).unwrap();
@@ -517,14 +518,20 @@ pub fn test_game_map() {
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(0, 0), player_pos);
 
-    let pawn = game.data.entities.ids.iter().find(|id| {
+    // Find entities
+    let pawn = *game.data.entities.ids.iter().find(|id| {
         game.data.entities.name.get(*id) == Some(&EntityName::Pawn)
-    });
+    }).unwrap();
 
-    let spikes = game.data.entities.ids.iter().find(|id| {
+    let spikes = *game.data.entities.ids.iter().find(|id| {
         game.data.entities.name.get(*id) == Some(&EntityName::Spike)
-    });
+    }).unwrap();
 
+    let gol = *game.data.entities.ids.iter().find(|id| {
+        game.data.entities.name.get(*id) == Some(&EntityName::Gol)
+    }).unwrap();
+
+    // Utility functions
     let mut test_move = |game: &mut Game, dir, pos| {
         game.input_action = InputAction::Move(dir);
         game.step_game(0.1);
@@ -601,5 +608,24 @@ pub fn test_game_map() {
     assert!(game.msg_log.turn_messages.iter().any(|msg| {
         matches!(msg, Msg::Killed(spike, pawn, _))
     }));
+
+    // pick up dagger and try to stab enemy through wall
+    test_move(&mut game, Direction::DownRight, (3, 10));
+    game.input_action = InputAction::Pickup;
+    game.step_game(0.1);
+    assert!(game.data.using(player_id, Item::Dagger));
+
+    let gol_hp = game.data.entities.fighter[&gol].hp;
+
+    test_move(&mut game, Direction::Right, (4, 10));
+    test_move(&mut game, Direction::Right, (5, 10));
+    test_move(&mut game, Direction::Right, (6, 10));
+    test_move(&mut game, Direction::Right, (7, 10));
+    test_move(&mut game, Direction::Right, (7, 10));
+
+    assert!(game.data.entities.ids.contains(&gol));
+
+    assert_eq!(gol_hp, game.data.entities.fighter[&gol].hp);
+    assert!(game.data.entities.alive[&gol]);
 }
 

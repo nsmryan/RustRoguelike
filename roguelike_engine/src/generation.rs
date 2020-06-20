@@ -469,6 +469,10 @@ pub fn make_test_map(game: &mut Game) {
     make_spikes(&mut game.data.entities, &game.config, Pos::new(2, 10), &mut game.msg_log);
 
 
+    make_dagger(&mut game.data.entities, &game.config, Pos::new(3, 10), &mut game.msg_log);
+
+    game.data.map[(8, 10)].left_wall = Wall::ShortWall;
+    let gol = make_gol(&mut game.data.entities, &game.config, Pos::new(8, 10), &mut game.msg_log);
     // could add surface testing- sounds are loud on rubble, soft on grass
     
     // could add monsters and check their facing, tracking player,
