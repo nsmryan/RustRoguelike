@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use rand::prelude::*;
 
 use serde::{Serialize, Deserialize};
@@ -407,7 +408,16 @@ pub fn step_logic(player_action: Action,
         }
 
         for key in ai_id.iter() {
-           data.entities.action[key] = ai_take_turn(*key, data, config, msg_log);
+            let action = ai_take_turn(*key, data, config, msg_log);
+           data.entities.action[key] = action;
+
+           // if changing state, resolve now and allow another action
+           if matches!(action, Action::StateChange(_)) {
+                msg_log.log(Msg::Action(*key, action));
+                resolve_messages(data, msg_log, settings, config);
+                let backup_action = ai_take_turn(*key, data, config, msg_log);
+                data.entities.action[key] = backup_action;
+            }
         }
 
         for key in ai_id {
