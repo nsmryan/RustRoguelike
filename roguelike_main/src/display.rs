@@ -260,8 +260,14 @@ impl DisplayState {
                     let sound_aoe =
                         data.map.aoe_fill(AoeEffect::Sound, source_pos, radius);
 
-                    let sound_effect = Effect::Sound(sound_aoe, 0.0);
-                    self.play_effect(sound_effect);
+                    let player_id = data.find_player().unwrap();
+                    let player_pos = data.entities.pos[&player_id];
+
+                    // only play the sound effect if the player position is included
+                    if source_pos == player_pos || sound_aoe.positions().iter().any(|pos| *pos == player_pos) {
+                        let sound_effect = Effect::Sound(sound_aoe, 0.0);
+                        self.play_effect(sound_effect);
+                    }
                 }
             }
 

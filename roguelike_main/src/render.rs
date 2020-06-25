@@ -612,8 +612,9 @@ fn render_effects(display_state: &mut DisplayState, game: &mut Game, area: &Area
                     let player_id = game.data.find_player().unwrap();
                     let player_pos = game.data.entities.pos[&player_id];
                     for pos in dist_positions.iter() {
-                        if !game.data.map[*pos].blocked &&
-                           game.data.map.is_in_fov(player_pos, *pos, game.config.fov_radius_player) {
+                        if !game.data.map[*pos].blocked { // &&
+                            // TODO this would hide sound if the player can't see the result
+                            // game.data.map.is_in_fov(player_pos, *pos, game.config.fov_radius_player) {
                            display_state.highlight_tile(*pos, highlight_color, area);
                         }
                     }
