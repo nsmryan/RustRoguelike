@@ -56,7 +56,7 @@ impl GameData {
                       for direction in Direction::move_actions() {
                           for offset in reach.move_with_reach(&direction) {
                               let next_pos = add_pos(pos, offset);
-                              if self.clear_path(pos, next_pos) {
+                              if self.clear_path(pos, next_pos) || next_pos == end {
                                   next_positions.push((next_pos, 1));
                               }
                           }
