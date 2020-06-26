@@ -235,6 +235,22 @@ impl Direction {
         }
     }
 
+    pub fn horiz(self) -> bool {
+        match self {
+            Direction::Left | Direction::Right |
+            Direction::Up | Direction::Down => true,
+            _ => false,
+        }
+    }
+
+    pub fn diag(self) -> bool {
+        match self {
+            Direction::DownLeft | Direction::UpRight |
+            Direction::DownLeft | Direction::UpRight => true,
+            _ => false,
+        }
+    }
+
     pub fn into_move(self) -> (i32, i32) {
         match self {
             Direction::Left => (-1, 0),

@@ -95,6 +95,13 @@ pub fn push_attack(handle: EntityId,
     }
 }
 
+// TODO 
+// crush at a location
+//pub fn crush_at(handle: EntityId, pos: Pos, entities: &mut Entities, msg_log: &mut MsgLog) {
+//    if let 
+//target: EntityId, 
+//}
+
 pub fn crush(handle: EntityId, target: EntityId, entities: &mut Entities, msg_log: &mut MsgLog) {
     let damage = entities.fighter.get(&target).map_or(0, |f| f.hp);
     if damage > 0 {

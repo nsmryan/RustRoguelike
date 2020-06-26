@@ -138,8 +138,10 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 if let Some(hit_entity) = data.has_blocking_entity(pos) {
                     // we hit another entity!
                     msg_log.log_front(Msg::HammerHitEntity(entity, hit_entity));
+                    data.used_up_item(entity);
                 } else if let Some(blocked) = data.map.is_blocked_by_wall(entity_pos, pos_diff.x, pos_diff.y) {
                     msg_log.log_front(Msg::HammerHitWall(entity, blocked));
+                    data.used_up_item(entity);
                 }
             }
 
@@ -168,9 +170,9 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     data.map[hit_pos].chr = ' ' as u8;
 
                     msg_log.log_front(Msg::Sound(entity, blocked.end_pos, config.sound_radius_attack, true)); 
+                } else {
+                    // TODO between-tile wall was hit
                 }
-
-                //NOTE ignore between-wall tiles
             }
 
             Msg::Action(entity_id, action) => {

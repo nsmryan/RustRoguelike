@@ -701,7 +701,9 @@ impl Map {
         self.compute_fov(self.fov_pos, self.fov_radius);
     }
 
+    // TODO this whole function should be reviewed
     pub fn aoe_fill(&self, aoe_effect: AoeEffect, start: Pos, radius: usize) -> Aoe {
+        // TODO astar to edges, remove inner tiles if passes
         trace!("aoe_fill {} {}", start, radius);
 
         let mut effect_targets: Vec<Vec<Pos>> = vec![Vec::new(); radius + 1];
@@ -717,6 +719,7 @@ impl Map {
         }
 
         let mut aoe_dists = vec![Vec::new(); radius + 1];
+        // TODO use a list of positions, and remove as the path goes through them
         for (_dist, positions) in effect_targets.iter().enumerate() {
             for cur_pos in positions {
                 
@@ -942,6 +945,7 @@ fn astar_neighbors(map: &Map, start: Pos, pos: Pos, max_dist: Option<i32>) -> Sm
               return SmallVec::new();
           }
       }
+
       map.reachable_neighbors(pos)
          .iter()
          .map(|pos| (*pos, 1))

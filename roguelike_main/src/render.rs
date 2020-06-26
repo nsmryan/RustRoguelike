@@ -638,43 +638,52 @@ fn render_effects(display_state: &mut DisplayState, game: &mut Game, area: &Area
     display_state.effects = effects;
 }
 
-/// Render each object in the game, filtering for objects not currently visible
-fn render_entities(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
+fn render_entity(entity_id: EntityId, display_state: &mut DisplayState, game: &mut Game, area: &Area) {
+    let pos = game.data.entities.pos[&entity_id];
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
-    // step each objects animation
-    for entity in game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>().iter() {
-        let pos = game.data.entities.pos[entity];
+    // only draw if within the map (outside is (-1, -1) like if in inventory).
+    if game.data.map.is_within_bounds(pos) {
+        let is_in_fov = 
+           game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player);
 
-        // only draw if within the map (outside is (-1, -1) like if in inventory).
-        if game.data.map.is_within_bounds(pos) {
-            let is_in_fov = 
-               game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player);
+        if let Some(anim_key) = game.data.entities.animation[&entity_id].get(0) {
+            let done = 
+                step_animation(*anim_key,
+                               entity_id,
+                               is_in_fov,
+                               display_state,
+                               &mut game.data,
+                               &game.settings,
+                               &game.config,
+                               area);
 
-            if let Some(anim_key) = game.data.entities.animation[entity].get(0) {
-                let done = 
-                    step_animation(*anim_key,
-                                   *entity,
-                                   is_in_fov,
-                                   display_state,
-                                   &mut game.data,
-                                   &game.settings,
-                                   &game.config,
-                                   area);
-
-                if done {
-                    game.data.entities.animation[entity].pop_front();
-                }
-            } else {
-                let needs_removal = game.data.entities.needs_removal[entity];
-                if is_in_fov && !needs_removal {
-                    let color = game.data.entities.color[entity];
-                    display_state.draw_char(game.data.entities.chr[entity], pos, color, area);
-                }
+            if done {
+                game.data.entities.animation[&entity_id].pop_front();
+            }
+        } else {
+            let needs_removal = game.data.entities.needs_removal[&entity_id];
+            if is_in_fov && !needs_removal {
+                let color = game.data.entities.color[&entity_id];
+                display_state.draw_char(game.data.entities.chr[&entity_id], pos, color, area);
             }
         }
     }
+}
+
+/// Render each object in the game, filtering for objects not currently visible
+fn render_entities(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
+    let player_id = game.data.find_player().unwrap();
+
+    // step each objects animation
+    for entity in game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>().iter() {
+        if *entity != player_id {
+            render_entity(*entity, display_state, game, area);
+        }
+    }
+
+    render_entity(player_id, display_state, game, area);
 }
 
 fn step_animation(anim_key: AnimKey,
