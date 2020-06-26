@@ -473,6 +473,11 @@ pub fn make_test_map(game: &mut Game) {
 
     game.data.map[(8, 10)].left_wall = Wall::ShortWall;
     make_gol(&mut game.data.entities, &game.config, Pos::new(8, 10), &mut game.msg_log);
+
+    // test columns falling into each other
+    make_column(&mut game.data.entities, &game.config, Pos::new(7, 5), &mut game.msg_log);
+    make_column(&mut game.data.entities, &game.config, Pos::new(7, 6), &mut game.msg_log);
+
     // could add surface testing- sounds are loud on rubble, soft on grass
     
     // could add monsters and check their facing, tracking player,

@@ -540,6 +540,16 @@ pub fn test_game_map() {
         game.data.entities.name.get(*id) == Some(&EntityName::Gol)
     }).unwrap();
 
+    let col1 = *game.data.entities.ids.iter().find(|id| {
+        game.data.entities.name.get(*id) == Some(&EntityName::Column) &&
+        game.data.entities.pos[*id] == Pos::new(7, 6)
+    }).unwrap();
+        
+    let col2 = *game.data.entities.ids.iter().find(|id| {
+        game.data.entities.name.get(*id) == Some(&EntityName::Column) &&
+        game.data.entities.pos[*id] == Pos::new(7, 5)
+    }).unwrap();
+
     // Utility functions
     let mut test_move = |game: &mut Game, dir, pos| {
         game.input_action = InputAction::Move(dir);
@@ -636,5 +646,19 @@ pub fn test_game_map() {
 
     assert_eq!(gol_hp, game.data.entities.fighter[&gol].hp);
     assert!(game.data.entities.alive[&gol]);
+
+    // walk into column and check that it knocks over the second column
+    test_move(&mut game, Direction::Up, (7, 9));
+    test_move(&mut game, Direction::Up, (7, 8));
+    test_move(&mut game, Direction::Up, (7, 7));
+    test_move(&mut game, Direction::Up, (7, 6));
+
+    assert!(game.msg_log.turn_messages.iter().any(|msg| {
+        matches!(msg, Msg::Crushed(player_id, col1, _))
+    }));
+
+    assert!(game.msg_log.turn_messages.iter().any(|msg| {
+        matches!(msg, Msg::Crushed(col1, col2, _))
+    }));
 }
 
