@@ -25,10 +25,14 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             Msg::Crushed(entity_id, pos, _obj_type) => {
                 data.map[pos].surface = Surface::Rubble;
 
-                if let Some(crushed_id) = data.has_blocking_entity(pos) {
+                dbg!(pos);
+                if let Some(crushed_id) = data.has_entity(pos) {
+                    dbg!();
                     if let Some(fighter) = data.entities.fighter.get(&crushed_id) {
+                        dbg!();
                         msg_log.log(Msg::Killed(entity_id, crushed_id, fighter.hp));
                     } else {
+                        dbg!();
                         // otherwise just remove the entity
                         data.remove_entity(crushed_id);
                     }
@@ -71,9 +75,10 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 if data.entities.typ[&pushed] == EntityType::Column {
 
                     let entity_diff = sub_pos(pushed_pos, pusher_pos);
-                    let next_pos = next_pos(pushed_pos, entity_diff);
+                    let next_pos = next_pos(pusher_pos, entity_diff);
                     let diff = sub_pos(pushed_pos, next_pos);
                     let blocked = data.map.is_blocked_by_wall(pushed_pos, diff.x, diff.y); 
+                    dbg!(pusher_pos, pushed_pos, next_pos);
 
                     if blocked == None {
                         data.remove_entity(pushed);
@@ -107,6 +112,11 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
 
                     data.map[pos].surface = Surface::Rubble;
                 }
+
+                if let Some(fighter) = data.entities.fighter.get_mut(&attacked) {
+                    fighter.hp = 0;
+                }
+                data.entities.alive[&attacked] = false;
 
                 data.entities.needs_removal[&attacked] = true;
             }
@@ -184,8 +194,9 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                             }
 
                             Attack::Push(target_id, delta_pos) => {
+                                dbg!(delta_pos, movement);
                                 msg_log.log(Msg::Pushed(entity_id, target_id, delta_pos));
-                                msg_log.log(Msg::Moved(entity_id, movement, add_pos(movement.pos, delta_pos)));
+                                msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
                             }
                         }
                     } else if movement.attack.is_none() {

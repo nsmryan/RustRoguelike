@@ -117,6 +117,16 @@ impl GameData {
         return !path_blocked && !blocked_by_wall;
     }
 
+    pub fn has_entity(&self, pos: Pos) -> Option<EntityId> {
+        for (key, other_pos) in self.entities.pos.iter() {
+            if *other_pos == pos {
+                return Some(*key);
+            }
+        }
+
+        return None;
+    }
+
     pub fn has_blocking_entity(&self, pos: Pos) -> Option<EntityId> {
         for (key, other_pos) in self.entities.pos.iter() {
             if *other_pos == pos {
