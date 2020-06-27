@@ -130,13 +130,15 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 let adj_locs = Reach::single(1).reachables(pos);
                 for loc in adj_locs {
                     if let Some(target_id) = data.has_blocking_entity(loc) {
-                        attack(entity_id, target_id, data, msg_log);
-                        any_hit_entity = true;
+                        if data.entities.alive[&target_id] {
+                            attack(entity_id, target_id, data, msg_log);
+                            any_hit_entity = true;
+                        }
                     }
                 }
 
                 if any_hit_entity {
-                    data.used_up_item(entity);
+                    data.used_up_item(entity_id);
                 }
             }
 
