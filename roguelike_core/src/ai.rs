@@ -92,15 +92,12 @@ pub fn ai_attack(monster_id: EntityId,
                           target_pos,
                           &attack_reach,
                           config) {
-        dbg!();
         let attack = Attack::Attack(target_id);
         turn = Action::Move(Movement::attack(hit_pos, MoveType::Move, attack));
     } else if data.map.is_blocked_by_wall(monster_pos, target_pos.x - monster_pos.x, target_pos.y - monster_pos.y).is_some() {
-        dbg!();
         // path to target is blocked by a wall- investigate the last known position
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else {
-        dbg!();
         // can see target, but can't hit them. try to move to a position where we can hit them
         let mut new_pos = monster_pos;
 
@@ -160,9 +157,9 @@ pub fn ai_attack(monster_id: EntityId,
                 new_pos = *best_target;
             }
         }
-
         // step towards the closest location that lets us hit the target
         pos_offset = ai_take_astar_step(monster_id, new_pos, &data);
+        dbg!(monster_pos, new_pos, pos_offset);
 
         if pos_mag(pos_offset) > 0 {
             turn = Action::Move(Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move));
@@ -199,9 +196,9 @@ pub fn ai_investigate(target_pos_orig: Pos,
             // if the monster reached its target then go back to being idle
             turn = Action::StateChange(Behavior::Idle);
         } else {
-            dbg!();
             // if the monster has not reached its target, move towards the target.
             let pos_offset = ai_take_astar_step(monster_id, target_pos, &game_data);
+            dbg!(pos_offset, monster_pos);
 
             let movement = Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move);
             turn = Action::Move(movement);
