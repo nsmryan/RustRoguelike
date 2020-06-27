@@ -5,9 +5,10 @@ use roguelike_core::ai::{Behavior};
 use roguelike_core::map::{Surface, AoeEffect};
 use roguelike_core::messaging::{MsgLog, Msg};
 use roguelike_core::constants::*;
-use roguelike_core::movement::{MoveMode, MoveType, Action, Attack, Movement};
+use roguelike_core::movement::{MoveMode, MoveType, Action, Attack, Movement, Direction};
 use roguelike_core::config::*;
 use roguelike_core::utils::*;
+use roguelike_core::map::*;
 
 use crate::game::*;
 use crate::actions::{throw_item, pick_item_up};
@@ -166,7 +167,31 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     msg_log.log_front(Msg::Crushed(entity, next_pos)); 
                     msg_log.log_front(Msg::Sound(entity, blocked.end_pos, config.sound_radius_attack, true)); 
                 } else {
-                    // TODO between-tile wall was hit
+                    let wall_loc: Pos;
+                    let left_wall: bool;
+                    if blocked.direction == Direction::Left {
+                        wall_loc = blocked.start_pos;
+                        left_wall = true;
+                    } else if blocked.direction == Direction::Right {
+                        wall_loc = blocked.end_pos;
+                        left_wall = true;
+                     } else if blocked.direction == Direction::Down {
+                        wall_loc = blocked.start_pos;
+                        left_wall = false;
+                     } else if blocked.direction == Direction::Up {
+                        wall_loc = blocked.end_pos;
+                        left_wall = false;
+                     } else {
+                       panic!(format!("Hammer direction was not up/down/left/right ({:?})!", blocked.direction));
+                     }
+
+                    if left_wall {
+                        data.map[wall_loc].left_wall = Wall::Empty;
+                    } else {
+                        data.map[wall_loc].bottom_wall = Wall::Empty;
+                    }
+
+                    msg_log.log(Msg::Crushed(entity, wall_loc));
                 }
             }
 
