@@ -89,20 +89,12 @@ pub fn push_attack(handle: EntityId,
         }
     }
 
-    msg_log.log(Msg::Pushed(handle, target));
     if killed {
         msg_log.log(Msg::Killed(handle, target, damage));
     } else {
         data.entities.messages[&target].push(Message::Attack(handle));
     }
 }
-
-// TODO 
-// crush at a location
-//pub fn crush_at(handle: EntityId, pos: Pos, entities: &mut Entities, msg_log: &mut MsgLog) {
-//    if let 
-//target: EntityId, 
-//}
 
 pub fn crush(handle: EntityId, target: EntityId, entities: &mut Entities, msg_log: &mut MsgLog) {
     let damage = entities.fighter.get(&target).map_or(0, |f| f.hp);

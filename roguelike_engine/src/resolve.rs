@@ -5,7 +5,7 @@ use roguelike_core::ai::{Behavior};
 use roguelike_core::map::{Surface, AoeEffect};
 use roguelike_core::messaging::{MsgLog, Msg};
 use roguelike_core::constants::*;
-use roguelike_core::movement::{MoveMode, MoveType, Action, Attack};
+use roguelike_core::movement::{MoveMode, MoveType, Action, Attack, Movement};
 use roguelike_core::config::*;
 use roguelike_core::utils::*;
 
@@ -24,6 +24,15 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
         match msg {
             Msg::Crushed(entity_id, pos, _obj_type) => {
                 data.map[pos].surface = Surface::Rubble;
+
+                if let Some(crushed_id) = data.has_blocking_entity(pos) {
+                    if let Some(fighter) = data.entities.fighter.get(&crushed_id) {
+                        msg_log.log(Msg::Killed(entity_id, crushed_id, fighter.hp));
+                    } else {
+                        // otherwise just remove the entity
+                        data.remove_entity(crushed_id);
+                    }
+                }
 
                 msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_crushed, true));
             }
@@ -55,59 +64,36 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     msg_log.log_front(Msg::Sound(entity_id, end, SOUND_RADIUS_RUN, true));
             }
 
-            Msg::Moved(entity_id, movement, pos) => {
-                // if running, but didn't move any squares, then decrease speed
-                if matches!(movement.typ, MoveType::Pass) {
-                    if matches!(data.entities.move_mode.get(&entity_id), Some(MoveMode::Run)) {
-                        data.entities.move_mode[&entity_id].decrease();
+            Msg::Pushed(pusher, pushed, delta_pos) => {
+                let pushed_pos = data.entities.pos[&pushed];
+                let pusher_pos = data.entities.pos[&pushed];
+
+                if data.entities.typ[&pushed] == EntityType::Column {
+                    let next_pos = next_pos(pusher_pos, pushed_pos);
+
+                    let diff = sub_pos(next_pos, pushed_pos);
+                    let blocked =
+                        data.map.is_blocked_by_wall(pushed_pos, diff.x, diff.y); 
+
+                    if blocked == None {
+                        data.remove_entity(pushed);
+
+                        msg_log.log(Msg::Crushed(pusher, next_pos, EntityType::Column));
                     }
-                }
-
-                // make a noise based on how fast the entity is moving and the terrain
-                if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {
-                    let mut sound_radius;
-
-                    match move_mode {
-                        MoveMode::Sneak => sound_radius = config.sound_radius_sneak,
-                        MoveMode::Walk => sound_radius = config.sound_radius_walk,
-                        MoveMode::Run => sound_radius = config.sound_radius_run,
-                    }
-
-                    if data.map[pos].surface == Surface::Rubble {
-                        sound_radius += config.sound_rubble_radius;
-                    } else if data.map[pos].surface == Surface::Grass {
-                        sound_radius -= config.sound_grass_radius;
-                    }
-
-                    msg_log.log_front(Msg::Sound(entity_id, pos, sound_radius, true));
+                } else if data.entities.alive[&pushed] {
+                    push_attack(pusher, pushed, delta_pos, true, data, msg_log);
                 } else {
-                    msg_log.log_front(Msg::Sound(entity_id, pos, SOUND_RADIUS_MONSTER_MOVE, true));
+                    error!("Tried to push entity {:?}, which was not valid!", data.entities.typ[&pushed]);
+                    panic!("What did you push? Check the game log!");
                 }
+            }
 
-                // get a list of triggered traps
-                let mut traps: Vec<EntityId> = Vec::new();
-                for key in data.entities.ids.iter() {
-                    if data.entities.trap.get(key).is_some()          && // key is a trap
-                       data.entities.alive[&entity_id]                 && // entity is alive
-                       data.entities.fighter.get(&entity_id).is_some() && // entity is a fighter
-                       data.entities.pos[key] == data.entities.pos[&entity_id] {
-                        traps.push(*key);
-                    }
-                }
-
-                // Check if the entity hit a trap
-                for trap in traps.iter() {
-                    match data.entities.trap[trap] {
-                        Trap::Spikes => {
-                            msg_log.log(Msg::SpikeTrapTriggered(*trap, entity_id));
-                            data.entities.needs_removal[trap] = true;
-                        }
-
-                        Trap::Sound => {
-                            msg_log.log(Msg::SoundTrapTriggered(*trap, entity_id));
-                            data.entities.needs_removal[trap] = true;
-                        }
-                    }
+            Msg::Moved(entity_id, movement, pos) => {
+                // only perform move if tile does not contain a wall or entity
+                dbg!(movement, pos);
+                if data.has_blocking_entity(pos).is_none() &&
+                   !data.map[pos].blocked {
+                       process_moved_message(entity_id, movement, pos, data, msg_log, config);
                 }
             }
 
@@ -178,8 +164,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             Msg::Action(entity_id, action) => {
                 let entity_pos = data.entities.pos[&entity_id];
 
-                // TODO add remaining variants, and move AI state change to here.
-                // likely need to split this into a separate function, as it is getting long
                 if let Action::Move(movement) = action {
                     if let Some(attack_field) = movement.attack {
                         match attack_field {
@@ -201,32 +185,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                             }
 
                             Attack::Push(target_id, delta_pos) => {
-                                if data.entities.typ[&target_id] == EntityType::Column {
-                                    let pos = data.entities.pos[&entity_id];
-                                        let next_pos = next_pos(pos, sub_pos(movement.pos, pos));
-
-                                    // if there is a path to the next tile, move it.
-                                    let diff = sub_pos(movement.pos, pos);
-                                    let blocked =
-                                        data.map.is_blocked_by_wall(movement.pos, diff.x, diff.y); 
-
-                                    if blocked == None {
-                                        data.entities.move_to(entity_id, movement.pos);
-
-                                        data.remove_entity(target_id);
-
-                                        if let Some(hit_entity) = data.has_blocking_entity(next_pos) {
-                                            crush(target_id, hit_entity, &mut data.entities, msg_log);
-                                        }
-
-                                        msg_log.log(Msg::Crushed(entity_id, next_pos, EntityType::Column));
-                                    }
-                                } else if data.entities.alive[&target_id] {
-                                    push_attack(entity_id, target_id, delta_pos, true, data, msg_log);
-                                } else {
-                                    error!("Tried to push entity {:?}, which was not valid!", data.entities.typ[&target_id]);
-                                    panic!("What did you push? Check the game log!");
-                                }
+                                msg_log.log(Msg::Pushed(entity_id, target_id, delta_pos));
+                                msg_log.log(Msg::Moved(entity_id, movement, add_pos(movement.pos, delta_pos)));
                             }
                         }
                     } else if movement.attack.is_none() {
@@ -347,3 +307,60 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
     data.entities.messages[&player_id].clear();
 }
 
+fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+    data.entities.move_to(entity_id, pos);
+
+    // if running, but didn't move any squares, then decrease speed
+    if matches!(movement.typ, MoveType::Pass) {
+        if matches!(data.entities.move_mode.get(&entity_id), Some(MoveMode::Run)) {
+            data.entities.move_mode[&entity_id].decrease();
+        }
+    }
+
+    // make a noise based on how fast the entity is moving and the terrain
+    if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {
+        let mut sound_radius;
+
+        match move_mode {
+            MoveMode::Sneak => sound_radius = config.sound_radius_sneak,
+            MoveMode::Walk => sound_radius = config.sound_radius_walk,
+            MoveMode::Run => sound_radius = config.sound_radius_run,
+        }
+
+        if data.map[pos].surface == Surface::Rubble {
+            sound_radius += config.sound_rubble_radius;
+        } else if data.map[pos].surface == Surface::Grass {
+            sound_radius -= config.sound_grass_radius;
+        }
+
+        msg_log.log_front(Msg::Sound(entity_id, pos, sound_radius, true));
+    } else {
+        msg_log.log_front(Msg::Sound(entity_id, pos, SOUND_RADIUS_MONSTER_MOVE, true));
+    }
+
+    // get a list of triggered traps
+    let mut traps: Vec<EntityId> = Vec::new();
+    for key in data.entities.ids.iter() {
+        if data.entities.trap.get(key).is_some()          && // key is a trap
+           data.entities.alive[&entity_id]                 && // entity is alive
+           data.entities.fighter.get(&entity_id).is_some() && // entity is a fighter
+           data.entities.pos[key] == data.entities.pos[&entity_id] {
+            traps.push(*key);
+        }
+    }
+
+    // Check if the entity hit a trap
+    for trap in traps.iter() {
+        match data.entities.trap[trap] {
+            Trap::Spikes => {
+                msg_log.log(Msg::SpikeTrapTriggered(*trap, entity_id));
+                data.entities.needs_removal[trap] = true;
+            }
+
+            Trap::Sound => {
+                msg_log.log(Msg::SoundTrapTriggered(*trap, entity_id));
+                data.entities.needs_removal[trap] = true;
+            }
+        }
+    }
+}
