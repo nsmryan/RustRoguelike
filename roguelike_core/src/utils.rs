@@ -12,7 +12,9 @@ use crate::messaging::*;
 
 
 pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
-    return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt() as i32;
+    //return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt() as i32;
+    let line = Line::new(pos1.to_tuple(), pos2.to_tuple()).into_iter();
+    return line.count() as i32;
 }
 
 pub fn pos_mag(pos: Pos) -> i32 {

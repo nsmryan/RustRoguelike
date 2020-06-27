@@ -660,8 +660,8 @@ impl Map {
 
     pub fn reachable_neighbors(&self, pos: Pos) -> SmallVec<[Pos; 8]> {
         let neighbors = [(1, 0),  (1, 1),  (0, 1), 
-        (-1, 1), (-1, 0), (-1, -1),
-        (0, -1), (1, -1)];
+                         (-1, 1), (-1, 0), (-1, -1),
+                         (0, -1), (1, -1)];
 
         let mut result = SmallVec::new();
 
@@ -701,18 +701,76 @@ impl Map {
         self.compute_fov(self.fov_pos, self.fov_radius);
     }
 
-    // TODO this whole function should be reviewed
+    // TODO this does not take into effect the lowering of effect due to indirect movement
+    // the other one checks for a clear path, and reduces radius if there is none
     pub fn aoe_fill(&self, aoe_effect: AoeEffect, start: Pos, radius: usize) -> Aoe {
-        // TODO astar to edges, remove inner tiles if passes
-        trace!("aoe_fill {} {}", start, radius);
+        let flood = self.floodfill(start, radius);
 
+        let mut aoe_dists = vec![Vec::new(); radius + 1];
+
+        let blocked_radius = if radius > 2 {
+            radius as i32 - 2
+        } else {
+            0
+        };
+
+        for pos in flood.iter() {
+            let dist = distance(start, *pos);
+
+            let dt = sub_pos(*pos, start);
+            let is_blocked = self.is_blocked_by_wall(start, dt.x, dt.y).is_some();
+            if !is_blocked || (is_blocked && dist <= blocked_radius) {
+                if dist as usize == aoe_dists.len() {
+                    dbg!(dist, radius, pos);
+                }
+                aoe_dists[dist as usize].push(*pos);
+            }
+        }
+        let aoe = Aoe::new(aoe_effect, aoe_dists);
+
+        return aoe;
+    }
+
+    pub fn floodfill(&self, start: Pos, radius: usize) -> Vec<Pos> {
+        let mut flood: Vec<Pos> = Vec::new();
+
+        let mut seen: Vec<Pos> = Vec::new();
+        let mut current: Vec<Pos> = Vec::new();
+        current.push(start);
+        seen.push(start);
+        flood.push(start);
+
+        for index in 0..radius {
+            let last = current.clone();
+            current.clear();
+            for pos in last.iter() {
+                let adj = astar_neighbors(self, start, *pos, Some(radius as i32));
+                for (next_pos, _cost) in adj {
+                    if !seen.contains(&next_pos) {
+                        // record having seen this position.
+                        seen.push(next_pos);
+                        current.push(next_pos);
+                        flood.push(next_pos);
+                    }
+                }
+            }
+        }
+
+        return flood;
+    }
+
+    pub fn aoe_fill_old(&self, aoe_effect: AoeEffect, start: Pos, radius: usize) -> Aoe {
         let mut effect_targets: Vec<Vec<Pos>> = vec![Vec::new(); radius + 1];
 
-        for effect_x in 0..self.width() {
-            for effect_y in 0..self.height() {
-                let effect_pos = Pos::new(effect_x, effect_y);
+        let rad = radius as i32;
+        for effect_x in -rad..rad {
+            for effect_y in -rad..rad {
+                if effect_x == 0 && effect_y == 0 {
+                    continue;
+                }
+                let effect_pos = add_pos(start, Pos::new(effect_x as i32, effect_y as i32));
                 let dist = distance(start, effect_pos);
-                if dist > 0 && dist <= radius as i32 {
+                if dist <= radius as i32 {
                     effect_targets[dist as usize].push(effect_pos);
                 }
             }
@@ -1099,3 +1157,38 @@ fn test_blocked_by_wall() {
     assert!(map.is_blocked_by_wall(Pos::new(5, 4), 0, 1).is_some());
 }
 
+#[test]
+fn test_floodfill() {
+    let mut map = Map::from_dims(10, 10);
+
+    let start = Pos::new(5, 5);
+
+    let flood: Vec<Pos> = map.floodfill(start, 0);
+    assert_eq!(vec!(start), flood);
+
+    let flood: Vec<Pos> = map.floodfill(start, 1);
+    assert_eq!(9, flood.len());
+
+    map[(5, 5)].left_wall = Wall::ShortWall;
+    map[(5, 6)].left_wall = Wall::ShortWall;
+    map[(5, 4)].left_wall = Wall::ShortWall;
+    let flood: Vec<Pos> = map.floodfill(start, 1);
+    assert_eq!(6, flood.len());
+
+    map[(6, 3)].left_wall = Wall::ShortWall;
+    map[(5, 3)].left_wall = Wall::ShortWall;
+
+    map[(6, 4)].left_wall = Wall::ShortWall;
+    map[(5, 4)].left_wall = Wall::ShortWall;
+
+    map[(6, 5)].left_wall = Wall::ShortWall;
+    map[(5, 5)].left_wall = Wall::ShortWall;
+    map[start].bottom_wall = Wall::ShortWall;
+    let flood: Vec<Pos> = map.floodfill(start, 2);
+    assert!(flood.contains(&start));
+    assert!(flood.contains(&Pos::new(5, 4)));
+    assert!(flood.contains(&Pos::new(5, 3)));
+
+    let flood: Vec<Pos> = map.floodfill(start, 3);
+    assert_eq!(6, flood.len());
+}

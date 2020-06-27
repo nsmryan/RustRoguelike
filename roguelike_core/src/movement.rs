@@ -294,6 +294,18 @@ impl Reach {
         return Reach::Single(1);
     }
 
+    pub fn single(dist: usize) -> Reach {
+        return Reach::Single(dist);
+    }
+
+    pub fn diag(dist: usize) -> Reach {
+        return Reach::Single(dist);
+    }
+
+    pub fn horiz(dist: usize) -> Reach {
+        return Reach::Single(dist);
+    }
+
     pub fn dist(&self) -> usize {
         match self {
             Reach::Single(dist) => *dist,
@@ -384,6 +396,13 @@ impl Reach {
                 }
             }
         }
+    }
+
+    pub fn reachables(&self, start: Pos) -> Vec<Pos> {
+        let offsets = self.offsets();
+        return offsets.iter()
+                      .map(|off| add_pos(start, *off))
+                      .collect::<Vec<Pos>>();
     }
 
     pub fn offsets(&self) -> Vec<Pos> {
