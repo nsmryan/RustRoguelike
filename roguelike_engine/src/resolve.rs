@@ -66,14 +66,14 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
 
             Msg::Pushed(pusher, pushed, delta_pos) => {
                 let pushed_pos = data.entities.pos[&pushed];
-                let pusher_pos = data.entities.pos[&pushed];
+                let pusher_pos = data.entities.pos[&pusher];
 
                 if data.entities.typ[&pushed] == EntityType::Column {
-                    let next_pos = next_pos(pusher_pos, pushed_pos);
 
-                    let diff = sub_pos(next_pos, pushed_pos);
-                    let blocked =
-                        data.map.is_blocked_by_wall(pushed_pos, diff.x, diff.y); 
+                    let entity_diff = sub_pos(pushed_pos, pusher_pos);
+                    let next_pos = next_pos(pushed_pos, entity_diff);
+                    let diff = sub_pos(pushed_pos, next_pos);
+                    let blocked = data.map.is_blocked_by_wall(pushed_pos, diff.x, diff.y); 
 
                     if blocked == None {
                         data.remove_entity(pushed);
