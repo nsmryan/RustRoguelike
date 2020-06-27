@@ -5,7 +5,7 @@ use roguelike_core::ai::{Behavior};
 use roguelike_core::map::{Surface, AoeEffect};
 use roguelike_core::messaging::{MsgLog, Msg};
 use roguelike_core::constants::*;
-use roguelike_core::movement::{MoveMode, MoveType, Action, Attack, Movement, Direction};
+use roguelike_core::movement::{MoveMode, MoveType, Action, Attack, Movement, Direction, Reach};
 use roguelike_core::config::*;
 use roguelike_core::utils::*;
 use roguelike_core::map::*;
@@ -62,7 +62,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::JumpWall(entity_id, _start, end) => {
-                    msg_log.log_front(Msg::Sound(entity_id, end, SOUND_RADIUS_RUN, true));
+                    msg_log.log_front(Msg::Sound(entity_id, end, config.sound_radius_run, true));
             }
 
             Msg::Pushed(pusher, pushed, delta_pos) => {
@@ -122,6 +122,15 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 // TODO move attack function here, and remove push Msg::Attack in attack function
                 let pos = data.entities.pos[&attacked];
                 msg_log.log_front(Msg::Sound(attacker, pos, config.sound_radius_attack, true)); 
+            }
+
+            Msg::SwordSwing(entity_id, pos) => {
+                let adj_locs = Reach::single(1).reachables(pos);
+                for loc in adj_locs {
+                    if let Some(target_id) = data.has_blocking_entity(loc) {
+                        attack(entity_id, target_id, data, msg_log);
+                    }
+                }
             }
 
             Msg::HammerSwing(entity, pos) => {
@@ -281,10 +290,10 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 } else if let Action::Pickup(item_id) = action {
                     msg_log.log(Msg::PickedUp(entity_id, item_id));
                 } else if let Action::UseItem(pos) = action {
-                    let holding_hammer = data.using(entity_id, Item::Hammer);
-
-                    if holding_hammer {
+                    if data.using(entity_id, Item::Hammer) {
                         msg_log.log(Msg::HammerSwing(entity_id, pos));
+                    } else if data.using(entity_id, Item::Sword) {
+                        msg_log.log(Msg::SwordSwing(entity_id, pos));
                     }
                 }
             }

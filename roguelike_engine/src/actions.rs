@@ -318,14 +318,15 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::UseItem, _) => {
-            let holding_hammer = game.data.using(player_id, Item::Hammer);
-
-            if holding_hammer {
+            if game.data.using(player_id, Item::Hammer) {
                 game.settings.state = GameState::Selection;
                 let reach = Reach::Horiz(1);
                 game.settings.selection =
                     Selection::new(SelectionType::WithinReach(reach), SelectionAction::Hammer);
                 game.msg_log.log(Msg::GameState(game.settings.state));
+            } else if game.data.using(player_id, Item::Sword) {
+                let player_pos = game.data.entities.pos[&player_id];
+                player_turn = Action::UseItem(player_pos);
             }
         }
 

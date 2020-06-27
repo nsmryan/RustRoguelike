@@ -64,6 +64,7 @@ pub enum Msg {
     MoveMode(MoveMode),
     TriedRunWithShield,
     SpawnedObject(EntityId, EntityType, Pos, EntityName),
+    SwordSwing(EntityId, Pos), // entity, position swung at
     HammerSwing(EntityId, Pos), // entity, position swung at
     HammerHitEntity(EntityId, EntityId), // entity, hit entity
     HammerHitWall(EntityId, Blocked),
@@ -185,6 +186,10 @@ impl Msg {
 
             Msg::TriedRunWithShield => {
                 return "Can't run with shield!".to_string();
+            }
+
+            Msg::SwordSwing(entity, _pos) => {
+                return format!("{:?} swung their sword", data.entities.name[entity]);
             }
 
             Msg::HammerSwing(entity, _pos) => {

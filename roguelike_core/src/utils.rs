@@ -141,13 +141,15 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: 
             data.entities.messages[&target].push(Message::Attack(entity));
         }
     } else {
+        // NOTE could add another section for the sword- currently the same as normal attacks
         let damage = data.entities.fighter.get(&entity).map_or(0, |f| f.power) -
                      data.entities.fighter.get(&target).map_or(0, |f| f.defense);
-        if damage > 0 {
+        if damage > 0 && data.entities.alive[&target] {
             data.entities.take_damage(target, damage);
 
             msg_log.log(Msg::Attack(entity, target, damage));
             // TODO consider moving this to the Attack msg
+            dbg!(target, data.entities.name[&target]);
             if data.entities.fighter[&target].hp <= 0 {
                 data.entities.alive[&target] = false;
                 data.entities.blocks[&target] = false;

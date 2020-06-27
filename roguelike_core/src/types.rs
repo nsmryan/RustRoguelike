@@ -274,6 +274,7 @@ pub enum Item {
     Dagger,
     Shield,
     Hammer,
+    Sword,
 }
 
 impl Item {
@@ -284,6 +285,7 @@ impl Item {
             Item::Dagger => ItemClass::Primary,
             Item::Shield => ItemClass::Primary,
             Item::Hammer => ItemClass::Primary,
+            Item::Sword => ItemClass::Primary,
         }
     }
 }
@@ -343,6 +345,7 @@ pub enum EntityName {
     Exit,
     Dagger,
     Hammer,
+    Sword,
     Shield,
     Spire,
     Spike,

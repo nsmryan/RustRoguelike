@@ -12,9 +12,6 @@ pub const INVENTORY_HEIGHT: usize = 500;
 
 /* Sound */
 pub const SOUND_RADIUS: usize = 3;
-pub const SOUND_RADIUS_SNEAK: usize = 2;
-pub const SOUND_RADIUS_WALK: usize = 3;
-pub const SOUND_RADIUS_RUN: usize = 5;
 pub const SOUND_RADIUS_STONE: usize = 3;
 pub const SOUND_RADIUS_MONSTER_MOVE: usize = 4;
 
@@ -131,6 +128,7 @@ pub const ENTITY_ORB: u8 = 135;
 pub const ENTITY_KEY: u8 = 235;
 pub const ENTITY_STONE: u8 = 244;
 pub const ENTITY_DAGGER: u8 = 247;
+pub const ENTITY_SWORD: u8 = 248;
 pub const ENTITY_SHIELD: u8 = 255;
 pub const ENTITY_HAMMER: u8 = 251;
 pub const ENTITY_TRAP_SOUND: u8 = 83; // char S

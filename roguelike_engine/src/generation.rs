@@ -75,6 +75,16 @@ pub fn make_hammer(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
     return object;
 }
 
+pub fn make_sword(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SWORD as char, config.color_light_grey, EntityName::Sword, false);
+
+    entities.item.insert(object,  Item::Sword);
+
+    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Sword));
+
+    return object;
+}
+
 pub fn make_shield(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SHIELD as char, config.color_light_grey, EntityName::Shield, false);
 
@@ -508,6 +518,7 @@ pub fn make_wall_test_map(entities: &mut Entities,
     map[(2, 6)].chr = MAP_STATUE_1 as u8;
 
     make_dagger(entities, config, Pos::new(position.0, position.1), msg_log);
+    make_sword(entities, config, Pos::new(1, 1), msg_log);
 
     map.update_map();
 
