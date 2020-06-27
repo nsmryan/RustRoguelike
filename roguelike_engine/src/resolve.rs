@@ -90,9 +90,9 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
 
             Msg::Moved(entity_id, movement, pos) => {
                 // only perform move if tile does not contain a wall or entity
-                dbg!(movement, pos);
-                if data.has_blocking_entity(pos).is_none() &&
-                   !data.map[pos].blocked {
+                if data.has_blocking_entity(movement.pos).is_none() &&
+                   !data.map[movement.pos].blocked {
+                       dbg!();
                        process_moved_message(entity_id, movement, pos, data, msg_log, config);
                 }
             }
@@ -179,7 +179,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                                 }
 
                                 if entity_pos != movement.pos {
-                                    data.entities.move_to(entity_id, movement.pos);
                                     msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
                                 }
                             }
@@ -213,8 +212,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                                 // should check for this, and no do the move at all, likely
                                 if entity_pos != movement.pos {
                                     if data.clear_path(entity_pos, movement.pos) {
-                                        data.entities.move_to(entity_id, movement.pos);
-
                                         if movement.typ == MoveType::Move {
                                             msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
                                         } else {

@@ -64,7 +64,8 @@ pub fn push_attack(handle: EntityId,
         let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
 
         if move_into {
-            data.entities.move_to(handle, other_pos);
+            let movement = Movement::new(other_pos, MoveType::Move, None);
+            msg_log.log(Msg::Moved(target, movement, past_pos));
 
             let movement = Movement::new(past_pos, MoveType::Move, None);
             msg_log.log(Msg::Moved(target, movement, past_pos));
@@ -72,8 +73,6 @@ pub fn push_attack(handle: EntityId,
 
         if move_result.no_collision() {
             // if not blocked, push the other entity, taking their space
-            data.entities.set_pos(target, past_pos);
-
             let movement = Movement::new(past_pos, MoveType::Move, None);
             msg_log.log(Msg::Moved(target, movement, past_pos));
         } else {
