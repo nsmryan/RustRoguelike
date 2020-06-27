@@ -67,6 +67,9 @@ pub struct Config {
     pub fov_radius_player: i32,
     pub console_max_height: u32,
     pub console_speed: f32,
+    pub sound_radius_sneak: usize,
+    pub sound_radius_walk: usize,
+    pub sound_radius_run: usize,
 }
 
 impl Config {

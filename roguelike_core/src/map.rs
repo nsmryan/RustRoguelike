@@ -701,8 +701,6 @@ impl Map {
         self.compute_fov(self.fov_pos, self.fov_radius);
     }
 
-    // TODO this does not take into effect the lowering of effect due to indirect movement
-    // the other one checks for a clear path, and reduces radius if there is none
     pub fn aoe_fill(&self, aoe_effect: AoeEffect, start: Pos, radius: usize) -> Aoe {
         let flood = self.floodfill(start, radius);
 
@@ -757,54 +755,6 @@ impl Map {
         }
 
         return flood;
-    }
-
-    pub fn aoe_fill_old(&self, aoe_effect: AoeEffect, start: Pos, radius: usize) -> Aoe {
-        let mut effect_targets: Vec<Vec<Pos>> = vec![Vec::new(); radius + 1];
-
-        let rad = radius as i32;
-        for effect_x in -rad..rad {
-            for effect_y in -rad..rad {
-                if effect_x == 0 && effect_y == 0 {
-                    continue;
-                }
-                let effect_pos = add_pos(start, Pos::new(effect_x as i32, effect_y as i32));
-                let dist = distance(start, effect_pos);
-                if dist <= radius as i32 {
-                    effect_targets[dist as usize].push(effect_pos);
-                }
-            }
-        }
-
-        let mut aoe_dists = vec![Vec::new(); radius + 1];
-        // TODO use a list of positions, and remove as the path goes through them
-        for (_dist, positions) in effect_targets.iter().enumerate() {
-            for cur_pos in positions {
-                
-                let dt = *cur_pos - start;
-
-                // if a direct line is blocked by a wall, lower the radius of the AOE effect
-                let is_blocked = self.is_blocked_by_wall(start, dt.x, dt.y).is_some();
-                let effective_radius = if is_blocked && radius > 2 {
-                    radius - 2
-                } else {
-                    radius
-                };
-
-                let dist = distance(start, *cur_pos) as usize;
-
-                // if the distance to the cell is greater then the radius, short circuit calling
-                // astar.
-                // otherwise use astar to see if there is a short path to the target
-                if dist <= effective_radius &&
-                   astar_cost(self, start, *cur_pos, Some(effective_radius as i32)) <= effective_radius &&
-                   !aoe_dists[dist].contains(cur_pos) {
-                    aoe_dists[dist].push(*cur_pos);
-                }
-            }
-        }
-
-        return Aoe::new(aoe_effect, aoe_dists);
     }
 }
 

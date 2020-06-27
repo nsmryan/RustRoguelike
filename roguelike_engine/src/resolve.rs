@@ -68,9 +68,9 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     let mut sound_radius;
 
                     match move_mode {
-                        MoveMode::Sneak => sound_radius = SOUND_RADIUS_SNEAK,
-                        MoveMode::Walk => sound_radius = SOUND_RADIUS_WALK,
-                        MoveMode::Run => sound_radius = SOUND_RADIUS_RUN,
+                        MoveMode::Sneak => sound_radius = config.sound_radius_sneak,
+                        MoveMode::Walk => sound_radius = config.sound_radius_walk,
+                        MoveMode::Run => sound_radius = config.sound_radius_run,
                     }
 
                     if data.map[pos].surface == Surface::Rubble {
