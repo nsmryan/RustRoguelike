@@ -281,6 +281,11 @@ pub fn move_x(pos: Pos, offset_x: i32) -> Pos {
     return Pos::new(pos.x + offset_x, pos.y);
 }
 
+pub fn next_from_to(start: Pos, end: Pos) -> Pos {
+    let diff = sub_pos(end, start);
+    return next_pos(start, diff);
+}
+
 pub fn next_pos(pos: Pos, delta_pos: Pos) -> Pos {
     let mut next_pos = add_pos(pos, delta_pos);
 

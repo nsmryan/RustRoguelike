@@ -504,6 +504,9 @@ pub fn make_wall_test_map(entities: &mut Entities,
     make_gol(entities, config, Pos::new(6, 5), msg_log);
     make_column(entities, config, Pos::new(6, 4), msg_log);
 
+    map[(2, 6)].blocked = true;
+    map[(2, 6)].chr = MAP_STATUE_1 as u8;
+
     make_dagger(entities, config, Pos::new(position.0, position.1), msg_log);
 
     map.update_map();

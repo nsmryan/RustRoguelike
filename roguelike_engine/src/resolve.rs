@@ -22,17 +22,13 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
         }
 
         match msg {
-            Msg::Crushed(entity_id, pos, _obj_type) => {
+            Msg::Crushed(entity_id, pos) => {
                 data.map[pos].surface = Surface::Rubble;
 
-                dbg!(pos);
                 if let Some(crushed_id) = data.has_entity(pos) {
-                    dbg!();
                     if let Some(fighter) = data.entities.fighter.get(&crushed_id) {
-                        dbg!();
                         msg_log.log(Msg::Killed(entity_id, crushed_id, fighter.hp));
                     } else {
-                        dbg!();
                         // otherwise just remove the entity
                         data.remove_entity(crushed_id);
                     }
@@ -83,7 +79,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     if blocked == None {
                         data.remove_entity(pushed);
 
-                        msg_log.log(Msg::Crushed(pusher, next_pos, EntityType::Column));
+                        msg_log.log(Msg::Crushed(pusher, next_pos));
                     }
                 } else if data.entities.alive[&pushed] {
                     push_attack(pusher, pushed, delta_pos, true, data, msg_log);
@@ -156,6 +152,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::HammerHitWall(entity, blocked) => {
+                let entity_pos = data.entities.pos[&entity];
                 let hit_pos = blocked.end_pos;
                 if data.map[hit_pos].blocked {
                     if data.map[hit_pos].surface == Surface::Floor {
@@ -165,6 +162,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     data.map[hit_pos].blocked = false;
                     data.map[hit_pos].chr = ' ' as u8;
 
+                    let next_pos = next_from_to(entity_pos, hit_pos);
+                    msg_log.log_front(Msg::Crushed(entity, next_pos)); 
                     msg_log.log_front(Msg::Sound(entity, blocked.end_pos, config.sound_radius_attack, true)); 
                 } else {
                     // TODO between-tile wall was hit
