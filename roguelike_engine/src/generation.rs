@@ -502,6 +502,7 @@ pub fn make_wall_test_map(entities: &mut Entities,
     map[(5, 4)].bottom_wall = Wall::ShortWall;
   
     make_gol(entities, config, Pos::new(6, 5), msg_log);
+    make_column(entities, config, Pos::new(6, 6), msg_log);
 
     make_dagger(entities, config, Pos::new(position.0, position.1), msg_log);
 
