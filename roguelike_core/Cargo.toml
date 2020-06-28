@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 tcod = "0.13"
+line_drawing = "0.8"
 
 doryen-fov = { version = "0.1.4", git = "https://github.com/nsmryan/doryen-fov", branch = "optional_serde", features = ["serde"] }
 

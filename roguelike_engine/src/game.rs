@@ -654,11 +654,11 @@ pub fn test_game_map() {
     test_move(&mut game, Direction::Up, (7, 6));
 
     assert!(game.msg_log.turn_messages.iter().any(|msg| {
-        matches!(msg, Msg::Crushed(player_id, col1, _))
+        matches!(msg, Msg::Crushed(player_id, col1))
     }));
 
     assert!(game.msg_log.turn_messages.iter().any(|msg| {
-        matches!(msg, Msg::Crushed(col1, col2, _))
+        matches!(msg, Msg::Crushed(col1, col2))
     }));
 }
 

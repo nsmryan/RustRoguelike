@@ -8,8 +8,6 @@ use pathfinding::directed::astar::astar;
 
 use indexmap::map::IndexMap;
 
-use tcod::line::*;
-
 use symbol::Symbol;
 
 use euclid::Point2D;
@@ -105,7 +103,7 @@ impl GameData {
     }
 
     pub fn clear_path(&self, start: Pos, end: Pos) -> bool {
-        let line = Line::new((start.x, start.y), (end.x, end.y));
+        let line = line_inclusive(start, end);
 
         let path_blocked =
             line.into_iter().any(|point|

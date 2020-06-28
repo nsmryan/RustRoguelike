@@ -1,8 +1,6 @@
 use std::iter::Iterator;
 use std::fmt;
 
-use tcod::line::*;
-
 use euclid::*;
 
 use serde::{Serialize, Deserialize};
@@ -341,7 +339,7 @@ impl Reach {
         let mut positions = Vec::new();
 
         if let Some(pos) = self.move_with_reach(move_action) {
-            for pos in Line::new((0, 0), pos.to_tuple()) {
+            for pos in line_inclusive(Pos::new(0, 0), pos) {
                 positions.push(Pos::from(pos));
             }
         }
@@ -446,7 +444,7 @@ impl Reach {
 
         let mut offsets = Vec::new();
         for end in end_points {
-            for pos in Line::new((0, 0), end.to_tuple()) {
+            for pos in line_inclusive(Pos::new(0, 0), end) {
                 offsets.push(Pos::from(pos));
             }
         }
@@ -607,7 +605,7 @@ pub fn check_collision(pos: Pos,
         } 
 
         // check for collision with an enitity
-        let move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
+        let move_line = line_inclusive(pos, Pos::new(pos.x + dx, pos.y + dy));
 
         for line_tuple in move_line {
             let line_pos = Pos::from(line_tuple);
