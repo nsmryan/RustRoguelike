@@ -65,16 +65,16 @@ pub fn push_attack(handle: EntityId,
 
         if move_into {
             let movement = Movement::new(other_pos, MoveType::Move, None);
-            msg_log.log(Msg::Moved(target, movement, past_pos));
+            msg_log.log_front(Msg::Moved(target, movement, past_pos));
 
             let movement = Movement::new(past_pos, MoveType::Move, None);
-            msg_log.log(Msg::Moved(target, movement, past_pos));
+            msg_log.log_front(Msg::Moved(target, movement, past_pos));
         }
 
         if move_result.no_collision() {
             // if not blocked, push the other entity, taking their space
             let movement = Movement::new(past_pos, MoveType::Move, None);
-            msg_log.log(Msg::Moved(target, movement, past_pos));
+            msg_log.log_front(Msg::Moved(target, movement, past_pos));
         } else {
             // otherwise crush them against the wall/entity
             data.entities.alive[&target] = false;

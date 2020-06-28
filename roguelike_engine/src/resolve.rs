@@ -236,7 +236,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                             }
 
                             Attack::Push(target_id, delta_pos) => {
-                                dbg!(delta_pos, movement);
                                 msg_log.log(Msg::Pushed(entity_id, target_id, delta_pos));
                                 msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
                             }
