@@ -14,6 +14,9 @@ run:
 release:
   RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo run --release
 
+build_release:
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo build --release
+
 build:
   RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo build
 
@@ -40,3 +43,6 @@ debug:
 
 flame:
   RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo flamegraph
+
+clean:
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo clean

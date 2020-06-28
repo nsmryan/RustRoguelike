@@ -3,10 +3,6 @@ use std::hash::{Hash, Hasher};
 
 use serde::{Serialize, Deserialize};
 
-// TODO remove with TCOD
-//use tcod::line::*;
-use line_drawing::*;
-
 use log::warn;
 
 use crate::ai::Behavior;

@@ -198,7 +198,6 @@ pub fn ai_investigate(target_pos_orig: Pos,
         } else {
             // if the monster has not reached its target, move towards the target.
             let pos_offset = ai_take_astar_step(monster_id, target_pos, &game_data);
-            dbg!(pos_offset, monster_pos);
 
             let movement = Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move);
             turn = Action::Move(movement);
