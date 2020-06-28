@@ -27,7 +27,7 @@ rerun:
   RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo watch -x run
 
 test:
-  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo test
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo test -- --nocapture
 
 retest:
   RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo watch -x test

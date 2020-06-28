@@ -3,8 +3,11 @@ use std::hash::{Hash, Hasher};
 
 use serde::{Serialize, Deserialize};
 
-use tcod::line::*;
+// TODO remove with TCOD
+//use tcod::line::*;
 use line_drawing::*;
+
+use log::warn;
 
 use crate::ai::Behavior;
 use crate::constants::{HAMMER_DAMAGE};
@@ -448,21 +451,19 @@ pub fn move_next_to(start_pos: Pos, end_pos: Pos) -> Pos {
 
     let mut line = line(start_pos, end_pos);
 
-    let mut second_to_last = line.iter().next().unwrap();
+    let mut second_to_last = *line.iter().next().unwrap();
 
-    while let Some(pos) = line.iter().next() {
-        if *pos != end_pos {
+    for pos in line {
+        if pos != end_pos {
             second_to_last = pos;
         }
     }
 
-    return Pos::from(*second_to_last);
+    return second_to_last;
 }
 
 #[test]
 pub fn test_move_next_to() {
-    // TODO remove
-    return;
     assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(5, 5)), Pos::new(4, 4));
     assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(1, 1)), Pos::new(0, 0));
     assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(-5, -5)), Pos::new(-4, -4));
@@ -483,14 +484,15 @@ pub fn test_in_direction_of() {
     assert_eq!(in_direction_of(start, Pos::new(-10, -10)), Pos::new(0, 0));
 }
 
-#[test]
-pub fn test_line() {
-    for x in -10..10 {
-        for y in -10..10 {
-            let tcod_line =
-                tcod::line::Line::new((0, 0), (x, y)).map(|pair| Pos::from(pair)).collect::<Vec<Pos>>();
-            let line = line(Pos::new(0, 0), Pos::new(x, y));
-            assert_eq!(((x, y), tcod_line), ((x, y), line));
-        }
-    }
-}
+// TODO remove with TCOD
+//#[test]
+//pub fn test_line() {
+//    for x in -10..10 {
+//        for y in -10..10 {
+//            let tcod_line =
+//                tcod::line::Line::new((0, 0), (x, y)).map(|pair| Pos::from(pair)).collect::<Vec<Pos>>();
+//            let line = line(Pos::new(0, 0), Pos::new(x, y));
+//            assert_eq!(((x, y), tcod_line), ((x, y), line));
+//        }
+//    }
+//}

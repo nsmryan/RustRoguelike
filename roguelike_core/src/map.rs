@@ -6,8 +6,6 @@ use rand::prelude::*;
 
 use pathfinding::directed::astar::astar;
 
-use tcod::line::*;
-
 use smallvec::SmallVec;
 
 use itertools::Itertools;
@@ -338,18 +336,16 @@ impl Map {
 
         let (end_x, end_y) = (start_pos.x + dx, start_pos.y + dy);
 
-        let line = Line::new((start_pos.x, start_pos.y), (end_x, end_y));
+        let line = line(start_pos, Pos::new(end_x, end_y));
 
         let dir = Direction::from_dxy(dx, dy).expect("Check for blocking wall with no movement?");
 
-        let positions = iter::once(start_pos.to_tuple()).chain(line.into_iter());
+        let positions = iter::once(start_pos).chain(line.into_iter());
 
         let mut blocked;
         let mut found_blocker = false;
-        for (start, end) in positions.tuple_windows() {
-            let (x, y) = start;
-            let pos = Pos::from(start);
-            let target_pos = Pos::from(end);
+        for (pos, target_pos) in positions.tuple_windows() {
+            let (x, y) = (pos.x, pos.y);
 
             blocked = Blocked::new(pos, target_pos, dir, false, Wall::Empty);
 
@@ -627,7 +623,7 @@ impl Map {
     }
 
     pub fn path_clear_of_obstacles(&self, start: Pos, end: Pos) -> bool {
-        let line = Line::new(start.to_tuple(), end.to_tuple());
+        let line = line(start, end);
 
         let path_blocked =
             line.into_iter().any(|point| self[Pos::from(point)].blocked);
@@ -643,7 +639,7 @@ impl Map {
         // duplicates will be removed, leaving only points within the radius.
         for x in (start.x - radius)..(start.x + radius) {
             for y in (start.y - radius)..(start.y + radius) {
-                let line = Line::new(start.to_tuple(), (x, y));
+                let line = line(start, Pos::new(x, y));
 
                 // get points to the edge of square, filtering for points within the given radius
                 for point in line.into_iter() {
@@ -834,10 +830,9 @@ pub fn place_block(map: &mut Map, start: Pos, width: i32, tile: Tile) -> Vec<Pos
 
 pub fn place_line(map: &mut Map, start: Pos, end: Pos, tile: Tile) -> Vec<Pos> {
     let mut positions = Vec::new();
-    let mut line = Line::new(start.to_tuple(), end.to_tuple());
+    let mut line = line(start, end);
 
-    while let Some(pos) = Line::step(&mut line) {
-        let pos = Pos::from(pos);
+    for pos in line {
         if map.is_within_bounds(pos) {
             map[pos] = tile;
             positions.push(pos);

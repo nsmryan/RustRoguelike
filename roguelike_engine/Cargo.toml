@@ -13,8 +13,6 @@ serde_yaml = "0.8"
 
 slotmap = "0.4"
 
-tcod = "0.13"
-
 noise = { version = "0.6", default-features = false }
 
 rexpaint = "*"

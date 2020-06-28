@@ -1,5 +1,3 @@
-use tcod::line::*;
-
 use serde::{Serialize, Deserialize};
 
 use log::info;
@@ -7,7 +5,7 @@ use log::info;
 use roguelike_core::movement::{Direction, Action, Reach};
 use roguelike_core::types::*;
 use roguelike_core::movement;
-use roguelike_core::utils::{reach_by_mode, item_primary_at};
+use roguelike_core::utils::{reach_by_mode, item_primary_at, line};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
@@ -368,7 +366,7 @@ pub fn throw_item(_player_id: EntityId,
                   start_pos: Pos,
                   end_pos: Pos,
                   game_data: &mut GameData) {
-    let throw_line = Line::new(start_pos.to_tuple(), end_pos.to_tuple());
+    let throw_line = line(start_pos, end_pos);
 
     // get target position in direction of player click
     let mut end_pos =
