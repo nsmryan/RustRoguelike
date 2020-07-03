@@ -549,7 +549,7 @@ pub fn test_hammer_small_wall() {
 
     game.data.map[player_pos].bottom_wall = Wall::ShortWall;
 
-    let gol_pos = Pos::new(4, 4);
+    let gol_pos = Pos::new(4, 5);
     let gol = make_gol(&mut game.data.entities, &game.config, gol_pos, &mut game.msg_log);
     let hammer = make_hammer(&mut game.data.entities, &game.config, Pos::new(4, 7), &mut game.msg_log);
 
@@ -565,7 +565,8 @@ pub fn test_hammer_small_wall() {
         println!("{:?}", msg);
     }
 
-    assert!(!game.data.entities.alive[&gol]);
+    // gol is no longer in entities list after being crushed
+    assert!(!game.data.entities.ids.contains(&gol));
 }
 
 

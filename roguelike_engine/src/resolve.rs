@@ -187,19 +187,19 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                     let wall_loc: Pos;
                     let left_wall: bool;
                     if blocked.direction == Direction::Left {
-                        wall_loc = blocked.start_pos;
-                        left_wall = true;
+                         wall_loc = blocked.start_pos;
+                         left_wall = true;
                     } else if blocked.direction == Direction::Right {
-                        wall_loc = blocked.end_pos;
-                        left_wall = true;
+                         wall_loc = blocked.end_pos;
+                         left_wall = true;
                      } else if blocked.direction == Direction::Down {
-                        wall_loc = blocked.start_pos;
-                        left_wall = false;
+                         wall_loc = blocked.start_pos;
+                         left_wall = false;
                      } else if blocked.direction == Direction::Up {
-                        wall_loc = blocked.end_pos;
-                        left_wall = false;
+                         wall_loc = blocked.end_pos;
+                         left_wall = false;
                      } else {
-                       panic!(format!("Hammer direction was not up/down/left/right ({:?})!", blocked.direction));
+                        panic!(format!("Hammer direction was not up/down/left/right ({:?})!", blocked.direction));
                      }
 
                     if left_wall {
