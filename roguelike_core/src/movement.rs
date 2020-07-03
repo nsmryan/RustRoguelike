@@ -21,6 +21,7 @@ pub enum Action {
     Pass,
     Yell,
     UseItem(Pos), // item used towards position, or just player pos
+    DisarmTrap(EntityId),
     // TODO consider just using Option<Action> instead
     NoAction,
 }
@@ -244,7 +245,7 @@ impl Direction {
     pub fn diag(self) -> bool {
         match self {
             Direction::DownLeft | Direction::UpRight |
-            Direction::DownLeft | Direction::UpRight => true,
+            Direction::UpLeft   | Direction::UpRight => true,
             _ => false,
         }
     }

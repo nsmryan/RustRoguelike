@@ -1,7 +1,5 @@
 use serde::{Serialize, Deserialize};
 
-use log::info;
-
 use roguelike_core::movement::{Direction, Action, Reach};
 use roguelike_core::types::*;
 use roguelike_core::movement;
@@ -43,6 +41,7 @@ pub enum InputAction {
     SelectItem(usize),
     ToggleConsole,
     UseItem,
+    Interact,
     None,
 }
 
@@ -313,6 +312,14 @@ pub fn handle_input(game: &mut Game) -> Action {
             //    //game.console.height = 0;
             //    //game.settings.state = GameState::Console;
             //}
+        }
+
+        (InputAction::Interact, _) => {
+            game.settings.state = GameState::Selection;
+            let reach = Reach::Horiz(1);
+            game.settings.selection =
+                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Interact);
+            game.msg_log.log(Msg::GameState(game.settings.state));
         }
 
         (InputAction::UseItem, _) => {

@@ -34,11 +34,12 @@ pub enum GameResult {
 pub enum SelectionAction {
     Throw,
     Hammer,
+    Interact,
 }
 
 impl SelectionAction {
     pub fn action_from_pos(&self, pos: Pos, data: &GameData) -> Action {
-        let action: Action;
+        let mut action: Action;
 
         match self {
             SelectionAction::Throw => {
@@ -50,6 +51,18 @@ impl SelectionAction {
 
             SelectionAction::Hammer => {
                 action = Action::UseItem(pos);
+            }
+
+            SelectionAction::Interact => {
+                // TODO implement
+                // if there is a trap, toggled armed
+                // perhaps other interactions are possible
+                action = Action::NoAction;
+                if let Some(entity_id) = data.has_entity(pos) {
+                    if let Some(_trap) = data.entities.trap.get(&entity_id) {
+                        action = Action::DisarmTrap(entity_id);
+                    }
+                }
             }
         }
 

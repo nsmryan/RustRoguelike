@@ -3,8 +3,6 @@ use std::hash::{Hash, Hasher};
 
 use serde::{Serialize, Deserialize};
 
-use log::warn;
-
 use crate::ai::Behavior;
 use crate::constants::{HAMMER_DAMAGE};
 use crate::map::{Surface};
@@ -110,8 +108,8 @@ impl Iterator for Line {
 }
 
 pub fn line(start: Pos, end: Pos) -> Vec<Pos> {
-    let p1 = (start.x as isize, start.y as isize);
-    let p2 = (end.x as isize, end.y as isize);
+    //let p1 = (start.x as isize, start.y as isize);
+    //let p2 = (end.x as isize, end.y as isize);
 
     //let line = Line::new(start.to_tuple(), end.to_tuple()).map(|pair| Pos::from(pair));
     //let points = line.collect::<Vec<Pos>>();
@@ -120,7 +118,7 @@ pub fn line(start: Pos, end: Pos) -> Vec<Pos> {
     //let mut points = bresenham.skip(1).collect::<Vec<Pos>>();
 
     let line = Line::new(start, end);
-    let mut points = line.collect::<Vec<Pos>>();
+    let points = line.collect::<Vec<Pos>>();
 
     return points;
 }
@@ -445,7 +443,7 @@ pub fn move_next_to(start_pos: Pos, end_pos: Pos) -> Pos {
         return start_pos;
     }
 
-    let mut line = line(start_pos, end_pos);
+    let line = line(start_pos, end_pos);
 
     let mut second_to_last = *line.iter().next().unwrap();
 

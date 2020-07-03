@@ -346,6 +346,10 @@ pub fn keyup_to_action(keycode: Keycode,
             input_action = InputAction::None;
         }
 
+        Keycode::A => {
+            input_action = InputAction::Interact;
+        }
+
         Keycode::Q => {
             input_action = InputAction::Exit;
         }

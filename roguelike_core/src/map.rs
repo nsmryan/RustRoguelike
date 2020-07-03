@@ -745,7 +745,7 @@ impl Map {
         seen.push(start);
         flood.push(start);
 
-        for index in 0..radius {
+        for _index in 0..radius {
             let last = current.clone();
             current.clear();
             for pos in last.iter() {
@@ -841,7 +841,7 @@ pub fn place_block(map: &mut Map, start: Pos, width: i32, tile: Tile) -> Vec<Pos
 
 pub fn place_line(map: &mut Map, start: Pos, end: Pos, tile: Tile) -> Vec<Pos> {
     let mut positions = Vec::new();
-    let mut line = line(start, end);
+    let line = line(start, end);
 
     for pos in line {
         if map.is_within_bounds(pos) {
