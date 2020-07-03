@@ -121,7 +121,7 @@ pub fn run(seed: u64) -> Result<(), String> {
 
         let input_timer = timer!("INPUT");
         /* Handle Events */
-        game.key_input.clear();
+        //game.key_input.clear();
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit {..}=> {
@@ -130,7 +130,7 @@ pub fn run(seed: u64) -> Result<(), String> {
 
                 Event::KeyDown {keycode, keymod, ..} => {
                     if let Some(keycode) = keycode {
-                        game.key_input.push((KeyDirection::Down, keycode));
+                        //game.key_input.push((KeyDirection::Down, keycode));
                         game.input_action =
                             keydown_to_action(keycode, keymod);
                     }
@@ -138,7 +138,7 @@ pub fn run(seed: u64) -> Result<(), String> {
 
                 Event::KeyUp {keycode, keymod, ..} => {
                     if let Some(keycode) = keycode {
-                        game.key_input.push((KeyDirection::Up, keycode));
+                        //game.key_input.push((KeyDirection::Up, keycode));
                         game.input_action =
                             keyup_to_action(keycode, keymod, game.settings.state);
                     }

@@ -2,7 +2,7 @@ use rand::prelude::*;
 
 use serde::{Serialize, Deserialize};
 
-use sdl2::keyboard::Keycode;
+//use sdl2::keyboard::Keycode;
 
 use roguelike_core::types::*;
 use roguelike_core::config::*;
@@ -192,7 +192,7 @@ impl GameSettings {
 pub struct Game {
     pub config: Config,
     pub input_action: InputAction,
-    pub key_input: Vec<(KeyDirection, Keycode)>,
+    //pub key_input: Vec<(KeyDirection, Keycode)>,
     pub mouse_state: MouseState,
     pub data: GameData,
     pub settings: GameSettings,
@@ -224,7 +224,7 @@ impl Game {
             settings: GameSettings::new(0, false),
             mouse_state: Default::default(),
             msg_log,
-            key_input: Vec::new(),
+            //key_input: Vec::new(),
             rng: rng,
         };
 
