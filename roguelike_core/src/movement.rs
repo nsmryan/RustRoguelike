@@ -21,7 +21,7 @@ pub enum Action {
     Pass,
     Yell,
     UseItem(Pos), // item used towards position, or just player pos
-    DisarmTrap(EntityId),
+    ArmDisarmTrap(EntityId),
     // TODO consider just using Option<Action> instead
     NoAction,
 }

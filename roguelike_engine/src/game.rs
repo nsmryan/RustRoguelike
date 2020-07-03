@@ -60,7 +60,7 @@ impl SelectionAction {
                 action = Action::NoAction;
                 if let Some(entity_id) = data.has_entity(pos) {
                     if let Some(_trap) = data.entities.trap.get(&entity_id) {
-                        action = Action::DisarmTrap(entity_id);
+                        action = Action::ArmDisarmTrap(entity_id);
                     }
                 }
             }

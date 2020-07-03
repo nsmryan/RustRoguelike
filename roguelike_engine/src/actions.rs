@@ -190,7 +190,12 @@ pub fn handle_input(game: &mut Game) -> Action {
             let pos = game.data.entities.pos[&player_id];
 
             for key in game.data.entities.pos.keys() {
-                if game.data.entities.pos[key] == pos && game.data.entities.item.get(key).is_some() {
+                let is_item = game.data.entities.item.get(key).is_some();
+                let is_disarmed_trap =
+                    game.data.entities.trap.get(key).is_some() &&
+                    game.data.entities.armed.get(key) == Some(&false);
+
+                if game.data.entities.pos[key] == pos && (is_item || is_disarmed_trap) {
                     player_turn = Action::Pickup(*key);
                     break;
                 }
@@ -347,6 +352,8 @@ pub fn pick_item_up(entity_id: EntityId,
                     entities: &mut Entities) {
     let pickup_class = entities.item[&item_id].class();
 
+    // TODO check for trap and pick it up somehow
+    // currently causes a crash
     match pickup_class {
         ItemClass::Primary => {
             if item_primary_at(entity_id, entities, 0) &&

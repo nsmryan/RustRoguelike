@@ -303,6 +303,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     } else if data.using(entity_id, Item::Sword) {
                         msg_log.log(Msg::SwordSwing(entity_id, pos));
                     }
+                } else if let Action::ArmDisarmTrap(trap_id) = action {
+                    data.entities.armed[&trap_id] = !data.entities.armed[&trap_id];
                 }
             }
 
@@ -390,7 +392,8 @@ fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data
     // get a list of triggered traps
     let mut traps: Vec<EntityId> = Vec::new();
     for key in data.entities.ids.iter() {
-        if data.entities.trap.get(key).is_some()          && // key is a trap
+        if data.entities.trap.get(key).is_some()           && // key is a trap
+           data.entities.armed.get(key) == Some(&true)     && // trap is armed
            data.entities.alive[&entity_id]                 && // entity is alive
            data.entities.fighter.get(&entity_id).is_some() && // entity is a fighter
            data.entities.pos[key] == data.entities.pos[&entity_id] {

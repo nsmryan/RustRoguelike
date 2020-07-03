@@ -664,6 +664,7 @@ fn render_entity(entity_id: EntityId, display_state: &mut DisplayState, game: &m
             let needs_removal = game.data.entities.needs_removal[&entity_id];
             if is_in_fov && !needs_removal {
                 let color = game.data.entities.color[&entity_id];
+
                 display_state.draw_char(game.data.entities.chr[&entity_id], pos, color, area);
             }
         }
@@ -685,7 +686,7 @@ fn render_entities(display_state: &mut DisplayState, game: &mut Game, area: &Are
 }
 
 fn step_animation(anim_key: AnimKey,
-                      object_id: EntityId,
+                      entity_id: EntityId,
                       is_in_fov: bool,
                       display_state: &mut DisplayState,
                       data: &mut GameData,
@@ -693,8 +694,13 @@ fn step_animation(anim_key: AnimKey,
                       config: &Config,
                       area: &Area) -> bool {
 
-    let pos = data.entities.pos[&object_id];
-    let color = data.entities.color[&object_id];
+    let pos = data.entities.pos[&entity_id];
+    let mut color = data.entities.color[&entity_id];
+
+    // TODO should also freeze animation or leave at first element to indicate disarmed trap
+    if data.entities.armed.get(&entity_id) == Some(&false) {
+        color = config.color_warm_grey;
+    }
 
     match display_state.animations[&anim_key].clone() {
         Animation::Between(ref mut sprite, start, end, ref mut dist, blocks_per_sec) => {
@@ -821,16 +827,16 @@ fn render_overlays(display_state: &mut DisplayState,
     // draw direction overlays
     let mut direction_color = game.config.color_soft_green;
     direction_color.a /= 2;
-    for object_id in game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>().iter() {
-        let pos = game.data.entities.pos[object_id];
+    for entity_id in game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>().iter() {
+        let pos = game.data.entities.pos[entity_id];
 
         if pos.x == -1 && pos.y == -1 {
             continue;
         }
 
         if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
-           game.data.entities.alive[object_id] {
-            if let Some(dir) = game.data.entities.direction.get(object_id) {
+           game.data.entities.alive[entity_id] {
+            if let Some(dir) = game.data.entities.direction.get(entity_id) {
                 // display_state.draw_tile_edge(pos, area, direction_color, dir);
 
                 let rotation = match dir {
@@ -853,14 +859,14 @@ fn render_overlays(display_state: &mut DisplayState,
     if let Some(mouse_xy) = map_mouse_pos {
         // Draw monster attack overlay
         let object_ids = get_entity_under_mouse(mouse_xy, &mut game.data, &game.config);
-        for object_id in object_ids.iter() {
-            let pos = game.data.entities.pos[object_id];
+        for entity_id in object_ids.iter() {
+            let pos = game.data.entities.pos[entity_id];
 
             if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
-               game.data.entities.alive[object_id] {
+               game.data.entities.alive[entity_id] {
                render_attack_overlay(display_state,
                                      game,
-                                     *object_id,
+                                     *entity_id,
                                      area);
             }
         }
@@ -868,15 +874,15 @@ fn render_overlays(display_state: &mut DisplayState,
 
     if game.settings.overlay {
         let keys = game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>();
-        for object_id in keys {
-            let pos = game.data.entities.pos[&object_id];
+        for entity_id in keys {
+            let pos = game.data.entities.pos[&entity_id];
 
             if game.data.map.is_within_bounds(pos) &&
                game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
-               game.data.entities.alive[&object_id] {
+               game.data.entities.alive[&entity_id] {
                render_attack_overlay(display_state,
                                      game,
-                                     object_id,
+                                     entity_id,
                                      area);
             }
         }
@@ -1089,17 +1095,17 @@ fn render_bar(display_state: &mut DisplayState,
 
 fn render_attack_overlay(display_state: &mut DisplayState,
                          game: &mut Game,
-                         object_id: EntityId,
+                         entity_id: EntityId,
                          area: &Area) {
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
-    let object_pos = game.data.entities.pos[&object_id];
+    let object_pos = game.data.entities.pos[&entity_id];
 
     let mut attack_highlight_color = game.config.color_red;
     attack_highlight_color.a = game.config.highlight_attack;
 
-    if let Some(reach) = game.data.entities.attack.get(&object_id) {
+    if let Some(reach) = game.data.entities.attack.get(&entity_id) {
         let attack_positions = 
             reach.offsets()
                  .iter()

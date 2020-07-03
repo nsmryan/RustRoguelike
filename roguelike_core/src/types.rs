@@ -190,6 +190,7 @@ impl GameData {
         self.entities.attack.remove(&id);
         self.entities.inventory.remove(&id);
         self.entities.trap.remove(&id);
+        self.entities.armed.remove(&id);
         self.entities.count_down.remove(&id);
         self.entities.move_mode.remove(&id);
         self.entities.direction.remove(&id);
@@ -404,6 +405,7 @@ pub struct Entities {
     pub attack: CompStore<Reach>,
     pub inventory: CompStore<VecDeque<EntityId>>,
     pub trap: CompStore<Trap>,
+    pub armed: CompStore<bool>,
     pub count_down: CompStore<usize>,
     pub move_mode: CompStore<MoveMode>,
     pub direction: CompStore<Direction>,
@@ -441,6 +443,7 @@ impl Entities {
         self.attack.remove(entity_id);
         self.inventory.remove(entity_id);
         self.trap.remove(entity_id);
+        self.armed.remove(entity_id);
         self.count_down.remove(entity_id);
         self.move_mode.remove(entity_id);
         self.direction.remove(entity_id);

@@ -168,6 +168,7 @@ pub fn make_trap_sound(entities: &mut Entities, config: &Config, pos: Pos, msg_l
     let sound = entities.create_entity(pos.x, pos.y, EntityType::Enemy, ENTITY_TRAP_SOUND as char, config.color_ice_blue, EntityName::Sound, false);
 
     entities.trap.insert(sound,  Trap::Sound);
+    entities.armed.insert(sound,  true);
 
     msg_log.log(Msg::SpawnedObject(sound, entities.typ[&sound], pos, EntityName::Sound));
 
@@ -178,6 +179,7 @@ pub fn make_spikes(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
     let spikes = entities.create_entity(pos.x, pos.y, EntityType::Enemy, MAP_TALL_SPIKES as char, config.color_ice_blue, EntityName::Spike, false);
 
     entities.trap.insert(spikes,  Trap::Spikes);
+    entities.armed.insert(spikes,  true);
 
     msg_log.log(Msg::SpawnedObject(spikes, entities.typ[&spikes], pos, EntityName::Spike));
 
