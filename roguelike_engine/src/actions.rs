@@ -330,7 +330,7 @@ pub fn handle_input(game: &mut Game) -> Action {
 
         (InputAction::Interact, _) => {
             game.settings.state = GameState::Selection;
-            let reach = Reach::Horiz(1);
+            let reach = Reach::single(1);
             game.settings.selection =
                 Selection::new(SelectionType::WithinReach(reach), SelectionAction::Interact);
             game.msg_log.log(Msg::GameState(game.settings.state));
