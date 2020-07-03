@@ -22,7 +22,7 @@ pub enum KeyDirection {
 pub enum InputAction {
     Move(Direction),
     Pass,
-    MapClick(Pos, Pos),
+    MapClick(Pos, Pos), // map loc, map cell
     Pickup,
     DropItem,
     SwapPrimaryItem,

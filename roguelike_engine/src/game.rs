@@ -537,6 +537,39 @@ pub fn test_game_step() {
 }
 
 #[test]
+pub fn test_hammer_small_wall() {
+    let mut config = Config::from_file("../config.yaml");
+    let mut game = Game::new(0, config.clone()).unwrap();
+
+    let player_id = game.data.find_player().unwrap();
+    game.data.map = Map::from_dims(10, 10);
+    let player_pos = Pos::new(4, 4);
+    game.data.entities.pos[&player_id] = player_pos;
+
+
+    game.data.map[player_pos].bottom_wall = Wall::ShortWall;
+
+    let gol_pos = Pos::new(4, 4);
+    let gol = make_gol(&mut game.data.entities, &game.config, gol_pos, &mut game.msg_log);
+    let hammer = make_hammer(&mut game.data.entities, &game.config, Pos::new(4, 7), &mut game.msg_log);
+
+    game.data.entities.inventory[&player_id].push_front(hammer);
+
+    game.input_action = InputAction::UseItem;
+    game.step_game(0.1);
+
+    game.input_action = InputAction::MapClick(gol_pos, gol_pos);
+    game.step_game(0.1);
+
+    for msg in game.msg_log.turn_messages {
+        println!("{:?}", msg);
+    }
+
+    assert!(!game.data.entities.alive[&gol]);
+}
+
+
+#[test]
 pub fn test_game_map() {
     // Create Game and Map
     let mut config = Config::from_file("../config.yaml");

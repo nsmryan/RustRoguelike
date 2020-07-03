@@ -515,7 +515,7 @@ pub fn make_wall_test_map(entities: &mut Entities,
     map[(4, 4)].bottom_wall = Wall::ShortWall;
     map[(5, 4)].bottom_wall = Wall::ShortWall;
   
-    make_gol(entities, config, Pos::new(6, 5), msg_log);
+    make_gol(entities, config, Pos::new(5, 5), msg_log);
     make_column(entities, config, Pos::new(6, 4), msg_log);
 
     map[(2, 6)].blocked = true;

@@ -1,3 +1,4 @@
+case:=' '
 
 start:
   cargo web start
@@ -29,11 +30,17 @@ debug-run:
 rerun:
   RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo watch -x run
 
-test:
-  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo test -- --nocapture
+test test_case=case:
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo test {{test_case}}
 
-retest:
-  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo watch -x test
+test_print test_case=case:
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo test {{test_case}} -- --nocapture
+
+retest test_case=case:
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo watch -x test {{test_case}}
+
+retest_print test_case=case:
+  RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo watch -x test {{test_case}} -- --nocapture
 
 sizes:
   RUSTFLAGS="-C link-arg=-fuse-ld=lld -Z print-type-sizes" cargo +nightly build

@@ -14,8 +14,9 @@ use crate::game::*;
 use crate::actions::{throw_item, pick_item_up, place_trap};
 
 
-pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &mut GameSettings, config: &Config) {
+pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mut GameSettings, config: &Config) {
     /* Handle Message Log */
+    println!("Turn {}:", settings.turn_count);
     while let Some(msg) = msg_log.pop() {
         let msg_line = msg.msg_line(data);
         if msg_line.len() > 0 {
@@ -144,12 +145,12 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 let entity_pos = data.entities.pos[&entity];
                 let pos_diff = sub_pos(pos, entity_pos);
 
-                if let Some(hit_entity) = data.has_blocking_entity(pos) {
+                if let Some(blocked) = data.map.is_blocked_by_wall(entity_pos, pos_diff.x, pos_diff.y) {
+                    msg_log.log_front(Msg::HammerHitWall(entity, blocked));
+                    data.used_up_item(entity);
+                } else if let Some(hit_entity) = data.has_blocking_entity(pos) {
                     // we hit another entity!
                     msg_log.log_front(Msg::HammerHitEntity(entity, hit_entity));
-                    data.used_up_item(entity);
-                } else if let Some(blocked) = data.map.is_blocked_by_wall(entity_pos, pos_diff.x, pos_diff.y) {
-                    msg_log.log_front(Msg::HammerHitWall(entity, blocked));
                     data.used_up_item(entity);
                 }
             }
@@ -207,7 +208,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                         data.map[wall_loc].bottom_wall = Wall::Empty;
                     }
 
-                    msg_log.log(Msg::Crushed(entity, wall_loc));
+                    msg_log.log(Msg::Crushed(entity, blocked.end_pos));
                 }
             }
 
