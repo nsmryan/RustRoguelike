@@ -609,7 +609,6 @@ fn render_effects(display_state: &mut DisplayState, game: &mut Game, area: &Area
                     highlight_color.a =
                         game.config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
 
-                    let player_id = game.data.find_player().unwrap();
                     for pos in dist_positions.iter() {
                         if !game.data.map[*pos].blocked { // &&
                             // TODO this would hide sound if the player can't see the result
