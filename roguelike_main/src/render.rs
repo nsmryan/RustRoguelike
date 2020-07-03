@@ -1,5 +1,3 @@
-use tcod::line::*;
-
 use noise::Perlin;
 use noise::NoiseFn;
 
@@ -13,7 +11,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Effect, Animation, AnimKey};
-use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color};
+use roguelike_core::utils::{line, item_primary_at, distance, move_towards, lerp_color};
 
 use roguelike_engine::game::*;
 
@@ -905,7 +903,7 @@ fn render_overlays(display_state: &mut DisplayState,
             // mouse pos at 0, 0 occurs when the mouse has not moved since startup.
             // this may cause a weirdness on the corner of the map
             if mouse_pos != Pos::new(0, 0) {
-                let line = Line::new(player_pos.to_tuple(), mouse_pos.to_tuple()).into_iter();
+                let line = line(player_pos, mouse_pos).into_iter();
                 for pos in line {
                     let pos = Pos::from(pos);
                     display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
