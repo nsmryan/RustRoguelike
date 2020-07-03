@@ -8,7 +8,7 @@ edition = "2018"
 rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
 num = "0.2"
 
-sdl2 = { version = "0.32", features = ["image", "unsafe_textures"] }
+sdl2 = { version = "0.34", features = ["image", "unsafe_textures"] }
 
 walkdir = "2"
 
