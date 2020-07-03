@@ -577,6 +577,8 @@ pub fn test_hammer_small_wall() {
         matches!(msg, Msg::HammerHitWall(player_id, _))
     }));
 
+    assert_eq!(Surface::Rubble, game.data.map[gol_pos].surface);
+
     // add the hammer back and hit the pawn with it to test hitting entities
     let hammer = make_hammer(&mut game.data.entities, &game.config, Pos::new(4, 7), &mut game.msg_log);
     game.data.entities.inventory[&player_id].push_front(hammer);
