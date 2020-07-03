@@ -244,7 +244,7 @@ impl Direction {
 
     pub fn diag(self) -> bool {
         match self {
-            Direction::DownLeft | Direction::UpRight |
+            Direction::DownLeft | Direction::DownRight |
             Direction::UpLeft   | Direction::UpRight => true,
             _ => false,
         }
