@@ -75,7 +75,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     let next_pos = next_pos(pusher_pos, entity_diff);
                     let diff = sub_pos(pushed_pos, next_pos);
                     let blocked = data.map.is_blocked_by_wall(pushed_pos, diff.x, diff.y); 
-                    dbg!(pusher_pos, pushed_pos, next_pos);
 
                     if blocked == None {
                         data.remove_entity(pushed);
@@ -94,7 +93,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 // only perform move if tile does not contain a wall or entity
                 if data.has_blocking_entity(movement.pos).is_none() &&
                    !data.map[movement.pos].blocked {
-                       dbg!();
                        process_moved_message(entity_id, movement, pos, data, msg_log, config);
                 }
             }

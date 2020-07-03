@@ -84,7 +84,6 @@ pub fn ai_attack(monster_id: EntityId,
     if !data.entities.alive[&target_id] {
         // if AI target is no longer alive
         turn = Action::StateChange(Behavior::Investigating(target_pos));
-        dbg!();
     } else if let Some(hit_pos) =
         // if AI can hit their target
         ai_can_hit_target(data, 
@@ -159,8 +158,6 @@ pub fn ai_attack(monster_id: EntityId,
         }
         // step towards the closest location that lets us hit the target
         pos_offset = ai_take_astar_step(monster_id, new_pos, &data);
-        dbg!(monster_pos, new_pos, pos_offset);
-
         if pos_mag(pos_offset) > 0 {
             turn = Action::Move(Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move));
         } else {
