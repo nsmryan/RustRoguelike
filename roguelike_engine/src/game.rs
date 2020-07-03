@@ -551,6 +551,10 @@ pub fn test_hammer_small_wall() {
 
     let gol_pos = Pos::new(4, 5);
     let gol = make_gol(&mut game.data.entities, &game.config, gol_pos, &mut game.msg_log);
+
+    let pawn_pos = Pos::new(3, 4);
+    let pawn = make_elf(&mut game.data.entities, &game.config, pawn_pos, &mut game.msg_log);
+
     let hammer = make_hammer(&mut game.data.entities, &game.config, Pos::new(4, 7), &mut game.msg_log);
 
     game.data.entities.inventory[&player_id].push_front(hammer);
@@ -561,12 +565,33 @@ pub fn test_hammer_small_wall() {
     game.input_action = InputAction::MapClick(gol_pos, gol_pos);
     game.step_game(0.1);
 
-    for msg in game.msg_log.turn_messages {
+    for msg in game.msg_log.turn_messages.iter() {
         println!("{:?}", msg);
     }
 
     // gol is no longer in entities list after being crushed
     assert!(!game.data.entities.ids.contains(&gol));
+    assert!(game.data.entities.ids.contains(&pawn));
+
+    assert!(game.msg_log.turn_messages.iter().any(|msg| {
+        matches!(msg, Msg::HammerHitWall(player_id, _))
+    }));
+
+    // add the hammer back and hit the pawn with it to test hitting entities
+    let hammer = make_hammer(&mut game.data.entities, &game.config, Pos::new(4, 7), &mut game.msg_log);
+    game.data.entities.inventory[&player_id].push_front(hammer);
+
+    game.input_action = InputAction::UseItem;
+    game.step_game(0.1);
+
+    game.input_action = InputAction::MapClick(pawn_pos, pawn_pos);
+    game.step_game(0.1);
+
+    assert!(!game.data.entities.ids.contains(&pawn));
+
+    assert!(game.msg_log.turn_messages.iter().any(|msg| {
+        matches!(msg, Msg::HammerHitEntity(player_id, pawn))
+    }));
 }
 
 
