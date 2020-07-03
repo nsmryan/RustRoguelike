@@ -85,9 +85,18 @@ pub fn handle_input_inventory(input: InputAction,
                 data.entities.selected_item.insert(player_id, item_key);
 
                 settings.state = GameState::Selection;
-                settings.selection =
-                    Selection::new(SelectionType::WithinRadius(PLAYER_THROW_DIST), SelectionAction::Throw);
-                settings.selection.only_visible = true;
+                settings.selection.only_visible = false;
+
+                // if the item is a trap, set it.
+                // otherwise, throw it.
+                if data.entities.trap.get(&item_key).is_some() {
+                    settings.selection =
+                        Selection::new(SelectionType::WithinReach(Reach::single(1)), SelectionAction::PlaceTrap);
+                } else {
+                    settings.selection =
+                        Selection::new(SelectionType::WithinRadius(PLAYER_THROW_DIST), SelectionAction::Throw);
+                }
+
                 msg_log.log(Msg::GameState(settings.state));
             }
             // if item index is not in the player's inventory, do nothing
@@ -348,31 +357,31 @@ pub fn handle_input(game: &mut Game) -> Action {
 }
 
 pub fn pick_item_up(entity_id: EntityId,
-                    item_id: EntityId,
+                    pickedup_id: EntityId,
                     entities: &mut Entities) {
-    let pickup_class = entities.item[&item_id].class();
+    // pick up item
+    let item = entities.item[&pickedup_id];
+    let item_class = item.class();
 
-    // TODO check for trap and pick it up somehow
-    // currently causes a crash
-    match pickup_class {
+    match item_class {
         ItemClass::Primary => {
             if item_primary_at(entity_id, entities, 0) &&
                item_primary_at(entity_id, entities, 1) {
-                entities.inventory[&entity_id][0] = item_id;
+                entities.inventory[&entity_id][0] = pickedup_id;
 
                 let obj_pos = entities.pos[&entity_id];
                 entities.set_pos(entity_id, obj_pos);
             } else {
-                entities.inventory[&entity_id].push_front(item_id);
+                entities.inventory[&entity_id].push_front(pickedup_id);
             }
         }
 
         ItemClass::Secondary => {
-            entities.inventory[&entity_id].push_back(item_id);
+            entities.inventory[&entity_id].push_back(pickedup_id);
         }
-    }
+    } 
 
-    entities.set_xy(item_id, -1, -1);
+    entities.set_xy(pickedup_id, -1, -1);
 }
 
 pub fn throw_item(_player_id: EntityId,
@@ -393,5 +402,12 @@ pub fn throw_item(_player_id: EntityId,
     }
 
     game_data.entities.set_pos(item_id, end_pos);
+}
+
+pub fn place_trap(trap_id: EntityId,
+                  place_pos: Pos,
+                  game_data: &mut GameData) {
+    game_data.entities.set_pos(trap_id, place_pos);
+    game_data.entities.armed[&trap_id] = true;
 }
 

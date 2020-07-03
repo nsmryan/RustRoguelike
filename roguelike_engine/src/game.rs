@@ -35,6 +35,7 @@ pub enum SelectionAction {
     Throw,
     Hammer,
     Interact,
+    PlaceTrap,
 }
 
 impl SelectionAction {
@@ -63,6 +64,13 @@ impl SelectionAction {
                         action = Action::ArmDisarmTrap(entity_id);
                     }
                 }
+            }
+
+            SelectionAction::PlaceTrap => {
+                let player_id = data.find_player().unwrap();
+                let trap_id =
+                    data.entities.selected_item.get(&player_id).expect("Placing a trap, but nothing selected!");
+                action = Action::PlaceTrap(pos, *trap_id);
             }
         }
 

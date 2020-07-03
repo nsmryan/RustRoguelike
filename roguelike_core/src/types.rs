@@ -274,6 +274,8 @@ pub enum Item {
     Shield,
     Hammer,
     Sword,
+    SpikeTrap,
+    SoundTrap,
 }
 
 impl Item {
@@ -285,6 +287,8 @@ impl Item {
             Item::Shield => ItemClass::Primary,
             Item::Hammer => ItemClass::Primary,
             Item::Sword => ItemClass::Primary,
+            Item::SpikeTrap => ItemClass::Secondary,
+            Item::SoundTrap => ItemClass::Secondary,
         }
     }
 }

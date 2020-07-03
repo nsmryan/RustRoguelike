@@ -11,7 +11,7 @@ use roguelike_core::utils::*;
 use roguelike_core::map::*;
 
 use crate::game::*;
-use crate::actions::{throw_item, pick_item_up};
+use crate::actions::{throw_item, pick_item_up, place_trap};
 
 
 pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &mut GameSettings, config: &Config) {
@@ -305,6 +305,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     }
                 } else if let Action::ArmDisarmTrap(trap_id) = action {
                     data.entities.armed[&trap_id] = !data.entities.armed[&trap_id];
+                } else if let Action::PlaceTrap(place_pos, trap_id) = action {
+                    place_trap(trap_id, place_pos, data);
                 }
             }
 

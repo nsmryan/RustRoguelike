@@ -165,10 +165,11 @@ pub fn make_elf(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
 }
 
 pub fn make_trap_sound(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let sound = entities.create_entity(pos.x, pos.y, EntityType::Enemy, ENTITY_TRAP_SOUND as char, config.color_ice_blue, EntityName::Sound, false);
+    let sound = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_TRAP_SOUND as char, config.color_ice_blue, EntityName::Sound, false);
 
     entities.trap.insert(sound,  Trap::Sound);
     entities.armed.insert(sound,  true);
+    entities.item.insert(sound,  Item::SoundTrap);
 
     msg_log.log(Msg::SpawnedObject(sound, entities.typ[&sound], pos, EntityName::Sound));
 
@@ -176,10 +177,11 @@ pub fn make_trap_sound(entities: &mut Entities, config: &Config, pos: Pos, msg_l
 }
 
 pub fn make_spikes(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let spikes = entities.create_entity(pos.x, pos.y, EntityType::Enemy, MAP_TALL_SPIKES as char, config.color_ice_blue, EntityName::Spike, false);
+    let spikes = entities.create_entity(pos.x, pos.y, EntityType::Item, MAP_TALL_SPIKES as char, config.color_ice_blue, EntityName::Spike, false);
 
     entities.trap.insert(spikes,  Trap::Spikes);
     entities.armed.insert(spikes,  true);
+    entities.item.insert(spikes,  Item::SpikeTrap);
 
     msg_log.log(Msg::SpawnedObject(spikes, entities.typ[&spikes], pos, EntityName::Spike));
 
