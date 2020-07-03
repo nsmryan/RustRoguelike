@@ -594,6 +594,8 @@ pub fn test_hammer_small_wall() {
     assert!(game.msg_log.turn_messages.iter().any(|msg| {
         matches!(msg, Msg::HammerHitEntity(player_id, pawn))
     }));
+
+    assert_ne!(Surface::Rubble, game.data.map[pawn_pos].surface);
 }
 
 
