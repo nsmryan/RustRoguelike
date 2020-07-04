@@ -482,15 +482,3 @@ pub fn test_in_direction_of() {
     assert_eq!(in_direction_of(start, Pos::new(-10, -10)), Pos::new(0, 0));
 }
 
-// TODO remove with TCOD
-//#[test]
-//pub fn test_line() {
-//    for x in -10..10 {
-//        for y in -10..10 {
-//            let tcod_line =
-//                tcod::line::Line::new((0, 0), (x, y)).map(|pair| Pos::from(pair)).collect::<Vec<Pos>>();
-//            let line = line(Pos::new(0, 0), Pos::new(x, y));
-//            assert_eq!(((x, y), tcod_line), ((x, y), line));
-//        }
-//    }
-//}
