@@ -136,7 +136,9 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::SelectItem(skill_index) => {
+            dbg!(skill_index);
             if skill_index < data.entities.skills[&player_id].len() {
+                dbg!();
                 settings.state = GameState::Selection;
                 settings.selection.only_visible = false;
 
@@ -146,10 +148,17 @@ pub fn handle_input_skill_menu(input: InputAction,
                     Skill::GrassThrow => {
                         settings.selection =
                             Selection::new(SelectionType::WithinReach(reach), SelectionAction::GrassThrow);
+
+                        settings.state = GameState::Selection;
+                        msg_log.log(Msg::GameState(settings.state));
                     }
 
                     Skill::Blink => {
+                        dbg!();
                         player_turn = Action::Blink(player_id);
+
+                        settings.state = GameState::Playing;
+                        msg_log.log(Msg::GameState(settings.state));
                     }
                 }
 

@@ -271,7 +271,8 @@ pub fn keyup_to_action(keycode: Keycode,
         }
 
         Keycode::Kp8 | Keycode::Num8 | Keycode::Up => {
-            if game_state == GameState::Inventory {
+            if game_state == GameState::Inventory ||
+               game_state == GameState::SkillMenu {
                 input_action = InputAction::SelectItem(8);
             } else {
                 input_action = InputAction::Move(Direction::Up);
@@ -279,7 +280,8 @@ pub fn keyup_to_action(keycode: Keycode,
         }
 
         Keycode::Kp6 | Keycode::Num6 | Keycode::Right => {
-            if game_state == GameState::Inventory {
+            if game_state == GameState::Inventory ||
+               game_state == GameState::SkillMenu {
                 input_action = InputAction::SelectItem(6);
             } else {
                 input_action = InputAction::Move(Direction::Right);
@@ -287,7 +289,8 @@ pub fn keyup_to_action(keycode: Keycode,
         }
 
         Keycode::Kp2 | Keycode::Num2 | Keycode::Down => {
-            if game_state == GameState::Inventory {
+            if game_state == GameState::Inventory ||
+               game_state == GameState::SkillMenu {
                 input_action = InputAction::SelectItem(2);
             } else {
                 input_action = InputAction::Move(Direction::Down);
@@ -295,7 +298,8 @@ pub fn keyup_to_action(keycode: Keycode,
         }
 
         Keycode::Kp4 | Keycode::Num4 | Keycode::Left => {
-            if game_state == GameState::Inventory {
+            if game_state == GameState::Inventory ||
+               game_state == GameState::SkillMenu {
                 input_action = InputAction::SelectItem(4);
             } else {
                 input_action = InputAction::Move(Direction::Left);
@@ -303,7 +307,8 @@ pub fn keyup_to_action(keycode: Keycode,
         }
 
         Keycode::Kp7 | Keycode::Num7 => {
-            if game_state == GameState::Inventory {
+            if game_state == GameState::Inventory ||
+               game_state == GameState::SkillMenu {
                 input_action = InputAction::SelectItem(7);
             } else {
                 input_action = InputAction::Move(Direction::UpLeft);
@@ -311,7 +316,8 @@ pub fn keyup_to_action(keycode: Keycode,
         }
 
         Keycode::Kp9 | Keycode::Num9 => {
-            if game_state == GameState::Inventory {
+            if game_state == GameState::Inventory ||
+               game_state == GameState::SkillMenu {
                 input_action = InputAction::SelectItem(9);
             } else {
                 input_action = InputAction::Move(Direction::UpRight);
@@ -319,7 +325,8 @@ pub fn keyup_to_action(keycode: Keycode,
         }
 
         Keycode::Kp3 | Keycode::Num3 => {
-            if game_state == GameState::Inventory {
+            if game_state == GameState::Inventory ||
+               game_state == GameState::SkillMenu {
                 input_action = InputAction::SelectItem(3);
             } else {
                 input_action = InputAction::Move(Direction::DownRight);
@@ -327,7 +334,8 @@ pub fn keyup_to_action(keycode: Keycode,
         }
 
         Keycode::Kp1 | Keycode::Num1 => {
-            if game_state == GameState::Inventory {
+            if game_state == GameState::Inventory ||
+               game_state == GameState::SkillMenu {
                 input_action = InputAction::SelectItem(1);
             } else {
                 input_action = InputAction::Move(Direction::DownLeft);
@@ -335,7 +343,8 @@ pub fn keyup_to_action(keycode: Keycode,
         }
 
         Keycode::Kp5 | Keycode::Num5 => {
-            if game_state == GameState::Inventory {
+            if game_state == GameState::Inventory ||
+               game_state == GameState::SkillMenu {
                 input_action = InputAction::SelectItem(5);
             } else {
                 input_action = InputAction::Pass;

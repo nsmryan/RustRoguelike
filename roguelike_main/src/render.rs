@@ -129,6 +129,15 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
                              FONT_HEIGHT as usize);
 
         render_inventory(display_state, game, &area);
+    } else if game.settings.state == GameState::SkillMenu {
+        let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
+                             (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
+                             INVENTORY_WIDTH,
+                             INVENTORY_HEIGHT,
+                             FONT_WIDTH as usize,
+                             FONT_HEIGHT as usize);
+
+        render_skill_menu(display_state, game, &area);
     }
 
     // TODO console
@@ -323,6 +332,31 @@ fn render_info(display_state: &mut DisplayState,
                                      color,
                                      area);
     }
+}
+
+fn render_skill_menu(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
+    let player_id = game.data.find_player().unwrap();
+
+    // Render header
+    draw_placard(display_state,
+                 "Skills".to_string(),
+                 area,
+                 &game.config);
+
+    let mut list = Vec::new();
+
+    for (index, skill) in game.data.entities.skills[&player_id].iter().enumerate() {
+        list.push(format!("{} {:?}", index, skill));
+    }
+
+    let y_pos = 2;
+    let text_pos = Pos::new(2, y_pos);
+    let color = game.config.color_light_grey;
+
+    display_state.draw_text_list(&list,
+                                 text_pos,
+                                 color,
+                                 area);
 }
 
 /// Render an inventory section within the given area
