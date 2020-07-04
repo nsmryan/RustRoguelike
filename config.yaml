@@ -117,7 +117,15 @@ sound_alpha: 86
 grid_alpha: 8
 grid_alpha_visible: 30
 grid_alpha_overlay: 150
-map_load: TestWall
+## Valid values for map_load
+# FromFile: load from map.xp file
+# TestWall: test map for checking wall interactions
+# TestMap: test map for unit tests
+# Random: generated map, not currently working
+# Empty: empty map, used in unit tests 
+# TestCorner: test map with corners of different types
+# TestPlayer: test map for player interactions
+map_load: FromFile
 map_file: map.xp
 idle_speed: 0.3499999940395355
 draw_mouse_line: false
