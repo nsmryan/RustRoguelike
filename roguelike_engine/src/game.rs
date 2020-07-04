@@ -321,6 +321,7 @@ impl Game {
                                  &mut self.data,
                                  &mut self.settings,
                                  &self.config,
+                                 &mut self.rng,
                                  &mut self.msg_log);
 
             if win {
@@ -353,6 +354,7 @@ impl Game {
                                  &mut self.data,
                                  &mut self.settings,
                                  &self.config,
+                                 &mut self.rng,
                                  &mut self.msg_log);
             if win {
                 self.settings.state = GameState::Win;
@@ -403,6 +405,7 @@ impl Game {
                                  &mut self.data,
                                  &mut self.settings,
                                  &self.config,
+                                 &mut self.rng,
                                  &mut self.msg_log);
             if win {
                 self.settings.state = GameState::Win;
@@ -442,6 +445,7 @@ pub fn step_logic(player_action: Action,
                   data: &mut GameData, 
                   settings: &mut GameSettings,
                   config: &Config,
+                  rng: &mut SmallRng,
                   msg_log: &mut MsgLog) -> bool {
     msg_log.clear();
 
@@ -454,7 +458,7 @@ pub fn step_logic(player_action: Action,
 
     /* Actions */
     msg_log.log(Msg::Action(player_id, player_action));
-    resolve_messages(data, msg_log, settings, config);
+    resolve_messages(data, msg_log, settings, rng, config);
 
     if data.entities.alive[&player_id] {
         let mut ai_id: Vec<EntityId> = Vec::new();
@@ -474,7 +478,7 @@ pub fn step_logic(player_action: Action,
            // if changing state, resolve now and allow another action
            if matches!(action, Action::StateChange(_)) {
                 msg_log.log(Msg::Action(*key, action));
-                resolve_messages(data, msg_log, settings, config);
+                resolve_messages(data, msg_log, settings, rng, config);
                 let backup_action = ai_take_turn(*key, data, config, msg_log);
                 data.entities.action[key] = backup_action;
             }
@@ -483,7 +487,7 @@ pub fn step_logic(player_action: Action,
         for key in ai_id {
             if let Some(action) = data.entities.action.get(&key).map(|v| *v) {
                 msg_log.log(Msg::Action(key, action));
-                resolve_messages(data, msg_log, settings, config);
+                resolve_messages(data, msg_log, settings, rng, config);
 
                 // check if fighter needs to be removed
                 if let Some(fighter) = data.entities.fighter.get(&key) {

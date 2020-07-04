@@ -1,3 +1,5 @@
+use rand::prelude::*;
+
 use log::{trace, error};
 
 use roguelike_core::types::*;
@@ -14,7 +16,7 @@ use crate::game::*;
 use crate::actions::{throw_item, pick_item_up, place_trap};
 
 
-pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mut GameSettings, config: &Config) {
+pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mut GameSettings, rng: &mut SmallRng, config: &Config) {
     /* Handle Message Log */
     println!("Turn {}:", settings.turn_count);
     while let Some(msg) = msg_log.pop() {
@@ -307,9 +309,33 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                 } else if let Action::PlaceTrap(place_pos, trap_id) = action {
                     place_trap(trap_id, place_pos, data);
                 } else if let Action::GrassThrow(entity_id, direction) = action {
-                    dbg!("Throwing Grass is happening!");
+                    let player_id = data.find_player().unwrap();
+                    let player_pos = data.entities.pos[&player_id];
+
+                    let grass_pos = add_pos(player_pos, direction.offset_pos(player_pos, 1));
+                    if data.map[grass_pos].tile_type == TileType::Empty {
+                        data.map[grass_pos].surface = Surface::Grass;
+                    }
                 } else if let Action::Blink(entity_id) = action {
-                    dbg!("Blink is happening!");
+                    let player_id = data.find_player().unwrap();
+                    let player_pos = data.entities.pos[&player_id];
+                    let mut potential_positions = data.map.floodfill(player_pos, BLINK_RADIUS);
+
+                    while potential_positions.len() > 0 {
+                        let ix = rng.gen_range(0, potential_positions.len());
+                        let rand_pos = potential_positions[ix];
+
+                        let dxy = sub_pos(rand_pos, player_pos);
+                        if data.has_blocking_entity(rand_pos).is_none() &&
+                           data.map.is_blocked_by_wall(player_pos, dxy.x, dxy.y).is_none() {
+                            data.entities.move_to(player_id, rand_pos);
+                            break;
+                        }
+
+                        potential_positions.swap_remove(ix);
+                    }
+
+                    msg_log.log(Msg::FailedBlink(player_id));
                 }
             }
 

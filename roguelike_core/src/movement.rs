@@ -252,16 +252,16 @@ impl Direction {
         }
     }
 
-    pub fn into_move(self) -> (i32, i32) {
+    pub fn into_move(&self) -> Pos {
         match self {
-            Direction::Left => (-1, 0),
-            Direction::Right => (1, 0),
-            Direction::Up => (0, -1),
-            Direction::Down => (0, 1),
-            Direction::DownLeft => (-1, 1),
-            Direction::DownRight => (1, 1),
-            Direction::UpLeft => (-1, -1),
-            Direction::UpRight => (1, -1),
+            Direction::Left => Pos::new(-1, 0),
+            Direction::Right => Pos::new(1, 0),
+            Direction::Up => Pos::new(0, -1),
+            Direction::Down => Pos::new(0, 1),
+            Direction::DownLeft => Pos::new(-1, 1),
+            Direction::DownRight => Pos::new(1, 1),
+            Direction::UpLeft => Pos::new(-1, -1),
+            Direction::UpRight => Pos::new(1, -1),
         }
     }
 
@@ -280,6 +280,11 @@ impl Direction {
         let index = (flt * 8.0) as usize;
         let dirs = Direction::move_actions();
         return dirs[index];
+    }
+
+    pub fn offset_pos(&self, pos: Pos, amount: i32) -> Pos {
+        let mov = self.into_move();
+        return scale_pos(mov, amount);
     }
 }
 

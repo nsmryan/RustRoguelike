@@ -17,6 +17,7 @@ pub const SOUND_RADIUS_MONSTER_MOVE: usize = 4;
 
 /* General Settings */
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
+pub const BLINK_RADIUS: usize = 4;
 
 /* Monster Settings */
 pub const MAX_MONSTERS: i32 = 15;

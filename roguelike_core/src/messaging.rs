@@ -70,6 +70,7 @@ pub enum Msg {
     HammerHitWall(EntityId, Blocked),
     ChangeLevel(),
     Action(EntityId, Action),
+    FailedBlink(EntityId),
 }
 
 impl Msg {
@@ -204,6 +205,10 @@ impl Msg {
 
             Msg::HammerHitWall(entity, _blocked) => {
                 return format!("{:?} hit a wall with their hammer", data.entities.name[entity]);
+            }
+
+            Msg::FailedBlink(entity) => {
+                return format!("{:?} failed to blink!", data.entities.name[entity]);
             }
 
             _ => {

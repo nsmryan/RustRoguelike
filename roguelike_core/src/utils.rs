@@ -323,6 +323,10 @@ pub fn sub_pos(pos1: Pos, pos2: Pos) -> Pos {
     return Pos::new(pos1.x - pos2.x, pos1.y - pos2.y);
 }
 
+pub fn scale_pos(pos: Pos, scale: i32) -> Pos {
+    return Pos::new(pos.x * scale, pos.y * scale);
+}
+
 pub fn move_towards(start: Pos, end: Pos, num_blocks: usize) -> Pos {
     let line = line(start, end);
 
