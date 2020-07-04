@@ -29,6 +29,8 @@ pub type EntityId = u64;
 
 pub type CompStore<T> = IndexMap<EntityId, T>;
 
+pub type Pos = Point2D<i32, ()>;
+
 pub struct GameData {
     pub map: Map,
     pub entities: Entities,
@@ -213,6 +215,12 @@ pub enum Trap {
     Sound,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum Skill {
+    GrassThrow,
+    Blink,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Default)]
 pub struct Color {
     pub r: u8,
@@ -246,6 +254,7 @@ pub enum GameState {
     Lose,
     Inventory,
     Selection,
+    SkillMenu,
 }
 
 impl Default for GameState {
@@ -378,15 +387,13 @@ impl Default for EntityType {
     }
 }
 
-
-pub type Pos = Point2D<i32, ()>;
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Message {
     Sound(EntityId, Pos),
     Attack(EntityId),
 }
 
+// ensure that each entity has a unique ID, up to 2^64 entities
 static OBJECT_ID_COUNT: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -409,6 +416,7 @@ pub struct Entities {
     pub direction: CompStore<Direction>,
     pub selected_item: CompStore<EntityId>,
     pub action: CompStore<Action>,
+    pub skills: CompStore<Vec<Skill>>,
 
     // TODO should end up in animation system instead
     pub animation: CompStore<VecDeque<AnimKey>>,
@@ -447,6 +455,7 @@ impl Entities {
         self.direction.remove(entity_id);
         self.selected_item.remove(entity_id);
         self.action.remove(entity_id);
+        self.skills.remove(entity_id);
         self.animation.remove(entity_id);
         self.alive.remove(entity_id);
         self.sound.remove(entity_id);
@@ -465,11 +474,11 @@ impl Entities {
         *self = Default::default();
     }
 
-    // TODO consider simplifying this and allowing these fields to be set
     pub fn create_entity(&mut self, x: i32, y: i32, typ: EntityType, chr: char, color: Color, name: EntityName, blocks: bool) -> EntityId {
         let id = OBJECT_ID_COUNT.fetch_add(1, Ordering::SeqCst);
         self.ids.push(id);
 
+        // add fields that all entities share
         self.pos.insert(id, Pos::new(x, y));
         self.typ.insert(id, typ);
         self.chr.insert(id, chr);

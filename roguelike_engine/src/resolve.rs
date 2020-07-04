@@ -306,6 +306,10 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                     data.entities.armed[&trap_id] = !data.entities.armed[&trap_id];
                 } else if let Action::PlaceTrap(place_pos, trap_id) = action {
                     place_trap(trap_id, place_pos, data);
+                } else if let Action::GrassThrow(entity_id, direction) = action {
+                    dbg!("Throwing Grass is happening!");
+                } else if let Action::Blink(entity_id) = action {
+                    dbg!("Blink is happening!");
                 }
             }
 

@@ -27,6 +27,7 @@ pub enum InputAction {
     DropItem,
     SwapPrimaryItem,
     Inventory,
+    SkillMenu,
     Exit,
     Esc,
     ExploreAll,
@@ -114,6 +115,63 @@ pub fn handle_input_inventory(input: InputAction,
         _ => {
         }
     }
+}
+
+pub fn handle_input_skill_menu(input: InputAction,
+                               data: &mut GameData,
+                               settings: &mut GameSettings,
+                               msg_log: &mut MsgLog) -> Action {
+    let mut player_turn: Action = Action::NoAction;
+    let player_id = data.find_player().unwrap();
+
+    match input {
+        InputAction::Inventory => {
+            settings.state = GameState::Inventory;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        InputAction::SkillMenu => {
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        InputAction::SelectItem(skill_index) => {
+            if skill_index < data.entities.skills[&player_id].len() {
+                settings.state = GameState::Selection;
+                settings.selection.only_visible = false;
+
+                let reach = Reach::single(1);
+
+                match data.entities.skills[&player_id][skill_index] {
+                    Skill::GrassThrow => {
+                        settings.selection =
+                            Selection::new(SelectionType::WithinReach(reach), SelectionAction::GrassThrow);
+                    }
+
+                    Skill::Blink => {
+                        player_turn = Action::Blink(player_id);
+                    }
+                }
+
+                msg_log.log(Msg::GameState(settings.state));
+            }
+            // if item index is not in the player's inventory, do nothing
+        }
+
+        InputAction::Esc => {
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        InputAction::Exit => {
+            settings.exiting = true;
+        }
+
+        _ => {
+        }
+    }
+
+    return player_turn;
 }
 
 pub fn handle_input_selection(input: InputAction,
@@ -264,6 +322,11 @@ pub fn handle_input(game: &mut Game) -> Action {
 
         (InputAction::Inventory, true) => {
             game.settings.state = GameState::Inventory;
+            game.msg_log.log(Msg::GameState(game.settings.state));
+        }
+
+        (InputAction::SkillMenu, true) => {
+            game.settings.state = GameState::SkillMenu;
             game.msg_log.log(Msg::GameState(game.settings.state));
         }
 

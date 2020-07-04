@@ -23,7 +23,8 @@ pub enum Action {
     UseItem(Pos), // item used towards position, or just player pos
     ArmDisarmTrap(EntityId),
     PlaceTrap(Pos, EntityId), // position to place, trap id
-    // TODO consider just using Option<Action> instead
+    Blink(EntityId),
+    GrassThrow(EntityId, Direction), // entity throwing, direction thrown
     NoAction,
 }
 

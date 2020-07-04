@@ -398,6 +398,10 @@ pub fn keyup_to_action(keycode: Keycode,
             input_action = InputAction::OverlayOff;
         }
 
+        Keycode::S => {
+            input_action = InputAction::SkillMenu;
+        }
+
         Keycode::Backquote => {
             input_action = InputAction::ToggleConsole;
         }

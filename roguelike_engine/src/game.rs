@@ -9,14 +9,14 @@ use roguelike_core::config::*;
 use roguelike_core::ai::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
-use roguelike_core::movement::{Action, Reach};
-use roguelike_core::utils::{move_towards, distance};
+use roguelike_core::movement::{Direction, Action, Reach};
+use roguelike_core::utils::{move_towards, distance, sub_pos};
 #[cfg(test)]
 use roguelike_core::movement::*;
 
 
 use crate::actions;
-use crate::actions::{InputAction, KeyDirection};
+use crate::actions::InputAction; //, KeyDirection};
 use crate::generation::*;
 use crate::make_map::read_map_xp;
 use crate::resolve::resolve_messages;
@@ -36,6 +36,7 @@ pub enum SelectionAction {
     Hammer,
     Interact,
     PlaceTrap,
+    GrassThrow,
 }
 
 impl SelectionAction {
@@ -71,6 +72,14 @@ impl SelectionAction {
                 let trap_id =
                     data.entities.selected_item.get(&player_id).expect("Placing a trap, but nothing selected!");
                 action = Action::PlaceTrap(pos, *trap_id);
+            }
+
+            SelectionAction::GrassThrow => {
+                let player_id = data.find_player().unwrap();
+                let player_pos = data.entities.pos[&player_id];
+                let dxy = sub_pos(pos, player_pos);
+                let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+                action = Action::GrassThrow(player_id, direction);
             }
         }
 
@@ -254,6 +263,10 @@ impl Game {
             GameState::Selection => {
                 return self.step_selection();
             }
+
+            GameState::SkillMenu => {
+                return self.step_skill_menu();
+            }
         }
     }
 
@@ -296,6 +309,32 @@ impl Game {
         return GameResult::Continue;
     }
 
+    fn step_skill_menu(&mut self) -> GameResult {
+        let input = self.input_action;
+        self.input_action = InputAction::None;
+
+        let player_action =
+            actions::handle_input_skill_menu(input, &mut self.data, &mut self.settings, &mut self.msg_log);
+
+        if player_action != Action::NoAction {
+            let win = step_logic(player_action,
+                                 &mut self.data,
+                                 &mut self.settings,
+                                 &self.config,
+                                 &mut self.msg_log);
+
+            if win {
+                self.settings.state = GameState::Win;
+            }
+        }
+
+        if self.settings.exiting {
+            return GameResult::Stop;
+        }
+
+        return GameResult::Continue;
+    }
+
     fn step_selection(&mut self) -> GameResult {
         let input = self.input_action;
         self.input_action = InputAction::None;
@@ -310,11 +349,14 @@ impl Game {
                                            &mut self.msg_log);
 
         if player_action != Action::NoAction {
-            step_logic(player_action,
-                       &mut self.data,
-                       &mut self.settings,
-                       &self.config,
-                       &mut self.msg_log);
+            let win = step_logic(player_action,
+                                 &mut self.data,
+                                 &mut self.settings,
+                                 &self.config,
+                                 &mut self.msg_log);
+            if win {
+                self.settings.state = GameState::Win;
+            }
         }
 
         if self.settings.exiting {
@@ -357,16 +399,14 @@ impl Game {
             actions::handle_input(self);
 
         if player_action != Action::NoAction {
-            step_logic(player_action,
-                       &mut self.data,
-                       &mut self.settings,
-                       &self.config,
-                       &mut self.msg_log);
-
-            if win_condition_met(&self.data) {
+            let win = step_logic(player_action,
+                                 &mut self.data,
+                                 &mut self.settings,
+                                 &self.config,
+                                 &mut self.msg_log);
+            if win {
                 self.settings.state = GameState::Win;
             }
-            self.settings.turn_count += 1;
         }
 
         if self.settings.exiting {
@@ -402,7 +442,7 @@ pub fn step_logic(player_action: Action,
                   data: &mut GameData, 
                   settings: &mut GameSettings,
                   config: &Config,
-                  msg_log: &mut MsgLog) {
+                  msg_log: &mut MsgLog) -> bool {
     msg_log.clear();
 
     let player_id = data.find_player().unwrap();
@@ -502,6 +542,10 @@ pub fn step_logic(player_action: Action,
     if previous_player_position != player_pos {
         data.map.compute_fov(player_pos, config.fov_radius_player);
     }
+
+    settings.turn_count += 1;
+
+    return win_condition_met(data);
 }
 
 #[test]

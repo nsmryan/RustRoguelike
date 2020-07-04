@@ -42,6 +42,11 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
     entities.direction.insert(player,  Direction::Up);
     entities.inventory.insert(player,  VecDeque::new());
 
+    let mut skill_set = Vec::new();
+    skill_set.push(Skill::GrassThrow);
+    skill_set.push(Skill::Blink);
+    entities.skills.insert(player,  skill_set);
+
     msg_log.log(Msg::SpawnedObject(player, entities.typ[&player], Pos::new(0, 0), EntityName::Player));
 
     return player;
