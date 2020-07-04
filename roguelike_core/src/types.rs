@@ -389,12 +389,6 @@ pub enum Message {
 
 static OBJECT_ID_COUNT: AtomicU64 = AtomicU64::new(0);
 
-// TODO consider replacing this with BTreeMaps
-// game.data.objects[handle].x would become
-// game.data.objects.x.get(handle) or
-// game.data.objects.x(handle) or
-// game.data.objects.x[handle] or
-// game.data.objects.get_x(handle) with an Option<T> and T variant
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct Entities {
     pub ids: Vec<EntityId>,
@@ -419,7 +413,7 @@ pub struct Entities {
     // TODO should end up in animation system instead
     pub animation: CompStore<VecDeque<AnimKey>>,
 
-    // TODO not sure about keeping these ones, or packaging into larger ones
+    // NOTE not sure about keeping these ones, or packaging into larger ones
     pub alive: CompStore<bool>,
     pub sound: CompStore<Pos>, // source position
     pub typ: CompStore<EntityType>,
@@ -427,7 +421,7 @@ pub struct Entities {
     pub blocks: CompStore<bool>,
     pub needs_removal: CompStore<bool>,
 
-    // TODO should be able to remove this
+    // NOTE should be able to remove this
     pub messages: CompStore<Vec<Message>>,
 }
 
