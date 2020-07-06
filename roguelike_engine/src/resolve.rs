@@ -345,7 +345,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                     data.entities.move_to(entity_id, end_pos);
                     data.entities.move_to(target_id, start_pos);
                 } else if let Action::PassWall(entity_id, pos) = action {
-                    dbg!();
+                    data.entities.move_to(entity_id, pos);
                 }
             }
 
