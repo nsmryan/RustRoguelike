@@ -335,6 +335,17 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                     }
 
                     msg_log.log(Msg::FailedBlink(player_id));
+                } else if let Action::Rubble(entity_id, blocked) = action {
+                    dbg!();
+                } else if let Action::Reform(entity_id, pos) = action {
+                    dbg!();
+                } else if let Action::Swap(entity_id, target_id) = action {
+                    let start_pos = data.entities.pos[&entity_id];
+                    let end_pos = data.entities.pos[&target_id];
+                    data.entities.move_to(entity_id, end_pos);
+                    data.entities.move_to(target_id, start_pos);
+                } else if let Action::PassWall(entity_id, pos) = action {
+                    dbg!();
                 }
             }
 

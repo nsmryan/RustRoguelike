@@ -10,7 +10,7 @@ use roguelike_core::ai::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::movement::{Direction, Action, Reach};
-use roguelike_core::utils::{move_towards, distance, sub_pos};
+use roguelike_core::utils::{move_towards, distance, sub_pos, next_pos};
 #[cfg(test)]
 use roguelike_core::movement::*;
 
@@ -37,6 +37,10 @@ pub enum SelectionAction {
     Interact,
     PlaceTrap,
     GrassThrow,
+    PassWall,
+    Rubble,
+    Reform,
+    Swap,
 }
 
 impl SelectionAction {
@@ -80,6 +84,61 @@ impl SelectionAction {
                 let dxy = sub_pos(pos, player_pos);
                 let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
                 action = Action::GrassThrow(player_id, direction);
+            }
+
+            SelectionAction::PassWall => {
+                action = Action::NoAction;
+
+                let player_id = data.find_player().unwrap();
+                let player_pos = data.entities.pos[&player_id];
+                let dxy = sub_pos(pos, player_pos);
+                let blocked = data.map.is_blocked_by_wall(player_pos, dxy.x, dxy.y);
+                
+                let mut pass_pos = pos;
+                if let Some(blocked) = blocked {
+                    if data.map[blocked.end_pos].blocked {
+                        let next = next_pos(player_pos, dxy);
+                        if  !data.map[next].blocked {
+                            action = Action::PassWall(player_id, next);
+                        }
+                    } else {
+                        action = Action::PassWall(player_id, pos);
+                    }
+                }
+            }
+
+            SelectionAction::Rubble => {
+                action = Action::NoAction;
+
+                let player_id = data.find_player().unwrap();
+                let player_pos = data.entities.pos[&player_id];
+                let dxy = sub_pos(pos, player_pos);
+                let blocked = data.map.is_blocked_by_wall(player_pos, dxy.x, dxy.y);
+
+                if let Some(blocked) = blocked {
+                    if data.has_blocking_entity(pos).is_none() {
+                        action = Action::Rubble(player_id, blocked);
+                    }
+                }
+            }
+
+            SelectionAction::Reform => {
+                action = Action::NoAction;
+
+                let player_id = data.find_player().unwrap();
+                if data.map[pos].surface == Surface::Rubble &&
+                   data.has_blocking_entity(pos).is_none() {
+                    action = Action::Reform(player_id, pos);
+                }
+            }
+
+            SelectionAction::Swap => {
+                action = Action::NoAction;
+
+                let player_id = data.find_player().unwrap();
+                if let Some(entity_id) = data.has_blocking_entity(pos) {
+                    action = Action::Swap(player_id, entity_id);
+                }
             }
         }
 

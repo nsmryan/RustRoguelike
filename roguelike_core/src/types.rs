@@ -229,6 +229,10 @@ pub enum Trap {
 pub enum Skill {
     GrassThrow,
     Blink,
+    PassWall,
+    Rubble,
+    Reform,
+    Swap,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Default)]

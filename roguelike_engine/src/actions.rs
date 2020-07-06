@@ -148,16 +148,44 @@ pub fn handle_input_skill_menu(input: InputAction,
                     Skill::GrassThrow => {
                         settings.selection =
                             Selection::new(SelectionType::WithinReach(reach), SelectionAction::GrassThrow);
-
                         settings.state = GameState::Selection;
                         msg_log.log(Msg::GameState(settings.state));
                     }
 
                     Skill::Blink => {
-                        dbg!();
                         player_turn = Action::Blink(player_id);
 
                         settings.state = GameState::Playing;
+                        msg_log.log(Msg::GameState(settings.state));
+                    }
+
+                    Skill::PassWall => {
+                        settings.selection =
+                            Selection::new(SelectionType::WithinReach(reach), SelectionAction::PassWall);
+                        settings.state = GameState::Selection;
+                        msg_log.log(Msg::GameState(settings.state));
+                    }
+
+                    Skill::Rubble => {
+                        settings.selection =
+                            Selection::new(SelectionType::WithinReach(reach), SelectionAction::Rubble);
+                        settings.state = GameState::Selection;
+                        msg_log.log(Msg::GameState(settings.state));
+                    }
+
+                    Skill::Reform => {
+                        settings.selection =
+                            Selection::new(SelectionType::WithinReach(reach), SelectionAction::Reform);
+                        settings.state = GameState::Selection;
+                        msg_log.log(Msg::GameState(settings.state));
+                    }
+
+                    Skill::Swap => {
+                        // NOTE make this a const or config item
+                        let reach = Reach::single(4);
+                        settings.selection =
+                            Selection::new(SelectionType::WithinReach(reach), SelectionAction::Swap);
+                        settings.state = GameState::Selection;
                         msg_log.log(Msg::GameState(settings.state));
                     }
                 }
