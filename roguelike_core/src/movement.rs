@@ -309,11 +309,11 @@ impl Reach {
     }
 
     pub fn diag(dist: usize) -> Reach {
-        return Reach::Single(dist);
+        return Reach::Diag(dist);
     }
 
     pub fn horiz(dist: usize) -> Reach {
-        return Reach::Single(dist);
+        return Reach::Horiz(dist);
     }
 
     pub fn dist(&self) -> usize {

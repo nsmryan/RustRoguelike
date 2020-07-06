@@ -167,6 +167,7 @@ pub fn handle_input_skill_menu(input: InputAction,
                     }
 
                     Skill::Rubble => {
+                        let reach = Reach::horiz(1);
                         settings.selection =
                             Selection::new(SelectionType::WithinReach(reach), SelectionAction::Rubble);
                         settings.state = GameState::Selection;

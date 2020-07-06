@@ -336,7 +336,36 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
 
                     msg_log.log(Msg::FailedBlink(player_id));
                 } else if let Action::Rubble(entity_id, blocked) = action {
-                    dbg!();
+                    let entity_pos = data.entities.pos[&entity_id];
+
+                    data.map[blocked.end_pos].surface = Surface::Rubble;
+                    data.map[blocked.end_pos].blocked = false;
+                    data.map[blocked.end_pos].chr = ' ' as u8;
+
+                    if blocked.wall_type != Wall::Empty {
+                        let dxy = sub_pos(blocked.end_pos, entity_pos);
+                        match Direction::from_dxy(dxy.x, dxy.y).unwrap() {
+                            Direction::Up => {
+                                data.map[blocked.end_pos].bottom_wall = Wall::Empty;
+                            }
+
+                            Direction::Down => {
+                                data.map[entity_pos].bottom_wall = Wall::Empty;
+                            }
+
+                            Direction::Left => {
+                                data.map[entity_pos].left_wall = Wall::Empty;
+                            }
+                            
+                            Direction::Right => {
+                                data.map[blocked.end_pos].left_wall = Wall::Empty;
+                            }
+
+                            _ => {
+                                panic!("Rubble skill doesn't work on diagonals!");
+                            }
+                        }
+                    }
                 } else if let Action::Reform(entity_id, pos) = action {
                     data.map[pos].surface = Surface::Floor;
                     data.map[pos].blocked = true;
