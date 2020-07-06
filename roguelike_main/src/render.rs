@@ -220,7 +220,6 @@ fn render_player(display_state: &mut DisplayState, game: &mut Game, area: &Area)
     let mut list = Vec::new();
 
     let color = game.config.color_soft_green;
-    let text_pos = Pos::new(1, 4);
 
     if let Some(fighter) = game.data.entities.fighter.get(&player_id) {
         let hp = if fighter.hp > 0 {
@@ -233,6 +232,9 @@ fn render_player(display_state: &mut DisplayState, game: &mut Game, area: &Area)
         render_bar(display_state, health_percent, 2, game.config.color_red, Color::white(), area);
     }
 
+    let energy = game.data.entities.energy[&player_id];
+    render_bar(display_state, energy as f32 / 10.0, 3, game.config.color_light_green, Color::white(), area);
+
     list.push(format!("position:"));
 
     list.push(format!(" ({}, {})", 
@@ -244,6 +246,7 @@ fn render_player(display_state: &mut DisplayState, game: &mut Game, area: &Area)
     let move_mode = game.data.entities.move_mode[&player_id];
     list.push(format!("{}", move_mode.to_string()));
 
+    let text_pos = Pos::new(1, 5);
     display_state.draw_text_list(&list,
                                  text_pos,
                                  color,

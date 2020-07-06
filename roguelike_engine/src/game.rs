@@ -600,7 +600,7 @@ pub fn step_logic(player_action: Action,
 
     // remove objects waiting removal
     for key in to_remove {
-        data.entities.remove(&key);
+        data.remove_entity(key);
     }
 
     /* Recompute FOV */

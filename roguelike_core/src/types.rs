@@ -202,6 +202,7 @@ impl GameData {
         self.entities.attack.remove(&id);
         self.entities.inventory.remove(&id);
         self.entities.trap.remove(&id);
+        self.entities.energy.remove(&id);
         self.entities.armed.remove(&id);
         self.entities.count_down.remove(&id);
         self.entities.move_mode.remove(&id);
@@ -425,6 +426,7 @@ pub struct Entities {
     pub inventory: CompStore<VecDeque<EntityId>>,
     pub trap: CompStore<Trap>,
     pub armed: CompStore<bool>,
+    pub energy: CompStore<u32>,
     pub count_down: CompStore<usize>,
     pub move_mode: CompStore<MoveMode>,
     pub direction: CompStore<Direction>,
@@ -448,7 +450,8 @@ pub struct Entities {
 }
 
 impl Entities {
-    pub fn remove(&mut self, entity_id: &EntityId) {
+    /* TODO can delete?
+    pub fn remove_second(&mut self, entity_id: &EntityId) {
         let id_ix = self.ids.iter().position(|id| id == entity_id).unwrap();
         self.ids.swap_remove(id_ix);
 
@@ -463,6 +466,7 @@ impl Entities {
         self.attack.remove(entity_id);
         self.inventory.remove(entity_id);
         self.trap.remove(entity_id);
+        self.energy.remove(entity_id);
         self.armed.remove(entity_id);
         self.count_down.remove(entity_id);
         self.move_mode.remove(entity_id);
@@ -479,6 +483,7 @@ impl Entities {
         self.needs_removal.remove(entity_id);
         self.messages.remove(entity_id);
     }
+    */
 
     pub fn new() -> Entities {
         return Default::default();

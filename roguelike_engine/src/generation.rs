@@ -51,6 +51,8 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
     skill_set.push(Skill::Swap);
     entities.skills.insert(player,  skill_set);
 
+    entities.energy.insert(player, 3);
+
     msg_log.log(Msg::SpawnedObject(player, entities.typ[&player], Pos::new(0, 0), EntityName::Player));
 
     return player;
