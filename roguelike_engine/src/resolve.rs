@@ -338,7 +338,9 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                 } else if let Action::Rubble(entity_id, blocked) = action {
                     dbg!();
                 } else if let Action::Reform(entity_id, pos) = action {
-                    dbg!();
+                    data.map[pos].surface = Surface::Floor;
+                    data.map[pos].blocked = true;
+                    data.map[pos].chr = MAP_WALL;
                 } else if let Action::Swap(entity_id, target_id) = action {
                     let start_pos = data.entities.pos[&entity_id];
                     let end_pos = data.entities.pos[&target_id];
