@@ -18,7 +18,6 @@ use crate::actions::{throw_item, pick_item_up, place_trap};
 
 pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mut GameSettings, rng: &mut SmallRng, config: &Config) {
     /* Handle Message Log */
-    println!("Turn {}:", settings.turn_count);
     while let Some(msg) = msg_log.pop() {
         let msg_line = msg.msg_line(data);
         if msg_line.len() > 0 {

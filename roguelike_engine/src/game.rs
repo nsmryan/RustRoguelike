@@ -458,6 +458,9 @@ pub fn step_logic(player_action: Action,
 
     /* Actions */
     msg_log.log(Msg::Action(player_id, player_action));
+
+    println!("Turn {}:", settings.turn_count);
+
     resolve_messages(data, msg_log, settings, rng, config);
 
     if data.entities.alive[&player_id] {

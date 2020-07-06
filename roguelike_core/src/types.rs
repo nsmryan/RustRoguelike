@@ -44,7 +44,11 @@ impl GameData {
         }
     }
 
-    pub fn path_between(&self, start: Pos, end: Pos, reach: Reach) -> Vec<Pos> {
+    pub fn path_between(&self,
+                        start: Pos,
+                        end: Pos,
+                        reach: Reach,
+                        cost_fun: Option<fn(Pos, Pos, Pos, &GameData) -> i32>) -> Vec<Pos> {
         let result;
 
         let maybe_results =
@@ -65,7 +69,13 @@ impl GameData {
                               // monsters, but that it okay.
                               if self.clear_path(pos, next_pos) || 
                                  (next_pos == end && self.map.is_blocked_by_wall(pos, dx, dy).is_none()) {
-                                  next_positions.push((next_pos, 1));
+                                 let cost;
+                                  if let Some(cost_fun) = cost_fun {
+                                      cost = cost_fun(start, pos, next_pos, self);
+                                  } else {
+                                      cost = 1;
+                                  }
+                                  next_positions.push((next_pos, cost));
                               }
                           }
                       }

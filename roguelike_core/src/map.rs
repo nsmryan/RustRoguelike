@@ -916,24 +916,11 @@ pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut Small
     }
 }
 
-// return only the cost to avoid a vec allocation
-pub fn astar_cost(map: &Map, start: Pos, end: Pos, max_dist: Option<i32>) -> usize {
-    trace!("astar_cost {} {}", start, end);
-
-    let maybe_results = 
-        astar(&start,
-              |&pos| astar_neighbors(map, start, pos, max_dist),
-              |&pos| distance(pos, end) as i32,
-              |&pos| pos == end);
-
-    if let Some((results, _cost)) = maybe_results {
-        return results.len();
-    }
-
-    return 0;
-}
-
-pub fn astar_path(map: &Map, start: Pos, end: Pos, max_dist: Option<i32>) -> Vec<Pos> {
+pub fn astar_path(map: &Map,
+                  start: Pos,
+                  end: Pos,
+                  max_dist: Option<i32>,
+                  cost_fn: Option<fn(Pos, Pos, &Map) -> i32>) -> Vec<Pos> {
     let result;
 
     trace!("astar_path {} {}", start, end);
@@ -941,7 +928,13 @@ pub fn astar_path(map: &Map, start: Pos, end: Pos, max_dist: Option<i32>) -> Vec
     let maybe_results = 
         astar(&start,
               |&pos| astar_neighbors(map, start, pos, max_dist),
-              |&pos| distance(pos, end) as i32,
+              |&pos| {
+                  if let Some(fun) = &cost_fn { 
+                      fun(start, pos, map)
+                  } else {
+                      distance(pos, end) as i32
+                  }
+              },
               |&pos| pos == end);
 
     if let Some((results, _cost)) = maybe_results {

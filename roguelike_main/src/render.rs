@@ -927,7 +927,7 @@ fn render_overlays(display_state: &mut DisplayState,
 
         if game.config.draw_star_path {
             // get a path to the mouse path, regardless of distance
-            let path = astar_path(&game.data.map, player_pos, mouse_pos, None);
+            let path = astar_path(&game.data.map, player_pos, mouse_pos, None, None);
             for pos in path {
                 display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
             }

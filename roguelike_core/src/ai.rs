@@ -134,7 +134,7 @@ pub fn ai_attack(monster_id: EntityId,
         if let Some(first_target) = targets.next() {
             let mut best_target = first_target;
 
-            let path = data.path_between(monster_pos, *best_target, movement);
+            let path = data.path_between(monster_pos, *best_target, movement, None);
             let mut best_dist = path.len();
 
             let large_dist = (MAP_WIDTH + MAP_HEIGHT) as usize;
@@ -143,7 +143,7 @@ pub fn ai_attack(monster_id: EntityId,
             }
 
             for move_target in targets {
-                let path = data.path_between(monster_pos, *move_target, movement);
+                let path = data.path_between(monster_pos, *move_target, movement, None);
                 let path_length = path.len();
                     
                 if path_length > 0 && (path_length < best_dist || best_dist == large_dist) {
@@ -255,15 +255,37 @@ fn ai_can_hit_target(data: &mut GameData,
     return hit_pos;
 }
 
-fn ai_take_astar_step(monster_id: EntityId,
-                      target_pos: Pos,
-                      data: &GameData) -> Pos {
+fn ai_astar_cost(start: Pos, prev: Pos, next: Pos, data: &GameData) -> i32 {
+    let mut cost = 1;
+    if let Some(entity_id) = data.has_blocking_entity(next) {
+        if data.entities.trap.get(&entity_id).is_some() &&
+           data.entities.armed.get(&entity_id) == Some(&true) {
+               // NOTE determined randomly. could be infinite, or smaller?
+               cost = 5;
+        }
+    }
+
+    return cost;
+}
+
+fn ai_astar_step(monster_id: EntityId,
+                 target_pos: Pos,
+                 data: &GameData) -> Vec<Pos> {
     let reach = data.entities.movement[&monster_id];
     let monster_pos = data.entities.pos[&monster_id];
 
-    let path = data.path_between(monster_pos, target_pos, reach);
+    let path = data.path_between(monster_pos, target_pos, reach, Some(ai_astar_cost));
+
+    return path;
+}
+
+fn ai_take_astar_step(monster_id: EntityId,
+                      target_pos: Pos,
+                      data: &GameData) -> Pos {
+    let path = ai_astar_step(monster_id, target_pos, data);
 
     if path.len() > 1 {
+        let monster_pos = data.entities.pos[&monster_id];
         return step_towards(monster_pos, path[1]);
     } else {
         return Pos::new(0, 0);
