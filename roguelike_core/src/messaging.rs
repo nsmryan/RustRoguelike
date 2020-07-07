@@ -164,7 +164,12 @@ impl Msg {
                         return "Selecting a location".to_string();
                     }
 
+                    GameState::SkillMenu => {
+                        return "Selecting a skill".to_string();
+                    }
+
                     _ => {
+                        dbg!(game_state);
                         panic!();
                     }
                 }

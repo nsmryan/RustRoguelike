@@ -302,31 +302,41 @@ impl Game {
     pub fn step_game(&mut self, dt: f32) -> GameResult {
         self.settings.time += dt;
 
+        let result;
         match self.settings.state {
             GameState::Playing => {
-                return self.step_playing();
+                result = self.step_playing();
             }
 
             GameState::Win => {
-                return self.step_win();
+                result = self.step_win();
             }
 
             GameState::Lose => {
-                return self.step_lose();
+                result = self.step_lose();
             }
 
             GameState::Inventory => {
-                return self.step_inventory();
+                result = self.step_inventory();
             }
 
             GameState::Selection => {
-                return self.step_selection();
+                result = self.step_selection();
             }
 
             GameState::SkillMenu => {
-                return self.step_skill_menu();
+                result = self.step_skill_menu();
             }
         }
+
+        while let Some(msg) = self.msg_log.pop() {
+            let msg_line = msg.msg_line(&self.data);
+            if msg_line.len() > 0 {
+                println!("msg: {}", msg_line);
+            }
+        }
+
+        return result;
     }
 
     fn step_win(&mut self) -> GameResult {
@@ -385,13 +395,6 @@ impl Game {
 
             if win {
                 self.settings.state = GameState::Win;
-            }
-        } else {
-            while let Some(msg) = self.msg_log.pop() {
-                let msg_line = msg.msg_line(&self.data);
-                if msg_line.len() > 0 {
-                    println!("msg: {}", msg_line);
-                }
             }
         }
 
