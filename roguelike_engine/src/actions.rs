@@ -136,64 +136,65 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::SelectItem(skill_index) => {
-            dbg!(skill_index);
-            if skill_index < data.entities.skills[&player_id].len() {
-                dbg!();
-                settings.state = GameState::Selection;
-                settings.selection.only_visible = false;
+            if data.entities.energy[&player_id] > 0 {
+                if skill_index < data.entities.skills[&player_id].len() {
+                    settings.state = GameState::Selection;
+                    settings.selection.only_visible = false;
 
-                let reach = Reach::single(1);
+                    let reach = Reach::single(1);
 
-                match data.entities.skills[&player_id][skill_index] {
-                    Skill::GrassThrow => {
-                        settings.selection =
-                            Selection::new(SelectionType::WithinReach(reach), SelectionAction::GrassThrow);
-                        settings.state = GameState::Selection;
-                        msg_log.log(Msg::GameState(settings.state));
+                    match data.entities.skills[&player_id][skill_index] {
+                        Skill::GrassThrow => {
+                            settings.selection =
+                                Selection::new(SelectionType::WithinReach(reach), SelectionAction::GrassThrow);
+                            settings.state = GameState::Selection;
+                            msg_log.log(Msg::GameState(settings.state));
+                        }
+
+                        Skill::Blink => {
+                            player_turn = Action::Blink(player_id);
+
+                            settings.state = GameState::Playing;
+                            msg_log.log(Msg::GameState(settings.state));
+                        }
+
+                        Skill::PassWall => {
+                            settings.selection =
+                                Selection::new(SelectionType::WithinReach(reach), SelectionAction::PassWall);
+                            settings.state = GameState::Selection;
+                            msg_log.log(Msg::GameState(settings.state));
+                        }
+
+                        Skill::Rubble => {
+                            let reach = Reach::horiz(1);
+                            settings.selection =
+                                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Rubble);
+                            settings.state = GameState::Selection;
+                            msg_log.log(Msg::GameState(settings.state));
+                        }
+
+                        Skill::Reform => {
+                            settings.selection =
+                                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Reform);
+                            settings.state = GameState::Selection;
+                            msg_log.log(Msg::GameState(settings.state));
+                        }
+
+                        Skill::Swap => {
+                            // NOTE make this a const or config item
+                            let reach = Reach::single(4);
+                            settings.selection =
+                                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Swap);
+                            settings.state = GameState::Selection;
+                            msg_log.log(Msg::GameState(settings.state));
+                        }
                     }
 
-                    Skill::Blink => {
-                        player_turn = Action::Blink(player_id);
-
-                        settings.state = GameState::Playing;
-                        msg_log.log(Msg::GameState(settings.state));
-                    }
-
-                    Skill::PassWall => {
-                        settings.selection =
-                            Selection::new(SelectionType::WithinReach(reach), SelectionAction::PassWall);
-                        settings.state = GameState::Selection;
-                        msg_log.log(Msg::GameState(settings.state));
-                    }
-
-                    Skill::Rubble => {
-                        let reach = Reach::horiz(1);
-                        settings.selection =
-                            Selection::new(SelectionType::WithinReach(reach), SelectionAction::Rubble);
-                        settings.state = GameState::Selection;
-                        msg_log.log(Msg::GameState(settings.state));
-                    }
-
-                    Skill::Reform => {
-                        settings.selection =
-                            Selection::new(SelectionType::WithinReach(reach), SelectionAction::Reform);
-                        settings.state = GameState::Selection;
-                        msg_log.log(Msg::GameState(settings.state));
-                    }
-
-                    Skill::Swap => {
-                        // NOTE make this a const or config item
-                        let reach = Reach::single(4);
-                        settings.selection =
-                            Selection::new(SelectionType::WithinReach(reach), SelectionAction::Swap);
-                        settings.state = GameState::Selection;
-                        msg_log.log(Msg::GameState(settings.state));
-                    }
+                    msg_log.log(Msg::GameState(settings.state));
                 }
-
-                msg_log.log(Msg::GameState(settings.state));
+            } else {
+                msg_log.log(Msg::NotEnoughEnergy(player_id));
             }
-            // if item index is not in the player's inventory, do nothing
         }
 
         InputAction::Esc => {

@@ -156,7 +156,7 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
 /*
 fn render_console(display_state: &mut DisplayState, game: &mut Game) {
     let color = game.config.color_console;
-    let color = Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
+    let color = sdl2_color(color);
     display_state.canvas.set_draw_color(color);
 
     let console_rect =
@@ -233,7 +233,7 @@ fn render_player(display_state: &mut DisplayState, game: &mut Game, area: &Area)
     }
 
     let energy = game.data.entities.energy[&player_id];
-    render_bar(display_state, energy as f32 / 10.0, 3, game.config.color_light_green, Color::white(), area);
+    render_pips(display_state, energy, 3, game.config.color_light_green, area);
 
     list.push(format!("position:"));
 
@@ -1070,7 +1070,7 @@ fn draw_placard(display_state: &mut DisplayState,
                                              area.width as u32 - 10,
                                              area.height as u32 - 10)).unwrap();
 
-    display_state.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+    display_state.canvas.set_draw_color(sdl2_color(color));
 
     // Draw a thin line around the edges of the placard
     display_state.canvas.draw_rect(Rect::new(area.x_offset + 5,
@@ -1098,6 +1098,37 @@ fn draw_placard(display_state: &mut DisplayState,
                            area);
 }
 
+fn render_pips(display_state: &mut DisplayState,
+               num_pips: u32,
+               y_pos: i32,
+               color: Color,
+               area: &Area) {
+    if num_pips > 0 {
+        let blend_mode = display_state.canvas.blend_mode();
+        display_state.canvas.set_blend_mode(blend_mode);
+
+        let color = sdl2_color(color);
+        display_state.canvas.set_draw_color(color);
+
+        let start = area.char_rect(1, y_pos);
+
+        let width = (area.width as u32) / num_pips;
+        let spacing = 4;
+        let mut pips = Vec::new();
+        for pip_index in 0..num_pips as i32 {
+            let x_offset =  start.x + start.height() as i32 * pip_index + spacing * pip_index;
+            let pip = Rect::new(x_offset,
+                                start.y + spacing,
+                                start.height(),
+                                start.height());
+            pips.push(pip)
+        }
+        display_state.canvas.fill_rects(&pips).unwrap();
+
+        display_state.canvas.set_blend_mode(BlendMode::None);
+    }
+}
+
 fn render_bar(display_state: &mut DisplayState,
               percent: f32,
               y_pos: i32,
@@ -1107,7 +1138,7 @@ fn render_bar(display_state: &mut DisplayState,
     let blend_mode = display_state.canvas.blend_mode();
 
     display_state.canvas.set_blend_mode(BlendMode::None);
-    let color = Sdl2Color::RGBA(fg_color.r, fg_color.g, fg_color.b, fg_color.a);
+    let color = sdl2_color(fg_color);
     display_state.canvas.set_draw_color(color);
     let start = area.char_rect(1, y_pos);
     let width = area.width as u32  - 2 * start.width();
@@ -1121,7 +1152,7 @@ fn render_bar(display_state: &mut DisplayState,
                               start.y,
                               width,
                               start.height());
-    let color = Sdl2Color::RGBA(bg_color.r, bg_color.g, bg_color.b, bg_color.a);
+    let color = sdl2_color(bg_color);
     display_state.canvas.set_draw_color(color);
     display_state.canvas.draw_rect(full_rect).unwrap();
 
@@ -1164,3 +1195,6 @@ fn render_attack_overlay(display_state: &mut DisplayState,
     }
 }
 
+pub fn sdl2_color(color: Color) -> Sdl2Color {
+    return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
+}

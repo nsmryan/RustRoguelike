@@ -308,6 +308,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                 } else if let Action::PlaceTrap(place_pos, trap_id) = action {
                     place_trap(trap_id, place_pos, data);
                 } else if let Action::GrassThrow(entity_id, direction) = action {
+                    data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
+
                     let player_id = data.find_player().unwrap();
                     let player_pos = data.entities.pos[&player_id];
 
@@ -316,6 +318,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                         data.map[grass_pos].surface = Surface::Grass;
                     }
                 } else if let Action::Blink(entity_id) = action {
+                    data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
+
                     let player_id = data.find_player().unwrap();
                     let player_pos = data.entities.pos[&player_id];
                     let mut potential_positions = data.map.floodfill(player_pos, BLINK_RADIUS);
@@ -336,6 +340,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
 
                     msg_log.log(Msg::FailedBlink(player_id));
                 } else if let Action::Rubble(entity_id, blocked) = action {
+                    data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
+
                     let entity_pos = data.entities.pos[&entity_id];
 
                     data.map[blocked.end_pos].surface = Surface::Rubble;
@@ -367,15 +373,21 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                         }
                     }
                 } else if let Action::Reform(entity_id, pos) = action {
+                    data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
+
                     data.map[pos].surface = Surface::Floor;
                     data.map[pos].blocked = true;
                     data.map[pos].chr = MAP_WALL;
                 } else if let Action::Swap(entity_id, target_id) = action {
+                    data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
+
                     let start_pos = data.entities.pos[&entity_id];
                     let end_pos = data.entities.pos[&target_id];
                     data.entities.move_to(entity_id, end_pos);
                     data.entities.move_to(target_id, start_pos);
                 } else if let Action::PassWall(entity_id, pos) = action {
+                    data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
+
                     data.entities.move_to(entity_id, pos);
                 }
             }

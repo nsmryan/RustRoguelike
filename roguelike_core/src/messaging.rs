@@ -71,6 +71,7 @@ pub enum Msg {
     ChangeLevel(),
     Action(EntityId, Action),
     FailedBlink(EntityId),
+    NotEnoughEnergy(EntityId),
 }
 
 impl Msg {
@@ -209,6 +210,10 @@ impl Msg {
 
             Msg::FailedBlink(entity) => {
                 return format!("{:?} failed to blink!", data.entities.name[entity]);
+            }
+
+            Msg::NotEnoughEnergy(entity) => {
+                return format!("{:?} does not have enough energy for that", data.entities.name[entity]);
             }
 
             _ => {

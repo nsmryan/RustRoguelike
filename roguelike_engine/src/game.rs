@@ -386,6 +386,13 @@ impl Game {
             if win {
                 self.settings.state = GameState::Win;
             }
+        } else {
+            while let Some(msg) = self.msg_log.pop() {
+                let msg_line = msg.msg_line(&self.data);
+                if msg_line.len() > 0 {
+                    println!("msg: {}", msg_line);
+                }
+            }
         }
 
         if self.settings.exiting {
