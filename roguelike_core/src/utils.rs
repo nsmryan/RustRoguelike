@@ -164,7 +164,7 @@ pub fn is_ordinal(delta: Pos) -> bool {
            (delta.y == 0 && delta.x != 0);
 }
 
-pub fn push_attack(handle: EntityId,
+pub fn push_attack(entity_id: EntityId,
                    target: EntityId,
                    delta_pos: Pos,
                    move_into: bool,
@@ -174,7 +174,7 @@ pub fn push_attack(handle: EntityId,
     let mut damage = 0;
 
     for _ in 0..pos_mag(delta_pos) {
-        let pos = data.entities.pos[&handle];
+        let pos = data.entities.pos[&entity_id];
         let other_pos = data.entities.pos[&target];
         let diff = other_pos - pos;
 
@@ -187,7 +187,7 @@ pub fn push_attack(handle: EntityId,
 
         if move_into {
             let movement = Movement::new(other_pos, MoveType::Move, None);
-            msg_log.log_front(Msg::Moved(target, movement, past_pos));
+            msg_log.log_front(Msg::Moved(entity_id, movement, other_pos));
 
             let movement = Movement::new(past_pos, MoveType::Move, None);
             msg_log.log_front(Msg::Moved(target, movement, past_pos));
@@ -211,9 +211,9 @@ pub fn push_attack(handle: EntityId,
     }
 
     if killed {
-        msg_log.log(Msg::Killed(handle, target, damage));
+        msg_log.log(Msg::Killed(entity_id, target, damage));
     } else {
-        data.entities.messages[&target].push(Message::Attack(handle));
+        data.entities.messages[&target].push(Message::Attack(entity_id));
     }
 }
 
