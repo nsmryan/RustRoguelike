@@ -125,7 +125,7 @@ grid_alpha_overlay: 150
 # Empty: empty map, used in unit tests 
 # TestCorner: test map with corners of different types
 # TestPlayer: test map for player interactions
-map_load: TestWall
+map_load: FromFile
 map_file: map.xp
 idle_speed: 0.3499999940395355
 draw_mouse_line: false

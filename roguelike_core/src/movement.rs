@@ -8,7 +8,7 @@ use serde::{Serialize, Deserialize};
 use crate::constants::*;
 use crate::types::*;
 use crate::utils::*;
-use crate::map::{Wall, Blocked};
+use crate::map::{Wall, Blocked, TileType};
 use crate::ai::Behavior;
 
 
@@ -710,8 +710,13 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId, other_id: EntityId, mo
         let attack = Attack::Stab(other_id);
         movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
     } else if data.entities.blocks[&other_id] {
-        let attack = Attack::Push(other_id, delta_pos);
-        movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
+        let next = next_pos(pos, delta_pos);
+        if data.map[next].tile_type != TileType::Water {
+            let attack = Attack::Push(other_id, delta_pos);
+            movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
+        } else {
+            movement = None;
+        }
     } else {
         movement = Some(Movement::move_to(move_pos, MoveType::Move));
     }
