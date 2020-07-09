@@ -279,7 +279,6 @@ pub fn handle_input(game: &mut Game) -> Action {
                                          player_id,
                                          &mut game.data);
 
-            // if moved, walked into enemy, and holding a dagger, then attack
             if let Some(movement) = maybe_movement {
                 player_turn = Action::Move(movement);
             }

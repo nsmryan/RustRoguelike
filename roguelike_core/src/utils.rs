@@ -431,11 +431,14 @@ pub fn next_pos(pos: Pos, delta_pos: Pos) -> Pos {
 pub fn can_stab(data: &GameData, entity: EntityId, target: EntityId) -> bool {
     let entity_pos = data.entities.pos[&entity];
     let target_pos = data.entities.pos[&target];
+
     // NOTE this is not generic- uses EntityType::Enemy
-    return data.entities.typ[&target] == EntityType::Enemy &&
-           data.using(entity, Item::Dagger) &&
-           data.clear_path(entity_pos, target_pos) &&
-           !matches!(data.entities.behavior.get(&target), Some(Behavior::Attacking(_)));
+    let is_enemy = data.entities.typ[&target] == EntityType::Enemy;
+    let using_dagger = data.using(entity, Item::Dagger);
+    let clear_path = data.clear_path_up_to(entity_pos, target_pos);
+    let not_attacking = !matches!(data.entities.behavior.get(&target), Some(Behavior::Attacking(_)));
+
+    return is_enemy && using_dagger && clear_path && not_attacking;
 }
 
 pub fn dxy(start_pos: Pos, end_pos: Pos) -> (i32, i32) {

@@ -114,6 +114,12 @@ impl GameData {
         return None;
     }
 
+    pub fn clear_path_up_to(&self, start: Pos, end: Pos) -> bool {
+        let up_to = move_next_to(start, end);
+
+        return self.clear_path(start, up_to);
+    }
+
     pub fn clear_path(&self, start: Pos, end: Pos) -> bool {
         let line = line_inclusive(start, end);
 
