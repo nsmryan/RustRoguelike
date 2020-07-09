@@ -711,6 +711,7 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId, other_id: EntityId, mo
         movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
     } else if data.entities.blocks[&other_id] {
         let next = next_pos(pos, delta_pos);
+        // check next position- if water don't push monster
         if data.map[next].tile_type != TileType::Water {
             let attack = Attack::Push(other_id, delta_pos);
             movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
