@@ -1089,7 +1089,6 @@ fn test_fov_blocked_by_wall_down() {
 
 #[test]
 fn test_blocked_by_wall() {
-    let radius = 10;
     let mut map = Map::from_dims(10, 10);
 
     map[(5, 5)] = Tile::water();

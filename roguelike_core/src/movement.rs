@@ -118,6 +118,16 @@ impl Default for Movement {
 }
 
 impl Movement {
+    pub fn step_to(pos: Pos) -> Movement {
+        return Movement {
+            pos: pos,
+            typ: MoveType::Move,
+            attack: None,
+        };
+    }
+}
+
+impl Movement {
     pub fn new(pos: Pos, typ: MoveType, attack: Option<Attack>) -> Movement {
         return Movement {
             pos,
@@ -288,7 +298,7 @@ impl Direction {
 
     pub fn offset_pos(&self, pos: Pos, amount: i32) -> Pos {
         let mov = self.into_move();
-        return scale_pos(mov, amount);
+        return add_pos(pos, scale_pos(mov, amount));
     }
 }
 
@@ -734,8 +744,9 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
     let pos = data.entities.pos[&entity_id];
 
     let entity_dist = distance(pos, entity_pos);
-    let wall_dist = distance(pos, blocked.start_pos);
+    let wall_dist = distance(pos, blocked.end_pos);
 
+    // We reach entity first, wall second
     if entity_dist < wall_dist {
         let attack =
             if can_stab(data, entity_id, other_id) {
@@ -746,7 +757,7 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
         let move_pos = move_next_to(pos, entity_pos);
         movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
     } else if entity_dist > wall_dist {
-        // wall is first
+        // we reach wall first, entity second
         let mut jumped_wall = false;
         if data.entities.move_mode[&entity_id] == MoveMode::Run {
             if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
@@ -768,7 +779,7 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
             movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
         }
     } else {
-        // entity and wall are together
+        // entity and wall are together- between-tile wall in front of entity
         // move up to the wall- we can't jump it or attack through it
         movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
     }

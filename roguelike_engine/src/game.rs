@@ -657,6 +657,66 @@ pub fn test_game_step() {
 }
 
 #[test]
+pub fn test_running() {
+    let mut config = Config::from_file("../config.yaml");
+    let mut game = Game::new(0, config.clone()).unwrap();
+
+    let player_id = game.data.find_player().unwrap();
+    game.data.map = Map::from_dims(10, 10);
+    let player_pos = Pos::new(4, 4);
+    game.data.entities.pos[&player_id] = player_pos;
+
+    let gol_pos = Pos::new(4, 5);
+    let gol = make_gol(&mut game.data.entities, &game.config, gol_pos, &mut game.msg_log);
+
+    game.data.map[(4, 6)].blocked = true;
+
+    game.input_action = InputAction::IncreaseMoveMode;
+    game.step_game(0.1);
+
+    assert!(game.data.entities.ids.contains(&gol));
+    game.input_action = InputAction::Move(Direction::Down);
+    game.step_game(0.1);
+    let player_pos = game.data.entities.pos[&player_id];
+    assert_eq!(gol_pos, player_pos);
+
+    // gol is no longer in entities list after being crushed
+    assert!(!game.data.entities.ids.contains(&gol));
+
+    //let pawn_pos = Pos::new(3, 4);
+    //let pawn = make_elf(&mut game.data.entities, &game.config, pawn_pos, &mut game.msg_log);
+}
+
+#[test]
+pub fn test_running_two_steps() {
+    let mut config = Config::from_file("../config.yaml");
+    let mut game = Game::new(0, config.clone()).unwrap();
+
+    let player_id = game.data.find_player().unwrap();
+    game.data.map = Map::from_dims(10, 10);
+    let player_pos = Pos::new(4, 3);
+    game.data.entities.pos[&player_id] = player_pos;
+
+    let gol_pos = Pos::new(4, 5);
+    let gol = make_gol(&mut game.data.entities, &game.config, gol_pos, &mut game.msg_log);
+
+    game.data.map[(4, 6)].blocked = true;
+
+    game.input_action = InputAction::IncreaseMoveMode;
+    game.step_game(0.1);
+
+    assert!(game.data.entities.ids.contains(&gol));
+    game.input_action = InputAction::Move(Direction::Down);
+    game.step_game(0.1);
+    let player_pos = game.data.entities.pos[&player_id];
+    assert_eq!(gol_pos, player_pos);
+
+    // gol is no longer in entities list after being crushed
+    assert!(!game.data.entities.ids.contains(&gol));
+    //let pawn = make_elf(&mut game.data.entities, &game.config, pawn_pos, &mut game.msg_log);
+}
+
+#[test]
 pub fn test_hammer_small_wall() {
     let mut config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone()).unwrap();
@@ -843,19 +903,23 @@ pub fn test_game_map() {
     test_move(&mut game, Direction::Right, (4, 10));
     test_move(&mut game, Direction::Right, (5, 10));
     test_move(&mut game, Direction::Right, (6, 10));
-    test_move(&mut game, Direction::Right, (7, 10));
-    test_move(&mut game, Direction::Right, (7, 10));
+    //test_move(&mut game, Direction::Right, (7, 10));
 
     assert!(game.data.entities.ids.contains(&gol));
 
     assert_eq!(gol_hp, game.data.entities.fighter[&gol].hp);
     assert!(game.data.entities.alive[&gol]);
 
+    test_move(&mut game, Direction::Right, (7, 10));
+
     // walk into column and check that it knocks over the second column
     test_move(&mut game, Direction::Up, (7, 9));
     test_move(&mut game, Direction::Up, (7, 8));
+    dbg!();
     test_move(&mut game, Direction::Up, (7, 7));
+    dbg!();
     test_move(&mut game, Direction::Up, (7, 6));
+    dbg!();
 
     assert!(game.msg_log.turn_messages.iter().any(|msg| {
         matches!(msg, Msg::Crushed(player_id, col1))

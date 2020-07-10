@@ -82,6 +82,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                         data.remove_entity(pushed);
 
                         msg_log.log(Msg::Crushed(pusher, next_pos));
+                        let movement = Movement::step_to(pushed_pos);
+                        msg_log.log(Msg::Moved(pusher, movement, pushed_pos));
                     }
                 } else if data.entities.alive[&pushed] {
                     push_attack(pusher, pushed, delta_pos, true, data, msg_log);
@@ -237,7 +239,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
 
                             Attack::Push(target_id, delta_pos) => {
                                 msg_log.log(Msg::Pushed(entity_id, target_id, delta_pos));
-                                msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                                //msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
                             }
                         }
                     } else if movement.attack.is_none() {
@@ -313,7 +315,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                     let player_id = data.find_player().unwrap();
                     let player_pos = data.entities.pos[&player_id];
 
-                    let grass_pos = add_pos(player_pos, direction.offset_pos(player_pos, 1));
+                    let grass_pos = direction.offset_pos(player_pos, 1);
                     if data.map[grass_pos].tile_type == TileType::Empty {
                         data.map[grass_pos].surface = Surface::Grass;
                     }
