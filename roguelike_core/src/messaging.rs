@@ -72,6 +72,7 @@ pub enum Msg {
     Action(EntityId, Action),
     FailedBlink(EntityId),
     NotEnoughEnergy(EntityId),
+    DropFailed(EntityId),
 }
 
 impl Msg {
@@ -219,6 +220,10 @@ impl Msg {
 
             Msg::NotEnoughEnergy(entity) => {
                 return format!("{:?} does not have enough energy for that", data.entities.name[entity]);
+            }
+
+            Msg::DropFailed(entity) => {
+                return format!("{:?} tried to drop an item, but its too crowded!", data.entities.name[entity]);
             }
 
             _ => {

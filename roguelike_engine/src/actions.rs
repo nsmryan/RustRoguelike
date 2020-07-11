@@ -128,6 +128,10 @@ pub fn handle_input_inventory(input: InputAction,
 
                             dist += 1;
                         }
+
+                        if !found_tile {
+                            msg_log.log(Msg::DropFailed(player_id));
+                        }
                     }
                 }
             }
