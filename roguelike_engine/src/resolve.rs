@@ -16,7 +16,7 @@ use crate::game::*;
 use crate::actions::{throw_item, pick_item_up, place_trap};
 
 
-pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mut GameSettings, rng: &mut SmallRng, config: &Config) {
+pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &mut GameSettings, rng: &mut SmallRng, config: &Config) {
     /* Handle Message Log */
     while let Some(msg) = msg_log.pop() {
         let msg_line = msg.msg_line(data);

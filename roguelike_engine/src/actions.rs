@@ -285,10 +285,13 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::DropItem, true) => {
-            if let Some(item_id) = game.data.entities.inventory[&player_id].remove(0) {
-               let player_pos = game.data.entities.pos[&player_id];
-               game.data.entities.set_pos(item_id, player_pos);
-            }
+            //if let Some(item_id) = game.data.entities.inventory[&player_id].remove(0) {
+            //   let player_pos = game.data.entities.pos[&player_id];
+            //   game.data.entities.set_pos(item_id, player_pos);
+            //}
+            game.settings.inventory_action = InventoryAction::Drop;
+            game.settings.state = GameState::Inventory;
+            game.msg_log.log(Msg::GameState(game.settings.state));
         }
 
         (InputAction::Pickup, true) => {
@@ -359,6 +362,7 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::Inventory, true) => {
+            game.settings.inventory_action = InventoryAction::Use;
             game.settings.state = GameState::Inventory;
             game.msg_log.log(Msg::GameState(game.settings.state));
         }

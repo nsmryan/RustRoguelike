@@ -341,7 +341,7 @@ impl DisplayState {
                 }
             }
 
-            Msg::JumpWall(jumper, start, end) => {
+            Msg::JumpWall(_jumper, _start, _end) => {
                 /* This animation does not work
                 if data.entities.typ[&jumper] == EntityType::Player {
                     let jump_sprite =

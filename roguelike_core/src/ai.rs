@@ -284,7 +284,7 @@ fn ai_can_hit_target(data: &mut GameData,
     return hit_pos;
 }
 
-fn ai_astar_cost(start: Pos, prev: Pos, next: Pos, data: &GameData) -> i32 {
+fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, data: &GameData) -> i32 {
     let mut cost = 1;
     if let Some(entity_id) = data.has_blocking_entity(next) {
         if data.entities.trap.get(&entity_id).is_some() &&
@@ -326,9 +326,7 @@ fn ai_take_astar_step(monster_id: EntityId,
 pub fn basic_ai_take_turn(monster_id: EntityId,
                           game_data: &mut GameData,
                           config: &Config) -> Action {
-    let player_id = game_data.find_player().unwrap();
     let monster_pos = game_data.entities.pos[&monster_id];
-    let player_pos = game_data.entities.pos[&player_id];
 
     if game_data.map.is_within_bounds(monster_pos) {
         match game_data.entities.behavior[&monster_id] {

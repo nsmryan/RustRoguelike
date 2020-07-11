@@ -1112,7 +1112,6 @@ fn render_pips(display_state: &mut DisplayState,
 
         let start = area.char_rect(1, y_pos);
 
-        let width = (area.width as u32) / num_pips;
         let spacing = 4;
         let mut pips = Vec::new();
         for pip_index in 0..num_pips as i32 {

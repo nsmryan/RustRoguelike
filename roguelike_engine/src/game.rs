@@ -94,7 +94,6 @@ impl SelectionAction {
                 let dxy = sub_pos(pos, player_pos);
                 let blocked = data.map.is_blocked_by_wall(player_pos, dxy.x, dxy.y);
                 
-                let mut pass_pos = pos;
                 if let Some(blocked) = blocked {
                     if data.map[blocked.end_pos].blocked {
                         let next = next_pos(player_pos, dxy);
@@ -223,6 +222,18 @@ impl Selection {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
+pub enum InventoryAction {
+    Use,
+    Drop,
+}
+
+impl Default for InventoryAction {
+    fn default() -> InventoryAction {
+        return InventoryAction::Drop;
+    }
+}
+
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct GameSettings {
     pub turn_count: usize,
@@ -236,6 +247,7 @@ pub struct GameSettings {
     pub time: f32,
     pub render_map: bool,
     pub selection: Selection,
+    pub inventory_action: InventoryAction,
 }
 
 impl GameSettings {
@@ -253,6 +265,7 @@ impl GameSettings {
             time: 0.0,
             render_map: true,
             selection: Selection::default(),
+            inventory_action: InventoryAction::default(),
         };
     }
 }
