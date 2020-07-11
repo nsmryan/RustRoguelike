@@ -271,7 +271,6 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: 
 
             msg_log.log(Msg::Attack(entity, target, damage));
             // TODO consider moving this to the Attack msg
-            dbg!(target, data.entities.name[&target]);
             if data.entities.fighter[&target].hp <= 0 {
                 data.entities.alive[&target] = false;
                 data.entities.blocks[&target] = false;

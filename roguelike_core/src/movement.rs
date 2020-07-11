@@ -720,10 +720,9 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId, other_id: EntityId, mo
         let attack = Attack::Stab(other_id);
         movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
     } else if data.entities.blocks[&other_id] {
-        let next = next_pos(pos, delta_pos);
-        // check next position- if water don't push monster
-        // TODO check if we are moving multiple tiles, and fewer tiles would have resulted in a
-        // push
+        let other_pos = data.entities.pos[&other_id];
+        let dxy = sub_pos(other_pos, pos);
+        let next = next_pos(pos, dxy);
         if data.map[next].tile_type != TileType::Water {
             let attack = Attack::Push(other_id, delta_pos);
             movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
@@ -748,14 +747,23 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
 
     // We reach entity first, wall second
     if entity_dist < wall_dist {
-        let attack =
-            if can_stab(data, entity_id, other_id) {
-                Attack::Stab(other_id)
-            } else {
-                Attack::Push(other_id, delta_pos)
-            };
-        let move_pos = move_next_to(pos, entity_pos);
-        movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
+        let dxy = sub_pos(entity_pos, pos);
+        let attack: Option<Attack>;
+        if can_stab(data, entity_id, other_id) {
+            attack = Some(Attack::Stab(other_id));
+        } else if data.map[next_pos(pos, dxy)].tile_type != TileType::Water {
+            attack = Some(Attack::Push(other_id, delta_pos));
+        } else {
+            // water after push, so supress attack
+            attack = None;
+        }
+
+        if let Some(attack) = attack {
+            let move_pos = move_next_to(pos, entity_pos);
+            movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
+        } else {
+            movement = None;
+        }
     } else if entity_dist > wall_dist {
         // we reach wall first, entity second
         let mut jumped_wall = false;
