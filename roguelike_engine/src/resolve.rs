@@ -64,7 +64,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
             }
 
             Msg::JumpWall(entity_id, _start, end) => {
-                    msg_log.log_front(Msg::Sound(entity_id, end, config.sound_radius_run, true));
+                msg_log.log_front(Msg::Sound(entity_id, end, config.sound_radius_run, true));
             }
 
             Msg::Pushed(pusher, pushed, delta_pos) => {
@@ -274,6 +274,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, settings: &mu
                                     } else if movement.typ == MoveType::JumpWall {
                                         // no clear path to moved position
                                         data.entities.move_to(entity_id, movement.pos);
+                                        msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
                                     } else {
                                         // TODO move towards position, perhaps emitting a Collide
                                         // message. This is likely causing the jump wall issue!

@@ -342,6 +342,7 @@ impl DisplayState {
             }
 
             Msg::JumpWall(jumper, start, end) => {
+                /* This animation does not work
                 if data.entities.typ[&jumper] == EntityType::Player {
                     let jump_sprite =
                         self.new_sprite("player_vault".to_string(), config.player_vault_sprite_speed)
@@ -359,6 +360,7 @@ impl DisplayState {
                     data.entities.animation[&jumper].push_back(jump_key);
                     data.entities.animation[&jumper].push_back(idle_key);
                 }
+                */
             }
 
             Msg::SpawnedObject(entity_id, _typ, _pos, _name) => {
