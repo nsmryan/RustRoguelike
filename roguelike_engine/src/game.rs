@@ -671,6 +671,8 @@ pub fn test_running() {
 
     game.data.map[(4, 6)].blocked = true;
 
+    // check that running into a monster crushes it against a wall when no empty tiles
+    // between
     game.input_action = InputAction::IncreaseMoveMode;
     game.step_game(0.1);
 
@@ -683,8 +685,17 @@ pub fn test_running() {
     // gol is no longer in entities list after being crushed
     assert!(!game.data.entities.ids.contains(&gol));
 
-    //let pawn_pos = Pos::new(3, 4);
-    //let pawn = make_elf(&mut game.data.entities, &game.config, pawn_pos, &mut game.msg_log);
+    // check that running into a monster, with water 2 tiles away, pushes monster
+    // up to the water
+    let pawn_pos = Pos::new(5, 5);
+    let pawn = make_elf(&mut game.data.entities, &game.config, pawn_pos, &mut game.msg_log);
+
+    game.data.map[(7, 5)].tile_type = TileType::Water;
+
+    game.input_action = InputAction::Move(Direction::Right);
+    game.step_game(0.1);
+    assert_eq!(Pos::new(5, 5), game.data.entities.pos[&player_id]);
+    assert_eq!(Pos::new(6, 5), game.data.entities.pos[&pawn]);
 }
 
 #[test]
@@ -915,11 +926,8 @@ pub fn test_game_map() {
     // walk into column and check that it knocks over the second column
     test_move(&mut game, Direction::Up, (7, 9));
     test_move(&mut game, Direction::Up, (7, 8));
-    dbg!();
     test_move(&mut game, Direction::Up, (7, 7));
-    dbg!();
     test_move(&mut game, Direction::Up, (7, 6));
-    dbg!();
 
     assert!(game.msg_log.turn_messages.iter().any(|msg| {
         matches!(msg, Msg::Crushed(player_id, col1))

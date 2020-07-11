@@ -231,7 +231,7 @@ fn ai_can_hit_target(data: &mut GameData,
     let within_fov =
         data.entities.is_in_fov(monster_id, &mut data.map, target_pos, config);
 
-    let clear_path = data.clear_path(monster_pos, target_pos);
+    let clear_path = data.clear_path_up_to(monster_pos, target_pos);
 
     if within_fov && clear_path {
         // get all locations they can hit
