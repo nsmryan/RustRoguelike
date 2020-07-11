@@ -168,6 +168,37 @@ pub fn ai_attack(monster_id: EntityId,
     return turn;
 }
 
+pub fn ai_idle(monster_id: EntityId,
+               game_data: &mut GameData,
+               config: &Config) -> Action {
+    let player_id = game_data.find_player().unwrap();
+    let player_pos = game_data.entities.pos[&player_id];
+
+    let mut turn = Action::none();
+
+    if game_data.entities.is_in_fov(monster_id, &mut game_data.map, player_pos, config) {
+        game_data.entities.face(monster_id, player_pos);
+        turn = Action::StateChange(Behavior::Attacking(player_id));
+    } else if let Some(Message::Attack(entity_id)) = game_data.entities.was_attacked(monster_id) {
+        game_data.entities.face(monster_id, player_pos);
+        turn = Action::StateChange(Behavior::Attacking(entity_id));
+    } else if let Some(Message::Sound(entity_id, sound_pos)) = game_data.entities.heard_sound(monster_id) {
+        let in_fov = game_data.entities.is_in_fov(monster_id, &mut game_data.map, sound_pos, config);
+        let is_player = entity_id == player_id;
+
+        let needs_investigation = !in_fov || (in_fov && is_player);
+
+        // only investigate if the monster can't see the tile, or if they can but it contains the
+        // player.
+        if needs_investigation {
+            game_data.entities.face(monster_id, sound_pos);
+            turn = Action::StateChange(Behavior::Investigating(sound_pos));
+        }
+    }
+
+    return turn;
+}
+
 pub fn ai_investigate(target_pos_orig: Pos, 
                       monster_id: EntityId,
                       game_data: &mut GameData,
@@ -302,20 +333,7 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
     if game_data.map.is_within_bounds(monster_pos) {
         match game_data.entities.behavior[&monster_id] {
             Behavior::Idle => {
-                let mut turn = Action::none();
-
-                if game_data.entities.is_in_fov(monster_id, &mut game_data.map, player_pos, config) {
-                    game_data.entities.face(monster_id, player_pos);
-                    turn = Action::StateChange(Behavior::Attacking(player_id));
-                } else if let Some(Message::Sound(_entity_id, sound_pos)) = game_data.entities.heard_sound(monster_id) {
-                    game_data.entities.face(monster_id, sound_pos);
-                    turn = Action::StateChange(Behavior::Investigating(sound_pos));
-                } else if let Some(Message::Attack(entity_id)) = game_data.entities.was_attacked(monster_id) {
-                    game_data.entities.face(monster_id, player_pos);
-                    turn = Action::StateChange(Behavior::Attacking(entity_id));
-                }
-
-                return turn;
+                return ai_idle(monster_id, game_data, config);
             }
 
             Behavior::Investigating(target_pos) => {
