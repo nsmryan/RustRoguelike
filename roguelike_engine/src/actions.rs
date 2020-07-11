@@ -83,22 +83,53 @@ pub fn handle_input_inventory(input: InputAction,
             if item_index < data.entities.inventory[&player_id].len() {
                 let item_key = data.entities.inventory[&player_id][item_index];
 
-                data.entities.selected_item.insert(player_id, item_key);
+                match settings.inventory_action {
+                    InventoryAction::Use => {
+                        data.entities.selected_item.insert(player_id, item_key);
 
-                settings.state = GameState::Selection;
-                settings.selection.only_visible = false;
+                        settings.state = GameState::Selection;
+                        settings.selection.only_visible = false;
 
-                // if the item is a trap, set it.
-                // otherwise, throw it.
-                if data.entities.trap.get(&item_key).is_some() {
-                    settings.selection =
-                        Selection::new(SelectionType::WithinReach(Reach::single(1)), SelectionAction::PlaceTrap);
-                } else {
-                    settings.selection =
-                        Selection::new(SelectionType::WithinRadius(PLAYER_THROW_DIST), SelectionAction::Throw);
+                        // if the item is a trap, set it.
+                        // otherwise, throw it.
+                        if data.entities.trap.get(&item_key).is_some() {
+                            settings.selection =
+                                Selection::new(SelectionType::WithinReach(Reach::single(1)), SelectionAction::PlaceTrap);
+                        } else {
+                            settings.selection =
+                                Selection::new(SelectionType::WithinRadius(PLAYER_THROW_DIST), SelectionAction::Throw);
+                        }
+
+                        msg_log.log(Msg::GameState(settings.state));
+                    }
+
+                    InventoryAction::Drop => {
+                        let player_pos = data.entities.pos[&player_id];
+
+                        // Find a place to drop the item, without placing it on the same tile
+                        // as another item.
+                        let mut found_tile = false;
+                        let mut dist = 1;
+                        while !found_tile && dist < 10 {
+                            let positions = data.map.floodfill(player_pos, dist);
+
+                            for pos in positions {
+                                if data.has_item(pos).is_none() {
+                                    data.entities.remove_item(player_id, item_key);
+                                    data.entities.set_pos(item_key, pos);
+
+                                    settings.state = GameState::Playing;
+                                    msg_log.log(Msg::GameState(settings.state));
+
+                                    found_tile = true;
+                                    break;
+                                }
+                            }
+
+                            dist += 1;
+                        }
+                    }
                 }
-
-                msg_log.log(Msg::GameState(settings.state));
             }
             // if item index is not in the player's inventory, do nothing
         }
@@ -285,10 +316,6 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::DropItem, true) => {
-            //if let Some(item_id) = game.data.entities.inventory[&player_id].remove(0) {
-            //   let player_pos = game.data.entities.pos[&player_id];
-            //   game.data.entities.set_pos(item_id, player_pos);
-            //}
             game.settings.inventory_action = InventoryAction::Drop;
             game.settings.state = GameState::Inventory;
             game.msg_log.log(Msg::GameState(game.settings.state));
@@ -489,7 +516,7 @@ pub fn pick_item_up(entity_id: EntityId,
     entities.set_xy(pickedup_id, -1, -1);
 }
 
-pub fn throw_item(_player_id: EntityId,
+pub fn throw_item(player_id: EntityId,
                   item_id: EntityId,
                   start_pos: Pos,
                   end_pos: Pos,
@@ -507,6 +534,8 @@ pub fn throw_item(_player_id: EntityId,
     }
 
     game_data.entities.set_pos(item_id, end_pos);
+
+    game_data.entities.remove_item(player_id, item_id);
 }
 
 pub fn place_trap(trap_id: EntityId,

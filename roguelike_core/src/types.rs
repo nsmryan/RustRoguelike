@@ -133,6 +133,16 @@ impl GameData {
         return !path_blocked && !blocked_by_wall;
     }
 
+    pub fn has_item(&self, pos: Pos) -> Option<EntityId> {
+        for key in self.entities.ids.iter() {
+            if self.entities.pos[key] == pos && self.entities.item.get(key).is_some() {
+                return Some(*key);
+            }
+        }
+
+        return None;
+    }
+
     pub fn has_entity(&self, pos: Pos) -> Option<EntityId> {
         for (key, other_pos) in self.entities.pos.iter() {
             if *other_pos == pos {
@@ -497,6 +507,11 @@ impl Entities {
 
     pub fn clear(&mut self) {
         *self = Default::default();
+    }
+
+    pub fn remove_item(&mut self, entity_id: EntityId, item_id: EntityId) {
+        let index = self.inventory[&entity_id].iter().position(|id| *id == item_id).unwrap();
+        self.inventory[&entity_id].remove(index);
     }
 
     pub fn create_entity(&mut self, x: i32, y: i32, typ: EntityType, chr: char, color: Color, name: EntityName, blocks: bool) -> EntityId {
