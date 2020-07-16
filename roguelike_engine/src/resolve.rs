@@ -72,7 +72,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 let pusher_pos = data.entities.pos[&pusher];
 
                 if data.entities.typ[&pushed] == EntityType::Column {
-
                     let entity_diff = sub_pos(pushed_pos, pusher_pos);
                     let next_pos = next_pos(pusher_pos, entity_diff);
                     let diff = sub_pos(pushed_pos, next_pos);
@@ -167,9 +166,12 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 // TODO this is repeated in push_attack, and likely elsewhere
                 data.entities.alive[&hit_entity] = false;
                 data.entities.blocks[&hit_entity] = false;
-                let damage = data.entities.fighter[&hit_entity].hp;
 
-                msg_log.log(Msg::Killed(entity, hit_entity, damage));
+                if let Some(fighter) = data.entities.fighter.get(&hit_entity) {
+                    let damage = fighter.hp;
+
+                    msg_log.log(Msg::Killed(entity, hit_entity, damage));
+                }
             }
 
             Msg::HammerHitWall(entity, blocked) => {

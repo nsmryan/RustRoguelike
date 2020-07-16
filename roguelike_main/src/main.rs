@@ -268,10 +268,6 @@ pub fn keyup_to_action(keycode: Keycode,
     let input_action: InputAction;
 
     match keycode {
-        Keycode::Kp0 | Keycode::Num0 => {
-            input_action = InputAction::SelectItem(0);
-        }
-
         Keycode::Kp8 | Keycode::Num8 | Keycode::Up => {
             if game_state == GameState::Inventory ||
                game_state == GameState::SkillMenu {
@@ -344,10 +340,10 @@ pub fn keyup_to_action(keycode: Keycode,
             }
         }
 
-        Keycode::Kp5 | Keycode::Num5 => {
+        Keycode::Kp5 | Keycode::Num5 | Keycode::Kp0 | Keycode::Num0 => {
             if game_state == GameState::Inventory ||
                game_state == GameState::SkillMenu {
-                input_action = InputAction::SelectItem(5);
+                input_action = InputAction::SelectItem(0);
             } else {
                 input_action = InputAction::Pass;
             }
