@@ -353,6 +353,7 @@ impl Game {
     }
 
     fn step_win(&mut self) -> GameResult {
+        dbg!("Winning");
 
         if matches!(self.input_action, InputAction::Exit) {
             return GameResult::Stop;
@@ -509,16 +510,19 @@ fn win_condition_met(data: &GameData) -> bool {
     // loop over objects in inventory, and check whether any
     // are the key object.
     let player_id = data.find_player().unwrap();
-
-    let has_key = 
-        data.entities.inventory[&player_id].iter().any(|item_id| {
-            data.entities.item.get(item_id) == Some(&Item::Goal)
-        });
-
     let player_pos = data.entities.pos[&player_id];
-    let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
+
+    let exit_id = data.find_exit().unwrap();
+    let exit_pos = data.entities.pos[&exit_id];
+
+    let has_key = data.is_in_inventory(player_id, Item::Goal);
+
+    //let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
+    let on_exit_tile = exit_pos == player_pos;
 
     let exit_condition = has_key && on_exit_tile;
+
+    dbg!(has_key, on_exit_tile);
 
     return exit_condition;
 }

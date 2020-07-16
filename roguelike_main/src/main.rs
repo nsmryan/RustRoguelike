@@ -215,7 +215,9 @@ pub fn run(seed: u64) -> Result<(), String> {
         frame_time = Instant::now();
         drop(logic_timer);
 
-        if game_result == GameResult::Stop || game.settings.exiting {
+        if game.settings.state == GameState::Win {
+            dbg!("Won");
+        } else if game_result == GameResult::Stop || game.settings.exiting {
             running = false;
         }
 

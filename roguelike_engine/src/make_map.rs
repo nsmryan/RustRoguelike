@@ -268,7 +268,7 @@ pub fn read_map_xp(config: &Config,
                                     data.map[pos].blocked = true;
                                 }
 
-                            MAP_WIDE_SPIKES| MAP_TALL_SPIKES => {
+                            MAP_WIDE_SPIKES | MAP_TALL_SPIKES => {
                                 data.map[pos].chr = chr as u8;
                                 data.map[pos].blocked = true;
                             }

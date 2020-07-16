@@ -262,6 +262,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                             }
 
                             MoveType::Move | MoveType::JumpWall => {
+                                // TODO if monster, and would hit trap, don't move
                                 // TODO what about if the entity is moved (say, pushed)?
                                 // should check for this, and no do the move at all, likely
                                 if entity_pos != movement.pos {

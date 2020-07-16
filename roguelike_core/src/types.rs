@@ -104,6 +104,16 @@ impl GameData {
         return None;
     }
 
+    pub fn find_exit(&self) -> Option<EntityId> {
+        for (key, name) in self.entities.name.iter() {
+            if *name == EntityName::Exit {
+                return Some(*key);
+            }
+        }
+
+        return None;
+    }
+
     pub fn find_mouse(&self) -> Option<EntityId> {
         for (key, name) in self.entities.name.iter() {
             if *name == EntityName::Mouse {
@@ -163,6 +173,16 @@ impl GameData {
         }
 
         return None;
+    }
+
+    pub fn is_in_inventory(&self, entity_id: EntityId, item: Item) -> bool {
+        for item in self.entities.inventory[&entity_id].iter() {
+            if self.entities.item[item] == Item::Goal {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     pub fn using(&self, entity_id: EntityId, item: Item) -> bool {
