@@ -319,6 +319,10 @@ pub fn read_map_xp(config: &Config,
                                 make_shield(&mut data.entities, config, Pos::new(x, y), msg_log);
                             }
 
+                            ENTITY_HAMMER => {
+                                make_hammer(&mut data.entities, config, Pos::new(x, y), msg_log);
+                            }
+ 
                             ENTITY_SPIKE_TRAP => {
                                 make_spikes(&mut data.entities, config, pos, msg_log);
                             }
