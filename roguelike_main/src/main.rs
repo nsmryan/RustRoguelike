@@ -109,8 +109,8 @@ pub fn run(seed: u64) -> Result<(), String> {
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
-    make_mouse(&mut game.data.entities, &config, &mut game.msg_log);
-    make_hammer(&mut game.data.entities, &config, add_pos(player_pos, Pos::new(-1, 0)),  &mut game.msg_log);
+    //make_mouse(&mut game.data.entities, &config, &mut game.msg_log);
+    //make_hammer(&mut game.data.entities, &config, add_pos(player_pos, Pos::new(-1, 0)),  &mut game.msg_log);
 
     let mut frame_time = Instant::now();
 

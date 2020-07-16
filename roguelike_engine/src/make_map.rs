@@ -15,6 +15,12 @@ use crate::generation::*;
 use crate::game::*;
 
 
+pub fn parse_maps_file(file_name: &str) -> Vec<String> {
+    let file_contents =
+        std::fs::read_to_string(file_name).expect(&format!("Could not read {}", file_name));
+    return file_contents.lines().map(|s| s.to_string()).collect::<Vec<String>>();
+}
+
 pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     let player_position: Pos;
 
@@ -32,8 +38,11 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
 
         MapLoadConfig::FromFile => {
+            let maps: Vec<String> = parse_maps_file("resources/maps.txt");
+
+            let map_name = format!("resources/{}", maps[0]);
             let mut position =
-                read_map_xp(&game.config, &mut game.data, &mut game.msg_log, "resources/map.xp");
+                read_map_xp(&game.config, &mut game.data, &mut game.msg_log, &map_name);
             if position == (0, 0) {
                 position = (game.data.map.width() / 2, game.data.map.height() / 2);
             }
