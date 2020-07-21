@@ -246,6 +246,9 @@ fn render_player(display_state: &mut DisplayState, game: &mut Game, area: &Area)
     let move_mode = game.data.entities.move_mode[&player_id];
     list.push(format!("{}", move_mode.to_string()));
 
+    list.push(format!(""));
+    list.push(format!("turn {}", game.settings.turn_count));
+
     let text_pos = Pos::new(1, 5);
     display_state.draw_text_list(&list,
                                  text_pos,
