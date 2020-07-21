@@ -31,8 +31,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 if let Some(crushed_id) = data.has_entity(pos) {
                     if let Some(fighter) = data.entities.fighter.get(&crushed_id) {
                         msg_log.log(Msg::Killed(entity_id, crushed_id, fighter.hp));
-                    } else {
-                        // otherwise just remove the entity
+                    } else if data.entities.item.get(&crushed_id).is_none() {
+                        // otherwise, if its not an item, just remove the entity
                         data.remove_entity(crushed_id);
                     }
                 }
