@@ -620,9 +620,11 @@ impl Map {
         let mut wall_in_path = false;
         if let Some(blocked) = blocked {
             let at_end = blocked.end_pos == end_pos;
-            let no_wall = blocked.wall_type.no_wall();
-            let visible_wall = blocked.blocked_tile && no_wall;
-            wall_in_path = !(at_end && visible_wall);
+            wall_in_path = !(at_end && blocked.blocked_tile);
+            // TODO remove when https://github.com/nsmryan/RustRoguelike/issues/135 is closed
+            //let no_wall = blocked.wall_type.no_wall();
+            //let visible_wall = blocked.blocked_tile && no_wall;
+            //wall_in_path = !(at_end && visible_wall);
         }
 
         let is_visible =
