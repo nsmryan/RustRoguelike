@@ -37,10 +37,14 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
             player_position = Pos::new(0, 0);
         }
 
-        MapLoadConfig::FromFile => {
-            let maps: Vec<String> = parse_maps_file("resources/maps.txt");
+        MapLoadConfig::FromFile(file_name) => {
+            let maps: Vec<String> = parse_maps_file(&format!("resources/{}", file_name));
 
-            let map_name = format!("resources/{}", maps[0]);
+            if game.settings.level_num >= maps.len() {
+                panic!(format!("Map index {} too large ({} available", game.settings.level_num, maps.len()));
+            }
+
+            let map_name = format!("resources/{}", maps[game.settings.level_num]);
             let mut position =
                 read_map_xp(&game.config, &mut game.data, &mut game.msg_log, &map_name);
             if position == (0, 0) {

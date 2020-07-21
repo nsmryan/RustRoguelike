@@ -18,7 +18,7 @@ use roguelike_core::movement::*;
 use crate::actions;
 use crate::actions::InputAction; //, KeyDirection};
 use crate::generation::*;
-use crate::make_map::read_map_xp;
+use crate::make_map::{read_map_xp, make_map};
 use crate::resolve::resolve_messages;
 #[cfg(test)]
 use crate::make_map::*;
@@ -248,6 +248,7 @@ pub struct GameSettings {
     pub render_map: bool,
     pub selection: Selection,
     pub inventory_action: InventoryAction,
+    pub level_num: usize,
 }
 
 impl GameSettings {
@@ -266,6 +267,7 @@ impl GameSettings {
             render_map: true,
             selection: Selection::default(),
             inventory_action: InventoryAction::default(),
+            level_num: 0,
         };
     }
 }
@@ -361,14 +363,16 @@ impl Game {
 
         self.msg_log.log(Msg::ChangeLevel());
 
-        self.data.entities.clear();
-        let _player_pos =
-            read_map_xp(&self.config, &mut self.data, &mut self.msg_log, "resources/map.xp");
+        let player_id = self.data.find_player().unwrap();
+        self.data.clear_except(vec!(player_id));
 
         self.settings.state = GameState::Playing;
 
-        // NOTE Exit game on win for now
-        return GameResult::Stop;
+        self.settings.level_num += 1;
+
+        make_map(&self.config.map_load.clone(), self);
+
+        return GameResult::Continue;
     }
 
     fn step_lose(&mut self) -> GameResult {

@@ -81,7 +81,7 @@ impl Blocked {
     }
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum MapLoadConfig {
     Random,
     TestMap,
@@ -89,7 +89,7 @@ pub enum MapLoadConfig {
     Empty,
     TestCorner,
     TestPlayer,
-    FromFile,
+    FromFile(String),
 }
 
 impl Default for MapLoadConfig {

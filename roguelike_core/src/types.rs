@@ -223,6 +223,24 @@ impl GameData {
         return within;
     }
 
+    pub fn clear_except(&mut self, exceptions: Vec<EntityId>) {
+        let mut dont_clear: Vec<EntityId> = Vec::new();
+
+        for id in exceptions.iter() {
+            dont_clear.push(*id);
+
+            if let Some(inventory) = self.entities.inventory.get(id) {
+                dont_clear.extend(inventory);
+            }
+        }
+
+        for id in self.entities.ids.clone().iter() {
+            if !dont_clear.contains(&id) {
+                self.remove_entity(*id);
+            }
+        }
+    }
+
     pub fn remove_entity(&mut self, id: EntityId) {
         let ix_pos = self.entities.ids.iter().position(|val| *val == id).unwrap();
         self.entities.ids.remove(ix_pos);

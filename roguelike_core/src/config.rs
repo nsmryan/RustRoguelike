@@ -4,6 +4,7 @@ use std::io::Read;
 use crate::types::*;
 use crate::map::*;
 
+
 use serde_derive::*;
 use serde_yaml;
 
@@ -79,6 +80,7 @@ impl Config {
         let mut config_string = String::new();
         file.read_to_string(&mut config_string)
             .expect(&format!("Could not read contents of {}", file_name));
+
         let config = serde_yaml::from_str(&config_string).expect(&format!("Could not parse {} file!", file_name));
 
         return config
