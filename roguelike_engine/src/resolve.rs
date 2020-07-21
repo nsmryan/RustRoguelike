@@ -81,10 +81,14 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                         data.remove_entity(pushed);
 
                         msg_log.log(Msg::Crushed(pusher, next_pos));
-                        let movement = Movement::step_to(pushed_pos);
-                        msg_log.log(Msg::Moved(pusher, movement, pushed_pos));
+
+                        if pos_on_map(data.entities.pos[&pusher]) {
+                            let movement = Movement::step_to(pushed_pos);
+                            msg_log.log(Msg::Moved(pusher, movement, pushed_pos));
+                        }
                     }
                 } else if data.entities.alive[&pushed] {
+                    dbg!();
                     push_attack(pusher, pushed, delta_pos, true, data, msg_log);
                 } else {
                     error!("Tried to push entity {:?}, which was not valid!", data.entities.typ[&pushed]);
@@ -158,10 +162,13 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             // TODO Consider making this a Push message, splitting out that code from Action as well
-            Msg::HammerHitEntity(entity, hit_entity) => {
-                let first = data.entities.pos[&entity];
+            Msg::HammerHitEntity(entity_id, hit_entity) => {
+                let first = data.entities.pos[&entity_id];
                 let second = data.entities.pos[&hit_entity];
-                push_attack(entity, hit_entity, sub_pos(first, second), false, data, msg_log);
+
+                //push_attack(entity_id, hit_entity, sub_pos(first, second), false, data, msg_log);
+                let delta_pos = sub_pos(second, first);
+                msg_log.log(Msg::Pushed(entity_id, hit_entity, delta_pos));
 
                 // TODO this is repeated in push_attack, and likely elsewhere
                 data.entities.alive[&hit_entity] = false;
@@ -170,7 +177,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 if let Some(fighter) = data.entities.fighter.get(&hit_entity) {
                     let damage = fighter.hp;
 
-                    msg_log.log(Msg::Killed(entity, hit_entity, damage));
+                    msg_log.log(Msg::Killed(entity_id, hit_entity, damage));
                 }
             }
 

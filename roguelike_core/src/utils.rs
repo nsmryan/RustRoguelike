@@ -332,6 +332,10 @@ pub fn move_towards(start: Pos, end: Pos, num_blocks: usize) -> Pos {
     return Pos::from(line.iter().map(|p| *p).skip(num_blocks).next().unwrap_or(end));
 }
 
+pub fn pos_on_map(pos: Pos) -> bool {
+    return pos.x == -1 && pos.y == -1;
+}
+
 pub fn rand_from_pos(pos: Pos) -> f32 {
     return rand_from_x_y(pos.x, pos.y);
 }
