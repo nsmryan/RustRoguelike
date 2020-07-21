@@ -549,7 +549,8 @@ pub fn step_logic(player_action: Action,
 
     resolve_messages(data, msg_log, settings, rng, config);
 
-    if data.entities.alive[&player_id] {
+    // resolve enemy action
+    if player_action.takes_turn() && data.entities.alive[&player_id] {
         let mut ai_id: Vec<EntityId> = Vec::new();
 
         for key in data.entities.ids.iter() {
@@ -636,7 +637,9 @@ pub fn step_logic(player_action: Action,
         data.map.compute_fov(player_pos, config.fov_radius_player);
     }
 
-    settings.turn_count += 1;
+    if player_action.takes_turn() {
+        settings.turn_count += 1;
+    }
 
     return win_condition_met(data);
 }
