@@ -132,8 +132,10 @@ impl GameData {
         let line = line_inclusive(start, end);
 
         let path_blocked =
-            line.into_iter().any(|point|
-                                 self.has_blocking_entity(Pos::from(point)).is_some());
+            line.into_iter().any(|point| {
+                let pos = Pos::from(point);
+                return self.has_blocking_entity(pos).is_some() || self.has_trap(pos).is_some();
+            });
 
         let (dx, dy) = (end.x - start.x, end.y - start.y);
 
@@ -165,6 +167,18 @@ impl GameData {
         for (key, other_pos) in self.entities.pos.iter() {
             if *other_pos == pos {
                 if self.entities.blocks[key] {
+                    return Some(*key);
+                }
+            }
+        }
+
+        return None;
+    }
+
+    pub fn has_trap(&self, pos: Pos) -> Option<EntityId> {
+        for (key, other_pos) in self.entities.pos.iter() {
+            if *other_pos == pos {
+                if self.entities.trap.get(key).is_some() && self.entities.armed.get(key).is_some() {
                     return Some(*key);
                 }
             }

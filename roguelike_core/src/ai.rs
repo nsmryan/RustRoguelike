@@ -315,7 +315,7 @@ fn ai_take_astar_step(monster_id: EntityId,
                       must_reach: bool,
                       data: &GameData) -> Pos {
     let path = ai_astar_step(monster_id, target_pos, must_reach, data);
-    dbg!(data.entities.name[&monster_id], &path);
+    dbg!(data.entities.name[&monster_id], target_pos, &path);
 
     if path.len() > 1 {
         let monster_pos = data.entities.pos[&monster_id];
