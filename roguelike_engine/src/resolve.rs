@@ -90,8 +90,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 } else if data.entities.alive[&pushed] {
                     push_attack(pusher, pushed, delta_pos, true, data, msg_log);
                 } else {
-                    error!("Tried to push entity {:?}, which was not valid!", data.entities.typ[&pushed]);
-                    panic!("What did you push? Check the game log!");
+                    panic!("Tried to push entity {:?}, alive = {}!",
+                           data.entities.typ[&pushed], data.entities.alive[&pushed]);
                 }
             }
 
@@ -168,10 +168,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 //push_attack(entity_id, hit_entity, sub_pos(first, second), false, data, msg_log);
                 let delta_pos = sub_pos(second, first);
                 msg_log.log(Msg::Pushed(entity_id, hit_entity, delta_pos));
-
-                // TODO this is repeated in push_attack, and likely elsewhere
-                data.entities.alive[&hit_entity] = false;
-                data.entities.blocks[&hit_entity] = false;
 
                 if let Some(fighter) = data.entities.fighter.get(&hit_entity) {
                     let damage = fighter.hp;
