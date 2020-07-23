@@ -60,6 +60,9 @@ struct GameOptions {
 
     #[options(help = "use a given seed for random number generation")]
     seed: Option<u64>,
+
+    #[options(help = "display help text")]
+    help: bool,
 }
 
 
