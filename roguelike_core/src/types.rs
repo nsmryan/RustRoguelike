@@ -48,6 +48,7 @@ impl GameData {
                         start: Pos,
                         end: Pos,
                         reach: Reach,
+                        must_reach: bool,
                         cost_fun: Option<fn(Pos, Pos, Pos, &GameData) -> Option<i32>>) -> Vec<Pos> {
         let result;
 
@@ -62,7 +63,8 @@ impl GameData {
                               let next_pos = add_pos(pos, offset);
                               let (dx, dy) = (next_pos.x - pos.x, next_pos.y - pos.y);
 
-                              if self.clear_path(pos, next_pos) {
+                              if self.clear_path(pos, next_pos) ||
+                                 (!must_reach && next_pos == end) {
                                  let mut cost = 1;
                                   if let Some(cost_fun) = cost_fun {
                                       if let Some(cur_cost) = cost_fun(start, pos, next_pos, self) {

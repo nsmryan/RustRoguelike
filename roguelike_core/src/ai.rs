@@ -93,7 +93,7 @@ pub fn ai_attack(monster_id: EntityId,
                           config) {
         let attack = Attack::Attack(target_id);
         turn = Action::Move(Movement::attack(hit_pos, MoveType::Move, attack));
-    } else if data.map.is_blocked_by_wall(monster_pos, target_pos.x - monster_pos.x, target_pos.y - monster_pos.y).is_some() {
+    } else if !data.entities.is_in_fov(monster_id, &mut data.map, target_pos, config) {
         // path to target is blocked by a wall- investigate the last known position
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else {
@@ -134,7 +134,7 @@ pub fn ai_attack(monster_id: EntityId,
         if let Some(first_target) = targets.next() {
             let mut best_target = first_target;
 
-            let path = data.path_between(monster_pos, *best_target, movement, None);
+            let path = data.path_between(monster_pos, *best_target, movement, true, None);
             let mut best_dist = path.len();
 
             let large_dist = (MAP_WIDTH + MAP_HEIGHT) as usize;
@@ -143,7 +143,7 @@ pub fn ai_attack(monster_id: EntityId,
             }
 
             for move_target in targets {
-                let path = data.path_between(monster_pos, *move_target, movement, None);
+                let path = data.path_between(monster_pos, *move_target, movement, true, None);
                 let path_length = path.len();
                     
                 if path_length > 0 && (path_length < best_dist || best_dist == large_dist) {
@@ -157,7 +157,7 @@ pub fn ai_attack(monster_id: EntityId,
             }
         }
         // step towards the closest location that lets us hit the target
-        pos_offset = ai_take_astar_step(monster_id, new_pos, &data);
+        pos_offset = ai_take_astar_step(monster_id, new_pos, true, &data);
         if pos_mag(pos_offset) > 0 {
             turn = Action::Move(Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move));
         } else {
@@ -225,7 +225,8 @@ pub fn ai_investigate(target_pos_orig: Pos,
             turn = Action::StateChange(Behavior::Idle);
         } else {
             // if the monster has not reached its target, move towards the target.
-            let pos_offset = ai_take_astar_step(monster_id, target_pos, &game_data);
+            let pos_offset = ai_take_astar_step(monster_id, target_pos, false, &game_data);
+            dbg!(target_pos, &pos_offset);
 
             let movement = Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move);
             turn = Action::Move(movement);
@@ -299,19 +300,22 @@ fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, data: &GameData) -> Option<
 
 fn ai_astar_step(monster_id: EntityId,
                  target_pos: Pos,
+                 must_reach: bool,
                  data: &GameData) -> Vec<Pos> {
     let reach = data.entities.movement[&monster_id];
     let monster_pos = data.entities.pos[&monster_id];
 
-    let path = data.path_between(monster_pos, target_pos, reach, Some(ai_astar_cost));
+    let path = data.path_between(monster_pos, target_pos, reach, must_reach, Some(ai_astar_cost));
 
     return path;
 }
 
 fn ai_take_astar_step(monster_id: EntityId,
                       target_pos: Pos,
+                      must_reach: bool,
                       data: &GameData) -> Pos {
-    let path = ai_astar_step(monster_id, target_pos, data);
+    let path = ai_astar_step(monster_id, target_pos, must_reach, data);
+    dbg!(data.entities.name[&monster_id], &path);
 
     if path.len() > 1 {
         let monster_pos = data.entities.pos[&monster_id];

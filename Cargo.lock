@@ -181,14 +181,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "memoffset"
-version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "autocfg 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "miniz_oxide"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -475,7 +467,6 @@ dependencies = [
  "indexmap 1.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "logging_timer 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "memoffset 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "noise 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -715,7 +706,6 @@ dependencies = [
 "checksum log 0.4.11 (registry+https://github.com/rust-lang/crates.io-index)" = "4fabed175da42fed1fa0746b0ea71f412aa9d35e76e95e59b192c64b9dc2bf8b"
 "checksum logging_timer 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "40d0c249955c17c2f8f86b5f501b16d2509ebbe775f7b1d1d2b1ba85ade2a793"
 "checksum logging_timer_proc_macros 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "482c2c28e6bcfe7c4274f82f701774d755e6aa873edfd619460fcd0966e0eb07"
-"checksum memoffset 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)" = "c198b026e1bbf08a937e94c6c60f9ec4a2267f5b0d2eec9c1b21b061ce2be55f"
 "checksum miniz_oxide 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "be0f75932c1f6cfae3c04000e40114adf955636e19040f9c0a2c380702aa1c7f"
 "checksum mint 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)" = "d42e54f364a39ad5238e3072db2e8747785b37655368da756987d3b09ada91e0"
 "checksum noise 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "337525774dd8a197b613a01ea88058ef0ed023e5ed1e4b7e93de478e1f2bf770"
