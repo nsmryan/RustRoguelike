@@ -20,5 +20,7 @@ log = "0.4"
 simple-logging = "2.0"
 logging_timer = "1.0"
 
+gumdrop = "0.8"
+
 roguelike_core = { path = "../roguelike_core" }
 roguelike_engine = { path = "../roguelike_engine" }

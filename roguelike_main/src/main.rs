@@ -7,11 +7,12 @@ mod plat;
 
 use std::env;
 use std::fs;
-use std::io::Write;
+use std::io::{BufRead, Write};
 use std::time::{Duration, Instant};
 use std::path::Path;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::str::FromStr;
 
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
@@ -27,6 +28,8 @@ use walkdir::WalkDir;
 use log::LevelFilter;
 use simple_logging;
 use logging_timer::timer;
+
+use gumdrop::Options;
 
 use roguelike_core::types::*;
 use roguelike_core::config::Config;
@@ -50,25 +53,56 @@ const CONFIG_NAME: &str = "config.yaml";
 const LOG_LEVEL: LevelFilter = LevelFilter::Trace;
 
 
+#[derive(Debug, Options)]
+struct GameOptions {
+    #[options(help = "replay from an input log file")]
+    replay: Option<String>,
+
+    #[options(help = "use a given seed for random number generation")]
+    seed: Option<u64>,
+}
+
+
 fn main() {
     let args = env::args().collect::<Vec<String>>();
 
-    let seed: u64;
-    if args.len() > 1 {
-        let mut hasher = DefaultHasher::new();
-        args[1].hash(&mut hasher);
-        seed = hasher.finish();
-    } else {
-        seed = rand::thread_rng().gen();
+    let opts = GameOptions::parse_args_default_or_exit();
+
+    let seed: u64 =
+        if let Some(given_seed) = opts.seed {
+            given_seed
+        } else {
+            1
+            // could add string input as a seed generator
+            // let mut hasher = DefaultHasher::new();
+            // args[1].hash(&mut hasher);
+            // hasher.finish()
+        };
+
+    // read in the recorded action log, if one is provided
+    let mut starting_actions = Vec::new();
+    if let Some(replay_file) = opts.replay {
+        let file =
+            std::fs::File::open(&replay_file).expect(&format!("Could not open replay file '{}'", &replay_file));
+        for line in std::io::BufReader::new(file).lines() {
+            if let Ok(action) = InputAction::from_str(&line.unwrap()) {
+                starting_actions.push(action);
+            }
+        }
     }
+
     println!("Seed: {} (0x{:X})", seed, seed);
 
     simple_logging::log_to_file("game.log", LOG_LEVEL).unwrap();
 
-    run(seed).unwrap();
+    run(seed, starting_actions).unwrap();
 }
 
-pub fn run(seed: u64) -> Result<(), String> {
+pub fn run(seed: u64, starting_actions: Vec<InputAction>) -> Result<(), String> {
+    // reverse the input log so we can pop actions off start-to-end
+    let mut starting_actions = starting_actions.clone();
+    starting_actions.reverse();
+
     let config = Config::from_file(CONFIG_NAME);
     let mut config_modified_time = fs::metadata(CONFIG_NAME).unwrap().modified().unwrap();
 
@@ -208,6 +242,11 @@ pub fn run(seed: u64) -> Result<(), String> {
             }
         }
         drop(input_timer);
+
+        // if there are starting actions to read, pop one off to play
+        if let Some(action) = starting_actions.pop() {
+            game.input_action = action;
+        }
 
         /* Record Inputs to Log File */
         if game.input_action != InputAction::None {
