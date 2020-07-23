@@ -186,7 +186,7 @@ pub fn ai_idle(monster_id: EntityId,
         let in_fov = game_data.entities.is_in_fov(monster_id, &mut game_data.map, sound_pos, config);
         let is_player = entity_id == player_id;
 
-        let needs_investigation = !in_fov || (in_fov && is_player);
+        let needs_investigation = is_player;
 
         // only investigate if the monster can't see the tile, or if they can but it contains the
         // player.
