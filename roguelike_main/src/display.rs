@@ -295,15 +295,18 @@ impl DisplayState {
 
             Msg::Moved(object_id, movement, _pos) => {
                 let player_handle = data.find_player().unwrap();
-                if object_id == player_handle && !matches!(movement.typ, MoveType::Pass) {
-                    let idle_sprite =
-                        self.new_sprite("player_idle".to_string(), config.idle_speed)
-                                          .unwrap();
-                    let idle_anim = Animation::Loop(idle_sprite);
-                    let idle_key = self.play_animation(idle_anim);
 
-                    data.entities.animation[&player_handle].clear();
-                    data.entities.animation[&player_handle].push_back(idle_key);
+                if object_id == player_handle {
+                    if !matches!(movement.typ, MoveType::Pass) {
+                        let idle_sprite =
+                            self.new_sprite("player_idle".to_string(), config.idle_speed)
+                                              .unwrap();
+                        let idle_anim = Animation::Loop(idle_sprite);
+                        let idle_key = self.play_animation(idle_anim);
+
+                        data.entities.animation[&player_handle].clear();
+                        data.entities.animation[&player_handle].push_back(idle_key);
+                    }
                 }
             }
 

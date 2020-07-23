@@ -275,12 +275,12 @@ impl GameSettings {
 pub struct Game {
     pub config: Config,
     pub input_action: InputAction,
-    //pub key_input: Vec<(KeyDirection, Keycode)>,
     pub mouse_state: MouseState,
     pub data: GameData,
     pub settings: GameSettings,
     pub msg_log: MsgLog,
     pub rng: SmallRng,
+    //pub key_input: Vec<(KeyDirection, Keycode)>,
 }
 
 impl Game {
@@ -516,17 +516,19 @@ fn win_condition_met(data: &GameData) -> bool {
     let player_id = data.find_player().unwrap();
     let player_pos = data.entities.pos[&player_id];
 
-    let exit_id = data.find_exit().unwrap();
-    let exit_pos = data.entities.pos[&exit_id];
+    let mut exit_condition = false;
+    if let Some(exit_id) = data.find_exit() {
+        let exit_pos = data.entities.pos[&exit_id];
 
-    let has_key = data.is_in_inventory(player_id, Item::Goal);
+        let has_key = data.is_in_inventory(player_id, Item::Goal);
 
-    //let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
-    let on_exit_tile = exit_pos == player_pos;
+        //let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
+        let on_exit_tile = exit_pos == player_pos;
 
-    let exit_condition = has_key && on_exit_tile;
+        exit_condition = has_key && on_exit_tile;
 
-    dbg!(has_key, on_exit_tile);
+        dbg!(has_key, on_exit_tile);
+    }
 
     return exit_condition;
 }

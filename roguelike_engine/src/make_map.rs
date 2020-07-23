@@ -296,6 +296,9 @@ pub fn read_map_xp(config: &Config,
 
                     MAP_LAYER_ENTITIES => {
                         match chr as u8 {
+                            0 => {
+                            }
+
                             ENTITY_PLAYER => {
                                 player_position = (x as i32, y as i32);
                             }
