@@ -284,13 +284,13 @@ fn ai_can_hit_target(data: &mut GameData,
     return hit_pos;
 }
 
-fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, data: &GameData) -> i32 {
-    let mut cost = 1;
+fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, data: &GameData) -> Option<i32> {
+    let mut cost = Some(1);
     if let Some(entity_id) = data.has_entity(next) {
         if data.entities.trap.get(&entity_id).is_some() &&
            data.entities.armed.get(&entity_id) == Some(&true) {
                // NOTE determined randomly. could be infinite, or smaller?
-               cost = 10;
+               cost = None;
         }
     }
 

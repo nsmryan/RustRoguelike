@@ -801,8 +801,6 @@ pub fn test_hammer_small_wall() {
     game.input_action = InputAction::UseItem;
     game.step_game(0.1);
 
-    assert_eq!(true, game.data.entities.alive[&pawn]);
-
     game.input_action = InputAction::MapClick(pawn_pos, pawn_pos);
     game.step_game(0.1);
 

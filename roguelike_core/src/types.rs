@@ -48,13 +48,13 @@ impl GameData {
                         start: Pos,
                         end: Pos,
                         reach: Reach,
-                        cost_fun: Option<fn(Pos, Pos, Pos, &GameData) -> i32>) -> Vec<Pos> {
+                        cost_fun: Option<fn(Pos, Pos, Pos, &GameData) -> Option<i32>>) -> Vec<Pos> {
         let result;
 
         let maybe_results =
             astar(&start,
                   |&pos| {
-                      // NOTE this allocation could be avoided with an Iterable
+                      // NOTE(perf) this allocation could be avoided with an Iterable
                       let mut next_positions = Vec::new();
 
                       for direction in Direction::move_actions() {
@@ -63,11 +63,13 @@ impl GameData {
                               let (dx, dy) = (next_pos.x - pos.x, next_pos.y - pos.y);
 
                               if self.clear_path(pos, next_pos) {
-                                 let cost;
+                                 let mut cost = 1;
                                   if let Some(cost_fun) = cost_fun {
-                                      cost = cost_fun(start, pos, next_pos, self);
-                                  } else {
-                                      cost = 1;
+                                      if let Some(cur_cost) = cost_fun(start, pos, next_pos, self) {
+                                          cost = cur_cost;
+                                      } else {
+                                          continue;
+                                      }
                                   }
                                   next_positions.push((next_pos, cost));
                               }
