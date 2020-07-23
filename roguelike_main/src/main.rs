@@ -7,6 +7,7 @@ mod plat;
 
 use std::env;
 use std::fs;
+use std::io::Write;
 use std::time::{Duration, Instant};
 use std::path::Path;
 use std::collections::hash_map::DefaultHasher;
@@ -102,15 +103,15 @@ pub fn run(seed: u64) -> Result<(), String> {
     /* Load Textures */
     load_sprites(&texture_creator, &mut display_state);
 
+    /* Action Log */
+    let mut action_log = std::fs::File::create("action_log.txt").unwrap();
+
     let mut game = Game::new(seed, config.clone())?;
 
     make_map(&config.map_load, &mut game);
 
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
-
-    //make_mouse(&mut game.data.entities, &config, &mut game.msg_log);
-    //make_hammer(&mut game.data.entities, &config, add_pos(player_pos, Pos::new(-1, 0)),  &mut game.msg_log);
 
     let mut frame_time = Instant::now();
 
@@ -207,6 +208,12 @@ pub fn run(seed: u64) -> Result<(), String> {
             }
         }
         drop(input_timer);
+
+        /* Record Inputs to Log File */
+        if game.input_action != InputAction::None {
+            action_log.write(game.input_action.to_string().as_bytes());
+            action_log.write("\n".as_bytes());
+        }
 
         /* Step the Game Forward */
         let logic_timer = timer!("LOGIC");

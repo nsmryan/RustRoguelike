@@ -1,3 +1,6 @@
+use std::str::FromStr;
+use std::fmt;
+
 use serde::{Serialize, Deserialize};
 
 use roguelike_core::movement::{Direction, Action, Reach};
@@ -44,6 +47,114 @@ pub enum InputAction {
     UseItem,
     Interact,
     None,
+}
+
+impl fmt::Display for InputAction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            InputAction::Move(direction) => {
+                match direction {
+                    Direction::Left => write!(f, "left"),
+                    Direction::Right => write!(f, "right"),
+                    Direction::Up => write!(f, "up"),
+                    Direction::Down => write!(f, "down"),
+                    Direction::DownLeft => write!(f, "downleft"),
+                    Direction::DownRight => write!(f, "downright"),
+                    Direction::UpLeft => write!(f, "upleft"),
+                    Direction::UpRight => write!(f, "upright"),
+                }
+            },
+            InputAction::Pass => write!(f, "pass"),
+            InputAction::MapClick(loc, cell) => write!(f, "click {} {} {} {}", loc.x, loc.y, cell.x, cell.y),
+            InputAction::Pickup => write!(f, "pickup"),
+            InputAction::DropItem => write!(f, "drop"),
+            InputAction::SwapPrimaryItem => write!(f, "swapitem"),
+            InputAction::Inventory => write!(f, "inventory"),
+            InputAction::SkillMenu => write!(f, "skill"),
+            InputAction::Exit => write!(f, "exit"),
+            InputAction::Esc => write!(f, "esc"),
+            InputAction::ExploreAll => write!(f, "exploreall"),
+            InputAction::RegenerateMap => write!(f, "regenmap"),
+            InputAction::GodMode => write!(f, "godmode"),
+            InputAction::RegenMap => write!(f, "regenmap"),
+            InputAction::Yell => write!(f, "yell"),
+            InputAction::IncreaseMoveMode => write!(f, "faster"),
+            InputAction::DecreaseMoveMode => write!(f, "slower"),
+            InputAction::OverlayOn => write!(f, "overlayon"),
+            InputAction::OverlayOff => write!(f, "overlayoff"),
+            InputAction::SelectItem(item) => write!(f, "selectitem {}", item),
+            InputAction::ToggleConsole => write!(f, "toggleconsole"),
+            InputAction::UseItem => write!(f, "use"),
+            InputAction::Interact => write!(f, "interact"),
+            InputAction::None => write!(f, "none"),
+        }
+    }
+}
+
+impl FromStr for InputAction {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let mut s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+
+        if s == "left" {
+            return Ok(InputAction::Move(Direction::Left));
+        } else if s == "right" {
+            return Ok(InputAction::Move(Direction::Right));
+        } else if s == "up" {
+            return Ok(InputAction::Move(Direction::Up));
+        } else if s == "down" {
+            return Ok(InputAction::Move(Direction::Down));
+        } else if s == "upleft" {
+            return Ok(InputAction::Move(Direction::UpLeft));
+        } else if s == "upright" {
+            return Ok(InputAction::Move(Direction::UpRight));
+        } else if s == "downleft" {
+            return Ok(InputAction::Move(Direction::DownLeft));
+        } else if s == "downright" {
+            return Ok(InputAction::Move(Direction::DownRight));
+        } else if s == "pass" {
+            return Ok(InputAction::Pass);
+        } else if s == "pickup" {
+            return Ok(InputAction::Pickup);
+        } else if s == "drop" {
+            return Ok(InputAction::DropItem);
+        } else if s == "yell" {
+            return Ok(InputAction::Yell);
+        } else if s == "inventory" {
+            return Ok(InputAction::Inventory);
+        } else if s == "use" {
+            return Ok(InputAction::UseItem);
+        } else if s.starts_with("selectitem") {
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let selection = args[1].parse::<usize>().unwrap();
+            return Ok(InputAction::SelectItem(selection));
+        } else if s == "interact" {
+            return Ok(InputAction::Interact);
+        } else if s == "godmode" {
+            return Ok(InputAction::GodMode);
+        } else if s.starts_with("click") {
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let loc_x = args[1].parse::<i32>().unwrap();
+            let loc_y = args[2].parse::<i32>().unwrap();
+            let cell_x = args[3].parse::<i32>().unwrap();
+            let cell_y = args[4].parse::<i32>().unwrap();
+            return Ok(InputAction::MapClick(Pos::new(loc_x, loc_y), Pos::new(cell_x, cell_y)));
+        } else if s == "swapitem" {
+            return Ok(InputAction::SwapPrimaryItem);
+        } else if s == "skill" {
+            return Ok(InputAction::SkillMenu);
+        } else if s == "esc" {
+            return Ok(InputAction::Esc);
+        } else if s == "faster" {
+            return Ok(InputAction::IncreaseMoveMode);
+        } else if s == "slower" {
+            return Ok(InputAction::DecreaseMoveMode);
+        } else {
+            return Err(format!("Could not parse '{}' as InputAction", s));
+        }
+    }
 }
 
 //pub fn handle_input_console(input: InputAction,
