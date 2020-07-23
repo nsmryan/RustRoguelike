@@ -62,7 +62,7 @@ pub enum Msg {
     Yell(EntityId, Pos),
     GameState(GameState),
     MoveMode(MoveMode),
-    TriedRunWithShield,
+    TriedRunWithHeavyEquipment,
     SpawnedObject(EntityId, EntityType, Pos, EntityName),
     SwordSwing(EntityId, Pos), // entity, position swung at
     HammerSwing(EntityId, Pos), // entity, position swung at
@@ -192,8 +192,8 @@ impl Msg {
                 }
             }
 
-            Msg::TriedRunWithShield => {
-                return "Can't run with shield!".to_string();
+            Msg::TriedRunWithHeavyEquipment => {
+                return "Your equipment is too heavy to run!".to_string();
             }
 
             Msg::SwordSwing(entity, _pos) => {

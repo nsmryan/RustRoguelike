@@ -357,7 +357,7 @@ pub fn handle_input(game: &mut Game) -> Action {
             let new_move_mode = move_mode.increase();
 
             if new_move_mode == movement::MoveMode::Run && (holding_shield || holding_hammer) {
-                game.msg_log.log(Msg::TriedRunWithShield);
+                game.msg_log.log(Msg::TriedRunWithHeavyEquipment);
             } else {
                 game.data.entities.move_mode[&player_id] = new_move_mode;
                 game.data.entities.movement[&player_id] = reach_by_mode(game.data.entities.move_mode[&player_id]);
