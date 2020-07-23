@@ -1183,7 +1183,8 @@ fn render_attack_overlay(display_state: &mut DisplayState,
                  // path from the entity to the reached position
                  .filter(|pos| {
                      let in_bounds = game.data.map.is_within_bounds(*pos);
-                     let clear = game.data.clear_path(object_pos, *pos);
+                     let traps_block = false;
+                     let clear = game.data.clear_path(object_pos, *pos, traps_block);
                      let player_can_see = game.data.map.is_in_fov(player_pos, *pos, game.config.fov_radius_player);
                      // check for player position so it gets highligted, even
                      // though the player causes 'clear_path' to fail.

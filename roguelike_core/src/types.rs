@@ -49,6 +49,7 @@ impl GameData {
                         end: Pos,
                         reach: Reach,
                         must_reach: bool,
+                        traps_block: bool,
                         cost_fun: Option<fn(Pos, Pos, Pos, &GameData) -> Option<i32>>) -> Vec<Pos> {
         let result;
 
@@ -63,7 +64,7 @@ impl GameData {
                               let next_pos = add_pos(pos, offset);
                               let (dx, dy) = (next_pos.x - pos.x, next_pos.y - pos.y);
 
-                              if self.clear_path(pos, next_pos) ||
+                              if self.clear_path(pos, next_pos, traps_block) ||
                                  (!must_reach && next_pos == end) {
                                  let mut cost = 1;
                                   if let Some(cost_fun) = cost_fun {
@@ -122,19 +123,19 @@ impl GameData {
         return None;
     }
 
-    pub fn clear_path_up_to(&self, start: Pos, end: Pos) -> bool {
+    pub fn clear_path_up_to(&self, start: Pos, end: Pos, traps_block: bool) -> bool {
         let up_to = move_next_to(start, end);
 
-        return self.clear_path(start, up_to);
+        return self.clear_path(start, up_to, traps_block);
     }
 
-    pub fn clear_path(&self, start: Pos, end: Pos) -> bool {
+    pub fn clear_path(&self, start: Pos, end: Pos, traps_block: bool) -> bool {
         let line = line_inclusive(start, end);
 
         let path_blocked =
             line.into_iter().any(|point| {
                 let pos = Pos::from(point);
-                return self.has_blocking_entity(pos).is_some() || self.has_trap(pos).is_some();
+                return self.has_blocking_entity(pos).is_some() || (traps_block && self.has_trap(pos).is_some());
             });
 
         let (dx, dy) = (end.x - start.x, end.y - start.y);

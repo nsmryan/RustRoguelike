@@ -270,7 +270,9 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                                 // TODO what about if the entity is moved (say, pushed)?
                                 // should check for this, and no do the move at all, likely
                                 if entity_pos != movement.pos {
-                                    if data.clear_path(entity_pos, movement.pos) {
+                                    let traps_block = false;
+
+                                    if data.clear_path(entity_pos, movement.pos, traps_block) {
                                         if movement.typ == MoveType::Move {
                                             msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
                                         } else {

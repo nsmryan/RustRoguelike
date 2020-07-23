@@ -132,9 +132,12 @@ pub fn ai_attack(monster_id: EntityId,
         // look through all potential positions for the shortest path
         let mut targets = potential_move_targets.iter();
         if let Some(first_target) = targets.next() {
+            let must_reach = true;
+            let traps_block = true;
+
             let mut best_target = first_target;
 
-            let path = data.path_between(monster_pos, *best_target, movement, true, None);
+            let path = data.path_between(monster_pos, *best_target, movement, must_reach, traps_block, None);
             let mut best_dist = path.len();
 
             let large_dist = (MAP_WIDTH + MAP_HEIGHT) as usize;
@@ -143,7 +146,7 @@ pub fn ai_attack(monster_id: EntityId,
             }
 
             for move_target in targets {
-                let path = data.path_between(monster_pos, *move_target, movement, true, None);
+                let path = data.path_between(monster_pos, *move_target, movement, must_reach, traps_block, None);
                 let path_length = path.len();
                     
                 if path_length > 0 && (path_length < best_dist || best_dist == large_dist) {
@@ -263,7 +266,7 @@ fn ai_can_hit_target(data: &mut GameData,
     let within_fov =
         data.entities.is_in_fov(monster_id, &mut data.map, target_pos, config);
 
-    let clear_path = data.clear_path_up_to(monster_pos, target_pos);
+    let clear_path = data.clear_path_up_to(monster_pos, target_pos, false);
 
     if within_fov && clear_path {
         // get all locations they can hit
@@ -305,7 +308,9 @@ fn ai_astar_step(monster_id: EntityId,
     let reach = data.entities.movement[&monster_id];
     let monster_pos = data.entities.pos[&monster_id];
 
-    let path = data.path_between(monster_pos, target_pos, reach, must_reach, Some(ai_astar_cost));
+    let traps_block = true;
+
+    let path = data.path_between(monster_pos, target_pos, reach, must_reach, traps_block, Some(ai_astar_cost));
 
     return path;
 }

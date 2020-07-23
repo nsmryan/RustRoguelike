@@ -438,7 +438,7 @@ pub fn can_stab(data: &GameData, entity: EntityId, target: EntityId) -> bool {
     // NOTE this is not generic- uses EntityType::Enemy
     let is_enemy = data.entities.typ[&target] == EntityType::Enemy;
     let using_dagger = data.using(entity, Item::Dagger);
-    let clear_path = data.clear_path_up_to(entity_pos, target_pos);
+    let clear_path = data.clear_path_up_to(entity_pos, target_pos, false);
     let not_attacking = !matches!(data.entities.behavior.get(&target), Some(Behavior::Attacking(_)));
 
     return is_enemy && using_dagger && clear_path && not_attacking;
