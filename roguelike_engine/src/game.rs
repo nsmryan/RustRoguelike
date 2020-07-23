@@ -526,8 +526,6 @@ fn win_condition_met(data: &GameData) -> bool {
         let on_exit_tile = exit_pos == player_pos;
 
         exit_condition = has_key && on_exit_tile;
-
-        dbg!(has_key, on_exit_tile);
     }
 
     return exit_condition;

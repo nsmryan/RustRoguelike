@@ -333,7 +333,7 @@ pub fn move_towards(start: Pos, end: Pos, num_blocks: usize) -> Pos {
 }
 
 pub fn pos_on_map(pos: Pos) -> bool {
-    return pos.x == -1 && pos.y == -1;
+    return pos.x != -1 || pos.y != -1;
 }
 
 pub fn rand_from_pos(pos: Pos) -> f32 {

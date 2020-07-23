@@ -88,7 +88,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                         }
                     }
                 } else if data.entities.alive[&pushed] {
-                    dbg!();
                     push_attack(pusher, pushed, delta_pos, true, data, msg_log);
                 } else {
                     error!("Tried to push entity {:?}, which was not valid!", data.entities.typ[&pushed]);
