@@ -62,13 +62,7 @@ impl GameData {
                               let next_pos = add_pos(pos, offset);
                               let (dx, dy) = (next_pos.x - pos.x, next_pos.y - pos.y);
 
-                              // use the next position if there is a clear path to it. It is also
-                              // useable if the path is only blocked by an entity and not a wall,
-                              // and it is the last step (in case we are pathing towards a target).
-                              // This will cause stopped paths if we are a monster blocked by other
-                              // monsters, but that it okay.
-                              if self.clear_path(pos, next_pos) || 
-                                 (next_pos == end && self.map.is_blocked_by_wall(pos, dx, dy).is_none()) {
+                              if self.clear_path(pos, next_pos) {
                                  let cost;
                                   if let Some(cost_fun) = cost_fun {
                                       cost = cost_fun(start, pos, next_pos, self);
