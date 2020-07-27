@@ -82,6 +82,7 @@ pub fn ai_attack(monster_id: EntityId,
     data.entities.face(monster_id, target_pos);
 
     if !data.entities.alive[&target_id] {
+        dbg!(format!("attmping to position: {}", target_pos));
         // if AI target is no longer alive
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else if let Some(hit_pos) =
@@ -93,7 +94,8 @@ pub fn ai_attack(monster_id: EntityId,
                           config) {
         let attack = Attack::Attack(target_id);
         turn = Action::Move(Movement::attack(hit_pos, MoveType::Move, attack));
-    } else if !data.entities.is_in_fov(monster_id, &mut data.map, target_pos, config) {
+    } else if !data.is_in_fov(monster_id, target_pos, config) {
+        dbg!("blocked");
         // path to target is blocked by a wall- investigate the last known position
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else {
@@ -172,21 +174,21 @@ pub fn ai_attack(monster_id: EntityId,
 }
 
 pub fn ai_idle(monster_id: EntityId,
-               game_data: &mut GameData,
+               data: &mut GameData,
                config: &Config) -> Action {
-    let player_id = game_data.find_player().unwrap();
-    let player_pos = game_data.entities.pos[&player_id];
+    let player_id = data.find_player().unwrap();
+    let player_pos = data.entities.pos[&player_id];
 
     let mut turn = Action::none();
 
-    if game_data.entities.is_in_fov(monster_id, &mut game_data.map, player_pos, config) {
-        game_data.entities.face(monster_id, player_pos);
+    if data.is_in_fov(monster_id, player_pos, config) {
+        data.entities.face(monster_id, player_pos);
         turn = Action::StateChange(Behavior::Attacking(player_id));
-    } else if let Some(Message::Attack(entity_id)) = game_data.entities.was_attacked(monster_id) {
-        game_data.entities.face(monster_id, player_pos);
+    } else if let Some(Message::Attack(entity_id)) = data.entities.was_attacked(monster_id) {
+        data.entities.face(monster_id, player_pos);
         turn = Action::StateChange(Behavior::Attacking(entity_id));
-    } else if let Some(Message::Sound(entity_id, sound_pos)) = game_data.entities.heard_sound(monster_id) {
-        let in_fov = game_data.entities.is_in_fov(monster_id, &mut game_data.map, sound_pos, config);
+    } else if let Some(Message::Sound(entity_id, sound_pos)) = data.entities.heard_sound(monster_id) {
+        let in_fov = data.is_in_fov(monster_id, sound_pos, config);
         let is_player = entity_id == player_id;
 
         let needs_investigation = is_player;
@@ -194,7 +196,7 @@ pub fn ai_idle(monster_id: EntityId,
         // only investigate if the monster can't see the tile, or if they can but it contains the
         // player.
         if needs_investigation {
-            game_data.entities.face(monster_id, sound_pos);
+            data.entities.face(monster_id, sound_pos);
             turn = Action::StateChange(Behavior::Investigating(sound_pos));
         }
     }
@@ -202,43 +204,50 @@ pub fn ai_idle(monster_id: EntityId,
     return turn;
 }
 
-pub fn ai_investigate(target_pos_orig: Pos, 
+pub fn ai_investigate(target_pos: Pos, 
                       monster_id: EntityId,
-                      game_data: &mut GameData,
+                      data: &mut GameData,
                       config: &Config) -> Action {
-    let player_id = game_data.find_player().unwrap();
+    let player_id = data.find_player().unwrap();
 
-    let target_pos = target_pos_orig;
-    let player_pos = game_data.entities.pos[&player_id];
-    let monster_pos = game_data.entities.pos[&monster_id];
+    let player_pos = data.entities.pos[&player_id];
+    let monster_pos = data.entities.pos[&monster_id];
 
     let mut turn: Action;
+
+    let (dx, dy) = sub_pos(player_pos,  monster_pos).to_tuple();
+    if data.map.is_blocked_by_wall(monster_pos, dx, dy).is_none() {
+        data.entities.face(monster_id, player_pos);
+    }
                
-    if game_data.entities.is_in_fov(monster_id, &mut game_data.map, player_pos, config) {
-        game_data.entities.face(monster_id, player_pos);
+    if data.is_in_fov(monster_id, player_pos, config) {
+        data.entities.face(monster_id, player_pos);
         turn = Action::StateChange(Behavior::Attacking(player_id));
     } else { // the monster can't see the player
-        if let Some(Message::Sound(_entity_id, pos)) = game_data.entities.heard_sound(monster_id) {
-            game_data.entities.behavior[&monster_id] =
-                Behavior::Investigating(pos);
-        }
-
-        if target_pos == monster_pos { 
-            // if the monster reached its target then go back to being idle
-            turn = Action::StateChange(Behavior::Idle);
+        if let Some(Message::Sound(_entity_id, pos)) = data.entities.heard_sound(monster_id) {
+            dbg!(_entity_id, monster_id, pos);
+            turn = Action::StateChange(Behavior::Investigating(pos));
         } else {
-            // if the monster has not reached its target, move towards the target.
-            let pos_offset = ai_take_astar_step(monster_id, target_pos, false, &game_data);
-            dbg!(target_pos, &pos_offset);
+            if target_pos == monster_pos { 
+                dbg!();
+                // if the monster reached its target then go back to being idle
+                turn = Action::StateChange(Behavior::Idle);
+            } else {
+                // if the monster has not reached its target, move towards the target.
+                let must_reach = false;
+                let pos_offset = ai_take_astar_step(monster_id, target_pos, must_reach, &data);
+                dbg!(target_pos, &pos_offset);
 
-            let movement = Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move);
-            turn = Action::Move(movement);
+                let movement = Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move);
+                turn = Action::Move(movement);
+            }
         }
     }
 
     // if the monster moved, but didn't go anywhere, they stop investigating
     if let Action::Move(movement) = turn {
         if movement.pos == monster_pos {
+            dbg!("Monster could not move so they are returning to IDLE");
             // NOTE this causes monster to give up whenever they can't reach their goal.
             // the problem is that this might happen in a long corridor, for example, where
             // you might want them to keep trying for a while in case there is a monster
@@ -264,7 +273,7 @@ fn ai_can_hit_target(data: &mut GameData,
     }
 
     let within_fov =
-        data.entities.is_in_fov(monster_id, &mut data.map, target_pos, config);
+        data.is_in_fov(monster_id, target_pos, config);
 
     let clear_path = data.clear_path_up_to(monster_pos, target_pos, false);
 
@@ -333,22 +342,23 @@ fn ai_take_astar_step(monster_id: EntityId,
 // NOTE this function takes a mutable GameData because FOV requires
 // mutation under the hood. It does not otherwise modify the game
 pub fn basic_ai_take_turn(monster_id: EntityId,
-                          game_data: &mut GameData,
+                          data: &mut GameData,
                           config: &Config) -> Action {
-    let monster_pos = game_data.entities.pos[&monster_id];
+    let monster_pos = data.entities.pos[&monster_id];
 
-    if game_data.map.is_within_bounds(monster_pos) {
-        match game_data.entities.behavior[&monster_id] {
+    if data.map.is_within_bounds(monster_pos) {
+        match data.entities.behavior[&monster_id] {
             Behavior::Idle => {
-                return ai_idle(monster_id, game_data, config);
+                return ai_idle(monster_id, data, config);
             }
 
             Behavior::Investigating(target_pos) => {
-                return ai_investigate(target_pos, monster_id, game_data, config);
+                dbg!(target_pos, monster_id);
+                return ai_investigate(target_pos, monster_id, data, config);
             }
 
             Behavior::Attacking(object_id) => {
-                return ai_attack(monster_id, object_id, game_data, config);
+                return ai_attack(monster_id, object_id, data, config);
             }
         }
     } else {

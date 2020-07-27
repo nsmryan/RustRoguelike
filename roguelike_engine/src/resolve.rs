@@ -50,6 +50,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
 
                 for obj_id in who_heard {
                     if obj_id != cause_id {
+                        dbg!(obj_id, cause_id, source_pos, data.entities.name[&obj_id], data.entities.name[&cause_id]);
                         // TODO replace with an Alerted message
                         data.entities.messages[&obj_id].push(Message::Sound(cause_id, source_pos));
                     }
@@ -454,7 +455,20 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
 }
 
 fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+    // if this move does not change the entity position, exit early
+    if pos == data.entities.pos[&entity_id] {
+        return;
+    }
+
     data.entities.move_to(entity_id, pos);
+
+    // if entity is a monster, which is also alert, and there is a path to the player,
+    // then face the player
+    if let Some(target_pos) = data.entities.target(entity_id) {
+        if data.could_see(entity_id, target_pos, config) {
+             data.entities.face(entity_id, target_pos);
+        }
+    }
 
     // if running, but didn't move any squares, then decrease speed
     if matches!(movement.typ, MoveType::Pass) {

@@ -578,21 +578,26 @@ pub fn step_logic(player_action: Action,
             }
         }
 
-        for key in ai_id {
-            if let Some(action) = data.entities.action.get(&key).map(|v| *v) {
-                msg_log.log(Msg::Action(key, action));
+        for key in ai_id.iter() {
+            if let Some(action) = data.entities.action.get(key).map(|v| *v) {
+                msg_log.log(Msg::Action(*key, action));
                 resolve_messages(data, msg_log, settings, rng, config);
 
                 // check if fighter needs to be removed
-                if let Some(fighter) = data.entities.fighter.get(&key) {
+                if let Some(fighter) = data.entities.fighter.get(key) {
                     if fighter.hp <= 0 {
-                        data.entities.alive[&key] = false;
-                        data.entities.blocks[&key] = false;
-                        data.entities.chr[&key] = '%';
-                        data.entities.fighter.remove(&key);
+                        data.entities.alive[key] = false;
+                        data.entities.blocks[key] = false;
+                        data.entities.chr[key] = '%';
+                        data.entities.fighter.remove(key);
                     }
                 }
             }
+        }
+
+        // if there are remaining messages for an entity, clear them
+        for key in ai_id.iter() {
+            data.entities.messages[key].clear();
         }
     }
 

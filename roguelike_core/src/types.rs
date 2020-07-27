@@ -64,8 +64,10 @@ impl GameData {
                               let next_pos = add_pos(pos, offset);
                               let (dx, dy) = (next_pos.x - pos.x, next_pos.y - pos.y);
 
-                              if self.clear_path(pos, next_pos, traps_block) ||
-                                 (!must_reach && next_pos == end) {
+                              let clear = self.clear_path(pos, next_pos, traps_block);
+                              if  clear ||
+                                  (!must_reach && next_pos == end && self.map.is_blocked_by_wall(pos, dx, dy).is_none()) {
+
                                  let mut cost = 1;
                                   if let Some(cost_fun) = cost_fun {
                                       if let Some(cur_cost) = cost_fun(start, pos, next_pos, self) {
@@ -91,6 +93,24 @@ impl GameData {
         }
 
         return result;
+    }
+
+    pub fn is_in_fov(&mut self, entity_id: EntityId, other_pos: Pos, config: &Config) -> bool {
+        let pos = self.entities.pos[&entity_id];
+
+        let radius: i32 = match self.entities.typ[&entity_id] {
+            EntityType::Enemy => config.fov_radius_monster,
+            EntityType::Player => config.fov_radius_player,
+            typ => panic!(format!("Tried to see with object of type {:?}", typ)),
+        };
+
+        if let Some(dir) = self.entities.direction.get(&entity_id) {
+            if self.map.is_in_fov_direction(pos, other_pos, radius, *dir) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     pub fn find_player(&self) -> Option<EntityId> {
@@ -234,6 +254,17 @@ impl GameData {
         }
 
         return within;
+    }
+
+    pub fn could_see(&mut self, entity_id: EntityId, target_pos: Pos, config: &Config) -> bool {
+        let current_facing = self.entities.direction[&entity_id];
+        self.entities.face(entity_id, target_pos);
+
+        let visible = self.is_in_fov(entity_id, target_pos, config);
+
+        self.entities.direction[&entity_id] = current_facing;
+
+        return visible;
     }
 
     pub fn clear_except(&mut self, exceptions: Vec<EntityId>) {
@@ -654,24 +685,6 @@ impl Entities {
         }
     }
 
-    pub fn is_in_fov(&self, entity_id: EntityId, map: &mut Map, other_pos: Pos, config: &Config) -> bool {
-        let pos = self.pos[&entity_id];
-
-        let radius: i32 = match self.typ[&entity_id] {
-            EntityType::Enemy => config.fov_radius_monster,
-            EntityType::Player => config.fov_radius_player,
-            _ => panic!(format!("Tried to see with object of type {:?}", self.typ)),
-        };
-
-        if let Some(dir) = self.direction.get(&entity_id) {
-            if map.is_in_fov_direction(pos, other_pos, radius, *dir) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     pub fn was_attacked(&mut self, entity_id: EntityId) -> Option<Message> {
         if let Some(index) = self.messages[&entity_id].iter().position(|msg| matches!(msg, Message::Attack(_))) {
             return Some(self.messages[&entity_id].remove(index));
@@ -693,6 +706,19 @@ impl Entities {
         if let Some(dir) = Direction::from_dxy(diff_pos.x, diff_pos.y) {
             self.direction[&entity_id] = dir;
         }
+    }
+
+    pub fn target(&self, entity_id: EntityId) -> Option<Pos> {
+        if let Some(Behavior::Investigating(target_pos)) = self.behavior.get(&entity_id) {
+            return Some(*target_pos);
+        }
+
+        if let Some(Behavior::Attacking(target_id)) = self.behavior.get(&entity_id) {
+            let target_pos = self.pos[target_id];
+            return Some(target_pos);
+        }
+
+        return None;
     }
 }
 
