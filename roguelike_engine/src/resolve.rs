@@ -61,7 +61,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 throw_item(entity_id, item_id, start, end, data);
 
                 // NOTE the radius here is the stone radius, regardless of item type
-                msg_log.log_front(Msg::Sound(entity_id, end, SOUND_RADIUS_STONE, false));
+                msg_log.log_front(Msg::Sound(entity_id, end, config.sound_radius_stone, false));
             }
 
             Msg::JumpWall(entity_id, _start, end) => {
@@ -495,7 +495,7 @@ fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data
 
         msg_log.log_front(Msg::Sound(entity_id, pos, sound_radius, true));
     } else {
-        msg_log.log_front(Msg::Sound(entity_id, pos, SOUND_RADIUS_MONSTER_MOVE, true));
+        msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_monster, true));
     }
 
     // get a list of triggered traps

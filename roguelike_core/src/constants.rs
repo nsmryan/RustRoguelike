@@ -10,11 +10,6 @@ pub const SCREEN_HEIGHT: u32 = 800;
 pub const INVENTORY_WIDTH: usize = 300;
 pub const INVENTORY_HEIGHT: usize = 500;
 
-/* Sound */
-pub const SOUND_RADIUS: usize = 3;
-pub const SOUND_RADIUS_STONE: usize = 3;
-pub const SOUND_RADIUS_MONSTER_MOVE: usize = 4;
-
 /* General Settings */
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
 pub const BLINK_RADIUS: usize = 4;

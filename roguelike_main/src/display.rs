@@ -272,7 +272,7 @@ impl DisplayState {
             }
 
             Msg::ItemThrow(_thrower, item_id, start, end) => {
-                let sound_aoe = data.map.aoe_fill(AoeEffect::Sound, end, SOUND_RADIUS_STONE);
+                let sound_aoe = data.map.aoe_fill(AoeEffect::Sound, end, config.sound_radius_stone);
 
                 let chr = data.entities.chr[&item_id];
                 let item_sprite =
