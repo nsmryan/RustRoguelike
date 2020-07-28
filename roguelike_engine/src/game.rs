@@ -595,9 +595,16 @@ pub fn step_logic(player_action: Action,
             }
         }
 
-        // if there are remaining messages for an entity, clear them
         for key in ai_id.iter() {
+            // if there are remaining messages for an entity, clear them
             data.entities.messages[key].clear();
+
+            let action = ai_take_turn(*key, data, config, msg_log);
+            if matches!(action, Action::StateChange(_)) {
+                msg_log.log(Msg::Action(*key, action));
+                data.entities.action[key] = action;
+                resolve_messages(data, msg_log, settings, rng, config);
+            }
         }
     }
 

@@ -225,18 +225,15 @@ pub fn ai_investigate(target_pos: Pos,
         turn = Action::StateChange(Behavior::Attacking(player_id));
     } else { // the monster can't see the player
         if let Some(Message::Sound(_entity_id, pos)) = data.entities.heard_sound(monster_id) {
-            dbg!(_entity_id, monster_id, pos);
             turn = Action::StateChange(Behavior::Investigating(pos));
         } else {
             if target_pos == monster_pos { 
-                dbg!();
                 // if the monster reached its target then go back to being idle
                 turn = Action::StateChange(Behavior::Idle);
             } else {
                 // if the monster has not reached its target, move towards the target.
                 let must_reach = false;
                 let pos_offset = ai_take_astar_step(monster_id, target_pos, must_reach, &data);
-                dbg!(target_pos, &pos_offset);
 
                 let movement = Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move);
                 turn = Action::Move(movement);
@@ -247,7 +244,6 @@ pub fn ai_investigate(target_pos: Pos,
     // if the monster moved, but didn't go anywhere, they stop investigating
     if let Action::Move(movement) = turn {
         if movement.pos == monster_pos {
-            dbg!("Monster could not move so they are returning to IDLE");
             // NOTE this causes monster to give up whenever they can't reach their goal.
             // the problem is that this might happen in a long corridor, for example, where
             // you might want them to keep trying for a while in case there is a monster
@@ -367,3 +363,19 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
     }
 }
 
+//pub fn ai_finalize_turn(monster_id: EntityId,
+//                        data: &mut GameData,
+//                        config: &Config,
+//                        _msg_log: &mut MsgLog) -> Option<Action> {
+//    let behavior = data.entities.behavior[&monster_id];
+//    match behavior {
+//        Behavior::Investigating(target_pos)) => {
+//        }
+//
+//        Behavior::Attacking(target_id) => {
+//        }
+//
+//        _ => {
+//        }
+//    }
+//}

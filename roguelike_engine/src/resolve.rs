@@ -50,7 +50,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
 
                 for obj_id in who_heard {
                     if obj_id != cause_id {
-                        dbg!(obj_id, cause_id, source_pos, data.entities.name[&obj_id], data.entities.name[&cause_id]);
                         // TODO replace with an Alerted message
                         data.entities.messages[&obj_id].push(Message::Sound(cause_id, source_pos));
                     }
@@ -465,8 +464,10 @@ fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data
     // if entity is a monster, which is also alert, and there is a path to the player,
     // then face the player
     if let Some(target_pos) = data.entities.target(entity_id) {
+            dbg!(pos, target_pos);
         if data.could_see(entity_id, target_pos, config) {
-             data.entities.face(entity_id, target_pos);
+            dbg!(pos, target_pos);
+            data.entities.face(entity_id, target_pos);
         }
     }
 
