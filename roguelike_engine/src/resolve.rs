@@ -38,6 +38,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 }
 
                 msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_crushed, true));
+                dbg!(entity_id, pos, config.sound_radius_crushed);
             }
 
             Msg::Sound(cause_id, source_pos, radius, _should_animate) => {
@@ -168,6 +169,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 //push_attack(entity_id, hit_entity, sub_pos(first, second), false, data, msg_log);
                 let delta_pos = sub_pos(second, first);
                 msg_log.log(Msg::Pushed(entity_id, hit_entity, delta_pos));
+                msg_log.log_front(Msg::Sound(entity_id, second, config.sound_radius_hammer, true));
 
                 if let Some(fighter) = data.entities.fighter.get(&hit_entity) {
                     let damage = fighter.hp;

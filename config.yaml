@@ -150,6 +150,7 @@ sound_radius_trap: 3
 sound_radius_monster: 3
 sound_radius_stone: 3
 sound_radius_player: 3
+sound_radius_hammer: 3
 overlay_directions: false
 overlay_player_fov: false
 fov_radius_monster: 6
