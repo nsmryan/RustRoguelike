@@ -82,7 +82,6 @@ pub fn ai_attack(monster_id: EntityId,
     data.entities.face(monster_id, target_pos);
 
     if !data.entities.alive[&target_id] {
-        dbg!(format!("attmping to position: {}", target_pos));
         // if AI target is no longer alive
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else if let Some(hit_pos) =
@@ -95,7 +94,6 @@ pub fn ai_attack(monster_id: EntityId,
         let attack = Attack::Attack(target_id);
         turn = Action::Move(Movement::attack(hit_pos, MoveType::Move, attack));
     } else if !data.is_in_fov(monster_id, target_pos, config) {
-        dbg!("blocked");
         // path to target is blocked by a wall- investigate the last known position
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else {
@@ -325,7 +323,6 @@ fn ai_take_astar_step(monster_id: EntityId,
                       must_reach: bool,
                       data: &GameData) -> Pos {
     let path = ai_astar_step(monster_id, target_pos, must_reach, data);
-    dbg!(data.entities.name[&monster_id], target_pos, &path);
 
     if path.len() > 1 {
         let monster_pos = data.entities.pos[&monster_id];
@@ -349,7 +346,6 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
             }
 
             Behavior::Investigating(target_pos) => {
-                dbg!(target_pos, monster_id);
                 return ai_investigate(target_pos, monster_id, data, config);
             }
 

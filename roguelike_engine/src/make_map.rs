@@ -145,89 +145,89 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             MAP_THIN_WALL_TOP => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0;
                                 data.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[pos].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_LEFT => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[pos].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_RIGHT => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_TOP_LEFT => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[pos].left_wall = Wall::ShortWall;
                                 data.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM_LEFT => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[pos].left_wall = Wall::ShortWall;
                                 data.map[pos].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_TOP_RIGHT => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                                 data.map[(x - 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM_RIGHT => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[pos].bottom_wall = Wall::ShortWall;
                                 data.map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_TOP => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_LEFT => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[pos].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_RIGHT => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[pos].bottom_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_TOP_LEFT => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[pos].left_wall = Wall::TallWall;
                                 data.map[(x, y - 1)].bottom_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM_LEFT => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[pos].bottom_wall = Wall::TallWall;
                                 data.map[pos].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_TOP_RIGHT => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[(x, y - 1)].bottom_wall = Wall::TallWall;
                                 data.map[(x + 1, y)].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM_RIGHT => {
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = 0; 
                                 data.map[pos].bottom_wall = Wall::TallWall;
                                 data.map[(x + 1, y)].left_wall = Wall::TallWall;
                             }

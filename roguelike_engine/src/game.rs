@@ -355,8 +355,6 @@ impl Game {
     }
 
     fn step_win(&mut self) -> GameResult {
-        dbg!("Winning");
-
         if matches!(self.input_action, InputAction::Exit) {
             return GameResult::Stop;
         }

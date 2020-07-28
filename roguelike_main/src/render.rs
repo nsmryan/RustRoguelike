@@ -333,6 +333,7 @@ fn render_info(display_state: &mut DisplayState,
         let text_pos = Pos::new(1, y_pos);
         text_list.push(format!("Surface is"));
         text_list.push(format!("{:?}",  game.data.map[mouse].surface));
+
         display_state.draw_text_list(&text_list,
                                      text_pos,
                                      color,
@@ -562,12 +563,14 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
 
             if tile.left_wall == Wall::ShortWall {
                 display_state.draw_char(MAP_THIN_WALL_LEFT as char, pos, wall_color, area);
+
             } else if tile.left_wall == Wall::TallWall {
                 display_state.draw_char(MAP_THICK_WALL_LEFT as char, pos, wall_color, area);
             }
 
             if x + 1 < map_width {
-                let right_tile = &game.data.map.tiles[x as usize + 1][y as usize];
+                let right_pos = Pos::new(pos.x + 1, pos.y);
+                let right_tile = &game.data.map[right_pos];
                 if right_tile.left_wall == Wall::ShortWall {
                     display_state.draw_char(MAP_THIN_WALL_RIGHT as char, pos, wall_color, area);
                 } else if right_tile.left_wall == Wall::TallWall {
@@ -576,10 +579,11 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
             }
 
             if y - 1 >= 0 {
-                let above_tile = &game.data.map.tiles[x as usize][y as usize - 1];
-                if above_tile.bottom_wall == Wall::ShortWall {
+                let up_pos = Pos::new(pos.x, pos.y - 1);
+                let up_tile = &game.data.map[up_pos];
+                if up_tile.bottom_wall == Wall::ShortWall {
                     display_state.draw_char(MAP_THIN_WALL_TOP as char, pos, wall_color, area);
-                } else if above_tile.bottom_wall == Wall::TallWall {
+                } else if up_tile.bottom_wall == Wall::TallWall {
                     display_state.draw_char(MAP_THICK_WALL_TOP as char, pos, wall_color, area);
                 }
             }
