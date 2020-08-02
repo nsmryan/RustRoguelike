@@ -729,32 +729,6 @@ fn render_impressions(display_state: &mut DisplayState, game: &mut Game, area: &
 
     // check for entities that have left FOV and make an impression for them
     // NOTE(perf) technically this is only necessary once per turn, not once per render
-    for entity_id in game.prev_turn_fov.iter() {
-        if *entity_id == player_id || game.data.entities.typ.get(entity_id) != Some(&EntityType::Enemy) {
-            continue;
-        }
-
-        let pos = game.data.entities.pos[entity_id];
-        if !game.data.is_in_fov(player_id, pos, &game.config) {
-            if let Some(sprite) = display_state.drawn_sprites.get(entity_id) {
-                display_state.impressions.push(Impression::new(*sprite, pos));
-            }
-        }
-    }
-
-    /* Remove impressions that are currently visible */
-    let mut impressions_visible = Vec::new();
-    for (index, impression) in display_state.impressions.iter().enumerate() {
-        if game.data.is_in_fov(player_id, impression.pos, &game.config) {
-            impressions_visible.push(index);
-        }
-    }
-    impressions_visible.sort();
-    impressions_visible.reverse();
-    for index in impressions_visible.iter() {
-        display_state.impressions.swap_remove(*index);
-    }
-
     display_state.drawn_sprites.clear();
 
     for impression in display_state.impressions.clone() {

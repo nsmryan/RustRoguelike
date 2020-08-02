@@ -33,7 +33,6 @@ pub struct Game {
     pub msg_log: MsgLog,
     pub rng: SmallRng,
     //pub key_input: Vec<(KeyDirection, Keycode)>,
-    pub prev_turn_fov: Vec<EntityId>,
 }
 
 impl Game {
@@ -62,7 +61,6 @@ impl Game {
             msg_log,
             //key_input: Vec::new(),
             rng: rng,
-            prev_turn_fov: Vec::new(),
         };
 
         return Ok(state);
@@ -524,8 +522,6 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
     let previous_player_position =
         game.data.entities.pos[&player_id];
 
-    game.prev_turn_fov = game.data.all_within_fov(player_id, &game.config);
-
     game.data.entities.action[&player_id] = player_action;
 
     /* Actions */
@@ -590,6 +586,11 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
             }
         }
     }
+
+    // send player turn action in case there is cleanup to perform, or another system
+    // needs to know that the turn is finished.
+    game.msg_log.log(Msg::PlayerTurn());
+    resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
 
     // TODO this shouldn't be necessary- it should be part of msg handling
     // check if player lost all hp

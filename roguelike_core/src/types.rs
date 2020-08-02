@@ -103,10 +103,14 @@ impl GameData {
             EntityType::Player => config.fov_radius_player,
             typ => panic!(format!("Tried to see with object of type {:?}", typ)),
         };
-
-        if let Some(dir) = self.entities.direction.get(&entity_id) {
-            if self.map.is_in_fov_direction(pos, other_pos, radius, *dir) {
-                return true;
+        
+        if self.entities.typ[&entity_id] == EntityType::Player {
+            return self.map.is_in_fov(pos, other_pos, radius);
+        } else {
+            if let Some(dir) = self.entities.direction.get(&entity_id) {
+                return self.map.is_in_fov_direction(pos, other_pos, radius, *dir);
+            } else {
+                panic!(format!("tried to perform is_in_fov on entity without facing"));
             }
         }
 

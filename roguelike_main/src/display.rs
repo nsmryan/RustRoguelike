@@ -56,6 +56,8 @@ pub struct DisplayState {
     pub texture_creator: TextureCreator<WindowContext>,
     pub drawn_sprites: IndexMap<EntityId, Sprite>,
     pub impressions: Vec<Impression>,
+    pub prev_turn_fov: Vec<EntityId>,
+    pub current_turn_fov: Vec<EntityId>,
 }
 
 impl DisplayState {
@@ -79,6 +81,8 @@ impl DisplayState {
             texture_creator,
             drawn_sprites: IndexMap::new(),
             impressions: Vec::new(),
+            prev_turn_fov: Vec::new(),
+            current_turn_fov: Vec::new(),
         };
     }
 
@@ -450,6 +454,55 @@ impl DisplayState {
                     let anim_key = self.play_animation(Animation::Loop(sprite));
 
                     data.entities.animation[&entity_id].push_front(anim_key);
+                }
+            }
+
+            Msg::PlayerTurn() => {
+                let player_id = data.find_player().unwrap();
+
+                self.prev_turn_fov.clear();
+                self.prev_turn_fov.extend(self.current_turn_fov.iter());
+                self.current_turn_fov.clear();
+
+                for entity_id in data.entities.ids.clone() {
+                    let pos = data.entities.pos[&entity_id];
+                    let name = data.entities.name[&entity_id];
+                    let in_fov = data.is_in_fov(player_id, pos, config);
+                    let player_pos = data.entities.pos[&player_id];
+                    println!("{:?} in fov {} ({} to {})", name, in_fov, player_pos, pos);
+                    if entity_id != player_id && data.is_in_fov(player_id, pos, config) {
+                        self.current_turn_fov.push(entity_id);
+                    }
+                }
+
+                println!("prev {}, cur {}", self.prev_turn_fov.len(), self.current_turn_fov.len());
+
+                for entity_id in self.prev_turn_fov.iter() {
+                    if data.entities.typ.get(entity_id) != Some(&EntityType::Enemy) {
+                        continue;
+                    }
+
+                    let pos = data.entities.pos[entity_id];
+                    if !data.is_in_fov(player_id, pos, config) {
+                        if let Some(sprite) = self.drawn_sprites.get(entity_id) {
+                            self.impressions.push(Impression::new(*sprite, pos));
+                            println!("adding impression");
+                        }
+                    }
+                }
+
+                /* Remove impressions that are currently visible */
+                let mut impressions_visible = Vec::new();
+                for (index, impression) in self.impressions.iter().enumerate() {
+                    if data.is_in_fov(player_id, impression.pos, config) {
+                        impressions_visible.push(index);
+                    }
+                }
+                println!("removing {} impressions", impressions_visible.len());
+                impressions_visible.sort();
+                impressions_visible.reverse();
+                for index in impressions_visible.iter() {
+                    self.impressions.swap_remove(*index);
                 }
             }
 

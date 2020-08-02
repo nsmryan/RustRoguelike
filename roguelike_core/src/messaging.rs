@@ -73,6 +73,7 @@ pub enum Msg {
     FailedBlink(EntityId),
     NotEnoughEnergy(EntityId),
     DropFailed(EntityId),
+    PlayerTurn(),
 }
 
 impl Msg {
@@ -224,6 +225,10 @@ impl Msg {
 
             Msg::DropFailed(entity) => {
                 return format!("{:?} tried to drop an item, but its too crowded!", data.entities.name[entity]);
+            }
+
+            Msg::PlayerTurn() => {
+                return "".to_string();
             }
 
             _ => {
