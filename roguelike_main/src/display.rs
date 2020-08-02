@@ -316,7 +316,10 @@ impl DisplayState {
                     let player_pos = data.entities.pos[&player_id];
 
                     // only play the sound effect if the player position is included
-                    if source_pos == player_pos || sound_aoe.positions().iter().any(|pos| *pos == player_pos) {
+                    let sound_hits_player = sound_aoe.positions().iter().any(|pos| *pos == player_pos);
+                    let sound_from_player = source_pos == player_pos;
+                    let player_cant_see_source = !data.is_in_fov(player_id, source_pos, config);
+                    if sound_from_player || (player_cant_see_source && sound_hits_player) {
                         let sound_effect = Effect::Sound(sound_aoe, 0.0);
                         self.play_effect(sound_effect);
                     }
