@@ -24,6 +24,228 @@ use crate::resolve::resolve_messages;
 use crate::make_map::*;
 
 
+pub struct Game {
+    pub config: Config,
+    pub input_action: InputAction,
+    pub mouse_state: MouseState,
+    pub data: GameData,
+    pub settings: GameSettings,
+    pub msg_log: MsgLog,
+    pub rng: SmallRng,
+    //pub key_input: Vec<(KeyDirection, Keycode)>,
+    pub prev_turn_fov: Vec<EntityId>,
+}
+
+impl Game {
+    pub fn new(seed: u64, config: Config) -> Result<Game, String> {
+        let entities = Entities::new();
+        let rng: SmallRng = SeedableRng::seed_from_u64(seed);
+
+        let mut msg_log = MsgLog::new();
+
+        let map = Map::empty();
+
+        let mut data = GameData::new(map, entities);
+
+        let player_id = make_player(&mut data.entities, &config, &mut msg_log);
+        data.entities.pos[&player_id] = Pos::new(-1, -1);
+
+        let stone_id = make_stone(&mut data.entities, &config, Pos::new(-1, -1), &mut msg_log);
+        data.entities.inventory[&player_id].push_back(stone_id);
+
+        let state = Game {
+            config,
+            input_action: InputAction::None,
+            data,
+            settings: GameSettings::new(0, false),
+            mouse_state: Default::default(),
+            msg_log,
+            //key_input: Vec::new(),
+            rng: rng,
+            prev_turn_fov: Vec::new(),
+        };
+
+        return Ok(state);
+    }
+
+    pub fn step_game(&mut self, dt: f32) -> GameResult {
+        self.settings.time += dt;
+
+        let result;
+        match self.settings.state {
+            GameState::Playing => {
+                result = self.step_playing();
+            }
+
+            GameState::Win => {
+                result = self.step_win();
+            }
+
+            GameState::Lose => {
+                result = self.step_lose();
+            }
+
+            GameState::Inventory => {
+                result = self.step_inventory();
+            }
+
+            GameState::Selection => {
+                result = self.step_selection();
+            }
+
+            GameState::SkillMenu => {
+                result = self.step_skill_menu();
+            }
+        }
+
+        while let Some(msg) = self.msg_log.pop() {
+            let msg_line = msg.msg_line(&self.data);
+            if msg_line.len() > 0 {
+                println!("msg: {}", msg_line);
+            }
+        }
+
+        return result;
+    }
+
+    fn step_win(&mut self) -> GameResult {
+        if matches!(self.input_action, InputAction::Exit) {
+            return GameResult::Stop;
+        }
+
+        self.msg_log.log(Msg::ChangeLevel());
+
+        let player_id = self.data.find_player().unwrap();
+        self.data.clear_except(vec!(player_id));
+
+        self.settings.state = GameState::Playing;
+
+        self.settings.level_num += 1;
+
+        make_map(&self.config.map_load.clone(), self);
+
+        return GameResult::Continue;
+    }
+
+    fn step_lose(&mut self) -> GameResult {
+        if self.input_action == InputAction::Exit {
+            return GameResult::Stop;
+        }
+
+        return GameResult::Continue;
+    }
+
+    fn step_inventory(&mut self) -> GameResult {
+        let input = self.input_action;
+        self.input_action = InputAction::None;
+
+        actions::handle_input_inventory(input, &mut self.data, &mut self.settings, &mut self.msg_log);
+
+        if self.settings.exiting {
+            return GameResult::Stop;
+        }
+
+        return GameResult::Continue;
+    }
+
+    fn step_skill_menu(&mut self) -> GameResult {
+        let input = self.input_action;
+        self.input_action = InputAction::None;
+
+        let player_action =
+            actions::handle_input_skill_menu(input, &mut self.data, &mut self.settings, &mut self.msg_log);
+
+        if player_action != Action::NoAction {
+            let win = step_logic(self, player_action);
+
+            if win {
+                self.settings.state = GameState::Win;
+            }
+        }
+
+        if self.settings.exiting {
+            return GameResult::Stop;
+        }
+
+        return GameResult::Continue;
+    }
+
+    fn step_selection(&mut self) -> GameResult {
+        let input = self.input_action;
+        self.input_action = InputAction::None;
+
+        self.settings.draw_selection_overlay = true;
+
+        let player_action =
+            actions::handle_input_selection(input,
+                                           &mut self.data,
+                                           &mut self.settings,
+                                           &self.config,
+                                           &mut self.msg_log);
+
+        if player_action != Action::NoAction {
+            let win = step_logic(self, player_action);
+            if win {
+                self.settings.state = GameState::Win;
+            }
+        }
+
+        if self.settings.exiting {
+            return GameResult::Stop;
+        }
+
+        return GameResult::Continue;
+    }
+
+//    fn step_console(&mut self) -> GameResult {
+//        let input = self.input_action;
+//        self.input_action = InputAction::None;
+//
+//        let time_since_open = self.settings.time - self.console.time_at_open;
+//        let lerp_amount = clampf(time_since_open / self.config.console_speed, 0.0, 1.0);
+//        self.console.height = lerp(self.console.height as f32,
+//                                   self.config.console_max_height as f32,
+//                                   lerp_amount) as u32;
+//        if (self.console.height as i32 - self.config.console_max_height as i32).abs() < 2 {
+//            self.console.height = self.config.console_max_height;
+//        }
+//
+//        if self.key_input.len() > 0 {
+//            // TODO add console back in
+//            //actions::handle_input_console(input,
+//            //                              &mut self.key_input,
+//            //                              &mut self.console,
+//            //                              &mut self.data,
+//            //                              &mut self.display_state,
+//            //                              &mut self.settings,
+//            //                              &self.config,
+//            //                              &mut self.msg_log);
+//        }
+//
+//        return GameResult::Continue;
+//    }
+
+    fn step_playing(&mut self) -> GameResult {
+        let player_action =
+            actions::handle_input(self);
+
+        if player_action != Action::NoAction {
+            let win = step_logic(self, player_action);
+            if win {
+                self.settings.state = GameState::Win;
+            }
+        }
+
+        if self.settings.exiting {
+            return GameResult::Stop;
+        }
+
+        self.input_action = InputAction::None;
+
+        return GameResult::Continue;
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum GameResult {
     Continue,
@@ -272,241 +494,6 @@ impl GameSettings {
     }
 }
 
-pub struct Game {
-    pub config: Config,
-    pub input_action: InputAction,
-    pub mouse_state: MouseState,
-    pub data: GameData,
-    pub settings: GameSettings,
-    pub msg_log: MsgLog,
-    pub rng: SmallRng,
-    //pub key_input: Vec<(KeyDirection, Keycode)>,
-}
-
-impl Game {
-    pub fn new(seed: u64, config: Config) -> Result<Game, String> {
-        let entities = Entities::new();
-        let rng: SmallRng = SeedableRng::seed_from_u64(seed);
-
-        let mut msg_log = MsgLog::new();
-
-        let map = Map::empty();
-
-        let mut data = GameData::new(map, entities);
-
-        let player_id = make_player(&mut data.entities, &config, &mut msg_log);
-        data.entities.pos[&player_id] = Pos::new(-1, -1);
-
-        let stone_id = make_stone(&mut data.entities, &config, Pos::new(-1, -1), &mut msg_log);
-        data.entities.inventory[&player_id].push_back(stone_id);
-
-        let state = Game {
-            config,
-            input_action: InputAction::None,
-            data,
-            settings: GameSettings::new(0, false),
-            mouse_state: Default::default(),
-            msg_log,
-            //key_input: Vec::new(),
-            rng: rng,
-        };
-
-        return Ok(state);
-    }
-
-    pub fn step_game(&mut self, dt: f32) -> GameResult {
-        self.settings.time += dt;
-
-        let result;
-        match self.settings.state {
-            GameState::Playing => {
-                result = self.step_playing();
-            }
-
-            GameState::Win => {
-                result = self.step_win();
-            }
-
-            GameState::Lose => {
-                result = self.step_lose();
-            }
-
-            GameState::Inventory => {
-                result = self.step_inventory();
-            }
-
-            GameState::Selection => {
-                result = self.step_selection();
-            }
-
-            GameState::SkillMenu => {
-                result = self.step_skill_menu();
-            }
-        }
-
-        while let Some(msg) = self.msg_log.pop() {
-            let msg_line = msg.msg_line(&self.data);
-            if msg_line.len() > 0 {
-                println!("msg: {}", msg_line);
-            }
-        }
-
-        return result;
-    }
-
-    fn step_win(&mut self) -> GameResult {
-        if matches!(self.input_action, InputAction::Exit) {
-            return GameResult::Stop;
-        }
-
-        self.msg_log.log(Msg::ChangeLevel());
-
-        let player_id = self.data.find_player().unwrap();
-        self.data.clear_except(vec!(player_id));
-
-        self.settings.state = GameState::Playing;
-
-        self.settings.level_num += 1;
-
-        make_map(&self.config.map_load.clone(), self);
-
-        return GameResult::Continue;
-    }
-
-    fn step_lose(&mut self) -> GameResult {
-        if self.input_action == InputAction::Exit {
-            return GameResult::Stop;
-        }
-
-        return GameResult::Continue;
-    }
-
-    fn step_inventory(&mut self) -> GameResult {
-        let input = self.input_action;
-        self.input_action = InputAction::None;
-
-        actions::handle_input_inventory(input, &mut self.data, &mut self.settings, &mut self.msg_log);
-
-        if self.settings.exiting {
-            return GameResult::Stop;
-        }
-
-        return GameResult::Continue;
-    }
-
-    fn step_skill_menu(&mut self) -> GameResult {
-        let input = self.input_action;
-        self.input_action = InputAction::None;
-
-        let player_action =
-            actions::handle_input_skill_menu(input, &mut self.data, &mut self.settings, &mut self.msg_log);
-
-        if player_action != Action::NoAction {
-            let win = step_logic(player_action,
-                                 &mut self.data,
-                                 &mut self.settings,
-                                 &self.config,
-                                 &mut self.rng,
-                                 &mut self.msg_log);
-
-            if win {
-                self.settings.state = GameState::Win;
-            }
-        }
-
-        if self.settings.exiting {
-            return GameResult::Stop;
-        }
-
-        return GameResult::Continue;
-    }
-
-    fn step_selection(&mut self) -> GameResult {
-        let input = self.input_action;
-        self.input_action = InputAction::None;
-
-        self.settings.draw_selection_overlay = true;
-
-        let player_action =
-            actions::handle_input_selection(input,
-                                           &mut self.data,
-                                           &mut self.settings,
-                                           &self.config,
-                                           &mut self.msg_log);
-
-        if player_action != Action::NoAction {
-            let win = step_logic(player_action,
-                                 &mut self.data,
-                                 &mut self.settings,
-                                 &self.config,
-                                 &mut self.rng,
-                                 &mut self.msg_log);
-            if win {
-                self.settings.state = GameState::Win;
-            }
-        }
-
-        if self.settings.exiting {
-            return GameResult::Stop;
-        }
-
-        return GameResult::Continue;
-    }
-
-//    fn step_console(&mut self) -> GameResult {
-//        let input = self.input_action;
-//        self.input_action = InputAction::None;
-//
-//        let time_since_open = self.settings.time - self.console.time_at_open;
-//        let lerp_amount = clampf(time_since_open / self.config.console_speed, 0.0, 1.0);
-//        self.console.height = lerp(self.console.height as f32,
-//                                   self.config.console_max_height as f32,
-//                                   lerp_amount) as u32;
-//        if (self.console.height as i32 - self.config.console_max_height as i32).abs() < 2 {
-//            self.console.height = self.config.console_max_height;
-//        }
-//
-//        if self.key_input.len() > 0 {
-//            // TODO add console back in
-//            //actions::handle_input_console(input,
-//            //                              &mut self.key_input,
-//            //                              &mut self.console,
-//            //                              &mut self.data,
-//            //                              &mut self.display_state,
-//            //                              &mut self.settings,
-//            //                              &self.config,
-//            //                              &mut self.msg_log);
-//        }
-//
-//        return GameResult::Continue;
-//    }
-
-    fn step_playing(&mut self) -> GameResult {
-        let player_action =
-            actions::handle_input(self);
-
-        if player_action != Action::NoAction {
-            let win = step_logic(player_action,
-                                 &mut self.data,
-                                 &mut self.settings,
-                                 &self.config,
-                                 &mut self.rng,
-                                 &mut self.msg_log);
-            if win {
-                self.settings.state = GameState::Win;
-            }
-        }
-
-        if self.settings.exiting {
-            return GameResult::Stop;
-        }
-
-        self.input_action = InputAction::None;
-
-        return GameResult::Continue;
-    }
-}
-
 /// Check whether the exit condition for the game is met.
 fn win_condition_met(data: &GameData) -> bool {
     // loop over objects in inventory, and check whether any
@@ -529,65 +516,63 @@ fn win_condition_met(data: &GameData) -> bool {
     return exit_condition;
 }
 
-pub fn step_logic(player_action: Action,
-                  data: &mut GameData, 
-                  settings: &mut GameSettings,
-                  config: &Config,
-                  rng: &mut SmallRng,
-                  msg_log: &mut MsgLog) -> bool {
-    msg_log.clear();
+pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
+    game.msg_log.clear();
 
-    let player_id = data.find_player().unwrap();
+    let player_id = game.data.find_player().unwrap();
 
     let previous_player_position =
-        data.entities.pos[&player_id];
+        game.data.entities.pos[&player_id];
 
-    data.entities.action[&player_id] = player_action;
+    game.prev_turn_fov = game.data.all_within_fov(player_id, &game.config);
+
+    game.data.entities.action[&player_id] = player_action;
 
     /* Actions */
-    msg_log.log(Msg::Action(player_id, player_action));
+    game.msg_log.log(Msg::Action(player_id, player_action));
 
-    println!("Turn {}:", settings.turn_count);
+    println!();
+    println!("Turn {}:", game.settings.turn_count);
 
-    resolve_messages(data, msg_log, settings, rng, config);
+    resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
 
     // resolve enemy action
-    if player_action.takes_turn() && data.entities.alive[&player_id] {
+    if player_action.takes_turn() && game.data.entities.alive[&player_id] {
         let mut ai_id: Vec<EntityId> = Vec::new();
 
-        for key in data.entities.ids.iter() {
-            if data.entities.ai.get(key).is_some() &&
-               data.entities.alive[key]            &&
-               data.entities.fighter.get(key).is_some() {
+        for key in game.data.entities.ids.iter() {
+            if game.data.entities.ai.get(key).is_some() &&
+               game.data.entities.alive[key]            &&
+               game.data.entities.fighter.get(key).is_some() {
                ai_id.push(*key);
            }
         }
 
         for key in ai_id.iter() {
-            let action = ai_take_turn(*key, data, config, msg_log);
-           data.entities.action[key] = action;
+            let action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
+           game.data.entities.action[key] = action;
 
            // if changing state, resolve now and allow another action
            if matches!(action, Action::StateChange(_)) {
-                msg_log.log(Msg::Action(*key, action));
-                resolve_messages(data, msg_log, settings, rng, config);
-                let backup_action = ai_take_turn(*key, data, config, msg_log);
-                data.entities.action[key] = backup_action;
+                game.msg_log.log(Msg::Action(*key, action));
+                resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
+                let backup_action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
+                game.data.entities.action[key] = backup_action;
             }
         }
 
         for key in ai_id.iter() {
-            if let Some(action) = data.entities.action.get(key).map(|v| *v) {
-                msg_log.log(Msg::Action(*key, action));
-                resolve_messages(data, msg_log, settings, rng, config);
+            if let Some(action) = game.data.entities.action.get(key).map(|v| *v) {
+                game.msg_log.log(Msg::Action(*key, action));
+                resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
 
                 // check if fighter needs to be removed
-                if let Some(fighter) = data.entities.fighter.get(key) {
+                if let Some(fighter) = game.data.entities.fighter.get(key) {
                     if fighter.hp <= 0 {
-                        data.entities.alive[key] = false;
-                        data.entities.blocks[key] = false;
-                        data.entities.chr[key] = '%';
-                        data.entities.fighter.remove(key);
+                        game.data.entities.alive[key] = false;
+                        game.data.entities.blocks[key] = false;
+                        game.data.entities.chr[key] = '%';
+                        game.data.entities.fighter.remove(key);
                     }
                 }
             }
@@ -595,29 +580,29 @@ pub fn step_logic(player_action: Action,
 
         for key in ai_id.iter() {
             // if there are remaining messages for an entity, clear them
-            data.entities.messages[key].clear();
+            game.data.entities.messages[key].clear();
 
-            let action = ai_take_turn(*key, data, config, msg_log);
+            let action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
             if matches!(action, Action::StateChange(_)) {
-                msg_log.log(Msg::Action(*key, action));
-                data.entities.action[key] = action;
-                resolve_messages(data, msg_log, settings, rng, config);
+                game.msg_log.log(Msg::Action(*key, action));
+                game.data.entities.action[key] = action;
+                resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
             }
         }
     }
 
     // TODO this shouldn't be necessary- it should be part of msg handling
     // check if player lost all hp
-    if let Some(fighter) = data.entities.fighter.get(&player_id) {
+    if let Some(fighter) = game.data.entities.fighter.get(&player_id) {
         if fighter.hp <= 0 {
             // modify player
             {
-                data.entities.alive[&player_id] = false;
-                data.entities.color[&player_id] = config.color_red;
+                game.data.entities.alive[&player_id] = false;
+                game.data.entities.color[&player_id] = game.config.color_red;
             }
 
-            if settings.state == GameState::Playing {
-                settings.state = GameState::Lose;
+            if game.settings.state == GameState::Playing {
+                game.settings.state = GameState::Lose;
             }
         }
     }
@@ -625,8 +610,8 @@ pub fn step_logic(player_action: Action,
     let mut to_remove: Vec<EntityId> = Vec::new();
 
     // perform count down
-    for entity_id in data.entities.ids.iter() {
-        if let Some(ref mut count) = data.entities.count_down.get_mut(entity_id) {
+    for entity_id in game.data.entities.ids.iter() {
+        if let Some(ref mut count) = game.data.entities.count_down.get_mut(entity_id) {
             if **count == 0 {
                 to_remove.push(*entity_id);
             } else {
@@ -634,28 +619,28 @@ pub fn step_logic(player_action: Action,
             }
         }
 
-        if data.entities.needs_removal[entity_id] &&
-           data.entities.animation[entity_id].len() == 0 {
+        if game.data.entities.needs_removal[entity_id] &&
+           game.data.entities.animation[entity_id].len() == 0 {
             to_remove.push(*entity_id);
         }
     }
 
     // remove objects waiting removal
     for key in to_remove {
-        data.remove_entity(key);
+        game.data.remove_entity(key);
     }
 
     /* Recompute FOV */
-    let player_pos = data.entities.pos[&player_id];
+    let player_pos = game.data.entities.pos[&player_id];
     if previous_player_position != player_pos {
-        data.map.compute_fov(player_pos, config.fov_radius_player);
+        game.data.map.compute_fov(player_pos, game.config.fov_radius_player);
     }
 
     if player_action.takes_turn() {
-        settings.turn_count += 1;
+        game.settings.turn_count += 1;
     }
 
-    return win_condition_met(data);
+    return win_condition_met(&game.data);
 }
 
 #[test]

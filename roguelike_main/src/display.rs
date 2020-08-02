@@ -10,11 +10,37 @@ use roguelike_core::constants::*;
 use roguelike_core::config::*;
 use roguelike_core::messaging::*;
 use roguelike_core::map::*;
-use roguelike_core::animation::{AnimKey, Effect, SpriteKey, Animation, Sprite, SpriteIndex};
+use roguelike_core::animation::{Sprite, AnimKey, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use roguelike_core::movement::{Cardinal, MoveType};
 
 use crate::plat::*;
 
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct AnimationResult {
+    pub done: bool,
+    pub sprite: Option<Sprite>,
+}
+
+impl AnimationResult {
+    pub fn new() -> AnimationResult {
+        let sprite: Option<Sprite> = None;
+        let done = false;
+        return AnimationResult { done, sprite};
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Impression {
+    pub sprite: Sprite,
+    pub pos: Pos,
+}
+
+impl Impression {
+    pub fn new(sprite: Sprite, pos: Pos) -> Impression {
+        return Impression { sprite, pos };
+    }
+}
 
 pub struct DisplayState {
     pub font_image: Texture,
@@ -28,6 +54,8 @@ pub struct DisplayState {
     pub next_anim_key: i64,
     pub background: Option<Texture>,
     pub texture_creator: TextureCreator<WindowContext>,
+    pub drawn_sprites: IndexMap<EntityId, Sprite>,
+    pub impressions: Vec<Impression>,
 }
 
 impl DisplayState {
@@ -49,6 +77,8 @@ impl DisplayState {
             next_anim_key: 0,
             background: None,
             texture_creator,
+            drawn_sprites: IndexMap::new(),
+            impressions: Vec::new(),
         };
     }
 
@@ -68,22 +98,22 @@ impl DisplayState {
         return None;
     }
 
-    pub fn new_sprite(&self, name: String, speed: f32) -> Option<Sprite> {
+    pub fn new_sprite(&self, name: String, speed: f32) -> Option<SpriteAnim> {
         if let Some(sprite_key) = self.lookup_spritekey(&name) {
             let max_index = self.sprites[&sprite_key].num_sprites;
-            return Some(Sprite::make_sprite(name, sprite_key, max_index as f32, speed));
+            return Some(SpriteAnim::make_anim(name, sprite_key, max_index as f32, speed));
         }
 
         return None;
     }
 
-    pub fn font_sprite(&self, chr: char) -> Option<Sprite> {
+    pub fn font_sprite(&self, chr: char) -> Option<SpriteAnim> {
         if let Some(sprite_key) = self.lookup_spritekey(&"font".to_string()) {
-            return Some(Sprite::new(format!("{}", chr),
-                                    sprite_key,
-                                    chr as i32 as SpriteIndex,
-                                    chr as i32 as SpriteIndex,
-                                    0.0));
+            return Some(SpriteAnim::new(format!("{}", chr),
+                                        sprite_key,
+                                        chr as i32 as SpriteIndex,
+                                        chr as i32 as SpriteIndex,
+                                        0.0));
         }
 
         return None;
@@ -113,15 +143,32 @@ impl DisplayState {
     }
 
     pub fn draw_sprite(&mut self,
-                       sprite: &Sprite,
+                       sprite: Sprite,
                        pos: Pos,
                        color: Color,
                        area: &Area) {
-        let sprite_sheet = &mut self.sprites[&sprite.sprite_key];
+        match sprite {
+            Sprite::Sprite(index, key) => {
+                self.draw_tile(index as u32, key, pos, color, area);
+            },
+
+            Sprite::Char(chr) => {
+                self.draw_char(chr, pos, color, area);
+            },
+        }
+    }
+
+    pub fn draw_tile(&mut self,
+                     index: u32,
+                     sprite_key: SpriteKey,
+                     pos: Pos,
+                     color: Color,
+                     area: &Area) {
+        let sprite_sheet = &mut self.sprites[&sprite_key];
 
         let sprites_per_row = sprite_sheet.sprites_per_row();
-        let sprite_x = (sprite.index as usize) % sprites_per_row;
-        let sprite_y = (sprite.index as usize) / sprites_per_row;
+        let sprite_x = index as usize % sprites_per_row;
+        let sprite_y = index as usize / sprites_per_row;
 
         let src = Rect::new(sprite_x as i32 * FONT_WIDTH,
                             sprite_y as i32 * FONT_HEIGHT,
@@ -169,6 +216,7 @@ impl DisplayState {
                             false,
                             false).unwrap();
     }
+
     pub fn draw_char(&mut self,
                      chr: char,
                      pos: Pos,

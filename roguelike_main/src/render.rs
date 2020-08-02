@@ -10,7 +10,7 @@ use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::animation::{Effect, Animation, AnimKey};
+use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
 use roguelike_core::utils::{line, item_primary_at, distance, move_towards, lerp_color};
 
 use roguelike_engine::game::*;
@@ -75,6 +75,8 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
                     render_background(display_state, game, &area);
 
                     render_map(display_state, game, &area);
+
+                    render_impressions(display_state, game, &area);
 
                     render_entities(display_state, game, &area);
 
@@ -678,7 +680,11 @@ fn render_effects(display_state: &mut DisplayState, game: &mut Game, area: &Area
     display_state.effects = effects;
 }
 
-fn render_entity(entity_id: EntityId, display_state: &mut DisplayState, game: &mut Game, area: &Area) {
+fn render_entity(entity_id: EntityId,
+                 display_state: &mut DisplayState, 
+                 game: &mut Game, area: &Area) -> Option<Sprite> {
+    let mut animation_result = AnimationResult::new();
+
     let pos = game.data.entities.pos[&entity_id];
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
@@ -689,17 +695,17 @@ fn render_entity(entity_id: EntityId, display_state: &mut DisplayState, game: &m
            game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player);
 
         if let Some(anim_key) = game.data.entities.animation[&entity_id].get(0) {
-            let done = 
-                step_animation(*anim_key,
-                               entity_id,
-                               is_in_fov,
-                               display_state,
-                               &mut game.data,
-                               &game.settings,
-                               &game.config,
-                               area);
+            animation_result = 
+                render_animation(*anim_key,
+                                 entity_id,
+                                 is_in_fov,
+                                 display_state,
+                                 &mut game.data,
+                                 &game.settings,
+                                 &game.config,
+                                 area);
 
-            if done {
+            if animation_result.done {
                 game.data.entities.animation[&entity_id].pop_front();
             }
         } else {
@@ -707,9 +713,52 @@ fn render_entity(entity_id: EntityId, display_state: &mut DisplayState, game: &m
             if is_in_fov && !needs_removal {
                 let color = game.data.entities.color[&entity_id];
 
-                display_state.draw_char(game.data.entities.chr[&entity_id], pos, color, area);
+                let chr = game.data.entities.chr[&entity_id];
+                let sprite = Sprite::char(chr);
+                display_state.draw_sprite(sprite, pos, color, area);
+                animation_result.sprite = Some(sprite);
             }
         }
+    }
+
+    return animation_result.sprite;
+}
+
+fn render_impressions(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
+    let player_id = game.data.find_player().unwrap();
+
+    // check for entities that have left FOV and make an impression for them
+    // NOTE(perf) technically this is only necessary once per turn, not once per render
+    for entity_id in game.prev_turn_fov.iter() {
+        if *entity_id == player_id || game.data.entities.typ.get(entity_id) != Some(&EntityType::Enemy) {
+            continue;
+        }
+
+        let pos = game.data.entities.pos[entity_id];
+        if !game.data.is_in_fov(player_id, pos, &game.config) {
+            if let Some(sprite) = display_state.drawn_sprites.get(entity_id) {
+                display_state.impressions.push(Impression::new(*sprite, pos));
+            }
+        }
+    }
+
+    /* Remove impressions that are currently visible */
+    let mut impressions_visible = Vec::new();
+    for (index, impression) in display_state.impressions.iter().enumerate() {
+        if game.data.is_in_fov(player_id, impression.pos, &game.config) {
+            impressions_visible.push(index);
+        }
+    }
+    impressions_visible.sort();
+    impressions_visible.reverse();
+    for index in impressions_visible.iter() {
+        display_state.impressions.swap_remove(*index);
+    }
+
+    display_state.drawn_sprites.clear();
+
+    for impression in display_state.impressions.clone() {
+        display_state.draw_sprite(impression.sprite, impression.pos, game.config.color_light_grey, area);
     }
 }
 
@@ -717,24 +766,33 @@ fn render_entity(entity_id: EntityId, display_state: &mut DisplayState, game: &m
 fn render_entities(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
     let player_id = game.data.find_player().unwrap();
 
+    display_state.drawn_sprites.clear();
+
     // step each objects animation
-    for entity in game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>().iter() {
-        if *entity != player_id {
-            render_entity(*entity, display_state, game, area);
+    for entity in game.data.entities.ids.clone() {
+        if entity != player_id {
+            let maybe_sprite = render_entity(entity, display_state, game, area);
+
+            if let Some(sprite) = maybe_sprite {
+                display_state.drawn_sprites.insert(entity, sprite);
+            }
         }
     }
 
-    render_entity(player_id, display_state, game, area);
+    let maybe_sprite = render_entity(player_id, display_state, game, area);
+    if let Some(sprite) = maybe_sprite {
+        display_state.drawn_sprites.insert(player_id, sprite);
+    }
 }
 
-fn step_animation(anim_key: AnimKey,
+fn render_animation(anim_key: AnimKey,
                       entity_id: EntityId,
                       is_in_fov: bool,
                       display_state: &mut DisplayState,
                       data: &mut GameData,
                       settings: &GameSettings,
                       config: &Config,
-                      area: &Area) -> bool {
+                      area: &Area) -> AnimationResult {
 
     let pos = data.entities.pos[&entity_id];
     let mut color = data.entities.color[&entity_id];
@@ -744,71 +802,81 @@ fn step_animation(anim_key: AnimKey,
         color = config.color_warm_grey;
     }
 
+    let mut animation_result: AnimationResult = AnimationResult::new();
     match display_state.animations[&anim_key].clone() {
-        Animation::Between(ref mut sprite, start, end, ref mut dist, blocks_per_sec) => {
+        Animation::Between(ref mut sprite_anim, start, end, ref mut dist, blocks_per_sec) => {
            if settings.god_mode || is_in_fov {
                *dist = *dist + (blocks_per_sec / config.rate as f32); 
                let num_blocks = *dist as usize;
 
                let draw_pos = move_towards(start, end, num_blocks);
 
+               let sprite = sprite_anim.sprite();
                display_state.draw_sprite(sprite,
                                          draw_pos,
                                          color,
                                          &area);
+               animation_result.sprite = Some(sprite);
 
-               sprite.step();
+               sprite_anim.step();
 
                display_state.animations[&anim_key] =
-                   Animation::Between(*sprite, start, end, *dist, blocks_per_sec);
+                   Animation::Between(*sprite_anim, start, end, *dist, blocks_per_sec);
 
-               return *dist >= distance(start, end) as f32;
+               animation_result.done = *dist >= distance(start, end) as f32;
            }
         }
 
-        Animation::Loop(ref mut sprite) => {
+        Animation::Loop(ref mut sprite_anim) => {
            if settings.god_mode || is_in_fov {
+                let sprite = sprite_anim.sprite();
                 display_state.draw_sprite(sprite,
                                           pos,
                                           color,
                                           &area);
+                animation_result.sprite = Some(sprite);
 
-                sprite.step();
+
+                sprite_anim.step();
 
                 display_state.animations[&anim_key] =
-                   Animation::Loop(*sprite);
+                   Animation::Loop(*sprite_anim);
 
                 // a looping animation never finishes
-                return false;
+                animation_result.done = false;
             }
         }
 
         Animation::PlayEffect(effect) => {
             display_state.play_effect(effect);
 
+            // NOTE the sprite is not updated here- this may cause entity impressions to not work
+            // in edge cases where an effect is playing.
+
             // true indicates that the animation is finished
-            return true;
+            //return true;
         }
 
-        Animation::Once(ref mut sprite) => {
+        Animation::Once(ref mut sprite_anim) => {
            if settings.god_mode || is_in_fov {
+                let sprite = sprite_anim.sprite();
                 display_state.draw_sprite(sprite,
                                           pos,
                                           color,
                                           &area);
+                animation_result.sprite = Some(sprite);
 
-                let sprite_done = sprite.step();
+                let sprite_done = sprite_anim.step();
 
                 display_state.animations[&anim_key] =
-                   Animation::Once(*sprite);
+                   Animation::Once(*sprite_anim);
 
-                return sprite_done;
+                animation_result.done = sprite_done;
             }
         }
     }
 
-    // assume animation is 'not finished' if it doesn't return anything
-    return false;
+    return animation_result;
 }
 
 fn render_overlays(display_state: &mut DisplayState, 

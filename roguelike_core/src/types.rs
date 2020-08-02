@@ -267,6 +267,23 @@ impl GameData {
         return visible;
     }
 
+    pub fn all_within_fov(&mut self, entity_id: EntityId, config: &Config) -> Vec<EntityId> {
+        // NOTE(perf) unnecessary allocation
+        let mut in_fov: Vec<EntityId> = Vec::new();
+
+        let ids = self.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>();
+        for other_id in ids {
+            if entity_id != other_id {
+                let pos = self.entities.pos[&other_id];
+                if self.is_in_fov(entity_id, pos, config) {
+                    in_fov.push(other_id);
+                }
+            }
+        }
+
+        return in_fov;
+    }
+
     pub fn clear_except(&mut self, exceptions: Vec<EntityId>) {
         let mut dont_clear: Vec<EntityId> = Vec::new();
 

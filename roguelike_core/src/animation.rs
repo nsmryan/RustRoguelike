@@ -16,8 +16,24 @@ pub enum Effect {
     HeardSomething(Pos, usize), // position of sound, turn that it occurred
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Sprite {
+    Char(char),
+    Sprite(u32, SpriteKey),
+}
+
+impl Sprite {
+    pub fn sprite(index: u32, sheet: SpriteKey) -> Sprite {
+        return Sprite::Sprite(index, sheet);
+    }
+
+    pub fn char(chr: char) -> Sprite {
+        return Sprite::Char(chr);
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Sprite {
+pub struct SpriteAnim {
     pub name: Name,
     pub sprite_key: SpriteKey,
     pub index: SpriteIndex,
@@ -26,13 +42,13 @@ pub struct Sprite {
     pub speed: f32,
 }
 
-impl Sprite {
+impl SpriteAnim {
     pub fn new(name: String,
                sprite_key: SpriteKey,
                index: SpriteIndex,
                max_index: SpriteIndex,
-               speed: f32) -> Sprite {
-        return Sprite { name: name.into(),
+               speed: f32) -> SpriteAnim {
+        return SpriteAnim { name: name.into(),
                         sprite_key,
                         index,
                         start_index: index,
@@ -41,11 +57,11 @@ impl Sprite {
         };
     }
 
-    pub fn make_sprite(name: String,
-                       sprite_key: SpriteKey,
-                       max_index: SpriteIndex,
-                       speed: f32) -> Sprite {
-        return Sprite {
+    pub fn make_anim(name: String,
+                     sprite_key: SpriteKey,
+                     max_index: SpriteIndex,
+                     speed: f32) -> SpriteAnim {
+        return SpriteAnim {
             name: name.into(),
             sprite_key,
             max_index,
@@ -66,13 +82,17 @@ impl Sprite {
 
         return false;
     }
+
+    pub fn sprite(&self) -> Sprite {
+        return Sprite::sprite(self.index as u32, self.sprite_key);
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Animation {
-    Loop(Sprite),                         // play sprite sheet in loop
-    Between(Sprite, Pos, Pos, f32, f32),  // start, end, dist, blocks_per_sec
-    Once(Sprite),                         // play sprite once and end
+    Loop(SpriteAnim),                         // play sprite sheet in loop
+    Between(SpriteAnim, Pos, Pos, f32, f32),  // start, end, dist, blocks_per_sec
+    Once(SpriteAnim),                         // play sprite once and end
     PlayEffect(Effect),
 }
 
