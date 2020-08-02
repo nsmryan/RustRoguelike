@@ -255,7 +255,8 @@ pub fn handle_input_inventory(input: InputAction,
         }
 
         InputAction::Exit => {
-            settings.exiting = true;
+            settings.state = GameState::ConfirmQuit;
+            msg_log.log(Msg::GameState(settings.state));
         }
 
         _ => {
@@ -349,6 +350,31 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::Exit => {
+            settings.state = GameState::ConfirmQuit;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        _ => {
+        }
+    }
+
+    return player_turn;
+}
+
+pub fn handle_input_confirm_quit(input: InputAction,
+                                 data: &mut GameData,
+                                 settings: &mut GameSettings,
+                                 msg_log: &mut MsgLog) -> Action {
+    let mut player_turn: Action = Action::NoAction;
+    let player_id = data.find_player().unwrap();
+
+    match input {
+        InputAction::Esc => {
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        InputAction::Exit => {
             settings.exiting = true;
         }
 
@@ -375,7 +401,8 @@ pub fn handle_input_selection(input: InputAction,
         }
 
         InputAction::Exit => {
-            settings.exiting = true;
+            settings.state = GameState::ConfirmQuit;
+            msg_log.log(Msg::GameState(settings.state));
         }
 
         InputAction::Esc => {
@@ -515,7 +542,8 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::Exit, _) => {
-            game.settings.exiting = true;
+            game.settings.state = GameState::ConfirmQuit;
+            game.msg_log.log(Msg::GameState(game.settings.state));
         }
 
         (InputAction::ExploreAll, _) => {

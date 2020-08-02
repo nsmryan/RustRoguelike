@@ -94,6 +94,10 @@ impl Game {
             GameState::SkillMenu => {
                 result = self.step_skill_menu();
             }
+
+            GameState::ConfirmQuit => {
+                result = self.step_confirm_quit();
+            }
         }
 
         while let Some(msg) = self.msg_log.pop() {
@@ -160,6 +164,20 @@ impl Game {
                 self.settings.state = GameState::Win;
             }
         }
+
+        if self.settings.exiting {
+            return GameResult::Stop;
+        }
+
+        return GameResult::Continue;
+    }
+
+    fn step_confirm_quit(&mut self) -> GameResult {
+        let input = self.input_action;
+        self.input_action = InputAction::None;
+
+        let player_action =
+            actions::handle_input_confirm_quit(input, &mut self.data, &mut self.settings, &mut self.msg_log);
 
         if self.settings.exiting {
             return GameResult::Stop;

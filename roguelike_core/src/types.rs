@@ -389,6 +389,7 @@ pub enum GameState {
     Inventory,
     Selection,
     SkillMenu,
+    ConfirmQuit,
 }
 
 impl Default for GameState {
