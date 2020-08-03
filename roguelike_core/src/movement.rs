@@ -732,7 +732,7 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId, other_id: EntityId, mo
         let dxy = sub_pos(other_pos, pos);
         let next = next_pos(pos, dxy);
         if data.map[next].tile_type != TileType::Water &&
-           !data.map[next].blocked {
+           data.map.is_blocked_by_wall(other_pos, delta_pos.x, delta_pos.y).is_none() {
             let attack = Attack::Push(other_id, delta_pos);
             movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
         } else {
