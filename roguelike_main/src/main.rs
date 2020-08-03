@@ -268,6 +268,7 @@ pub fn run(seed: u64, starting_actions: Vec<InputAction>) -> Result<(), String> 
 
         if game.settings.state == GameState::Win {
             dbg!("Won");
+            display_state.clear_level_state();
         } else if game_result == GameResult::Stop || game.settings.exiting {
             running = false;
         }

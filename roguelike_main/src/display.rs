@@ -304,6 +304,12 @@ impl DisplayState {
         self.effects.push(effect);
     }
 
+    pub fn clear_level_state(&mut self) {
+        self.impressions.clear();
+        self.prev_turn_fov.clear();
+        self.current_turn_fov.clear();
+    }
+
     pub fn process_message(&mut self, msg: Msg, data: &mut GameData, config: &Config) {
         match msg {
             Msg::Sound(_cause_id, source_pos, radius, should_animate) => {
@@ -472,13 +478,10 @@ impl DisplayState {
                     let name = data.entities.name[&entity_id];
                     let in_fov = data.is_in_fov(player_id, pos, config);
                     let player_pos = data.entities.pos[&player_id];
-                    println!("{:?} in fov {} ({} to {})", name, in_fov, player_pos, pos);
                     if entity_id != player_id && data.is_in_fov(player_id, pos, config) {
                         self.current_turn_fov.push(entity_id);
                     }
                 }
-
-                println!("prev {}, cur {}", self.prev_turn_fov.len(), self.current_turn_fov.len());
 
                 for entity_id in self.prev_turn_fov.iter() {
                     if data.entities.typ.get(entity_id) != Some(&EntityType::Enemy) {
@@ -489,7 +492,6 @@ impl DisplayState {
                     if !data.is_in_fov(player_id, pos, config) {
                         if let Some(sprite) = self.drawn_sprites.get(entity_id) {
                             self.impressions.push(Impression::new(*sprite, pos));
-                            println!("adding impression");
                         }
                     }
                 }
@@ -501,7 +503,6 @@ impl DisplayState {
                         impressions_visible.push(index);
                     }
                 }
-                println!("removing {} impressions", impressions_visible.len());
                 impressions_visible.sort();
                 impressions_visible.reverse();
                 for index in impressions_visible.iter() {

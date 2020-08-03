@@ -38,7 +38,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 }
 
                 msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_crushed, true));
-                dbg!(entity_id, pos, config.sound_radius_crushed);
             }
 
             Msg::Sound(cause_id, source_pos, radius, _should_animate) => {
