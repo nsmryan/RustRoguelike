@@ -617,10 +617,10 @@ impl Map {
         let blocked =
             self.is_blocked_by_wall(start_pos, offset.x, offset.y);
 
-        let mut wall_in_path = false;
+        let mut blocked_by_wall = false;
         if let Some(blocked) = blocked {
             let at_end = blocked.end_pos == end_pos;
-            wall_in_path = !(at_end && blocked.blocked_tile);
+            blocked_by_wall = !(at_end && blocked.blocked_tile);
             // TODO remove when https://github.com/nsmryan/RustRoguelike/issues/135 is closed
             //let no_wall = blocked.wall_type.no_wall();
             //let visible_wall = blocked.blocked_tile && no_wall;
@@ -630,7 +630,7 @@ impl Map {
         let is_visible =
             self.fov.is_in_fov(end_pos.x as usize, end_pos.y as usize);
 
-        let is_in_fov = !wall_in_path && is_visible;
+        let is_in_fov = !blocked_by_wall && is_visible;
 
         return is_in_fov;
     }
