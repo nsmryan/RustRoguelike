@@ -119,6 +119,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 }
                 data.entities.alive[&attacked] = false;
 
+                data.entities.blocks[&attacked] = false;
+
                 data.entities.needs_removal[&attacked] = true;
             }
 
