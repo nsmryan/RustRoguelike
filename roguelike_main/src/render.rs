@@ -688,9 +688,7 @@ fn render_effects(display_state: &mut DisplayState, game: &mut Game, area: &Area
                         game.config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
 
                     for pos in dist_positions.iter() {
-                        if !game.data.map[*pos].blocked { // &&
-                            // TODO this would hide sound if the player can't see the result
-                            // game.data.map.is_in_fov(player_pos, *pos, game.config.fov_radius_player) {
+                        if !game.data.map[*pos].blocked {
                            display_state.highlight_tile(*pos, highlight_color, area);
                         }
                     }
@@ -700,6 +698,9 @@ fn render_effects(display_state: &mut DisplayState, game: &mut Game, area: &Area
                     remove_indices.push(index);
                 } else {
                     *sound_dt += 1.0 / game.config.rate as f32;
+                    if *sound_dt > game.config.sound_timeout {
+                        *sound_dt = game.config.sound_timeout;
+                    }
                 }
             }
         }
@@ -857,12 +858,10 @@ fn render_animation(anim_key: AnimKey,
 
         Animation::PlayEffect(effect) => {
             display_state.play_effect(effect);
+            animation_result.done = true;
 
             // NOTE the sprite is not updated here- this may cause entity impressions to not work
             // in edge cases where an effect is playing.
-
-            // true indicates that the animation is finished
-            //return true;
         }
 
         Animation::Once(ref mut sprite_anim) => {
