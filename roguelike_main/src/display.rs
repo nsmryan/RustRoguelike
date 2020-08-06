@@ -312,7 +312,7 @@ impl DisplayState {
 
     pub fn process_message(&mut self, msg: Msg, data: &mut GameData, config: &Config) {
         match msg {
-            Msg::Sound(_cause_id, source_pos, radius, should_animate) => {
+            Msg::Sound(cause_id, source_pos, radius, should_animate) => {
                 if should_animate {
                     // NOTE this is a duplicate computation, also done in logic message processing
                     let sound_aoe =
@@ -323,9 +323,10 @@ impl DisplayState {
 
                     // only play the sound effect if the player position is included
                     let sound_hits_player = sound_aoe.positions().iter().any(|pos| *pos == player_pos);
-                    let sound_from_player = source_pos == player_pos;
-                    let player_cant_see_source = !data.is_in_fov(player_id, source_pos, config);
-                    if sound_from_player || (player_cant_see_source && sound_hits_player) {
+                    let sound_from_monster = data.entities.typ[&cause_id] == EntityType::Enemy;
+                    let player_can_see_source = data.is_in_fov(player_id, source_pos, config);
+                    let visible_monster_sound = sound_from_monster && player_can_see_source;
+                    if !visible_monster_sound && sound_hits_player {
                         let sound_effect = Effect::Sound(sound_aoe, 0.0);
                         self.play_effect(sound_effect);
                     }
