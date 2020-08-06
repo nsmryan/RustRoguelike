@@ -553,15 +553,16 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
         let mut ai_id: Vec<EntityId> = Vec::new();
 
         for key in game.data.entities.ids.iter() {
-            if game.data.entities.ai.get(key).is_some() &&
-               game.data.entities.alive[key]            &&
+            if game.data.entities.ai.get(key).is_some()    &&
+               game.data.entities.alive[key]               &&
+               game.data.entities.limbo.get(key).is_none() &&
                game.data.entities.fighter.get(key).is_some() {
                ai_id.push(*key);
            }
         }
 
         for key in ai_id.iter() {
-            let action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
+           let action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
            game.data.entities.action[key] = action;
 
            // if changing state, resolve now and allow another action

@@ -67,7 +67,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 msg_log.log_front(Msg::Sound(entity_id, end, config.sound_radius_run, true));
             }
 
-            Msg::Pushed(pusher, pushed, delta_pos) => {
+            Msg::Pushed(pusher, pushed, delta_pos, move_into) => {
                 let pushed_pos = data.entities.pos[&pushed];
                 let pusher_pos = data.entities.pos[&pusher];
 
@@ -88,7 +88,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                         }
                     }
                 } else if data.entities.alive[&pushed] {
-                    push_attack(pusher, pushed, delta_pos, true, data, msg_log);
+                    push_attack(pusher, pushed, delta_pos, move_into, data, msg_log);
                 } else {
                     panic!("Tried to push entity {:?}, alive = {}!",
                            data.entities.typ[&pushed], data.entities.alive[&pushed]);
@@ -171,7 +171,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
 
                 //push_attack(entity_id, hit_entity, sub_pos(first, second), false, data, msg_log);
                 let delta_pos = sub_pos(second, first);
-                msg_log.log(Msg::Pushed(entity_id, hit_entity, delta_pos));
+                msg_log.log(Msg::Pushed(entity_id, hit_entity, delta_pos, false));
                 msg_log.log_front(Msg::Sound(entity_id, second, config.sound_radius_hammer, true));
 
                 if let Some(fighter) = data.entities.fighter.get(&hit_entity) {
@@ -247,7 +247,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                             }
 
                             Attack::Push(target_id, delta_pos) => {
-                                msg_log.log(Msg::Pushed(entity_id, target_id, delta_pos));
+                                msg_log.log(Msg::Pushed(entity_id, target_id, delta_pos, true));
                                 //msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
                             }
                         }
