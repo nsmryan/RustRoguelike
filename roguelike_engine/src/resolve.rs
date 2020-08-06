@@ -121,7 +121,9 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
 
                 data.entities.blocks[&attacked] = false;
 
-                data.entities.needs_removal[&attacked] = true;
+                data.entities.limbo.insert(attacked, ());
+
+                data.entities.count_down.insert(attacked, 1);
             }
 
             Msg::Attack(attacker, attacked, _damage) => {

@@ -328,6 +328,8 @@ impl GameData {
         self.entities.direction.remove(&id);
         self.entities.selected_item.remove(&id);
         self.entities.action.remove(&id);
+        self.entities.skills.remove(&id);
+        self.entities.limbo.remove(&id);
         self.entities.animation.remove(&id);
         self.entities.alive.remove(&id);
         self.entities.sound.remove(&id);
@@ -553,6 +555,7 @@ pub struct Entities {
     pub selected_item: CompStore<EntityId>,
     pub action: CompStore<Action>,
     pub skills: CompStore<Vec<Skill>>,
+    pub limbo: CompStore<()>,
 
     // TODO should end up in animation system instead
     pub animation: CompStore<VecDeque<AnimKey>>,

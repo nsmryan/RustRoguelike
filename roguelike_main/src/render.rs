@@ -725,7 +725,8 @@ fn render_entity(entity_id: EntityId,
     let player_pos = game.data.entities.pos[&player_id];
 
     // only draw if within the map (outside is (-1, -1) like if in inventory).
-    if game.data.map.is_within_bounds(pos) {
+    if game.data.map.is_within_bounds(pos) &&
+       game.data.entities.limbo.get(&entity_id).is_none() {
         let is_in_fov = 
            game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player);
 

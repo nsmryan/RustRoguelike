@@ -323,7 +323,7 @@ impl DisplayState {
 
                     // only play the sound effect if the player position is included
                     let sound_hits_player = sound_aoe.positions().iter().any(|pos| *pos == player_pos);
-                    let sound_from_monster = data.entities.typ[&cause_id] == EntityType::Enemy;
+                    let sound_from_monster = data.entities.typ.get(&cause_id) == Some(&EntityType::Enemy);
                     let player_can_see_source = data.is_in_fov(player_id, source_pos, config);
                     let visible_monster_sound = sound_from_monster && player_can_see_source;
                     if !visible_monster_sound && sound_hits_player {

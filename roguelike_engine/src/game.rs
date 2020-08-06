@@ -2,8 +2,6 @@ use rand::prelude::*;
 
 use serde::{Serialize, Deserialize};
 
-//use sdl2::keyboard::Keycode;
-
 use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::ai::*;
@@ -638,9 +636,6 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
             }
         }
 
-        if game.data.entities.needs_removal[entity_id] {
-           dbg!(game.data.entities.animation[entity_id].len());
-        }
         if game.data.entities.needs_removal[entity_id] &&
            game.data.entities.animation[entity_id].len() == 0 {
             to_remove.push(*entity_id);
