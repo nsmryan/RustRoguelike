@@ -726,11 +726,20 @@ impl Entities {
         }
     }
 
+    // NOTE(duplication) could merge with face_to
     pub fn face(&mut self, entity_id: EntityId, face_pos: Pos) {
-        let diff_pos = sub_pos(face_pos, self.pos[&entity_id]);
-        if let Some(dir) = Direction::from_dxy(diff_pos.x, diff_pos.y) {
+        let diff = sub_pos(face_pos, self.pos[&entity_id]);
+        if let Some(dir) = Direction::from_dxy(diff.x, diff.y) {
             self.direction[&entity_id] = dir;
         }
+    }
+
+    pub fn face_to(&mut self, entity_id: EntityId, face_pos: Pos) -> Direction {
+        let diff = sub_pos(face_pos, self.pos[&entity_id]);
+        if let Some(dir) = Direction::from_dxy(diff.x, diff.y) {
+            return dir;
+        }
+        panic!(format!("Facing with diff ({}, {}) not valid!", diff.x, diff.y));
     }
 
     pub fn target(&self, entity_id: EntityId) -> Option<Pos> {

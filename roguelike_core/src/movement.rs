@@ -308,6 +308,39 @@ impl Direction {
         let mov = self.into_move();
         return add_pos(pos, scale_pos(mov, amount));
     }
+
+    pub fn turn_amount(&self, dir: Direction) -> i32 {
+        use Direction::*;
+        let dirs = vec![DownLeft, Left, UpLeft, Up, UpRight, Right, DownRight, Down];
+        let count = dirs.len() as i32;
+
+        let start_ix = dirs.iter().position(|d| *d == *self).unwrap() as i32;
+        let end_ix = dirs.iter().position(|d| *d == dir).unwrap() as i32;
+
+        if (end_ix - start_ix).abs() < 4 {
+            return end_ix - start_ix;
+        } else if end_ix > start_ix {
+            return (count - end_ix) + start_ix;
+        } else {
+            return (count - start_ix) + end_ix;
+        }
+    }
+}
+
+#[test]
+pub fn test_direction_turn_amount() {
+    assert_eq!(-1, Direction::Up.turn_amount(Direction::UpLeft));
+    assert_eq!(1, Direction::Up.turn_amount(Direction::UpRight));
+
+    for move_action in Direction::move_actions() {
+        assert_eq!(0, move_action.turn_amount(move_action));
+    }
+
+    assert_eq!(1, Direction::Down.turn_amount(Direction::DownLeft));
+    assert_eq!(-1, Direction::Down.turn_amount(Direction::DownRight));
+
+    assert_eq!(1, Direction::Left.turn_amount(Direction::UpLeft));
+    assert_eq!(-1, Direction::Left.turn_amount(Direction::DownLeft));
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]

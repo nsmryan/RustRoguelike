@@ -68,6 +68,106 @@ pub fn step_towards(start_pos: Pos, target_pos: Pos) -> Pos {
     return delta_pos;
 }
 
+pub fn ai_pos_that_hit_target(monster_id: EntityId,
+                              target_id: EntityId,
+                              data: &mut GameData,
+                              config: &Config) -> Vec<Pos> {
+    let mut potential_move_targets = Vec::new();
+
+    let target_pos = data.entities.pos[&target_id];
+    let monster_pos = data.entities.pos[&monster_id];
+
+    // check all movement options in case one lets us hit the target
+    let attack = data.entities.attack[&monster_id];
+    let direction = data.entities.direction[&monster_id];
+    for move_action in Direction::move_actions() {
+        for attack_offset in attack.attacks_with_reach(&move_action) {
+            let attackable_pos = add_pos(target_pos, attack_offset);
+
+            if attackable_pos == monster_pos ||
+               !data.map.is_within_bounds(attackable_pos) {
+                continue;
+            }
+
+            data.entities.set_pos(monster_id, attackable_pos);
+            data.entities.face(monster_id, target_pos);
+            let can_hit = ai_can_hit_target(data, monster_id, target_pos, &attack, config).is_some();
+
+            if can_hit {
+                potential_move_targets.push(attackable_pos);
+            }
+        }
+    }
+    data.entities.set_pos(monster_id, monster_pos);
+    data.entities.direction[&monster_id] = direction;
+
+    return potential_move_targets;
+}
+
+pub fn ai_move_to_attack_pos(monster_id: EntityId,
+                             target_id: EntityId,
+                             data: &mut GameData,
+                             config: &Config) -> Action {
+    let turn: Action;
+
+    let target_pos = data.entities.pos[&target_id];
+    let monster_pos = data.entities.pos[&monster_id];
+
+    let mut new_pos = monster_pos;
+
+    let pos_offset;
+    let movement = data.entities.movement[&monster_id];
+
+    let potential_move_targets = ai_pos_that_hit_target(monster_id, target_id, data, config);
+
+    // look through all potential positions for the shortest path
+    let mut targets = potential_move_targets.iter();
+    if let Some(first_target) = targets.next() {
+        let must_reach = true;
+        let traps_block = true;
+        let dir = data.entities.direction[&monster_id];
+
+        let mut best_target = *first_target;
+
+        let path = data.path_between(monster_pos, best_target, movement, must_reach, traps_block, None);
+        let mut best_dist = path.len();
+        let mut best_turn_amount = dir.turn_amount(data.entities.face_to(monster_id, best_target));
+
+        let large_dist = (MAP_WIDTH + MAP_HEIGHT) as usize;
+        if best_dist == 0 {
+            best_dist = large_dist;
+        }
+
+        for move_pos in targets {
+            let path = data.path_between(monster_pos, *move_pos, movement, must_reach, traps_block, None);
+            let path_length = path.len();
+            let turn_amount = dir.turn_amount(data.entities.face_to(monster_id, *move_pos));
+                
+            let better_path = path_length < best_dist;
+            let equal_path = path_length == best_dist;
+            let better_turn = turn_amount < best_turn_amount;
+            let no_current_best = best_dist == large_dist;
+            if path_length > 0 && (better_path || (equal_path && better_turn) || no_current_best) {
+                best_dist = path_length;
+                best_target = *move_pos;
+            }
+        }
+
+        if best_dist > 0 && best_dist != large_dist {
+            new_pos = best_target;
+        }
+    }
+    // step towards the closest location that lets us hit the target
+    pos_offset = ai_take_astar_step(monster_id, new_pos, true, &data);
+    if pos_mag(pos_offset) > 0 {
+        turn = Action::Move(Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move));
+    } else {
+        turn = Action::NoAction;
+    }
+
+    return turn;
+}
+
 pub fn ai_attack(monster_id: EntityId,
                  target_id: EntityId,
                  data: &mut GameData,
@@ -98,74 +198,7 @@ pub fn ai_attack(monster_id: EntityId,
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else {
         // can see target, but can't hit them. try to move to a position where we can hit them
-        let mut new_pos = monster_pos;
-
-        let pos_offset;
-        let (attack, movement) =
-            (data.entities.attack[&monster_id], data.entities.movement[&monster_id]);
-
-        let mut potential_move_targets = Vec::new();
-
-        // check all movement options in case one lets us hit the target
-        let direction = data.entities.direction[&monster_id];
-        for move_action in Direction::move_actions() {
-            for attack_offset in attack.attacks_with_reach(&move_action) {
-                let attackable_pos = add_pos(target_pos, attack_offset);
-
-                if attackable_pos == monster_pos ||
-                   !data.map.is_within_bounds(attackable_pos) {
-                    continue;
-                }
-
-                data.entities.set_pos(monster_id, attackable_pos);
-                data.entities.face(monster_id, target_pos);
-                let can_hit = ai_can_hit_target(data, monster_id, target_pos, &attack, config).is_some();
-
-                if can_hit {
-                    potential_move_targets.push(attackable_pos);
-                }
-            }
-        }
-        data.entities.set_pos(monster_id, monster_pos);
-        data.entities.direction[&monster_id] = direction;
-
-        // look through all potential positions for the shortest path
-        let mut targets = potential_move_targets.iter();
-        if let Some(first_target) = targets.next() {
-            let must_reach = true;
-            let traps_block = true;
-
-            let mut best_target = first_target;
-
-            let path = data.path_between(monster_pos, *best_target, movement, must_reach, traps_block, None);
-            let mut best_dist = path.len();
-
-            let large_dist = (MAP_WIDTH + MAP_HEIGHT) as usize;
-            if best_dist == 0 {
-                best_dist = large_dist;
-            }
-
-            for move_target in targets {
-                let path = data.path_between(monster_pos, *move_target, movement, must_reach, traps_block, None);
-                let path_length = path.len();
-                    
-                if path_length > 0 && (path_length < best_dist || best_dist == large_dist) {
-                    best_dist = path_length;
-                    best_target = move_target;
-                }
-            }
-
-            if best_dist > 0 && best_dist != large_dist {
-                new_pos = *best_target;
-            }
-        }
-        // step towards the closest location that lets us hit the target
-        pos_offset = ai_take_astar_step(monster_id, new_pos, true, &data);
-        if pos_mag(pos_offset) > 0 {
-            turn = Action::Move(Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move));
-        } else {
-            turn = Action::NoAction;
-        }
+        turn = ai_move_to_attack_pos(monster_id, target_id, data, config);
     }
 
     return turn;
