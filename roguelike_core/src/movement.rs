@@ -15,7 +15,7 @@ use crate::ai::Behavior;
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Action {
     Move(Movement),
-    StateChange(Behavior),
+    StateChange(Behavior, bool), // new behavior, whether to take a turn after state change
     Pickup(EntityId),
     ThrowItem(Pos, EntityId), // end position, item id
     Pass,
@@ -44,7 +44,7 @@ impl Action {
     pub fn takes_turn(&self) -> bool {
         use Action::*;
         match self {
-            NoAction | StateChange(_) | Pickup(_) => return false,
+            NoAction | StateChange(_, _) | Pickup(_) => return false,
             _ => return true,
         }
     }

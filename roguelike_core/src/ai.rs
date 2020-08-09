@@ -16,6 +16,7 @@ pub enum Ai {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Behavior {
     Idle,
+    Alert(EntityId),
     Investigating(Pos),
     Attacking(EntityId),
 }
@@ -31,12 +32,9 @@ impl Behavior {
         match self {
             Behavior::Idle => "idle".to_string(),
             Behavior::Investigating(_position) => "investigating".to_string(),
+            Behavior::Alert(_entity_id) => "alert".to_string(),
             Behavior::Attacking(_obj_id) => "attacking".to_string(),
         }
-    }
-
-    pub fn is_aware(&self) -> bool {
-        return matches!(self, Behavior::Attacking(_));
     }
 }
 
@@ -168,6 +166,16 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     return turn;
 }
 
+pub fn ai_alert(monster_id: EntityId, target_id: EntityId, data: &mut GameData, config: &Config) -> Action {
+    let target_pos = data.entities.pos[&target_id];
+
+    if data.is_in_fov(monster_id, target_pos, config) {
+        return Action::StateChange(Behavior::Attacking(target_id), true);
+    } else {
+        return Action::StateChange(Behavior::Investigating(target_pos), true);
+    }
+}
+
 pub fn ai_attack(monster_id: EntityId,
                  target_id: EntityId,
                  data: &mut GameData,
@@ -183,7 +191,7 @@ pub fn ai_attack(monster_id: EntityId,
 
     if !data.entities.alive[&target_id] {
         // if AI target is no longer alive
-        turn = Action::StateChange(Behavior::Investigating(target_pos));
+        turn = Action::StateChange(Behavior::Investigating(target_pos), true);
     } else if let Some(hit_pos) =
         // if AI can hit their target
         ai_can_hit_target(data, 
@@ -195,7 +203,7 @@ pub fn ai_attack(monster_id: EntityId,
         turn = Action::Move(Movement::attack(hit_pos, MoveType::Move, attack));
     } else if !data.is_in_fov(monster_id, target_pos, config) {
         // path to target is blocked by a wall- investigate the last known position
-        turn = Action::StateChange(Behavior::Investigating(target_pos));
+        turn = Action::StateChange(Behavior::Investigating(target_pos), true);
     } else {
         // can see target, but can't hit them. try to move to a position where we can hit them
         turn = ai_move_to_attack_pos(monster_id, target_id, data, config);
@@ -213,11 +221,13 @@ pub fn ai_idle(monster_id: EntityId,
     let mut turn = Action::none();
 
     if data.is_in_fov(monster_id, player_pos, config) {
+        // can see player
         data.entities.face(monster_id, player_pos);
-        turn = Action::StateChange(Behavior::Attacking(player_id));
+        turn = Action::StateChange(Behavior::Alert(player_id), false);
     } else if let Some(Message::Attack(entity_id)) = data.entities.was_attacked(monster_id) {
+        // attacked by player
         data.entities.face(monster_id, player_pos);
-        turn = Action::StateChange(Behavior::Attacking(entity_id));
+        turn = Action::StateChange(Behavior::Attacking(entity_id), true);
     } else if let Some(Message::Sound(entity_id, sound_pos)) = data.entities.heard_sound(monster_id) {
         let in_fov = data.is_in_fov(monster_id, sound_pos, config);
         let is_player = entity_id == player_id;
@@ -228,7 +238,7 @@ pub fn ai_idle(monster_id: EntityId,
         // player.
         if needs_investigation {
             data.entities.face(monster_id, sound_pos);
-            turn = Action::StateChange(Behavior::Investigating(sound_pos));
+            turn = Action::StateChange(Behavior::Investigating(sound_pos), true);
         }
     }
 
@@ -253,14 +263,14 @@ pub fn ai_investigate(target_pos: Pos,
                
     if data.is_in_fov(monster_id, player_pos, config) {
         data.entities.face(monster_id, player_pos);
-        turn = Action::StateChange(Behavior::Attacking(player_id));
+        turn = Action::StateChange(Behavior::Attacking(player_id), true);
     } else { // the monster can't see the player
         if let Some(Message::Sound(_entity_id, pos)) = data.entities.heard_sound(monster_id) {
-            turn = Action::StateChange(Behavior::Investigating(pos));
+            turn = Action::StateChange(Behavior::Investigating(pos), true);
         } else {
             if target_pos == monster_pos { 
                 // if the monster reached its target then go back to being idle
-                turn = Action::StateChange(Behavior::Idle);
+                turn = Action::StateChange(Behavior::Idle, true);
             } else {
                 // if the monster has not reached its target, move towards the target.
                 let must_reach = false;
@@ -279,7 +289,7 @@ pub fn ai_investigate(target_pos: Pos,
             // the problem is that this might happen in a long corridor, for example, where
             // you might want them to keep trying for a while in case there is a monster
             // in front of them.
-            turn = Action::StateChange(Behavior::Idle);
+            turn = Action::StateChange(Behavior::Idle, true);
         }
     }
 
@@ -376,6 +386,10 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
         match data.entities.behavior[&monster_id] {
             Behavior::Idle => {
                 return ai_idle(monster_id, data, config);
+            }
+
+            Behavior::Alert(target_id) => {
+                return ai_alert(monster_id, target_id, data, config);
             }
 
             Behavior::Investigating(target_pos) => {

@@ -118,6 +118,7 @@ impl Game {
         let player_id = self.data.find_player().unwrap();
         self.data.clear_except(vec!(player_id));
 
+        // remove goal item
         let key_id = self.data.is_in_inventory(player_id, Item::Goal).expect("Won level without goal!");
         self.data.entities.remove_item(player_id, key_id);
 
@@ -555,6 +556,7 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
     if player_action.takes_turn() && game.data.entities.alive[&player_id] {
         let mut ai_id: Vec<EntityId> = Vec::new();
 
+        // find entities that can take actions
         for key in game.data.entities.ids.iter() {
             if game.data.entities.ai.get(key).is_some()    &&
                game.data.entities.alive[key]               &&
@@ -564,19 +566,24 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
            }
         }
 
+        // get action, or change state and then get action
         for key in ai_id.iter() {
            let action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
            game.data.entities.action[key] = action;
 
            // if changing state, resolve now and allow another action
-           if matches!(action, Action::StateChange(_)) {
+           if let Action::StateChange(_state, take_action) = action {
                 game.msg_log.log(Msg::Action(*key, action));
                 resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
-                let backup_action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
-                game.data.entities.action[key] = backup_action;
+
+                if take_action {
+                    let backup_action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
+                    game.data.entities.action[key] = backup_action;
+                }
             }
         }
 
+        // resolve actions
         for key in ai_id.iter() {
             if let Some(action) = game.data.entities.action.get(key).map(|v| *v) {
                 game.msg_log.log(Msg::Action(*key, action));
@@ -598,11 +605,22 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
             // if there are remaining messages for an entity, clear them
             game.data.entities.messages[key].clear();
 
-            let action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
-            if matches!(action, Action::StateChange(_)) {
-                game.msg_log.log(Msg::Action(*key, action));
-                game.data.entities.action[key] = action;
-                resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
+            // let the AI change state if desired, unless they decided to skip their turn while
+            // state changing before.
+            let mut can_state_change = true;
+            if let Action::StateChange(_state, take_action) = game.data.entities.action[key] {
+                can_state_change = take_action;
+            }
+
+            if can_state_change {
+                // check if there is another action to take- if the monster wants to change state
+                // again, allow it.
+                let action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
+                if matches!(action, Action::StateChange(_, _)) {
+                    game.msg_log.log(Msg::Action(*key, action));
+                    game.data.entities.action[key] = action;
+                    resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
+                }
             }
         }
     }

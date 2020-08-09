@@ -303,7 +303,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                             data.entities.face(entity_id, target_pos);
                         }
                     }
-                } else if let Action::StateChange(behavior) = action {
+                } else if let Action::StateChange(behavior, _take_action) = action {
                     msg_log.log(Msg::StateChange(entity_id, behavior));
                 } else if let Action::Yell = action {
                     msg_log.log(Msg::Yell(entity_id, entity_pos));
