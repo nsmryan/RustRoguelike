@@ -225,7 +225,7 @@ pub fn handle_input_inventory(input: InputAction,
                             let positions = data.map.floodfill(player_pos, dist);
 
                             for pos in positions {
-                                if data.has_item(pos).is_none() {
+                                if data.item_at_pos(pos).is_none() {
                                     data.entities.remove_item(player_id, item_key);
                                     data.entities.set_pos(item_key, pos);
 

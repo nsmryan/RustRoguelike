@@ -118,6 +118,9 @@ impl Game {
         let player_id = self.data.find_player().unwrap();
         self.data.clear_except(vec!(player_id));
 
+        let key_id = self.data.is_in_inventory(player_id, Item::Goal).expect("Won level without goal!");
+        self.data.entities.remove_item(player_id, key_id);
+
         self.settings.state = GameState::Playing;
 
         self.settings.level_num += 1;
@@ -519,7 +522,7 @@ fn win_condition_met(data: &GameData) -> bool {
     if let Some(exit_id) = data.find_exit() {
         let exit_pos = data.entities.pos[&exit_id];
 
-        let has_key = data.is_in_inventory(player_id, Item::Goal);
+        let has_key = data.is_in_inventory(player_id, Item::Goal).is_some();
 
         //let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
         let on_exit_tile = exit_pos == player_pos;

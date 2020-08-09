@@ -168,7 +168,17 @@ impl GameData {
         return !path_blocked && !blocked_by_wall;
     }
 
-    pub fn has_item(&self, pos: Pos) -> Option<EntityId> {
+    pub fn has_item_in_inventory(&self, entity_id: EntityId, item: Item) -> Option<EntityId> {
+        for item_id in self.entities.inventory[&entity_id].iter() {
+            if Some(&item) == self.entities.item.get(item_id) {
+                return Some(*item_id);
+            }
+        }
+
+        return None;
+    }
+
+    pub fn item_at_pos(&self, pos: Pos) -> Option<EntityId> {
         for key in self.entities.ids.iter() {
             if self.entities.pos[key] == pos && self.entities.item.get(key).is_some() {
                 return Some(*key);
@@ -212,14 +222,14 @@ impl GameData {
         return None;
     }
 
-    pub fn is_in_inventory(&self, entity_id: EntityId, item: Item) -> bool {
+    pub fn is_in_inventory(&self, entity_id: EntityId, item: Item) -> Option<EntityId> {
         for item in self.entities.inventory[&entity_id].iter() {
             if self.entities.item[item] == Item::Goal {
-                return true;
+                return Some(*item);
             }
         }
 
-        return false;
+        return None;
     }
 
     pub fn using(&self, entity_id: EntityId, item: Item) -> bool {
