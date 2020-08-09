@@ -378,8 +378,6 @@ fn render_skill_menu(display_state: &mut DisplayState, game: &mut Game, area: &A
 }
 
 fn render_confirm_quit(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
-    let player_id = game.data.find_player().unwrap();
-
     // Render header
     draw_placard(display_state,
                  "Quit?".to_string(),
@@ -761,8 +759,6 @@ fn render_entity(entity_id: EntityId,
 }
 
 fn render_impressions(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
-    let player_id = game.data.find_player().unwrap();
-
     // check for entities that have left FOV and make an impression for them
     // NOTE(perf) technically this is only necessary once per turn, not once per render
     display_state.drawn_sprites.clear();
@@ -1064,6 +1060,26 @@ fn render_overlays(display_state: &mut DisplayState,
         }
     }
 
+    if game.config.overlay_fov_alg {
+        let highlight_color_fov = game.config.color_light_orange;
+        let highlight_color_lines = game.config.color_red;
+
+        for y in 0..game.data.map.height() {
+            for x in 0..game.data.map.width() {
+                let pos = Pos::new(x, y);
+                let in_fov = game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player);
+                let in_fov_lines = game.data.map.is_in_fov_lines(player_pos, pos, game.config.fov_radius_player);
+
+                if in_fov && !in_fov_lines {
+                    display_state.draw_tile_outline(pos, area, highlight_color_fov);
+                }
+
+                if in_fov_lines && !in_fov {
+                    display_state.draw_tile_outline(pos, area, highlight_color_lines);
+                }
+            }
+        }
+    }
 }
 
 fn get_entity_under_mouse(mouse_pos: Pos,

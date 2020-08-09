@@ -270,16 +270,19 @@ pub fn read_map_xp(config: &Config,
                                 MAP_STATUE_4 | MAP_STATUE_5 | MAP_STATUE_6 => {
                                     data.map[pos].chr = chr as u8;
                                     data.map[pos].blocked = true;
+                                    data.map[pos].block_sight = true;
                                 }
 
                             MAP_WIDE_SPIKES | MAP_TALL_SPIKES => {
                                 data.map[pos].chr = chr as u8;
                                 data.map[pos].blocked = true;
+                                    data.map[pos].block_sight = true;
                             }
 
                             MAP_WALL => {
                                 data.map[pos].chr = chr as u8;
                                 data.map[pos].blocked = true;
+                                    data.map[pos].block_sight = true;
                             }
 
                             ENTITY_CLOAK_GUY => {

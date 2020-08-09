@@ -153,6 +153,7 @@ sound_radius_player: 3
 sound_radius_hammer: 3
 overlay_directions: false
 overlay_player_fov: false
+overlay_fov_alg: true
 fov_radius_monster: 6
 fov_radius_player: 6
 console_max_height: 400

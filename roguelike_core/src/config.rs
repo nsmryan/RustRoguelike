@@ -68,6 +68,7 @@ pub struct Config {
     pub sound_radius_hammer: usize,
     pub overlay_directions: bool,
     pub overlay_player_fov: bool,
+    pub overlay_fov_alg: bool,
     pub fov_radius_monster: i32,
     pub fov_radius_player: i32,
     pub console_max_height: u32,

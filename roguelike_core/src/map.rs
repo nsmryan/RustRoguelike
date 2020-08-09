@@ -595,6 +595,10 @@ impl Map {
     }
 
     pub fn is_in_fov(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
+        return self.is_in_fov_lines(start_pos, end_pos, radius);
+    }
+
+    pub fn is_in_fov_alg(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
         if start_pos == end_pos {
             return true;
         }
@@ -620,17 +624,60 @@ impl Map {
         let mut blocked_by_wall = false;
         if let Some(blocked) = blocked {
             let at_end = blocked.end_pos == end_pos;
-            blocked_by_wall = !(at_end && blocked.blocked_tile);
-            // TODO remove when https://github.com/nsmryan/RustRoguelike/issues/135 is closed
-            //let no_wall = blocked.wall_type.no_wall();
-            //let visible_wall = blocked.blocked_tile && no_wall;
-            //wall_in_path = !(at_end && visible_wall);
+            blocked_by_wall = !(at_end && self[end_pos].block_sight && blocked.end_pos == end_pos);
         }
 
         let is_visible =
             self.fov.is_in_fov(end_pos.x as usize, end_pos.y as usize);
 
         let is_in_fov = !blocked_by_wall && is_visible;
+
+        return is_in_fov;
+   }
+
+    pub fn is_in_fov_lines(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
+        if start_pos == end_pos {
+            return true;
+        }
+
+        if !self.is_within_bounds(start_pos) || !self.is_within_bounds(end_pos) {
+            return false;
+        }
+
+        let within_radius = distance(start_pos, end_pos) < radius;
+        if !within_radius {
+            return false;
+        }
+
+        let offset = Pos::new(end_pos.x - start_pos.x,
+                              end_pos.y - start_pos.y);
+        let blocked =
+            self.is_blocked_by_wall(start_pos, offset.x, offset.y);
+
+        let mut is_in_fov;
+
+        let mut blocked_by_wall = false;
+        if let Some(blocked) = blocked {
+            let at_end = blocked.end_pos == end_pos;
+            is_in_fov = at_end && self[end_pos].block_sight && blocked.end_pos == end_pos;
+        } else {
+            is_in_fov = true;
+        }
+
+        if is_in_fov {
+            // if the position is in the FOV, but the line up to the next-to-last square is
+            // different from the current line, then check that line too. This resolves
+            // artifacts where squares are visible even though no squares around them are.
+            let fov_line = line(start_pos, end_pos);
+            let len = fov_line.len();
+            if len >= 3 {
+                let next_to_last = *fov_line.iter().skip(len - 2).next().unwrap();
+                let next_to_line = line(start_pos, next_to_last);
+                if next_to_line.iter().zip(fov_line.iter().skip(len - 1)).any(|pair| pair.0 != pair.1) {
+                    is_in_fov = self.is_in_fov_lines(start_pos, next_to_last, radius);
+                }
+            }
+        }
 
         return is_in_fov;
     }

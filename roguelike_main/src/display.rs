@@ -476,9 +476,6 @@ impl DisplayState {
 
                 for entity_id in data.entities.ids.clone() {
                     let pos = data.entities.pos[&entity_id];
-                    let name = data.entities.name[&entity_id];
-                    let in_fov = data.is_in_fov(player_id, pos, config);
-                    let player_pos = data.entities.pos[&player_id];
                     if entity_id != player_id && data.is_in_fov(player_id, pos, config) {
                         self.current_turn_fov.push(entity_id);
                     }

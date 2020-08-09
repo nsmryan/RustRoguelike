@@ -365,8 +365,7 @@ pub fn handle_input_confirm_quit(input: InputAction,
                                  data: &mut GameData,
                                  settings: &mut GameSettings,
                                  msg_log: &mut MsgLog) -> Action {
-    let mut player_turn: Action = Action::NoAction;
-    let player_id = data.find_player().unwrap();
+    let player_turn: Action = Action::NoAction;
 
     match input {
         InputAction::Esc => {
