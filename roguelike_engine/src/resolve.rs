@@ -99,7 +99,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 // only perform move if tile does not contain a wall or entity
                 if data.has_blocking_entity(movement.pos).is_none() &&
                    !data.map[movement.pos].blocked {
-                       process_moved_message(entity_id, movement, pos, data, msg_log, config);
+                   process_moved_message(entity_id, movement, pos, data, msg_log, config);
                 }
             }
 

@@ -406,19 +406,3 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
     }
 }
 
-//pub fn ai_finalize_turn(monster_id: EntityId,
-//                        data: &mut GameData,
-//                        config: &Config,
-//                        _msg_log: &mut MsgLog) -> Option<Action> {
-//    let behavior = data.entities.behavior[&monster_id];
-//    match behavior {
-//        Behavior::Investigating(target_pos)) => {
-//        }
-//
-//        Behavior::Attacking(target_id) => {
-//        }
-//
-//        _ => {
-//        }
-//    }
-//}

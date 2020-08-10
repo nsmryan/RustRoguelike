@@ -321,6 +321,7 @@ impl GameData {
         self.entities.ids.remove(ix_pos);
 
         self.entities.pos.remove(&id);
+        self.entities.last_pos.remove(&id);
         self.entities.chr.remove(&id);
         self.entities.name.remove(&id);
         self.entities.fighter.remove(&id);
@@ -547,6 +548,7 @@ static OBJECT_ID_COUNT: AtomicU64 = AtomicU64::new(0);
 pub struct Entities {
     pub ids: Vec<EntityId>,
     pub pos: CompStore<Pos>,
+    pub last_pos: CompStore<Pos>,
     pub chr: CompStore<char>,
     pub name: CompStore<EntityName>,
     pub fighter: CompStore<Fighter>,
@@ -637,6 +639,7 @@ impl Entities {
 
         // add fields that all entities share
         self.pos.insert(id, Pos::new(x, y));
+        self.last_pos.insert(id, Pos::new(x, y));
         self.typ.insert(id, typ);
         self.chr.insert(id, chr);
         self.color.insert(id, color);
@@ -671,6 +674,7 @@ impl Entities {
             }
         }
 
+        self.last_pos[&entity_id] = self_pos;
         self.set_pos(entity_id, pos);
     }
 
@@ -691,7 +695,7 @@ impl Entities {
             self.direction[&entity_id] = dir;
         }
 
-        self.set_pos(entity_id, Pos::new(self_pos.x + diff_x, self_pos.y + diff_y));
+        self.move_to(entity_id, Pos::new(self_pos.x + diff_x, self_pos.y + diff_y));
     }
 
     pub fn distance_to(&self, entity_id: EntityId, other: EntityId) -> f32 {

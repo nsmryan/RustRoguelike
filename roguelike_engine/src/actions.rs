@@ -227,7 +227,7 @@ pub fn handle_input_inventory(input: InputAction,
                             for pos in positions {
                                 if data.item_at_pos(pos).is_none() {
                                     data.entities.remove_item(player_id, item_key);
-                                    data.entities.set_pos(item_key, pos);
+                                    data.entities.move_to(item_key, pos);
 
                                     settings.state = GameState::Playing;
                                     msg_log.log(Msg::GameState(settings.state));
@@ -642,10 +642,12 @@ pub fn pick_item_up(entity_id: EntityId,
         ItemClass::Primary => {
             if item_primary_at(entity_id, entities, 0) &&
                item_primary_at(entity_id, entities, 1) {
+                let primary_item = entities.inventory[&entity_id][0];
+
                 entities.inventory[&entity_id][0] = pickedup_id;
 
                 let obj_pos = entities.pos[&entity_id];
-                entities.set_pos(entity_id, obj_pos);
+                entities.move_to(primary_item, obj_pos);
             } else {
                 entities.inventory[&entity_id].push_front(pickedup_id);
             }
@@ -656,7 +658,7 @@ pub fn pick_item_up(entity_id: EntityId,
         }
     } 
 
-    entities.set_xy(pickedup_id, -1, -1);
+    entities.move_to(pickedup_id, Pos::new(-1, -1));
 }
 
 pub fn throw_item(player_id: EntityId,
@@ -676,7 +678,7 @@ pub fn throw_item(player_id: EntityId,
         end_pos = blocked.start_pos;
     }
 
-    game_data.entities.set_pos(item_id, end_pos);
+    game_data.entities.move_to(item_id, end_pos);
 
     game_data.entities.remove_item(player_id, item_id);
 }
@@ -684,7 +686,7 @@ pub fn throw_item(player_id: EntityId,
 pub fn place_trap(trap_id: EntityId,
                   place_pos: Pos,
                   game_data: &mut GameData) {
-    game_data.entities.set_pos(trap_id, place_pos);
+    game_data.entities.move_to(trap_id, place_pos);
     game_data.entities.armed[&trap_id] = true;
 }
 
