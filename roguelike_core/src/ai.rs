@@ -252,6 +252,7 @@ pub fn ai_investigate(target_pos: Pos,
     let player_id = data.find_player().unwrap();
 
     let player_pos = data.entities.pos[&player_id];
+    let player_last_pos = data.entities.last_pos[&player_id];
     let monster_pos = data.entities.pos[&monster_id];
 
     let mut turn: Action;
@@ -261,10 +262,11 @@ pub fn ai_investigate(target_pos: Pos,
         data.entities.face(monster_id, player_pos);
     }
                
-    if data.is_in_fov(monster_id, player_pos, config) {
+    if data.is_in_fov(monster_id, player_last_pos, config) {
         data.entities.face(monster_id, player_pos);
         turn = Action::StateChange(Behavior::Attacking(player_id), true);
-    } else { // the monster can't see the player
+    } else {
+        // the monster can't see the player
         if let Some(Message::Sound(_entity_id, pos)) = data.entities.heard_sound(monster_id) {
             turn = Action::StateChange(Behavior::Investigating(pos), true);
         } else {
