@@ -43,7 +43,7 @@ impl MsgLog {
 
 #[derive(Copy, Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub enum Msg {
-    Pass(),
+    Pass(EntityId),
     Crushed(EntityId, Pos), // object that did the crushing, position
     Sound(EntityId, Pos, usize, bool), // object causing sound, location, radius, whether animation will play
     SoundTrapTriggered(EntityId, EntityId), // trap, entity
@@ -83,7 +83,7 @@ impl Msg {
                 return "An object has been crushed".to_string();
             }
 
-            Msg::Pass() => {
+            Msg::Pass(_entity_id) => {
                 return "Player passed their turn".to_string();
             }
 

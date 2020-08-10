@@ -16,7 +16,7 @@ pub enum Ai {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Behavior {
     Idle,
-    Alert(EntityId),
+    Alert(EntityId, Pos),
     Investigating(Pos),
     Attacking(EntityId),
 }
@@ -32,7 +32,7 @@ impl Behavior {
         match self {
             Behavior::Idle => "idle".to_string(),
             Behavior::Investigating(_position) => "investigating".to_string(),
-            Behavior::Alert(_entity_id) => "alert".to_string(),
+            Behavior::Alert(_target_id, _target_pos) => "alert".to_string(),
             Behavior::Attacking(_obj_id) => "attacking".to_string(),
         }
     }
@@ -166,10 +166,11 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     return turn;
 }
 
-pub fn ai_alert(monster_id: EntityId, target_id: EntityId, data: &mut GameData, config: &Config) -> Action {
-    let target_pos = data.entities.pos[&target_id];
+pub fn ai_alert(monster_id: EntityId, target_id: EntityId, target_pos: Pos, data: &mut GameData, config: &Config) -> Action {
+    let last_target_pos = data.entities.last_pos[&target_id];
+    let current_target_pos = data.entities.pos[&target_id];
 
-    if data.is_in_fov(monster_id, target_pos, config) {
+    if data.is_in_fov(monster_id, current_target_pos, config) {
         return Action::StateChange(Behavior::Attacking(target_id), true);
     } else {
         return Action::StateChange(Behavior::Investigating(target_pos), true);
@@ -223,7 +224,7 @@ pub fn ai_idle(monster_id: EntityId,
     if data.is_in_fov(monster_id, player_pos, config) {
         // can see player
         data.entities.face(monster_id, player_pos);
-        turn = Action::StateChange(Behavior::Alert(player_id), false);
+        turn = Action::StateChange(Behavior::Investigating(player_pos), false);
     } else if let Some(Message::Attack(entity_id)) = data.entities.was_attacked(monster_id) {
         // attacked by player
         data.entities.face(monster_id, player_pos);
@@ -257,15 +258,24 @@ pub fn ai_investigate(target_pos: Pos,
 
     let mut turn: Action;
 
-    let (dx, dy) = sub_pos(player_pos,  monster_pos).to_tuple();
-    if data.map.is_blocked_by_wall(monster_pos, dx, dy).is_none() {
-        data.entities.face(monster_id, player_pos);
+    let (dx, dy) = sub_pos(target_pos, monster_pos).to_tuple();
+    // if data.map.is_blocked_by_wall(monster_pos, dx, dy).is_none() {
+    if data.is_in_fov(monster_id, target_pos, config) {
+        data.entities.face(monster_id, target_pos);
     }
                
-    if data.is_in_fov(monster_id, player_last_pos, config) {
-        data.entities.face(monster_id, player_pos);
+    let player_in_fov = data.is_in_fov(monster_id, player_pos, config);
+    let player_last_in_fov = data.is_in_fov(monster_id, player_last_pos, config);
+
+    if !player_in_fov && player_last_in_fov && target_pos == player_last_pos {
+        // if the player leaves FOV, and we are targeting their old position,
+        // target their new position
+        turn = Action::StateChange(Behavior::Investigating(player_pos), true);
+    } else if player_in_fov && player_last_in_fov {
+        // if they are in FOV, and remained in FOV for a turn, attack them
         turn = Action::StateChange(Behavior::Attacking(player_id), true);
     } else {
+        // entered FOV (player_in_fov && !player_last_in_fov) or not in FOV at all
         // the monster can't see the player
         if let Some(Message::Sound(_entity_id, pos)) = data.entities.heard_sound(monster_id) {
             turn = Action::StateChange(Behavior::Investigating(pos), true);
@@ -390,8 +400,8 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
                 return ai_idle(monster_id, data, config);
             }
 
-            Behavior::Alert(target_id) => {
-                return ai_alert(monster_id, target_id, data, config);
+            Behavior::Alert(target_id, target_pos) => {
+                return ai_alert(monster_id, target_id, target_pos, data, config);
             }
 
             Behavior::Investigating(target_pos) => {

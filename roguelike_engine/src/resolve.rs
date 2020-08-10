@@ -96,11 +96,12 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::Moved(entity_id, movement, pos) => {
-                // only perform move if tile does not contain a wall or entity
-                if data.has_blocking_entity(movement.pos).is_none() &&
-                   !data.map[movement.pos].blocked {
-                   process_moved_message(entity_id, movement, pos, data, msg_log, config);
-                }
+               process_moved_message(entity_id, movement, pos, data, msg_log, config);
+            }
+
+            Msg::Pass(entity_id) => {
+                let pos = data.entities.pos[&entity_id];
+                data.entities.move_to(entity_id, pos);
             }
 
             Msg::Yell(entity_id, pos) => {
@@ -308,7 +309,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 } else if let Action::Yell = action {
                     msg_log.log(Msg::Yell(entity_id, entity_pos));
                 } else if let Action::Pass = action {
-                    msg_log.log(Msg::Pass());
+                    msg_log.log(Msg::Pass(entity_id));
                 } else if let Action::ThrowItem(throw_pos, item_id) = action {
                     msg_log.log(Msg::ItemThrow(entity_id, item_id, entity_pos, throw_pos));
                 } else if let Action::Pickup(item_id) = action {
@@ -460,8 +461,16 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
 
 fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     // if this move does not change the entity position, exit early
-    if pos == data.entities.pos[&entity_id] {
-        return;
+    //if pos == data.entities.pos[&entity_id] {
+    //    //perform the move to update last_pos
+    //    data.entities.move_to(entity_id, pos);
+    //    return;
+    //}
+
+    // only perform move if tile does not contain a wall or entity
+    if pos != data.entities.pos[&entity_id] &&
+       (data.has_blocking_entity(movement.pos).is_some() || data.map[movement.pos].blocked) {
+       return;
     }
 
     data.entities.move_to(entity_id, pos);

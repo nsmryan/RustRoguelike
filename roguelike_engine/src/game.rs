@@ -571,6 +571,9 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
            let action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
            game.data.entities.action[key] = action;
 
+           // if used messages to take turn, clear so we can use new ones
+           game.data.entities.messages[key].clear();
+
            // if changing state, resolve now and allow another action
            if let Action::StateChange(_state, take_action) = action {
                 game.msg_log.log(Msg::Action(*key, action));
