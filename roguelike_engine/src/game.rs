@@ -299,13 +299,11 @@ impl SelectionAction {
             }
 
             SelectionAction::Interact => {
-                // TODO implement
-                // if there is a trap, toggled armed
-                // perhaps other interactions are possible
                 action = Action::NoAction;
-                if let Some(entity_id) = data.has_entity(pos) {
+                for entity_id  in data.has_entity(pos) {
                     if let Some(_trap) = data.entities.trap.get(&entity_id) {
                         action = Action::ArmDisarmTrap(entity_id);
+                        break;
                     }
                 }
             }

@@ -326,7 +326,9 @@ fn ai_can_hit_target(data: &mut GameData,
 
 fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, data: &GameData) -> Option<i32> {
     let mut cost = Some(1);
-    if let Some(entity_id) = data.has_entity(next) {
+
+    // check for an armed trap in the list of entities on this tile
+    for entity_id in data.has_entities(next) {
         if data.entities.trap.get(&entity_id).is_some() &&
            data.entities.armed.get(&entity_id) == Some(&true) {
                // NOTE determined randomly. could be infinite, or smaller?

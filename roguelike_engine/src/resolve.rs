@@ -28,11 +28,12 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             Msg::Crushed(entity_id, pos) => {
                 data.map[pos].surface = Surface::Rubble;
 
-                if let Some(crushed_id) = data.has_entity(pos) {
+                for crushed_id in data.has_entities(pos) {
                     if let Some(fighter) = data.entities.fighter.get(&crushed_id) {
                         msg_log.log(Msg::Killed(entity_id, crushed_id, fighter.hp));
-                    } else if data.entities.item.get(&crushed_id).is_none() {
-                        // otherwise, if its not an item, just remove the entity
+                    } else if data.entities.item.get(&crushed_id).is_none() &&
+                              data.entities.name[&crushed_id] != EntityName::Mouse {
+                        // otherwise, if its not an item or the mouse, just remove the entity
                         data.remove_entity(crushed_id);
                     }
                 }

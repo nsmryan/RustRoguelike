@@ -188,6 +188,17 @@ impl GameData {
         return None;
     }
 
+    pub fn has_entities(&self, pos: Pos) -> Vec<EntityId> {
+        let mut entities = Vec::new();
+        for (key, other_pos) in self.entities.pos.iter() {
+            if *other_pos == pos {
+                entities.push(*key);
+            }
+        }
+
+        return entities;
+    }
+
     pub fn has_entity(&self, pos: Pos) -> Option<EntityId> {
         for (key, other_pos) in self.entities.pos.iter() {
             if *other_pos == pos {
