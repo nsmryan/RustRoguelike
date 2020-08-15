@@ -80,7 +80,7 @@ impl MoveMode {
             // Removed Walking (issue 151), so run -> sneak
             // MoveMode::Sneak => MoveMode::Walk,
             MoveMode::Sneak => MoveMode::Sneak,
-            MoveMode::Run => MoveMode::Walk,
+            MoveMode::Run => MoveMode::Sneak,
             MoveMode::Walk => panic!("You shouldn't be able to walk!"),
         }
     }

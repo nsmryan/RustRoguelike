@@ -879,15 +879,15 @@ pub fn test_game_map() {
     };
 
     // make sure move modes work, to avoid errors further on
-    assert_eq!(MoveMode::Walk, game.data.entities.move_mode[&player_id]);
+    assert_eq!(MoveMode::Sneak, game.data.entities.move_mode[&player_id]);
     input(&mut game, InputAction::DecreaseMoveMode);
     assert_eq!(MoveMode::Sneak, game.data.entities.move_mode[&player_id]);
     input(&mut game, InputAction::IncreaseMoveMode);
-    assert_eq!(MoveMode::Walk, game.data.entities.move_mode[&player_id]);
+    assert_eq!(MoveMode::Run, game.data.entities.move_mode[&player_id]);
     input(&mut game, InputAction::IncreaseMoveMode);
     assert_eq!(MoveMode::Run, game.data.entities.move_mode[&player_id]);
     input(&mut game, InputAction::DecreaseMoveMode);
-    assert_eq!(MoveMode::Walk, game.data.entities.move_mode[&player_id]);
+    assert_eq!(MoveMode::Sneak, game.data.entities.move_mode[&player_id]);
 
     // walk around a bit
     test_move(&mut game, Direction::Right, (1, 0));
