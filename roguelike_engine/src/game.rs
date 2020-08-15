@@ -510,7 +510,7 @@ impl GameSettings {
 }
 
 /// Check whether the exit condition for the game is met.
-fn win_condition_met(data: &GameData) -> bool {
+fn level_exit_condition_met(data: &GameData) -> bool {
     // loop over objects in inventory, and check whether any
     // are the key object.
     let player_id = data.find_player().unwrap();
@@ -549,8 +549,10 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
 
     resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
 
+    let won_level = level_exit_condition_met(&game.data);
+
     // resolve enemy action
-    if player_action.takes_turn() && game.data.entities.alive[&player_id] {
+    if player_action.takes_turn() && game.data.entities.alive[&player_id] && !won_level {
         let mut ai_id: Vec<EntityId> = Vec::new();
 
         for key in game.data.entities.ids.iter() {
@@ -659,7 +661,7 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
         game.settings.turn_count += 1;
     }
 
-    return win_condition_met(&game.data);
+    return level_exit_condition_met(&game.data);
 }
 
 #[test]
