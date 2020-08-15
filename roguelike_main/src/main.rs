@@ -5,13 +5,13 @@ mod console;
 mod display;
 mod plat;
 
-use std::env;
+//use std::env;
 use std::fs;
 use std::io::{BufRead, Write};
 use std::time::{Duration, Instant};
 use std::path::Path;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
+//use std::collections::hash_map::DefaultHasher;
+//use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
 use sdl2::event::Event;
@@ -21,7 +21,7 @@ use sdl2::keyboard::{Mod, Keycode};
 use sdl2::render::{TextureCreator};
 use sdl2::video::WindowContext;
 
-use rand::prelude::*;
+//use rand::prelude::*;
 
 use walkdir::WalkDir;
 
@@ -35,7 +35,6 @@ use roguelike_core::types::*;
 use roguelike_core::config::Config;
 use roguelike_core::constants::*;
 use roguelike_core::movement::Direction;
-use roguelike_core::utils::{add_pos};
 
 use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
@@ -67,7 +66,7 @@ struct GameOptions {
 
 
 fn main() {
-    let args = env::args().collect::<Vec<String>>();
+    //let args = env::args().collect::<Vec<String>>();
 
     let opts = GameOptions::parse_args_default_or_exit();
 
@@ -147,8 +146,6 @@ pub fn run(seed: u64, starting_actions: Vec<InputAction>) -> Result<(), String> 
 
     make_map(&config.map_load, &mut game);
 
-    let player_id = game.data.find_player().unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
     make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
 
     let mut frame_time = Instant::now();

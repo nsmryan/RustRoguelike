@@ -1,5 +1,6 @@
 use rand::prelude::*;
 
+#[allow(unused_imports)]
 use log::{trace, error};
 
 use roguelike_core::types::*;

@@ -234,9 +234,9 @@ impl GameData {
     }
 
     pub fn is_in_inventory(&self, entity_id: EntityId, item: Item) -> Option<EntityId> {
-        for item in self.entities.inventory[&entity_id].iter() {
-            if self.entities.item[item] == Item::Goal {
-                return Some(*item);
+        for item_key in self.entities.inventory[&entity_id].iter() {
+            if self.entities.item[item_key] == item {
+                return Some(*item_key);
             }
         }
 

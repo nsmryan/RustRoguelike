@@ -16,7 +16,7 @@ use roguelike_core::movement::*;
 use crate::actions;
 use crate::actions::InputAction; //, KeyDirection};
 use crate::generation::*;
-use crate::make_map::{read_map_xp, make_map};
+use crate::make_map::make_map;
 use crate::resolve::resolve_messages;
 #[cfg(test)]
 use crate::make_map::*;
@@ -177,8 +177,7 @@ impl Game {
         let input = self.input_action;
         self.input_action = InputAction::None;
 
-        let player_action =
-            actions::handle_input_confirm_quit(input, &mut self.data, &mut self.settings, &mut self.msg_log);
+        actions::handle_input_confirm_quit(input, &mut self.data, &mut self.settings, &mut self.msg_log);
 
         if self.settings.exiting {
             return GameResult::Stop;
@@ -699,7 +698,7 @@ pub fn test_game_step() {
 // TODO issue 151 removes walking and 150 removes pushing
 //      so this test no longer makes any sense.
 pub fn test_running() {
-    let mut config = Config::from_file("../config.yaml");
+    let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone()).unwrap();
 
     let player_id = game.data.find_player().unwrap();

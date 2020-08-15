@@ -95,7 +95,7 @@ impl FromStr for InputAction {
     type Err = String;
 
     fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let mut s: &mut str = &mut string.to_string();
+        let s: &mut str = &mut string.to_string();
         s.make_ascii_lowercase();
 
         if s == "left" {
@@ -362,11 +362,10 @@ pub fn handle_input_skill_menu(input: InputAction,
 }
 
 pub fn handle_input_confirm_quit(input: InputAction,
-                                 data: &mut GameData,
+                                 _data: &mut GameData,
                                  settings: &mut GameSettings,
                                  msg_log: &mut MsgLog) -> Action {
-    let mut player_turn: Action = Action::NoAction;
-    let player_id = data.find_player().unwrap();
+    let player_turn: Action = Action::NoAction;
 
     match input {
         InputAction::Esc => {
@@ -634,7 +633,7 @@ pub fn handle_input(game: &mut Game) -> Action {
 pub fn pick_item_up(entity_id: EntityId,
                     item_id: EntityId,
                     entities: &mut Entities,
-                    msg_log: &mut MsgLog) {
+                    _msg_log: &mut MsgLog) {
     // pick up item
     let item = entities.item[&item_id];
     let item_class = item.class();

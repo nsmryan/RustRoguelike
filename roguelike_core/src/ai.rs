@@ -165,6 +165,7 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
             if path_cost > 0 && (better_path || (equal_path && better_turn) || no_current_best) {
                 best_cost = path_cost;
                 best_target = *move_pos;
+                best_turn_amount = turn_amount;
             }
         }
 
@@ -188,7 +189,6 @@ pub fn ai_attack(monster_id: EntityId,
                  data: &mut GameData,
                  config: &Config) -> Action {
     let target_pos = data.entities.pos[&target_id];
-    let monster_pos = data.entities.pos[&monster_id];
 
     let turn: Action;
 
@@ -232,7 +232,6 @@ pub fn ai_idle(monster_id: EntityId,
         data.entities.face(monster_id, player_pos);
         turn = Action::StateChange(Behavior::Attacking(entity_id));
     } else if let Some(Message::Sound(entity_id, sound_pos)) = data.entities.heard_sound(monster_id) {
-        let in_fov = data.is_in_fov(monster_id, sound_pos, config);
         let is_player = entity_id == player_id;
 
         let needs_investigation = is_player;

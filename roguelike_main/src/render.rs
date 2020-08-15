@@ -378,8 +378,6 @@ fn render_skill_menu(display_state: &mut DisplayState, game: &mut Game, area: &A
 }
 
 fn render_confirm_quit(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
-    let player_id = game.data.find_player().unwrap();
-
     // Render header
     draw_placard(display_state,
                  "Quit?".to_string(),
@@ -763,8 +761,6 @@ fn render_entity(entity_id: EntityId,
 }
 
 fn render_impressions(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
-    let player_id = game.data.find_player().unwrap();
-
     // check for entities that have left FOV and make an impression for them
     // NOTE(perf) technically this is only necessary once per turn, not once per render
     display_state.drawn_sprites.clear();

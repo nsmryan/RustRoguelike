@@ -398,8 +398,6 @@ impl DisplayState {
             }
 
             Msg::Moved(entity_id, movement, _pos) => {
-                let player_id = data.find_player().unwrap();
-
                 if !matches!(movement.typ, MoveType::Pass) {
                     if let Some(anim_key) = self.get_idle_animation(entity_id, data, config) {
                         data.entities.set_animation(entity_id, anim_key);
@@ -421,7 +419,7 @@ impl DisplayState {
                 }
             }
 
-            Msg::HammerSwing(entity_id, pos) => {
+            Msg::HammerSwing(entity_id, _pos) => {
                 if data.entities.typ[&entity_id] == EntityType::Player {
                     let attack_sprite =
                         self.new_sprite("player_attack_hammer".to_string(), config.player_attack_hammer_speed)
@@ -438,7 +436,7 @@ impl DisplayState {
                 }
             }
 
-            Msg::Stabbed(entity_id, hit_entity) => {
+            Msg::Stabbed(entity_id, _hit_entity) => {
                 if data.entities.typ[&entity_id] == EntityType::Player {
                     let attack_sprite =
                         self.new_sprite("player_attack_dagger".to_string(), config.player_attack_speed)
@@ -455,7 +453,7 @@ impl DisplayState {
                 }
             }
 
-            Msg::SwordSwing(entity_id, pos) => {
+            Msg::SwordSwing(entity_id, _pos) => {
                 if data.entities.typ[&entity_id] == EntityType::Player {
                     if let Some(idle_key) = self.get_idle_animation(entity_id, data, config) {
                         data.entities.animation[&entity_id].clear();
@@ -533,9 +531,6 @@ impl DisplayState {
 
                 for entity_id in data.entities.ids.clone() {
                     let pos = data.entities.pos[&entity_id];
-                    let name = data.entities.name[&entity_id];
-                    let in_fov = data.is_in_fov(player_id, pos, config);
-                    let player_pos = data.entities.pos[&player_id];
                     if entity_id != player_id && data.is_in_fov(player_id, pos, config) {
                         self.current_turn_fov.push(entity_id);
                     }
