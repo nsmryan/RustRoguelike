@@ -255,7 +255,7 @@ pub fn run(seed: u64, starting_actions: Vec<InputAction>) -> Result<(), String> 
         /* Record Inputs to Log File */
         if game.input_action != InputAction::None &&
            game.input_action != InputAction::Exit {
-            action_log.write(game.input_action.to_string().as_bytes());
+            action_log.write(game.input_action.to_string().as_bytes()).unwrap();
             action_log.write("\n".as_bytes()).unwrap();
         }
 
