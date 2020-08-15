@@ -68,6 +68,7 @@ pub enum Msg {
     HammerSwing(EntityId, Pos), // entity, position swung at
     HammerHitEntity(EntityId, EntityId), // entity, hit entity
     HammerHitWall(EntityId, Blocked),
+    Stabbed(EntityId, EntityId), // entity, hit entity
     ChangeLevel(),
     Action(EntityId, Action),
     FailedBlink(EntityId),
@@ -218,6 +219,12 @@ impl Msg {
 
             Msg::HammerHitWall(entity_id, _blocked) => {
                 return format!("{:?} hit a wall with their hammer", data.entities.name[entity_id]);
+            }
+
+            Msg::Stabbed(attacker, attacked) => {
+                let entity_name = &data.entities.name[attacker];
+                let hit_entity_name = &data.entities.name[attacked];
+                return format!("{:?} stabbed {:?} with a dagger!", entity_name, hit_entity_name);
             }
 
             Msg::FailedBlink(entity_id) => {

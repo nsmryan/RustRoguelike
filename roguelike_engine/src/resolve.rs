@@ -245,6 +245,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                                 if entity_pos != movement.pos {
                                     msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
                                 }
+
+                                msg_log.log(Msg::Stabbed(entity_id, target_id));
                             }
 
                             Attack::Push(target_id, delta_pos) => {
