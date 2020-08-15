@@ -130,30 +130,45 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
         let mut best_target = *first_target;
 
         let path = data.path_between(monster_pos, best_target, movement, must_reach, traps_block, None);
-        let mut best_dist = path.len();
+        let mut best_cost = path.len();
         let mut best_turn_amount = dir.turn_amount(data.entities.face_to(monster_id, best_target));
 
-        let large_dist = (MAP_WIDTH + MAP_HEIGHT) as usize;
-        if best_dist == 0 {
-            best_dist = large_dist;
+        let large_cost = (MAP_WIDTH + MAP_HEIGHT) as usize;
+        if best_cost == 0 {
+            best_cost = large_cost;
         }
 
         for move_pos in targets {
             let path = data.path_between(monster_pos, *move_pos, movement, must_reach, traps_block, None);
             let path_length = path.len();
+
+            // the fov_cost is added in if the next move would leave the target's FOV
+            data.entities.set_pos(monster_id, *move_pos);
+            let fov_cost =
+                if data.is_in_fov(monster_id, target_pos, config) {
+                     NOT_IN_FOV_COST
+                } else {
+                    0
+                };
+            data.entities.set_pos(monster_id, monster_pos);
+
+            // the total cost is the lenght of the path, but also a cost if it causes the target to
+            // leave the FOV.
+            let path_cost = path_length + fov_cost;
+
             let turn_amount = dir.turn_amount(data.entities.face_to(monster_id, *move_pos));
                 
-            let better_path = path_length < best_dist;
-            let equal_path = path_length == best_dist;
+            let better_path = path_cost < best_cost;
+            let equal_path = path_cost == best_cost;
             let better_turn = turn_amount < best_turn_amount;
-            let no_current_best = best_dist == large_dist;
-            if path_length > 0 && (better_path || (equal_path && better_turn) || no_current_best) {
-                best_dist = path_length;
+            let no_current_best = best_cost == large_cost;
+            if path_cost > 0 && (better_path || (equal_path && better_turn) || no_current_best) {
+                best_cost = path_cost;
                 best_target = *move_pos;
             }
         }
 
-        if best_dist > 0 && best_dist != large_dist {
+        if best_cost > 0 && best_cost != large_cost {
             new_pos = best_target;
         }
     }
@@ -181,16 +196,14 @@ pub fn ai_attack(monster_id: EntityId,
 
     data.entities.face(monster_id, target_pos);
 
-    if !data.entities.alive[&target_id] {
+    let can_hit_target = 
+        ai_can_hit_target(data, monster_id, target_pos, &attack_reach, config);
+
+    if data.entities.is_dead(target_id) {
         // if AI target is no longer alive
         turn = Action::StateChange(Behavior::Investigating(target_pos));
-    } else if let Some(hit_pos) =
-        // if AI can hit their target
-        ai_can_hit_target(data, 
-                          monster_id,
-                          target_pos,
-                          &attack_reach,
-                          config) {
+    } else if let Some(hit_pos) = can_hit_target {
+        // can hit their target, so just attack them
         let attack = Attack::Attack(target_id);
         turn = Action::Move(Movement::attack(hit_pos, MoveType::Move, attack));
     } else if !data.is_in_fov(monster_id, target_pos, config) {

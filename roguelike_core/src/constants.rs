@@ -34,6 +34,8 @@ pub const MAX_MOMENTUM: i32 = 2;
 pub const SPIKE_DAMAGE: i32 = 20;
 pub const HAMMER_DAMAGE: i32 = 40;
 
+pub const NOT_IN_FOV_COST: usize = 5;
+
 /* Player */
 pub const PLAYER_THROW_DIST: usize = 5;
 
