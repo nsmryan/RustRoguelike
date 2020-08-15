@@ -246,12 +246,13 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                                     msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
                                 }
 
+                                // this is done after the Moved msg to ensure that the attack
+                                // animation plays instead of an idle animation
                                 msg_log.log(Msg::Stabbed(entity_id, target_id));
                             }
 
                             Attack::Push(target_id, delta_pos) => {
                                 msg_log.log(Msg::Pushed(entity_id, target_id, delta_pos, true));
-                                //msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
                             }
                         }
                     } else if movement.attack.is_none() {
