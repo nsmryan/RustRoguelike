@@ -410,7 +410,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::PickedUp(entity_id, item_id) => {
-                pick_item_up(entity_id, item_id, &mut data.entities);
+                pick_item_up(entity_id, item_id, &mut data.entities, msg_log);
             }
 
             Msg::StateChange(entity_id, behavior) => {

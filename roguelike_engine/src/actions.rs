@@ -632,31 +632,32 @@ pub fn handle_input(game: &mut Game) -> Action {
 }
 
 pub fn pick_item_up(entity_id: EntityId,
-                    pickedup_id: EntityId,
-                    entities: &mut Entities) {
+                    item_id: EntityId,
+                    entities: &mut Entities,
+                    msg_log: &mut MsgLog) {
     // pick up item
-    let item = entities.item[&pickedup_id];
+    let item = entities.item[&item_id];
     let item_class = item.class();
 
     match item_class {
         ItemClass::Primary => {
             if item_primary_at(entity_id, entities, 0) &&
                item_primary_at(entity_id, entities, 1) {
-                entities.inventory[&entity_id][0] = pickedup_id;
+                entities.inventory[&entity_id][0] = item_id;
 
                 let obj_pos = entities.pos[&entity_id];
                 entities.set_pos(entity_id, obj_pos);
             } else {
-                entities.inventory[&entity_id].push_front(pickedup_id);
+                entities.inventory[&entity_id].push_front(item_id);
             }
         }
 
         ItemClass::Secondary => {
-            entities.inventory[&entity_id].push_back(pickedup_id);
+            entities.inventory[&entity_id].push_back(item_id);
         }
-    } 
+    }
 
-    entities.set_xy(pickedup_id, -1, -1);
+    entities.set_xy(item_id, -1, -1);
 }
 
 pub fn throw_item(player_id: EntityId,

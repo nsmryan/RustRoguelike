@@ -73,6 +73,7 @@ pub enum Msg {
     FailedBlink(EntityId),
     NotEnoughEnergy(EntityId),
     DropFailed(EntityId),
+    DroppedItem(EntityId, EntityId),
     PlayerTurn(),
 }
 
@@ -87,11 +88,11 @@ impl Msg {
                 return "Player passed their turn".to_string();
             }
 
-            Msg::SoundTrapTriggered(_trap, _entity) => {
+            Msg::SoundTrapTriggered(_trap, _entity_id) => {
                 return "Sound trap triggered".to_string();
             }
 
-            Msg::SpikeTrapTriggered(_trap, _entity) => {
+            Msg::SpikeTrapTriggered(_trap, _entity_id) => {
                 return "Spike trap triggered".to_string();
             }
 
@@ -99,9 +100,9 @@ impl Msg {
                 return "Player died!".to_string();
             }
 
-            Msg::PickedUp(entity, item) => {
+            Msg::PickedUp(entity_id, item) => {
                 return format!("{:?} picked up a {:?}",
-                               data.entities.name[entity].clone(),
+                               data.entities.name[entity_id].clone(),
                                data.entities.name[item].clone());
             }
 
@@ -124,31 +125,31 @@ impl Msg {
                 return format!("{:?} pushed {:?}", data.entities.name[attacker], data.entities.name[attacked]);
             }
 
-            Msg::Moved(entity, movement, pos) => {
+            Msg::Moved(entity_id, movement, pos) => {
                 if let MoveType::Pass = movement.typ {
-                    return format!("{:?} passed their turn", data.entities.name[entity]);
+                    return format!("{:?} passed their turn", data.entities.name[entity_id]);
                 } else {
-                    return format!("{:?} moved to {}", data.entities.name[entity], pos);
+                    return format!("{:?} moved to {}", data.entities.name[entity_id], pos);
                 }
             }
 
-            Msg::JumpWall(_entity, _start, _end) => {
+            Msg::JumpWall(_entity_id, _start, _end) => {
                 return "Jumped a wall".to_string();
             }
 
-            Msg::WallKick(_entity, _pos) => {
+            Msg::WallKick(_entity_id, _pos) => {
                 return "Did a wallkick".to_string();
             }
 
-            Msg::StateChange(_entity, behavior) => {
+            Msg::StateChange(_entity_id, behavior) => {
                 return format!("Changed state to {:?}", *behavior);
             }
 
-            Msg::Yell(entity, _pos) => {
-                return format!("{:?} yelled", data.entities.name[entity]);
+            Msg::Yell(entity_id, _pos) => {
+                return format!("{:?} yelled", data.entities.name[entity_id]);
             }
 
-            Msg::Collided(_entity, _pos) => {
+            Msg::Collided(_entity_id, _pos) => {
                 return "Collided".to_string();
             }
 
@@ -201,38 +202,42 @@ impl Msg {
                 return "Your equipment is too heavy to run!".to_string();
             }
 
-            Msg::SwordSwing(entity, _pos) => {
-                return format!("{:?} swung their sword", data.entities.name[entity]);
+            Msg::SwordSwing(entity_id, _pos) => {
+                return format!("{:?} swung their sword", data.entities.name[entity_id]);
             }
 
-            Msg::HammerSwing(entity, _pos) => {
-                return format!("{:?} swung their hammer", data.entities.name[entity]);
+            Msg::HammerSwing(entity_id, _pos) => {
+                return format!("{:?} swung their hammer", data.entities.name[entity_id]);
             }
 
-            Msg::HammerHitEntity(entity, hit_entity) => {
-                let entity_name = &data.entities.name[entity];
+            Msg::HammerHitEntity(entity_id, hit_entity) => {
+                let entity_name = &data.entities.name[entity_id];
                 let hit_entity_name = &data.entities.name[hit_entity];
                 return format!("{:?} hit {:?} with their hammer", entity_name, hit_entity_name);
             }
 
-            Msg::HammerHitWall(entity, _blocked) => {
-                return format!("{:?} hit a wall with their hammer", data.entities.name[entity]);
+            Msg::HammerHitWall(entity_id, _blocked) => {
+                return format!("{:?} hit a wall with their hammer", data.entities.name[entity_id]);
             }
 
-            Msg::FailedBlink(entity) => {
-                return format!("{:?} failed to blink!", data.entities.name[entity]);
+            Msg::FailedBlink(entity_id) => {
+                return format!("{:?} failed to blink!", data.entities.name[entity_id]);
             }
 
-            Msg::NotEnoughEnergy(entity) => {
-                return format!("{:?} does not have enough energy for that", data.entities.name[entity]);
+            Msg::NotEnoughEnergy(entity_id) => {
+                return format!("{:?} does not have enough energy for that", data.entities.name[entity_id]);
             }
 
-            Msg::DropFailed(entity) => {
-                return format!("{:?} tried to drop an item, but its too crowded!", data.entities.name[entity]);
+            Msg::DropFailed(entity_id) => {
+                return format!("{:?} tried to drop an item, but its too crowded!", data.entities.name[entity_id]);
             }
 
             Msg::PlayerTurn() => {
                 return "".to_string();
+            }
+
+            Msg::PickedUp(entity_id, item_id) => {
+                return format!("{:?} picked up a {:?}", data.entities.name[entity_id], data.entities.name[item_id]);
             }
 
             _ => {
