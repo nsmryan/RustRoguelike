@@ -423,8 +423,16 @@ impl DisplayState {
 
             Msg::HammerSwing(entity_id, pos) => {
                 if data.entities.typ[&entity_id] == EntityType::Player {
+                    let attack_sprite =
+                        self.new_sprite("player_attack_hammer".to_string(), config.player_attack_hammer_speed)
+                                          .unwrap();
+                    let attack_anim = Animation::Once(attack_sprite);
+                    let attack_key = self.play_animation(attack_anim);
+
+                    data.entities.animation[&entity_id].clear();
+                    data.entities.animation[&entity_id].push_back(attack_key);
+
                     if let Some(idle_key) = self.get_idle_animation(entity_id, data, config) {
-                        data.entities.animation[&entity_id].clear();
                         data.entities.animation[&entity_id].push_back(idle_key);
                     }
                 }

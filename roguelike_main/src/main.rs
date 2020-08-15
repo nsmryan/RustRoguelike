@@ -497,6 +497,8 @@ pub fn keydown_to_action(keycode: Keycode,
 fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display_state: &mut DisplayState) {
     load_sprite(texture_creator, display_state, "animations/player/Player_Idle.png", "player_idle", 1);
     load_sprite(texture_creator, display_state, "animations/player/player_attack.png", "player_attack", 1);
+    load_sprite(texture_creator, display_state, "animations/player/player_attack_Hammer.png", "player_attack_hammer", 1);
+    load_sprite(texture_creator, display_state, "animations/player/player_attack_Dagger.png", "player_attack_dagger", 1);
     load_sprite(texture_creator, display_state, "animations/player/Player_Idle_Dagger.png", "player_idle_dagger", 1);
     load_sprite(texture_creator, display_state, "animations/player/Player_Idle_Hammer.png", "player_idle_hammer", 1);
     load_sprite(texture_creator, display_state, "animations/player/Player_Idle_Shield.png", "player_idle_shield", 1);
