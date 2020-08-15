@@ -779,5 +779,11 @@ impl Entities {
     pub fn is_dead(&self, entity_id: EntityId) -> bool {
         return !self.ids.contains(&entity_id) || self.limbo.get(&entity_id).is_some();
     }
+
+    /// Set the entity's animation, removing any old animations in play
+    pub fn set_animation(&mut self, entity_id: EntityId, key: AnimKey) {
+        self.animation[&entity_id].clear();
+        self.animation[&entity_id].push_back(key);
+    }
 }
 

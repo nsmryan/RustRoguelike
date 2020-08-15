@@ -102,12 +102,15 @@ impl DisplayState {
         return None;
     }
 
+    /// Create a sprite by looking up a texture and constructing the
+    /// SpriteAnim structure.
     pub fn new_sprite(&self, name: String, speed: f32) -> Option<SpriteAnim> {
         if let Some(sprite_key) = self.lookup_spritekey(&name) {
             let max_index = self.sprites[&sprite_key].num_sprites;
             return Some(SpriteAnim::make_anim(name, sprite_key, max_index as f32, speed));
         }
 
+        panic!(format!("Tried to play sprite {}, but could not find animation!", name));
         return None;
     }
 
@@ -293,6 +296,19 @@ impl DisplayState {
         self.canvas.draw_rect(inner_rect).unwrap();
     }
 
+    /// Create and play a looping sprite
+    pub fn loop_sprite(&mut self, sprite_name: &str, speed: f32) -> AnimKey {
+        let sprite_anim = self.new_sprite(sprite_name.to_string(), speed).unwrap();
+        
+        let anim = Animation::Loop(sprite_anim);
+
+        let key = self.play_animation(anim);
+
+        return key;
+    }
+
+    /// Add an animation to the current animation system, returning
+    /// a key used to reference this animation
     pub fn play_animation(&mut self, animation: Animation) -> AnimKey {
         let anim_key = self.next_anim_key;
         self.next_anim_key += 1;
@@ -356,18 +372,12 @@ impl DisplayState {
             }
 
             Msg::Moved(object_id, movement, _pos) => {
-                let player_handle = data.find_player().unwrap();
+                let player_id = data.find_player().unwrap();
 
-                if object_id == player_handle {
+                if object_id == player_id {
                     if !matches!(movement.typ, MoveType::Pass) {
-                        let idle_sprite =
-                            self.new_sprite("player_idle".to_string(), config.idle_speed)
-                                              .unwrap();
-                        let idle_anim = Animation::Loop(idle_sprite);
-                        let idle_key = self.play_animation(idle_anim);
-
-                        data.entities.animation[&player_handle].clear();
-                        data.entities.animation[&player_handle].push_back(idle_key);
+                        let idle_key = self.loop_sprite("player_idle", config.idle_speed);
+                        data.entities.set_animation(object_id, idle_key);
                     }
                 }
             }
