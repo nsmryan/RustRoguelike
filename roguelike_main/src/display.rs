@@ -110,7 +110,7 @@ impl DisplayState {
             return Some(SpriteAnim::make_anim(name, sprite_key, max_index as f32, speed));
         }
 
-        panic!(format!("Tried to play sprite {}, but could not find animation!", name));
+        //panic!(format!("Tried to play sprite {}, but could not find animation!", name));
         return None;
     }
 
@@ -307,12 +307,22 @@ impl DisplayState {
         return key;
     }
 
-    pub fn run_idle_animation(&mut self, entity_id: EntityId, data: &mut GameData) {
+    pub fn run_idle_animation(&mut self, entity_id: EntityId, data: &mut GameData, config: &Config) {
         let player_id = data.find_player().unwrap();
 
         if entity_id == player_id {
-            let idle_key = self.loop_sprite("player_idle", config.idle_speed);
-            data.entities.set_animation(entity_id, idle_key);
+            let key;
+            if data.using(entity_id, Item::Dagger) {
+                key = self.loop_sprite("player_idle_dagger", config.idle_speed);
+            } else if data.using(entity_id, Item::Hammer) {
+                key = self.loop_sprite("player_idle_hammer", config.idle_speed);
+            } else if data.using(entity_id, Item::Shield) {
+                key = self.loop_sprite("player_idle_shield", config.idle_speed);
+            } else {
+                key = self.loop_sprite("player_idle", config.idle_speed);
+            }
+
+            data.entities.set_animation(entity_id, key);
         }
     }
 
@@ -380,14 +390,15 @@ impl DisplayState {
                 data.entities.animation[&item_id].push_back(loop_key);
             }
 
+            Msg::PickedUp(entity_id, _item_id) => {
+                self.run_idle_animation(entity_id, data, config);
+            }
+
             Msg::Moved(entity_id, movement, _pos) => {
                 let player_id = data.find_player().unwrap();
 
-                // NOTE this check for the player may not be necessary
-                if entity_id == player_id {
-                    if !matches!(movement.typ, MoveType::Pass) {
-                        self.run_idle_animation(entity_id, data);
-                    }
+                if !matches!(movement.typ, MoveType::Pass) {
+                    self.run_idle_animation(entity_id, data, config);
                 }
             }
 
@@ -414,8 +425,7 @@ impl DisplayState {
                     let attack_key = self.play_animation(attack_anim);
 
                     let idle_sprite =
-                        self.new_sprite("player_idle".to_string(), config.idle_speed)
-                                          .unwrap();
+                        self.new_sprite("player_idle".to_string(), config.idle_speed).unwrap();
                     let idle_anim = Animation::Loop(idle_sprite);
                     let idle_key = self.play_animation(idle_anim);
 
