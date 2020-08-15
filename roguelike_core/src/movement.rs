@@ -766,14 +766,21 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId, other_id: EntityId, mo
         movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
     } else if data.entities.blocks[&other_id] {
         let other_pos = data.entities.pos[&other_id];
-        let dxy = sub_pos(other_pos, pos);
-        let next = next_pos(pos, dxy);
-        if data.map[next].tile_type != TileType::Water &&
+        let next = next_pos(pos, delta_pos);
+
+        let other_to_next = sub_pos(next, other_pos);
+
+        let next_tile_water = data.map[next].tile_type == TileType::Water;
+        // NOTE removed the "is blocked" check, and pushing into a blocked position crushes, which
+        // is valid. I'm not sure why this was in here.
+        //let push_is_blocked = data.map.is_blocked_by_wall(other_pos, other_to_next.x, other_to_next.y).is_some();
+
+        if  !next_tile_water { // && !push_is_blocked {
             // TODO issue 150 this is where pushing comes from. 
-           data.map.is_blocked_by_wall(other_pos, delta_pos.x, delta_pos.y).is_none() {
             let attack = Attack::Push(other_id, delta_pos);
             movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
         } else {
+            dbg!();
             movement = None;
         }
     } else {

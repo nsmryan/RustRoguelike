@@ -763,9 +763,8 @@ pub fn test_running_two_steps() {
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(gol_pos, player_pos);
 
-    // gol is no longer in entities list after being crushed
-    assert!(!game.data.entities.ids.contains(&gol));
-    //let pawn = make_elf(&mut game.data.entities, &game.config, pawn_pos, &mut game.msg_log);
+    // gol was crushed, so check
+    assert!(game.data.entities.is_dead(gol));
 }
 
 #[test]
