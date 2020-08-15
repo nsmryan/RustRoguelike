@@ -775,5 +775,9 @@ impl Entities {
 
         return None;
     }
+
+    pub fn is_dead(&self, entity_id: EntityId) -> bool {
+        return !self.ids.contains(&entity_id) || self.limbo.get(&entity_id).is_some();
+    }
 }
 

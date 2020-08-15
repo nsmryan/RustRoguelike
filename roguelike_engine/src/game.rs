@@ -696,7 +696,8 @@ pub fn test_game_step() {
     assert_eq!(Pos::new(0, 0), player_pos);
 }
 
-#[test]
+// TODO issue 151 removes walking and 150 removes pushing
+//      so this test no longer makes any sense.
 pub fn test_running() {
     let mut config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone()).unwrap();
@@ -798,7 +799,7 @@ pub fn test_hammer_small_wall() {
     }
 
     // gol is no longer in entities list after being crushed
-    assert!(!game.data.entities.ids.contains(&gol));
+    assert!(game.data.entities.is_dead(gol));
 
     assert!(game.msg_log.turn_messages.iter().any(|msg| {
         matches!(msg, Msg::HammerHitWall(player_id, _))
@@ -820,7 +821,7 @@ pub fn test_hammer_small_wall() {
     game.input_action = InputAction::MapClick(pawn_pos, pawn_pos);
     game.step_game(0.1);
 
-    assert!(!game.data.entities.ids.contains(&pawn));
+    assert!(game.data.entities.is_dead(pawn));
 
     assert!(game.msg_log.turn_messages.iter().any(|msg| {
         matches!(msg, Msg::HammerHitEntity(player_id, pawn))
