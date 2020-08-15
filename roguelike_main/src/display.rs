@@ -307,6 +307,15 @@ impl DisplayState {
         return key;
     }
 
+    pub fn run_idle_animation(&mut self, entity_id: EntityId, data: &mut GameData) {
+        let player_id = data.find_player().unwrap();
+
+        if entity_id == player_id {
+            let idle_key = self.loop_sprite("player_idle", config.idle_speed);
+            data.entities.set_animation(entity_id, idle_key);
+        }
+    }
+
     /// Add an animation to the current animation system, returning
     /// a key used to reference this animation
     pub fn play_animation(&mut self, animation: Animation) -> AnimKey {
@@ -371,13 +380,13 @@ impl DisplayState {
                 data.entities.animation[&item_id].push_back(loop_key);
             }
 
-            Msg::Moved(object_id, movement, _pos) => {
+            Msg::Moved(entity_id, movement, _pos) => {
                 let player_id = data.find_player().unwrap();
 
-                if object_id == player_id {
+                // NOTE this check for the player may not be necessary
+                if entity_id == player_id {
                     if !matches!(movement.typ, MoveType::Pass) {
-                        let idle_key = self.loop_sprite("player_idle", config.idle_speed);
-                        data.entities.set_animation(object_id, idle_key);
+                        self.run_idle_animation(entity_id, data);
                     }
                 }
             }
