@@ -649,17 +649,27 @@ impl Map {
             return false;
         }
 
-        let offset = Pos::new(end_pos.x - start_pos.x,
-                              end_pos.y - start_pos.y);
-        let blocked =
-            self.is_blocked_by_wall(start_pos, offset.x, offset.y);
+        let blocked;
+        {
+            let offset = Pos::new(end_pos.x - start_pos.x,
+                                  end_pos.y - start_pos.y);
+            blocked = self.is_blocked_by_wall(start_pos, offset.x, offset.y);
+        }
 
         let mut is_in_fov;
 
         let mut blocked_by_wall = false;
         if let Some(blocked) = blocked {
             let at_end = blocked.end_pos == end_pos;
-            is_in_fov = at_end && self[end_pos].block_sight && blocked.end_pos == end_pos;
+
+            let offset = Pos::new(start_pos.x - end_pos.x,
+                                  start_pos.y - end_pos.y);
+            let visible_back = 
+                self.is_blocked_by_wall(end_pos, offset.x, offset.y).is_none();
+
+            // in fov if the line going back is not blocked, or its the last position
+            // in the line and it blocks line of sight (its a full tile wall).
+            is_in_fov = visible_back || (at_end && self[end_pos].block_sight && blocked.end_pos == end_pos);
         } else {
             is_in_fov = true;
         }
