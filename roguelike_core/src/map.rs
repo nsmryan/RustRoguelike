@@ -724,8 +724,15 @@ impl Map {
         for pos in flood.iter() {
             let dist = distance(start, *pos);
 
-            let dt = sub_pos(*pos, start);
-            let is_blocked = self.is_blocked_by_wall(start, dt.x, dt.y).is_some();
+            // must be blocked to and from a position to dampen.
+            let dt_to = sub_pos(*pos, start);
+            let is_blocked_to = self.is_blocked_by_wall(start, dt_to.x, dt_to.y).is_some();
+
+            let dt_from = sub_pos(start, *pos);
+            let is_blocked_from = self.is_blocked_by_wall(*pos, dt_from.x, dt_from.y).is_some();
+
+            let is_blocked = is_blocked_to && is_blocked_from;
+
             if !is_blocked || (is_blocked && dist <= blocked_radius) {
                 if dist as usize == aoe_dists.len() {
                     dbg!(dist, radius, pos);

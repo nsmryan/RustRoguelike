@@ -43,9 +43,10 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::Sound(cause_id, source_pos, radius, _should_animate) => {
-                trace!("sound {} {}", cause_id, source_pos);
+                trace!("sound {} {} {}", cause_id, source_pos, radius);
                 let sound_aoe =
                     data.map.aoe_fill(AoeEffect::Sound, source_pos, radius);
+                println!("{:?}", &sound_aoe);
 
                 let who_heard =
                     data.within_aoe(&sound_aoe);
