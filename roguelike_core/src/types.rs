@@ -309,6 +309,14 @@ impl GameData {
         return in_fov;
     }
 
+    pub fn can_push(&self, entity_id: EntityId, other_id: EntityId) -> bool {
+        let entity_type = self.entities.typ[&entity_id];
+        let other_type = self.entities.typ[&other_id];
+
+        // the player can't push the enemies
+        return !(entity_type == EntityType::Player && other_type == EntityType::Enemy);
+    }
+
     pub fn clear_except(&mut self, exceptions: Vec<EntityId>) {
         let mut dont_clear: Vec<EntityId> = Vec::new();
 

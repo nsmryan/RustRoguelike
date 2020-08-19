@@ -774,7 +774,7 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId, other_id: EntityId, mo
         let push_is_blocked = data.map.is_blocked_by_wall(other_pos, other_to_next.x, other_to_next.y).is_some();
         let is_column = data.entities.typ[&other_id] == EntityType::Column;
 
-        if  !next_tile_water && !(push_is_blocked && is_column) {
+        if data.can_push(entity_id, other_id) && !next_tile_water && !(push_is_blocked && is_column) {
             // TODO issue 150 this is where pushing comes from. 
             let attack = Attack::Push(other_id, delta_pos);
             movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
