@@ -656,16 +656,17 @@ impl Map {
             blocked = self.is_blocked_by_wall(start_pos, offset.x, offset.y);
         }
 
-        let mut is_in_fov;
-
-        let mut blocked_by_wall = false;
-        if let Some(blocked) = blocked {
-            let at_end = blocked.end_pos == end_pos;
-
+        let visible_back;
+        {
             let offset = Pos::new(start_pos.x - end_pos.x,
                                   start_pos.y - end_pos.y);
-            let visible_back = 
-                self.is_blocked_by_wall(end_pos, offset.x, offset.y).is_none();
+
+            visible_back = self.is_blocked_by_wall(end_pos, offset.x, offset.y).is_none();
+        }
+
+        let mut is_in_fov;
+        if let Some(blocked) = blocked {
+            let at_end = blocked.end_pos == end_pos;
 
             // in fov if the line going back is not blocked, or its the last position
             // in the line and it blocks line of sight (its a full tile wall).
@@ -674,7 +675,8 @@ impl Map {
             is_in_fov = true;
         }
 
-        if is_in_fov {
+        fn needs_culling(map: &mut Map, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
+            let mut cull = false;
             // if the position is in the FOV, but the line up to the next-to-last square is
             // different from the current line, then check that line too. This resolves
             // artifacts where squares are visible even though no squares around them are.
@@ -684,9 +686,15 @@ impl Map {
                 let next_to_last = *fov_line.iter().skip(len - 2).next().unwrap();
                 let next_to_line = line(start_pos, next_to_last);
                 if next_to_line.iter().zip(fov_line.iter().skip(len - 1)).any(|pair| pair.0 != pair.1) {
-                    is_in_fov = self.is_in_fov_lines(start_pos, next_to_last, radius);
+                    cull = !map.is_in_fov_lines(start_pos, next_to_last, radius);
                 }
             }
+
+            return cull;
+        }
+
+        if is_in_fov {
+            is_in_fov = !(needs_culling(self, start_pos, end_pos, radius) || needs_culling(self, end_pos, start_pos, radius));
         }
 
         return is_in_fov;
