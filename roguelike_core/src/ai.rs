@@ -106,6 +106,7 @@ pub fn ai_pos_that_hit_target(monster_id: EntityId,
 
 pub fn ai_move_to_attack_pos(monster_id: EntityId,
                              target_id: EntityId,
+                             old_dir: Direction,
                              data: &mut GameData,
                              config: &Config) -> Action {
     let turn: Action;
@@ -121,58 +122,50 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     let potential_move_targets = ai_pos_that_hit_target(monster_id, target_id, data, config);
 
     // look through all potential positions for the shortest path
-    let mut targets = potential_move_targets.iter();
-    if let Some(first_target) = targets.next() {
-        let must_reach = true;
-        let traps_block = true;
-        let dir = data.entities.direction[&monster_id];
+    let must_reach = true;
+    let traps_block = true;
+    //let dir = data.entities.direction[&monster_id];
 
-        let mut best_target = *first_target;
+    let mut path_solutions: Vec<((usize, i32), Pos)> = Vec::new();
+    for target in potential_move_targets {
+        let path = data.path_between(monster_pos, target, movement, must_reach, traps_block, None);
 
-        let path = data.path_between(monster_pos, best_target, movement, must_reach, traps_block, None);
-        let mut best_cost = path.len();
-        let mut best_turn_amount = dir.turn_amount(data.entities.face_to(monster_id, best_target));
-
-        let large_cost = (MAP_WIDTH + MAP_HEIGHT) as usize;
-        if best_cost == 0 {
-            best_cost = large_cost;
+        // paths contain the starting square, so less than 2 is no path at all
+        if path.len() < 2 {
+            continue;
         }
 
-        for move_pos in targets {
-            let path = data.path_between(monster_pos, *move_pos, movement, must_reach, traps_block, None);
-            let path_length = path.len();
+        let next_pos = path[1];
 
+        let mut cost = path.len();
+        {
             // the fov_cost is added in if the next move would leave the target's FOV
-            data.entities.set_pos(monster_id, *move_pos);
-            let fov_cost =
+            data.entities.set_pos(monster_id, target);
+            let cur_dir = data.entities.direction[&monster_id];
+            data.entities.face(monster_id, target_pos);
+            cost +=
                 if data.is_in_fov(monster_id, target_pos, config) {
                      NOT_IN_FOV_COST
                 } else {
                     0
                 };
+            data.entities.direction[&monster_id] = cur_dir;
             data.entities.set_pos(monster_id, monster_pos);
-
-            // the total cost is the lenght of the path, but also a cost if it causes the target to
-            // leave the FOV.
-            let path_cost = path_length + fov_cost;
-
-            let turn_amount = dir.turn_amount(data.entities.face_to(monster_id, *move_pos));
-                
-            let better_path = path_cost < best_cost;
-            let equal_path = path_cost == best_cost;
-            let better_turn = turn_amount < best_turn_amount;
-            let no_current_best = best_cost == large_cost;
-            if path_cost > 0 && (better_path || (equal_path && better_turn) || no_current_best) {
-                best_cost = path_cost;
-                best_target = *move_pos;
-                best_turn_amount = turn_amount;
-            }
         }
 
-        if best_cost > 0 && best_cost != large_cost {
-            new_pos = best_target;
-        }
+        let turn_dir = data.entities.face_to(monster_id, next_pos);
+        let turn_amount = old_dir.turn_amount(turn_dir);
+        println!("{:?}, {:?}, {:?}, {:?}, {:?}", next_pos, old_dir, turn_dir, turn_amount, cost);
+
+        path_solutions.push(((cost, turn_amount.abs()), next_pos));
     }
+
+    // if there is a solution, get the best one and use it
+    if let Some(best_sol) = path_solutions.iter().min_by(|a, b| a.0.partial_cmp(&b.0).unwrap()) {
+        println!("{:?}", &path_solutions);
+        new_pos = best_sol.1;
+    }
+
     // step towards the closest location that lets us hit the target
     pos_offset = ai_take_astar_step(monster_id, new_pos, true, &data);
     if pos_mag(pos_offset) > 0 {
@@ -194,6 +187,8 @@ pub fn ai_attack(monster_id: EntityId,
 
     let attack_reach = data.entities.attack[&monster_id];
 
+    let old_dir = data.entities.direction[&monster_id];
+
     data.entities.face(monster_id, target_pos);
 
     let can_hit_target = 
@@ -211,7 +206,7 @@ pub fn ai_attack(monster_id: EntityId,
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else {
         // can see target, but can't hit them. try to move to a position where we can hit them
-        turn = ai_move_to_attack_pos(monster_id, target_id, data, config);
+        turn = ai_move_to_attack_pos(monster_id, target_id, old_dir, data, config);
     }
 
     return turn;

@@ -779,7 +779,6 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId, other_id: EntityId, mo
             let attack = Attack::Push(other_id, delta_pos);
             movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
         } else {
-            dbg!();
             movement = None;
         }
     } else {
