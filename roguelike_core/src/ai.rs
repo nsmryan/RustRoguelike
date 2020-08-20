@@ -124,8 +124,9 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     // look through all potential positions for the shortest path
     let must_reach = true;
     let traps_block = true;
-    //let dir = data.entities.direction[&monster_id];
 
+    // path_solutions contains the path length, the amount of turning (absolute value), and the
+    // next position to go to for this solution.
     let mut path_solutions: Vec<((usize, i32), Pos)> = Vec::new();
     for target in potential_move_targets {
         let path = data.path_between(monster_pos, target, movement, must_reach, traps_block, None);
