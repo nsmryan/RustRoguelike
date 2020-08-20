@@ -106,6 +106,7 @@ pub fn ai_pos_that_hit_target(monster_id: EntityId,
 
 pub fn ai_move_to_attack_pos(monster_id: EntityId,
                              target_id: EntityId,
+                             old_dir: Direction,
                              data: &mut GameData,
                              config: &Config) -> Action {
     let turn: Action;
@@ -121,42 +122,49 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     let potential_move_targets = ai_pos_that_hit_target(monster_id, target_id, data, config);
 
     // look through all potential positions for the shortest path
-    let mut targets = potential_move_targets.iter();
-    if let Some(first_target) = targets.next() {
-        let must_reach = true;
-        let traps_block = true;
-        let dir = data.entities.direction[&monster_id];
+    let must_reach = true;
+    let traps_block = true;
 
-        let mut best_target = *first_target;
+    // path_solutions contains the path length, the amount of turning (absolute value), and the
+    // next position to go to for this solution.
+    let mut path_solutions: Vec<((usize, i32), Pos)> = Vec::new();
+    for target in potential_move_targets {
+        let path = data.path_between(monster_pos, target, movement, must_reach, traps_block, None);
 
-        let path = data.path_between(monster_pos, best_target, movement, must_reach, traps_block, None);
-        let mut best_dist = path.len();
-        let mut best_turn_amount = dir.turn_amount(data.entities.face_to(monster_id, best_target));
-
-        let large_dist = (MAP_WIDTH + MAP_HEIGHT) as usize;
-        if best_dist == 0 {
-            best_dist = large_dist;
+        // paths contain the starting square, so less than 2 is no path at all
+        if path.len() < 2 {
+            continue;
         }
 
-        for move_pos in targets {
-            let path = data.path_between(monster_pos, *move_pos, movement, must_reach, traps_block, None);
-            let path_length = path.len();
-            let turn_amount = dir.turn_amount(data.entities.face_to(monster_id, *move_pos));
-                
-            let better_path = path_length < best_dist;
-            let equal_path = path_length == best_dist;
-            let better_turn = turn_amount < best_turn_amount;
-            let no_current_best = best_dist == large_dist;
-            if path_length > 0 && (better_path || (equal_path && better_turn) || no_current_best) {
-                best_dist = path_length;
-                best_target = *move_pos;
-            }
+        let next_pos = path[1];
+
+        let mut cost = path.len();
+        {
+            // the fov_cost is added in if the next move would leave the target's FOV
+            data.entities.set_pos(monster_id, target);
+            let cur_dir = data.entities.direction[&monster_id];
+            data.entities.face(monster_id, target_pos);
+            cost +=
+                if data.is_in_fov(monster_id, target_pos, config) {
+                     NOT_IN_FOV_COST
+                } else {
+                    0
+                };
+            data.entities.direction[&monster_id] = cur_dir;
+            data.entities.set_pos(monster_id, monster_pos);
         }
 
-        if best_dist > 0 && best_dist != large_dist {
-            new_pos = best_target;
-        }
+        let turn_dir = data.entities.face_to(monster_id, next_pos);
+        let turn_amount = old_dir.turn_amount(turn_dir);
+
+        path_solutions.push(((cost, turn_amount.abs()), next_pos));
     }
+
+    // if there is a solution, get the best one and use it
+    if let Some(best_sol) = path_solutions.iter().min_by(|a, b| a.0.partial_cmp(&b.0).unwrap()) {
+        new_pos = best_sol.1;
+    }
+
     // step towards the closest location that lets us hit the target
     pos_offset = ai_take_astar_step(monster_id, new_pos, true, &data);
     if pos_mag(pos_offset) > 0 {
@@ -173,24 +181,23 @@ pub fn ai_attack(monster_id: EntityId,
                  data: &mut GameData,
                  config: &Config) -> Action {
     let target_pos = data.entities.pos[&target_id];
-    let monster_pos = data.entities.pos[&monster_id];
 
     let turn: Action;
 
     let attack_reach = data.entities.attack[&monster_id];
 
+    let old_dir = data.entities.direction[&monster_id];
+
     data.entities.face(monster_id, target_pos);
 
-    if !data.entities.alive[&target_id] {
+    let can_hit_target = 
+        ai_can_hit_target(data, monster_id, target_pos, &attack_reach, config);
+
+    if data.entities.is_dead(target_id) {
         // if AI target is no longer alive
         turn = Action::StateChange(Behavior::Investigating(target_pos));
-    } else if let Some(hit_pos) =
-        // if AI can hit their target
-        ai_can_hit_target(data, 
-                          monster_id,
-                          target_pos,
-                          &attack_reach,
-                          config) {
+    } else if let Some(hit_pos) = can_hit_target {
+        // can hit their target, so just attack them
         let attack = Attack::Attack(target_id);
         turn = Action::Move(Movement::attack(hit_pos, MoveType::Move, attack));
     } else if !data.is_in_fov(monster_id, target_pos, config) {
@@ -198,7 +205,7 @@ pub fn ai_attack(monster_id: EntityId,
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else {
         // can see target, but can't hit them. try to move to a position where we can hit them
-        turn = ai_move_to_attack_pos(monster_id, target_id, data, config);
+        turn = ai_move_to_attack_pos(monster_id, target_id, old_dir, data, config);
     }
 
     return turn;
@@ -219,7 +226,6 @@ pub fn ai_idle(monster_id: EntityId,
         data.entities.face(monster_id, player_pos);
         turn = Action::StateChange(Behavior::Attacking(entity_id));
     } else if let Some(Message::Sound(entity_id, sound_pos)) = data.entities.heard_sound(monster_id) {
-        let in_fov = data.is_in_fov(monster_id, sound_pos, config);
         let is_player = entity_id == player_id;
 
         let needs_investigation = is_player;
@@ -326,7 +332,9 @@ fn ai_can_hit_target(data: &mut GameData,
 
 fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, data: &GameData) -> Option<i32> {
     let mut cost = Some(1);
-    if let Some(entity_id) = data.has_entity(next) {
+
+    // check for an armed trap in the list of entities on this tile
+    for entity_id in data.has_entities(next) {
         if data.entities.trap.get(&entity_id).is_some() &&
            data.entities.armed.get(&entity_id) == Some(&true) {
                // NOTE determined randomly. could be infinite, or smaller?

@@ -118,6 +118,9 @@ impl Game {
         let player_id = self.data.find_player().unwrap();
         self.data.clear_except(vec!(player_id));
 
+        let key_id = self.data.is_in_inventory(player_id, Item::Goal).expect("Won level without goal!");
+        self.data.entities.remove_item(player_id, key_id);
+
         self.settings.state = GameState::Playing;
 
         self.settings.level_num += 1;
@@ -295,13 +298,11 @@ impl SelectionAction {
             }
 
             SelectionAction::Interact => {
-                // TODO implement
-                // if there is a trap, toggled armed
-                // perhaps other interactions are possible
                 action = Action::NoAction;
-                if let Some(entity_id) = data.has_entity(pos) {
+                for entity_id  in data.has_entity(pos) {
                     if let Some(_trap) = data.entities.trap.get(&entity_id) {
                         action = Action::ArmDisarmTrap(entity_id);
+                        break;
                     }
                 }
             }
@@ -508,7 +509,7 @@ impl GameSettings {
 }
 
 /// Check whether the exit condition for the game is met.
-fn win_condition_met(data: &GameData) -> bool {
+fn level_exit_condition_met(data: &GameData) -> bool {
     // loop over objects in inventory, and check whether any
     // are the key object.
     let player_id = data.find_player().unwrap();
@@ -518,7 +519,7 @@ fn win_condition_met(data: &GameData) -> bool {
     if let Some(exit_id) = data.find_exit() {
         let exit_pos = data.entities.pos[&exit_id];
 
-        let has_key = data.is_in_inventory(player_id, Item::Goal);
+        let has_key = data.is_in_inventory(player_id, Item::Goal).is_some();
 
         //let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
         let on_exit_tile = exit_pos == player_pos;
@@ -547,8 +548,10 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
 
     resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
 
+    let won_level = level_exit_condition_met(&game.data);
+
     // resolve enemy action
-    if player_action.takes_turn() && game.data.entities.alive[&player_id] {
+    if player_action.takes_turn() && game.data.entities.alive[&player_id] && !won_level {
         let mut ai_id: Vec<EntityId> = Vec::new();
 
         for key in game.data.entities.ids.iter() {
@@ -657,7 +660,7 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
         game.settings.turn_count += 1;
     }
 
-    return win_condition_met(&game.data);
+    return level_exit_condition_met(&game.data);
 }
 
 #[test]
@@ -692,9 +695,10 @@ pub fn test_game_step() {
     assert_eq!(Pos::new(0, 0), player_pos);
 }
 
-#[test]
+// TODO issue 151 removes walking and 150 removes pushing
+//      so this test no longer makes any sense.
 pub fn test_running() {
-    let mut config = Config::from_file("../config.yaml");
+    let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone()).unwrap();
 
     let player_id = game.data.find_player().unwrap();
@@ -758,9 +762,8 @@ pub fn test_running_two_steps() {
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(gol_pos, player_pos);
 
-    // gol is no longer in entities list after being crushed
-    assert!(!game.data.entities.ids.contains(&gol));
-    //let pawn = make_elf(&mut game.data.entities, &game.config, pawn_pos, &mut game.msg_log);
+    // gol was crushed, so check
+    assert!(game.data.entities.is_dead(gol));
 }
 
 #[test]
@@ -794,7 +797,7 @@ pub fn test_hammer_small_wall() {
     }
 
     // gol is no longer in entities list after being crushed
-    assert!(!game.data.entities.ids.contains(&gol));
+    assert!(game.data.entities.is_dead(gol));
 
     assert!(game.msg_log.turn_messages.iter().any(|msg| {
         matches!(msg, Msg::HammerHitWall(player_id, _))
@@ -816,7 +819,7 @@ pub fn test_hammer_small_wall() {
     game.input_action = InputAction::MapClick(pawn_pos, pawn_pos);
     game.step_game(0.1);
 
-    assert!(!game.data.entities.ids.contains(&pawn));
+    assert!(game.data.entities.is_dead(pawn));
 
     assert!(game.msg_log.turn_messages.iter().any(|msg| {
         matches!(msg, Msg::HammerHitEntity(player_id, pawn))
@@ -875,15 +878,15 @@ pub fn test_game_map() {
     };
 
     // make sure move modes work, to avoid errors further on
-    assert_eq!(MoveMode::Walk, game.data.entities.move_mode[&player_id]);
+    assert_eq!(MoveMode::Sneak, game.data.entities.move_mode[&player_id]);
     input(&mut game, InputAction::DecreaseMoveMode);
     assert_eq!(MoveMode::Sneak, game.data.entities.move_mode[&player_id]);
     input(&mut game, InputAction::IncreaseMoveMode);
-    assert_eq!(MoveMode::Walk, game.data.entities.move_mode[&player_id]);
+    assert_eq!(MoveMode::Run, game.data.entities.move_mode[&player_id]);
     input(&mut game, InputAction::IncreaseMoveMode);
     assert_eq!(MoveMode::Run, game.data.entities.move_mode[&player_id]);
     input(&mut game, InputAction::DecreaseMoveMode);
-    assert_eq!(MoveMode::Walk, game.data.entities.move_mode[&player_id]);
+    assert_eq!(MoveMode::Sneak, game.data.entities.move_mode[&player_id]);
 
     // walk around a bit
     test_move(&mut game, Direction::Right, (1, 0));

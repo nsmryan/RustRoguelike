@@ -95,7 +95,7 @@ impl FromStr for InputAction {
     type Err = String;
 
     fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let mut s: &mut str = &mut string.to_string();
+        let s: &mut str = &mut string.to_string();
         s.make_ascii_lowercase();
 
         if s == "left" {
@@ -225,7 +225,7 @@ pub fn handle_input_inventory(input: InputAction,
                             let positions = data.map.floodfill(player_pos, dist);
 
                             for pos in positions {
-                                if data.has_item(pos).is_none() {
+                                if data.item_at_pos(pos).is_none() {
                                     data.entities.remove_item(player_id, item_key);
                                     data.entities.set_pos(item_key, pos);
 
@@ -362,7 +362,7 @@ pub fn handle_input_skill_menu(input: InputAction,
 }
 
 pub fn handle_input_confirm_quit(input: InputAction,
-                                 data: &mut GameData,
+                                 _data: &mut GameData,
                                  settings: &mut GameSettings,
                                  msg_log: &mut MsgLog) -> Action {
     let player_turn: Action = Action::NoAction;
@@ -631,31 +631,32 @@ pub fn handle_input(game: &mut Game) -> Action {
 }
 
 pub fn pick_item_up(entity_id: EntityId,
-                    pickedup_id: EntityId,
-                    entities: &mut Entities) {
+                    item_id: EntityId,
+                    entities: &mut Entities,
+                    _msg_log: &mut MsgLog) {
     // pick up item
-    let item = entities.item[&pickedup_id];
+    let item = entities.item[&item_id];
     let item_class = item.class();
 
     match item_class {
         ItemClass::Primary => {
             if item_primary_at(entity_id, entities, 0) &&
                item_primary_at(entity_id, entities, 1) {
-                entities.inventory[&entity_id][0] = pickedup_id;
+                entities.inventory[&entity_id][0] = item_id;
 
                 let obj_pos = entities.pos[&entity_id];
                 entities.set_pos(entity_id, obj_pos);
             } else {
-                entities.inventory[&entity_id].push_front(pickedup_id);
+                entities.inventory[&entity_id].push_front(item_id);
             }
         }
 
         ItemClass::Secondary => {
-            entities.inventory[&entity_id].push_back(pickedup_id);
+            entities.inventory[&entity_id].push_back(item_id);
         }
-    } 
+    }
 
-    entities.set_xy(pickedup_id, -1, -1);
+    entities.set_xy(item_id, -1, -1);
 }
 
 pub fn throw_item(player_id: EntityId,

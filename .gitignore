@@ -30,4 +30,5 @@ tags
 # Persistent undo
 [._]*.un~
 
-
+# Project Specific
+issue_logs/

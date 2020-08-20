@@ -29,11 +29,12 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             Msg::Crushed(entity_id, pos) => {
                 data.map[pos].surface = Surface::Rubble;
 
-                if let Some(crushed_id) = data.has_entity(pos) {
+                for crushed_id in data.has_entities(pos) {
                     if let Some(fighter) = data.entities.fighter.get(&crushed_id) {
                         msg_log.log(Msg::Killed(entity_id, crushed_id, fighter.hp));
-                    } else if data.entities.item.get(&crushed_id).is_none() {
-                        // otherwise, if its not an item, just remove the entity
+                    } else if data.entities.item.get(&crushed_id).is_none() &&
+                              data.entities.name[&crushed_id] != EntityName::Mouse {
+                        // otherwise, if its not an item or the mouse, just remove the entity
                         data.remove_entity(crushed_id);
                     }
                 }
@@ -42,7 +43,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::Sound(cause_id, source_pos, radius, _should_animate) => {
-                trace!("sound {} {}", cause_id, source_pos);
+                trace!("sound {} {} {}", cause_id, source_pos, radius);
                 let sound_aoe =
                     data.map.aoe_fill(AoeEffect::Sound, source_pos, radius);
 
@@ -245,11 +246,14 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                                 if entity_pos != movement.pos {
                                     msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
                                 }
+
+                                // this is done after the Moved msg to ensure that the attack
+                                // animation plays instead of an idle animation
+                                msg_log.log(Msg::Stabbed(entity_id, target_id));
                             }
 
                             Attack::Push(target_id, delta_pos) => {
                                 msg_log.log(Msg::Pushed(entity_id, target_id, delta_pos, true));
-                                //msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
                             }
                         }
                     } else if movement.attack.is_none() {
@@ -410,7 +414,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::PickedUp(entity_id, item_id) => {
-                pick_item_up(entity_id, item_id, &mut data.entities);
+                pick_item_up(entity_id, item_id, &mut data.entities, msg_log);
             }
 
             Msg::StateChange(entity_id, behavior) => {
@@ -470,9 +474,7 @@ fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data
     // if entity is a monster, which is also alert, and there is a path to the player,
     // then face the player
     if let Some(target_pos) = data.entities.target(entity_id) {
-            dbg!(pos, target_pos);
         if data.could_see(entity_id, target_pos, config) {
-            dbg!(pos, target_pos);
             data.entities.face(entity_id, target_pos);
         }
     }

@@ -168,7 +168,17 @@ impl GameData {
         return !path_blocked && !blocked_by_wall;
     }
 
-    pub fn has_item(&self, pos: Pos) -> Option<EntityId> {
+    pub fn has_item_in_inventory(&self, entity_id: EntityId, item: Item) -> Option<EntityId> {
+        for item_id in self.entities.inventory[&entity_id].iter() {
+            if Some(&item) == self.entities.item.get(item_id) {
+                return Some(*item_id);
+            }
+        }
+
+        return None;
+    }
+
+    pub fn item_at_pos(&self, pos: Pos) -> Option<EntityId> {
         for key in self.entities.ids.iter() {
             if self.entities.pos[key] == pos && self.entities.item.get(key).is_some() {
                 return Some(*key);
@@ -176,6 +186,17 @@ impl GameData {
         }
 
         return None;
+    }
+
+    pub fn has_entities(&self, pos: Pos) -> Vec<EntityId> {
+        let mut entities = Vec::new();
+        for (key, other_pos) in self.entities.pos.iter() {
+            if *other_pos == pos {
+                entities.push(*key);
+            }
+        }
+
+        return entities;
     }
 
     pub fn has_entity(&self, pos: Pos) -> Option<EntityId> {
@@ -212,14 +233,14 @@ impl GameData {
         return None;
     }
 
-    pub fn is_in_inventory(&self, entity_id: EntityId, item: Item) -> bool {
-        for item in self.entities.inventory[&entity_id].iter() {
-            if self.entities.item[item] == Item::Goal {
-                return true;
+    pub fn is_in_inventory(&self, entity_id: EntityId, item: Item) -> Option<EntityId> {
+        for item_key in self.entities.inventory[&entity_id].iter() {
+            if self.entities.item[item_key] == item {
+                return Some(*item_key);
             }
         }
 
-        return false;
+        return None;
     }
 
     pub fn using(&self, entity_id: EntityId, item: Item) -> bool {
@@ -286,6 +307,14 @@ impl GameData {
         }
 
         return in_fov;
+    }
+
+    pub fn can_push(&self, entity_id: EntityId, other_id: EntityId) -> bool {
+        let entity_type = self.entities.typ[&entity_id];
+        let other_type = self.entities.typ[&other_id];
+
+        // the player can't push the enemies
+        return !(entity_type == EntityType::Player && other_type == EntityType::Enemy);
     }
 
     pub fn clear_except(&mut self, exceptions: Vec<EntityId>) {
@@ -753,6 +782,16 @@ impl Entities {
         }
 
         return None;
+    }
+
+    pub fn is_dead(&self, entity_id: EntityId) -> bool {
+        return !self.ids.contains(&entity_id) || self.limbo.get(&entity_id).is_some();
+    }
+
+    /// Set the entity's animation, removing any old animations in play
+    pub fn set_animation(&mut self, entity_id: EntityId, key: AnimKey) {
+        self.animation[&entity_id].clear();
+        self.animation[&entity_id].push_back(key);
     }
 }
 

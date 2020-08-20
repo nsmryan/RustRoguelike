@@ -38,7 +38,7 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
                   power: 5 });
     entities.movement.insert(player,  Reach::Single(1));
     entities.attack.insert(player,  Reach::Single(1));
-    entities.move_mode.insert(player,  MoveMode::Walk);
+    entities.move_mode.insert(player,  MoveMode::Sneak);
     entities.direction.insert(player,  Direction::Up);
     entities.inventory.insert(player,  VecDeque::new());
 

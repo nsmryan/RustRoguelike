@@ -488,50 +488,23 @@ pub fn keydown_to_action(keycode: Keycode,
     return input_action;
 }
 
-fn load_sprites(texture_creator: &TextureCreator<WindowContext>,
-                display_state: &mut DisplayState) {
-    let player_idle = texture_creator.load_texture("animations/player/Player_Idle.png")
-        .expect("Could not load texture!");
+fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display_state: &mut DisplayState) {
+    load_sprite(texture_creator, display_state, "animations/player/Player_Idle.png", "player_idle", 1);
+    load_sprite(texture_creator, display_state, "animations/player/player_attack.png", "player_attack", 1);
+    load_sprite(texture_creator, display_state, "animations/player/player_attack_Hammer.png", "player_attack_hammer", 1);
+    load_sprite(texture_creator, display_state, "animations/player/player_attack_Dagger.png", "player_attack_dagger", 1);
+    load_sprite(texture_creator, display_state, "animations/player/Player_Idle_Dagger.png", "player_idle_dagger", 1);
+    load_sprite(texture_creator, display_state, "animations/player/Player_Idle_Hammer.png", "player_idle_hammer", 1);
+    load_sprite(texture_creator, display_state, "animations/player/Player_Idle_Shield.png", "player_idle_shield", 1);
+    load_sprite(texture_creator, display_state, "animations/player/player_vault.png", "player_vault", 1);
+    load_sprite(texture_creator, display_state, "animations/player/player_wallkick.png", "player_wall_kick", 1);
+    load_sprite(texture_creator, display_state, "animations/monster1/Gol_Idle.png", "gol_idle", 1);
+    load_sprite(texture_creator, display_state, "animations/monster1/Gol_Die.png", "gol_die", 1);
+    load_sprite(texture_creator, display_state, "animations/monster3/Elf_Idle.png", "elf_idle", 1);
+    load_sprite(texture_creator, display_state, "animations/traps/DamageTrap.png", "spikes", 1);
+    load_sprite(texture_creator, display_state, "resources/rexpaint16x16.png", "font", 16);
+    load_sprite(texture_creator, display_state, "animations/traps/McMuffin.png", "key", 1);
 
-    let player_attack = texture_creator.load_texture("animations/player/player_attack.png")
-        .expect("Could not load texture!");
-
-    let player_vault = texture_creator.load_texture("animations/player/player_vault.png")
-        .expect("Could not load texture!");
-
-    let player_wall_kick = texture_creator.load_texture("animations/player/player_wallkick.png")
-        .expect("Could not load texture!");
-
-    let gol_idle = texture_creator.load_texture("animations/monster1/Gol_Idle.png")
-        .expect("Could not load texture!");
-
-    let gol_die = texture_creator.load_texture("animations/monster1/Gol_Die.png")
-        .expect("Could not load texture!");
-
-    let elf_idle = texture_creator.load_texture("animations/monster3/Elf_Idle.png")
-        .expect("Could not load texture!");
-
-    let spikes_anim = texture_creator.load_texture("animations/traps/DamageTrap.png")
-        .expect("Could not load texture!");
-
-    let font_as_sprite = texture_creator.load_texture("resources/rexpaint16x16.png")
-        .expect("Could not load texture!");
-
-    let mcmuffin = texture_creator.load_texture("animations/traps/McMuffin.png")
-        .expect("Could not load texture!");
-
-    display_state.add_sprite(SpriteSheet::new("player_wall_kick".to_string(), player_wall_kick, 1));
-    display_state.add_sprite(SpriteSheet::new("player_idle".to_string(),      player_idle,      1));
-    display_state.add_sprite(SpriteSheet::new("player_attack".to_string(),    player_attack,    1));
-    display_state.add_sprite(SpriteSheet::new("player_vault".to_string(),     player_vault,     1));
-    display_state.add_sprite(SpriteSheet::new("gol_idle".to_string(),         gol_idle,         1));
-    display_state.add_sprite(SpriteSheet::new("gol_die".to_string(),          gol_die,          1));
-    display_state.add_sprite(SpriteSheet::new("elf_idle".to_string(),         elf_idle,         1));
-    display_state.add_sprite(SpriteSheet::new("spikes".to_string(),           spikes_anim,      1));
-    display_state.add_sprite(SpriteSheet::new("font".to_string(),             font_as_sprite,   16));
-    display_state.add_sprite(SpriteSheet::new("key".to_string(),              mcmuffin,         1));
-
-    // load any animations in the autoload directory.
     for entry in WalkDir::new("animations/autoload/") {
         let entry = entry.unwrap();
         let path = entry.path();
@@ -545,5 +518,14 @@ fn load_sprites(texture_creator: &TextureCreator<WindowContext>,
             }
         }
     }
+}
+
+fn load_sprite(texture_creator: &TextureCreator<WindowContext>,
+               display_state: &mut DisplayState,
+               path: &str,
+               sprite_name: &str,
+               rows: usize) {
+    let texture = texture_creator.load_texture(path).expect("Could not load texture!");
+    display_state.add_sprite(SpriteSheet::new(sprite_name.to_string(), texture, rows));
 }
 

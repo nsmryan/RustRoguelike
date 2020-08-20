@@ -188,13 +188,10 @@ pub fn push_attack(entity_id: EntityId,
         if move_into {
             let movement = Movement::new(other_pos, MoveType::Move, None);
             msg_log.log_front(Msg::Moved(entity_id, movement, other_pos));
-
-            let movement = Movement::new(past_pos, MoveType::Move, None);
-            msg_log.log_front(Msg::Moved(target, movement, past_pos));
         }
 
         if move_result.no_collision() {
-            // if not blocked, push the other entity, taking their space
+            // if not blocked, push the other entity
             let movement = Movement::new(past_pos, MoveType::Move, None);
             msg_log.log_front(Msg::Moved(target, movement, past_pos));
         } else {
@@ -257,7 +254,7 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: 
 
         if !data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() &&
            !data.has_blocking_entity(past_pos).is_some() {
-            data.entities.set_pos(target, past_pos);
+            data.entities.move_to(target, past_pos);
             data.entities.move_to(entity, other_pos);
 
             data.entities.messages[&target].push(Message::Attack(entity));

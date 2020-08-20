@@ -103,7 +103,7 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
                                      plot.height,
                                      FONT_WIDTH as usize,
                                      FONT_HEIGHT as usize);
-                render_player(display_state, game, &area);
+                render_player_info(display_state, game, &area);
             }
 
             "info" => {
@@ -220,7 +220,7 @@ fn render_console(display_state: &mut DisplayState, game: &mut Game) {
 }
 */
 
-fn render_player(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
+fn render_player_info(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
     draw_placard(display_state,
                  "Player".to_string(),
                  area,
@@ -722,7 +722,8 @@ fn render_entity(entity_id: EntityId,
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
-    // only draw if within the map (outside is (-1, -1) like if in inventory).
+    // only draw if within the map (outside is (-1, -1) like if in inventory)
+    // and not in limbo.
     if game.data.map.is_within_bounds(pos) &&
        game.data.entities.limbo.get(&entity_id).is_none() {
         let is_in_fov = 
@@ -743,6 +744,7 @@ fn render_entity(entity_id: EntityId,
                 game.data.entities.animation[&entity_id].pop_front();
             }
         } else {
+            // NOTE the needs_removal can probably be removed
             let needs_removal = game.data.entities.needs_removal[&entity_id];
             if is_in_fov && !needs_removal {
                 let color = game.data.entities.color[&entity_id];

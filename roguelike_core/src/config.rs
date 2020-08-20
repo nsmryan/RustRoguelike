@@ -50,6 +50,7 @@ pub struct Config {
     pub item_throw_speed: f32,
     pub key_speed: f32,
     pub player_attack_speed: f32,
+    pub player_attack_hammer_speed: f32,
     pub player_vault_sprite_speed: f32,
     pub player_vault_move_speed: f32,
     pub sound_timeout: f32,

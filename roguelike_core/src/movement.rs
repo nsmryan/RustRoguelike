@@ -60,24 +60,28 @@ pub enum MoveMode {
 
 impl Default for MoveMode {
     fn default() -> MoveMode {
-        return MoveMode::Walk;
+        return MoveMode::Sneak;
     }
 }
 
 impl MoveMode {
     pub fn increase(&self) -> MoveMode {
         match self {
-            MoveMode::Sneak => MoveMode::Walk,
-            MoveMode::Walk => MoveMode::Run,
+            // Removed Walking (issue 151), so sneak -> run
+            // MoveMode::Sneak => MoveMode::Walk,
+            MoveMode::Sneak => MoveMode::Run,
             MoveMode::Run => MoveMode::Run,
+            MoveMode::Walk => panic!("You shouldn't be able to walk!"),
         }
     }
 
     pub fn decrease(&self) -> MoveMode {
         match self {
+            // Removed Walking (issue 151), so run -> sneak
+            // MoveMode::Sneak => MoveMode::Walk,
             MoveMode::Sneak => MoveMode::Sneak,
-            MoveMode::Walk => MoveMode::Sneak,
-            MoveMode::Run => MoveMode::Walk,
+            MoveMode::Run => MoveMode::Sneak,
+            MoveMode::Walk => panic!("You shouldn't be able to walk!"),
         }
     }
 }
@@ -762,10 +766,16 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId, other_id: EntityId, mo
         movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
     } else if data.entities.blocks[&other_id] {
         let other_pos = data.entities.pos[&other_id];
-        let dxy = sub_pos(other_pos, pos);
-        let next = next_pos(pos, dxy);
-        if data.map[next].tile_type != TileType::Water &&
-           data.map.is_blocked_by_wall(other_pos, delta_pos.x, delta_pos.y).is_none() {
+        let next = next_pos(pos, delta_pos);
+
+        let other_to_next = sub_pos(next, other_pos);
+
+        let next_tile_water = data.map[next].tile_type == TileType::Water;
+        let push_is_blocked = data.map.is_blocked_by_wall(other_pos, other_to_next.x, other_to_next.y).is_some();
+        let is_column = data.entities.typ[&other_id] == EntityType::Column;
+
+        if data.can_push(entity_id, other_id) && !next_tile_water && !(push_is_blocked && is_column) {
+            // TODO issue 150 this is where pushing comes from. 
             let attack = Attack::Push(other_id, delta_pos);
             movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
         } else {
@@ -794,6 +804,7 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
         if can_stab(data, entity_id, other_id) {
             attack = Some(Attack::Stab(other_id));
         } else if data.map[next_pos(pos, dxy)].tile_type != TileType::Water {
+            // TODO issue 150 this is where pushing comes from. 
             attack = Some(Attack::Push(other_id, delta_pos));
         } else {
             // water after push, so supress attack
@@ -820,6 +831,7 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
                 if can_stab(data, entity_id, other_id) {
                     Attack::Stab(other_id)
                 } else {
+                    // TODO issue 150 this is where pushing comes from. 
                     Attack::Push(other_id, delta_pos)
                 };
             let move_pos = move_next_to(pos, entity_pos);
