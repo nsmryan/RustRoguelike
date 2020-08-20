@@ -155,14 +155,12 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
 
         let turn_dir = data.entities.face_to(monster_id, next_pos);
         let turn_amount = old_dir.turn_amount(turn_dir);
-        println!("{:?}, {:?}, {:?}, {:?}, {:?}", next_pos, old_dir, turn_dir, turn_amount, cost);
 
         path_solutions.push(((cost, turn_amount.abs()), next_pos));
     }
 
     // if there is a solution, get the best one and use it
     if let Some(best_sol) = path_solutions.iter().min_by(|a, b| a.0.partial_cmp(&b.0).unwrap()) {
-        println!("{:?}", &path_solutions);
         new_pos = best_sol.1;
     }
 
