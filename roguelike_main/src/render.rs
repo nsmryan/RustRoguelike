@@ -1005,7 +1005,7 @@ fn render_overlays(display_state: &mut DisplayState,
         }
     }
 
-    // draw attack position highlights
+    // draw attack and fov position highlights
     if let Some(mouse_xy) = map_mouse_pos {
         // Draw monster attack overlay
         let object_ids = get_entity_under_mouse(mouse_xy, &mut game.data, &game.config);
@@ -1014,10 +1014,9 @@ fn render_overlays(display_state: &mut DisplayState,
 
             if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
                game.data.entities.alive[entity_id] {
-               render_attack_overlay(display_state,
-                                     game,
-                                     *entity_id,
-                                     area);
+               render_attack_overlay(display_state, game, *entity_id, area);
+               render_fov_overlay(display_state, game, *entity_id, area);
+               render_movement_overlay(display_state, game, *entity_id, area);
             }
         }
     }
@@ -1330,6 +1329,64 @@ fn render_attack_overlay(display_state: &mut DisplayState,
     }
 }
 
+fn render_fov_overlay(display_state: &mut DisplayState,
+                      game: &mut Game,
+                      entity_id: EntityId,
+                      area: &Area) {
+    let player_id = game.data.find_player().unwrap();
+    let player_pos = game.data.entities.pos[&player_id];
+
+    let entity_pos = game.data.entities.pos[&entity_id];
+
+    let mut highlight_color = game.config.color_light_grey;
+    highlight_color.a = game.config.grid_alpha_overlay;
+
+    for y in 0..game.data.map.height() {
+        for x in 0..game.data.map.width() {
+            let map_pos = Pos::new(x, y);
+
+            let visible = game.data.is_in_fov(entity_id, map_pos, &game.config) &&
+                          game.data.is_in_fov(player_id, map_pos, &game.config);
+
+
+            if visible {
+                let chr = game.data.entities.chr[&entity_id];
+                display_state.draw_tile_outline(map_pos, area, highlight_color);
+            }
+        }
+    }
+}
+
+fn render_movement_overlay(display_state: &mut DisplayState,
+                           game: &mut Game,
+                           entity_id: EntityId,
+                           area: &Area) {
+    let player_id = game.data.find_player().unwrap();
+    let player_pos = game.data.entities.pos[&player_id];
+
+    let entity_pos = game.data.entities.pos[&entity_id];
+
+    let mut highlight_color = game.config.color_light_grey;
+    highlight_color.a = game.config.grid_alpha_overlay;
+
+    if let Some(reach) = game.data.entities.movement.get(&entity_id) {
+        for move_pos in reach.reachables(entity_pos) {
+            let visible = game.data.is_in_fov(player_id, move_pos, &game.config);
+            if visible {
+                let chr = game.data.entities.chr[&entity_id];
+
+                draw_char(&mut display_state.canvas,
+                          &mut display_state.font_image,
+                          chr as char,
+                          move_pos,
+                          highlight_color,
+                          area);
+            }
+        }
+    }
+}
+
 pub fn sdl2_color(color: Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
 }
+
