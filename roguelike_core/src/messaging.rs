@@ -172,6 +172,10 @@ impl Msg {
                         return "Selecting a skill".to_string();
                     }
 
+                    GameState::ClassMenu => {
+                        return "Selecting a class".to_string();
+                    }
+
                     GameState::ConfirmQuit => {
                         return "Confirm quit".to_string();
                     }

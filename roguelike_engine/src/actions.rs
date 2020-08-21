@@ -31,6 +31,7 @@ pub enum InputAction {
     SwapPrimaryItem,
     Inventory,
     SkillMenu,
+    ClassMenu,
     Exit,
     Esc,
     ExploreAll,
@@ -71,6 +72,7 @@ impl fmt::Display for InputAction {
             InputAction::SwapPrimaryItem => write!(f, "swapitem"),
             InputAction::Inventory => write!(f, "inventory"),
             InputAction::SkillMenu => write!(f, "skill"),
+            InputAction::ClassMenu => write!(f, "class"),
             InputAction::Exit => write!(f, "exit"),
             InputAction::Esc => write!(f, "esc"),
             InputAction::ExploreAll => write!(f, "exploreall"),
@@ -145,6 +147,8 @@ impl FromStr for InputAction {
             return Ok(InputAction::SwapPrimaryItem);
         } else if s == "skill" {
             return Ok(InputAction::SkillMenu);
+        } else if s == "class" {
+            return Ok(InputAction::ClassMenu);
         } else if s == "esc" {
             return Ok(InputAction::Esc);
         } else if s == "faster" {
@@ -361,6 +365,69 @@ pub fn handle_input_skill_menu(input: InputAction,
     return player_turn;
 }
 
+pub fn handle_input_class_menu(input: InputAction,
+                               data: &mut GameData,
+                               settings: &mut GameSettings,
+                               msg_log: &mut MsgLog) -> Action {
+    let mut player_turn: Action = Action::NoAction;
+    let player_id = data.find_player().unwrap();
+
+    match input {
+        InputAction::Inventory => {
+            settings.state = GameState::Inventory;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        InputAction::ClassMenu => {
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        InputAction::SelectItem(class_index) => {
+            let classes = EntityClass::classes();
+            if class_index < classes.len() {
+                settings.state = GameState::Selection;
+                settings.selection.only_visible = false;
+
+                match classes[class_index] {
+                    EntityClass::General => {
+                        data.entities.class[&player_id] = classes[class_index];
+                        msg_log.log(Msg::GameState(GameState::Playing));
+                    }
+
+                    EntityClass::Monolith => {
+                        data.entities.class[&player_id] = classes[class_index];
+                        msg_log.log(Msg::GameState(GameState::Playing));
+                    }
+
+                    EntityClass::Grass => {
+                        data.entities.class[&player_id] = classes[class_index];
+                        msg_log.log(Msg::GameState(GameState::Playing));
+                    }
+                }
+            }
+
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        InputAction::Esc => {
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        InputAction::Exit => {
+            settings.state = GameState::ConfirmQuit;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        _ => {
+        }
+    }
+
+    return player_turn;
+}
+
 pub fn handle_input_confirm_quit(input: InputAction,
                                  _data: &mut GameData,
                                  settings: &mut GameSettings,
@@ -537,6 +604,11 @@ pub fn handle_input(game: &mut Game) -> Action {
 
         (InputAction::SkillMenu, true) => {
             game.settings.state = GameState::SkillMenu;
+            game.msg_log.log(Msg::GameState(game.settings.state));
+        }
+
+        (InputAction::ClassMenu, true) => {
+            game.settings.state = GameState::ClassMenu;
             game.msg_log.log(Msg::GameState(game.settings.state));
         }
 

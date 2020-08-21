@@ -93,6 +93,10 @@ impl Game {
                 result = self.step_skill_menu();
             }
 
+            GameState::ClassMenu => {
+                result = self.step_class_menu();
+            }
+
             GameState::ConfirmQuit => {
                 result = self.step_confirm_quit();
             }
@@ -157,6 +161,28 @@ impl Game {
 
         let player_action =
             actions::handle_input_skill_menu(input, &mut self.data, &mut self.settings, &mut self.msg_log);
+
+        if player_action != Action::NoAction {
+            let win = step_logic(self, player_action);
+
+            if win {
+                self.settings.state = GameState::Win;
+            }
+        }
+
+        if self.settings.exiting {
+            return GameResult::Stop;
+        }
+
+        return GameResult::Continue;
+    }
+
+    fn step_class_menu(&mut self) -> GameResult {
+        let input = self.input_action;
+        self.input_action = InputAction::None;
+
+        let player_action =
+            actions::handle_input_class_menu(input, &mut self.data, &mut self.settings, &mut self.msg_log);
 
         if player_action != Action::NoAction {
             let win = step_logic(self, player_action);

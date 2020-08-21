@@ -357,6 +357,7 @@ impl GameData {
         self.entities.direction.remove(&id);
         self.entities.selected_item.remove(&id);
         self.entities.action.remove(&id);
+        self.entities.class.remove(&id);
         self.entities.skills.remove(&id);
         self.entities.limbo.remove(&id);
         self.entities.animation.remove(&id);
@@ -420,12 +421,21 @@ pub enum GameState {
     Inventory,
     Selection,
     SkillMenu,
+    ClassMenu,
     ConfirmQuit,
 }
 
 impl Default for GameState {
     fn default() -> GameState {
         return GameState::Playing;
+    }
+}
+
+impl GameState {
+    pub fn is_menu(self) -> bool {
+        return self == GameState::Inventory ||
+               self == GameState::SkillMenu ||
+               self == GameState::ClassMenu;
     }
 }
 
@@ -553,6 +563,26 @@ impl Default for EntityType {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum EntityClass {
+    General,
+    Grass,
+    Monolith,
+}
+
+impl Default for EntityClass {
+    fn default() -> EntityClass {
+        return EntityClass::General;
+    }
+}
+
+impl EntityClass {
+    pub fn classes() -> Vec<EntityClass> {
+        use EntityClass::*;
+        return vec!(General, Grass, Monolith);
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Message {
     Sound(EntityId, Pos),
@@ -583,6 +613,7 @@ pub struct Entities {
     pub direction: CompStore<Direction>,
     pub selected_item: CompStore<EntityId>,
     pub action: CompStore<Action>,
+    pub class: CompStore<EntityClass>,
     pub skills: CompStore<Vec<Skill>>,
     pub limbo: CompStore<()>,
 
@@ -625,6 +656,7 @@ impl Entities {
         self.direction.remove(entity_id);
         self.selected_item.remove(entity_id);
         self.action.remove(entity_id);
+        self.class.remove(entity_id);
         self.skills.remove(entity_id);
         self.animation.remove(entity_id);
         self.alive.remove(entity_id);

@@ -43,13 +43,16 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
     entities.inventory.insert(player,  VecDeque::new());
 
     let mut skill_set = Vec::new();
-    skill_set.push(Skill::GrassThrow);
-    skill_set.push(Skill::Blink);
-    skill_set.push(Skill::PassWall);
-    skill_set.push(Skill::Rubble);
-    skill_set.push(Skill::Reform);
-    skill_set.push(Skill::Swap);
+    // TODO remove when classes are fully implemented
+    //skill_set.push(Skill::GrassThrow);
+    //skill_set.push(Skill::Blink);
+    //skill_set.push(Skill::PassWall);
+    //skill_set.push(Skill::Rubble);
+    //skill_set.push(Skill::Reform);
+    //skill_set.push(Skill::Swap);
     entities.skills.insert(player,  skill_set);
+
+    entities.class.insert(player, EntityClass::General);
 
     entities.energy.insert(player, 3);
 

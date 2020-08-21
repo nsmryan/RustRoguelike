@@ -140,6 +140,15 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
                              FONT_HEIGHT as usize);
 
         render_skill_menu(display_state, game, &area);
+    } else if game.settings.state == GameState::ClassMenu {
+        let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
+                             (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
+                             INVENTORY_WIDTH,
+                             INVENTORY_HEIGHT,
+                             FONT_WIDTH as usize,
+                             FONT_HEIGHT as usize);
+
+        render_class_menu(display_state, game, &area);
     } else if game.settings.state == GameState::ConfirmQuit {
         let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
                              (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
@@ -365,6 +374,31 @@ fn render_skill_menu(display_state: &mut DisplayState, game: &mut Game, area: &A
 
     for (index, skill) in game.data.entities.skills[&player_id].iter().enumerate() {
         list.push(format!("{} {:?}", index, skill));
+    }
+
+    let y_pos = 2;
+    let text_pos = Pos::new(2, y_pos);
+    let color = game.config.color_light_grey;
+
+    display_state.draw_text_list(&list,
+                                 text_pos,
+                                 color,
+                                 area);
+}
+
+fn render_class_menu(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
+    let player_id = game.data.find_player().unwrap();
+
+    // Render header
+    draw_placard(display_state,
+                 "Choice Class".to_string(),
+                 area,
+                 &game.config);
+
+    let mut list = Vec::new();
+
+    for (index, class) in EntityClass::classes().iter().enumerate() {
+        list.push(format!("{} {:?}", index, class));
     }
 
     let y_pos = 2;
