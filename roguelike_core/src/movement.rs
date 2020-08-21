@@ -29,6 +29,7 @@ pub enum Action {
     Reform(EntityId, Pos),
     Swap(EntityId, EntityId), // casting entity, target entity
     PassWall(EntityId, Pos),
+    Push(EntityId, Direction), // casting entity, target direction
     NoAction,
 }
 

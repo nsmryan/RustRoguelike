@@ -339,6 +339,13 @@ pub fn handle_input_skill_menu(input: InputAction,
                             settings.state = GameState::Selection;
                             msg_log.log(Msg::GameState(settings.state));
                         }
+
+                        Skill::Push => {
+                            settings.selection =
+                                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Push);
+                            settings.state = GameState::Selection;
+                            msg_log.log(Msg::GameState(settings.state));
+                        }
                     }
 
                     msg_log.log(Msg::GameState(settings.state));
@@ -406,6 +413,12 @@ pub fn handle_input_class_menu(input: InputAction,
                     EntityClass::Grass => {
                         data.entities.class[&player_id] = classes[class_index];
                         data.entities.skills[&player_id].push(Skill::GrassThrow);
+                        msg_log.log(Msg::GameState(GameState::Playing));
+                    }
+
+                    EntityClass::Clockwork => {
+                        data.entities.class[&player_id] = classes[class_index];
+                        data.entities.skills[&player_id].push(Skill::Push);
                         msg_log.log(Msg::GameState(GameState::Playing));
                     }
                 }

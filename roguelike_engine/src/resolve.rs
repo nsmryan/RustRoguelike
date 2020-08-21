@@ -331,10 +331,9 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 } else if let Action::GrassThrow(entity_id, direction) = action {
                     data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
 
-                    let player_id = data.find_player().unwrap();
-                    let player_pos = data.entities.pos[&player_id];
+                    let pos = data.entities.pos[&entity_id];
 
-                    let grass_pos = direction.offset_pos(player_pos, 1);
+                    let grass_pos = direction.offset_pos(pos, 1);
                     if data.map[grass_pos].tile_type == TileType::Empty {
                         data.map[grass_pos].surface = Surface::Grass;
                     }
@@ -410,6 +409,19 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
 
                     data.entities.move_to(entity_id, pos);
+                } else if let Action::Push(entity_id, direction) = action {
+                    data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
+
+                    let pos = data.entities.pos[&entity_id];
+
+                    let push_pos = direction.offset_pos(pos, 1);
+                    for other_id in data.has_entities(push_pos) {
+                        if data.entities.typ[&other_id] == EntityType::Enemy {
+                            let dxy = sub_pos(push_pos, pos);
+                            let move_into = false;
+                            msg_log.log(Msg::Pushed(entity_id, other_id, dxy, move_into));
+                        }
+                    }
                 }
             }
 

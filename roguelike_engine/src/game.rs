@@ -305,6 +305,7 @@ pub enum SelectionAction {
     Rubble,
     Reform,
     Swap,
+    Push,
 }
 
 impl SelectionAction {
@@ -400,6 +401,14 @@ impl SelectionAction {
                 if let Some(entity_id) = data.has_blocking_entity(pos) {
                     action = Action::Swap(player_id, entity_id);
                 }
+            }
+
+            SelectionAction::Push => {
+                let player_id = data.find_player().unwrap();
+                let player_pos = data.entities.pos[&player_id];
+                let dxy = sub_pos(pos, player_pos);
+                let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+                action = Action::Push(player_id, direction);
             }
         }
 

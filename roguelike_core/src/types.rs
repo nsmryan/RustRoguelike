@@ -385,6 +385,7 @@ pub enum Skill {
     Rubble,
     Reform,
     Swap,
+    Push,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Default)]
@@ -568,6 +569,7 @@ pub enum EntityClass {
     General,
     Grass,
     Monolith,
+    Clockwork,
 }
 
 impl Default for EntityClass {
@@ -579,7 +581,7 @@ impl Default for EntityClass {
 impl EntityClass {
     pub fn classes() -> Vec<EntityClass> {
         use EntityClass::*;
-        return vec!(General, Grass, Monolith);
+        return vec!(General, Grass, Monolith, Clockwork);
     }
 }
 
