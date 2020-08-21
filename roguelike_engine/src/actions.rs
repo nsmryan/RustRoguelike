@@ -397,11 +397,15 @@ pub fn handle_input_class_menu(input: InputAction,
 
                     EntityClass::Monolith => {
                         data.entities.class[&player_id] = classes[class_index];
+                        data.entities.skills[&player_id].push(Skill::PassWall);
+                        data.entities.skills[&player_id].push(Skill::Rubble);
+                        data.entities.skills[&player_id].push(Skill::Reform);
                         msg_log.log(Msg::GameState(GameState::Playing));
                     }
 
                     EntityClass::Grass => {
                         data.entities.class[&player_id] = classes[class_index];
+                        data.entities.skills[&player_id].push(Skill::GrassThrow);
                         msg_log.log(Msg::GameState(GameState::Playing));
                     }
                 }
