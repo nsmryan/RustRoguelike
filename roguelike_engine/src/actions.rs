@@ -571,11 +571,12 @@ pub fn handle_input(game: &mut Game) -> Action {
 
         (InputAction::GodMode, true) => {
             let god_mode_hp = 1000000;
-            let handle = game.data.find_player().unwrap();
-            if let Some(ref mut fighter) = game.data.entities.fighter.get_mut(&handle) {
+            let player_id = game.data.find_player().unwrap();
+            if let Some(ref mut fighter) = game.data.entities.fighter.get_mut(&player_id) {
                 fighter.hp = god_mode_hp;
                 fighter.max_hp = god_mode_hp;
             }
+            game.data.entities.energy[&player_id] = 1000;
 
             // set god mode flag
             game.settings.god_mode = true;
