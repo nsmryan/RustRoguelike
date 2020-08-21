@@ -302,6 +302,12 @@ pub fn handle_input_skill_menu(input: InputAction,
                             msg_log.log(Msg::GameState(settings.state));
                         }
 
+                        Skill::GrassBlade => {
+                            player_turn = Action::GrassBlade(player_id);
+                            settings.state = GameState::Playing;
+                            msg_log.log(Msg::GameState(settings.state));
+                        }
+
                         Skill::Blink => {
                             player_turn = Action::Blink(player_id);
 
@@ -413,6 +419,7 @@ pub fn handle_input_class_menu(input: InputAction,
                     EntityClass::Grass => {
                         data.entities.class[&player_id] = classes[class_index];
                         data.entities.skills[&player_id].push(Skill::GrassThrow);
+                        data.entities.skills[&player_id].push(Skill::GrassBlade);
                         msg_log.log(Msg::GameState(GameState::Playing));
                     }
 
