@@ -69,6 +69,14 @@ pub fn make_column(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
     return object;
 }
 
+pub fn make_energy(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let object = entities.create_entity(pos.x, pos.y, EntityType::Energy, ENTITY_STONE as char, config.color_light_green, EntityName::Energy, false);
+
+    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Energy));
+
+    return object;
+}
+
 pub fn make_dagger(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_DAGGER as char, config.color_light_grey, EntityName::Dagger, false);
 

@@ -540,6 +540,7 @@ pub enum EntityName {
     Spike,
     Stone,
     Mouse,
+    Energy,
     Other,
 }
 
@@ -555,6 +556,7 @@ pub enum EntityType {
     Enemy,
     Item,
     Column,
+    Energy,
     Other,
 }
 

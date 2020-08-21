@@ -531,6 +531,18 @@ fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data
         }
     }
 
+    // check if player walks on energy
+    let player_id = data.find_player().unwrap();
+    if entity_id == player_id {
+        for other_id in data.entities.ids.clone().iter() {
+            if data.entities.pos[other_id] == pos && 
+            data.entities.typ[other_id] == EntityType::Energy {
+                data.entities.energy[&player_id] += 1;
+                data.entities.needs_removal[other_id] = true;
+            }
+        }
+    }
+
     // Check if the entity hit a trap
     for trap in traps.iter() {
         match data.entities.trap[trap] {
