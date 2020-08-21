@@ -142,7 +142,6 @@ pub fn run(seed: u64, starting_actions: Vec<InputAction>) -> Result<(), String> 
     let mut game = Game::new(seed, config.clone())?;
 
     make_map(&config.map_load, &mut game);
-    make_energy(&mut game.data.entities, &game.config, Pos::new(18, 15), &mut game.msg_log);
 
     make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
 

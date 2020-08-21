@@ -15,6 +15,7 @@ use roguelike_core::map::*;
 
 use crate::game::*;
 use crate::actions::{throw_item, pick_item_up, place_trap};
+use crate::generation::{make_energy};
 
 
 pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &mut GameSettings, rng: &mut SmallRng, config: &Config) {
@@ -110,10 +111,13 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
+                let attacked_pos = data.entities.pos[&attacked];
                 if data.entities.typ[&attacked] != EntityType::Player {
-                    let pos = data.entities.pos[&attacked];
+                    data.map[attacked_pos].surface = Surface::Rubble;
+                }
 
-                    data.map[pos].surface = Surface::Rubble;
+                if data.entities.typ[&attacked] == EntityType::Enemy {
+                    make_energy(&mut data.entities, config, attacked_pos, msg_log);
                 }
 
                 if let Some(fighter) = data.entities.fighter.get_mut(&attacked) {
