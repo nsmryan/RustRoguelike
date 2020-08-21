@@ -405,6 +405,7 @@ pub fn handle_input_class_menu(input: InputAction,
                 match classes[class_index] {
                     EntityClass::General => {
                         data.entities.class[&player_id] = classes[class_index];
+                        data.entities.skills[&player_id].push(Skill::Blink);
                         msg_log.log(Msg::GameState(GameState::Playing));
                     }
 

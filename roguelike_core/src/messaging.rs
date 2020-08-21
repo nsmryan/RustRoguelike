@@ -48,6 +48,7 @@ pub enum Msg {
     Sound(EntityId, Pos, usize, bool), // object causing sound, location, radius, whether animation will play
     SoundTrapTriggered(EntityId, EntityId), // trap, entity
     SpikeTrapTriggered(EntityId, EntityId), // trap, entity
+    BlinkTrapTriggered(EntityId, EntityId), // trap, entity
     PlayerDeath,
     PickedUp(EntityId, EntityId), // entity, item id
     ItemThrow(EntityId, EntityId, Pos, Pos), // thrower, stone id, start, end

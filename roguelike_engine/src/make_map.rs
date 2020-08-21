@@ -257,7 +257,7 @@ pub fn read_map_xp(config: &Config,
                                 data.map[pos].blocked = true;
                             }
 
-                            MAP_DOT_MIDDLE | MAP_ORB => {
+                            MAP_ORB => {
                                 data.map[pos].chr = chr as u8;
                                 data.map[pos].blocked = true;
                             }

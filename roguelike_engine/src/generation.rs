@@ -70,7 +70,7 @@ pub fn make_column(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
 }
 
 pub fn make_energy(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let object = entities.create_entity(pos.x, pos.y, EntityType::Energy, ENTITY_STONE as char, config.color_light_green, EntityName::Energy, false);
+    let object = entities.create_entity(pos.x, pos.y, EntityType::Energy, ENTITY_BLINK_TRAP as char, config.color_light_green, EntityName::Energy, false);
 
     msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Energy));
 
@@ -208,6 +208,18 @@ pub fn make_spikes(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
     msg_log.log(Msg::SpawnedObject(spikes, entities.typ[&spikes], pos, EntityName::Spike));
 
     return spikes;
+}
+
+pub fn make_blink_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let blink = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_BLINK_TRAP as char, config.color_ice_blue, EntityName::BlinkTrap, false);
+
+    entities.trap.insert(blink,  Trap::Blink);
+    entities.armed.insert(blink,  true);
+    entities.item.insert(blink,  Item::BlinkTrap);
+
+    msg_log.log(Msg::SpawnedObject(blink, entities.typ[&blink], pos, EntityName::BlinkTrap));
+
+    return blink;
 }
 
 pub fn make_exit(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {

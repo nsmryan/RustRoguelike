@@ -107,7 +107,6 @@ pub const MAP_DOT_TOP_RIGHT: u8 = 146;
 pub const MAP_DOT_BOTTOM_LEFT: u8 = 161;
 pub const MAP_DOT_BOTTOM_RIGHT: u8 = 162;
 
-pub const MAP_DOT_MIDDLE: u8 = 249;
 pub const MAP_SMALL_DOT_MIDDLE: u8 = 250;
 pub const MAP_STAR: u8 = 15;
 pub const MAP_ORB: u8 = 135;
@@ -131,6 +130,7 @@ pub const ENTITY_SHIELD: u8 = 255;
 pub const ENTITY_HAMMER: u8 = 251;
 pub const ENTITY_TRAP_SOUND: u8 = 83; // char S
 pub const ENTITY_SPIKE_TRAP: u8 = 136;
+pub const ENTITY_BLINK_TRAP: u8 = 6;
 
 pub const ARROW_RIGHT: u8 = 16;
 pub const ARROW_LEFT: u8 = 17;

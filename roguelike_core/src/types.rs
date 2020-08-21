@@ -375,6 +375,7 @@ impl GameData {
 pub enum Trap {
     Spikes,
     Sound,
+    Blink,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -463,6 +464,7 @@ pub enum Item {
     Sword,
     SpikeTrap,
     SoundTrap,
+    BlinkTrap,
 }
 
 impl Item {
@@ -476,6 +478,7 @@ impl Item {
             Item::Sword => ItemClass::Primary,
             Item::SpikeTrap => ItemClass::Secondary,
             Item::SoundTrap => ItemClass::Secondary,
+            Item::BlinkTrap => ItemClass::Secondary,
         }
     }
 }
@@ -539,6 +542,7 @@ pub enum EntityName {
     Shield,
     Spire,
     Spike,
+    BlinkTrap,
     Stone,
     Mouse,
     Energy,

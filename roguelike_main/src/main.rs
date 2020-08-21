@@ -144,6 +144,7 @@ pub fn run(seed: u64, starting_actions: Vec<InputAction>) -> Result<(), String> 
     make_map(&config.map_load, &mut game);
 
     make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
+    make_blink_trap(&mut game.data.entities, &game.config, Pos::new(18, 15), &mut game.msg_log);
 
     let mut frame_time = Instant::now();
 

@@ -352,24 +352,13 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     use_energy(entity_id, data);
 
                     let player_id = data.find_player().unwrap();
-                    let player_pos = data.entities.pos[&player_id];
-                    let mut potential_positions = data.map.floodfill(player_pos, BLINK_RADIUS);
+                    let entity_pos = data.entities.pos[&entity_id];
 
-                    while potential_positions.len() > 0 {
-                        let ix = rng.gen_range(0, potential_positions.len());
-                        let rand_pos = potential_positions[ix];
-
-                        let dxy = sub_pos(rand_pos, player_pos);
-                        if data.has_blocking_entity(rand_pos).is_none() &&
-                           data.map.is_blocked_by_wall(player_pos, dxy.x, dxy.y).is_none() {
-                            data.entities.move_to(player_id, rand_pos);
-                            break;
-                        }
-
-                        potential_positions.swap_remove(ix);
+                    if let Some(blink_pos) = find_blink_pos(entity_pos, rng, data) {
+                        data.entities.move_to(entity_id, blink_pos);
+                    } else {
+                        msg_log.log(Msg::FailedBlink(entity_id));
                     }
-
-                    msg_log.log(Msg::FailedBlink(player_id));
                 } else if let Action::Rubble(entity_id, blocked) = action {
                     use_energy(entity_id, data);
 
@@ -455,11 +444,19 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 }
             }
 
-            Msg::SoundTrapTriggered(trap, entity) => {
+            Msg::SoundTrapTriggered(trap, entity_id) => {
                 let source_pos = data.entities.pos[&trap];
 
                 // the triggering entity is considered the source of the sound
-                Msg::Sound(entity, source_pos, config.sound_radius_trap, true);
+                Msg::Sound(entity_id, source_pos, config.sound_radius_trap, true);
+            }
+
+            Msg::BlinkTrapTriggered(trap, entity_id) => {
+                let source_pos = data.entities.pos[&trap];
+
+                if let Some(blink_pos) = find_blink_pos(source_pos, rng, data) {
+                    data.entities.move_to(entity_id, blink_pos);
+                }
             }
 
             _ => {
@@ -513,6 +510,24 @@ pub fn use_energy(entity_id: EntityId, data: &mut GameData) {
         EntityClass::Clockwork => {
         }
     }
+}
+
+pub fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Option<Pos> {
+    let mut potential_positions = data.map.floodfill(pos, BLINK_RADIUS);
+    while potential_positions.len() > 0 {
+        let ix = rng.gen_range(0, potential_positions.len());
+        let rand_pos = potential_positions[ix];
+
+        let dxy = sub_pos(rand_pos, pos);
+        if data.has_blocking_entity(rand_pos).is_none() &&
+           data.map.is_blocked_by_wall(pos, dxy.x, dxy.y).is_none() {
+               return Some(rand_pos);
+        }
+
+        potential_positions.swap_remove(ix);
+    }
+    
+    return None;
 }
 
 fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
@@ -593,6 +608,11 @@ fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data
 
             Trap::Sound => {
                 msg_log.log(Msg::SoundTrapTriggered(*trap, entity_id));
+                data.entities.needs_removal[trap] = true;
+            }
+
+            Trap::Blink => {
+                msg_log.log(Msg::BlinkTrapTriggered(*trap, entity_id));
                 data.entities.needs_removal[trap] = true;
             }
         }
