@@ -333,7 +333,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 } else if let Action::PlaceTrap(place_pos, trap_id) = action {
                     place_trap(trap_id, place_pos, data);
                 } else if let Action::GrassThrow(entity_id, direction) = action {
-                    data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
+                    use_energy(entity_id, data);
 
                     let pos = data.entities.pos[&entity_id];
 
@@ -342,7 +342,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                         data.map[grass_pos].surface = Surface::Grass;
                     }
                 } else if let Action::Blink(entity_id) = action {
-                    data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
+                    use_energy(entity_id, data);
 
                     let player_id = data.find_player().unwrap();
                     let player_pos = data.entities.pos[&player_id];
@@ -364,7 +364,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
 
                     msg_log.log(Msg::FailedBlink(player_id));
                 } else if let Action::Rubble(entity_id, blocked) = action {
-                    data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
+                    use_energy(entity_id, data);
 
                     let entity_pos = data.entities.pos[&entity_id];
 
@@ -397,24 +397,24 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                         }
                     }
                 } else if let Action::Reform(entity_id, pos) = action {
-                    data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
+                    use_energy(entity_id, data);
 
                     data.map[pos].surface = Surface::Floor;
                     data.map[pos].blocked = true;
                     data.map[pos].chr = MAP_WALL;
                 } else if let Action::Swap(entity_id, target_id) = action {
-                    data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
+                    use_energy(entity_id, data);
 
                     let start_pos = data.entities.pos[&entity_id];
                     let end_pos = data.entities.pos[&target_id];
                     data.entities.move_to(entity_id, end_pos);
                     data.entities.move_to(target_id, start_pos);
                 } else if let Action::PassWall(entity_id, pos) = action {
-                    data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
+                    use_energy(entity_id, data);
 
                     data.entities.move_to(entity_id, pos);
                 } else if let Action::Push(entity_id, direction) = action {
-                    data.entities.energy.get_mut(&entity_id).map(|energy| *energy -= 1);
+                    use_energy(entity_id, data);
 
                     let pos = data.entities.pos[&entity_id];
 
@@ -477,6 +477,35 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
         }
     }
     data.entities.messages[&player_id].clear();
+}
+
+pub fn use_energy(entity_id: EntityId, data: &mut GameData) {
+    let pos = data.entities.pos[&entity_id];
+
+    let class = data.entities.class[&entity_id];
+    //let skill_class = data.entities.skill[&entit_id].class();
+
+    // NOTE this uses the entity's class, not the skill's class
+    match class {
+        EntityClass::General => {
+            data.entities.energy[&entity_id] -= 1;
+        }
+
+        EntityClass::Grass => {
+            if data.map[pos].surface == Surface::Grass {
+                data.map[pos].surface = Surface::Floor;
+            }
+        }
+
+        EntityClass::Monolith => {
+            if data.map[pos].surface == Surface::Rubble {
+                data.map[pos].surface = Surface::Floor;
+            }
+        }
+
+        EntityClass::Clockwork => {
+        }
+    }
 }
 
 fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
