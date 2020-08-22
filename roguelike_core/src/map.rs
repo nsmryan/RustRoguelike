@@ -346,8 +346,8 @@ impl Map {
 
     // check if given path is blocked
     pub fn path_blocked_by_wall(&self, path: Vec<Pos>) -> Option<Blocked> {
-        for (pos, target_pos) in positions.tuple_windows() {
-            let blocked = move_blocked_by_wall(&self, pos, target_pos);
+        for (pos, target_pos) in path.iter().tuple_windows() {
+            let blocked = self.move_blocked_by_wall(*pos, *target_pos);
 
             if blocked.is_some() {
                 return blocked;
@@ -364,7 +364,7 @@ impl Map {
         let (x, y) = (pos.x, pos.y);
 
         let dxy = sub_pos(next_pos, pos);
-        let dir = Direction::from_dxy(dx, dy).expect("Check for blocking wall with no movement?");
+        let dir = Direction::from_dxy(dxy.x, dxy.y).expect("Check for blocking wall with no movement?");
 
         let mut blocked = Blocked::new(pos, next_pos, dir, false, Wall::Empty);
 
@@ -673,38 +673,38 @@ impl Map {
 
         // this function returns the last position within FOV between two points
         fn fov_line(map: &Map, start: Pos, end: Pos, max_dist: i32, crouching: bool) -> Pos {
+            assert!(max_dist > 0);
+
             let mut current_pos = start;
             let mut remaining_dist: i32 = max_dist;
 
-            while current_pos != end && remaining_dist > 0 {
-                let offset = sub_pos(end, current_pos);
-                let blocked = map.is_blocked_by_wall(current_pos, offset.x, offset.y);
+            let mut seen_short_wall = false;
+            for (pos, next_pos) in line_between(start, end).iter().tuple_windows() {
+                let blocked = map.move_blocked_by_wall(*pos, *next_pos);
 
                 if let Some(blocked) = blocked {
-                    if !crouching && blocked.wall_type == Wall::ShortWall {
-                        let new_pos = blocked.end_pos;
-
-                        effective_distance += distance(current_pos, new_pos);
-                        // NOTE this is the FOV of short walls
-                        effective_distance += 1;
-
-                        current_pos = new_pos;
+                    if !seen_short_wall && !crouching && blocked.wall_type == Wall::ShortWall {
+                        // subtract off an additional tile for the short wall
+                        remaining_dist -= 1;
+                        seen_short_wall = true;
                     } else {
                         // blocked by tile, tall wall, or short wall if crouching
-                        return false;
+                        return *pos;
                     }
-                } else {
-                    remaining_dist -= distance(current_pos, end);
+                }
 
-                    break;
+                remaining_dist -= 1;
+
+                if remaining_dist == 0 {
+                    return *pos;
                 }
             }
 
-            return effective_distance <= max_dist;
+            return end;
         }
 
         let fov_end_pos  = fov_line(self, start_pos, end_pos, radius, false);
-        let visible_back = fov_line(self, end_pos, start_pos, radius, false) == start_pos:
+        let visible_back = fov_line(self, end_pos, start_pos, radius, false) == start_pos;
 
         let mut is_in_fov;
         if fov_end_pos == end_pos {
