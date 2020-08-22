@@ -22,11 +22,15 @@ pub struct Line {
     orig_y: i32,
     dest_x: i32,
     dest_y: i32,
+
+    include_start: bool,
 }
 
 impl Line {
-    pub fn new(start: Pos, end: Pos) -> Line {
+    pub fn new(start: Pos, end: Pos, include_start: bool) -> Line {
         let mut line: Line = Default::default();
+
+        line.include_start = include_start;
 
         line.orig_x = start.x;
         line.orig_y = start.y;
@@ -67,6 +71,11 @@ impl Line {
     }
 
     pub fn step(&mut self) -> Option<Pos> {
+        if self.include_start {
+            self.include_start = false;
+            return Some(Pos::new(self.orig_x, self.orig_y));
+        }
+
         if self.step_x * self.delta_x > self.step_y * self.delta_y {
             if self.orig_x == self.dest_x {
                 return None;
@@ -107,28 +116,31 @@ impl Iterator for Line {
     }
 }
 
+// does not include start position
 pub fn line(start: Pos, end: Pos) -> Vec<Pos> {
-    //let p1 = (start.x as isize, start.y as isize);
-    //let p2 = (end.x as isize, end.y as isize);
-
-    //let line = Line::new(start.to_tuple(), end.to_tuple()).map(|pair| Pos::from(pair));
-    //let points = line.collect::<Vec<Pos>>();
-
-    //let mut bresenham = Bresenham::new(p1, p2).map(|pair| Pos::new(pair.0 as i32, pair.1 as i32));
-    //let mut points = bresenham.skip(1).collect::<Vec<Pos>>();
-
-    let line = Line::new(start, end);
+    let include_start = false;
+    let line = Line::new(start, end, include_start);
     let points = line.collect::<Vec<Pos>>();
 
     return points;
 }
 
+// includes end position, even if line is 0 distance
 pub fn line_inclusive(start: Pos, end: Pos) -> Vec<Pos> {
     let mut points = line(start, end);
 
     if start != end {
         points.push(end);
     }
+
+    return points;
+}
+
+// includes start position
+pub fn line_between(start: Pos, end: Pos) -> Vec<Pos> {
+    let include_start = true;
+    let line = Line::new(start, end, include_start);
+    let points = line.collect::<Vec<Pos>>();
 
     return points;
 }
@@ -461,6 +473,29 @@ pub fn move_next_to(start_pos: Pos, end_pos: Pos) -> Pos {
     }
 
     return second_to_last;
+}
+
+#[test]
+pub fn test_lines() {
+    let dist: i32 = 10; 
+    let offset: i32 = dist / 2;
+
+    for x in 0..dist {
+        for y in 0..dist {
+            let x_offset = x - offset;
+            let y_offset = y - offset;
+            if x_offset == 0 && y_offset == 0 {
+                continue;
+            }
+
+            let start = Pos::new(0, 0);
+            let end = Pos::new(x_offset, y_offset);
+            let path = line(start, end);
+
+            assert!(path[0] != start);
+            assert_eq!(path[path.len() - 1], end);
+        }
+    }
 }
 
 #[test]
