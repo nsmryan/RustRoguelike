@@ -393,7 +393,8 @@ impl Map {
         let x_moved = Pos::new(next_pos.x, y);
         let y_moved = Pos::new(x, next_pos.y);
         
-        match Direction::from_dxy(move_dir.x, move_dir.y).unwrap() {
+        let dir = Direction::from_dxy(move_dir.x, move_dir.y).unwrap();
+        match dir {
             Direction::Right | Direction::Left => {
                 let mut left_wall_pos = pos;
                 // moving right
@@ -427,7 +428,7 @@ impl Map {
                     found_blocker = true;
                 }
 
-                if self.blocked_right(move_y(pos, -1)) && self.blocked_down(move_x(pos, 1)) {
+                if self.blocked_right(move_y(pos, 1)) && self.blocked_down(move_x(pos, 1)) {
                     let blocked_pos = add_pos(pos, Pos::new(-1, 1));
                     if self.is_within_bounds(blocked_pos) {
                         blocked.wall_type = self[blocked_pos].bottom_wall;
@@ -526,6 +527,13 @@ impl Map {
         }
 
         if found_blocker {
+            // its possible to get here due to an out-of-bounds tile that is not
+            // blocked and has no walls. Indicate that this is due to a blocked tile outside
+            // of the arena
+            if !blocked.blocked_tile && blocked.wall_type == Wall::Empty {
+                blocked.blocked_tile = true;
+            }
+
             return Some(blocked);
         } else {
             return None;

@@ -150,7 +150,13 @@ impl GameData {
     pub fn clear_path_up_to(&self, start: Pos, end: Pos, traps_block: bool) -> bool {
         let up_to = move_next_to(start, end);
 
-        return self.clear_path(start, up_to, traps_block);
+        let clear_up_to = self.clear_path(start, up_to, traps_block);
+        let last_move_blocked  = self.map.move_blocked_by_wall(up_to, end);
+        let last_move_clear  = last_move_blocked.is_none();
+        if start == Pos::new(17, 11) {
+            dbg!(last_move_blocked);
+        }
+        return clear_up_to && last_move_clear;
     }
 
     pub fn clear_path(&self, start: Pos, end: Pos, traps_block: bool) -> bool {
