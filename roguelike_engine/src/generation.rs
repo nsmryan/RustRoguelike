@@ -244,66 +244,6 @@ pub fn make_stone(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
     return stone;
 }
 
-/* TODO remove
-pub fn make_map(map_type: &MapGenType,
-                entities: &mut Entities,
-                config: &Config,
-                msg_log: &mut MsgLog,
-                rng: &mut SmallRng) -> (GameData, Pos) {
-    let result;
-    match map_type {
-        MapGenType::WallTest => {
-            let (map, player_position) = make_wall_test_map(entities, config, msg_log);
-            
-            result = (GameData::new(map, entities.clone()), player_position);
-        }
-
-        MapGenType::CornerTest => {
-            let (map, player_position) = make_corner_test_map(entities, config, msg_log);
-            
-            result = (GameData::new(map, entities.clone()), player_position);
-        }
-
-        MapGenType::PlayerTest => {
-            let (map, player_position) = make_player_test_map(entities, config, msg_log);
-            
-            result = (GameData::new(map, entities.clone()), player_position);
-        }
-
-        MapGenType::Island => {
-            let map = Map::from_dims(MAP_WIDTH as usize, MAP_HEIGHT as usize);
-
-            let mut data = GameData::new(map, entities.clone());
-            let starting_position = make_island(&mut data, config, msg_log, rng);
-
-            data.map[starting_position.to_tuple()].tile_type = TileType::Empty;
-
-            data.map.update_map();
-
-            result = (data, starting_position);
-        }
-
-        MapGenType::FromFile(file_name) => {
-            let mut entities = Entities::new();
-            let (new_map, player_position) =
-                read_map_xp(config, &mut entities, msg_log, &file_name);
-
-            let data = GameData::new(new_map, entities);
-
-            result = (data, Pos::from(player_position));
-        }
-
-        MapGenType::Animations => {
-            let (map, player_position) = make_player_test_map(entities, config, msg_log);
-            
-            result = (GameData::new(map, entities.clone()), player_position);
-        }
-    }
-
-    return result;
-}
-*/
-
 pub fn make_island(data: &mut GameData,
                    config: &Config,
                    msg_log: &mut MsgLog,
