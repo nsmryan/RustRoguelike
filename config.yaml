@@ -120,13 +120,14 @@ grid_alpha_overlay: 150
 ## Valid values for map_load
 # FromFile: load from map.xp file
 # TestWall: test map for checking wall interactions
+# TestRandom: test random generation
 # TestMap: test map for unit tests
 # Random: generated map, not currently working
 # Empty: empty map, used in unit tests 
 # TestCorner: test map with corners of different types
 # TestPlayer: test map for player interactions
-map_load:
-  FromFile: "maps.txt"
+map_load: #TestRandom
+    FromFile: "maps.txt"
 map_file: map.xp
 idle_speed: 0.3499999940395355
 draw_mouse_line: false
@@ -162,4 +163,4 @@ console_speed: 1.0
 sound_radius_sneak: 1
 sound_radius_walk: 2
 sound_radius_run: 4
-take_screenshot: true
+take_screenshot: false

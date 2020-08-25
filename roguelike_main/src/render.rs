@@ -313,7 +313,8 @@ fn render_info(display_state: &mut DisplayState,
             let pos = game.data.entities.pos[obj_id];
 
             // only display things in the player's FOV
-            if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) {
+            if game.settings.god_mode ||
+               game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) {
                 if let Some(fighter) = game.data.entities.fighter.get(obj_id) {
                     y_pos += 1;
 
@@ -759,7 +760,8 @@ fn render_entity(entity_id: EntityId,
     if game.data.map.is_within_bounds(pos) &&
        game.data.entities.limbo.get(&entity_id).is_none() {
         let is_in_fov = 
-           game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player);
+           game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) ||
+           game.settings.god_mode;
 
         if let Some(anim_key) = game.data.entities.animation[&entity_id].get(0) {
             animation_result = 

@@ -85,6 +85,7 @@ impl Blocked {
 pub enum MapLoadConfig {
     Random,
     TestMap,
+    TestRandom,
     TestWall,
     Empty,
     TestCorner,

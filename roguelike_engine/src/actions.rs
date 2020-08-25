@@ -667,22 +667,19 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::GodMode, true) => {
-            let god_mode_hp = 1000000;
+            let god_mode_hp = 10000;
             let player_id = game.data.find_player().unwrap();
-            if let Some(ref mut fighter) = game.data.entities.fighter.get_mut(&player_id) {
-                fighter.hp = god_mode_hp;
-                fighter.max_hp = god_mode_hp;
-            }
+            game.data.entities.fighter[&player_id].hp = god_mode_hp;
+            game.data.entities.fighter[&player_id].max_hp = god_mode_hp;
             game.data.entities.energy[&player_id] = 1000;
 
             // set god mode flag
             game.settings.god_mode = true;
 
-            // set all tiles to be transparent and walkable. walkable is not current used
-            // anywhere
+            // set all tiles to be transparent and walkable
             for x in 0..game.data.map.tiles.len() {
                 for y in 0..game.data.map.tiles[0].len() {
-                    game.data.map.set_cell(x as i32, y as i32, true);
+                    game.data.map[(x as i32, y as i32)].block_sight = false;
                 }
             }
             game.data.map.update_map();

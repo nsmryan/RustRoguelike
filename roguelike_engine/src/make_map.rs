@@ -37,6 +37,12 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
             player_position = Pos::new(0, 0);
         }
 
+        MapLoadConfig::TestRandom => {
+            let new_map = Map::from_dims(30, 30);
+            game.data.map = new_map;
+            player_position = Pos::new(0, 0);
+        }
+
         MapLoadConfig::FromFile(file_name) => {
             let maps: Vec<String> = parse_maps_file(&format!("resources/{}", file_name));
 
