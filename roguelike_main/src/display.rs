@@ -86,6 +86,10 @@ impl DisplayState {
         };
     }
 
+    pub fn update_display(&mut self) {
+        self.canvas.present();
+    }
+
     pub fn add_sprite(&mut self, sprite_sheet: SpriteSheet) {
         let sprite_key = self.next_sprite_key;
         self.next_sprite_key += 1;

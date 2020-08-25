@@ -77,6 +77,7 @@ pub struct Config {
     pub sound_radius_sneak: usize,
     pub sound_radius_walk: usize,
     pub sound_radius_run: usize,
+    pub take_screenshot: bool,
 }
 
 impl Config {

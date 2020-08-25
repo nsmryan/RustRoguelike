@@ -21,6 +21,7 @@ use sdl2::render::{TextureCreator};
 use sdl2::video::WindowContext;
 
 use walkdir::WalkDir;
+use bmp;
 
 use log::LevelFilter;
 use simple_logging;
@@ -46,19 +47,21 @@ use crate::plat::*;
 
 
 const CONFIG_NAME: &str = "config.yaml";
-const LOG_LEVEL: LevelFilter = LevelFilter::Trace;
 
 
-#[derive(Debug, Options)]
-struct GameOptions {
+#[derive(Debug, Clone, Options)]
+pub struct GameOptions {
     #[options(help = "replay from an input log file")]
-    replay: Option<String>,
+    pub replay: Option<String>,
+
+    #[options(help = "log level to record in game.log (OFF, ERROR, WARN, INFO, DEBUG, TRACE)")]
+    pub log_level: Option<String>,
 
     #[options(help = "use a given seed for random number generation")]
-    seed: Option<u64>,
+    pub seed: Option<u64>,
 
     #[options(help = "display help text")]
-    help: bool,
+    pub help: bool,
 }
 
 
@@ -78,32 +81,18 @@ fn main() {
             // hasher.finish()
         };
 
-    // read in the recorded action log, if one is provided
-    let mut starting_actions = Vec::new();
-    if let Some(replay_file) = opts.replay {
-        let file =
-            std::fs::File::open(&replay_file).expect(&format!("Could not open replay file '{}'", &replay_file));
-        for line in std::io::BufReader::new(file).lines() {
-            if let Ok(action) = InputAction::from_str(&line.unwrap()) {
-                starting_actions.push(action);
-            }
-        }
-    }
-
     println!("Seed: {} (0x{:X})", seed, seed);
 
-    simple_logging::log_to_file("game.log", LOG_LEVEL).unwrap();
+    let log_level =
+        opts.log_level.clone().map_or(LevelFilter::Trace,
+                                      |level_str| LevelFilter::from_str(&level_str).expect("Log level unexpected!"));
+    simple_logging::log_to_file("game.log", log_level).unwrap();
 
-    run(seed, starting_actions).unwrap();
+    run(seed, opts).unwrap();
 }
 
-pub fn run(seed: u64, starting_actions: Vec<InputAction>) -> Result<(), String> {
-    // reverse the input log so we can pop actions off start-to-end
-    let mut starting_actions = starting_actions.clone();
-    starting_actions.reverse();
-
+pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     let config = Config::from_file(CONFIG_NAME);
-    let mut config_modified_time = fs::metadata(CONFIG_NAME).unwrap().modified().unwrap();
 
     /* Create SDL Context */
     let sdl_context = sdl2::init()?;
@@ -114,11 +103,6 @@ pub fn run(seed: u64, starting_actions: Vec<InputAction>) -> Result<(), String> 
     let canvas = window.into_canvas()
         .accelerated().build().map_err(|e| e.to_string())?;
     let texture_creator = canvas.texture_creator();
-
-    let mut event_pump = sdl_context.event_pump()?;
-
-    /* Setup FPS Throttling */
-    let fps_throttler = Throttler::new(Duration::from_millis(1000 / config.rate as u64));
 
     /* Create Display Structures */
     let screen_sections =
@@ -136,14 +120,45 @@ pub fn run(seed: u64, starting_actions: Vec<InputAction>) -> Result<(), String> 
     /* Load Textures */
     load_sprites(&texture_creator, &mut display_state);
 
-    /* Action Log */
-    let mut action_log = std::fs::File::create("action_log.txt").unwrap();
-
     let mut game = Game::new(seed, config.clone())?;
+
+    make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
 
     make_map(&config.map_load, &mut game);
 
-    make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
+    if game.config.take_screenshot {
+        take_screenshot(&mut game, &mut display_state);
+        return Ok(());
+    }
+
+    return game_loop(game, display_state, opts, sdl_context);
+}
+
+pub fn game_loop(mut game: Game, mut display_state: DisplayState, opts: GameOptions, sdl_context: sdl2::Sdl) -> Result<(), String> {
+    // read in the recorded action log, if one is provided
+    let mut starting_actions = Vec::new();
+    if let Some(replay_file) = opts.replay {
+        let file =
+            std::fs::File::open(&replay_file).expect(&format!("Could not open replay file '{}'", &replay_file));
+        for line in std::io::BufReader::new(file).lines() {
+            if let Ok(action) = InputAction::from_str(&line.unwrap()) {
+                starting_actions.push(action);
+            }
+        }
+    }
+
+    let mut config_modified_time = fs::metadata(CONFIG_NAME).unwrap().modified().unwrap();
+
+    // reverse the input log so we can pop actions off start-to-end
+    starting_actions.reverse();
+
+    /* Action Log */
+    let mut action_log = std::fs::File::create("action_log.txt").unwrap();
+
+    /* Setup FPS Throttling */
+    let fps_throttler = Throttler::new(Duration::from_millis(1000 / game.config.rate as u64));
+
+    let mut event_pump = sdl_context.event_pump()?;
 
     let mut frame_time = Instant::now();
 
@@ -275,6 +290,8 @@ pub fn run(seed: u64, starting_actions: Vec<InputAction>) -> Result<(), String> 
 
         /* Draw the Game to the Screen */
         render_all(&mut display_state, &mut game)?;
+
+        display_state.update_display();
 
         drop(display_timer);
 
@@ -481,6 +498,23 @@ pub fn keydown_to_action(keycode: Keycode,
     }
 
     return input_action;
+}
+
+pub fn take_screenshot(game: &mut Game, display_state: &mut DisplayState) -> Result<(), String> {
+    let game_result = game.step_game(0.0);
+    render_all(display_state, game)?;
+
+    let pixels = display_state.canvas.read_pixels(None, sdl2::pixels::PixelFormatEnum::RGB24).unwrap();
+    let (width, height) = display_state.canvas.output_size().unwrap();
+    let mut image = bmp::Image::new(width, height);
+    for index in 0..(width * height) {
+        let byte_index = 3 * index as usize;
+        let pixel = bmp::Pixel::new(pixels[byte_index], pixels[byte_index + 1], pixels[byte_index + 2]);
+        image.set_pixel(index % width, index / width, pixel);
+    }
+    image.save("screenshoot.bmp");
+
+    return Ok(());
 }
 
 fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display_state: &mut DisplayState) {

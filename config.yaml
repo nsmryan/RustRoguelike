@@ -162,3 +162,4 @@ console_speed: 1.0
 sound_radius_sneak: 1
 sound_radius_walk: 2
 sound_radius_run: 4
+take_screenshot: true

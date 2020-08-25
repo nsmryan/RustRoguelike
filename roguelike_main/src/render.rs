@@ -165,8 +165,6 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
     //    render_console(display_state, game);
     //}
 
-    display_state.canvas.present();
-
     display_state.zones = zones;
 
     Ok(())
