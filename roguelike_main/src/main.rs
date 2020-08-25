@@ -501,6 +501,8 @@ pub fn keydown_to_action(keycode: Keycode,
 }
 
 pub fn take_screenshot(game: &mut Game, display_state: &mut DisplayState) -> Result<(), String> {
+    game.settings.god_mode = true;
+
     let game_result = game.step_game(0.0);
     render_all(display_state, game)?;
 

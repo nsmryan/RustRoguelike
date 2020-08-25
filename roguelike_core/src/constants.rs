@@ -52,8 +52,6 @@ pub const MSG_HEIGHT: u32 = PANEL_HEIGHT - 1;
 pub const MAP_WIDTH: i32 = 30;
 pub const MAP_HEIGHT: i32 = 30;
 
-pub const FOV_LIGHT_WALLS: bool = true;
-
 pub const ISLAND_RADIUS: i32 = 15;
 pub const ISLAND_NUM_OBSTACLES: i32 = 15;
 pub const ISLAND_NUM_SUBTRACTIONS_ATTEMPTS: i32 = 50;

@@ -3,6 +3,9 @@ use std::io::BufReader;
 
 use rexpaint::*;
 
+use noise::Perlin;
+use noise::NoiseFn;
+
 use log::trace;
 
 use roguelike_core::constants::*;
@@ -41,6 +44,18 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
             let new_map = Map::from_dims(30, 30);
             game.data.map = new_map;
             player_position = Pos::new(0, 0);
+
+            let perlin = Perlin::new();
+            let scaler = game.config.tile_noise_scaler;
+            for x in 0..30 {
+                for y in 0..30 {
+                   let val = perlin.get([x as f64 / scaler,
+                                         y as f64 / scaler]) as f32;
+                   if val > 0.5 {
+                       game.data.map[(x, y)] = Tile::water();
+                   }
+                }
+            }
         }
 
         MapLoadConfig::FromFile(file_name) => {
