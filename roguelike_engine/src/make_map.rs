@@ -6,6 +6,10 @@ use rexpaint::*;
 use noise::Perlin;
 use noise::NoiseFn;
 
+use wfc_image::*;
+use image;
+use image::GenericImageView;
+
 use log::trace;
 
 use roguelike_core::constants::*;
@@ -45,17 +49,40 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
             game.data.map = new_map;
             player_position = Pos::new(0, 0);
 
+            let mut file = File::open("resources/wfc_seed_2.png").unwrap();
+            let reader = BufReader::new(file);
+            let seed_image = image::load(reader, image::ImageFormat::Png).unwrap();
+            // TODO add or
+            //
+            let orientations = [Orientation::Original,
+                                Orientation::Clockwise90,
+                                Orientation::Clockwise180,
+                                Orientation::Clockwise270,
+                                Orientation::DiagonallyFlipped,
+                                Orientation::DiagonallyFlippedClockwise90,
+                                Orientation::DiagonallyFlippedClockwise180,
+                                Orientation::DiagonallyFlippedClockwise270];
+            let map_image = 
+                wfc_image::generate_image_with_rng(&seed_image,
+                                                   core::num::NonZeroU32::new(3).unwrap(),
+                                                   wfc_image::Size::new(30, 30),
+                                                   &orientations, 
+                                                   wfc_image::wrap::WrapNone,
+                                                   ForbidNothing,
+                                                   wfc_image::retry::NumTimes(3),
+                                                   &mut game.rng).unwrap();
+            map_image.save("wfc_map.png");
+
             let perlin = Perlin::new();
             let scaler = game.config.tile_noise_scaler;
             for x in 0..30 {
                 for y in 0..30 {
-                   let val = perlin.get([x as f64 / scaler,
-                                         y as f64 / scaler]) as f32;
-                   if val > 0.3 {
-                       let pos = Pos::new(x, y);
-                       game.data.map[pos].chr = MAP_WALL as u8;
-                       game.data.map[pos].blocked = true;
-                       game.data.map[pos].block_sight = true;
+                    let pixel = map_image.get_pixel(x, y);
+                    if pixel.0[0] == 0 {
+                        let pos = Pos::new(x as i32, y as i32);
+                        game.data.map[pos].chr = MAP_WALL as u8;
+                        game.data.map[pos].blocked = true;
+                        game.data.map[pos].block_sight = true;
                    }
                 }
             }
