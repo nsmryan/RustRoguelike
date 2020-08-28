@@ -32,7 +32,12 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
     display_state.canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
     display_state.canvas.clear();
 
-    let zones = plots.collect::<Vec<Plot>>();
+    let zones;
+    if game.config.show_info {
+        zones = plots.collect::<Vec<Plot>>();
+    } else {
+        zones = Plan::zone("map").plot(0, 0, screen_rect.0 as usize, screen_rect.1 as usize).collect::<Vec<Plot>>();
+    }
 
     let mut mouse_map_pos = None;
     for zone in zones.iter() {
@@ -1375,6 +1380,8 @@ fn render_movement_overlay(display_state: &mut DisplayState,
             if visible {
                 let chr = game.data.entities.chr[&entity_id];
 
+                //let sprite = display_state.drawn_sprites[&entity_id];
+                //display_state.draw_sprite(sprite, entity_pos, highlight_color, area);
                 draw_char(&mut display_state.canvas,
                           &mut display_state.font_image,
                           chr as char,

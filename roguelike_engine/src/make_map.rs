@@ -51,8 +51,11 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
                 for y in 0..30 {
                    let val = perlin.get([x as f64 / scaler,
                                          y as f64 / scaler]) as f32;
-                   if val > 0.5 {
-                       game.data.map[(x, y)] = Tile::water();
+                   if val > 0.3 {
+                       let pos = Pos::new(x, y);
+                       game.data.map[pos].chr = MAP_WALL as u8;
+                       game.data.map[pos].blocked = true;
+                       game.data.map[pos].block_sight = true;
                    }
                 }
             }
@@ -303,7 +306,7 @@ pub fn read_map_xp(config: &Config,
                             MAP_WALL => {
                                 data.map[pos].chr = chr as u8;
                                 data.map[pos].blocked = true;
-                                    data.map[pos].block_sight = true;
+                                data.map[pos].block_sight = true;
                             }
 
                             ENTITY_CLOAK_GUY => {

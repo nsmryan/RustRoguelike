@@ -127,7 +127,7 @@ grid_alpha_overlay: 150
 # TestCorner: test map with corners of different types
 # TestPlayer: test map for player interactions
 map_load: TestRandom
-#FromFile: "maps.txt"
+    #FromFile: "maps.txt"
 map_file: map.xp
 idle_speed: 0.3499999940395355
 draw_mouse_line: false
@@ -164,3 +164,4 @@ sound_radius_sneak: 1
 sound_radius_walk: 2
 sound_radius_run: 4
 take_screenshot: true
+show_info: false
