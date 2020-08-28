@@ -144,6 +144,18 @@ impl Tile {
         }
     }
 
+    pub fn grass() -> Self {
+        let mut tile = Tile::empty();
+        tile.surface = Surface::Grass;
+        return tile;
+    }
+
+    pub fn rubble() -> Self {
+        let mut tile = Tile::empty();
+        tile.surface = Surface::Rubble;
+        return tile;
+    }
+
     pub fn wall() -> Self {
         return Tile::wall_with(' ');
     }
@@ -259,12 +271,12 @@ impl Map {
         return map;
     }
 
-    pub fn from_dims(width: usize, height: usize) -> Map {
-        let tiles = vec!(vec!(Tile::empty(); height); width);
+    pub fn from_dims(width: u32, height: u32) -> Map {
+        let tiles = vec!(vec!(Tile::empty(); height as usize); width as usize);
         let mut map =
             Map {
                 tiles,
-                fov: MapData::new(width, height),
+                fov: MapData::new(width as usize, height as usize),
                 fov_pos: Pos::new(0, 0),
                 fov_radius: 1,
             };

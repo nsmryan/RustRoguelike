@@ -3,9 +3,6 @@ use std::io::BufReader;
 
 use rexpaint::*;
 
-use noise::Perlin;
-use noise::NoiseFn;
-
 use wfc_image::*;
 use image;
 use image::GenericImageView;
@@ -28,6 +25,112 @@ pub fn parse_maps_file(file_name: &str) -> Vec<String> {
     return file_contents.lines().map(|s| s.to_string()).collect::<Vec<String>>();
 }
 
+pub fn parse_ascii_map(file_name: &str) -> Vec<Vec<Tile>> {
+    let file_contents =
+        std::fs::read_to_string(file_name).expect(&format!("Could not read {}", file_name));
+
+    let lines = file_contents.lines()
+                             .map(|s| s.chars().collect::<Vec<char>>())
+                             .collect::<Vec<Vec<char>>>();
+
+    return parse_ascii_chars(lines);
+}
+
+fn parse_ascii_chars(lines: Vec<Vec<char>>) -> Vec<Vec<Tile>> {
+    assert!(lines.len() % 2 == 0);
+    assert!(lines[0].len() % 2 == 0);
+
+    let height = lines.len() / 2;
+    let width = lines[0].len() / 2;
+
+    let mut tile_map = Vec::new();
+    for y in 0..height {
+        let mut tiles = Vec::new();
+        for x in 0..width {
+            let tile = tile_from_ascii(lines[y * 2][x * 2 + 1], lines[y * 2][x * 2], lines[y * 2 + 1][x * 2 + 1]);
+            tiles.push(tile);
+        }
+        tile_map.push(tiles);
+    }
+
+    return tile_map;
+}
+
+fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char) -> Tile {
+    let mut tile;
+    match tile_chr {
+        ' ' => {
+            tile = Tile::empty();
+        }
+
+        ';' => {
+            tile = Tile::rubble();
+        }
+
+        'w' => {
+            tile = Tile::water();
+        }
+        
+        '#' => {
+            tile = Tile::wall_with(MAP_WALL as char);
+        }
+
+        '"' => {
+            tile = Tile::grass();
+        }
+
+        _ => {
+            panic!(format!("Unexpected char '{}'", tile_chr));
+        }
+    }
+
+    if left_wall == '|' {
+        tile.left_wall = Wall::ShortWall;
+    }
+
+    if bottom_wall == '_' {
+        tile.bottom_wall = Wall::ShortWall;
+    }
+
+    return tile;
+}
+
+#[test]
+fn test_parse_ascii_map() {
+    let lines = vec!(vec!('|', '"', ' ', '#'),
+                     vec!(' ', ' ', ' ', ' '),
+                     vec!(' ', '#', ' ', ' '),
+                     vec!(' ', '_', ' ', '_'),
+                     vec!(' ', ' ', ' ', 'w'),
+                     vec!(' ', ' ', ' ', ' '),
+                     );
+    let tiles = parse_ascii_chars(lines);
+
+    let mut expected_tiles = vec![vec![Tile::empty(); 2]; 3];
+    expected_tiles[0][0].left_wall = Wall::ShortWall;
+    expected_tiles[0][0].surface = Surface::Grass;
+
+    expected_tiles[0][1].blocked = true;
+    expected_tiles[0][1].block_sight = true;
+    expected_tiles[0][1].tile_type = TileType::Wall;
+
+    expected_tiles[1][0].blocked = true;
+    expected_tiles[1][0].block_sight = true;
+    expected_tiles[1][0].tile_type = TileType::Wall;
+
+    expected_tiles[0][1].chr = MAP_WALL;
+    expected_tiles[1][0].chr = MAP_WALL;
+
+    expected_tiles[1][0].bottom_wall = Wall::ShortWall;
+    expected_tiles[1][1].bottom_wall = Wall::ShortWall;
+
+    expected_tiles[2][1] = Tile::water();
+
+    for (actual, expected) in tiles.iter().flatten().zip(expected_tiles.iter().flatten()) {
+        assert_eq!(expected, actual);
+    }
+}
+
 pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     let player_position: Pos;
 
@@ -45,15 +148,15 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
 
         MapLoadConfig::TestRandom => {
-            let new_map = Map::from_dims(30, 30);
+            let width: u32 = 30;
+            let height: u32 = 30;
+            let new_map = Map::from_dims(width, height);
             game.data.map = new_map;
             player_position = Pos::new(0, 0);
 
             let mut file = File::open("resources/wfc_seed_2.png").unwrap();
             let reader = BufReader::new(file);
             let seed_image = image::load(reader, image::ImageFormat::Png).unwrap();
-            // TODO add or
-            //
             let orientations = [Orientation::Original,
                                 Orientation::Clockwise90,
                                 Orientation::Clockwise180,
@@ -62,21 +165,21 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
                                 Orientation::DiagonallyFlippedClockwise90,
                                 Orientation::DiagonallyFlippedClockwise180,
                                 Orientation::DiagonallyFlippedClockwise270];
+            trace!("wfc start");
             let map_image = 
                 wfc_image::generate_image_with_rng(&seed_image,
                                                    core::num::NonZeroU32::new(3).unwrap(),
-                                                   wfc_image::Size::new(30, 30),
+                                                   wfc_image::Size::new(width, height),
                                                    &orientations, 
                                                    wfc_image::wrap::WrapNone,
                                                    ForbidNothing,
                                                    wfc_image::retry::NumTimes(3),
                                                    &mut game.rng).unwrap();
+            trace!("wfc end");
             map_image.save("wfc_map.png");
 
-            let perlin = Perlin::new();
-            let scaler = game.config.tile_noise_scaler;
-            for x in 0..30 {
-                for y in 0..30 {
+            for x in 0..width {
+                for y in 0..height {
                     let pixel = map_image.get_pixel(x, y);
                     if pixel.0[0] == 0 {
                         let pos = Pos::new(x as i32, y as i32);
@@ -105,7 +208,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
 
         MapLoadConfig::Random => {
-            game.data.map = Map::from_dims(MAP_WIDTH as usize, MAP_HEIGHT as usize);
+            game.data.map = Map::from_dims(MAP_WIDTH as u32, MAP_HEIGHT as u32);
             let starting_position = make_island(&mut game.data, &game.config, &mut game.msg_log, &mut game.rng);
             player_position = Pos::from(starting_position);
         }
@@ -145,7 +248,7 @@ pub fn read_map_xp(config: &Config,
     trace!("reading in map data");
     let xp = XpFile::read(&mut buf_reader).unwrap();
 
-    data.map = Map::from_dims(xp.layers[0].width, xp.layers[0].height);
+    data.map = Map::from_dims(xp.layers[0].width as u32, xp.layers[0].height as u32);
     let mut player_position = (0, 0);
 
     for (layer_index, layer) in xp.layers.iter().enumerate() {

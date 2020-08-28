@@ -682,7 +682,6 @@ dependencies = [
  "image 0.23.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "mint 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "noise 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rexpaint 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "roguelike_core 0.1.0",

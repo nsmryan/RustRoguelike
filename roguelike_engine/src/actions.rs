@@ -673,16 +673,8 @@ pub fn handle_input(game: &mut Game) -> Action {
             game.data.entities.fighter[&player_id].max_hp = god_mode_hp;
             game.data.entities.energy[&player_id] = 1000;
 
-            // set god mode flag
-            game.settings.god_mode = true;
-
-            // set all tiles to be transparent and walkable
-            for x in 0..game.data.map.tiles.len() {
-                for y in 0..game.data.map.tiles[0].len() {
-                    game.data.map[(x as i32, y as i32)].block_sight = false;
-                }
-            }
-            game.data.map.update_map();
+            // toggle god mode flag
+            game.settings.god_mode = !game.settings.god_mode;
         }
 
         // TODO console

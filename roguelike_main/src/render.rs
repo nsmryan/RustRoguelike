@@ -391,8 +391,6 @@ fn render_skill_menu(display_state: &mut DisplayState, game: &mut Game, area: &A
 }
 
 fn render_class_menu(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
-    let player_id = game.data.find_player().unwrap();
-
     // Render header
     draw_placard(display_state,
                  "Choice Class".to_string(),
@@ -1339,9 +1337,6 @@ fn render_fov_overlay(display_state: &mut DisplayState,
                       entity_id: EntityId,
                       area: &Area) {
     let player_id = game.data.find_player().unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
-
-    let entity_pos = game.data.entities.pos[&entity_id];
 
     let mut highlight_color = game.config.color_light_grey;
     highlight_color.a = game.config.grid_alpha_overlay;
@@ -1367,7 +1362,6 @@ fn render_movement_overlay(display_state: &mut DisplayState,
                            entity_id: EntityId,
                            area: &Area) {
     let player_id = game.data.find_player().unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
 
     let entity_pos = game.data.entities.pos[&entity_id];
 
