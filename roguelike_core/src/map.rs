@@ -91,6 +91,7 @@ pub enum MapLoadConfig {
     TestCorner,
     TestPlayer,
     FromFile(String),
+    FromAsciiMap(String),
 }
 
 impl Default for MapLoadConfig {

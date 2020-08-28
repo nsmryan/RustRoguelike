@@ -191,6 +191,13 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
             }
         }
 
+        MapLoadConfig::FromAsciiMap(file_name) => {
+            let tiles: Vec<Vec<Tile>> = parse_ascii_map(&format!("resources/{}", file_name));
+
+            game.data.map = Map::with_vec(tiles);
+            player_position = Pos::from(position);
+        }
+
         MapLoadConfig::FromFile(file_name) => {
             let maps: Vec<String> = parse_maps_file(&format!("resources/{}", file_name));
 

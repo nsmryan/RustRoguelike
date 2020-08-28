@@ -119,6 +119,7 @@ grid_alpha_visible: 30
 grid_alpha_overlay: 150
 ## Valid values for map_load
 # FromFile: load from map.xp file
+# FromAsciiMap: load from ascii map file
 # TestWall: test map for checking wall interactions
 # TestRandom: test random generation
 # TestMap: test map for unit tests
@@ -128,6 +129,7 @@ grid_alpha_overlay: 150
 # TestPlayer: test map for player interactions
 map_load: TestRandom
     #FromFile: "maps.txt"
+    FromAsciiMap: "ascii_map.txt"
 map_file: map.xp
 idle_speed: 0.3499999940395355
 draw_mouse_line: false
