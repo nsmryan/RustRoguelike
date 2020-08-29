@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io::BufReader;
 
+use rand::prelude::*;
+
 use rexpaint::*;
 
 use wfc_image::*;
@@ -25,41 +27,80 @@ pub fn parse_maps_file(file_name: &str) -> Vec<String> {
     return file_contents.lines().map(|s| s.to_string()).collect::<Vec<String>>();
 }
 
-pub fn parse_ascii_map(file_name: &str) -> Vec<Vec<Tile>> {
+
+fn remove_commas(s: String) -> String {
+    let s = s.chars().collect::<Vec<char>>();
+    let mut new_s = String::new();
+    let mut index = 0;
+    if s[0] == ',' {
+        new_s.push(' ');
+    }
+
+    while index < s.len() {
+        if s[index] == ',' {
+           if index + 1 < s.len() && s[index + 1] == ',' {
+                new_s.push(' ');
+           }
+        } else {
+            new_s.push(s[index]);
+        }
+        index += 1;
+    }
+
+    if s[s.len() - 1] == ',' {
+        new_s.push(' ');
+    }
+
+    return new_s;
+}
+
+#[test]
+fn test_remove_commas() {
+    assert_eq!("   ".to_string(), remove_commas(",,".to_string()));
+    assert_eq!("   ".to_string(), remove_commas(", ,".to_string()));
+    assert_eq!("   ".to_string(), remove_commas(" , , ".to_string()));
+    assert_eq!("  9".to_string(), remove_commas(" , ,9".to_string()));
+    assert_eq!("0 9".to_string(), remove_commas("0, ,9".to_string()));
+    assert_eq!("% %".to_string(), remove_commas("%,,%".to_string()));
+}
+
+pub fn parse_ascii_map(file_name: &str, game: &mut Game) -> Vec<Vec<Tile>> {
     let file_contents =
         std::fs::read_to_string(file_name).expect(&format!("Could not read {}", file_name));
 
     let lines = file_contents.lines()
-                             .map(|s| s.chars().collect::<Vec<char>>())
+                             .map(|l| remove_commas(l.to_string()))
+                             .map(|l| l.chars().collect::<Vec<char>>())
                              .collect::<Vec<Vec<char>>>();
 
-    return parse_ascii_chars(lines);
+    return parse_ascii_chars(lines, game);
 }
 
-fn parse_ascii_chars(lines: Vec<Vec<char>>) -> Vec<Vec<Tile>> {
+fn parse_ascii_chars(lines: Vec<Vec<char>>, game: &mut Game) -> Vec<Vec<Tile>> {
     assert!(lines.len() % 2 == 0);
-    assert!(lines[0].len() % 2 == 0);
+    assert!((lines[0].len() - 1)% 2 == 0);
 
     let height = lines.len() / 2;
-    let width = lines[0].len() / 2;
+    let width = (lines[0].len() / 2) - 1;
 
-    let mut tile_map = Vec::new();
+    let mut tile_map = vec![vec![Tile::empty(); height]; width];
     for y in 0..height {
-        let mut tiles = Vec::new();
         for x in 0..width {
-            let tile = tile_from_ascii(lines[y * 2][x * 2 + 1], lines[y * 2][x * 2], lines[y * 2 + 1][x * 2 + 1]);
-            tiles.push(tile);
+            let tile_chr = lines[y * 2][x * 2 + 1];
+            let left_wall = lines[y * 2][x * 2];
+            let bottom_wall = lines[y * 2 + 1][x * 2 + 1];
+            let tile = tile_from_ascii(tile_chr, left_wall, bottom_wall, Pos::new(x as i32, y as i32), game);
+            tile_map[x][y] = tile;
         }
-        tile_map.push(tiles);
     }
 
     return tile_map;
 }
 
-fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char) -> Tile {
+fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos, game: &mut Game) -> Tile {
     let mut tile;
     match tile_chr {
-        ' ' => {
+        ' ' | '\t' | '.' => {
             tile = Tile::empty();
         }
 
@@ -67,7 +108,7 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char) -> Tile {
             tile = Tile::rubble();
         }
 
-        'w' => {
+        '%' => {
             tile = Tile::water();
         }
         
@@ -79,6 +120,11 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char) -> Tile {
             tile = Tile::grass();
         }
 
+        'I' => {
+            tile = Tile::empty();
+            make_column(&mut game.data.entities, &game.config, pos, &mut game.msg_log);
+        }
+
         _ => {
             panic!(format!("Unexpected char '{}'", tile_chr));
         }
@@ -88,7 +134,7 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char) -> Tile {
         tile.left_wall = Wall::ShortWall;
     }
 
-    if bottom_wall == '_' {
+    if bottom_wall == '_' || bottom_wall == '\u{2014}' {
         tile.bottom_wall = Wall::ShortWall;
     }
 
@@ -131,6 +177,45 @@ fn test_parse_ascii_map() {
     }
 }
 
+pub fn generate_map(width: u32, height: u32, rng: &mut SmallRng) -> Map {
+    let mut new_map = Map::from_dims(width, height);
+
+    let mut file = File::open("resources/wfc_seed_2.png").unwrap();
+    let reader = BufReader::new(file);
+    let seed_image = image::load(reader, image::ImageFormat::Png).unwrap();
+    let orientations = [Orientation::Original,
+                        Orientation::Clockwise90,
+                        Orientation::Clockwise180,
+                        Orientation::Clockwise270,
+                        Orientation::DiagonallyFlipped,
+                        Orientation::DiagonallyFlippedClockwise90,
+                        Orientation::DiagonallyFlippedClockwise180,
+                        Orientation::DiagonallyFlippedClockwise270];
+    let map_image = 
+        wfc_image::generate_image_with_rng(&seed_image,
+                                           core::num::NonZeroU32::new(3).unwrap(),
+                                           wfc_image::Size::new(width, height),
+                                           &orientations, 
+                                           wfc_image::wrap::WrapNone,
+                                           ForbidNothing,
+                                           wfc_image::retry::NumTimes(3),
+                                           rng).unwrap();
+    map_image.save("wfc_map.png");
+
+    for x in 0..width {
+        for y in 0..height {
+            let pixel = map_image.get_pixel(x, y);
+            if pixel.0[0] == 0 {
+                let pos = Pos::new(x as i32, y as i32);
+                new_map[pos].chr = MAP_WALL as u8;
+                new_map[pos].blocked = true;
+                new_map[pos].block_sight = true;
+            }
+         }
+    }
+
+    return new_map;
+}
 pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     let player_position: Pos;
 
@@ -148,54 +233,16 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
 
         MapLoadConfig::TestRandom => {
-            let width: u32 = 30;
-            let height: u32 = 30;
-            let new_map = Map::from_dims(width, height);
-            game.data.map = new_map;
+            game.data.map = generate_map(20, 20, &mut game.rng);
             player_position = Pos::new(0, 0);
-
-            let mut file = File::open("resources/wfc_seed_2.png").unwrap();
-            let reader = BufReader::new(file);
-            let seed_image = image::load(reader, image::ImageFormat::Png).unwrap();
-            let orientations = [Orientation::Original,
-                                Orientation::Clockwise90,
-                                Orientation::Clockwise180,
-                                Orientation::Clockwise270,
-                                Orientation::DiagonallyFlipped,
-                                Orientation::DiagonallyFlippedClockwise90,
-                                Orientation::DiagonallyFlippedClockwise180,
-                                Orientation::DiagonallyFlippedClockwise270];
-            trace!("wfc start");
-            let map_image = 
-                wfc_image::generate_image_with_rng(&seed_image,
-                                                   core::num::NonZeroU32::new(3).unwrap(),
-                                                   wfc_image::Size::new(width, height),
-                                                   &orientations, 
-                                                   wfc_image::wrap::WrapNone,
-                                                   ForbidNothing,
-                                                   wfc_image::retry::NumTimes(3),
-                                                   &mut game.rng).unwrap();
-            trace!("wfc end");
-            map_image.save("wfc_map.png");
-
-            for x in 0..width {
-                for y in 0..height {
-                    let pixel = map_image.get_pixel(x, y);
-                    if pixel.0[0] == 0 {
-                        let pos = Pos::new(x as i32, y as i32);
-                        game.data.map[pos].chr = MAP_WALL as u8;
-                        game.data.map[pos].blocked = true;
-                        game.data.map[pos].block_sight = true;
-                   }
-                }
-            }
         }
 
         MapLoadConfig::FromAsciiMap(file_name) => {
-            let tiles: Vec<Vec<Tile>> = parse_ascii_map(&format!("resources/{}", file_name));
+            let tiles: Vec<Vec<Tile>> = parse_ascii_map(&format!("resources/{}", file_name), game);
 
             game.data.map = Map::with_vec(tiles);
-            player_position = Pos::from(position);
+
+            player_position = Pos::new(4, 4);
         }
 
         MapLoadConfig::FromFile(file_name) => {
