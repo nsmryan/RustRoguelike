@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::BufReader;
+use std::collections::HashSet;
 
 use rand::prelude::*;
 
@@ -16,6 +17,7 @@ use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
+use roguelike_core::utils::*;
 
 use crate::generation::*;
 use crate::game::*;
@@ -150,7 +152,8 @@ fn test_parse_ascii_map() {
                      vec!(' ', ' ', ' ', 'w'),
                      vec!(' ', ' ', ' ', ' '),
                      );
-    let tiles = parse_ascii_chars(lines);
+    let mut game = Game::new(0, Config::default()).unwrap();
+    let tiles = parse_ascii_chars(lines, &mut game);
 
     let mut expected_tiles = vec![vec![Tile::empty(); 2]; 3];
     expected_tiles[0][0].left_wall = Wall::ShortWall;
@@ -216,6 +219,226 @@ pub fn generate_map(width: u32, height: u32, rng: &mut SmallRng) -> Map {
 
     return new_map;
 }
+
+pub fn saturate_map(game: &mut Game) {
+    // find structures-
+    // find blocks that are next to exactly one block (search through all tiles, and
+    // don't accept tiles that are already accepted).
+    //
+    // then move along walls and edges, marking groups that:
+    // 1. are lines
+    // 2. are Ls
+    // 3. are bendy
+    // 4. split into structures (more then one next block in a move)
+    //
+    // break up long lines with rubble or gaps
+    // place grass in open areas and perhaps in very enclosed areas
+    // place rubble near blocks
+    // lone blocks might become columns
+    //
+    //
+    // place goal and exit, and pathing between them, knocking out tiles that
+    // block the player from completing the level.
+    let structures = find_structures(&game.data.map);
+    println!("{} singles", structures.iter().filter(|s| s.typ == StructureType::Single).count());
+    println!("{} lines", structures.iter().filter(|s| s.typ == StructureType::Line).count());
+    println!("{} Ls", structures.iter().filter(|s| s.typ == StructureType::Path).count());
+    println!("{} complex", structures.iter().filter(|s| s.typ == StructureType::Complex).count());
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug)]
+pub enum StructureType {
+    Single,
+    Line,
+    Path,
+    Complex,
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct Structure {
+    blocks: Vec<Pos>,
+    typ: StructureType,
+}
+
+impl Structure {
+    pub fn new() -> Structure {
+        return Structure { blocks: Vec::new(), typ: StructureType::Single };
+    }
+
+    pub fn add_block(&mut self, block: Pos) {
+        self.blocks.push(block);
+    }
+}
+
+fn process_block(block: Pos, structure: &mut Structure, map: &Map, seen: &mut HashSet<Pos>) {
+    let adjacent = adjacent_blocks(block, map, seen);
+
+    let mut needs_processing = false;
+    if adjacent.len() == 1 {
+        needs_processing = true;
+        if structure.typ == StructureType::Line && structure.blocks.len() > 1 {
+            let len = structure.blocks.len();
+            if sub_pos(structure.blocks[len - 2], structure.blocks[len - 1]) !=
+               sub_pos(structure.blocks[len - 1], adjacent[0]) {
+               structure.typ = StructureType::Path;
+            }
+        }
+
+    } else if adjacent.len() > 1 {
+        needs_processing = true;
+
+        // this structure must be complex- if there are multiple adj, they are new
+        // meaning we split in at least two directions
+        structure.typ = StructureType::Complex;
+    }
+
+    if needs_processing {
+        for adj in adjacent.iter() {
+            structure.add_block(*adj);
+            seen.insert(*adj);
+        }
+
+        for adj in adjacent.iter() {
+            process_block(*adj, structure, map, seen);
+        }
+    }
+}
+
+fn adjacent_blocks(block: Pos, map: &Map, seen: &HashSet<Pos>) -> Vec<Pos> {
+    let mut result = Vec::new();
+
+    let adjacents = [move_x(block, 1), move_y(block, 1), move_x(block, -1), move_y(block, -1)];
+    for adj in adjacents.iter() {
+        if map.is_within_bounds(*adj) && map[*adj].blocked && !seen.contains(&adj) {
+            result.push(*adj);
+        }
+    }
+
+    return result;
+}
+
+#[test]
+fn test_adjacent_blocks() {
+    let mut map = Map::from_dims(5, 5);
+    let mid = Pos::new(2, 2);
+    map[(2, 2)].blocked = true;
+
+    map[(1, 2)].blocked = true;
+    map[(2, 1)].blocked = true;
+    map[(3, 2)].blocked = true;
+    map[(2, 3)].blocked = true;
+
+    let mut seen = HashSet::new();
+
+    assert_eq!(4, adjacent_blocks(Pos::new(2, 2), &map, &seen).len());
+    assert_eq!(2, adjacent_blocks(Pos::new(1, 1), &map, &seen).len());
+    assert_eq!(1, adjacent_blocks(Pos::new(2, 1), &map, &seen).len());
+    seen.insert(Pos::new(1, 2));
+    assert_eq!(3, adjacent_blocks(Pos::new(2, 2), &map, &seen).len());
+}
+
+fn find_structures(map: &Map) -> Vec<Structure> {
+    let (width, height) = map.size();
+    let mut blocks = Vec::new();
+    for y in 0..height {
+        for x in 0..width {
+            if map[(x, y)].blocked {
+                blocks.push(Pos::new(x, y));
+            }
+        }
+    }
+
+    let mut structures = Vec::new();
+    let mut seen: HashSet<Pos> = HashSet::new();
+    for block in blocks {
+        if !seen.contains(&block) {
+            let mut structure = Structure::new();
+
+            let adjacent = adjacent_blocks(block, &map, &seen);
+
+            if adjacent.len() != 2 {
+                structure.add_block(block);
+                seen.insert(block);
+
+                if adjacent.len() == 1 {
+                    // found start of a structure (line, L, or complex)- process structure
+                    structure.typ = StructureType::Line;
+                    process_block(block, &mut structure, map, &mut seen);
+                } else if adjacent.len() > 2 {
+                    // found part of a complex structure- process all peices
+                    structure.typ = StructureType::Complex;
+
+                    for adj in adjacent.iter() {
+                        seen.insert(*adj);
+                    }
+
+                    for adj in adjacent {
+                        process_block(adj, &mut structure, map, &mut seen);
+                    }
+                }
+
+                structures.push(structure);
+            }
+            // else we are in the middle of a line, so we will pick it up later
+        }
+    }
+
+    return structures;
+}
+
+#[test]
+fn test_find_simple_structures() {
+    let mut map = Map::from_dims(5, 5);
+
+    // find a single line
+    map[(0, 2)].blocked = true;
+    map[(1, 2)].blocked = true;
+    map[(2, 2)].blocked = true;
+    let structures = find_structures(&map);
+    assert_eq!(1, structures.len());
+    assert_eq!(StructureType::Line, structures[0].typ);
+    assert_eq!(3, structures[0].blocks.len());
+
+    // add a lone block and check that it is found along with the line
+    map[(0, 0)].blocked = true;
+    let structures = find_structures(&map);
+    assert_eq!(2, structures.len());
+    assert!(structures.iter().find(|s| s.typ == StructureType::Single).is_some());
+    assert!(structures.iter().find(|s| s.typ == StructureType::Line).is_some());
+
+    // add a vertical line and check that all structures are found
+    map[(4, 0)].blocked = true;
+    map[(4, 1)].blocked = true;
+    map[(4, 2)].blocked = true;
+    map[(4, 3)].blocked = true;
+    let structures = find_structures(&map);
+    assert_eq!(3, structures.len());
+    assert!(structures.iter().find(|s| s.typ == StructureType::Single).is_some());
+    assert!(structures.iter().filter(|s| s.typ == StructureType::Line).count() == 2);
+}
+
+#[test]
+fn test_find_complex_structures() {
+    let mut map = Map::from_dims(5, 5);
+
+    // lay down an L
+    map[(0, 2)].blocked = true;
+    map[(1, 2)].blocked = true;
+    map[(2, 2)].blocked = true;
+    map[(2, 3)].blocked = true;
+    let structures = find_structures(&map);
+    assert_eq!(1, structures.len());
+    assert_eq!(StructureType::Path, structures[0].typ);
+    assert_eq!(4, structures[0].blocks.len());
+
+    // turn it into a 'complex' structure and check that it is discovered
+    map[(2, 1)].blocked = true;
+    let structures = find_structures(&map);
+    assert_eq!(1, structures.len());
+    assert_eq!(StructureType::Complex, structures[0].typ);
+    assert_eq!(5, structures[0].blocks.len());
+}
+
 pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     let player_position: Pos;
 
@@ -234,6 +457,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
 
         MapLoadConfig::TestRandom => {
             game.data.map = generate_map(20, 20, &mut game.rng);
+            saturate_map(game);
             player_position = Pos::new(0, 0);
         }
 
