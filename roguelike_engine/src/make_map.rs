@@ -4,6 +4,8 @@ use std::collections::HashSet;
 
 use rand::prelude::*;
 
+use pathfinding::directed::astar::astar;
+
 use rexpaint::*;
 
 use wfc_image::*;
@@ -220,30 +222,104 @@ pub fn generate_map(width: u32, height: u32, rng: &mut SmallRng) -> Map {
     return new_map;
 }
 
-pub fn saturate_map(game: &mut Game) {
+pub fn saturate_map(game: &mut Game) -> Pos {
     // find structures-
     // find blocks that are next to exactly one block (search through all tiles, and
     // don't accept tiles that are already accepted).
     //
-    // then move along walls and edges, marking groups that:
-    // 1. are lines
-    // 2. are Ls
-    // 3. are bendy
-    // 4. split into structures (more then one next block in a move)
-    //
-    // break up long lines with rubble or gaps
     // place grass in open areas and perhaps in very enclosed areas
     // place rubble near blocks
-    // lone blocks might become columns
-    //
     //
     // place goal and exit, and pathing between them, knocking out tiles that
     // block the player from completing the level.
-    let structures = find_structures(&game.data.map);
+    let mut structures = find_structures(&game.data.map);
     println!("{} singles", structures.iter().filter(|s| s.typ == StructureType::Single).count());
     println!("{} lines", structures.iter().filter(|s| s.typ == StructureType::Line).count());
     println!("{} Ls", structures.iter().filter(|s| s.typ == StructureType::Path).count());
     println!("{} complex", structures.iter().filter(|s| s.typ == StructureType::Complex).count());
+
+    let mut to_remove: Vec<usize> = Vec::new();
+    for (index, structure) in structures.iter().enumerate() {
+        if structure.typ == StructureType::Single {
+            if game.rng.gen_range(0.0, 1.0) > 0.1 {
+                make_column(&mut game.data.entities, &game.config, structure.blocks[0], &mut game.msg_log);
+                to_remove.push(index);
+            }
+        } else if structure.typ == StructureType::Line { 
+            if structure.blocks.len() > 5 {
+                let index = game.rng.gen_range(0, structure.blocks.len());
+                let block = structure.blocks[index];
+                game.data.map[block] = Tile::empty();
+                game.data.map[block].surface = Surface::Rubble;
+            }
+        }
+    }
+
+    to_remove.sort();
+    to_remove.reverse();
+    for index in to_remove.iter() {
+        for block in structures[*index].blocks.iter() {
+            game.data.map[*block] = Tile::empty();
+        }
+        structures.swap_remove(*index);
+    }
+
+    // place goal and key
+    let (width, height) = game.data.map.size();
+
+    let key_x = game.rng.gen_range(0, width);
+    let key_y = game.rng.gen_range(0, height);
+    let key_pos = Pos::new(key_x, key_y);
+    game.data.map[key_pos] = Tile::empty();
+    make_key(&mut game.data.entities, &game.config, key_pos, &mut game.msg_log);
+
+    let goal_x = game.rng.gen_range(0, width);
+    let goal_y = game.rng.gen_range(0, height);
+    let goal_pos = Pos::new(goal_x, goal_y);
+    game.data.map[goal_pos] = Tile::empty();
+    make_exit(&mut game.data.entities, &game.config, goal_pos, &mut game.msg_log);
+
+    fn blocked_tile_cost(pos: Pos, map: &Map) -> i32 {
+        if map[pos].blocked {
+            return 10;
+        } 
+
+        return 0;
+    }
+
+    let player_pos = Pos::new(0, 0);
+
+    // clear a path to the key
+    let key_path = 
+        astar(&player_pos,
+              |&pos| game.data.map.neighbors(pos).iter().map(|p| (*p, 1)).collect::<Vec<(Pos, i32)>>(),
+              |&pos| blocked_tile_cost(pos, &game.data.map) + distance(player_pos, pos) as i32,
+              |&pos| pos == key_pos);
+
+    if let Some((results, _cost)) = key_path {
+        for pos in results {
+            if game.data.map[pos].blocked {
+                game.data.map[pos] = Tile::empty();
+            }
+        }
+    }
+
+    // clear a path to the goal
+    let goal_path = 
+        astar(&player_pos,
+              |&pos| game.data.map.neighbors(pos).iter().map(|p| (*p, 1)).collect::<Vec<(Pos, i32)>>(),
+              |&pos| blocked_tile_cost(pos, &game.data.map) + distance(player_pos, pos) as i32,
+              |&pos| pos == goal_pos);
+
+    if let Some((results, _cost)) = goal_path {
+        for pos in results {
+            if game.data.map[pos].blocked {
+                game.data.map[pos] = Tile::empty();
+            }
+        }
+    }
+
+    return player_pos;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug)]
@@ -457,8 +533,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
 
         MapLoadConfig::TestRandom => {
             game.data.map = generate_map(20, 20, &mut game.rng);
-            saturate_map(game);
-            player_position = Pos::new(0, 0);
+            player_position = saturate_map(game);
         }
 
         MapLoadConfig::FromAsciiMap(file_name) => {

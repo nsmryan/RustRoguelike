@@ -746,6 +746,21 @@ impl Map {
         return circle_positions.iter().map(|pos| *pos).collect();
     }
 
+    pub fn neighbors(&self, pos: Pos) -> SmallVec<[Pos; 8]> {
+        let neighbors = [(1, 0),  (1, 1),  (0, 1), 
+                         (-1, 1), (-1, 0), (-1, -1),
+                         (0, -1), (1, -1)];
+
+        let mut result = SmallVec::new();
+        for delta in neighbors.iter() {
+            let new_pos = pos + Vector2D::new(delta.0, delta.1);
+            if self.is_within_bounds(new_pos) {
+                result.push(new_pos);
+            }
+        }
+
+        return result;
+    }
     pub fn reachable_neighbors(&self, pos: Pos) -> SmallVec<[Pos; 8]> {
         let neighbors = [(1, 0),  (1, 1),  (0, 1), 
                          (-1, 1), (-1, 0), (-1, -1),
