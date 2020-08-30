@@ -104,6 +104,8 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         .accelerated().build().map_err(|e| e.to_string())?;
     let texture_creator = canvas.texture_creator();
 
+    let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
+
     /* Create Display Structures */
     let screen_sections =
         Plan::vert("screen", 0.80, Plan::zone("map"),

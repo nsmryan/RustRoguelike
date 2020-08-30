@@ -127,9 +127,9 @@ grid_alpha_overlay: 150
 # Empty: empty map, used in unit tests 
 # TestCorner: test map with corners of different types
 # TestPlayer: test map for player interactions
-map_load: #TestRandom
+map_load: TestRandom
 # FromAsciiMap: "Vault_Level1.csv"
-    FromFile: "maps.txt"
+#FromFile: "maps.txt"
 map_file: map.xp
 idle_speed: 0.3499999940395355
 draw_mouse_line: false
