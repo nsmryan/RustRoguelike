@@ -355,8 +355,12 @@ fn render_info(display_state: &mut DisplayState,
 
         y_pos = 10;
         let text_pos = Pos::new(1, y_pos);
-        text_list.push(format!("Surface is"));
+        text_list.push(format!("Tile is"));
         text_list.push(format!("{:?}",  game.data.map[mouse].surface));
+
+        if game.data.map[mouse].blocked {
+            text_list.push(format!("blocked"));
+        }
 
         display_state.draw_text_list(&text_list,
                                      text_pos,
@@ -1115,6 +1119,17 @@ fn render_overlays(display_state: &mut DisplayState,
                 if in_fov_lines && !in_fov {
                     display_state.draw_tile_outline(pos, area, highlight_color_lines);
                 }
+            }
+        }
+    }
+
+    if game.config.overlay_floodfill {
+        let highlight_color = game.config.color_light_orange;
+        for y in 0..game.data.map.height() {
+            for x in 0..game.data.map.width() {
+                let pos = Pos::new(x, y);
+
+                let near_count = game.data.map.floodfill(pos, 3).len();
             }
         }
     }

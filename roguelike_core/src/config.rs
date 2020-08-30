@@ -70,6 +70,7 @@ pub struct Config {
     pub overlay_directions: bool,
     pub overlay_player_fov: bool,
     pub overlay_fov_alg: bool,
+    pub overlay_floodfill: bool,
     pub fov_radius_monster: i32,
     pub fov_radius_player: i32,
     pub console_max_height: u32,

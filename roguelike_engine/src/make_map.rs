@@ -281,7 +281,7 @@ pub fn saturate_map(game: &mut Game) -> Pos {
 
     fn blocked_tile_cost(pos: Pos, map: &Map) -> i32 {
         if map[pos].blocked {
-            return 10;
+            return 15;
         } 
 
         return 0;

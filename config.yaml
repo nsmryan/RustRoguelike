@@ -127,9 +127,9 @@ grid_alpha_overlay: 150
 # Empty: empty map, used in unit tests 
 # TestCorner: test map with corners of different types
 # TestPlayer: test map for player interactions
-map_load: TestRandom
+map_load: #TestRandom
 # FromAsciiMap: "Vault_Level1.csv"
-    #FromFile: "maps.txt"
+    FromFile: "maps.txt"
 map_file: map.xp
 idle_speed: 0.3499999940395355
 draw_mouse_line: false
@@ -158,6 +158,7 @@ sound_radius_hammer: 3
 overlay_directions: false
 overlay_player_fov: false
 overlay_fov_alg: true
+overlay_floodfill: false
 fov_radius_monster: 6
 fov_radius_player: 6
 console_max_height: 400
@@ -166,4 +167,4 @@ sound_radius_sneak: 1
 sound_radius_walk: 2
 sound_radius_run: 4
 take_screenshot: false
-show_info: false
+show_info: true
