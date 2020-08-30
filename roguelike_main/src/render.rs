@@ -88,6 +88,18 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
                     render_effects(display_state, game, &area);
 
                     render_overlays(display_state, game, mouse_map_pos, &area);
+                    draw_char_with_font(&mut display_state.canvas,
+                                        &mut display_state.font_map,
+                                        'a',
+                                        Pos::new(2, 2),
+                                        game.config.color_warm_grey,
+                                        &area);
+                    draw_text_with_font(&mut display_state.canvas,
+                                        &mut display_state.font_map,
+                                        "test",
+                                        Pos::new(1, 2),
+                                        game.config.color_warm_grey,
+                                        &area);
                 }
             }
 
@@ -1130,6 +1142,7 @@ fn render_overlays(display_state: &mut DisplayState,
                 let pos = Pos::new(x, y);
 
                 let near_count = game.data.map.floodfill(pos, 3).len();
+
             }
         }
     }

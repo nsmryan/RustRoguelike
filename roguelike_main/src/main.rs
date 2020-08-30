@@ -9,6 +9,7 @@ use std::fs;
 use std::io::{BufRead, Write};
 use std::time::{Duration, Instant};
 use std::path::Path;
+use std::collections::HashMap;
 //use std::collections::hash_map::DefaultHasher;
 //use std::hash::{Hash, Hasher};
 use std::str::FromStr;
@@ -19,6 +20,7 @@ use sdl2::mouse::MouseButton;
 use sdl2::keyboard::{Mod, Keycode};
 use sdl2::render::{TextureCreator};
 use sdl2::video::WindowContext;
+use sdl2::render::Texture;
 
 use walkdir::WalkDir;
 use bmp;
@@ -104,7 +106,8 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         .accelerated().build().map_err(|e| e.to_string())?;
     let texture_creator = canvas.texture_creator();
 
-    //let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
+    let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
+    let font_map = FontMap::new(&ttf_context, &texture_creator, "Monoid.ttf".to_string(), 16);
 
     /* Create Display Structures */
     let screen_sections =
@@ -117,7 +120,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         .expect("Could not load texture!");
 
     let mut display_state =
-        DisplayState::new(screen_sections, font_image, canvas);
+        DisplayState::new(screen_sections, font_image, font_map, canvas);
 
     /* Load Textures */
     load_sprites(&texture_creator, &mut display_state);
@@ -292,6 +295,10 @@ pub fn game_loop(mut game: Game, mut display_state: DisplayState, opts: GameOpti
 
         /* Draw the Game to the Screen */
         render_all(&mut display_state, &mut game)?;
+
+        //display_state.canvas.copy(&display_state.text_font,
+        //                          Some(sdl2::rect::Rect::new('a' as i32 * 8 - 8, 0, 8, 18)),
+        //                          Some(sdl2::rect::Rect::new(10, 10, 8, 18)));
 
         display_state.update_display();
 
@@ -516,7 +523,7 @@ pub fn take_screenshot(game: &mut Game, display_state: &mut DisplayState) -> Res
         let pixel = bmp::Pixel::new(pixels[byte_index], pixels[byte_index + 1], pixels[byte_index + 2]);
         image.set_pixel(index % width, index / width, pixel);
     }
-    image.save("screenshoot.bmp");
+    image.save("screenshot.bmp");
 
     return Ok(());
 }

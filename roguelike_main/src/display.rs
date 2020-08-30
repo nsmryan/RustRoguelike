@@ -1,7 +1,11 @@
+use std::rc::Rc;
+use std::collections::HashMap;
+
 use sdl2::render::{Texture, WindowCanvas, TextureCreator};
 use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{Color as Sdl2Color};
+use sdl2::ttf::{Font, Sdl2TtfContext};
 
 use indexmap::map::IndexMap;
 
@@ -44,6 +48,7 @@ impl Impression {
 
 pub struct DisplayState {
     pub font_image: Texture,
+    pub font_map: FontMap,
     pub sprites: IndexMap<SpriteKey, SpriteSheet>,
     pub next_sprite_key: i64,
     pub screen_sections: Plan,
@@ -63,12 +68,14 @@ pub struct DisplayState {
 impl DisplayState {
     pub fn new(screen_sections: Plan,
                font_image: Texture,
+               font_map: FontMap,
                canvas: WindowCanvas) -> DisplayState {
 
         let texture_creator = canvas.texture_creator();
 
         return DisplayState {
             font_image,
+            font_map,
             sprites: IndexMap::new(),
             next_sprite_key: 0,
             screen_sections,
@@ -574,6 +581,35 @@ impl DisplayState {
 }
 
 
+pub struct FontMap {
+    map: HashMap<char, Texture>,
+    width: u32,
+    height: u32,
+}
+
+impl FontMap {
+    pub fn new(ttf_context: &Sdl2TtfContext, texture_creator: &TextureCreator<WindowContext>, file_name: String, font_size: u16) -> FontMap {
+        let font = ttf_context.load_font("resources/Monoid.ttf", font_size).expect("Could not load font file!");
+
+        let mut font_map: HashMap<char, Texture> = HashMap::new();
+        let mut width = 0;
+        let mut height = 0;
+        for chr_ix in 1..=255u8 {
+            let chr_surface = font.render_latin1(&[chr_ix]).solid(sdl2::pixels::Color::WHITE).unwrap();
+            let char_texture = chr_surface.as_texture(&texture_creator).unwrap();
+
+            let query = char_texture.query();
+            width = query.width;
+            height = query.height;
+
+            font_map.insert(chr_ix as char, char_texture);
+        }
+
+        return FontMap {map: font_map, width, height };
+    }
+}
+
+
 pub struct SpriteSheet {
     pub texture: Texture,
     pub name: String,
@@ -673,3 +709,56 @@ pub fn draw_char(canvas: &mut WindowCanvas,
                    false,
                    false).unwrap();
 }
+
+pub fn draw_text_with_font(canvas: &mut WindowCanvas,
+                           font_map: &mut FontMap,
+                           text: &str,
+                           pos: Pos,
+                           color: Color,
+                           area: &Area) {
+    let total_width = font_map.width * text.len() as u32;
+    let tile_rect = area.char_rect(pos.x, pos.y);
+
+    let each_width = tile_rect.w / text.len() as i32;
+
+    let y = tile_rect.y + (tile_rect.h / 2) - (font_map.height as i32 / 2);
+    for (index, chr) in text.chars().enumerate() {
+        let tex = font_map.map.get_mut(&chr).unwrap();
+
+        let dst = Rect::new(tile_rect.x + index as i32 * font_map.width as i32,
+                            y,
+                            font_map.width,
+                            font_map.height);
+
+        tex.set_color_mod(color.r, color.g, color.b);
+        tex.set_alpha_mod(color.a);
+
+        canvas.copy(tex,
+                    None,
+                    Some(dst)).unwrap();
+    }
+}
+
+pub fn draw_char_with_font(canvas: &mut WindowCanvas,
+                           font_map: &mut FontMap,
+                           chr: char,
+                           pos: Pos,
+                           color: Color,
+                           area: &Area) {
+    let tex = font_map.map.get_mut(&chr).unwrap();
+
+    let tile_rect = area.char_rect(pos.x, pos.y);
+
+    let dst = Rect::new(tile_rect.x + (tile_rect.w / 2) - (font_map.width as i32 / 2),
+                        tile_rect.y + (tile_rect.h / 2) - (font_map.height as i32 / 2),
+                        font_map.width,
+                        font_map.height);
+
+    tex.set_color_mod(color.r, color.g, color.b);
+    tex.set_alpha_mod(color.a);
+
+    canvas.copy(tex,
+                None,
+                Some(dst)).unwrap();
+}
+
