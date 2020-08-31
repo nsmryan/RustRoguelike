@@ -722,10 +722,12 @@ pub fn draw_text_with_font(canvas: &mut WindowCanvas,
     let each_width = tile_rect.w / text.len() as i32;
 
     let y = tile_rect.y + (tile_rect.h / 2) - (font_map.height as i32 / 2);
+    let x_offset = (tile_rect.w - total_width as i32) / 2;
     for (index, chr) in text.chars().enumerate() {
         let tex = font_map.map.get_mut(&chr).unwrap();
 
-        let dst = Rect::new(tile_rect.x + index as i32 * font_map.width as i32,
+        let x = x_offset + tile_rect.x + index as i32 * font_map.width as i32;
+        let dst = Rect::new(x,
                             y,
                             font_map.width,
                             font_map.height);

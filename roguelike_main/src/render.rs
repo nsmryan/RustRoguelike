@@ -88,18 +88,6 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
                     render_effects(display_state, game, &area);
 
                     render_overlays(display_state, game, mouse_map_pos, &area);
-                    draw_char_with_font(&mut display_state.canvas,
-                                        &mut display_state.font_map,
-                                        'a',
-                                        Pos::new(2, 2),
-                                        game.config.color_warm_grey,
-                                        &area);
-                    draw_text_with_font(&mut display_state.canvas,
-                                        &mut display_state.font_map,
-                                        "test",
-                                        Pos::new(1, 2),
-                                        game.config.color_warm_grey,
-                                        &area);
                 }
             }
 
@@ -1135,14 +1123,33 @@ fn render_overlays(display_state: &mut DisplayState,
         }
     }
 
+    // NOTE floodfill ranges:
+    // 4-5 is the end of a cooridor
+    // < 14 is pretty enclosed
+    // 14-24 is within the corner of a building or at an opening from an enclosed space
+    // low 30s tend to be next to a shear wall
+    // 40 are nearly fully open
+    // 49 may be fully open
     if game.config.overlay_floodfill {
         let highlight_color = game.config.color_light_orange;
         for y in 0..game.data.map.height() {
             for x in 0..game.data.map.width() {
                 let pos = Pos::new(x, y);
 
-                let near_count = game.data.map.floodfill(pos, 3).len();
+                if !game.data.map[pos].blocked {
+                    let near_count = game.data.map.floodfill(pos, 3).len();
 
+                    let amount = near_count as f32 / 50.0;
+                    let adj_color = lerp_color(game.config.color_ice_blue, game.config.color_red, amount);
+                    display_state.draw_char(MAP_EMPTY_CHAR as char, pos, adj_color, area);
+
+                    draw_text_with_font(&mut display_state.canvas,
+                                        &mut display_state.font_map,
+                                        &format!("{}", near_count),
+                                        pos,
+                                        highlight_color,
+                                        area);
+                }
             }
         }
     }

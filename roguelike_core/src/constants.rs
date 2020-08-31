@@ -106,6 +106,7 @@ pub const MAP_DOT_BOTTOM_LEFT: u8 = 161;
 pub const MAP_DOT_BOTTOM_RIGHT: u8 = 162;
 
 pub const MAP_SMALL_DOT_MIDDLE: u8 = 250;
+pub const MAP_FULL: u8 = 13;
 pub const MAP_STAR: u8 = 15;
 pub const MAP_ORB: u8 = 135;
 pub const MAP_WALL: u8 = 150;
