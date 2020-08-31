@@ -759,7 +759,11 @@ pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked:
     return movement;
 }
 
-pub fn entity_move_blocked_by_entity(entity_id: EntityId, other_id: EntityId, move_pos: Pos, delta_pos: Pos, data: &GameData) -> Option<Movement> {
+pub fn entity_move_blocked_by_entity(entity_id: EntityId,
+                                     other_id: EntityId,
+                                     move_pos: Pos,
+                                     delta_pos: Pos,
+                                     data: &GameData) -> Option<Movement> {
     let movement: Option<Movement>;
 
     let pos = data.entities.pos[&entity_id];
@@ -769,6 +773,9 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId, other_id: EntityId, mo
     } else if data.entities.blocks[&other_id] {
         let other_pos = data.entities.pos[&other_id];
         let next = next_pos(pos, delta_pos);
+        if !data.map.is_within_bounds(next) {
+            return None;
+        }
 
         let other_to_next = sub_pos(next, other_pos);
 
