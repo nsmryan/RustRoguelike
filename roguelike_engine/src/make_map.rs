@@ -222,17 +222,7 @@ pub fn generate_map(width: u32, height: u32, rng: &mut SmallRng) -> Map {
     return new_map;
 }
 
-pub fn saturate_map(game: &mut Game) -> Pos {
-    // find structures-
-    // find blocks that are next to exactly one block (search through all tiles, and
-    // don't accept tiles that are already accepted).
-    //
-    // place grass in open areas and perhaps in very enclosed areas
-    // place rubble near blocks
-    //
-    // place goal and exit, and pathing between them, knocking out tiles that
-    // block the player from completing the level.
-
+pub fn handle_diagonal_full_tile_walls(game: &mut Game) {
     let (width, height) = game.data.map.size();
 
     // ensure that diagonal full tile walls do not occur.
@@ -251,12 +241,28 @@ pub fn saturate_map(game: &mut Game) -> Pos {
             }
         }
     }
+}
+
+pub fn saturate_map(game: &mut Game) -> Pos {
+    // find structures-
+    // find blocks that are next to exactly one block (search through all tiles, and
+    // don't accept tiles that are already accepted).
+    //
+    // place grass in open areas and perhaps in very enclosed areas
+    // place rubble near blocks
+    //
+    // place goal and exit, and pathing between them, knocking out tiles that
+    // block the player from completing the level.
+
+    handle_diagonal_full_tile_walls(game);
 
     let mut structures = find_structures(&game.data.map);
     println!("{} singles", structures.iter().filter(|s| s.typ == StructureType::Single).count());
     println!("{} lines", structures.iter().filter(|s| s.typ == StructureType::Line).count());
     println!("{} Ls", structures.iter().filter(|s| s.typ == StructureType::Path).count());
     println!("{} complex", structures.iter().filter(|s| s.typ == StructureType::Complex).count());
+
+    let (width, height) = game.data.map.size();
 
     let mut to_remove: Vec<usize> = Vec::new();
     for (index, structure) in structures.iter().enumerate() {
