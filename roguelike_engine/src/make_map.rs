@@ -222,7 +222,7 @@ pub fn generate_map(width: u32, height: u32, rng: &mut SmallRng) -> Map {
     return new_map;
 }
 
-pub fn handle_diagonal_full_tile_walls(game: &mut Game) {
+fn handle_diagonal_full_tile_walls(game: &mut Game) {
     let (width, height) = game.data.map.size();
 
     // ensure that diagonal full tile walls do not occur.
@@ -243,7 +243,62 @@ pub fn handle_diagonal_full_tile_walls(game: &mut Game) {
     }
 }
 
-pub fn saturate_map(game: &mut Game) -> Pos {
+fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
+    let (width, height) = game.data.map.size();
+
+    // place goal and key
+    let key_x = game.rng.gen_range(0, width);
+    let key_y = game.rng.gen_range(0, height);
+    let key_pos = Pos::new(key_x, key_y);
+    game.data.map[key_pos] = Tile::empty();
+    make_key(&mut game.data.entities, &game.config, key_pos, &mut game.msg_log);
+
+    let goal_x = game.rng.gen_range(0, width);
+    let goal_y = game.rng.gen_range(0, height);
+    let goal_pos = Pos::new(goal_x, goal_y);
+    game.data.map[goal_pos] = Tile::empty();
+    make_exit(&mut game.data.entities, &game.config, goal_pos, &mut game.msg_log);
+
+    fn blocked_tile_cost(pos: Pos, map: &Map) -> i32 {
+        if map[pos].blocked {
+            return 15;
+        } 
+
+        return 0;
+    }
+
+    // clear a path to the key
+    let key_path = 
+        astar(&player_pos,
+              |&pos| game.data.map.neighbors(pos).iter().map(|p| (*p, 1)).collect::<Vec<(Pos, i32)>>(),
+              |&pos| blocked_tile_cost(pos, &game.data.map) + distance(player_pos, pos) as i32,
+              |&pos| pos == key_pos);
+
+    if let Some((results, _cost)) = key_path {
+        for pos in results {
+            if game.data.map[pos].blocked {
+                game.data.map[pos] = Tile::empty();
+            }
+        }
+    }
+
+    // clear a path to the goal
+    let goal_path = 
+        astar(&player_pos,
+              |&pos| game.data.map.neighbors(pos).iter().map(|p| (*p, 1)).collect::<Vec<(Pos, i32)>>(),
+              |&pos| blocked_tile_cost(pos, &game.data.map) + distance(player_pos, pos) as i32,
+              |&pos| pos == goal_pos);
+
+    if let Some((results, _cost)) = goal_path {
+        for pos in results {
+            if game.data.map[pos].blocked {
+                game.data.map[pos] = Tile::empty();
+            }
+        }
+    }
+}
+
+fn saturate_map(game: &mut Game) -> Pos {
     // find structures-
     // find blocks that are next to exactly one block (search through all tiles, and
     // don't accept tiles that are already accepted).
@@ -290,57 +345,38 @@ pub fn saturate_map(game: &mut Game) -> Pos {
         structures.swap_remove(*index);
     }
 
-    // place goal and key
-    let key_x = game.rng.gen_range(0, width);
-    let key_y = game.rng.gen_range(0, height);
-    let key_pos = Pos::new(key_x, key_y);
-    game.data.map[key_pos] = Tile::empty();
-    make_key(&mut game.data.entities, &game.config, key_pos, &mut game.msg_log);
-
-    let goal_x = game.rng.gen_range(0, width);
-    let goal_y = game.rng.gen_range(0, height);
-    let goal_pos = Pos::new(goal_x, goal_y);
-    game.data.map[goal_pos] = Tile::empty();
-    make_exit(&mut game.data.entities, &game.config, goal_pos, &mut game.msg_log);
-
-    fn blocked_tile_cost(pos: Pos, map: &Map) -> i32 {
-        if map[pos].blocked {
-            return 15;
-        } 
-
-        return 0;
-    }
-
     let player_pos = Pos::new(0, 0);
 
-    // clear a path to the key
-    let key_path = 
-        astar(&player_pos,
-              |&pos| game.data.map.neighbors(pos).iter().map(|p| (*p, 1)).collect::<Vec<(Pos, i32)>>(),
-              |&pos| blocked_tile_cost(pos, &game.data.map) + distance(player_pos, pos) as i32,
-              |&pos| pos == key_pos);
+    place_key_and_goal(game, player_pos);
 
-    if let Some((results, _cost)) = key_path {
-        for pos in results {
-            if game.data.map[pos].blocked {
-                game.data.map[pos] = Tile::empty();
+    let mut potential_grass_pos = Vec::new();
+    for x in 0..width {
+        for y in 0..height {
+            let pos = Pos::new(x, y);
+
+            if !game.data.map[pos].blocked {
+                let count = game.data.map.floodfill(pos, 3).len();
+                if count > 28 && count < 35 {
+                    potential_grass_pos.push(pos);
+                }
             }
         }
     }
+    potential_grass_pos.shuffle(&mut game.rng);
+    let num_grass_to_place = game.rng.gen_range(4, 8);
+    let num_grass_to_place = std::cmp::min(num_grass_to_place, potential_grass_pos.len());
+    for pos_index in 0..num_grass_to_place {
+        let pos = potential_grass_pos[pos_index];
+        game.data.map[pos].surface = Surface::Grass;
 
-    // clear a path to the goal
-    let goal_path = 
-        astar(&player_pos,
-              |&pos| game.data.map.neighbors(pos).iter().map(|p| (*p, 1)).collect::<Vec<(Pos, i32)>>(),
-              |&pos| blocked_tile_cost(pos, &game.data.map) + distance(player_pos, pos) as i32,
-              |&pos| pos == goal_pos);
-
-    if let Some((results, _cost)) = goal_path {
-        for pos in results {
-            if game.data.map[pos].blocked {
-                game.data.map[pos] = Tile::empty();
+        for _ in 0..4 {
+            let offset_pos = Pos::new(pos.x + game.rng.gen_range(0, 3),
+                                      pos.y + game.rng.gen_range(0, 3));
+            if !game.data.map[offset_pos].blocked {
+                game.data.map[offset_pos].surface = Surface::Grass;
             }
         }
+
     }
 
     return player_pos;
