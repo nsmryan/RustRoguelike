@@ -19,6 +19,7 @@ use euclid::*;
 use serde_derive::*;
 
 use crate::types::*;
+use crate::constants::*;
 use crate::utils::*;
 use crate::movement::Direction;
 
@@ -158,18 +159,18 @@ impl Tile {
     }
 
     pub fn wall() -> Self {
-        return Tile::wall_with(' ');
+        return Tile::wall_with(MAP_WALL as char);
     }
 
     pub fn wall_with(chr: char) -> Self {
         Tile { blocked: true,
-        block_sight: true,
-        explored: false,
-        tile_type: TileType::Wall,
-        bottom_wall: Wall::Empty,
-        left_wall: Wall::Empty,
-        chr: chr as u8,
-        surface: Surface::Floor,
+               block_sight: true,
+               explored: false,
+               tile_type: TileType::Wall,
+               bottom_wall: Wall::Empty,
+               left_wall: Wall::Empty,
+               chr: chr as u8,
+               surface: Surface::Floor,
         }
     }
 

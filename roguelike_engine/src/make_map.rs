@@ -232,6 +232,26 @@ pub fn saturate_map(game: &mut Game) -> Pos {
     //
     // place goal and exit, and pathing between them, knocking out tiles that
     // block the player from completing the level.
+
+    let (width, height) = game.data.map.size();
+
+    // ensure that diagonal full tile walls do not occur.
+    for y in 0..(height - 1) {
+        for x in 0..(width - 1) {
+            if game.data.map[(x, y)].blocked         && 
+               game.data.map[(x + 1, y + 1)].blocked &&
+               !game.data.map[(x + 1, y)].blocked    && 
+               !game.data.map[(x, y + 1)].blocked {
+                   game.data.map[(x + 1, y)] = Tile::wall();
+            } else if game.data.map[(x + 1, y)].blocked  && 
+                      game.data.map[(x, y + 1)].blocked  &&
+                      !game.data.map[(x, y)].blocked &&
+                      !game.data.map[(x + 1, y + 1)].blocked {
+                   game.data.map[(x, y)] = Tile::wall();
+            }
+        }
+    }
+
     let mut structures = find_structures(&game.data.map);
     println!("{} singles", structures.iter().filter(|s| s.typ == StructureType::Single).count());
     println!("{} lines", structures.iter().filter(|s| s.typ == StructureType::Line).count());
@@ -265,8 +285,6 @@ pub fn saturate_map(game: &mut Game) -> Pos {
     }
 
     // place goal and key
-    let (width, height) = game.data.map.size();
-
     let key_x = game.rng.gen_range(0, width);
     let key_y = game.rng.gen_range(0, height);
     let key_pos = Pos::new(key_x, key_y);
