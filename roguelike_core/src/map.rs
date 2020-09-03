@@ -867,6 +867,29 @@ impl Map {
 
         return flood;
     }
+
+    pub fn get_all_pos(&self) -> Vec<Pos> {
+        let (width, height) = self.size();
+        return (0..width).cartesian_product(0..height)
+                         .map(|pair| Pos::from(pair))
+                         .collect::<Vec<Pos>>();
+    }
+
+    pub fn get_empty_pos(&self) -> Vec<Pos> {
+        let (width, height) = self.size();
+        return (0..width).cartesian_product(0..height)
+                         .map(|pair| Pos::from(pair))
+                         .filter(|pos| self[*pos].tile_type != TileType::Wall)
+                         .collect::<Vec<Pos>>();
+    }
+
+    pub fn get_wall_pos(&self) -> Vec<Pos> {
+        let (width, height) = self.size();
+        return (0..width).cartesian_product(0..height)
+                         .map(|pair| Pos::from(pair))
+                         .filter(|pos| self[*pos].tile_type == TileType::Wall)
+                         .collect::<Vec<Pos>>();
+    }
 }
 
 impl Index<(i32, i32)> for Map {

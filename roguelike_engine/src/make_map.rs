@@ -212,9 +212,7 @@ pub fn generate_map(width: u32, height: u32, rng: &mut SmallRng) -> Map {
             let pixel = map_image.get_pixel(x, y);
             if pixel.0[0] == 0 {
                 let pos = Pos::new(x as i32, y as i32);
-                new_map[pos].chr = MAP_WALL as u8;
-                new_map[pos].blocked = true;
-                new_map[pos].block_sight = true;
+                new_map[pos] = Tile::wall_with(MAP_WALL as char);
             }
          }
     }
@@ -240,6 +238,40 @@ fn handle_diagonal_full_tile_walls(game: &mut Game) {
                    game.data.map[(x, y)] = Tile::wall();
             }
         }
+    }
+}
+
+fn place_monsters(game: &mut Game) {
+    let mut potential_pos = game.data.map.get_empty_pos();
+
+    // add gols
+    for _ in 0..3 {
+        let len = potential_pos.len();
+
+        if len == 0 {
+            break;
+        }
+
+        let index = game.rng.gen_range(0, len);
+        let pos = potential_pos[index];
+
+        make_gol(&mut game.data.entities, &game.config, pos, &mut game.msg_log);
+
+        potential_pos.remove(index);
+    }
+
+    for _ in 0..3 {
+        let len = potential_pos.len();
+        if len == 0 {
+            break;
+        }
+
+        let index = game.rng.gen_range(0, len);
+        let pos = potential_pos[index];
+
+        make_elf(&mut game.data.entities, &game.config, pos, &mut game.msg_log);
+
+        potential_pos.remove(index);
     }
 }
 
@@ -349,6 +381,8 @@ fn saturate_map(game: &mut Game) -> Pos {
 
     place_key_and_goal(game, player_pos);
 
+    place_monsters(game);
+
     let mut potential_grass_pos = Vec::new();
     for x in 0..width {
         for y in 0..height {
@@ -457,12 +491,12 @@ fn adjacent_blocks(block: Pos, map: &Map, seen: &HashSet<Pos>) -> Vec<Pos> {
 fn test_adjacent_blocks() {
     let mut map = Map::from_dims(5, 5);
     let mid = Pos::new(2, 2);
-    map[(2, 2)].blocked = true;
+    map[(2, 2)] = Tile::wall();
 
-    map[(1, 2)].blocked = true;
-    map[(2, 1)].blocked = true;
-    map[(3, 2)].blocked = true;
-    map[(2, 3)].blocked = true;
+    map[(1, 2)] = Tile::wall();
+    map[(2, 1)] = Tile::wall();
+    map[(3, 2)] = Tile::wall();
+    map[(2, 3)] = Tile::wall();
 
     let mut seen = HashSet::new();
 
@@ -527,26 +561,27 @@ fn test_find_simple_structures() {
     let mut map = Map::from_dims(5, 5);
 
     // find a single line
-    map[(0, 2)].blocked = true;
-    map[(1, 2)].blocked = true;
-    map[(2, 2)].blocked = true;
+    // // TODO replace with Tile::wall()
+    map[(0, 2)] = Tile::wall();
+    map[(1, 2)] = Tile::wall();
+    map[(2, 2)] = Tile::wall();
     let structures = find_structures(&map);
     assert_eq!(1, structures.len());
     assert_eq!(StructureType::Line, structures[0].typ);
     assert_eq!(3, structures[0].blocks.len());
 
     // add a lone block and check that it is found along with the line
-    map[(0, 0)].blocked = true;
+    map[(0, 0)] = Tile::wall();
     let structures = find_structures(&map);
     assert_eq!(2, structures.len());
     assert!(structures.iter().find(|s| s.typ == StructureType::Single).is_some());
     assert!(structures.iter().find(|s| s.typ == StructureType::Line).is_some());
 
     // add a vertical line and check that all structures are found
-    map[(4, 0)].blocked = true;
-    map[(4, 1)].blocked = true;
-    map[(4, 2)].blocked = true;
-    map[(4, 3)].blocked = true;
+    map[(4, 0)] = Tile::wall();
+    map[(4, 1)] = Tile::wall();
+    map[(4, 2)] = Tile::wall();
+    map[(4, 3)] = Tile::wall();
     let structures = find_structures(&map);
     assert_eq!(3, structures.len());
     assert!(structures.iter().find(|s| s.typ == StructureType::Single).is_some());
@@ -558,17 +593,18 @@ fn test_find_complex_structures() {
     let mut map = Map::from_dims(5, 5);
 
     // lay down an L
-    map[(0, 2)].blocked = true;
-    map[(1, 2)].blocked = true;
-    map[(2, 2)].blocked = true;
-    map[(2, 3)].blocked = true;
+    // // TODO replace with Tile::wall()
+    map[(0, 2)] = Tile::wall();
+    map[(1, 2)] = Tile::wall();
+    map[(2, 2)] = Tile::wall();
+    map[(2, 3)] = Tile::wall();
     let structures = find_structures(&map);
     assert_eq!(1, structures.len());
     assert_eq!(StructureType::Path, structures[0].typ);
     assert_eq!(4, structures[0].blocks.len());
 
     // turn it into a 'complex' structure and check that it is discovered
-    map[(2, 1)].blocked = true;
+    map[(2, 1)] = Tile::wall();
     let structures = find_structures(&map);
     assert_eq!(1, structures.len());
     assert_eq!(StructureType::Complex, structures[0].typ);
