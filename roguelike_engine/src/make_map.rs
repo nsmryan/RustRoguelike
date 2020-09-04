@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::collections::HashSet;
+use std::str::FromStr;
 
 use rand::prelude::*;
 
@@ -24,6 +25,56 @@ use roguelike_core::utils::*;
 use crate::generation::*;
 use crate::game::*;
 
+
+#[derive(Copy, Clone, PartialOrd, PartialEq, Debug)]
+pub enum VaultTag {
+    Medium,
+    Rare,
+    NoRot,
+    NoMirror,
+    NoReplace,
+}
+
+
+impl FromStr for VaultTag {
+    type Err = String;
+
+    fn from_str(original_str: &str) -> Result<Self, Self::Err> {
+
+        let s: &mut str = &mut original_str.to_string();
+        s.make_ascii_lowercase();
+
+        if s == "medium" {
+            return Ok(VaultTag::Medium);
+        } else if s == "rare" {
+            return Ok(VaultTag::Rare);
+        } else if s == "norot" {
+            return Ok(VaultTag::NoRot);
+        } else if s == "nomirror" {
+            return Ok(VaultTag::NoMirror);
+        } else if s == "noreplace" {
+            return Ok(VaultTag::NoReplace);
+        }
+
+        return Err(format!("Could not decode vault tag '{}'", original_str));
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct Vault {
+    tiles: Vec<Vec<Tile>>,
+    tags: Vec<VaultTag>,
+}
+
+impl Vault {
+    pub fn new(tiles: Vec<Vec<Tile>>, tags: Vec<VaultTag>) -> Vault {
+        return Vault { tiles, tags };
+    }
+
+    pub fn empty() -> Vault {
+        return Vault { tiles: Vec::new(), tags: Vec::new() };
+    }
+}
 
 pub fn parse_maps_file(file_name: &str) -> Vec<String> {
     let file_contents =
@@ -68,16 +119,32 @@ fn test_remove_commas() {
     assert_eq!("% %".to_string(), remove_commas("%,,%".to_string()));
 }
 
-pub fn parse_ascii_map(file_name: &str, game: &mut Game) -> Vec<Vec<Tile>> {
+pub fn parse_ascii_map(file_name: &str, game: &mut Game) -> Vault {
     let file_contents =
         std::fs::read_to_string(file_name).expect(&format!("Could not read {}", file_name));
 
-    let lines = file_contents.lines()
-                             .map(|l| remove_commas(l.to_string()))
-                             .map(|l| l.chars().collect::<Vec<char>>())
-                             .collect::<Vec<Vec<char>>>();
+    let mut lines = Vec::new();
+    let mut tags: Vec<VaultTag> = Vec::new();
 
-    return parse_ascii_chars(lines, game);
+    for line in file_contents.lines() {
+        let cleaned_line = remove_commas(line.to_string());
+
+        if cleaned_line.starts_with("::") {
+            for tag_str in cleaned_line.split_at(2).1.trim().split(" ") {
+                if tag_str.starts_with("::") {
+                    break;
+                }
+                tags.push(VaultTag::from_str(tag_str).unwrap());
+            }
+            break;
+        }
+
+        lines.push(cleaned_line.chars().collect::<Vec<char>>());
+    }
+
+    let tiles = parse_ascii_chars(lines, game);
+
+    return Vault::new(tiles, tags);
 }
 
 fn parse_ascii_chars(lines: Vec<Vec<char>>, game: &mut Game) -> Vec<Vec<Tile>> {
@@ -561,7 +628,6 @@ fn test_find_simple_structures() {
     let mut map = Map::from_dims(5, 5);
 
     // find a single line
-    // // TODO replace with Tile::wall()
     map[(0, 2)] = Tile::wall();
     map[(1, 2)] = Tile::wall();
     map[(2, 2)] = Tile::wall();
@@ -593,7 +659,6 @@ fn test_find_complex_structures() {
     let mut map = Map::from_dims(5, 5);
 
     // lay down an L
-    // // TODO replace with Tile::wall()
     map[(0, 2)] = Tile::wall();
     map[(1, 2)] = Tile::wall();
     map[(2, 2)] = Tile::wall();
@@ -633,9 +698,9 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
 
         MapLoadConfig::FromAsciiMap(file_name) => {
-            let tiles: Vec<Vec<Tile>> = parse_ascii_map(&format!("resources/{}", file_name), game);
+            let vault: Vault = parse_ascii_map(&format!("resources/{}", file_name), game);
 
-            game.data.map = Map::with_vec(tiles);
+            game.data.map = Map::with_vec(vault.tiles);
 
             player_position = Pos::new(4, 4);
         }
