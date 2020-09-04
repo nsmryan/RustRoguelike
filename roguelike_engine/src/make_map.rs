@@ -139,7 +139,8 @@ pub fn parse_ascii_map(file_name: &str, game: &mut Game) -> Vault {
             break;
         }
 
-        lines.push(cleaned_line.chars().collect::<Vec<char>>());
+        let char_line = cleaned_line.chars().collect::<Vec<char>>();
+        lines.push(char_line);
     }
 
     let tiles = parse_ascii_chars(lines, game);
@@ -152,9 +153,10 @@ fn parse_ascii_chars(lines: Vec<Vec<char>>, game: &mut Game) -> Vec<Vec<Tile>> {
     assert!((lines[0].len() - 1)% 2 == 0);
 
     let height = lines.len() / 2;
-    let width = (lines[0].len() / 2) - 1;
+    let width = (lines[0].len() - 1) / 2;
 
     let mut tile_map = vec![vec![Tile::empty(); height]; width];
+    println!("{}, {}", width, height);
     for y in 0..height {
         for x in 0..width {
             let tile_chr = lines[y * 2][x * 2 + 1];
@@ -201,11 +203,11 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos,
         }
     }
 
-    if left_wall == '|' {
+    if left_wall == '|' || left_wall == '\u{c780}' || left_wall as u16 == 8212 {
         tile.left_wall = Wall::ShortWall;
     }
 
-    if bottom_wall == '_' || bottom_wall == '\u{2014}' {
+    if bottom_wall == '_' || bottom_wall == '\u{2014}' || bottom_wall as u16 == 124 {
         tile.bottom_wall = Wall::ShortWall;
     }
 

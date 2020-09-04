@@ -419,7 +419,7 @@ impl Map {
                         found_blocker = true;
                     }
 
-                    if self.blocked_right(move_y(pos, -1)) && self.blocked_down(move_x(pos, 1)) {
+                    if self.blocked_right(move_y(pos, 1)) && self.blocked_down(move_x(pos, 1)) {
                         let blocked_pos = add_pos(pos, Pos::new(-1, 1));
                         if self.is_within_bounds(blocked_pos) {
                             blocked.wall_type = self[blocked_pos].bottom_wall;
