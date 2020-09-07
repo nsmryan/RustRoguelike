@@ -20,6 +20,9 @@ use roguelike_core::movement::{Cardinal, MoveType};
 use crate::plat::*;
 
 
+type TextureKey = u64;
+
+
 // TODO rename to panel or area or something
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
 pub struct Section {
@@ -204,6 +207,9 @@ pub struct DisplayState {
     pub prev_turn_fov: Vec<EntityId>,
     pub current_turn_fov: Vec<EntityId>,
 
+    pub textures: IndexMap<TextureKey, Texture>,
+    pub next_texture_key: u64,
+
     pub background_panel: Panel,
     pub map_panel: Panel,
     pub player_panel: Panel,
@@ -247,6 +253,9 @@ impl DisplayState {
             prev_turn_fov: Vec::new(),
             current_turn_fov: Vec::new(),
 
+            textures: IndexMap::new(),
+            next_texture_key: 0,
+
             background_panel,
             map_panel,
             player_panel,
@@ -258,7 +267,14 @@ impl DisplayState {
         self.canvas.present();
     }
 
-    pub fn add_sprite(&mut self, sprite_sheet: SpriteSheet) {
+    pub fn add_spritesheet(&mut self, name: String, texture: Texture, row: usize) {
+        let tex_info = texture.query();
+        let width = tex_info.width as usize;
+        let height = tex_info.height as usize;
+
+        let tex_key = self.add_texture(texture);
+
+        let sprite_sheet = SpriteSheet::new(name, width, height, tex_key, 1);
         let sprite_key = self.next_sprite_key;
         self.next_sprite_key += 1;
         self.sprites.insert(sprite_key, sprite_sheet);
@@ -296,6 +312,15 @@ impl DisplayState {
         }
 
         return None;
+    }
+
+    pub fn add_texture(&mut self, texture: Texture) -> TextureKey {
+        let key = self.next_texture_key;
+
+        self.textures.insert(key, texture);
+        self.next_texture_key += 1;
+
+        return key;
     }
 
     pub fn draw_text(&mut self,
@@ -356,10 +381,11 @@ impl DisplayState {
 
         let dst = area.char_rect(pos.x, pos.y);
 
-        sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
-        sprite_sheet.texture.set_alpha_mod(color.a);
+        let texture = &mut self.textures[&sprite_sheet.texture_key];
+        texture.set_color_mod(color.r, color.g, color.b);
+        texture.set_alpha_mod(color.a);
 
-        self.canvas.copy_ex(&sprite_sheet.texture,
+        self.canvas.copy_ex(texture,
                             Some(src),
                             Some(dst),
                             0.0,
@@ -798,7 +824,7 @@ impl FontMap {
 
 
 pub struct SpriteSheet {
-    pub texture: Texture,
+    pub texture_key: TextureKey,
     pub name: String,
     pub num_sprites: usize,
     pub rows: usize,
@@ -807,14 +833,12 @@ pub struct SpriteSheet {
 }
 
 impl SpriteSheet {
-    pub fn new(name: String, texture: Texture, rows: usize) -> SpriteSheet {
-        let width = texture.query().width as usize;
-        let height = texture.query().height as usize;
+    pub fn new(name: String, width: usize, height: usize, texture_key: TextureKey, rows: usize) -> SpriteSheet {
         let num_sprites_per_row = width / FONT_WIDTH as usize;
         let num_sprites = num_sprites_per_row * rows;
 
         return SpriteSheet {
-            texture,
+            texture_key,
             name,
             num_sprites,
             rows,

@@ -43,7 +43,6 @@ use roguelike_engine::make_map::{make_map, read_map_xp};
 
 use crate::throttler::*;
 use crate::render::*;
-//use crate::console::*;
 use crate::display::*;
 use crate::plat::*;
 
@@ -551,10 +550,10 @@ fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display_state: 
         let file_name = entry.file_name().to_string_lossy().to_string();
         if let Ok(metadata) = entry.metadata() {
             if metadata.is_file() && file_name.ends_with("png") {
-                let sprite =
+                let sprite_texture =
                     texture_creator.load_texture(path).expect("Could not load texture!");
 
-                display_state.add_sprite(SpriteSheet::new(file_name, sprite, 1));
+                display_state.add_spritesheet(file_name, sprite_texture, 1);
             }
         }
     }
@@ -566,6 +565,6 @@ fn load_sprite(texture_creator: &TextureCreator<WindowContext>,
                sprite_name: &str,
                rows: usize) {
     let texture = texture_creator.load_texture(path).expect("Could not load texture!");
-    display_state.add_sprite(SpriteSheet::new(sprite_name.to_string(), texture, rows));
+    display_state.add_spritesheet(sprite_name.to_string(), texture, rows);
 }
 
