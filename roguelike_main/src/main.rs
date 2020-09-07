@@ -118,10 +118,10 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     let mut display_state =
         DisplayState::new(screen_sections, font_map, canvas);
 
-    load_sprite(&texture_creator, &mut display_state, "resources/rexpaint16x16.png", "tiles", 16);
-
     /* Load Textures */
     load_sprites(&texture_creator, &mut display_state);
+
+    load_sprite(&texture_creator, &mut display_state, "resources/rexpaint16x16.png", "tiles", 16);
 
     let mut game = Game::new(seed, config.clone())?;
 

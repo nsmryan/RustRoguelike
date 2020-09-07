@@ -519,42 +519,42 @@ fn render_background(display_state: &mut DisplayState, game: &mut Game, section:
 
     let (map_width, map_height) = game.data.map.size();
 
-    {
-        // unpack fields to prevent borrowing issues
-        // this is in a separate scope so we can use display_state below
-        let sprite_key =
-            display_state.lookup_spritekey("tiles")
-                         .expect("Could not find rexpaint file in renderer!");
-        let sprite = &display_state.sprites[&sprite_key];
-        let font_image = &mut display_state.textures[&sprite.texture_key];
+    let sprite_key =
+        display_state.lookup_spritekey("tiles")
+                     .expect("Could not find rexpaint file in renderer!");
+    let sprite = &mut display_state.sprites[&sprite_key];
 
-        let canvas = &mut display_state.canvas;
+    let canvas = &mut display_state.canvas;
 
-        canvas.with_texture_canvas(&mut display_state.background_panel.tex, |canvas| {
-            for y in 0..map_height {
-                for x in 0..map_width {
-                    let map_pos = Pos::new(x, y);
+    let cell_dims = display_state.background_panel.cell_dims();
 
-                    let visible =
-                        game.data.map.is_in_fov(pos, map_pos, game.config.fov_radius_player) ||
-                        game.settings.god_mode;
+    canvas.with_texture_canvas(&mut display_state.background_panel.target, |canvas| {
+        canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
+        canvas.clear();
 
-                    draw_char_new(canvas,
-                                  font_image,
-                                  MAP_EMPTY_CHAR as char,
-                                  map_pos,
-                                  empty_tile_color(&game.config, map_pos, visible));
+        for y in 0..map_height {
+            for x in 0..map_width {
+                let map_pos = Pos::new(x, y);
 
-                    let tile = &game.data.map[(x, y)];
-                    if tile.tile_type == TileType::Water {
-                        let color = tile_color(&game.config, x, y, tile, visible);
-                        let chr = tile.chr;
-                        draw_char_new(canvas, font_image, chr as char, map_pos, color);
-                    }
+                let visible =
+                    game.data.map.is_in_fov(pos, map_pos, game.config.fov_radius_player) ||
+                    game.settings.god_mode;
+
+                sprite.draw_char(canvas,
+                                 MAP_EMPTY_CHAR as char,
+                                 map_pos,
+                                 cell_dims,
+                                 empty_tile_color(&game.config, map_pos, visible));
+
+                let tile = &game.data.map[(x, y)];
+                if tile.tile_type == TileType::Water {
+                    let color = tile_color(&game.config, x, y, tile, visible);
+                    let chr = tile.chr;
+                    sprite.draw_char(canvas, chr as char, map_pos, cell_dims, color);
                 }
             }
-        }).unwrap();
-    }
+        }
+    }).unwrap();
 }
 
 /// Render the map, with environment and walls
@@ -563,19 +563,19 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, section: &Secti
     let player_pos = game.data.entities.pos[&player_id];
 
     let (map_width, map_height) = game.data.map.size();
+    let cell_dims = display_state.map_panel.cell_dims();
 
     {
         let sprite_key =
             display_state.lookup_spritekey("tiles")
                          .expect("Could not find rexpaint file in renderer!");
-        let sprite = &display_state.sprites[&sprite_key];
-        let font_image = &mut display_state.textures[&sprite.texture_key];
+        let sprite = &mut display_state.sprites[&sprite_key];
 
-        let (canvas, background) =
-            (&mut display_state.canvas,
-             &mut display_state.background_panel.tex);
+        let canvas = &mut display_state.canvas;
 
-        canvas.with_texture_canvas(&mut display_state.map_panel.tex, |canvas| {
+        let background = &mut display_state.background_panel.target;
+
+        canvas.with_texture_canvas(&mut display_state.map_panel.target, |canvas| {
             canvas.copy(background, None, None);
 
             for y in 0..map_height {
@@ -608,16 +608,16 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, section: &Secti
                     // if the tile is not empty or water, draw it
                     let color = tile_color(&game.config, x, y, tile, visible);
                     if chr != MAP_EMPTY_CHAR && tile.tile_type != TileType::Water {
-                        draw_char_new(canvas, font_image, chr as char, pos, color);
+                        sprite.draw_char(canvas, chr as char, pos, cell_dims, color);
                     }
 
                     match tile.surface {
                         Surface::Rubble => {
-                            draw_char_new(canvas, font_image, MAP_RUBBLE as char, pos, color);
+                            sprite.draw_char(canvas, MAP_RUBBLE as char, pos, cell_dims, color);
                         }
 
                         Surface::Grass => {
-                            draw_char_new(canvas, font_image, MAP_RUBBLE as char, pos, game.config.color_light_green);
+                            sprite.draw_char(canvas, MAP_RUBBLE as char, pos, cell_dims, game.config.color_light_green);
                         }
 
                         Surface::Floor => {
@@ -627,25 +627,25 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, section: &Secti
 
                     // finally, draw the between-tile walls appropriate to this tile
                     if tile.bottom_wall == Wall::ShortWall {
-                        draw_char_new(canvas, font_image, MAP_THIN_WALL_BOTTOM as char, pos, wall_color);
+                        sprite.draw_char(canvas, MAP_THIN_WALL_BOTTOM as char, pos, cell_dims, wall_color);
                     } else if tile.bottom_wall == Wall::TallWall {
-                        draw_char_new(canvas, font_image, MAP_THICK_WALL_BOTTOM as char, pos, wall_color);
+                        sprite.draw_char(canvas, MAP_THICK_WALL_BOTTOM as char, pos, cell_dims, wall_color);
                     }
 
                     if tile.left_wall == Wall::ShortWall {
-                        draw_char_new(canvas, font_image, MAP_THIN_WALL_LEFT as char, pos, wall_color);
+                        sprite.draw_char(canvas, MAP_THIN_WALL_LEFT as char, pos, cell_dims, wall_color);
 
                     } else if tile.left_wall == Wall::TallWall {
-                        draw_char_new(canvas, font_image, MAP_THICK_WALL_LEFT as char, pos, wall_color);
+                        sprite.draw_char(canvas, MAP_THICK_WALL_LEFT as char, pos, cell_dims, wall_color);
                     }
 
                     if x + 1 < map_width {
                         let right_pos = Pos::new(pos.x + 1, pos.y);
                         let right_tile = &game.data.map[right_pos];
                         if right_tile.left_wall == Wall::ShortWall {
-                            draw_char_new(canvas, font_image, MAP_THIN_WALL_RIGHT as char, pos, wall_color);
+                        sprite.draw_char(canvas, MAP_THIN_WALL_RIGHT as char, pos, cell_dims, wall_color);
                         } else if right_tile.left_wall == Wall::TallWall {
-                            draw_char_new(canvas, font_image, MAP_THICK_WALL_RIGHT as char, pos, wall_color);
+                        sprite.draw_char(canvas, MAP_THICK_WALL_RIGHT as char, pos, cell_dims, wall_color);
                         }
                     }
 
@@ -653,9 +653,9 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, section: &Secti
                         let up_pos = Pos::new(pos.x, pos.y - 1);
                         let up_tile = &game.data.map[up_pos];
                         if up_tile.bottom_wall == Wall::ShortWall {
-                            draw_char_new(canvas, font_image, MAP_THIN_WALL_TOP as char, pos, wall_color);
+                            sprite.draw_char(canvas, MAP_THIN_WALL_TOP as char, pos, cell_dims, wall_color);
                         } else if up_tile.bottom_wall == Wall::TallWall {
-                            draw_char_new(canvas, font_image, MAP_THICK_WALL_TOP as char, pos, wall_color);
+                            sprite.draw_char(canvas, MAP_THICK_WALL_TOP as char, pos, cell_dims, wall_color);
                         }
                     }
 
@@ -676,7 +676,8 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, section: &Secti
                         if game.data.map[pos].explored {
                             blackout_color.a = game.config.explored_alpha
                         }
-                        draw_char_new(canvas, font_image, MAP_EMPTY_CHAR as char, pos, blackout_color);
+                        
+                        sprite.draw_char(canvas, MAP_EMPTY_CHAR as char, pos, cell_dims, blackout_color);
                     }
 
                     // draw an outline around the tile
@@ -687,12 +688,11 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, section: &Secti
         }).unwrap();
     }
 
-    // NOTE duplicate from render_background
-    let src = Rect::new(0, 0, (map_width * FONT_WIDTH) as u32, (map_height * FONT_HEIGHT) as u32);
+    let src = Rect::new(0, 0, (map_width * cell_dims.0 as i32) as u32, (map_height * cell_dims.1 as i32) as u32);
     let centered = section.fit_to_section(src.w as usize, src.h as usize);
     let dst = centered.get_rect();
 
-    display_state.canvas.copy(&display_state.map_panel.tex, src, dst);
+    display_state.canvas.copy(&display_state.map_panel.target, src, dst).unwrap();
 }
 
 /// Render each effect currently playing in the game
@@ -1420,7 +1420,6 @@ fn render_movement_overlay(display_state: &mut DisplayState,
         display_state.lookup_spritekey("tiles")
                      .expect("Could not find rexpaint file in renderer!");
     let sprite = &display_state.sprites[&sprite_key];
-    let font_image = &mut display_state.textures[&sprite.texture_key];
 
     if let Some(reach) = game.data.entities.movement.get(&entity_id) {
         for move_pos in reach.reachables(entity_pos) {
