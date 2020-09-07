@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::collections::HashMap;
 
-use sdl2::render::{Texture, WindowCanvas, TextureCreator};
+use sdl2::render::{Texture, WindowCanvas, TextureCreator, BlendMode};
 use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{Color as Sdl2Color};
@@ -20,31 +20,172 @@ use roguelike_core::movement::{Cardinal, MoveType};
 use crate::plat::*;
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct AnimationResult {
-    pub done: bool,
-    pub sprite: Option<Sprite>,
+// TODO rename to panel or area or something
+#[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
+pub struct Section {
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
 }
 
-impl AnimationResult {
-    pub fn new() -> AnimationResult {
-        let sprite: Option<Sprite> = None;
-        let done = false;
-        return AnimationResult { done, sprite};
+impl Section {
+    pub fn new(x: usize, y: usize, width: usize, height: usize) -> Section {
+        return Section { x, y, width, height };
+    }
+
+    pub fn split_vert(&self, percent: f32) -> (Section, Section) {
+        assert!(percent > 0.0);
+        assert!(percent <= 0.0);
+
+        let half_width = self.width / 2;
+        let left = Section::new(self.x, self.y, self.width / 2, self.height);
+        let right = Section::new(self.x + half_width, self.y, half_width, self.height);
+
+        return (left, right);
+    }
+
+    pub fn split_horiz(&self, percent: f32) -> (Section, Section) {
+        assert!(percent > 0.0);
+        assert!(percent <= 0.0);
+
+        let half_height = self.height / 2;
+        let top = Section::new(self.x, self.y, self.width, self.height / 2);
+        let bottom = Section::new(self.x, self.y + half_height, self.width, self.height / 2);
+
+        return (top, bottom);
+    }
+
+    pub fn centered(&self, width: usize, height: usize) -> Section {
+        assert!(width <= self.width);
+        assert!(height <= self.height);
+
+        let x_diff = self.width - width;
+        let y_diff = self.height - height;
+
+        return Section::new(x_diff / 2, y_diff / 2, width, height);
+    }
+
+    pub fn get_rect(&self) -> Rect {
+        return Rect::new(self.x as i32, self.y as i32, self.width as u32, self.height as u32);
+    }
+
+    pub fn fit_to_section(&self, width: usize, height: usize) -> Section {
+        let scale_x = self.width as f32 / width as f32;
+        let scale_y = self.height as f32 / height as f32;
+
+        let scaler;
+        if scale_x * height as f32 > self.height as f32 {
+            scaler = scale_y;
+        } else {
+            scaler = scale_x;
+        }
+        assert!(scaler * height as f32 <= self.height as f32);
+        assert!(scaler * width as f32 <= self.width as f32);
+
+        let x_offset = (self.width  as f32 - (width as f32 * scaler)) / 2.0;
+        let y_offset = (self.height as f32 - (height as f32 * scaler)) / 2.0;
+
+        return Section::new(self.x + x_offset as usize,
+                            self.y + y_offset as usize,
+                            (width as f32 * scaler) as usize,
+                            (height as f32 * scaler) as usize);
+    }
+
+    pub fn to_area(&self) -> Area {
+        return Area::new(self.x as i32,
+                         self.y as i32,
+                         self.width,
+                         self.height,
+                         FONT_WIDTH as usize,
+                         FONT_HEIGHT as usize);
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Impression {
-    pub sprite: Sprite,
-    pub pos: Pos,
+#[test]
+pub fn test_section_splits() {
+    let section = Section::new(0, 0, 100, 100);
+    let (left, right) = section.split_vert(50.0);
+    let (top, bottom) = section.split_horiz(50.0);
+
+    assert_eq!(0, left.x);
+    assert_eq!(0, left.y);
+    assert_eq!(50, right.x);
+    assert_eq!(0, right.y);
+
+    assert_eq!(50, left.width);
+    assert_eq!(50, right.width);
+    assert_eq!(100, left.height);
+    assert_eq!(100, right.height);
+
+    assert_eq!(0, top.x);
+    assert_eq!(0, top.y);
+    assert_eq!(0, bottom.x);
+    assert_eq!(50, bottom.y);
+
+    assert_eq!(100, top.width);
+    assert_eq!(100, bottom.width);
+    assert_eq!(50, top.height);
+    assert_eq!(50, bottom.height);
 }
 
-impl Impression {
-    pub fn new(sprite: Sprite, pos: Pos) -> Impression {
-        return Impression { sprite, pos };
+#[test]
+pub fn test_section_centered() {
+    let section = Section::new(0, 0, 100, 100);
+
+    let centered = section.centered(50, 50);
+    assert_eq!(25, centered.x);
+    assert_eq!(25, centered.y);
+    assert_eq!(50, centered.width);
+    assert_eq!(50, centered.height);
+}
+
+#[test]
+pub fn test_section_fit() {
+    let section = Section::new(0, 0, 100, 100);
+    let width = 50;
+    let height = 50;
+    let fit =  section.fit_to_section(width, height);
+    assert_eq!(0, fit.x);
+    assert_eq!(0, fit.y);
+    assert_eq!(100, fit.width);
+    assert_eq!(100, fit.height);
+
+    let width = 50;
+    let height = 20;
+    let fit =  section.fit_to_section(width, height);
+    assert_eq!(0, fit.x);
+    assert_eq!(30, fit.y);
+    assert_eq!(100, fit.width);
+    assert_eq!(40, fit.height);
+
+
+}
+
+
+pub struct Panel {
+    pub cells: (u32, u32),
+    pub tex: Texture,
+}
+
+impl Panel {
+    pub fn new(cells: (u32, u32), tex: Texture) -> Panel {
+        return Panel { cells, tex };
+    }
+
+    pub fn from_dims(texture_creator: &TextureCreator<WindowContext>, width: u32, height: u32, over_sample: u32) -> Panel {
+        let pixel_format = texture_creator.default_pixel_format();
+
+        let tex =
+            texture_creator.create_texture_target(pixel_format,
+                                                  width as u32 * FONT_WIDTH as u32 * over_sample,
+                                                  height as u32 * FONT_HEIGHT as u32 * over_sample).unwrap();
+        let panel = Panel::new((height as u32, width as u32), tex);
+
+        return panel;
     }
 }
+
 
 pub struct DisplayState {
     pub font_image: Texture,
@@ -57,12 +198,16 @@ pub struct DisplayState {
     pub effects: Vec<Effect>,
     pub animations: IndexMap<AnimKey, Animation>,
     pub next_anim_key: i64,
-    pub background: Option<Texture>,
     pub texture_creator: TextureCreator<WindowContext>,
     pub drawn_sprites: IndexMap<EntityId, Sprite>,
     pub impressions: Vec<Impression>,
     pub prev_turn_fov: Vec<EntityId>,
     pub current_turn_fov: Vec<EntityId>,
+
+    pub background_panel: Panel,
+    pub map_panel: Panel,
+    pub player_panel: Panel,
+    pub info_panel: Panel,
 }
 
 impl DisplayState {
@@ -72,6 +217,18 @@ impl DisplayState {
                canvas: WindowCanvas) -> DisplayState {
 
         let texture_creator = canvas.texture_creator();
+
+        let pixel_format = texture_creator.default_pixel_format();
+
+        let over_sample = 5;
+        let background_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, over_sample);
+
+        let map_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, over_sample);
+
+        // TODO determine panel width and height cells
+        let info_panel = Panel::from_dims(&texture_creator, 10, 20, 1);
+
+        let player_panel = Panel::from_dims(&texture_creator, 10, 20, 1);
 
         return DisplayState {
             font_image,
@@ -84,12 +241,16 @@ impl DisplayState {
             effects: Vec::new(),
             animations: IndexMap::new(),
             next_anim_key: 0,
-            background: None,
             texture_creator,
             drawn_sprites: IndexMap::new(),
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),
             current_turn_fov: Vec::new(),
+
+            background_panel,
+            map_panel,
+            player_panel,
+            info_panel,
         };
     }
 
@@ -581,6 +742,32 @@ impl DisplayState {
 }
 
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct AnimationResult {
+    pub done: bool,
+    pub sprite: Option<Sprite>,
+}
+
+impl AnimationResult {
+    pub fn new() -> AnimationResult {
+        let sprite: Option<Sprite> = None;
+        let done = false;
+        return AnimationResult { done, sprite};
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Impression {
+    pub sprite: Sprite,
+    pub pos: Pos,
+}
+
+impl Impression {
+    pub fn new(sprite: Sprite, pos: Pos) -> Impression {
+        return Impression { sprite, pos };
+    }
+}
+
 pub struct FontMap {
     map: HashMap<char, Texture>,
     width: u32,
@@ -615,11 +802,15 @@ pub struct SpriteSheet {
     pub name: String,
     pub num_sprites: usize,
     pub rows: usize,
+    pub width: usize,
+    pub height: usize,
 }
 
 impl SpriteSheet {
     pub fn new(name: String, texture: Texture, rows: usize) -> SpriteSheet {
-        let num_sprites_per_row = texture.query().width as usize / FONT_WIDTH as usize;
+        let width = texture.query().width as usize;
+        let height = texture.query().height as usize;
+        let num_sprites_per_row = width / FONT_WIDTH as usize;
         let num_sprites = num_sprites_per_row * rows;
 
         return SpriteSheet {
@@ -627,11 +818,17 @@ impl SpriteSheet {
             name,
             num_sprites,
             rows,
+            width,
+            height,
         };
     }
 
     pub fn sprites_per_row(&self) -> usize {
          return self.num_sprites / self.rows;
+    }
+
+    pub fn cells(&self) -> (usize, usize) {
+        return (self.sprites_per_row(), self.rows);
     }
 }
 
@@ -710,6 +907,39 @@ pub fn draw_char(canvas: &mut WindowCanvas,
                    false).unwrap();
 }
 
+// TODO rename
+// TODO keep font size with texture
+pub fn draw_char_new(canvas: &mut WindowCanvas,
+                     font_image: &mut Texture,
+                     chr: char,
+                     pos: Pos,
+                     color: Color) {
+    let chr_x = (chr as i32) % FONT_WIDTH;
+    let chr_y = (chr as i32) / FONT_HEIGHT;
+
+    let src = Rect::new((chr_x * FONT_WIDTH) as i32,
+                        (chr_y * FONT_HEIGHT) as i32,
+                        FONT_WIDTH as u32,
+                        FONT_HEIGHT as u32);
+
+    let dst = Rect::new((pos.x * FONT_WIDTH) as i32,
+                        (pos.y * FONT_HEIGHT) as i32,
+                        FONT_WIDTH as u32,
+                        FONT_HEIGHT as u32);
+
+    font_image.set_color_mod(color.r, color.g, color.b);
+    font_image.set_alpha_mod(color.a);
+
+    canvas.copy_ex(font_image,
+                   Some(src),
+                   Some(dst),
+                   0.0,
+                   None,
+                   false,
+                   false).unwrap();
+}
+
+
 pub fn draw_text_with_font(canvas: &mut WindowCanvas,
                            font_map: &mut FontMap,
                            text: &str,
@@ -764,3 +994,15 @@ pub fn draw_char_with_font(canvas: &mut WindowCanvas,
                 Some(dst)).unwrap();
 }
 
+pub fn draw_outline_tile(canvas: &mut WindowCanvas,
+                         pos: Pos,
+                         color: Color) {
+    canvas.set_blend_mode(BlendMode::Blend);
+    canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+
+    let rect = Rect::new(pos.x * FONT_WIDTH,
+                         pos.y * FONT_HEIGHT,
+                         FONT_WIDTH as u32,
+                         FONT_HEIGHT as u32);
+    canvas.draw_rect(rect).unwrap();
+}

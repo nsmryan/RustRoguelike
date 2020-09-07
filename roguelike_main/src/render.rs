@@ -3,6 +3,7 @@ use noise::NoiseFn;
 
 use sdl2::render::BlendMode;
 use sdl2::rect::Rect;
+use sdl2::rect::Point;
 use sdl2::pixels::{Color as Sdl2Color};
 
 use roguelike_core::types::*;
@@ -77,9 +78,12 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
 
 
                 if game.settings.render_map {
-                    render_background(display_state, game, &area);
+                    let (screen_width, screen_height) = display_state.canvas.output_size().unwrap();
+                    let section = Section::new(0, 0, screen_width as usize, screen_height as usize);
 
-                    render_map(display_state, game, &area);
+                    render_background(display_state, game, &section);
+
+                    render_map(display_state, game, &section);
 
                     render_impressions(display_state, game, &area);
 
@@ -506,190 +510,179 @@ fn render_inventory(display_state: &mut DisplayState, game: &mut Game, area: &Ar
 }
 
 /// render the background files, including water tiles
-fn render_background(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
+fn render_background(display_state: &mut DisplayState, game: &mut Game, section: &Section) {
+    // NOTE(perf) move this to messaging and render on new level.
+    //            make sure a new level generates a message, even for the first level.
     let player_id = game.data.find_player().unwrap();
     let pos = game.data.entities.pos[&player_id];
 
-    if let Some(background) = &display_state.background {
-        let src = area.get_rect();
+    let (map_width, map_height) = game.data.map.size();
 
-        let dst = area.get_rect();
+    {
+        // unpack fields to prevent borrowing issues
+        // this is in a separate scope so we can use display_state below
+        let (canvas, font_image) =
+            (&mut display_state.canvas,
+             &mut display_state.font_image);
 
-        display_state
-            .canvas
-            .copy_ex(&background,
-                     Some(src),
-                     Some(dst),
-                     0.0,
-                     None,
-                     false,
-                     false).unwrap();
-    } else {
-        let pixel_format = display_state.texture_creator.default_pixel_format();
+        canvas.with_texture_canvas(&mut display_state.background_panel.tex, |canvas| {
+            for y in 0..map_height {
+                for x in 0..map_width {
+                    let map_pos = Pos::new(x, y);
 
-        let mut background =
-            display_state
-                .texture_creator
-                .create_texture_target(pixel_format,
-                                       area.width as u32,
-                                       area.height as u32).unwrap();
+                    let visible =
+                        game.data.map.is_in_fov(pos, map_pos, game.config.fov_radius_player) ||
+                        game.settings.god_mode;
 
-        {
-            // unpack fields to prevent borrowing issues
-            let (canvas, font_image, map, settings, config) =
-                (&mut display_state.canvas,
-                 &mut display_state.font_image,
-                 &mut game.data.map,
-                 &game.settings,
-                 &game.config);
-
-            canvas.with_texture_canvas(&mut background, |canvas| {
-                for y in 0..map.height() {
-                    for x in 0..map.width() {
-                        let map_pos = Pos::new(x, y);
-
-                        let visible =
-                            map.is_in_fov(pos, map_pos, config.fov_radius_player) ||
-                            settings.god_mode;
-
-                        draw_char(canvas,
+                    draw_char_new(canvas,
                                   font_image,
                                   MAP_EMPTY_CHAR as char,
                                   map_pos,
-                                  empty_tile_color(&config, map_pos, visible),
-                                  area);
+                                  empty_tile_color(&game.config, map_pos, visible));
 
-                        let tile = &map.tiles[x as usize][y as usize];
-                        if tile.tile_type == TileType::Water {
-                            let color = tile_color(&config, x, y, tile, visible);
-                            let chr = tile.chr;
-                            draw_char(canvas, font_image, chr as char, map_pos, color, area);
-                        }
+                    let tile = &game.data.map[(x, y)];
+                    if tile.tile_type == TileType::Water {
+                        let color = tile_color(&game.config, x, y, tile, visible);
+                        let chr = tile.chr;
+                        draw_char_new(canvas, font_image, chr as char, map_pos, color);
                     }
                 }
-            }).unwrap();
-        }
-
-        display_state.background = Some(background);
+            }
+        }).unwrap();
     }
 }
 
 /// Render the map, with environment and walls
-fn render_map(display_state: &mut DisplayState, game: &mut Game, area: &Area) {
-    let map_width = game.data.map.width();
-    let map_height = game.data.map.height();
-
+fn render_map(display_state: &mut DisplayState, game: &mut Game, section: &Section) {
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
-    for y in 0..map_height {
-        for x in 0..map_width {
-            let pos = Pos::new(x, y);
+    let (map_width, map_height) = game.data.map.size();
 
-            // Render game stuff
-            let visible =
-                game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) ||
-                game.settings.god_mode;
+    {
+        let (canvas, background, font_image) =
+            (&mut display_state.canvas,
+             &mut display_state.background_panel.tex,
+             &mut display_state.font_image);
 
-            game.data.map[pos].explored |= visible;
+        canvas.with_texture_canvas(&mut display_state.map_panel.tex, |canvas| {
+            canvas.copy(background, None, None);
 
-            let explored = game.data.map[pos].explored || visible;
+            for y in 0..map_height {
+                for x in 0..map_width {
+                    let pos = Pos::new(x, y);
 
-            let tile = &game.data.map[pos];
+                    // Render game stuff
+                    let visible =
+                        game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) ||
+                        game.settings.god_mode;
 
-            let wall_color =
-                if explored {
-                    game.config.color_light_brown
-                } else {
-                    game.config.color_dark_brown
-                };
+                    game.data.map[pos].explored |= visible;
 
-            let chr = tile.chr;
+                    let explored = game.data.map[pos].explored || visible;
 
-            // draw empty tile first, in case there is transparency in the character
-            // draw_char(display_state, MAP_EMPTY_CHAR as char, x, y, empty_tile_color(config, x, y, visible));
+                    let tile = &game.data.map[pos];
 
-            // if the tile is not empty or water, draw it
-            let color = tile_color(&game.config, x, y, tile, visible);
-            if chr != MAP_EMPTY_CHAR && tile.tile_type != TileType::Water {
-                display_state.draw_char(chr as char, pos, color, area);
-            }
+                    let wall_color =
+                        if explored {
+                            game.config.color_light_brown
+                        } else {
+                            game.config.color_dark_brown
+                        };
 
-            match tile.surface {
-                Surface::Rubble => {
-                    display_state.draw_char(MAP_RUBBLE as char, pos, color, area);
+                    let chr = tile.chr;
+
+                    // draw empty tile first, in case there is transparency in the character
+                    // draw_char(display_state, MAP_EMPTY_CHAR as char, x, y, empty_tile_color(config, x, y, visible));
+
+                    // if the tile is not empty or water, draw it
+                    let color = tile_color(&game.config, x, y, tile, visible);
+                    if chr != MAP_EMPTY_CHAR && tile.tile_type != TileType::Water {
+                        draw_char_new(canvas, font_image, chr as char, pos, color);
+                    }
+
+                    match tile.surface {
+                        Surface::Rubble => {
+                            draw_char_new(canvas, font_image, MAP_RUBBLE as char, pos, color);
+                        }
+
+                        Surface::Grass => {
+                            draw_char_new(canvas, font_image, MAP_RUBBLE as char, pos, game.config.color_light_green);
+                        }
+
+                        Surface::Floor => {
+                            // Nothing to draw
+                        }
+                    }
+
+                    // finally, draw the between-tile walls appropriate to this tile
+                    if tile.bottom_wall == Wall::ShortWall {
+                        draw_char_new(canvas, font_image, MAP_THIN_WALL_BOTTOM as char, pos, wall_color);
+                    } else if tile.bottom_wall == Wall::TallWall {
+                        draw_char_new(canvas, font_image, MAP_THICK_WALL_BOTTOM as char, pos, wall_color);
+                    }
+
+                    if tile.left_wall == Wall::ShortWall {
+                        draw_char_new(canvas, font_image, MAP_THIN_WALL_LEFT as char, pos, wall_color);
+
+                    } else if tile.left_wall == Wall::TallWall {
+                        draw_char_new(canvas, font_image, MAP_THICK_WALL_LEFT as char, pos, wall_color);
+                    }
+
+                    if x + 1 < map_width {
+                        let right_pos = Pos::new(pos.x + 1, pos.y);
+                        let right_tile = &game.data.map[right_pos];
+                        if right_tile.left_wall == Wall::ShortWall {
+                            draw_char_new(canvas, font_image, MAP_THIN_WALL_RIGHT as char, pos, wall_color);
+                        } else if right_tile.left_wall == Wall::TallWall {
+                            draw_char_new(canvas, font_image, MAP_THICK_WALL_RIGHT as char, pos, wall_color);
+                        }
+                    }
+
+                    if y - 1 >= 0 {
+                        let up_pos = Pos::new(pos.x, pos.y - 1);
+                        let up_tile = &game.data.map[up_pos];
+                        if up_tile.bottom_wall == Wall::ShortWall {
+                            draw_char_new(canvas, font_image, MAP_THIN_WALL_TOP as char, pos, wall_color);
+                        } else if up_tile.bottom_wall == Wall::TallWall {
+                            draw_char_new(canvas, font_image, MAP_THICK_WALL_TOP as char, pos, wall_color);
+                        }
+                    }
+
+                    // Draw a square around this tile to help distinguish it visually in the grid
+                    let outline_color = Color::white();
+                    let alpha;
+                    if visible && game.data.map[pos].tile_type != TileType::Water {
+                        if game.settings.overlay {
+                            alpha = game.config.grid_alpha_overlay;
+                        } else {
+                            alpha = game.config.grid_alpha_visible;
+                        }
+                    } else {
+                        alpha = game.config.grid_alpha;
+                    }
+                    if game.config.fog_of_war && !visible {
+                        let mut blackout_color = Color::black();
+                        if game.data.map[pos].explored {
+                            blackout_color.a = game.config.explored_alpha
+                        }
+                        draw_char_new(canvas, font_image, MAP_EMPTY_CHAR as char, pos, blackout_color);
+                    }
+
+                    // draw an outline around the tile
+                    // TODO add back in
+                    draw_outline_tile(canvas, pos, outline_color);
                 }
-
-                Surface::Grass => {
-                    display_state.draw_char(MAP_RUBBLE as char, pos, game.config.color_light_green, area);
-                }
-
-                Surface::Floor => {
-                }
             }
-
-            // finally, draw the between-tile walls appropriate to this tile
-            if tile.bottom_wall == Wall::ShortWall {
-                display_state.draw_char(MAP_THIN_WALL_BOTTOM as char, pos, wall_color, area);
-            } else if tile.bottom_wall == Wall::TallWall {
-                display_state.draw_char(MAP_THICK_WALL_BOTTOM as char, pos, wall_color, area);
-            }
-
-            if tile.left_wall == Wall::ShortWall {
-                display_state.draw_char(MAP_THIN_WALL_LEFT as char, pos, wall_color, area);
-
-            } else if tile.left_wall == Wall::TallWall {
-                display_state.draw_char(MAP_THICK_WALL_LEFT as char, pos, wall_color, area);
-            }
-
-            if x + 1 < map_width {
-                let right_pos = Pos::new(pos.x + 1, pos.y);
-                let right_tile = &game.data.map[right_pos];
-                if right_tile.left_wall == Wall::ShortWall {
-                    display_state.draw_char(MAP_THIN_WALL_RIGHT as char, pos, wall_color, area);
-                } else if right_tile.left_wall == Wall::TallWall {
-                    display_state.draw_char(MAP_THICK_WALL_RIGHT as char, pos, wall_color, area);
-                }
-            }
-
-            if y - 1 >= 0 {
-                let up_pos = Pos::new(pos.x, pos.y - 1);
-                let up_tile = &game.data.map[up_pos];
-                if up_tile.bottom_wall == Wall::ShortWall {
-                    display_state.draw_char(MAP_THIN_WALL_TOP as char, pos, wall_color, area);
-                } else if up_tile.bottom_wall == Wall::TallWall {
-                    display_state.draw_char(MAP_THICK_WALL_TOP as char, pos, wall_color, area);
-                }
-            }
-
-            // Draw a square around this tile to help distinguish it visually in the grid
-            let outline_color = Color::white();
-            let alpha;
-            if visible && game.data.map[pos].tile_type != TileType::Water {
-                if game.settings.overlay {
-                    alpha = game.config.grid_alpha_overlay;
-                } else {
-                    alpha = game.config.grid_alpha_visible;
-                }
-            } else {
-                alpha = game.config.grid_alpha;
-            }
-            let color = Sdl2Color::RGBA(outline_color.r, outline_color.g, outline_color.b, alpha);
-
-            if game.config.fog_of_war && !visible {
-                let mut blackout_color = Color::black();
-                if game.data.map[pos].explored {
-                    blackout_color.a = game.config.explored_alpha
-                }
-                display_state.draw_char(MAP_EMPTY_CHAR as char, pos, blackout_color, area);
-            }
-
-            // draw an outline around the tile
-            display_state.canvas.set_blend_mode(BlendMode::Blend);
-            display_state.canvas.set_draw_color(color);
-            display_state.canvas.draw_rect(area.char_rect(x, y)).unwrap();
-        }
+        }).unwrap();
     }
+
+    // NOTE duplicate from render_background
+    let src = Rect::new(0, 0, (map_width * FONT_WIDTH) as u32, (map_height * FONT_HEIGHT) as u32);
+    let centered = section.fit_to_section(src.w as usize, src.h as usize);
+    let dst = centered.get_rect();
+
+    display_state.canvas.copy(&display_state.map_panel.tex, src, dst);
 }
 
 /// Render each effect currently playing in the game

@@ -803,7 +803,7 @@ pub fn test_running_two_steps() {
 
 #[test]
 pub fn test_hammer_small_wall() {
-    let mut config = Config::from_file("../config.yaml");
+    let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone()).unwrap();
 
     let player_id = game.data.find_player().unwrap();
@@ -900,7 +900,7 @@ pub fn test_game_map() {
     }).unwrap();
 
     // Utility functions
-    let mut test_move = |game: &mut Game, dir, pos| {
+    let test_move = |game: &mut Game, dir, pos| {
         game.input_action = InputAction::Move(dir);
         game.step_game(0.1);
         let player_pos = game.data.entities.pos[&player_id];
