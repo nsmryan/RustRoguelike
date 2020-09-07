@@ -476,10 +476,11 @@ fn render_inventory(display_state: &mut DisplayState, game: &mut Game, area: &Ar
         }
 
         // place prompt character
-        display_state.draw_char(('0' as u8 + item_index) as char,
-                                Pos::new(1, y_pos),
-                                game.config.color_ice_blue,
-                                area);
+        // TODO need font image
+        //display_state.draw_char(('0' as u8 + item_index) as char,
+        //                        Pos::new(1, y_pos),
+        //                        game.config.color_ice_blue,
+        //                        area);
 
         // place object name
         let text_pos = Pos::new(2, y_pos);
@@ -521,9 +522,13 @@ fn render_background(display_state: &mut DisplayState, game: &mut Game, section:
     {
         // unpack fields to prevent borrowing issues
         // this is in a separate scope so we can use display_state below
-        let (canvas, font_image) =
-            (&mut display_state.canvas,
-             &mut display_state.font_image);
+        let sprite_key =
+            display_state.lookup_spritekey("tiles")
+                         .expect("Could not find rexpaint file in renderer!");
+        let sprite = &display_state.sprites[&sprite_key];
+        let font_image = &mut display_state.textures[&sprite.texture_key];
+
+        let canvas = &mut display_state.canvas;
 
         canvas.with_texture_canvas(&mut display_state.background_panel.tex, |canvas| {
             for y in 0..map_height {
@@ -560,10 +565,15 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, section: &Secti
     let (map_width, map_height) = game.data.map.size();
 
     {
-        let (canvas, background, font_image) =
+        let sprite_key =
+            display_state.lookup_spritekey("tiles")
+                         .expect("Could not find rexpaint file in renderer!");
+        let sprite = &display_state.sprites[&sprite_key];
+        let font_image = &mut display_state.textures[&sprite.texture_key];
+
+        let (canvas, background) =
             (&mut display_state.canvas,
-             &mut display_state.background_panel.tex,
-             &mut display_state.font_image);
+             &mut display_state.background_panel.tex);
 
         canvas.with_texture_canvas(&mut display_state.map_panel.tex, |canvas| {
             canvas.copy(background, None, None);
@@ -670,8 +680,8 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, section: &Secti
                     }
 
                     // draw an outline around the tile
-                    // TODO add back in
-                    draw_outline_tile(canvas, pos, outline_color);
+                    // TODO add back in when texture is larger
+                    //draw_outline_tile(canvas, pos, outline_color);
                 }
             }
         }).unwrap();
@@ -697,10 +707,11 @@ fn render_effects(display_state: &mut DisplayState, game: &mut Game, area: &Area
     for (index, effect) in effects.iter_mut().enumerate() {
         match effect {
             Effect::HeardSomething(pos, created_turn) => {
-                display_state.draw_char(ENTITY_ELF as char,
-                                             *pos,
-                                             game.config.color_warm_grey,
-                                             area);
+                // TODO need font image
+                //display_state.draw_char(ENTITY_ELF as char,
+                //                        *pos,
+                //                        game.config.color_warm_grey,
+                //                        area);
 
                 if *created_turn != game.settings.turn_count {
                     dbg!(*created_turn, game.settings.turn_count);
@@ -939,11 +950,14 @@ fn render_overlays(display_state: &mut DisplayState,
                 if x_diff.abs() < 5 && y_diff.abs() < 5 {
                     let res: i8 = x_diff as i8 - y_diff as i8;
                     if res <= 0 {
-                        display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_green, area);
+                        // TODO need font image
+                        //display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_green, area);
                     } else {
-                        display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_grey, area);
+                        // TODO need font image
+                        //display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_grey, area);
                     }
-                    display_state.draw_char(('0' as u8 + res.abs() as u8) as char, pos, game.config.color_red, area);
+                    // TODO need font image
+                    //display_state.draw_char(('0' as u8 + res.abs() as u8) as char, pos, game.config.color_red, area);
                 }
             }
         }
@@ -964,7 +978,8 @@ fn render_overlays(display_state: &mut DisplayState,
                                                       game.config.fov_radius_player,
                                                       dir);
                 if is_in_fov {
-                    display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_green, area);
+                    // TODO need font image
+                    //display_state.draw_char(MAP_GROUND as char, pos, game.config.color_light_green, area);
                 }
             }
         }
@@ -1046,7 +1061,8 @@ fn render_overlays(display_state: &mut DisplayState,
             // get a path to the mouse path, regardless of distance
             let path = astar_path(&game.data.map, player_pos, mouse_pos, None, None);
             for pos in path {
-                display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
+                // TODO need font image
+                //display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
             }
         }
 
@@ -1057,7 +1073,8 @@ fn render_overlays(display_state: &mut DisplayState,
                 let line = line(player_pos, mouse_pos).into_iter();
                 for pos in line {
                     let pos = Pos::from(pos);
-                    display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
+                    // TODO need font image
+                    //display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
                 }
             }
         }
@@ -1070,7 +1087,8 @@ fn render_overlays(display_state: &mut DisplayState,
                     game.settings.selection.selected_pos(player_pos, mouse_pos, game.config.fov_radius_player, &mut game.data);
 
                 if let Some(pos) = selected_pos {
-                    display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
+                    // TODO need font image
+                    //display_state.draw_char(MAP_EMPTY_CHAR as char, pos, highlight_color, area);
                 }
             }
         }
@@ -1134,7 +1152,8 @@ fn render_overlays(display_state: &mut DisplayState,
 
                     let amount = near_count as f32 / 50.0;
                     let adj_color = lerp_color(game.config.color_ice_blue, game.config.color_red, amount);
-                    display_state.draw_char(MAP_EMPTY_CHAR as char, pos, adj_color, area);
+                    // TODO need font image
+                    //display_state.draw_char(MAP_EMPTY_CHAR as char, pos, adj_color, area);
 
                     draw_text_with_font(&mut display_state.canvas,
                                         &mut display_state.font_map,
@@ -1355,7 +1374,8 @@ fn render_attack_overlay(display_state: &mut DisplayState,
                  .collect::<Vec<Pos>>();
 
         for position in attack_positions {
-            display_state.draw_char(MAP_EMPTY_CHAR as char, position, attack_highlight_color, area);
+            // TODO need font image
+            //display_state.draw_char(MAP_EMPTY_CHAR as char, position, attack_highlight_color, area);
         }
     }
 }
@@ -1396,6 +1416,12 @@ fn render_movement_overlay(display_state: &mut DisplayState,
     let mut highlight_color = game.config.color_light_grey;
     highlight_color.a = game.config.grid_alpha_overlay;
 
+    let sprite_key =
+        display_state.lookup_spritekey("tiles")
+                     .expect("Could not find rexpaint file in renderer!");
+    let sprite = &display_state.sprites[&sprite_key];
+    let font_image = &mut display_state.textures[&sprite.texture_key];
+
     if let Some(reach) = game.data.entities.movement.get(&entity_id) {
         for move_pos in reach.reachables(entity_pos) {
             let visible = game.data.is_in_fov(player_id, move_pos, &game.config);
@@ -1404,12 +1430,13 @@ fn render_movement_overlay(display_state: &mut DisplayState,
 
                 //let sprite = display_state.drawn_sprites[&entity_id];
                 //display_state.draw_sprite(sprite, entity_pos, highlight_color, area);
-                draw_char(&mut display_state.canvas,
-                          &mut display_state.font_image,
-                          chr as char,
-                          move_pos,
-                          highlight_color,
-                          area);
+                // TODO need font image
+                //draw_char(&mut display_state.canvas,
+                //          &mut font_image,
+                //          chr as char,
+                //          move_pos,
+                //          highlight_color,
+                //          area);
             }
         }
     }

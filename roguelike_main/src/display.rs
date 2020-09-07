@@ -191,19 +191,27 @@ impl Panel {
 
 
 pub struct DisplayState {
-    pub font_image: Texture,
+    // TODO try to remove by turning into a spritesheet
     pub font_map: FontMap,
+
+    // TODO try to remove with new sections system
+    pub zones: Vec<Plot>,
+    pub screen_sections: Plan,
+
     pub sprites: IndexMap<SpriteKey, SpriteSheet>,
     pub next_sprite_key: i64,
-    pub screen_sections: Plan,
-    pub zones: Vec<Plot>,
+
     pub canvas: WindowCanvas,
     pub effects: Vec<Effect>,
+
     pub animations: IndexMap<AnimKey, Animation>,
     pub next_anim_key: i64,
+
     pub texture_creator: TextureCreator<WindowContext>,
+
     pub drawn_sprites: IndexMap<EntityId, Sprite>,
     pub impressions: Vec<Impression>,
+
     pub prev_turn_fov: Vec<EntityId>,
     pub current_turn_fov: Vec<EntityId>,
 
@@ -218,7 +226,6 @@ pub struct DisplayState {
 
 impl DisplayState {
     pub fn new(screen_sections: Plan,
-               font_image: Texture,
                font_map: FontMap,
                canvas: WindowCanvas) -> DisplayState {
 
@@ -237,7 +244,6 @@ impl DisplayState {
         let player_panel = Panel::from_dims(&texture_creator, 10, 20, 1);
 
         return DisplayState {
-            font_image,
             font_map,
             sprites: IndexMap::new(),
             next_sprite_key: 0,
@@ -280,7 +286,7 @@ impl DisplayState {
         self.sprites.insert(sprite_key, sprite_sheet);
     }
 
-    pub fn lookup_spritekey(&self, name: &String) -> Option<SpriteKey> {
+    pub fn lookup_spritekey(&self, name: &str) -> Option<SpriteKey> {
         for (key, sprite_sheet) in self.sprites.iter() {
             if sprite_sheet.name == *name {
                 return Some(*key);
@@ -410,16 +416,17 @@ impl DisplayState {
 
         let dst = area.char_rect(pos.x, pos.y);
 
-        self.font_image.set_color_mod(color.r, color.g, color.b);
-        self.font_image.set_alpha_mod(color.a);
+        // TODO need font image
+        //self.font_image.set_color_mod(color.r, color.g, color.b);
+        //self.font_image.set_alpha_mod(color.a);
 
-        self.canvas.copy_ex(&self.font_image,
-                            Some(src),
-                            Some(dst),
-                            angle,
-                            None,
-                            false,
-                            false).unwrap();
+        //self.canvas.copy_ex(&self.font_image,
+        //                    Some(src),
+        //                    Some(dst),
+        //                    angle,
+        //                    None,
+        //                    false,
+        //                    false).unwrap();
     }
 
     pub fn draw_char(&mut self,
@@ -851,8 +858,12 @@ impl SpriteSheet {
          return self.num_sprites / self.rows;
     }
 
-    pub fn cells(&self) -> (usize, usize) {
+    pub fn num_cells(&self) -> (usize, usize) {
         return (self.sprites_per_row(), self.rows);
+    }
+
+    pub fn num_pixels(&self) -> (usize, usize) {
+        return (self.width, self.height);
     }
 }
 
@@ -963,7 +974,7 @@ pub fn draw_char_new(canvas: &mut WindowCanvas,
                    false).unwrap();
 }
 
-
+// TODO redo with spritesheet font
 pub fn draw_text_with_font(canvas: &mut WindowCanvas,
                            font_map: &mut FontMap,
                            text: &str,

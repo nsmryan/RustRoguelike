@@ -115,11 +115,10 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
                                           Plan::split_horiz(0.5, Plan::zone("player"),
                                                                  Plan::zone("info"))));
 
-    let font_image = texture_creator.load_texture("resources/rexpaint16x16.png")
-        .expect("Could not load texture!");
-
     let mut display_state =
-        DisplayState::new(screen_sections, font_image, font_map, canvas);
+        DisplayState::new(screen_sections, font_map, canvas);
+
+    load_sprite(&texture_creator, &mut display_state, "resources/rexpaint16x16.png", "tiles", 16);
 
     /* Load Textures */
     load_sprites(&texture_creator, &mut display_state);
@@ -550,10 +549,7 @@ fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display_state: 
         let file_name = entry.file_name().to_string_lossy().to_string();
         if let Ok(metadata) = entry.metadata() {
             if metadata.is_file() && file_name.ends_with("png") {
-                let sprite_texture =
-                    texture_creator.load_texture(path).expect("Could not load texture!");
-
-                display_state.add_spritesheet(file_name, sprite_texture, 1);
+                load_sprite(texture_creator, display_state, path.to_str().unwrap(), &file_name, 1);
             }
         }
     }
