@@ -77,7 +77,6 @@ pub enum Msg {
     DropFailed(EntityId),
     DroppedItem(EntityId, EntityId),
     PlayerTurn(),
-    NewLevel(),
 }
 
 impl Msg {
@@ -246,10 +245,6 @@ impl Msg {
             }
 
             Msg::PlayerTurn() => {
-                return "".to_string();
-            }
-
-            Msg::NewLevel() => {
                 return "".to_string();
             }
 

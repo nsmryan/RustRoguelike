@@ -512,8 +512,11 @@ fn render_inventory(display_state: &mut DisplayState, game: &mut Game, area: &Ar
 
 /// render the background files, including water tiles
 fn render_background(display_state: &mut DisplayState, game: &mut Game, section: &Section) {
-    // NOTE(perf) move this to messaging and render on new level.
-    //            make sure a new level generates a message, even for the first level.
+    if !display_state.background_panel.dirty {
+        return;
+    }
+    display_state.background_panel.dirty = false;
+
     let player_id = game.data.find_player().unwrap();
     let pos = game.data.entities.pos[&player_id];
 
@@ -576,11 +579,18 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, section: &Secti
         let background = &mut display_state.background_panel.target;
 
         canvas.with_texture_canvas(&mut display_state.map_panel.target, |canvas| {
+            canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
+            canvas.clear();
+
             canvas.copy(background, None, None);
 
             for y in 0..map_height {
                 for x in 0..map_width {
                     let pos = Pos::new(x, y);
+
+                    // draw an outline around the tile
+                    let outline_color = Color::white();
+                    draw_outline_tile(canvas, pos, cell_dims, outline_color);
 
                     // Render game stuff
                     let visible =
@@ -660,7 +670,6 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, section: &Secti
                     }
 
                     // Draw a square around this tile to help distinguish it visually in the grid
-                    let outline_color = Color::white();
                     let alpha;
                     if visible && game.data.map[pos].tile_type != TileType::Water {
                         if game.settings.overlay {
@@ -679,10 +688,6 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, section: &Secti
                         
                         sprite.draw_char(canvas, MAP_EMPTY_CHAR as char, pos, cell_dims, blackout_color);
                     }
-
-                    // draw an outline around the tile
-                    // TODO add back in when texture is larger
-                    //draw_outline_tile(canvas, pos, outline_color);
                 }
             }
         }).unwrap();
@@ -1107,7 +1112,8 @@ fn render_overlays(display_state: &mut DisplayState,
                 // draw a highlight on that square
                 // don't draw overlay on top of character
                 if movement.pos != game.data.entities.pos[&player_id] {
-                    display_state.draw_tile_outline(movement.pos, area, highlight_color);
+                    // TODO add back in with rendering update
+                    //display_state.draw_tile_outline(movement.pos, area, highlight_color);
                 }
             }
         }
@@ -1124,11 +1130,13 @@ fn render_overlays(display_state: &mut DisplayState,
                 let in_fov_lines = game.data.map.is_in_fov_lines(player_pos, pos, game.config.fov_radius_player);
 
                 if in_fov && !in_fov_lines {
-                    display_state.draw_tile_outline(pos, area, highlight_color_fov);
+                    // TODO add back in with rendering update
+                    //display_state.draw_tile_outline(pos, area, highlight_color_fov);
                 }
 
                 if in_fov_lines && !in_fov {
-                    display_state.draw_tile_outline(pos, area, highlight_color_lines);
+                    // TODO add back in with rendering update
+                    //display_state.draw_tile_outline(pos, area, highlight_color_lines);
                 }
             }
         }
@@ -1399,7 +1407,8 @@ fn render_fov_overlay(display_state: &mut DisplayState,
 
             if visible {
                 let chr = game.data.entities.chr[&entity_id];
-                display_state.draw_tile_outline(map_pos, area, highlight_color);
+                // TODO add back in with rendering update
+                //display_state.draw_tile_outline(map_pos, area, highlight_color);
             }
         }
     }

@@ -170,6 +170,7 @@ pub struct Panel<T> {
     pub target: T,
     pub cells: (u32, u32),
     pub num_pixels: (u32, u32),
+    pub dirty: bool,
 }
 
 impl Panel<Texture> {
@@ -177,7 +178,7 @@ impl Panel<Texture> {
         let query = tex.query();
         let width = query.width;
         let height = query.height;
-        return Panel { cells, target: tex, num_pixels: (width, height) };
+        return Panel { cells, target: tex, num_pixels: (width, height), dirty: true };
     }
 
     pub fn from_dims(texture_creator: &TextureCreator<WindowContext>, width: u32, height: u32, over_sample: u32) -> Panel<Texture> {
@@ -202,6 +203,7 @@ impl<T> Panel<T> {
             target,
             cells: self.cells,
             num_pixels: self.num_pixels,
+            dirty: true,
         };
     }
 }
@@ -436,6 +438,7 @@ impl DisplayState {
                           pos: Pos,
                           color: Color,
                           area: &Area) {
+        self.canvas.set_blend_mode(BlendMode::Blend);
         self.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
         let dst_rect = area.char_rect(pos.x, pos.y);
@@ -444,6 +447,7 @@ impl DisplayState {
 
 
     pub fn draw_tile_edge(&mut self, pos: Pos, area: &Area, color: Color, dir: Cardinal) {
+        self.canvas.set_blend_mode(BlendMode::Blend);
         self.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
         let tile_rect = area.char_rect(pos.x, pos.y);
@@ -483,18 +487,6 @@ impl DisplayState {
         self.canvas.fill_rect(side_rect).unwrap();
     }
 
-
-    pub fn draw_tile_outline(&mut self, pos: Pos, area: &Area, color: Color) {
-        self.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
-
-        let tile_rect = area.char_rect(pos.x, pos.y);
-
-        let inner_rect = Rect::new(tile_rect.x() + 1,
-                                   tile_rect.y + 1,
-                                   tile_rect.width() - 1,
-                                   tile_rect.height() - 1);
-        self.canvas.draw_rect(inner_rect).unwrap();
-    }
 
     /// Create and play a looping sprite
     pub fn loop_sprite(&mut self, sprite_name: &str, speed: f32) -> AnimKey {
@@ -916,6 +908,7 @@ impl SpriteSheet {
                             cell_width as u32,
                             cell_height as u32);
 
+        canvas.set_blend_mode(BlendMode::Blend);
         self.texture.set_color_mod(color.r, color.g, color.b);
         self.texture.set_alpha_mod(color.a);
 
@@ -1093,13 +1086,29 @@ pub fn draw_char_with_font(canvas: &mut WindowCanvas,
 
 pub fn draw_outline_tile(canvas: &mut WindowCanvas,
                          pos: Pos,
+                         cell_dims: (u32, u32),
                          color: Color) {
     canvas.set_blend_mode(BlendMode::Blend);
     canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
-    let rect = Rect::new(pos.x * FONT_WIDTH,
-                         pos.y * FONT_HEIGHT,
-                         FONT_WIDTH as u32,
-                         FONT_HEIGHT as u32);
+    let rect = Rect::new(pos.x * cell_dims.0 as i32 + 1,
+                         pos.y * cell_dims.1 as i32 + 1,
+                         cell_dims.0,
+                         cell_dims.1);
+
     canvas.draw_rect(rect).unwrap();
 }
+
+/*
+pub fn draw_tile_outline(canvas: &mut Canvas, pos: Pos, cell_dims: (u32, u32), color: Color) {
+    self.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+
+    let tile_rect = area.char_rect(pos.x, pos.y);
+
+    let inner_rect = Rect::new(tile_rect.x() + 1,
+                               tile_rect.y + 1,
+                               tile_rect.width() - 1,
+                               tile_rect.height() - 1);
+    self.canvas.draw_rect(inner_rect).unwrap();
+}
+*/
