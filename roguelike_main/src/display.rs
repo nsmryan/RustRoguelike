@@ -445,7 +445,6 @@ impl DisplayState {
         self.canvas.fill_rect(dst_rect).unwrap();
     }
 
-
     pub fn draw_tile_edge(&mut self, pos: Pos, area: &Area, color: Color, dir: Cardinal) {
         self.canvas.set_blend_mode(BlendMode::Blend);
         self.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
@@ -1085,18 +1084,37 @@ pub fn draw_char_with_font(canvas: &mut WindowCanvas,
 }
 
 pub fn draw_outline_tile(canvas: &mut WindowCanvas,
-                         pos: Pos,
+                         cell: Pos,
                          cell_dims: (u32, u32),
                          color: Color) {
     canvas.set_blend_mode(BlendMode::Blend);
     canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
-    let rect = Rect::new(pos.x * cell_dims.0 as i32 + 1,
-                         pos.y * cell_dims.1 as i32 + 1,
+    let rect = Rect::new(cell.x * cell_dims.0 as i32 + 1,
+                         cell.y * cell_dims.1 as i32 + 1,
                          cell_dims.0,
                          cell_dims.1);
 
     canvas.draw_rect(rect).unwrap();
+}
+
+pub fn draw_tile_highlight(canvas: &mut WindowCanvas,
+                           panel: &mut Panel<Texture>,
+                           cell: Pos,
+                           color: Color) {
+    let cell_dims = panel.cell_dims();
+
+    canvas.with_texture_canvas(&mut panel.target, |canvas| {
+        canvas.set_blend_mode(BlendMode::Blend);
+        canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+
+        let rect = Rect::new(cell.x * cell_dims.0 as i32,
+                             cell.y * cell_dims.1 as i32,
+                             cell_dims.0,
+                             cell_dims.1);
+
+        canvas.fill_rect(rect).unwrap();
+    }).unwrap();
 }
 
 /*

@@ -58,6 +58,8 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
         }
     }
 
+    // TODO reorganize to avoid canvas target setting
+
     // for each screen section, render its contents
     for plot in zones.iter() {
         match plot.name.as_str() {
@@ -85,13 +87,24 @@ pub fn render_all(display_state: &mut DisplayState, game: &mut Game)  -> Result<
 
                     render_map(display_state, game, &section);
 
+                    render_overlays(display_state, game, mouse_map_pos, &area);
+
+                    // TODO move to end, where we compose the screen from textures
+                    let (map_width, map_height) = game.data.map.size();
+                    let cell_dims = display_state.map_panel.cell_dims();
+                    let src = Rect::new(0, 0, (map_width * cell_dims.0 as i32) as u32, (map_height * cell_dims.1 as i32) as u32);
+                    let centered = section.fit_to_section(src.w as usize, src.h as usize);
+                    let dst = centered.get_rect();
+
+                    display_state.canvas.copy(&display_state.map_panel.target, src, dst).unwrap();
+
+                    // TODO move these above as they are updated
                     render_impressions(display_state, game, &area);
 
                     render_entities(display_state, game, &area);
 
                     render_effects(display_state, game, &area);
 
-                    render_overlays(display_state, game, mouse_map_pos, &area);
                 }
             }
 
@@ -589,8 +602,11 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, section: &Secti
                     let pos = Pos::new(x, y);
 
                     // draw an outline around the tile
-                    let outline_color = Color::white();
-                    draw_outline_tile(canvas, pos, cell_dims, outline_color);
+                    {
+                        let mut outline_color = Color::white();
+                        outline_color.a /= 8;
+                        draw_outline_tile(canvas, pos, cell_dims, outline_color);
+                    }
 
                     // Render game stuff
                     let visible =
@@ -692,12 +708,6 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game, section: &Secti
             }
         }).unwrap();
     }
-
-    let src = Rect::new(0, 0, (map_width * cell_dims.0 as i32) as u32, (map_height * cell_dims.1 as i32) as u32);
-    let centered = section.fit_to_section(src.w as usize, src.h as usize);
-    let dst = centered.get_rect();
-
-    display_state.canvas.copy(&display_state.map_panel.target, src, dst).unwrap();
 }
 
 /// Render each effect currently playing in the game
@@ -844,13 +854,13 @@ fn render_entities(display_state: &mut DisplayState, game: &mut Game, area: &Are
 }
 
 fn render_animation(anim_key: AnimKey,
-                      entity_id: EntityId,
-                      is_in_fov: bool,
-                      display_state: &mut DisplayState,
-                      data: &mut GameData,
-                      settings: &GameSettings,
-                      config: &Config,
-                      area: &Area) -> AnimationResult {
+                    entity_id: EntityId,
+                    is_in_fov: bool,
+                    display_state: &mut DisplayState,
+                    data: &mut GameData,
+                    settings: &GameSettings,
+                    config: &Config,
+                    area: &Area) -> AnimationResult {
 
     let pos = data.entities.pos[&entity_id];
     let mut color = data.entities.color[&entity_id];
@@ -941,6 +951,8 @@ fn render_overlays(display_state: &mut DisplayState,
                    area: &Area) {
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
+
+    let cell_dims = display_state.map_panel.cell_dims();
 
     // render a grid of numbers if enabled
     if game.config.overlay_directions {
@@ -1041,6 +1053,7 @@ fn render_overlays(display_state: &mut DisplayState,
         }
     }
 
+    // render attack overlay highlighting squares that an entity can attack
     if game.settings.overlay {
         let keys = game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>();
         for entity_id in keys {
@@ -1112,8 +1125,11 @@ fn render_overlays(display_state: &mut DisplayState,
                 // draw a highlight on that square
                 // don't draw overlay on top of character
                 if movement.pos != game.data.entities.pos[&player_id] {
-                    // TODO add back in with rendering update
-                    //display_state.draw_tile_outline(movement.pos, area, highlight_color);
+                    dbg!();
+                    draw_tile_highlight(&mut display_state.canvas,
+                                        &mut display_state.map_panel,
+                                        movement.pos,
+                                        highlight_color);
                 }
             }
         }
@@ -1132,11 +1148,12 @@ fn render_overlays(display_state: &mut DisplayState,
                 if in_fov && !in_fov_lines {
                     // TODO add back in with rendering update
                     //display_state.draw_tile_outline(pos, area, highlight_color_fov);
+                    draw_outline_tile(&mut display_state.canvas, pos, cell_dims, highlight_color_fov);
                 }
 
                 if in_fov_lines && !in_fov {
                     // TODO add back in with rendering update
-                    //display_state.draw_tile_outline(pos, area, highlight_color_lines);
+                    draw_outline_tile(&mut display_state.canvas, pos, cell_dims, highlight_color_lines);
                 }
             }
         }
@@ -1393,6 +1410,7 @@ fn render_fov_overlay(display_state: &mut DisplayState,
                       entity_id: EntityId,
                       area: &Area) {
     let player_id = game.data.find_player().unwrap();
+    let cell_dims = display_state.background_panel.cell_dims();
 
     let mut highlight_color = game.config.color_light_grey;
     highlight_color.a = game.config.grid_alpha_overlay;
@@ -1409,6 +1427,7 @@ fn render_fov_overlay(display_state: &mut DisplayState,
                 let chr = game.data.entities.chr[&entity_id];
                 // TODO add back in with rendering update
                 //display_state.draw_tile_outline(map_pos, area, highlight_color);
+                draw_outline_tile(&mut display_state.canvas, map_pos, cell_dims, highlight_color);
             }
         }
     }
