@@ -1,11 +1,10 @@
-use std::rc::Rc;
 use std::collections::HashMap;
 
 use sdl2::render::{Texture, WindowCanvas, TextureCreator, BlendMode};
 use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{Color as Sdl2Color};
-use sdl2::ttf::{Font, Sdl2TtfContext};
+use sdl2::ttf::{Sdl2TtfContext};
 
 use indexmap::map::IndexMap;
 
@@ -209,30 +208,10 @@ impl<T> Panel<T> {
 }
 
 
-pub struct DisplayState {
-    // TODO try to remove by turning into a spritesheet
-    pub font_map: FontMap,
-
-    // TODO try to remove with new sections system
-    pub zones: Vec<Plot>,
-    pub screen_sections: Plan,
-
-    pub sprites: IndexMap<SpriteKey, SpriteSheet>,
-    pub next_sprite_key: i64,
-
+pub struct DisplayTargets {
     pub canvas: WindowCanvas,
-    pub effects: Vec<Effect>,
-
-    pub animations: IndexMap<AnimKey, Animation>,
-    pub next_anim_key: i64,
 
     pub texture_creator: TextureCreator<WindowContext>,
-
-    pub drawn_sprites: IndexMap<EntityId, Sprite>,
-    pub impressions: Vec<Impression>,
-
-    pub prev_turn_fov: Vec<EntityId>,
-    pub current_turn_fov: Vec<EntityId>,
 
     pub background_panel: Panel<Texture>,
     pub map_panel: Panel<Texture>,
@@ -240,10 +219,8 @@ pub struct DisplayState {
     pub info_panel: Panel<Texture>,
 }
 
-impl DisplayState {
-    pub fn new(screen_sections: Plan,
-               font_map: FontMap,
-               canvas: WindowCanvas) -> DisplayState {
+impl DisplayTargets {
+    pub fn new(canvas: WindowCanvas) -> DisplayTargets {
 
         let texture_creator = canvas.texture_creator();
 
@@ -259,38 +236,59 @@ impl DisplayState {
 
         let player_panel = Panel::from_dims(&texture_creator, 10, 20, 1);
 
-        return DisplayState {
-            font_map,
-            sprites: IndexMap::new(),
-            next_sprite_key: 0,
-            screen_sections,
+        return DisplayTargets {
             canvas,
-            zones: Vec::new(),
-            effects: Vec::new(),
-            animations: IndexMap::new(),
-            next_anim_key: 0,
             texture_creator,
-            drawn_sprites: IndexMap::new(),
-            impressions: Vec::new(),
-            prev_turn_fov: Vec::new(),
-            current_turn_fov: Vec::new(),
-
             background_panel,
             map_panel,
             player_panel,
             info_panel,
         };
     }
+}
 
-    pub fn update_display(&mut self) {
-        self.canvas.present();
-    }
+pub struct DisplayState {
+    // TODO try to remove by turning into a spritesheet
+    pub font_map: FontMap,
 
-    pub fn add_spritesheet(&mut self, name: String, texture: Texture, rows: usize) {
-        let sprite_sheet = SpriteSheet::new(name, texture, rows);
-        let sprite_key = self.next_sprite_key;
-        self.next_sprite_key += 1;
-        self.sprites.insert(sprite_key, sprite_sheet);
+    // TODO try to remove with new sections system
+    pub zones: Vec<Plot>,
+    pub screen_sections: Plan,
+
+    pub sprites: IndexMap<SpriteKey, SpriteSheet>,
+    pub next_sprite_key: i64,
+
+    pub effects: Vec<Effect>,
+
+    pub animations: IndexMap<AnimKey, Animation>,
+    pub next_anim_key: i64,
+
+
+    pub drawn_sprites: IndexMap<EntityId, Sprite>,
+    pub impressions: Vec<Impression>,
+
+    pub prev_turn_fov: Vec<EntityId>,
+    pub current_turn_fov: Vec<EntityId>,
+}
+
+impl DisplayState {
+    pub fn new(screen_sections: Plan,
+               font_map: FontMap) -> DisplayState {
+
+        return DisplayState {
+            font_map,
+            sprites: IndexMap::new(),
+            next_sprite_key: 0,
+            screen_sections,
+            zones: Vec::new(),
+            effects: Vec::new(),
+            animations: IndexMap::new(),
+            next_anim_key: 0,
+            drawn_sprites: IndexMap::new(),
+            impressions: Vec::new(),
+            prev_turn_fov: Vec::new(),
+            current_turn_fov: Vec::new(),
+        };
     }
 
     pub fn lookup_spritekey(&self, name: &str) -> Option<SpriteKey> {
@@ -302,12 +300,39 @@ impl DisplayState {
 
         return None;
     }
+}
+
+pub struct Display {
+    pub state: DisplayState,
+    pub targets: DisplayTargets,
+}
+
+// TODO determine which functions should be moved to DisplayTargets or DisplayState
+impl Display {
+    pub fn new(screen_sections: Plan,
+               font_map: FontMap,
+               canvas: WindowCanvas) -> Display {
+        return Display { state: DisplayState::new(screen_sections, font_map),
+                         targets: DisplayTargets::new(canvas),
+        };
+    }
+
+    pub fn update_display(&mut self) {
+        self.targets.canvas.present();
+    }
+
+    pub fn add_spritesheet(&mut self, name: String, texture: Texture, rows: usize) {
+        let sprite_sheet = SpriteSheet::new(name, texture, rows);
+        let sprite_key = self.state.next_sprite_key;
+        self.state.next_sprite_key += 1;
+        self.state.sprites.insert(sprite_key, sprite_sheet);
+    }
 
     /// Create a sprite by looking up a texture and constructing the
     /// SpriteAnim structure.
     pub fn new_sprite(&self, name: String, speed: f32) -> Option<SpriteAnim> {
-        if let Some(sprite_key) = self.lookup_spritekey(&name) {
-            let max_index = self.sprites[&sprite_key].num_sprites;
+        if let Some(sprite_key) = self.state.lookup_spritekey(&name) {
+            let max_index = self.state.sprites[&sprite_key].num_sprites;
             return Some(SpriteAnim::make_anim(name, sprite_key, max_index as f32, speed));
         }
 
@@ -316,7 +341,7 @@ impl DisplayState {
     }
 
     pub fn font_sprite(&self, chr: char) -> Option<SpriteAnim> {
-        if let Some(sprite_key) = self.lookup_spritekey(&"font".to_string()) {
+        if let Some(sprite_key) = self.state.lookup_spritekey(&"font".to_string()) {
             return Some(SpriteAnim::new(format!("{}", chr),
                                         sprite_key,
                                         chr as i32 as SpriteIndex,
@@ -372,7 +397,7 @@ impl DisplayState {
                      pos: Pos,
                      color: Color,
                      area: &Area) {
-        let sprite_sheet = &mut self.sprites[&sprite_key];
+        let sprite_sheet = &mut self.state.sprites[&sprite_key];
 
         let sprites_per_row = sprite_sheet.sprites_per_row();
         let sprite_x = index as usize % sprites_per_row;
@@ -388,7 +413,7 @@ impl DisplayState {
         sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
         sprite_sheet.texture.set_alpha_mod(color.a);
 
-        self.canvas.copy_ex(&sprite_sheet.texture,
+        self.targets.canvas.copy_ex(&sprite_sheet.texture,
                             Some(src),
                             Some(dst),
                             0.0,
@@ -438,16 +463,16 @@ impl DisplayState {
                           pos: Pos,
                           color: Color,
                           area: &Area) {
-        self.canvas.set_blend_mode(BlendMode::Blend);
-        self.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+        self.targets.canvas.set_blend_mode(BlendMode::Blend);
+        self.targets.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
         let dst_rect = area.char_rect(pos.x, pos.y);
-        self.canvas.fill_rect(dst_rect).unwrap();
+        self.targets.canvas.fill_rect(dst_rect).unwrap();
     }
 
     pub fn draw_tile_edge(&mut self, pos: Pos, area: &Area, color: Color, dir: Cardinal) {
-        self.canvas.set_blend_mode(BlendMode::Blend);
-        self.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+        self.targets.canvas.set_blend_mode(BlendMode::Blend);
+        self.targets.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
         let tile_rect = area.char_rect(pos.x, pos.y);
         let width = 5;
@@ -483,7 +508,7 @@ impl DisplayState {
             }
         }
 
-        self.canvas.fill_rect(side_rect).unwrap();
+        self.targets.canvas.fill_rect(side_rect).unwrap();
     }
 
 
@@ -521,20 +546,20 @@ impl DisplayState {
     /// Add an animation to the current animation system, returning
     /// a key used to reference this animation
     pub fn play_animation(&mut self, animation: Animation) -> AnimKey {
-        let anim_key = self.next_anim_key;
-        self.next_anim_key += 1;
-        self.animations.insert(anim_key, animation);
+        let anim_key = self.state.next_anim_key;
+        self.state.next_anim_key += 1;
+        self.state.animations.insert(anim_key, animation);
         return anim_key;
     }
 
     pub fn play_effect(&mut self, effect: Effect) {
-        self.effects.push(effect);
+        self.state.effects.push(effect);
     }
 
     pub fn clear_level_state(&mut self) {
-        self.impressions.clear();
-        self.prev_turn_fov.clear();
-        self.current_turn_fov.clear();
+        self.state.impressions.clear();
+        self.state.prev_turn_fov.clear();
+        self.state.current_turn_fov.clear();
     }
 
     pub fn process_message(&mut self, msg: Msg, data: &mut GameData, config: &Config) {
@@ -716,33 +741,33 @@ impl DisplayState {
             Msg::PlayerTurn() => {
                 let player_id = data.find_player().unwrap();
 
-                self.prev_turn_fov.clear();
-                self.prev_turn_fov.extend(self.current_turn_fov.iter());
-                self.current_turn_fov.clear();
+                self.state.prev_turn_fov.clear();
+                self.state.prev_turn_fov.extend(self.state.current_turn_fov.iter());
+                self.state.current_turn_fov.clear();
 
                 for entity_id in data.entities.ids.clone() {
                     let pos = data.entities.pos[&entity_id];
                     if entity_id != player_id && data.is_in_fov(player_id, pos, config) {
-                        self.current_turn_fov.push(entity_id);
+                        self.state.current_turn_fov.push(entity_id);
                     }
                 }
 
-                for entity_id in self.prev_turn_fov.iter() {
+                for entity_id in self.state.prev_turn_fov.iter() {
                     if data.entities.typ.get(entity_id) != Some(&EntityType::Enemy) {
                         continue;
                     }
 
                     let pos = data.entities.pos[entity_id];
                     if !data.is_in_fov(player_id, pos, config) {
-                        if let Some(sprite) = self.drawn_sprites.get(entity_id) {
-                            self.impressions.push(Impression::new(*sprite, pos));
+                        if let Some(sprite) = self.state.drawn_sprites.get(entity_id) {
+                            self.state.impressions.push(Impression::new(*sprite, pos));
                         }
                     }
                 }
 
                 /* Remove impressions that are currently visible */
                 let mut impressions_visible = Vec::new();
-                for (index, impression) in self.impressions.iter().enumerate() {
+                for (index, impression) in self.state.impressions.iter().enumerate() {
                     if data.is_in_fov(player_id, impression.pos, config) {
                         impressions_visible.push(index);
                     }
@@ -750,7 +775,7 @@ impl DisplayState {
                 impressions_visible.sort();
                 impressions_visible.reverse();
                 for index in impressions_visible.iter() {
-                    self.impressions.swap_remove(*index);
+                    self.state.impressions.swap_remove(*index);
                 }
             }
 

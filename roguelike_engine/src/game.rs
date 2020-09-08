@@ -258,7 +258,7 @@ impl Game {
 //            //                              &mut self.key_input,
 //            //                              &mut self.console,
 //            //                              &mut self.data,
-//            //                              &mut self.display_state,
+//            //                              &mut self.display,
 //            //                              &mut self.settings,
 //            //                              &self.config,
 //            //                              &mut self.msg_log);

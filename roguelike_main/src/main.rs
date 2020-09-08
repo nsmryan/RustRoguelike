@@ -9,7 +9,6 @@ use std::fs;
 use std::io::{BufRead, Write};
 use std::time::{Duration, Instant};
 use std::path::Path;
-use std::collections::HashMap;
 //use std::collections::hash_map::DefaultHasher;
 //use std::hash::{Hash, Hasher};
 use std::str::FromStr;
@@ -20,7 +19,6 @@ use sdl2::mouse::MouseButton;
 use sdl2::keyboard::{Mod, Keycode};
 use sdl2::render::{TextureCreator};
 use sdl2::video::WindowContext;
-use sdl2::render::Texture;
 
 use walkdir::WalkDir;
 use bmp;
@@ -115,13 +113,13 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
                                           Plan::split_horiz(0.5, Plan::zone("player"),
                                                                  Plan::zone("info"))));
 
-    let mut display_state =
-        DisplayState::new(screen_sections, font_map, canvas);
+    let mut display =
+        Display::new(screen_sections, font_map, canvas);
 
     /* Load Textures */
-    load_sprites(&texture_creator, &mut display_state);
+    load_sprites(&texture_creator, &mut display);
 
-    load_sprite(&texture_creator, &mut display_state, "resources/rexpaint16x16.png", "tiles", 16);
+    load_sprite(&texture_creator, &mut display, "resources/rexpaint16x16.png", "tiles", 16);
 
     let mut game = Game::new(seed, config.clone())?;
 
@@ -130,14 +128,14 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     make_map(&config.map_load, &mut game);
 
     if game.config.take_screenshot {
-        take_screenshot(&mut game, &mut display_state);
+        take_screenshot(&mut game, &mut display);
         return Ok(());
     }
 
-    return game_loop(game, display_state, opts, sdl_context);
+    return game_loop(game, display, opts, sdl_context);
 }
 
-pub fn game_loop(mut game: Game, mut display_state: DisplayState, opts: GameOptions, sdl_context: sdl2::Sdl) -> Result<(), String> {
+pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_context: sdl2::Sdl) -> Result<(), String> {
     // read in the recorded action log, if one is provided
     let mut starting_actions = Vec::new();
     if let Some(replay_file) = opts.replay {
@@ -208,10 +206,11 @@ pub fn game_loop(mut game: Game, mut display_state: DisplayState, opts: GameOpti
                             // Find the region where the mouse click occurred.
                             // If the click is within the map, generate a map click event.
                             let in_map =
-                                display_state.zones.iter()
-                                                   .filter(|zone| zone.contains(x as usize, y as usize) &&
-                                                                  zone.name == "map")
-                                                   .next();
+                                display.state.zones
+                                             .iter()
+                                             .filter(|zone| zone.contains(x as usize, y as usize) &&
+                                                            zone.name == "map")
+                                             .next();
 
                             if let Some(map_zone) = in_map {
                                 let map_loc = map_zone.within(x as usize, y as usize);
@@ -280,7 +279,7 @@ pub fn game_loop(mut game: Game, mut display_state: DisplayState, opts: GameOpti
 
         if game.settings.state == GameState::Win {
             dbg!("Won");
-            display_state.clear_level_state();
+            display.clear_level_state();
         } else if game_result == GameResult::Stop || game.settings.exiting {
             running = false;
         }
@@ -288,17 +287,17 @@ pub fn game_loop(mut game: Game, mut display_state: DisplayState, opts: GameOpti
         let display_timer = timer!("DISPLAY");
         // TODO consider moving this within an update function for the display system
         for msg in game.msg_log.turn_messages.iter() {
-            display_state.process_message(*msg, &mut game.data, &game.config);
+            display.process_message(*msg, &mut game.data, &game.config);
         }
 
         /* Draw the Game to the Screen */
-        render_all(&mut display_state, &mut game)?;
+        render_all(&mut display, &mut game)?;
 
-        //display_state.canvas.copy(&display_state.text_font,
+        //display.canvas.copy(&display.text_font,
         //                          Some(sdl2::rect::Rect::new('a' as i32 * 8 - 8, 0, 8, 18)),
         //                          Some(sdl2::rect::Rect::new(10, 10, 8, 18)));
 
-        display_state.update_display();
+        display.update_display();
 
         drop(display_timer);
 
@@ -507,14 +506,14 @@ pub fn keydown_to_action(keycode: Keycode,
     return input_action;
 }
 
-pub fn take_screenshot(game: &mut Game, display_state: &mut DisplayState) -> Result<(), String> {
+pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), String> {
     game.settings.god_mode = true;
 
     game.step_game(0.0);
-    render_all(display_state, game)?;
+    render_all(display, game)?;
 
-    let pixels = display_state.canvas.read_pixels(None, sdl2::pixels::PixelFormatEnum::RGB24).unwrap();
-    let (width, height) = display_state.canvas.output_size().unwrap();
+    let pixels = display.targets.canvas.read_pixels(None, sdl2::pixels::PixelFormatEnum::RGB24).unwrap();
+    let (width, height) = display.targets.canvas.output_size().unwrap();
     let mut image = bmp::Image::new(width, height);
     for index in 0..(width * height) {
         let byte_index = 3 * index as usize;
@@ -526,22 +525,22 @@ pub fn take_screenshot(game: &mut Game, display_state: &mut DisplayState) -> Res
     return Ok(());
 }
 
-fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display_state: &mut DisplayState) {
-    load_sprite(texture_creator, display_state, "animations/player/Player_Idle.png", "player_idle", 1);
-    load_sprite(texture_creator, display_state, "animations/player/player_attack.png", "player_attack", 1);
-    load_sprite(texture_creator, display_state, "animations/player/player_attack_Hammer.png", "player_attack_hammer", 1);
-    load_sprite(texture_creator, display_state, "animations/player/player_attack_Dagger.png", "player_attack_dagger", 1);
-    load_sprite(texture_creator, display_state, "animations/player/Player_Idle_Dagger.png", "player_idle_dagger", 1);
-    load_sprite(texture_creator, display_state, "animations/player/Player_Idle_Hammer.png", "player_idle_hammer", 1);
-    load_sprite(texture_creator, display_state, "animations/player/Player_Idle_Shield.png", "player_idle_shield", 1);
-    load_sprite(texture_creator, display_state, "animations/player/player_vault.png", "player_vault", 1);
-    load_sprite(texture_creator, display_state, "animations/player/player_wallkick.png", "player_wall_kick", 1);
-    load_sprite(texture_creator, display_state, "animations/monster1/Gol_Idle.png", "gol_idle", 1);
-    load_sprite(texture_creator, display_state, "animations/monster1/Gol_Die.png", "gol_die", 1);
-    load_sprite(texture_creator, display_state, "animations/monster3/Elf_Idle.png", "elf_idle", 1);
-    load_sprite(texture_creator, display_state, "animations/traps/DamageTrap.png", "spikes", 1);
-    load_sprite(texture_creator, display_state, "resources/rexpaint16x16.png", "font", 16);
-    load_sprite(texture_creator, display_state, "animations/traps/McMuffin.png", "key", 1);
+fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display: &mut Display) {
+    load_sprite(texture_creator, display, "animations/player/Player_Idle.png", "player_idle", 1);
+    load_sprite(texture_creator, display, "animations/player/player_attack.png", "player_attack", 1);
+    load_sprite(texture_creator, display, "animations/player/player_attack_Hammer.png", "player_attack_hammer", 1);
+    load_sprite(texture_creator, display, "animations/player/player_attack_Dagger.png", "player_attack_dagger", 1);
+    load_sprite(texture_creator, display, "animations/player/Player_Idle_Dagger.png", "player_idle_dagger", 1);
+    load_sprite(texture_creator, display, "animations/player/Player_Idle_Hammer.png", "player_idle_hammer", 1);
+    load_sprite(texture_creator, display, "animations/player/Player_Idle_Shield.png", "player_idle_shield", 1);
+    load_sprite(texture_creator, display, "animations/player/player_vault.png", "player_vault", 1);
+    load_sprite(texture_creator, display, "animations/player/player_wallkick.png", "player_wall_kick", 1);
+    load_sprite(texture_creator, display, "animations/monster1/Gol_Idle.png", "gol_idle", 1);
+    load_sprite(texture_creator, display, "animations/monster1/Gol_Die.png", "gol_die", 1);
+    load_sprite(texture_creator, display, "animations/monster3/Elf_Idle.png", "elf_idle", 1);
+    load_sprite(texture_creator, display, "animations/traps/DamageTrap.png", "spikes", 1);
+    load_sprite(texture_creator, display, "resources/rexpaint16x16.png", "font", 16);
+    load_sprite(texture_creator, display, "animations/traps/McMuffin.png", "key", 1);
 
     for entry in WalkDir::new("animations/autoload/") {
         let entry = entry.unwrap();
@@ -549,18 +548,18 @@ fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display_state: 
         let file_name = entry.file_name().to_string_lossy().to_string();
         if let Ok(metadata) = entry.metadata() {
             if metadata.is_file() && file_name.ends_with("png") {
-                load_sprite(texture_creator, display_state, path.to_str().unwrap(), &file_name, 1);
+                load_sprite(texture_creator, display, path.to_str().unwrap(), &file_name, 1);
             }
         }
     }
 }
 
 fn load_sprite(texture_creator: &TextureCreator<WindowContext>,
-               display_state: &mut DisplayState,
+               display: &mut Display,
                path: &str,
                sprite_name: &str,
                rows: usize) {
     let texture = texture_creator.load_texture(path).expect("Could not load texture!");
-    display_state.add_spritesheet(sprite_name.to_string(), texture, rows);
+    display.add_spritesheet(sprite_name.to_string(), texture, rows);
 }
 
