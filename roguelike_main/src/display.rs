@@ -302,7 +302,7 @@ impl DisplayState {
     }
 
     pub fn draw_sprite(&mut self,
-                       canvas: &mut CanvasWindow,
+                       canvas: &mut WindowCanvas,
                        sprite: Sprite,
                        pos: Pos,
                        color: Color,
@@ -312,53 +312,26 @@ impl DisplayState {
         let sprite_key;
         match sprite {
             Sprite::Sprite(index, key) => {
-                sprite_index = index as u32;
+                sprite_index = index as usize;
                 sprite_key = key;
             },
 
             Sprite::Char(chr) => {
-                index = chr as u32;
+                sprite_index = chr as usize;
+                // TODO move expect into lookup_spritekey and return non-optional
                 sprite_key =
-                    display_state.lookup_spritekey("tiles")
-                                 .expect("Could not find rexpaint file in renderer!");
+                    self.lookup_spritekey("tiles")
+                        .expect("Could not find rexpaint file in renderer!");
             },
         }
 
-        let sprite = &mut display_state.sprites[&sprite_key];
-        sprite.draw_sprite_at_cell(canvas, index, pos, cell_dims, color, 0.0);
+        let sprite = &mut self.sprites[&sprite_key];
+        sprite.draw_sprite_at_cell(canvas, sprite_index, pos, cell_dims, color, 0.0);
     }
 
-    pub fn draw_tile(&mut self,
-                     index: u32,
-                     sprite_key: SpriteKey,
-                     pos: Pos,
-                     color: Color,
-                     area: &Area) {
-        let sprite_sheet = &mut self.state.sprites[&sprite_key];
-
-        let sprites_per_row = sprite_sheet.sprites_per_row();
-        let sprite_x = index as usize % sprites_per_row;
-        let sprite_y = index as usize / sprites_per_row;
-
-        let src = Rect::new(sprite_x as i32 * FONT_WIDTH,
-                            sprite_y as i32 * FONT_HEIGHT,
-                            FONT_WIDTH as u32,
-                            FONT_HEIGHT as u32);
-
-        let dst = area.char_rect(pos.x, pos.y);
-
-        sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
-        sprite_sheet.texture.set_alpha_mod(color.a);
-
-        self.targets.canvas.copy_ex(&sprite_sheet.texture,
-                            Some(src),
-                            Some(dst),
-                            0.0,
-                            None,
-                            false,
-                            false).unwrap();
+    pub fn play_effect(&mut self, effect: Effect) {
+        self.effects.push(effect);
     }
-
 }
 
 pub struct Display {
@@ -535,10 +508,6 @@ impl Display {
         return anim_key;
     }
 
-    pub fn play_effect(&mut self, effect: Effect) {
-        self.state.effects.push(effect);
-    }
-
     pub fn clear_level_state(&mut self) {
         self.state.impressions.clear();
         self.state.prev_turn_fov.clear();
@@ -563,7 +532,7 @@ impl Display {
                     let visible_monster_sound = sound_from_monster && player_can_see_source;
                     if !visible_monster_sound && sound_hits_player {
                         let sound_effect = Effect::Sound(sound_aoe, 0.0);
-                        self.play_effect(sound_effect);
+                        self.state.play_effect(sound_effect);
                     }
                 }
             }
@@ -902,7 +871,7 @@ impl SpriteSheet {
                             rotation: f64) {
         let (num_cells_x, num_cells_y) = self.num_cells();
         let sprite_x = index % num_cells_x;
-        let sprite_y = index / num_cells_y;
+        let sprite_y = index / num_cells_x;
 
         let (sprite_width, sprite_height) = self.sprite_dims();
         let src = Rect::new((sprite_x * sprite_width) as i32,
@@ -1011,8 +980,8 @@ pub fn draw_text_with_font(canvas: &mut WindowCanvas,
                            font_map: &mut FontMap,
                            text: &str,
                            pos: Pos,
-                           color: Color,
-                           area: &Area) {
+                           color: Color) {
+    /*
     let total_width = font_map.width * text.len() as u32;
     let tile_rect = area.char_rect(pos.x, pos.y);
 
@@ -1036,6 +1005,7 @@ pub fn draw_text_with_font(canvas: &mut WindowCanvas,
                     None,
                     Some(dst)).unwrap();
     }
+    */
 }
 
 pub fn draw_char_with_font(canvas: &mut WindowCanvas,

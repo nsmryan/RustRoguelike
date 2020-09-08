@@ -88,11 +88,6 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
                     let cell_dims = display.targets.map_panel.cell_dims();
 
                     {
-                        let sprite_key =
-                            display.state.lookup_spritekey("tiles")
-                                         .expect("Could not find rexpaint file in renderer!");
-                        let sprite = &mut display.state.sprites[&sprite_key];
-
                         let canvas = &mut display.targets.canvas;
                         let display_state = &mut display.state;
 
@@ -108,7 +103,11 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 
                             render_overlays(canvas, display_state, game, mouse_map_pos, cell_dims);
 
+                            render_entities(canvas, display_state, game, cell_dims, &area);
+                    
                             render_impressions(canvas, display_state, game, cell_dims);
+
+                            render_effects(canvas, display_state, game, cell_dims);
                         }).unwrap();
                     }
 
@@ -120,12 +119,6 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
                     let dst = centered.get_rect();
 
                     display.targets.canvas.copy(&display.targets.map_panel.target, src, dst).unwrap();
-
-                    // TODO move these above as they are updated
-
-                    render_entities(display, game, &area);
-
-                    render_effects(display, game, &area);
                 }
             }
 
@@ -721,22 +714,29 @@ fn render_map(canvas: &mut WindowCanvas, display_state: &mut DisplayState, cell_
 /// The strategy here is to copy the effects vector, update all items,
 /// and then remove finished effects from back to front. The
 /// resulting vector of effects is then saved as the new effects vector.
-fn render_effects(display: &mut Display, game: &mut Game, area: &Area) {
+fn render_effects(canvas: &mut WindowCanvas,
+                  display_state: &mut DisplayState,
+                  game: &mut Game,
+                  cell_dims: (u32, u32)) {
     let mut remove_indices = Vec::new();
 
-    let mut effects = display.state.effects.clone();
+    let mut effects = display_state.effects.clone();
+
+    let sprite_key =
+        display_state.lookup_spritekey("tiles")
+                     .expect("Could not find rexpaint file in renderer!");
+    let sprite = &mut display_state.sprites[&sprite_key];
 
     for (index, effect) in effects.iter_mut().enumerate() {
         match effect {
             Effect::HeardSomething(pos, created_turn) => {
-                // TODO need font image
-                //display.draw_char(ENTITY_ELF as char,
-                //                        *pos,
-                //                        game.config.color_warm_grey,
-                //                        area);
+                sprite.draw_char(canvas,
+                                 ENTITY_ELF as char,
+                                 *pos,
+                                 cell_dims,
+                                 game.config.color_warm_grey);
 
                 if *created_turn != game.settings.turn_count {
-                    dbg!(*created_turn, game.settings.turn_count);
                     remove_indices.push(index);
                 }
             }
@@ -751,9 +751,12 @@ fn render_effects(display: &mut Display, game: &mut Game, area: &Area) {
                     highlight_color.a =
                         game.config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
 
+                    // NOTE(perf) with the new texture system, consider rendering a series of sound
+                    //            tiles and simply pasting them, perhaps saving time from not
+                    //            needing to blend.
                     for pos in dist_positions.iter() {
                         if !game.data.map[*pos].blocked {
-                           display.highlight_tile(*pos, highlight_color, area);
+                           draw_tile_highlight(canvas, cell_dims, *pos, highlight_color);
                         }
                     }
                 }
@@ -776,12 +779,15 @@ fn render_effects(display: &mut Display, game: &mut Game, area: &Area) {
         effects.swap_remove(index);
     }
 
-    display.state.effects = effects;
+    display_state.effects = effects;
 }
 
-fn render_entity(entity_id: EntityId,
-                 display: &mut Display, 
-                 game: &mut Game, area: &Area) -> Option<Sprite> {
+fn render_entity(canvas: &mut WindowCanvas,
+                 entity_id: EntityId,
+                 display_state: &mut DisplayState,
+                 game: &mut Game,
+                 cell_dims: (u32, u32),
+                 area: &Area) -> Option<Sprite> {
     let mut animation_result = AnimationResult::new();
 
     let pos = game.data.entities.pos[&entity_id];
@@ -801,10 +807,12 @@ fn render_entity(entity_id: EntityId,
                 render_animation(*anim_key,
                                  entity_id,
                                  is_in_fov,
-                                 display,
+                                 canvas,
+                                 display_state,
                                  &mut game.data,
                                  &game.settings,
                                  &game.config,
+                                 cell_dims,
                                  area);
 
             if animation_result.done {
@@ -818,7 +826,7 @@ fn render_entity(entity_id: EntityId,
 
                 let chr = game.data.entities.chr[&entity_id];
                 let sprite = Sprite::char(chr);
-                display.draw_sprite(sprite, pos, color, cell_dims);
+                display_state.draw_sprite(canvas, sprite, pos, color, cell_dims);
                 animation_result.sprite = Some(sprite);
             }
         }
@@ -827,46 +835,45 @@ fn render_entity(entity_id: EntityId,
     return animation_result.sprite;
 }
 
-fn render_impressions(canvas: &mut Canvas, display_state: &mut DisplayState, game: &mut Game, cell_dims: (u32, u32)) {
+fn render_impressions(canvas: &mut WindowCanvas, display_state: &mut DisplayState, game: &mut Game, cell_dims: (u32, u32)) {
     // check for entities that have left FOV and make an impression for them
-    // NOTE(perf) technically this is only necessary once per turn, not once per render
-    display_state.drawn_sprites.clear();
-
     for impression in display_state.impressions.clone() {
         display_state.draw_sprite(canvas, impression.sprite, impression.pos, game.config.color_light_grey, cell_dims);
     }
 }
 
 /// Render each object in the game, filtering for objects not currently visible
-fn render_entities(display: &mut Display, game: &mut Game, area: &Area) {
+fn render_entities(canvas: &mut WindowCanvas, display_state: &mut DisplayState, game: &mut Game, cell_dims: (u32, u32), area: &Area) {
     let player_id = game.data.find_player().unwrap();
 
-    display.state.drawn_sprites.clear();
+    display_state.drawn_sprites.clear();
 
     // step each objects animation
     for entity in game.data.entities.ids.clone() {
         if entity != player_id {
-            let maybe_sprite = render_entity(entity, display, game, area);
+            let maybe_sprite = render_entity(canvas, entity, display_state, game, cell_dims, area);
 
             if let Some(sprite) = maybe_sprite {
-                display.state.drawn_sprites.insert(entity, sprite);
+                display_state.drawn_sprites.insert(entity, sprite);
             }
         }
     }
 
-    let maybe_sprite = render_entity(player_id, display, game, area);
+    let maybe_sprite = render_entity(canvas, player_id, display_state, game, cell_dims, area);
     if let Some(sprite) = maybe_sprite {
-        display.state.drawn_sprites.insert(player_id, sprite);
+        display_state.drawn_sprites.insert(player_id, sprite);
     }
 }
 
 fn render_animation(anim_key: AnimKey,
                     entity_id: EntityId,
                     is_in_fov: bool,
-                    display: &mut Display,
+                    canvas: &mut WindowCanvas,
+                    display_state: &mut DisplayState,
                     data: &mut GameData,
                     settings: &GameSettings,
                     config: &Config,
+                    cell_dims: (u32, u32),
                     area: &Area) -> AnimationResult {
 
     let pos = data.entities.pos[&entity_id];
@@ -878,7 +885,7 @@ fn render_animation(anim_key: AnimKey,
     }
 
     let mut animation_result: AnimationResult = AnimationResult::new();
-    match display.state.animations[&anim_key].clone() {
+    match display_state.animations[&anim_key].clone() {
         Animation::Between(ref mut sprite_anim, start, end, ref mut dist, blocks_per_sec) => {
            if settings.god_mode || is_in_fov {
                *dist = *dist + (blocks_per_sec / config.rate as f32); 
@@ -887,15 +894,16 @@ fn render_animation(anim_key: AnimKey,
                let draw_pos = move_towards(start, end, num_blocks);
 
                let sprite = sprite_anim.sprite();
-               display.draw_sprite(sprite,
+               display_state.draw_sprite(canvas,
+                                         sprite,
                                          draw_pos,
                                          color,
-                                         &area);
+                                         cell_dims);
                animation_result.sprite = Some(sprite);
 
                sprite_anim.step();
 
-               display.state.animations[&anim_key] =
+               display_state.animations[&anim_key] =
                    Animation::Between(*sprite_anim, start, end, *dist, blocks_per_sec);
 
                animation_result.done = *dist >= distance(start, end) as f32;
@@ -905,16 +913,17 @@ fn render_animation(anim_key: AnimKey,
         Animation::Loop(ref mut sprite_anim) => {
            if settings.god_mode || is_in_fov {
                 let sprite = sprite_anim.sprite();
-                display.draw_sprite(sprite,
+                let player_id = data.find_player().unwrap();
+                display_state.draw_sprite(canvas,
+                                          sprite,
                                           pos,
                                           color,
-                                          &area);
+                                          cell_dims);
                 animation_result.sprite = Some(sprite);
-
 
                 sprite_anim.step();
 
-                display.state.animations[&anim_key] =
+                display_state.animations[&anim_key] =
                    Animation::Loop(*sprite_anim);
 
                 // a looping animation never finishes
@@ -923,7 +932,7 @@ fn render_animation(anim_key: AnimKey,
         }
 
         Animation::PlayEffect(effect) => {
-            display.play_effect(effect);
+            display_state.play_effect(effect);
             animation_result.done = true;
 
             // NOTE the sprite is not updated here- this may cause entity impressions to not work
@@ -933,15 +942,16 @@ fn render_animation(anim_key: AnimKey,
         Animation::Once(ref mut sprite_anim) => {
            if settings.god_mode || is_in_fov {
                 let sprite = sprite_anim.sprite();
-                display.draw_sprite(sprite,
+                display_state.draw_sprite(canvas,
+                                          sprite,
                                           pos,
                                           color,
-                                          &area);
+                                          cell_dims);
                 animation_result.sprite = Some(sprite);
 
                 let sprite_done = sprite_anim.step();
 
-                display.state.animations[&anim_key] =
+                display_state.animations[&anim_key] =
                    Animation::Once(*sprite_anim);
 
                 animation_result.done = sprite_done;
@@ -1201,8 +1211,7 @@ fn render_overlays(canvas: &mut WindowCanvas,
                                         &mut display_state.font_map,
                                         &format!("{}", near_count),
                                         pos,
-                                        highlight_color,
-                                        area);
+                                        highlight_color);
                 }
             }
         }
