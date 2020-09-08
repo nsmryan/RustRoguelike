@@ -105,10 +105,10 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
                             canvas.copy(background, None, None);
 
                             render_map(canvas, display_state, cell_dims, game);
+
+                            render_overlays(canvas, display_state, game, mouse_map_pos, cell_dims, &area);
                         }).unwrap();
                     }
-
-                    render_overlays(display, game, mouse_map_pos, &area);
 
                     // TODO move to end, where we compose the screen from textures
                     let (map_width, map_height) = game.data.map.size();
@@ -125,7 +125,6 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
                     render_entities(display, game, &area);
 
                     render_effects(display, game, &area);
-
                 }
             }
 
@@ -952,14 +951,19 @@ fn render_animation(anim_key: AnimKey,
     return animation_result;
 }
 
-fn render_overlays(display: &mut Display, 
+fn render_overlays(canvas: &mut WindowCanvas,
+                   display_state: &mut DisplayState,
                    game: &mut Game,
                    map_mouse_pos: Option<Pos>,
+                   cell_dims: (u32, u32),
                    area: &Area) {
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
-    let cell_dims = display.targets.map_panel.cell_dims();
+    let sprite_key =
+        display_state.lookup_spritekey("tiles")
+                     .expect("Could not find rexpaint file in renderer!");
+    let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     // render a grid of numbers if enabled
     if game.config.overlay_directions {
@@ -1039,7 +1043,12 @@ fn render_overlays(display: &mut Display,
                     Direction::UpRight => -45.0,
                 };
 
-                display.draw_char_with_rotation(ARROW_RIGHT as char, pos, direction_color, area, rotation);
+                tile_sprite.draw_sprite_at_cell(canvas,
+                                                ARROW_RIGHT as usize,
+                                                pos,
+                                                cell_dims,
+                                                direction_color,
+                                                rotation);
             }
         }
     }
@@ -1053,9 +1062,9 @@ fn render_overlays(display: &mut Display,
 
             if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
                game.data.entities.alive[entity_id] {
-               render_attack_overlay(display, game, *entity_id, area);
-               render_fov_overlay(display, game, *entity_id, area);
-               render_movement_overlay(display, game, *entity_id, area);
+               render_attack_overlay(canvas, display_state, game, *entity_id, cell_dims);
+               render_fov_overlay(canvas, display_state, game, *entity_id, cell_dims);
+               render_movement_overlay(canvas, display_state, game, *entity_id, cell_dims);
             }
         }
     }
@@ -1069,10 +1078,11 @@ fn render_overlays(display: &mut Display,
             if game.data.map.is_within_bounds(pos) &&
                game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
                game.data.entities.alive[&entity_id] {
-               render_attack_overlay(display,
+               render_attack_overlay(canvas,
+                                     display_state,
                                      game,
                                      entity_id,
-                                     area);
+                                     cell_dims);
             }
         }
     }
@@ -1133,8 +1143,8 @@ fn render_overlays(display: &mut Display,
                 // don't draw overlay on top of character
                 if movement.pos != game.data.entities.pos[&player_id] {
                     dbg!();
-                    draw_tile_highlight(&mut display.targets.canvas,
-                                        &mut display.targets.map_panel,
+                    draw_tile_highlight(canvas,
+                                        cell_dims,
                                         movement.pos,
                                         highlight_color);
                 }
@@ -1155,12 +1165,12 @@ fn render_overlays(display: &mut Display,
                 if in_fov && !in_fov_lines {
                     // TODO add back in with rendering update
                     //display.draw_tile_outline(pos, area, highlight_color_fov);
-                    draw_outline_tile(&mut display.targets.canvas, pos, cell_dims, highlight_color_fov);
+                    draw_outline_tile(canvas, pos, cell_dims, highlight_color_fov);
                 }
 
                 if in_fov_lines && !in_fov {
                     // TODO add back in with rendering update
-                    draw_outline_tile(&mut display.targets.canvas, pos, cell_dims, highlight_color_lines);
+                    draw_outline_tile(canvas, pos, cell_dims, highlight_color_lines);
                 }
             }
         }
@@ -1187,8 +1197,8 @@ fn render_overlays(display: &mut Display,
                     // TODO need font image
                     //display.draw_char(MAP_EMPTY_CHAR as char, pos, adj_color, area);
 
-                    draw_text_with_font(&mut display.targets.canvas,
-                                        &mut display.state.font_map,
+                    draw_text_with_font(canvas,
+                                        &mut display_state.font_map,
                                         &format!("{}", near_count),
                                         pos,
                                         highlight_color,
@@ -1374,10 +1384,11 @@ fn render_bar(display: &mut Display,
     display.targets.canvas.set_blend_mode(blend_mode);
 }
 
-fn render_attack_overlay(display: &mut Display,
+fn render_attack_overlay(canvas: &mut WindowCanvas,
+                         display_state: &mut DisplayState,
                          game: &mut Game,
                          entity_id: EntityId,
-                         area: &Area) {
+                         cell_dims: (u32, u32)) {
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
@@ -1385,6 +1396,12 @@ fn render_attack_overlay(display: &mut Display,
 
     let mut attack_highlight_color = game.config.color_red;
     attack_highlight_color.a = game.config.highlight_attack;
+
+    // TODO consider the duplication with looking this up in rendering functions
+    let sprite_key =
+        display_state.lookup_spritekey("tiles")
+                     .expect("Could not find rexpaint file in renderer!");
+    let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     if let Some(reach) = game.data.entities.attack.get(&entity_id) {
         let attack_positions = 
@@ -1406,18 +1423,17 @@ fn render_attack_overlay(display: &mut Display,
                  .collect::<Vec<Pos>>();
 
         for position in attack_positions {
-            // TODO need font image
-            //display.draw_char(MAP_EMPTY_CHAR as char, position, attack_highlight_color, area);
+            tile_sprite.draw_char(canvas, MAP_EMPTY_CHAR as char, position, cell_dims, attack_highlight_color);
         }
     }
 }
 
-fn render_fov_overlay(display: &mut Display,
+fn render_fov_overlay(canvas: &mut WindowCanvas,
+                      display_state: &mut DisplayState,
                       game: &mut Game,
                       entity_id: EntityId,
-                      area: &Area) {
+                      cell_dims: (u32, u32)) {
     let player_id = game.data.find_player().unwrap();
-    let cell_dims = display.targets.background_panel.cell_dims();
 
     let mut highlight_color = game.config.color_light_grey;
     highlight_color.a = game.config.grid_alpha_overlay;
@@ -1432,18 +1448,17 @@ fn render_fov_overlay(display: &mut Display,
 
             if visible {
                 let chr = game.data.entities.chr[&entity_id];
-                // TODO add back in with rendering update
-                //display.draw_tile_outline(map_pos, area, highlight_color);
-                draw_outline_tile(&mut display.targets.canvas, map_pos, cell_dims, highlight_color);
+                draw_outline_tile(canvas, map_pos, cell_dims, highlight_color);
             }
         }
     }
 }
 
-fn render_movement_overlay(display: &mut Display,
+fn render_movement_overlay(canvas: &mut WindowCanvas,
+                           display_state: &mut DisplayState,
                            game: &mut Game,
                            entity_id: EntityId,
-                           area: &Area) {
+                           cell_dims: (u32, u32)) {
     let player_id = game.data.find_player().unwrap();
 
     let entity_pos = game.data.entities.pos[&entity_id];
@@ -1452,9 +1467,9 @@ fn render_movement_overlay(display: &mut Display,
     highlight_color.a = game.config.grid_alpha_overlay;
 
     let sprite_key =
-        display.state.lookup_spritekey("tiles")
+        display_state.lookup_spritekey("tiles")
                      .expect("Could not find rexpaint file in renderer!");
-    let sprite = &display.state.sprites[&sprite_key];
+    let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     if let Some(reach) = game.data.entities.movement.get(&entity_id) {
         for move_pos in reach.reachables(entity_pos) {
@@ -1462,15 +1477,7 @@ fn render_movement_overlay(display: &mut Display,
             if visible {
                 let chr = game.data.entities.chr[&entity_id];
 
-                //let sprite = display.drawn_sprites[&entity_id];
-                //display.draw_sprite(sprite, entity_pos, highlight_color, area);
-                // TODO need font image
-                //draw_char(&mut display.canvas,
-                //          &mut font_image,
-                //          chr as char,
-                //          move_pos,
-                //          highlight_color,
-                //          area);
+                tile_sprite.draw_char(canvas, chr as char, move_pos, cell_dims, highlight_color);
             }
         }
     }

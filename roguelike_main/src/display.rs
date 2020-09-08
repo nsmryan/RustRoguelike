@@ -422,41 +422,12 @@ impl Display {
                             false).unwrap();
     }
 
-    pub fn draw_char_with_rotation(&mut self,
-                                   chr: char,
-                                   pos: Pos,
-                                   color: Color,
-                                   area: &Area,
-                                   angle: f64) {
-        let chr_x = (chr as i32) % FONT_WIDTH;
-        let chr_y = (chr as i32) / FONT_HEIGHT;
-
-        let src = Rect::new((chr_x * FONT_WIDTH) as i32,
-                            (chr_y * FONT_HEIGHT) as i32,
-                            FONT_WIDTH as u32,
-                            FONT_HEIGHT as u32);
-
-        let dst = area.char_rect(pos.x, pos.y);
-
-        // TODO need font image
-        //self.font_image.set_color_mod(color.r, color.g, color.b);
-        //self.font_image.set_alpha_mod(color.a);
-
-        //self.canvas.copy_ex(&self.font_image,
-        //                    Some(src),
-        //                    Some(dst),
-        //                    angle,
-        //                    None,
-        //                    false,
-        //                    false).unwrap();
-    }
-
     pub fn draw_char(&mut self,
                      chr: char,
                      pos: Pos,
                      color: Color,
                      area: &Area) {
-        self.draw_char_with_rotation(chr, pos, color, area, 0.0);
+        //self.draw_char_with_rotation(chr, pos, color, area, 0.0);
     }
 
     pub fn highlight_tile(&mut self,
@@ -858,7 +829,6 @@ impl SpriteSheet {
 
         let num_sprites_per_row = width / FONT_WIDTH as usize;
         let num_sprites = num_sprites_per_row * rows;
-        println!("{} {} {} ({}, {}), {}", name, num_sprites_per_row, num_sprites, width, height, rows);
 
         return SpriteSheet {
             texture,
@@ -887,13 +857,14 @@ impl SpriteSheet {
         return (self.width / num_width, self.height / num_height);
     }
 
+    // consider removing and just converting chars to usize
     pub fn draw_char(&mut self,
                      canvas: &mut WindowCanvas,
                      chr: char,
                      cell: Pos,
                      cell_dims: (u32, u32),
                      color: Color) {
-        self.draw_sprite_at_cell(canvas, chr as usize, cell, cell_dims, color);
+        self.draw_sprite_at_cell(canvas, chr as usize, cell, cell_dims, color, 0.0);
     }
 
     pub fn draw_sprite_at_cell(&mut self,
@@ -901,20 +872,22 @@ impl SpriteSheet {
                                index: usize,
                                cell: Pos,
                                cell_dims: (u32, u32),
-                               color: Color) {
+                               color: Color,
+                               rotation: f64) {
         let (cell_width, cell_height) = cell_dims;
 
         let pos = Pos::new(cell.x * cell_width as i32, cell.y * cell_height as i32);
 
-        self.draw_sprite_at_pixel(canvas, index, pos, cell_dims, color);
+        self.draw_sprite_full(canvas, index, pos, cell_dims, color, rotation);
     }
 
-    pub fn draw_sprite_at_pixel(&mut self,
-                                canvas: &mut WindowCanvas,
-                                index: usize,
-                                pos: Pos,
-                                cell_dims: (u32, u32),
-                                color: Color) {
+    pub fn draw_sprite_full(&mut self,
+                            canvas: &mut WindowCanvas,
+                            index: usize,
+                            pos: Pos,
+                            cell_dims: (u32, u32),
+                            color: Color,
+                            rotation: f64) {
         let (num_cells_x, num_cells_y) = self.num_cells();
         let sprite_x = index % num_cells_x;
         let sprite_y = index / num_cells_y;
@@ -939,7 +912,7 @@ impl SpriteSheet {
         canvas.copy_ex(&self.texture,
                        Some(src),
                        Some(dst),
-                       0.0,
+                       rotation,
                        None,
                        false,
                        false).unwrap();
@@ -1008,38 +981,6 @@ pub fn draw_char(canvas: &mut WindowCanvas,
                         FONT_HEIGHT as u32);
 
     let dst = area.char_rect(pos.x, pos.y);
-
-    font_image.set_color_mod(color.r, color.g, color.b);
-    font_image.set_alpha_mod(color.a);
-
-    canvas.copy_ex(font_image,
-                   Some(src),
-                   Some(dst),
-                   0.0,
-                   None,
-                   false,
-                   false).unwrap();
-}
-
-// TODO rename
-// TODO keep font size with texture
-pub fn draw_char_new(canvas: &mut WindowCanvas,
-                     font_image: &mut Texture,
-                     chr: char,
-                     pos: Pos,
-                     color: Color) {
-    let chr_x = (chr as i32) % FONT_WIDTH;
-    let chr_y = (chr as i32) / FONT_HEIGHT;
-
-    let src = Rect::new((chr_x * FONT_WIDTH) as i32,
-                        (chr_y * FONT_HEIGHT) as i32,
-                        FONT_WIDTH as u32,
-                        FONT_HEIGHT as u32);
-
-    let dst = Rect::new((pos.x * FONT_WIDTH) as i32,
-                        (pos.y * FONT_HEIGHT) as i32,
-                        FONT_WIDTH as u32,
-                        FONT_HEIGHT as u32);
 
     font_image.set_color_mod(color.r, color.g, color.b);
     font_image.set_alpha_mod(color.a);
@@ -1124,34 +1065,17 @@ pub fn draw_outline_tile(canvas: &mut WindowCanvas,
 }
 
 pub fn draw_tile_highlight(canvas: &mut WindowCanvas,
-                           panel: &mut Panel<Texture>,
+                           cell_dims: (u32, u32),
                            cell: Pos,
                            color: Color) {
-    let cell_dims = panel.cell_dims();
+    canvas.set_blend_mode(BlendMode::Blend);
+    canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
-    canvas.with_texture_canvas(&mut panel.target, |canvas| {
-        canvas.set_blend_mode(BlendMode::Blend);
-        canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+    let rect = Rect::new(cell.x * cell_dims.0 as i32,
+                         cell.y * cell_dims.1 as i32,
+                         cell_dims.0,
+                         cell_dims.1);
 
-        let rect = Rect::new(cell.x * cell_dims.0 as i32,
-                             cell.y * cell_dims.1 as i32,
-                             cell_dims.0,
-                             cell_dims.1);
-
-        canvas.fill_rect(rect).unwrap();
-    }).unwrap();
+    canvas.fill_rect(rect).unwrap();
 }
 
-/*
-pub fn draw_tile_outline(canvas: &mut Canvas, pos: Pos, cell_dims: (u32, u32), color: Color) {
-    self.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
-
-    let tile_rect = area.char_rect(pos.x, pos.y);
-
-    let inner_rect = Rect::new(tile_rect.x() + 1,
-                               tile_rect.y + 1,
-                               tile_rect.width() - 1,
-                               tile_rect.height() - 1);
-    self.canvas.draw_rect(inner_rect).unwrap();
-}
-*/
