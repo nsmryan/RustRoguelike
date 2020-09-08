@@ -300,6 +300,65 @@ impl DisplayState {
 
         return None;
     }
+
+    pub fn draw_sprite(&mut self,
+                       canvas: &mut CanvasWindow,
+                       sprite: Sprite,
+                       pos: Pos,
+                       color: Color,
+                       cell_dims: (u32, u32)) {
+
+        let sprite_index;
+        let sprite_key;
+        match sprite {
+            Sprite::Sprite(index, key) => {
+                sprite_index = index as u32;
+                sprite_key = key;
+            },
+
+            Sprite::Char(chr) => {
+                index = chr as u32;
+                sprite_key =
+                    display_state.lookup_spritekey("tiles")
+                                 .expect("Could not find rexpaint file in renderer!");
+            },
+        }
+
+        let sprite = &mut display_state.sprites[&sprite_key];
+        sprite.draw_sprite_at_cell(canvas, index, pos, cell_dims, color, 0.0);
+    }
+
+    pub fn draw_tile(&mut self,
+                     index: u32,
+                     sprite_key: SpriteKey,
+                     pos: Pos,
+                     color: Color,
+                     area: &Area) {
+        let sprite_sheet = &mut self.state.sprites[&sprite_key];
+
+        let sprites_per_row = sprite_sheet.sprites_per_row();
+        let sprite_x = index as usize % sprites_per_row;
+        let sprite_y = index as usize / sprites_per_row;
+
+        let src = Rect::new(sprite_x as i32 * FONT_WIDTH,
+                            sprite_y as i32 * FONT_HEIGHT,
+                            FONT_WIDTH as u32,
+                            FONT_HEIGHT as u32);
+
+        let dst = area.char_rect(pos.x, pos.y);
+
+        sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
+        sprite_sheet.texture.set_alpha_mod(color.a);
+
+        self.targets.canvas.copy_ex(&sprite_sheet.texture,
+                            Some(src),
+                            Some(dst),
+                            0.0,
+                            None,
+                            false,
+                            false).unwrap();
+    }
+
 }
 
 pub struct Display {
@@ -373,53 +432,6 @@ impl Display {
             self.draw_text(text, Pos::new(pos.x, pos.y + y_pos), color, area);
             y_pos += 1;
         }
-    }
-
-    pub fn draw_sprite(&mut self,
-                       sprite: Sprite,
-                       pos: Pos,
-                       color: Color,
-                       area: &Area) {
-        match sprite {
-            Sprite::Sprite(index, key) => {
-                self.draw_tile(index as u32, key, pos, color, area);
-            },
-
-            Sprite::Char(chr) => {
-                self.draw_char(chr, pos, color, area);
-            },
-        }
-    }
-
-    pub fn draw_tile(&mut self,
-                     index: u32,
-                     sprite_key: SpriteKey,
-                     pos: Pos,
-                     color: Color,
-                     area: &Area) {
-        let sprite_sheet = &mut self.state.sprites[&sprite_key];
-
-        let sprites_per_row = sprite_sheet.sprites_per_row();
-        let sprite_x = index as usize % sprites_per_row;
-        let sprite_y = index as usize / sprites_per_row;
-
-        let src = Rect::new(sprite_x as i32 * FONT_WIDTH,
-                            sprite_y as i32 * FONT_HEIGHT,
-                            FONT_WIDTH as u32,
-                            FONT_HEIGHT as u32);
-
-        let dst = area.char_rect(pos.x, pos.y);
-
-        sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
-        sprite_sheet.texture.set_alpha_mod(color.a);
-
-        self.targets.canvas.copy_ex(&sprite_sheet.texture,
-                            Some(src),
-                            Some(dst),
-                            0.0,
-                            None,
-                            false,
-                            false).unwrap();
     }
 
     pub fn draw_char(&mut self,

@@ -19,7 +19,7 @@ pub enum Effect {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Sprite {
     Char(char),
-    Sprite(u32, SpriteKey),
+    Sprite(u32, SpriteKey), // index, sprite key
 }
 
 impl Sprite {

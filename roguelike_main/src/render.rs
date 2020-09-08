@@ -106,7 +106,9 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 
                             render_map(canvas, display_state, cell_dims, game);
 
-                            render_overlays(canvas, display_state, game, mouse_map_pos, cell_dims, &area);
+                            render_overlays(canvas, display_state, game, mouse_map_pos, cell_dims);
+
+                            render_impressions(canvas, display_state, game, cell_dims);
                         }).unwrap();
                     }
 
@@ -120,7 +122,6 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
                     display.targets.canvas.copy(&display.targets.map_panel.target, src, dst).unwrap();
 
                     // TODO move these above as they are updated
-                    render_impressions(display, game, &area);
 
                     render_entities(display, game, &area);
 
@@ -817,7 +818,7 @@ fn render_entity(entity_id: EntityId,
 
                 let chr = game.data.entities.chr[&entity_id];
                 let sprite = Sprite::char(chr);
-                display.draw_sprite(sprite, pos, color, area);
+                display.draw_sprite(sprite, pos, color, cell_dims);
                 animation_result.sprite = Some(sprite);
             }
         }
@@ -826,13 +827,13 @@ fn render_entity(entity_id: EntityId,
     return animation_result.sprite;
 }
 
-fn render_impressions(display: &mut Display, game: &mut Game, area: &Area) {
+fn render_impressions(canvas: &mut Canvas, display_state: &mut DisplayState, game: &mut Game, cell_dims: (u32, u32)) {
     // check for entities that have left FOV and make an impression for them
     // NOTE(perf) technically this is only necessary once per turn, not once per render
-    display.state.drawn_sprites.clear();
+    display_state.drawn_sprites.clear();
 
-    for impression in display.state.impressions.clone() {
-        display.draw_sprite(impression.sprite, impression.pos, game.config.color_light_grey, area);
+    for impression in display_state.impressions.clone() {
+        display_state.draw_sprite(canvas, impression.sprite, impression.pos, game.config.color_light_grey, cell_dims);
     }
 }
 
@@ -955,8 +956,7 @@ fn render_overlays(canvas: &mut WindowCanvas,
                    display_state: &mut DisplayState,
                    game: &mut Game,
                    map_mouse_pos: Option<Pos>,
-                   cell_dims: (u32, u32),
-                   area: &Area) {
+                   cell_dims: (u32, u32)) {
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
