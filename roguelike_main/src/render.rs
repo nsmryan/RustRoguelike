@@ -87,10 +87,13 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
         let canvas = &mut display.targets.canvas;
         let display_state = &mut display.state;
 
-        let player_panel = &mut display.targets.player_panel.target;
+        let player_panel = &mut display.targets.player_panel;
+
+        let panel = player_panel.with_target(());
 
         canvas.with_texture_canvas(&mut display.targets.player_panel.target, |canvas| {
-            render_player_info(canvas, display_state, game, cell_dims);
+            let panel = panel.with_target(canvas);
+            render_player_info(panel, display_state, game, cell_dims);
         }).unwrap();
     }
 
@@ -173,6 +176,113 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     Ok(())
 }
 
+/// Draw an outline and title around an area of the screen
+fn render_placard(panel: Panel<&mut WindowCanvas>,
+                  display_state: &mut DisplayState,
+                  text: &str,
+                  config: &Config) {
+    let color = config.color_mint_green;
+    
+    // Draw a black background
+    panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+    panel.target.clear();
+    let (width, height) = panel.target.output_size().unwrap();
+    let (cell_width, cell_height) = panel.cell_dims();
+
+    panel.target.set_draw_color(sdl2_color(color));
+
+    // Draw a thin line around the edges of the placard
+    panel.target.draw_rect(Rect::new(cell_width as i32 / 2,
+                                     (cell_height as i32 / 2),
+                                     width as u32 - (cell_width / 2),
+                                     height as u32 - (cell_height / 2))).unwrap();
+
+    // draw a rectangle around where the placard header text will be placed.
+    let half_text = text.len() / 2;
+    let text_offset = (width / 2) - (cell_width * half_text as u32);
+    panel.target.fill_rect(Rect::new(text_offset as i32 - 3,
+                                     0,
+                                     (text.len() * cell_width as usize) as u32 + 2,
+                                     cell_height as u32)).unwrap();
+
+    // Draw header text
+    let mid_char_offset = (width / cell_width) / 2;
+    let text_start = (mid_char_offset - half_text as u32) as i32;
+
+    let text_pos = Pos::new(text_start, 0);
+
+    let sprite_key =
+        display_state.lookup_spritekey("tiles")
+                     .expect("Could not find rexpaint file in renderer!");
+    let tile_sprite = &mut display_state.sprites[&sprite_key];
+
+    tile_sprite.draw_text(panel.target, &text, text_pos, panel.cell_dims(), config.color_dark_blue);
+}
+
+fn render_pips(canvas: &mut WindowCanvas,
+               display_state: &mut DisplayState,
+               num_pips: u32,
+               y_pos: i32,
+               color: Color) {
+    /* TODO add back in
+    if num_pips > 0 {
+        let blend_mode = display.targets.canvas.blend_mode();
+        display.targets.canvas.set_blend_mode(blend_mode);
+
+        let color = sdl2_color(color);
+        display.targets.canvas.set_draw_color(color);
+
+        let start = area.char_rect(1, y_pos);
+
+        let spacing = 4;
+        let mut pips = Vec::new();
+        for pip_index in 0..num_pips as i32 {
+            let x_offset =  start.x + start.height() as i32 * pip_index + spacing * pip_index;
+            let pip = Rect::new(x_offset,
+                                start.y + spacing,
+                                start.height(),
+                                start.height());
+            pips.push(pip)
+        }
+        display.targets.canvas.fill_rects(&pips).unwrap();
+
+        display.targets.canvas.set_blend_mode(BlendMode::None);
+    }
+    */
+}
+
+fn render_bar(display: &mut Display,
+              percent: f32,
+              y_pos: i32,
+              fg_color: Color,
+              bg_color: Color) {
+    /* TODO add back in
+    let blend_mode = display.targets.canvas.blend_mode();
+
+    display.targets.canvas.set_blend_mode(BlendMode::None);
+    let color = sdl2_color(fg_color);
+    display.targets.canvas.set_draw_color(color);
+    let start = area.char_rect(1, y_pos);
+    let width = area.width as u32  - 2 * start.width();
+    let health_rect = Rect::new(start.x,
+                                start.y,
+                                (width as f32 * percent) as u32,
+                                start.height());
+    display.targets.canvas.fill_rect(health_rect).unwrap();
+
+    let full_rect = Rect::new(start.x,
+                              start.y,
+                              width,
+                              start.height());
+    let color = sdl2_color(bg_color);
+    display.targets.canvas.set_draw_color(color);
+    display.targets.canvas.draw_rect(full_rect).unwrap();
+
+    display.targets.canvas.set_blend_mode(blend_mode);
+    */
+}
+
+
 // TODO console
 /*
 fn render_console(display: &mut Display, game: &mut Game) {
@@ -230,12 +340,13 @@ fn render_console(display: &mut Display, game: &mut Game) {
 }
 */
 
-fn render_player_info(canvas: &mut WindowCanvas, display_state: &mut DisplayState, game: &mut Game, cell_dims: (u32, u32)) {
-    /* TODO add back in
-    render_placard(canvas,
+fn render_player_info(panel: Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game, cell_dims: (u32, u32)) {
+    render_placard(panel,
+                   display_state,
                    "Player",
                    &game.config);
 
+    /* TODO add back in
     let player_id = game.data.find_player().unwrap();
 
     let mut list = Vec::new();
@@ -440,12 +551,12 @@ fn render_confirm_quit(canvas: &mut WindowCanvas, display_state: &mut DisplaySta
 /// Render an inventory section within the given area
 fn render_inventory(canvas: &mut WindowCanvas, display_state: &mut DisplayState, game: &mut Game) {
     // Render header
+    /* TODO add back in
     render_placard(canvas,
                  display_state,
                  "Inventory",
                  &game.config);
 
-    /* TODO add back in
     let player_id = game.data.find_player().unwrap();
 
     // Render each object's name in inventory
@@ -1252,112 +1363,6 @@ fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> 
     };
 
     return color;
-}
-
-/// Draw an outline and title around an area of the screen
-fn render_placard(canvas: &mut WindowCanvas,
-                  display_state: &mut DisplayState,
-                  text: &str,
-                  config: &Config) {
-    let color = config.color_mint_green;
-    
-    // Draw a black background
-    canvas.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
-    /* TODO add back in
-    canvas.fill_rect(Rect::new(area.x_offset + 5,
-                               area.y_offset + (area.font_height as i32 / 2),
-                               area.width as u32 - 10,
-                               area.height as u32 - 10)).unwrap();
-
-    canvas.set_draw_color(sdl2_color(color));
-
-    // Draw a thin line around the edges of the placard
-    canvas.draw_rect(Rect::new(area.x_offset + 5,
-                               area.y_offset + (area.font_height as i32 / 2),
-                               area.width as u32 - 10,
-                               area.height as u32 - 10)).unwrap();
-
-    // draw a rectangle around where the placard header text will be placed.
-    let half_text = text.len() / 2;
-    let text_offset = (area.width / 2) - (area.font_width * half_text);
-    canvas.fill_rect(Rect::new(area.x_offset + text_offset as i32 - 3,
-                               area.y_offset,
-                               (text.len() * area.font_width) as u32 + 2,
-                               area.font_height as u32)).unwrap();
-
-    // Draw header text
-    let mid_char_offset = (area.width / area.font_width) / 2;
-    let text_start = (mid_char_offset - half_text) as i32;
-
-    let text_pos = Pos::new(text_start, 0);
-
-    display.draw_text(&text,
-                      text_pos,
-                      config.color_dark_blue);
-    */
-}
-
-fn render_pips(canvas: &mut WindowCanvas,
-               display_state: &mut DisplayState,
-               num_pips: u32,
-               y_pos: i32,
-               color: Color) {
-    /* TODO add back in
-    if num_pips > 0 {
-        let blend_mode = display.targets.canvas.blend_mode();
-        display.targets.canvas.set_blend_mode(blend_mode);
-
-        let color = sdl2_color(color);
-        display.targets.canvas.set_draw_color(color);
-
-        let start = area.char_rect(1, y_pos);
-
-        let spacing = 4;
-        let mut pips = Vec::new();
-        for pip_index in 0..num_pips as i32 {
-            let x_offset =  start.x + start.height() as i32 * pip_index + spacing * pip_index;
-            let pip = Rect::new(x_offset,
-                                start.y + spacing,
-                                start.height(),
-                                start.height());
-            pips.push(pip)
-        }
-        display.targets.canvas.fill_rects(&pips).unwrap();
-
-        display.targets.canvas.set_blend_mode(BlendMode::None);
-    }
-    */
-}
-
-fn render_bar(display: &mut Display,
-              percent: f32,
-              y_pos: i32,
-              fg_color: Color,
-              bg_color: Color) {
-    /* TODO add back in
-    let blend_mode = display.targets.canvas.blend_mode();
-
-    display.targets.canvas.set_blend_mode(BlendMode::None);
-    let color = sdl2_color(fg_color);
-    display.targets.canvas.set_draw_color(color);
-    let start = area.char_rect(1, y_pos);
-    let width = area.width as u32  - 2 * start.width();
-    let health_rect = Rect::new(start.x,
-                                start.y,
-                                (width as f32 * percent) as u32,
-                                start.height());
-    display.targets.canvas.fill_rect(health_rect).unwrap();
-
-    let full_rect = Rect::new(start.x,
-                              start.y,
-                              width,
-                              start.height());
-    let color = sdl2_color(bg_color);
-    display.targets.canvas.set_draw_color(color);
-    display.targets.canvas.draw_rect(full_rect).unwrap();
-
-    display.targets.canvas.set_blend_mode(blend_mode);
-    */
 }
 
 fn render_attack_overlay(canvas: &mut WindowCanvas,

@@ -193,6 +193,7 @@ impl Panel<Texture> {
         return panel;
     }
 }
+
 impl<T> Panel<T> {
     pub fn cell_dims(&self) -> (u32, u32) {
         return (self.num_pixels.0 / self.cells.0, self.num_pixels.1 / self.cells.1);
@@ -837,6 +838,19 @@ impl SpriteSheet {
     pub fn sprite_dims(&self) -> (usize, usize) {
         let (num_width, num_height) = self.num_cells();
         return (self.width / num_width, self.height / num_height);
+    }
+
+    pub fn draw_text(&mut self,
+                     canvas: &mut WindowCanvas,
+                     text: &str,
+                     cell: Pos,
+                     cell_dims: (u32, u32),
+                     color: Color) {
+        let mut pos = cell;
+        for chr in text.chars() {
+            self.draw_sprite_at_cell(canvas, chr as usize, pos, cell_dims, color, 0.0);
+            pos.x += 1;
+        }
     }
 
     // consider removing and just converting chars to usize
