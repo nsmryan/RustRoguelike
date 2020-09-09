@@ -32,93 +32,31 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     display.targets.canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
     display.targets.canvas.clear();
 
-    let zones;
-    if game.config.show_info {
-        zones = plots.collect::<Vec<Plot>>();
-    } else {
-        zones = Plan::zone("map").plot(0, 0, screen_rect.0 as usize, screen_rect.1 as usize).collect::<Vec<Plot>>();
-    }
-
+    // TODO need to work out mouse position with new system
     let mut mouse_map_pos = None;
-    for zone in zones.iter() {
-        if zone.name == "map" && zone.contains(game.mouse_state.x as usize, game.mouse_state.y as usize) {
-            let ((_x_offset, _y_offset), scaler) =
-                zone.fit(game.data.map.width() as usize * FONT_WIDTH as usize,
-                         game.data.map.height() as usize * FONT_HEIGHT as usize);
+    //for zone in zones.iter() {
+    //    if zone.name == "map" && zone.contains(game.mouse_state.x as usize, game.mouse_state.y as usize) {
+    //        let ((_x_offset, _y_offset), scaler) =
+    //            zone.fit(game.data.map.width() as usize * FONT_WIDTH as usize,
+    //                     game.data.map.height() as usize * FONT_HEIGHT as usize);
 
-            let mouse_map_xy = zone.within(game.mouse_state.x as usize, game.mouse_state.y as usize);
-            let map_x = mouse_map_xy.0 as f32 / (FONT_WIDTH as f32 * scaler);
-            let map_y = mouse_map_xy.1 as f32 / (FONT_HEIGHT as f32 * scaler);
-            mouse_map_pos = Some(Pos::new(map_x as i32, map_y as i32));
+    //        let mouse_map_xy = zone.within(game.mouse_state.x as usize, game.mouse_state.y as usize);
+    //        let map_x = mouse_map_xy.0 as f32 / (FONT_WIDTH as f32 * scaler);
+    //        let map_y = mouse_map_xy.1 as f32 / (FONT_HEIGHT as f32 * scaler);
+    //        mouse_map_pos = Some(Pos::new(map_x as i32, map_y as i32));
 
-            if let Some(mouse_id) = game.data.find_mouse() {
-                game.data.entities.set_xy(mouse_id, map_x as i32, map_y as i32);
-            }
-        }
-    }
-
-    // TODO reorganize to avoid canvas target setting
-
-    // for each screen section, render its contents
-    for plot in zones.iter() {
-        match plot.name.as_str() {
-            "screen" => {
-            }
-
-            "map" => {
-                let ((x_offset, y_offset), scaler) =
-                    plot.fit(game.data.map.width() as usize * FONT_WIDTH as usize,
-                             game.data.map.height() as usize * FONT_HEIGHT as usize);
-
-                let area = Area::new(x_offset as i32,
-                                     y_offset as i32,
-                                     plot.width,
-                                     plot.height,
-                                     (scaler * FONT_WIDTH as f32) as usize, 
-                                     (scaler * FONT_WIDTH as f32) as usize);
-
-
-                if game.settings.render_map {
-                }
-            }
-
-            "inventory" => {
-                let area = Area::new(plot.x as i32,
-                                     plot.y as i32,
-                                     plot.width,
-                                     plot.height,
-                                     FONT_WIDTH as usize,
-                                     FONT_HEIGHT as usize);
-                // TODO add back in
-                //render_inventory(canvas, display_state, game);
-            }
-
-            "player" => {
-            }
-
-            "info" => {
-                let area = Area::new(plot.x as i32,
-                                     plot.y as i32,
-                                     plot.width,
-                                     plot.height,
-                                     FONT_WIDTH as usize,
-                                     FONT_HEIGHT as usize);
-                // TODO add back in
-                //render_info(canvas, display_state, game, mouse_map_pos);
-            }
-
-            section_name => {
-                panic!(format!("Unexpected screen section '{}'", section_name));
-            }
-        }
-    }
+    //        if let Some(mouse_id) = game.data.find_mouse() {
+    //            game.data.entities.set_xy(mouse_id, map_x as i32, map_y as i32);
+    //        }
+    //    }
+    //}
 
     /* Draw Background */
     render_background(display, game);
 
     /* Draw Map */
     let cell_dims = display.targets.map_panel.cell_dims();
-    {
+    if game.settings.render_map {
         let canvas = &mut display.targets.canvas;
         let display_state = &mut display.state;
 
@@ -156,6 +94,11 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
         }).unwrap();
     }
 
+    // TODO add back in
+    //render_inventory(canvas, display_state, game);
+    // TODO add back in
+    //render_info(canvas, display_state, game, mouse_map_pos);
+
 
     /* Paste Panels on Screen */
     let (screen_width, screen_height) = display.targets.canvas.output_size().unwrap();
@@ -171,7 +114,6 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     let centered = map_section.fit_to_section(src.w as usize, src.h as usize);
     let dst = centered.get_rect();
 
-    dbg!(dst, section);
     display.targets.canvas.copy(&display.targets.map_panel.target, src, dst).unwrap();
 
     /* Draw Player Info Panel */
@@ -227,8 +169,6 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     //if game.settings.state == GameState::Console {
     //    render_console(display, game);
     //}
-
-    display.state.zones = zones;
 
     Ok(())
 }
@@ -499,12 +439,13 @@ fn render_confirm_quit(canvas: &mut WindowCanvas, display_state: &mut DisplaySta
 
 /// Render an inventory section within the given area
 fn render_inventory(canvas: &mut WindowCanvas, display_state: &mut DisplayState, game: &mut Game) {
-    /* TODO add back in
     // Render header
     render_placard(canvas,
+                 display_state,
                  "Inventory",
                  &game.config);
 
+    /* TODO add back in
     let player_id = game.data.find_player().unwrap();
 
     // Render each object's name in inventory
@@ -1315,13 +1256,14 @@ fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> 
 
 /// Draw an outline and title around an area of the screen
 fn render_placard(canvas: &mut WindowCanvas,
+                  display_state: &mut DisplayState,
                   text: &str,
                   config: &Config) {
-    /* TODO add back in
     let color = config.color_mint_green;
     
     // Draw a black background
     canvas.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+    /* TODO add back in
     canvas.fill_rect(Rect::new(area.x_offset + 5,
                                area.y_offset + (area.font_height as i32 / 2),
                                area.width as u32 - 10,
