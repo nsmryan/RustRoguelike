@@ -163,7 +163,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 
     // TODO make percents configurable
     /* Draw Map Panel */
-    let (map_section, info_section) = section.split_horiz(0.8);
+    let (map_section, info_section) = section.split_vert(0.7);
 
     let (map_width, map_height) = game.data.map.size();
     let cell_dims = display.targets.map_panel.cell_dims();
@@ -171,7 +171,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     let centered = map_section.fit_to_section(src.w as usize, src.h as usize);
     let dst = centered.get_rect();
 
-    dbg!(dst);
+    dbg!(dst, section);
     display.targets.canvas.copy(&display.targets.map_panel.target, src, dst).unwrap();
 
     /* Draw Player Info Panel */

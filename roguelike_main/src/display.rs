@@ -40,9 +40,9 @@ impl Section {
         assert!(percent >= 0.0);
         assert!(percent <= 1.0);
 
-        let half_width = self.width / 2;
-        let left = Section::new(self.x, self.y, self.width / 2, self.height);
-        let right = Section::new(self.x + half_width, self.y, half_width, self.height);
+        let left_width = (self.width as f32 * percent) as usize;
+        let left = Section::new(self.x, self.y, left_width, self.height);
+        let right = Section::new(self.x + left_width, self.y, self.width - left_width, self.height);
 
         return (left, right);
     }
@@ -51,9 +51,9 @@ impl Section {
         assert!(percent <= 1.0, "percent {}", percent);
         assert!(percent >= 0.0, "percent {}", percent);
 
-        let half_height = self.height / 2;
-        let top = Section::new(self.x, self.y, self.width, self.height / 2);
-        let bottom = Section::new(self.x, self.y + half_height, self.width, self.height / 2);
+        let top_height = (self.height as f32 * percent) as usize;
+        let top = Section::new(self.x, self.y, self.width, top_height);
+        let bottom = Section::new(self.x, self.y + top_height, self.width, self.height - top_height);
 
         return (top, bottom);
     }
