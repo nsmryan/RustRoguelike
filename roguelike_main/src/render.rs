@@ -171,6 +171,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     let centered = map_section.fit_to_section(src.w as usize, src.h as usize);
     let dst = centered.get_rect();
 
+    dbg!(dst);
     display.targets.canvas.copy(&display.targets.map_panel.target, src, dst).unwrap();
 
     /* Draw Player Info Panel */
