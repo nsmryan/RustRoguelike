@@ -127,6 +127,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
     make_map(&config.map_load, &mut game);
 
+    // TODO make this a command line option instead of a configuration setting
     if game.config.take_screenshot {
         take_screenshot(&mut game, &mut display);
         return Ok(());

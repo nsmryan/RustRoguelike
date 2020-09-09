@@ -37,8 +37,8 @@ impl Section {
     }
 
     pub fn split_vert(&self, percent: f32) -> (Section, Section) {
-        assert!(percent > 0.0);
-        assert!(percent <= 0.0);
+        assert!(percent >= 0.0);
+        assert!(percent <= 1.0);
 
         let half_width = self.width / 2;
         let left = Section::new(self.x, self.y, self.width / 2, self.height);
@@ -48,8 +48,8 @@ impl Section {
     }
 
     pub fn split_horiz(&self, percent: f32) -> (Section, Section) {
-        assert!(percent > 0.0);
-        assert!(percent <= 0.0);
+        assert!(percent <= 1.0, "percent {}", percent);
+        assert!(percent >= 0.0, "percent {}", percent);
 
         let half_height = self.height / 2;
         let top = Section::new(self.x, self.y, self.width, self.height / 2);
@@ -165,6 +165,7 @@ pub fn test_section_fit() {
 }
 
 
+// TODO look at removing type argument
 pub struct Panel<T> {
     pub target: T,
     pub cells: (u32, u32),

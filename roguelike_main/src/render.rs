@@ -79,46 +79,6 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 
 
                 if game.settings.render_map {
-                    // TODO create section by splitting screen according to config
-                    let (screen_width, screen_height) = display.targets.canvas.output_size().unwrap();
-                    let section = Section::new(0, 0, screen_width as usize, screen_height as usize);
-
-                    render_background(display, game);
-
-                    let cell_dims = display.targets.map_panel.cell_dims();
-
-                    {
-                        let canvas = &mut display.targets.canvas;
-                        let display_state = &mut display.state;
-
-                        let background = &mut display.targets.background_panel.target;
-
-                        canvas.with_texture_canvas(&mut display.targets.map_panel.target, |canvas| {
-                            canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
-                            canvas.clear();
-
-                            canvas.copy(background, None, None);
-
-                            render_map(canvas, display_state, cell_dims, game);
-
-                            render_overlays(canvas, display_state, game, mouse_map_pos, cell_dims);
-
-                            render_entities(canvas, display_state, game, cell_dims, &area);
-                    
-                            render_impressions(canvas, display_state, game, cell_dims);
-
-                            render_effects(canvas, display_state, game, cell_dims);
-                        }).unwrap();
-                    }
-
-                    // TODO move to end, where we compose the screen from textures
-                    let (map_width, map_height) = game.data.map.size();
-                    let cell_dims = display.targets.map_panel.cell_dims();
-                    let src = Rect::new(0, 0, (map_width * cell_dims.0 as i32) as u32, (map_height * cell_dims.1 as i32) as u32);
-                    let centered = section.fit_to_section(src.w as usize, src.h as usize);
-                    let dst = centered.get_rect();
-
-                    display.targets.canvas.copy(&display.targets.map_panel.target, src, dst).unwrap();
                 }
             }
 
@@ -129,17 +89,11 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
                                      plot.height,
                                      FONT_WIDTH as usize,
                                      FONT_HEIGHT as usize);
-                render_inventory(display, game, &area);
+                // TODO add back in
+                //render_inventory(canvas, display_state, game);
             }
 
             "player" => {
-                let area = Area::new(plot.x as i32,
-                                     plot.y as i32,
-                                     plot.width,
-                                     plot.height,
-                                     FONT_WIDTH as usize,
-                                     FONT_HEIGHT as usize);
-                render_player_info(display, game, &area);
             }
 
             "info" => {
@@ -149,7 +103,8 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
                                      plot.height,
                                      FONT_WIDTH as usize,
                                      FONT_HEIGHT as usize);
-                render_info(display, game, mouse_map_pos, &area);
+                // TODO add back in
+                //render_info(canvas, display_state, game, mouse_map_pos);
             }
 
             section_name => {
@@ -157,6 +112,73 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
             }
         }
     }
+
+    /* Draw Background */
+    render_background(display, game);
+
+    /* Draw Map */
+    let cell_dims = display.targets.map_panel.cell_dims();
+    {
+        let canvas = &mut display.targets.canvas;
+        let display_state = &mut display.state;
+
+        let background = &mut display.targets.background_panel.target;
+
+        canvas.with_texture_canvas(&mut display.targets.map_panel.target, |canvas| {
+            canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
+            canvas.clear();
+
+            canvas.copy(background, None, None);
+
+            render_map(canvas, display_state, cell_dims, game);
+
+            render_overlays(canvas, display_state, game, mouse_map_pos, cell_dims);
+
+            render_entities(canvas, display_state, game, cell_dims);
+    
+            render_impressions(canvas, display_state, game, cell_dims);
+
+            render_effects(canvas, display_state, game, cell_dims);
+        }).unwrap();
+    }
+
+    /* Draw Player Info */
+    let cell_dims = display.targets.player_panel.cell_dims();
+
+    {
+        let canvas = &mut display.targets.canvas;
+        let display_state = &mut display.state;
+
+        let player_panel = &mut display.targets.player_panel.target;
+
+        canvas.with_texture_canvas(&mut display.targets.player_panel.target, |canvas| {
+            render_player_info(canvas, display_state, game, cell_dims);
+        }).unwrap();
+    }
+
+
+    /* Paste Panels on Screen */
+    let (screen_width, screen_height) = display.targets.canvas.output_size().unwrap();
+    let section = Section::new(0, 0, screen_width as usize, screen_height as usize);
+
+    // TODO make percents configurable
+    /* Draw Map Panel */
+    let (map_section, info_section) = section.split_horiz(0.8);
+
+    let (map_width, map_height) = game.data.map.size();
+    let cell_dims = display.targets.map_panel.cell_dims();
+    let src = Rect::new(0, 0, (map_width * cell_dims.0 as i32) as u32, (map_height * cell_dims.1 as i32) as u32);
+    let centered = map_section.fit_to_section(src.w as usize, src.h as usize);
+    let dst = centered.get_rect();
+
+    display.targets.canvas.copy(&display.targets.map_panel.target, src, dst).unwrap();
+
+    /* Draw Player Info Panel */
+    let dst = info_section.get_rect();
+
+    display.targets.canvas.copy(&display.targets.player_panel.target, None, dst).unwrap();
+
+
 
     if game.settings.state == GameState::Inventory {
         let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
@@ -166,7 +188,8 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
                              FONT_WIDTH as usize,
                              FONT_HEIGHT as usize);
 
-        render_inventory(display, game, &area);
+        // TODO add back in
+        //render_inventory(canvas, display_state, game);
     } else if game.settings.state == GameState::SkillMenu {
         let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
                              (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
@@ -175,7 +198,8 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
                              FONT_WIDTH as usize,
                              FONT_HEIGHT as usize);
 
-        render_skill_menu(display, game, &area);
+        // TODO add back in
+        //render_skill_menu(canvas, display_state, game);
     } else if game.settings.state == GameState::ClassMenu {
         let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
                              (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
@@ -184,7 +208,8 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
                              FONT_WIDTH as usize,
                              FONT_HEIGHT as usize);
 
-        render_class_menu(display, game, &area);
+        // TODO add back in
+        //render_class_menu(canvas, display_state, game);
     } else if game.settings.state == GameState::ConfirmQuit {
         let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
                              (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
@@ -193,7 +218,8 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
                              FONT_WIDTH as usize,
                              FONT_HEIGHT as usize);
 
-        render_confirm_quit(display, game, &area);
+        // TODO add back in
+        //render_confirm_quit(canvas, display_state, game);
     }
 
     // TODO console
@@ -263,11 +289,11 @@ fn render_console(display: &mut Display, game: &mut Game) {
 }
 */
 
-fn render_player_info(display: &mut Display, game: &mut Game, area: &Area) {
-    draw_placard(display,
-                 "Player".to_string(),
-                 area,
-                 &game.config);
+fn render_player_info(canvas: &mut WindowCanvas, display_state: &mut DisplayState, game: &mut Game, cell_dims: (u32, u32)) {
+    /* TODO add back in
+    render_placard(canvas,
+                   "Player",
+                   &game.config);
 
     let player_id = game.data.find_player().unwrap();
 
@@ -283,11 +309,11 @@ fn render_player_info(display: &mut Display, game: &mut Game, area: &Area) {
         };
         let health_percent = hp as f32 / fighter.max_hp as f32;
 
-        render_bar(display, health_percent, 2, game.config.color_red, Color::white(), area);
+        render_bar(display, health_percent, 2, game.config.color_red, Color::white());
     }
 
     let energy = game.data.entities.energy[&player_id];
-    render_pips(display, energy, 3, game.config.color_light_green, area);
+    render_pips(canvas, display_state, energy, 3, game.config.color_light_green);
 
     list.push(format!("position:"));
 
@@ -304,21 +330,22 @@ fn render_player_info(display: &mut Display, game: &mut Game, area: &Area) {
     list.push(format!("turn {}", game.settings.turn_count));
 
     let text_pos = Pos::new(1, 5);
-    display.draw_text_list(&list,
-                                 text_pos,
-                                 color,
-                                 area);
+    tile_sprite.draw_text_list(canvas, 
+                               &list,
+                               text_pos,
+                               color);
 
+    */
 }
 
-fn render_info(display: &mut Display,
+fn render_info(canvas: &mut WindowCanvas,
+               display_state: &mut DisplayState,
                game: &mut Game,
-               mouse_xy: Option<Pos>,
-               area: &Area) {
-    draw_placard(display,
-                 "Info".to_string(),
-                 area,
-                 &game.config);
+               mouse_xy: Option<Pos>) {
+    /* TODO add back in
+    render_placard(canvas,
+                   "Info",
+                   &game.config);
 
     if let Some(mouse) = mouse_xy {
         let color = game.config.color_soft_green;
@@ -338,8 +365,7 @@ fn render_info(display: &mut Display,
         let text_pos = Pos::new(1, y_pos);
         display.draw_text_list(&text_list,
                                      text_pos,
-                                     color,
-                                     area);
+                                     color);
         text_list.clear();
 
         y_pos += 1;
@@ -360,7 +386,7 @@ fn render_info(display: &mut Display,
                                health_percent,
                                y_pos,
                                game.config.color_red,
-                               Color::white(), area);
+                               Color::white());
 
                     y_pos += 2;
                 }
@@ -380,8 +406,7 @@ fn render_info(display: &mut Display,
         let text_pos = Pos::new(1, y_pos);
         display.draw_text_list(&text_list,
                                      text_pos,
-                                     color,
-                                     area);
+                                     color);
         text_list.clear();
 
         y_pos = 10;
@@ -395,19 +420,19 @@ fn render_info(display: &mut Display,
 
         display.draw_text_list(&text_list,
                                      text_pos,
-                                     color,
-                                     area);
+                                     color);
     }
+    */
 }
 
-fn render_skill_menu(display: &mut Display, game: &mut Game, area: &Area) {
+fn render_skill_menu(canvas: &mut WindowCanvas, display_state: &mut DisplayState, game: &mut Game) {
+    /* TODO add back in
     let player_id = game.data.find_player().unwrap();
 
     // Render header
-    draw_placard(display,
-                 "Skills".to_string(),
-                 area,
-                 &game.config);
+    render_placard(canvas,
+                  "Skills",
+                  &game.config);
 
     let mut list = Vec::new();
 
@@ -421,16 +446,16 @@ fn render_skill_menu(display: &mut Display, game: &mut Game, area: &Area) {
 
     display.draw_text_list(&list,
                                  text_pos,
-                                 color,
-                                 area);
+                                 color);
+    */
 }
 
-fn render_class_menu(display: &mut Display, game: &mut Game, area: &Area) {
+fn render_class_menu(canvas: &mut WindowCanvas, display_state: &mut DisplayState, game: &mut Game) {
+    /* TODO add back in
     // Render header
-    draw_placard(display,
-                 "Choice Class".to_string(),
-                 area,
-                 &game.config);
+    render_placard(canvas,
+                  "Choice Class",
+                  &game.config);
 
     let mut list = Vec::new();
 
@@ -443,17 +468,17 @@ fn render_class_menu(display: &mut Display, game: &mut Game, area: &Area) {
     let color = game.config.color_light_grey;
 
     display.draw_text_list(&list,
-                                 text_pos,
-                                 color,
-                                 area);
+                           text_pos,
+                           color);
+    */
 }
 
-fn render_confirm_quit(display: &mut Display, game: &mut Game, area: &Area) {
+fn render_confirm_quit(canvas: &mut WindowCanvas, display_state: &mut DisplayState, game: &mut Game) {
+    /* TODO add back in
     // Render header
-    draw_placard(display,
-                 "Quit?".to_string(),
-                 area,
-                 &game.config);
+    render_placard(canvas,
+                   "Quit?",
+                   &game.config);
 
     let mut list = Vec::new();
 
@@ -467,16 +492,16 @@ fn render_confirm_quit(display: &mut Display, game: &mut Game, area: &Area) {
 
     display.draw_text_list(&list,
                                  text_pos,
-                                 color,
-                                 area);
+                                 color);
+    */
 }
 
 /// Render an inventory section within the given area
-fn render_inventory(display: &mut Display, game: &mut Game, area: &Area) {
+fn render_inventory(canvas: &mut WindowCanvas, display_state: &mut DisplayState, game: &mut Game) {
+    /* TODO add back in
     // Render header
-    draw_placard(display,
-                 "Inventory".to_string(),
-                 area,
+    render_placard(canvas,
+                 "Inventory",
                  &game.config);
 
     let player_id = game.data.find_player().unwrap();
@@ -520,8 +545,7 @@ fn render_inventory(display: &mut Display, game: &mut Game, area: &Area) {
         let item_text = format!(" {:?} {}", game.data.entities.name[obj_id], item_marker);
         display.draw_text(&item_text,
                                 text_pos,
-                                color,
-                                area);
+                                color);
         
         y_pos += 1;
 
@@ -532,9 +556,9 @@ fn render_inventory(display: &mut Display, game: &mut Game, area: &Area) {
         let text_pos = Pos::new(1, y_pos);
         display.draw_text(&format!("empty"),
                                 text_pos,
-                                game.config.color_ice_blue,
-                                area);
+                                game.config.color_ice_blue);
     }
+    */
 }
 
 /// render the background files, including water tiles
@@ -786,8 +810,7 @@ fn render_entity(canvas: &mut WindowCanvas,
                  entity_id: EntityId,
                  display_state: &mut DisplayState,
                  game: &mut Game,
-                 cell_dims: (u32, u32),
-                 area: &Area) -> Option<Sprite> {
+                 cell_dims: (u32, u32)) -> Option<Sprite> {
     let mut animation_result = AnimationResult::new();
 
     let pos = game.data.entities.pos[&entity_id];
@@ -812,8 +835,7 @@ fn render_entity(canvas: &mut WindowCanvas,
                                  &mut game.data,
                                  &game.settings,
                                  &game.config,
-                                 cell_dims,
-                                 area);
+                                 cell_dims);
 
             if animation_result.done {
                 game.data.entities.animation[&entity_id].pop_front();
@@ -843,7 +865,7 @@ fn render_impressions(canvas: &mut WindowCanvas, display_state: &mut DisplayStat
 }
 
 /// Render each object in the game, filtering for objects not currently visible
-fn render_entities(canvas: &mut WindowCanvas, display_state: &mut DisplayState, game: &mut Game, cell_dims: (u32, u32), area: &Area) {
+fn render_entities(canvas: &mut WindowCanvas, display_state: &mut DisplayState, game: &mut Game, cell_dims: (u32, u32)) {
     let player_id = game.data.find_player().unwrap();
 
     display_state.drawn_sprites.clear();
@@ -851,7 +873,7 @@ fn render_entities(canvas: &mut WindowCanvas, display_state: &mut DisplayState, 
     // step each objects animation
     for entity in game.data.entities.ids.clone() {
         if entity != player_id {
-            let maybe_sprite = render_entity(canvas, entity, display_state, game, cell_dims, area);
+            let maybe_sprite = render_entity(canvas, entity, display_state, game, cell_dims);
 
             if let Some(sprite) = maybe_sprite {
                 display_state.drawn_sprites.insert(entity, sprite);
@@ -859,7 +881,7 @@ fn render_entities(canvas: &mut WindowCanvas, display_state: &mut DisplayState, 
         }
     }
 
-    let maybe_sprite = render_entity(canvas, player_id, display_state, game, cell_dims, area);
+    let maybe_sprite = render_entity(canvas, player_id, display_state, game, cell_dims);
     if let Some(sprite) = maybe_sprite {
         display_state.drawn_sprites.insert(player_id, sprite);
     }
@@ -873,8 +895,7 @@ fn render_animation(anim_key: AnimKey,
                     data: &mut GameData,
                     settings: &GameSettings,
                     config: &Config,
-                    cell_dims: (u32, u32),
-                    area: &Area) -> AnimationResult {
+                    cell_dims: (u32, u32)) -> AnimationResult {
 
     let pos = data.entities.pos[&entity_id];
     let mut color = data.entities.color[&entity_id];
@@ -1292,34 +1313,34 @@ fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> 
 }
 
 /// Draw an outline and title around an area of the screen
-fn draw_placard(display: &mut Display,
-                text: String,
-                area: &Area,
-                config: &Config) {
+fn render_placard(canvas: &mut WindowCanvas,
+                  text: &str,
+                  config: &Config) {
+    /* TODO add back in
     let color = config.color_mint_green;
     
     // Draw a black background
-    display.targets.canvas.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
-    display.targets.canvas.fill_rect(Rect::new(area.x_offset + 5,
-                                     area.y_offset + (area.font_height as i32 / 2),
-                                     area.width as u32 - 10,
-                                     area.height as u32 - 10)).unwrap();
+    canvas.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+    canvas.fill_rect(Rect::new(area.x_offset + 5,
+                               area.y_offset + (area.font_height as i32 / 2),
+                               area.width as u32 - 10,
+                               area.height as u32 - 10)).unwrap();
 
-    display.targets.canvas.set_draw_color(sdl2_color(color));
+    canvas.set_draw_color(sdl2_color(color));
 
     // Draw a thin line around the edges of the placard
-    display.targets.canvas.draw_rect(Rect::new(area.x_offset + 5,
-                                     area.y_offset + (area.font_height as i32 / 2),
-                                     area.width as u32 - 10,
-                                     area.height as u32 - 10)).unwrap();
+    canvas.draw_rect(Rect::new(area.x_offset + 5,
+                               area.y_offset + (area.font_height as i32 / 2),
+                               area.width as u32 - 10,
+                               area.height as u32 - 10)).unwrap();
 
     // draw a rectangle around where the placard header text will be placed.
     let half_text = text.len() / 2;
     let text_offset = (area.width / 2) - (area.font_width * half_text);
-    display.targets.canvas.fill_rect(Rect::new(area.x_offset + text_offset as i32 - 3,
-                                     area.y_offset,
-                                     (text.len() * area.font_width) as u32 + 2,
-                                     area.font_height as u32)).unwrap();
+    canvas.fill_rect(Rect::new(area.x_offset + text_offset as i32 - 3,
+                               area.y_offset,
+                               (text.len() * area.font_width) as u32 + 2,
+                               area.font_height as u32)).unwrap();
 
     // Draw header text
     let mid_char_offset = (area.width / area.font_width) / 2;
@@ -1329,15 +1350,16 @@ fn draw_placard(display: &mut Display,
 
     display.draw_text(&text,
                       text_pos,
-                      config.color_dark_blue,
-                      area);
+                      config.color_dark_blue);
+    */
 }
 
-fn render_pips(display: &mut Display,
+fn render_pips(canvas: &mut WindowCanvas,
+               display_state: &mut DisplayState,
                num_pips: u32,
                y_pos: i32,
-               color: Color,
-               area: &Area) {
+               color: Color) {
+    /* TODO add back in
     if num_pips > 0 {
         let blend_mode = display.targets.canvas.blend_mode();
         display.targets.canvas.set_blend_mode(blend_mode);
@@ -1361,14 +1383,15 @@ fn render_pips(display: &mut Display,
 
         display.targets.canvas.set_blend_mode(BlendMode::None);
     }
+    */
 }
 
 fn render_bar(display: &mut Display,
               percent: f32,
               y_pos: i32,
               fg_color: Color,
-              bg_color: Color,
-              area: &Area) {
+              bg_color: Color) {
+    /* TODO add back in
     let blend_mode = display.targets.canvas.blend_mode();
 
     display.targets.canvas.set_blend_mode(BlendMode::None);
@@ -1391,6 +1414,7 @@ fn render_bar(display: &mut Display,
     display.targets.canvas.draw_rect(full_rect).unwrap();
 
     display.targets.canvas.set_blend_mode(blend_mode);
+    */
 }
 
 fn render_attack_overlay(canvas: &mut WindowCanvas,

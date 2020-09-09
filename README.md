@@ -2,6 +2,18 @@
 This Rust Roguelike is a Roguelike written in Rust.
 
 
+This is tested on Windows, and can be made to work on Linux. A simple
+```bash
+cargo run
+```
+should download all dependecies and get it running. If you are playing and not developing,
+consider
+```bash
+cargo run --release
+```
+to get a smoother experience, but not that it will take some time the first time it is
+run (several minutes).
+
 ## Key Map
   * 0,1,2,3,4,6,7,8,9: directional movement, or a selection in a menu
   * 5: pass turn
