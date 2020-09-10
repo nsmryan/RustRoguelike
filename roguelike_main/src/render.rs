@@ -84,7 +84,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     let cell_dims = display.targets.player_panel.cell_dims();
 
     {
-        let canvas = &mut display.targets.canvas;
+        let canvas = &mut display.targets.canvas_panel.target;
         let display_state = &mut display.state;
 
         let player_panel = &mut display.targets.player_panel;
@@ -104,27 +104,25 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 
 
     /* Paste Panels on Screen */
-    let (screen_width, screen_height) = display.targets.canvas.output_size().unwrap();
-    let section = Section::new(0, 0, screen_width as usize, screen_height as usize);
+    let screen = display.targets.canvas_panel.area();
+    let (map_area, info_area) = screen.split_right(display.targets.info_panel.cells.0);
 
-    // TODO make percents configurable
-    /* Draw Map Panel */
-    let (map_section, info_section) = section.split_vert(0.7);
+    // TODO this should not be necessary - just make the map panel the right size in the first place
+    // and re-create it when the map changes.
+    let map_cell_dims = display.targets.map_panel.cell_dims();
+    display.targets.map_panel.cells = game.data.map.size();
+    //let src = Rect::new(0, 0, (map_width * cell_dims.0 as i32) as u32, (map_height * cell_dims.1 as i32) as u32);
+    let src = display.targets.map_panel.get_rect();
+    display.targets.map_panel.cells = map_cell_dims;
 
-    let (map_width, map_height) = game.data.map.size();
-    let cell_dims = display.targets.map_panel.cell_dims();
-    let src = Rect::new(0, 0, (map_width * cell_dims.0 as i32) as u32, (map_height * cell_dims.1 as i32) as u32);
-    let centered = map_section.fit_to_section(src.w as usize, src.h as usize);
-    let dst = centered.get_rect();
+    let dst = display.targets.canvas_panel.get_rect_within(map_area);
 
     display.targets.canvas.copy(&display.targets.map_panel.target, src, dst).unwrap();
 
     /* Draw Player Info Panel */
-    let dst = info_section.get_rect();
+    let dst = display.targets.canvas_panel.get_rect_within(info_area);
 
     display.targets.canvas.copy(&display.targets.player_panel.target, None, dst).unwrap();
-
-
 
     if game.settings.state == GameState::Inventory {
         let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),

@@ -22,85 +22,55 @@ use crate::plat::*;
 type TextureKey = u64;
 
 
-// TODO rename to panel or area or something
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
-pub struct Section {
-    x: usize,
-    y: usize,
+pub struct Area {
+    x_offset: usize,
+    y_offset: usize,
     width: usize,
     height: usize,
 }
 
-impl Section {
-    pub fn new(x: usize, y: usize, width: usize, height: usize) -> Section {
-        return Section { x, y, width, height };
+impl Area {
+    pub fn new(width: usize, height: usize) -> Area {
+        return Area { x_offset: 0, y_offset: 0, width, height };
     }
 
-    pub fn split_vert(&self, percent: f32) -> (Section, Section) {
-        assert!(percent >= 0.0);
-        assert!(percent <= 1.0);
+    pub fn split_left(&self, left_width: usize) -> (Area, Area) {
+        assert!(left_width <= width);
 
-        let left_width = (self.width as f32 * percent) as usize;
-        let left = Section::new(self.x, self.y, left_width, self.height);
-        let right = Section::new(self.x + left_width, self.y, self.width - left_width, self.height);
+        let right_width = self.width - left_width;
+        let left = Area::new(self.x_offset, self.y_offset, left_width, self.height);
+        let right = Area::new(self.x_offset + right_width, self.y_offset, right_width, self.height);
 
         return (left, right);
     }
 
-    pub fn split_horiz(&self, percent: f32) -> (Section, Section) {
-        assert!(percent <= 1.0, "percent {}", percent);
-        assert!(percent >= 0.0, "percent {}", percent);
+    pub fn split_right(&self, right_width: usize) -> (Area, Area) {
+        assert!(right_width <= width);
 
-        let top_height = (self.height as f32 * percent) as usize;
-        let top = Section::new(self.x, self.y, self.width, top_height);
-        let bottom = Section::new(self.x, self.y + top_height, self.width, self.height - top_height);
+        let left = Area::new(self.x_offset, self.y_offset, self.width - right_width, self.height);
+        let right = Area::new(self.x_offset + right_width, self.y_offset, right_width, self.height);
+
+        return (left, right);
+    }
+
+    pub fn split_top(&self, top_height: usize) -> (Area, Area) {
+        assert!(top_height <= self.height);
+
+        let top = Section::new(self.x_offset, self.y_offset, self.width, top_height);
+        let bottom = Section::new(self.x_offset, self.y_offset + top_height, self.width, self.height - top_height);
 
         return (top, bottom);
     }
 
-    pub fn centered(&self, width: usize, height: usize) -> Section {
-        assert!(width <= self.width);
-        assert!(height <= self.height);
+    pub fn split_bottom(&self, bottom_height: usize) -> (Area, Area) {
+        assert!(bottom_height + self.height);
 
-        let x_diff = self.width - width;
-        let y_diff = self.height - height;
+        let top_height = self.height - bottom_height;
+        let top = Section::new(self.x_offset, self.y_offset, self.width, top_height);
+        let bottom = Section::new(self.x_offset, self.y_offset + top_height, self.width, bottom_height);
 
-        return Section::new(x_diff / 2, y_diff / 2, width, height);
-    }
-
-    pub fn get_rect(&self) -> Rect {
-        return Rect::new(self.x as i32, self.y as i32, self.width as u32, self.height as u32);
-    }
-
-    pub fn fit_to_section(&self, width: usize, height: usize) -> Section {
-        let scale_x = self.width as f32 / width as f32;
-        let scale_y = self.height as f32 / height as f32;
-
-        let scaler;
-        if scale_x * height as f32 > self.height as f32 {
-            scaler = scale_y;
-        } else {
-            scaler = scale_x;
-        }
-        assert!(scaler * height as f32 <= self.height as f32);
-        assert!(scaler * width as f32 <= self.width as f32);
-
-        let x_offset = (self.width  as f32 - (width as f32 * scaler)) / 2.0;
-        let y_offset = (self.height as f32 - (height as f32 * scaler)) / 2.0;
-
-        return Section::new(self.x + x_offset as usize,
-                            self.y + y_offset as usize,
-                            (width as f32 * scaler) as usize,
-                            (height as f32 * scaler) as usize);
-    }
-
-    pub fn to_area(&self) -> Area {
-        return Area::new(self.x as i32,
-                         self.y as i32,
-                         self.width,
-                         self.height,
-                         FONT_WIDTH as usize,
-                         FONT_HEIGHT as usize);
+        return (top, bottom);
     }
 }
 
@@ -165,7 +135,6 @@ pub fn test_section_fit() {
 }
 
 
-// TODO look at removing type argument
 pub struct Panel<T> {
     pub target: T,
     pub cells: (u32, u32),
@@ -174,13 +143,6 @@ pub struct Panel<T> {
 }
 
 impl Panel<Texture> {
-    pub fn new(cells: (u32, u32), tex: Texture) -> Panel<Texture> {
-        let query = tex.query();
-        let width = query.width;
-        let height = query.height;
-        return Panel { cells, target: tex, num_pixels: (width, height), dirty: true };
-    }
-
     pub fn from_dims(texture_creator: &TextureCreator<WindowContext>, width: u32, height: u32, over_sample: u32) -> Panel<Texture> {
         let pixel_format = texture_creator.default_pixel_format();
 
@@ -207,18 +169,59 @@ impl<T> Panel<T> {
             dirty: true,
         };
     }
+
+    pub fn texture(cells: (u32, u32), texture_creator: TextureCreator) -> Panel<Texture> {
+        let pixel_format = texture_creator.default_pixel_format();
+
+        let tex = texture_creator.create_texture_target(pixel_format, 
+        let query = tex.query();
+        let width = query.width;
+        let height = query.height;
+        return Panel { cells, target: tex, num_pixels: (width, height), dirty: true };
+    }
+
+    pub fn with_canvas(cells: (u32, u32), canvas: WindowCanvas) -> Panel<WindowCanvas> {
+        let (width, height) = canvas.output_size();
+        return Panel { cells, target: canvas, num_pixels: (width, height), dirty: true };
+    }
+
+    pub fn area(&self) -> Area {
+        return Area::new(self.cells.0, self.cells.1);
+    }
+
+    pub fn get_rect_within(&self, area: &Area) -> Rect {
+        let scale_x = self.width as f32 / area.width as f32;
+        let scale_y = self.height as f32 / area.height as f32;
+
+        let scaler;
+        if scale_x * area.height as f32 > self.height as f32 {
+            scaler = scale_y;
+        } else {
+            scaler = scale_x;
+        }
+        assert!(scaler * area.height as f32 <= self.height as f32);
+        assert!(scaler * area.width as f32 <= self.width as f32);
+
+        let x_offset = (self.num_pixels.0 as f32 - (area.width as f32 * scaler)) / 2.0;
+        let y_offset = (self.num_pixels.1 as f32 - (area.height as f32 * scaler)) / 2.0;
+
+        return Rect::new(area.x_offset + x_offset as usize,
+                         area.y_offset + y_offset as usize,
+                         (area.width as f32 * scaler) as usize,
+                         (area.height as f32 * scaler) as usize);
+    }
 }
 
 
 pub struct DisplayTargets {
-    pub canvas: WindowCanvas,
-
-    pub texture_creator: TextureCreator<WindowContext>,
+    pub canvas_panel: Panel<WindowCanvas>,
 
     pub background_panel: Panel<Texture>,
     pub map_panel: Panel<Texture>,
     pub player_panel: Panel<Texture>,
     pub info_panel: Panel<Texture>,
+
+    pub texture_creator: TextureCreator<WindowContext>,
 }
 
 impl DisplayTargets {
@@ -226,20 +229,22 @@ impl DisplayTargets {
 
         let texture_creator = canvas.texture_creator();
 
-        let pixel_format = texture_creator.default_pixel_format();
-
         let over_sample = 5;
-        let background_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, over_sample);
+        // TODO allocate textures with width and height, using oversampling, and pass result to
+        // with_texture
+        let background_panel = Panel::texture((MAP_WIDTH as u32, MAP_HEIGHT as u32), &texture_creator);
 
-        let map_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, over_sample);
+        let map_panel = Panel::texture((MAP_WIDTH as u32, MAP_HEIGHT as u32), &texture_creator);
 
         // TODO determine panel width and height cells
-        let info_panel = Panel::from_dims(&texture_creator, 10, 20, 1);
+        let info_panel = Panel::with_texture((10, 20), &texture_creator);
 
-        let player_panel = Panel::from_dims(&texture_creator, 10, 20, 1);
+        let player_panel = Panel::with_texture((10, 20), &texture_creator);
+
+        let canvas_panel = Panel::with_canvas((SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32), canvas);
 
         return DisplayTargets {
-            canvas,
+            canvas_panel,
             texture_creator,
             background_panel,
             map_panel,
@@ -352,7 +357,7 @@ impl Display {
     }
 
     pub fn update_display(&mut self) {
-        self.targets.canvas.present();
+        self.targets.canvas_panel.target.present();
     }
 
     pub fn add_spritesheet(&mut self, name: String, texture: Texture, rows: usize) {
@@ -389,22 +394,20 @@ impl Display {
     pub fn draw_text(&mut self,
                      text: &String,
                      pos: Pos,
-                     color: Color,
-                     area: &Area) {
+                     color: Color) {
         for (index, chr) in text.chars().enumerate() {
             let chr_pos = Pos::new(pos.x + index as i32, pos.y);
-            self.draw_char(chr, chr_pos, color, area);
+            self.draw_char(chr, chr_pos, color);
         }
     }
 
     pub fn draw_text_list(&mut self,
                           text_list: &Vec<String>,
                           pos: Pos,
-                          color: Color,
-                          area: &Area) {
+                          color: Color) {
         let mut y_pos = 0;
         for text in text_list.iter() {
-            self.draw_text(text, Pos::new(pos.x, pos.y + y_pos), color, area);
+            self.draw_text(text, Pos::new(pos.x, pos.y + y_pos), color);
             y_pos += 1;
         }
     }
@@ -412,25 +415,25 @@ impl Display {
     pub fn draw_char(&mut self,
                      chr: char,
                      pos: Pos,
-                     color: Color,
-                     area: &Area) {
+                     color: Color) {
         //self.draw_char_with_rotation(chr, pos, color, area, 0.0);
     }
 
+    // TODO this should be on panels, not always the canvas
     pub fn highlight_tile(&mut self,
                           pos: Pos,
-                          color: Color,
-                          area: &Area) {
-        self.targets.canvas.set_blend_mode(BlendMode::Blend);
-        self.targets.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+                          color: Color) {
+        self.targets.canvas_panel.target.set_blend_mode(BlendMode::Blend);
+        self.targets.canvas_panel.target.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
         let dst_rect = area.char_rect(pos.x, pos.y);
-        self.targets.canvas.fill_rect(dst_rect).unwrap();
+        self.targets.canvas_panel.target.fill_rect(dst_rect).unwrap();
     }
 
-    pub fn draw_tile_edge(&mut self, pos: Pos, area: &Area, color: Color, dir: Cardinal) {
-        self.targets.canvas.set_blend_mode(BlendMode::Blend);
-        self.targets.canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+    // TODO this should be on panels, not always the canvas
+    pub fn draw_tile_edge(&mut self, pos: Pos, color: Color, dir: Cardinal) {
+        self.targets.canvas_panel.target.set_blend_mode(BlendMode::Blend);
+        self.targets.canvas_panel.target.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
         let tile_rect = area.char_rect(pos.x, pos.y);
         let width = 5;
@@ -466,7 +469,7 @@ impl Display {
             }
         }
 
-        self.targets.canvas.fill_rect(side_rect).unwrap();
+        self.targets.canvas_panel.target.fill_rect(side_rect).unwrap();
     }
 
 
@@ -915,53 +918,11 @@ impl SpriteSheet {
     }
 }
 
-
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub struct Area {
-    pub x_offset: i32,
-    pub y_offset: i32,
-    pub width: usize,
-    pub height: usize,
-    pub font_width: usize,
-    pub font_height: usize,
-}
-
-impl Area {
-    pub fn new(x_offset: i32,
-               y_offset: i32,
-               width: usize,
-               height: usize,
-               font_width: usize,
-               font_height: usize) -> Area {
-        Area { x_offset,
-               y_offset,
-               width,
-               height,
-               font_width,
-               font_height,
-        }
-    }
-
-    pub fn char_rect(&self, x: i32, y: i32) -> Rect {
-        return Rect::new(self.x_offset + x * self.font_width as i32,
-                         self.y_offset + y * self.font_height as i32,
-                         self.font_width as u32,
-                         self.font_height as u32);
-    }
-
-    pub fn get_rect(&self) -> Rect {
-        return Rect::new(self.x_offset,
-                         self.y_offset,
-                         self.width as u32,
-                         self.height as u32);
-    }
-}
-
-
 pub fn engine_color(color: &Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
 }
 
+/*
 pub fn draw_char(canvas: &mut WindowCanvas,
                  font_image: &mut Texture,
                  chr: char,
@@ -989,6 +950,7 @@ pub fn draw_char(canvas: &mut WindowCanvas,
                    false,
                    false).unwrap();
 }
+*/
 
 // TODO redo with spritesheet font
 pub fn draw_text_with_font(canvas: &mut WindowCanvas,
@@ -1023,6 +985,7 @@ pub fn draw_text_with_font(canvas: &mut WindowCanvas,
     */
 }
 
+/* TODO check if still needed
 pub fn draw_char_with_font(canvas: &mut WindowCanvas,
                            font_map: &mut FontMap,
                            chr: char,
@@ -1045,6 +1008,7 @@ pub fn draw_char_with_font(canvas: &mut WindowCanvas,
                 None,
                 Some(dst)).unwrap();
 }
+*/
 
 pub fn draw_outline_tile(canvas: &mut WindowCanvas,
                          cell: Pos,
