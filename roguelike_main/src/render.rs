@@ -20,7 +20,7 @@ use crate::plat::*;
 
 
 pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String> {
-    let screen_rect = display.targets.canvas.output_size()?;
+    let screen_rect = display.targets.canvas_panel.target.output_size()?;
 
     let plots = display.state
                     .screen_sections
@@ -29,8 +29,8 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
                           screen_rect.0 as usize,
                           screen_rect.1 as usize);
 
-    display.targets.canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
-    display.targets.canvas.clear();
+    display.targets.canvas_panel.target.set_draw_color(Sdl2Color::RGB(0, 0, 0));
+    display.targets.canvas_panel.target.clear();
 
     // TODO need to work out mouse position with new system
     let mut mouse_map_pos = None;
@@ -57,7 +57,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     /* Draw Map */
     let cell_dims = display.targets.map_panel.cell_dims();
     if game.settings.render_map {
-        let canvas = &mut display.targets.canvas;
+        let canvas = &mut display.targets.canvas_panel.target;
         let display_state = &mut display.state;
 
         let background = &mut display.targets.background_panel.target;
@@ -105,62 +105,61 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 
     /* Paste Panels on Screen */
     let screen = display.targets.canvas_panel.area();
-    let (map_area, info_area) = screen.split_right(display.targets.info_panel.cells.0);
+    let (map_area, info_area) = screen.split_right(display.targets.info_panel.cells.0 as usize);
 
-    // TODO this should not be necessary - just make the map panel the right size in the first place
+    // TODO just make the map panel the right size in the first place
     // and re-create it when the map changes.
     let map_cell_dims = display.targets.map_panel.cell_dims();
-    display.targets.map_panel.cells = game.data.map.size();
-    //let src = Rect::new(0, 0, (map_width * cell_dims.0 as i32) as u32, (map_height * cell_dims.1 as i32) as u32);
-    let src = display.targets.map_panel.get_rect();
-    display.targets.map_panel.cells = map_cell_dims;
+   
+    let (map_width, map_height) = game.data.map.size();
+    let src = display.targets.map_panel.get_rect_cells(map_width as usize, map_height as usize);
 
-    let dst = display.targets.canvas_panel.get_rect_within(map_area);
+    let dst = display.targets.canvas_panel.get_rect_within(&map_area);
 
-    display.targets.canvas.copy(&display.targets.map_panel.target, src, dst).unwrap();
+    display.targets.canvas_panel.target.copy(&display.targets.map_panel.target, src, dst).unwrap();
 
     /* Draw Player Info Panel */
-    let dst = display.targets.canvas_panel.get_rect_within(info_area);
+    let dst = display.targets.canvas_panel.get_rect_within(&info_area);
 
-    display.targets.canvas.copy(&display.targets.player_panel.target, None, dst).unwrap();
+    display.targets.canvas_panel.target.copy(&display.targets.player_panel.target, None, dst).unwrap();
 
     if game.settings.state == GameState::Inventory {
-        let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
-                             (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
-                             INVENTORY_WIDTH,
-                             INVENTORY_HEIGHT,
-                             FONT_WIDTH as usize,
-                             FONT_HEIGHT as usize);
+        //let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
+        //                     (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
+        //                     INVENTORY_WIDTH,
+        //                     INVENTORY_HEIGHT,
+        //                     FONT_WIDTH as usize,
+        //                     FONT_HEIGHT as usize);
 
         // TODO add back in
         //render_inventory(canvas, display_state, game);
     } else if game.settings.state == GameState::SkillMenu {
-        let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
-                             (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
-                             INVENTORY_WIDTH,
-                             INVENTORY_HEIGHT,
-                             FONT_WIDTH as usize,
-                             FONT_HEIGHT as usize);
+        //let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
+        //                     (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
+        //                     INVENTORY_WIDTH,
+        //                     INVENTORY_HEIGHT,
+        //                     FONT_WIDTH as usize,
+        //                     FONT_HEIGHT as usize);
 
         // TODO add back in
         //render_skill_menu(canvas, display_state, game);
     } else if game.settings.state == GameState::ClassMenu {
-        let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
-                             (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
-                             INVENTORY_WIDTH,
-                             INVENTORY_HEIGHT,
-                             FONT_WIDTH as usize,
-                             FONT_HEIGHT as usize);
+        //let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
+        //                     (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
+        //                     INVENTORY_WIDTH,
+        //                     INVENTORY_HEIGHT,
+        //                     FONT_WIDTH as usize,
+        //                     FONT_HEIGHT as usize);
 
         // TODO add back in
         //render_class_menu(canvas, display_state, game);
     } else if game.settings.state == GameState::ConfirmQuit {
-        let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
-                             (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
-                             INVENTORY_WIDTH,
-                             INVENTORY_HEIGHT,
-                             FONT_WIDTH as usize,
-                             FONT_HEIGHT as usize);
+        //let area = Area::new((SCREEN_WIDTH as i32 / 2) - (INVENTORY_WIDTH as i32 / 2),
+        //                     (SCREEN_HEIGHT as i32 / 2) - (INVENTORY_HEIGHT as i32 / 2),
+        //                     INVENTORY_WIDTH,
+        //                     INVENTORY_HEIGHT,
+        //                     FONT_WIDTH as usize,
+        //                     FONT_HEIGHT as usize);
 
         // TODO add back in
         //render_confirm_quit(canvas, display_state, game);
@@ -629,7 +628,7 @@ fn render_background(display: &mut Display, game: &mut Game) {
                      .expect("Could not find rexpaint file in renderer!");
     let sprite = &mut display.state.sprites[&sprite_key];
 
-    let canvas = &mut display.targets.canvas;
+    let canvas = &mut display.targets.canvas_panel.target;
 
     let cell_dims = display.targets.background_panel.cell_dims();
 

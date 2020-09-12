@@ -35,21 +35,25 @@ impl Area {
         return Area { x_offset: 0, y_offset: 0, width, height };
     }
 
+    pub fn new_at(x_offset: usize, y_offset: usize, width: usize, height: usize) -> Area {
+        return Area { x_offset, y_offset, width, height };
+    }
+
     pub fn split_left(&self, left_width: usize) -> (Area, Area) {
-        assert!(left_width <= width);
+        assert!(left_width <= self.width);
 
         let right_width = self.width - left_width;
-        let left = Area::new(self.x_offset, self.y_offset, left_width, self.height);
-        let right = Area::new(self.x_offset + right_width, self.y_offset, right_width, self.height);
+        let left = Area::new_at(self.x_offset, self.y_offset, left_width, self.height);
+        let right = Area::new_at(self.x_offset + right_width, self.y_offset, right_width, self.height);
 
         return (left, right);
     }
 
     pub fn split_right(&self, right_width: usize) -> (Area, Area) {
-        assert!(right_width <= width);
+        assert!(right_width <= self.width);
 
-        let left = Area::new(self.x_offset, self.y_offset, self.width - right_width, self.height);
-        let right = Area::new(self.x_offset + right_width, self.y_offset, right_width, self.height);
+        let left = Area::new_at(self.x_offset, self.y_offset, self.width - right_width, self.height);
+        let right = Area::new_at(self.x_offset + right_width, self.y_offset, right_width, self.height);
 
         return (left, right);
     }
@@ -57,18 +61,18 @@ impl Area {
     pub fn split_top(&self, top_height: usize) -> (Area, Area) {
         assert!(top_height <= self.height);
 
-        let top = Section::new(self.x_offset, self.y_offset, self.width, top_height);
-        let bottom = Section::new(self.x_offset, self.y_offset + top_height, self.width, self.height - top_height);
+        let top = Area::new_at(self.x_offset, self.y_offset, self.width, top_height);
+        let bottom = Area::new_at(self.x_offset, self.y_offset + top_height, self.width, self.height - top_height);
 
         return (top, bottom);
     }
 
     pub fn split_bottom(&self, bottom_height: usize) -> (Area, Area) {
-        assert!(bottom_height + self.height);
+        assert!(bottom_height <= self.height);
 
         let top_height = self.height - bottom_height;
-        let top = Section::new(self.x_offset, self.y_offset, self.width, top_height);
-        let bottom = Section::new(self.x_offset, self.y_offset + top_height, self.width, bottom_height);
+        let top = Area::new_at(self.x_offset, self.y_offset, self.width, top_height);
+        let bottom = Area::new_at(self.x_offset, self.y_offset + top_height, self.width, bottom_height);
 
         return (top, bottom);
     }
@@ -154,6 +158,20 @@ impl Panel<Texture> {
 
         return panel;
     }
+
+    pub fn new(cells: (u32, u32), texture: Texture) -> Panel<Texture> {
+        let query = texture.query();
+        let width = query.width;
+        let height = query.height;
+        return Panel { cells, target: texture, num_pixels: (width, height), dirty: true };
+    }
+}
+
+impl Panel<WindowCanvas> {
+    pub fn with_canvas(cells: (u32, u32), canvas: WindowCanvas) -> Panel<WindowCanvas> {
+        let (width, height) = canvas.output_size().unwrap();
+        return Panel { cells, target: canvas, num_pixels: (width, height), dirty: true };
+    }
 }
 
 impl<T> Panel<T> {
@@ -170,45 +188,42 @@ impl<T> Panel<T> {
         };
     }
 
-    pub fn texture(cells: (u32, u32), texture_creator: TextureCreator) -> Panel<Texture> {
-        let pixel_format = texture_creator.default_pixel_format();
-
-        let tex = texture_creator.create_texture_target(pixel_format, 
-        let query = tex.query();
-        let width = query.width;
-        let height = query.height;
-        return Panel { cells, target: tex, num_pixels: (width, height), dirty: true };
-    }
-
-    pub fn with_canvas(cells: (u32, u32), canvas: WindowCanvas) -> Panel<WindowCanvas> {
-        let (width, height) = canvas.output_size();
-        return Panel { cells, target: canvas, num_pixels: (width, height), dirty: true };
-    }
-
     pub fn area(&self) -> Area {
-        return Area::new(self.cells.0, self.cells.1);
+        return Area::new(self.cells.0 as usize, self.cells.1 as usize);
+    }
+
+    pub fn get_rect_cells(&self, width: usize, height: usize) -> Rect {
+        assert!(width as u32 <= self.cells.0);
+        assert!(height as u32 <= self.cells.1);
+
+        let (cell_width, cell_height) = self.cell_dims();
+
+        let pixel_width = width as u32 * cell_width;
+        let pixel_height = height as u32 * cell_height;
+
+        return Rect::new(0, 0, pixel_width, pixel_height);
     }
 
     pub fn get_rect_within(&self, area: &Area) -> Rect {
-        let scale_x = self.width as f32 / area.width as f32;
-        let scale_y = self.height as f32 / area.height as f32;
+        let scale_x = self.num_pixels.0 as f32 / area.width as f32;
+        let scale_y = self.num_pixels.1 as f32 / area.height as f32;
 
         let scaler;
-        if scale_x * area.height as f32 > self.height as f32 {
+        if scale_x * area.height as f32 > self.num_pixels.1 as f32 {
             scaler = scale_y;
         } else {
             scaler = scale_x;
         }
-        assert!(scaler * area.height as f32 <= self.height as f32);
-        assert!(scaler * area.width as f32 <= self.width as f32);
+        assert!(scaler * area.height as f32 <= self.num_pixels.1 as f32);
+        assert!(scaler * area.width as f32 <= self.num_pixels.0 as f32);
 
         let x_offset = (self.num_pixels.0 as f32 - (area.width as f32 * scaler)) / 2.0;
         let y_offset = (self.num_pixels.1 as f32 - (area.height as f32 * scaler)) / 2.0;
 
-        return Rect::new(area.x_offset + x_offset as usize,
-                         area.y_offset + y_offset as usize,
-                         (area.width as f32 * scaler) as usize,
-                         (area.height as f32 * scaler) as usize);
+        return Rect::new(area.x_offset as i32 + x_offset as i32,
+                         area.y_offset as i32 + y_offset as i32,
+                         (area.width as f32 * scaler) as u32,
+                         (area.height as f32 * scaler) as u32);
     }
 }
 
@@ -231,15 +246,15 @@ impl DisplayTargets {
 
         let over_sample = 5;
         // TODO allocate textures with width and height, using oversampling, and pass result to
-        // with_texture
-        let background_panel = Panel::texture((MAP_WIDTH as u32, MAP_HEIGHT as u32), &texture_creator);
+        // 'texture'
+        let background_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, 1);
 
-        let map_panel = Panel::texture((MAP_WIDTH as u32, MAP_HEIGHT as u32), &texture_creator);
+        let map_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, 1);
 
         // TODO determine panel width and height cells
-        let info_panel = Panel::with_texture((10, 20), &texture_creator);
+        let info_panel = Panel::from_dims(&texture_creator, 10, 20, 1);
 
-        let player_panel = Panel::with_texture((10, 20), &texture_creator);
+        let player_panel = Panel::from_dims(&texture_creator, 10, 20, 1);
 
         let canvas_panel = Panel::with_canvas((SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32), canvas);
 
@@ -426,12 +441,15 @@ impl Display {
         self.targets.canvas_panel.target.set_blend_mode(BlendMode::Blend);
         self.targets.canvas_panel.target.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
+        /* TODO add back in
         let dst_rect = area.char_rect(pos.x, pos.y);
         self.targets.canvas_panel.target.fill_rect(dst_rect).unwrap();
+        */
     }
 
     // TODO this should be on panels, not always the canvas
     pub fn draw_tile_edge(&mut self, pos: Pos, color: Color, dir: Cardinal) {
+        /* TODO add back in
         self.targets.canvas_panel.target.set_blend_mode(BlendMode::Blend);
         self.targets.canvas_panel.target.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
@@ -470,6 +488,7 @@ impl Display {
         }
 
         self.targets.canvas_panel.target.fill_rect(side_rect).unwrap();
+        */
     }
 
 
