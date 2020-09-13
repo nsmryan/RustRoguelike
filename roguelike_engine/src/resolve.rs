@@ -351,7 +351,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 } else if let Action::Blink(entity_id) = action {
                     use_energy(entity_id, data);
 
-                    let player_id = data.find_player().unwrap();
                     let entity_pos = data.entities.pos[&entity_id];
 
                     if let Some(blink_pos) = find_blink_pos(entity_pos, rng, data) {

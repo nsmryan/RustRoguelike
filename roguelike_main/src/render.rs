@@ -66,7 +66,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
             canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
             canvas.clear();
 
-            canvas.copy(background, None, None);
+            canvas.copy(background, None, None).unwrap();
 
             render_map(canvas, display_state, cell_dims, game);
 
@@ -92,8 +92,8 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
         let panel = player_panel.with_target(());
 
         canvas.with_texture_canvas(&mut display.targets.player_panel.target, |canvas| {
-            let panel = panel.with_target(canvas);
-            render_player_info(panel, display_state, game, cell_dims);
+            let mut panel = panel.with_target(canvas);
+            render_player_info(&mut panel, display_state, game, cell_dims);
         }).unwrap();
     }
 
@@ -174,7 +174,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 }
 
 /// Draw an outline and title around an area of the screen
-fn render_placard(panel: Panel<&mut WindowCanvas>,
+fn render_placard(panel: &mut Panel<&mut WindowCanvas>,
                   display_state: &mut DisplayState,
                   text: &str,
                   config: &Config) {
@@ -248,35 +248,39 @@ fn render_pips(canvas: &mut WindowCanvas,
     */
 }
 
-fn render_bar(display: &mut Display,
+fn render_bar(panel: &mut Panel<&mut WindowCanvas>,
+              display_state: &mut DisplayState,
               percent: f32,
               y_pos: i32,
               fg_color: Color,
               bg_color: Color) {
-    /* TODO add back in
-    let blend_mode = display.targets.canvas.blend_mode();
+    let blend_mode = panel.target.blend_mode();
 
-    display.targets.canvas.set_blend_mode(BlendMode::None);
+    panel.target.set_blend_mode(BlendMode::None);
     let color = sdl2_color(fg_color);
-    display.targets.canvas.set_draw_color(color);
-    let start = area.char_rect(1, y_pos);
-    let width = area.width as u32  - 2 * start.width();
-    let health_rect = Rect::new(start.x,
-                                start.y,
+    panel.target.set_draw_color(color);
+
+    let cell_dims = panel.cell_dims();
+
+    let width = panel.num_pixels.0 as u32  - 3 * cell_dims.0;
+
+    let x = cell_dims.0 as i32 * 2;
+
+    let health_rect = Rect::new(x,
+                                cell_dims.1 as i32 * y_pos,
                                 (width as f32 * percent) as u32,
-                                start.height());
-    display.targets.canvas.fill_rect(health_rect).unwrap();
+                                cell_dims.1);
+    panel.target.fill_rect(health_rect).unwrap();
 
-    let full_rect = Rect::new(start.x,
-                              start.y,
+    let full_rect = Rect::new(x,
+                              cell_dims.1 as i32 * y_pos,
                               width,
-                              start.height());
+                              cell_dims.1);
     let color = sdl2_color(bg_color);
-    display.targets.canvas.set_draw_color(color);
-    display.targets.canvas.draw_rect(full_rect).unwrap();
+    panel.target.set_draw_color(color);
+    panel.target.draw_rect(full_rect).unwrap();
 
-    display.targets.canvas.set_blend_mode(blend_mode);
-    */
+    panel.target.set_blend_mode(blend_mode);
 }
 
 
@@ -337,16 +341,15 @@ fn render_console(display: &mut Display, game: &mut Game) {
 }
 */
 
-fn render_player_info(panel: Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game, cell_dims: (u32, u32)) {
+fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game, cell_dims: (u32, u32)) {
     render_placard(panel,
                    display_state,
                    "Player",
                    &game.config);
 
-    /* TODO add back in
     let player_id = game.data.find_player().unwrap();
 
-    let mut list = Vec::new();
+    let mut list: Vec<String> = Vec::new();
 
     let color = game.config.color_soft_green;
 
@@ -358,8 +361,9 @@ fn render_player_info(panel: Panel<&mut WindowCanvas>, display_state: &mut Displ
         };
         let health_percent = hp as f32 / fighter.max_hp as f32;
 
-        render_bar(display, health_percent, 2, game.config.color_red, Color::white());
+        render_bar(panel, display_state, health_percent, 2, game.config.color_red, Color::white());
     }
+    /* TODO add back in
 
     let energy = game.data.entities.energy[&player_id];
     render_pips(canvas, display_state, energy, 3, game.config.color_light_green);

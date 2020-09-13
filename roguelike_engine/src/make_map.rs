@@ -254,7 +254,7 @@ fn test_parse_ascii_map() {
 pub fn generate_map(width: u32, height: u32, rng: &mut SmallRng) -> Map {
     let mut new_map = Map::from_dims(width, height);
 
-    let mut file = File::open("resources/wfc_seed_2.png").unwrap();
+    let file = File::open("resources/wfc_seed_2.png").unwrap();
     let reader = BufReader::new(file);
     let seed_image = image::load(reader, image::ImageFormat::Png).unwrap();
     let orientations = [Orientation::Original,
@@ -274,7 +274,7 @@ pub fn generate_map(width: u32, height: u32, rng: &mut SmallRng) -> Map {
                                            ForbidNothing,
                                            wfc_image::retry::NumTimes(3),
                                            rng).unwrap();
-    map_image.save("wfc_map.png");
+    map_image.save("wfc_map.png").unwrap();
 
     for x in 0..width {
         for y in 0..height {

@@ -44,7 +44,7 @@ impl Area {
 
         let right_width = self.width - left_width;
         let left = Area::new_at(self.x_offset, self.y_offset, left_width, self.height);
-        let right = Area::new_at(self.x_offset + right_width, self.y_offset, right_width, self.height);
+        let right = Area::new_at(self.x_offset + left_width, self.y_offset, right_width, self.height);
 
         return (left, right);
     }
@@ -52,8 +52,9 @@ impl Area {
     pub fn split_right(&self, right_width: usize) -> (Area, Area) {
         assert!(right_width <= self.width);
 
-        let left = Area::new_at(self.x_offset, self.y_offset, self.width - right_width, self.height);
-        let right = Area::new_at(self.x_offset + right_width, self.y_offset, right_width, self.height);
+        let left_width = self.width - right_width;
+        let left = Area::new_at(self.x_offset, self.y_offset, left_width, self.height);
+        let right = Area::new_at(self.x_offset + left_width, self.y_offset, right_width, self.height);
 
         return (left, right);
     }
@@ -79,65 +80,67 @@ impl Area {
 }
 
 #[test]
-pub fn test_section_splits() {
-    let section = Section::new(0, 0, 100, 100);
-    let (left, right) = section.split_vert(50.0);
-    let (top, bottom) = section.split_horiz(50.0);
+pub fn test_area_splits_left() {
+    let section = Area::new(100, 100);
+    let (left, right) = section.split_left(20);
 
-    assert_eq!(0, left.x);
-    assert_eq!(0, left.y);
-    assert_eq!(50, right.x);
-    assert_eq!(0, right.y);
+    assert_eq!(0, left.x_offset);
+    assert_eq!(0, left.y_offset);
+    assert_eq!(20, right.x_offset);
+    assert_eq!(0, right.y_offset);
 
-    assert_eq!(50, left.width);
-    assert_eq!(50, right.width);
+    assert_eq!(20, left.width);
+    assert_eq!(80, right.width);
     assert_eq!(100, left.height);
     assert_eq!(100, right.height);
+}
 
-    assert_eq!(0, top.x);
-    assert_eq!(0, top.y);
-    assert_eq!(0, bottom.x);
-    assert_eq!(50, bottom.y);
+#[test]
+pub fn test_area_splits_top() {
+    let section = Area::new(100, 100);
+    let (top, bottom) = section.split_top(20);
+
+    assert_eq!(0, top.x_offset);
+    assert_eq!(0, top.y_offset);
+    assert_eq!(0, bottom.x_offset);
+    assert_eq!(20, bottom.y_offset);
 
     assert_eq!(100, top.width);
     assert_eq!(100, bottom.width);
-    assert_eq!(50, top.height);
-    assert_eq!(50, bottom.height);
+    assert_eq!(20, top.height);
+    assert_eq!(80, bottom.height);
 }
 
 #[test]
-pub fn test_section_centered() {
-    let section = Section::new(0, 0, 100, 100);
+pub fn test_area_splits_right() {
+    let section = Area::new(100, 100);
+    let (left, right) = section.split_right(20);
 
-    let centered = section.centered(50, 50);
-    assert_eq!(25, centered.x);
-    assert_eq!(25, centered.y);
-    assert_eq!(50, centered.width);
-    assert_eq!(50, centered.height);
+    assert_eq!(0, left.x_offset);
+    assert_eq!(0, left.y_offset);
+    assert_eq!(80, right.x_offset);
+    assert_eq!(0, right.y_offset);
+
+    assert_eq!(80, left.width);
+    assert_eq!(20, right.width);
+    assert_eq!(100, left.height);
+    assert_eq!(100, right.height);
 }
 
 #[test]
-pub fn test_section_fit() {
-    let section = Section::new(0, 0, 100, 100);
-    let width = 50;
-    let height = 50;
-    let fit =  section.fit_to_section(width, height);
-    assert_eq!(0, fit.x);
-    assert_eq!(0, fit.y);
-    assert_eq!(100, fit.width);
-    assert_eq!(100, fit.height);
+pub fn test_area_splits_bottom() {
+    let section = Area::new(100, 100);
+    let (top, bottom) = section.split_bottom(20);
+    assert_eq!(0, top.x_offset);
+    assert_eq!(0, top.y_offset);
+    assert_eq!(0, bottom.x_offset);
+    assert_eq!(80, bottom.y_offset);
 
-    let width = 50;
-    let height = 20;
-    let fit =  section.fit_to_section(width, height);
-    assert_eq!(0, fit.x);
-    assert_eq!(30, fit.y);
-    assert_eq!(100, fit.width);
-    assert_eq!(40, fit.height);
-
-
+    assert_eq!(100, top.width);
+    assert_eq!(100, bottom.width);
+    assert_eq!(80, top.height);
+    assert_eq!(20, bottom.height);
 }
-
 
 pub struct Panel<T> {
     pub target: T,
@@ -154,16 +157,20 @@ impl Panel<Texture> {
             texture_creator.create_texture_target(pixel_format,
                                                   width as u32 * FONT_WIDTH as u32 * over_sample,
                                                   height as u32 * FONT_HEIGHT as u32 * over_sample).unwrap();
-        let panel = Panel::new((height as u32, width as u32), tex);
+        let panel = Panel::with_texture((width as u32, height as u32), tex);
 
         return panel;
     }
 
-    pub fn new(cells: (u32, u32), texture: Texture) -> Panel<Texture> {
+    pub fn with_texture(cells: (u32, u32), texture: Texture) -> Panel<Texture> {
         let query = texture.query();
         let width = query.width;
         let height = query.height;
         return Panel { cells, target: texture, num_pixels: (width, height), dirty: true };
+    }
+
+    pub fn unit(cells: (u32, u32), dims: (u32, u32)) -> Panel<()> {
+        return Panel { cells, target: (), num_pixels: dims, dirty: true };
     }
 }
 
@@ -217,14 +224,46 @@ impl<T> Panel<T> {
         assert!(scaler * area.height as f32 <= self.num_pixels.1 as f32);
         assert!(scaler * area.width as f32 <= self.num_pixels.0 as f32);
 
-        let x_offset = (self.num_pixels.0 as f32 - (area.width as f32 * scaler)) / 2.0;
-        let y_offset = (self.num_pixels.1 as f32 - (area.height as f32 * scaler)) / 2.0;
+        // TODO where should we do the fitting of a panel into another panel?
+        //let x_offset = (self.num_pixels.0 as f32 - (area.width as f32 * scaler)) / 2.0;
+        //let y_offset = (self.num_pixels.1 as f32 - (area.height as f32 * scaler)) / 2.0;
 
-        return Rect::new(area.x_offset as i32 + x_offset as i32,
-                         area.y_offset as i32 + y_offset as i32,
+        let x_offset = area.x_offset as f32 * scaler;
+        let y_offset = area.y_offset as f32 * scaler;
+
+        return Rect::new(x_offset as i32,
+                         y_offset as i32,
                          (area.width as f32 * scaler) as u32,
                          (area.height as f32 * scaler) as u32);
     }
+}
+
+#[test]
+pub fn test_panel_with_area() {
+    let panel = Panel::unit((10, 10), (100, 100));
+
+    let area = panel.area();
+
+    assert_eq!(0, area.x_offset);
+    assert_eq!(0, area.y_offset);
+    assert_eq!(panel.cells.0 as u32, area.width as u32);
+    assert_eq!(panel.cells.1 as u32, area.height as u32);
+
+    let (left, right) = area.split_right(2);
+
+    let left_rect = panel.get_rect_within(&left);
+    assert_eq!(0, left_rect.x);
+    assert_eq!(0, left_rect.y);
+    assert_eq!(80, left_rect.w);
+    assert_eq!(100, left_rect.h);
+
+    let right_rect = panel.get_rect_within(&right);
+    dbg!(right, right_rect);
+    assert_eq!(80, right_rect.x);
+    assert_eq!(0, right_rect.y);
+    assert_eq!(20, right_rect.w);
+    assert_eq!(100, right_rect.h);
+
 }
 
 
@@ -252,9 +291,9 @@ impl DisplayTargets {
         let map_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, 1);
 
         // TODO determine panel width and height cells
-        let info_panel = Panel::from_dims(&texture_creator, 10, 20, 1);
+        let info_panel = Panel::from_dims(&texture_creator, 20, 20, 1);
 
-        let player_panel = Panel::from_dims(&texture_creator, 10, 20, 1);
+        let player_panel = Panel::from_dims(&texture_creator, 20, 20, 1);
 
         let canvas_panel = Panel::with_canvas((SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32), canvas);
 
@@ -906,7 +945,7 @@ impl SpriteSheet {
                             cell_dims: (u32, u32),
                             color: Color,
                             rotation: f64) {
-        let (num_cells_x, num_cells_y) = self.num_cells();
+        let (num_cells_x, _num_cells_y) = self.num_cells();
         let sprite_x = index % num_cells_x;
         let sprite_y = index / num_cells_x;
 

@@ -775,7 +775,7 @@ pub fn test_running() {
 
 #[test]
 pub fn test_running_two_steps() {
-    let mut config = Config::from_file("../config.yaml");
+    let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone()).unwrap();
 
     let player_id = game.data.find_player().unwrap();
@@ -907,7 +907,7 @@ pub fn test_game_map() {
         assert_eq!(Pos::from(pos), player_pos);
     };
 
-    let mut input = |game: &mut Game, action| {
+    let input = |game: &mut Game, action| {
         game.input_action = action;
         game.step_game(0.1);
     };

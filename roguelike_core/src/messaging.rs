@@ -248,10 +248,6 @@ impl Msg {
                 return "".to_string();
             }
 
-            Msg::PickedUp(entity_id, item_id) => {
-                return format!("{:?} picked up a {:?}", data.entities.name[entity_id], data.entities.name[item_id]);
-            }
-
             _ => {
                 return "".to_string();
             }

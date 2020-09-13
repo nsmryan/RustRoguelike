@@ -113,8 +113,6 @@ impl GameData {
                 panic!(format!("tried to perform is_in_fov on entity without facing"));
             }
         }
-
-        return false;
     }
 
     pub fn find_player(&self) -> Option<EntityId> {

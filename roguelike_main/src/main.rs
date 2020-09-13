@@ -129,7 +129,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
     // TODO make this a command line option instead of a configuration setting
     if game.config.take_screenshot {
-        take_screenshot(&mut game, &mut display);
+        take_screenshot(&mut game, &mut display).unwrap();
         return Ok(());
     }
 
@@ -521,7 +521,7 @@ pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), Str
         let pixel = bmp::Pixel::new(pixels[byte_index], pixels[byte_index + 1], pixels[byte_index + 2]);
         image.set_pixel(index % width, index / width, pixel);
     }
-    image.save("screenshot.bmp");
+    image.save("screenshot.bmp").unwrap();
 
     return Ok(());
 }
