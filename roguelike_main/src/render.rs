@@ -216,7 +216,7 @@ fn render_placard(panel: &mut Panel<&mut WindowCanvas>,
     tile_sprite.draw_text(panel.target, &text, text_pos, panel.cell_dims(), config.color_dark_blue);
 }
 
-fn render_pips(canvas: &mut WindowCanvas,
+fn render_pips(panel: &mut Panel<&mut WindowCanvas>,
                display_state: &mut DisplayState,
                num_pips: u32,
                y_pos: i32,
@@ -363,10 +363,11 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 
         render_bar(panel, display_state, health_percent, 2, game.config.color_red, Color::white());
     }
-    /* TODO add back in
 
     let energy = game.data.entities.energy[&player_id];
-    render_pips(canvas, display_state, energy, 3, game.config.color_light_green);
+    render_pips(&mut panel, display_state, energy, 3, game.config.color_light_green);
+
+    /* TODO add back in
 
     list.push(format!("position:"));
 
