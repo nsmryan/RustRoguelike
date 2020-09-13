@@ -24,10 +24,10 @@ type TextureKey = u64;
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
 pub struct Area {
-    x_offset: usize,
-    y_offset: usize,
-    width: usize,
-    height: usize,
+    pub x_offset: usize,
+    pub y_offset: usize,
+    pub width: usize,
+    pub height: usize,
 }
 
 impl Area {
@@ -76,6 +76,16 @@ impl Area {
         let bottom = Area::new_at(self.x_offset, self.y_offset + top_height, self.width, bottom_height);
 
         return (top, bottom);
+    }
+
+    pub fn centered(&self, width: usize, height: usize) -> Area {
+        assert!(width <= self.width);
+        assert!(height <= self.height);
+
+        let x_offset = (self.width - width) / 2;
+        let y_offset = (self.height - height) / 2;
+
+        return Area::new_at(x_offset, y_offset, width, height);
     }
 }
 
@@ -199,7 +209,7 @@ impl<T> Panel<T> {
         return Area::new(self.cells.0 as usize, self.cells.1 as usize);
     }
 
-    pub fn get_rect_cells(&self, width: usize, height: usize) -> Rect {
+    pub fn get_rect_up_left(&self, width: usize, height: usize) -> Rect {
         assert!(width as u32 <= self.cells.0);
         assert!(height as u32 <= self.cells.1);
 
@@ -211,30 +221,52 @@ impl<T> Panel<T> {
         return Rect::new(0, 0, pixel_width, pixel_height);
     }
 
-    pub fn get_rect_within(&self, area: &Area) -> Rect {
-        let scale_x = self.num_pixels.0 as f32 / area.width as f32;
-        let scale_y = self.num_pixels.1 as f32 / area.height as f32;
+    pub fn get_rect_from_area(&self, area: &Area) -> Rect {
+        let cell_dims = self.cell_dims();
+
+        let x_offset = area.x_offset as f32 * cell_dims.0 as f32;
+        let y_offset = area.y_offset as f32 * cell_dims.1 as f32;
+
+        let width = (area.width as f32 * cell_dims.0 as f32) as u32;
+        let height = (area.height as f32 * cell_dims.1 as f32) as u32;
+
+        // don't draw off the screen
+        assert!(x_offset as u32 + width <= self.num_pixels.0);
+        assert!(y_offset as u32 + height <= self.num_pixels.1);
+
+        return Rect::new(x_offset as i32, y_offset as i32, width, height);
+    }
+
+    pub fn get_rect_within(&self, area: &Area, target_dims: (u32, u32)) -> Rect {
+        let (target_width, target_height) = target_dims;
+        let base_rect = self.get_rect_from_area(area);
+
+        let scale_x = base_rect.w as f32 / target_width as f32;
+        let scale_y = base_rect.h as f32 / target_height as f32;
 
         let scaler;
-        if scale_x * area.height as f32 > self.num_pixels.1 as f32 {
+        if scale_x * target_height as f32 > base_rect.h as f32 {
             scaler = scale_y;
         } else {
             scaler = scale_x;
         }
-        assert!(scaler * area.height as f32 <= self.num_pixels.1 as f32);
-        assert!(scaler * area.width as f32 <= self.num_pixels.0 as f32);
 
-        // TODO where should we do the fitting of a panel into another panel?
-        //let x_offset = (self.num_pixels.0 as f32 - (area.width as f32 * scaler)) / 2.0;
-        //let y_offset = (self.num_pixels.1 as f32 - (area.height as f32 * scaler)) / 2.0;
+        let final_target_width = target_width as f32 * scaler;
+        let final_target_height = target_height as f32 * scaler;
 
-        let x_offset = area.x_offset as f32 * scaler;
-        let y_offset = area.y_offset as f32 * scaler;
+        let x_inner_offset = (base_rect.w as f32 - final_target_width) / 2.0;
+        let y_inner_offset = (base_rect.h as f32 - final_target_height) / 2.0;
+        let x_offset = base_rect.x + x_inner_offset as i32;
+        let y_offset = base_rect.y + y_inner_offset as i32;
+
+        // check that we don't reach past the destination rect we should be drawing within
+        assert!((x_offset as f32 + final_target_width  as f32) <= base_rect.x as f32 + base_rect.w as f32);
+        assert!((y_offset as f32 + final_target_height as f32) <= base_rect.y as f32 + base_rect.h as f32);
 
         return Rect::new(x_offset as i32,
                          y_offset as i32,
-                         (area.width as f32 * scaler) as u32,
-                         (area.height as f32 * scaler) as u32);
+                         final_target_width as u32,
+                         final_target_height as u32);
     }
 }
 
@@ -274,6 +306,8 @@ pub struct DisplayTargets {
     pub map_panel: Panel<Texture>,
     pub player_panel: Panel<Texture>,
     pub info_panel: Panel<Texture>,
+    pub inventory_panel: Panel<Texture>,
+    pub menu_panel: Panel<Texture>,
 
     pub texture_creator: TextureCreator<WindowContext>,
 }
@@ -291,9 +325,13 @@ impl DisplayTargets {
         let map_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, 1);
 
         // TODO determine panel width and height cells
-        let info_panel = Panel::from_dims(&texture_creator, 20, 20, 1);
+        let info_panel = Panel::from_dims(&texture_creator, 20, 15, 1);
+
+        let inventory_panel = Panel::from_dims(&texture_creator, 20, 15, 1);
 
         let player_panel = Panel::from_dims(&texture_creator, 20, 20, 1);
+
+        let menu_panel = Panel::from_dims(&texture_creator, 20, 20, 1);
 
         let canvas_panel = Panel::with_canvas((SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32), canvas);
 
@@ -304,6 +342,8 @@ impl DisplayTargets {
             map_panel,
             player_panel,
             info_panel,
+            menu_panel,
+            inventory_panel,
         };
     }
 }
@@ -899,6 +939,21 @@ impl SpriteSheet {
     pub fn sprite_dims(&self) -> (usize, usize) {
         let (num_width, num_height) = self.num_cells();
         return (self.width / num_width, self.height / num_height);
+    }
+
+    // TODO these functions should take a Panel<&mut WindowCanvas> and not take cell_dims
+    // separately
+    pub fn draw_text_list(&mut self,
+                         canvas: &mut WindowCanvas,
+                         text_list: &Vec<String>,
+                         cell: Pos,
+                         cell_dims: (u32, u32),
+                         color: Color) {
+        let (_, height) = cell_dims;
+        for (index, text) in text_list.iter().enumerate() {
+            let text_cell = Pos::new(cell.x, cell.y + index as i32);
+            self.draw_text(canvas, text, text_cell, cell_dims, color);
+        }
     }
 
     pub fn draw_text(&mut self,
