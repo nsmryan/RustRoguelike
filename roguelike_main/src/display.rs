@@ -16,8 +16,6 @@ use roguelike_core::map::*;
 use roguelike_core::animation::{Sprite, AnimKey, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use roguelike_core::movement::{Cardinal, MoveType};
 
-use crate::plat::*;
-
 
 type TextureKey = u64;
 
@@ -318,13 +316,10 @@ impl DisplayTargets {
         let texture_creator = canvas.texture_creator();
 
         let over_sample = 5;
-        // TODO allocate textures with width and height, using oversampling, and pass result to
-        // 'texture'
         let background_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, 1);
 
         let map_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, 1);
 
-        // TODO determine panel width and height cells
         let info_panel = Panel::from_dims(&texture_creator, 20, 15, 1);
 
         let inventory_panel = Panel::from_dims(&texture_creator, 20, 15, 1);
@@ -350,11 +345,8 @@ impl DisplayTargets {
 
 pub struct DisplayState {
     // TODO try to remove by turning into a spritesheet
+    // currently this is the only thing that makes display states hard to create
     pub font_map: FontMap,
-
-    // TODO try to remove with new sections system
-    pub zones: Vec<Plot>,
-    pub screen_sections: Plan,
 
     pub sprites: IndexMap<SpriteKey, SpriteSheet>,
     pub next_sprite_key: i64,
@@ -373,15 +365,12 @@ pub struct DisplayState {
 }
 
 impl DisplayState {
-    pub fn new(screen_sections: Plan,
-               font_map: FontMap) -> DisplayState {
+    pub fn new(font_map: FontMap) -> DisplayState {
 
         return DisplayState {
             font_map,
             sprites: IndexMap::new(),
             next_sprite_key: 0,
-            screen_sections,
-            zones: Vec::new(),
             effects: Vec::new(),
             animations: IndexMap::new(),
             next_anim_key: 0,
@@ -442,10 +431,9 @@ pub struct Display {
 
 // TODO determine which functions should be moved to DisplayTargets or DisplayState
 impl Display {
-    pub fn new(screen_sections: Plan,
-               font_map: FontMap,
+    pub fn new(font_map: FontMap,
                canvas: WindowCanvas) -> Display {
-        return Display { state: DisplayState::new(screen_sections, font_map),
+        return Display { state: DisplayState::new(font_map),
                          targets: DisplayTargets::new(canvas),
         };
     }
@@ -1034,36 +1022,6 @@ impl SpriteSheet {
 pub fn engine_color(color: &Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
 }
-
-/*
-pub fn draw_char(canvas: &mut WindowCanvas,
-                 font_image: &mut Texture,
-                 chr: char,
-                 pos: Pos,
-                 color: Color,
-                 area: &Area) {
-    let chr_x = (chr as i32) % FONT_WIDTH;
-    let chr_y = (chr as i32) / FONT_HEIGHT;
-
-    let src = Rect::new((chr_x * FONT_WIDTH) as i32,
-                        (chr_y * FONT_HEIGHT) as i32,
-                        FONT_WIDTH as u32,
-                        FONT_HEIGHT as u32);
-
-    let dst = area.char_rect(pos.x, pos.y);
-
-    font_image.set_color_mod(color.r, color.g, color.b);
-    font_image.set_alpha_mod(color.a);
-
-    canvas.copy_ex(font_image,
-                   Some(src),
-                   Some(dst),
-                   0.0,
-                   None,
-                   false,
-                   false).unwrap();
-}
-*/
 
 // TODO redo with spritesheet font
 pub fn draw_text_with_font(canvas: &mut WindowCanvas,

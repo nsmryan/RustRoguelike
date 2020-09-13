@@ -3,7 +3,6 @@ mod throttler;
 mod render;
 mod console;
 mod display;
-mod plat;
 
 use std::fs;
 use std::io::{BufRead, Write};
@@ -42,7 +41,6 @@ use roguelike_engine::make_map::{make_map, read_map_xp};
 use crate::throttler::*;
 use crate::render::*;
 use crate::display::*;
-use crate::plat::*;
 
 
 const CONFIG_NAME: &str = "config.yaml";
@@ -107,14 +105,8 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     let font_map = FontMap::new(&ttf_context, &texture_creator, "Monoid.ttf".to_string(), 16);
 
     /* Create Display Structures */
-    let screen_sections =
-        Plan::vert("screen", 0.80, Plan::zone("map"),
-                   Plan::split_horiz(0.3, Plan::zone("inventory"),
-                                          Plan::split_horiz(0.5, Plan::zone("player"),
-                                                                 Plan::zone("info"))));
-
     let mut display =
-        Display::new(screen_sections, font_map, canvas);
+        Display::new(font_map, canvas);
 
     /* Load Textures */
     load_sprites(&texture_creator, &mut display);
@@ -204,23 +196,24 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
                         MouseButton::Left => {
                             game.mouse_state.left_pressed = true;
 
+                            // TODO mouse click needs to be redone with new system
                             // Find the region where the mouse click occurred.
                             // If the click is within the map, generate a map click event.
-                            let in_map =
-                                display.state.zones
-                                             .iter()
-                                             .filter(|zone| zone.contains(x as usize, y as usize) &&
-                                                            zone.name == "map")
-                                             .next();
+                            //let in_map =
+                            //    display.state.zones
+                            //                 .iter()
+                            //                 .filter(|zone| zone.contains(x as usize, y as usize) &&
+                            //                                zone.name == "map")
+                            //                 .next();
 
-                            if let Some(map_zone) = in_map {
-                                let map_loc = map_zone.within(x as usize, y as usize);
-                                let map_cell = (((map_loc.0 as f32 / map_zone.width as f32) * (game.data.map.width() as f32)) as i32,
-                                                ((map_loc.1 as f32 / map_zone.height as f32) * (game.data.map.height() as f32)) as i32);
-                                game.input_action =
-                                  InputAction::MapClick(Pos::new(map_loc.0 as i32, map_loc.1 as i32),
-                                                        Pos::new(map_cell.0 as i32, map_cell.1 as i32));
-                            }
+                            //if let Some(map_zone) = in_map {
+                            //    let map_loc = map_zone.within(x as usize, y as usize);
+                            //    let map_cell = (((map_loc.0 as f32 / map_zone.width as f32) * (game.data.map.width() as f32)) as i32,
+                            //                    ((map_loc.1 as f32 / map_zone.height as f32) * (game.data.map.height() as f32)) as i32);
+                            //    game.input_action =
+                            //      InputAction::MapClick(Pos::new(map_loc.0 as i32, map_loc.1 as i32),
+                            //                            Pos::new(map_cell.0 as i32, map_cell.1 as i32));
+                            //}
                         }
 
                         MouseButton::Middle => {

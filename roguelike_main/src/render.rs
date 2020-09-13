@@ -16,19 +16,9 @@ use roguelike_core::utils::{line, item_primary_at, distance, move_towards, lerp_
 use roguelike_engine::game::*;
 
 use crate::display::*;
-use crate::plat::*;
 
 
 pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String> {
-    let screen_rect = display.targets.canvas_panel.target.output_size()?;
-
-    let plots = display.state
-                    .screen_sections
-                    .plot(0,
-                          0,
-                          screen_rect.0 as usize,
-                          screen_rect.1 as usize);
-
     display.targets.canvas_panel.target.set_draw_color(Sdl2Color::RGB(0, 0, 0));
     display.targets.canvas_panel.target.clear();
 
@@ -145,7 +135,6 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     display.targets.canvas_panel.target.copy(&display.targets.player_panel.target, None, dst).unwrap();
 
     /* Draw Menus */
-    // TODO menus need to be pasted into a smaller rectangle within the map
     {
         let canvas_panel = &mut display.targets.canvas_panel;
         let display_state = &mut display.state;
@@ -173,7 +162,6 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
         }).unwrap();
 
         if draw_menu {
-            // TODO restrict to a subset of the map_area
             let menu_area = menu_panel.area();
             let menu_area = map_area.centered(menu_area.width, menu_area.height);
             let dst = canvas_panel.get_rect_within(&menu_area, menu_panel.num_pixels);
@@ -1315,13 +1303,10 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 let in_fov_lines = game.data.map.is_in_fov_lines(player_pos, pos, game.config.fov_radius_player);
 
                 if in_fov && !in_fov_lines {
-                    // TODO add back in with rendering update
-                    //display.draw_tile_outline(pos, area, highlight_color_fov);
                     draw_outline_tile(panel.target, pos, cell_dims, highlight_color_fov);
                 }
 
                 if in_fov_lines && !in_fov {
-                    // TODO add back in with rendering update
                     draw_outline_tile(panel.target, pos, cell_dims, highlight_color_lines);
                 }
             }
