@@ -196,24 +196,11 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
                         MouseButton::Left => {
                             game.mouse_state.left_pressed = true;
 
-                            // TODO mouse click needs to be redone with new system
-                            // Find the region where the mouse click occurred.
-                            // If the click is within the map, generate a map click event.
-                            //let in_map =
-                            //    display.state.zones
-                            //                 .iter()
-                            //                 .filter(|zone| zone.contains(x as usize, y as usize) &&
-                            //                                zone.name == "map")
-                            //                 .next();
+                            let cell_dims = display.targets.canvas_panel.cell_dims();
 
-                            //if let Some(map_zone) = in_map {
-                            //    let map_loc = map_zone.within(x as usize, y as usize);
-                            //    let map_cell = (((map_loc.0 as f32 / map_zone.width as f32) * (game.data.map.width() as f32)) as i32,
-                            //                    ((map_loc.1 as f32 / map_zone.height as f32) * (game.data.map.height() as f32)) as i32);
-                            //    game.input_action =
-                            //      InputAction::MapClick(Pos::new(map_loc.0 as i32, map_loc.1 as i32),
-                            //                            Pos::new(map_cell.0 as i32, map_cell.1 as i32));
-                            //}
+                            game.input_action =
+                                InputAction::MapClick(Pos::new(x, y),
+                                                      Pos::new(x / cell_dims.0 as i32, y /  cell_dims.1 as i32));
                         }
 
                         MouseButton::Middle => {

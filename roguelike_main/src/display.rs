@@ -85,6 +85,15 @@ impl Area {
 
         return Area::new_at(x_offset, y_offset, width, height);
     }
+
+    pub fn cell_at(&self, cell_pos: Pos) -> Option<(usize, usize)> {
+        if cell_pos.x as usize >= self.x_offset && cell_pos.x as usize <= self.x_offset + self.width &&
+           cell_pos.y as usize >= self.y_offset && cell_pos.y as usize <= self.y_offset + self.height {
+               return Some((cell_pos.x  as usize - self.x_offset, cell_pos.y as usize - self.y_offset));
+        }
+
+        return None
+    }
 }
 
 #[test]

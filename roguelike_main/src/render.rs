@@ -22,24 +22,19 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     display.targets.canvas_panel.target.set_draw_color(Sdl2Color::RGB(0, 0, 0));
     display.targets.canvas_panel.target.clear();
 
-    // TODO need to work out mouse position with new system
+    /* Split Screen Into Sections */
+    let screen = display.targets.canvas_panel.area();
+    let (map_area, rest_area) = screen.split_right(display.targets.info_panel.cells.0 as usize);
+    let (player_area, remaining_area) = rest_area.split_top(20);
+    let (inventory_area, info_area) = remaining_area.split_top(15);
+
     let mut mouse_map_pos = None;
-    //for zone in zones.iter() {
-    //    if zone.name == "map" && zone.contains(game.mouse_state.x as usize, game.mouse_state.y as usize) {
-    //        let ((_x_offset, _y_offset), scaler) =
-    //            zone.fit(game.data.map.width() as usize * FONT_WIDTH as usize,
-    //                     game.data.map.height() as usize * FONT_HEIGHT as usize);
-
-    //        let mouse_map_xy = zone.within(game.mouse_state.x as usize, game.mouse_state.y as usize);
-    //        let map_x = mouse_map_xy.0 as f32 / (FONT_WIDTH as f32 * scaler);
-    //        let map_y = mouse_map_xy.1 as f32 / (FONT_HEIGHT as f32 * scaler);
-    //        mouse_map_pos = Some(Pos::new(map_x as i32, map_y as i32));
-
-    //        if let Some(mouse_id) = game.data.find_mouse() {
-    //            game.data.entities.set_xy(mouse_id, map_x as i32, map_y as i32);
-    //        }
-    //    }
-    //}
+    if let Some(mouse_id) = game.data.find_mouse() {
+        if let Some(mouse_cell) = map_area.cell_at(Pos::new(game.mouse_state.x, game.mouse_state.y)) {
+            game.data.entities.set_xy(mouse_id, mouse_cell.0 as i32, mouse_cell.1 as i32);
+        }
+    }
+    let mouse_map_pos = mouse_map_pos;
 
     /* Draw Background */
     render_background(display, game);
@@ -105,11 +100,6 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     }
 
     /* Paste Panels on Screen */
-    let screen = display.targets.canvas_panel.area();
-    let (map_area, rest_area) = screen.split_right(display.targets.info_panel.cells.0 as usize);
-    let (player_area, remaining_area) = rest_area.split_top(20);
-    let (inventory_area, info_area) = remaining_area.split_top(15);
-
     // TODO just make the map panel the right size in the first place
     // and re-create it when the map changes.
     let map_cell_dims = display.targets.map_panel.cell_dims();
