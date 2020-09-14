@@ -28,10 +28,13 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     let (player_area, remaining_area) = rest_area.split_top(20);
     let (inventory_area, info_area) = remaining_area.split_top(15);
 
+    // NOTE this works because the map is on the top left, so we can look into the area directly
+    // without offset
     let mut mouse_map_pos = None;
     if let Some(mouse_id) = game.data.find_mouse() {
-        if let Some(mouse_cell) = map_area.cell_at(Pos::new(game.mouse_state.x, game.mouse_state.y)) {
+        if let Some(mouse_cell) = map_area.cell_at_pixel(Pos::new(game.mouse_state.x, game.mouse_state.y)) {
             game.data.entities.set_xy(mouse_id, mouse_cell.0 as i32, mouse_cell.1 as i32);
+            mouse_map_pos = Some(Pos::new(mouse_cell.0 as i32, mouse_cell.1 as i32));
         }
     }
     let mouse_map_pos = mouse_map_pos;
@@ -1283,26 +1286,29 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     // 40 are nearly fully open
     // 49 may be fully open
     if game.config.overlay_floodfill {
-        let tile_sprite = &mut display_state.sprites[&sprite_key];
+        let font_key = display_state.lookup_spritekey("font").unwrap();
+
 
         let highlight_color = game.config.color_light_orange;
         for y in 0..game.data.map.height() {
             for x in 0..game.data.map.width() {
                 let pos = Pos::new(x, y);
 
-                if !game.data.map[pos].blocked {
+                if !game.data.map[pos].blocked &&
+                   game.data.map[pos].tile_type != TileType::Water {
                     let near_count = game.data.map.floodfill(pos, 3).len();
 
                     let amount = near_count as f32 / 50.0;
                     let adj_color = lerp_color(game.config.color_ice_blue, game.config.color_red, amount);
+
+                    let tile_sprite = &mut display_state.sprites[&sprite_key];
                     tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, adj_color);
 
-                    // TODO add back in when fonts are just spritemaps
-                    //draw_text_with_font(panel,
-                    //                    &mut display_state.font_map,
-                    //                    &format!("{}", near_count),
-                    //                    pos,
-                    //                    highlight_color);
+                    let font_sprite = &mut display_state.sprites[&font_key];
+                    font_sprite.draw_text(panel,
+                                          &format!("{}", near_count),
+                                          pos,
+                                          highlight_color);
                 }
             }
         }

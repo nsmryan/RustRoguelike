@@ -86,7 +86,8 @@ impl Area {
         return Area::new_at(x_offset, y_offset, width, height);
     }
 
-    pub fn cell_at(&self, cell_pos: Pos) -> Option<(usize, usize)> {
+    pub fn cell_at_pixel(&self, pixel_pos: Pos) -> Option<(usize, usize)> {
+        let cell_pos = Pos::new(pixel_pos.x / self.width as i32, pixel_pos.y / self.height as i32);
         if cell_pos.x as usize >= self.x_offset && cell_pos.x as usize <= self.x_offset + self.width &&
            cell_pos.y as usize >= self.y_offset && cell_pos.y as usize <= self.y_offset + self.height {
                return Some((cell_pos.x  as usize - self.x_offset, cell_pos.y as usize - self.y_offset));

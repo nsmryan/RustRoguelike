@@ -533,7 +533,7 @@ fn load_font(ttf_context: &Sdl2TtfContext,
 
             let char_rect = sdl2::rect::Rect::new(chr_ix as i32 % 16, chr_ix as i32 / 16, char_width, char_height);
 
-            canvas.copy(&char_texture, None, char_rect);
+            canvas.copy(&char_texture, None, char_rect).unwrap();
         }
     }).unwrap();
 
