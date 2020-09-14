@@ -333,9 +333,9 @@ impl DisplayTargets {
         let texture_creator = canvas.texture_creator();
 
         let over_sample = 5;
-        let background_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, 1);
+        let background_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, 5);
 
-        let map_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, 1);
+        let map_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, 5);
 
         let info_panel = Panel::from_dims(&texture_creator, 20, 15, 1);
 
