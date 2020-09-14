@@ -16,8 +16,9 @@ use sdl2::event::Event;
 use sdl2::image::LoadTexture;
 use sdl2::mouse::MouseButton;
 use sdl2::keyboard::{Mod, Keycode};
-use sdl2::render::{TextureCreator};
+use sdl2::render::{WindowCanvas, Texture, TextureCreator};
 use sdl2::video::WindowContext;
+use sdl2::ttf::Sdl2TtfContext;
 
 use walkdir::WalkDir;
 use bmp;
@@ -101,17 +102,17 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         .accelerated().build().map_err(|e| e.to_string())?;
     let texture_creator = canvas.texture_creator();
 
-    let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
-    let font_map = FontMap::new(&ttf_context, &texture_creator, "Monoid.ttf".to_string(), 16);
-
     /* Create Display Structures */
-    let mut display =
-        Display::new(font_map, canvas);
+    let mut display = Display::new(canvas);
 
     /* Load Textures */
     load_sprites(&texture_creator, &mut display);
 
     load_sprite(&texture_creator, &mut display, "resources/rexpaint16x16.png", "tiles", 16);
+
+    let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
+    let font_texture = load_font(&ttf_context, &texture_creator, &mut display.targets.canvas_panel.target, "Monoid.ttf".to_string(), 16);
+    display.add_spritesheet("font".to_string(), font_texture, 16);
 
     let mut game = Game::new(seed, config.clone())?;
 
@@ -504,6 +505,39 @@ pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), Str
     image.save("screenshot.bmp").unwrap();
 
     return Ok(());
+}
+
+fn load_font(ttf_context: &Sdl2TtfContext,
+             texture_creator: &TextureCreator<WindowContext>,
+             canvas: &mut WindowCanvas,
+             file_name: String,
+             font_size: u16) -> Texture {
+    let font = ttf_context.load_font(format!("resources/{}", file_name), font_size).expect("Could not load font file!");
+
+    let pixel_format = texture_creator.default_pixel_format();
+
+    // assumes monospace font- otherwise none of this works
+    let (char_width, char_height) = font.size_of_char('a').unwrap();
+
+    let mut font_texture =
+        texture_creator.create_texture_target(pixel_format,
+                                              char_width as u32 * FONT_WIDTH as u32,
+                                              char_height as u32 * FONT_HEIGHT as u32).unwrap();
+
+    canvas.with_texture_canvas(&mut font_texture, |canvas| {
+        canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
+        canvas.clear();
+        for chr_ix in 1..=255u8 {
+            let chr_surface = font.render_latin1(&[chr_ix]).solid(sdl2::pixels::Color::WHITE).unwrap();
+            let char_texture = chr_surface.as_texture(&texture_creator).unwrap();
+
+            let char_rect = sdl2::rect::Rect::new(chr_ix as i32 % 16, chr_ix as i32 / 16, char_width, char_height);
+
+            canvas.copy(&char_texture, None, char_rect);
+        }
+    }).unwrap();
+
+    return font_texture;
 }
 
 fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display: &mut Display) {

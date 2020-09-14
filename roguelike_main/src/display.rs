@@ -355,10 +355,6 @@ impl DisplayTargets {
 }
 
 pub struct DisplayState {
-    // TODO try to remove by turning into a spritesheet
-    // currently this is the only thing that makes display states hard to create
-    pub font_map: FontMap,
-
     pub sprites: IndexMap<SpriteKey, SpriteSheet>,
     pub next_sprite_key: i64,
 
@@ -376,10 +372,9 @@ pub struct DisplayState {
 }
 
 impl DisplayState {
-    pub fn new(font_map: FontMap) -> DisplayState {
+    pub fn new() -> DisplayState {
 
         return DisplayState {
-            font_map,
             sprites: IndexMap::new(),
             next_sprite_key: 0,
             effects: Vec::new(),
@@ -441,9 +436,8 @@ pub struct Display {
 
 // TODO determine which functions should be moved to DisplayTargets or DisplayState
 impl Display {
-    pub fn new(font_map: FontMap,
-               canvas: WindowCanvas) -> Display {
-        return Display { state: DisplayState::new(font_map),
+    pub fn new(canvas: WindowCanvas) -> Display {
+        return Display { state: DisplayState::new(),
                          targets: DisplayTargets::new(canvas),
         };
     }
@@ -779,34 +773,6 @@ impl Impression {
     }
 }
 
-pub struct FontMap {
-    map: HashMap<char, Texture>,
-    width: u32,
-    height: u32,
-}
-
-impl FontMap {
-    pub fn new(ttf_context: &Sdl2TtfContext, texture_creator: &TextureCreator<WindowContext>, file_name: String, font_size: u16) -> FontMap {
-        let font = ttf_context.load_font("resources/Monoid.ttf", font_size).expect("Could not load font file!");
-
-        let mut font_map: HashMap<char, Texture> = HashMap::new();
-        let mut width = 0;
-        let mut height = 0;
-        for chr_ix in 1..=255u8 {
-            let chr_surface = font.render_latin1(&[chr_ix]).solid(sdl2::pixels::Color::WHITE).unwrap();
-            let char_texture = chr_surface.as_texture(&texture_creator).unwrap();
-
-            let query = char_texture.query();
-            width = query.width;
-            height = query.height;
-
-            font_map.insert(chr_ix as char, char_texture);
-        }
-
-        return FontMap {map: font_map, width, height };
-    }
-}
-
 
 pub struct SpriteSheet {
     pub texture: Texture,
@@ -942,11 +908,11 @@ pub fn engine_color(color: &Color) -> Sdl2Color {
 }
 
 // TODO redo with spritesheet font
-pub fn draw_text_with_font(panel: &mut Panel<&mut WindowCanvas>,
-                           font_map: &mut FontMap,
-                           text: &str,
-                           pos: Pos,
-                           color: Color) {
+//pub fn draw_text_with_font(panel: &mut Panel<&mut WindowCanvas>,
+                           //font_map: &mut FontMap,
+                           //text: &str,
+                           //pos: Pos,
+                           //color: Color) {
     /*
     let total_width = font_map.width * text.len() as u32;
     let tile_rect = area.char_rect(pos.x, pos.y);
@@ -972,7 +938,7 @@ pub fn draw_text_with_font(panel: &mut Panel<&mut WindowCanvas>,
                     Some(dst)).unwrap();
     }
     */
-}
+//}
 
 /* TODO check if still needed
 pub fn draw_char_with_font(canvas: &mut WindowCanvas,

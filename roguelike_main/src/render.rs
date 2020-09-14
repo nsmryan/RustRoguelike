@@ -1297,11 +1297,12 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                     let adj_color = lerp_color(game.config.color_ice_blue, game.config.color_red, amount);
                     tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, adj_color);
 
-                    draw_text_with_font(panel,
-                                        &mut display_state.font_map,
-                                        &format!("{}", near_count),
-                                        pos,
-                                        highlight_color);
+                    // TODO add back in when fonts are just spritemaps
+                    //draw_text_with_font(panel,
+                    //                    &mut display_state.font_map,
+                    //                    &format!("{}", near_count),
+                    //                    pos,
+                    //                    highlight_color);
                 }
             }
         }
