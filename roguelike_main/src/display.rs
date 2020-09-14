@@ -337,13 +337,15 @@ impl DisplayTargets {
 
         let map_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, 5);
 
-        let info_panel = Panel::from_dims(&texture_creator, 20, 15, 1);
+        let info_width = 14;
 
-        let inventory_panel = Panel::from_dims(&texture_creator, 20, 15, 1);
+        let info_panel = Panel::from_dims(&texture_creator, info_width, 15, 1);
 
-        let player_panel = Panel::from_dims(&texture_creator, 20, 20, 1);
+        let inventory_panel = Panel::from_dims(&texture_creator, info_width, 15, 1);
 
-        let menu_panel = Panel::from_dims(&texture_creator, 20, 20, 1);
+        let player_panel = Panel::from_dims(&texture_creator, info_width, 20, 1);
+
+        let menu_panel = Panel::from_dims(&texture_creator, info_width, 20, 1);
 
         let canvas_panel = Panel::with_canvas((SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32), canvas);
 

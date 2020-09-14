@@ -1497,6 +1497,14 @@ fn cell_within_rect(rect: Rect, area_cell_dims: (i32, i32), pixel_pos: (i32, i32
        let x_cell = (pixel_pos.0 - rect.x) / cell_dims.0;
        let y_cell = (pixel_pos.1 - rect.y) / cell_dims.1;
 
+       assert!(x_cell * area_cell_dims.0 < rect.x + rect.w);
+       assert!(y_cell * area_cell_dims.1 < rect.y + rect.h);
+
+       // NOTE hacky way to prevent this situation
+       if x_cell >= area_cell_dims.0 || y_cell >= area_cell_dims.1 {
+           return None;
+       }
+
        return Some((x_cell, y_cell));
     }
 
