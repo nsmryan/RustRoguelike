@@ -28,11 +28,14 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     let (player_area, remaining_area) = rest_area.split_top(20);
     let (inventory_area, info_area) = remaining_area.split_top(15);
 
-    // NOTE this works because the map is on the top left, so we can look into the area directly
-    // without offset
+    let map_rect = display.targets.canvas_panel.get_rect_from_area(&map_area);
+
+    /* Determine Mouse Position */
     let mut mouse_map_pos = None;
     if let Some(mouse_id) = game.data.find_mouse() {
-        if let Some(mouse_cell) = map_area.cell_at_pixel(Pos::new(game.mouse_state.x, game.mouse_state.y)) {
+        let mouse_pos = (game.mouse_state.x, game.mouse_state.y);
+        if let Some(mouse_cell) = cell_within_rect(map_rect, game.data.map.size(), mouse_pos) {
+            // NOTE this should be done as an action MapClick
             game.data.entities.set_xy(mouse_id, mouse_cell.0 as i32, mouse_cell.1 as i32);
             mouse_map_pos = Some(Pos::new(mouse_cell.0 as i32, mouse_cell.1 as i32));
         }
@@ -109,8 +112,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
    
     let (map_width, map_height) = game.data.map.size();
     let src = display.targets.map_panel.get_rect_up_left(map_width as usize, map_height as usize);
-    let dst = display.targets.canvas_panel.get_rect_from_area(&map_area);
-    display.targets.canvas_panel.target.copy(&display.targets.map_panel.target, src, dst).unwrap();
+    display.targets.canvas_panel.target.copy(&display.targets.map_panel.target, src, map_rect).unwrap();
 
     /* Draw Inventory Panel */
     let dst = display.targets.canvas_panel.get_rect_within(&inventory_area,
@@ -1485,5 +1487,19 @@ fn render_movement_overlay(panel: &mut Panel<&mut WindowCanvas>,
 
 pub fn sdl2_color(color: Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
+}
+
+fn cell_within_rect(rect: Rect, area_cell_dims: (i32, i32), pixel_pos: (i32, i32)) -> Option<(i32, i32)> {
+    if pixel_pos.0 >= rect.x && pixel_pos.0 < rect.x + rect.w &&
+       pixel_pos.1 >= rect.y && pixel_pos.1 < rect.y + rect.h {
+
+       let cell_dims = (rect.w / area_cell_dims.0, rect.h / area_cell_dims.1);
+       let x_cell = (pixel_pos.0 - rect.x) / cell_dims.0;
+       let y_cell = (pixel_pos.1 - rect.y) / cell_dims.1;
+
+       return Some((x_cell, y_cell));
+    }
+
+    return None;
 }
 
