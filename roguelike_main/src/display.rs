@@ -159,6 +159,7 @@ pub fn test_area_splits_bottom() {
     assert_eq!(20, bottom.height);
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Panel<T> {
     pub target: T,
     pub cells: (u32, u32),
@@ -186,8 +187,9 @@ impl Panel<Texture> {
         return Panel { cells, target: texture, num_pixels: (width, height), dirty: true };
     }
 
-    pub fn unit(cells: (u32, u32), dims: (u32, u32)) -> Panel<()> {
-        return Panel { cells, target: (), num_pixels: dims, dirty: true };
+    // TODO use instead of with_target(())
+    pub fn unit(&self) -> Panel<()> {
+        return Panel { target: (), cells: self.cells, num_pixels: self.num_pixels, dirty: self.dirty };
     }
 }
 
@@ -401,11 +403,10 @@ impl DisplayState {
     }
 
     pub fn draw_sprite(&mut self,
-                       canvas: &mut WindowCanvas,
+                       panel: &mut Panel<&mut WindowCanvas>,
                        sprite: Sprite,
                        pos: Pos,
-                       color: Color,
-                       cell_dims: (u32, u32)) {
+                       color: Color) {
 
         let sprite_index;
         let sprite_key;
@@ -425,7 +426,7 @@ impl DisplayState {
         }
 
         let sprite = &mut self.sprites[&sprite_key];
-        sprite.draw_sprite_at_cell(canvas, sprite_index, pos, cell_dims, color, 0.0);
+        sprite.draw_sprite_at_cell(panel, sprite_index, pos, color, 0.0);
     }
 
     pub fn play_effect(&mut self, effect: Effect) {
@@ -852,65 +853,59 @@ impl SpriteSheet {
         return (self.width / num_width, self.height / num_height);
     }
 
-    // TODO these functions should take a Panel<&mut WindowCanvas> and not take cell_dims
-    // separately
     pub fn draw_text_list(&mut self,
-                         canvas: &mut WindowCanvas,
+                         panel: &mut Panel<&mut WindowCanvas>,
                          text_list: &Vec<String>,
                          cell: Pos,
-                         cell_dims: (u32, u32),
                          color: Color) {
-        let (_, height) = cell_dims;
         for (index, text) in text_list.iter().enumerate() {
             let text_cell = Pos::new(cell.x, cell.y + index as i32);
-            self.draw_text(canvas, text, text_cell, cell_dims, color);
+            self.draw_text(panel, text, text_cell, color);
         }
     }
 
     pub fn draw_text(&mut self,
-                     canvas: &mut WindowCanvas,
+                     panel: &mut Panel<&mut WindowCanvas>,
                      text: &str,
                      cell: Pos,
-                     cell_dims: (u32, u32),
                      color: Color) {
         let mut pos = cell;
         for chr in text.chars() {
-            self.draw_sprite_at_cell(canvas, chr as usize, pos, cell_dims, color, 0.0);
+            self.draw_sprite_at_cell(panel, chr as usize, pos, color, 0.0);
             pos.x += 1;
         }
     }
 
     // consider removing and just converting chars to usize
     pub fn draw_char(&mut self,
-                     canvas: &mut WindowCanvas,
+                     panel: &mut Panel<&mut WindowCanvas>,
                      chr: char,
                      cell: Pos,
-                     cell_dims: (u32, u32),
                      color: Color) {
-        self.draw_sprite_at_cell(canvas, chr as usize, cell, cell_dims, color, 0.0);
+        self.draw_sprite_at_cell(panel, chr as usize, cell, color, 0.0);
     }
 
     pub fn draw_sprite_at_cell(&mut self,
-                               canvas: &mut WindowCanvas,
+                               panel: &mut Panel<&mut WindowCanvas>,
                                index: usize,
                                cell: Pos,
-                               cell_dims: (u32, u32),
                                color: Color,
                                rotation: f64) {
-        let (cell_width, cell_height) = cell_dims;
+        let (cell_width, cell_height) = panel.cell_dims();
 
         let pos = Pos::new(cell.x * cell_width as i32, cell.y * cell_height as i32);
 
-        self.draw_sprite_full(canvas, index, pos, cell_dims, color, rotation);
+        self.draw_sprite_full(panel, index, pos, color, rotation);
     }
 
     pub fn draw_sprite_full(&mut self,
-                            canvas: &mut WindowCanvas,
+                            panel: &mut Panel<&mut WindowCanvas>,
                             index: usize,
                             pos: Pos,
-                            cell_dims: (u32, u32),
                             color: Color,
                             rotation: f64) {
+        let cell_dims = panel.cell_dims();
+
         let (num_cells_x, _num_cells_y) = self.num_cells();
         let sprite_x = index % num_cells_x;
         let sprite_y = index / num_cells_x;
@@ -928,11 +923,11 @@ impl SpriteSheet {
                             cell_width as u32,
                             cell_height as u32);
 
-        canvas.set_blend_mode(BlendMode::Blend);
+        panel.target.set_blend_mode(BlendMode::Blend);
         self.texture.set_color_mod(color.r, color.g, color.b);
         self.texture.set_alpha_mod(color.a);
 
-        canvas.copy_ex(&self.texture,
+        panel.target.copy_ex(&self.texture,
                        Some(src),
                        Some(dst),
                        rotation,
@@ -947,7 +942,7 @@ pub fn engine_color(color: &Color) -> Sdl2Color {
 }
 
 // TODO redo with spritesheet font
-pub fn draw_text_with_font(canvas: &mut WindowCanvas,
+pub fn draw_text_with_font(panel: &mut Panel<&mut WindowCanvas>,
                            font_map: &mut FontMap,
                            text: &str,
                            pos: Pos,
@@ -1004,33 +999,35 @@ pub fn draw_char_with_font(canvas: &mut WindowCanvas,
 }
 */
 
-pub fn draw_outline_tile(canvas: &mut WindowCanvas,
+pub fn draw_outline_tile(panel: &mut Panel<&mut WindowCanvas>,
                          cell: Pos,
-                         cell_dims: (u32, u32),
                          color: Color) {
-    canvas.set_blend_mode(BlendMode::Blend);
-    canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+    let cell_dims = panel.cell_dims();
+
+    panel.target.set_blend_mode(BlendMode::Blend);
+    panel.target.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
     let rect = Rect::new(cell.x * cell_dims.0 as i32 + 1,
                          cell.y * cell_dims.1 as i32 + 1,
                          cell_dims.0,
                          cell_dims.1);
 
-    canvas.draw_rect(rect).unwrap();
+    panel.target.draw_rect(rect).unwrap();
 }
 
-pub fn draw_tile_highlight(canvas: &mut WindowCanvas,
-                           cell_dims: (u32, u32),
+pub fn draw_tile_highlight(panel: &mut Panel<&mut WindowCanvas>,
                            cell: Pos,
                            color: Color) {
-    canvas.set_blend_mode(BlendMode::Blend);
-    canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+    let cell_dims = panel.cell_dims();
+
+    panel.target.set_blend_mode(BlendMode::Blend);
+    panel.target.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
     let rect = Rect::new(cell.x * cell_dims.0 as i32,
                          cell.y * cell_dims.1 as i32,
                          cell_dims.0,
                          cell_dims.1);
 
-    canvas.fill_rect(rect).unwrap();
+    panel.target.fill_rect(rect).unwrap();
 }
 

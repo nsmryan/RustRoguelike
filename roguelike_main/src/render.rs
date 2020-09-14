@@ -57,11 +57,11 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
                 canvas.copy(&background.target, None, None).unwrap();
 
                 let mut panel = panel.with_target(canvas);
-                render_map(&mut panel, display_state, cell_dims, game);
-                render_overlays(&mut panel, display_state, game, mouse_map_pos, cell_dims);
-                render_entities(&mut panel, display_state, game, cell_dims);
-                render_impressions(&mut panel, display_state, game, cell_dims);
-                render_effects(&mut panel, display_state, game, cell_dims);
+                render_map(&mut panel, display_state, game);
+                render_overlays(&mut panel, display_state, game, mouse_map_pos);
+                render_entities(&mut panel, display_state, game);
+                render_impressions(&mut panel, display_state, game);
+                render_effects(&mut panel, display_state, game);
             }).unwrap();
         }
 
@@ -128,7 +128,6 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     {
         let canvas_panel = &mut display.targets.canvas_panel;
         let display_state = &mut display.state;
-
 
         let menu_panel = &mut display.targets.menu_panel;
         let inventory_panel = &mut display.targets.inventory_panel;
@@ -207,7 +206,7 @@ fn render_placard(panel: &mut Panel<&mut WindowCanvas>,
                      .expect("Could not find rexpaint file in renderer!");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
-    tile_sprite.draw_text(panel.target, &text, text_pos, panel.cell_dims(), config.color_dark_blue);
+    tile_sprite.draw_text(panel, &text, text_pos, config.color_dark_blue);
 }
 
 fn render_pips(panel: &mut Panel<&mut WindowCanvas>,
@@ -383,11 +382,7 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
         display_state.lookup_spritekey("tiles")
                      .expect("Could not find rexpaint file in renderer!");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
-    tile_sprite.draw_text_list(&mut panel.target, 
-                               &list,
-                               text_pos,
-                               cell_dims,
-                               color);
+    tile_sprite.draw_text_list(panel, &list, text_pos, color);
 }
 
 fn render_info(panel: &mut Panel<&mut WindowCanvas>,
@@ -424,10 +419,9 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
         {
             let tile_sprite = &mut display_state.sprites[&sprite_key];
-            tile_sprite.draw_text_list(panel.target,
+            tile_sprite.draw_text_list(panel,
                                        &text_list,
                                        text_pos,
-                                       cell_dims,
                                        color);
         }
         text_list.clear();
@@ -470,11 +464,10 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
         let tile_sprite = &mut display_state.sprites[&sprite_key];
         let text_pos = Pos::new(1, y_pos);
-        tile_sprite.draw_text_list(panel.target,
+        tile_sprite.draw_text_list(panel,
                                    &text_list,
-                                    text_pos,
-                                    cell_dims,
-                                    color);
+                                   text_pos,
+                                   color);
         text_list.clear();
 
         y_pos = 10;
@@ -486,10 +479,9 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
             text_list.push(format!("blocked"));
         }
 
-        tile_sprite.draw_text_list(panel.target,
+        tile_sprite.draw_text_list(panel,
                                    &text_list,
                                    text_pos,
-                                   cell_dims,
                                    color);
     }
 }
@@ -519,10 +511,9 @@ fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
     let tile_sprite = &mut display_state.sprites[&sprite_key];
     let cell_dims = panel.cell_dims();
 
-    tile_sprite.draw_text_list(panel.target,
+    tile_sprite.draw_text_list(panel,
                                &list,
                                text_pos,
-                               cell_dims,
                                color);
 }
 
@@ -548,10 +539,9 @@ fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
                      .expect("Could not find rexpaint file in renderer!");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
-    tile_sprite.draw_text_list(panel.target,
+    tile_sprite.draw_text_list(panel,
                                &list,
                                text_pos,
-                               panel.cell_dims(),
                                color);
 }
 
@@ -578,10 +568,9 @@ fn render_confirm_quit(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut
                      .expect("Could not find rexpaint file in renderer!");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
-    tile_sprite.draw_text_list(panel.target,
+    tile_sprite.draw_text_list(panel,
                                &list,
                                text_pos,
-                               cell_dims,
                                color);
 }
 
@@ -624,10 +613,9 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
         }
 
         // place prompt character
-        tile_sprite.draw_char(panel.target,
+        tile_sprite.draw_char(panel,
                               ('0' as u8 + item_index) as char,
                               Pos::new(1, y_pos),
-                              cell_dims,
                               game.config.color_ice_blue);
 
         // place object name
@@ -639,10 +627,9 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
                 ""
             };
         let item_text = format!(" {:?} {}", game.data.entities.name[obj_id], item_marker);
-        tile_sprite.draw_text(panel.target,
+        tile_sprite.draw_text(panel,
                               &item_text,
                               text_pos,
-                              cell_dims,
                               color);
         
         y_pos += 1;
@@ -652,10 +639,9 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
 
     if game.data.entities.inventory[&player_id].len() == 0 {
         let text_pos = Pos::new(1, y_pos);
-        tile_sprite.draw_text(panel.target,
+        tile_sprite.draw_text(panel,
                               &format!("empty"),
                               text_pos,
-                              cell_dims,
                               game.config.color_ice_blue);
     }
 }
@@ -681,10 +667,12 @@ fn render_background(display: &mut Display, game: &mut Game) {
 
     let cell_dims = display.targets.background_panel.cell_dims();
 
+    let panel = display.targets.background_panel.with_target(());
     canvas.with_texture_canvas(&mut display.targets.background_panel.target, |canvas| {
         canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
         canvas.clear();
 
+        let mut panel = panel.with_target(canvas);
         for y in 0..map_height {
             for x in 0..map_width {
                 let map_pos = Pos::new(x, y);
@@ -693,17 +681,16 @@ fn render_background(display: &mut Display, game: &mut Game) {
                     game.data.map.is_in_fov(pos, map_pos, game.config.fov_radius_player) ||
                     game.settings.god_mode;
 
-                sprite.draw_char(canvas,
+                sprite.draw_char(&mut panel,
                                  MAP_EMPTY_CHAR as char,
                                  map_pos,
-                                 cell_dims,
                                  empty_tile_color(&game.config, map_pos, visible));
 
                 let tile = &game.data.map[(x, y)];
                 if tile.tile_type == TileType::Water {
                     let color = tile_color(&game.config, x, y, tile, visible);
                     let chr = tile.chr;
-                    sprite.draw_char(canvas, chr as char, map_pos, cell_dims, color);
+                    sprite.draw_char(&mut panel, chr as char, map_pos, color);
                 }
             }
         }
@@ -711,7 +698,7 @@ fn render_background(display: &mut Display, game: &mut Game) {
 }
 
 /// Render the map, with environment and walls
-fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, cell_dims: (u32, u32), game: &mut Game) {
+fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
@@ -730,7 +717,7 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
             {
                 let mut outline_color = Color::white();
                 outline_color.a /= 8;
-                draw_outline_tile(panel.target, pos, cell_dims, outline_color);
+                draw_outline_tile(panel, pos, outline_color);
             }
 
             // Render game stuff
@@ -756,16 +743,16 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
             // if the tile is not empty or water, draw it
             let color = tile_color(&game.config, x, y, tile, visible);
             if chr != MAP_EMPTY_CHAR && tile.tile_type != TileType::Water {
-                sprite.draw_char(panel.target, chr as char, pos, cell_dims, color);
+                sprite.draw_char(panel, chr as char, pos, color);
             }
 
             match tile.surface {
                 Surface::Rubble => {
-                    sprite.draw_char(panel.target, MAP_RUBBLE as char, pos, cell_dims, color);
+                    sprite.draw_char(panel, MAP_RUBBLE as char, pos, color);
                 }
 
                 Surface::Grass => {
-                    sprite.draw_char(panel.target, MAP_RUBBLE as char, pos, cell_dims, game.config.color_light_green);
+                    sprite.draw_char(panel, MAP_RUBBLE as char, pos, game.config.color_light_green);
                 }
 
                 Surface::Floor => {
@@ -775,25 +762,25 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
 
             // finally, draw the between-tile walls appropriate to this tile
             if tile.bottom_wall == Wall::ShortWall {
-                sprite.draw_char(panel.target, MAP_THIN_WALL_BOTTOM as char, pos, cell_dims, wall_color);
+                sprite.draw_char(panel, MAP_THIN_WALL_BOTTOM as char, pos, wall_color);
             } else if tile.bottom_wall == Wall::TallWall {
-                sprite.draw_char(panel.target, MAP_THICK_WALL_BOTTOM as char, pos, cell_dims, wall_color);
+                sprite.draw_char(panel, MAP_THICK_WALL_BOTTOM as char, pos, wall_color);
             }
 
             if tile.left_wall == Wall::ShortWall {
-                sprite.draw_char(panel.target, MAP_THIN_WALL_LEFT as char, pos, cell_dims, wall_color);
+                sprite.draw_char(panel, MAP_THIN_WALL_LEFT as char, pos, wall_color);
 
             } else if tile.left_wall == Wall::TallWall {
-                sprite.draw_char(panel.target, MAP_THICK_WALL_LEFT as char, pos, cell_dims, wall_color);
+                sprite.draw_char(panel, MAP_THICK_WALL_LEFT as char, pos, wall_color);
             }
 
             if x + 1 < map_width {
                 let right_pos = Pos::new(pos.x + 1, pos.y);
                 let right_tile = &game.data.map[right_pos];
                 if right_tile.left_wall == Wall::ShortWall {
-                sprite.draw_char(panel.target, MAP_THIN_WALL_RIGHT as char, pos, cell_dims, wall_color);
+                sprite.draw_char(panel, MAP_THIN_WALL_RIGHT as char, pos, wall_color);
                 } else if right_tile.left_wall == Wall::TallWall {
-                sprite.draw_char(panel.target, MAP_THICK_WALL_RIGHT as char, pos, cell_dims, wall_color);
+                sprite.draw_char(panel, MAP_THICK_WALL_RIGHT as char, pos, wall_color);
                 }
             }
 
@@ -801,9 +788,9 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
                 let up_pos = Pos::new(pos.x, pos.y - 1);
                 let up_tile = &game.data.map[up_pos];
                 if up_tile.bottom_wall == Wall::ShortWall {
-                    sprite.draw_char(panel.target, MAP_THIN_WALL_TOP as char, pos, cell_dims, wall_color);
+                    sprite.draw_char(panel, MAP_THIN_WALL_TOP as char, pos, wall_color);
                 } else if up_tile.bottom_wall == Wall::TallWall {
-                    sprite.draw_char(panel.target, MAP_THICK_WALL_TOP as char, pos, cell_dims, wall_color);
+                    sprite.draw_char(panel, MAP_THICK_WALL_TOP as char, pos, wall_color);
                 }
             }
 
@@ -824,7 +811,7 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
                     blackout_color.a = game.config.explored_alpha
                 }
                 
-                sprite.draw_char(panel.target, MAP_EMPTY_CHAR as char, pos, cell_dims, blackout_color);
+                sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, blackout_color);
             }
         }
     }
@@ -836,8 +823,7 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
 /// resulting vector of effects is then saved as the new effects vector.
 fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                   display_state: &mut DisplayState,
-                  game: &mut Game,
-                  cell_dims: (u32, u32)) {
+                  game: &mut Game) {
     let mut remove_indices = Vec::new();
 
     let mut effects = display_state.effects.clone();
@@ -850,10 +836,9 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
     for (index, effect) in effects.iter_mut().enumerate() {
         match effect {
             Effect::HeardSomething(pos, created_turn) => {
-                sprite.draw_char(panel.target,
+                sprite.draw_char(panel,
                                  ENTITY_ELF as char,
                                  *pos,
-                                 cell_dims,
                                  game.config.color_warm_grey);
 
                 if *created_turn != game.settings.turn_count {
@@ -876,7 +861,7 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                     //            needing to blend.
                     for pos in dist_positions.iter() {
                         if !game.data.map[*pos].blocked {
-                           draw_tile_highlight(panel.target, cell_dims, *pos, highlight_color);
+                           draw_tile_highlight(panel, *pos, highlight_color);
                         }
                     }
                 }
@@ -902,11 +887,10 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
     display_state.effects = effects;
 }
 
-fn render_entity(canvas: &mut WindowCanvas,
+fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
                  entity_id: EntityId,
                  display_state: &mut DisplayState,
-                 game: &mut Game,
-                 cell_dims: (u32, u32)) -> Option<Sprite> {
+                 game: &mut Game) -> Option<Sprite> {
     let mut animation_result = AnimationResult::new();
 
     let pos = game.data.entities.pos[&entity_id];
@@ -926,12 +910,11 @@ fn render_entity(canvas: &mut WindowCanvas,
                 render_animation(*anim_key,
                                  entity_id,
                                  is_in_fov,
-                                 canvas,
+                                 panel,
                                  display_state,
                                  &mut game.data,
                                  &game.settings,
-                                 &game.config,
-                                 cell_dims);
+                                 &game.config);
 
             if animation_result.done {
                 game.data.entities.animation[&entity_id].pop_front();
@@ -944,7 +927,7 @@ fn render_entity(canvas: &mut WindowCanvas,
 
                 let chr = game.data.entities.chr[&entity_id];
                 let sprite = Sprite::char(chr);
-                display_state.draw_sprite(canvas, sprite, pos, color, cell_dims);
+                display_state.draw_sprite(panel, sprite, pos, color);
                 animation_result.sprite = Some(sprite);
             }
         }
@@ -953,15 +936,15 @@ fn render_entity(canvas: &mut WindowCanvas,
     return animation_result.sprite;
 }
 
-fn render_impressions(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game, cell_dims: (u32, u32)) {
+fn render_impressions(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     // check for entities that have left FOV and make an impression for them
     for impression in display_state.impressions.clone() {
-        display_state.draw_sprite(panel.target, impression.sprite, impression.pos, game.config.color_light_grey, cell_dims);
+        display_state.draw_sprite(panel, impression.sprite, impression.pos, game.config.color_light_grey);
     }
 }
 
 /// Render each object in the game, filtering for objects not currently visible
-fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game, cell_dims: (u32, u32)) {
+fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     let player_id = game.data.find_player().unwrap();
 
     display_state.drawn_sprites.clear();
@@ -969,7 +952,7 @@ fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Dis
     // step each objects animation
     for entity in game.data.entities.ids.clone() {
         if entity != player_id {
-            let maybe_sprite = render_entity(panel.target, entity, display_state, game, cell_dims);
+            let maybe_sprite = render_entity(panel, entity, display_state, game);
 
             if let Some(sprite) = maybe_sprite {
                 display_state.drawn_sprites.insert(entity, sprite);
@@ -977,7 +960,7 @@ fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Dis
         }
     }
 
-    let maybe_sprite = render_entity(panel.target, player_id, display_state, game, cell_dims);
+    let maybe_sprite = render_entity(panel, player_id, display_state, game);
     if let Some(sprite) = maybe_sprite {
         display_state.drawn_sprites.insert(player_id, sprite);
     }
@@ -986,12 +969,11 @@ fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Dis
 fn render_animation(anim_key: AnimKey,
                     entity_id: EntityId,
                     is_in_fov: bool,
-                    canvas: &mut WindowCanvas,
+                    panel: &mut Panel<&mut WindowCanvas>,
                     display_state: &mut DisplayState,
                     data: &mut GameData,
                     settings: &GameSettings,
-                    config: &Config,
-                    cell_dims: (u32, u32)) -> AnimationResult {
+                    config: &Config) -> AnimationResult {
 
     let pos = data.entities.pos[&entity_id];
     let mut color = data.entities.color[&entity_id];
@@ -1011,11 +993,10 @@ fn render_animation(anim_key: AnimKey,
                let draw_pos = move_towards(start, end, num_blocks);
 
                let sprite = sprite_anim.sprite();
-               display_state.draw_sprite(canvas,
+               display_state.draw_sprite(panel,
                                          sprite,
                                          draw_pos,
-                                         color,
-                                         cell_dims);
+                                         color);
                animation_result.sprite = Some(sprite);
 
                sprite_anim.step();
@@ -1031,11 +1012,10 @@ fn render_animation(anim_key: AnimKey,
            if settings.god_mode || is_in_fov {
                 let sprite = sprite_anim.sprite();
                 let player_id = data.find_player().unwrap();
-                display_state.draw_sprite(canvas,
+                display_state.draw_sprite(panel,
                                           sprite,
                                           pos,
-                                          color,
-                                          cell_dims);
+                                          color);
                 animation_result.sprite = Some(sprite);
 
                 sprite_anim.step();
@@ -1059,11 +1039,7 @@ fn render_animation(anim_key: AnimKey,
         Animation::Once(ref mut sprite_anim) => {
            if settings.god_mode || is_in_fov {
                 let sprite = sprite_anim.sprite();
-                display_state.draw_sprite(canvas,
-                                          sprite,
-                                          pos,
-                                          color,
-                                          cell_dims);
+                display_state.draw_sprite(panel, sprite, pos, color);
                 animation_result.sprite = Some(sprite);
 
                 let sprite_done = sprite_anim.step();
@@ -1082,8 +1058,7 @@ fn render_animation(anim_key: AnimKey,
 fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                    display_state: &mut DisplayState,
                    game: &mut Game,
-                   map_mouse_pos: Option<Pos>,
-                   cell_dims: (u32, u32)) {
+                   map_mouse_pos: Option<Pos>) {
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
@@ -1108,11 +1083,11 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 if x_diff.abs() < 5 && y_diff.abs() < 5 {
                     let res: i8 = x_diff as i8 - y_diff as i8;
                     if res <= 0 {
-                        tile_sprite.draw_char(panel.target, MAP_GROUND as char, pos, cell_dims, game.config.color_light_green);
+                        tile_sprite.draw_char(panel, MAP_GROUND as char, pos, game.config.color_light_green);
                     } else {
-                        tile_sprite.draw_char(panel.target, MAP_GROUND as char, pos, cell_dims, game.config.color_light_grey);
+                        tile_sprite.draw_char(panel, MAP_GROUND as char, pos, game.config.color_light_grey);
                     }
-                    tile_sprite.draw_char(panel.target, ('0' as u8 + res.abs() as u8) as char, pos, cell_dims, game.config.color_red);
+                    tile_sprite.draw_char(panel, ('0' as u8 + res.abs() as u8) as char, pos, game.config.color_red);
                 }
             }
         }
@@ -1135,7 +1110,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                                                       game.config.fov_radius_player,
                                                       dir);
                 if is_in_fov {
-                    tile_sprite.draw_char(panel.target, MAP_GROUND as char, pos, cell_dims, game.config.color_light_green);
+                    tile_sprite.draw_char(panel, MAP_GROUND as char, pos, game.config.color_light_green);
                 }
             }
         }
@@ -1174,10 +1149,9 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                         Direction::UpRight => -45.0,
                     };
 
-                    tile_sprite.draw_sprite_at_cell(panel.target,
+                    tile_sprite.draw_sprite_at_cell(panel,
                                                     ARROW_RIGHT as usize,
                                                     pos,
-                                                    cell_dims,
                                                     direction_color,
                                                     rotation);
                 }
@@ -1194,9 +1168,9 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
             if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
                game.data.entities.alive[entity_id] {
-               render_attack_overlay(panel.target, display_state, game, *entity_id, cell_dims);
-               render_fov_overlay(panel.target, display_state, game, *entity_id, cell_dims);
-               render_movement_overlay(panel.target, display_state, game, *entity_id, cell_dims);
+               render_attack_overlay(panel, display_state, game, *entity_id);
+               render_fov_overlay(panel, display_state, game, *entity_id);
+               render_movement_overlay(panel, display_state, game, *entity_id);
             }
         }
     }
@@ -1210,11 +1184,10 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             if game.data.map.is_within_bounds(pos) &&
                game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
                game.data.entities.alive[&entity_id] {
-               render_attack_overlay(panel.target,
+               render_attack_overlay(panel,
                                      display_state,
                                      game,
-                                     entity_id,
-                                     cell_dims);
+                                     entity_id);
             }
         }
     }
@@ -1230,7 +1203,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             // get a path to the mouse path, regardless of distance
             let path = astar_path(&game.data.map, player_pos, mouse_pos, None, None);
             for pos in path {
-                tile_sprite.draw_char(panel.target, MAP_EMPTY_CHAR as char, pos, cell_dims, highlight_color);
+                tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, highlight_color);
             }
         }
 
@@ -1241,7 +1214,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 let line = line(player_pos, mouse_pos).into_iter();
                 for pos in line {
                     let pos = Pos::from(pos);
-                    tile_sprite.draw_char(panel.target, MAP_EMPTY_CHAR as char, pos, cell_dims, highlight_color);
+                    tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, highlight_color);
                 }
             }
         }
@@ -1254,7 +1227,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                     game.settings.selection.selected_pos(player_pos, mouse_pos, game.config.fov_radius_player, &mut game.data);
 
                 if let Some(pos) = selected_pos {
-                    tile_sprite.draw_char(panel.target, MAP_EMPTY_CHAR as char, pos, cell_dims, highlight_color);
+                    tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, highlight_color);
                 }
             }
         }
@@ -1273,8 +1246,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 // draw a highlight on that square
                 // don't draw overlay on top of character
                 if movement.pos != game.data.entities.pos[&player_id] {
-                    draw_tile_highlight(panel.target,
-                                        cell_dims,
+                    draw_tile_highlight(panel,
                                         movement.pos,
                                         highlight_color);
                 }
@@ -1293,11 +1265,11 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 let in_fov_lines = game.data.map.is_in_fov_lines(player_pos, pos, game.config.fov_radius_player);
 
                 if in_fov && !in_fov_lines {
-                    draw_outline_tile(panel.target, pos, cell_dims, highlight_color_fov);
+                    draw_outline_tile(panel, pos, highlight_color_fov);
                 }
 
                 if in_fov_lines && !in_fov {
-                    draw_outline_tile(panel.target, pos, cell_dims, highlight_color_lines);
+                    draw_outline_tile(panel, pos, highlight_color_lines);
                 }
             }
         }
@@ -1323,9 +1295,9 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
                     let amount = near_count as f32 / 50.0;
                     let adj_color = lerp_color(game.config.color_ice_blue, game.config.color_red, amount);
-                    tile_sprite.draw_char(panel.target, MAP_EMPTY_CHAR as char, pos, cell_dims, adj_color);
+                    tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, adj_color);
 
-                    draw_text_with_font(panel.target,
+                    draw_text_with_font(panel,
                                         &mut display_state.font_map,
                                         &format!("{}", near_count),
                                         pos,
@@ -1409,11 +1381,10 @@ fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> 
     return color;
 }
 
-fn render_attack_overlay(canvas: &mut WindowCanvas,
+fn render_attack_overlay(panel: &mut Panel<&mut WindowCanvas>,
                          display_state: &mut DisplayState,
                          game: &mut Game,
-                         entity_id: EntityId,
-                         cell_dims: (u32, u32)) {
+                         entity_id: EntityId) {
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
@@ -1447,16 +1418,15 @@ fn render_attack_overlay(canvas: &mut WindowCanvas,
                  .collect::<Vec<Pos>>();
 
         for position in attack_positions {
-            tile_sprite.draw_char(canvas, MAP_EMPTY_CHAR as char, position, cell_dims, attack_highlight_color);
+            tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, position, attack_highlight_color);
         }
     }
 }
 
-fn render_fov_overlay(canvas: &mut WindowCanvas,
+fn render_fov_overlay(panel: &mut Panel<&mut WindowCanvas>,
                       display_state: &mut DisplayState,
                       game: &mut Game,
-                      entity_id: EntityId,
-                      cell_dims: (u32, u32)) {
+                      entity_id: EntityId) {
     let player_id = game.data.find_player().unwrap();
 
     let mut highlight_color = game.config.color_light_grey;
@@ -1472,17 +1442,16 @@ fn render_fov_overlay(canvas: &mut WindowCanvas,
 
             if visible {
                 let chr = game.data.entities.chr[&entity_id];
-                draw_outline_tile(canvas, map_pos, cell_dims, highlight_color);
+                draw_outline_tile(panel, map_pos, highlight_color);
             }
         }
     }
 }
 
-fn render_movement_overlay(canvas: &mut WindowCanvas,
+fn render_movement_overlay(panel: &mut Panel<&mut WindowCanvas>,
                            display_state: &mut DisplayState,
                            game: &mut Game,
-                           entity_id: EntityId,
-                           cell_dims: (u32, u32)) {
+                           entity_id: EntityId) {
     let player_id = game.data.find_player().unwrap();
 
     let entity_pos = game.data.entities.pos[&entity_id];
@@ -1501,7 +1470,7 @@ fn render_movement_overlay(canvas: &mut WindowCanvas,
             if visible {
                 let chr = game.data.entities.chr[&entity_id];
 
-                tile_sprite.draw_char(canvas, chr as char, move_pos, cell_dims, highlight_color);
+                tile_sprite.draw_char(panel, chr as char, move_pos, highlight_color);
             }
         }
     }
