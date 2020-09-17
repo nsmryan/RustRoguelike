@@ -2,6 +2,8 @@ use rand::prelude::*;
 
 use serde::{Serialize, Deserialize};
 
+use logging_timer::timer;
+
 use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::ai::*;
@@ -586,6 +588,7 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
     let won_level = level_exit_condition_met(&game.data);
 
     // resolve enemy action
+    let monster = timer!("MONSTER");
     if player_action.takes_turn() && game.data.entities.alive[&player_id] && !won_level {
         let mut ai_id: Vec<EntityId> = Vec::new();
 
@@ -640,6 +643,7 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
             }
         }
     }
+    drop(monster);
 
     // send player turn action in case there is cleanup to perform, or another system
     // needs to know that the turn is finished.

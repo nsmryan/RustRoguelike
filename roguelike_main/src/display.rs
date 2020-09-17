@@ -325,6 +325,14 @@ pub struct DisplayTargets {
     pub menu_panel: Panel<Texture>,
 
     pub texture_creator: TextureCreator<WindowContext>,
+
+    pub screen_area: Area,
+    pub map_area: Area,
+    pub player_area: Area,
+    pub remaining_area: Area,
+    pub inventory_area: Area,
+    pub info_area: Area,
+    pub menu_area: Area,
 }
 
 impl DisplayTargets {
@@ -340,14 +348,18 @@ impl DisplayTargets {
         let info_width = 14;
 
         let info_panel = Panel::from_dims(&texture_creator, info_width, 15, 1);
-
         let inventory_panel = Panel::from_dims(&texture_creator, info_width, 15, 1);
-
         let player_panel = Panel::from_dims(&texture_creator, info_width, 20, 1);
-
         let menu_panel = Panel::from_dims(&texture_creator, info_width, 20, 1);
-
         let canvas_panel = Panel::with_canvas((SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32), canvas);
+
+        let screen_area = canvas_panel.area();
+        let (map_area, rest_area) = screen_area.split_right(info_panel.cells.0 as usize);
+        let (player_area, remaining_area) = rest_area.split_top(20);
+        let (inventory_area, info_area) = remaining_area.split_top(15);
+
+        let menu_area = menu_panel.area();
+        let menu_area = map_area.centered(menu_area.width, menu_area.height);
 
         return DisplayTargets {
             canvas_panel,
@@ -358,7 +370,20 @@ impl DisplayTargets {
             info_panel,
             menu_panel,
             inventory_panel,
+
+            screen_area,
+            map_area,
+            player_area,
+            remaining_area,
+            inventory_area,
+            info_area,
+            menu_area,
         };
+    }
+
+    pub fn mouse_pos(&self, x: i32, y: i32, map_width: i32, map_height: i32) -> Option<(i32, i32)> {
+        let map_rect = self.canvas_panel.get_rect_from_area(&self.map_area);
+        return cell_within_rect(map_rect, (map_width, map_height), (x, y));
     }
 }
 
@@ -915,64 +940,6 @@ pub fn engine_color(color: &Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
 }
 
-// TODO redo with spritesheet font
-//pub fn draw_text_with_font(panel: &mut Panel<&mut WindowCanvas>,
-                           //font_map: &mut FontMap,
-                           //text: &str,
-                           //pos: Pos,
-                           //color: Color) {
-    /*
-    let total_width = font_map.width * text.len() as u32;
-    let tile_rect = area.char_rect(pos.x, pos.y);
-
-    let each_width = tile_rect.w / text.len() as i32;
-
-    let y = tile_rect.y + (tile_rect.h / 2) - (font_map.height as i32 / 2);
-    let x_offset = (tile_rect.w - total_width as i32) / 2;
-    for (index, chr) in text.chars().enumerate() {
-        let tex = font_map.map.get_mut(&chr).unwrap();
-
-        let x = x_offset + tile_rect.x + index as i32 * font_map.width as i32;
-        let dst = Rect::new(x,
-                            y,
-                            font_map.width,
-                            font_map.height);
-
-        tex.set_color_mod(color.r, color.g, color.b);
-        tex.set_alpha_mod(color.a);
-
-        canvas.copy(tex,
-                    None,
-                    Some(dst)).unwrap();
-    }
-    */
-//}
-
-/* TODO check if still needed
-pub fn draw_char_with_font(canvas: &mut WindowCanvas,
-                           font_map: &mut FontMap,
-                           chr: char,
-                           pos: Pos,
-                           color: Color,
-                           area: &Area) {
-    let tex = font_map.map.get_mut(&chr).unwrap();
-
-    let tile_rect = area.char_rect(pos.x, pos.y);
-
-    let dst = Rect::new(tile_rect.x + (tile_rect.w / 2) - (font_map.width as i32 / 2),
-                        tile_rect.y + (tile_rect.h / 2) - (font_map.height as i32 / 2),
-                        font_map.width,
-                        font_map.height);
-
-    tex.set_color_mod(color.r, color.g, color.b);
-    tex.set_alpha_mod(color.a);
-
-    canvas.copy(tex,
-                None,
-                Some(dst)).unwrap();
-}
-*/
-
 pub fn draw_outline_tile(panel: &mut Panel<&mut WindowCanvas>,
                          cell: Pos,
                          color: Color) {
@@ -1003,5 +970,27 @@ pub fn draw_tile_highlight(panel: &mut Panel<&mut WindowCanvas>,
                          cell_dims.1);
 
     panel.target.fill_rect(rect).unwrap();
+}
+
+pub fn cell_within_rect(rect: Rect, area_cell_dims: (i32, i32), pixel_pos: (i32, i32)) -> Option<(i32, i32)> {
+    if pixel_pos.0 >= rect.x && pixel_pos.0 < rect.x + rect.w &&
+       pixel_pos.1 >= rect.y && pixel_pos.1 < rect.y + rect.h {
+
+       let cell_dims = (rect.w / area_cell_dims.0, rect.h / area_cell_dims.1);
+       let x_cell = (pixel_pos.0 - rect.x) / cell_dims.0;
+       let y_cell = (pixel_pos.1 - rect.y) / cell_dims.1;
+
+       assert!(x_cell * area_cell_dims.0 < rect.x + rect.w);
+       assert!(y_cell * area_cell_dims.1 < rect.y + rect.h);
+
+       // NOTE hacky way to prevent this situation
+       if x_cell >= area_cell_dims.0 || y_cell >= area_cell_dims.1 {
+           return None;
+       }
+
+       return Some((x_cell, y_cell));
+    }
+
+    return None;
 }
 

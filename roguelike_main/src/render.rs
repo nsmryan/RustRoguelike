@@ -23,12 +23,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     display.targets.canvas_panel.target.clear();
 
     /* Split Screen Into Sections */
-    let screen = display.targets.canvas_panel.area();
-    let (map_area, rest_area) = screen.split_right(display.targets.info_panel.cells.0 as usize);
-    let (player_area, remaining_area) = rest_area.split_top(20);
-    let (inventory_area, info_area) = remaining_area.split_top(15);
-
-    let map_rect = display.targets.canvas_panel.get_rect_from_area(&map_area);
+    let map_rect = display.targets.canvas_panel.get_rect_from_area(&display.targets.map_area);
 
     /* Determine Mouse Position */
     let mut mouse_map_pos = None;
@@ -54,7 +49,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
         if game.settings.render_map {
             let background = &mut display.targets.background_panel;
             let map_panel = &mut display.targets.map_panel;
-            let panel = background.with_target(());
+            let panel = background.unit();
 
             canvas.with_texture_canvas(&mut display.targets.map_panel.target, |canvas| {
                 canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
@@ -74,7 +69,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
         /* Draw Player Info */
         {
             let player_panel = &mut display.targets.player_panel;
-            let panel = player_panel.with_target(());
+            let panel = player_panel.unit();
 
             canvas.with_texture_canvas(&mut display.targets.player_panel.target, |canvas| {
                 let mut panel = panel.with_target(canvas);
@@ -85,7 +80,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
         /* Draw Inventory */
         {
             let inventory_panel = &mut display.targets.inventory_panel;
-            let panel = inventory_panel.with_target(());
+            let panel = inventory_panel.unit();
 
             canvas.with_texture_canvas(&mut display.targets.inventory_panel.target, |canvas| {
                 let mut panel = panel.with_target(canvas);
@@ -96,7 +91,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
         /* Draw Game Info */
         {
             let info_panel = &mut display.targets.info_panel;
-            let panel = info_panel.with_target(());
+            let panel = info_panel.unit();
 
             canvas.with_texture_canvas(&mut display.targets.info_panel.target, |canvas| {
                 let mut panel = panel.with_target(canvas);
@@ -115,17 +110,17 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     display.targets.canvas_panel.target.copy(&display.targets.map_panel.target, src, map_rect).unwrap();
 
     /* Draw Inventory Panel */
-    let dst = display.targets.canvas_panel.get_rect_within(&inventory_area,
+    let dst = display.targets.canvas_panel.get_rect_within(&display.targets.inventory_area,
                                                            display.targets.inventory_panel.num_pixels);
     display.targets.canvas_panel.target.copy(&display.targets.inventory_panel.target, None, dst).unwrap();
 
     /* Draw Game Info Panel */
-    let dst = display.targets.canvas_panel.get_rect_within(&info_area,
+    let dst = display.targets.canvas_panel.get_rect_within(&display.targets.info_area,
                                                            display.targets.info_panel.num_pixels);
     display.targets.canvas_panel.target.copy(&display.targets.info_panel.target, None, dst).unwrap();
 
     /* Draw Player Info Panel */
-    let dst = display.targets.canvas_panel.get_rect_within(&player_area,
+    let dst = display.targets.canvas_panel.get_rect_within(&display.targets.player_area,
                                                            display.targets.player_panel.num_pixels);
     display.targets.canvas_panel.target.copy(&display.targets.player_panel.target, None, dst).unwrap();
 
@@ -136,7 +131,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 
         let menu_panel = &mut display.targets.menu_panel;
         let inventory_panel = &mut display.targets.inventory_panel;
-        let panel = menu_panel.with_target(());
+        let panel = menu_panel.unit();
 
         let mut draw_menu: bool = true;
         canvas_panel.target.with_texture_canvas(&mut menu_panel.target, |canvas| {
@@ -156,9 +151,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
         }).unwrap();
 
         if draw_menu {
-            let menu_area = menu_panel.area();
-            let menu_area = map_area.centered(menu_area.width, menu_area.height);
-            let dst = canvas_panel.get_rect_within(&menu_area, menu_panel.num_pixels);
+            let dst = canvas_panel.get_rect_within(&display.targets.menu_area, menu_panel.num_pixels);
             canvas_panel.target.copy(&menu_panel.target, None, dst).unwrap();
         }
     }
@@ -672,7 +665,7 @@ fn render_background(display: &mut Display, game: &mut Game) {
 
     let cell_dims = display.targets.background_panel.cell_dims();
 
-    let panel = display.targets.background_panel.with_target(());
+    let panel = display.targets.background_panel.unit();
     canvas.with_texture_canvas(&mut display.targets.background_panel.target, |canvas| {
         canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
         canvas.clear();
@@ -1487,27 +1480,5 @@ fn render_movement_overlay(panel: &mut Panel<&mut WindowCanvas>,
 
 pub fn sdl2_color(color: Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
-}
-
-fn cell_within_rect(rect: Rect, area_cell_dims: (i32, i32), pixel_pos: (i32, i32)) -> Option<(i32, i32)> {
-    if pixel_pos.0 >= rect.x && pixel_pos.0 < rect.x + rect.w &&
-       pixel_pos.1 >= rect.y && pixel_pos.1 < rect.y + rect.h {
-
-       let cell_dims = (rect.w / area_cell_dims.0, rect.h / area_cell_dims.1);
-       let x_cell = (pixel_pos.0 - rect.x) / cell_dims.0;
-       let y_cell = (pixel_pos.1 - rect.y) / cell_dims.1;
-
-       assert!(x_cell * area_cell_dims.0 < rect.x + rect.w);
-       assert!(y_cell * area_cell_dims.1 < rect.y + rect.h);
-
-       // NOTE hacky way to prevent this situation
-       if x_cell >= area_cell_dims.0 || y_cell >= area_cell_dims.1 {
-           return None;
-       }
-
-       return Some((x_cell, y_cell));
-    }
-
-    return None;
 }
 
