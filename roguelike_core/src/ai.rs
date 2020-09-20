@@ -74,7 +74,6 @@ pub fn ai_pos_that_hit_target(monster_id: EntityId,
                               target_id: EntityId,
                               data: &mut GameData,
                               config: &Config) -> Vec<Pos> {
-    let pos_hit = timer!("pos_hit");
     let mut potential_move_targets = Vec::new();
 
     let target_pos = data.entities.pos[&target_id];
@@ -122,7 +121,12 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     let pos_offset;
     let movement = data.entities.movement[&monster_id];
 
-    let potential_move_targets = ai_pos_that_hit_target(monster_id, target_id, data, config);
+    let mut potential_move_targets = ai_pos_that_hit_target(monster_id, target_id, data, config);
+
+    // sort by distance to monster to we consider closer positions first, allowing us to
+    // skip far away paths we won't take anyway.
+    potential_move_targets.sort_by(|a, b| distance(monster_pos, *a).partial_cmp(&distance(monster_pos, *b)).unwrap());
+    let potential_move_targets = potential_move_targets;
 
     // look through all potential positions for the shortest path
     let must_reach = true;
@@ -131,20 +135,12 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     // path_solutions contains the path length, the amount of turning (absolute value), and the
     // next position to go to for this solution.
     let mut path_solutions: Vec<((usize, i32), Pos)> = Vec::new();
+    let mut lowest_cost = std::usize::MAX;
     for target in potential_move_targets {
+        let mut cost = 0;
 
-        let path = data.path_between(monster_pos, target, movement, must_reach, traps_block, None);
-
-        // paths contain the starting square, so less than 2 is no path at all
-        if path.len() < 2 {
-            continue;
-        }
-
-        let next_pos = path[1];
-
-        let mut cost = path.len();
+        // the fov_cost is added in if the next move would leave the target's FOV
         {
-            // the fov_cost is added in if the next move would leave the target's FOV
             data.entities.set_pos(monster_id, target);
             let cur_dir = data.entities.direction[&monster_id];
             data.entities.face(monster_id, target_pos);
@@ -158,10 +154,35 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
             data.entities.set_pos(monster_id, monster_pos);
         }
 
+        // if the current cost is already higher then the lowest cost found so far,
+        // there is no reason to consider this path
+        if cost > lowest_cost {
+            continue;
+        }
+        // if the current cost (FOV cost), plus distance (the shortest possible path)
+        // if *already* more then the best path so far, this cannot possibly be the best
+        // path to take, so skip it
+        if cost + distance(monster_pos, target) as usize > lowest_cost {
+            continue;
+        }
+
+        let path = data.path_between(monster_pos, target, movement, must_reach, traps_block, None);
+
+        // paths contain the starting square, so less than 2 is no path at all
+        if path.len() < 2 {
+            continue;
+        }
+
+        cost += path.len();
+
+        let next_pos = path[1];
+
         let turn_dir = data.entities.face_to(monster_id, next_pos);
         let turn_amount = old_dir.turn_amount(turn_dir);
 
         path_solutions.push(((cost, turn_amount.abs()), next_pos));
+
+        lowest_cost = std::cmp::min(lowest_cost, cost);
     }
 
     // if there is a solution, get the best one and use it

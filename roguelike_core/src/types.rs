@@ -54,13 +54,13 @@ impl GameData {
                         traps_block: bool,
                         cost_fun: Option<fn(Pos, Pos, Pos, &GameData) -> Option<i32>>) -> Vec<Pos> {
         // 100% of total problem
-        let path_between = timer!("path_between");
+        //let path_between = timer!("path_between");
         let result;
 
         let maybe_results =
             astar(&start,
                   |&pos| {
-                      let path_between = timer!("next_pos");
+                      //let path_between = timer!("next_pos");
 
                       // NOTE(perf) this allocation could be avoided with an Iterable
                       let mut next_positions = Vec::with_capacity(10);
@@ -72,18 +72,18 @@ impl GameData {
 
                               let mut can_move = false;
                               // <10% of total (0.3 out of 4.0)
-                              let clear_path = timer!("clear_path");
+                              //let clear_path = timer!("clear_path");
                               let clear = self.clear_path(pos, next_pos, traps_block);
-                              drop(clear_path);
+                              //drop(clear_path);
                               can_move |= clear;
 
                               if !can_move {
                                   // move expensive then clear_path by about 3x
                                   if !must_reach && next_pos == end {
-                                      let is_blocked = timer!("is_blocked_by_wall");
+                                      //let is_blocked = timer!("is_blocked_by_wall");
                                       let not_blocked = self.map.is_blocked_by_wall(pos, dx, dy).is_none();
                                       can_move |= not_blocked;
-                                      drop(is_blocked);
+                                      //drop(is_blocked);
                                   }
                               }
 

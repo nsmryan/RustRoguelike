@@ -1,6 +1,8 @@
 use noise::NoiseFn;
 use noise::Perlin;
 
+use logging_timer::timer;
+
 use sdl2::render::{BlendMode, WindowCanvas};
 use sdl2::rect::Rect;
 use sdl2::pixels::{Color as Sdl2Color};

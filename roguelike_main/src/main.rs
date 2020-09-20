@@ -278,10 +278,6 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         /* Draw the Game to the Screen */
         render_all(&mut display, &mut game)?;
 
-        //display.canvas.copy(&display.text_font,
-        //                          Some(sdl2::rect::Rect::new('a' as i32 * 8 - 8, 0, 8, 18)),
-        //                          Some(sdl2::rect::Rect::new(10, 10, 8, 18)));
-
         display.update_display();
 
         drop(display_timer);
