@@ -2,6 +2,8 @@ use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::default::Default;
 
+use logging_timer::timer;
+
 use serde::{Serialize, Deserialize};
 
 use pathfinding::directed::astar::astar;
@@ -51,25 +53,44 @@ impl GameData {
                         must_reach: bool,
                         traps_block: bool,
                         cost_fun: Option<fn(Pos, Pos, Pos, &GameData) -> Option<i32>>) -> Vec<Pos> {
+        // 100% of total problem
+        let path_between = timer!("path_between");
         let result;
 
         let maybe_results =
             astar(&start,
                   |&pos| {
+                      let path_between = timer!("next_pos");
+
                       // NOTE(perf) this allocation could be avoided with an Iterable
-                      let mut next_positions = Vec::new();
+                      let mut next_positions = Vec::with_capacity(10);
 
                       for direction in Direction::move_actions() {
                           for offset in reach.move_with_reach(&direction) {
                               let next_pos = add_pos(pos, offset);
                               let (dx, dy) = (next_pos.x - pos.x, next_pos.y - pos.y);
 
+                              let mut can_move = false;
+                              // <10% of total (0.3 out of 4.0)
+                              let clear_path = timer!("clear_path");
                               let clear = self.clear_path(pos, next_pos, traps_block);
-                              if  clear ||
-                                  (!must_reach && next_pos == end && self.map.is_blocked_by_wall(pos, dx, dy).is_none()) {
+                              drop(clear_path);
+                              can_move |= clear;
 
+                              if !can_move {
+                                  // move expensive then clear_path by about 3x
+                                  if !must_reach && next_pos == end {
+                                      let is_blocked = timer!("is_blocked_by_wall");
+                                      let not_blocked = self.map.is_blocked_by_wall(pos, dx, dy).is_none();
+                                      can_move |= not_blocked;
+                                      drop(is_blocked);
+                                  }
+                              }
+
+                              if can_move {
                                  let mut cost = 1;
                                   if let Some(cost_fun) = cost_fun {
+                                      // very small amount of time
                                       if let Some(cur_cost) = cost_fun(start, pos, next_pos, self) {
                                           cost = cur_cost;
                                       } else {
@@ -162,8 +183,7 @@ impl GameData {
 
         let (dx, dy) = (end.x - start.x, end.y - start.y);
 
-        let blocked_by_wall = self.map.is_blocked_by_wall(start, dx, dy).is_some();
-        return !path_blocked && !blocked_by_wall;
+        return !path_blocked && self.map.is_blocked_by_wall(start, dx, dy).is_none();
     }
 
     pub fn has_item_in_inventory(&self, entity_id: EntityId, item: Item) -> Option<EntityId> {

@@ -74,6 +74,7 @@ pub fn ai_pos_that_hit_target(monster_id: EntityId,
                               target_id: EntityId,
                               data: &mut GameData,
                               config: &Config) -> Vec<Pos> {
+    let pos_hit = timer!("pos_hit");
     let mut potential_move_targets = Vec::new();
 
     let target_pos = data.entities.pos[&target_id];
@@ -131,6 +132,7 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     // next position to go to for this solution.
     let mut path_solutions: Vec<((usize, i32), Pos)> = Vec::new();
     for target in potential_move_targets {
+
         let path = data.path_between(monster_pos, target, movement, must_reach, traps_block, None);
 
         // paths contain the starting square, so less than 2 is no path at all
@@ -192,7 +194,8 @@ pub fn ai_attack(monster_id: EntityId,
 
     data.entities.face(monster_id, target_pos);
 
-    let can_hit_target = 
+
+    let can_hit_target =
         ai_can_hit_target(data, monster_id, target_pos, &attack_reach, config);
 
     if data.entities.is_dead(target_id) {
@@ -259,7 +262,9 @@ pub fn ai_investigate(target_pos: Pos,
         data.entities.face(monster_id, player_pos);
     }
                
-    if data.is_in_fov(monster_id, player_pos, config) {
+    let in_fov = data.is_in_fov(monster_id, player_pos, config);
+
+    if in_fov {
         data.entities.face(monster_id, player_pos);
         turn = Action::StateChange(Behavior::Attacking(player_id));
     } else { // the monster can't see the player

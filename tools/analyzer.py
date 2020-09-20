@@ -26,6 +26,7 @@ def parse_series(lines):
     names = set()
     epsilon = 0.0000000001
     last_time = 0.0
+    totals = {}
 
     for line in lines:
         if not "Elapsed" in line:
@@ -35,10 +36,14 @@ def parse_series(lines):
         name = parts[3][:-1]
         if not name in series.keys():
             series[name] = [(0.0, 0)]
+            totals[name] = 0
 
         elapsed_str = parts[4][skip_n:-3]
         timestamp = parse_timestamp(parts[0][1:-1])
         
+        if elapsed_str == '':
+            continue
+
         elapsed = float(elapsed_str)
         stripped_line = line.strip()
         if stripped_line.endswith('ms'):
@@ -51,14 +56,21 @@ def parse_series(lines):
         series[name].append((timestamp, 1))
         series[name].append((timestamp + epsilon, 0))
 
+        totals[name] += elapsed
+
         last_time = max(last_time, timestamp)
 
         names.add(name)
 
+    names = list(names)
+    names.sort()
+    names.reverse()
+
     for name in names:
         series[name].append((last_time, 0))
+        print(name + " (" + str(len(series[name])) + "): " + str(totals[name]))
+    print()
     
-    print(series['LOGIC'][:10])
     return (names, series)
 
 def load_perf(file_name):
@@ -72,10 +84,10 @@ def load_perf(file_name):
 def plot_perf():
     (names, series) = load_perf("game.log")
 
-    index = 1
+    index = 1 + 3 * len(names)
     for (name, data) in series.items():
         add_line_series("Plot", name, [(pair[0], pair[1] + (index / 2)) for pair in data]) #, weight=2, fill=[255, 0, 0, 100])
-        index += 3
+        index -= 3
 
 def plot_callback(sender, data):
     clear_plot("Plot")
