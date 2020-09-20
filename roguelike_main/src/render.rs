@@ -20,6 +20,7 @@ use roguelike_engine::game::*;
 use crate::display::*;
 
 
+// 10ms to display on last check
 pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String> {
     display.targets.canvas_panel.target.set_draw_color(Sdl2Color::RGB(0, 0, 0));
     display.targets.canvas_panel.target.clear();
