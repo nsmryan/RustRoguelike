@@ -1,8 +1,6 @@
 use noise::NoiseFn;
 use noise::Perlin;
 
-use logging_timer::timer;
-
 use sdl2::render::{BlendMode, WindowCanvas};
 use sdl2::rect::Rect;
 use sdl2::pixels::{Color as Sdl2Color};
@@ -184,7 +182,7 @@ fn render_placard(panel: &mut Panel<&mut WindowCanvas>,
 
     // Draw a thin line around the edges of the placard
     panel.target.draw_rect(Rect::new(cell_width as i32 / 2,
-                                     (cell_height as i32 / 2),
+                                     cell_height as i32 / 2,
                                      width as u32 - (cell_width / 2),
                                      height as u32 - (cell_height / 2))).unwrap();
 

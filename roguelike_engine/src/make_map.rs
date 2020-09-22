@@ -76,6 +76,7 @@ impl Vault {
     }
 }
 
+/// Read file into a vector of lines
 pub fn parse_maps_file(file_name: &str) -> Vec<String> {
     let file_contents =
         std::fs::read_to_string(file_name).expect(&format!("Could not read {}", file_name));
@@ -119,7 +120,8 @@ fn test_remove_commas() {
     assert_eq!("% %".to_string(), remove_commas("%,,%".to_string()));
 }
 
-pub fn parse_ascii_map(file_name: &str, game: &mut Game) -> Vault {
+/// Read Vault file into Vault structure
+pub fn parse_vault(file_name: &str, game: &mut Game) -> Vault {
     let file_contents =
         std::fs::read_to_string(file_name).expect(&format!("Could not read {}", file_name));
 
@@ -149,9 +151,6 @@ pub fn parse_ascii_map(file_name: &str, game: &mut Game) -> Vault {
 }
 
 fn parse_ascii_chars(lines: Vec<Vec<char>>, game: &mut Game) -> Vec<Vec<Tile>> {
-    assert!(lines.len() % 2 == 0);
-    assert!((lines[0].len() - 1)% 2 == 0);
-
     let height = lines.len() / 2;
     let width = (lines[0].len() - 1) / 2;
 
@@ -199,7 +198,8 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos,
         }
 
         _ => {
-            panic!(format!("Unexpected char '{}'", tile_chr));
+            tile = Tile::empty();
+            dbg!(format!("Unexpected char '{}'", tile_chr));
         }
     }
 
@@ -215,7 +215,7 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos,
 }
 
 #[test]
-fn test_parse_ascii_map() {
+fn test_parse_vault() {
     let lines = vec!(vec!('|', '"', ' ', '#'),
                      vec!(' ', ' ', ' ', ' '),
                      vec!(' ', '#', ' ', ' '),
@@ -344,6 +344,56 @@ fn place_monsters(game: &mut Game) {
     }
 }
 
+fn place_vaults(game: &mut Game) {
+    let mut vaults = Vec::new();
+    for entry in std::fs::read_dir("resources/vaults/").unwrap() {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        let vault_file_name = path.to_str().unwrap();
+        if !vault_file_name.ends_with(".csv") {
+            continue;
+        }
+        dbg!(vault_file_name);
+        vaults.push(parse_vault(vault_file_name, game));
+    }
+
+    let (width, height) = game.data.map.size();
+}
+
+fn place_grass(game: &mut Game) {
+    let (width, height) = game.data.map.size();
+
+    let mut potential_grass_pos = Vec::new();
+    for x in 0..width {
+        for y in 0..height {
+            let pos = Pos::new(x, y);
+
+            if !game.data.map[pos].blocked {
+                let count = game.data.map.floodfill(pos, 3).len();
+                if count > 28 && count < 35 {
+                    potential_grass_pos.push(pos);
+                }
+            }
+        }
+    }
+    potential_grass_pos.shuffle(&mut game.rng);
+    let num_grass_to_place = game.rng.gen_range(4, 8);
+    let num_grass_to_place = std::cmp::min(num_grass_to_place, potential_grass_pos.len());
+    for pos_index in 0..num_grass_to_place {
+        let pos = potential_grass_pos[pos_index];
+        game.data.map[pos].surface = Surface::Grass;
+
+        for _ in 0..4 {
+            let offset_pos = Pos::new(pos.x + game.rng.gen_range(0, 3),
+                                      pos.y + game.rng.gen_range(0, 3));
+            if !game.data.map[offset_pos].blocked {
+                game.data.map[offset_pos].surface = Surface::Grass;
+            }
+        }
+
+    }
+}
+
 fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
     let (width, height) = game.data.map.size();
 
@@ -418,8 +468,6 @@ fn saturate_map(game: &mut Game) -> Pos {
     println!("{} Ls", structures.iter().filter(|s| s.typ == StructureType::Path).count());
     println!("{} complex", structures.iter().filter(|s| s.typ == StructureType::Complex).count());
 
-    let (width, height) = game.data.map.size();
-
     let mut to_remove: Vec<usize> = Vec::new();
     for (index, structure) in structures.iter().enumerate() {
         if structure.typ == StructureType::Single {
@@ -452,35 +500,9 @@ fn saturate_map(game: &mut Game) -> Pos {
 
     place_monsters(game);
 
-    let mut potential_grass_pos = Vec::new();
-    for x in 0..width {
-        for y in 0..height {
-            let pos = Pos::new(x, y);
+    place_grass(game);
 
-            if !game.data.map[pos].blocked {
-                let count = game.data.map.floodfill(pos, 3).len();
-                if count > 28 && count < 35 {
-                    potential_grass_pos.push(pos);
-                }
-            }
-        }
-    }
-    potential_grass_pos.shuffle(&mut game.rng);
-    let num_grass_to_place = game.rng.gen_range(4, 8);
-    let num_grass_to_place = std::cmp::min(num_grass_to_place, potential_grass_pos.len());
-    for pos_index in 0..num_grass_to_place {
-        let pos = potential_grass_pos[pos_index];
-        game.data.map[pos].surface = Surface::Grass;
-
-        for _ in 0..4 {
-            let offset_pos = Pos::new(pos.x + game.rng.gen_range(0, 3),
-                                      pos.y + game.rng.gen_range(0, 3));
-            if !game.data.map[offset_pos].blocked {
-                game.data.map[offset_pos].surface = Surface::Grass;
-            }
-        }
-
-    }
+    place_vaults(game);
 
     return player_pos;
 }
@@ -700,7 +722,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
 
         MapLoadConfig::FromAsciiMap(file_name) => {
-            let vault: Vault = parse_ascii_map(&format!("resources/{}", file_name), game);
+            let vault: Vault = parse_vault(&format!("resources/{}", file_name), game);
 
             game.data.map = Map::with_vec(vault.tiles);
 

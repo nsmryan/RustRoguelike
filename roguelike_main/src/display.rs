@@ -1,10 +1,7 @@
-use std::collections::HashMap;
-
 use sdl2::render::{Texture, WindowCanvas, TextureCreator, BlendMode};
 use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{Color as Sdl2Color};
-use sdl2::ttf::{Sdl2TtfContext};
 
 use indexmap::map::IndexMap;
 
@@ -14,7 +11,7 @@ use roguelike_core::config::*;
 use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::animation::{Sprite, AnimKey, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
-use roguelike_core::movement::{Cardinal, MoveType};
+use roguelike_core::movement::MoveType;
 
 
 type TextureKey = u64;
