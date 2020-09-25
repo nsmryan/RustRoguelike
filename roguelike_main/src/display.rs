@@ -347,7 +347,7 @@ impl DisplayTargets {
         let info_panel = Panel::from_dims(&texture_creator, info_width, 15, 1);
         let inventory_panel = Panel::from_dims(&texture_creator, info_width, 15, 1);
         let player_panel = Panel::from_dims(&texture_creator, info_width, 20, 1);
-        let menu_panel = Panel::from_dims(&texture_creator, info_width, 20, 1);
+        let menu_panel = Panel::from_dims(&texture_creator, info_width + 5, 20, 1);
         let canvas_panel = Panel::with_canvas((SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32), canvas);
 
         let screen_area = canvas_panel.area();
@@ -710,22 +710,24 @@ impl Display {
             }
 
             Msg::SpawnedObject(entity_id, _typ, _pos, _name) => {
-                let mut anim_desc = None;
-                if data.entities.typ[&entity_id] == EntityType::Player {
-                    anim_desc = Some(("player_idle", config.idle_speed));
-                } else if data.entities.name[&entity_id] == EntityName::Key {
-                    anim_desc = Some(("key", config.key_speed));
-                } else if data.entities.name[&entity_id] == EntityName::Spike {
-                    anim_desc = Some(("spikes", config.idle_speed));
-                } else if data.entities.name[&entity_id] == EntityName::Pawn {
-                    anim_desc = Some(("elf_idle", config.idle_speed));
-                } else if data.entities.name[&entity_id] == EntityName::Gol {
-                    anim_desc = Some(("gol_idle", config.idle_speed));
-                }
+                if data.entities.ids.contains(&entity_id) {
+                    let mut anim_desc = None;
+                    if data.entities.typ[&entity_id] == EntityType::Player {
+                        anim_desc = Some(("player_idle", config.idle_speed));
+                    } else if data.entities.name[&entity_id] == EntityName::Key {
+                        anim_desc = Some(("key", config.key_speed));
+                    } else if data.entities.name[&entity_id] == EntityName::Spike {
+                        anim_desc = Some(("spikes", config.idle_speed));
+                    } else if data.entities.name[&entity_id] == EntityName::Pawn {
+                        anim_desc = Some(("elf_idle", config.idle_speed));
+                    } else if data.entities.name[&entity_id] == EntityName::Gol {
+                        anim_desc = Some(("gol_idle", config.idle_speed));
+                    }
 
-                if let Some((name, speed)) = anim_desc {
-                    let anim_key = self.loop_sprite(name, speed);
-                    data.entities.animation[&entity_id].push_front(anim_key);
+                    if let Some((name, speed)) = anim_desc {
+                        let anim_key = self.loop_sprite(name, speed);
+                        data.entities.animation[&entity_id].push_front(anim_key);
+                    }
                 }
             }
 
@@ -977,8 +979,8 @@ pub fn cell_within_rect(rect: Rect, area_cell_dims: (i32, i32), pixel_pos: (i32,
        let x_cell = (pixel_pos.0 - rect.x) / cell_dims.0;
        let y_cell = (pixel_pos.1 - rect.y) / cell_dims.1;
 
-       assert!(x_cell * area_cell_dims.0 < rect.x + rect.w);
-       assert!(y_cell * area_cell_dims.1 < rect.y + rect.h);
+       //assert!(x_cell * area_cell_dims.0 < rect.x + rect.w);
+       //assert!(y_cell * area_cell_dims.1 < rect.y + rect.h);
 
        // NOTE hacky way to prevent this situation
        if x_cell >= area_cell_dims.0 || y_cell >= area_cell_dims.1 {

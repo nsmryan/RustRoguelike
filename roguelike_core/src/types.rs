@@ -33,6 +33,7 @@ pub type CompStore<T> = IndexMap<EntityId, T>;
 
 pub type Pos = Point2D<i32, ()>;
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct GameData {
     pub map: Map,
     pub entities: Entities,
@@ -44,6 +45,10 @@ impl GameData {
             map,
             entities,
         }
+    }
+
+    pub fn empty(width: u32, height: u32) -> GameData {
+        return GameData::new(Map::from_dims(width, height), Entities::new());
     }
 
     pub fn path_between(&self,
@@ -660,42 +665,6 @@ pub struct Entities {
 }
 
 impl Entities {
-    /* TODO can delete?
-    pub fn remove_second(&mut self, entity_id: &EntityId) {
-        let id_ix = self.ids.iter().position(|id| id == entity_id).unwrap();
-        self.ids.swap_remove(id_ix);
-
-        self.pos.remove(entity_id);
-        self.chr.remove(entity_id);
-        self.name.remove(entity_id);
-        self.fighter.remove(entity_id);
-        self.ai.remove(entity_id);
-        self.behavior.remove(entity_id);
-        self.item.remove(entity_id);
-        self.movement.remove(entity_id);
-        self.attack.remove(entity_id);
-        self.inventory.remove(entity_id);
-        self.trap.remove(entity_id);
-        self.energy.remove(entity_id);
-        self.armed.remove(entity_id);
-        self.count_down.remove(entity_id);
-        self.move_mode.remove(entity_id);
-        self.direction.remove(entity_id);
-        self.selected_item.remove(entity_id);
-        self.action.remove(entity_id);
-        self.class.remove(entity_id);
-        self.skills.remove(entity_id);
-        self.animation.remove(entity_id);
-        self.alive.remove(entity_id);
-        self.sound.remove(entity_id);
-        self.typ.remove(entity_id);
-        self.color.remove(entity_id);
-        self.blocks.remove(entity_id);
-        self.needs_removal.remove(entity_id);
-        self.messages.remove(entity_id);
-    }
-    */
-
     pub fn new() -> Entities {
         return Default::default();
     }
@@ -851,6 +820,39 @@ impl Entities {
     pub fn set_animation(&mut self, entity_id: EntityId, key: AnimKey) {
         self.animation[&entity_id].clear();
         self.animation[&entity_id].push_back(key);
+    }
+
+    pub fn merge(&mut self, other: &Entities) {
+        self.ids.extend(other.ids.iter());
+        self.pos.extend(other.pos.iter());
+        self.chr.extend(other.chr.iter());
+        self.name.extend(other.name.iter());
+        self.fighter.extend(other.fighter.iter());
+        self.ai.extend(other.ai.iter());
+        self.behavior.extend(other.behavior.iter());
+        self.item.extend(other.item.iter());
+        self.movement.extend(other.movement.iter());
+        self.attack.extend(other.attack.iter());
+        self.inventory.extend(other.inventory.iter().map(|(k, v)| (*k, v.clone())));
+        self.trap.extend(other.trap.iter());
+        self.armed.extend(other.armed.iter());
+        self.energy.extend(other.energy.iter());
+        self.count_down.extend(other.count_down.iter());
+        self.move_mode.extend(other.move_mode.iter());
+        self.direction.extend(other.direction.iter());
+        self.selected_item.extend(other.selected_item.iter());
+        self.action.extend(other.action.iter());
+        self.class.extend(other.class.iter());
+        self.skills.extend(other.skills.iter().map(|(k, v)| (*k, v.clone())));
+        self.limbo.extend(other.limbo.iter());
+        self.animation.extend(other.animation.iter().map(|(k, v)| (*k, v.clone())));
+        self.alive.extend(other.alive.iter());
+        self.sound.extend(other.sound.iter());
+        self.typ.extend(other.typ.iter());
+        self.color.extend(other.color.iter());
+        self.blocks.extend(other.blocks.iter());
+        self.needs_removal.extend(other.needs_removal.iter());
+        self.messages.extend(other.messages.iter().map(|(k, v)| (*k, v.clone())));
     }
 }
 

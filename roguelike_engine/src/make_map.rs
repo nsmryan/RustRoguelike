@@ -62,17 +62,18 @@ impl FromStr for VaultTag {
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Vault {
-    tiles: Vec<Vec<Tile>>,
+    data: GameData,
     tags: Vec<VaultTag>,
 }
 
 impl Vault {
     pub fn new(tiles: Vec<Vec<Tile>>, tags: Vec<VaultTag>) -> Vault {
-        return Vault { tiles, tags };
+        let map = Map::with_vec(tiles);
+        return Vault { data: GameData::new(map, Entities::new()), tags };
     }
 
     pub fn empty() -> Vault {
-        return Vault { tiles: Vec::new(), tags: Vec::new() };
+        return Vault { data: GameData::empty(0, 0), tags: Vec::new() };
     }
 }
 
@@ -121,7 +122,7 @@ fn test_remove_commas() {
 }
 
 /// Read Vault file into Vault structure
-pub fn parse_vault(file_name: &str, game: &mut Game) -> Vault {
+pub fn parse_vault(file_name: &str, config: &Config) -> Vault {
     let file_contents =
         std::fs::read_to_string(file_name).expect(&format!("Could not read {}", file_name));
 
@@ -145,31 +146,33 @@ pub fn parse_vault(file_name: &str, game: &mut Game) -> Vault {
         lines.push(char_line);
     }
 
-    let tiles = parse_ascii_chars(lines, game);
+    let vault = parse_ascii_chars(lines, config);
 
-    return Vault::new(tiles, tags);
+    return vault;
 }
 
-fn parse_ascii_chars(lines: Vec<Vec<char>>, game: &mut Game) -> Vec<Vec<Tile>> {
+fn parse_ascii_chars(lines: Vec<Vec<char>>, config: &Config) -> Vault {
     let height = lines.len() / 2;
     let width = (lines[0].len() - 1) / 2;
 
     let mut tile_map = vec![vec![Tile::empty(); height]; width];
+    let mut vault = Vault::new(tile_map, Vec::new());
+
     println!("{}, {}", width, height);
     for y in 0..height {
         for x in 0..width {
             let tile_chr = lines[y * 2][x * 2 + 1];
             let left_wall = lines[y * 2][x * 2];
             let bottom_wall = lines[y * 2 + 1][x * 2 + 1];
-            let tile = tile_from_ascii(tile_chr, left_wall, bottom_wall, Pos::new(x as i32, y as i32), game);
-            tile_map[x][y] = tile;
+            let tile = tile_from_ascii(tile_chr, left_wall, bottom_wall, Pos::new(x as i32, y as i32), &mut vault, config);
+            vault.data.map[(x as i32, y as i32)] = tile;
         }
     }
 
-    return tile_map;
+    return vault;
 }
 
-fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos, game: &mut Game) -> Tile {
+fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos, vault: &mut Vault, config: &Config) -> Tile {
     let mut tile;
     match tile_chr {
         ' ' | '\t' | '.' => {
@@ -194,7 +197,8 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos,
 
         'I' => {
             tile = Tile::empty();
-            make_column(&mut game.data.entities, &game.config, pos, &mut game.msg_log);
+            let mut msg_log = MsgLog::new();
+            make_column(&mut vault.data.entities, config, pos, &mut msg_log);
         }
 
         _ => {
@@ -223,8 +227,7 @@ fn test_parse_vault() {
                      vec!(' ', ' ', ' ', 'w'),
                      vec!(' ', ' ', ' ', ' '),
                      );
-    let mut game = Game::new(0, Config::default()).unwrap();
-    let tiles = parse_ascii_chars(lines, &mut game);
+    let tiles = parse_ascii_chars(lines, &Config::default());
 
     let mut expected_tiles = vec![vec![Tile::empty(); 2]; 3];
     expected_tiles[0][0].left_wall = Wall::ShortWall;
@@ -314,7 +317,7 @@ fn place_monsters(game: &mut Game) {
     let mut potential_pos = game.data.map.get_empty_pos();
 
     // add gols
-    for _ in 0..3 {
+    for _ in 0..5 {
         let len = potential_pos.len();
 
         if len == 0 {
@@ -329,7 +332,7 @@ fn place_monsters(game: &mut Game) {
         potential_pos.remove(index);
     }
 
-    for _ in 0..3 {
+    for _ in 0..5 {
         let len = potential_pos.len();
         if len == 0 {
             break;
@@ -345,19 +348,40 @@ fn place_monsters(game: &mut Game) {
 }
 
 fn place_vaults(game: &mut Game) {
-    let mut vaults = Vec::new();
-    for entry in std::fs::read_dir("resources/vaults/").unwrap() {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        let vault_file_name = path.to_str().unwrap();
-        if !vault_file_name.ends_with(".csv") {
-            continue;
+    let (width, height) = game.data.map.size();
+
+    if game.rng.gen_range(0.0, 1.0) < 0.99 {
+        let vault_index = game.rng.gen_range(0, game.vaults.len());
+
+        let (width, height) = game.data.map.size();
+        let offset = Pos::new(game.rng.gen_range(0, width), game.rng.gen_range(0, height));
+
+        let vault = &game.vaults[vault_index];
+        if offset.x + vault.data.map.size().0  < width &&
+           offset.y + vault.data.map.size().1 < height {
+               dbg!();
+            place_vault(&mut game.data, vault, offset);
         }
-        dbg!(vault_file_name);
-        vaults.push(parse_vault(vault_file_name, game));
+    }
+}
+
+fn place_vault(data: &mut GameData, vault: &Vault, offset: Pos) {
+    let (width, height) = vault.data.map.size();
+
+    for x in 0..width {
+        for y in 0..height {
+            let pos = add_pos(offset, Pos::new(x, y));
+            data.map[pos] = vault.data.map[(x, y)];
+        }
     }
 
-    let (width, height) = game.data.map.size();
+    let mut entities = vault.data.entities.clone();
+    for id in vault.data.entities.ids.iter() {
+        entities.pos[id] = 
+            add_pos(offset, entities.pos[id]);
+    }
+
+    data.entities.merge(&entities);
 }
 
 fn place_grass(game: &mut Game) {
@@ -386,7 +410,8 @@ fn place_grass(game: &mut Game) {
         for _ in 0..4 {
             let offset_pos = Pos::new(pos.x + game.rng.gen_range(0, 3),
                                       pos.y + game.rng.gen_range(0, 3));
-            if !game.data.map[offset_pos].blocked {
+            if game.data.map.is_within_bounds(offset_pos) &&
+               !game.data.map[offset_pos].blocked {
                 game.data.map[offset_pos].surface = Surface::Grass;
             }
         }
@@ -394,19 +419,37 @@ fn place_grass(game: &mut Game) {
     }
 }
 
+fn find_available_tile(game: &mut Game) -> Option<Pos> {
+    let mut avail_pos = None;
+
+    let (width, height) = game.data.map.size();
+    let mut index = 1.0;
+    for x in 0..width {
+        for y in 0..height {
+            let pos = Pos::new(x, y);
+
+            if !game.data.map[pos].blocked && game.data.has_blocking_entity(pos).is_none() {
+                if game.rng.gen_range(0.0, 1.0) < (1.0 / index) {
+                    avail_pos = Some(pos);
+                }
+
+                index += 1.0;
+            }
+        }
+    }
+
+    return avail_pos;
+}
+
 fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
     let (width, height) = game.data.map.size();
 
     // place goal and key
-    let key_x = game.rng.gen_range(0, width);
-    let key_y = game.rng.gen_range(0, height);
-    let key_pos = Pos::new(key_x, key_y);
+    let key_pos = find_available_tile(game).unwrap();
     game.data.map[key_pos] = Tile::empty();
     make_key(&mut game.data.entities, &game.config, key_pos, &mut game.msg_log);
 
-    let goal_x = game.rng.gen_range(0, width);
-    let goal_y = game.rng.gen_range(0, height);
-    let goal_pos = Pos::new(goal_x, goal_y);
+    let goal_pos = find_available_tile(game).unwrap();
     game.data.map[goal_pos] = Tile::empty();
     make_exit(&mut game.data.entities, &game.config, goal_pos, &mut game.msg_log);
 
@@ -483,6 +526,29 @@ fn saturate_map(game: &mut Game) -> Pos {
                 game.data.map[block].surface = Surface::Rubble;
             }
         }
+
+        if structure.typ == StructureType::Line {
+           if game.rng.gen_range(0.0, 1.0) < 0.5 {
+               let wall_type;
+               if game.rng.gen_range(0.0, 1.0) < 0.5 {
+                   wall_type = Wall::ShortWall;
+               } else {
+                   wall_type = Wall::TallWall;
+               }
+
+               let diff = sub_pos(structure.blocks[0], structure.blocks[1]);
+               for pos in structure.blocks.iter() {
+                   if diff.x != 0 {
+                       game.data.map[*pos].bottom_wall = wall_type;
+                   } else {
+                       game.data.map[*pos].left_wall = wall_type;
+                   }
+
+                   game.data.map[*pos].blocked = false;
+                   game.data.map[*pos].chr = ' ' as u8;
+               }
+           }
+        }
     }
 
     to_remove.sort();
@@ -494,18 +560,56 @@ fn saturate_map(game: &mut Game) -> Pos {
         structures.swap_remove(*index);
     }
 
-    let player_pos = Pos::new(0, 0);
+    let (width, height) = game.data.map.size();
+    let x_mid = width / 2;
+    let y_mid = height / 2;
+    let mid_pos = Pos::new(x_mid, y_mid);
 
-    place_key_and_goal(game, player_pos);
-
-    place_monsters(game);
+    clear_island(game);
 
     place_grass(game);
 
     place_vaults(game);
 
+    let player_id = game.data.find_player().unwrap();
+    let player_pos = find_available_tile(game).unwrap();
+    game.data.entities.pos[&player_id] = player_pos;
+
+    place_key_and_goal(game, player_pos);
+
+    place_monsters(game);
+
+    clear_island(game);
+
     return player_pos;
 }
+
+fn clear_island(game: &mut Game) {
+    fn dist(pos1: Pos, pos2: Pos) -> f32 {
+        return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt();
+    }
+
+    let (width, height) = game.data.map.size();
+    let x_mid = width / 2;
+    let y_mid = height / 2;
+    let mid_pos = Pos::new(x_mid, y_mid);
+
+    for y in 0..height {
+        for x in 0..width {
+            let pos = Pos::new(x, y);
+
+            if dist(pos, mid_pos) > ISLAND_DISTANCE as f32 {
+                game.data.map[pos] = Tile::water();
+                game.data.map[pos].chr = MAP_WATER;
+
+                for entity_id in game.data.has_entities(pos).clone() {
+                    game.data.remove_entity(entity_id);
+                }
+            }
+        }
+    }
+}
+
 
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug)]
 pub enum StructureType {
@@ -721,10 +825,40 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
             player_position = saturate_map(game);
         }
 
-        MapLoadConfig::FromAsciiMap(file_name) => {
-            let vault: Vault = parse_vault(&format!("resources/{}", file_name), game);
+        MapLoadConfig::TestVaults => {
+            player_position = Pos::new(0, 0);
 
-            game.data.map = Map::with_vec(vault.tiles);
+            let mut max_width = 0;
+            let mut max_height = 0;
+            for vault in game.vaults.iter() {
+                let (width, height) = vault.data.map.size();
+                max_width = std::cmp::max(max_width, width);
+                max_height = std::cmp::max(max_height, height);
+            }
+            let square = (game.vaults.len() as f32).sqrt().ceil() as u32;
+            let max_dim = std::cmp::max(max_width, max_height);
+
+            game.data.map = Map::from_dims(std::cmp::min(MAP_WIDTH as u32, max_dim as u32 * square as u32),
+                                           std::cmp::min(MAP_HEIGHT as u32, max_dim as u32 * square as u32));
+
+            let vaults = game.vaults.clone();
+            for (index, vault) in vaults.iter().enumerate() {
+                let x_pos = index % square as usize;
+                let y_pos = index / square as usize;
+                let offset = Pos::new(max_width * x_pos as i32 + 2 * x_pos as i32,
+                                      max_height * y_pos as i32 + 2 * y_pos as i32);
+
+                let (width, height) = vault.data.map.size();
+                if offset.x + width < MAP_WIDTH && offset.y + height < MAP_HEIGHT {
+                    place_vault(&mut game.data, vault, offset);
+                }
+            }
+        }
+
+        MapLoadConfig::VaultFile(file_name) => {
+            let vault: Vault = parse_vault(&format!("resources/{}", file_name), &game.config);
+
+            game.data.map = Map::with_vec(vault.data.map.tiles);
 
             player_position = Pos::new(4, 4);
         }

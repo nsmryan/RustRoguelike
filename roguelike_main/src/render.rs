@@ -1180,7 +1180,8 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         for entity_id in keys {
             let pos = game.data.entities.pos[&entity_id];
 
-            if game.data.map.is_within_bounds(pos) &&
+            if entity_id != player_id &&
+               game.data.map.is_within_bounds(pos) &&
                game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
                game.data.entities.alive[&entity_id] {
                render_attack_overlay(panel,

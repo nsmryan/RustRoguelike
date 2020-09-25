@@ -12,7 +12,7 @@ use itertools::Itertools;
 
 use log::trace;
 
-use doryen_fov::{MapData, FovAlgorithm, FovRestrictive};
+//use doryen_fov::{MapData, FovAlgorithm, FovRestrictive};
 
 use euclid::*;
 
@@ -91,8 +91,9 @@ pub enum MapLoadConfig {
     Empty,
     TestCorner,
     TestPlayer,
+    TestVaults,
     FromFile(String),
-    FromAsciiMap(String),
+    VaultFile(String),
 }
 
 impl Default for MapLoadConfig {
@@ -201,6 +202,16 @@ impl Tile {
         surface: Surface::Floor,
         }
     }
+
+    pub fn shorten(&mut self) {
+        if self.bottom_wall == Wall::TallWall {
+            self.bottom_wall = Wall::ShortWall;
+        }
+
+        if self.left_wall == Wall::TallWall {
+            self.left_wall = Wall::ShortWall;
+        }
+    }
 }
 
 
@@ -248,10 +259,10 @@ impl Wall {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Map {
     pub tiles: Vec<Vec<Tile>>,
-    fov: MapData,
+    //fov: MapData,
     fov_pos: Pos,
     fov_radius: i32,
 }
@@ -263,7 +274,7 @@ impl Map {
         let mut map =
             Map {
                 tiles,
-                fov: MapData::new(width, height),
+                //fov: MapData::new(width, height),
                 fov_pos: Pos::new(0, 0),
                 fov_radius: 1,
             };
@@ -278,7 +289,7 @@ impl Map {
         let mut map =
             Map {
                 tiles,
-                fov: MapData::new(width as usize, height as usize),
+                //fov: MapData::new(width as usize, height as usize),
                 fov_pos: Pos::new(0, 0),
                 fov_radius: 1,
             };
@@ -292,7 +303,7 @@ impl Map {
         let map =
             Map {
                 tiles: Vec::new(),
-                fov: MapData::new(1, 1),
+                //fov: MapData::new(1, 1),
                 fov_pos: Pos::new(0, 0),
                 fov_radius: 1,
             };
@@ -613,6 +624,7 @@ impl Map {
         return self.is_in_fov_lines(start_pos, end_pos, radius);
     }
 
+    /*
     pub fn is_in_fov_alg(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
         if start_pos == end_pos {
             return true;
@@ -649,6 +661,7 @@ impl Map {
 
         return is_in_fov;
    }
+   */
 
     pub fn is_in_fov_lines(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
         if start_pos == end_pos {
@@ -779,10 +792,12 @@ impl Map {
     }
 
     pub fn set_cell(&mut self, x: i32, y: i32, transparent: bool) {
-        self.fov.set_transparent(x as usize, y as usize, transparent);
+        //self.fov.set_transparent(x as usize, y as usize, transparent);
     }
 
+    // TODO remove
     pub fn compute_fov(&mut self, pos: Pos, view_radius: i32) {
+        /*
         self.fov_pos = pos;
         self.fov_radius = view_radius;
         FovRestrictive::new().compute_fov(&mut self.fov,
@@ -790,19 +805,23 @@ impl Map {
                                           pos.y as usize,
                                           view_radius as usize,
                                           true);
+        */
     }
 
+    // TODO remove
     pub fn update_map(&mut self) {
         let dims = (self.width(), self.height());
 
+        /*
         for y in 0..dims.1 {
             for x in 0..dims.0 {
                 let transparent = !self.tiles[x as usize][y as usize].block_sight;
-                self.fov.set_transparent(x as usize, y as usize, transparent);
+                //self.fov.set_transparent(x as usize, y as usize, transparent);
             }
         }
 
         self.compute_fov(self.fov_pos, self.fov_radius);
+        */
     }
 
     pub fn aoe_fill(&self, aoe_effect: AoeEffect, start: Pos, radius: usize) -> Aoe {

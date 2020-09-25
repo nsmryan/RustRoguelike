@@ -18,7 +18,7 @@ use roguelike_core::movement::*;
 use crate::actions;
 use crate::actions::InputAction; //, KeyDirection};
 use crate::generation::*;
-use crate::make_map::make_map;
+use crate::make_map::{make_map, Vault, parse_vault};
 use crate::resolve::resolve_messages;
 #[cfg(test)]
 use crate::make_map::*;
@@ -32,7 +32,7 @@ pub struct Game {
     pub settings: GameSettings,
     pub msg_log: MsgLog,
     pub rng: SmallRng,
-    //pub key_input: Vec<(KeyDirection, Keycode)>,
+    pub vaults: Vec<Vault>,
 }
 
 impl Game {
@@ -52,6 +52,17 @@ impl Game {
         let stone_id = make_stone(&mut data.entities, &config, Pos::new(-1, -1), &mut msg_log);
         data.entities.inventory[&player_id].push_back(stone_id);
 
+        let mut vaults = Vec::new();
+        for entry in std::fs::read_dir("resources/vaults/").unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            let vault_file_name = path.to_str().unwrap();
+            if !vault_file_name.ends_with(".csv") {
+                continue;
+            }
+            vaults.push(parse_vault(vault_file_name, &config));
+        }
+
         let state = Game {
             config,
             input_action: InputAction::None,
@@ -59,8 +70,8 @@ impl Game {
             settings: GameSettings::new(0, false),
             mouse_state: Default::default(),
             msg_log,
-            //key_input: Vec::new(),
             rng: rng,
+            vaults,
         };
 
         return Ok(state);

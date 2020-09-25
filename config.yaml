@@ -118,8 +118,8 @@ grid_alpha: 8
 grid_alpha_visible: 30
 grid_alpha_overlay: 150
 ## Valid values for map_load
-# FromFile: load from map.xp file
-# FromAsciiMap: load from ascii map file
+# FromFile(filename): load from map.xp file
+# FromVaultFile(filename): load a given vault as the level
 # TestWall: test map for checking wall interactions
 # TestRandom: test random generation
 # TestMap: test map for unit tests
@@ -127,7 +127,8 @@ grid_alpha_overlay: 150
 # Empty: empty map, used in unit tests 
 # TestCorner: test map with corners of different types
 # TestPlayer: test map for player interactions
-map_load: TestRandom
+map_load: #TestVaults
+    TestRandom
 #FromAsciiMap: "vaults/Vaults - Vault1.csv"
 #FromFile: "maps.txt"
 map_file: map.xp
