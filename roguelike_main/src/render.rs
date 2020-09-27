@@ -1010,7 +1010,6 @@ fn render_animation(anim_key: AnimKey,
         Animation::Loop(ref mut sprite_anim) => {
            if settings.god_mode || is_in_fov {
                 let sprite = sprite_anim.sprite();
-                let player_id = data.find_player().unwrap();
                 display_state.draw_sprite(panel,
                                           sprite,
                                           pos,
@@ -1064,8 +1063,6 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     let sprite_key =
         display_state.lookup_spritekey("tiles")
                      .expect("Could not find rexpaint file in renderer!");
-
-    let cell_dims = panel.cell_dims();
 
     // render a grid of numbers if enabled
     if game.config.overlay_directions {
@@ -1428,7 +1425,7 @@ fn render_attack_overlay(panel: &mut Panel<&mut WindowCanvas>,
 }
 
 fn render_fov_overlay(panel: &mut Panel<&mut WindowCanvas>,
-                      display_state: &mut DisplayState,
+                      _display_state: &mut DisplayState,
                       game: &mut Game,
                       entity_id: EntityId) {
     let player_id = game.data.find_player().unwrap();
@@ -1445,7 +1442,6 @@ fn render_fov_overlay(panel: &mut Panel<&mut WindowCanvas>,
 
 
             if visible {
-                let chr = game.data.entities.chr[&entity_id];
                 draw_outline_tile(panel, map_pos, highlight_color);
             }
         }

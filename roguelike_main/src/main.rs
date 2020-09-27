@@ -67,8 +67,6 @@ pub struct GameOptions {
 
 
 fn main() {
-    //let args = env::args().collect::<Vec<String>>();
-
     let opts = GameOptions::parse_args_default_or_exit();
 
     let seed: u64 =
@@ -82,7 +80,7 @@ fn main() {
             // hasher.finish()
         };
 
-    println!("Seed: {} (0x{:X})", seed, seed);
+    eprintln!("Seed: {} (0x{:X})", seed, seed);
 
     let log_level =
         opts.log_level.clone().map_or(LevelFilter::Trace,
