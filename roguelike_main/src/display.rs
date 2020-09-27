@@ -460,7 +460,6 @@ pub struct Display {
     pub targets: DisplayTargets,
 }
 
-// TODO determine which functions should be moved to DisplayTargets or DisplayState
 impl Display {
     pub fn new(canvas: WindowCanvas) -> Display {
         return Display { state: DisplayState::new(),
