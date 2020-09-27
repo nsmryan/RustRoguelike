@@ -583,16 +583,13 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
 
     let player_id = game.data.find_player().unwrap();
 
-    let previous_player_position =
-        game.data.entities.pos[&player_id];
-
     game.data.entities.action[&player_id] = player_action;
 
     /* Actions */
     game.msg_log.log(Msg::Action(player_id, player_action));
 
-    println!();
-    println!("Turn {}:", game.settings.turn_count);
+    eprintln!();
+    eprintln!("Turn {}:", game.settings.turn_count);
 
     resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
 
@@ -660,22 +657,6 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
     // needs to know that the turn is finished.
     game.msg_log.log(Msg::PlayerTurn());
     resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
-
-    // TODO this shouldn't be necessary- it should be part of msg handling
-    // check if player lost all hp
-    if let Some(fighter) = game.data.entities.fighter.get(&player_id) {
-        if fighter.hp <= 0 {
-            // modify player
-            {
-                game.data.entities.alive[&player_id] = false;
-                game.data.entities.color[&player_id] = game.config.color_red;
-            }
-
-            if game.settings.state == GameState::Playing {
-                game.settings.state = GameState::Lose;
-            }
-        }
-    }
 
     let mut to_remove: Vec<EntityId> = Vec::new();
 

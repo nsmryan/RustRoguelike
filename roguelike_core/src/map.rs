@@ -12,8 +12,6 @@ use itertools::Itertools;
 
 use log::trace;
 
-//use doryen_fov::{MapData, FovAlgorithm, FovRestrictive};
-
 use euclid::*;
 
 use serde_derive::*;

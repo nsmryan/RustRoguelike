@@ -1,7 +1,5 @@
 use serde::{Serialize, Deserialize};
 
-use logging_timer::timer;
-
 use crate::constants::*;
 use crate::types::*;
 use crate::movement::*;
