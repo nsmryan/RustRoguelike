@@ -112,7 +112,11 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     load_sprite(&texture_creator, &mut display, "resources/rexpaint16x16.png", "tiles", 16);
 
     let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
-    let font_texture = load_font(&ttf_context, &texture_creator, &mut display.targets.canvas_panel.target, "Monoid.ttf".to_string(), 16);
+    let font_texture = load_font(&ttf_context,
+                                 &texture_creator,
+                                 &mut display.targets.canvas_panel.target,
+                                 "Monoid.ttf".to_string(),
+                                 16);
     display.add_spritesheet("font".to_string(), font_texture, 16);
 
     let mut game = Game::new(seed, config.clone())?;
@@ -158,88 +162,14 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
     let mut frame_time = Instant::now();
 
     /* Main Game Loop */
-    let mut running = true;
-    while running {
+    while game.settings.running {
         let _loop_timer = timer!("GAME_LOOP");
 
-        let input_timer = timer!("INPUT");
         /* Handle Events */
-        //game.key_input.clear();
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit {..}=> {
-                    running = false;
-                }
-
-                Event::KeyDown {keycode, keymod, ..} => {
-                    if let Some(keycode) = keycode {
-                        //game.key_input.push((KeyDirection::Down, keycode));
-                        game.input_action =
-                            keydown_to_action(keycode, keymod);
-                    }
-                }
-
-                Event::KeyUp {keycode, keymod, ..} => {
-                    if let Some(keycode) = keycode {
-                        //game.key_input.push((KeyDirection::Up, keycode));
-                        game.input_action =
-                            keyup_to_action(keycode, keymod, game.settings.state);
-                    }
-                }
-
-                Event::MouseMotion {x, y, ..} => {
-                    game.mouse_state.x = x;
-                    game.mouse_state.y = y;
-                }
-
-                Event::MouseButtonDown {mouse_btn, x, y, ..} => {
-                    match mouse_btn {
-                        MouseButton::Left => {
-                            game.mouse_state.left_pressed = true;
-
-                            let (map_width, map_height) = game.data.map.size();
-                            if let Some(mouse_cell) = display.targets.mouse_pos(x, y, map_width, map_height) {
-                                let screen_pos = Pos::new(x, y);
-                                let mouse_pos = Pos::new(mouse_cell.0, mouse_cell.1);
-                                game.input_action = InputAction::MapClick(screen_pos, mouse_pos);
-                            }
-                        }
-
-                        MouseButton::Middle => {
-                            game.mouse_state.middle_pressed = true;
-                        }
-
-                        MouseButton::Right => {
-                            game.mouse_state.right_pressed = true;
-                        }
-
-                        _ => {
-                        },
-                    }
-                }
-
-                Event::MouseButtonUp {mouse_btn, ..} => {
-                    match mouse_btn {
-                        MouseButton::Left => {
-                            game.mouse_state.left_pressed = false;
-                        }
-
-                        MouseButton::Middle => {
-                            game.mouse_state.middle_pressed = false;
-                        }
-
-                        MouseButton::Right => {
-                            game.mouse_state.right_pressed = false;
-                        }
-
-                        _ => {},
-                    }
-                }
-
-                _ => {}
-            }
+        {
+            let _input_timer = timer!("INPUT");
+            handle_sdl2_input(&mut game, &mut display, &mut event_pump);
         }
-        drop(input_timer);
 
         // if there are starting actions to read, pop one off to play
         if let Some(action) = starting_actions.pop() {
@@ -254,31 +184,33 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         }
 
         /* Step the Game Forward */
-        let logic_timer = timer!("LOGIC");
-        let dt = Instant::now().duration_since(frame_time);
-        let game_result = game.step_game(dt.as_secs_f32());
-        frame_time = Instant::now();
-        drop(logic_timer);
+        let game_result: GameResult;
+        {
+            let _logic_timer = timer!("LOGIC");
+            let dt = Instant::now().duration_since(frame_time);
+            game_result = game.step_game(dt.as_secs_f32());
+            frame_time = Instant::now();
+        }
 
         if game.settings.state == GameState::Win {
             dbg!("Won");
             display.clear_level_state();
         } else if game_result == GameResult::Stop || game.settings.exiting {
-            running = false;
+            game.settings.running = false;
         }
 
-        let display_timer = timer!("DISPLAY");
-        // TODO consider moving this within an update function for the display system
-        for msg in game.msg_log.turn_messages.iter() {
-            display.process_message(*msg, &mut game.data, &game.config);
+        /* Update Display */
+        {
+            let _display_timer = timer!("DISPLAY");
+            for msg in game.msg_log.turn_messages.iter() {
+                display.process_message(*msg, &mut game.data, &game.config);
+            }
+
+            /* Draw the Game to the Screen */
+            render_all(&mut display, &mut game)?;
+
+            display.update_display();
         }
-
-        /* Draw the Game to the Screen */
-        render_all(&mut display, &mut game)?;
-
-        display.update_display();
-
-        drop(display_timer);
 
         game.msg_log.clear();
 
@@ -308,6 +240,83 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
     }
 
     return Ok(());
+}
+
+pub fn handle_sdl2_input(game: &mut Game, display: &mut Display, event_pump: &mut sdl2::EventPump) {
+    for event in event_pump.poll_iter() {
+        match event {
+            Event::Quit {..}=> {
+                game.settings.running = false;
+            }
+
+            Event::KeyDown {keycode, keymod, ..} => {
+                if let Some(keycode) = keycode {
+                    //game.key_input.push((KeyDirection::Down, keycode));
+                    game.input_action =
+                        keydown_to_action(keycode, keymod);
+                }
+            }
+
+            Event::KeyUp {keycode, keymod, ..} => {
+                if let Some(keycode) = keycode {
+                    //game.key_input.push((KeyDirection::Up, keycode));
+                    game.input_action =
+                        keyup_to_action(keycode, keymod, game.settings.state);
+                }
+            }
+
+            Event::MouseMotion {x, y, ..} => {
+                game.mouse_state.x = x;
+                game.mouse_state.y = y;
+            }
+
+            Event::MouseButtonDown {mouse_btn, x, y, ..} => {
+                match mouse_btn {
+                    MouseButton::Left => {
+                        game.mouse_state.left_pressed = true;
+
+                        let (map_width, map_height) = game.data.map.size();
+                        if let Some(mouse_cell) = display.targets.mouse_pos(x, y, map_width, map_height) {
+                            let screen_pos = Pos::new(x, y);
+                            let mouse_pos = Pos::new(mouse_cell.0, mouse_cell.1);
+                            game.input_action = InputAction::MapClick(screen_pos, mouse_pos);
+                        }
+                    }
+
+                    MouseButton::Middle => {
+                        game.mouse_state.middle_pressed = true;
+                    }
+
+                    MouseButton::Right => {
+                        game.mouse_state.right_pressed = true;
+                    }
+
+                    _ => {
+                    },
+                }
+            }
+
+            Event::MouseButtonUp {mouse_btn, ..} => {
+                match mouse_btn {
+                    MouseButton::Left => {
+                        game.mouse_state.left_pressed = false;
+                    }
+
+                    MouseButton::Middle => {
+                        game.mouse_state.middle_pressed = false;
+                    }
+
+                    MouseButton::Right => {
+                        game.mouse_state.right_pressed = false;
+                    }
+
+                    _ => {},
+                }
+            }
+
+            _ => {}
+        }
+    }
 }
 
 pub fn keyup_to_action(keycode: Keycode,

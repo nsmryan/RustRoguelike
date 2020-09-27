@@ -533,6 +533,7 @@ pub struct GameSettings {
     pub selection: Selection,
     pub inventory_action: InventoryAction,
     pub level_num: usize,
+    pub running: bool,
 }
 
 impl GameSettings {
@@ -552,6 +553,7 @@ impl GameSettings {
             selection: Selection::default(),
             inventory_action: InventoryAction::default(),
             level_num: 0,
+            running: true,
         };
     }
 }
