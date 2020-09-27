@@ -190,7 +190,6 @@ impl Panel<Texture> {
         return Panel { cells, target: texture, num_pixels: (width, height), dirty: true };
     }
 
-    // TODO use instead of with_target(())
     pub fn unit(&self) -> Panel<()> {
         return Panel { target: (), cells: self.cells, num_pixels: self.num_pixels, dirty: self.dirty };
     }
@@ -417,14 +416,14 @@ impl DisplayState {
         };
     }
 
-    pub fn lookup_spritekey(&self, name: &str) -> Option<SpriteKey> {
+    pub fn lookup_spritekey(&self, name: &str) -> SpriteKey {
         for (key, sprite_sheet) in self.sprites.iter() {
             if sprite_sheet.name == *name {
-                return Some(*key);
+                return *key;
             }
         }
 
-        return None;
+        panic!(format!("Could not find sprite '{}'", name));
     }
 
     pub fn draw_sprite(&mut self,
@@ -443,10 +442,7 @@ impl DisplayState {
 
             Sprite::Char(chr) => {
                 sprite_index = chr as usize;
-                // TODO move expect into lookup_spritekey and return non-optional
-                sprite_key =
-                    self.lookup_spritekey("tiles")
-                        .expect("Could not find rexpaint file in renderer!");
+                sprite_key = self.lookup_spritekey("tiles");
             },
         }
 
@@ -485,31 +481,24 @@ impl Display {
 
     /// Create a sprite by looking up a texture and constructing the
     /// SpriteAnim structure.
-    pub fn new_sprite(&self, name: String, speed: f32) -> Option<SpriteAnim> {
-        if let Some(sprite_key) = self.state.lookup_spritekey(&name) {
-            let max_index = self.state.sprites[&sprite_key].num_sprites;
-            return Some(SpriteAnim::make_anim(name, sprite_key, max_index as f32, speed));
-        }
-
-        //panic!(format!("Tried to play sprite {}, but could not find animation!", name));
-        return None;
+    pub fn new_sprite(&self, name: String, speed: f32) -> SpriteAnim {
+        let sprite_key = self.state.lookup_spritekey(&name);
+        let max_index = self.state.sprites[&sprite_key].num_sprites;
+        return SpriteAnim::make_anim(name, sprite_key, max_index as f32, speed);
     }
 
-    pub fn font_sprite(&self, chr: char) -> Option<SpriteAnim> {
-        if let Some(sprite_key) = self.state.lookup_spritekey(&"font".to_string()) {
-            return Some(SpriteAnim::new(format!("{}", chr),
-                                        sprite_key,
-                                        chr as i32 as SpriteIndex,
-                                        chr as i32 as SpriteIndex,
-                                        0.0));
-        }
-
-        return None;
+    pub fn font_sprite(&self, chr: char) -> SpriteAnim {
+        let sprite_key = self.state.lookup_spritekey(&"font".to_string());
+        return SpriteAnim::new(format!("{}", chr),
+                               sprite_key,
+                               chr as i32 as SpriteIndex,
+                               chr as i32 as SpriteIndex,
+                               0.0);
     }
 
     /// Create and play a looping sprite
     pub fn loop_sprite(&mut self, sprite_name: &str, speed: f32) -> AnimKey {
-        let sprite_anim = self.new_sprite(sprite_name.to_string(), speed).unwrap();
+        let sprite_anim = self.new_sprite(sprite_name.to_string(), speed);
         
         let anim = Animation::Loop(sprite_anim);
 
@@ -580,9 +569,7 @@ impl Display {
                 let sound_aoe = data.map.aoe_fill(AoeEffect::Sound, end, config.sound_radius_stone);
 
                 let chr = data.entities.chr[&item_id];
-                let item_sprite =
-                    self.font_sprite(chr)
-                        .expect("Could not find item sprite!");
+                let item_sprite = self.font_sprite(chr);
 
                 let move_anim = Animation::Between(item_sprite, start, end, 0.0, config.item_throw_speed);
                 let item_anim = Animation::PlayEffect(Effect::Sound(sound_aoe, 0.0));
@@ -617,20 +604,17 @@ impl Display {
                     data.entities.animation[&attacked].clear();
 
                     let sprite_name = format!("{:?}_die", data.entities.name[&attacked]);
-                    let maybe_sprite = self.new_sprite(sprite_name, 1.0);
-                    if let Some(sprite) = maybe_sprite {
-                        let anim = self.play_animation(Animation::Once(sprite));
-                        data.entities.animation[&attacked].clear();
-                        data.entities.animation[&attacked].push_front(anim);
-                    }
+                    let sprite = self.new_sprite(sprite_name, 1.0);
+                    let anim = self.play_animation(Animation::Once(sprite));
+                    data.entities.animation[&attacked].clear();
+                    data.entities.animation[&attacked].push_front(anim);
                 }
             }
 
             Msg::HammerSwing(entity_id, _pos) => {
                 if data.entities.typ[&entity_id] == EntityType::Player {
                     let attack_sprite =
-                        self.new_sprite("player_attack_hammer".to_string(), config.player_attack_hammer_speed)
-                                          .unwrap();
+                        self.new_sprite("player_attack_hammer".to_string(), config.player_attack_hammer_speed);
                     let attack_anim = Animation::Once(attack_sprite);
                     let attack_key = self.play_animation(attack_anim);
 
@@ -646,8 +630,7 @@ impl Display {
             Msg::Stabbed(entity_id, _hit_entity) => {
                 if data.entities.typ[&entity_id] == EntityType::Player {
                     let attack_sprite =
-                        self.new_sprite("player_attack_dagger".to_string(), config.player_attack_speed)
-                                          .unwrap();
+                        self.new_sprite("player_attack_dagger".to_string(), config.player_attack_speed);
                     let attack_anim = Animation::Once(attack_sprite);
                     let attack_key = self.play_animation(attack_anim);
 
@@ -672,8 +655,7 @@ impl Display {
             Msg::Attack(attacker, _attacked, _damage) => {
                 if data.entities.typ[&attacker] == EntityType::Player {
                     let attack_sprite =
-                        self.new_sprite("player_attack".to_string(), config.player_attack_speed)
-                                          .unwrap();
+                        self.new_sprite("player_attack".to_string(), config.player_attack_speed);
                     let attack_anim = Animation::Once(attack_sprite);
                     let attack_key = self.play_animation(attack_anim);
 

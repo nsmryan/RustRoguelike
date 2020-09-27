@@ -153,11 +153,6 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
         }
     }
 
-    // TODO console
-    //if game.settings.state == GameState::Console {
-    //    render_console(display, game);
-    //}
-
     Ok(())
 }
 
@@ -196,9 +191,7 @@ fn render_placard(panel: &mut Panel<&mut WindowCanvas>,
 
     let text_pos = Pos::new(text_start, 0);
 
-    let sprite_key =
-        display_state.lookup_spritekey("tiles")
-                     .expect("Could not find rexpaint file in renderer!");
+    let sprite_key = display_state.lookup_spritekey("tiles");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     tile_sprite.draw_text(panel, &text, text_pos, config.color_dark_blue);
@@ -371,9 +364,7 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 
     let text_pos = Pos::new(1, 5);
 
-    let sprite_key =
-        display_state.lookup_spritekey("tiles")
-                     .expect("Could not find rexpaint file in renderer!");
+    let sprite_key = display_state.lookup_spritekey("tiles");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
     tile_sprite.draw_text_list(panel, &list, text_pos, color);
 }
@@ -387,9 +378,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
                    "Info",
                    &game.config);
 
-    let sprite_key =
-        display_state.lookup_spritekey("tiles")
-                     .expect("Could not find rexpaint file in renderer!");
+    let sprite_key = display_state.lookup_spritekey("tiles");
 
     if let Some(mouse) = mouse_xy {
         let color = game.config.color_soft_green;
@@ -496,9 +485,7 @@ fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
     let text_pos = Pos::new(2, y_pos);
     let color = game.config.color_light_grey;
 
-    let sprite_key =
-        display_state.lookup_spritekey("tiles")
-                     .expect("Could not find rexpaint file in renderer!");
+    let sprite_key = display_state.lookup_spritekey("tiles");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     tile_sprite.draw_text_list(panel,
@@ -524,9 +511,7 @@ fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
     let text_pos = Pos::new(2, y_pos);
     let color = game.config.color_light_grey;
 
-    let sprite_key =
-        display_state.lookup_spritekey("tiles")
-                     .expect("Could not find rexpaint file in renderer!");
+    let sprite_key = display_state.lookup_spritekey("tiles");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     tile_sprite.draw_text_list(panel,
@@ -552,9 +537,7 @@ fn render_confirm_quit(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut
     let text_pos = Pos::new(2, y_pos);
     let color = game.config.color_light_grey;
 
-    let sprite_key =
-        display_state.lookup_spritekey("tiles")
-                     .expect("Could not find rexpaint file in renderer!");
+    let sprite_key = display_state.lookup_spritekey("tiles");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     tile_sprite.draw_text_list(panel,
@@ -573,9 +556,7 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
 
     let player_id = game.data.find_player().unwrap();
 
-    let sprite_key =
-        display_state.lookup_spritekey("tiles")
-                     .expect("Could not find rexpaint file in renderer!");
+    let sprite_key = display_state.lookup_spritekey("tiles");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     // Render each object's name in inventory
@@ -645,9 +626,7 @@ fn render_background(display: &mut Display, game: &mut Game) {
 
     let (map_width, map_height) = game.data.map.size();
 
-    let sprite_key =
-        display.state.lookup_spritekey("tiles")
-                     .expect("Could not find rexpaint file in renderer!");
+    let sprite_key = display.state.lookup_spritekey("tiles");
     let sprite = &mut display.state.sprites[&sprite_key];
 
     let canvas = &mut display.targets.canvas_panel.target;
@@ -689,9 +668,7 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
 
     let (map_width, map_height) = game.data.map.size();
 
-    let sprite_key =
-        display_state.lookup_spritekey("tiles")
-                     .expect("Could not find rexpaint file in renderer!");
+    let sprite_key = display_state.lookup_spritekey("tiles");
     let sprite = &mut display_state.sprites[&sprite_key];
 
     for y in 0..map_height {
@@ -803,9 +780,7 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
 
     let mut effects = display_state.effects.clone();
 
-    let sprite_key =
-        display_state.lookup_spritekey("tiles")
-                     .expect("Could not find rexpaint file in renderer!");
+    let sprite_key = display_state.lookup_spritekey("tiles");
     let sprite = &mut display_state.sprites[&sprite_key];
 
     for (index, effect) in effects.iter_mut().enumerate() {
@@ -1036,9 +1011,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     let player_id = game.data.find_player().unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
-    let sprite_key =
-        display_state.lookup_spritekey("tiles")
-                     .expect("Could not find rexpaint file in renderer!");
+    let sprite_key = display_state.lookup_spritekey("tiles");
 
     // render a grid of numbers if enabled
     if game.config.overlay_directions {
@@ -1256,7 +1229,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     // 40 are nearly fully open
     // 49 may be fully open
     if game.config.overlay_floodfill {
-        let font_key = display_state.lookup_spritekey("font").unwrap();
+        let font_key = display_state.lookup_spritekey("font");
 
 
         let highlight_color = game.config.color_light_orange;
@@ -1370,9 +1343,7 @@ fn render_attack_overlay(panel: &mut Panel<&mut WindowCanvas>,
     let mut attack_highlight_color = game.config.color_red;
     attack_highlight_color.a = game.config.highlight_attack;
 
-    let sprite_key =
-        display_state.lookup_spritekey("tiles")
-                     .expect("Could not find rexpaint file in renderer!");
+    let sprite_key = display_state.lookup_spritekey("tiles");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     if let Some(reach) = game.data.entities.attack.get(&entity_id) {
@@ -1435,9 +1406,7 @@ fn render_movement_overlay(panel: &mut Panel<&mut WindowCanvas>,
     let mut highlight_color = game.config.color_light_grey;
     highlight_color.a = game.config.grid_alpha_overlay;
 
-    let sprite_key =
-        display_state.lookup_spritekey("tiles")
-                     .expect("Could not find rexpaint file in renderer!");
+    let sprite_key = display_state.lookup_spritekey("tiles");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     if let Some(reach) = game.data.entities.movement.get(&entity_id) {
