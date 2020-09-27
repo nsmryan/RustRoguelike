@@ -58,6 +58,9 @@ pub struct GameOptions {
     #[options(help = "use a given seed for random number generation")]
     pub seed: Option<u64>,
 
+    #[options(help = "take a screenshot and exit", short="t")]
+    pub screenshot: bool,
+
     #[options(help = "display help text")]
     pub help: bool,
 }
@@ -120,8 +123,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
     make_map(&config.map_load, &mut game);
 
-    // TODO make this a command line option instead of a configuration setting
-    if game.config.take_screenshot {
+    if opts.screenshot {
         take_screenshot(&mut game, &mut display).unwrap();
         return Ok(());
     }
