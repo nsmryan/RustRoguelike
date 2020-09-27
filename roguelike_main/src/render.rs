@@ -43,13 +43,11 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 
     /* Draw Map */
     {
-        let cell_dims = display.targets.map_panel.cell_dims();
         let canvas = &mut display.targets.canvas_panel.target;
         let display_state = &mut display.state;
 
         if game.settings.render_map {
             let background = &mut display.targets.background_panel;
-            let map_panel = &mut display.targets.map_panel;
             let panel = background.unit();
 
             canvas.with_texture_canvas(&mut display.targets.map_panel.target, |canvas| {
@@ -104,8 +102,6 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     /* Paste Panels on Screen */
     // TODO just make the map panel the right size in the first place
     // and re-create it when the map changes.
-    let map_cell_dims = display.targets.map_panel.cell_dims();
-   
     let (map_width, map_height) = game.data.map.size();
     let src = display.targets.map_panel.get_rect_up_left(map_width as usize, map_height as usize);
     display.targets.canvas_panel.target.copy(&display.targets.map_panel.target, src, map_rect).unwrap();
@@ -209,7 +205,7 @@ fn render_placard(panel: &mut Panel<&mut WindowCanvas>,
 }
 
 fn render_pips(panel: &mut Panel<&mut WindowCanvas>,
-               display_state: &mut DisplayState,
+               _display_state: &mut DisplayState,
                num_pips: u32,
                y_pos: i32,
                color: Color) {
@@ -241,7 +237,7 @@ fn render_pips(panel: &mut Panel<&mut WindowCanvas>,
 }
 
 fn render_bar(panel: &mut Panel<&mut WindowCanvas>,
-              display_state: &mut DisplayState,
+              _display_state: &mut DisplayState,
               percent: f32,
               y_pos: i32,
               fg_color: Color,
@@ -341,8 +337,6 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 
     let player_id = game.data.find_player().unwrap();
 
-    let cell_dims = panel.cell_dims();
-
     let mut list: Vec<String> = Vec::new();
 
     let color = game.config.color_soft_green;
@@ -396,8 +390,6 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
     let sprite_key =
         display_state.lookup_spritekey("tiles")
                      .expect("Could not find rexpaint file in renderer!");
-
-    let cell_dims = panel.cell_dims();
 
     if let Some(mouse) = mouse_xy {
         let color = game.config.color_soft_green;
@@ -508,7 +500,6 @@ fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
         display_state.lookup_spritekey("tiles")
                      .expect("Could not find rexpaint file in renderer!");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
-    let cell_dims = panel.cell_dims();
 
     tile_sprite.draw_text_list(panel,
                                &list,
@@ -561,7 +552,6 @@ fn render_confirm_quit(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut
     let text_pos = Pos::new(2, y_pos);
     let color = game.config.color_light_grey;
 
-    let cell_dims = panel.cell_dims();
     let sprite_key =
         display_state.lookup_spritekey("tiles")
                      .expect("Could not find rexpaint file in renderer!");
@@ -587,8 +577,6 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
         display_state.lookup_spritekey("tiles")
                      .expect("Could not find rexpaint file in renderer!");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
-
-    let cell_dims = panel.cell_dims();
 
     // Render each object's name in inventory
     let mut y_pos = 2;
@@ -663,8 +651,6 @@ fn render_background(display: &mut Display, game: &mut Game) {
     let sprite = &mut display.state.sprites[&sprite_key];
 
     let canvas = &mut display.targets.canvas_panel.target;
-
-    let cell_dims = display.targets.background_panel.cell_dims();
 
     let panel = display.targets.background_panel.unit();
     canvas.with_texture_canvas(&mut display.targets.background_panel.target, |canvas| {
@@ -793,17 +779,7 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
                 }
             }
 
-            // Draw a square around this tile to help distinguish it visually in the grid
-            let alpha;
-            if visible && game.data.map[pos].tile_type != TileType::Water {
-                if game.settings.overlay {
-                    alpha = game.config.grid_alpha_overlay;
-                } else {
-                    alpha = game.config.grid_alpha_visible;
-                }
-            } else {
-                alpha = game.config.grid_alpha;
-            }
+            // apply a FoW darkening to cells
             if game.config.fog_of_war && !visible {
                 let mut blackout_color = Color::black();
                 if game.data.map[pos].explored {

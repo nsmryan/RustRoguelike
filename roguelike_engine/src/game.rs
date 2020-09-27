@@ -700,12 +700,6 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
         game.data.remove_entity(key);
     }
 
-    /* Recompute FOV */
-    let player_pos = game.data.entities.pos[&player_id];
-    if previous_player_position != player_pos {
-        game.data.map.compute_fov(player_pos, game.config.fov_radius_player);
-    }
-
     if player_action.takes_turn() {
         game.settings.turn_count += 1;
     }

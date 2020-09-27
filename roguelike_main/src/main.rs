@@ -199,8 +199,6 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
 
                             let (map_width, map_height) = game.data.map.size();
                             if let Some(mouse_cell) = display.targets.mouse_pos(x, y, map_width, map_height) {
-                                let cell_dims = display.targets.canvas_panel.cell_dims();
-
                                 let screen_pos = Pos::new(x, y);
                                 let mouse_pos = Pos::new(mouse_cell.0, mouse_cell.1);
                                 game.input_action = InputAction::MapClick(screen_pos, mouse_pos);

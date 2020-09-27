@@ -279,8 +279,6 @@ impl Map {
                 fov_radius: 1,
             };
 
-        map.update_map();
-
         return map;
     }
 
@@ -293,8 +291,6 @@ impl Map {
                 fov_pos: Pos::new(0, 0),
                 fov_radius: 1,
             };
-
-        map.update_map();
 
         return map;
     }
@@ -789,39 +785,6 @@ impl Map {
         }
 
         return result;
-    }
-
-    pub fn set_cell(&mut self, x: i32, y: i32, transparent: bool) {
-        //self.fov.set_transparent(x as usize, y as usize, transparent);
-    }
-
-    // TODO remove
-    pub fn compute_fov(&mut self, pos: Pos, view_radius: i32) {
-        /*
-        self.fov_pos = pos;
-        self.fov_radius = view_radius;
-        FovRestrictive::new().compute_fov(&mut self.fov,
-                                          pos.x as usize,
-                                          pos.y as usize,
-                                          view_radius as usize,
-                                          true);
-        */
-    }
-
-    // TODO remove
-    pub fn update_map(&mut self) {
-        let dims = (self.width(), self.height());
-
-        /*
-        for y in 0..dims.1 {
-            for x in 0..dims.0 {
-                let transparent = !self.tiles[x as usize][y as usize].block_sight;
-                //self.fov.set_transparent(x as usize, y as usize, transparent);
-            }
-        }
-
-        self.compute_fov(self.fov_pos, self.fov_radius);
-        */
     }
 
     pub fn aoe_fill(&self, aoe_effect: AoeEffect, start: Pos, radius: usize) -> Aoe {

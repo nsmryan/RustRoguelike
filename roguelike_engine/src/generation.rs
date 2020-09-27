@@ -410,8 +410,6 @@ pub fn make_player_test_map(entities: &mut Entities,
     make_stone(entities, config, Pos::new(4, 2), msg_log);
     make_stone(entities, config, Pos::new(3, 2), msg_log);
   
-    map.update_map();
-
     return (map, Pos::from(position));
 }
 
@@ -491,8 +489,6 @@ pub fn make_wall_test_map(entities: &mut Entities,
     make_dagger(entities, config, Pos::new(position.0, position.1), msg_log);
     make_sword(entities, config, Pos::new(1, 1), msg_log);
 
-    map.update_map();
-
     return (map, Pos::from(position));
 }
 
@@ -522,8 +518,6 @@ pub fn make_corner_test_map(entities: &mut Entities,
 
   
     make_gol(entities, config, Pos::new(7, 5), msg_log);
-
-    map.update_map();
 
     return (map, Pos::from(position));
 }

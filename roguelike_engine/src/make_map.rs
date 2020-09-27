@@ -155,7 +155,7 @@ fn parse_ascii_chars(lines: Vec<Vec<char>>, config: &Config) -> Vault {
     let height = lines.len() / 2;
     let width = (lines[0].len() - 1) / 2;
 
-    let mut tile_map = vec![vec![Tile::empty(); height]; width];
+    let tile_map = vec![vec![Tile::empty(); height]; width];
     let mut vault = Vault::new(tile_map, Vec::new());
 
     println!("{}, {}", width, height);
@@ -348,8 +348,6 @@ fn place_monsters(game: &mut Game) {
 }
 
 fn place_vaults(game: &mut Game) {
-    let (width, height) = game.data.map.size();
-
     if game.rng.gen_range(0.0, 1.0) < 0.99 {
         let vault_index = game.rng.gen_range(0, game.vaults.len());
 
@@ -442,8 +440,6 @@ fn find_available_tile(game: &mut Game) -> Option<Pos> {
 }
 
 fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
-    let (width, height) = game.data.map.size();
-
     // place goal and key
     let key_pos = find_available_tile(game).unwrap();
     game.data.map[key_pos] = Tile::empty();
@@ -559,11 +555,6 @@ fn saturate_map(game: &mut Game) -> Pos {
         }
         structures.swap_remove(*index);
     }
-
-    let (width, height) = game.data.map.size();
-    let x_mid = width / 2;
-    let y_mid = height / 2;
-    let mid_pos = Pos::new(x_mid, y_mid);
 
     clear_island(game);
 
@@ -1188,8 +1179,6 @@ pub fn read_map_xp(config: &Config,
 
     trace!("map read finished");
 
-    data.map.update_map();
- 
     trace!("map updated");
 
     return player_position;
