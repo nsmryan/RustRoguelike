@@ -269,12 +269,9 @@ pub struct Map {
 
 impl Map {
     pub fn with_vec(tiles: Vec<Vec<Tile>>) -> Map {
-        let width = tiles.len();
-        let height = tiles[0].len();
-        let mut map =
+        let map =
             Map {
                 tiles,
-                //fov: MapData::new(width, height),
                 fov_pos: Pos::new(0, 0),
                 fov_radius: 1,
             };
@@ -284,10 +281,9 @@ impl Map {
 
     pub fn from_dims(width: u32, height: u32) -> Map {
         let tiles = vec!(vec!(Tile::empty(); height as usize); width as usize);
-        let mut map =
+        let map =
             Map {
                 tiles,
-                //fov: MapData::new(width as usize, height as usize),
                 fov_pos: Pos::new(0, 0),
                 fov_radius: 1,
             };
@@ -299,7 +295,6 @@ impl Map {
         let map =
             Map {
                 tiles: Vec::new(),
-                //fov: MapData::new(1, 1),
                 fov_pos: Pos::new(0, 0),
                 fov_radius: 1,
             };
