@@ -970,10 +970,9 @@ pub fn read_map_xp(config: &Config,
                             MAP_GROUND => {
                             }
 
-                            MAP_WATER => {
+                            MAP_WATER | MAP_WATER_XP => {
                                 data.map[pos] = Tile::water();
-                                dbg!("water", chr);
-                                data.map[pos].chr = chr as u8;
+                                data.map[pos].chr = MAP_WATER;
                             }
 
                             MAP_RUBBLE => {
@@ -985,7 +984,7 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             _ => {
-                                panic!(format!("Unexpected character {} in ground layer!", chr as u8));
+                                dbg!(format!("Unexpected character {} in ground layer!", chr as u8));
                             }
                         }
                     }
