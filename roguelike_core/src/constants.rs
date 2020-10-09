@@ -64,7 +64,7 @@ pub const MAP_LAYER_ENVIRONMENT: usize = 1;
 pub const MAP_LAYER_ENTITIES: usize = 2;
 
 pub const MAP_GROUND: u8 = 154;
-pub const MAP_WATER: u8 = 224;
+pub const MAP_WATER: u8 = 219;
 pub const MAP_EMPTY: u8 = 32;
 pub const MAP_EMPTY_CHAR: u8 = 219; // all white square
 

@@ -201,6 +201,40 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos,
             make_column(&mut vault.data.entities, config, pos, &mut msg_log);
         }
 
+        'p' => {
+            tile = Tile::empty();
+            let mut msg_log = MsgLog::new();
+            make_elf(&mut vault.data.entities, config, pos, &mut msg_log);
+        }
+
+        'g' => {
+            tile = Tile::empty();
+            let mut msg_log = MsgLog::new();
+            make_gol(&mut vault.data.entities, config, pos, &mut msg_log);
+        }
+
+        'o' => {
+            tile = Tile::empty();
+            let mut msg_log = MsgLog::new();
+            make_stone(&mut vault.data.entities, config, pos, &mut msg_log);
+        }
+
+        '*' => {
+            tile = Tile::empty();
+            // TODO trap
+        }
+
+        'S' => {
+            tile = Tile::empty();
+            // TODO Statue - choose from list of statues
+        }
+
+        'v' => {
+            tile = Tile::empty();
+            let mut msg_log = MsgLog::new();
+            make_dagger(&mut vault.data.entities, config, pos, &mut msg_log);
+        }
+
         _ => {
             tile = Tile::empty();
             dbg!(format!("Unexpected char '{}'", tile_chr));
@@ -589,7 +623,7 @@ fn clear_island(game: &mut Game) {
         for x in 0..width {
             let pos = Pos::new(x, y);
 
-            if dist(pos, mid_pos) > ISLAND_DISTANCE as f32 {
+            if dist(pos, mid_pos) >= ISLAND_DISTANCE as f32 {
                 game.data.map[pos] = Tile::water();
                 game.data.map[pos].chr = MAP_WATER;
 
@@ -938,6 +972,7 @@ pub fn read_map_xp(config: &Config,
 
                             MAP_WATER => {
                                 data.map[pos] = Tile::water();
+                                dbg!("water", chr);
                                 data.map[pos].chr = chr as u8;
                             }
 

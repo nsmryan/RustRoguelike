@@ -654,6 +654,7 @@ fn render_background(display: &mut Display, game: &mut Game) {
                 if tile.tile_type == TileType::Water {
                     let color = tile_color(&game.config, x, y, tile, visible);
                     let chr = tile.chr;
+                    dbg!(chr);
                     sprite.draw_char(&mut panel, chr as char, map_pos, color);
                 }
             }
