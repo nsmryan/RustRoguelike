@@ -441,6 +441,10 @@ pub fn keyup_to_action(keycode: Keycode,
             input_action = InputAction::GodMode;
         }
 
+        Keycode::P => {
+            input_action = InputAction::RegenerateMap;
+        }
+
         Keycode::X => {
             input_action = InputAction::IncreaseMoveMode;
         }

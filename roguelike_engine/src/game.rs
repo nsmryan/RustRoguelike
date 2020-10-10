@@ -133,8 +133,6 @@ impl Game {
         self.msg_log.log(Msg::ChangeLevel());
 
         let player_id = self.data.find_player().unwrap();
-        self.data.clear_except(vec!(player_id));
-
         let key_id = self.data.is_in_inventory(player_id, Item::Goal).expect("Won level without goal!");
         self.data.entities.remove_item(player_id, key_id);
 
