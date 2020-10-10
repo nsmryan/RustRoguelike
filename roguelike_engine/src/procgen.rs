@@ -35,7 +35,7 @@ pub enum StructureType {
 #[derive(Clone, PartialEq, Debug)]
 pub struct Structure {
     pub blocks: Vec<Pos>,
-pub     typ: StructureType,
+    pub typ: StructureType,
 }
 
 impl Structure {
