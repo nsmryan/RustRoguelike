@@ -78,7 +78,7 @@ impl Vault {
 }
 
 /// Read file into a vector of lines
-pub fn parse_maps_file(file_name: &str) -> Vec<String> {
+fn parse_map_file(file_name: &str) -> Vec<String> {
     let file_contents =
         std::fs::read_to_string(file_name).expect(&format!("Could not read {}", file_name));
     return file_contents.lines().map(|s| s.to_string()).collect::<Vec<String>>();
@@ -889,7 +889,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
 
         MapLoadConfig::FromFile(file_name) => {
-            let maps: Vec<String> = parse_maps_file(&format!("resources/{}", file_name));
+            let maps: Vec<String> = parse_map_file(&format!("resources/{}", file_name));
 
             if game.settings.level_num >= maps.len() {
                 panic!(format!("Map index {} too large ({} available", game.settings.level_num, maps.len()));
