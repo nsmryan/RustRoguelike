@@ -170,6 +170,13 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     clear_island(game, island_radius);
 
+    let num_grass_to_place =
+        cmds.iter().filter_map(|cmd| {
+            if let ProcCmd::Grass(num_grass) = cmd {
+                return Some(num_grass) 
+            };
+            return None;
+    }).map(|r| *r).next().unwrap_or(0);
     place_grass(game);
 
     place_vaults(game);
@@ -302,7 +309,7 @@ pub fn place_vault(data: &mut GameData, vault: &Vault, offset: Pos) {
     data.entities.merge(&entities);
 }
 
-fn place_grass(game: &mut Game) {
+fn place_grass(game: &mut Game, num_grass_to_place: usize) {
     let (width, height) = game.data.map.size();
 
     let mut potential_grass_pos = Vec::new();
@@ -319,7 +326,6 @@ fn place_grass(game: &mut Game) {
         }
     }
     potential_grass_pos.shuffle(&mut game.rng);
-    let num_grass_to_place = game.rng.gen_range(4, 8);
     let num_grass_to_place = std::cmp::min(num_grass_to_place, potential_grass_pos.len());
     for pos_index in 0..num_grass_to_place {
         let pos = potential_grass_pos[pos_index];
