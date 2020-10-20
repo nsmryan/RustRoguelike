@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::collections::HashSet;
-use std::str::FromStr;
 
 use rand::prelude::*;
 
@@ -11,10 +10,7 @@ use wfc_image::*;
 use image;
 use image::GenericImageView;
 
-use log::trace;
-
 use roguelike_core::constants::*;
-use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::utils::*;
@@ -46,6 +42,16 @@ impl Structure {
     pub fn add_block(&mut self, block: Pos) {
         self.blocks.push(block);
     }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug)]
+pub enum ProcCmd {
+    Island(usize), // radius
+    Entities(EntityType, usize, usize),
+    Items(Item, usize, usize),
+    Grass(usize, usize),
+    Rubble(usize),
+    ShortWall(usize),
 }
 
 pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut SmallRng) -> Map {

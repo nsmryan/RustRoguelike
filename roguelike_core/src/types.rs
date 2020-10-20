@@ -466,7 +466,7 @@ pub struct MouseState {
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Item {
     Stone,
     Goal,
@@ -512,30 +512,15 @@ pub struct Fighter {
     pub power: i32,
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct Rect  {
-    pub x1: i32,
-    pub y1: i32,
-    pub x2: i32,
-    pub y2: i32,
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
+pub enum InventoryAction {
+    Use,
+    Drop,
 }
 
-impl Rect {
-    pub fn new(x: i32, y: i32, w: i32, h: i32) -> Self {
-        Rect { x1: x, y1: y, x2: x + w, y2: y + h }
-    }
-
-    pub fn center(&self) -> (i32, i32) {
-        let center_x = (self.x1 + self.x2) / 2;
-        let center_y = (self.y1 + self.y2) / 2;
-        (center_x, center_y)
-    }
-
-    pub fn intersects_with(&self, other: &Rect) -> bool {
-        (self.x1 <= other.x2) &&
-            (self.x2 >= other.x1) &&
-            (self.y1 <= other.y2) &&
-            (self.y2 >= other.y1)
+impl Default for InventoryAction {
+    fn default() -> InventoryAction {
+        return InventoryAction::Drop;
     }
 }
 
@@ -567,7 +552,7 @@ impl Default for EntityName {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum EntityType {
     Player,
     Enemy,

@@ -504,18 +504,6 @@ impl Selection {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
-pub enum InventoryAction {
-    Use,
-    Drop,
-}
-
-impl Default for InventoryAction {
-    fn default() -> InventoryAction {
-        return InventoryAction::Drop;
-    }
-}
-
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct GameSettings {
     pub turn_count: usize,

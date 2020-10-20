@@ -1,11 +1,6 @@
 use std::fs::File;
 use std::io::BufReader;
-use std::collections::HashSet;
 use std::str::FromStr;
-
-use rand::prelude::*;
-
-use pathfinding::directed::astar::astar;
 
 use rexpaint::*;
 
@@ -16,7 +11,6 @@ use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
-use roguelike_core::utils::*;
 
 use crate::generation::*;
 use crate::game::*;

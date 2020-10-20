@@ -454,10 +454,11 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
         let text_pos = Pos::new(1, y_pos);
         text_list.push(format!("Tile is"));
         text_list.push(format!("{:?}",  game.data.map[mouse].surface));
-        if (game.data.map[mouse].bottom_wall != Wall::Empty) {
+        if game.data.map[mouse].bottom_wall != Wall::Empty {
             text_list.push("Lower wall".to_string());
         }
-        if (game.data.map[mouse].left_wall != Wall::Empty) {
+
+        if game.data.map[mouse].left_wall != Wall::Empty {
             text_list.push("Left wall".to_string());
         }
 
