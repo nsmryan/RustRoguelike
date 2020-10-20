@@ -24,7 +24,7 @@ simple-logging = "2.0"
 logging_timer = "1.0"
 
 wfc_image = "0.10"
-image = "*"
+image = { version = "*", default-features = false, features = ["png"] }
 
 rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
 

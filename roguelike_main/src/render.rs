@@ -1206,22 +1206,16 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         }
     }
 
-    if game.config.overlay_fov_alg {
-        let highlight_color_fov = game.config.color_light_orange;
-        let highlight_color_lines = game.config.color_red;
+    if game.settings.overlay{
+        let mut highlight_color_fov = game.config.color_light_orange;
+        highlight_color_fov.a = game.config.grid_alpha_visible;
 
         for y in 0..game.data.map.height() {
             for x in 0..game.data.map.width() {
                 let pos = Pos::new(x, y);
                 let in_fov = game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player);
-                let in_fov_lines = game.data.map.is_in_fov_lines(player_pos, pos, game.config.fov_radius_player);
-
-                if in_fov && !in_fov_lines {
+                if in_fov {
                     draw_outline_tile(panel, pos, highlight_color_fov);
-                }
-
-                if in_fov_lines && !in_fov {
-                    draw_outline_tile(panel, pos, highlight_color_lines);
                 }
             }
         }
@@ -1236,7 +1230,6 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     // 49 may be fully open
     if game.config.overlay_floodfill {
         let font_key = display_state.lookup_spritekey("font");
-
 
         let highlight_color = game.config.color_light_orange;
         for y in 0..game.data.map.height() {
@@ -1347,7 +1340,7 @@ fn render_attack_overlay(panel: &mut Panel<&mut WindowCanvas>,
     let object_pos = game.data.entities.pos[&entity_id];
 
     let mut attack_highlight_color = game.config.color_red;
-    attack_highlight_color.a = game.config.highlight_attack;
+    attack_highlight_color.a = game.config.highlight_alpha_attack;
 
     let sprite_key = display_state.lookup_spritekey("tiles");
     let tile_sprite = &mut display_state.sprites[&sprite_key];

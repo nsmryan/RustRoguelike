@@ -388,6 +388,10 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
     }
 
+    if let None = game.data.find_mouse() {
+        make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
+    }
+
     let player_id = game.data.find_player().unwrap();
     game.data.entities.pos[&player_id] = player_position;
 }

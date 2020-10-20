@@ -36,7 +36,7 @@ pub struct Config {
     pub load_map_file_every_frame: bool,
     pub tile_noise_scaler: f64,
     pub highlight_player_move: u8,
-    pub highlight_attack: u8,
+    pub highlight_alpha_attack: u8,
     pub sound_alpha: u8,
     pub grid_alpha: u8,
     pub grid_alpha_visible: u8,
