@@ -49,7 +49,7 @@ pub enum ProcCmd {
     Island(i32), // radius
     Entities(EntityName, usize, usize),
     Items(Item, usize, usize),
-    Grass((usize, usize), (usize, usize)), // (min, max), (small dist, max dist)
+    Grass((usize, usize), i32), // (min, max), disperse distance
     Rubble(usize),
     Columns(usize),
 }
@@ -170,14 +170,15 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     clear_island(game, island_radius);
 
-    let num_grass_to_place =
+    let range_disperse =
         cmds.iter().filter_map(|cmd| {
-            if let ProcCmd::Grass(num_grass) = cmd {
-                return Some(num_grass) 
+            if let ProcCmd::Grass(range, disperse) = cmd {
+                return Some((range, disperse)) 
             };
             return None;
-    }).map(|r| *r).next().unwrap_or(0);
-    place_grass(game);
+    }).next().unwrap_or((&(0, 0), &0));
+    let num_grass_to_place = game.rng.gen_range((range_disperse.0).0, (range_disperse.0).1);
+    place_grass(game, num_grass_to_place, *range_disperse.1);
 
     place_vaults(game);
 
@@ -221,7 +222,7 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
 
     for cmd in cmds.iter() {
         if let ProcCmd::Items(typ, min, max) = cmd {
-            let num_gen = game.rng.gen_range(min, max);
+            let num_gen = game.rng.gen_range(min, max + 1);
             for _ in 0..num_gen {
                 let len = potential_pos.len();
 
@@ -309,7 +310,7 @@ pub fn place_vault(data: &mut GameData, vault: &Vault, offset: Pos) {
     data.entities.merge(&entities);
 }
 
-fn place_grass(game: &mut Game, num_grass_to_place: usize) {
+fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
     let (width, height) = game.data.map.size();
 
     let mut potential_grass_pos = Vec::new();
@@ -332,8 +333,8 @@ fn place_grass(game: &mut Game, num_grass_to_place: usize) {
         game.data.map[pos].surface = Surface::Grass;
 
         for _ in 0..4 {
-            let offset_pos = Pos::new(pos.x + game.rng.gen_range(0, 3),
-                                      pos.y + game.rng.gen_range(0, 3));
+            let offset_pos = Pos::new(pos.x + game.rng.gen_range(0, disperse),
+                                      pos.y + game.rng.gen_range(0, disperse));
             if game.data.map.is_within_bounds(offset_pos) &&
                !game.data.map[offset_pos].blocked {
                 game.data.map[offset_pos].surface = Surface::Grass;
