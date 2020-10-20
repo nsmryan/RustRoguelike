@@ -11,7 +11,8 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
-use roguelike_core::utils::{line, item_primary_at, distance, move_towards, lerp_color};
+use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color};
+use roguelike_core::line::line;
 
 use roguelike_engine::game::*;
 

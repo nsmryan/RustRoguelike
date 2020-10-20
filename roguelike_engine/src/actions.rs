@@ -6,10 +6,11 @@ use serde::{Serialize, Deserialize};
 use roguelike_core::movement::{Direction, Action, Reach};
 use roguelike_core::types::*;
 use roguelike_core::movement;
-use roguelike_core::utils::{reach_by_mode, item_primary_at, line};
+use roguelike_core::utils::{reach_by_mode, item_primary_at};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
+use roguelike_core::line::line;
 
 use crate::game::*;
 use crate::make_map;

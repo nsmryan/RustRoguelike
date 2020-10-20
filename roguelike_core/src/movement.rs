@@ -10,6 +10,7 @@ use crate::types::*;
 use crate::utils::*;
 use crate::map::{Wall, Blocked, TileType};
 use crate::ai::Behavior;
+use crate::line::*;
 
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]

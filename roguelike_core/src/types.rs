@@ -18,6 +18,7 @@ use crate::movement::*;
 use crate::animation::AnimKey;
 use crate::utils::*;
 use crate::config::Config;
+use crate::line::*;
 
 // TODO consider renaming this file- it really just contains
 // GameData and Entities. likely split into separate files.

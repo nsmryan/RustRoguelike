@@ -20,6 +20,7 @@ use crate::types::*;
 use crate::constants::*;
 use crate::utils::*;
 use crate::movement::Direction;
+use crate::line::*;
 
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
