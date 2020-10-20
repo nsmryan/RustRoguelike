@@ -1,14 +1,6 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-
 use serde::{Serialize, Deserialize};
 
-use crate::ai::Behavior;
-use crate::constants::{HAMMER_DAMAGE};
-use crate::map::{Surface};
 use crate::types::*;
-use crate::movement::{Reach, MoveMode, check_collision, MoveType, Movement};
-use crate::messaging::*;
 
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
