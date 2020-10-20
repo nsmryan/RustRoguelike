@@ -856,6 +856,7 @@ impl Map {
         return (0..width).cartesian_product(0..height)
                          .map(|pair| Pos::from(pair))
                          .filter(|pos| self[*pos].tile_type != TileType::Wall)
+                         .filter(|pos| self[*pos].tile_type != TileType::Water)
                          .collect::<Vec<Pos>>();
     }
 

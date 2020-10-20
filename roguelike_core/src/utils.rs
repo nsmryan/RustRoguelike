@@ -1,8 +1,6 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-use serde::{Serialize, Deserialize};
-
 use crate::ai::Behavior;
 use crate::constants::{HAMMER_DAMAGE};
 use crate::map::{Surface};

@@ -299,8 +299,20 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
 
         MapLoadConfig::TestRandom => {
             let template_file = "resources/wfc_seed_2.png";
+            let cmds = vec![ProcCmd::Island(ISLAND_DISTANCE),
+                            ProcCmd::Entities(EntityName::Gol, 1, 4),
+                            ProcCmd::Entities(EntityName::Pawn, 2, 4),
+                            ProcCmd::Items(Item::Stone, 0, 3),
+                            ProcCmd::Items(Item::Dagger, 0, 1),
+                            ProcCmd::Items(Item::Hammer, 0, 1),
+                            ProcCmd::Items(Item::Sword, 0, 1),
+                            ProcCmd::Items(Item::Shield, 0, 1),
+                            ProcCmd::Grass((4, 8), (0, 3)),
+                            ProcCmd::Columns(5),
+                            ProcCmd::Rubble(5),
+            ];
             game.data.map = generate_bare_map(20, 20, &template_file, &mut game.rng);
-            player_position = saturate_map(game);
+            player_position = saturate_map(game, &cmds);
         }
 
         MapLoadConfig::TestVaults => {

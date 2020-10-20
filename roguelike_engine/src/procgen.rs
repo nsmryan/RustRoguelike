@@ -46,12 +46,12 @@ impl Structure {
 
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug)]
 pub enum ProcCmd {
-    Island(usize), // radius
-    Entities(EntityType, usize, usize),
+    Island(i32), // radius
+    Entities(EntityName, usize, usize),
     Items(Item, usize, usize),
-    Grass(usize, usize),
+    Grass((usize, usize), (usize, usize)), // (min, max), (small dist, max dist)
     Rubble(usize),
-    ShortWall(usize),
+    Columns(usize),
 }
 
 pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut SmallRng) -> Map {
@@ -92,7 +92,7 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
     return new_map;
 }
 
-pub fn saturate_map(game: &mut Game) -> Pos {
+pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     // find structures-
     // find blocks that are next to exactly one block (search through all tiles, and
     // don't accept tiles that are already accepted).
@@ -160,7 +160,15 @@ pub fn saturate_map(game: &mut Game) -> Pos {
         structures.swap_remove(*index);
     }
 
-    clear_island(game);
+    let island_radius =
+        cmds.iter().filter_map(|cmd| {
+            if let ProcCmd::Island(radius) = cmd {
+                return Some(radius) 
+            };
+            return None;
+    }).map(|r| *r).next().unwrap_or(0);
+
+    clear_island(game, island_radius);
 
     place_grass(game);
 
@@ -172,9 +180,10 @@ pub fn saturate_map(game: &mut Game) -> Pos {
 
     place_key_and_goal(game, player_pos);
 
-    place_monsters(game);
+    place_items(game, cmds);
+    place_monsters(game, cmds);
 
-    clear_island(game);
+    clear_island(game, island_radius);
 
     return player_pos;
 }
@@ -200,37 +209,61 @@ fn handle_diagonal_full_tile_walls(game: &mut Game) {
     }
 }
 
-fn place_monsters(game: &mut Game) {
+fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
     let mut potential_pos = game.data.map.get_empty_pos();
 
-    // add gols
-    for _ in 0..5 {
-        let len = potential_pos.len();
+    for cmd in cmds.iter() {
+        if let ProcCmd::Items(typ, min, max) = cmd {
+            let num_gen = game.rng.gen_range(min, max);
+            for _ in 0..num_gen {
+                let len = potential_pos.len();
 
-        if len == 0 {
-            break;
+                if len == 0 {
+                    break;
+                }
+
+                let index = game.rng.gen_range(0, len);
+                let pos = potential_pos[index];
+
+                match typ {
+                    Item::Dagger => { make_dagger(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    Item::Sword => { make_sword(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    Item::Shield => { make_shield(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    Item::Hammer => { make_hammer(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    _ => {},
+                }
+            }
         }
-
-        let index = game.rng.gen_range(0, len);
-        let pos = potential_pos[index];
-
-        make_gol(&mut game.data.entities, &game.config, pos, &mut game.msg_log);
-
-        potential_pos.remove(index);
     }
+}
 
-    for _ in 0..5 {
-        let len = potential_pos.len();
-        if len == 0 {
-            break;
+fn place_monsters(game: &mut Game, cmds: &Vec<ProcCmd>) {
+    let mut potential_pos = game.data.map.get_empty_pos();
+
+    for cmd in cmds.iter() {
+        if let ProcCmd::Entities(typ, min, max) = cmd {
+            let num_gen = game.rng.gen_range(min, max);
+
+            for _ in 0..num_gen {
+                let len = potential_pos.len();
+
+                if len == 0 {
+                    break;
+                }
+
+                let index = game.rng.gen_range(0, len);
+                let pos = potential_pos[index];
+
+                match typ {
+                    EntityName::Gol => { make_gol(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    EntityName::Pawn => { make_elf(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    EntityName::Spire => { make_spire(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    _ => {},
+                }
+
+                potential_pos.remove(index);
+            }
         }
-
-        let index = game.rng.gen_range(0, len);
-        let pos = potential_pos[index];
-
-        make_elf(&mut game.data.entities, &game.config, pos, &mut game.msg_log);
-
-        potential_pos.remove(index);
     }
 }
 
@@ -375,7 +408,7 @@ fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
     }
 }
 
-fn clear_island(game: &mut Game) {
+fn clear_island(game: &mut Game, island_radius: i32) {
     fn dist(pos1: Pos, pos2: Pos) -> f32 {
         return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt();
     }
@@ -389,7 +422,7 @@ fn clear_island(game: &mut Game) {
         for x in 0..width {
             let pos = Pos::new(x, y);
 
-            if dist(pos, mid_pos) >= ISLAND_DISTANCE as f32 {
+            if dist(pos, mid_pos) >= island_radius as f32 {
                 game.data.map[pos] = Tile::water();
                 game.data.map[pos].chr = MAP_WATER;
 

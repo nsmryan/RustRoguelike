@@ -525,7 +525,7 @@ impl Default for InventoryAction {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum EntityName {
     Player,
     Gol,
