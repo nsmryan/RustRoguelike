@@ -50,6 +50,14 @@ impl GameData {
         return GameData::new(Map::from_dims(width, height), Entities::new());
     }
 
+    pub fn get_clear_pos(&self) -> Vec<Pos> {
+        return self.map.get_empty_pos()
+                       .iter()
+                       .map(|pos| *pos)
+                       .filter(|pos| self.has_blocking_entity(*pos).is_none())
+                       .collect::<Vec<Pos>>();
+    }
+
     pub fn path_between(&self,
                         start: Pos,
                         end: Pos,

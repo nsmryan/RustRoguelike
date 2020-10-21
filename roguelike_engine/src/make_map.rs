@@ -307,6 +307,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
                             ProcCmd::Items(Item::Hammer, 0, 1),
                             ProcCmd::Items(Item::Sword, 0, 1),
                             ProcCmd::Items(Item::Shield, 0, 1),
+                            ProcCmd::MaxItems(3),
                             ProcCmd::Grass((4, 8), 3),
                             ProcCmd::Columns(5),
                             ProcCmd::Rubble(5),

@@ -49,6 +49,7 @@ pub enum ProcCmd {
     Island(i32), // radius
     Entities(EntityName, usize, usize),
     Items(Item, usize, usize),
+    MaxItems(usize),
     Grass((usize, usize), i32), // (min, max), disperse distance
     Rubble(usize),
     Columns(usize),
@@ -218,12 +219,25 @@ fn handle_diagonal_full_tile_walls(game: &mut Game) {
 }
 
 fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
-    let mut potential_pos = game.data.map.get_empty_pos();
+    let mut potential_pos = game.data.get_clear_pos();
+
+    let mut num_items = 0;
+    let max_items = cmds.iter().filter_map(|cmd| {
+        if let ProcCmd::MaxItems(n) = cmd {
+            return Some(n);
+        }
+        return None;
+    }).map(|n| *n).next().unwrap_or(10000);
 
     for cmd in cmds.iter() {
         if let ProcCmd::Items(typ, min, max) = cmd {
             let num_gen = game.rng.gen_range(min, max + 1);
             for _ in 0..num_gen {
+                num_items += 1;
+                if num_items >= max_items {
+                    return;
+                }
+
                 let len = potential_pos.len();
 
                 if len == 0 {
@@ -246,7 +260,7 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
 }
 
 fn place_monsters(game: &mut Game, cmds: &Vec<ProcCmd>) {
-    let mut potential_pos = game.data.map.get_empty_pos();
+    let mut potential_pos = game.data.get_clear_pos();
 
     for cmd in cmds.iter() {
         if let ProcCmd::Entities(typ, min, max) = cmd {
@@ -384,7 +398,7 @@ fn clear_path_to(game: &mut Game, start_pos: Pos, target_pos: Pos) {
         return 1;
     }
 
-    // clear a path to the key
+    // clear a path to the target position
     let path = 
         astar(&start_pos,
               |&pos| {
