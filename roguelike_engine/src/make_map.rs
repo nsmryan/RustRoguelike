@@ -259,11 +259,11 @@ fn test_parse_vault() {
     expected_tiles[0][0].left_wall = Wall::ShortWall;
     expected_tiles[0][0].surface = Surface::Grass;
 
-    expected_tiles[0][1].blocked = true;
+    expected_tiles[0][1].block_move = true;
     expected_tiles[0][1].block_sight = true;
     expected_tiles[0][1].tile_type = TileType::Wall;
 
-    expected_tiles[1][0].blocked = true;
+    expected_tiles[1][0].block_move = true;
     expected_tiles[1][0].block_sight = true;
     expected_tiles[1][0].tile_type = TileType::Wall;
 
@@ -275,9 +275,7 @@ fn test_parse_vault() {
 
     expected_tiles[2][1] = Tile::water();
 
-    for (actual, expected) in tiles.iter().flatten().zip(expected_tiles.iter().flatten()) {
-        assert_eq!(expected, actual);
-    }
+    assert_eq!(tiles.data.map, Map::with_vec(expected_tiles));
 }
 
 pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
@@ -548,32 +546,32 @@ pub fn read_map_xp(config: &Config,
 
                             MAP_DOT_TOP_LEFT => {
                                 data.map[pos].chr = chr as u8;
-                                data.map[pos].blocked = true;
+                                data.map[pos].block_move = true;
                             }
 
                             MAP_DOT_TOP_RIGHT => {
                                 data.map[pos].chr = chr as u8;
-                                data.map[pos].blocked = true;
+                                data.map[pos].block_move = true;
                             }
 
                             MAP_DOT_BOTTOM_LEFT => {
                                 data.map[pos].chr = chr as u8;
-                                data.map[pos].blocked = true;
+                                data.map[pos].block_move = true;
                             }
 
                             MAP_DOT_BOTTOM_RIGHT => {
                                 data.map[pos].chr = chr as u8;
-                                data.map[pos].blocked = true;
+                                data.map[pos].block_move = true;
                             }
 
                             MAP_ROOK => {
                                 data.map[pos].chr = chr as u8;
-                                data.map[pos].blocked = true;
+                                data.map[pos].block_move = true;
                             }
 
                             MAP_ORB => {
                                 data.map[pos].chr = chr as u8;
-                                data.map[pos].blocked = true;
+                                data.map[pos].block_move = true;
                             }
 
                             MAP_EMPTY => {
@@ -583,30 +581,30 @@ pub fn read_map_xp(config: &Config,
                             MAP_STATUE_1 | MAP_STATUE_2 | MAP_STATUE_3 |
                                 MAP_STATUE_4 | MAP_STATUE_5 | MAP_STATUE_6 => {
                                     data.map[pos].chr = chr as u8;
-                                    data.map[pos].blocked = true;
+                                    data.map[pos].block_move = true;
                                     data.map[pos].block_sight = true;
                                 }
 
                             MAP_WIDE_SPIKES | MAP_TALL_SPIKES => {
                                 data.map[pos].chr = chr as u8;
-                                data.map[pos].blocked = true;
+                                data.map[pos].block_move = true;
                                     data.map[pos].block_sight = true;
                             }
 
                             MAP_WALL => {
                                 data.map[pos].chr = chr as u8;
-                                data.map[pos].blocked = true;
+                                data.map[pos].block_move = true;
                                 data.map[pos].block_sight = true;
                             }
 
                             ENTITY_CLOAK_GUY => {
                                 data.map[pos].chr = chr as u8;
-                                data.map[pos].blocked = true;
+                                data.map[pos].block_move = true;
                             }
 
                             _ => {
                                 data.map[pos].chr = chr as u8;
-                                data.map[pos].blocked = true;
+                                data.map[pos].block_move = true;
                             }
                         }
                     }

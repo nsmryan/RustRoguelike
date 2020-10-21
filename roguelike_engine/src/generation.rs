@@ -423,7 +423,7 @@ pub fn make_test_map(game: &mut Game) {
 
     // right hit wall, moves to (2,2)
     // right again hit wall, doesn't move player
-    game.data.map[(3, 2)].blocked = true;
+    game.data.map[(3, 2)].block_move = true;
     game.data.map[(3, 2)].tile_type = TileType::Wall;
 
     // move down works- left wall is next to player
@@ -436,11 +436,11 @@ pub fn make_test_map(game: &mut Game) {
     //where v is a monster facing down,
     //s is a spike trap.
     //make sure that the trap triggers and hurts the monster
-    game.data.map[(0, 8)].blocked = true;
+    game.data.map[(0, 8)].block_move = true;
     game.data.map[(0, 8)].tile_type = TileType::Wall;
-    game.data.map[(1, 8)].blocked = true;
+    game.data.map[(1, 8)].block_move = true;
     game.data.map[(1, 8)].tile_type = TileType::Wall;
-    game.data.map[(3, 8)].blocked = true;
+    game.data.map[(3, 8)].block_move = true;
     game.data.map[(3, 8)].tile_type = TileType::Wall;
 
     let elf = make_pawn(&mut game.data.entities, &game.config, Pos::new(2, 9), &mut game.msg_log);
@@ -483,7 +483,7 @@ pub fn make_wall_test_map(entities: &mut Entities,
     make_gol(entities, config, Pos::new(5, 5), msg_log);
     make_column(entities, config, Pos::new(6, 4), msg_log);
 
-    map[(2, 6)].blocked = true;
+    map[(2, 6)].block_move = true;
     map[(2, 6)].chr = MAP_STATUE_1 as u8;
 
     make_dagger(entities, config, Pos::new(position.0, position.1), msg_log);
@@ -512,7 +512,7 @@ pub fn make_corner_test_map(entities: &mut Entities,
     map[(x_pos, y_start - 1)].bottom_wall = Wall::ShortWall;
 
     map[(position.0 + 1, position.1 + 2)].bottom_wall = Wall::ShortWall;
-    map[(position.0 + 2, position.1 + 2)].blocked = true;
+    map[(position.0 + 2, position.1 + 2)].block_move = true;
     map[(position.0 + 2, position.1 + 2)].block_sight = true;
     map[(position.0 + 2, position.1 + 2)].chr = MAP_WALL;
 

@@ -77,8 +77,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 if data.entities.typ[&pushed] == EntityType::Column {
                     let entity_diff = sub_pos(pushed_pos, pusher_pos);
                     let next_pos = next_pos(pusher_pos, entity_diff);
-                    let diff = sub_pos(pushed_pos, next_pos);
-                    let blocked = data.map.is_blocked_by_wall(pushed_pos, diff.x, diff.y); 
+                    let blocked = data.map.is_blocked_by_wall(pushed_pos, next_pos); 
 
                     if blocked == None {
                         data.remove_entity(pushed);
@@ -101,7 +100,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             Msg::Moved(entity_id, movement, pos) => {
                 // only perform move if tile does not contain a wall or entity
                 if data.has_blocking_entity(movement.pos).is_none() &&
-                   !data.map[movement.pos].blocked {
+                   !data.map[movement.pos].block_move {
                        process_moved_message(entity_id, movement, pos, data, msg_log, config);
                 }
             }
@@ -158,9 +157,8 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
 
             Msg::HammerSwing(entity, pos) => {
                 let entity_pos = data.entities.pos[&entity];
-                let pos_diff = sub_pos(pos, entity_pos);
 
-                if let Some(blocked) = data.map.is_blocked_by_wall(entity_pos, pos_diff.x, pos_diff.y) {
+                if let Some(blocked) = data.map.is_blocked_by_wall(entity_pos, pos) {
                     msg_log.log_front(Msg::HammerHitWall(entity, blocked));
                     data.used_up_item(entity);
                 } else if let Some(hit_entity) = data.has_blocking_entity(pos) {
@@ -190,12 +188,12 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             Msg::HammerHitWall(entity, blocked) => {
                 let entity_pos = data.entities.pos[&entity];
                 let hit_pos = blocked.end_pos;
-                if data.map[hit_pos].blocked {
+                if data.map[hit_pos].block_move {
                     if data.map[hit_pos].surface == Surface::Floor {
                         data.map[hit_pos].surface = Surface::Rubble;
                     }
 
-                    data.map[hit_pos].blocked = false;
+                    data.map[hit_pos].block_move = false;
                     data.map[hit_pos].chr = ' ' as u8;
 
                     let next_pos = next_from_to(entity_pos, hit_pos);
@@ -364,7 +362,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     let entity_pos = data.entities.pos[&entity_id];
 
                     data.map[blocked.end_pos].surface = Surface::Rubble;
-                    data.map[blocked.end_pos].blocked = false;
+                    data.map[blocked.end_pos].block_move = false;
                     data.map[blocked.end_pos].chr = ' ' as u8;
 
                     if blocked.wall_type != Wall::Empty {
@@ -395,7 +393,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                     use_energy(entity_id, data);
 
                     data.map[pos].surface = Surface::Floor;
-                    data.map[pos].blocked = true;
+                    data.map[pos].block_move = true;
                     data.map[pos].chr = MAP_WALL;
                 } else if let Action::Swap(entity_id, target_id) = action {
                     use_energy(entity_id, data);
@@ -517,9 +515,8 @@ pub fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Opti
         let ix = rng.gen_range(0, potential_positions.len());
         let rand_pos = potential_positions[ix];
 
-        let dxy = sub_pos(rand_pos, pos);
         if data.has_blocking_entity(rand_pos).is_none() &&
-           data.map.is_blocked_by_wall(pos, dxy.x, dxy.y).is_none() {
+           data.map.is_blocked_by_wall(pos, rand_pos).is_none() {
                return Some(rand_pos);
         }
 

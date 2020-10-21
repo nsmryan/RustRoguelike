@@ -276,8 +276,7 @@ pub fn ai_investigate(target_pos: Pos,
 
     let mut turn: Action;
 
-    let (dx, dy) = sub_pos(player_pos,  monster_pos).to_tuple();
-    if data.map.is_blocked_by_wall(monster_pos, dx, dy).is_none() {
+    if data.map.is_blocked_by_wall(monster_pos, player_pos).is_none() {
         data.entities.face(monster_id, player_pos);
     }
                

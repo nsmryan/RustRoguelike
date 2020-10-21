@@ -281,34 +281,6 @@ impl<T> Panel<T> {
     }
 }
 
-#[test]
-pub fn test_panel_with_area() {
-    let panel = Panel::unit((10, 10), (100, 100));
-
-    let area = panel.area();
-
-    assert_eq!(0, area.x_offset);
-    assert_eq!(0, area.y_offset);
-    assert_eq!(panel.cells.0 as u32, area.width as u32);
-    assert_eq!(panel.cells.1 as u32, area.height as u32);
-
-    let (left, right) = area.split_right(2);
-
-    let left_rect = panel.get_rect_within(&left);
-    assert_eq!(0, left_rect.x);
-    assert_eq!(0, left_rect.y);
-    assert_eq!(80, left_rect.w);
-    assert_eq!(100, left_rect.h);
-
-    let right_rect = panel.get_rect_within(&right);
-    dbg!(right, right_rect);
-    assert_eq!(80, right_rect.x);
-    assert_eq!(0, right_rect.y);
-    assert_eq!(20, right_rect.w);
-    assert_eq!(100, right_rect.h);
-
-}
-
 
 pub struct DisplayTargets {
     pub canvas_panel: Panel<WindowCanvas>,

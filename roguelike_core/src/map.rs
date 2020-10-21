@@ -111,7 +111,7 @@ pub enum Surface {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[repr(C, packed)]
 pub struct Tile {
-    pub blocked: bool,
+    pub block_move: bool,
     pub block_sight: bool,
     pub explored: bool,
     pub tile_type: TileType,
@@ -123,7 +123,7 @@ pub struct Tile {
 
 impl Tile {
     pub fn empty() -> Self {
-        Tile { blocked: false,
+        Tile { block_move: false,
         block_sight: false,
         explored: false,
         tile_type: TileType::Empty,
@@ -135,7 +135,7 @@ impl Tile {
     }
 
     pub fn water() -> Self {
-        Tile { blocked: true,
+        Tile { block_move: true,
         block_sight: false,
         explored: false,
         tile_type: TileType::Water,
@@ -163,7 +163,7 @@ impl Tile {
     }
 
     pub fn wall_with(chr: char) -> Self {
-        Tile { blocked: true,
+        Tile { block_move: true,
                block_sight: true,
                explored: false,
                tile_type: TileType::Wall,
@@ -179,7 +179,7 @@ impl Tile {
     }
 
     pub fn short_wall_with(chr: char) -> Self {
-        Tile { blocked: true,
+        Tile { block_move: true,
         block_sight: false,
         explored: false,
         tile_type: TileType::ShortWall,
@@ -191,7 +191,7 @@ impl Tile {
     }
 
     pub fn exit() -> Self {
-        Tile { blocked: false,
+        Tile { block_move: false,
         block_sight: false,
         explored: false,
         tile_type: TileType::Exit,
@@ -308,7 +308,7 @@ impl Map {
         }
 
         let blocking_wall = self[pos].left_wall != Wall::Empty;
-        let blocking_tile = self[offset].blocked;
+        let blocking_tile = self[offset].block_move;
         return blocking_wall || blocking_tile;
     }
 
@@ -319,7 +319,7 @@ impl Map {
         }
 
         let blocking_wall = self[offset].left_wall != Wall::Empty;
-        let blocking_tile = self[offset].blocked;
+        let blocking_tile = self[offset].block_move;
         return blocking_wall || blocking_tile;
     }
 
@@ -330,7 +330,7 @@ impl Map {
         }
 
         let blocking_wall = self[pos].bottom_wall != Wall::Empty;
-        let blocking_tile = self[offset].blocked;
+        let blocking_tile = self[offset].block_move;
         return blocking_wall || blocking_tile;
     }
 
@@ -341,20 +341,18 @@ impl Map {
         }
 
         let blocking_wall = self[offset].bottom_wall != Wall::Empty;
-        let blocking_tile = self[offset].blocked;
+        let blocking_tile = self[offset].block_move;
         return blocking_wall || blocking_tile;
     }
 
-    pub fn is_blocked_by_wall(&self, start_pos: Pos, dx: i32, dy: i32) -> Option<Blocked> {
-        if dx == 0 && dy == 0 {
+    pub fn is_blocked_by_wall(&self, start_pos: Pos, end_pos: Pos) -> Option<Blocked> {
+        if end_pos.x == 0 && end_pos.y == 0 {
             return None;
         }
 
-        let (end_x, end_y) = (start_pos.x + dx, start_pos.y + dy);
+        let line = line(start_pos, end_pos);
 
-        let line = line(start_pos, Pos::new(end_x, end_y));
-
-        let dir = Direction::from_dxy(dx, dy).expect("Check for blocking wall with no movement?");
+        let dir = Direction::from_dxy(end_pos.x, end_pos.y).expect("Check for blocking wall with no movement?");
 
         let positions = iter::once(start_pos).chain(line.into_iter());
 
@@ -374,8 +372,9 @@ impl Map {
                 return Some(blocked);
             }
 
+            // TODO only checks move
             // if moving into a blocked tile, we are blocked
-            if self[target_pos].blocked {
+            if self[target_pos].block_move {
                 blocked.blocked_tile = true;
                 found_blocker = true;
             }
@@ -633,10 +632,8 @@ impl Map {
             self.compute_fov(start_pos, radius);
         }
 
-        let offset = Pos::new(end_pos.x - start_pos.x,
-                              end_pos.y - start_pos.y);
         let blocked =
-            self.is_blocked_by_wall(start_pos, offset.x, offset.y);
+            self.is_blocked_by_wall(start_pos, end_pos);
 
         let mut blocked_by_wall = false;
         if let Some(blocked) = blocked {
@@ -667,20 +664,9 @@ impl Map {
             return false;
         }
 
-        let blocked;
-        {
-            let offset = Pos::new(end_pos.x - start_pos.x,
-                                  end_pos.y - start_pos.y);
-            blocked = self.is_blocked_by_wall(start_pos, offset.x, offset.y);
-        }
+        let blocked = self.is_blocked_by_wall(start_pos, end_pos);
 
-        let visible_back;
-        {
-            let offset = Pos::new(start_pos.x - end_pos.x,
-                                  start_pos.y - end_pos.y);
-
-            visible_back = self.is_blocked_by_wall(end_pos, offset.x, offset.y).is_none();
-        }
+        let visible_back = self.is_blocked_by_wall(end_pos, start_pos).is_none();
 
         let mut is_in_fov;
         if let Some(blocked) = blocked {
@@ -722,7 +708,7 @@ impl Map {
         let line = line(start, end);
 
         let path_blocked =
-            line.into_iter().any(|point| self[Pos::from(point)].blocked);
+            line.into_iter().any(|point| self[Pos::from(point)].block_move);
 
         return !path_blocked;
     }
@@ -788,7 +774,8 @@ impl Map {
         let mut result = SmallVec::new();
 
         for delta in neighbors.iter() {
-            if self.is_blocked_by_wall(pos, delta.0, delta.1).is_none() {
+            let end_pos = Pos::new(pos.x + delta.0, pos.y + delta.1);
+            if self.is_blocked_by_wall(pos, end_pos).is_none() {
                 result.push(pos + Vector2D::new(delta.0, delta.1));
             }
         }
@@ -811,11 +798,9 @@ impl Map {
             let dist = distance(start, *pos);
 
             // must be blocked to and from a position to dampen.
-            let dt_to = sub_pos(*pos, start);
-            let is_blocked_to = self.is_blocked_by_wall(start, dt_to.x, dt_to.y).is_some();
+            let is_blocked_to = self.is_blocked_by_wall(start, *pos).is_some();
 
-            let dt_from = sub_pos(start, *pos);
-            let is_blocked_from = self.is_blocked_by_wall(*pos, dt_from.x, dt_from.y).is_some();
+            let is_blocked_from = self.is_blocked_by_wall(*pos, start).is_some();
 
             let is_blocked = is_blocked_to && is_blocked_from;
 
@@ -1085,16 +1070,14 @@ fn test_blocked_by_wall_right() {
     let pos = Pos::new(5, 5);
     map[pos].left_wall = Wall::ShortWall;
   
-    map.update_map();
-
     let left_of_wall = Pos::new(4, 5);
-    let blocked = map.is_blocked_by_wall(left_of_wall, 1, 0);
+    let blocked = map.is_blocked_by_wall(left_of_wall, add_pos(left_of_wall, Pos::new(1, 0)));
     assert_eq!(blocked.map(|b| b.wall_type == Wall::ShortWall), Some(true));
 
-    assert!(map.is_blocked_by_wall(pos, 1, 0).is_none());
+    assert!(map.is_blocked_by_wall(pos, add_pos(pos, Pos::new(1, 0))).is_none());
 
     let two_left_of_wall = Pos::new(3, 5);
-    assert_eq!(map.is_blocked_by_wall(two_left_of_wall, 1, 0), None);
+    assert_eq!(map.is_blocked_by_wall(two_left_of_wall, add_pos(two_left_of_wall, Pos::new(1, 0))), None);
 }
 
 #[test]
@@ -1104,12 +1087,10 @@ fn test_blocked_by_wall_up() {
     let pos = Pos::new(5, 5);
     map[pos].bottom_wall = Wall::ShortWall;
   
-    map.update_map();
-
-    let blocked = map.is_blocked_by_wall(Pos::new(5, 6), 0, -1);
+    let blocked = map.is_blocked_by_wall(Pos::new(5, 6), Pos::new(5, 5));
     assert_eq!(blocked.map(|b| b.wall_type), Some(Wall::ShortWall));
-    assert!(map.is_blocked_by_wall(Pos::new(5, 5), 0, -1).is_none());
-    assert!(map.is_blocked_by_wall(Pos::new(5, 4), 0, -1).is_none());
+    assert!(map.is_blocked_by_wall(Pos::new(5, 5), Pos::new(5, 4)).is_none());
+    assert!(map.is_blocked_by_wall(Pos::new(5, 4), Pos::new(5, 3)).is_none());
 }
 
 #[test]
@@ -1119,12 +1100,10 @@ fn test_blocked_by_wall_down() {
     let pos = Pos::new(5, 5);
     map[pos].bottom_wall = Wall::ShortWall;
   
-    map.update_map();
-
-    let blocked = map.is_blocked_by_wall(Pos::new(5, 5), 0, 1);
+    let blocked = map.is_blocked_by_wall(Pos::new(5, 5), Pos::new(5, 6));
     assert_eq!(blocked.map(|b| b.wall_type), Some(Wall::ShortWall));
-    assert!(map.is_blocked_by_wall(Pos::new(5, 6), 0, 1).is_none());
-    assert!(map.is_blocked_by_wall(Pos::new(5, 7), 0, 1).is_none());
+    assert!(map.is_blocked_by_wall(Pos::new(5, 6), Pos::new(5, 7)).is_none());
+    assert!(map.is_blocked_by_wall(Pos::new(5, 7), Pos::new(5, 8)).is_none());
 }
 
 #[test]
@@ -1134,12 +1113,10 @@ fn test_blocked_by_wall_left() {
     let pos = Pos::new(5, 5);
     map[pos].left_wall = Wall::ShortWall;
   
-    map.update_map();
-
-    let blocked = map.is_blocked_by_wall(Pos::new(5, 5), -1, 0);
+    let blocked = map.is_blocked_by_wall(Pos::new(5, 5), Pos::new(4, 5));
     assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
-    assert!(map.is_blocked_by_wall(Pos::new(4, 5), -1, 0).is_none());
-    assert!(map.is_blocked_by_wall(Pos::new(6, 5), -1, 0).is_none());
+    assert!(map.is_blocked_by_wall(Pos::new(4, 5), Pos::new(3, 5)).is_none());
+    assert!(map.is_blocked_by_wall(Pos::new(6, 5), Pos::new(5, 5)).is_none());
 }
 
 #[test]
@@ -1150,12 +1127,10 @@ fn test_fov_blocked_by_wall_right() {
     for wall_y_pos in 2..8 {
         let pos: Pos = Pos::new(5, wall_y_pos);
         map[pos] = Tile::empty();
-        map[pos].left_wall = Wall::ShortWall;
+        map[pos].block_sight = true;
     }
   
-    map.update_map();
-
-    assert!(map.is_in_fov(Pos::new(4, 5), Pos::new(9, 5), radius) == false);
+    assert_eq!(false, map.is_in_fov(Pos::new(4, 5), Pos::new(9, 5), radius));
 }
 
 #[test]
@@ -1164,14 +1139,13 @@ fn test_fov_blocked_by_wall_left() {
     let mut map = Map::from_dims(10, 10);
 
     for wall_y_pos in 2..8 {
-        let pos: Pos = Pos::new(5, wall_y_pos);
+        let pos: Pos = Pos::new(6, wall_y_pos);
         map[pos] = Tile::empty();
-        map[pos].left_wall = Wall::ShortWall;
+        map[pos].block_sight = true;
+        map[pos].block_move = true;
     }
   
-    map.update_map();
-
-    assert!(map.is_in_fov(Pos::new(9, 5), Pos::new(4, 5), radius) == false);
+    assert_eq!(false, map.is_in_fov(Pos::new(9, 5), Pos::new(4, 5), radius));
 }
 
 #[test]
@@ -1180,14 +1154,13 @@ fn test_fov_blocked_by_wall_up() {
     let mut map = Map::from_dims(10, 10);
 
     for wall_x_pos in 2..8 {
-        let pos: (i32, i32) = (wall_x_pos, 5);
+        let pos: (i32, i32) = (wall_x_pos, 6);
         map[pos] = Tile::empty();
-        map[pos].bottom_wall = Wall::ShortWall;
+        map[pos].block_sight = true;
+        map[pos].block_move = true;
     }
   
-    map.update_map();
-
-    assert!(map.is_in_fov(Pos::new(5, 9), Pos::new(5, 5), radius) == false);
+    assert_eq!(false, map.is_in_fov(Pos::new(5, 9), Pos::new(5, 5), radius));
 }
 
 #[test]
@@ -1196,14 +1169,13 @@ fn test_fov_blocked_by_wall_down() {
     let mut map = Map::from_dims(10, 10);
 
     for wall_x_pos in 2..8 {
-        let pos: (i32, i32) = (wall_x_pos, 5);
+        let pos: (i32, i32) = (wall_x_pos, 4);
         map[pos] = Tile::empty();
-        map[pos].bottom_wall = Wall::ShortWall;
+        map[pos].block_sight = true;
+        map[pos].block_move = true;
     }
   
-    map.update_map();
-
-    assert!(map.is_in_fov(Pos::new(5, 1), Pos::new(5, 6), radius) == false);
+    assert_eq!(false, map.is_in_fov(Pos::new(5, 1), Pos::new(5, 6), radius));
 }
 
 #[test]
@@ -1212,16 +1184,14 @@ fn test_blocked_by_wall() {
 
     map[(5, 5)] = Tile::water();
   
-    map.update_map();
+    assert!(map.is_blocked_by_wall(Pos::new(4, 5), Pos::new(5, 5)).is_some());
+    assert!(map.is_blocked_by_wall(Pos::new(4, 5), Pos::new(7, 5)).is_some());
+    assert!(map.is_blocked_by_wall(Pos::new(3, 5), Pos::new(6, 5)).is_some());
 
-    assert!(map.is_blocked_by_wall(Pos::new(4, 5), 1, 0).is_some());
-    assert!(map.is_blocked_by_wall(Pos::new(4, 5), 3, 0).is_some());
-    assert!(map.is_blocked_by_wall(Pos::new(3, 5), 3, 0).is_some());
+    assert!(map.is_blocked_by_wall(Pos::new(6, 5), Pos::new(5, 5)).is_some());
 
-    assert!(map.is_blocked_by_wall(Pos::new(6, 5), -1, 0).is_some());
-
-    assert!(map.is_blocked_by_wall(Pos::new(5, 6), 0, -1).is_some());
-    assert!(map.is_blocked_by_wall(Pos::new(5, 4), 0, 1).is_some());
+    assert!(map.is_blocked_by_wall(Pos::new(5, 6), Pos::new(5, 5)).is_some());
+    assert!(map.is_blocked_by_wall(Pos::new(5, 4), Pos::new(5, 5)).is_some());
 }
 
 #[test]

@@ -76,7 +76,6 @@ impl GameData {
                       for direction in Direction::move_actions() {
                           for offset in reach.move_with_reach(&direction) {
                               let next_pos = add_pos(pos, offset);
-                              let (dx, dy) = (next_pos.x - pos.x, next_pos.y - pos.y);
 
                               let mut can_move = false;
                               let clear = self.clear_path(pos, next_pos, traps_block);
@@ -85,7 +84,7 @@ impl GameData {
                               if !can_move {
                                   // move expensive then clear_path by about 3x
                                   if !must_reach && next_pos == end {
-                                      let not_blocked = self.map.is_blocked_by_wall(pos, dx, dy).is_none();
+                                      let not_blocked = self.map.is_blocked_by_wall(pos, next_pos).is_none();
                                       can_move |= not_blocked;
                                   }
                               }
@@ -184,9 +183,7 @@ impl GameData {
                 return self.has_blocking_entity(pos).is_some() || (traps_block && self.has_trap(pos).is_some());
             });
 
-        let (dx, dy) = (end.x - start.x, end.y - start.y);
-
-        return !path_blocked && self.map.is_blocked_by_wall(start, dx, dy).is_none();
+        return !path_blocked && self.map.is_blocked_by_wall(start, end).is_none();
     }
 
     pub fn has_item_in_inventory(&self, entity_id: EntityId, item: Item) -> Option<EntityId> {

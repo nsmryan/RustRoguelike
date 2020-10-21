@@ -669,7 +669,7 @@ pub fn check_collision(pos: Pos,
 
     // if no movement occurs, no need to check walls and entities.
     if !(dx == 0 && dy == 0) {
-        if let Some(blocked) = data.map.is_blocked_by_wall(pos, dx, dy) {
+        if let Some(blocked) = data.map.is_blocked_by_wall(pos, Pos::new(pos.x + dx, pos.y + dy)) {
             result.blocked = Some(blocked);
             result.move_pos = blocked.start_pos;
         } 
@@ -778,10 +778,8 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId,
             return None;
         }
 
-        let other_to_next = sub_pos(next, other_pos);
-
         let next_tile_water = data.map[next].tile_type == TileType::Water;
-        let push_is_blocked = data.map.is_blocked_by_wall(other_pos, other_to_next.x, other_to_next.y).is_some();
+        let push_is_blocked = data.map.is_blocked_by_wall(other_pos, next).is_some();
         let is_column = data.entities.typ[&other_id] == EntityType::Column;
 
         if data.can_push(entity_id, other_id) && !next_tile_water && !(push_is_blocked && is_column) {

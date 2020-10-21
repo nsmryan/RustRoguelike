@@ -365,13 +365,12 @@ impl SelectionAction {
 
                 let player_id = data.find_player().unwrap();
                 let player_pos = data.entities.pos[&player_id];
-                let dxy = sub_pos(pos, player_pos);
-                let blocked = data.map.is_blocked_by_wall(player_pos, dxy.x, dxy.y);
+                let blocked = data.map.is_blocked_by_wall(player_pos, pos);
                 
                 if let Some(blocked) = blocked {
-                    if data.map[blocked.end_pos].blocked {
-                        let next = next_pos(player_pos, dxy);
-                        if  !data.map[next].blocked {
+                    if data.map[blocked.end_pos].block_move {
+                        let next = next_pos(player_pos, blocked.end_pos);
+                        if  !data.map[next].block_move {
                             action = Action::PassWall(player_id, next);
                         }
                     } else {
@@ -385,8 +384,7 @@ impl SelectionAction {
 
                 let player_id = data.find_player().unwrap();
                 let player_pos = data.entities.pos[&player_id];
-                let dxy = sub_pos(pos, player_pos);
-                let blocked = data.map.is_blocked_by_wall(player_pos, dxy.x, dxy.y);
+                let blocked = data.map.is_blocked_by_wall(player_pos, pos);
 
                 if let Some(blocked) = blocked {
                     if data.has_blocking_entity(pos).is_none() {
@@ -722,7 +720,7 @@ pub fn test_running() {
     let gol_pos = Pos::new(4, 5);
     let gol = make_gol(&mut game.data.entities, &game.config, gol_pos, &mut game.msg_log);
 
-    game.data.map[(4, 6)].blocked = true;
+    game.data.map[(4, 6)].block_move = true;
 
     // check that running into a monster crushes it against a wall when no empty tiles
     // between
@@ -764,7 +762,7 @@ pub fn test_running_two_steps() {
     let gol_pos = Pos::new(4, 5);
     let gol = make_gol(&mut game.data.entities, &game.config, gol_pos, &mut game.msg_log);
 
-    game.data.map[(4, 6)].blocked = true;
+    game.data.map[(4, 6)].block_move = true;
 
     game.input_action = InputAction::IncreaseMoveMode;
     game.step_game(0.1);

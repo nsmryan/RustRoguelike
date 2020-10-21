@@ -129,7 +129,7 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: 
 
         let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
 
-        if !data.map.is_blocked_by_wall(other_pos, x_diff, y_diff).is_some() &&
+        if !data.map.is_blocked_by_wall(other_pos, Pos::new(x_diff, y_diff)).is_some() &&
            !data.has_blocking_entity(past_pos).is_some() {
             data.entities.move_to(target, past_pos);
             data.entities.move_to(entity, other_pos);

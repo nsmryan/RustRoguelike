@@ -463,7 +463,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
             text_list.push("Left wall".to_string());
         }
 
-        if game.data.map[mouse].blocked {
+        if game.data.map[mouse].block_move {
             text_list.push(format!("blocked"));
         }
 
@@ -818,7 +818,7 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                     //            tiles and simply pasting them, perhaps saving time from not
                     //            needing to blend.
                     for pos in dist_positions.iter() {
-                        if !game.data.map[*pos].blocked {
+                        if !game.data.map[*pos].block_move {
                            draw_tile_highlight(panel, *pos, highlight_color);
                         }
                     }
@@ -1238,7 +1238,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             for x in 0..game.data.map.width() {
                 let pos = Pos::new(x, y);
 
-                if !game.data.map[pos].blocked &&
+                if !game.data.map[pos].block_move &&
                    game.data.map[pos].tile_type != TileType::Water {
                     let near_count = game.data.map.floodfill(pos, 3).len();
 

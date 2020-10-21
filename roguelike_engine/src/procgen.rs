@@ -161,7 +161,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
                        game.data.map[*pos].left_wall = wall_type;
                    }
 
-                   game.data.map[*pos].blocked = false;
+                   game.data.map[*pos].block_move = false;
                    game.data.map[*pos].chr = ' ' as u8;
                }
            }
@@ -222,16 +222,16 @@ fn ensure_iter_and_full_walls(game: &mut Game) {
 
     for y in 0..(height - 1) {
         for x in 0..(width - 1) {
-            if game.data.map[(x, y)].blocked {
+            if game.data.map[(x, y)].block_move {
                 game.data.map[(x, y)].left_wall = Wall::Empty;
                 game.data.map[(x, y)].bottom_wall = Wall::Empty;
             }
 
-            if game.data.map[(x + 1, y)].blocked {
+            if game.data.map[(x + 1, y)].block_move {
                 game.data.map[(x, y)].left_wall = Wall::Empty;
             }
 
-            if game.data.map[(x, y + 1)].blocked {
+            if game.data.map[(x, y + 1)].block_move {
                 game.data.map[(x, y)].bottom_wall = Wall::Empty;
             }
         }
@@ -244,15 +244,15 @@ fn handle_diagonal_full_tile_walls(game: &mut Game) {
 
     for y in 0..(height - 1) {
         for x in 0..(width - 1) {
-            if game.data.map[(x, y)].blocked         && 
-               game.data.map[(x + 1, y + 1)].blocked &&
-               !game.data.map[(x + 1, y)].blocked    && 
-               !game.data.map[(x, y + 1)].blocked {
+            if game.data.map[(x, y)].block_move         && 
+               game.data.map[(x + 1, y + 1)].block_move &&
+               !game.data.map[(x + 1, y)].block_move    && 
+               !game.data.map[(x, y + 1)].block_move {
                    game.data.map[(x + 1, y)] = Tile::wall();
-            } else if game.data.map[(x + 1, y)].blocked  && 
-                      game.data.map[(x, y + 1)].blocked  &&
-                      !game.data.map[(x, y)].blocked &&
-                      !game.data.map[(x + 1, y + 1)].blocked {
+            } else if game.data.map[(x + 1, y)].block_move  && 
+                      game.data.map[(x, y + 1)].block_move  &&
+                      !game.data.map[(x, y)].block_move &&
+                      !game.data.map[(x + 1, y + 1)].block_move {
                    game.data.map[(x, y)] = Tile::wall();
             }
         }
@@ -373,7 +373,7 @@ fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
         for y in 0..height {
             let pos = Pos::new(x, y);
 
-            if !game.data.map[pos].blocked {
+            if !game.data.map[pos].block_move {
                 let count = game.data.map.floodfill(pos, 3).len();
                 if count > 28 && count < 35 {
                     potential_grass_pos.push(pos);
@@ -391,7 +391,7 @@ fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
             let offset_pos = Pos::new(pos.x + game.rng.gen_range(0, disperse),
                                       pos.y + game.rng.gen_range(0, disperse));
             if game.data.map.is_within_bounds(offset_pos) &&
-               !game.data.map[offset_pos].blocked {
+               !game.data.map[offset_pos].block_move {
                 game.data.map[offset_pos].surface = Surface::Grass;
             }
         }
@@ -408,7 +408,7 @@ fn find_available_tile(game: &mut Game) -> Option<Pos> {
         for y in 0..height {
             let pos = Pos::new(x, y);
 
-            if !game.data.map[pos].blocked && game.data.has_blocking_entity(pos).is_none() {
+            if !game.data.map[pos].block_move && game.data.has_blocking_entity(pos).is_none() {
                 if game.rng.gen_range(0.0, 1.0) < (1.0 / index) {
                     avail_pos = Some(pos);
                 }
@@ -423,7 +423,7 @@ fn find_available_tile(game: &mut Game) -> Option<Pos> {
 
 fn clear_path_to(game: &mut Game, start_pos: Pos, target_pos: Pos) {
     fn blocked_tile_cost(pos: Pos, map: &Map) -> i32 {
-        if map[pos].blocked {
+        if map[pos].block_move {
             return 15;
         } 
 
@@ -431,8 +431,7 @@ fn clear_path_to(game: &mut Game, start_pos: Pos, target_pos: Pos) {
     }
 
     fn move_tile_cost(pos: Pos, next_pos: Pos, map: &Map) -> i32 {
-        let delta = sub_pos(next_pos, pos);
-        if map.is_blocked_by_wall(pos, delta.x, delta.y).is_some() {
+        if map.is_blocked_by_wall(pos, next_pos).is_some() {
             return 15;
         } 
 
@@ -453,7 +452,7 @@ fn clear_path_to(game: &mut Game, start_pos: Pos, target_pos: Pos) {
 
     if let Some((results, _cost)) = path {
         for pos in results {
-            if game.data.map[pos].blocked {
+            if game.data.map[pos].block_move {
                 game.data.map[pos] = Tile::empty();
             }
         }
@@ -539,7 +538,7 @@ fn adjacent_blocks(block: Pos, map: &Map, seen: &HashSet<Pos>) -> Vec<Pos> {
 
     let adjacents = [move_x(block, 1), move_y(block, 1), move_x(block, -1), move_y(block, -1)];
     for adj in adjacents.iter() {
-        if map.is_within_bounds(*adj) && map[*adj].blocked && !seen.contains(&adj) {
+        if map.is_within_bounds(*adj) && map[*adj].block_move && !seen.contains(&adj) {
             result.push(*adj);
         }
     }
@@ -572,7 +571,7 @@ fn find_structures(map: &Map) -> Vec<Structure> {
     let mut blocks = Vec::new();
     for y in 0..height {
         for x in 0..width {
-            if map[(x, y)].blocked {
+            if map[(x, y)].block_move {
                 blocks.push(Pos::new(x, y));
             }
         }
