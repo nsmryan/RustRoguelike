@@ -366,16 +366,7 @@ fn find_available_tile(game: &mut Game) -> Option<Pos> {
     return avail_pos;
 }
 
-fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
-    // place goal and key
-    let key_pos = find_available_tile(game).unwrap();
-    game.data.map[key_pos] = Tile::empty();
-    make_key(&mut game.data.entities, &game.config, key_pos, &mut game.msg_log);
-
-    let goal_pos = find_available_tile(game).unwrap();
-    game.data.map[goal_pos] = Tile::empty();
-    make_exit(&mut game.data.entities, &game.config, goal_pos, &mut game.msg_log);
-
+fn clear_path_to(game: &mut Game, start_pos: Pos, target_pos: Pos) {
     fn blocked_tile_cost(pos: Pos, map: &Map) -> i32 {
         if map[pos].blocked {
             return 15;
@@ -384,35 +375,47 @@ fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
         return 0;
     }
 
+    fn move_tile_cost(pos: Pos, next_pos: Pos, map: &Map) -> i32 {
+        let delta = sub_pos(next_pos, pos);
+        if map.is_blocked_by_wall(pos, delta.x, delta.y).is_some() {
+            return 15;
+        } 
+
+        return 1;
+    }
+
     // clear a path to the key
-    let key_path = 
-        astar(&player_pos,
-              |&pos| game.data.map.neighbors(pos).iter().map(|p| (*p, 1)).collect::<Vec<(Pos, i32)>>(),
-              |&pos| blocked_tile_cost(pos, &game.data.map) + distance(player_pos, pos) as i32,
-              |&pos| pos == key_pos);
+    let path = 
+        astar(&start_pos,
+              |&pos| {
+                  game.data.map.cardinal_neighbors(pos)
+                               .iter()
+                               .map(|p| (*p, move_tile_cost(pos, *p, &game.data.map)))
+                               .collect::<Vec<(Pos, i32)>>()
+              },
+              |&pos| blocked_tile_cost(pos, &game.data.map) + distance(start_pos, pos) as i32,
+              |&pos| pos == target_pos);
 
-    if let Some((results, _cost)) = key_path {
+    if let Some((results, _cost)) = path {
         for pos in results {
             if game.data.map[pos].blocked {
                 game.data.map[pos] = Tile::empty();
             }
         }
     }
+}
 
-    // clear a path to the goal
-    let goal_path = 
-        astar(&player_pos,
-              |&pos| game.data.map.neighbors(pos).iter().map(|p| (*p, 1)).collect::<Vec<(Pos, i32)>>(),
-              |&pos| blocked_tile_cost(pos, &game.data.map) + distance(player_pos, pos) as i32,
-              |&pos| pos == goal_pos);
+fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
+    // place goal and key
+    let key_pos = find_available_tile(game).unwrap();
+    game.data.map[key_pos] = Tile::empty();
+    make_key(&mut game.data.entities, &game.config, key_pos, &mut game.msg_log);
+    clear_path_to(game, player_pos, key_pos);
 
-    if let Some((results, _cost)) = goal_path {
-        for pos in results {
-            if game.data.map[pos].blocked {
-                game.data.map[pos] = Tile::empty();
-            }
-        }
-    }
+    let goal_pos = find_available_tile(game).unwrap();
+    game.data.map[goal_pos] = Tile::empty();
+    make_exit(&mut game.data.entities, &game.config, goal_pos, &mut game.msg_log);
+    clear_path_to(game, player_pos, goal_pos);
 }
 
 fn clear_island(game: &mut Game, island_radius: i32) {
