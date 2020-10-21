@@ -226,10 +226,12 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         }
 
         /* Reload Configuration */
-        let current_config_modified_time = fs::metadata(CONFIG_NAME).unwrap().modified().unwrap();
-        if current_config_modified_time != config_modified_time {
-            config_modified_time = current_config_modified_time;
-            game.config = Config::from_file(CONFIG_NAME);
+        if let Ok(current_config_modified_time) = fs::metadata(CONFIG_NAME) {
+            let current_config_modified_time = current_config_modified_time.modified().unwrap();
+            if current_config_modified_time != config_modified_time {
+                config_modified_time = current_config_modified_time;
+                game.config = Config::from_file(CONFIG_NAME);
+            }
         }
         drop(config_timer);
 
