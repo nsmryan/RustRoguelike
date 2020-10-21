@@ -741,7 +741,7 @@ pub fn test_running() {
     // check that running into a monster, with water 2 tiles away, pushes monster
     // up to the water
     let pawn_pos = Pos::new(5, 5);
-    let pawn = make_elf(&mut game.data.entities, &game.config, pawn_pos, &mut game.msg_log);
+    let pawn = make_pawn(&mut game.data.entities, &game.config, pawn_pos, &mut game.msg_log);
 
     game.data.map[(7, 5)].tile_type = TileType::Water;
 
@@ -819,7 +819,7 @@ pub fn test_hammer_small_wall() {
     assert_eq!(Surface::Rubble, game.data.map[gol_pos].surface);
 
     let pawn_pos = Pos::new(3, 4);
-    let pawn = make_elf(&mut game.data.entities, &game.config, pawn_pos, &mut game.msg_log);
+    let pawn = make_pawn(&mut game.data.entities, &game.config, pawn_pos, &mut game.msg_log);
     assert_eq!(true, game.data.entities.alive[&pawn]);
 
     // add the hammer back and hit the pawn with it to test hitting entities

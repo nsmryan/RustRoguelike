@@ -162,7 +162,7 @@ pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
     return spire;
 }
 
-pub fn make_elf(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let elf = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{A5}', config.color_orange, EntityName::Pawn, true);
 
     entities.fighter.insert(elf,  Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, });
@@ -327,7 +327,7 @@ pub fn make_island(data: &mut GameData,
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
             if !data.has_blocking_entity(pos).is_some()  {
-                make_elf(&mut data.entities, config, pos, msg_log);
+                make_pawn(&mut data.entities, config, pos, msg_log);
                 break;
             }
         }
@@ -443,7 +443,7 @@ pub fn make_test_map(game: &mut Game) {
     game.data.map[(3, 8)].blocked = true;
     game.data.map[(3, 8)].tile_type = TileType::Wall;
 
-    let elf = make_elf(&mut game.data.entities, &game.config, Pos::new(2, 9), &mut game.msg_log);
+    let elf = make_pawn(&mut game.data.entities, &game.config, Pos::new(2, 9), &mut game.msg_log);
     game.data.entities.direction[&elf] = Direction::Down;
     make_spikes(&mut game.data.entities, &game.config, Pos::new(2, 10), &mut game.msg_log);
 

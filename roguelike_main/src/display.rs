@@ -478,6 +478,16 @@ impl Display {
         self.state.sprites.insert(sprite_key, sprite_sheet);
     }
 
+    pub fn sprite_exists(&self, name: &str) -> bool {
+        for (key, sprite_sheet) in self.state.sprites.iter() {
+            if sprite_sheet.name == *name {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// Create a sprite by looking up a texture and constructing the
     /// SpriteAnim structure.
     pub fn new_sprite(&self, name: String, speed: f32) -> SpriteAnim {
@@ -603,10 +613,12 @@ impl Display {
                     data.entities.animation[&attacked].clear();
 
                     let sprite_name = format!("{:?}_die", data.entities.name[&attacked]);
-                    let sprite = self.new_sprite(sprite_name, 1.0);
-                    let anim = self.play_animation(Animation::Once(sprite));
-                    data.entities.animation[&attacked].clear();
-                    data.entities.animation[&attacked].push_front(anim);
+                    if self.sprite_exists(&sprite_name) {
+                        let sprite = self.new_sprite(sprite_name, 1.0);
+                        let anim = self.play_animation(Animation::Once(sprite));
+                        data.entities.animation[&attacked].clear();
+                        data.entities.animation[&attacked].push_front(anim);
+                    }
                 }
             }
 

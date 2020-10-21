@@ -267,7 +267,7 @@ impl Console {
                 let y = args.pop().unwrap().parse::<i32>().unwrap();
                 let x = args.pop().unwrap().parse::<i32>().unwrap();
 
-                let elf = make_elf(&mut data.entities, config, Pos::new(x, y), msg_log);
+                let elf = make_pawn(&mut data.entities, config, Pos::new(x, y), msg_log);
                 self.output.push(format!("Added elf at ({}, {}), id = {}", x, y, elf));
             }
 

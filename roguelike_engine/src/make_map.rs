@@ -194,7 +194,7 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos,
         'p' => {
             tile = Tile::empty();
             let mut msg_log = MsgLog::new();
-            make_elf(&mut vault.data.entities, config, pos, &mut msg_log);
+            make_pawn(&mut vault.data.entities, config, pos, &mut msg_log);
         }
 
         'g' => {
@@ -635,7 +635,7 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_ELF => {
-                                make_elf(&mut data.entities, config, pos, msg_log);
+                                make_pawn(&mut data.entities, config, pos, msg_log);
                             }
 
                             MAP_EMPTY => {

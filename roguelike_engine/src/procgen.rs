@@ -196,10 +196,10 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     return player_pos;
 }
 
+/// Ensure that diagonal full tile walls do not occur.
 fn handle_diagonal_full_tile_walls(game: &mut Game) {
     let (width, height) = game.data.map.size();
 
-    // ensure that diagonal full tile walls do not occur.
     for y in 0..(height - 1) {
         for x in 0..(width - 1) {
             if game.data.map[(x, y)].blocked         && 
@@ -264,7 +264,7 @@ fn place_monsters(game: &mut Game, cmds: &Vec<ProcCmd>) {
 
                 match typ {
                     EntityName::Gol => { make_gol(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
-                    EntityName::Pawn => { make_elf(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    EntityName::Pawn => { make_pawn(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                     EntityName::Spire => { make_spire(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                     _ => {},
                 }
