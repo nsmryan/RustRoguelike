@@ -198,6 +198,8 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     return player_pos;
 }
 
+/// Look for intertile walls that are adjacent to full tile walls.
+/// These don't make sense in 3D, so remove them.
 fn ensure_iter_and_full_walls(game: &mut Game) {
     let (width, height) = game.data.map.size();
 
@@ -210,6 +212,10 @@ fn ensure_iter_and_full_walls(game: &mut Game) {
 
             if game.data.map[(x + 1, y)].blocked {
                 game.data.map[(x, y)].left_wall = Wall::Empty;
+            }
+
+            if game.data.map[(x, y + 1)].blocked {
+                game.data.map[(x, y)].bottom_wall = Wall::Empty;
             }
         }
     }
