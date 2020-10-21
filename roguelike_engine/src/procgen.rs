@@ -194,7 +194,26 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     clear_island(game, island_radius);
 
+    ensure_iter_and_full_walls(game);
+
     return player_pos;
+}
+
+fn ensure_iter_and_full_walls(game: &mut Game) {
+    let (width, height) = game.data.map.size();
+
+    for y in 0..(height - 1) {
+        for x in 0..(width - 1) {
+            if game.data.map[(x, y)].blocked {
+                game.data.map[(x, y)].left_wall = Wall::Empty;
+                game.data.map[(x, y)].bottom_wall = Wall::Empty;
+            }
+
+            if game.data.map[(x + 1, y)].blocked {
+                game.data.map[(x, y)].left_wall = Wall::Empty;
+            }
+        }
+    }
 }
 
 /// Ensure that diagonal full tile walls do not occur.
