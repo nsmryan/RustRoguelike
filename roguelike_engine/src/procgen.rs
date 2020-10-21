@@ -1,7 +1,10 @@
-use std::fs::File; use std::io::BufReader;
+use std::fs::File;
+use std::io::{Read, BufReader};
 use std::collections::HashSet;
 
 use rand::prelude::*;
+
+use serde::{Serialize, Deserialize};
 
 use pathfinding::directed::astar::astar;
 
@@ -43,7 +46,7 @@ impl Structure {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
 pub enum ProcCmd {
     Island(i32), // radius
     Entities(EntityName, usize, usize),
@@ -52,6 +55,20 @@ pub enum ProcCmd {
     Grass((usize, usize), i32), // (min, max), disperse distance
     Rubble(usize),
     Columns(usize),
+}
+
+impl ProcCmd {
+    pub fn from_file(file_name: &str) -> Vec<ProcCmd> {
+        let mut file =
+            File::open(file_name).expect(&format!("Could not open/parse procgen file {}", file_name));
+        let mut procgen_string = String::new();
+        file.read_to_string(&mut procgen_string)
+            .expect(&format!("Could not read contents of {}", file_name));
+
+        let cmds = serde_yaml::from_str(&procgen_string).expect(&format!("Could not parse {} file!", file_name));
+        
+        return cmds;
+    }
 }
 
 pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut SmallRng) -> Map {
