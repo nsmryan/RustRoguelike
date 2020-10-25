@@ -219,7 +219,8 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     place_key_and_goal(game, player_pos);
 
     place_items(game, cmds);
-    place_monsters(game, cmds);
+
+    place_monsters(game, player_pos, cmds);
 
     clear_island(game, island_radius);
 
@@ -313,8 +314,14 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
     }
 }
 
-fn place_monsters(game: &mut Game, cmds: &Vec<ProcCmd>) {
-    let mut potential_pos = game.data.get_clear_pos();
+fn place_monsters(game: &mut Game, player_pos: Pos, cmds: &Vec<ProcCmd>) {
+    // get empty positions, but make sure they are not close to the player
+    let mut potential_pos = 
+        game.data.get_clear_pos()
+                 .iter()
+                 .filter(|p| distance(player_pos, **p) > 4)
+                 .map(|p| *p)
+                 .collect::<Vec<Pos>>();
 
     for cmd in cmds.iter() {
         if let ProcCmd::Entities(typ, min, max) = cmd {
@@ -330,11 +337,18 @@ fn place_monsters(game: &mut Game, cmds: &Vec<ProcCmd>) {
                 let index = game.rng.gen_range(0, len);
                 let pos = potential_pos[index];
 
+                let id;
                 match typ {
-                    EntityName::Gol => { make_gol(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
-                    EntityName::Pawn => { make_pawn(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
-                    EntityName::Spire => { make_spire(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
-                    _ => {},
+                    EntityName::Gol => { id = Some(make_gol(&mut game.data.entities, &game.config, pos, &mut game.msg_log)); },
+                    EntityName::Pawn => { id = Some(make_pawn(&mut game.data.entities, &game.config, pos, &mut game.msg_log)); },
+                    EntityName::Spire => { id = Some(make_spire(&mut game.data.entities, &game.config, pos, &mut game.msg_log)); },
+                    _ => { id = None; },
+                }
+                if let Some(id) = id {
+                    if game.data.is_in_fov(id, player_pos, &game.config) {
+                        game.data.entities.direction[&id] = 
+                            game.data.entities.direction[&id].reverse();
+                    }
                 }
 
                 potential_pos.remove(index);
@@ -479,7 +493,12 @@ fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
     make_key(&mut game.data.entities, &game.config, key_pos, &mut game.msg_log);
     clear_path_to(game, player_pos, key_pos);
 
-    let goal_pos = find_available_tile(game).unwrap();
+    // Find the goal position, ensuring it is not too close to the key
+    let mut goal_pos = find_available_tile(game).unwrap();
+    while distance(key_pos, goal_pos) < 4 {
+        goal_pos = find_available_tile(game).unwrap();
+    }
+
     game.data.map[goal_pos] = Tile::empty();
     make_exit(&mut game.data.entities, &game.config, goal_pos, &mut game.msg_log);
     clear_path_to(game, player_pos, goal_pos);

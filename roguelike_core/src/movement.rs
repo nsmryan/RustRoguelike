@@ -265,6 +265,19 @@ impl Direction {
         }
     }
 
+    pub fn reverse(&self) -> Direction {
+        match self {
+            Direction::Left => Direction::Right,
+            Direction::Right => Direction::Left,
+            Direction::Up => Direction::Down,
+            Direction::Down => Direction::Up,
+            Direction::DownLeft => Direction::UpRight,
+            Direction::DownRight => Direction::UpLeft,
+            Direction::UpLeft => Direction::DownRight,
+            Direction::UpRight => Direction::DownLeft,
+        }
+    }
+
     pub fn horiz(self) -> bool {
         match self {
             Direction::Left | Direction::Right |
