@@ -1,5 +1,11 @@
 ---
+# Island creates an island with a given radius
 - Island: 7
+# Entities takes a entity type,
+# a min number, and a max number of entities of that type
+# entity types: Player, Gol, Pawn, Column, Key, Sound, Exit,
+#               Dagger, Hammer, Sword, Shield, Spire, Spike,
+#               BlinkTrap, Stone, Mouse, Energy, Other,
 - Entities: 
     - Gol:
     - 1
@@ -8,6 +14,9 @@
     - Pawn
     - 2
     - 4
+# Item takes a item type,
+# a min number, and a max number of entities of that type
+# Item types are: Stone, Goal, Dagger, Shield, Hammer, Sword, SpikeTrap, SoundTrap, BlinkTrap,
 - Items: 
     - Dagger
     - 0
@@ -28,10 +37,15 @@
     - Shield
     - 0
     - 1
+# MaxItems limits the number of items that can appear of any type
 - MaxItems: 3
+# Grass takes a min and max number of grassed locations.
+# it also takes the dispersion (the distance from the center that the grass can lay)
 - Grass: 
     - - 4
       - 8
     - 3
+# Columns indicates that some walls should be replaced with columns
 - Columns: 5
+# Rubble indicates that some walls should be replaced with columns
 - Rubble: 5

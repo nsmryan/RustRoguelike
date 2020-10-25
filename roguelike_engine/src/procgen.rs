@@ -122,11 +122,33 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     handle_diagonal_full_tile_walls(game);
 
+    /* clear out an island */
+    let island_radius =
+        cmds.iter().filter_map(|cmd| {
+            if let ProcCmd::Island(radius) = cmd {
+                return Some(radius) 
+            };
+            return None;
+    }).map(|r| *r).next().unwrap_or(0);
+
+    clear_island(game, island_radius);
+
+    /* detect structures left */
     let mut structures = find_structures(&game.data.map);
     println!("{} singles", structures.iter().filter(|s| s.typ == StructureType::Single).count());
     println!("{} lines", structures.iter().filter(|s| s.typ == StructureType::Line).count());
     println!("{} Ls", structures.iter().filter(|s| s.typ == StructureType::Path).count());
     println!("{} complex", structures.iter().filter(|s| s.typ == StructureType::Complex).count());
+
+    /* modify structures with rubble, columns, etc */
+    let max_rubbles =
+        cmds.iter().filter_map(|cmd| {
+            if let ProcCmd::Rubble(num_rubble) = cmd {
+                return Some(num_rubble) 
+            };
+            return None;
+    }).map(|r| *r).next().unwrap_or(0);
+    let mut num_rubbles = 0;
 
     let mut to_remove: Vec<usize> = Vec::new();
     for (index, structure) in structures.iter().enumerate() {
@@ -136,11 +158,12 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
                 to_remove.push(index);
             }
         } else if structure.typ == StructureType::Line { 
-            if structure.blocks.len() > 5 {
+            if structure.blocks.len() > 5 && num_rubbles < max_rubbles {
                 let index = game.rng.gen_range(0, structure.blocks.len());
                 let block = structure.blocks[index];
                 game.data.map[block] = Tile::empty();
                 game.data.map[block].surface = Surface::Rubble;
+                num_rubbles += 1;
             }
         }
 
@@ -176,16 +199,6 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
         }
         structures.swap_remove(*index);
     }
-
-    let island_radius =
-        cmds.iter().filter_map(|cmd| {
-            if let ProcCmd::Island(radius) = cmd {
-                return Some(radius) 
-            };
-            return None;
-    }).map(|r| *r).next().unwrap_or(0);
-
-    clear_island(game, island_radius);
 
     let range_disperse =
         cmds.iter().filter_map(|cmd| {
