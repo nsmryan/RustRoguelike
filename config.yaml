@@ -128,7 +128,7 @@ grid_alpha_overlay: 150
 # TestCorner: test map with corners of different types
 # TestPlayer: test map for player interactions
 map_load: #TestVaults
-    TestRandom
+    ProcGen: "map1.yaml"
 #FromAsciiMap: "vaults/Vaults - Vault1.csv"
 #FromFile: "maps.txt"
 map_file: map.xp

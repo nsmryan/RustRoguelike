@@ -85,7 +85,6 @@ impl Blocked {
 pub enum MapLoadConfig {
     Random,
     TestMap,
-    TestRandom,
     TestWall,
     Empty,
     TestCorner,
@@ -93,6 +92,7 @@ pub enum MapLoadConfig {
     TestVaults,
     FromFile(String),
     VaultFile(String),
+    ProcGen(String),
 }
 
 impl Default for MapLoadConfig {

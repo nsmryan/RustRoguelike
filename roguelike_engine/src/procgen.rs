@@ -260,7 +260,7 @@ fn handle_diagonal_full_tile_walls(game: &mut Game) {
 }
 
 fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
-    let mut potential_pos = game.data.get_clear_pos();
+    let potential_pos = game.data.get_clear_pos();
 
     let mut num_items = 0;
     let max_items = cmds.iter().filter_map(|cmd| {

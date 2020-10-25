@@ -32,6 +32,7 @@ use gumdrop::Options;
 use roguelike_core::types::*;
 use roguelike_core::config::Config;
 use roguelike_core::constants::*;
+use roguelike_core::map::MapLoadConfig;
 use roguelike_core::movement::Direction;
 
 use roguelike_engine::game::*;
@@ -60,6 +61,9 @@ pub struct GameOptions {
 
     #[options(help = "take a screenshot and exit", short="t")]
     pub screenshot: bool,
+
+    #[options(help = "procgen map config", short="m")]
+    pub procgen_map: Option<String>,
 
     #[options(help = "display help text")]
     pub help: bool,
@@ -123,7 +127,12 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
     make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
 
-    make_map(&config.map_load, &mut game);
+    if let Some(procgen_map) = opts.procgen_map.clone() {
+        let map_config = MapLoadConfig::ProcGen(procgen_map);
+        make_map(&map_config , &mut game);
+    } else {
+        make_map(&config.map_load, &mut game);
+    }
 
     if opts.screenshot {
         take_screenshot(&mut game, &mut display).unwrap();
