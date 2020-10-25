@@ -131,6 +131,8 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
             return None;
     }).map(|r| *r).next().unwrap_or(0);
 
+    place_vaults(game);
+
     clear_island(game, island_radius);
 
     /* detect structures left */
@@ -209,8 +211,6 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     }).next().unwrap_or((&(0, 0), &0));
     let num_grass_to_place = game.rng.gen_range((range_disperse.0).0, (range_disperse.0).1);
     place_grass(game, num_grass_to_place, *range_disperse.1);
-
-    place_vaults(game);
 
     let player_id = game.data.find_player().unwrap();
     let player_pos = find_available_tile(game).unwrap();
@@ -360,6 +360,7 @@ fn place_monsters(game: &mut Game, player_pos: Pos, cmds: &Vec<ProcCmd>) {
 fn place_vaults(game: &mut Game) {
     if game.rng.gen_range(0.0, 1.0) < 0.99 {
         let vault_index = game.rng.gen_range(0, game.vaults.len());
+        println!("Placing vault {}", vault_index);
 
         let (width, height) = game.data.map.size();
         let offset = Pos::new(game.rng.gen_range(0, width), game.rng.gen_range(0, height));
@@ -367,7 +368,6 @@ fn place_vaults(game: &mut Game) {
         let vault = &game.vaults[vault_index];
         if offset.x + vault.data.map.size().0  < width &&
            offset.y + vault.data.map.size().1 < height {
-               dbg!();
             place_vault(&mut game.data, vault, offset);
         }
     }
