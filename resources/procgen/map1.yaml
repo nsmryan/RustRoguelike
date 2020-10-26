@@ -47,6 +47,10 @@
     - 3
 # Columns indicates that some walls should be replaced with columns
 - Columns: 5
+
 # Rubble indicates that some walls should be replaced with columns
 - Rubble: 5
+
+# Seed file is a png used to generate the map with the WFC algorithm
+# This must be in the resoures/procgen/ directory
 - SeedFile: "wfc_seed_2.png"
