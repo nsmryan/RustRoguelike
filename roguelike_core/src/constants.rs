@@ -134,6 +134,7 @@ pub const ENTITY_HAMMER: u8 = 251;
 pub const ENTITY_TRAP_SOUND: u8 = 83; // char S
 pub const ENTITY_SPIKE_TRAP: u8 = 136;
 pub const ENTITY_BLINK_TRAP: u8 = 6;
+pub const ENTITY_FREEZE_TRAP: u8 = 70; // char F
 
 pub const ARROW_RIGHT: u8 = 16;
 pub const ARROW_LEFT: u8 = 17;

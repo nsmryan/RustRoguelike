@@ -394,6 +394,7 @@ pub enum Trap {
     Spikes,
     Sound,
     Blink,
+    Freeze,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -483,6 +484,7 @@ pub enum Item {
     SpikeTrap,
     SoundTrap,
     BlinkTrap,
+    FreezeTrap,
 }
 
 impl Item {
@@ -497,6 +499,7 @@ impl Item {
             Item::SpikeTrap => ItemClass::Secondary,
             Item::SoundTrap => ItemClass::Secondary,
             Item::BlinkTrap => ItemClass::Secondary,
+            Item::FreezeTrap => ItemClass::Secondary,
         }
     }
 }
@@ -537,15 +540,16 @@ pub enum EntityName {
     Pawn,
     Column,
     Key,
-    Sound,
     Exit,
     Dagger,
     Hammer,
     Sword,
     Shield,
     Spire,
-    Spike,
+    SpikeTrap,
     BlinkTrap,
+    FreezeTrap,
+    SoundTrap,
     Stone,
     Mouse,
     Energy,

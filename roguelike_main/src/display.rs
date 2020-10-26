@@ -681,7 +681,7 @@ impl Display {
                         anim_desc = Some(("player_idle", config.idle_speed));
                     } else if data.entities.name[&entity_id] == EntityName::Key {
                         anim_desc = Some(("key", config.key_speed));
-                    } else if data.entities.name[&entity_id] == EntityName::Spike {
+                    } else if data.entities.name[&entity_id] == EntityName::SpikeTrap {
                         anim_desc = Some(("spikes", config.idle_speed));
                     } else if data.entities.name[&entity_id] == EntityName::Pawn {
                         anim_desc = Some(("elf_idle", config.idle_speed));

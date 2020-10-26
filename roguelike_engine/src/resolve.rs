@@ -456,6 +456,27 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 }
             }
 
+            Msg::Froze(entity_id) => {
+                // TODO implement freeze effect
+            }
+
+            Msg::FreezeTrapTriggered(trap, cause_id) => {
+                let source_pos = data.entities.pos[&trap];
+
+                let freeze_aoe =
+                    data.map.aoe_fill(AoeEffect::Freeze, source_pos, config.freeze_trap_radius);
+
+                let who_hit =
+                    data.within_aoe(&freeze_aoe);
+
+                for obj_id in who_hit {
+                    // TODO probably need to filter out a bit more
+                    if obj_id != cause_id && data.entities.alive[&obj_id] {
+                        msg_log.log(Msg::Froze(obj_id));
+                    }
+                }
+            }
+
             _ => {
             }
         }
@@ -609,6 +630,11 @@ fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data
 
             Trap::Blink => {
                 msg_log.log(Msg::BlinkTrapTriggered(*trap, entity_id));
+                data.entities.needs_removal[trap] = true;
+            }
+
+            Trap::Freeze => {
+                msg_log.log(Msg::FreezeTrapTriggered(*trap, entity_id));
                 data.entities.needs_removal[trap] = true;
             }
         }

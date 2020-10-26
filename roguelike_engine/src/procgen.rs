@@ -352,6 +352,7 @@ fn place_traps(game: &mut Game, cmds: &Vec<ProcCmd>) {
                     Trap::Spikes => { make_spikes(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                     Trap::Sound => { make_trap_sound(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                     Trap::Blink => { make_blink_trap(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    Trap::Freeze => { make_freeze_trap(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                 }
             }
         }

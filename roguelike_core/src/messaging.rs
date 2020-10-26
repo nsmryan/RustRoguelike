@@ -49,6 +49,8 @@ pub enum Msg {
     SoundTrapTriggered(EntityId, EntityId), // trap, entity
     SpikeTrapTriggered(EntityId, EntityId), // trap, entity
     BlinkTrapTriggered(EntityId, EntityId), // trap, entity
+    FreezeTrapTriggered(EntityId, EntityId), // trap, entity
+    Froze(EntityId),
     PlayerDeath,
     PickedUp(EntityId, EntityId), // entity, item id
     ItemThrow(EntityId, EntityId, Pos, Pos), // thrower, stone id, start, end
@@ -90,12 +92,20 @@ impl Msg {
                 return "Player passed their turn".to_string();
             }
 
+            Msg::BlinkTrapTriggered(_trap, _entity_id) => {
+                return "Blink trap triggered".to_string();
+            }
+
             Msg::SoundTrapTriggered(_trap, _entity_id) => {
                 return "Sound trap triggered".to_string();
             }
 
             Msg::SpikeTrapTriggered(_trap, _entity_id) => {
                 return "Spike trap triggered".to_string();
+            }
+
+            Msg::FreezeTrapTriggered(_trap, _entity_id) => {
+                return "Freeze trap triggered".to_string();
             }
 
             Msg::PlayerDeath => {
@@ -246,6 +256,10 @@ impl Msg {
 
             Msg::PlayerTurn() => {
                 return "".to_string();
+            }
+
+            Msg::Froze(entity_id) => {
+                return format!("{:?} was frozen!", data.entities.name[entity_id]);
             }
 
             _ => {

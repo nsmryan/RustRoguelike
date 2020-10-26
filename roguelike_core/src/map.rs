@@ -23,9 +23,10 @@ use crate::movement::Direction;
 use crate::line::*;
 
 
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AoeEffect {
     Sound,
+    Freeze,
 }
 
 #[derive(Clone, Debug, PartialEq)]

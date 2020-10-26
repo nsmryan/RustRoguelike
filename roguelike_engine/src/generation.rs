@@ -180,25 +180,25 @@ pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
 }
 
 pub fn make_trap_sound(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let sound = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_TRAP_SOUND as char, config.color_ice_blue, EntityName::Sound, false);
+    let sound = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_TRAP_SOUND as char, config.color_ice_blue, EntityName::SoundTrap, false);
 
     entities.trap.insert(sound,  Trap::Sound);
     entities.armed.insert(sound,  true);
     entities.item.insert(sound,  Item::SoundTrap);
 
-    msg_log.log(Msg::SpawnedObject(sound, entities.typ[&sound], pos, EntityName::Sound));
+    msg_log.log(Msg::SpawnedObject(sound, entities.typ[&sound], pos, EntityName::SoundTrap));
 
     return sound;
 }
 
 pub fn make_spikes(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let spikes = entities.create_entity(pos.x, pos.y, EntityType::Item, MAP_TALL_SPIKES as char, config.color_ice_blue, EntityName::Spike, false);
+    let spikes = entities.create_entity(pos.x, pos.y, EntityType::Item, MAP_TALL_SPIKES as char, config.color_ice_blue, EntityName::SpikeTrap, false);
 
     entities.trap.insert(spikes,  Trap::Spikes);
     entities.armed.insert(spikes,  true);
     entities.item.insert(spikes,  Item::SpikeTrap);
 
-    msg_log.log(Msg::SpawnedObject(spikes, entities.typ[&spikes], pos, EntityName::Spike));
+    msg_log.log(Msg::SpawnedObject(spikes, entities.typ[&spikes], pos, EntityName::SpikeTrap));
 
     return spikes;
 }
@@ -213,6 +213,18 @@ pub fn make_blink_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_l
     msg_log.log(Msg::SpawnedObject(blink, entities.typ[&blink], pos, EntityName::BlinkTrap));
 
     return blink;
+}
+
+pub fn make_freeze_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let freeze = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_FREEZE_TRAP as char, config.color_ice_blue, EntityName::FreezeTrap, false);
+
+    entities.trap.insert(freeze,  Trap::Freeze);
+    entities.armed.insert(freeze,  true);
+    entities.item.insert(freeze,  Item::FreezeTrap);
+
+    msg_log.log(Msg::SpawnedObject(freeze, entities.typ[&freeze], pos, EntityName::FreezeTrap));
+
+    return freeze;
 }
 
 pub fn make_exit(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {

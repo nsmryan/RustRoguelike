@@ -52,6 +52,10 @@
     - Sound
     - 0
     - 2
+- Traps: 
+    - Freeze
+    - 1
+    - 5
 # MaxTraps limits the number of traps that can appear of any type
 - MaxTraps: 6
 
