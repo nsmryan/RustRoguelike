@@ -1233,7 +1233,8 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     if game.config.overlay_floodfill {
         let font_key = display_state.lookup_spritekey("font");
 
-        let highlight_color = game.config.color_light_orange;
+        let mut highlight_color = game.config.color_light_orange;
+        highlight_color.a = 50;
         for y in 0..game.data.map.height() {
             for x in 0..game.data.map.width() {
                 let pos = Pos::new(x, y);

@@ -2,7 +2,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use crate::ai::Behavior;
-use crate::constants::{HAMMER_DAMAGE};
+use crate::constants::{HAMMER_DAMAGE, SWORD_DAMAGE};
 use crate::map::{Surface};
 use crate::types::*;
 use crate::movement::{Reach, MoveMode, check_collision, MoveType, Movement};
@@ -136,6 +136,9 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: 
 
             data.entities.messages[&target].push(Message::Attack(entity));
         }
+    } else if data.using(entity, Item::Sword) {
+        msg_log.log(Msg::Attack(entity, target, SWORD_DAMAGE));
+        msg_log.log(Msg::Killed(entity, target, SWORD_DAMAGE));
     } else {
         // NOTE could add another section for the sword- currently the same as normal attacks
         let damage = data.entities.fighter.get(&entity).map_or(0, |f| f.power) -

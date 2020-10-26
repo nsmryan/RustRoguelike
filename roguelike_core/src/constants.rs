@@ -33,6 +33,7 @@ pub const MAX_MOMENTUM: i32 = 2;
 
 pub const SPIKE_DAMAGE: i32 = 20;
 pub const HAMMER_DAMAGE: i32 = 40;
+pub const SWORD_DAMAGE: i32 = 20;
 
 pub const NOT_IN_FOV_COST: usize = 5;
 
