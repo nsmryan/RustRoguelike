@@ -164,7 +164,8 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
     let mut action_log = std::fs::File::create("action_log.txt").unwrap();
 
     /* Setup FPS Throttling */
-    let fps_throttler = Throttler::new(Duration::from_millis(1000 / game.config.rate as u64));
+    let frame_ms = 1000 / game.config.frame_rate as u64;
+    let fps_throttler = Throttler::new(Duration::from_millis(frame_ms));
 
     let mut event_pump = sdl_context.event_pump()?;
 

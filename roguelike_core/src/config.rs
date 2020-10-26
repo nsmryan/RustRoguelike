@@ -46,7 +46,7 @@ pub struct Config {
     pub idle_speed: f32,
     pub draw_mouse_line: bool,
     pub draw_star_path: bool,
-    pub rate: usize,
+    pub frame_rate: usize,
     pub item_throw_speed: f32,
     pub key_speed: f32,
     pub player_attack_speed: f32,

@@ -49,3 +49,4 @@
 - Columns: 5
 # Rubble indicates that some walls should be replaced with columns
 - Rubble: 5
+- SeedFile: "wfc_seed_2.png"

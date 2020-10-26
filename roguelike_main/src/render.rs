@@ -827,7 +827,7 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                 if *sound_dt >= game.config.sound_timeout {
                     remove_indices.push(index);
                 } else {
-                    *sound_dt += 1.0 / game.config.rate as f32;
+                    *sound_dt += 1.0 / game.config.frame_rate as f32;
                     if *sound_dt > game.config.sound_timeout {
                         *sound_dt = game.config.sound_timeout;
                     }
@@ -945,7 +945,7 @@ fn render_animation(anim_key: AnimKey,
     match display_state.animations[&anim_key].clone() {
         Animation::Between(ref mut sprite_anim, start, end, ref mut dist, blocks_per_sec) => {
            if settings.god_mode || is_in_fov {
-               *dist = *dist + (blocks_per_sec / config.rate as f32); 
+               *dist = *dist + (blocks_per_sec / config.frame_rate as f32); 
                let num_blocks = *dist as usize;
 
                let draw_pos = move_towards(start, end, num_blocks);

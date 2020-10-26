@@ -451,7 +451,7 @@ impl Display {
     }
 
     pub fn sprite_exists(&self, name: &str) -> bool {
-        for (key, sprite_sheet) in self.state.sprites.iter() {
+        for (_key, sprite_sheet) in self.state.sprites.iter() {
             if sprite_sheet.name == *name {
                 return true;
             }

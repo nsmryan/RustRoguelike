@@ -46,7 +46,7 @@ impl Structure {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
 pub enum ProcCmd {
     Island(i32), // radius
     Entities(EntityName, usize, usize),
@@ -55,6 +55,7 @@ pub enum ProcCmd {
     Grass((usize, usize), i32), // (min, max), disperse distance
     Rubble(usize),
     Columns(usize),
+    SeedFile(String),
 }
 
 impl ProcCmd {

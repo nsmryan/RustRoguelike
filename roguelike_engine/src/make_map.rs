@@ -298,10 +298,15 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
 
         MapLoadConfig::ProcGen(procgen_params) => {
-            let template_file = "resources/wfc_seed_2.png";
-
             let file_name = format!("resources/procgen/{}", procgen_params);
             let cmds = ProcCmd::from_file(&file_name);
+
+            let mut template_file = "resources/wfc_seed_2.png".to_string();
+            for param in cmds.iter() {
+                if let ProcCmd::SeedFile(file_name) = param {
+                    template_file = format!("resources/{}", file_name);
+                }
+            }
 
             game.data.map = generate_bare_map(20, 20, &template_file, &mut game.rng);
             player_position = saturate_map(game, &cmds);
