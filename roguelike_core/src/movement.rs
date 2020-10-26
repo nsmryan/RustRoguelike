@@ -347,6 +347,21 @@ impl Direction {
     }
 }
 
+impl fmt::Display for Direction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Direction::Left => write!(f, "left"),
+            Direction::Right => write!(f, "right"),
+            Direction::Up => write!(f, "up"),
+            Direction::Down => write!(f, "down"),
+            Direction::DownLeft => write!(f, "down/left"),
+            Direction::DownRight => write!(f, "down/right"),
+            Direction::UpLeft => write!(f, "up/left"),
+            Direction::UpRight => write!(f, "up/right"),
+        }
+    }
+}
+
 #[test]
 pub fn test_direction_turn_amount() {
     assert_eq!(-1, Direction::Up.turn_amount(Direction::UpLeft));

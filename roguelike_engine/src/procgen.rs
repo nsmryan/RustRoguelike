@@ -52,6 +52,8 @@ pub enum ProcCmd {
     Entities(EntityName, usize, usize),
     Items(Item, usize, usize),
     MaxItems(usize),
+    Traps(Trap, usize, usize),
+    MaxTraps(usize),
     Grass((usize, usize), i32), // (min, max), disperse distance
     Rubble(usize),
     Columns(usize),
@@ -223,6 +225,8 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     place_monsters(game, player_pos, cmds);
 
+    place_traps(game, cmds);
+
     clear_island(game, island_radius);
 
     ensure_iter_and_full_walls(game);
@@ -309,6 +313,45 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
                     Item::Shield => { make_shield(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                     Item::Hammer => { make_hammer(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                     _ => {},
+                }
+            }
+        }
+    }
+}
+
+fn place_traps(game: &mut Game, cmds: &Vec<ProcCmd>) {
+    let potential_pos = game.data.get_clear_pos();
+
+    let mut num_traps = 0;
+    let max_traps = cmds.iter().filter_map(|cmd| {
+        if let ProcCmd::MaxTraps(n) = cmd {
+            return Some(n);
+        }
+        return None;
+    }).map(|n| *n).next().unwrap_or(10000);
+
+    for cmd in cmds.iter() {
+        if let ProcCmd::Traps(typ, min, max) = cmd {
+            let num_gen = game.rng.gen_range(min, max + 1);
+            for _ in 0..num_gen {
+                num_traps += 1;
+                if num_traps >= max_traps {
+                    return;
+                }
+
+                let len = potential_pos.len();
+
+                if len == 0 {
+                    return;
+                }
+
+                let index = game.rng.gen_range(0, len);
+                let pos = potential_pos[index];
+
+                match typ {
+                    Trap::Spikes => { make_spikes(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    Trap::Sound => { make_trap_sound(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    Trap::Blink => { make_blink_trap(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                 }
             }
         }

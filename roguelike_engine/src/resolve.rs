@@ -445,7 +445,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 let source_pos = data.entities.pos[&trap];
 
                 // the triggering entity is considered the source of the sound
-                Msg::Sound(entity_id, source_pos, config.sound_radius_trap, true);
+                msg_log.log(Msg::Sound(entity_id, source_pos, config.sound_radius_trap, true));
             }
 
             Msg::BlinkTrapTriggered(trap, entity_id) => {

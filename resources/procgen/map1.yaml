@@ -39,6 +39,22 @@
     - 1
 # MaxItems limits the number of items that can appear of any type
 - MaxItems: 3
+
+- Traps: 
+    - Spikes
+    - 0
+    - 2
+- Traps: 
+    - Blink
+    - 0
+    - 2
+- Traps: 
+    - Sound
+    - 0
+    - 2
+# MaxTraps limits the number of traps that can appear of any type
+- MaxTraps: 6
+
 # Grass takes a min and max number of grassed locations.
 # it also takes the dispersion (the distance from the center that the grass can lay)
 - Grass: 

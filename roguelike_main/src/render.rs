@@ -435,6 +435,12 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
                 text_list.push(format!(""));
 
+                if let Some(direction) = game.data.entities.direction.get(obj_id) {
+                    text_list.push(format!("Facing"));
+                    text_list.push(format!("  {}", direction));
+                    text_list.push(format!(""));
+                }
+
                 if game.data.entities.fighter.get_mut(obj_id).map_or(false, |fighter| fighter.hp <= 0) {
                     text_list.push(format!("{}", "dead"));
                 } else if let Some(behave) = game.data.entities.behavior.get(obj_id) {
