@@ -599,6 +599,11 @@ impl EntityClass {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+pub struct StatusEffect {
+    pub frozen: usize, // turns
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Message {
     Sound(EntityId, Pos),
@@ -632,6 +637,7 @@ pub struct Entities {
     pub class: CompStore<EntityClass>,
     pub skills: CompStore<Vec<Skill>>,
     pub limbo: CompStore<()>,
+    pub status: CompStore<StatusEffect>,
 
     // TODO should end up in animation system instead
     pub animation: CompStore<VecDeque<AnimKey>>,
@@ -679,6 +685,7 @@ impl Entities {
         self.action.insert(id,  Action::NoAction);
         self.messages.insert(id,  Vec::new());
         self.needs_removal.insert(id,  false);
+        self.status.insert(id,  StatusEffect::default());
 
         return id;
     }

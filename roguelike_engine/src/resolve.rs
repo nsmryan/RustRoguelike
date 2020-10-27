@@ -19,6 +19,8 @@ use crate::generation::{make_energy, make_dagger};
 
 
 pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &mut GameSettings, rng: &mut SmallRng, config: &Config) {
+    let player_id = data.find_player().unwrap();
+
     /* Handle Message Log */
     while let Some(msg) = msg_log.pop() {
         let msg_line = msg.msg_line(data);
@@ -456,8 +458,10 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 }
             }
 
-            Msg::Froze(entity_id) => {
-                // TODO implement freeze effect
+            Msg::Froze(entity_id, num_turns) => {
+                if entity_id == player_id || data.entities.ai.get(&entity_id).is_some() {
+                    data.entities.status[&entity_id].frozen = num_turns;
+                }
             }
 
             Msg::FreezeTrapTriggered(trap, cause_id) => {
@@ -472,7 +476,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 for obj_id in who_hit {
                     // TODO probably need to filter out a bit more
                     if obj_id != cause_id && data.entities.alive[&obj_id] {
-                        msg_log.log(Msg::Froze(obj_id));
+                        msg_log.log(Msg::Froze(obj_id, FREEZE_TRAP_NUM_TURNS));
                     }
                 }
             }
@@ -483,7 +487,6 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
     }
 
     /* Process Player Messages */
-    let player_id = data.find_player().unwrap();
     for message in data.entities.messages[&player_id].iter() {
         if let Message::Sound(obj_id, pos) = message {
             if *obj_id == player_id {

@@ -646,6 +646,15 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
 
     let mut to_remove: Vec<EntityId> = Vec::new();
 
+    // check status effects
+    for entity_id in game.data.entities.ids.iter() {
+        if let Some(mut status) = game.data.entities.status.get_mut(entity_id) {
+            if status.frozen > 0 {
+                status.frozen -= 1;
+            }
+        }
+    }
+
     // perform count down
     for entity_id in game.data.entities.ids.iter() {
         if let Some(ref mut count) = game.data.entities.count_down.get_mut(entity_id) {

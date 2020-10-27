@@ -406,17 +406,21 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
     let monster_pos = data.entities.pos[&monster_id];
 
     if data.map.is_within_bounds(monster_pos) {
-        match data.entities.behavior[&monster_id] {
-            Behavior::Idle => {
-                return ai_idle(monster_id, data, config);
-            }
+        if data.entities.status[&monster_id].frozen > 0 {
+            return Action::none();
+        } else {
+            match data.entities.behavior[&monster_id] {
+                Behavior::Idle => {
+                    return ai_idle(monster_id, data, config);
+                }
 
-            Behavior::Investigating(target_pos) => {
-                return ai_investigate(target_pos, monster_id, data, config);
-            }
+                Behavior::Investigating(target_pos) => {
+                    return ai_investigate(target_pos, monster_id, data, config);
+                }
 
-            Behavior::Attacking(object_id) => {
-                return ai_attack(monster_id, object_id, data, config);
+                Behavior::Attacking(object_id) => {
+                    return ai_attack(monster_id, object_id, data, config);
+                }
             }
         }
     } else {

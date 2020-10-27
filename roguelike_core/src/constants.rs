@@ -37,6 +37,9 @@ pub const SWORD_DAMAGE: i32 = 20;
 
 pub const NOT_IN_FOV_COST: usize = 5;
 
+/* Trap Settings */
+pub const FREEZE_TRAP_NUM_TURNS: usize = 3;
+
 /* Player */
 pub const PLAYER_THROW_DIST: usize = 5;
 

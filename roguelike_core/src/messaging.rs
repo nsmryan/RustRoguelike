@@ -50,7 +50,7 @@ pub enum Msg {
     SpikeTrapTriggered(EntityId, EntityId), // trap, entity
     BlinkTrapTriggered(EntityId, EntityId), // trap, entity
     FreezeTrapTriggered(EntityId, EntityId), // trap, entity
-    Froze(EntityId),
+    Froze(EntityId, usize), // entity, num turns
     PlayerDeath,
     PickedUp(EntityId, EntityId), // entity, item id
     ItemThrow(EntityId, EntityId, Pos, Pos), // thrower, stone id, start, end
@@ -258,7 +258,7 @@ impl Msg {
                 return "".to_string();
             }
 
-            Msg::Froze(entity_id) => {
+            Msg::Froze(entity_id, _num_turns) => {
                 return format!("{:?} was frozen!", data.entities.name[entity_id]);
             }
 
