@@ -1093,7 +1093,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             }
 
             if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
-               game.data.entities.alive[entity_id] {
+               game.data.entities.status[entity_id].alive {
                 if let Some(dir) = game.data.entities.direction.get(entity_id) {
                     // display.draw_tile_edge(pos, area, direction_color, dir);
 
@@ -1126,7 +1126,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             let pos = game.data.entities.pos[entity_id];
 
             if game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
-               game.data.entities.alive[entity_id] {
+               game.data.entities.status[entity_id].alive {
                render_attack_overlay(panel, display_state, game, *entity_id);
                render_fov_overlay(panel, display_state, game, *entity_id);
                render_movement_overlay(panel, display_state, game, *entity_id);
@@ -1143,7 +1143,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             if entity_id != player_id &&
                game.data.map.is_within_bounds(pos) &&
                game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) &&
-               game.data.entities.alive[&entity_id] {
+               game.data.entities.status[&entity_id].alive {
                render_attack_overlay(panel,
                                      display_state,
                                      game,

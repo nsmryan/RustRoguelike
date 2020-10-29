@@ -525,7 +525,7 @@ pub fn handle_input(game: &mut Game) -> Action {
 
     let mut player_turn: Action = Action::none();
 
-    let player_alive = game.data.entities.alive[&player_id];
+    let player_alive = game.data.entities.status[&player_id].alive;
 
     match (game.input_action, player_alive) {
         (InputAction::Pass, true) => {

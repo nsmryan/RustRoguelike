@@ -583,12 +583,12 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
 
     // resolve enemy action
     let monster = timer!("MONSTER");
-    if player_action.takes_turn() && game.data.entities.alive[&player_id] && !won_level {
+    if player_action.takes_turn() && game.data.entities.status[&player_id].alive && !won_level {
         let mut ai_id: Vec<EntityId> = Vec::new();
 
         for key in game.data.entities.ids.iter() {
             if game.data.entities.ai.get(key).is_some()    &&
-               game.data.entities.alive[key]               &&
+               game.data.entities.status[key].alive         &&
                game.data.entities.limbo.get(key).is_none() &&
                game.data.entities.fighter.get(key).is_some() {
                ai_id.push(*key);
@@ -616,7 +616,7 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
                 // check if fighter needs to be removed
                 if let Some(fighter) = game.data.entities.fighter.get(key) {
                     if fighter.hp <= 0 {
-                        game.data.entities.alive[key] = false;
+                        game.data.entities.status[key].alive = false;
                         game.data.entities.blocks[key] = false;
                         game.data.entities.chr[key] = '%';
                         game.data.entities.fighter.remove(key);
@@ -827,7 +827,7 @@ pub fn test_hammer_small_wall() {
 
     let pawn_pos = Pos::new(3, 4);
     let pawn = make_pawn(&mut game.data.entities, &game.config, pawn_pos, &mut game.msg_log);
-    assert_eq!(true, game.data.entities.alive[&pawn]);
+    assert_eq!(true, game.data.entities.status[&pawn].alive);
 
     // add the hammer back and hit the pawn with it to test hitting entities
     let hammer = make_hammer(&mut game.data.entities, &game.config, Pos::new(4, 7), &mut game.msg_log);
@@ -978,7 +978,7 @@ pub fn test_game_map() {
     assert!(game.data.entities.ids.contains(&gol));
 
     assert_eq!(gol_hp, game.data.entities.fighter[&gol].hp);
-    assert!(game.data.entities.alive[&gol]);
+    assert!(game.data.entities.status[&gol].alive);
 
     test_move(&mut game, Direction::Right, (7, 10));
 

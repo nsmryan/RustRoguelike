@@ -73,7 +73,7 @@ pub fn push_attack(entity_id: EntityId,
             msg_log.log_front(Msg::Moved(target, movement, past_pos));
         } else {
             // otherwise crush them against the wall/entity
-            data.entities.alive[&target] = false;
+            data.entities.status[&target].alive = false;
             data.entities.blocks[&target] = false;
             damage = data.entities.fighter[&target].hp;
 
@@ -96,7 +96,7 @@ pub fn crush(handle: EntityId, target: EntityId, entities: &mut Entities, msg_lo
     if damage > 0 {
         entities.take_damage(target, damage);
 
-        entities.alive[&target] = false;
+        entities.status[&target].alive = false;
         entities.blocks[&target] = false;
 
         msg_log.log(Msg::Killed(handle, target, damage));
@@ -105,7 +105,7 @@ pub fn crush(handle: EntityId, target: EntityId, entities: &mut Entities, msg_lo
 
 pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
     if data.using(entity, Item::Hammer) {
-        data.entities.alive[&target] = false;
+        data.entities.status[&target].alive = false;
         data.entities.blocks[&target] = false;
 
         data.entities.take_damage(target, HAMMER_DAMAGE);
@@ -143,13 +143,13 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: 
         // NOTE could add another section for the sword- currently the same as normal attacks
         let damage = data.entities.fighter.get(&entity).map_or(0, |f| f.power) -
                      data.entities.fighter.get(&target).map_or(0, |f| f.defense);
-        if damage > 0 && data.entities.alive[&target] {
+        if damage > 0 && data.entities.status[&target].alive {
             data.entities.take_damage(target, damage);
 
             msg_log.log(Msg::Attack(entity, target, damage));
             // TODO consider moving this to the Attack msg
             if data.entities.fighter[&target].hp <= 0 {
-                data.entities.alive[&target] = false;
+                data.entities.status[&target].alive = false;
                 data.entities.blocks[&target] = false;
 
                 msg_log.log(Msg::Killed(entity, target, damage));
@@ -166,7 +166,7 @@ pub fn stab(handle: EntityId, target: EntityId, entities: &mut Entities, msg_log
     if damage != 0 {
         msg_log.log(Msg::Attack(handle, target, damage));
 
-        entities.alive[&target] = false;
+        entities.status[&target].alive = false;
         entities.blocks[&target] = false;
 
         msg_log.log(Msg::Killed(handle, target, damage));

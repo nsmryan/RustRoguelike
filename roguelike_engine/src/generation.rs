@@ -30,7 +30,7 @@ pub enum MapGenType {
 pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLog) -> EntityId {
     let player = entities.create_entity(0, 0, EntityType::Player, '@', Color::white(), EntityName::Player, true);
 
-    entities.alive.insert(player,  true);
+    entities.status[&player].alive = true;
     entities.fighter.insert(player,
         Fighter { max_hp: config.player_health,
                   hp: config.player_health,
@@ -137,7 +137,7 @@ pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
     entities.color.insert(gol,  config.color_light_orange);
     entities.movement.insert(gol,  Reach::Single(GOL_MOVE_DISTANCE));
     entities.attack.insert(gol,  Reach::Diag(GOL_ATTACK_DISTANCE));
-    entities.alive.insert(gol,  true);
+    entities.status[&gol].alive = true;
     entities.direction.insert(gol,  Direction::from_f32(rand_from_pos(pos)));
 
     msg_log.log(Msg::SpawnedObject(gol, entities.typ[&gol], pos, EntityName::Gol));
@@ -154,7 +154,7 @@ pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
     entities.color.insert(spire,  config.color_mint_green);
     entities.movement.insert(spire,  Reach::Single(SPIRE_MOVE_DISTANCE));
     entities.attack.insert(spire,  Reach::Single(SPIRE_ATTACK_DISTANCE));
-    entities.alive.insert(spire,  true);
+    entities.status[&spire].alive = true;
     entities.direction.insert(spire,  Direction::Up);
 
     msg_log.log(Msg::SpawnedObject(spire, entities.typ[&spire], pos, EntityName::Spire));
@@ -171,7 +171,7 @@ pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
     entities.color.insert(elf,  config.color_ice_blue);
     entities.movement.insert(elf,  Reach::Single(PAWN_MOVE_DISTANCE));
     entities.attack.insert(elf,  Reach::Single(PAWN_ATTACK_DISTANCE));
-    entities.alive.insert(elf,  true);
+    entities.status[&elf].alive = true;
     entities.direction.insert(elf,  Direction::from_f32(rand_from_pos(pos)));
 
     msg_log.log(Msg::SpawnedObject(elf, entities.typ[&elf], pos, EntityName::Pawn));
@@ -241,7 +241,7 @@ pub fn make_stone(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
     let stone = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_STONE as char, config.color_light_grey, EntityName::Stone, true);
 
     entities.item.insert(stone,  Item::Stone);
-    entities.alive.insert(stone,  false);
+    entities.status[&stone].alive = false;
     entities.blocks.insert(stone,  false);
 
     msg_log.log(Msg::SpawnedObject(stone, entities.typ[&stone], pos, EntityName::Stone));

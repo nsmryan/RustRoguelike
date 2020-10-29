@@ -368,8 +368,8 @@ impl GameData {
         self.entities.attack.remove(&id);
         self.entities.inventory.remove(&id);
         self.entities.trap.remove(&id);
-        self.entities.energy.remove(&id);
         self.entities.armed.remove(&id);
+        self.entities.energy.remove(&id);
         self.entities.count_down.remove(&id);
         self.entities.move_mode.remove(&id);
         self.entities.direction.remove(&id);
@@ -379,9 +379,9 @@ impl GameData {
         self.entities.skills.remove(&id);
         self.entities.limbo.remove(&id);
         self.entities.animation.remove(&id);
-        self.entities.alive.remove(&id);
         self.entities.sound.remove(&id);
         self.entities.typ.remove(&id);
+        self.entities.status.remove(&id);
         self.entities.color.remove(&id);
         self.entities.blocks.remove(&id);
         self.entities.needs_removal.remove(&id);
@@ -602,6 +602,8 @@ impl EntityClass {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct StatusEffect {
     pub frozen: usize, // turns
+    pub active: bool,
+    pub alive: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -643,7 +645,6 @@ pub struct Entities {
     pub animation: CompStore<VecDeque<AnimKey>>,
 
     // NOTE not sure about keeping these ones, or packaging into larger ones
-    pub alive: CompStore<bool>,
     pub sound: CompStore<Pos>, // source position
     pub typ: CompStore<EntityType>,
     pub color: CompStore<Color>,
@@ -679,7 +680,6 @@ impl Entities {
         self.color.insert(id, color);
         self.name.insert(id, name);
         self.blocks.insert(id, blocks);
-        self.alive.insert(id, false);
         self.direction.insert(id, Direction::Up);
         self.animation.insert(id,  VecDeque::new());
         self.action.insert(id,  Action::NoAction);
@@ -753,7 +753,7 @@ impl Entities {
 
         if let Some(fighter) = self.fighter.get(&entity) {
             if fighter.hp <= 0 {
-                self.alive[&entity] = false;
+                self.status[&entity].alive = false;
             }
         }
     }
@@ -837,9 +837,9 @@ impl Entities {
         self.skills.extend(other.skills.iter().map(|(k, v)| (*k, v.clone())));
         self.limbo.extend(other.limbo.iter());
         self.animation.extend(other.animation.iter().map(|(k, v)| (*k, v.clone())));
-        self.alive.extend(other.alive.iter());
         self.sound.extend(other.sound.iter());
         self.typ.extend(other.typ.iter());
+        self.status.extend(other.status.iter());
         self.color.extend(other.color.iter());
         self.blocks.extend(other.blocks.iter());
         self.needs_removal.extend(other.needs_removal.iter());

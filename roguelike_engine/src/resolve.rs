@@ -91,11 +91,11 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                             msg_log.log(Msg::Moved(pusher, movement, pushed_pos));
                         }
                     }
-                } else if data.entities.alive[&pushed] {
+                } else if data.entities.status[&pushed].alive {
                     push_attack(pusher, pushed, delta_pos, move_into, data, msg_log);
                 } else {
                     panic!("Tried to push entity {:?}, alive = {}!",
-                           data.entities.typ[&pushed], data.entities.alive[&pushed]);
+                           data.entities.typ[&pushed], data.entities.status[&pushed].alive);
                 }
             }
 
@@ -124,7 +124,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 if let Some(fighter) = data.entities.fighter.get_mut(&attacked) {
                     fighter.hp = 0;
                 }
-                data.entities.alive[&attacked] = false;
+                data.entities.status[&attacked].alive = false;
 
                 data.entities.blocks[&attacked] = false;
 
@@ -145,7 +145,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 let adj_locs = Reach::single(1).reachables(pos);
                 for loc in adj_locs {
                     if let Some(target_id) = data.has_blocking_entity(loc) {
-                        if data.entities.alive[&target_id] {
+                        if data.entities.status[&target_id].alive {
                             attack(entity_id, target_id, data, msg_log);
                             any_hit_entity = true;
                         }
@@ -436,7 +436,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 data.entities.take_damage(entity_id, SPIKE_DAMAGE);
 
                 if data.entities.fighter[&entity_id].hp <= 0 {
-                    data.entities.alive[&entity_id] = false;
+                    data.entities.status[&entity_id].alive = false;
                     data.entities.blocks[&entity_id] = false;
 
                     msg_log.log(Msg::Killed(trap, entity_id, SPIKE_DAMAGE));
@@ -475,7 +475,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
 
                 for obj_id in who_hit {
                     // TODO probably need to filter out a bit more
-                    if obj_id != cause_id && data.entities.alive[&obj_id] {
+                    if obj_id != cause_id && data.entities.status[&obj_id].alive {
                         msg_log.log(Msg::Froze(obj_id, FREEZE_TRAP_NUM_TURNS));
                     }
                 }
@@ -599,7 +599,7 @@ fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data
     for key in data.entities.ids.iter() {
         if data.entities.trap.get(key).is_some()           && // key is a trap
            data.entities.armed.get(key) == Some(&true)     && // trap is armed
-           data.entities.alive[&entity_id]                 && // entity is alive
+           data.entities.status[&entity_id].alive           && // entity is alive
            data.entities.fighter.get(&entity_id).is_some() && // entity is a fighter
            data.entities.pos[key] == data.entities.pos[&entity_id] {
             traps.push(*key);

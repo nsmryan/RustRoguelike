@@ -46,7 +46,7 @@ pub fn ai_take_turn(monster_id: EntityId,
                     _msg_log: &mut MsgLog) -> Action {
     let mut turn: Action = Action::NoAction;
 
-    if data.entities.alive[&monster_id] {
+    if data.entities.status[&monster_id].alive {
         match data.entities.ai.get(&monster_id) {
             Some(Ai::Basic) => {
                 turn = basic_ai_take_turn(monster_id, data, config);
