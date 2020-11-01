@@ -70,7 +70,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::ItemThrow(entity_id, item_id, start, end) => {
-                throw_item(entity_id, item_id, start, end, data);
+                throw_item(entity_id, item_id, start, end, data, msg_log);
 
                 // NOTE the radius here is the stone radius, regardless of item type
                 msg_log.log_front(Msg::Sound(entity_id, end, config.sound_radius_stone, false));

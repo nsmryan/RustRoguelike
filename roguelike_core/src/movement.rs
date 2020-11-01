@@ -140,9 +140,7 @@ impl Movement {
             attack: None,
         };
     }
-}
 
-impl Movement {
     pub fn new(pos: Pos, typ: MoveType, attack: Option<Attack>) -> Movement {
         return Movement {
             pos,

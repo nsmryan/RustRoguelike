@@ -3,7 +3,7 @@ use std::fmt;
 
 use serde::{Serialize, Deserialize};
 
-use roguelike_core::movement::{Direction, Action, Reach};
+use roguelike_core::movement::{Direction, Action, Reach, Movement};
 use roguelike_core::types::*;
 use roguelike_core::movement;
 use roguelike_core::utils::{reach_by_mode, item_primary_at};
@@ -749,7 +749,8 @@ pub fn throw_item(player_id: EntityId,
                   item_id: EntityId,
                   start_pos: Pos,
                   end_pos: Pos,
-                  game_data: &mut GameData) {
+                  game_data: &mut GameData,
+                  msg_log: &mut MsgLog) {
     let throw_line = line(start_pos, end_pos);
 
     // get target position in direction of player click
@@ -761,7 +762,10 @@ pub fn throw_item(player_id: EntityId,
         end_pos = blocked.start_pos;
     }
 
-    game_data.entities.set_pos(item_id, end_pos);
+    game_data.entities.set_pos(item_id, start_pos);
+
+    let movement = Movement::step_to(end_pos);
+    msg_log.log(Msg::Moved(item_id, movement, end_pos));
 
     game_data.entities.remove_item(player_id, item_id);
 }
