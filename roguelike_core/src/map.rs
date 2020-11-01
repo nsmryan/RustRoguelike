@@ -23,6 +23,15 @@ use crate::movement::Direction;
 use crate::line::*;
 
 
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum TileType {
+    Empty,
+    ShortWall,
+    Wall,
+    Water,
+    Exit,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AoeEffect {
     Sound,
@@ -212,16 +221,6 @@ impl Tile {
             self.left_wall = Wall::ShortWall;
         }
     }
-}
-
-
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum TileType {
-    Empty,
-    ShortWall,
-    Wall,
-    Water,
-    Exit,
 }
 
 

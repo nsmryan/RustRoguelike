@@ -382,6 +382,7 @@ impl GameData {
         self.entities.sound.remove(&id);
         self.entities.typ.remove(&id);
         self.entities.status.remove(&id);
+        self.entities.gate_pos.remove(&id);
         self.entities.color.remove(&id);
         self.entities.blocks.remove(&id);
         self.entities.needs_removal.remove(&id);
@@ -550,6 +551,7 @@ pub enum EntityName {
     BlinkTrap,
     FreezeTrap,
     SoundTrap,
+    GateTrigger,
     Stone,
     Mouse,
     Energy,
@@ -569,6 +571,7 @@ pub enum EntityType {
     Item,
     Column,
     Energy,
+    Trigger,
     Other,
 }
 
@@ -640,6 +643,7 @@ pub struct Entities {
     pub skills: CompStore<Vec<Skill>>,
     pub limbo: CompStore<()>,
     pub status: CompStore<StatusEffect>,
+    pub gate_pos: CompStore<Option<Pos>>,
 
     // TODO should end up in animation system instead
     pub animation: CompStore<VecDeque<AnimKey>>,
@@ -840,6 +844,7 @@ impl Entities {
         self.sound.extend(other.sound.iter());
         self.typ.extend(other.typ.iter());
         self.status.extend(other.status.iter());
+        self.gate_pos.extend(other.gate_pos.iter());
         self.color.extend(other.color.iter());
         self.blocks.extend(other.blocks.iter());
         self.needs_removal.extend(other.needs_removal.iter());

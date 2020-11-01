@@ -227,6 +227,8 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     place_traps(game, cmds);
 
+    place_triggers(game, cmds);
+
     clear_island(game, island_radius);
 
     ensure_iter_and_full_walls(game);
@@ -319,6 +321,30 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
     }
 }
 
+fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
+    let potential_pos = game.data.get_clear_pos();
+
+    let mut num_triggers = 0;
+    let max_triggers = 2;
+
+    // TODO Should collect locations near walls in a set, and chose a random number of random pos,
+    // without replacement
+    for pos in potential_pos {
+        for neighbor in game.data.map.cardinal_neighbors(pos) {
+            if game.data.map[neighbor].tile_type == TileType::Wall {
+                make_gate_trigger(&mut game.data.entities, &game.config, pos, &mut game.msg_log);
+
+                num_triggers += 1;
+                if num_triggers >= max_triggers {
+                    return;
+                }
+
+                break;
+            }
+        }
+    }
+}
+
 fn place_traps(game: &mut Game, cmds: &Vec<ProcCmd>) {
     let potential_pos = game.data.get_clear_pos();
 
@@ -349,8 +375,8 @@ fn place_traps(game: &mut Game, cmds: &Vec<ProcCmd>) {
                 let pos = potential_pos[index];
 
                 match typ {
-                    Trap::Spikes => { make_spikes(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
-                    Trap::Sound => { make_trap_sound(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    Trap::Spikes => { make_spike_trap(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    Trap::Sound => { make_sound_trap(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                     Trap::Blink => { make_blink_trap(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                     Trap::Freeze => { make_freeze_trap(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                 }

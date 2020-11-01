@@ -35,6 +35,8 @@ pub const SPIKE_DAMAGE: i32 = 20;
 pub const HAMMER_DAMAGE: i32 = 40;
 pub const SWORD_DAMAGE: i32 = 20;
 
+pub const TRIGGER_WALL_DAMAGE: i32 = 20;
+
 pub const NOT_IN_FOV_COST: usize = 5;
 
 /* Trap Settings */
@@ -138,6 +140,7 @@ pub const ENTITY_TRAP_SOUND: u8 = 83; // char S
 pub const ENTITY_SPIKE_TRAP: u8 = 136;
 pub const ENTITY_BLINK_TRAP: u8 = 6;
 pub const ENTITY_FREEZE_TRAP: u8 = 70; // char F
+pub const ENTITY_GATE_TRIGGER: u8 = 76; // char G
 
 pub const ARROW_RIGHT: u8 = 16;
 pub const ARROW_LEFT: u8 = 17;

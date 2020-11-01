@@ -660,7 +660,7 @@ pub fn read_map_xp(config: &Config,
                             }
  
                             ENTITY_SPIKE_TRAP => {
-                                make_spikes(&mut data.entities, config, pos, msg_log);
+                                make_spike_trap(&mut data.entities, config, pos, msg_log);
                             }
 
                             _ => {

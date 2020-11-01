@@ -179,7 +179,7 @@ pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
     return elf;
 }
 
-pub fn make_trap_sound(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+pub fn make_sound_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let sound = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_TRAP_SOUND as char, config.color_ice_blue, EntityName::SoundTrap, false);
 
     entities.trap.insert(sound,  Trap::Sound);
@@ -191,7 +191,7 @@ pub fn make_trap_sound(entities: &mut Entities, config: &Config, pos: Pos, msg_l
     return sound;
 }
 
-pub fn make_spikes(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+pub fn make_spike_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let spikes = entities.create_entity(pos.x, pos.y, EntityType::Item, MAP_TALL_SPIKES as char, config.color_ice_blue, EntityName::SpikeTrap, false);
 
     entities.trap.insert(spikes,  Trap::Spikes);
@@ -225,6 +225,16 @@ pub fn make_freeze_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_
     msg_log.log(Msg::SpawnedObject(freeze, entities.typ[&freeze], pos, EntityName::FreezeTrap));
 
     return freeze;
+}
+
+pub fn make_gate_trigger(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let gate = entities.create_entity(pos.x, pos.y, EntityType::Trigger, ENTITY_GATE_TRIGGER as char, config.color_ice_blue, EntityName::GateTrigger, false);
+
+    entities.gate_pos.insert(gate, None);
+
+    msg_log.log(Msg::SpawnedObject(gate, entities.typ[&gate], pos, EntityName::GateTrigger));
+
+    return gate;
 }
 
 pub fn make_exit(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
@@ -457,7 +467,7 @@ pub fn make_test_map(game: &mut Game) {
 
     let elf = make_pawn(&mut game.data.entities, &game.config, Pos::new(2, 9), &mut game.msg_log);
     game.data.entities.direction[&elf] = Direction::Down;
-    make_spikes(&mut game.data.entities, &game.config, Pos::new(2, 10), &mut game.msg_log);
+    make_spike_trap(&mut game.data.entities, &game.config, Pos::new(2, 10), &mut game.msg_log);
 
 
     make_dagger(&mut game.data.entities, &game.config, Pos::new(3, 10), &mut game.msg_log);

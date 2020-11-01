@@ -29,6 +29,14 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
         }
 
         match msg {
+            Msg::Moved(entity_id, movement, pos) => {
+                // only perform move if tile does not contain a wall or entity
+                if data.has_blocking_entity(movement.pos).is_none() &&
+                   !data.map[movement.pos].block_move {
+                       process_moved_message(entity_id, movement, pos, data, msg_log, config);
+                }
+            }
+
             Msg::Crushed(entity_id, pos) => {
                 data.map[pos].surface = Surface::Rubble;
 
@@ -99,26 +107,24 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 }
             }
 
-            Msg::Moved(entity_id, movement, pos) => {
-                // only perform move if tile does not contain a wall or entity
-                if data.has_blocking_entity(movement.pos).is_none() &&
-                   !data.map[movement.pos].block_move {
-                       process_moved_message(entity_id, movement, pos, data, msg_log, config);
-                }
-            }
-
             Msg::Yell(entity_id, pos) => {
                 msg_log.log_front(Msg::Sound(entity_id, pos, config.yell_radius, true));
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
                 let attacked_pos = data.entities.pos[&attacked];
-                if data.entities.typ[&attacked] != EntityType::Player {
-                    data.map[attacked_pos].surface = Surface::Rubble;
-                }
 
-                if data.entities.typ[&attacked] == EntityType::Enemy {
-                    make_energy(&mut data.entities, config, attacked_pos, msg_log);
+                // if the attacked entities position is not blocked
+                if !data.map[attacked_pos].block_move {
+                    // all non-player entities leave rubble
+                    if data.entities.typ[&attacked] != EntityType::Player {
+                        data.map[attacked_pos].surface = Surface::Rubble;
+                    }
+
+                    // leave energy ball
+                    if data.entities.typ[&attacked] == EntityType::Enemy {
+                        make_energy(&mut data.entities, config, attacked_pos, msg_log);
+                    }
                 }
 
                 if let Some(fighter) = data.entities.fighter.get_mut(&attacked) {
@@ -481,6 +487,61 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 }
             }
 
+            Msg::Untriggered(trigger, entity_id) => {
+                if data.entities.name[&trigger] == EntityName::GateTrigger {
+                    // if the gate is currently active, raise the wall
+                    if data.entities.status[&trigger].active {
+                        // is the trigger free of other entities?
+                        let stepped_on =
+                            data.entities
+                                .ids.iter()
+                                .any(|key| data.entities.typ[key] != EntityType::Trigger &&
+                                           data.entities.pos[&trigger] == data.entities.pos[key]);
+
+                        let mut maybe_wall_pos = None;
+                        if !stepped_on {
+                            // raise the gate
+                            data.entities.status[&trigger].active = false;
+                            if let Some(wall_pos) = data.entities.gate_pos[&trigger] {
+                                data.map[wall_pos] = Tile::wall();
+                                data.entities.gate_pos[&trigger] = None;
+                                maybe_wall_pos = Some(wall_pos);
+                            }
+                        }
+
+                        // if the gate was raised, kill entities in that spot
+                        if let Some(wall_pos) = maybe_wall_pos {
+                            for key in data.entities.ids.iter() {
+                                if data.entities.pos[key] == wall_pos &&
+                                   data.entities.status[key].alive {
+                                    msg_log.log(Msg::Killed(trigger, *key, TRIGGER_WALL_DAMAGE));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Msg::Triggered(trigger, entity_id) => {
+                if data.entities.name[&trigger] == EntityName::GateTrigger {
+                    if !data.entities.status[&trigger].active {
+                        let trigger_pos = data.entities.pos[&trigger];
+
+                        // any wall nearby is a potential target
+                        for neighbor in data.map.cardinal_neighbors(trigger_pos) {
+                            if data.map[neighbor].tile_type == TileType::Wall {
+                                data.entities.status[&trigger].active = true;
+
+                                data.map[neighbor] = Tile::empty();
+
+                                data.entities.gate_pos[&trigger] = Some(neighbor);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
             _ => {
             }
         }
@@ -556,6 +617,8 @@ fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data
         return;
     }
 
+    let original_pos = data.entities.pos[&entity_id];
+
     data.entities.move_to(entity_id, pos);
 
     // if entity is a monster, which is also alert, and there is a path to the player,
@@ -599,7 +662,7 @@ fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data
     for key in data.entities.ids.iter() {
         if data.entities.trap.get(key).is_some()           && // key is a trap
            data.entities.armed.get(key) == Some(&true)     && // trap is armed
-           data.entities.status[&entity_id].alive           && // entity is alive
+           data.entities.status[&entity_id].alive          && // entity is alive
            data.entities.fighter.get(&entity_id).is_some() && // entity is a fighter
            data.entities.pos[key] == data.entities.pos[&entity_id] {
             traps.push(*key);
@@ -642,4 +705,22 @@ fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data
             }
         }
     }
+
+    // Resolve triggers
+    for key in data.entities.ids.iter() {
+        if data.entities.typ[key] == EntityType::Trigger && // key is a trigger
+           data.entities.pos[key] == data.entities.pos[&entity_id] {
+               msg_log.log(Msg::Triggered(*key, entity_id));
+        }
+    }
+
+    for key in data.entities.ids.iter() {
+        if data.entities.typ[key] == EntityType::Trigger && // key is a trigger
+           data.entities.pos[key] == original_pos        &&
+           data.entities.status[key].active {
+               dbg!("untriggered");
+               msg_log.log(Msg::Untriggered(*key, entity_id));
+        }
+    }
 }
+

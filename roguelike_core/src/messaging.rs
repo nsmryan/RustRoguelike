@@ -50,6 +50,7 @@ pub enum Msg {
     SpikeTrapTriggered(EntityId, EntityId), // trap, entity
     BlinkTrapTriggered(EntityId, EntityId), // trap, entity
     FreezeTrapTriggered(EntityId, EntityId), // trap, entity
+    GateTriggered(EntityId, EntityId), // trap, entity
     Froze(EntityId, usize), // entity, num turns
     PlayerDeath,
     PickedUp(EntityId, EntityId), // entity, item id
@@ -79,6 +80,8 @@ pub enum Msg {
     DropFailed(EntityId),
     DroppedItem(EntityId, EntityId),
     PlayerTurn(),
+    Triggered(EntityId, EntityId), // trap, entity
+    Untriggered(EntityId, EntityId), // trap, entity
 }
 
 impl Msg {
@@ -106,6 +109,10 @@ impl Msg {
 
             Msg::FreezeTrapTriggered(_trap, _entity_id) => {
                 return "Freeze trap triggered".to_string();
+            }
+
+            Msg::GateTriggered(_trap, _entity_id) => {
+                return "Gate activated".to_string();
             }
 
             Msg::PlayerDeath => {
@@ -260,6 +267,14 @@ impl Msg {
 
             Msg::Froze(entity_id, _num_turns) => {
                 return format!("{:?} was frozen!", data.entities.name[entity_id]);
+            }
+
+            Msg::Triggered(_trap, entity_id) => {
+                return format!("{:?} triggered something!", data.entities.name[entity_id]);
+            }
+
+            Msg::Untriggered(_trap, entity_id) => {
+                return format!("{:?} stepped off something!", data.entities.name[entity_id]);
             }
 
             _ => {
