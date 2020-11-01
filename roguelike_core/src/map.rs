@@ -261,9 +261,6 @@ impl Wall {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Map {
     pub tiles: Vec<Vec<Tile>>,
-    //fov: MapData,
-    fov_pos: Pos,
-    fov_radius: i32,
 }
 
 impl Map {
@@ -271,8 +268,6 @@ impl Map {
         let map =
             Map {
                 tiles,
-                fov_pos: Pos::new(0, 0),
-                fov_radius: 1,
             };
 
         return map;
@@ -283,8 +278,6 @@ impl Map {
         let map =
             Map {
                 tiles,
-                fov_pos: Pos::new(0, 0),
-                fov_radius: 1,
             };
 
         return map;
@@ -294,8 +287,6 @@ impl Map {
         let map =
             Map {
                 tiles: Vec::new(),
-                fov_pos: Pos::new(0, 0),
-                fov_radius: 1,
             };
 
         return map;
