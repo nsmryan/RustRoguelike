@@ -548,6 +548,38 @@ impl Map {
         return self.tiles[0].len() as i32;
     }
 
+    pub fn is_in_fov(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
+        //return self.is_in_fov_lines(start_pos, end_pos, radius);
+        return self.is_in_fov_shadowcast(start_pos, end_pos, radius);
+    }
+
+    pub fn is_in_fov_shadowcast(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
+        if let Some(visible) = self.fov_cache.get(&start_pos) {
+            return visible.iter().any(|e| *e == end_pos);
+        }
+
+        let mut in_fov = false;
+        // NOTE(perf) this pre-allocation speeds up FOV significantly
+        let mut visible_positions = Vec::with_capacity(120);
+
+        let mut mark_fov = |sym_pos: SymPos| {
+            let pos = Pos::new(sym_pos.0 as i32, sym_pos.1 as i32);
+            in_fov |= pos == end_pos;
+            visible_positions.push(pos);
+        };
+
+        let mut is_blocking = |sym_pos: SymPos| {
+            let pos = Pos::new(sym_pos.0 as i32, sym_pos.1 as i32);
+            return !self.is_within_bounds(pos) || distance(start_pos, pos) >= radius || self[pos].block_move;
+        };
+
+        compute_fov((start_pos.x as isize, start_pos.y as isize), &mut is_blocking, &mut mark_fov);
+
+        self.fov_cache.insert(start_pos, visible_positions);
+
+        return in_fov;
+    }
+
     pub fn is_in_fov_direction(&mut self, start_pos: Pos, end_pos: Pos, radius: i32, dir: Direction) -> bool {
         if start_pos == end_pos {
             return true;
@@ -607,40 +639,6 @@ impl Map {
         }
             
         return false;
-    }
-
-    pub fn is_in_fov(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
-        //return self.is_in_fov_lines(start_pos, end_pos, radius);
-        return self.is_in_fov_shadowcast(start_pos, end_pos, radius);
-    }
-
-    pub fn is_in_fov_shadowcast(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
-        if let Some(visible) = self.fov_cache.get(&start_pos) {
-            return visible.iter().any(|e| *e == end_pos);
-        }
-
-        let mut in_fov = false;
-        // TODO(perf) could try with_capacity to avoid additional allocations.
-        let mut visible_positions = Vec::new();
-
-        let mut mark_fov = |sym_pos: SymPos| {
-            let pos = Pos::new(sym_pos.0 as i32, sym_pos.1 as i32);
-            in_fov |= pos == end_pos;
-            visible_positions.push(pos);
-        };
-
-        let mut is_blocking = |sym_pos: SymPos| {
-            let pos = Pos::new(sym_pos.0 as i32, sym_pos.1 as i32);
-            return !self.is_within_bounds(pos) || distance(start_pos, pos) >= radius || self[pos].block_move;
-        };
-
-        let fov_timer = timer!("FOV");
-        compute_fov((start_pos.x as isize, start_pos.y as isize), &mut is_blocking, &mut mark_fov);
-        drop(fov_timer);
-
-        self.fov_cache.insert(start_pos, visible_positions);
-
-        return in_fov;
     }
 
     pub fn is_in_fov_lines(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
