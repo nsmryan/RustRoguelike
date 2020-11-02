@@ -134,7 +134,6 @@ pub struct Tile {
     pub left_wall: Wall,
     pub chr: u8,
     pub surface: Surface,
-    pub opaqueness: usize,
 }
 
 impl Tile {
@@ -197,26 +196,28 @@ impl Tile {
     }
 
     pub fn short_wall_with(chr: char) -> Self {
-        Tile { block_move: true,
-        block_sight: false,
-        explored: false,
-        tile_type: TileType::ShortWall,
-        bottom_wall: Wall::Empty,
-        left_wall: Wall::Empty,
-        chr: chr as u8,
-        surface: Surface::Floor,
+        Tile {
+            block_move: true,
+            block_sight: false,
+            explored: false,
+            tile_type: TileType::ShortWall,
+            bottom_wall: Wall::Empty,
+            left_wall: Wall::Empty,
+            chr: chr as u8,
+            surface: Surface::Floor,
         }
     }
 
     pub fn exit() -> Self {
-        Tile { block_move: false,
-        block_sight: false,
-        explored: false,
-        tile_type: TileType::Exit,
-        bottom_wall: Wall::Empty,
-        left_wall: Wall::Empty,
-        chr: ' ' as u8,
-        surface: Surface::Floor,
+        Tile {
+            block_move: false,
+            block_sight: false,
+            explored: false,
+            tile_type: TileType::Exit,
+            bottom_wall: Wall::Empty,
+            left_wall: Wall::Empty,
+            chr: ' ' as u8,
+            surface: Surface::Floor,
         }
     }
 
@@ -573,7 +574,8 @@ impl Map {
 
         let mut is_blocking = |sym_pos: SymPos| {
             let pos = Pos::new(sym_pos.0 as i32, sym_pos.1 as i32);
-            return !self.is_within_bounds(pos) || distance(start_pos, pos) >= radius || self[pos].block_move;
+            let dist = (start_pos.x - pos.x).abs() + (start_pos.y - pos.y).abs();
+            return !self.is_within_bounds(pos) || dist >= radius || self[pos].block_move;
         };
 
         compute_fov((start_pos.x as isize, start_pos.y as isize), &mut is_blocking, &mut mark_fov);
