@@ -134,30 +134,33 @@ pub struct Tile {
     pub left_wall: Wall,
     pub chr: u8,
     pub surface: Surface,
+    pub opaqueness: usize,
 }
 
 impl Tile {
     pub fn empty() -> Self {
-        Tile { block_move: false,
-        block_sight: false,
-        explored: false,
-        tile_type: TileType::Empty,
-        bottom_wall: Wall::Empty,
-        left_wall: Wall::Empty,
-        chr: ' ' as u8,
-        surface: Surface::Floor,
+        Tile {
+            block_move: false,
+            block_sight: false,
+            explored: false,
+            tile_type: TileType::Empty,
+            bottom_wall: Wall::Empty,
+            left_wall: Wall::Empty,
+            chr: ' ' as u8,
+            surface: Surface::Floor,
         }
     }
 
     pub fn water() -> Self {
-        Tile { block_move: true,
-        block_sight: false,
-        explored: false,
-        tile_type: TileType::Water,
-        bottom_wall: Wall::Empty,
-        left_wall: Wall::Empty,
-        chr: ' ' as u8,
-        surface: Surface::Floor,
+        Tile {
+            block_move: true,
+            block_sight: false,
+            explored: false,
+            tile_type: TileType::Water,
+            bottom_wall: Wall::Empty,
+            left_wall: Wall::Empty,
+            chr: ' ' as u8,
+            surface: Surface::Floor,
         }
     }
 
