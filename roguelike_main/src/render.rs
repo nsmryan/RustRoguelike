@@ -701,7 +701,11 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
                 game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) ||
                 game.settings.god_mode;
 
-            game.data.map[pos].explored |= visible;
+            // careful not to set map if not needed- this will clear the fov cache
+            // TODO this seems like it should be somewhere else.
+            if visible && !game.data.map[pos].explored {
+                game.data.map[pos].explored = visible;
+            }
 
             let explored = game.data.map[pos].explored || visible;
 

@@ -1,10 +1,15 @@
 use std::ops::{Index, IndexMut};
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::iter;
 
 use rand::prelude::*;
 
 use pathfinding::directed::astar::astar;
+
+use logging_timer::timer;
+
+use symmetric_shadowcasting::Pos as SymPos;
+use symmetric_shadowcasting::compute_fov;
 
 use smallvec::SmallVec;
 
@@ -261,6 +266,7 @@ impl Wall {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Map {
     pub tiles: Vec<Vec<Tile>>,
+    pub fov_cache: HashMap<Pos, Vec<Pos>>,
 }
 
 impl Map {
@@ -268,6 +274,7 @@ impl Map {
         let map =
             Map {
                 tiles,
+                fov_cache: HashMap::new(),
             };
 
         return map;
@@ -278,6 +285,7 @@ impl Map {
         let map =
             Map {
                 tiles,
+                fov_cache: HashMap::new(),
             };
 
         return map;
@@ -287,6 +295,7 @@ impl Map {
         let map =
             Map {
                 tiles: Vec::new(),
+                fov_cache: HashMap::new(),
             };
 
         return map;
@@ -601,45 +610,38 @@ impl Map {
     }
 
     pub fn is_in_fov(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
-        return self.is_in_fov_lines(start_pos, end_pos, radius);
+        //return self.is_in_fov_lines(start_pos, end_pos, radius);
+        return self.is_in_fov_shadowcast(start_pos, end_pos, radius);
     }
 
-    /*
-    pub fn is_in_fov_alg(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
-        if start_pos == end_pos {
-            return true;
+    pub fn is_in_fov_shadowcast(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
+        if let Some(visible) = self.fov_cache.get(&start_pos) {
+            return visible.iter().any(|e| *e == end_pos);
         }
 
-        if !self.is_within_bounds(start_pos) || !self.is_within_bounds(end_pos) {
-            return false;
-        }
+        let mut in_fov = false;
+        // TODO(perf) could try with_capacity to avoid additional allocations.
+        let mut visible_positions = Vec::new();
 
-        let within_radius = distance(start_pos, end_pos) < radius;
-        if !within_radius {
-            return false;
-        }
+        let mut mark_fov = |sym_pos: SymPos| {
+            let pos = Pos::new(sym_pos.0 as i32, sym_pos.1 as i32);
+            in_fov |= pos == end_pos;
+            visible_positions.push(pos);
+        };
 
-        if self.fov_pos != start_pos {
-            self.compute_fov(start_pos, radius);
-        }
+        let mut is_blocking = |sym_pos: SymPos| {
+            let pos = Pos::new(sym_pos.0 as i32, sym_pos.1 as i32);
+            return !self.is_within_bounds(pos) || distance(start_pos, pos) >= radius || self[pos].block_move;
+        };
 
-        let blocked =
-            self.is_blocked_by_wall(start_pos, end_pos);
+        let fov_timer = timer!("FOV");
+        compute_fov((start_pos.x as isize, start_pos.y as isize), &mut is_blocking, &mut mark_fov);
+        drop(fov_timer);
 
-        let mut blocked_by_wall = false;
-        if let Some(blocked) = blocked {
-            let at_end = blocked.end_pos == end_pos;
-            blocked_by_wall = !(at_end && self[end_pos].block_sight && blocked.end_pos == end_pos);
-        }
+        self.fov_cache.insert(start_pos, visible_positions);
 
-        let is_visible =
-            self.fov.is_in_fov(end_pos.x as usize, end_pos.y as usize);
-
-        let is_in_fov = !blocked_by_wall && is_visible;
-
-        return is_in_fov;
-   }
-   */
+        return in_fov;
+    }
 
     pub fn is_in_fov_lines(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
         if start_pos == end_pos {
@@ -870,6 +872,7 @@ impl Index<(i32, i32)> for Map {
 
 impl IndexMut<(i32, i32)> for Map {
     fn index_mut(&mut self, index: (i32, i32)) -> &mut Tile {
+        self.fov_cache.clear();
         &mut self.tiles[index.0 as usize][index.1 as usize]
     }
 }
@@ -884,6 +887,7 @@ impl Index<Pos> for Map {
 
 impl IndexMut<Pos> for Map {
     fn index_mut(&mut self, index: Pos) -> &mut Tile {
+        self.fov_cache.clear();
         &mut self.tiles[index.x as usize][index.y as usize]
     }
 }

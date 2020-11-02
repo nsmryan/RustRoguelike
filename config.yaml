@@ -162,7 +162,7 @@ overlay_player_fov: false
 overlay_fov_alg: false
 overlay_floodfill: false
 fov_radius_monster: 6
-fov_radius_player: 5
+fov_radius_player: 4
 console_max_height: 400
 console_speed: 1.0
 sound_radius_sneak: 1

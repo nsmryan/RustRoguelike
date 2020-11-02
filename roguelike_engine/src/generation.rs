@@ -274,9 +274,9 @@ pub fn make_island(data: &mut GameData,
             let pos = Pos::new(x, y);
 
             if distance(pos, center) <= ISLAND_RADIUS {
-                data.map.tiles[x as usize][y as usize] = Tile::empty();
+                data.map[pos] = Tile::empty();
             } else {
-                data.map.tiles[x as usize][y as usize] = Tile::water();
+                data.map[pos] = Tile::water();
                 water_tile_positions.push((x, y));
             }
         }

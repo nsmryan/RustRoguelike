@@ -644,7 +644,8 @@ pub fn handle_input(game: &mut Game) -> Action {
         (InputAction::ExploreAll, _) => {
             for x in 0..game.data.map.width() {
                 for y in 0..game.data.map.height() {
-                    game.data.map.tiles[x as usize][y as usize].explored = true;
+                    let pos = Pos::new(x, y);
+                    game.data.map[pos].explored = true;
                 }
             }
         }
