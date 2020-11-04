@@ -719,7 +719,7 @@ fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data
            data.entities.pos[key] == original_pos        &&
            data.entities.status[key].active {
                dbg!("untriggered");
-               msg_log.log(Msg::Untriggered(*key, entity_id));
+               msg_log.log_front(Msg::Untriggered(*key, entity_id));
         }
     }
 }
