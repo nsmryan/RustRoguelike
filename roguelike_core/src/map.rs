@@ -6,8 +6,6 @@ use rand::prelude::*;
 
 use pathfinding::directed::astar::astar;
 
-use logging_timer::timer;
-
 use symmetric_shadowcasting::Pos as SymPos;
 use symmetric_shadowcasting::compute_fov;
 
@@ -124,6 +122,12 @@ pub enum Surface {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum BlockedType {
+    Fov,
+    Move,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[repr(C, packed)]
 pub struct Tile {
     pub block_move: bool,
@@ -221,6 +225,18 @@ impl Tile {
         }
     }
 
+    pub fn blocked(self, block_type: BlockedType) -> bool {
+        match block_type {
+            BlockedType::Fov => {
+                return self.block_sight;
+            }
+
+            BlockedType::Move => {
+                return self.block_move;
+            }
+        }
+    }
+
     pub fn shorten(&mut self) {
         if self.bottom_wall == Wall::TallWall {
             self.bottom_wall = Wall::ShortWall;
@@ -305,51 +321,59 @@ impl Map {
         return map;
     }
 
-    pub fn blocked_left(&self, pos: Pos) -> bool {
+    pub fn blocked_left(&self, pos: Pos, blocked_type: BlockedType) -> bool {
         let offset = Pos::new(pos.x - 1, pos.y);
         if !self.is_within_bounds(offset) || !self.is_within_bounds(pos) {
             return true;
         }
 
         let blocking_wall = self[pos].left_wall != Wall::Empty;
-        let blocking_tile = self[offset].block_move;
+        let blocking_tile = self[offset].blocked(blocked_type);
         return blocking_wall || blocking_tile;
     }
 
-    pub fn blocked_right(&self, pos: Pos) -> bool {
+    pub fn blocked_right(&self, pos: Pos, blocked_type: BlockedType) -> bool {
         let offset = Pos::new(pos.x + 1, pos.y);
         if !self.is_within_bounds(pos) || !self.is_within_bounds(pos) { 
             return true;
         }
 
         let blocking_wall = self[offset].left_wall != Wall::Empty;
-        let blocking_tile = self[offset].block_move;
+        let blocking_tile = self[offset].blocked(blocked_type);
         return blocking_wall || blocking_tile;
     }
 
-    pub fn blocked_down(&self, pos: Pos) -> bool {
+    pub fn blocked_down(&self, pos: Pos, blocked_type: BlockedType) -> bool {
         let offset = Pos::new(pos.x, pos.y + 1);
         if !self.is_within_bounds(pos) || !self.is_within_bounds(pos) {
             return true;
         }
 
         let blocking_wall = self[pos].bottom_wall != Wall::Empty;
-        let blocking_tile = self[offset].block_move;
+        let blocking_tile = self[offset].blocked(blocked_type);
         return blocking_wall || blocking_tile;
     }
 
-    pub fn blocked_up(&self, pos: Pos) -> bool {
+    pub fn blocked_up(&self, pos: Pos, blocked_type: BlockedType) -> bool {
         let offset = Pos::new(pos.x, pos.y - 1);
         if !self.is_within_bounds(pos) || !self.is_within_bounds(pos) {
             return true;
         }
 
         let blocking_wall = self[offset].bottom_wall != Wall::Empty;
-        let blocking_tile = self[offset].block_move;
+        let blocking_tile = self[offset].blocked(blocked_type);
         return blocking_wall || blocking_tile;
     }
 
-    pub fn is_blocked_by_wall(&self, start_pos: Pos, end_pos: Pos) -> Option<Blocked> {
+    pub fn path_blocked_fov(&self, start_pos: Pos, end_pos: Pos) -> Option<Blocked> {
+        return self.path_blocked(start_pos, end_pos, BlockedType::Fov);
+    }
+
+    pub fn path_blocked_move(&self, start_pos: Pos, end_pos: Pos) -> Option<Blocked> {
+        return self.path_blocked(start_pos, end_pos, BlockedType::Move);
+    }
+
+    pub fn path_blocked(&self, start_pos: Pos, end_pos: Pos, blocked_type: BlockedType) -> Option<Blocked> {
         if end_pos.x == 0 && end_pos.y == 0 {
             return None;
         }
@@ -376,9 +400,8 @@ impl Map {
                 return Some(blocked);
             }
 
-            // TODO only checks move
             // if moving into a blocked tile, we are blocked
-            if self[target_pos].block_move {
+            if self[target_pos].blocked(blocked_type) {
                 blocked.blocked_tile = true;
                 found_blocker = true;
             }
@@ -418,12 +441,13 @@ impl Map {
                 }
 
                 Direction::DownRight => {
-                    if self.blocked_right(pos) && self.blocked_down(pos) {
+                    if self.blocked_right(pos, blocked_type) && self.blocked_down(pos, blocked_type) {
                         blocked.wall_type = self[pos].bottom_wall;
                         found_blocker = true;
                     }
 
-                    if self.blocked_right(move_y(pos, 1)) && self.blocked_down(move_x(pos, 1)) {
+                    if self.blocked_right(move_y(pos, 1), blocked_type) &&
+                       self.blocked_down(move_x(pos, 1), blocked_type) {
                         let blocked_pos = add_pos(pos, Pos::new(-1, 1));
                         if self.is_within_bounds(blocked_pos) {
                             blocked.wall_type = self[blocked_pos].bottom_wall;
@@ -431,24 +455,27 @@ impl Map {
                         found_blocker = true;
                     }
 
-                    if self.blocked_right(pos) && self.blocked_right(y_moved) {
+                    if self.blocked_right(pos, blocked_type) &&
+                       self.blocked_right(y_moved, blocked_type) {
                         blocked.wall_type = self[move_x(pos, 1)].left_wall;
                         found_blocker = true;
                     }
 
-                    if self.blocked_down(pos) && self.blocked_down(x_moved) {
+                    if self.blocked_down(pos, blocked_type) &&
+                       self.blocked_down(x_moved, blocked_type) {
                         blocked.wall_type = self[pos].bottom_wall;
                         found_blocker = true;
                     }
                 }
 
                 Direction::UpRight => {
-                    if self.blocked_up(pos) && self.blocked_right(pos) {
+                    if self.blocked_up(pos, blocked_type) && self.blocked_right(pos, blocked_type) {
                         blocked.wall_type = self[move_y(pos, -1)].bottom_wall;
                         found_blocker = true;
                     }
 
-                    if self.blocked_up(move_x(pos, 1)) && self.blocked_right(move_y(pos, -1)) {
+                    if self.blocked_up(move_x(pos, 1), blocked_type) &&
+                       self.blocked_right(move_y(pos, -1), blocked_type) {
                         let blocked_pos = add_pos(pos, Pos::new(1, -1));
                         if self.is_within_bounds(blocked_pos) {
                             blocked.wall_type = self[blocked_pos].bottom_wall;
@@ -456,24 +483,25 @@ impl Map {
                         found_blocker = true;
                     }
 
-                    if self.blocked_right(pos) && self.blocked_right(y_moved) {
+                    if self.blocked_right(pos, blocked_type) && self.blocked_right(y_moved, blocked_type) {
                         blocked.wall_type = self[move_x(pos, 1)].left_wall;
                         found_blocker = true;
                     }
 
-                    if self.blocked_up(pos) && self.blocked_up(x_moved) {
+                    if self.blocked_up(pos, blocked_type) && self.blocked_up(x_moved, blocked_type) {
                         blocked.wall_type = self[move_y(pos, -1)].bottom_wall;
                         found_blocker = true;
                     }
                 }
 
                 Direction::DownLeft => {
-                    if self.blocked_left(pos) && self.blocked_down(pos) {
+                    if self.blocked_left(pos, blocked_type) && self.blocked_down(pos, blocked_type) {
                         blocked.wall_type = self[pos].left_wall;
                         found_blocker = true;
                     }
 
-                    if self.blocked_left(move_y(pos, 1)) && self.blocked_down(move_x(pos, -1)) {
+                    if self.blocked_left(move_y(pos, 1), blocked_type) &&
+                       self.blocked_down(move_x(pos, -1), blocked_type) {
                         let blocked_pos = add_pos(pos, Pos::new(1, -1));
                         if self.is_within_bounds(blocked_pos) {
                             blocked.wall_type = self[blocked_pos].left_wall;
@@ -481,19 +509,20 @@ impl Map {
                         found_blocker = true;
                     }
 
-                    if self.blocked_left(pos) && self.blocked_left(y_moved) {
+                    if self.blocked_left(pos, blocked_type) && self.blocked_left(y_moved, blocked_type) {
                         blocked.wall_type = self[pos].left_wall;
                         found_blocker = true;
                     }
 
-                    if self.blocked_down(pos) && self.blocked_down(x_moved) {
+                    if self.blocked_down(pos, blocked_type) && self.blocked_down(x_moved, blocked_type) {
                         blocked.wall_type = self[pos].bottom_wall;
                         found_blocker = true;
                     }
                 }
 
                 Direction::UpLeft => {
-                    if self.blocked_left(move_y(pos, -1)) && self.blocked_up(move_x(pos, -1)) {
+                    if self.blocked_left(move_y(pos, -1), blocked_type) &&
+                       self.blocked_up(move_x(pos, -1), blocked_type) {
                         let blocked_pos = add_pos(pos, Pos::new(-1, -1));
                         if self.is_within_bounds(blocked_pos) {
                             blocked.wall_type = self[blocked_pos].left_wall;
@@ -501,17 +530,17 @@ impl Map {
                         found_blocker = true;
                     }
 
-                    if self.blocked_left(pos) && self.blocked_up(pos) {
+                    if self.blocked_left(pos, blocked_type) && self.blocked_up(pos, blocked_type) {
                         blocked.wall_type = self[pos].left_wall;
                         found_blocker = true;
                     }
 
-                    if self.blocked_left(pos) && self.blocked_left(y_moved) {
+                    if self.blocked_left(pos, blocked_type) && self.blocked_left(y_moved, blocked_type) {
                         blocked.wall_type = self[pos].left_wall;
                         found_blocker = true;
                     }
 
-                    if self.blocked_up(pos) && self.blocked_up(x_moved) {
+                    if self.blocked_up(pos, blocked_type) && self.blocked_up(x_moved, blocked_type) {
                         let blocked_pos = move_y(pos, -1);
                         if self.is_within_bounds(blocked_pos) {
                             blocked.wall_type = self[blocked_pos].bottom_wall;
@@ -660,9 +689,9 @@ impl Map {
             return false;
         }
 
-        let blocked = self.is_blocked_by_wall(start_pos, end_pos);
+        let blocked = self.path_blocked_fov(start_pos, end_pos);
 
-        let visible_back = self.is_blocked_by_wall(end_pos, start_pos).is_none();
+        let visible_back = self.path_blocked_fov(end_pos, start_pos).is_none();
 
         let mut is_in_fov;
         if let Some(blocked) = blocked {
@@ -771,7 +800,7 @@ impl Map {
 
         for delta in neighbors.iter() {
             let end_pos = Pos::new(pos.x + delta.0, pos.y + delta.1);
-            if self.is_blocked_by_wall(pos, end_pos).is_none() {
+            if self.path_blocked_move(pos, end_pos).is_none() {
                 result.push(pos + Vector2D::new(delta.0, delta.1));
             }
         }
@@ -794,9 +823,9 @@ impl Map {
             let dist = distance(start, *pos);
 
             // must be blocked to and from a position to dampen.
-            let is_blocked_to = self.is_blocked_by_wall(start, *pos).is_some();
+            let is_blocked_to = self.path_blocked_move(start, *pos).is_some();
 
-            let is_blocked_from = self.is_blocked_by_wall(*pos, start).is_some();
+            let is_blocked_from = self.path_blocked_move(*pos, start).is_some();
 
             let is_blocked = is_blocked_to && is_blocked_from;
 

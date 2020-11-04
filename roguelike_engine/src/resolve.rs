@@ -87,7 +87,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 if data.entities.typ[&pushed] == EntityType::Column {
                     let entity_diff = sub_pos(pushed_pos, pusher_pos);
                     let next_pos = next_pos(pusher_pos, entity_diff);
-                    let blocked = data.map.is_blocked_by_wall(pushed_pos, next_pos); 
+                    let blocked = data.map.path_blocked_move(pushed_pos, next_pos); 
 
                     if blocked == None {
                         data.remove_entity(pushed);
@@ -166,7 +166,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             Msg::HammerSwing(entity, pos) => {
                 let entity_pos = data.entities.pos[&entity];
 
-                if let Some(blocked) = data.map.is_blocked_by_wall(entity_pos, pos) {
+                if let Some(blocked) = data.map.path_blocked_move(entity_pos, pos) {
                     msg_log.log_front(Msg::HammerHitWall(entity, blocked));
                     data.used_up_item(entity);
                 } else if let Some(hit_entity) = data.has_blocking_entity(pos) {
@@ -601,7 +601,7 @@ pub fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Opti
         let rand_pos = potential_positions[ix];
 
         if data.has_blocking_entity(rand_pos).is_none() &&
-           data.map.is_blocked_by_wall(pos, rand_pos).is_none() {
+           data.map.path_blocked_move(pos, rand_pos).is_none() {
                return Some(rand_pos);
         }
 
@@ -710,7 +710,7 @@ fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data
     for key in data.entities.ids.iter() {
         if data.entities.typ[key] == EntityType::Trigger && // key is a trigger
            data.entities.pos[key] == data.entities.pos[&entity_id] {
-               msg_log.log(Msg::Triggered(*key, entity_id));
+               msg_log.log_front(Msg::Triggered(*key, entity_id));
         }
     }
 
@@ -718,7 +718,6 @@ fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data
         if data.entities.typ[key] == EntityType::Trigger && // key is a trigger
            data.entities.pos[key] == original_pos        &&
            data.entities.status[key].active {
-               dbg!("untriggered");
                msg_log.log_front(Msg::Untriggered(*key, entity_id));
         }
     }

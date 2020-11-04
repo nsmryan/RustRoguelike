@@ -365,7 +365,7 @@ impl SelectionAction {
 
                 let player_id = data.find_player().unwrap();
                 let player_pos = data.entities.pos[&player_id];
-                let blocked = data.map.is_blocked_by_wall(player_pos, pos);
+                let blocked = data.map.path_blocked_move(player_pos, pos);
                 
                 if let Some(blocked) = blocked {
                     if data.map[blocked.end_pos].block_move {
@@ -384,7 +384,7 @@ impl SelectionAction {
 
                 let player_id = data.find_player().unwrap();
                 let player_pos = data.entities.pos[&player_id];
-                let blocked = data.map.is_blocked_by_wall(player_pos, pos);
+                let blocked = data.map.path_blocked_move(player_pos, pos);
 
                 if let Some(blocked) = blocked {
                     if data.has_blocking_entity(pos).is_none() {

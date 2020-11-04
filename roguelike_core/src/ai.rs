@@ -276,7 +276,7 @@ pub fn ai_investigate(target_pos: Pos,
 
     let mut turn: Action;
 
-    if data.map.is_blocked_by_wall(monster_pos, player_pos).is_none() {
+    if data.map.path_blocked_fov(monster_pos, player_pos).is_none() {
         data.entities.face(monster_id, player_pos);
     }
                
@@ -332,6 +332,7 @@ fn ai_can_hit_target(data: &mut GameData,
 
     let within_fov =
         data.is_in_fov(monster_id, target_pos, config);
+
 
     let clear_path = data.clear_path_up_to(monster_pos, target_pos, false);
 

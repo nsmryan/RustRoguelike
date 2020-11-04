@@ -548,7 +548,7 @@ fn clear_path_to(game: &mut Game, start_pos: Pos, target_pos: Pos) {
     }
 
     fn move_tile_cost(pos: Pos, next_pos: Pos, map: &Map) -> i32 {
-        if map.is_blocked_by_wall(pos, next_pos).is_some() {
+        if map.path_blocked_move(pos, next_pos).is_some() {
             return 15;
         } 
 

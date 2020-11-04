@@ -758,7 +758,7 @@ pub fn throw_item(player_id: EntityId,
     let mut end_pos =
         Pos::from(throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap());
 
-    if let Some(blocked) = game_data.map.is_blocked_by_wall(start_pos, end_pos) {
+    if let Some(blocked) = game_data.map.path_blocked_move(start_pos, end_pos) {
         // the start pos of the blocked struct is the last reached position
         end_pos = blocked.start_pos;
     }

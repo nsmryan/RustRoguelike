@@ -82,9 +82,8 @@ impl GameData {
                               can_move |= clear;
 
                               if !can_move {
-                                  // move expensive then clear_path by about 3x
                                   if !must_reach && next_pos == end {
-                                      let not_blocked = self.map.is_blocked_by_wall(pos, next_pos).is_none();
+                                      let not_blocked = self.map.path_blocked_move(pos, next_pos).is_none();
                                       can_move |= not_blocked;
                                   }
                               }
@@ -183,7 +182,7 @@ impl GameData {
                 return self.has_blocking_entity(pos).is_some() || (traps_block && self.has_trap(pos).is_some());
             });
 
-        return !path_blocked && self.map.is_blocked_by_wall(start, end).is_none();
+        return !path_blocked && self.map.path_blocked_move(start, end).is_none();
     }
 
     pub fn has_item_in_inventory(&self, entity_id: EntityId, item: Item) -> Option<EntityId> {
