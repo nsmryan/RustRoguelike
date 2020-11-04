@@ -409,13 +409,15 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
         y_pos += 1;
 
+        let in_fov = game.settings.god_mode ||
+                     game.data.map.is_in_fov(player_pos, mouse, game.config.fov_radius_player);
+
         // only display first object
         if let Some(obj_id) = object_ids.first() {
             let pos = game.data.entities.pos[obj_id];
 
             // only display things in the player's FOV
-            if game.settings.god_mode ||
-               game.data.map.is_in_fov(player_pos, pos, game.config.fov_radius_player) {
+            if in_fov {
                 if let Some(fighter) = game.data.entities.fighter.get(obj_id) {
                     y_pos += 1;
 
@@ -458,25 +460,27 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
         text_list.clear();
 
         y_pos = 10;
-        let text_pos = Pos::new(1, y_pos);
-        text_list.push(format!("Tile is"));
-        text_list.push(format!("{:?}",  game.data.map[mouse].surface));
-        if game.data.map[mouse].bottom_wall != Wall::Empty {
-            text_list.push("Lower wall".to_string());
-        }
+        if in_fov {
+            let text_pos = Pos::new(1, y_pos);
+            text_list.push(format!("Tile is"));
+            text_list.push(format!("{:?}",  game.data.map[mouse].surface));
+            if game.data.map[mouse].bottom_wall != Wall::Empty {
+                text_list.push("Lower wall".to_string());
+            }
 
-        if game.data.map[mouse].left_wall != Wall::Empty {
-            text_list.push("Left wall".to_string());
-        }
+            if game.data.map[mouse].left_wall != Wall::Empty {
+                text_list.push("Left wall".to_string());
+            }
 
-        if game.data.map[mouse].block_move {
-            text_list.push(format!("blocked"));
-        }
+            if game.data.map[mouse].block_move {
+                text_list.push(format!("blocked"));
+            }
 
-        tile_sprite.draw_text_list(panel,
-                                   &text_list,
-                                   text_pos,
-                                   color);
+            tile_sprite.draw_text_list(panel,
+                                       &text_list,
+                                       text_pos,
+                                       color);
+        }
     }
 }
 
