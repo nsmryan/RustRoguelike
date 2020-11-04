@@ -59,6 +59,9 @@
 # MaxTraps limits the number of traps that can appear of any type
 - MaxTraps: 6
 
+# MaxGates limits the number of trigger gates that can appear
+- MaxGates: 3
+
 # Grass takes a min and max number of grassed locations.
 # it also takes the dispersion (the distance from the center that the grass can lay)
 - Grass: 

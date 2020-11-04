@@ -52,6 +52,7 @@ pub enum ProcCmd {
     Entities(EntityName, usize, usize),
     Items(Item, usize, usize),
     MaxItems(usize),
+    MaxGates(usize),
     Traps(Trap, usize, usize),
     MaxTraps(usize),
     Grass((usize, usize), i32), // (min, max), disperse distance
@@ -329,18 +330,36 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
 
     // TODO Should collect locations near walls in a set, and chose a random number of random pos,
     // without replacement
+    let mut near_walls = HashSet::new();
+
     for pos in potential_pos {
         for neighbor in game.data.map.cardinal_neighbors(pos) {
             if game.data.map[neighbor].tile_type == TileType::Wall {
-                make_gate_trigger(&mut game.data.entities, &game.config, pos, &mut game.msg_log);
-
-                num_triggers += 1;
-                if num_triggers >= max_triggers {
-                    return;
-                }
-
-                break;
+                near_walls.insert(pos);
             }
+        }
+    }
+
+    let mut num_gates = 0;
+    let max_gates = cmds.iter().filter_map(|cmd| {
+        if let ProcCmd::MaxGates(n) = cmd {
+            return Some(n);
+        }
+        return None;
+    }).map(|n| *n).next().unwrap_or(0);
+
+    let gate_positions = near_walls.iter().map(|p| *p).collect::<Vec<Pos>>();
+
+    for _ in 0..max_gates {
+        let gate_pos_index = game.rng.gen_range(0, gate_positions.len());
+        let gate_pos = gate_positions[gate_pos_index];
+
+        let gate = make_gate_trigger(&mut game.data.entities, &game.config, gate_pos, &mut game.msg_log);
+        game.data.entities.gate_pos.insert(gate, Some(gate_pos));
+
+        num_gates += 1;
+        if num_gates >= max_gates {
+            return;
         }
     }
 }
