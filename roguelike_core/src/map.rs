@@ -582,8 +582,18 @@ impl Map {
     }
 
     pub fn is_in_fov(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
-        //return self.is_in_fov_lines(start_pos, end_pos, radius);
-        return self.is_in_fov_shadowcast(start_pos, end_pos, radius);
+        //let alg_fov = self.is_in_fov_lines(start_pos, end_pos, radius);
+        let alg_fov = self.is_in_fov_shadowcast(start_pos, end_pos, radius);
+        
+        let path_fov = self.path_blocked_fov(start_pos, end_pos).is_some();
+
+        // TODO there is something wrong with position 0, 0?
+        if start_pos == Pos::new(2, 4) && end_pos == Pos::new(0, 0) {
+            dbg!(path_fov, alg_fov);
+            dbg!(self.path_blocked_fov(start_pos, end_pos));
+        }
+
+        return alg_fov && !path_fov;
     }
 
     pub fn is_in_fov_shadowcast(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
@@ -612,7 +622,9 @@ impl Map {
                 return true;
             }
 
-            return self[pos].block_sight || self.path_blocked_fov(start_pos, pos).is_some();
+            let blocked_sight = self[pos].block_sight;
+
+            return blocked_sight;
         };
 
         compute_fov((start_pos.x as isize, start_pos.y as isize), &mut is_blocking, &mut mark_fov);

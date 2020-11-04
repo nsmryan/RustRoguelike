@@ -129,7 +129,7 @@ grid_alpha_overlay: 150
 # TestPlayer: test map for player interactions
 map_load: #TestVaults
     ProcGen: "map1.yaml"
-#FromAsciiMap: "vaults/Vaults - Vault1.csv"
+#VaultFile: "vaults/Vaults - Vault1.csv"
 #FromFile: "maps.txt"
 map_file: map.xp
 idle_speed: 0.3499999940395355
