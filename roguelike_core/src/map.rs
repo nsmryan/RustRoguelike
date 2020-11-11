@@ -585,29 +585,26 @@ impl Map {
         //let alg_fov = self.is_in_fov_lines(start_pos, end_pos, radius);
         let alg_fov = self.is_in_fov_shadowcast(start_pos, end_pos, radius);
         
-        let path_fov = self.path_blocked_fov(start_pos, end_pos).is_some();
+        let path_fov = self.path_blocked_fov(start_pos, end_pos);
 
-        // TODO there is something wrong with position 0, 0?
-        if start_pos == Pos::new(2, 4) && end_pos == Pos::new(0, 0) {
-            dbg!(path_fov, alg_fov);
-            dbg!(self.path_blocked_fov(start_pos, end_pos));
-        }
+        let mut clear_fov_path = true;
+        if let Some(blocked) = path_fov {
+            clear_fov_path = end_pos == blocked.end_pos;
+        } 
 
-        return alg_fov && !path_fov;
+        return alg_fov && clear_fov_path;
     }
 
     pub fn is_in_fov_shadowcast(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
         if let Some(visible) = self.fov_cache.get(&start_pos) {
-            return visible.iter().any(|e| *e == end_pos);
+            return visible.contains(&end_pos);
         }
 
-        let mut in_fov = false;
         // NOTE(perf) this pre-allocation speeds up FOV significantly
         let mut visible_positions = Vec::with_capacity(120);
 
         let mut mark_fov = |sym_pos: SymPos| {
             let pos = Pos::new(sym_pos.0 as i32, sym_pos.1 as i32);
-            in_fov |= pos == end_pos;
             visible_positions.push(pos);
         };
 
@@ -629,7 +626,11 @@ impl Map {
 
         compute_fov((start_pos.x as isize, start_pos.y as isize), &mut is_blocking, &mut mark_fov);
 
+        let in_fov = visible_positions.contains(&end_pos);
         self.fov_cache.insert(start_pos, visible_positions);
+        if end_pos == Pos::new(5, 1) {
+            dbg!(start_pos, in_fov);
+        }
 
         return in_fov;
     }
