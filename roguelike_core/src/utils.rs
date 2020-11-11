@@ -16,6 +16,14 @@ pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
     return line.iter().count() as i32;
 }
 
+pub fn distance_tiles(pos1: Pos, pos2: Pos) -> i32 {
+    return (pos1.x - pos2.x).abs() + (pos1.y - pos2.y).abs();
+}
+
+pub fn distance_maximum(pos1: Pos, pos2: Pos) -> i32 {
+    return std::cmp::max((pos1.x - pos2.x).abs(), (pos1.y - pos2.y).abs());
+}
+
 pub fn pos_mag(pos: Pos) -> i32 {
     return distance(Pos::new(0, 0), pos);
 }

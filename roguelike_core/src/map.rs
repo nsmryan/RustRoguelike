@@ -583,19 +583,21 @@ impl Map {
 
     pub fn is_in_fov(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
         //let alg_fov = self.is_in_fov_lines(start_pos, end_pos, radius);
-        let alg_fov = self.is_in_fov_shadowcast(start_pos, end_pos, radius);
+        let alg_fov = self.is_in_fov_shadowcast(start_pos, end_pos);
         
         let path_fov = self.path_blocked_fov(start_pos, end_pos);
+
+        let within_radius = distance_maximum(start_pos, end_pos) <= radius;
 
         let mut clear_fov_path = true;
         if let Some(blocked) = path_fov {
             clear_fov_path = end_pos == blocked.end_pos;
         } 
 
-        return alg_fov && clear_fov_path;
+        return alg_fov && within_radius && clear_fov_path;
     }
 
-    pub fn is_in_fov_shadowcast(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
+    pub fn is_in_fov_shadowcast(&mut self, start_pos: Pos, end_pos: Pos) -> bool {
         if let Some(visible) = self.fov_cache.get(&start_pos) {
             return visible.contains(&end_pos);
         }
@@ -611,9 +613,6 @@ impl Map {
         let mut is_blocking = |sym_pos: SymPos| {
             let pos = Pos::new(sym_pos.0 as i32, sym_pos.1 as i32);
             let dist = (start_pos.x - pos.x).abs() + (start_pos.y - pos.y).abs();
-            if dist >= radius {
-                return true;
-            }
 
             if !self.is_within_bounds(pos) {
                 return true;
@@ -628,9 +627,6 @@ impl Map {
 
         let in_fov = visible_positions.contains(&end_pos);
         self.fov_cache.insert(start_pos, visible_positions);
-        if end_pos == Pos::new(5, 1) {
-            dbg!(start_pos, in_fov);
-        }
 
         return in_fov;
     }
