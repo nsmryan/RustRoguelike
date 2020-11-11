@@ -141,6 +141,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     /* detect structures left */
     let mut structures = find_structures(&game.data.map);
+    println!();
     println!("{} singles", structures.iter().filter(|s| s.typ == StructureType::Single).count());
     println!("{} lines", structures.iter().filter(|s| s.typ == StructureType::Line).count());
     println!("{} Ls", structures.iter().filter(|s| s.typ == StructureType::Path).count());
@@ -173,30 +174,38 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
             }
         }
 
-        if structure.typ == StructureType::Line {
-           if game.rng.gen_range(0.0, 1.0) < 0.5 {
-               let wall_type;
-               if game.rng.gen_range(0.0, 1.0) < 0.5 {
-                   wall_type = Wall::ShortWall;
-               } else {
-                   wall_type = Wall::TallWall;
-               }
+        if (structure.typ == StructureType::Line || structure.typ == StructureType::Complex) &&
+           game.rng.gen_range(0.0, 1.0) < 0.5 {
+           let wall_type;
+           if game.rng.gen_range(0.0, 1.0) < 1.0 {
+               wall_type = Wall::ShortWall;
+           } else {
+               wall_type = Wall::TallWall;
+           }
 
-               let diff = sub_pos(structure.blocks[0], structure.blocks[1]);
-               for pos in structure.blocks.iter() {
-                   if diff.x != 0 {
-                       game.data.map[*pos].bottom_wall = wall_type;
-                   } else {
-                       game.data.map[*pos].left_wall = wall_type;
+           for pos in structure.blocks.iter() {
+               game.data.map[*pos] = Tile::empty();
+
+               for neighbor in game.data.map.cardinal_neighbors(*pos) {
+                   if game.data.map.is_within_bounds(neighbor) &&
+                      game.data.map[neighbor].block_move {
+                       if pos.x != neighbor.x {
+                           game.data.map[*pos].bottom_wall = wall_type;
+                       }
+                       if pos.y != neighbor.y {
+                           game.data.map[*pos].left_wall = wall_type;
+                       }
                    }
+               } 
+           }
 
-                   game.data.map[*pos].block_move = false;
-                   game.data.map[*pos].chr = ' ' as u8;
-               }
+           if game.rng.gen_range(0.0, 1.0) < 0.25 {
+               break;
            }
         }
     }
 
+    // remove structures that have been turned into other things
     to_remove.sort();
     to_remove.reverse();
     for index in to_remove.iter() {
@@ -216,9 +225,13 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     let num_grass_to_place = game.rng.gen_range((range_disperse.0).0, (range_disperse.0).1);
     place_grass(game, num_grass_to_place, *range_disperse.1);
 
+    clear_island(game, island_radius);
+
     let player_id = game.data.find_player().unwrap();
     let player_pos = find_available_tile(game).unwrap();
     game.data.entities.pos[&player_id] = player_pos;
+
+    clear_island(game, island_radius);
 
     place_key_and_goal(game, player_pos);
 
@@ -349,6 +362,11 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
     }).map(|n| *n).next().unwrap_or(0);
 
     let gate_positions = near_walls.iter().map(|p| *p).collect::<Vec<Pos>>();
+
+    // if there are no possible positions, exit early
+    if gate_positions.len() == 0 {
+        return;
+    }
 
     for _ in 0..max_gates {
         let gate_pos_index = game.rng.gen_range(0, gate_positions.len());

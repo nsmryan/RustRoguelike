@@ -124,6 +124,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     display.add_spritesheet("font".to_string(), font_texture, 16);
 
     let mut game = Game::new(seed, config.clone())?;
+    game.load_vaults("resources/vaults/");
 
     make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
 

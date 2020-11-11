@@ -1,3 +1,4 @@
+use std::env;
 use rand::prelude::*;
 
 use serde::{Serialize, Deserialize};
@@ -53,15 +54,6 @@ impl Game {
         data.entities.inventory[&player_id].push_back(stone_id);
 
         let mut vaults = Vec::new();
-        for entry in std::fs::read_dir("resources/vaults/").unwrap() {
-            let entry = entry.unwrap();
-            let path = entry.path();
-            let vault_file_name = path.to_str().unwrap();
-            if !vault_file_name.ends_with(".csv") {
-                continue;
-            }
-            vaults.push(parse_vault(vault_file_name, &config));
-        }
 
         let state = Game {
             config,
@@ -75,6 +67,18 @@ impl Game {
         };
 
         return Ok(state);
+    }
+
+    pub fn load_vaults(&mut self, path: &str) {
+        for entry in std::fs::read_dir(path).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            let vault_file_name = path.to_str().unwrap();
+            if !vault_file_name.ends_with(".csv") {
+                continue;
+            }
+            self.vaults.push(parse_vault(vault_file_name, &self.config));
+        }
     }
 
     pub fn step_game(&mut self, dt: f32) -> GameResult {
@@ -867,7 +871,7 @@ pub fn test_game_map() {
     }).unwrap();
 
     let spikes = *game.data.entities.ids.iter().find(|id| {
-        game.data.entities.name.get(*id) == Some(&EntityName::Spike)
+        game.data.entities.name.get(*id) == Some(&EntityName::SpikeTrap)
     }).unwrap();
 
     let gol = *game.data.entities.ids.iter().find(|id| {

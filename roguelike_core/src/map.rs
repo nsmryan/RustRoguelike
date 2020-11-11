@@ -1116,13 +1116,13 @@ fn test_blocked_by_wall_right() {
     map[pos].left_wall = Wall::ShortWall;
   
     let left_of_wall = Pos::new(4, 5);
-    let blocked = map.is_blocked_by_wall(left_of_wall, add_pos(left_of_wall, Pos::new(1, 0)));
+    let blocked = map.path_blocked_move(left_of_wall, add_pos(left_of_wall, Pos::new(1, 0)));
     assert_eq!(blocked.map(|b| b.wall_type == Wall::ShortWall), Some(true));
 
-    assert!(map.is_blocked_by_wall(pos, add_pos(pos, Pos::new(1, 0))).is_none());
+    assert!(map.path_blocked_move(pos, add_pos(pos, Pos::new(1, 0))).is_none());
 
     let two_left_of_wall = Pos::new(3, 5);
-    assert_eq!(map.is_blocked_by_wall(two_left_of_wall, add_pos(two_left_of_wall, Pos::new(1, 0))), None);
+    assert_eq!(map.path_blocked_move(two_left_of_wall, add_pos(two_left_of_wall, Pos::new(1, 0))), None);
 }
 
 #[test]
@@ -1132,10 +1132,10 @@ fn test_blocked_by_wall_up() {
     let pos = Pos::new(5, 5);
     map[pos].bottom_wall = Wall::ShortWall;
   
-    let blocked = map.is_blocked_by_wall(Pos::new(5, 6), Pos::new(5, 5));
+    let blocked = map.path_blocked_move(Pos::new(5, 6), Pos::new(5, 5));
     assert_eq!(blocked.map(|b| b.wall_type), Some(Wall::ShortWall));
-    assert!(map.is_blocked_by_wall(Pos::new(5, 5), Pos::new(5, 4)).is_none());
-    assert!(map.is_blocked_by_wall(Pos::new(5, 4), Pos::new(5, 3)).is_none());
+    assert!(map.path_blocked_move(Pos::new(5, 5), Pos::new(5, 4)).is_none());
+    assert!(map.path_blocked_move(Pos::new(5, 4), Pos::new(5, 3)).is_none());
 }
 
 #[test]
@@ -1145,10 +1145,10 @@ fn test_blocked_by_wall_down() {
     let pos = Pos::new(5, 5);
     map[pos].bottom_wall = Wall::ShortWall;
   
-    let blocked = map.is_blocked_by_wall(Pos::new(5, 5), Pos::new(5, 6));
+    let blocked = map.path_blocked_move(Pos::new(5, 5), Pos::new(5, 6));
     assert_eq!(blocked.map(|b| b.wall_type), Some(Wall::ShortWall));
-    assert!(map.is_blocked_by_wall(Pos::new(5, 6), Pos::new(5, 7)).is_none());
-    assert!(map.is_blocked_by_wall(Pos::new(5, 7), Pos::new(5, 8)).is_none());
+    assert!(map.path_blocked_move(Pos::new(5, 6), Pos::new(5, 7)).is_none());
+    assert!(map.path_blocked_move(Pos::new(5, 7), Pos::new(5, 8)).is_none());
 }
 
 #[test]
@@ -1158,10 +1158,10 @@ fn test_blocked_by_wall_left() {
     let pos = Pos::new(5, 5);
     map[pos].left_wall = Wall::ShortWall;
   
-    let blocked = map.is_blocked_by_wall(Pos::new(5, 5), Pos::new(4, 5));
+    let blocked = map.path_blocked_move(Pos::new(5, 5), Pos::new(4, 5));
     assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
-    assert!(map.is_blocked_by_wall(Pos::new(4, 5), Pos::new(3, 5)).is_none());
-    assert!(map.is_blocked_by_wall(Pos::new(6, 5), Pos::new(5, 5)).is_none());
+    assert!(map.path_blocked_move(Pos::new(4, 5), Pos::new(3, 5)).is_none());
+    assert!(map.path_blocked_move(Pos::new(6, 5), Pos::new(5, 5)).is_none());
 }
 
 #[test]
@@ -1229,14 +1229,14 @@ fn test_blocked_by_wall() {
 
     map[(5, 5)] = Tile::water();
   
-    assert!(map.is_blocked_by_wall(Pos::new(4, 5), Pos::new(5, 5)).is_some());
-    assert!(map.is_blocked_by_wall(Pos::new(4, 5), Pos::new(7, 5)).is_some());
-    assert!(map.is_blocked_by_wall(Pos::new(3, 5), Pos::new(6, 5)).is_some());
+    assert!(map.path_blocked_move(Pos::new(4, 5), Pos::new(5, 5)).is_some());
+    assert!(map.path_blocked_move(Pos::new(4, 5), Pos::new(7, 5)).is_some());
+    assert!(map.path_blocked_move(Pos::new(3, 5), Pos::new(6, 5)).is_some());
 
-    assert!(map.is_blocked_by_wall(Pos::new(6, 5), Pos::new(5, 5)).is_some());
+    assert!(map.path_blocked_move(Pos::new(6, 5), Pos::new(5, 5)).is_some());
 
-    assert!(map.is_blocked_by_wall(Pos::new(5, 6), Pos::new(5, 5)).is_some());
-    assert!(map.is_blocked_by_wall(Pos::new(5, 4), Pos::new(5, 5)).is_some());
+    assert!(map.path_blocked_move(Pos::new(5, 6), Pos::new(5, 5)).is_some());
+    assert!(map.path_blocked_move(Pos::new(5, 4), Pos::new(5, 5)).is_some());
 }
 
 #[test]
