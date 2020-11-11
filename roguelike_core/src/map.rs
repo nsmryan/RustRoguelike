@@ -582,13 +582,14 @@ impl Map {
     }
 
     pub fn is_in_fov(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
-        //let alg_fov = self.is_in_fov_lines(start_pos, end_pos, radius);
         let alg_fov = self.is_in_fov_shadowcast(start_pos, end_pos);
         
         let path_fov = self.path_blocked_fov(start_pos, end_pos);
 
         let within_radius = distance_maximum(start_pos, end_pos) <= radius;
 
+        // make sure there is a clear path, but allow the player to
+        // see walls (blocking position is the end_pos tile)
         let mut clear_fov_path = true;
         if let Some(blocked) = path_fov {
             clear_fov_path = end_pos == blocked.end_pos;
