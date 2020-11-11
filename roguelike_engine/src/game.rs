@@ -763,34 +763,6 @@ pub fn test_running() {
 }
 
 #[test]
-pub fn test_running_two_steps() {
-    let config = Config::from_file("../config.yaml");
-    let mut game = Game::new(0, config.clone()).unwrap();
-
-    let player_id = game.data.find_player().unwrap();
-    game.data.map = Map::from_dims(10, 10);
-    let player_pos = Pos::new(4, 3);
-    game.data.entities.pos[&player_id] = player_pos;
-
-    let gol_pos = Pos::new(4, 5);
-    let gol = make_gol(&mut game.data.entities, &game.config, gol_pos, &mut game.msg_log);
-
-    game.data.map[(4, 6)].block_move = true;
-
-    game.input_action = InputAction::IncreaseMoveMode;
-    game.step_game(0.1);
-
-    assert!(game.data.entities.ids.contains(&gol));
-    game.input_action = InputAction::Move(Direction::Down);
-    game.step_game(0.1);
-    let player_pos = game.data.entities.pos[&player_id];
-    assert_eq!(gol_pos, player_pos);
-
-    // gol was crushed, so check
-    assert!(game.data.entities.is_dead(gol));
-}
-
-#[test]
 pub fn test_hammer_small_wall() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone()).unwrap();
