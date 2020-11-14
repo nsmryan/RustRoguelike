@@ -517,15 +517,7 @@ pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), Str
     game.step_game(0.0);
     render_all(display, game)?;
 
-    let pixels = display.targets.canvas_panel.target.read_pixels(None, sdl2::pixels::PixelFormatEnum::RGB24).unwrap();
-    let (width, height) = display.targets.canvas_panel.target.output_size().unwrap();
-    let mut image = bmp::Image::new(width, height);
-    for index in 0..(width * height) {
-        let byte_index = 3 * index as usize;
-        let pixel = bmp::Pixel::new(pixels[byte_index], pixels[byte_index + 1], pixels[byte_index + 2]);
-        image.set_pixel(index % width, index / width, pixel);
-    }
-    image.save("screenshot.bmp").unwrap();
+    display.save_screenshot("screenshot");
 
     return Ok(());
 }

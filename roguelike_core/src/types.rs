@@ -32,7 +32,7 @@ pub type CompStore<T> = IndexMap<EntityId, T>;
 
 pub type Pos = Point2D<i32, ()>;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GameData {
     pub map: Map,
     pub entities: Entities,
@@ -608,7 +608,7 @@ pub struct StatusEffect {
     pub alive: bool,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Message {
     Sound(EntityId, Pos),
     Attack(EntityId),
@@ -617,7 +617,7 @@ pub enum Message {
 // ensure that each entity has a unique ID, up to 2^64 entities
 static OBJECT_ID_COUNT: AtomicU64 = AtomicU64::new(0);
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct Entities {
     pub ids: Vec<EntityId>,
     pub pos: CompStore<Pos>,

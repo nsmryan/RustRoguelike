@@ -446,8 +446,8 @@ impl Display {
         self.targets.canvas_panel.target.present();
     }
 
-    pub fn save_screenshot(&mut self) {
-        let format = PixelFormatEnum::RGBA8888;
+    pub fn save_screenshot(&mut self, name: &str) {
+        let format = PixelFormatEnum::RGB24;
         let (width, height) = self.targets.canvas_panel.target.output_size().unwrap();
 
         let pixels = self.targets.canvas_panel.target.read_pixels(None, format).unwrap();
@@ -456,15 +456,15 @@ impl Display {
 
         for x in 0..width {
             for y in 0..height {
-                let index = ((x + y * width) * 4) as usize;
-                let pixel = bmp::Pixel::new(pixels[index + 3],
-                                            pixels[index + 2],
-                                            pixels[index + 1]);
+                let index = (x + y * width) as usize * 3;
+                let pixel = bmp::Pixel::new(pixels[index + 0],
+                                            pixels[index + 1],
+                                            pixels[index + 2]);
                 shot.set_pixel(x, y, pixel);
             }
         }
 
-        shot.save("shot.bmp").unwrap();
+        shot.save(format!("{}.bmp", name)).unwrap();
     }
 
     pub fn add_spritesheet(&mut self, name: String, texture: Texture, rows: usize) {
