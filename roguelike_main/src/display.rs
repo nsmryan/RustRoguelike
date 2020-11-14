@@ -1,7 +1,10 @@
-use sdl2::render::{Texture, WindowCanvas, TextureCreator, BlendMode};
+use bmp::Image;
+
+use sdl2::render::{Texture, WindowCanvas, TextureCreator, BlendMode, Canvas, TextureAccess};
 use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
-use sdl2::pixels::{Color as Sdl2Color};
+use sdl2::pixels::{PixelFormatEnum, Color as Sdl2Color};
+use sdl2::image::SaveSurface;
 
 use indexmap::map::IndexMap;
 
@@ -441,6 +444,27 @@ impl Display {
 
     pub fn update_display(&mut self) {
         self.targets.canvas_panel.target.present();
+    }
+
+    pub fn save_screenshot(&mut self) {
+        let format = PixelFormatEnum::RGBA8888;
+        let (width, height) = self.targets.canvas_panel.target.output_size().unwrap();
+
+        let pixels = self.targets.canvas_panel.target.read_pixels(None, format).unwrap();
+
+        let mut shot = Image::new(width, height);
+
+        for x in 0..width {
+            for y in 0..height {
+                let index = ((x + y * width) * 4) as usize;
+                let pixel = bmp::Pixel::new(pixels[index + 3],
+                                            pixels[index + 2],
+                                            pixels[index + 1]);
+                shot.set_pixel(x, y, pixel);
+            }
+        }
+
+        shot.save("shot.bmp").unwrap();
     }
 
     pub fn add_spritesheet(&mut self, name: String, texture: Texture, rows: usize) {

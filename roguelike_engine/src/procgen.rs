@@ -338,9 +338,6 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
 fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
     let potential_pos = game.data.get_clear_pos();
 
-    let mut num_triggers = 0;
-    let max_triggers = 2;
-
     // TODO Should collect locations near walls in a set, and chose a random number of random pos,
     // without replacement
     let mut near_walls = HashSet::new();
