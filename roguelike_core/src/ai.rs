@@ -61,13 +61,6 @@ pub fn ai_take_turn(monster_id: EntityId,
     return turn;
 }
 
-pub fn step_towards(start_pos: Pos, target_pos: Pos) -> Pos {
-    let dx = target_pos.x - start_pos.x;
-    let dy = target_pos.y - start_pos.y;
-    let delta_pos = Pos::new(signedness(dx), signedness(dy));
-    return delta_pos;
-}
-
 pub fn ai_pos_that_hit_target(monster_id: EntityId,
                               target_id: EntityId,
                               data: &mut GameData,

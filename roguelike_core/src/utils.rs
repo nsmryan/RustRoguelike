@@ -285,6 +285,13 @@ pub fn clampf(val: f32, min: f32, max: f32) -> f32 {
     return val;
 }
 
+pub fn step_towards(start_pos: Pos, target_pos: Pos) -> Pos {
+    let dx = target_pos.x - start_pos.x;
+    let dy = target_pos.y - start_pos.y;
+    let delta_pos = Pos::new(signedness(dx), signedness(dy));
+    return delta_pos;
+}
+
 pub fn move_by(start: Pos, diff: Pos) -> Pos {
     return Pos::new(start.x + diff.x, start.y + diff.y);
 }

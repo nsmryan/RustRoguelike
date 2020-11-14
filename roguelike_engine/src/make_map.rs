@@ -244,40 +244,6 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos,
     return tile;
 }
 
-#[test]
-fn test_parse_vault() {
-    let lines = vec!(vec!('|', '"', ' ', '#'),
-                     vec!(' ', ' ', ' ', ' '),
-                     vec!(' ', '#', ' ', ' '),
-                     vec!(' ', '_', ' ', '_'),
-                     vec!(' ', ' ', ' ', 'w'),
-                     vec!(' ', ' ', ' ', ' '),
-                     );
-    let tiles = parse_ascii_chars(lines, &Config::default());
-
-    let mut expected_tiles = vec![vec![Tile::empty(); 2]; 3];
-    expected_tiles[0][0].left_wall = Wall::ShortWall;
-    expected_tiles[0][0].surface = Surface::Grass;
-
-    expected_tiles[0][1].block_move = true;
-    expected_tiles[0][1].block_sight = true;
-    expected_tiles[0][1].tile_type = TileType::Wall;
-
-    expected_tiles[1][0].block_move = true;
-    expected_tiles[1][0].block_sight = true;
-    expected_tiles[1][0].tile_type = TileType::Wall;
-
-    expected_tiles[0][1].chr = MAP_WALL;
-    expected_tiles[1][0].chr = MAP_WALL;
-
-    expected_tiles[1][0].bottom_wall = Wall::ShortWall;
-    expected_tiles[1][1].bottom_wall = Wall::ShortWall;
-
-    expected_tiles[2][1] = Tile::water();
-
-    assert_eq!(tiles.data.map, Map::with_vec(expected_tiles));
-}
-
 pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     let player_position: Pos;
 

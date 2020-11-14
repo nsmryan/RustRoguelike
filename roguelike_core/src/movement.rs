@@ -589,77 +589,6 @@ pub fn test_reach_offsets_single() {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Momentum {
-    pub mx: i32,
-    pub my: i32,
-    pub max: i32,
-}
-
-impl Default for Momentum {
-    fn default() -> Momentum {
-        Momentum {
-            mx: 0,
-            my: 0,
-            max: MAX_MOMENTUM,
-        }
-    }
-}
-
-impl Momentum {
-    pub fn running(&mut self) -> bool {
-        return self.magnitude() != 0;
-    }
-
-    pub fn at_maximum(&self) -> bool {
-        return self.magnitude() == MAX_MOMENTUM;
-    }
-        
-    pub fn magnitude(&self) -> i32 {
-        if self.mx.abs() > self.my.abs() {
-            return self.mx.abs();
-        } else {
-            return self.my.abs();
-        }
-    }
-
-    pub fn diagonal(&self) -> bool {
-        return self.mx.abs() != 0 && self.my.abs() != 0;
-    }
-
-    pub fn moved(&mut self, dx: i32, dy: i32) {
-        // if the movement is in the opposite direction, and we have some momentum
-        // currently, lose our momentum.
-
-        if self.mx != 0 && dx.signum() != self.mx.signum() {
-            self.mx = 0;
-        } else {
-            self.mx = clamp(self.mx + dx.signum(), -self.max, self.max);
-        }
-
-        if self.my != 0 && dy.signum() != self.my.signum() {
-            self.my = 0;
-        } else {
-            self.my = clamp(self.my + dy.signum(), -self.max, self.max);
-        }
-    }
-
-    pub fn set_momentum(&mut self, mx: i32, my: i32) {
-        self.mx = mx;
-        self.my = my;
-    }
-
-    pub fn along(&self, dx: i32, dy: i32) -> bool {
-        return (self.mx * dx + self.my * dy) > 0;
-    }
-
-    pub fn clear(&mut self) {
-        self.mx = 0;
-        self.my = 0;
-    }
-}
-
-
-#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MoveResult {
     entity: Option<EntityId>,
     blocked: Option<Blocked>,
@@ -760,13 +689,6 @@ pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked:
     }
 
     if jumped_wall {
-        // TODO remove when confirmed that this is not desired
-        // if we jump the wall, we have to recheck for collisions for the
-        // remaining move distance.
-        //let (dx, dy) = dxy(blocked.end_pos, add_pos(pos, delta_pos));
-        //let next_move_result = check_collision(blocked.end_pos, dx, dy, data);
-        //let new_pos = next_move_result.move_pos;
-
         let new_pos = blocked.end_pos;
 
         movement = Some(Movement::move_to(new_pos, MoveType::JumpWall));

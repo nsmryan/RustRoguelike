@@ -223,7 +223,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                          wall_loc = blocked.end_pos;
                          left_wall = false;
                      } else {
-                        panic!(format!("Hammer direction was not up/down/left/right ({:?})!", blocked.direction));
+                        panic!(format!("Hammer direction was not up/down/left/right ({:?})!", blocked));
                      }
 
                     if left_wall {

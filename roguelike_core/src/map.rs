@@ -374,13 +374,16 @@ impl Map {
     }
 
     pub fn path_blocked(&self, start_pos: Pos, end_pos: Pos, blocked_type: BlockedType) -> Option<Blocked> {
-        if end_pos.x == 0 && end_pos.y == 0 {
+        let dxy = sub_pos(end_pos, start_pos);
+
+        if dxy.x == 0 && dxy.y == 0 {
             return None;
         }
 
         let line = line(start_pos, end_pos);
 
-        let dir = Direction::from_dxy(end_pos.x, end_pos.y).expect("Check for blocking wall with no movement?");
+        let dir = Direction::from_dxy(dxy.x, dxy.y)
+                            .expect(&format!("Check for blocking wall with no movement {:?}?", dxy));
 
         let positions = iter::once(start_pos).chain(line.into_iter());
 
@@ -412,7 +415,8 @@ impl Map {
             let x_moved = Pos::new(target_pos.x, y);
             let y_moved = Pos::new(x, target_pos.y);
             
-            match Direction::from_dxy(move_dir.x, move_dir.y).unwrap() {
+            let direction = Direction::from_dxy(move_dir.x, move_dir.y).unwrap();
+            match direction {
                 Direction::Right | Direction::Left => {
                     let mut left_wall_pos = pos;
                     // moving right
