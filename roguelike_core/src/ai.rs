@@ -97,6 +97,31 @@ pub fn ai_pos_that_hit_target(monster_id: EntityId,
     return potential_move_targets;
 }
 
+pub fn ai_fov_cost(monster_id: EntityId,
+                   check_pos: Pos,
+                   target_pos: Pos,
+                   data: &mut GameData,
+                   config: &Config) -> usize {
+    let monster_pos = data.entities.pos[&monster_id];
+
+    // the fov_cost is added in if the next move would leave the target's FOV
+    let mut cost: usize = 0;
+    data.entities.set_pos(monster_id, check_pos);
+    let cur_dir = data.entities.direction[&monster_id];
+    data.entities.face(monster_id, target_pos);
+    cost =
+        if data.is_in_fov(monster_id, target_pos, config) {
+             NOT_IN_FOV_COST
+        } else {
+            0
+        };
+    data.entities.direction[&monster_id] = cur_dir;
+    data.entities.set_pos(monster_id, monster_pos);
+
+    return cost;
+}
+
+
 pub fn ai_move_to_attack_pos(monster_id: EntityId,
                              target_id: EntityId,
                              old_dir: Direction,
@@ -128,22 +153,9 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     let mut path_solutions: Vec<((usize, i32), Pos)> = Vec::new();
     let mut lowest_cost = std::usize::MAX;
     for target in potential_move_targets {
-        let mut cost = 0;
+        let mut cost: usize = 0;
 
-        // the fov_cost is added in if the next move would leave the target's FOV
-        {
-            data.entities.set_pos(monster_id, target);
-            let cur_dir = data.entities.direction[&monster_id];
-            data.entities.face(monster_id, target_pos);
-            cost +=
-                if data.is_in_fov(monster_id, target_pos, config) {
-                     NOT_IN_FOV_COST
-                } else {
-                    0
-                };
-            data.entities.direction[&monster_id] = cur_dir;
-            data.entities.set_pos(monster_id, monster_pos);
-        }
+        cost += ai_fov_cost(monster_id, target, target_pos, data, config);
 
         // if the current cost is already higher then the lowest cost found so far,
         // there is no reason to consider this path
