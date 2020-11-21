@@ -122,10 +122,13 @@ pub fn ai_fov_cost(monster_id: EntityId,
 }
 
 pub fn ai_target_pos_cost(monster_id: EntityId,
+                          target_id: EntityId,
                           check_pos: Pos,
                           lowest_cost: usize,
                           data: &mut GameData,
                           config: &Config) -> Option<(usize, Pos)> {
+    let monster_pos = data.entities.pos[&monster_id];
+    let target_pos = data.entities.pos[&target_id];
     let movement = data.entities.movement[&monster_id];
 
     let mut cost: usize = 0;
@@ -172,8 +175,6 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
 
     let mut new_pos = monster_pos;
 
-    let pos_offset;
-
     let mut potential_move_targets = ai_pos_that_hit_target(monster_id, target_id, data, config);
 
     // sort by distance to monster to we consider closer positions first, allowing us to
@@ -190,7 +191,7 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     let mut path_solutions: Vec<((usize, i32), Pos)> = Vec::new();
     let mut lowest_cost = std::usize::MAX;
     for target in potential_move_targets {
-        let maybe_cost = ai_target_pos_cost(monster_id, target, lowest_cost, data, config);
+        let maybe_cost = ai_target_pos_cost(monster_id, target_id, target, lowest_cost, data, config);
 
         if let Some((cost, next_pos)) = maybe_cost {
             let turn_dir = data.entities.face_to(monster_id, next_pos);
@@ -208,7 +209,7 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     }
 
     // step towards the closest location that lets us hit the target
-    pos_offset = ai_take_astar_step(monster_id, new_pos, true, &data);
+    let pos_offset = ai_take_astar_step(monster_id, new_pos, true, &data);
     if pos_mag(pos_offset) > 0 {
         turn = Action::Move(Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move));
     } else {
