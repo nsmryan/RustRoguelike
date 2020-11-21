@@ -305,6 +305,7 @@ pub fn ai_investigate(target_pos: Pos,
 
     let mut turn: Action;
 
+    // if the player is in FOV, and not blocked by a wall, face the player
     if data.map.path_blocked_fov(monster_pos, player_pos).is_none() {
         data.entities.face(monster_id, player_pos);
     }
@@ -359,19 +360,13 @@ fn ai_can_hit_target(data: &mut GameData,
         return None;
     }
 
-    let within_fov =
-        data.is_in_fov(monster_id, target_pos, config);
-
+    let within_fov = data.is_in_fov(monster_id, target_pos, config);
 
     let clear_path = data.clear_path_up_to(monster_pos, target_pos, false);
 
     if within_fov && clear_path {
         // get all locations they can hit
-        let positions: Vec<Pos> =
-            reach.offsets()
-            .iter()
-            .map(|pos| Pos::new(pos.x + monster_pos.x, pos.y + monster_pos.y))
-            .collect();
+        let positions: Vec<Pos> = reach.reachables(monster_pos);
 
         // look through attack positions, in case one hits the target
         for pos in positions {
