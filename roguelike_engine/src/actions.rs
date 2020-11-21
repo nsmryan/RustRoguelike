@@ -181,6 +181,86 @@ impl FromStr for InputAction {
 //    }
 //}
 
+pub fn inventory_use_item(item_index: usize,
+                          data: &mut GameData,
+                          settings: &mut GameSettings,
+                          msg_log: &mut MsgLog) {
+    let player_id = data.find_player().unwrap();
+    let item_key = data.entities.inventory[&player_id][item_index];
+    data.entities.selected_item.insert(player_id, item_key);
+
+    settings.state = GameState::Selection;
+    settings.selection.only_visible = false;
+
+    // if the item is a trap, set it.
+    // otherwise, throw it.
+    if data.entities.trap.get(&item_key).is_some() {
+        settings.selection =
+            Selection::new(SelectionType::WithinReach(Reach::single(1)), SelectionAction::PlaceTrap);
+    } else {
+        settings.selection =
+            Selection::new(SelectionType::WithinRadius(PLAYER_THROW_DIST), SelectionAction::Throw);
+    }
+
+    msg_log.log(Msg::GameState(settings.state));
+}
+
+pub fn inventory_drop_item(item_index: usize,
+                           data: &mut GameData,
+                           settings: &mut GameSettings,
+                           msg_log: &mut MsgLog) {
+    let player_id = data.find_player().unwrap();
+    let player_pos = data.entities.pos[&player_id];
+    let item_key = data.entities.inventory[&player_id][item_index];
+
+    // Find a place to drop the item, without placing it on the same tile
+    // as another item.
+    let mut found_tile = false;
+    let mut dist = 1;
+    while !found_tile && dist < 10 {
+        let positions = data.map.floodfill(player_pos, dist);
+
+        for pos in positions {
+            if data.item_at_pos(pos).is_none() {
+                data.entities.remove_item(player_id, item_key);
+                data.entities.set_pos(item_key, pos);
+
+                settings.state = GameState::Playing;
+                msg_log.log(Msg::GameState(settings.state));
+
+                found_tile = true;
+                break;
+            }
+        }
+
+        dist += 1;
+    }
+
+    if !found_tile {
+        msg_log.log(Msg::DropFailed(player_id));
+    }
+}
+
+pub fn inventory_select_item(item_index: usize,
+                             data: &mut GameData,
+                             settings: &mut GameSettings,
+                             msg_log: &mut MsgLog) {
+    let player_id = data.find_player().unwrap();
+
+    if item_index < data.entities.inventory[&player_id].len() {
+        match settings.inventory_action {
+            InventoryAction::Use => {
+                inventory_use_item(item_index, data, settings, msg_log);
+            }
+
+            InventoryAction::Drop => {
+                inventory_drop_item(item_index, data, settings, msg_log);
+            }
+        }
+    }
+    // if item index is not in the player's inventory, do nothing
+}
+
 pub fn handle_input_inventory(input: InputAction,
                               data: &mut GameData,
                               settings: &mut GameSettings,
@@ -194,62 +274,7 @@ pub fn handle_input_inventory(input: InputAction,
         }
 
         InputAction::SelectItem(item_index) => {
-            if item_index < data.entities.inventory[&player_id].len() {
-                let item_key = data.entities.inventory[&player_id][item_index];
-
-                match settings.inventory_action {
-                    InventoryAction::Use => {
-                        data.entities.selected_item.insert(player_id, item_key);
-
-                        settings.state = GameState::Selection;
-                        settings.selection.only_visible = false;
-
-                        // if the item is a trap, set it.
-                        // otherwise, throw it.
-                        if data.entities.trap.get(&item_key).is_some() {
-                            settings.selection =
-                                Selection::new(SelectionType::WithinReach(Reach::single(1)), SelectionAction::PlaceTrap);
-                        } else {
-                            settings.selection =
-                                Selection::new(SelectionType::WithinRadius(PLAYER_THROW_DIST), SelectionAction::Throw);
-                        }
-
-                        msg_log.log(Msg::GameState(settings.state));
-                    }
-
-                    InventoryAction::Drop => {
-                        let player_pos = data.entities.pos[&player_id];
-
-                        // Find a place to drop the item, without placing it on the same tile
-                        // as another item.
-                        let mut found_tile = false;
-                        let mut dist = 1;
-                        while !found_tile && dist < 10 {
-                            let positions = data.map.floodfill(player_pos, dist);
-
-                            for pos in positions {
-                                if data.item_at_pos(pos).is_none() {
-                                    data.entities.remove_item(player_id, item_key);
-                                    data.entities.set_pos(item_key, pos);
-
-                                    settings.state = GameState::Playing;
-                                    msg_log.log(Msg::GameState(settings.state));
-
-                                    found_tile = true;
-                                    break;
-                                }
-                            }
-
-                            dist += 1;
-                        }
-
-                        if !found_tile {
-                            msg_log.log(Msg::DropFailed(player_id));
-                        }
-                    }
-                }
-            }
-            // if item index is not in the player's inventory, do nothing
+            inventory_select_item(item_index, data, settings, msg_log);
         }
 
         InputAction::Esc => {
