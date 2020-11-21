@@ -116,7 +116,7 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
 
     // sort by distance to monster to we consider closer positions first, allowing us to
     // skip far away paths we won't take anyway.
-    potential_move_targets.sort_by(|a, b| distance(monster_pos, *a).partial_cmp(&distance(monster_pos, *b)).unwrap());
+    sort_by_distance_to(monster_pos, &mut potential_move_targets);
     let potential_move_targets = potential_move_targets;
 
     // look through all potential positions for the shortest path

@@ -49,6 +49,11 @@ pub fn is_ordinal(delta: Pos) -> bool {
            (delta.y == 0 && delta.x != 0);
 }
 
+pub fn sort_by_distance_to(pos: Pos, positions: &mut Vec<Pos>) {
+    positions.sort_by(|a, b| distance(pos, *a)
+             .partial_cmp(&distance(pos, *b)).unwrap());
+}
+
 pub fn push_attack(entity_id: EntityId,
                    target: EntityId,
                    delta_pos: Pos,
