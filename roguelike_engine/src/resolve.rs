@@ -80,31 +80,7 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
-                let attacked_pos = data.entities.pos[&attacked];
-
-                // if the attacked entities position is not blocked
-                if !data.map[attacked_pos].block_move {
-                    // all non-player entities leave rubble
-                    if data.entities.typ[&attacked] != EntityType::Player {
-                        data.map[attacked_pos].surface = Surface::Rubble;
-                    }
-
-                    // leave energy ball
-                    if data.entities.typ[&attacked] == EntityType::Enemy {
-                        make_energy(&mut data.entities, config, attacked_pos, msg_log);
-                    }
-                }
-
-                if let Some(fighter) = data.entities.fighter.get_mut(&attacked) {
-                    fighter.hp = 0;
-                }
-                data.entities.status[&attacked].alive = false;
-
-                data.entities.blocks[&attacked] = false;
-
-                data.entities.limbo.insert(attacked, ());
-
-                data.entities.count_down.insert(attacked, 1);
+                killed_entity(attacked, data, msg_log, config);
             }
 
             Msg::Attack(attacker, attacked, _damage) => {
@@ -531,6 +507,34 @@ pub fn resolve_messages(data: &mut GameData,
         }
     }
     data.entities.messages[&player_id].clear();
+}
+
+pub fn killed_entity(attacked: EntityId, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+    let attacked_pos = data.entities.pos[&attacked];
+
+    // if the attacked entities position is not blocked
+    if !data.map[attacked_pos].block_move {
+        // all non-player entities leave rubble
+        if data.entities.typ[&attacked] != EntityType::Player {
+            data.map[attacked_pos].surface = Surface::Rubble;
+        }
+
+        // leave energy ball
+        if data.entities.typ[&attacked] == EntityType::Enemy {
+            make_energy(&mut data.entities, config, attacked_pos, msg_log);
+        }
+    }
+
+    if let Some(fighter) = data.entities.fighter.get_mut(&attacked) {
+        fighter.hp = 0;
+    }
+    data.entities.status[&attacked].alive = false;
+
+    data.entities.blocks[&attacked] = false;
+
+    data.entities.limbo.insert(attacked, ());
+
+    data.entities.count_down.insert(attacked, 1);
 }
 
 pub fn pushed_entity(pusher: EntityId,
