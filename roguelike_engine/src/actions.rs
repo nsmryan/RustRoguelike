@@ -34,7 +34,7 @@ pub enum ActionMode {
     Alternate,
 }
 
-pub type ActionTarget = usize;
+pub type ActionTarget = i32;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum InputAction {
@@ -567,6 +567,15 @@ pub fn handle_input(game: &mut Game) -> Action {
     let player_alive = game.data.entities.status[&player_id].alive;
 
     match (game.input_action, player_alive) {
+        (InputAction::Chord(dir, strength, mode, target), true) => {
+            // if no target selection, then it is a move
+            if target == -1 {
+                // TODO check primary or alt and run or walk
+            } else {
+                // TODO if primary, use. if alt, throw (or if 5 then drop)
+            }
+        }
+
         (InputAction::Pass, true) => {
             player_turn = Action::Pass;
         }
@@ -593,19 +602,7 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::Pickup, true) => {
-            let pos = game.data.entities.pos[&player_id];
-
-            for key in game.data.entities.pos.keys() {
-                let is_item = game.data.entities.item.get(key).is_some();
-                let is_disarmed_trap =
-                    game.data.entities.trap.get(key).is_some() &&
-                    game.data.entities.armed.get(key) == Some(&false);
-
-                if game.data.entities.pos[key] == pos && (is_item || is_disarmed_trap) {
-                    player_turn = Action::Pickup(*key);
-                    break;
-                }
-            }
+            player_turn = pickup_item(player_id, game);
         }
 
         (InputAction::MapClick(_map_loc, _map_cell), _) => {
@@ -617,33 +614,12 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::IncreaseMoveMode, true) => {
-            let holding_shield = game.data.using(player_id, Item::Shield);
-            let holding_hammer = game.data.using(player_id, Item::Hammer);
-
-            let move_mode = game.data.entities.move_mode.get(&player_id).expect("Player should have a move mode");
-            let new_move_mode = move_mode.increase();
-
-            if new_move_mode == movement::MoveMode::Run && (holding_shield || holding_hammer) {
-                game.msg_log.log(Msg::TriedRunWithHeavyEquipment);
-            } else {
-                game.data.entities.move_mode[&player_id] = new_move_mode;
-                game.data.entities.movement[&player_id] = reach_by_mode(game.data.entities.move_mode[&player_id]);
-
-                game.msg_log.log(Msg::MoveMode(new_move_mode));
-            }
-
+            increase_move_mode(player_id, game);
             player_turn = Action::none();
         }
 
         (InputAction::DecreaseMoveMode, true) => {
-            game.data.entities.move_mode[&player_id] =
-                game.data.entities.move_mode[&player_id].decrease();
-
-            game.data.entities.movement[&player_id] =
-                reach_by_mode(game.data.entities.move_mode[&player_id]);
-
-            game.msg_log.log(Msg::MoveMode(game.data.entities.move_mode[&player_id]));
-
+            decrease_move_mode(player_id, game);
             player_turn = Action::none();
         }
 
@@ -737,16 +713,7 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::UseItem, _) => {
-            if game.data.using(player_id, Item::Hammer) {
-                game.settings.state = GameState::Selection;
-                let reach = Reach::Horiz(1);
-                game.settings.selection =
-                    Selection::new(SelectionType::WithinReach(reach), SelectionAction::Hammer);
-                game.msg_log.log(Msg::GameState(game.settings.state));
-            } else if game.data.using(player_id, Item::Sword) {
-                let player_pos = game.data.entities.pos[&player_id];
-                player_turn = Action::UseItem(player_pos);
-            }
+            player_turn = use_item(player_id, game);
         }
 
         (_, _) => {
@@ -754,6 +721,72 @@ pub fn handle_input(game: &mut Game) -> Action {
     }
 
     return player_turn;
+}
+
+pub fn pickup_item(entity_id: EntityId, game: &mut Game) -> Action {
+    let mut turn: Action = Action::none();
+
+    let pos = game.data.entities.pos[&entity_id];
+
+    for key in game.data.entities.pos.keys() {
+        let is_item = game.data.entities.item.get(key).is_some();
+        let is_disarmed_trap =
+            game.data.entities.trap.get(key).is_some() &&
+            game.data.entities.armed.get(key) == Some(&false);
+
+        if game.data.entities.pos[key] == pos && (is_item || is_disarmed_trap) {
+            turn = Action::Pickup(*key);
+            break;
+        }
+    }
+
+    return turn;
+}
+
+pub fn decrease_move_mode(entity_id: EntityId, game: &mut Game) {
+    game.data.entities.move_mode[&entity_id] =
+        game.data.entities.move_mode[&entity_id].decrease();
+
+    game.data.entities.movement[&entity_id] =
+        reach_by_mode(game.data.entities.move_mode[&entity_id]);
+
+    game.msg_log.log(Msg::MoveMode(game.data.entities.move_mode[&entity_id]));
+}
+
+pub fn increase_move_mode(entity_id: EntityId, game: &mut Game) {
+    let holding_shield = game.data.using(entity_id, Item::Shield);
+    let holding_hammer = game.data.using(entity_id, Item::Hammer);
+
+    let move_mode = game.data.entities.move_mode.get(&entity_id).expect("Player should have a move mode");
+    let new_move_mode = move_mode.increase();
+
+    if new_move_mode == movement::MoveMode::Run && (holding_shield || holding_hammer) {
+        game.msg_log.log(Msg::TriedRunWithHeavyEquipment);
+    } else {
+        game.data.entities.move_mode[&entity_id] = new_move_mode;
+        game.data.entities.movement[&entity_id] = reach_by_mode(game.data.entities.move_mode[&entity_id]);
+
+        game.msg_log.log(Msg::MoveMode(new_move_mode));
+    }
+}
+
+pub fn use_item(entity_id: EntityId, game: &mut Game) -> Action {
+    let mut turn: Action = Action::none();
+
+    if game.data.using(entity_id, Item::Hammer) {
+        game.settings.state = GameState::Selection;
+
+        let reach = Reach::Horiz(1);
+        game.settings.selection =
+            Selection::new(SelectionType::WithinReach(reach), SelectionAction::Hammer);
+
+        game.msg_log.log(Msg::GameState(game.settings.state));
+    } else if game.data.using(entity_id, Item::Sword) {
+        let pos = game.data.entities.pos[&entity_id];
+        turn = Action::UseItem(pos);
+    }
+
+    return turn;
 }
 
 pub fn pick_item_up(entity_id: EntityId,

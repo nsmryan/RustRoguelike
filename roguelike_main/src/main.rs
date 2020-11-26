@@ -341,7 +341,7 @@ pub fn handle_chord<'a>(direction: Direction, scancodes: &Vec<Scancode>) -> Inpu
     let mut is_chord: bool = false;
     let mut strength: ActionStrength = ActionStrength::Weak;
     let mut mode: ActionMode = ActionMode::Primary;
-    let mut target = 0;
+    let mut target = -1;
 
     if scancodes.iter().any(|s| *s == Scancode::LShift) ||
        scancodes.iter().any(|s| *s == Scancode::RShift) {
@@ -359,12 +359,11 @@ pub fn handle_chord<'a>(direction: Direction, scancodes: &Vec<Scancode>) -> Inpu
     for (index, code) in target_codes.iter().enumerate() {
         if scancodes.iter().any(|s| *s == *code) {
                is_chord = true;
-               target = index;
+               target = index as i32;
         }
     }
 
     if is_chord {
-        println!("Is CHORD");
         action = InputAction::Chord(direction, strength, mode, target);
     }
 
