@@ -90,21 +90,7 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::SwordSwing(entity_id, pos) => {
-                let mut any_hit_entity = false;
-    
-                let adj_locs = Reach::single(1).reachables(pos);
-                for loc in adj_locs {
-                    if let Some(target_id) = data.has_blocking_entity(loc) {
-                        if data.entities.status[&target_id].alive {
-                            attack(entity_id, target_id, data, msg_log);
-                            any_hit_entity = true;
-                        }
-                    }
-                }
-
-                if any_hit_entity {
-                    data.used_up_item(entity_id);
-                }
+                sword_swing(entity_id, pos, data, msg_log);
             }
 
             Msg::HammerSwing(entity, pos) => {
@@ -186,20 +172,7 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::FreezeTrapTriggered(trap, cause_id) => {
-                let source_pos = data.entities.pos[&trap];
-
-                let freeze_aoe =
-                    data.map.aoe_fill(AoeEffect::Freeze, source_pos, config.freeze_trap_radius);
-
-                let who_hit =
-                    data.within_aoe(&freeze_aoe);
-
-                for obj_id in who_hit {
-                    // TODO probably need to filter out a bit more
-                    if obj_id != cause_id && data.entities.status[&obj_id].alive {
-                        msg_log.log(Msg::Froze(obj_id, FREEZE_TRAP_NUM_TURNS));
-                    }
-                }
+                freeze_trap_triggered(trap, cause_id, data, msg_log, config);
             }
 
             Msg::Untriggered(trigger, _entity_id) => {
@@ -231,6 +204,41 @@ pub fn resolve_messages(data: &mut GameData,
         }
     }
     data.entities.messages[&player_id].clear();
+}
+
+pub fn sword_swing(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
+    let mut any_hit_entity = false;
+
+    let adj_locs = Reach::single(1).reachables(pos);
+    for loc in adj_locs {
+        if let Some(target_id) = data.has_blocking_entity(loc) {
+            if data.entities.status[&target_id].alive {
+                attack(entity_id, target_id, data, msg_log);
+                any_hit_entity = true;
+            }
+        }
+    }
+
+    if any_hit_entity {
+        data.used_up_item(entity_id);
+    }
+}
+
+pub fn freeze_trap_triggered(trap: EntityId, cause_id: EntityId, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+    let source_pos = data.entities.pos[&trap];
+
+    let freeze_aoe =
+        data.map.aoe_fill(AoeEffect::Freeze, source_pos, config.freeze_trap_radius);
+
+    let who_hit =
+        data.within_aoe(&freeze_aoe);
+
+    for obj_id in who_hit {
+        // TODO probably need to filter out a bit more
+        if obj_id != cause_id && data.entities.status[&obj_id].alive {
+            msg_log.log(Msg::Froze(obj_id, FREEZE_TRAP_NUM_TURNS));
+        }
+    }
 }
 
 pub fn triggered(trigger: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
