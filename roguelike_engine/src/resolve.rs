@@ -93,38 +93,17 @@ pub fn resolve_messages(data: &mut GameData,
                 sword_swing(entity_id, pos, data, msg_log);
             }
 
-            Msg::HammerSwing(entity, pos) => {
-                let entity_pos = data.entities.pos[&entity];
-
-                if let Some(blocked) = data.map.path_blocked_move(entity_pos, pos) {
-                    msg_log.log_front(Msg::HammerHitWall(entity, blocked));
-                    data.used_up_item(entity);
-                } else if let Some(hit_entity) = data.has_blocking_entity(pos) {
-                    // we hit another entity!
-                    msg_log.log_front(Msg::HammerHitEntity(entity, hit_entity));
-                    data.used_up_item(entity);
-                }
+            Msg::HammerSwing(entity_id, pos) => {
+                hammer_swing(entity_id, pos, data, msg_log);
             }
 
             // TODO Consider making this a Push message, splitting out that code from Action as well
             Msg::HammerHitEntity(entity_id, hit_entity) => {
-                let first = data.entities.pos[&entity_id];
-                let second = data.entities.pos[&hit_entity];
-
-                //push_attack(entity_id, hit_entity, sub_pos(first, second), false, data, msg_log);
-                let delta_pos = sub_pos(second, first);
-                msg_log.log(Msg::Pushed(entity_id, hit_entity, delta_pos, false));
-                msg_log.log_front(Msg::Sound(entity_id, second, config.sound_radius_hammer, true));
-
-                if let Some(fighter) = data.entities.fighter.get(&hit_entity) {
-                    let damage = fighter.hp;
-
-                    msg_log.log(Msg::Killed(entity_id, hit_entity, damage));
-                }
+                hammer_hit_entity(entity_id, hit_entity, data, msg_log, config);
             }
 
-            Msg::HammerHitWall(entity, blocked) => {
-                hammer_hit_wall(entity, blocked, data, msg_log, config);
+            Msg::HammerHitWall(entity_id, blocked) => {
+                hammer_hit_wall(entity_id, blocked, data, msg_log, config);
             }
 
             Msg::Action(entity_id, action) => {
@@ -204,6 +183,35 @@ pub fn resolve_messages(data: &mut GameData,
         }
     }
     data.entities.messages[&player_id].clear();
+}
+
+pub fn hammer_swing(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
+    let entity_pos = data.entities.pos[&entity_id];
+
+    if let Some(blocked) = data.map.path_blocked_move(entity_pos, pos) {
+        msg_log.log_front(Msg::HammerHitWall(entity_id, blocked));
+        data.used_up_item(entity_id);
+    } else if let Some(hit_entity) = data.has_blocking_entity(pos) {
+        // we hit another entity!
+        msg_log.log_front(Msg::HammerHitEntity(entity_id, hit_entity));
+        data.used_up_item(entity_id);
+    }
+}
+
+pub fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+    let first = data.entities.pos[&entity_id];
+    let second = data.entities.pos[&hit_entity];
+
+    //push_attack(entity_id, hit_entity, sub_pos(first, second), false, data, msg_log);
+    let delta_pos = sub_pos(second, first);
+    msg_log.log(Msg::Pushed(entity_id, hit_entity, delta_pos, false));
+    msg_log.log_front(Msg::Sound(entity_id, second, config.sound_radius_hammer, true));
+
+    if let Some(fighter) = data.entities.fighter.get(&hit_entity) {
+        let damage = fighter.hp;
+
+        msg_log.log(Msg::Killed(entity_id, hit_entity, damage));
+    }
 }
 
 pub fn sword_swing(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
