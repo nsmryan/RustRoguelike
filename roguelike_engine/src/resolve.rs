@@ -46,7 +46,6 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::Sound(cause_id, source_pos, radius, _should_animate) => {
-                trace!("sound {} {} {}", cause_id, source_pos, radius);
                 let sound_aoe =
                     data.map.aoe_fill(AoeEffect::Sound, source_pos, radius);
 
@@ -73,30 +72,7 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::Pushed(pusher, pushed, delta_pos, move_into) => {
-                let pushed_pos = data.entities.pos[&pushed];
-                let pusher_pos = data.entities.pos[&pusher];
-
-                if data.entities.typ[&pushed] == EntityType::Column {
-                    let entity_diff = sub_pos(pushed_pos, pusher_pos);
-                    let next_pos = next_pos(pusher_pos, entity_diff);
-                    let blocked = data.map.path_blocked_move(pushed_pos, next_pos); 
-
-                    if blocked == None {
-                        data.remove_entity(pushed);
-
-                        msg_log.log(Msg::Crushed(pusher, next_pos));
-
-                        if pos_on_map(data.entities.pos[&pusher]) {
-                            let movement = Movement::step_to(pushed_pos);
-                            msg_log.log(Msg::Moved(pusher, movement, pushed_pos));
-                        }
-                    }
-                } else if data.entities.status[&pushed].alive {
-                    push_attack(pusher, pushed, delta_pos, move_into, data, msg_log);
-                } else {
-                    panic!("Tried to push entity {:?}, alive = {}!",
-                           data.entities.typ[&pushed], data.entities.status[&pushed].alive);
-                }
+                pushed_entity(pusher, pushed, delta_pos, move_into, data, msg_log);
             }
 
             Msg::Yell(entity_id, pos) => {
@@ -555,6 +531,38 @@ pub fn resolve_messages(data: &mut GameData,
         }
     }
     data.entities.messages[&player_id].clear();
+}
+
+pub fn pushed_entity(pusher: EntityId,
+                     pushed: EntityId,
+                     delta_pos: Pos,
+                     move_into: bool,
+                     data: &mut GameData,
+                     msg_log: &mut MsgLog) {
+    let pushed_pos = data.entities.pos[&pushed];
+    let pusher_pos = data.entities.pos[&pusher];
+
+    if data.entities.typ[&pushed] == EntityType::Column {
+        let entity_diff = sub_pos(pushed_pos, pusher_pos);
+        let next_pos = next_pos(pusher_pos, entity_diff);
+        let blocked = data.map.path_blocked_move(pushed_pos, next_pos); 
+
+        if blocked == None {
+            data.remove_entity(pushed);
+
+            msg_log.log(Msg::Crushed(pusher, next_pos));
+
+            if pos_on_map(data.entities.pos[&pusher]) {
+                let movement = Movement::step_to(pushed_pos);
+                msg_log.log(Msg::Moved(pusher, movement, pushed_pos));
+            }
+        }
+    } else if data.entities.status[&pushed].alive {
+        push_attack(pusher, pushed, delta_pos, move_into, data, msg_log);
+    } else {
+        panic!("Tried to push entity {:?}, alive = {}!",
+               data.entities.typ[&pushed], data.entities.status[&pushed].alive);
+    }
 }
 
 pub fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
