@@ -393,58 +393,11 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::Untriggered(trigger, _entity_id) => {
-                if data.entities.name[&trigger] == EntityName::GateTrigger {
-                    // if the gate is currently active, raise the wall
-                    if data.entities.status[&trigger].active {
-                        // is the trigger free of other entities?
-                        let stepped_on =
-                            data.entities
-                                .ids.iter()
-                                .any(|key| data.entities.typ[key] != EntityType::Trigger &&
-                                           data.entities.pos[&trigger] == data.entities.pos[key]);
-
-                        let mut maybe_wall_pos = None;
-                        if !stepped_on {
-                            // raise the gate
-                            data.entities.status[&trigger].active = false;
-                            if let Some(wall_pos) = data.entities.gate_pos[&trigger] {
-                                data.map[wall_pos] = Tile::wall();
-                                data.entities.gate_pos[&trigger] = None;
-                                maybe_wall_pos = Some(wall_pos);
-                            }
-                        }
-
-                        // if the gate was raised, kill entities in that spot
-                        if let Some(wall_pos) = maybe_wall_pos {
-                            for key in data.entities.ids.iter() {
-                                if data.entities.pos[key] == wall_pos &&
-                                   data.entities.status[key].alive {
-                                    msg_log.log(Msg::Killed(trigger, *key, TRIGGER_WALL_DAMAGE));
-                                }
-                            }
-                        }
-                    }
-                }
+                untriggered(trigger, data, msg_log);
             }
 
             Msg::Triggered(trigger, _entity_id) => {
-                if data.entities.name[&trigger] == EntityName::GateTrigger {
-                    if !data.entities.status[&trigger].active {
-                        let trigger_pos = data.entities.pos[&trigger];
-
-                        // any wall nearby is a potential target
-                        for neighbor in data.map.cardinal_neighbors(trigger_pos) {
-                            if data.map[neighbor].tile_type == TileType::Wall {
-                                data.entities.status[&trigger].active = true;
-
-                                data.map[neighbor] = Tile::empty();
-
-                                data.entities.gate_pos[&trigger] = Some(neighbor);
-                                break;
-                            }
-                        }
-                    }
-                }
+                triggered(trigger, data, msg_log);
             }
 
             _ => {
@@ -468,6 +421,61 @@ pub fn resolve_messages(data: &mut GameData,
         }
     }
     data.entities.messages[&player_id].clear();
+}
+
+pub fn triggered(trigger: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
+    if data.entities.name[&trigger] == EntityName::GateTrigger {
+        if !data.entities.status[&trigger].active {
+            let trigger_pos = data.entities.pos[&trigger];
+
+            // any wall nearby is a potential target
+            for neighbor in data.map.cardinal_neighbors(trigger_pos) {
+                if data.map[neighbor].tile_type == TileType::Wall {
+                    data.entities.status[&trigger].active = true;
+
+                    data.map[neighbor] = Tile::empty();
+
+                    data.entities.gate_pos[&trigger] = Some(neighbor);
+                    break;
+                }
+            }
+        }
+    }
+}
+
+pub fn untriggered(trigger: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
+    if data.entities.name[&trigger] == EntityName::GateTrigger {
+        // if the gate is currently active, raise the wall
+        if data.entities.status[&trigger].active {
+            // is the trigger free of other entities?
+            let stepped_on =
+                data.entities
+                    .ids.iter()
+                    .any(|key| data.entities.typ[key] != EntityType::Trigger &&
+                               data.entities.pos[&trigger] == data.entities.pos[key]);
+
+            let mut maybe_wall_pos = None;
+            if !stepped_on {
+                // raise the gate
+                data.entities.status[&trigger].active = false;
+                if let Some(wall_pos) = data.entities.gate_pos[&trigger] {
+                    data.map[wall_pos] = Tile::wall();
+                    data.entities.gate_pos[&trigger] = None;
+                    maybe_wall_pos = Some(wall_pos);
+                }
+            }
+
+            // if the gate was raised, kill entities in that spot
+            if let Some(wall_pos) = maybe_wall_pos {
+                for key in data.entities.ids.iter() {
+                    if data.entities.pos[key] == wall_pos &&
+                       data.entities.status[key].alive {
+                        msg_log.log(Msg::Killed(trigger, *key, TRIGGER_WALL_DAMAGE));
+                    }
+                }
+            }
+        }
+    }
 }
 
 pub fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
