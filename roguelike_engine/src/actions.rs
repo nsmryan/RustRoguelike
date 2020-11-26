@@ -13,6 +13,7 @@ use roguelike_core::config::Config;
 use roguelike_core::line::line;
 
 use crate::game::*;
+use crate::selection::*;
 use crate::make_map;
 
 

@@ -264,7 +264,6 @@ pub fn handle_sdl2_input(game: &mut Game, display: &mut Display, event_pump: &mu
 
             Event::KeyDown {keycode, keymod, ..} => {
                 if let Some(keycode) = keycode {
-                    //game.key_input.push((KeyDirection::Down, keycode));
                     game.input_action =
                         keydown_to_action(keycode, keymod);
                 }
@@ -272,7 +271,6 @@ pub fn handle_sdl2_input(game: &mut Game, display: &mut Display, event_pump: &mu
 
             Event::KeyUp {keycode, keymod, ..} => {
                 if let Some(keycode) = keycode {
-                    //game.key_input.push((KeyDirection::Up, keycode));
                     game.input_action =
                         keyup_to_action(keycode, keymod, game.settings.state);
                 }
