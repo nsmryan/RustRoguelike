@@ -18,7 +18,11 @@ use crate::actions::{throw_item, pick_item_up, place_trap};
 use crate::generation::{make_energy, make_dagger};
 
 
-pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &mut GameSettings, rng: &mut SmallRng, config: &Config) {
+pub fn resolve_messages(data: &mut GameData,
+                        msg_log: &mut MsgLog,
+                        _settings: &mut GameSettings,
+                        rng: &mut SmallRng,
+                        config: &Config) {
     let player_id = data.find_player().unwrap();
 
     /* Handle Message Log */
@@ -38,19 +42,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
             }
 
             Msg::Crushed(entity_id, pos) => {
-                data.map[pos].surface = Surface::Rubble;
-
-                for crushed_id in data.has_entities(pos) {
-                    if let Some(fighter) = data.entities.fighter.get(&crushed_id) {
-                        msg_log.log(Msg::Killed(entity_id, crushed_id, fighter.hp));
-                    } else if data.entities.item.get(&crushed_id).is_none() &&
-                              data.entities.name[&crushed_id] != EntityName::Mouse {
-                        // otherwise, if its not an item or the mouse, just remove the entity
-                        data.remove_entity(crushed_id);
-                    }
-                }
-
-                msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_crushed, true));
+                crushed(entity_id, pos, data, msg_log, config);
             }
 
             Msg::Sound(cause_id, source_pos, radius, _should_animate) => {
@@ -565,6 +557,22 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
     data.entities.messages[&player_id].clear();
 }
 
+pub fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+    data.map[pos].surface = Surface::Rubble;
+
+    for crushed_id in data.has_entities(pos) {
+        if let Some(fighter) = data.entities.fighter.get(&crushed_id) {
+            msg_log.log(Msg::Killed(entity_id, crushed_id, fighter.hp));
+        } else if data.entities.item.get(&crushed_id).is_none() &&
+                  data.entities.name[&crushed_id] != EntityName::Mouse {
+            // otherwise, if its not an item or the mouse, just remove the entity
+            data.remove_entity(crushed_id);
+        }
+    }
+
+    msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_crushed, true));
+}
+
 pub fn use_energy(entity_id: EntityId, data: &mut GameData) {
     let pos = data.entities.pos[&entity_id];
 
@@ -611,7 +619,12 @@ pub fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Opti
     return None;
 }
 
-fn process_moved_message(entity_id: EntityId, movement: Movement, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+fn process_moved_message(entity_id: EntityId,
+                         movement: Movement,
+                         pos: Pos,
+                         data: &mut GameData,
+                         msg_log: &mut MsgLog,
+                         config: &Config) {
     // if this move does not change the entity position, exit early
     if pos == data.entities.pos[&entity_id] {
         return;

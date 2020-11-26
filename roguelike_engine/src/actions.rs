@@ -625,7 +625,6 @@ pub fn handle_input(game: &mut Game) -> Action {
 
         (InputAction::OverlayOn, _) => {
             game.settings.overlay = true;
-
             player_turn = Action::none();
         }
 
