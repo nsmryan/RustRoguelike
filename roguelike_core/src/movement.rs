@@ -5,7 +5,6 @@ use euclid::*;
 
 use serde::{Serialize, Deserialize};
 
-use crate::constants::*;
 use crate::types::*;
 use crate::utils::*;
 use crate::map::{Wall, Blocked, TileType};

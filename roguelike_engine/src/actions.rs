@@ -266,8 +266,6 @@ pub fn handle_input_inventory(input: InputAction,
                               data: &mut GameData,
                               settings: &mut GameSettings,
                               msg_log: &mut MsgLog) {
-    let player_id = data.find_player().unwrap();
-
     match input {
         InputAction::Inventory => {
             settings.state = GameState::Playing;

@@ -105,11 +105,10 @@ pub fn ai_fov_cost(monster_id: EntityId,
     let monster_pos = data.entities.pos[&monster_id];
 
     // the fov_cost is added in if the next move would leave the target's FOV
-    let mut cost: usize = 0;
     data.entities.set_pos(monster_id, check_pos);
     let cur_dir = data.entities.direction[&monster_id];
     data.entities.face(monster_id, target_pos);
-    cost =
+    let cost =
         if data.is_in_fov(monster_id, target_pos, config) {
              NOT_IN_FOV_COST
         } else {
@@ -183,9 +182,6 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
                              old_dir: Direction,
                              data: &mut GameData,
                              config: &Config) -> Action {
-    let turn: Action;
-
-    let target_pos = data.entities.pos[&target_id];
     let monster_pos = data.entities.pos[&monster_id];
 
     let mut new_pos = monster_pos;
@@ -197,13 +193,11 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     sort_by_distance_to(monster_pos, &mut potential_move_targets);
     let potential_move_targets = potential_move_targets;
 
-    // look through all potential positions for the shortest path
-    let must_reach = true;
-    let traps_block = true;
-
     // path_solutions contains the path length, the amount of turning (absolute value), and the
     // next position to go to for this solution.
     let mut path_solutions: Vec<((usize, i32), Pos)> = Vec::new();
+
+    // look through all potential positions for the shortest path
     let mut lowest_cost = std::usize::MAX;
     for target in potential_move_targets {
         let maybe_cost = ai_target_pos_cost(monster_id, target_id, target, lowest_cost, data, config);

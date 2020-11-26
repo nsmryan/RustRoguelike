@@ -487,7 +487,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 }
             }
 
-            Msg::Untriggered(trigger, entity_id) => {
+            Msg::Untriggered(trigger, _entity_id) => {
                 if data.entities.name[&trigger] == EntityName::GateTrigger {
                     // if the gate is currently active, raise the wall
                     if data.entities.status[&trigger].active {
@@ -522,7 +522,7 @@ pub fn resolve_messages(data: &mut GameData, msg_log: &mut MsgLog, _settings: &m
                 }
             }
 
-            Msg::Triggered(trigger, entity_id) => {
+            Msg::Triggered(trigger, _entity_id) => {
                 if data.entities.name[&trigger] == EntityName::GateTrigger {
                     if !data.entities.status[&trigger].active {
                         let trigger_pos = data.entities.pos[&trigger];

@@ -1,4 +1,3 @@
-use std::env;
 use rand::prelude::*;
 
 use serde::{Serialize, Deserialize};
@@ -10,8 +9,7 @@ use roguelike_core::config::*;
 use roguelike_core::ai::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
-use roguelike_core::movement::{Direction, Action, Reach};
-use roguelike_core::utils::{move_towards, distance, sub_pos, next_pos};
+use roguelike_core::movement::{Direction, Action};
 #[cfg(test)]
 use roguelike_core::movement::*;
 
@@ -54,7 +52,7 @@ impl Game {
         let stone_id = make_stone(&mut data.entities, &config, Pos::new(-1, -1), &mut msg_log);
         data.entities.inventory[&player_id].push_back(stone_id);
 
-        let mut vaults = Vec::new();
+        let vaults = Vec::new();
 
         let state = Game {
             config,

@@ -1,6 +1,6 @@
 use bmp::Image;
 
-use sdl2::render::{Texture, WindowCanvas, TextureCreator, BlendMode, Canvas, TextureAccess};
+use sdl2::render::{Texture, WindowCanvas, TextureCreator, BlendMode};
 use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{PixelFormatEnum, Color as Sdl2Color};

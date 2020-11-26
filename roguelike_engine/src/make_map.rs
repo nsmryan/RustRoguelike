@@ -6,8 +6,6 @@ use rexpaint::*;
 
 use log::trace;
 
-use serde_yaml;
-
 use roguelike_core::constants::*;
 use roguelike_core::messaging::*;
 use roguelike_core::map::*;

@@ -617,7 +617,6 @@ impl Map {
 
         let mut is_blocking = |sym_pos: SymPos| {
             let pos = Pos::new(sym_pos.0 as i32, sym_pos.1 as i32);
-            let dist = (start_pos.x - pos.x).abs() + (start_pos.y - pos.y).abs();
 
             if !self.is_within_bounds(pos) {
                 return true;
