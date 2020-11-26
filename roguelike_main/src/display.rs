@@ -4,7 +4,6 @@ use sdl2::render::{Texture, WindowCanvas, TextureCreator, BlendMode, Canvas, Tex
 use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{PixelFormatEnum, Color as Sdl2Color};
-use sdl2::image::SaveSurface;
 
 use indexmap::map::IndexMap;
 

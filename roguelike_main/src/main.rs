@@ -21,7 +21,6 @@ use sdl2::video::WindowContext;
 use sdl2::ttf::Sdl2TtfContext;
 
 use walkdir::WalkDir;
-use bmp;
 
 use log::LevelFilter;
 use simple_logging;

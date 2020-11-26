@@ -414,8 +414,6 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
         // only display first object
         if let Some(obj_id) = object_ids.first() {
-            let pos = game.data.entities.pos[obj_id];
-
             // only display things in the player's FOV
             if in_fov {
                 if let Some(fighter) = game.data.entities.fighter.get(obj_id) {
