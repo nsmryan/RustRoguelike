@@ -12,10 +12,13 @@ use wfc_image::*;
 use image;
 use image::GenericImageView;
 
+use euclid::*;
+
 use roguelike_core::constants::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::utils::*;
+use roguelike_core::line::*;
 
 use crate::generation::*;
 use crate::game::*;
@@ -805,3 +808,94 @@ fn test_find_complex_structures() {
     assert_eq!(5, structures[0].blocks.len());
 }
 
+
+pub fn place_block(map: &mut Map, start: Pos, width: i32, tile: Tile) -> Vec<Pos> {
+    let mut positions = Vec::new();
+
+    for x in 0..width {
+        for y in 0..width {
+            let pos = start + Vector2D::new(x, y);
+            map[pos] = tile;
+            positions.push(pos);
+        }
+    }
+
+    return positions;
+}
+
+pub fn place_line(map: &mut Map, start: Pos, end: Pos, tile: Tile) -> Vec<Pos> {
+    let mut positions = Vec::new();
+    let line = line(start, end);
+
+    for pos in line {
+        if map.is_within_bounds(pos) {
+            map[pos] = tile;
+            positions.push(pos);
+        }
+    }
+
+    positions
+}
+
+pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut SmallRng) {
+    match obstacle {
+        Obstacle::Block => {
+            map.tiles[pos.x as usize][pos.y as usize] = Tile::wall();
+        }
+
+        Obstacle::Wall => {
+            let end_pos = if rng.gen_bool(0.5) {
+                move_x(pos, 3)
+            } else {
+                move_y(pos, 3)
+            };
+            place_line(map, pos, end_pos, Tile::wall());
+        }
+
+        Obstacle::ShortWall => {
+            let end_pos = if rng.gen_bool(0.5) {
+                move_x(pos, 3)
+            } else {
+                move_y(pos, 3)
+            };
+            place_line(map, pos, end_pos, Tile::short_wall());
+        }
+
+        Obstacle::Square => {
+            place_block(map, pos, 2, Tile::wall());
+        }
+
+        Obstacle::LShape => {
+            let mut dir = 1;
+            if rng.gen_bool(0.5) {
+                dir = -1;
+            }
+
+            if rng.gen_bool(0.5) {
+                for x in 0..3 {
+                    map.tiles[pos.x as usize + x][pos.y as usize] = Tile::wall();
+                }
+                map.tiles[pos.x as usize][(pos.y + dir) as usize] = Tile::wall();
+            } else {
+                for y in 0..3 {
+                    map.tiles[pos.x as usize][pos.y as usize + y] = Tile::wall();
+                }
+                map.tiles[(pos.x + dir) as usize][pos.y as usize] = Tile::wall();
+            }
+        }
+
+        Obstacle::Building => {
+            let size = 2;
+
+            let mut positions = vec!();
+            positions.append(&mut place_line(map, move_by(pos, Pos::new(-size, size)),  move_by(pos, Pos::new(size,  size)), Tile::wall()));
+            positions.append(&mut place_line(map, move_by(pos, Pos::new(-size, size)),  move_by(pos, Pos::new(-size, -size)), Tile::wall()));
+            positions.append(&mut place_line(map, move_by(pos, Pos::new(-size, -size)), move_by(pos, Pos::new(size, -size)), Tile::wall()));
+            positions.append(&mut place_line(map, move_by(pos, Pos::new(size, -size)),  move_by(pos, Pos::new(size,  size)), Tile::wall()));
+
+            for _ in 0..rng.gen_range(0, 10) {
+                positions.swap_remove(rng.gen_range(0, positions.len()));
+            }
+        }
+    }
+}

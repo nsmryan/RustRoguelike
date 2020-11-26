@@ -14,6 +14,7 @@ use roguelike_core::config::*;
 use roguelike_core::utils::{rand_from_pos, distance};
 
 use crate::game::*;
+use crate::procgen::*;
 
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]

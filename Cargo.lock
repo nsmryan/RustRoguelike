@@ -751,6 +751,7 @@ dependencies = [
 name = "roguelike_engine"
 version = "0.1.0"
 dependencies = [
+ "euclid",
  "image",
  "log",
  "logging_timer",
