@@ -142,197 +142,7 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::Action(entity_id, action) => {
-                let entity_pos = data.entities.pos[&entity_id];
-
-                if let Action::Move(movement) = action {
-                    if let Some(attack_field) = movement.attack {
-                        match attack_field {
-                            Attack::Attack(target_id) => {
-                                attack(entity_id, target_id, data, msg_log);
-                            }
-
-                            Attack::Stab(target_id) => {
-                                stab(entity_id, target_id, &mut data.entities, msg_log);
-
-                                if data.using(entity_id, Item::Dagger) {
-                                    data.used_up_item(entity_id);
-                                }
-
-                                if entity_pos != movement.pos {
-                                    msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
-                                }
-
-                                // this is done after the Moved msg to ensure that the attack
-                                // animation plays instead of an idle animation
-                                msg_log.log(Msg::Stabbed(entity_id, target_id));
-                            }
-
-                            Attack::Push(target_id, delta_pos) => {
-                                msg_log.log(Msg::Pushed(entity_id, target_id, delta_pos, true));
-                            }
-                        }
-                    } else if movement.attack.is_none() {
-                        match movement.typ {
-                            MoveType::Collide => {
-                                data.entities.move_to(entity_id, movement.pos);
-
-                                msg_log.log(Msg::Collided(entity_id, movement.pos));
-                            }
-
-                            MoveType::Pass => {
-                                msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
-                            }
-
-                            MoveType::WallKick(_dir_x, _dir_y) => {
-                                data.entities.move_to(entity_id, movement.pos);
-
-                                // TODO could check for enemy and attack
-                                msg_log.log(Msg::WallKick(entity_id, movement.pos));
-                            }
-
-                            MoveType::Move | MoveType::JumpWall => {
-                                // TODO if monster, and would hit trap, don't move
-                                // TODO what about if the entity is moved (say, pushed)?
-                                // should check for this, and no do the move at all, likely
-                                if entity_pos != movement.pos {
-                                    let traps_block = false;
-
-                                    if data.clear_path(entity_pos, movement.pos, traps_block) {
-                                        if movement.typ == MoveType::Move {
-                                            msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
-                                        } else {
-                                            msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
-                                        }
-                                    } else if movement.typ == MoveType::JumpWall {
-                                        // no clear path to moved position
-                                        //data.entities.move_to(entity_id, movement.pos);
-                                        msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
-                                        msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
-                                    } else {
-                                        // TODO move towards position, perhaps emitting a Collide
-                                        // message. This is likely causing the jump wall issue!
-                                    }
-                                }
-                                // else the movement does not change our position, so do nothing
-                            }
-                        }
-
-                        // if entity is attacking, face their target after the move
-                        if let Some(Behavior::Attacking(target_id)) = data.entities.behavior.get(&entity_id) {
-                            let target_pos = data.entities.pos[target_id];
-                            data.entities.face(entity_id, target_pos);
-                        }
-                    }
-                } else if let Action::StateChange(behavior) = action {
-                    msg_log.log(Msg::StateChange(entity_id, behavior));
-                } else if let Action::Yell = action {
-                    msg_log.log(Msg::Yell(entity_id, entity_pos));
-                } else if let Action::Pass = action {
-                    msg_log.log(Msg::Pass());
-                } else if let Action::ThrowItem(throw_pos, item_id) = action {
-                    msg_log.log(Msg::ItemThrow(entity_id, item_id, entity_pos, throw_pos));
-                } else if let Action::Pickup(item_id) = action {
-                    msg_log.log(Msg::PickedUp(entity_id, item_id));
-                } else if let Action::UseItem(pos) = action {
-                    if data.using(entity_id, Item::Hammer) {
-                        msg_log.log(Msg::HammerSwing(entity_id, pos));
-                    } else if data.using(entity_id, Item::Sword) {
-                        msg_log.log(Msg::SwordSwing(entity_id, pos));
-                    }
-                } else if let Action::ArmDisarmTrap(trap_id) = action {
-                    data.entities.armed[&trap_id] = !data.entities.armed[&trap_id];
-                } else if let Action::PlaceTrap(place_pos, trap_id) = action {
-                    place_trap(trap_id, place_pos, data);
-                } else if let Action::GrassThrow(entity_id, direction) = action {
-                    use_energy(entity_id, data);
-
-                    let pos = data.entities.pos[&entity_id];
-
-                    let grass_pos = direction.offset_pos(pos, 1);
-                    if data.map[grass_pos].tile_type == TileType::Empty {
-                        data.map[grass_pos].surface = Surface::Grass;
-                    }
-                } else if let Action::GrassBlade(entity_id) = action {
-                    use_energy(entity_id, data);
-
-                    let pos = data.entities.pos[&entity_id];
-
-                    let dagger_id = make_dagger(&mut data.entities, config, pos, msg_log);
-                    pick_item_up(entity_id, dagger_id, &mut data.entities, msg_log);
-                } else if let Action::Blink(entity_id) = action {
-                    use_energy(entity_id, data);
-
-                    let entity_pos = data.entities.pos[&entity_id];
-
-                    if let Some(blink_pos) = find_blink_pos(entity_pos, rng, data) {
-                        data.entities.move_to(entity_id, blink_pos);
-                    } else {
-                        msg_log.log(Msg::FailedBlink(entity_id));
-                    }
-                } else if let Action::Rubble(entity_id, blocked) = action {
-                    use_energy(entity_id, data);
-
-                    let entity_pos = data.entities.pos[&entity_id];
-
-                    data.map[blocked.end_pos].surface = Surface::Rubble;
-                    data.map[blocked.end_pos].block_move = false;
-                    data.map[blocked.end_pos].chr = ' ' as u8;
-
-                    if blocked.wall_type != Wall::Empty {
-                        let dxy = sub_pos(blocked.end_pos, entity_pos);
-                        match Direction::from_dxy(dxy.x, dxy.y).unwrap() {
-                            Direction::Up => {
-                                data.map[blocked.end_pos].bottom_wall = Wall::Empty;
-                            }
-
-                            Direction::Down => {
-                                data.map[entity_pos].bottom_wall = Wall::Empty;
-                            }
-
-                            Direction::Left => {
-                                data.map[entity_pos].left_wall = Wall::Empty;
-                            }
-                            
-                            Direction::Right => {
-                                data.map[blocked.end_pos].left_wall = Wall::Empty;
-                            }
-
-                            _ => {
-                                panic!("Rubble skill doesn't work on diagonals!");
-                            }
-                        }
-                    }
-                } else if let Action::Reform(entity_id, pos) = action {
-                    use_energy(entity_id, data);
-
-                    data.map[pos].surface = Surface::Floor;
-                    data.map[pos].block_move = true;
-                    data.map[pos].chr = MAP_WALL;
-                } else if let Action::Swap(entity_id, target_id) = action {
-                    use_energy(entity_id, data);
-
-                    let start_pos = data.entities.pos[&entity_id];
-                    let end_pos = data.entities.pos[&target_id];
-                    data.entities.move_to(entity_id, end_pos);
-                    data.entities.move_to(target_id, start_pos);
-                } else if let Action::PassWall(entity_id, pos) = action {
-                    use_energy(entity_id, data);
-
-                    data.entities.move_to(entity_id, pos);
-                } else if let Action::Push(entity_id, direction) = action {
-                    use_energy(entity_id, data);
-
-                    let pos = data.entities.pos[&entity_id];
-
-                    let push_pos = direction.offset_pos(pos, 1);
-                    for other_id in data.has_entities(push_pos) {
-                        if data.entities.typ[&other_id] == EntityType::Enemy {
-                            let dxy = sub_pos(push_pos, pos);
-                            let move_into = false;
-                            msg_log.log(Msg::Pushed(entity_id, other_id, dxy, move_into));
-                        }
-                    }
-                }
+                handle_action(entity_id, action, rng, data, msg_log, config);
             }
 
             Msg::PickedUp(entity_id, item_id) => {
@@ -438,6 +248,205 @@ pub fn triggered(trigger: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
                     data.entities.gate_pos[&trigger] = Some(neighbor);
                     break;
                 }
+            }
+        }
+    }
+}
+
+pub fn handle_action(entity_id: EntityId,
+                     action: Action,
+                     rng: &mut SmallRng,
+                     data: &mut GameData,
+                     msg_log: &mut MsgLog,
+                     config: &Config) {
+    let entity_pos = data.entities.pos[&entity_id];
+
+    if let Action::Move(movement) = action {
+        if let Some(attack_field) = movement.attack {
+            match attack_field {
+                Attack::Attack(target_id) => {
+                    attack(entity_id, target_id, data, msg_log);
+                }
+
+                Attack::Stab(target_id) => {
+                    stab(entity_id, target_id, &mut data.entities, msg_log);
+
+                    if data.using(entity_id, Item::Dagger) {
+                        data.used_up_item(entity_id);
+                    }
+
+                    if entity_pos != movement.pos {
+                        msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                    }
+
+                    // this is done after the Moved msg to ensure that the attack
+                    // animation plays instead of an idle animation
+                    msg_log.log(Msg::Stabbed(entity_id, target_id));
+                }
+
+                Attack::Push(target_id, delta_pos) => {
+                    msg_log.log(Msg::Pushed(entity_id, target_id, delta_pos, true));
+                }
+            }
+        } else if movement.attack.is_none() {
+            match movement.typ {
+                MoveType::Collide => {
+                    data.entities.move_to(entity_id, movement.pos);
+
+                    msg_log.log(Msg::Collided(entity_id, movement.pos));
+                }
+
+                MoveType::Pass => {
+                    msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                }
+
+                MoveType::WallKick(_dir_x, _dir_y) => {
+                    data.entities.move_to(entity_id, movement.pos);
+
+                    // TODO could check for enemy and attack
+                    msg_log.log(Msg::WallKick(entity_id, movement.pos));
+                }
+
+                MoveType::Move | MoveType::JumpWall => {
+                    // TODO if monster, and would hit trap, don't move
+                    // TODO what about if the entity is moved (say, pushed)?
+                    // should check for this, and no do the move at all, likely
+                    if entity_pos != movement.pos {
+                        let traps_block = false;
+
+                        if data.clear_path(entity_pos, movement.pos, traps_block) {
+                            if movement.typ == MoveType::Move {
+                                msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                            } else {
+                                msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
+                            }
+                        } else if movement.typ == MoveType::JumpWall {
+                            // no clear path to moved position
+                            //data.entities.move_to(entity_id, movement.pos);
+                            msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
+                            msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                        } else {
+                            // TODO move towards position, perhaps emitting a Collide
+                            // message. This is likely causing the jump wall issue!
+                        }
+                    }
+                    // else the movement does not change our position, so do nothing
+                }
+            }
+
+            // if entity is attacking, face their target after the move
+            if let Some(Behavior::Attacking(target_id)) = data.entities.behavior.get(&entity_id) {
+                let target_pos = data.entities.pos[target_id];
+                data.entities.face(entity_id, target_pos);
+            }
+        }
+    } else if let Action::StateChange(behavior) = action {
+        msg_log.log(Msg::StateChange(entity_id, behavior));
+    } else if let Action::Yell = action {
+        msg_log.log(Msg::Yell(entity_id, entity_pos));
+    } else if let Action::Pass = action {
+        msg_log.log(Msg::Pass());
+    } else if let Action::ThrowItem(throw_pos, item_id) = action {
+        msg_log.log(Msg::ItemThrow(entity_id, item_id, entity_pos, throw_pos));
+    } else if let Action::Pickup(item_id) = action {
+        msg_log.log(Msg::PickedUp(entity_id, item_id));
+    } else if let Action::UseItem(pos) = action {
+        if data.using(entity_id, Item::Hammer) {
+            msg_log.log(Msg::HammerSwing(entity_id, pos));
+        } else if data.using(entity_id, Item::Sword) {
+            msg_log.log(Msg::SwordSwing(entity_id, pos));
+        }
+    } else if let Action::ArmDisarmTrap(trap_id) = action {
+        data.entities.armed[&trap_id] = !data.entities.armed[&trap_id];
+    } else if let Action::PlaceTrap(place_pos, trap_id) = action {
+        place_trap(trap_id, place_pos, data);
+    } else if let Action::GrassThrow(entity_id, direction) = action {
+        use_energy(entity_id, data);
+
+        let pos = data.entities.pos[&entity_id];
+
+        let grass_pos = direction.offset_pos(pos, 1);
+        if data.map[grass_pos].tile_type == TileType::Empty {
+            data.map[grass_pos].surface = Surface::Grass;
+        }
+    } else if let Action::GrassBlade(entity_id) = action {
+        use_energy(entity_id, data);
+
+        let pos = data.entities.pos[&entity_id];
+
+        let dagger_id = make_dagger(&mut data.entities, config, pos, msg_log);
+        pick_item_up(entity_id, dagger_id, &mut data.entities, msg_log);
+    } else if let Action::Blink(entity_id) = action {
+        use_energy(entity_id, data);
+
+        let entity_pos = data.entities.pos[&entity_id];
+
+        if let Some(blink_pos) = find_blink_pos(entity_pos, rng, data) {
+            data.entities.move_to(entity_id, blink_pos);
+        } else {
+            msg_log.log(Msg::FailedBlink(entity_id));
+        }
+    } else if let Action::Rubble(entity_id, blocked) = action {
+        use_energy(entity_id, data);
+
+        let entity_pos = data.entities.pos[&entity_id];
+
+        data.map[blocked.end_pos].surface = Surface::Rubble;
+        data.map[blocked.end_pos].block_move = false;
+        data.map[blocked.end_pos].chr = ' ' as u8;
+
+        if blocked.wall_type != Wall::Empty {
+            let dxy = sub_pos(blocked.end_pos, entity_pos);
+            match Direction::from_dxy(dxy.x, dxy.y).unwrap() {
+                Direction::Up => {
+                    data.map[blocked.end_pos].bottom_wall = Wall::Empty;
+                }
+
+                Direction::Down => {
+                    data.map[entity_pos].bottom_wall = Wall::Empty;
+                }
+
+                Direction::Left => {
+                    data.map[entity_pos].left_wall = Wall::Empty;
+                }
+                
+                Direction::Right => {
+                    data.map[blocked.end_pos].left_wall = Wall::Empty;
+                }
+
+                _ => {
+                    panic!("Rubble skill doesn't work on diagonals!");
+                }
+            }
+        }
+    } else if let Action::Reform(entity_id, pos) = action {
+        use_energy(entity_id, data);
+
+        data.map[pos].surface = Surface::Floor;
+        data.map[pos].block_move = true;
+        data.map[pos].chr = MAP_WALL;
+    } else if let Action::Swap(entity_id, target_id) = action {
+        use_energy(entity_id, data);
+
+        let start_pos = data.entities.pos[&entity_id];
+        let end_pos = data.entities.pos[&target_id];
+        data.entities.move_to(entity_id, end_pos);
+        data.entities.move_to(target_id, start_pos);
+    } else if let Action::PassWall(entity_id, pos) = action {
+        use_energy(entity_id, data);
+
+        data.entities.move_to(entity_id, pos);
+    } else if let Action::Push(entity_id, direction) = action {
+        use_energy(entity_id, data);
+
+        let pos = data.entities.pos[&entity_id];
+
+        let push_pos = direction.offset_pos(pos, 1);
+        for other_id in data.has_entities(push_pos) {
+            if data.entities.typ[&other_id] == EntityType::Enemy {
+                let dxy = sub_pos(push_pos, pos);
+                let move_into = false;
+                msg_log.log(Msg::Pushed(entity_id, other_id, dxy, move_into));
             }
         }
     }
