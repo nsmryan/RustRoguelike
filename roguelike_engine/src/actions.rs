@@ -17,11 +17,24 @@ use crate::selection::*;
 use crate::make_map;
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum KeyDirection {
     Down,
     Up
 }
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum ActionStrength {
+    Weak,
+    Strong,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum ActionMode {
+    Primary,
+    Alternate,
+}
+
+pub type ActionTarget = usize;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum InputAction {
@@ -48,6 +61,7 @@ pub enum InputAction {
     ToggleConsole,
     UseItem,
     Interact,
+    Chord(Direction, ActionStrength, ActionMode, ActionTarget),
     None,
 }
 
@@ -88,6 +102,7 @@ impl fmt::Display for InputAction {
             InputAction::ToggleConsole => write!(f, "toggleconsole"),
             InputAction::UseItem => write!(f, "use"),
             InputAction::Interact => write!(f, "interact"),
+            InputAction::Chord(dir, stren, mode, target) => write!(f, "chord {:?} {:?} {:?} {:?}", dir, stren, mode, target),
             InputAction::None => write!(f, "none"),
         }
     }

@@ -15,7 +15,7 @@ use std::str::FromStr;
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
 use sdl2::mouse::MouseButton;
-use sdl2::keyboard::{Mod, Keycode};
+use sdl2::keyboard::{Mod, Keycode, Scancode};
 use sdl2::render::{WindowCanvas, Texture, TextureCreator};
 use sdl2::video::WindowContext;
 use sdl2::ttf::Sdl2TtfContext;
@@ -178,7 +178,8 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         /* Handle Events */
         {
             let _input_timer = timer!("INPUT");
-            handle_sdl2_input(&mut game, &mut display, &mut event_pump);
+            let scancodes = event_pump.keyboard_state().pressed_scancodes().into_iter().collect::<Vec<Scancode>>();
+            handle_sdl2_input(&mut game, &mut display, scancodes, &mut event_pump);
         }
 
         // if there are starting actions to read, pop one off to play
@@ -254,7 +255,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
     return Ok(());
 }
 
-pub fn handle_sdl2_input(game: &mut Game, display: &mut Display, event_pump: &mut sdl2::EventPump) {
+pub fn handle_sdl2_input(game: &mut Game, display: &mut Display, scancodes: Vec<Scancode>, event_pump: &mut sdl2::EventPump) {
     for event in event_pump.poll_iter() {
         match event {
             Event::Quit {..}=> {
@@ -272,6 +273,11 @@ pub fn handle_sdl2_input(game: &mut Game, display: &mut Display, event_pump: &mu
                 if let Some(keycode) = keycode {
                     game.input_action =
                         keyup_to_action(keycode, keymod, game.settings.state);
+
+                    if let InputAction::Move(dir) = game.input_action {
+                        println!("CHORD");
+                        game.input_action = handle_chord(dir, &scancodes);
+                    }
                 }
             }
 
@@ -327,6 +333,42 @@ pub fn handle_sdl2_input(game: &mut Game, display: &mut Display, event_pump: &mu
             _ => {}
         }
     }
+}
+
+pub fn handle_chord<'a>(direction: Direction, scancodes: &Vec<Scancode>) -> InputAction {
+    let mut action = InputAction::Move(direction);
+
+    let mut is_chord: bool = false;
+    let mut strength: ActionStrength = ActionStrength::Weak;
+    let mut mode: ActionMode = ActionMode::Primary;
+    let mut target = 0;
+
+    if scancodes.iter().any(|s| *s == Scancode::LShift) ||
+       scancodes.iter().any(|s| *s == Scancode::RShift) {
+           is_chord = true;
+           strength = ActionStrength::Strong;
+    }
+
+    if scancodes.iter().any(|s| *s == Scancode::LAlt) ||
+       scancodes.iter().any(|s| *s == Scancode::RAlt) {
+           is_chord = true;
+           mode = ActionMode::Alternate;
+    }
+
+    let target_codes = &[Scancode::Z, Scancode::X, Scancode::C, Scancode::V, Scancode::B];
+    for (index, code) in target_codes.iter().enumerate() {
+        if scancodes.iter().any(|s| *s == *code) {
+               is_chord = true;
+               target = index;
+        }
+    }
+
+    if is_chord {
+        println!("Is CHORD");
+        action = InputAction::Chord(direction, strength, mode, target);
+    }
+
+    return action;
 }
 
 pub fn keyup_to_action(keycode: Keycode,
