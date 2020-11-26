@@ -138,46 +138,7 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::HammerHitWall(entity, blocked) => {
-                let entity_pos = data.entities.pos[&entity];
-                let hit_pos = blocked.end_pos;
-                if data.map[hit_pos].block_move {
-                    if data.map[hit_pos].surface == Surface::Floor {
-                        data.map[hit_pos].surface = Surface::Rubble;
-                    }
-
-                    data.map[hit_pos].block_move = false;
-                    data.map[hit_pos].chr = ' ' as u8;
-
-                    let next_pos = next_from_to(entity_pos, hit_pos);
-                    msg_log.log_front(Msg::Crushed(entity, next_pos)); 
-                    msg_log.log_front(Msg::Sound(entity, blocked.end_pos, config.sound_radius_attack, true)); 
-                } else {
-                    let wall_loc: Pos;
-                    let left_wall: bool;
-                    if blocked.direction == Direction::Left {
-                         wall_loc = blocked.start_pos;
-                         left_wall = true;
-                    } else if blocked.direction == Direction::Right {
-                         wall_loc = blocked.end_pos;
-                         left_wall = true;
-                     } else if blocked.direction == Direction::Down {
-                         wall_loc = blocked.start_pos;
-                         left_wall = false;
-                     } else if blocked.direction == Direction::Up {
-                         wall_loc = blocked.end_pos;
-                         left_wall = false;
-                     } else {
-                        panic!(format!("Hammer direction was not up/down/left/right ({:?})!", blocked));
-                     }
-
-                    if left_wall {
-                        data.map[wall_loc].left_wall = Wall::Empty;
-                    } else {
-                        data.map[wall_loc].bottom_wall = Wall::Empty;
-                    }
-
-                    msg_log.log(Msg::Crushed(entity, blocked.end_pos));
-                }
+                hammer_hit_wall(entity, blocked, data, msg_log, config);
             }
 
             Msg::Action(entity_id, action) => {
@@ -507,6 +468,49 @@ pub fn resolve_messages(data: &mut GameData,
         }
     }
     data.entities.messages[&player_id].clear();
+}
+
+pub fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+    let entity_pos = data.entities.pos[&entity];
+    let hit_pos = blocked.end_pos;
+    if data.map[hit_pos].block_move {
+        if data.map[hit_pos].surface == Surface::Floor {
+            data.map[hit_pos].surface = Surface::Rubble;
+        }
+
+        data.map[hit_pos].block_move = false;
+        data.map[hit_pos].chr = ' ' as u8;
+
+        let next_pos = next_from_to(entity_pos, hit_pos);
+        msg_log.log_front(Msg::Crushed(entity, next_pos)); 
+        msg_log.log_front(Msg::Sound(entity, blocked.end_pos, config.sound_radius_attack, true)); 
+    } else {
+        let wall_loc: Pos;
+        let left_wall: bool;
+        if blocked.direction == Direction::Left {
+             wall_loc = blocked.start_pos;
+             left_wall = true;
+        } else if blocked.direction == Direction::Right {
+             wall_loc = blocked.end_pos;
+             left_wall = true;
+         } else if blocked.direction == Direction::Down {
+             wall_loc = blocked.start_pos;
+             left_wall = false;
+         } else if blocked.direction == Direction::Up {
+             wall_loc = blocked.end_pos;
+             left_wall = false;
+         } else {
+            panic!(format!("Hammer direction was not up/down/left/right ({:?})!", blocked));
+         }
+
+        if left_wall {
+            data.map[wall_loc].left_wall = Wall::Empty;
+        } else {
+            data.map[wall_loc].bottom_wall = Wall::Empty;
+        }
+
+        msg_log.log(Msg::Crushed(entity, blocked.end_pos));
+    }
 }
 
 pub fn killed_entity(attacked: EntityId, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
