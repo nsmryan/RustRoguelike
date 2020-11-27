@@ -249,7 +249,7 @@ pub fn freeze_trap_triggered(trap: EntityId, cause_id: EntityId, data: &mut Game
     }
 }
 
-pub fn triggered(trigger: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
+pub fn triggered(trigger: EntityId, data: &mut GameData, _msg_log: &mut MsgLog) {
     if data.entities.name[&trigger] == EntityName::GateTrigger {
         if !data.entities.status[&trigger].active {
             let trigger_pos = data.entities.pos[&trigger];

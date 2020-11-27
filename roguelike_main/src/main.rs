@@ -275,8 +275,9 @@ pub fn handle_sdl2_input(game: &mut Game, display: &mut Display, scancodes: Vec<
                         keyup_to_action(keycode, keymod, game.settings.state);
 
                     if let InputAction::Move(dir) = game.input_action {
-                        println!("CHORD");
-                        game.input_action = handle_chord(dir, &scancodes);
+                        game.input_action = handle_chord(Some(dir), &scancodes);
+                    } else if game.input_action == InputAction::Pass {
+                        game.input_action = handle_chord(None, &scancodes);
                     }
                 }
             }
@@ -335,8 +336,11 @@ pub fn handle_sdl2_input(game: &mut Game, display: &mut Display, scancodes: Vec<
     }
 }
 
-pub fn handle_chord<'a>(direction: Direction, scancodes: &Vec<Scancode>) -> InputAction {
-    let mut action = InputAction::Move(direction);
+pub fn handle_chord(direction: Option<Direction>, scancodes: &Vec<Scancode>) -> InputAction {
+    let mut action = match direction {
+        None => InputAction::None,
+        Some(dir) => InputAction::Move(dir),
+    };
 
     let mut is_chord: bool = false;
     let mut strength: ActionStrength = ActionStrength::Weak;
@@ -365,6 +369,7 @@ pub fn handle_chord<'a>(direction: Direction, scancodes: &Vec<Scancode>) -> Inpu
 
     if is_chord {
         action = InputAction::Chord(direction, strength, mode, target);
+        dbg!(action);
     }
 
     return action;

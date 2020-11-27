@@ -61,7 +61,7 @@ pub enum InputAction {
     ToggleConsole,
     UseItem,
     Interact,
-    Chord(Direction, ActionStrength, ActionMode, ActionTarget),
+    Chord(Option<Direction>, ActionStrength, ActionMode, ActionTarget),
     None,
 }
 
@@ -203,6 +203,7 @@ pub fn inventory_use_item(item_index: usize,
                           msg_log: &mut MsgLog) {
     let player_id = data.find_player().unwrap();
     let item_key = data.entities.inventory[&player_id][item_index];
+    data.entities.selected_item.swap_remove(&player_id);
     data.entities.selected_item.insert(player_id, item_key);
 
     settings.state = GameState::Selection;
@@ -310,8 +311,7 @@ pub fn handle_input_skill_menu(input: InputAction,
                                data: &mut GameData,
                                settings: &mut GameSettings,
                                msg_log: &mut MsgLog) -> Action {
-    let mut player_turn: Action = Action::NoAction;
-    let player_id = data.find_player().unwrap();
+    let player_turn: Action = Action::NoAction;
 
     match input {
         InputAction::Inventory => {
@@ -325,78 +325,7 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::SelectItem(skill_index) => {
-            if data.entities.energy[&player_id] > 0 {
-                if skill_index < data.entities.skills[&player_id].len() {
-                    settings.state = GameState::Selection;
-                    settings.selection.only_visible = false;
-
-                    let reach = Reach::single(1);
-
-                    match data.entities.skills[&player_id][skill_index] {
-                        Skill::GrassThrow => {
-                            settings.selection =
-                                Selection::new(SelectionType::WithinReach(reach), SelectionAction::GrassThrow);
-                            settings.state = GameState::Selection;
-                            msg_log.log(Msg::GameState(settings.state));
-                        }
-
-                        Skill::GrassBlade => {
-                            player_turn = Action::GrassBlade(player_id);
-                            settings.state = GameState::Playing;
-                            msg_log.log(Msg::GameState(settings.state));
-                        }
-
-                        Skill::Blink => {
-                            player_turn = Action::Blink(player_id);
-
-                            settings.state = GameState::Playing;
-                            msg_log.log(Msg::GameState(settings.state));
-                        }
-
-                        Skill::PassWall => {
-                            settings.selection =
-                                Selection::new(SelectionType::WithinReach(reach), SelectionAction::PassWall);
-                            settings.state = GameState::Selection;
-                            msg_log.log(Msg::GameState(settings.state));
-                        }
-
-                        Skill::Rubble => {
-                            let reach = Reach::horiz(1);
-                            settings.selection =
-                                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Rubble);
-                            settings.state = GameState::Selection;
-                            msg_log.log(Msg::GameState(settings.state));
-                        }
-
-                        Skill::Reform => {
-                            settings.selection =
-                                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Reform);
-                            settings.state = GameState::Selection;
-                            msg_log.log(Msg::GameState(settings.state));
-                        }
-
-                        Skill::Swap => {
-                            // NOTE make this a const or config item
-                            let reach = Reach::single(4);
-                            settings.selection =
-                                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Swap);
-                            settings.state = GameState::Selection;
-                            msg_log.log(Msg::GameState(settings.state));
-                        }
-
-                        Skill::Push => {
-                            settings.selection =
-                                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Push);
-                            settings.state = GameState::Selection;
-                            msg_log.log(Msg::GameState(settings.state));
-                        }
-                    }
-
-                    msg_log.log(Msg::GameState(settings.state));
-                }
-            } else {
-                msg_log.log(Msg::NotEnoughEnergy(player_id));
-            }
+            handle_skill(skill_index, data, settings, msg_log);
         }
 
         InputAction::Esc => {
@@ -568,12 +497,7 @@ pub fn handle_input(game: &mut Game) -> Action {
 
     match (game.input_action, player_alive) {
         (InputAction::Chord(dir, strength, mode, target), true) => {
-            // if no target selection, then it is a move
-            if target == -1 {
-                // TODO check primary or alt and run or walk
-            } else {
-                // TODO if primary, use. if alt, throw (or if 5 then drop)
-            }
+            player_turn = chord(dir, strength, mode, target, game);
         }
 
         (InputAction::Pass, true) => {
@@ -583,16 +507,7 @@ pub fn handle_input(game: &mut Game) -> Action {
         (InputAction::Move(move_action), true) => {
             let player_id = game.data.find_player().unwrap();
 
-            let player_reach = game.data.entities.movement[&player_id];
-            let maybe_movement = 
-                movement::calculate_move(move_action,
-                                         player_reach,
-                                         player_id,
-                                         &mut game.data);
-
-            if let Some(movement) = maybe_movement {
-                player_turn = Action::Move(movement);
-            }
+            player_turn = handle_move(player_id, move_action, game);
         }
 
         (InputAction::DropItem, true) => {
@@ -722,6 +637,23 @@ pub fn handle_input(game: &mut Game) -> Action {
     return player_turn;
 }
 
+pub fn handle_move(entity_id: EntityId, move_action: Direction, game: &mut Game) -> Action {
+    let mut turn = Action::none();
+    
+    let player_reach = game.data.entities.movement[&entity_id];
+    let maybe_movement = 
+        movement::calculate_move(move_action,
+                                 player_reach,
+                                 entity_id,
+                                 &mut game.data);
+
+    if let Some(movement) = maybe_movement {
+        turn = Action::Move(movement);
+    }
+
+    return turn;
+}
+
 pub fn pickup_item(entity_id: EntityId, game: &mut Game) -> Action {
     let mut turn: Action = Action::none();
 
@@ -849,3 +781,156 @@ pub fn place_trap(trap_id: EntityId,
     game_data.entities.armed[&trap_id] = true;
 }
 
+pub fn handle_skill(skill_index: usize,
+                    data: &mut GameData, 
+                    settings: &mut GameSettings, 
+                    msg_log: &mut MsgLog) -> Action {
+    let player_id = data.find_player().unwrap();
+
+    if data.entities.energy[&player_id] <= 0 {
+        msg_log.log(Msg::NotEnoughEnergy(player_id));
+        return Action::none();
+    }
+
+    if skill_index >= data.entities.skills[&player_id].len() {
+        return Action::none();
+    }
+
+    let mut turn: Action = Action::none();
+
+    settings.state = GameState::Selection;
+    settings.selection.only_visible = false;
+
+    let reach = Reach::single(1);
+
+    match data.entities.skills[&player_id][skill_index] {
+        Skill::GrassThrow => {
+            settings.selection =
+                Selection::new(SelectionType::WithinReach(reach), SelectionAction::GrassThrow);
+            settings.state = GameState::Selection;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        Skill::GrassBlade => {
+            turn = Action::GrassBlade(player_id);
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        Skill::Blink => {
+            turn = Action::Blink(player_id);
+
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        Skill::PassWall => {
+            settings.selection =
+                Selection::new(SelectionType::WithinReach(reach), SelectionAction::PassWall);
+            settings.state = GameState::Selection;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        Skill::Rubble => {
+            let reach = Reach::horiz(1);
+            settings.selection =
+                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Rubble);
+            settings.state = GameState::Selection;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        Skill::Reform => {
+            settings.selection =
+                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Reform);
+            settings.state = GameState::Selection;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        Skill::Swap => {
+            // NOTE make this a const or config item
+            let reach = Reach::single(4);
+            settings.selection =
+                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Swap);
+            settings.state = GameState::Selection;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        Skill::Push => {
+            settings.selection =
+                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Push);
+            settings.state = GameState::Selection;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+    }
+
+    msg_log.log(Msg::GameState(settings.state));
+
+    return turn;
+}
+
+// TODO currently a regular move does not use the chord system-
+// the only effect of shift and strength is to ensure chords are used
+// even with regular moves.
+pub fn chord(dir: Option<Direction>,
+             _strength: ActionStrength,
+             mode: ActionMode,
+             target: i32,
+             game: &mut Game) -> Action {
+    let mut turn = Action::none();
+    let player_id = game.data.find_player().unwrap();
+
+    // if no target selection, then it is a move
+    if target == -1 {
+        dbg!(game.data.entities.move_mode[&player_id]);
+        match mode {
+            ActionMode::Primary => {
+                decrease_move_mode(player_id, game);
+            }
+
+            ActionMode::Alternate => {
+                increase_move_mode(player_id, game);
+            }
+        }
+        dbg!(game.data.entities.move_mode[&player_id]);
+
+        match dir {
+            None => turn = Action::Pass,
+            Some(direction) => turn = handle_move(player_id, direction, game),
+        }
+    } else {
+        let num_items_in_inventory = game.data.entities.inventory[&player_id].len() as i32;
+        if target >= num_items_in_inventory {
+            let skill_index = (target - num_items_in_inventory) as usize;
+            if skill_index < game.data.entities.skills[&player_id].len() {
+                handle_skill(skill_index, &mut game.data, &mut game.settings, &mut game.msg_log);
+            }
+        } else {
+            match mode {
+                ActionMode::Primary => {
+                    // primary item use is the item's main action
+                    turn = use_item(player_id, game);
+                }
+
+                ActionMode::Alternate => {
+                    // alternate item use means drop or throw item
+                    match dir {
+                        None => {
+                            inventory_drop_item(target as usize, &mut game.data, &mut game.settings, &mut game.msg_log);
+                        }
+
+                        Some(direction) => {
+                            let start = game.data.entities.pos[&player_id];
+                            let max_end = direction.offset_pos(start, PLAYER_THROW_DIST as i32);
+                            let end = game.data.map.path_blocked_move(start, max_end)
+                                                   .map_or(max_end, |b| b.end_pos);
+                            let item_id = game.data.entities.inventory[&player_id][target as usize];
+                            turn = Action::ThrowItem(end, item_id);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return turn;
+}
