@@ -274,11 +274,7 @@ pub fn handle_sdl2_input(game: &mut Game, display: &mut Display, scancodes: Vec<
                     game.input_action =
                         keyup_to_action(keycode, keymod, game.settings.state);
 
-                    if let InputAction::Move(dir) = game.input_action {
-                        game.input_action = handle_chord(Some(dir), &scancodes);
-                    } else if game.input_action == InputAction::Pass {
-                        game.input_action = handle_chord(None, &scancodes);
-                    }
+                    game.input_action = handle_chord(game.input_action, &scancodes);
                 }
             }
 
@@ -336,11 +332,8 @@ pub fn handle_sdl2_input(game: &mut Game, display: &mut Display, scancodes: Vec<
     }
 }
 
-pub fn handle_chord(direction: Option<Direction>, scancodes: &Vec<Scancode>) -> InputAction {
-    let mut action = match direction {
-        None => InputAction::None,
-        Some(dir) => InputAction::Move(dir),
-    };
+pub fn handle_chord(input_action: InputAction, scancodes: &Vec<Scancode>) -> InputAction {
+    let mut action = input_action;
 
     let mut is_chord: bool = false;
     let mut strength: ActionStrength = ActionStrength::Weak;
@@ -362,12 +355,15 @@ pub fn handle_chord(direction: Option<Direction>, scancodes: &Vec<Scancode>) -> 
     let target_codes = &[Scancode::Z, Scancode::X, Scancode::C, Scancode::V, Scancode::B];
     for (index, code) in target_codes.iter().enumerate() {
         if scancodes.iter().any(|s| *s == *code) {
-               is_chord = true;
                target = index as i32;
         }
     }
 
     if is_chord {
+        let direction = match input_action {
+            InputAction::Move(dir) => Some(dir),
+            _ => None,
+        };
         action = InputAction::Chord(direction, strength, mode, target);
         dbg!(action);
     }

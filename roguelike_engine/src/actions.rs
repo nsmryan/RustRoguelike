@@ -311,7 +311,7 @@ pub fn handle_input_skill_menu(input: InputAction,
                                data: &mut GameData,
                                settings: &mut GameSettings,
                                msg_log: &mut MsgLog) -> Action {
-    let player_turn: Action = Action::NoAction;
+    let mut player_turn: Action = Action::NoAction;
 
     match input {
         InputAction::Inventory => {
@@ -325,7 +325,7 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::SelectItem(skill_index) => {
-            handle_skill(skill_index, data, settings, msg_log);
+            player_turn = handle_skill(skill_index, data, settings, msg_log);
         }
 
         InputAction::Esc => {
@@ -902,7 +902,7 @@ pub fn chord(dir: Option<Direction>,
         if target >= num_items_in_inventory {
             let skill_index = (target - num_items_in_inventory) as usize;
             if skill_index < game.data.entities.skills[&player_id].len() {
-                handle_skill(skill_index, &mut game.data, &mut game.settings, &mut game.msg_log);
+                turn = handle_skill(skill_index, &mut game.data, &mut game.settings, &mut game.msg_log);
             }
         } else {
             match mode {
