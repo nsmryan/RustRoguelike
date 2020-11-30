@@ -245,7 +245,7 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos,
 pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     let player_position: Pos;
 
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     game.data.clear_except(vec!(player_id));
 
     match map_load_config {
@@ -355,11 +355,11 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
     }
 
-    if let None = game.data.find_mouse() {
+    if let None = game.data.find_by_name(EntityName::Mouse) {
         make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
     }
 
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     game.data.entities.pos[&player_id] = player_position;
 }
 

@@ -512,7 +512,7 @@ impl Display {
     }
 
     pub fn get_idle_animation(&mut self, entity_id: EntityId, data: &mut GameData, config: &Config) -> Option<AnimKey> {
-        let player_id = data.find_player().unwrap();
+        let player_id = data.find_by_name(EntityName::Player).unwrap();
 
         if entity_id == player_id {
             let key;
@@ -554,7 +554,7 @@ impl Display {
                     let sound_aoe =
                         data.map.aoe_fill(AoeEffect::Sound, source_pos, radius);
 
-                    let player_id = data.find_player().unwrap();
+                    let player_id = data.find_by_name(EntityName::Player).unwrap();
                     let player_pos = data.entities.pos[&player_id];
 
                     // only play the sound effect if the player position is included
@@ -720,7 +720,7 @@ impl Display {
             }
 
             Msg::PlayerTurn() => {
-                let player_id = data.find_player().unwrap();
+                let player_id = data.find_by_name(EntityName::Player).unwrap();
 
                 self.state.prev_turn_fov.clear();
                 self.state.prev_turn_fov.extend(self.state.current_turn_fov.iter());

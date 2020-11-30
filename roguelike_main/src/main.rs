@@ -228,7 +228,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         /* Reload map if configured to do so */
         let config_timer = timer!("CONFIG");
         if game.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
-            let player = game.data.find_player().unwrap();
+            let player = game.data.find_by_name(EntityName::Player).unwrap();
 
             let map_file = format!("resources/{}", game.config.map_file);
             game.data.entities.clear();

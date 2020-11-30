@@ -137,29 +137,9 @@ impl GameData {
         }
     }
 
-    pub fn find_player(&self) -> Option<EntityId> {
-        for (key, typ) in self.entities.typ.iter() {
-            if *typ == EntityType::Player {
-                return Some(*key);
-            }
-        }
-
-        return None;
-    }
-
-    pub fn find_exit(&self) -> Option<EntityId> {
-        for (key, name) in self.entities.name.iter() {
-            if *name == EntityName::Exit {
-                return Some(*key);
-            }
-        }
-
-        return None;
-    }
-
-    pub fn find_mouse(&self) -> Option<EntityId> {
-        for (key, name) in self.entities.name.iter() {
-            if *name == EntityName::Mouse {
+    pub fn find_by_name(&self, name: EntityName) -> Option<EntityId> {
+        for (key, nam) in self.entities.name.iter() {
+            if *nam == name {
                 return Some(*key);
             }
         }

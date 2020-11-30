@@ -47,7 +47,7 @@ pub extern "C" fn create_game(seed: u64, config_name: *mut i8, map_name: *mut i8
 
         let pos = read_map_xp(&game.config, &mut game.data, &mut game.msg_log, map_str);
 
-        let player_id = game.data.find_player().unwrap();
+        let player_id = game.data.find_by_name(EntityName::Player).unwrap();
         game.data.entities.pos[&player_id] = Pos::from(pos);
     }
 

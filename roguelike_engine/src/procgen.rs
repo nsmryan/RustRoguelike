@@ -230,7 +230,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     clear_island(game, island_radius);
 
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = find_available_tile(game).unwrap();
     game.data.entities.pos[&player_id] = player_pos;
 

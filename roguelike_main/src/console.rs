@@ -206,7 +206,7 @@ impl Console {
                 let y = args.pop().unwrap().parse::<i32>().unwrap();
                 let x = args.pop().unwrap().parse::<i32>().unwrap();
 
-                let player = data.find_player().unwrap();
+                let player = data.find_by_name(EntityName::Player).unwrap();
 
                 let player_pos = data.entities.pos[&player];
                 let can_see = data.map.is_in_fov(player_pos, Pos::new(x, y), config.fov_radius_player);
@@ -222,7 +222,7 @@ impl Console {
                 let y = args.pop().unwrap().parse::<i32>().unwrap();
                 let x = args.pop().unwrap().parse::<i32>().unwrap();
 
-                let player = data.find_player().unwrap();
+                let player = data.find_by_name(EntityName::Player).unwrap();
 
                 data.entities.set_xy(player, x, y);
                 self.output.push(format!("Player at ({}, {})", x, y));
@@ -274,7 +274,7 @@ impl Console {
             Command::PlayerHp => {
                 let hp = args.pop().unwrap().parse::<i32>().unwrap();
 
-                let player = data.find_player().unwrap();
+                let player = data.find_by_name(EntityName::Player).unwrap();
                 data.entities.fighter[&player].hp = hp;
 
                 self.output.push(format!("Player HP set to {}", hp));

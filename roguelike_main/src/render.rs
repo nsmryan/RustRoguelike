@@ -29,7 +29,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 
     /* Determine Mouse Position */
     let mut mouse_map_pos = None;
-    if let Some(mouse_id) = game.data.find_mouse() {
+    if let Some(mouse_id) = game.data.find_by_name(EntityName::Mouse) {
         let mouse_pos = (game.mouse_state.x, game.mouse_state.y);
         if let Some(mouse_cell) = cell_within_rect(map_rect, game.data.map.size(), mouse_pos) {
             // NOTE this should be done as an action MapClick
@@ -329,7 +329,7 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
                    "Player",
                    &game.config);
 
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let mut list: Vec<String> = Vec::new();
 
@@ -384,7 +384,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
     if let Some(mouse) = mouse_xy {
         let color = game.config.color_soft_green;
 
-        let player_id = game.data.find_player().unwrap();
+        let player_id = game.data.find_by_name(EntityName::Player).unwrap();
         let player_pos = game.data.entities.pos[&player_id];
 
         let object_ids =
@@ -483,7 +483,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 }
 
 fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     // Render header
     render_placard(panel,
@@ -570,7 +570,7 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
                   "Inventory",
                   &game.config);
 
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let sprite_key = display_state.lookup_spritekey("tiles");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
@@ -637,7 +637,7 @@ fn render_background(display: &mut Display, game: &mut Game) {
     }
     display.targets.background_panel.dirty = false;
 
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let pos = game.data.entities.pos[&player_id];
 
     let (map_width, map_height) = game.data.map.size();
@@ -679,7 +679,7 @@ fn render_background(display: &mut Display, game: &mut Game) {
 
 /// Render the map, with environment and walls
 fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
     let (map_width, map_height) = game.data.map.size();
@@ -864,7 +864,7 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
     let mut animation_result = AnimationResult::new();
 
     let pos = game.data.entities.pos[&entity_id];
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
     // only draw if within the map (outside is (-1, -1) like if in inventory)
@@ -915,7 +915,7 @@ fn render_impressions(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 
 /// Render each object in the game, filtering for objects not currently visible
 fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     display_state.drawn_sprites.clear();
 
@@ -1028,7 +1028,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                    display_state: &mut DisplayState,
                    game: &mut Game,
                    map_mouse_pos: Option<Pos>) {
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
     let sprite_key = display_state.lookup_spritekey("tiles");
@@ -1159,7 +1159,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     }
 
     // draw mouse path overlays
-    if let Some(mouse_id) = game.data.find_mouse() {
+    if let Some(mouse_id) = game.data.find_by_name(EntityName::Mouse) {
         let tile_sprite = &mut display_state.sprites[&sprite_key];
 
         let mouse_pos = game.data.entities.pos[&mouse_id];
@@ -1349,7 +1349,7 @@ fn render_attack_overlay(panel: &mut Panel<&mut WindowCanvas>,
                          display_state: &mut DisplayState,
                          game: &mut Game,
                          entity_id: EntityId) {
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
     let object_pos = game.data.entities.pos[&entity_id];
@@ -1389,7 +1389,7 @@ fn render_fov_overlay(panel: &mut Panel<&mut WindowCanvas>,
                       _display_state: &mut DisplayState,
                       game: &mut Game,
                       entity_id: EntityId) {
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let mut highlight_color = game.config.color_light_grey;
     highlight_color.a = game.config.grid_alpha_overlay;
@@ -1413,7 +1413,7 @@ fn render_movement_overlay(panel: &mut Panel<&mut WindowCanvas>,
                            display_state: &mut DisplayState,
                            game: &mut Game,
                            entity_id: EntityId) {
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let entity_pos = game.data.entities.pos[&entity_id];
 

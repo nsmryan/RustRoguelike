@@ -135,7 +135,7 @@ impl Game {
 
         self.msg_log.log(Msg::ChangeLevel());
 
-        let player_id = self.data.find_player().unwrap();
+        let player_id = self.data.find_by_name(EntityName::Player).unwrap();
         let key_id = self.data.is_in_inventory(player_id, Item::Goal).expect("Won level without goal!");
         self.data.entities.remove_item(player_id, key_id);
 
@@ -352,11 +352,11 @@ impl GameSettings {
 fn level_exit_condition_met(data: &GameData) -> bool {
     // loop over objects in inventory, and check whether any
     // are the key object.
-    let player_id = data.find_player().unwrap();
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
 
     let mut exit_condition = false;
-    if let Some(exit_id) = data.find_exit() {
+    if let Some(exit_id) = data.find_by_name(EntityName::Exit) {
         let exit_pos = data.entities.pos[&exit_id];
 
         let has_key = data.is_in_inventory(player_id, Item::Goal).is_some();
@@ -373,7 +373,7 @@ fn level_exit_condition_met(data: &GameData) -> bool {
 pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
     game.msg_log.clear();
 
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     game.data.entities.action[&player_id] = player_action;
 
@@ -495,7 +495,7 @@ pub fn test_game_step() {
     config.map_load = MapLoadConfig::Empty;
     let mut game = Game::new(0, config.clone()).unwrap();
 
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     make_map(&MapLoadConfig::Empty, &mut game);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(0, 0), player_pos);
@@ -527,7 +527,7 @@ pub fn test_running() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone()).unwrap();
 
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     game.data.map = Map::from_dims(10, 10);
     let player_pos = Pos::new(4, 4);
     game.data.entities.pos[&player_id] = player_pos;
@@ -569,7 +569,7 @@ pub fn test_hammer_small_wall() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone()).unwrap();
 
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     game.data.map = Map::from_dims(10, 10);
     let player_pos = Pos::new(4, 4);
     game.data.entities.pos[&player_id] = player_pos;

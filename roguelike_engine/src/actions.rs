@@ -205,7 +205,7 @@ pub fn inventory_use_item(item_index: usize,
                           data: &mut GameData,
                           settings: &mut GameSettings,
                           msg_log: &mut MsgLog) {
-    let player_id = data.find_player().unwrap();
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
     let item_key = data.entities.inventory[&player_id][item_index];
     data.entities.selected_item.swap_remove(&player_id);
     data.entities.selected_item.insert(player_id, item_key);
@@ -230,7 +230,7 @@ pub fn inventory_drop_item(item_index: usize,
                            data: &mut GameData,
                            settings: &mut GameSettings,
                            msg_log: &mut MsgLog) {
-    let player_id = data.find_player().unwrap();
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
     let item_key = data.entities.inventory[&player_id][item_index];
 
@@ -266,7 +266,7 @@ pub fn inventory_select_item(item_index: usize,
                              data: &mut GameData,
                              settings: &mut GameSettings,
                              msg_log: &mut MsgLog) {
-    let player_id = data.find_player().unwrap();
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     if item_index < data.entities.inventory[&player_id].len() {
         match settings.inventory_action {
@@ -354,7 +354,7 @@ pub fn handle_input_class_menu(input: InputAction,
                                settings: &mut GameSettings,
                                msg_log: &mut MsgLog) -> Action {
     let player_turn: Action = Action::NoAction;
-    let player_id = data.find_player().unwrap();
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     match input {
         InputAction::Inventory => {
@@ -452,7 +452,7 @@ pub fn handle_input_selection(input: InputAction,
                               settings: &mut GameSettings,
                               config: &Config,
                               msg_log: &mut MsgLog) -> Action {
-    let player_id = data.find_player().unwrap();
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     let mut player_turn: Action = Action::none();
 
@@ -493,7 +493,7 @@ pub fn handle_input_selection(input: InputAction,
 }
 
 pub fn handle_input(game: &mut Game) -> Action {
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let mut player_turn: Action = Action::none();
 
@@ -515,7 +515,7 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::Move(move_action), true) => {
-            let player_id = game.data.find_player().unwrap();
+            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
             player_turn = handle_move(player_id, move_action, game);
         }
@@ -607,7 +607,7 @@ pub fn handle_input(game: &mut Game) -> Action {
 
         (InputAction::GodMode, true) => {
             let god_mode_hp = 10000;
-            let player_id = game.data.find_player().unwrap();
+            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
             game.data.entities.fighter[&player_id].hp = god_mode_hp;
             game.data.entities.fighter[&player_id].max_hp = god_mode_hp;
             game.data.entities.energy[&player_id] = 1000;
@@ -795,7 +795,7 @@ pub fn handle_skill(skill_index: usize,
                     data: &mut GameData, 
                     settings: &mut GameSettings, 
                     msg_log: &mut MsgLog) -> Action {
-    let player_id = data.find_player().unwrap();
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     if data.entities.energy[&player_id] <= 0 {
         msg_log.log(Msg::NotEnoughEnergy(player_id));
@@ -884,7 +884,7 @@ pub fn chord(dir: Option<Direction>,
              target: i32,
              game: &mut Game) -> Action {
     let mut turn = Action::none();
-    let player_id = game.data.find_player().unwrap();
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     // if no target selection, then it is a move
     if target == -1 {

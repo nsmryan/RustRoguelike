@@ -26,7 +26,7 @@ impl SelectionAction {
 
         match self {
             SelectionAction::Throw => {
-                let player_id = data.find_player().unwrap();
+                let player_id = data.find_by_name(EntityName::Player).unwrap();
                 let item_id =
                     data.entities.selected_item.get(&player_id).expect("Throwing an item, but nothing selected!");
                 action = Action::ThrowItem(pos, *item_id);
@@ -47,14 +47,14 @@ impl SelectionAction {
             }
 
             SelectionAction::PlaceTrap => {
-                let player_id = data.find_player().unwrap();
+                let player_id = data.find_by_name(EntityName::Player).unwrap();
                 let trap_id =
                     data.entities.selected_item.get(&player_id).expect("Placing a trap, but nothing selected!");
                 action = Action::PlaceTrap(pos, *trap_id);
             }
 
             SelectionAction::GrassThrow => {
-                let player_id = data.find_player().unwrap();
+                let player_id = data.find_by_name(EntityName::Player).unwrap();
                 let player_pos = data.entities.pos[&player_id];
                 let dxy = sub_pos(pos, player_pos);
                 let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
@@ -64,7 +64,7 @@ impl SelectionAction {
             SelectionAction::PassWall => {
                 action = Action::NoAction;
 
-                let player_id = data.find_player().unwrap();
+                let player_id = data.find_by_name(EntityName::Player).unwrap();
                 let player_pos = data.entities.pos[&player_id];
                 let blocked = data.map.path_blocked_move(player_pos, pos);
                 
@@ -83,7 +83,7 @@ impl SelectionAction {
             SelectionAction::Rubble => {
                 action = Action::NoAction;
 
-                let player_id = data.find_player().unwrap();
+                let player_id = data.find_by_name(EntityName::Player).unwrap();
                 let player_pos = data.entities.pos[&player_id];
                 let blocked = data.map.path_blocked_move(player_pos, pos);
 
@@ -97,7 +97,7 @@ impl SelectionAction {
             SelectionAction::Reform => {
                 action = Action::NoAction;
 
-                let player_id = data.find_player().unwrap();
+                let player_id = data.find_by_name(EntityName::Player).unwrap();
                 if data.map[pos].surface == Surface::Rubble &&
                    data.has_blocking_entity(pos).is_none() {
                     action = Action::Reform(player_id, pos);
@@ -107,14 +107,14 @@ impl SelectionAction {
             SelectionAction::Swap => {
                 action = Action::NoAction;
 
-                let player_id = data.find_player().unwrap();
+                let player_id = data.find_by_name(EntityName::Player).unwrap();
                 if let Some(entity_id) = data.has_blocking_entity(pos) {
                     action = Action::Swap(player_id, entity_id);
                 }
             }
 
             SelectionAction::Push => {
-                let player_id = data.find_player().unwrap();
+                let player_id = data.find_by_name(EntityName::Player).unwrap();
                 let player_pos = data.entities.pos[&player_id];
                 let dxy = sub_pos(pos, player_pos);
                 let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();

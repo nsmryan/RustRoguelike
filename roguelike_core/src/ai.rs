@@ -261,7 +261,7 @@ pub fn ai_attack(monster_id: EntityId,
 pub fn ai_idle(monster_id: EntityId,
                data: &mut GameData,
                config: &Config) -> Action {
-    let player_id = data.find_player().unwrap();
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
 
     let mut turn = Action::none();
@@ -292,7 +292,7 @@ pub fn ai_investigate(target_pos: Pos,
                       monster_id: EntityId,
                       data: &mut GameData,
                       config: &Config) -> Action {
-    let player_id = data.find_player().unwrap();
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     let player_pos = data.entities.pos[&player_id];
     let monster_pos = data.entities.pos[&monster_id];

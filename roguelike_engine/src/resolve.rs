@@ -23,7 +23,7 @@ pub fn resolve_messages(data: &mut GameData,
                         _settings: &mut GameSettings,
                         rng: &mut SmallRng,
                         config: &Config) {
-    let player_id = data.find_player().unwrap();
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     /* Handle Message Log */
     while let Some(msg) = msg_log.pop() {
@@ -734,7 +734,7 @@ fn process_moved_message(entity_id: EntityId,
     }
 
     // check if player walks on energy
-    let player_id = data.find_player().unwrap();
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
     if entity_id == player_id {
         for other_id in data.entities.ids.clone().iter() {
             if data.entities.pos[other_id] == pos && 
