@@ -435,7 +435,7 @@ impl Color {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum GameState {
     Playing,
     Win,
@@ -504,7 +504,7 @@ impl Item {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum ItemClass {
     Primary,
     Secondary,
@@ -521,7 +521,7 @@ pub struct Fighter {
     pub power: i32,
 }
 
-#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum InventoryAction {
     Use,
     Drop,
@@ -553,6 +553,7 @@ pub enum EntityName {
     GateTrigger,
     Stone,
     Mouse,
+    Cursor,
     Energy,
     Other,
 }
@@ -580,7 +581,7 @@ impl Default for EntityType {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum EntityClass {
     General,
     Grass,

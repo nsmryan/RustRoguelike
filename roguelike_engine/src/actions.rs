@@ -62,6 +62,8 @@ pub enum InputAction {
     UseItem,
     Interact,
     Chord(Option<Direction>, ActionStrength, ActionMode, ActionTarget),
+    CursorMove(Direction),
+    CursorApply(ActionMode, ActionTarget),
     None,
 }
 
@@ -103,6 +105,8 @@ impl fmt::Display for InputAction {
             InputAction::UseItem => write!(f, "use"),
             InputAction::Interact => write!(f, "interact"),
             InputAction::Chord(dir, stren, mode, target) => write!(f, "chord {:?} {:?} {:?} {:?}", dir, stren, mode, target),
+            InputAction::CursorMove(dir) => write!(f, "cursormove {:?}", dir),
+            InputAction::CursorApply(mode, target) => write!(f, "chord {:?} {:?}", mode, target),
             InputAction::None => write!(f, "none"),
         }
     }
@@ -496,6 +500,12 @@ pub fn handle_input(game: &mut Game) -> Action {
     let player_alive = game.data.entities.status[&player_id].alive;
 
     match (game.input_action, player_alive) {
+        (InputAction::CursorMove(Direction), true) => {
+        }
+
+        (InputAction::CursorApply(ActionMode, ActionTarget), true) => {
+        }
+
         (InputAction::Chord(dir, strength, mode, target), true) => {
             player_turn = chord(dir, strength, mode, target, game);
         }
@@ -868,9 +878,6 @@ pub fn handle_skill(skill_index: usize,
     return turn;
 }
 
-// TODO currently a regular move does not use the chord system-
-// the only effect of shift and strength is to ensure chords are used
-// even with regular moves.
 pub fn chord(dir: Option<Direction>,
              _strength: ActionStrength,
              mode: ActionMode,
