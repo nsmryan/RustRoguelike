@@ -500,10 +500,10 @@ pub fn handle_input(game: &mut Game) -> Action {
     let player_alive = game.data.entities.status[&player_id].alive;
 
     match (game.input_action, player_alive) {
-        (InputAction::CursorMove(Direction), true) => {
+        (InputAction::CursorMove(direction), true) => {
         }
 
-        (InputAction::CursorApply(ActionMode, ActionTarget), true) => {
+        (InputAction::CursorApply(action_mode, action_target), true) => {
         }
 
         (InputAction::Chord(dir, strength, mode, target), true) => {

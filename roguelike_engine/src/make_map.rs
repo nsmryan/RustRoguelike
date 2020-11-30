@@ -355,7 +355,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
     }
 
-    if let None = game.data.find_by_name(EntityName::Mouse) {
+    if game.data.find_by_name(EntityName::Mouse).is_none() {
         make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
     }
 
