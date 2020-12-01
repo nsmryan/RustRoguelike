@@ -6,7 +6,7 @@ use serde::{Serialize, Deserialize};
 use roguelike_core::movement::{Direction, Action, Reach, Movement};
 use roguelike_core::types::*;
 use roguelike_core::movement;
-use roguelike_core::utils::{reach_by_mode, item_primary_at, add_pos};
+use roguelike_core::utils::{reach_by_mode, item_primary_at, add_pos, sub_pos};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
@@ -510,7 +510,17 @@ pub fn handle_input(game: &mut Game) -> Action {
         (InputAction::CursorApply(action_mode, action_target), true) => {
             let cursor_id = game.data.find_by_name(EntityName::Cursor).unwrap();
 
-            //game.data.entities.pos[&cursor_id] += 
+            let cursor_pos = game.data.entities.pos[&cursor_id];
+            let player_pos = game.data.entities.pos[&player_id];
+            let must_reach = false;
+            let traps_block = true;
+            let path = game.data.path_between(player_pos, cursor_pos, Reach::single(1), must_reach, traps_block, None);
+
+            if path.len() > 1 {
+                let target_pos = path[1];
+                let movement = Movement::step_to(target_pos);
+                player_turn = Action::Move(movement);
+            }
         }
 
         (InputAction::Chord(dir, strength, mode, target), true) => {
