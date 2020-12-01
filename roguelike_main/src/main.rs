@@ -128,7 +128,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
     if let Some(procgen_map) = opts.procgen_map.clone() {
         let map_config = MapLoadConfig::ProcGen(procgen_map);
-        make_map(&map_config , &mut game);
+        make_map(&map_config, &mut game);
     } else {
         make_map(&config.map_load, &mut game);
     }
@@ -178,7 +178,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         {
             let _input_timer = timer!("INPUT");
             let scancodes = event_pump.keyboard_state().pressed_scancodes().into_iter().collect::<Vec<Scancode>>();
-            handle_sdl2_input(&mut game, &mut display, scancodes, &mut event_pump);
+            handle_sdl2_input(&mut game, &mut display, &scancodes, &mut event_pump);
         }
 
         // if there are starting actions to read, pop one off to play

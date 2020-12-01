@@ -11,7 +11,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
-use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color};
+use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, move_x, move_y};
 use roguelike_core::line::line;
 
 use roguelike_engine::game::*;
@@ -1056,6 +1056,25 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 }
             }
         }
+    }
+
+    // render cursor if enabled
+    if game.config.use_cursor {
+        let cursor_id = game.data.find_by_name(EntityName::Cursor).unwrap();
+
+        let cursor_pos = game.data.entities.pos[&cursor_id];
+
+        let (cell_width, cell_height) = panel.cell_dims();
+        let cell_width = cell_width as i32;
+        let cell_height = cell_height as i32;
+        let pos = Pos::new(cursor_pos.x * cell_width, cursor_pos.y * cell_height);
+
+        let color = sdl2_color(game.config.color_orange);
+        panel.target.set_draw_color(color);
+        let pos_end = Pos::new(pos.x + cell_width, pos.y + cell_height);
+        panel.target.draw_line(pos.to_tuple(), pos_end.to_tuple());
+
+        panel.target.draw_line(move_x(pos, cell_width).to_tuple(), move_y(pos, cell_height).to_tuple());
     }
 
     // render FOV if enabled

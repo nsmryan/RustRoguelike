@@ -1,9 +1,10 @@
 use sdl2::event::Event;
 use sdl2::mouse::MouseButton;
-use sdl2::keyboard::{Mod, Keycode, Scancode};
+use sdl2::keyboard::{Keycode, Scancode, Mod};
 
 use roguelike_core::types::*;
 use roguelike_core::movement::Direction;
+use roguelike_core::config::Config;
 
 use roguelike_engine::game::*;
 use roguelike_engine::actions::*;
@@ -11,7 +12,12 @@ use roguelike_engine::actions::*;
 use crate::display::*;
 
 
-pub fn handle_sdl2_input(game: &mut Game, display: &mut Display, scancodes: Vec<Scancode>, event_pump: &mut sdl2::EventPump) {
+const TARGET_CODES: &[Scancode] = &[Scancode::Z, Scancode::X, Scancode::C, Scancode::V, Scancode::B];
+
+pub fn handle_sdl2_input(game: &mut Game,
+                         display: &mut Display,
+                         scancodes: &Vec<Scancode>,
+                         event_pump: &mut sdl2::EventPump) {
     for event in event_pump.poll_iter() {
         match event {
             Event::Quit {..}=> {
@@ -28,9 +34,11 @@ pub fn handle_sdl2_input(game: &mut Game, display: &mut Display, scancodes: Vec<
             Event::KeyUp {keycode, keymod, ..} => {
                 if let Some(keycode) = keycode {
                     game.input_action =
-                        keyup_to_action(keycode, keymod, game.settings.state);
+                        keyup_to_action(keycode, keymod, scancodes, game.settings.state);
 
                     game.input_action = handle_chord(game.input_action, &scancodes);
+
+                    game.input_action = handle_cursor(game.input_action, &scancodes, &game.config);
                 }
             }
 
@@ -88,6 +96,19 @@ pub fn handle_sdl2_input(game: &mut Game, display: &mut Display, scancodes: Vec<
     }
 }
 
+
+pub fn handle_cursor(input_action: InputAction, scancodes: &Vec<Scancode>, config: &Config) -> InputAction {
+    let mut action = input_action;
+
+    if config.use_cursor {
+        if let InputAction::Move(dir) = input_action {
+            action = InputAction::CursorMove(dir);
+        }
+    } 
+
+    return action;
+}
+
 pub fn handle_chord(input_action: InputAction, scancodes: &Vec<Scancode>) -> InputAction {
     let mut action = input_action;
 
@@ -108,8 +129,7 @@ pub fn handle_chord(input_action: InputAction, scancodes: &Vec<Scancode>) -> Inp
            mode = ActionMode::Alternate;
     }
 
-    let target_codes = &[Scancode::Z, Scancode::X, Scancode::C, Scancode::V, Scancode::B];
-    for (index, code) in target_codes.iter().enumerate() {
+    for (index, code) in TARGET_CODES.iter().enumerate() {
         if scancodes.iter().any(|s| *s == *code) {
                target = index as i32;
         }
@@ -121,14 +141,14 @@ pub fn handle_chord(input_action: InputAction, scancodes: &Vec<Scancode>) -> Inp
             _ => None,
         };
         action = InputAction::Chord(direction, strength, mode, target);
-        dbg!(action);
     }
 
     return action;
 }
 
 pub fn keyup_to_action(keycode: Keycode,
-                       _keymods: Mod,
+                       keymods: Mod,
+                       scancodes: &Vec<Scancode>,
                        game_state: GameState) -> InputAction {
     let input_action: InputAction;
 
@@ -261,7 +281,7 @@ pub fn keyup_to_action(keycode: Keycode,
             input_action = InputAction::DecreaseMoveMode;
         }
 
-        Keycode::Space => {
+        Keycode::O => {
             input_action = InputAction::OverlayOff;
         }
 
@@ -281,6 +301,25 @@ pub fn keyup_to_action(keycode: Keycode,
             input_action = InputAction::UseItem;
         }
 
+        Keycode::U => {
+            input_action = InputAction::UseItem;
+        }
+
+        Keycode::Space => {
+            let mut mode = ActionMode::Primary;
+            if keymods.contains(Mod::LALTMOD) || keymods.contains(Mod::RALTMOD) {
+                mode = ActionMode::Alternate;
+            }
+
+            let mut target = -1;
+            for (index, code) in TARGET_CODES.iter().enumerate() {
+                if scancodes.iter().any(|s| *s == *code) {
+                       target = index as i32;
+                }
+            }
+            input_action = InputAction::CursorApply(mode, target);
+        }
+
         _ => {
             input_action = InputAction::None;
         }
@@ -294,7 +333,7 @@ pub fn keydown_to_action(keycode: Keycode,
     let input_action: InputAction;
 
     match keycode {
-        Keycode::Space => {
+        Keycode::O => {
             input_action = InputAction::OverlayOn;
         }
 

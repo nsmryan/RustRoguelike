@@ -129,6 +129,14 @@ pub fn make_mouse(entities: &mut Entities, _config: &Config, msg_log: &mut MsgLo
     mouse
 }
 
+pub fn make_cursor(entities: &mut Entities, pos: Pos, _config: &Config, msg_log: &mut MsgLog) -> EntityId {
+    let cursor = entities.create_entity(pos.x, pos.y, EntityType::Other, ' ', Color::white(), EntityName::Cursor, false);
+
+    msg_log.log(Msg::SpawnedObject(cursor, entities.typ[&cursor], Pos::new(-1, -1), EntityName::Cursor));
+
+    cursor
+}
+
 pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let gol = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{98}', config.color_orange, EntityName::Gol, true);
 
