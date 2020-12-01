@@ -797,6 +797,12 @@ impl Entities {
         self.animation[&entity_id].push_back(key);
     }
 
+    pub fn add_skill(&mut self, entity_id: EntityId, skill: Skill) {
+        if !self.skills[&entity_id].iter().any(|s| *s == skill) {
+            self.skills[&entity_id].push(skill);
+        }
+    }
+
     pub fn merge(&mut self, other: &Entities) {
         self.ids.extend(other.ids.iter());
         self.pos.extend(other.pos.iter());

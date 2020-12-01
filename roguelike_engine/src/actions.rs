@@ -376,28 +376,28 @@ pub fn handle_input_class_menu(input: InputAction,
                 match classes[class_index] {
                     EntityClass::General => {
                         data.entities.class[&player_id] = classes[class_index];
-                        data.entities.skills[&player_id].push(Skill::Blink);
+                        data.entities.add_skill(player_id, Skill::Blink);
                         msg_log.log(Msg::GameState(GameState::Playing));
                     }
 
                     EntityClass::Monolith => {
                         data.entities.class[&player_id] = classes[class_index];
-                        data.entities.skills[&player_id].push(Skill::PassWall);
-                        data.entities.skills[&player_id].push(Skill::Rubble);
-                        data.entities.skills[&player_id].push(Skill::Reform);
+                        data.entities.add_skill(player_id, Skill::PassWall);
+                        data.entities.add_skill(player_id, Skill::Rubble);
+                        data.entities.add_skill(player_id, Skill::Reform);
                         msg_log.log(Msg::GameState(GameState::Playing));
                     }
 
                     EntityClass::Grass => {
                         data.entities.class[&player_id] = classes[class_index];
-                        data.entities.skills[&player_id].push(Skill::GrassThrow);
-                        data.entities.skills[&player_id].push(Skill::GrassBlade);
+                        data.entities.add_skill(player_id, Skill::GrassThrow);
+                        data.entities.add_skill(player_id, Skill::GrassBlade);
                         msg_log.log(Msg::GameState(GameState::Playing));
                     }
 
                     EntityClass::Clockwork => {
                         data.entities.class[&player_id] = classes[class_index];
-                        data.entities.skills[&player_id].push(Skill::Push);
+                        data.entities.add_skill(player_id, Skill::Push);
                         msg_log.log(Msg::GameState(GameState::Playing));
                     }
                 }
