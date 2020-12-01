@@ -170,3 +170,4 @@ sound_radius_walk: 2
 sound_radius_run: 4
 take_screenshot: false
 show_info: true
+use_cursor: true

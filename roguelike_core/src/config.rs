@@ -81,6 +81,7 @@ pub struct Config {
     pub sound_radius_run: usize,
     pub take_screenshot: bool,
     pub show_info: bool,
+    pub use_cursor: bool
 }
 
 impl Config {
