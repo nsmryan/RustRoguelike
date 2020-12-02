@@ -507,7 +507,7 @@ pub fn handle_input(game: &mut Game) -> Action {
             game.data.entities.pos[&cursor_id] = add_pos(pos, dir.into_move());
         }
 
-        (InputAction::CursorApply(action_mode, action_target), true) => {
+        (InputAction::CursorApply(mode, target), true) => {
             let cursor_id = game.data.find_by_name(EntityName::Cursor).unwrap();
 
             let cursor_pos = game.data.entities.pos[&cursor_id];
@@ -516,11 +516,18 @@ pub fn handle_input(game: &mut Game) -> Action {
             let traps_block = true;
             let path = game.data.path_between(player_pos, cursor_pos, Reach::single(1), must_reach, traps_block, None);
 
+            let mut dir = None;
             if path.len() > 1 {
                 let target_pos = path[1];
-                let movement = Movement::step_to(target_pos);
-                player_turn = Action::Move(movement);
+                let dxy = sub_pos(target_pos, player_pos);
+
+                dir = Direction::from_dxy(dxy.x, dxy.y);
+                //let movement = Movement::step_to(target_pos);
+                //player_turn = Action::Move(movement);
             }
+
+            player_turn = chord(dir, ActionStrength::Weak, mode, target, game);
+            dbg!(player_turn);
         }
 
         (InputAction::Chord(dir, strength, mode, target), true) => {
@@ -905,7 +912,6 @@ pub fn chord(dir: Option<Direction>,
 
     // if no target selection, then it is a move
     if target == -1 {
-        dbg!(game.data.entities.move_mode[&player_id]);
         match mode {
             ActionMode::Primary => {
                 decrease_move_mode(player_id, game);
@@ -915,7 +921,6 @@ pub fn chord(dir: Option<Direction>,
                 increase_move_mode(player_id, game);
             }
         }
-        dbg!(game.data.entities.move_mode[&player_id]);
 
         match dir {
             None => turn = Action::Pass,

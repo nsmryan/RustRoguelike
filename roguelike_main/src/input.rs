@@ -36,9 +36,14 @@ pub fn handle_sdl2_input(game: &mut Game,
                     game.input_action =
                         keyup_to_action(keycode, keymod, scancodes, game.settings.state);
 
+                    dbg!(game.input_action);
                     game.input_action = handle_chord(game.input_action, &scancodes);
+                    dbg!(game.input_action);
 
-                    game.input_action = handle_cursor(game.input_action, &scancodes, &game.config);
+                    if game.config.use_cursor {
+                        game.input_action = handle_cursor(game.input_action, &scancodes, &game.config);
+                        dbg!(game.input_action);
+                    }
                 }
             }
 
@@ -100,11 +105,9 @@ pub fn handle_sdl2_input(game: &mut Game,
 pub fn handle_cursor(input_action: InputAction, scancodes: &Vec<Scancode>, config: &Config) -> InputAction {
     let mut action = input_action;
 
-    if config.use_cursor {
-        if let InputAction::Move(dir) = input_action {
-            action = InputAction::CursorMove(dir);
-        }
-    } 
+    if let InputAction::Move(dir) = input_action {
+        action = InputAction::CursorMove(dir);
+    }
 
     return action;
 }
@@ -116,6 +119,12 @@ pub fn handle_chord(input_action: InputAction, scancodes: &Vec<Scancode>) -> Inp
     let mut strength: ActionStrength = ActionStrength::Weak;
     let mut mode: ActionMode = ActionMode::Primary;
     let mut target = -1;
+
+    // NOTE this is hacky- the cursor and chord system should be handled differently
+    if matches!(input_action, InputAction::CursorApply(_, _)) ||
+       matches!(input_action, InputAction::CursorMove(_)) {
+           return input_action;
+    }
 
     if scancodes.iter().any(|s| *s == Scancode::LShift) ||
        scancodes.iter().any(|s| *s == Scancode::RShift) {
