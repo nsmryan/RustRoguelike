@@ -47,6 +47,7 @@ pub fn handle_sdl2_input(game: &mut Game,
 
                     if game.input_action != InputAction::None {
                         game.input_action = handle_chord(game.input_action, &scancodes);
+                        dbg!(game.input_action);
 
                         if game.config.use_cursor {
                             game.input_action = handle_cursor(game.input_action, &scancodes, &game.config);
@@ -133,9 +134,17 @@ pub fn handle_chord(input_action: InputAction, scancodes: &Vec<Scancode>) -> Inp
     let mut target = -1;
 
     // NOTE this is hacky- the cursor and chord system should be handled differently
-    if matches!(input_action, InputAction::CursorApply(_, _)) ||
-       matches!(input_action, InputAction::CursorMove(_)) {
-           return input_action;
+    if scancodes.iter().all(|s| *s != Scancode::LCtrl) &&
+       scancodes.iter().all(|s| *s != Scancode::RCtrl) {
+        if matches!(input_action, InputAction::CursorApply(_, _)) ||
+           matches!(input_action, InputAction::CursorMove(_)) {
+               return input_action;
+        }
+       }
+
+    if scancodes.iter().any(|s| *s == Scancode::LCtrl) ||
+       scancodes.iter().any(|s| *s == Scancode::RCtrl) {
+           is_chord = true;
     }
 
     if scancodes.iter().any(|s| *s == Scancode::LAlt) ||
@@ -156,6 +165,7 @@ pub fn handle_chord(input_action: InputAction, scancodes: &Vec<Scancode>) -> Inp
             _ => None,
         };
         action = InputAction::Chord(direction, strength, mode, target);
+        dbg!(action);
     }
 
     return action;

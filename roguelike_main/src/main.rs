@@ -189,9 +189,6 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
             game.input_action = action;
         }
 
-        if game.input_action != InputAction::None {
-            dbg!(game.input_action);
-        }
         /* Record Inputs to Log File */
         if game.input_action != InputAction::None &&
            game.input_action != InputAction::Exit {
@@ -204,13 +201,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         {
             let _logic_timer = timer!("LOGIC");
             let dt = Instant::now().duration_since(frame_time);
-        if game.input_action != InputAction::None {
-            dbg!(game.input_action);
-        }
             game_result = game.step_game(dt.as_secs_f32());
-        if game.input_action != InputAction::None {
-            dbg!(game.input_action);
-        }
             frame_time = Instant::now();
         }
 

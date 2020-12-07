@@ -536,9 +536,7 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::Chord(dir, strength, mode, target), true) => {
-            dbg!(dir);
             let loc = dir.map_or(ActionLoc::None, |dir| ActionLoc::Dir(dir));
-            dbg!(loc);
             player_turn = chord(loc, strength, mode, target, game);
         }
 
@@ -951,10 +949,14 @@ pub fn chord(loc: ActionLoc,
 
         }
     } else {
+        dbg!(target);
         let num_items_in_inventory = game.data.entities.inventory[&player_id].len() as i32;
-        if target >= num_items_in_inventory {
-            let skill_index = (target - num_items_in_inventory) as usize;
+        if target >= 2 {
+            // the minus 2 here comes from the primary and secondary item, after which comes
+            // the skills
+            let skill_index = (target - 2) as usize;
             if skill_index < game.data.entities.skills[&player_id].len() {
+                dbg!(skill_index);
                 turn = handle_skill(skill_index, &mut game.data, &mut game.settings, &mut game.msg_log);
             }
         } else {
