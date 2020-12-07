@@ -18,31 +18,39 @@ pub fn handle_sdl2_input(game: &mut Game,
                          display: &mut Display,
                          scancodes: &Vec<Scancode>,
                          event_pump: &mut sdl2::EventPump) {
-    for event in event_pump.poll_iter() {
+    let current_events = event_pump.poll_iter().collect::<Vec<Event>>();
+    for event in current_events {
         match event {
             Event::Quit {..}=> {
                 game.settings.running = false;
             }
 
-            Event::KeyDown {keycode, keymod, ..} => {
+            Event::KeyDown {keycode, keymod, repeat, ..} => {
+                if repeat {
+                    continue;
+                }
+
                 if let Some(keycode) = keycode {
                     game.input_action =
                         keydown_to_action(keycode, keymod);
                 }
             }
 
-            Event::KeyUp {keycode, keymod, ..} => {
+            Event::KeyUp {keycode, keymod, repeat, ..} => {
+                if repeat {
+                    continue;
+                }
+
                 if let Some(keycode) = keycode {
                     game.input_action =
                         keyup_to_action(keycode, keymod, scancodes, game.settings.state);
 
-                    dbg!(game.input_action);
-                    game.input_action = handle_chord(game.input_action, &scancodes);
-                    dbg!(game.input_action);
+                    if game.input_action != InputAction::None {
+                        game.input_action = handle_chord(game.input_action, &scancodes);
 
-                    if game.config.use_cursor {
-                        game.input_action = handle_cursor(game.input_action, &scancodes, &game.config);
-                        dbg!(game.input_action);
+                        if game.config.use_cursor {
+                            game.input_action = handle_cursor(game.input_action, &scancodes, &game.config);
+                        }
                     }
                 }
             }
@@ -106,7 +114,11 @@ pub fn handle_cursor(input_action: InputAction, scancodes: &Vec<Scancode>, confi
     let mut action = input_action;
 
     if let InputAction::Move(dir) = input_action {
-        action = InputAction::CursorMove(dir);
+        dbg!(scancodes);
+        if scancodes.iter().all(|s| *s != Scancode::LCtrl) &&
+           scancodes.iter().all(|s| *s != Scancode::RCtrl) {
+            action = InputAction::CursorMove(dir);
+        }
     }
 
     return action;
@@ -124,12 +136,6 @@ pub fn handle_chord(input_action: InputAction, scancodes: &Vec<Scancode>) -> Inp
     if matches!(input_action, InputAction::CursorApply(_, _)) ||
        matches!(input_action, InputAction::CursorMove(_)) {
            return input_action;
-    }
-
-    if scancodes.iter().any(|s| *s == Scancode::LShift) ||
-       scancodes.iter().any(|s| *s == Scancode::RShift) {
-           is_chord = true;
-           strength = ActionStrength::Strong;
     }
 
     if scancodes.iter().any(|s| *s == Scancode::LAlt) ||

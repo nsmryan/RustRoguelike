@@ -508,6 +508,7 @@ pub fn handle_input(game: &mut Game) -> Action {
 
     match (game.input_action, player_alive) {
         (InputAction::CursorMove(dir), true) => {
+            dbg!(game.input_action);
             let cursor_id = game.data.find_by_name(EntityName::Cursor).unwrap();
 
             let pos = game.data.entities.pos[&cursor_id];
@@ -535,7 +536,9 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::Chord(dir, strength, mode, target), true) => {
+            dbg!(dir);
             let loc = dir.map_or(ActionLoc::None, |dir| ActionLoc::Dir(dir));
+            dbg!(loc);
             player_turn = chord(loc, strength, mode, target, game);
         }
 
@@ -544,6 +547,7 @@ pub fn handle_input(game: &mut Game) -> Action {
         }
 
         (InputAction::Move(move_action), true) => {
+            dbg!();
             let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
             player_turn = handle_move(player_id, move_action, game);
@@ -928,6 +932,7 @@ pub fn chord(loc: ActionLoc,
             }
         }
 
+        dbg!(loc);
         match loc {
             ActionLoc::None => {
                 turn = Action::Pass;

@@ -615,7 +615,8 @@ pub fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut
         if let Some(fighter) = data.entities.fighter.get(&crushed_id) {
             msg_log.log(Msg::Killed(entity_id, crushed_id, fighter.hp));
         } else if data.entities.item.get(&crushed_id).is_none() &&
-                  data.entities.name[&crushed_id] != EntityName::Mouse {
+                  data.entities.name[&crushed_id] != EntityName::Mouse &&
+                  data.entities.name[&crushed_id] != EntityName::Cursor {
             // otherwise, if its not an item or the mouse, just remove the entity
             data.remove_entity(crushed_id);
         }
