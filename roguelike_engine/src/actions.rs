@@ -34,6 +34,13 @@ pub enum ActionMode {
     Alternate,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum ActionLoc {
+    Dir(Direction),
+    Place(Pos),
+    None
+}
+
 pub type ActionTarget = i32;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -516,22 +523,20 @@ pub fn handle_input(game: &mut Game) -> Action {
             let traps_block = true;
             let path = game.data.path_between(player_pos, cursor_pos, Reach::single(1), must_reach, traps_block, None);
 
-            let mut dir = None;
-            if path.len() > 1 {
-                let target_pos = path[1];
-                let dxy = sub_pos(target_pos, player_pos);
+            // TODO is this needed somewhere to pathfind?
+            //let mut action_loc = ActionLoc::None;
+            //if path.len() > 1 {
+            //    let target_pos = path[1];
+            //    action_loc = ActionLoc::Place(target_pos);
+            //}
 
-                dir = Direction::from_dxy(dxy.x, dxy.y);
-                //let movement = Movement::step_to(target_pos);
-                //player_turn = Action::Move(movement);
-            }
-
-            player_turn = chord(dir, ActionStrength::Weak, mode, target, game);
+            player_turn = chord(ActionLoc::Place(cursor_pos), ActionStrength::Weak, mode, target, game);
             dbg!(player_turn);
         }
 
         (InputAction::Chord(dir, strength, mode, target), true) => {
-            player_turn = chord(dir, strength, mode, target, game);
+            let loc = dir.map_or(ActionLoc::None, |dir| ActionLoc::Dir(dir));
+            player_turn = chord(loc, strength, mode, target, game);
         }
 
         (InputAction::Pass, true) => {
@@ -902,13 +907,14 @@ pub fn handle_skill(skill_index: usize,
     return turn;
 }
 
-pub fn chord(dir: Option<Direction>,
+pub fn chord(loc: ActionLoc,
              _strength: ActionStrength,
              mode: ActionMode,
              target: i32,
              game: &mut Game) -> Action {
     let mut turn = Action::none();
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = game.data.entities.pos[&player_id];
 
     // if no target selection, then it is a move
     if target == -1 {
@@ -922,9 +928,22 @@ pub fn chord(dir: Option<Direction>,
             }
         }
 
-        match dir {
-            None => turn = Action::Pass,
-            Some(direction) => turn = handle_move(player_id, direction, game),
+        match loc {
+            ActionLoc::None => {
+                turn = Action::Pass;
+            }
+
+            ActionLoc::Dir(direction) => {
+                turn = handle_move(player_id, direction, game);
+            }
+
+            ActionLoc::Place(pos) => {
+                let dxy = sub_pos(pos, player_pos);
+                let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+
+                turn = handle_move(player_id, direction, game);
+            }
+
         }
     } else {
         let num_items_in_inventory = game.data.entities.inventory[&player_id].len() as i32;
@@ -942,12 +961,17 @@ pub fn chord(dir: Option<Direction>,
 
                 ActionMode::Alternate => {
                     // alternate item use means drop or throw item
-                    match dir {
-                        None => {
+                    match loc {
+                        ActionLoc::None => {
                             inventory_drop_item(target as usize, &mut game.data, &mut game.settings, &mut game.msg_log);
                         }
 
-                        Some(direction) => {
+                        ActionLoc::Place(pos) => {
+                            let item_id = game.data.entities.inventory[&player_id][target as usize];
+                            turn = Action::ThrowItem(pos, item_id);
+                        }
+
+                        ActionLoc::Dir(direction) => {
                             let start = game.data.entities.pos[&player_id];
                             let max_end = direction.offset_pos(start, PLAYER_THROW_DIST as i32);
                             let end = game.data.map.path_blocked_move(start, max_end)
