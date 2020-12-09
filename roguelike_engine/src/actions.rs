@@ -920,6 +920,7 @@ pub fn chord(loc: ActionLoc,
 
     // if no target selection, then it is a move
     if target == -1 {
+        dbg!(loc);
         match mode {
             ActionMode::Primary => {
                 decrease_move_mode(player_id, game);
@@ -930,7 +931,6 @@ pub fn chord(loc: ActionLoc,
             }
         }
 
-        dbg!(loc);
         match loc {
             ActionLoc::None => {
                 turn = Action::Pass;
@@ -949,7 +949,7 @@ pub fn chord(loc: ActionLoc,
 
         }
     } else {
-        dbg!(target);
+        dbg!(loc, target);
         let num_items_in_inventory = game.data.entities.inventory[&player_id].len() as i32;
         if target >= 2 {
             // the minus 2 here comes from the primary and secondary item, after which comes

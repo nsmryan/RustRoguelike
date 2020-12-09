@@ -47,9 +47,9 @@ pub fn handle_sdl2_input(game: &mut Game,
                         keyup_to_action(keycode, keymod, scancodes, game.settings.state);
 
                     if game.input_action != InputAction::None {
-                        if scancodes.iter().any(|s| MODIFIERS.iter().position(|o| o == s) != None) {
+                        if scancodes.iter().any(|s| MODIFIERS.iter().position(|o| o == s) != None) &&
+                           !matches!(game.input_action, InputAction::CursorApply(_, _)) {
                             game.input_action = handle_chord(game.input_action, &scancodes);
-                            dbg!(game.input_action);
                         } else if game.config.use_cursor {
                             game.input_action = handle_cursor(game.input_action, &scancodes, &game.config);
                         }
@@ -116,7 +116,6 @@ pub fn handle_cursor(input_action: InputAction, scancodes: &Vec<Scancode>, confi
     let mut action = input_action;
 
     if let InputAction::Move(dir) = input_action {
-        dbg!(scancodes);
         action = InputAction::CursorMove(dir);
     }
 
@@ -154,7 +153,6 @@ pub fn handle_chord(input_action: InputAction, scancodes: &Vec<Scancode>) -> Inp
             _ => None,
         };
         action = InputAction::Chord(direction, strength, mode, target);
-        dbg!(action);
     }
 
     return action;
