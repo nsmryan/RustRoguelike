@@ -956,10 +956,9 @@ pub fn chord(loc: ActionLoc,
             // the skills
             let skill_index = (target - 2) as usize;
             if skill_index < game.data.entities.skills[&player_id].len() {
-                dbg!(skill_index);
                 turn = handle_skill(skill_index, &mut game.data, &mut game.settings, &mut game.msg_log);
             }
-        } else {
+        } else if target < num_items_in_inventory {
             match mode {
                 ActionMode::Primary => {
                     // primary item use is the item's main action

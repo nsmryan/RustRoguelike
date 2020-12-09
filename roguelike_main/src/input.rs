@@ -13,6 +13,7 @@ use crate::display::*;
 
 
 const TARGET_CODES: &[Scancode] = &[Scancode::Z, Scancode::X, Scancode::C, Scancode::V, Scancode::B];
+const MODIFIERS: &[Scancode] = &[Scancode::LAlt, Scancode::RAlt, Scancode::RCtrl, Scancode::LCtrl];
 
 pub fn handle_sdl2_input(game: &mut Game,
                          display: &mut Display,
@@ -46,10 +47,10 @@ pub fn handle_sdl2_input(game: &mut Game,
                         keyup_to_action(keycode, keymod, scancodes, game.settings.state);
 
                     if game.input_action != InputAction::None {
-                        game.input_action = handle_chord(game.input_action, &scancodes);
-                        dbg!(game.input_action);
-
-                        if game.config.use_cursor {
+                        if scancodes.iter().any(|s| MODIFIERS.iter().position(|o| o == s) != None) {
+                            game.input_action = handle_chord(game.input_action, &scancodes);
+                            dbg!(game.input_action);
+                        } else if game.config.use_cursor {
                             game.input_action = handle_cursor(game.input_action, &scancodes, &game.config);
                         }
                     }
@@ -116,10 +117,7 @@ pub fn handle_cursor(input_action: InputAction, scancodes: &Vec<Scancode>, confi
 
     if let InputAction::Move(dir) = input_action {
         dbg!(scancodes);
-        if scancodes.iter().all(|s| *s != Scancode::LCtrl) &&
-           scancodes.iter().all(|s| *s != Scancode::RCtrl) {
-            action = InputAction::CursorMove(dir);
-        }
+        action = InputAction::CursorMove(dir);
     }
 
     return action;
@@ -132,15 +130,6 @@ pub fn handle_chord(input_action: InputAction, scancodes: &Vec<Scancode>) -> Inp
     let mut strength: ActionStrength = ActionStrength::Weak;
     let mut mode: ActionMode = ActionMode::Primary;
     let mut target = -1;
-
-    // NOTE this is hacky- the cursor and chord system should be handled differently
-    if scancodes.iter().all(|s| *s != Scancode::LCtrl) &&
-       scancodes.iter().all(|s| *s != Scancode::RCtrl) {
-        if matches!(input_action, InputAction::CursorApply(_, _)) ||
-           matches!(input_action, InputAction::CursorMove(_)) {
-               return input_action;
-        }
-       }
 
     if scancodes.iter().any(|s| *s == Scancode::LCtrl) ||
        scancodes.iter().any(|s| *s == Scancode::RCtrl) {
@@ -320,10 +309,6 @@ pub fn keyup_to_action(keycode: Keycode,
 
         Keycode::Backquote => {
             input_action = InputAction::ToggleConsole;
-        }
-
-        Keycode::U => {
-            input_action = InputAction::UseItem;
         }
 
         Keycode::U => {
