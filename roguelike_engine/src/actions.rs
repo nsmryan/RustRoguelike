@@ -336,7 +336,7 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::SelectItem(skill_index) => {
-            player_turn = handle_skill(skill_index, data, settings, msg_log);
+            player_turn = handle_skill(skill_index, ActionLoc::None, data, settings, msg_log);
         }
 
         InputAction::Esc => {
@@ -823,6 +823,7 @@ pub fn place_trap(trap_id: EntityId,
 }
 
 pub fn handle_skill(skill_index: usize,
+                    action_loc: ActionLoc,
                     data: &mut GameData, 
                     settings: &mut GameSettings, 
                     msg_log: &mut MsgLog) -> Action {
@@ -844,12 +845,13 @@ pub fn handle_skill(skill_index: usize,
 
     let reach = Reach::single(1);
 
+    let mut selection = None;
+    // TODO add input to this function for whether a selection has been made.
+    // instead of entering selection mode, apply the action immediately
     match data.entities.skills[&player_id][skill_index] {
         Skill::GrassThrow => {
-            settings.selection =
-                Selection::new(SelectionType::WithinReach(reach), SelectionAction::GrassThrow);
-            settings.state = GameState::Selection;
-            msg_log.log(Msg::GameState(settings.state));
+            selection =
+                Some(Selection::new(SelectionType::WithinReach(reach), SelectionAction::GrassThrow));
         }
 
         Skill::GrassBlade => {
@@ -866,42 +868,38 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::PassWall => {
-            settings.selection =
-                Selection::new(SelectionType::WithinReach(reach), SelectionAction::PassWall);
-            settings.state = GameState::Selection;
-            msg_log.log(Msg::GameState(settings.state));
+            selection =
+                Some(Selection::new(SelectionType::WithinReach(reach), SelectionAction::PassWall));
         }
 
         Skill::Rubble => {
             let reach = Reach::horiz(1);
-            settings.selection =
-                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Rubble);
-            settings.state = GameState::Selection;
-            msg_log.log(Msg::GameState(settings.state));
+            selection =
+                Some(Selection::new(SelectionType::WithinReach(reach), SelectionAction::Rubble));
         }
 
         Skill::Reform => {
-            settings.selection =
-                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Reform);
-            settings.state = GameState::Selection;
-            msg_log.log(Msg::GameState(settings.state));
+            selection =
+                Some(Selection::new(SelectionType::WithinReach(reach), SelectionAction::Reform));
         }
 
         Skill::Swap => {
             // NOTE make this a const or config item
             let reach = Reach::single(4);
-            settings.selection =
-                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Swap);
-            settings.state = GameState::Selection;
-            msg_log.log(Msg::GameState(settings.state));
+            selection =
+                Some(Selection::new(SelectionType::WithinReach(reach), SelectionAction::Swap));
         }
 
         Skill::Push => {
-            settings.selection =
-                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Push);
-            settings.state = GameState::Selection;
-            msg_log.log(Msg::GameState(settings.state));
+            selection =
+                Some(Selection::new(SelectionType::WithinReach(reach), SelectionAction::Push));
         }
+    }
+
+    if let Some(selection) = selection {
+        settings.selection = selection;
+        settings.state = GameState::Selection;
+        msg_log.log(Msg::GameState(settings.state));
     }
 
     msg_log.log(Msg::GameState(settings.state));
@@ -956,7 +954,7 @@ pub fn chord(loc: ActionLoc,
             // the skills
             let skill_index = (target - 2) as usize;
             if skill_index < game.data.entities.skills[&player_id].len() {
-                turn = handle_skill(skill_index, &mut game.data, &mut game.settings, &mut game.msg_log);
+                turn = handle_skill(skill_index, loc, &mut game.data, &mut game.settings, &mut game.msg_log);
             }
         } else if target < num_items_in_inventory {
             match mode {

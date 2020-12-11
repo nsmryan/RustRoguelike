@@ -388,12 +388,10 @@ pub fn handle_action(entity_id: EntityId,
     } else if let Action::GrassBlade(entity_id) = action {
         use_energy(entity_id, data);
 
-        dbg!();
         let pos = data.entities.pos[&entity_id];
 
         let dagger_id = make_dagger(&mut data.entities, config, pos, msg_log);
         pick_item_up(entity_id, dagger_id, &mut data.entities, msg_log);
-        dbg!();
     } else if let Action::Blink(entity_id) = action {
         use_energy(entity_id, data);
 
