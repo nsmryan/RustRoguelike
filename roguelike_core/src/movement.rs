@@ -415,6 +415,21 @@ impl Reach {
         }
     }
 
+    pub fn furthest_in_direction(&self, pos: Pos, dir: Direction) -> Option<Pos> {
+        let valid = 
+            match self {
+                Reach::Diag(_) => dir.diag(),
+                Reach::Horiz(_) => dir.horiz(),
+                Reach::Single(_) => true,
+            };
+
+        if valid {
+            return Some(add_pos(pos, dir.offset_pos(pos, self.dist() as i32)));
+        } else {
+            return None;
+        }
+    }
+
     pub fn closest_to(&self, pos: Pos, other: Pos) -> Pos {
         let offsets = self.offsets();
 

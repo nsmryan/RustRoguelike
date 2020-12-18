@@ -42,6 +42,8 @@ pub fn handle_sdl2_input(game: &mut Game,
                     continue;
                 }
 
+                // TODO either keep track of keys that are "used up" when a chord is pressed,
+                // or ctrl cancels 'up's when it is pressed
                 if let Some(keycode) = keycode {
                     game.input_action =
                         keyup_to_action(keycode, keymod, scancodes, game.settings.state);

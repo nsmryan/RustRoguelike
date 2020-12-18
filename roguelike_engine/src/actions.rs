@@ -840,9 +840,6 @@ pub fn handle_skill(skill_index: usize,
 
     let mut turn: Action = Action::none();
 
-    settings.state = GameState::Selection;
-    settings.selection.only_visible = false;
-
     let reach = Reach::single(1);
 
     let mut selection = None;
@@ -896,13 +893,31 @@ pub fn handle_skill(skill_index: usize,
         }
     }
 
+    dbg!(selection, action_loc);
     if let Some(selection) = selection {
-        settings.selection = selection;
-        settings.state = GameState::Selection;
-        msg_log.log(Msg::GameState(settings.state));
-    }
+        match action_loc {
+            ActionLoc::Place(pos) => {
+                turn = selection.action.action_from_pos(pos, data);
+            }
 
-    msg_log.log(Msg::GameState(settings.state));
+            ActionLoc::Dir(dir) => {
+                let player_pos = data.entities.pos[&player_id];
+                if let Some(pos) = selection.typ.offset_pos(player_pos, dir) {
+                    turn = selection.action.action_from_pos(pos, data);
+                }
+            }
+
+            ActionLoc::None => {
+                // if no action location is given, enter selection mode
+                settings.selection = selection;
+                settings.state = GameState::Selection;
+                settings.selection.only_visible = false;
+                msg_log.log(Msg::GameState(settings.state));
+
+            }
+        }
+    }
+    dbg!(settings.state);
 
     return turn;
 }
@@ -955,6 +970,7 @@ pub fn chord(loc: ActionLoc,
             let skill_index = (target - 2) as usize;
             if skill_index < game.data.entities.skills[&player_id].len() {
                 turn = handle_skill(skill_index, loc, &mut game.data, &mut game.settings, &mut game.msg_log);
+                dbg!(&turn);
             }
         } else if target < num_items_in_inventory {
             match mode {
@@ -982,6 +998,7 @@ pub fn chord(loc: ActionLoc,
                                                    .map_or(max_end, |b| b.end_pos);
                             let item_id = game.data.entities.inventory[&player_id][target as usize];
                             turn = Action::ThrowItem(end, item_id);
+                            dbg!(&turn);
                         }
                     }
                 }

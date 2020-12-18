@@ -133,6 +133,20 @@ pub enum SelectionType {
     WithinRadius(usize),
 }
 
+impl SelectionType {
+    pub fn offset_pos(&self, pos: Pos, dir: Direction) -> Option<Pos> {
+        match self {
+            SelectionType::WithinReach(reach) => {
+                return reach.furthest_in_direction(pos, dir);
+            }
+
+            SelectionType::WithinRadius(dist) => {
+                return Some(dir.offset_pos(pos, *dist as i32));
+            }
+        }
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Selection {
     pub typ: SelectionType,
