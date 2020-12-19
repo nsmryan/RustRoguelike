@@ -15,100 +15,154 @@ use crate::display::*;
 const TARGET_CODES: &[Scancode] = &[Scancode::Z, Scancode::X, Scancode::C, Scancode::V, Scancode::B];
 const MODIFIERS: &[Scancode] = &[Scancode::LAlt, Scancode::RAlt, Scancode::RCtrl, Scancode::LCtrl];
 
-pub fn handle_sdl2_input(game: &mut Game,
-                         display: &mut Display,
-                         scancodes: &Vec<Scancode>,
-                         event_pump: &mut sdl2::EventPump) {
-    let current_events = event_pump.poll_iter().collect::<Vec<Event>>();
-    for event in current_events {
-        match event {
-            Event::Quit {..}=> {
-                game.settings.running = false;
-            }
 
-            Event::KeyDown {keycode, keymod, repeat, ..} => {
-                if repeat {
-                    continue;
+#[derive(Clone, Debug)]
+pub struct Input {
+    chording: bool,
+    chorded: bool,
+    mode: ActionMode,
+    target: i32,
+}
+
+impl Input {
+    pub fn new() -> Input {
+        return Input { chording: false, chorded: false, mode: ActionMode::Primary, target: 0 };
+    }
+
+    // TODO return an Option<InputAction> instead of modifying the game.
+    // possibly make game & instead of &mut
+    // try to reduce inputs and dependencies here
+    pub fn handle_sdl2_input(&mut self,
+                             game: &mut Game,
+                             display: &mut Display,
+                             scancodes: &Vec<Scancode>,
+                             event_pump: &mut sdl2::EventPump) {
+        let current_events = event_pump.poll_iter().collect::<Vec<Event>>();
+        for event in current_events {
+            match event {
+                Event::Quit {..}=> {
+                    game.settings.running = false;
                 }
 
-                if let Some(keycode) = keycode {
-                    game.input_action =
-                        keydown_to_action(keycode, keymod);
+                Event::KeyDown {keycode, keymod, repeat, ..} => {
+                    if repeat {
+                        continue;
+                    }
+
+                    let chord_down = keymod.contains(Mod::RCTRLMOD) | keymod.contains(Mod::LCTRLMOD);
+                    if chord_down {
+                        if !self.chording {
+                            self.chording = true;
+                            self.chorded = true;
+                            self.mode = ActionMode::Primary;
+                        }
+                    } else {
+                        if let Some(keycode) = keycode {
+                            game.input_action =
+                                keydown_to_action(keycode, keymod);
+                        }
+                    }
                 }
-            }
 
-            Event::KeyUp {keycode, keymod, repeat, ..} => {
-                if repeat {
-                    continue;
-                }
+                Event::KeyUp {keycode, keymod, repeat, ..} => {
+                    if repeat {
+                        continue;
+                    }
 
-                // TODO either keep track of keys that are "used up" when a chord is pressed,
-                // or ctrl cancels 'up's when it is pressed
-                if let Some(keycode) = keycode {
-                    game.input_action =
-                        keyup_to_action(keycode, keymod, scancodes, game.settings.state);
+                    if !keymod.contains(Mod::RCTRLMOD) & !keymod.contains(Mod::LCTRLMOD) {
+                        self.chording = false;
+                    }
 
-                    if game.input_action != InputAction::None {
-                        if scancodes.iter().any(|s| MODIFIERS.iter().position(|o| o == s) != None) &&
-                           !matches!(game.input_action, InputAction::CursorApply(_, _)) {
-                            game.input_action = handle_chord(game.input_action, &scancodes);
+                    if self.chording {
+                        if keymod.contains(Mod::RALTMOD) | keymod.contains(Mod::LALTMOD) {
+                            self.mode = ActionMode::Alternate;
+                        }
+
+                        for (index, code) in TARGET_CODES.iter().enumerate() {
+                            if scancodes.iter().any(|s| *s == *code) {
+                                   self.target = index as i32;
+                            }
+                        }
+                    }
+
+                    if let Some(keycode) = keycode {
+                        game.input_action =
+                            keyup_to_action(keycode, keymod, scancodes, game.settings.state);
+
+                        if self.chorded {
+                            let strength = ActionStrength::Weak;
+                            // TODO this should also catch the situation where you don't need a
+                            // move in order to carry out the chord, such as certain skills.
+                            match game.input_action {
+                                InputAction::Move(dir) => {
+                                    game.input_action = InputAction::Chord(Some(dir), strength, self.mode, self.target);
+                                }
+
+                                InputAction::Pass => {
+                                    game.input_action = InputAction::Chord(None, strength, self.mode, self.target);
+                                }
+
+                                _ => {}
+                            }
                         } else if game.config.use_cursor {
-                            game.input_action = handle_cursor(game.input_action, &scancodes, &game.config);
+                           if let InputAction::Move(dir) = game.input_action {
+                                game.input_action = InputAction::CursorMove(dir);
+                           }
                         }
                     }
                 }
-            }
 
-            Event::MouseMotion {x, y, ..} => {
-                game.mouse_state.x = x;
-                game.mouse_state.y = y;
-            }
+                Event::MouseMotion {x, y, ..} => {
+                    game.mouse_state.x = x;
+                    game.mouse_state.y = y;
+                }
 
-            Event::MouseButtonDown {mouse_btn, x, y, ..} => {
-                match mouse_btn {
-                    MouseButton::Left => {
-                        game.mouse_state.left_pressed = true;
+                Event::MouseButtonDown {mouse_btn, x, y, ..} => {
+                    match mouse_btn {
+                        MouseButton::Left => {
+                            game.mouse_state.left_pressed = true;
 
-                        let (map_width, map_height) = game.data.map.size();
-                        if let Some(mouse_cell) = display.targets.mouse_pos(x, y, map_width, map_height) {
-                            let screen_pos = Pos::new(x, y);
-                            let mouse_pos = Pos::new(mouse_cell.0, mouse_cell.1);
-                            game.input_action = InputAction::MapClick(screen_pos, mouse_pos);
+                            let (map_width, map_height) = game.data.map.size();
+                            if let Some(mouse_cell) = display.targets.mouse_pos(x, y, map_width, map_height) {
+                                let screen_pos = Pos::new(x, y);
+                                let mouse_pos = Pos::new(mouse_cell.0, mouse_cell.1);
+                                game.input_action = InputAction::MapClick(screen_pos, mouse_pos);
+                            }
                         }
-                    }
 
-                    MouseButton::Middle => {
-                        game.mouse_state.middle_pressed = true;
-                    }
+                        MouseButton::Middle => {
+                            game.mouse_state.middle_pressed = true;
+                        }
 
-                    MouseButton::Right => {
-                        game.mouse_state.right_pressed = true;
-                    }
+                        MouseButton::Right => {
+                            game.mouse_state.right_pressed = true;
+                        }
 
-                    _ => {
-                    },
+                        _ => {
+                        },
+                    }
                 }
-            }
 
-            Event::MouseButtonUp {mouse_btn, ..} => {
-                match mouse_btn {
-                    MouseButton::Left => {
-                        game.mouse_state.left_pressed = false;
+                Event::MouseButtonUp {mouse_btn, ..} => {
+                    match mouse_btn {
+                        MouseButton::Left => {
+                            game.mouse_state.left_pressed = false;
+                        }
+
+                        MouseButton::Middle => {
+                            game.mouse_state.middle_pressed = false;
+                        }
+
+                        MouseButton::Right => {
+                            game.mouse_state.right_pressed = false;
+                        }
+
+                        _ => {},
                     }
-
-                    MouseButton::Middle => {
-                        game.mouse_state.middle_pressed = false;
-                    }
-
-                    MouseButton::Right => {
-                        game.mouse_state.right_pressed = false;
-                    }
-
-                    _ => {},
                 }
-            }
 
-            _ => {}
+                _ => {}
+            }
         }
     }
 }

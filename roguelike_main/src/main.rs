@@ -170,6 +170,8 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
 
     let mut frame_time = Instant::now();
 
+    let mut input = Input::new();
+
     /* Main Game Loop */
     while game.settings.running {
         let _loop_timer = timer!("GAME_LOOP");
@@ -181,7 +183,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
                                       .pressed_scancodes()
                                       .into_iter()
                                       .collect::<Vec<Scancode>>();
-            handle_sdl2_input(&mut game, &mut display, &scancodes, &mut event_pump);
+            input.handle_sdl2_input(&mut game, &mut display, &scancodes, &mut event_pump);
         }
 
         // if there are starting actions to read, pop one off to play
