@@ -324,79 +324,17 @@ impl Input {
 pub fn keyup_to_action(chr: char, game_state: GameState) -> InputAction {
     let input_action: InputAction;
 
+    if chr.is_ascii_digit() {
+        if game_state.is_menu() {
+            return InputAction::SelectItem(chr.to_digit(10).unwrap() as usize);
+        } else if chr == '5' {
+            return InputAction::Pass;
+        } else if let Some(dir) = from_digit(chr) {
+            return InputAction::Move(dir);
+        }
+    }
+
     match chr {
-        '8' => {
-            if game_state.is_menu() {
-                input_action = InputAction::SelectItem(8);
-            } else {
-                input_action = InputAction::Move(Direction::Up);
-            }
-        }
-
-        '6' => {
-            if game_state.is_menu() {
-                input_action = InputAction::SelectItem(6);
-            } else {
-                input_action = InputAction::Move(Direction::Right);
-            }
-        }
-
-        '2' => {
-            if game_state.is_menu() {
-                input_action = InputAction::SelectItem(2);
-            } else {
-                input_action = InputAction::Move(Direction::Down);
-            }
-        }
-
-        '4' => {
-            if game_state.is_menu() {
-                input_action = InputAction::SelectItem(4);
-            } else {
-                input_action = InputAction::Move(Direction::Left);
-            }
-        }
-
-        '7' => {
-            if game_state.is_menu() {
-                input_action = InputAction::SelectItem(7);
-            } else {
-                input_action = InputAction::Move(Direction::UpLeft);
-            }
-        }
-
-        '9' => {
-            if game_state.is_menu() {
-                input_action = InputAction::SelectItem(9);
-            } else {
-                input_action = InputAction::Move(Direction::UpRight);
-            }
-        }
-
-        '3' => {
-            if game_state.is_menu() {
-                input_action = InputAction::SelectItem(3);
-            } else {
-                input_action = InputAction::Move(Direction::DownRight);
-            }
-        }
-
-        '1' => {
-            if game_state.is_menu() {
-                input_action = InputAction::SelectItem(1);
-            } else {
-                input_action = InputAction::Move(Direction::DownLeft);
-            }
-        }
-
-        '5' => {
-            if game_state.is_menu() {
-                input_action = InputAction::SelectItem(0);
-            } else {
-                input_action = InputAction::Pass;
-            }
-        }
-
         'a' => {
             input_action = InputAction::Interact;
         }
