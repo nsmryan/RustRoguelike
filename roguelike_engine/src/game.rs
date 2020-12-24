@@ -46,9 +46,6 @@ impl Game {
         let player_id = make_player(&mut data.entities, &config, &mut msg_log);
         data.entities.pos[&player_id] = Pos::new(-1, -1);
 
-        let stone_id = make_stone(&mut data.entities, &config, Pos::new(-1, -1), &mut msg_log);
-        data.entities.inventory[&player_id].push_back(stone_id);
-
         let vaults = Vec::new();
 
         let state = Game {

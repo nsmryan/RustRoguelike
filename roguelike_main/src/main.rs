@@ -121,11 +121,17 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
                                  16);
     display.add_spritesheet("font".to_string(), font_texture, 16);
 
+    /* Create Game Structure */
     let mut game = Game::new(seed, config.clone())?;
+    let stone_id = make_stone(&mut game.data.entities, &game.config, Pos::new(-1, -1), &mut game.msg_log);
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    game.data.entities.inventory[&player_id].push_back(stone_id);
+
     game.load_vaults("resources/vaults/");
 
     make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
 
+    /* Load Procgen Data */
     if let Some(procgen_map) = opts.procgen_map.clone() {
         let map_config = MapLoadConfig::ProcGen(procgen_map);
         make_map(&map_config, &mut game);
@@ -208,7 +214,6 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         }
 
         if game.settings.state == GameState::Win {
-            dbg!("Won");
             display.clear_level_state();
         } else if game_result == GameResult::Stop || game.settings.exiting {
             game.settings.running = false;
