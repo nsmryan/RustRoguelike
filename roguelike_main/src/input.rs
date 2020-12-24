@@ -12,11 +12,183 @@ use roguelike_engine::actions::*;
 use crate::display::*;
 
 
-const TARGET_CODES: &[Scancode] = &[Scancode::Z, Scancode::X, Scancode::C, Scancode::V, Scancode::B];
-const MODIFIERS: &[Scancode] = &[Scancode::LAlt, Scancode::RAlt, Scancode::RCtrl, Scancode::LCtrl];
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd)]
+pub enum KeyDir {
+    Up,
+    Down,
+}
+
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd)]
+pub enum MouseClick {
+    Left,
+    Right,
+    Middle,
+}
+
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd)]
+pub enum InputEvent {
+    Char(char, KeyDir),
+    Ctrl(KeyDir),
+    Alt(KeyDir),
+    MousePos(i32, i32),
+    MouseButton(MouseClick, KeyDir),
+    Esc,
+    Tab,
+    Quit,
+}
+
+impl InputEvent {
+    pub fn read_event(event: Event) -> Option<InputEvent> {
+        match event {
+            Event::Quit {..} => {
+                return Some(InputEvent::Quit);
+            }
+
+            // TODO could merge KeyDown and KeyUp
+            Event::KeyDown {keycode, repeat, ..} => {
+                if repeat {
+                    return None;
+                }
+
+                if let Some(key) = keycode {
+                    if let Some(chr) = keycode_to_char(key) {
+                        return Some(InputEvent::Char(chr, KeyDir::Down));
+                    } else if key == Keycode::LCtrl || key == Keycode::RCtrl {
+                        return Some(InputEvent::Ctrl(KeyDir::Down));
+                    } else if key == Keycode::LAlt || key == Keycode::RAlt {
+                        return Some(InputEvent::Alt(KeyDir::Down));
+                    } else {
+                        // NOTE could check for LShift, RShift
+                        return None;
+                    }
+                }
+
+                return None;
+            }
+
+            Event::KeyUp {keycode, repeat, ..} => {
+                if repeat {
+                    return None;
+                }
+
+                if let Some(key) = keycode {
+                    if let Some(chr) = keycode_to_char(key) {
+                        return Some(InputEvent::Char(chr, KeyDir::Up));
+                    } else if key == Keycode::LCtrl || key == Keycode::RCtrl {
+                        return Some(InputEvent::Ctrl(KeyDir::Up));
+                    } else if key == Keycode::LAlt || key == Keycode::RAlt {
+                        return Some(InputEvent::Alt(KeyDir::Up));
+                    } else if key == Keycode::Tab {
+                        return Some(InputEvent::Tab);
+                    } else if key == Keycode::Escape {
+                        return Some(InputEvent::Esc);
+                    } else {
+                        // NOTE could check for LShift, RShift
+                        return None;
+                    }
+                }
+
+                return None;
+            }
+
+            Event::MouseMotion {x, y, ..} => {
+                return Some(InputEvent::MousePos(x, y));
+            }
+
+            Event::MouseButtonDown {mouse_btn, ..} => {
+                let click = match mouse_btn {
+                    MouseButton::Left => MouseClick::Left,
+                    MouseButton::Right => MouseClick::Right,
+                    MouseButton::Middle => MouseClick::Middle,
+                    _ => return None,
+                };
+                return Some(InputEvent::MouseButton(click, KeyDir::Down));
+            }
+
+            Event::MouseButtonUp {mouse_btn, ..} => {
+                let click = match mouse_btn {
+                    MouseButton::Left => MouseClick::Left,
+                    MouseButton::Right => MouseClick::Right,
+                    MouseButton::Middle => MouseClick::Middle,
+                    _ => return None,
+                };
+                return Some(InputEvent::MouseButton(click, KeyDir::Up));
+            }
+
+            _ => {
+                return None;
+            }
+        }
+    }
+}
+
+pub fn keycode_to_char(key: Keycode) -> Option<char> {
+    match key {
+        Keycode::Space => Some(' '),
+        Keycode::Comma => Some(','),
+        Keycode::Minus => Some('-'),
+        Keycode::Period => Some('.'),
+        Keycode::Num0 => Some('0'),
+        Keycode::Num1 => Some('1'),
+        Keycode::Num2 => Some('2'),
+        Keycode::Num3 => Some('3'),
+        Keycode::Num4 => Some('4'),
+        Keycode::Num5 => Some('5'),
+        Keycode::Num6 => Some('6'),
+        Keycode::Num7 => Some('7'),
+        Keycode::Num8 => Some('8'),
+        Keycode::Num9 => Some('9'),
+        Keycode::A => Some('a'),
+        Keycode::B => Some('b'),
+        Keycode::C => Some('c'),
+        Keycode::D => Some('d'),
+        Keycode::E => Some('e'),
+        Keycode::F => Some('f'),
+        Keycode::G => Some('g'),
+        Keycode::H => Some('h'),
+        Keycode::I => Some('i'),
+        Keycode::J => Some('j'),
+        Keycode::K => Some('k'),
+        Keycode::L => Some('l'),
+        Keycode::M => Some('m'),
+        Keycode::N => Some('n'),
+        Keycode::O => Some('o'),
+        Keycode::P => Some('p'),
+        Keycode::Q => Some('q'),
+        Keycode::R => Some('r'),
+        Keycode::S => Some('s'),
+        Keycode::T => Some('t'),
+        Keycode::U => Some('u'),
+        Keycode::V => Some('v'),
+        Keycode::W => Some('w'),
+        Keycode::X => Some('x'),
+        Keycode::Y => Some('y'),
+        Keycode::Z => Some('z'),
+        Keycode::Right => Some('6'),
+        Keycode::Left => Some('4'),
+        Keycode::Down => Some('2'),
+        Keycode::Up => Some('8'),
+        Keycode::Kp0 => Some('0'),
+        Keycode::Kp1 => Some('1'),
+        Keycode::Kp2 => Some('2'),
+        Keycode::Kp3 => Some('3'),
+        Keycode::Kp4 => Some('4'),
+        Keycode::Kp5 => Some('5'),
+        Keycode::Kp6 => Some('6'),
+        Keycode::Kp7 => Some('7'),
+        Keycode::Kp8 => Some('8'),
+        Keycode::Kp9 => Some('9'),
+        Keycode::KpPeriod => Some('.'),
+        Keycode::KpSpace => Some(' '),
+        Keycode::Backquote => Some('`'),
+        _ => None,
+    }
+}
+
+const TARGET_CODES: &[char] = &['z', 'x', 'c', 'v', 'b'];
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Input {
     chording: bool,
     chorded: bool,
@@ -26,202 +198,134 @@ pub struct Input {
 
 impl Input {
     pub fn new() -> Input {
-        return Input { chording: false, chorded: false, mode: ActionMode::Primary, target: 0 };
+        return Input { chording: false, chorded: false, mode: ActionMode::Primary, target: -1 };
+    }
+
+    pub fn reset(&mut self) {
+        self.chording = false;
+        self.chorded = false;
+        self.mode = ActionMode::Primary;
+        self.target = -1;
     }
 
     // TODO return an Option<InputAction> instead of modifying the game.
     // possibly make game & instead of &mut
     // try to reduce inputs and dependencies here
-    pub fn handle_sdl2_input(&mut self,
-                             game: &mut Game,
-                             display: &mut Display,
-                             scancodes: &Vec<Scancode>,
-                             event_pump: &mut sdl2::EventPump) {
-        let current_events = event_pump.poll_iter().collect::<Vec<Event>>();
-        for event in current_events {
-            match event {
-                Event::Quit {..}=> {
-                    game.settings.running = false;
-                }
+    pub fn handle_event(&mut self,
+                        game: &mut Game,
+                        display: &mut Display,
+                        event: InputEvent) {
+        match event {
+            InputEvent::Quit => {
+                game.settings.running = false;
+            }
 
-                Event::KeyDown {keycode, keymod, repeat, ..} => {
-                    if repeat {
-                        continue;
+            InputEvent::Esc => {
+                game.input_action = InputAction::Esc;
+            }
+
+            InputEvent::Tab => {
+                game.input_action = InputAction::SwapPrimaryItem;
+            }
+
+            InputEvent::Ctrl(dir) => {
+                match dir {
+                    KeyDir::Down => {
+                        self.chording = true;
+                        self.chorded = true;
+                        self.mode = ActionMode::Primary;
                     }
 
-                    let chord_down = keymod.contains(Mod::RCTRLMOD) | keymod.contains(Mod::LCTRLMOD);
-                    if chord_down {
-                        if !self.chording {
-                            self.chording = true;
-                            self.chorded = true;
-                            self.mode = ActionMode::Primary;
-                        }
-                    } else {
-                        if let Some(keycode) = keycode {
-                            game.input_action =
-                                keydown_to_action(keycode, keymod);
-                        }
-                    }
-                }
-
-                Event::KeyUp {keycode, keymod, repeat, ..} => {
-                    if repeat {
-                        continue;
-                    }
-
-                    if !keymod.contains(Mod::RCTRLMOD) & !keymod.contains(Mod::LCTRLMOD) {
+                    KeyDir::Up => {
                         self.chording = false;
                     }
+                }
+            }
 
-                    if self.chording {
-                        if keymod.contains(Mod::RALTMOD) | keymod.contains(Mod::LALTMOD) {
-                            self.mode = ActionMode::Alternate;
-                        }
+            InputEvent::Alt(dir) => {
+                if dir == KeyDir::Down && self.chording {
+                    self.mode = ActionMode::Alternate;
+                }
+            }
 
-                        for (index, code) in TARGET_CODES.iter().enumerate() {
-                            if scancodes.iter().any(|s| *s == *code) {
-                                   self.target = index as i32;
+            InputEvent::Char(chr, dir) => {
+                match dir {
+                    KeyDir::Up => {
+                        if self.chorded && chr.is_ascii_digit() {
+                            let dir = from_digit(chr);
+                            game.input_action = InputAction::Chord(dir, ActionStrength::Weak, self.mode, self.target);
+                            self.reset();
+                        } else if self.chording {
+                            for (index, target_chr) in TARGET_CODES.iter().enumerate() {
+                                if chr == *target_chr {
+                                       self.target = index as i32;
+                                }
+                            }
+                        } else if chr == ' ' {
+                            game.input_action = InputAction::CursorApply(self.mode, self.target);
+                            self.reset();
+                        } else {
+                            game.input_action = keyup_to_action(chr, game.settings.state);
+
+                            if game.config.use_cursor {
+                               if let InputAction::Move(dir) = game.input_action {
+                                    game.input_action = InputAction::CursorMove(dir);
+                               }
                             }
                         }
                     }
 
-                    if let Some(keycode) = keycode {
-                        game.input_action =
-                            keyup_to_action(keycode, keymod, scancodes, game.settings.state);
-
-                        if self.chorded {
-                            let strength = ActionStrength::Weak;
-                            // TODO this should also catch the situation where you don't need a
-                            // move in order to carry out the chord, such as certain skills.
-                            match game.input_action {
-                                InputAction::Move(dir) => {
-                                    game.input_action = InputAction::Chord(Some(dir), strength, self.mode, self.target);
-                                }
-
-                                InputAction::Pass => {
-                                    game.input_action = InputAction::Chord(None, strength, self.mode, self.target);
-                                }
-
-                                _ => {}
-                            }
-                        } else if game.config.use_cursor {
-                           if let InputAction::Move(dir) = game.input_action {
-                                game.input_action = InputAction::CursorMove(dir);
-                           }
+                    KeyDir::Down => {
+                        if chr == 'o' {
+                            game.input_action = InputAction::OverlayOn;
                         }
                     }
                 }
+            }
 
-                Event::MouseMotion {x, y, ..} => {
-                    game.mouse_state.x = x;
-                    game.mouse_state.y = y;
-                }
+            InputEvent::MousePos(x, y) => {
+                game.mouse_state.x = x;
+                game.mouse_state.y = y;
+            }
 
-                Event::MouseButtonDown {mouse_btn, x, y, ..} => {
-                    match mouse_btn {
-                        MouseButton::Left => {
-                            game.mouse_state.left_pressed = true;
+            InputEvent::MouseButton(clicked, dir) => {
+                let down = dir == KeyDir::Down;
+                match clicked {
+                    MouseClick::Left => {
+                        game.mouse_state.left_pressed = down;
 
+                        if down {
                             let (map_width, map_height) = game.data.map.size();
-                            if let Some(mouse_cell) = display.targets.mouse_pos(x, y, map_width, map_height) {
-                                let screen_pos = Pos::new(x, y);
+                            let option_mouse_cell =
+                                display.targets.mouse_pos(game.mouse_state.x, game.mouse_state.y, map_width, map_height);
+
+                            if let Some(mouse_cell) = option_mouse_cell {
+                                let screen_pos = Pos::new(game.mouse_state.x, game.mouse_state.y);
                                 let mouse_pos = Pos::new(mouse_cell.0, mouse_cell.1);
                                 game.input_action = InputAction::MapClick(screen_pos, mouse_pos);
                             }
                         }
+                    }
 
-                        MouseButton::Middle => {
-                            game.mouse_state.middle_pressed = true;
-                        }
+                    MouseClick::Middle => {
+                        game.mouse_state.middle_pressed = down;
+                    }
 
-                        MouseButton::Right => {
-                            game.mouse_state.right_pressed = true;
-                        }
-
-                        _ => {
-                        },
+                    MouseClick::Right => {
+                        game.mouse_state.right_pressed = down;
                     }
                 }
-
-                Event::MouseButtonUp {mouse_btn, ..} => {
-                    match mouse_btn {
-                        MouseButton::Left => {
-                            game.mouse_state.left_pressed = false;
-                        }
-
-                        MouseButton::Middle => {
-                            game.mouse_state.middle_pressed = false;
-                        }
-
-                        MouseButton::Right => {
-                            game.mouse_state.right_pressed = false;
-                        }
-
-                        _ => {},
-                    }
-                }
-
-                _ => {}
             }
         }
     }
 }
 
-
-pub fn handle_cursor(input_action: InputAction, scancodes: &Vec<Scancode>, config: &Config) -> InputAction {
-    let mut action = input_action;
-
-    if let InputAction::Move(dir) = input_action {
-        action = InputAction::CursorMove(dir);
-    }
-
-    return action;
-}
-
-pub fn handle_chord(input_action: InputAction, scancodes: &Vec<Scancode>) -> InputAction {
-    let mut action = input_action;
-
-    let mut is_chord: bool = false;
-    let mut strength: ActionStrength = ActionStrength::Weak;
-    let mut mode: ActionMode = ActionMode::Primary;
-    let mut target = -1;
-
-    if scancodes.iter().any(|s| *s == Scancode::LCtrl) ||
-       scancodes.iter().any(|s| *s == Scancode::RCtrl) {
-           is_chord = true;
-    }
-
-    if scancodes.iter().any(|s| *s == Scancode::LAlt) ||
-       scancodes.iter().any(|s| *s == Scancode::RAlt) {
-           is_chord = true;
-           mode = ActionMode::Alternate;
-    }
-
-    for (index, code) in TARGET_CODES.iter().enumerate() {
-        if scancodes.iter().any(|s| *s == *code) {
-               target = index as i32;
-        }
-    }
-
-    if is_chord {
-        let direction = match input_action {
-            InputAction::Move(dir) => Some(dir),
-            _ => None,
-        };
-        action = InputAction::Chord(direction, strength, mode, target);
-    }
-
-    return action;
-}
-
-pub fn keyup_to_action(keycode: Keycode,
-                       keymods: Mod,
-                       scancodes: &Vec<Scancode>,
-                       game_state: GameState) -> InputAction {
+// TODO game_state might not be necessary- split out processing to states themselves
+pub fn keyup_to_action(chr: char, game_state: GameState) -> InputAction {
     let input_action: InputAction;
 
-    match keycode {
-        Keycode::Kp8 | Keycode::Num8 | Keycode::Up => {
+    match chr {
+        '8' => {
             if game_state.is_menu() {
                 input_action = InputAction::SelectItem(8);
             } else {
@@ -229,7 +333,7 @@ pub fn keyup_to_action(keycode: Keycode,
             }
         }
 
-        Keycode::Kp6 | Keycode::Num6 | Keycode::Right => {
+        '6' => {
             if game_state.is_menu() {
                 input_action = InputAction::SelectItem(6);
             } else {
@@ -237,7 +341,7 @@ pub fn keyup_to_action(keycode: Keycode,
             }
         }
 
-        Keycode::Kp2 | Keycode::Num2 | Keycode::Down => {
+        '2' => {
             if game_state.is_menu() {
                 input_action = InputAction::SelectItem(2);
             } else {
@@ -245,7 +349,7 @@ pub fn keyup_to_action(keycode: Keycode,
             }
         }
 
-        Keycode::Kp4 | Keycode::Num4 | Keycode::Left => {
+        '4' => {
             if game_state.is_menu() {
                 input_action = InputAction::SelectItem(4);
             } else {
@@ -253,7 +357,7 @@ pub fn keyup_to_action(keycode: Keycode,
             }
         }
 
-        Keycode::Kp7 | Keycode::Num7 => {
+        '7' => {
             if game_state.is_menu() {
                 input_action = InputAction::SelectItem(7);
             } else {
@@ -261,7 +365,7 @@ pub fn keyup_to_action(keycode: Keycode,
             }
         }
 
-        Keycode::Kp9 | Keycode::Num9 => {
+        '9' => {
             if game_state.is_menu() {
                 input_action = InputAction::SelectItem(9);
             } else {
@@ -269,7 +373,7 @@ pub fn keyup_to_action(keycode: Keycode,
             }
         }
 
-        Keycode::Kp3 | Keycode::Num3 => {
+        '3' => {
             if game_state.is_menu() {
                 input_action = InputAction::SelectItem(3);
             } else {
@@ -277,7 +381,7 @@ pub fn keyup_to_action(keycode: Keycode,
             }
         }
 
-        Keycode::Kp1 | Keycode::Num1 => {
+        '1' => {
             if game_state.is_menu() {
                 input_action = InputAction::SelectItem(1);
             } else {
@@ -285,7 +389,7 @@ pub fn keyup_to_action(keycode: Keycode,
             }
         }
 
-        Keycode::Kp5 | Keycode::Num5 | Keycode::Kp0 | Keycode::Num0 => {
+        '5' => {
             if game_state.is_menu() {
                 input_action = InputAction::SelectItem(0);
             } else {
@@ -293,95 +397,68 @@ pub fn keyup_to_action(keycode: Keycode,
             }
         }
 
-        Keycode::Return => {
-            input_action = InputAction::None;
-        }
-
-        Keycode::A => {
+        'a' => {
             input_action = InputAction::Interact;
         }
 
-        Keycode::Q => {
+        'q' => {
             input_action = InputAction::Exit;
         }
 
-        Keycode::G => {
+        'g' => {
             input_action = InputAction::Pickup;
         }
 
-        Keycode::D => {
+        'd' => {
             input_action = InputAction::DropItem;
         }
 
-        Keycode::I => {
+        'i' => {
             input_action = InputAction::Inventory;
         }
 
-        Keycode::Y => {
+        'y' => {
             input_action = InputAction::Yell;
         }
 
-        Keycode::V => {
+        'v' => {
             input_action = InputAction::ExploreAll;
         }
 
-        Keycode::Escape => {
-            input_action = InputAction::Esc;
-        }
-
-        Keycode::Tab => {
-            input_action = InputAction::SwapPrimaryItem;
-        }
-
-        Keycode::T => {
+        't' => {
             input_action = InputAction::GodMode;
         }
 
-        Keycode::P => {
+        'p' => {
             input_action = InputAction::RegenerateMap;
         }
 
-        Keycode::X => {
+        'x' => {
             input_action = InputAction::IncreaseMoveMode;
         }
 
-        Keycode::Z => {
+        'z' => {
             input_action = InputAction::DecreaseMoveMode;
         }
 
-        Keycode::O => {
+        'o' => {
             input_action = InputAction::OverlayOff;
         }
 
-        Keycode::S => {
+        's' => {
             input_action = InputAction::SkillMenu;
         }
 
-        Keycode::C => {
+        'c' => {
             input_action = InputAction::ClassMenu;
         }
 
-        Keycode::Backquote => {
+        '`' => {
             input_action = InputAction::ToggleConsole;
         }
 
-        Keycode::U => {
+        'u' => {
             input_action = InputAction::UseItem;
-        }
-
-        Keycode::Space => {
-            let mut mode = ActionMode::Primary;
-            if keymods.contains(Mod::LALTMOD) || keymods.contains(Mod::RALTMOD) {
-                mode = ActionMode::Alternate;
-            }
-
-            let mut target = -1;
-            for (index, code) in TARGET_CODES.iter().enumerate() {
-                if scancodes.iter().any(|s| *s == *code) {
-                       target = index as i32;
-                }
-            }
-            input_action = InputAction::CursorApply(mode, target);
         }
 
         _ => {
@@ -392,20 +469,17 @@ pub fn keyup_to_action(keycode: Keycode,
     return input_action;
 }
 
-pub fn keydown_to_action(keycode: Keycode,
-                         _keymods: Mod) -> InputAction {
-    let input_action: InputAction;
-
-    match keycode {
-        Keycode::O => {
-            input_action = InputAction::OverlayOn;
-        }
-
-        _ => {
-            input_action = InputAction::None;
-        }
+pub fn from_digit(chr: char) -> Option<Direction> {
+    match chr {
+        '4' => Some(Direction::Left),
+        '6' => Some(Direction::Right),
+        '8' => Some(Direction::Up),
+        '2' => Some(Direction::Down),
+        '1' => Some(Direction::DownLeft),
+        '3' => Some(Direction::DownRight),
+        '7' => Some(Direction::UpLeft),
+        '9' => Some(Direction::UpRight),
+        _ => None,
     }
-
-    return input_action;
 }
 

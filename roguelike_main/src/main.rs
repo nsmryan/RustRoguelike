@@ -179,11 +179,11 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         /* Handle Events */
         {
             let _input_timer = timer!("INPUT");
-            let scancodes = event_pump.keyboard_state()
-                                      .pressed_scancodes()
-                                      .into_iter()
-                                      .collect::<Vec<Scancode>>();
-            input.handle_sdl2_input(&mut game, &mut display, &scancodes, &mut event_pump);
+            for sdl2_event in event_pump.poll_iter() {
+                if let Some(event) = InputEvent::read_event(sdl2_event) {
+                    input.handle_event(&mut game, &mut display, event);
+                }
+            }
         }
 
         // if there are starting actions to read, pop one off to play
