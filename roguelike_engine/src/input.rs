@@ -145,7 +145,6 @@ impl Input {
     }
 }
 
-// TODO game_state might not be necessary- split out processing to states themselves
 pub fn keyup_to_action(chr: char, game_state: GameState) -> InputAction {
     let input_action: InputAction;
 

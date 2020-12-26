@@ -19,7 +19,7 @@ pub fn translate_event(event: Event, game: &mut Game, display: &mut Display) -> 
             return Some(InputEvent::Quit);
         }
 
-        // TODO could merge KeyDown and KeyUp
+        // NOTE could merge KeyDown and KeyUp
         Event::KeyDown {keycode, repeat, ..} => {
             if repeat {
                 return None;
