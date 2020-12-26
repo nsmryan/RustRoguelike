@@ -424,7 +424,7 @@ impl Reach {
             };
 
         if valid {
-            return Some(add_pos(pos, dir.offset_pos(pos, self.dist() as i32)));
+            return Some(dir.offset_pos(pos, self.dist() as i32));
         } else {
             return None;
         }

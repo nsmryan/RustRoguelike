@@ -22,6 +22,7 @@ pub enum KeyDirection {
     Down,
     Up
 }
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum ActionStrength {
     Weak,
@@ -829,11 +830,13 @@ pub fn handle_skill(skill_index: usize,
                     msg_log: &mut MsgLog) -> Action {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
+    // # check if we have enough energy to carry out the skill
     if data.entities.energy[&player_id] <= 0 {
         msg_log.log(Msg::NotEnoughEnergy(player_id));
         return Action::none();
     }
 
+    // get the skill in the player's list of skills
     if skill_index >= data.entities.skills[&player_id].len() {
         return Action::none();
     }
@@ -898,12 +901,14 @@ pub fn handle_skill(skill_index: usize,
         match action_loc {
             ActionLoc::Place(pos) => {
                 turn = selection.action.action_from_pos(pos, data);
+                dbg!(turn);
             }
 
             ActionLoc::Dir(dir) => {
                 let player_pos = data.entities.pos[&player_id];
                 if let Some(pos) = selection.typ.offset_pos(player_pos, dir) {
                     turn = selection.action.action_from_pos(pos, data);
+                    dbg!(turn, dir, pos, player_pos);
                 }
             }
 
