@@ -442,6 +442,13 @@ impl GameState {
 }
 
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+pub enum ActionMode {
+    Primary,
+    Alternate,
+}
+
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Item {
     Stone,

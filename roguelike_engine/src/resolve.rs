@@ -15,7 +15,7 @@ use roguelike_core::map::*;
 
 use crate::game::*;
 use crate::actions::{throw_item, pick_item_up, place_trap};
-use crate::generation::{make_energy, make_dagger};
+use crate::generation::{make_energy, make_dagger, make_sword};
 
 
 pub fn resolve_messages(data: &mut GameData,
@@ -385,13 +385,22 @@ pub fn handle_action(entity_id: EntityId,
         if data.map[grass_pos].tile_type == TileType::Empty {
             data.map[grass_pos].surface = Surface::Grass;
         }
-    } else if let Action::GrassBlade(entity_id) = action {
+    } else if let Action::GrassBlade(entity_id, action_mode) = action {
         use_energy(entity_id, data);
 
         let pos = data.entities.pos[&entity_id];
 
-        let dagger_id = make_dagger(&mut data.entities, config, pos, msg_log);
-        pick_item_up(entity_id, dagger_id, &mut data.entities, msg_log);
+        let item_id;
+        match action_mode {
+            ActionMode::Primary => {
+                item_id = make_sword(&mut data.entities, config, pos, msg_log);
+            }
+
+            ActionMode::Alternate => {
+                item_id = make_dagger(&mut data.entities, config, pos, msg_log);
+            }
+        }
+        pick_item_up(entity_id, item_id, &mut data.entities, msg_log);
     } else if let Action::Blink(entity_id) = action {
         use_energy(entity_id, data);
 

@@ -44,12 +44,6 @@ pub enum ActionStrength {
     Strong,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
-pub enum ActionMode {
-    Primary,
-    Alternate,
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ActionLoc {
     Dir(Direction),
@@ -354,7 +348,8 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::SelectItem(skill_index) => {
-            player_turn = handle_skill(skill_index, ActionLoc::None, data, settings, msg_log);
+            // NOTE there is no way to select the alternate use of a skill!
+            player_turn = handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, data, settings, msg_log);
         }
 
         InputAction::Esc => {
@@ -842,6 +837,7 @@ pub fn place_trap(trap_id: EntityId,
 
 pub fn handle_skill(skill_index: usize,
                     action_loc: ActionLoc,
+                    action_mode: ActionMode,
                     data: &mut GameData, 
                     settings: &mut GameSettings, 
                     msg_log: &mut MsgLog) -> Action {
@@ -872,7 +868,7 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::GrassBlade => {
-            turn = Action::GrassBlade(player_id);
+            turn = Action::GrassBlade(player_id, action_mode);
             settings.state = GameState::Playing;
             msg_log.log(Msg::GameState(settings.state));
         }
@@ -991,7 +987,7 @@ pub fn chord(loc: ActionLoc,
             // the skills
             let skill_index = (target - 2) as usize;
             if skill_index < game.data.entities.skills[&player_id].len() {
-                turn = handle_skill(skill_index, loc, &mut game.data, &mut game.settings, &mut game.msg_log);
+                turn = handle_skill(skill_index, loc, mode, &mut game.data, &mut game.settings, &mut game.msg_log);
                 dbg!(&turn);
             }
         } else if target < num_items_in_inventory {
