@@ -23,7 +23,6 @@ use crate::make_map::*;
 
 pub struct Game {
     pub config: Config,
-    pub input_action: InputAction,
     pub data: GameData,
     pub settings: GameSettings,
     pub msg_log: MsgLog,
@@ -49,7 +48,6 @@ impl Game {
 
         let state = Game {
             config,
-            input_action: InputAction::None,
             data,
             settings: GameSettings::new(0, false),
             msg_log,
@@ -72,41 +70,41 @@ impl Game {
         }
     }
 
-    pub fn step_game(&mut self, dt: f32) -> GameResult {
+    pub fn step_game(&mut self, input_action: InputAction, dt: f32) -> GameResult {
         self.settings.time += dt;
 
         let result;
         match self.settings.state {
             GameState::Playing => {
-                result = self.step_playing();
+                result = self.step_playing(input_action);
             }
 
             GameState::Win => {
-                result = self.step_win();
+                result = self.step_win(input_action);
             }
 
             GameState::Lose => {
-                result = self.step_lose();
+                result = self.step_lose(input_action);
             }
 
             GameState::Inventory => {
-                result = self.step_inventory();
+                result = self.step_inventory(input_action);
             }
 
             GameState::Selection => {
-                result = self.step_selection();
+                result = self.step_selection(input_action);
             }
 
             GameState::SkillMenu => {
-                result = self.step_skill_menu();
+                result = self.step_skill_menu(input_action);
             }
 
             GameState::ClassMenu => {
-                result = self.step_class_menu();
+                result = self.step_class_menu(input_action);
             }
 
             GameState::ConfirmQuit => {
-                result = self.step_confirm_quit();
+                result = self.step_confirm_quit(input_action);
             }
         }
 
@@ -120,8 +118,8 @@ impl Game {
         return result;
     }
 
-    fn step_win(&mut self) -> GameResult {
-        if matches!(self.input_action, InputAction::Exit) {
+    fn step_win(&mut self, input_action: InputAction) -> GameResult {
+        if matches!(input_action, InputAction::Exit) {
             return GameResult::Stop;
         }
 
@@ -140,17 +138,16 @@ impl Game {
         return GameResult::Continue;
     }
 
-    fn step_lose(&mut self) -> GameResult {
-        if self.input_action == InputAction::Exit {
+    fn step_lose(&mut self, input_action: InputAction) -> GameResult {
+        if input_action == InputAction::Exit {
             return GameResult::Stop;
         }
 
         return GameResult::Continue;
     }
 
-    fn step_inventory(&mut self) -> GameResult {
-        let input = self.input_action;
-        self.input_action = InputAction::None;
+    fn step_inventory(&mut self, input_action: InputAction) -> GameResult {
+        let input = input_action;
 
         actions::handle_input_inventory(input, &mut self.data, &mut self.settings, &mut self.msg_log);
 
@@ -161,9 +158,8 @@ impl Game {
         return GameResult::Continue;
     }
 
-    fn step_skill_menu(&mut self) -> GameResult {
-        let input = self.input_action;
-        self.input_action = InputAction::None;
+    fn step_skill_menu(&mut self, input_action: InputAction) -> GameResult {
+        let input = input_action;
 
         let player_action =
             actions::handle_input_skill_menu(input, &mut self.data, &mut self.settings, &mut self.msg_log);
@@ -183,9 +179,8 @@ impl Game {
         return GameResult::Continue;
     }
 
-    fn step_class_menu(&mut self) -> GameResult {
-        let input = self.input_action;
-        self.input_action = InputAction::None;
+    fn step_class_menu(&mut self, input_action: InputAction) -> GameResult {
+        let input = input_action;
 
         let player_action =
             actions::handle_input_class_menu(input, &mut self.data, &mut self.settings, &mut self.msg_log);
@@ -205,9 +200,8 @@ impl Game {
         return GameResult::Continue;
     }
 
-    fn step_confirm_quit(&mut self) -> GameResult {
-        let input = self.input_action;
-        self.input_action = InputAction::None;
+    fn step_confirm_quit(&mut self, input_action: InputAction) -> GameResult {
+        let input = input_action;
 
         actions::handle_input_confirm_quit(input, &mut self.data, &mut self.settings, &mut self.msg_log);
 
@@ -218,9 +212,8 @@ impl Game {
         return GameResult::Continue;
     }
 
-    fn step_selection(&mut self) -> GameResult {
-        let input = self.input_action;
-        self.input_action = InputAction::None;
+    fn step_selection(&mut self, input_action: InputAction) -> GameResult {
+        let input = input_action;
 
         self.settings.draw_selection_overlay = true;
 
@@ -273,8 +266,8 @@ impl Game {
 //        return GameResult::Continue;
 //    }
 
-    fn step_playing(&mut self) -> GameResult {
-        let player_action = actions::handle_input(self);
+    fn step_playing(&mut self, input_action: InputAction) -> GameResult {
+        let player_action = actions::handle_input(self, input_action);
 
         if player_action != Action::NoAction {
             let win = step_logic(self, player_action);
@@ -286,8 +279,6 @@ impl Game {
         if self.settings.exiting {
             return GameResult::Stop;
         }
-
-        self.input_action = InputAction::None;
 
         return GameResult::Continue;
     }

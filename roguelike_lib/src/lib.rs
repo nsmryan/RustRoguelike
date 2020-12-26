@@ -203,7 +203,6 @@ pub extern "C" fn step_game(game_ptr: *mut Game, input: *mut i8) {
             trace!("Received unparsable input {:?}", input_cstr);
         }
     }
-    game.input_action = input_action;
 
     //trace!("calling step_game");
     //let game_result = game.step_game(0.1);

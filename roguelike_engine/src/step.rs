@@ -164,29 +164,30 @@ pub fn test_game_step() {
     let mut config = Config::from_file("../config.yaml");
     config.map_load = MapLoadConfig::Empty;
     let mut game = Game::new(0, config.clone()).unwrap();
+    let mut input_action = InputAction::None;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     make_map(&MapLoadConfig::Empty, &mut game);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(0, 0), player_pos);
 
-    game.input_action = InputAction::Move(Direction::Right);
-    game.step_game(0.1);
+    input_action = InputAction::Move(Direction::Right);
+    game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(1, 0), player_pos);
 
-    game.input_action = InputAction::Move(Direction::Down);
-    game.step_game(0.1);
+    input_action = InputAction::Move(Direction::Down);
+    game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(1, 1), player_pos);
 
-    game.input_action = InputAction::Move(Direction::Left);
-    game.step_game(0.1);
+    input_action = InputAction::Move(Direction::Left);
+    game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(0, 1), player_pos);
 
-    game.input_action = InputAction::Move(Direction::Up);
-    game.step_game(0.1);
+    input_action = InputAction::Move(Direction::Up);
+    game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(0, 0), player_pos);
 }
@@ -196,6 +197,7 @@ pub fn test_game_step() {
 pub fn test_running() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone()).unwrap();
+    let mut input_action = InputAction::None;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     game.data.map = Map::from_dims(10, 10);
@@ -209,12 +211,12 @@ pub fn test_running() {
 
     // check that running into a monster crushes it against a wall when no empty tiles
     // between
-    game.input_action = InputAction::IncreaseMoveMode;
-    game.step_game(0.1);
+    input_action = InputAction::IncreaseMoveMode;
+    game.step_game(input_action, 0.1);
 
     assert!(game.data.entities.ids.contains(&gol));
-    game.input_action = InputAction::Move(Direction::Down);
-    game.step_game(0.1);
+    input_action = InputAction::Move(Direction::Down);
+    game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(gol_pos, player_pos);
 
@@ -228,8 +230,8 @@ pub fn test_running() {
 
     game.data.map[(7, 5)].tile_type = TileType::Water;
 
-    game.input_action = InputAction::Move(Direction::Right);
-    game.step_game(0.1);
+    input_action = InputAction::Move(Direction::Right);
+    game.step_game(input_action, 0.1);
     assert_eq!(Pos::new(5, 5), game.data.entities.pos[&player_id]);
     assert_eq!(Pos::new(6, 5), game.data.entities.pos[&pawn]);
 }
@@ -238,6 +240,7 @@ pub fn test_running() {
 pub fn test_hammer_small_wall() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone()).unwrap();
+    let mut input_action = InputAction::None;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     game.data.map = Map::from_dims(10, 10);
@@ -254,11 +257,11 @@ pub fn test_hammer_small_wall() {
 
     game.data.entities.inventory[&player_id].push_front(hammer);
 
-    game.input_action = InputAction::UseItem;
-    game.step_game(0.1);
+    input_action = InputAction::UseItem;
+    game.step_game(input_action, 0.1);
 
-    game.input_action = InputAction::MapClick(gol_pos, gol_pos);
-    game.step_game(0.1);
+    input_action = InputAction::MapClick(gol_pos, gol_pos);
+    game.step_game(input_action, 0.1);
 
     for msg in game.msg_log.turn_messages.iter() {
         println!("{:?}", msg);
@@ -281,11 +284,11 @@ pub fn test_hammer_small_wall() {
     let hammer = make_hammer(&mut game.data.entities, &game.config, Pos::new(4, 7), &mut game.msg_log);
     game.data.entities.inventory[&player_id].push_front(hammer);
 
-    game.input_action = InputAction::UseItem;
-    game.step_game(0.1);
+    input_action = InputAction::UseItem;
+    game.step_game(input_action, 0.1);
 
-    game.input_action = InputAction::MapClick(pawn_pos, pawn_pos);
-    game.step_game(0.1);
+    input_action = InputAction::MapClick(pawn_pos, pawn_pos);
+    game.step_game(input_action, 0.1);
 
     assert!(game.data.entities.is_dead(pawn));
 

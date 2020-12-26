@@ -183,30 +183,32 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
     while game.settings.running {
         let _loop_timer = timer!("GAME_LOOP");
 
+        let mut input_action: InputAction = InputAction::None;
         /* Handle Events */
         {
             let _input_timer = timer!("INPUT");
             for sdl2_event in event_pump.poll_iter() {
                 if let Some(event) = translate_event(sdl2_event, &mut game, &mut display) {
                     let action = input.handle_event(&mut game, event);
-                    game.input_action = action;
+                    // TODO may lose inputs if multiple events create actions!
+                    input_action = action;
                 }
             }
         }
 
         // if there are starting actions to read, pop one off to play
         if let Some(action) = starting_actions.pop() {
-            game.input_action = action;
+            input_action = action;
         }
 
-       if game.input_action == InputAction::Exit {
+       if input_action == InputAction::Exit {
             game.settings.running = false;
        }
 
         /* Record Inputs to Log File */
-        if game.input_action != InputAction::None &&
-           game.input_action != InputAction::Exit {
-            action_log.write(game.input_action.to_string().as_bytes()).unwrap();
+        if input_action != InputAction::None &&
+           input_action != InputAction::Exit {
+            action_log.write(input_action.to_string().as_bytes()).unwrap();
             action_log.write("\n".as_bytes()).unwrap();
         }
 
@@ -215,7 +217,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         {
             let _logic_timer = timer!("LOGIC");
             let dt = Instant::now().duration_since(frame_time);
-            game_result = game.step_game(dt.as_secs_f32());
+            game_result = game.step_game(input_action, dt.as_secs_f32());
             frame_time = Instant::now();
         }
 
@@ -273,7 +275,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
 pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), String> {
     game.settings.god_mode = true;
 
-    game.step_game(0.0);
+    game.step_game(InputAction::None, 0.0);
     render_all(display, game)?;
 
     display.save_screenshot("screenshot");

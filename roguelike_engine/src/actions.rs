@@ -517,16 +517,16 @@ pub fn handle_input_selection(input: InputAction,
     return player_turn;
 }
 
-pub fn handle_input(game: &mut Game) -> Action {
+pub fn handle_input(game: &mut Game, input_action: InputAction) -> Action {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let mut player_turn: Action = Action::none();
 
     let player_alive = game.data.entities.status[&player_id].alive;
 
-    match (game.input_action, player_alive) {
+    match (input_action, player_alive) {
         (InputAction::CursorMove(dir), true) => {
-            dbg!(game.input_action);
+            dbg!(input_action);
             let cursor_id = game.data.find_by_name(EntityName::Cursor).unwrap();
 
             let pos = game.data.entities.pos[&cursor_id];
