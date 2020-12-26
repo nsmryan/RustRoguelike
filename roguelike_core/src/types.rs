@@ -442,17 +442,6 @@ impl GameState {
 }
 
 
-#[derive(Copy, Clone, PartialEq, Debug, Default)]
-pub struct MouseState {
-    pub x: i32,
-    pub y: i32,
-    pub left_pressed: bool,
-    pub middle_pressed: bool,
-    pub right_pressed: bool,
-    pub wheel: f32,
-}
-
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Item {
     Stone,

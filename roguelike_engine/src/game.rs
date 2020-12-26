@@ -24,7 +24,6 @@ use crate::make_map::*;
 pub struct Game {
     pub config: Config,
     pub input_action: InputAction,
-    pub mouse_state: MouseState,
     pub data: GameData,
     pub settings: GameSettings,
     pub msg_log: MsgLog,
@@ -53,7 +52,6 @@ impl Game {
             input_action: InputAction::None,
             data,
             settings: GameSettings::new(0, false),
-            mouse_state: Default::default(),
             msg_log,
             rng: rng,
             vaults,

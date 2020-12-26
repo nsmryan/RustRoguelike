@@ -17,6 +17,21 @@ use crate::selection::*;
 use crate::make_map;
 
 
+// TODO move to input.rs when ready
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+pub enum KeyDir {
+    Up,
+    Down,
+}
+
+// TODO move to input.rs when ready
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+pub enum MouseClick {
+    Left,
+    Right,
+    Middle,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum KeyDirection {
     Down,
@@ -49,6 +64,7 @@ pub enum InputAction {
     Move(Direction),
     Pass,
     MapClick(Pos, Pos), // map loc, map cell
+    MouseButton(MouseClick, KeyDir),
     Pickup,
     DropItem,
     SwapPrimaryItem,
@@ -92,6 +108,7 @@ impl fmt::Display for InputAction {
             },
             InputAction::Pass => write!(f, "pass"),
             InputAction::MapClick(loc, cell) => write!(f, "click {} {} {} {}", loc.x, loc.y, cell.x, cell.y),
+            InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
             InputAction::Pickup => write!(f, "pickup"),
             InputAction::DropItem => write!(f, "drop"),
             InputAction::SwapPrimaryItem => write!(f, "swapitem"),

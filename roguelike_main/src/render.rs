@@ -30,7 +30,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     /* Determine Mouse Position */
     let mut mouse_map_pos = None;
     if let Some(mouse_id) = game.data.find_by_name(EntityName::Mouse) {
-        let mouse_pos = (game.mouse_state.x, game.mouse_state.y);
+        let mouse_pos = (display.mouse_state.x, display.mouse_state.y);
         if let Some(mouse_cell) = cell_within_rect(map_rect, game.data.map.size(), mouse_pos) {
             // NOTE this should be done as an action MapClick
             game.data.entities.set_xy(mouse_id, mouse_cell.0 as i32, mouse_cell.1 as i32);
