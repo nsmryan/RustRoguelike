@@ -1,0 +1,37 @@
+---
+- Island: 7
+- Entities: 
+    - Gol:
+    - 1
+    - 4
+- Entities: 
+    - Pawn
+    - 2
+    - 4
+- Items: 
+    - Dagger
+    - 0
+    - 1
+- Items: 
+    - Stone
+    - 0
+    - 3
+- Items: 
+    - Hammer
+    - 0
+    - 1
+- Items: 
+    - Sword
+    - 0
+    - 1
+- Items: 
+    - Shield
+    - 0
+    - 1
+- MaxItems: 3
+- Grass: 
+    - - 14
+      - 18
+    - 3
+- Columns: 5
+- Rubble: 5

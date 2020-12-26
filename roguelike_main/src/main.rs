@@ -36,6 +36,7 @@ use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
 use roguelike_engine::actions::*;
 use roguelike_engine::make_map::{make_map, read_map_xp};
+use roguelike_engine::input::*;
 
 use crate::throttler::*;
 use crate::render::*;
@@ -186,7 +187,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         {
             let _input_timer = timer!("INPUT");
             for sdl2_event in event_pump.poll_iter() {
-                if let Some(event) = InputEvent::read_event(sdl2_event, &mut game, &mut display) {
+                if let Some(event) = translate_event(sdl2_event, &mut game, &mut display) {
                     let action = input.handle_event(&mut game, event);
                     game.input_action = action;
                 }

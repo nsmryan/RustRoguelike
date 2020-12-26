@@ -6,3 +6,4 @@ pub mod resolve;
 pub mod selection;
 pub mod procgen;
 pub mod step;
+pub mod input;
