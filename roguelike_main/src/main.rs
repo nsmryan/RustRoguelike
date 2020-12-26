@@ -3,7 +3,7 @@ mod throttler;
 mod render;
 mod console;
 mod display;
-mod input;
+mod keyboard;
 
 use std::fs;
 use std::io::{BufRead, Write};
@@ -40,7 +40,7 @@ use roguelike_engine::make_map::{make_map, read_map_xp};
 use crate::throttler::*;
 use crate::render::*;
 use crate::display::*;
-use crate::input::*;
+use crate::keyboard::*;
 
 
 const CONFIG_NAME: &str = "config.yaml";
@@ -186,7 +186,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         {
             let _input_timer = timer!("INPUT");
             for sdl2_event in event_pump.poll_iter() {
-                if let Some(event) = InputEvent::read_event(sdl2_event) {
+                if let Some(event) = InputEvent::read_event(sdl2_event, &mut game, &mut display) {
                     input.handle_event(&mut game, &mut display, event);
                 }
             }
