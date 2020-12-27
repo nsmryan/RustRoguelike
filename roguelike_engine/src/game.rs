@@ -162,7 +162,7 @@ impl Game {
         let input = input_action;
 
         let player_action =
-            actions::handle_input_skill_menu(input, &mut self.data, &mut self.settings, &mut self.msg_log);
+            actions::handle_input_skill_menu(input, &mut self.data, &mut self.settings, &mut self.msg_log, &self.config);
 
         if player_action != Action::NoAction {
             let win = step_logic(self, player_action);

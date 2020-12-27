@@ -314,9 +314,10 @@ pub fn handle_input_inventory(input: InputAction,
 }
 
 pub fn handle_input_skill_menu(input: InputAction,
-                               data: &mut GameData,
+                               data: &GameData,
                                settings: &mut GameSettings,
-                               msg_log: &mut MsgLog) -> Action {
+                               msg_log: &mut MsgLog,
+                               config: &Config) -> Action {
     let mut player_turn: Action = Action::NoAction;
 
     match input {
@@ -332,7 +333,7 @@ pub fn handle_input_skill_menu(input: InputAction,
 
         InputAction::SelectItem(skill_index) => {
             // NOTE there is no way to select the alternate use of a skill!
-            player_turn = handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, data, settings, msg_log);
+            player_turn = handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, data, settings, msg_log, config);
         }
 
         InputAction::Esc => {
@@ -840,7 +841,8 @@ pub fn handle_skill(skill_index: usize,
                     action_mode: ActionMode,
                     data: &GameData, 
                     settings: &mut GameSettings, 
-                    msg_log: &mut MsgLog) -> Action {
+                    msg_log: &mut MsgLog,
+                    config: &Config) -> Action {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     // # check if we have enough energy to carry out the skill
@@ -859,8 +861,6 @@ pub fn handle_skill(skill_index: usize,
     let reach = Reach::single(1);
 
     let mut selection = None;
-    // TODO add input to this function for whether a selection has been made.
-    // instead of entering selection mode, apply the action immediately
     match data.entities.skills[&player_id][skill_index] {
         Skill::GrassThrow => {
             selection =
@@ -897,8 +897,7 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::Swap => {
-            // NOTE make this a const or config item
-            let reach = Reach::single(4);
+            let reach = Reach::single(config.swap_radius);
             selection =
                 Some(Selection::new(SelectionType::WithinReach(reach), SelectionAction::Swap));
         }
@@ -987,7 +986,7 @@ pub fn chord(loc: ActionLoc,
             // the skills
             let skill_index = (target - 2) as usize;
             if skill_index < game.data.entities.skills[&player_id].len() {
-                turn = handle_skill(skill_index, loc, mode, &mut game.data, &mut game.settings, &mut game.msg_log);
+                turn = handle_skill(skill_index, loc, mode, &mut game.data, &mut game.settings, &mut game.msg_log, &game.config);
             }
         } else if target < num_items_in_inventory {
             match mode {
