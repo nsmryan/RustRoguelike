@@ -503,7 +503,7 @@ pub fn handle_input_selection(input: InputAction,
     return player_turn;
 }
 
-pub fn handle_input(game: &mut Game, input_action: InputAction) -> Action {
+pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> Action {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let mut player_turn: Action = Action::none();

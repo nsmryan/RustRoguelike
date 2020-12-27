@@ -267,7 +267,7 @@ impl Game {
 //    }
 
     fn step_playing(&mut self, input_action: InputAction) -> GameResult {
-        let player_action = actions::handle_input(self, input_action);
+        let player_action = actions::handle_input_playing(self, input_action);
 
         if player_action != Action::NoAction {
             let win = step_logic(self, player_action);

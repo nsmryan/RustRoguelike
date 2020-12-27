@@ -14,7 +14,7 @@ use roguelike_core::utils::*;
 use roguelike_core::map::*;
 use roguelike_core::line::line;
 
-use crate::game::*;
+use crate::game::GameSettings;
 use crate::generation::{make_energy, make_dagger, make_sword};
 
 
