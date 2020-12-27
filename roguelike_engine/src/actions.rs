@@ -673,7 +673,7 @@ pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> Actio
         }
 
         (InputAction::UseItem, _) => {
-            player_turn = use_item(player_id, game);
+            player_turn = use_item(player_id, &game.data, &mut game.settings, &mut game.msg_log);
         }
 
         (_, _) => {
@@ -751,20 +751,19 @@ pub fn increase_move_mode(entity_id: EntityId, game: &mut Game) {
     }
 }
 
-// TODO(&mut) remove &mut and see if compiles
-pub fn use_item(entity_id: EntityId, game: &mut Game) -> Action {
+pub fn use_item(entity_id: EntityId, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) -> Action {
     let mut turn: Action = Action::none();
 
-    if game.data.using(entity_id, Item::Hammer) {
-        game.settings.state = GameState::Selection;
+    if data.using(entity_id, Item::Hammer) {
+        settings.state = GameState::Selection;
 
         let reach = Reach::Horiz(1);
-        game.settings.selection =
+        settings.selection =
             Selection::new(SelectionType::WithinReach(reach), SelectionAction::Hammer);
 
-        game.msg_log.log(Msg::GameState(game.settings.state));
-    } else if game.data.using(entity_id, Item::Sword) {
-        let pos = game.data.entities.pos[&entity_id];
+        msg_log.log(Msg::GameState(settings.state));
+    } else if data.using(entity_id, Item::Sword) {
+        let pos = data.entities.pos[&entity_id];
         turn = Action::UseItem(pos);
     }
 
@@ -928,7 +927,7 @@ pub fn chord(loc: ActionLoc,
             match mode {
                 ActionMode::Primary => {
                     // primary item use is the item's main action
-                    turn = use_item(player_id, game);
+                    turn = use_item(player_id, &game.data, &mut game.settings, &mut game.msg_log);
                 }
 
                 ActionMode::Alternate => {
