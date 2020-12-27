@@ -1,6 +1,7 @@
 use std::ops::{Index, IndexMut};
 use std::collections::{HashSet, HashMap};
 use std::iter;
+use std::cell::RefCell;
 
 use rand::prelude::*;
 
@@ -286,7 +287,7 @@ impl Wall {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Map {
     pub tiles: Vec<Vec<Tile>>,
-    pub fov_cache: HashMap<Pos, Vec<Pos>>,
+    pub fov_cache: RefCell<HashMap<Pos, Vec<Pos>>>,
 }
 
 impl Map {
@@ -294,7 +295,7 @@ impl Map {
         let map =
             Map {
                 tiles,
-                fov_cache: HashMap::new(),
+                fov_cache: RefCell::new(HashMap::new()),
             };
 
         return map;
@@ -305,7 +306,7 @@ impl Map {
         let map =
             Map {
                 tiles,
-                fov_cache: HashMap::new(),
+                fov_cache: RefCell::new(HashMap::new()),
             };
 
         return map;
@@ -315,7 +316,7 @@ impl Map {
         let map =
             Map {
                 tiles: Vec::new(),
-                fov_cache: HashMap::new(),
+                fov_cache: RefCell::new(HashMap::new()),
             };
 
         return map;
@@ -585,7 +586,7 @@ impl Map {
         return self.tiles[0].len() as i32;
     }
 
-    pub fn is_in_fov(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
+    pub fn is_in_fov(&self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
         let alg_fov = self.is_in_fov_shadowcast(start_pos, end_pos);
         
         let path_fov = self.path_blocked_fov(start_pos, end_pos);
@@ -602,8 +603,8 @@ impl Map {
         return alg_fov && within_radius && clear_fov_path;
     }
 
-    pub fn is_in_fov_shadowcast(&mut self, start_pos: Pos, end_pos: Pos) -> bool {
-        if let Some(visible) = self.fov_cache.get(&start_pos) {
+    pub fn is_in_fov_shadowcast(&self, start_pos: Pos, end_pos: Pos) -> bool {
+        if let Some(visible) = self.fov_cache.borrow_mut().get(&start_pos) {
             return visible.contains(&end_pos);
         }
 
@@ -630,12 +631,12 @@ impl Map {
         compute_fov((start_pos.x as isize, start_pos.y as isize), &mut is_blocking, &mut mark_fov);
 
         let in_fov = visible_positions.contains(&end_pos);
-        self.fov_cache.insert(start_pos, visible_positions);
+        self.fov_cache.borrow_mut().insert(start_pos, visible_positions);
 
         return in_fov;
     }
 
-    pub fn is_in_fov_direction(&mut self, start_pos: Pos, end_pos: Pos, radius: i32, dir: Direction) -> bool {
+    pub fn is_in_fov_direction(&self, start_pos: Pos, end_pos: Pos, radius: i32, dir: Direction) -> bool {
         if start_pos == end_pos {
             return true;
         } else if self.is_in_fov(start_pos, end_pos, radius) {
@@ -696,7 +697,7 @@ impl Map {
         return false;
     }
 
-    pub fn is_in_fov_lines(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
+    pub fn is_in_fov_lines(&self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
         if start_pos == end_pos {
             return true;
         }
@@ -725,7 +726,7 @@ impl Map {
             is_in_fov = true;
         }
 
-        fn needs_culling(map: &mut Map, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
+        fn needs_culling(map: &Map, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
             let mut cull = false;
             // if the position is in the FOV, but the line up to the next-to-last square is
             // different from the current line, then check that line too. This resolves
@@ -925,7 +926,7 @@ impl Index<(i32, i32)> for Map {
 
 impl IndexMut<(i32, i32)> for Map {
     fn index_mut(&mut self, index: (i32, i32)) -> &mut Tile {
-        self.fov_cache.clear();
+        self.fov_cache.borrow_mut().clear();
         &mut self.tiles[index.0 as usize][index.1 as usize]
     }
 }
@@ -940,7 +941,7 @@ impl Index<Pos> for Map {
 
 impl IndexMut<Pos> for Map {
     fn index_mut(&mut self, index: Pos) -> &mut Tile {
-        self.fov_cache.clear();
+        self.fov_cache.borrow_mut().clear();
         &mut self.tiles[index.x as usize][index.y as usize]
     }
 }

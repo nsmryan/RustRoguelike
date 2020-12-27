@@ -1,3 +1,5 @@
+use serde::{Serialize, Deserialize};
+
 use roguelike_core::types::*;
 use roguelike_core::movement::Direction;
 use roguelike_core::config::Config;
@@ -7,6 +9,19 @@ use crate::actions::*;
 
 
 const TARGET_CODES: &[char] = &['z', 'x', 'c', 'v', 'b'];
+
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+pub enum KeyDir {
+    Up,
+    Down,
+}
+
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+pub enum MouseClick {
+    Left,
+    Right,
+    Middle,
+}
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq)]
 pub enum InputEvent {

@@ -4,7 +4,7 @@ use roguelike_core::types::*;
 use roguelike_core::messaging::*;
 use roguelike_core::config::*;
 
-use roguelike_engine::actions::KeyDirection;
+use roguelike_engine::input::KeyDir;
 use roguelike_engine::generation::*;
 use roguelike_engine::game::GameSettings;
 
@@ -71,7 +71,7 @@ impl Console {
 
     pub fn eval(&mut self,
                 key: Keycode,
-                dir: KeyDirection,
+                dir: KeyDir,
                 data: &mut GameData,
                 display_state: &mut DisplayState,
                 settings: &mut GameSettings,
@@ -84,12 +84,12 @@ impl Console {
 
     pub fn key(&mut self,
                 key: Keycode,
-                dir: KeyDirection) -> Option<(Command, Vec<String>)> {
+                dir: KeyDir) -> Option<(Command, Vec<String>)> {
         use Keycode::*;
 
         let mut command = None;
         
-        if dir == KeyDirection::Down {
+        if dir == KeyDir::Down {
             match key {
                 A => self.input.push('a'),
                 B => self.input.push('b'),

@@ -173,7 +173,7 @@ impl Selection {
         };
     }
 
-    pub fn selected_pos(&self, pos: Pos, selected: Pos, fov_radius: i32, data: &mut GameData) -> Option<Pos> {
+    pub fn selected_pos(&self, pos: Pos, selected: Pos, fov_radius: i32, data: &GameData) -> Option<Pos> {
         let mut maybe_selected_pos: Option<Pos>;
 
         match self.typ {
@@ -206,7 +206,7 @@ impl Selection {
         return maybe_selected_pos;
     }
 
-    pub fn select(&self, pos: Pos, selected: Pos, fov_radius: i32, data: &mut GameData) -> Option<Action> {
+    pub fn select(&self, pos: Pos, selected: Pos, fov_radius: i32, data: &GameData) -> Option<Action> {
         let maybe_selected_pos: Option<Pos> = self.selected_pos(pos, selected, fov_radius, data);
 
         if let Some(selected_pos) = maybe_selected_pos {

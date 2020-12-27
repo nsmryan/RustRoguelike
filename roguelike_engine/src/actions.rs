@@ -14,29 +14,9 @@ use roguelike_core::line::line;
 
 use crate::game::*;
 use crate::selection::*;
+use crate::input::*;
 use crate::make_map;
 
-
-// TODO move to input.rs when ready
-#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
-pub enum KeyDir {
-    Up,
-    Down,
-}
-
-// TODO move to input.rs when ready
-#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
-pub enum MouseClick {
-    Left,
-    Right,
-    Middle,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
-pub enum KeyDirection {
-    Down,
-    Up
-}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum ActionStrength {
@@ -200,7 +180,7 @@ impl FromStr for InputAction {
 }
 
 //pub fn handle_input_console(input: InputAction,
-//                            key_input: &mut Vec<(KeyDirection, Keycode)>,
+//                            key_input: &mut Vec<(KeyDir, Keycode)>,
 //                            console: &mut Console,
 //                            game_data: &mut GameData,
 //                            display_state: &mut DisplayState,
@@ -225,16 +205,17 @@ pub fn inventory_use_item(item_index: usize,
                           settings: &mut GameSettings,
                           msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
-    let item_key = data.entities.inventory[&player_id][item_index];
+    let item_id = data.entities.inventory[&player_id][item_index];
+    // TODO(&mut) move to resolve
     data.entities.selected_item.swap_remove(&player_id);
-    data.entities.selected_item.insert(player_id, item_key);
+    data.entities.selected_item.insert(player_id, item_id);
 
-    settings.state = GameState::Selection;
+    // TODO(&mut) move to resolve
     settings.selection.only_visible = false;
 
     // if the item is a trap, set it.
     // otherwise, throw it.
-    if data.entities.trap.get(&item_key).is_some() {
+    if data.entities.trap.get(&item_id).is_some() {
         settings.selection =
             Selection::new(SelectionType::WithinReach(Reach::single(1)), SelectionAction::PlaceTrap);
     } else {
@@ -242,6 +223,7 @@ pub fn inventory_use_item(item_index: usize,
             Selection::new(SelectionType::WithinRadius(PLAYER_THROW_DIST), SelectionAction::Throw);
     }
 
+    settings.state = GameState::Selection;
     msg_log.log(Msg::GameState(settings.state));
 }
 
@@ -251,7 +233,7 @@ pub fn inventory_drop_item(item_index: usize,
                            msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
-    let item_key = data.entities.inventory[&player_id][item_index];
+    let item_id = data.entities.inventory[&player_id][item_index];
 
     // Find a place to drop the item, without placing it on the same tile
     // as another item.
@@ -260,10 +242,11 @@ pub fn inventory_drop_item(item_index: usize,
     while !found_tile && dist < 10 {
         let positions = data.map.floodfill(player_pos, dist);
 
+        // TODO(&mut) move to resolve
         for pos in positions {
             if data.item_at_pos(pos).is_none() {
-                data.entities.remove_item(player_id, item_key);
-                data.entities.set_pos(item_key, pos);
+                data.entities.remove_item(player_id, item_id);
+                data.entities.set_pos(item_id, pos);
 
                 settings.state = GameState::Playing;
                 msg_log.log(Msg::GameState(settings.state));
@@ -390,9 +373,11 @@ pub fn handle_input_class_menu(input: InputAction,
         InputAction::SelectItem(class_index) => {
             let classes = EntityClass::classes();
             if class_index < classes.len() {
+                // TODO(&mut) move to resolve
                 settings.state = GameState::Selection;
                 settings.selection.only_visible = false;
 
+                // TODO(&mut) move to resolve
                 match classes[class_index] {
                     EntityClass::General => {
                         data.entities.class[&player_id] = classes[class_index];
@@ -457,6 +442,7 @@ pub fn handle_input_confirm_quit(input: InputAction,
         }
 
         InputAction::Exit => {
+            // TODO(&mut) move to resolve, or allow settings to change
             settings.exiting = true;
         }
 
@@ -468,7 +454,7 @@ pub fn handle_input_confirm_quit(input: InputAction,
 }
 
 pub fn handle_input_selection(input: InputAction,
-                              data: &mut GameData, 
+                              data: &GameData, 
                               settings: &mut GameSettings,
                               config: &Config,
                               msg_log: &mut MsgLog) -> Action {
@@ -497,9 +483,11 @@ pub fn handle_input_selection(input: InputAction,
             let player_pos = data.entities.pos[&player_id];
 
             if let Some(action) = settings.selection.select(player_pos, map_cell, config.fov_radius_player, data) {
+                // TODO(&mut) move to resolve, or allow settings to change
                 // exit selection state
                 settings.state = GameState::Playing;
                 msg_log.log(Msg::GameState(settings.state));
+                // TODO(&mut) move to resolve, or allow settings to change
                 settings.draw_selection_overlay = false;
                 player_turn = action;
             }
@@ -524,6 +512,7 @@ pub fn handle_input(game: &mut Game, input_action: InputAction) -> Action {
             dbg!(input_action);
             let cursor_id = game.data.find_by_name(EntityName::Cursor).unwrap();
 
+            // TODO(&mut) move to resolve
             let pos = game.data.entities.pos[&cursor_id];
             game.data.entities.pos[&cursor_id] = add_pos(pos, dir.into_move());
         }
@@ -708,6 +697,7 @@ pub fn handle_move(entity_id: EntityId, move_action: Direction, game: &mut Game)
     return turn;
 }
 
+// TODO(&mut) remove &mut and see if compiles
 pub fn pickup_item(entity_id: EntityId, game: &mut Game) -> Action {
     let mut turn: Action = Action::none();
 
@@ -728,6 +718,7 @@ pub fn pickup_item(entity_id: EntityId, game: &mut Game) -> Action {
     return turn;
 }
 
+// TODO(&mut) remove &mut and see if compiles
 pub fn decrease_move_mode(entity_id: EntityId, game: &mut Game) {
     game.data.entities.move_mode[&entity_id] =
         game.data.entities.move_mode[&entity_id].decrease();
@@ -738,6 +729,7 @@ pub fn decrease_move_mode(entity_id: EntityId, game: &mut Game) {
     game.msg_log.log(Msg::MoveMode(game.data.entities.move_mode[&entity_id]));
 }
 
+// TODO(&mut) remove &mut when moved to resolve
 pub fn increase_move_mode(entity_id: EntityId, game: &mut Game) {
     let holding_shield = game.data.using(entity_id, Item::Shield);
     let holding_hammer = game.data.using(entity_id, Item::Hammer);
@@ -748,6 +740,7 @@ pub fn increase_move_mode(entity_id: EntityId, game: &mut Game) {
     if new_move_mode == movement::MoveMode::Run && (holding_shield || holding_hammer) {
         game.msg_log.log(Msg::TriedRunWithHeavyEquipment);
     } else {
+        // TODO(&mut) move to resolve
         game.data.entities.move_mode[&entity_id] = new_move_mode;
         game.data.entities.movement[&entity_id] = reach_by_mode(game.data.entities.move_mode[&entity_id]);
 
@@ -755,6 +748,7 @@ pub fn increase_move_mode(entity_id: EntityId, game: &mut Game) {
     }
 }
 
+// TODO(&mut) remove &mut and see if compiles
 pub fn use_item(entity_id: EntityId, game: &mut Game) -> Action {
     let mut turn: Action = Action::none();
 
@@ -774,6 +768,7 @@ pub fn use_item(entity_id: EntityId, game: &mut Game) -> Action {
     return turn;
 }
 
+// TODO(&mut) after moving code to resolve, remove &mut and see if compiles
 pub fn pick_item_up(entity_id: EntityId,
                     item_id: EntityId,
                     entities: &mut Entities,
@@ -782,6 +777,7 @@ pub fn pick_item_up(entity_id: EntityId,
     let item = entities.item[&item_id];
     let item_class = item.class();
 
+    // TODO(&mut) move to resolve
     match item_class {
         ItemClass::Primary => {
             if item_primary_at(entity_id, entities, 0) &&
@@ -803,6 +799,7 @@ pub fn pick_item_up(entity_id: EntityId,
     entities.set_xy(item_id, -1, -1);
 }
 
+// TODO(&mut) remove &mut once moved code to resolve
 pub fn throw_item(player_id: EntityId,
                   item_id: EntityId,
                   start_pos: Pos,
@@ -820,6 +817,7 @@ pub fn throw_item(player_id: EntityId,
         end_pos = blocked.start_pos;
     }
 
+    // TODO(&mut) move to resolve
     game_data.entities.set_pos(item_id, start_pos);
 
     let movement = Movement::step_to(end_pos);
@@ -828,6 +826,7 @@ pub fn throw_item(player_id: EntityId,
     game_data.entities.remove_item(player_id, item_id);
 }
 
+// TODO move to resolve.rs to make more clear where it is used?
 pub fn place_trap(trap_id: EntityId,
                   place_pos: Pos,
                   game_data: &mut GameData) {
@@ -835,6 +834,7 @@ pub fn place_trap(trap_id: EntityId,
     game_data.entities.armed[&trap_id] = true;
 }
 
+// TODO(&mut) make data & and see if compiles
 pub fn handle_skill(skill_index: usize,
                     action_loc: ActionLoc,
                     action_mode: ActionMode,
@@ -940,6 +940,8 @@ pub fn handle_skill(skill_index: usize,
     return turn;
 }
 
+// TODO consider splitting into three functions:
+// targeted, non-targeted
 pub fn chord(loc: ActionLoc,
              _strength: ActionStrength,
              mode: ActionMode,
@@ -951,7 +953,6 @@ pub fn chord(loc: ActionLoc,
 
     // if no target selection, then it is a move
     if target == -1 {
-        dbg!(loc);
         match mode {
             ActionMode::Primary => {
                 decrease_move_mode(player_id, game);
@@ -980,7 +981,6 @@ pub fn chord(loc: ActionLoc,
 
         }
     } else {
-        dbg!(loc, target);
         let num_items_in_inventory = game.data.entities.inventory[&player_id].len() as i32;
         if target >= 2 {
             // the minus 2 here comes from the primary and secondary item, after which comes
@@ -988,7 +988,6 @@ pub fn chord(loc: ActionLoc,
             let skill_index = (target - 2) as usize;
             if skill_index < game.data.entities.skills[&player_id].len() {
                 turn = handle_skill(skill_index, loc, mode, &mut game.data, &mut game.settings, &mut game.msg_log);
-                dbg!(&turn);
             }
         } else if target < num_items_in_inventory {
             match mode {
@@ -1016,7 +1015,6 @@ pub fn chord(loc: ActionLoc,
                                                    .map_or(max_end, |b| b.end_pos);
                             let item_id = game.data.entities.inventory[&player_id][target as usize];
                             turn = Action::ThrowItem(end, item_id);
-                            dbg!(&turn);
                         }
                     }
                 }
@@ -1026,3 +1024,4 @@ pub fn chord(loc: ActionLoc,
 
     return turn;
 }
+

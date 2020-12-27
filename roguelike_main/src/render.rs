@@ -1075,6 +1075,8 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         panel.target.draw_line(pos.to_tuple(), pos_end.to_tuple());
 
         panel.target.draw_line(move_x(pos, cell_width).to_tuple(), move_y(pos, cell_height).to_tuple());
+
+        // TODO render a shadow cursor for the position you will step too
     }
 
     // render FOV if enabled
