@@ -680,7 +680,7 @@ pub fn handle_input(game: &mut Game, input_action: InputAction) -> Action {
     return player_turn;
 }
 
-pub fn handle_move(entity_id: EntityId, move_action: Direction, game: &mut Game) -> Action {
+pub fn handle_move(entity_id: EntityId, move_action: Direction, game: &Game) -> Action {
     let mut turn = Action::none();
     
     let player_reach = game.data.entities.movement[&entity_id];
@@ -688,7 +688,7 @@ pub fn handle_move(entity_id: EntityId, move_action: Direction, game: &mut Game)
         movement::calculate_move(move_action,
                                  player_reach,
                                  entity_id,
-                                 &mut game.data);
+                                 &game.data);
 
     if let Some(movement) = maybe_movement {
         turn = Action::Move(movement);
@@ -698,7 +698,7 @@ pub fn handle_move(entity_id: EntityId, move_action: Direction, game: &mut Game)
 }
 
 // TODO(&mut) remove &mut and see if compiles
-pub fn pickup_item(entity_id: EntityId, game: &mut Game) -> Action {
+pub fn pickup_item(entity_id: EntityId, game: &Game) -> Action {
     let mut turn: Action = Action::none();
 
     let pos = game.data.entities.pos[&entity_id];
@@ -718,7 +718,7 @@ pub fn pickup_item(entity_id: EntityId, game: &mut Game) -> Action {
     return turn;
 }
 
-// TODO(&mut) remove &mut and see if compiles
+// TODO(&mut) move to resolve, remove &mut and see if compiles
 pub fn decrease_move_mode(entity_id: EntityId, game: &mut Game) {
     game.data.entities.move_mode[&entity_id] =
         game.data.entities.move_mode[&entity_id].decrease();
@@ -838,7 +838,7 @@ pub fn place_trap(trap_id: EntityId,
 pub fn handle_skill(skill_index: usize,
                     action_loc: ActionLoc,
                     action_mode: ActionMode,
-                    data: &mut GameData, 
+                    data: &GameData, 
                     settings: &mut GameSettings, 
                     msg_log: &mut MsgLog) -> Action {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
