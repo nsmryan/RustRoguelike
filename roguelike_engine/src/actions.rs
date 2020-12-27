@@ -264,6 +264,7 @@ pub fn inventory_drop_item(item_index: usize,
     }
 }
 
+// TODO(&mut) make data & once changes are in resolve
 pub fn inventory_select_item(item_index: usize,
                              data: &mut GameData,
                              settings: &mut GameSettings,
@@ -284,6 +285,7 @@ pub fn inventory_select_item(item_index: usize,
     // if item index is not in the player's inventory, do nothing
 }
 
+// TODO(&mut) make data & once inventory select is &
 pub fn handle_input_inventory(input: InputAction,
                               data: &mut GameData,
                               settings: &mut GameSettings,
@@ -767,72 +769,6 @@ pub fn use_item(entity_id: EntityId, game: &mut Game) -> Action {
     }
 
     return turn;
-}
-
-// TODO(&mut) after moving code to resolve, remove &mut and see if compiles
-pub fn pick_item_up(entity_id: EntityId,
-                    item_id: EntityId,
-                    entities: &mut Entities,
-                    _msg_log: &mut MsgLog) {
-    // pick up item
-    let item = entities.item[&item_id];
-    let item_class = item.class();
-
-    // TODO(&mut) move to resolve
-    match item_class {
-        ItemClass::Primary => {
-            if item_primary_at(entity_id, entities, 0) &&
-               item_primary_at(entity_id, entities, 1) {
-                entities.inventory[&entity_id][0] = item_id;
-
-                let obj_pos = entities.pos[&entity_id];
-                entities.set_pos(entity_id, obj_pos);
-            } else {
-                entities.inventory[&entity_id].push_front(item_id);
-            }
-        }
-
-        ItemClass::Secondary => {
-            entities.inventory[&entity_id].push_back(item_id);
-        }
-    }
-
-    entities.set_xy(item_id, -1, -1);
-}
-
-// TODO(&mut) remove &mut once moved code to resolve
-pub fn throw_item(player_id: EntityId,
-                  item_id: EntityId,
-                  start_pos: Pos,
-                  end_pos: Pos,
-                  game_data: &mut GameData,
-                  msg_log: &mut MsgLog) {
-    let throw_line = line(start_pos, end_pos);
-
-    // get target position in direction of player click
-    let mut end_pos =
-        Pos::from(throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap());
-
-    if let Some(blocked) = game_data.map.path_blocked_move(start_pos, end_pos) {
-        // the start pos of the blocked struct is the last reached position
-        end_pos = blocked.start_pos;
-    }
-
-    // TODO(&mut) move to resolve
-    game_data.entities.set_pos(item_id, start_pos);
-
-    let movement = Movement::step_to(end_pos);
-    msg_log.log(Msg::Moved(item_id, movement, end_pos));
-
-    game_data.entities.remove_item(player_id, item_id);
-}
-
-// TODO move to resolve.rs to make more clear where it is used?
-pub fn place_trap(trap_id: EntityId,
-                  place_pos: Pos,
-                  game_data: &mut GameData) {
-    game_data.entities.set_pos(trap_id, place_pos);
-    game_data.entities.armed[&trap_id] = true;
 }
 
 // TODO(&mut) make data & and see if compiles

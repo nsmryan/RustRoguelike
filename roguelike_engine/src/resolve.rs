@@ -12,9 +12,9 @@ use roguelike_core::movement::{MoveMode, MoveType, Action, Attack, Movement, Dir
 use roguelike_core::config::*;
 use roguelike_core::utils::*;
 use roguelike_core::map::*;
+use roguelike_core::line::line;
 
 use crate::game::*;
-use crate::actions::{throw_item, pick_item_up, place_trap};
 use crate::generation::{make_energy, make_dagger, make_sword};
 
 
@@ -659,6 +659,67 @@ pub fn use_energy(entity_id: EntityId, data: &mut GameData) {
         EntityClass::Clockwork => {
         }
     }
+}
+
+pub fn pick_item_up(entity_id: EntityId,
+                    item_id: EntityId,
+                    entities: &mut Entities,
+                    _msg_log: &mut MsgLog) {
+    // pick up item
+    let item = entities.item[&item_id];
+    let item_class = item.class();
+
+    // TODO(&mut) move to resolve
+    match item_class {
+        ItemClass::Primary => {
+            if item_primary_at(entity_id, entities, 0) &&
+               item_primary_at(entity_id, entities, 1) {
+                entities.inventory[&entity_id][0] = item_id;
+
+                let obj_pos = entities.pos[&entity_id];
+                entities.set_pos(entity_id, obj_pos);
+            } else {
+                entities.inventory[&entity_id].push_front(item_id);
+            }
+        }
+
+        ItemClass::Secondary => {
+            entities.inventory[&entity_id].push_back(item_id);
+        }
+    }
+
+    entities.set_xy(item_id, -1, -1);
+}
+
+pub fn place_trap(trap_id: EntityId, place_pos: Pos, game_data: &mut GameData) {
+    game_data.entities.set_pos(trap_id, place_pos);
+    game_data.entities.armed[&trap_id] = true;
+}
+
+pub fn throw_item(player_id: EntityId,
+                  item_id: EntityId,
+                  start_pos: Pos,
+                  end_pos: Pos,
+                  game_data: &mut GameData,
+                  msg_log: &mut MsgLog) {
+    let throw_line = line(start_pos, end_pos);
+
+    // get target position in direction of player click
+    let mut end_pos =
+        Pos::from(throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap());
+
+    if let Some(blocked) = game_data.map.path_blocked_move(start_pos, end_pos) {
+        // the start pos of the blocked struct is the last reached position
+        end_pos = blocked.start_pos;
+    }
+
+    // TODO(&mut) move to resolve
+    game_data.entities.set_pos(item_id, start_pos);
+
+    let movement = Movement::step_to(end_pos);
+    msg_log.log(Msg::Moved(item_id, movement, end_pos));
+
+    game_data.entities.remove_item(player_id, item_id);
 }
 
 pub fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Option<Pos> {
