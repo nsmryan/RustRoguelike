@@ -210,15 +210,15 @@ impl Msg {
             Msg::MoveMode(entity_id, move_mode) => {
                 match move_mode {
                     MoveMode::Sneak => {
-                        return format!("{:?} is now sneaking", entity_id);
+                        return format!("{:?} is now sneaking", data.entities.name[entity_id]);
                     }
 
                     MoveMode::Walk => {
-                        return format!("{:?} is now walking", entity_id);
+                        return format!("{:?} is now walking", data.entities.name[entity_id]);
                     }
 
                     MoveMode::Run => {
-                        return format!("{:?} is now running", entity_id);
+                        return format!("{:?} is now running", data.entities.name[entity_id]);
                     }
                 }
             }

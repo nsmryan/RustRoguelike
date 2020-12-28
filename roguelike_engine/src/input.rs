@@ -39,18 +39,24 @@ pub struct Input {
     chording: bool,
     chorded: bool,
     mode: ActionMode,
+    moding: bool,
     target: i32,
 }
 
 impl Input {
     pub fn new() -> Input {
-        return Input { chording: false, chorded: false, mode: ActionMode::Primary, target: -1 };
+        return Input { chording: false, chorded: false, mode: ActionMode::Primary, moding: false, target: -1 };
     }
 
     pub fn reset(&mut self) {
-        self.chording = false;
-        self.chorded = false;
-        self.mode = ActionMode::Primary;
+        if !self.chording {
+            self.chorded = false;
+        }
+
+        if !self.moding {
+            self.mode = ActionMode::Primary;
+        }
+
         self.target = -1;
     }
 
@@ -93,12 +99,14 @@ impl Input {
                 if dir == KeyDir::Down && self.chording {
                     self.mode = ActionMode::Alternate;
                 }
+
+                self.moding = dir == KeyDir::Down;
             }
 
             InputEvent::Char(chr, dir) => {
                 match dir {
                     KeyDir::Up => {
-                        if self.chorded && chr.is_ascii_digit() {
+                        if (self.chording || self.target != -1) && chr.is_ascii_digit() {
                             let dir = from_digit(chr);
                             action = InputAction::Chord(dir, ActionStrength::Weak, self.mode, self.target);
                             self.reset();

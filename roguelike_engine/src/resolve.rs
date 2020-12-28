@@ -319,6 +319,7 @@ pub fn triggered(trigger: EntityId, data: &mut GameData, _msg_log: &mut MsgLog) 
     }
 }
 
+// TODO consider splitting into attack vs movement to reduce function size
 pub fn handle_action(entity_id: EntityId,
                      action: Action,
                      rng: &mut SmallRng,

@@ -19,8 +19,6 @@ use crate::make_map::*;
 
 
 pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
-    game.msg_log.clear();
-
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     game.data.entities.action[&player_id] = player_action;
