@@ -17,12 +17,6 @@ use crate::input::*;
 use crate::make_map;
 
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
-pub enum ActionStrength {
-    Weak,
-    Strong,
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ActionLoc {
     Dir(Direction),
@@ -77,7 +71,7 @@ pub enum InputAction {
     ToggleConsole,
     UseItem,
     Interact,
-    Chord(Option<Direction>, ActionStrength, ActionMode, ActionTarget),
+    Chord(Option<Direction>, ActionMode, ActionTarget),
     CursorMove(Direction),
     CursorApply(ActionMode, ActionTarget),
     None,
@@ -121,7 +115,7 @@ impl fmt::Display for InputAction {
             InputAction::ToggleConsole => write!(f, "toggleconsole"),
             InputAction::UseItem => write!(f, "use"),
             InputAction::Interact => write!(f, "interact"),
-            InputAction::Chord(dir, stren, mode, target) => write!(f, "chord {:?} {:?} {:?} {:?}", dir, stren, mode, target),
+            InputAction::Chord(dir, mode, target) => write!(f, "chord {:?} {:?} {:?}", dir, mode, target),
             InputAction::CursorMove(dir) => write!(f, "cursormove {:?}", dir),
             InputAction::CursorApply(mode, target) => write!(f, "cursorapply {:?} {:?}", mode, target),
             InputAction::None => write!(f, "none"),
@@ -194,10 +188,9 @@ impl FromStr for InputAction {
         } else if s.starts_with("chord") {
             let args = s.split(" ").collect::<Vec<&str>>();
             let dir = Direction::from_str(args[1]).ok();
-            let stren = ActionStrength::Weak;
             let mode = ActionMode::from_str(args[3]).unwrap();
             let target = args[4].parse::<i32>().unwrap();
-            return Ok(InputAction::Chord(dir, stren, mode, target));
+            return Ok(InputAction::Chord(dir, mode, target));
         } else if s.starts_with("cursormove") {
             let args = s.split(" ").collect::<Vec<&str>>();
             let dir = Direction::from_str(args[1]).unwrap();
@@ -501,7 +494,7 @@ pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> Actio
                       &mut game.msg_log);
         }
 
-        (InputAction::Chord(dir, _strength, mode, target), true) => {
+        (InputAction::Chord(dir, mode, target), true) => {
             let loc = dir.map_or(ActionLoc::None, |dir| ActionLoc::Dir(dir));
             action_result.turn =
                 chord(loc,

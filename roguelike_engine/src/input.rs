@@ -108,7 +108,7 @@ impl Input {
                     KeyDir::Up => {
                         if (self.chording || self.target != -1) && chr.is_ascii_digit() {
                             let dir = from_digit(chr);
-                            action = InputAction::Chord(dir, ActionStrength::Weak, self.mode, self.target);
+                            action = InputAction::Chord(dir, self.mode, self.target);
                             self.reset();
                         } else if self.chording {
                             for (index, target_chr) in TARGET_CODES.iter().enumerate() {
