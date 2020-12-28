@@ -224,8 +224,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
 
         if game.settings.state == GameState::Win {
             display.clear_level_state();
-        } else if game.settings.state == GameState::Exit || game.settings.exiting {
-            // TODO settings.exiting is overtaken by GameState::Exit
+        } else if game.settings.state == GameState::Exit {
             game.settings.running = false;
         }
 

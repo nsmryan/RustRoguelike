@@ -285,7 +285,8 @@ impl Console {
             }
 
             Command::Quit => {
-                settings.exiting = true;
+                // NOTE would need to transistion to Exit mode instead
+                //settings.exiting = true;
             }
 
             Command::UnknownCommand => {
