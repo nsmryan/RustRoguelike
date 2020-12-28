@@ -488,27 +488,31 @@ pub fn handle_input_selection(input: InputAction,
 }
 
 // TODO consider breaking game into components and making GameData &
-pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> ActionResult {
+pub fn handle_input_playing(input_action: InputAction,
+                            data: &GameData,
+                            settings: &mut GameSettings,
+                            msg_log: &mut MsgLog,
+                            config: &Config) -> ActionResult {
     let mut action_result: ActionResult = Default::default();
 
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    let player_alive = game.data.entities.status[&player_id].alive;
+    let player_alive = data.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
         (InputAction::CursorMove(dir), true) => {
-            let cursor_pos = game.settings.cursor_pos;
-            game.settings.cursor_pos = add_pos(cursor_pos, dir.into_move());
+            let cursor_pos = settings.cursor_pos;
+            settings.cursor_pos = add_pos(cursor_pos, dir.into_move());
         }
 
         (InputAction::CursorApply(mode, target), true) => {
-            let cursor_pos = game.settings.cursor_pos;
+            let cursor_pos = settings.cursor_pos;
 
             // TODO is this needed somewhere to pathfind?
-            //let player_pos = game.data.entities.pos[&player_id];
+            //let player_pos = data.entities.pos[&player_id];
             //let must_reach = false;
             //let traps_block = true;
-            //let path = game.data.path_between(player_pos, cursor_pos, Reach::single(1), must_reach, traps_block, None);
+            //let path = data.path_between(player_pos, cursor_pos, Reach::single(1), must_reach, traps_block, None);
             //let mut action_loc = ActionLoc::None;
             //if path.len() > 1 {
             //    let target_pos = path[1];
@@ -519,10 +523,10 @@ pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> Actio
                 chord(ActionLoc::Place(cursor_pos),
                       mode,
                       target,
-                      &game.data,
-                      &mut game.settings,
-                      &game.config,
-                      &mut game.msg_log);
+                      data,
+                      settings,
+                      config,
+                      msg_log);
         }
 
         (InputAction::Chord(dir, mode, target), true) => {
@@ -531,10 +535,10 @@ pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> Actio
                 chord(loc,
                       mode,
                       target, 
-                      &game.data,
-                      &mut game.settings,
-                      &game.config,
-                      &mut game.msg_log);
+                      data,
+                      settings,
+                      config,
+                      msg_log);
         }
 
         (InputAction::Pass, true) => {
@@ -542,18 +546,18 @@ pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> Actio
         }
 
         (InputAction::Move(direction), true) => {
-            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+            let player_id = data.find_by_name(EntityName::Player).unwrap();
 
             action_result.turn = Action::MoveDir(direction);
         }
 
         (InputAction::DropItem, true) => {
-            game.settings.inventory_action = InventoryAction::Drop;
+            settings.inventory_action = InventoryAction::Drop;
             action_result.new_state = Some(GameState::Inventory);
         }
 
         (InputAction::Pickup, true) => {
-            action_result.turn = pickup_item(player_id, &game.data);
+            action_result.turn = pickup_item(player_id, data);
         }
 
         (InputAction::MapClick(_map_loc, _map_cell), _) => {
@@ -566,23 +570,23 @@ pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> Actio
         }
 
         (InputAction::IncreaseMoveMode, true) => {
-            increase_move_mode(player_id, &game.data, &mut game.msg_log);
+            increase_move_mode(player_id, data, msg_log);
         }
 
         (InputAction::DecreaseMoveMode, true) => {
-            decrease_move_mode(player_id, &game.data, &mut game.msg_log);
+            decrease_move_mode(player_id, data, msg_log);
         }
 
         (InputAction::OverlayOn, _) => {
-            game.settings.overlay = true;
+            settings.overlay = true;
         }
 
         (InputAction::OverlayOff, _) => {
-            game.settings.overlay = false;
+            settings.overlay = false;
         }
 
         (InputAction::Inventory, true) => {
-            game.settings.inventory_action = InventoryAction::Use;
+            settings.inventory_action = InventoryAction::Use;
             action_result.new_state = Some(GameState::Inventory);
         }
 
@@ -599,19 +603,19 @@ pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> Actio
         }
 
         (InputAction::SwapPrimaryItem, _) => {
-            game.msg_log.log(Msg::SwapPrimaryItem);
+            msg_log.log(Msg::SwapPrimaryItem);
         }
 
         (InputAction::Interact, _) => {
             action_result.new_state = Some(GameState::Selection);
             let reach = Reach::single(1);
-            game.settings.selection =
+            settings.selection =
                 Selection::new(SelectionType::WithinReach(reach), SelectionAction::Interact);
         }
 
         (InputAction::UseItem, _) => {
             action_result.turn =
-                use_item(player_id, &game.data, &mut game.settings, &mut game.msg_log);
+                use_item(player_id, data, settings, msg_log);
         }
 
         (_, _) => {

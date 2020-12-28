@@ -81,8 +81,12 @@ impl Game {
         let action_result: ActionResult;
         match self.settings.state {
             GameState::Playing => {
-                // TODO need to fix up handle_input_playing to refactor step_game
-                action_result = actions::handle_input_playing(self, input_action);
+                action_result =
+                    actions::handle_input_playing(input_action,
+                                                  &self.data,
+                                                  &mut self.settings,
+                                                  &mut self.msg_log,
+                                                  &self.config);
             }
 
             GameState::Win => {
