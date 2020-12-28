@@ -123,7 +123,7 @@ impl fmt::Display for InputAction {
             InputAction::Interact => write!(f, "interact"),
             InputAction::Chord(dir, stren, mode, target) => write!(f, "chord {:?} {:?} {:?} {:?}", dir, stren, mode, target),
             InputAction::CursorMove(dir) => write!(f, "cursormove {:?}", dir),
-            InputAction::CursorApply(mode, target) => write!(f, "chord {:?} {:?}", mode, target),
+            InputAction::CursorApply(mode, target) => write!(f, "cursorapply {:?} {:?}", mode, target),
             InputAction::None => write!(f, "none"),
         }
     }
@@ -191,6 +191,22 @@ impl FromStr for InputAction {
             return Ok(InputAction::IncreaseMoveMode);
         } else if s == "slower" {
             return Ok(InputAction::DecreaseMoveMode);
+        } else if s.starts_with("chord") {
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let dir = Direction::from_str(args[1]).ok();
+            let stren = ActionStrength::Weak;
+            let mode = ActionMode::from_str(args[3]).unwrap();
+            let target = args[4].parse::<i32>().unwrap();
+            return Ok(InputAction::Chord(dir, stren, mode, target));
+        } else if s.starts_with("cursormove") {
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let dir = Direction::from_str(args[1]).unwrap();
+            return Ok(InputAction::CursorMove(dir));
+        } else if s.starts_with("cursorapply") {
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let mode = ActionMode::from_str(args[1]).unwrap();
+            let target = args[2].parse::<i32>().unwrap();
+            return Ok(InputAction::CursorApply(mode, target));
         } else {
             return Err(format!("Could not parse '{}' as InputAction", s));
         }
@@ -501,10 +517,10 @@ pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> Actio
             action_result.turn = Action::Pass;
         }
 
-        (InputAction::Move(move_action), true) => {
+        (InputAction::Move(direction), true) => {
             let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
-            action_result.turn = handle_move(player_id, move_action, &game.data);
+            action_result.turn = Action::MoveDir(direction);
         }
 
         (InputAction::DropItem, true) => {
@@ -579,23 +595,6 @@ pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> Actio
     }
 
     return action_result;
-}
-
-pub fn handle_move(entity_id: EntityId, move_action: Direction, data: &GameData) -> Action {
-    let mut turn = Action::none();
-    
-    let player_reach = data.entities.movement[&entity_id];
-    let maybe_movement = 
-        movement::calculate_move(move_action,
-                                 player_reach,
-                                 entity_id,
-                                 data);
-
-    if let Some(movement) = maybe_movement {
-        turn = Action::Move(movement);
-    }
-
-    return turn;
 }
 
 pub fn pickup_item(entity_id: EntityId, data: &GameData) -> Action {
@@ -794,16 +793,15 @@ pub fn chord(loc: ActionLoc,
             }
 
             ActionLoc::Dir(direction) => {
-                turn = handle_move(player_id, direction, data);
+                turn = Action::MoveDir(direction); // handle_move(player_id, direction, data);
             }
 
             ActionLoc::Place(pos) => {
                 let dxy = sub_pos(pos, player_pos);
                 let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
 
-                turn = handle_move(player_id, direction, data);
+                turn = Action::MoveDir(direction);
             }
-
         }
     } else {
         let num_items_in_inventory = data.entities.inventory[&player_id].len() as i32;

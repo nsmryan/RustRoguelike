@@ -1,5 +1,6 @@
 use std::iter::Iterator;
 use std::fmt;
+use std::str::FromStr;
 
 use euclid::*;
 
@@ -15,6 +16,7 @@ use crate::line::*;
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Action {
     Move(Movement),
+    MoveDir(Direction),
     StateChange(Behavior),
     Pickup(EntityId),
     ThrowItem(Pos, EntityId), // end position, item id
@@ -237,6 +239,49 @@ pub enum Direction {
     UpRight,
 }
 
+impl fmt::Display for Direction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Direction::Left => write!(f, "left"),
+            Direction::Right => write!(f, "right"),
+            Direction::Up => write!(f, "up"),
+            Direction::Down => write!(f, "down"),
+            Direction::DownLeft => write!(f, "down/left"),
+            Direction::DownRight => write!(f, "down/right"),
+            Direction::UpLeft => write!(f, "up/left"),
+            Direction::UpRight => write!(f, "up/right"),
+        }
+    }
+}
+
+impl FromStr for Direction {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "left" {
+            return Ok(Direction::Left);
+        } else if s == "right" {
+            return Ok(Direction::Right);
+        } else if s == "up" {
+            return Ok(Direction::Up);
+        } else if s == "down" {
+            return Ok(Direction::Down);
+        } else if s == "upright" {
+            return Ok(Direction::UpRight);
+        } else if s == "upleft" {
+            return Ok(Direction::UpLeft);
+        } else if s == "downright" {
+            return Ok(Direction::DownRight);
+        } else if s == "downleft" {
+            return Ok(Direction::DownLeft);
+        }
+
+        return Err(format!("Could not parse '{}' as Direction", s));
+    }
+}
+
 impl Direction {
     pub fn from_dxy(dx: i32, dy: i32) -> Option<Direction> {
         if dx == 0 && dy == 0 {
@@ -340,21 +385,6 @@ impl Direction {
             return (count - end_ix) + start_ix;
         } else {
             return (count - start_ix) + end_ix;
-        }
-    }
-}
-
-impl fmt::Display for Direction {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Direction::Left => write!(f, "left"),
-            Direction::Right => write!(f, "right"),
-            Direction::Up => write!(f, "up"),
-            Direction::Down => write!(f, "down"),
-            Direction::DownLeft => write!(f, "down/left"),
-            Direction::DownRight => write!(f, "down/right"),
-            Direction::UpLeft => write!(f, "up/left"),
-            Direction::UpRight => write!(f, "up/right"),
         }
     }
 }
@@ -819,7 +849,7 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
     return movement;
 }
 
-pub fn calculate_move(action: Direction,
+pub fn calculate_move(dir: Direction,
                       reach: Reach,
                       entity_id: EntityId,
                       data: &GameData) -> Option<Movement> {
@@ -827,8 +857,8 @@ pub fn calculate_move(action: Direction,
 
     let pos = data.entities.pos[&entity_id];
 
-    // get the location we would move to given the input action
-    if let Some(delta_pos) = reach.move_with_reach(&action) {
+    // get the location we would move to given the input direction
+    if let Some(delta_pos) = reach.move_with_reach(&dir) {
         let (dx, dy) = delta_pos.to_tuple();
 
         // check if movement collides with a blocked location or an entity

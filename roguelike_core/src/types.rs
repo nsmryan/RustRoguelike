@@ -1,6 +1,8 @@
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::default::Default;
+use std::fmt;
+use std::str::FromStr;
 
 use serde::{Serialize, Deserialize};
 
@@ -447,6 +449,31 @@ impl GameState {
 pub enum ActionMode {
     Primary,
     Alternate,
+}
+
+impl fmt::Display for ActionMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ActionMode::Primary => write!(f, "primary"),
+            ActionMode::Alternate => write!(f, "alternate"),
+        }
+    }
+}
+
+impl FromStr for ActionMode {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "primary" {
+            return Ok(ActionMode::Primary);
+        } else if s == "alternate" {
+            return Ok(ActionMode::Alternate);
+        }
+
+        return Err(format!("Could not parse '{}' as ActionMode", s));
+    }
 }
 
 

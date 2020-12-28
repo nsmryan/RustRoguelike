@@ -61,6 +61,38 @@ pub fn ai_take_turn(monster_id: EntityId,
     return turn;
 }
 
+// TODO this function takes a mutable GameData because FOV requires
+// mutation under the hood. This is not interior mutability, so
+// remove the 'mut'.
+pub fn basic_ai_take_turn(monster_id: EntityId,
+                          data: &mut GameData,
+                          config: &Config) -> Action {
+    let monster_pos = data.entities.pos[&monster_id];
+
+    if data.map.is_within_bounds(monster_pos) {
+        if data.entities.status[&monster_id].frozen > 0 {
+            return Action::none();
+        } else {
+            match data.entities.behavior[&monster_id] {
+                Behavior::Idle => {
+                    return ai_idle(monster_id, data, config);
+                }
+
+                Behavior::Investigating(target_pos) => {
+                    return ai_investigate(target_pos, monster_id, data, config);
+                }
+
+                Behavior::Attacking(object_id) => {
+                    return ai_attack(monster_id, object_id, data, config);
+                }
+            }
+        }
+    } else {
+        // position outside of map- return empty turn
+        return Action::none();
+    }
+}
+
 pub fn ai_pos_that_hit_target(monster_id: EntityId,
                               target_id: EntityId,
                               data: &mut GameData,
@@ -414,37 +446,6 @@ fn ai_take_astar_step(monster_id: EntityId,
         return step_towards(monster_pos, path[1]);
     } else {
         return Pos::new(0, 0);
-    }
-}
-
-// NOTE this function takes a mutable GameData because FOV requires
-// mutation under the hood. It does not otherwise modify the game
-pub fn basic_ai_take_turn(monster_id: EntityId,
-                          data: &mut GameData,
-                          config: &Config) -> Action {
-    let monster_pos = data.entities.pos[&monster_id];
-
-    if data.map.is_within_bounds(monster_pos) {
-        if data.entities.status[&monster_id].frozen > 0 {
-            return Action::none();
-        } else {
-            match data.entities.behavior[&monster_id] {
-                Behavior::Idle => {
-                    return ai_idle(monster_id, data, config);
-                }
-
-                Behavior::Investigating(target_pos) => {
-                    return ai_investigate(target_pos, monster_id, data, config);
-                }
-
-                Behavior::Attacking(object_id) => {
-                    return ai_attack(monster_id, object_id, data, config);
-                }
-            }
-        }
-    } else {
-        // position outside of map- return empty turn
-        return Action::none();
     }
 }
 

@@ -9,6 +9,7 @@ use roguelike_core::map::{Surface, AoeEffect};
 use roguelike_core::messaging::{MsgLog, Msg};
 use roguelike_core::constants::*;
 use roguelike_core::movement::{MoveMode, MoveType, Action, Attack, Movement, Direction, Reach};
+use roguelike_core::movement;
 use roguelike_core::config::*;
 use roguelike_core::utils::*;
 use roguelike_core::map::*;
@@ -319,7 +320,106 @@ pub fn triggered(trigger: EntityId, data: &mut GameData, _msg_log: &mut MsgLog) 
     }
 }
 
-// TODO consider splitting into attack vs movement to reduce function size
+pub fn handle_attack(entity_id: EntityId,
+                     movement: Movement,
+                     rng: &mut SmallRng,
+                     data: &mut GameData,
+                     msg_log: &mut MsgLog,
+                     config: &Config) {
+    let entity_pos = data.entities.pos[&entity_id];
+
+    // we already checked that this unwrap is safe before calling this function
+    match movement.attack.unwrap() {
+        Attack::Attack(target_id) => {
+            attack(entity_id, target_id, data, msg_log);
+        }
+
+        Attack::Stab(target_id) => {
+            stab(entity_id, target_id, &mut data.entities, msg_log);
+
+            if data.using(entity_id, Item::Dagger) {
+                data.used_up_item(entity_id);
+            }
+
+            if entity_pos != movement.pos {
+                msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+            }
+
+            // this is done after the Moved msg to ensure that the attack
+            // animation plays instead of an idle animation
+            msg_log.log(Msg::Stabbed(entity_id, target_id));
+        }
+
+        Attack::Push(target_id, delta_pos) => {
+            msg_log.log(Msg::Pushed(entity_id, target_id, delta_pos, true));
+        }
+    }
+}
+
+pub fn handle_move(entity_id: EntityId,
+                   movement: Movement,
+                   rng: &mut SmallRng,
+                   data: &mut GameData,
+                   msg_log: &mut MsgLog,
+                   config: &Config) {
+    let entity_pos = data.entities.pos[&entity_id];
+
+    if movement.attack.is_some() {
+        handle_attack(entity_id, movement, rng, data, msg_log, config);
+    } else {
+        match movement.typ {
+            MoveType::Collide => {
+                data.entities.move_to(entity_id, movement.pos);
+
+                msg_log.log(Msg::Collided(entity_id, movement.pos));
+            }
+
+            MoveType::Pass => {
+                msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+            }
+
+            MoveType::WallKick(_dir_x, _dir_y) => {
+                data.entities.move_to(entity_id, movement.pos);
+
+                // TODO could check for enemy and attack
+                msg_log.log(Msg::WallKick(entity_id, movement.pos));
+            }
+
+            MoveType::Move | MoveType::JumpWall => {
+                // TODO if monster, and would hit trap, don't move
+                // TODO what about if the entity is moved (say, pushed)?
+                // should check for this, and no do the move at all, likely
+                if entity_pos != movement.pos {
+                    let traps_block = false;
+
+                    if data.clear_path(entity_pos, movement.pos, traps_block) {
+                        if movement.typ == MoveType::Move {
+                            msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                        } else {
+                            msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
+                        }
+                    } else if movement.typ == MoveType::JumpWall {
+                        // no clear path to moved position
+                        //data.entities.move_to(entity_id, movement.pos);
+                        msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
+                        msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                    } else {
+                        // TODO move towards position, perhaps emitting a Collide
+                        // message. This is likely causing the jump wall issue!
+                    }
+                }
+                // else the movement does not change our position, so do nothing
+            }
+        }
+
+        // if entity is attacking, face their target after the move
+        if let Some(Behavior::Attacking(target_id)) = data.entities.behavior.get(&entity_id) {
+            let target_pos = data.entities.pos[target_id];
+            data.entities.face(entity_id, target_pos);
+        }
+    }
+}
+
 pub fn handle_action(entity_id: EntityId,
                      action: Action,
                      rng: &mut SmallRng,
@@ -328,85 +428,16 @@ pub fn handle_action(entity_id: EntityId,
                      config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
 
-    if let Action::Move(movement) = action {
-        if let Some(attack_field) = movement.attack {
-            match attack_field {
-                Attack::Attack(target_id) => {
-                    attack(entity_id, target_id, data, msg_log);
-                }
-
-                Attack::Stab(target_id) => {
-                    stab(entity_id, target_id, &mut data.entities, msg_log);
-
-                    if data.using(entity_id, Item::Dagger) {
-                        data.used_up_item(entity_id);
-                    }
-
-                    if entity_pos != movement.pos {
-                        msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
-                    }
-
-                    // this is done after the Moved msg to ensure that the attack
-                    // animation plays instead of an idle animation
-                    msg_log.log(Msg::Stabbed(entity_id, target_id));
-                }
-
-                Attack::Push(target_id, delta_pos) => {
-                    msg_log.log(Msg::Pushed(entity_id, target_id, delta_pos, true));
-                }
-            }
-        } else if movement.attack.is_none() {
-            match movement.typ {
-                MoveType::Collide => {
-                    data.entities.move_to(entity_id, movement.pos);
-
-                    msg_log.log(Msg::Collided(entity_id, movement.pos));
-                }
-
-                MoveType::Pass => {
-                    msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
-                }
-
-                MoveType::WallKick(_dir_x, _dir_y) => {
-                    data.entities.move_to(entity_id, movement.pos);
-
-                    // TODO could check for enemy and attack
-                    msg_log.log(Msg::WallKick(entity_id, movement.pos));
-                }
-
-                MoveType::Move | MoveType::JumpWall => {
-                    // TODO if monster, and would hit trap, don't move
-                    // TODO what about if the entity is moved (say, pushed)?
-                    // should check for this, and no do the move at all, likely
-                    if entity_pos != movement.pos {
-                        let traps_block = false;
-
-                        if data.clear_path(entity_pos, movement.pos, traps_block) {
-                            if movement.typ == MoveType::Move {
-                                msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
-                            } else {
-                                msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
-                            }
-                        } else if movement.typ == MoveType::JumpWall {
-                            // no clear path to moved position
-                            //data.entities.move_to(entity_id, movement.pos);
-                            msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
-                            msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
-                        } else {
-                            // TODO move towards position, perhaps emitting a Collide
-                            // message. This is likely causing the jump wall issue!
-                        }
-                    }
-                    // else the movement does not change our position, so do nothing
-                }
-            }
-
-            // if entity is attacking, face their target after the move
-            if let Some(Behavior::Attacking(target_id)) = data.entities.behavior.get(&entity_id) {
-                let target_pos = data.entities.pos[target_id];
-                data.entities.face(entity_id, target_pos);
-            }
+    if let Action::MoveDir(direction) = action {
+        let reach = data.entities.movement[&entity_id];
+        let maybe_movement = 
+            movement::calculate_move(direction, reach, entity_id, data);
+        if let Some(movement) = maybe_movement {
+            handle_move(entity_id, movement, rng, data, msg_log, config);
         }
+        // TODO need to signal whether a turn was taken
+    } else if let Action::Move(movement) = action {
+        handle_move(entity_id, movement, rng, data, msg_log, config);
     } else if let Action::StateChange(behavior) = action {
         msg_log.log(Msg::StateChange(entity_id, behavior));
     } else if let Action::Yell = action {
@@ -453,6 +484,7 @@ pub fn handle_action(entity_id: EntityId,
         }
         pick_item_up(entity_id, item_id, &mut data.entities, msg_log);
     } else if let Action::Blink(entity_id) = action {
+        // TODO split into separate function
         use_energy(entity_id, data);
 
         let entity_pos = data.entities.pos[&entity_id];
@@ -463,6 +495,7 @@ pub fn handle_action(entity_id: EntityId,
             msg_log.log(Msg::FailedBlink(entity_id));
         }
     } else if let Action::Rubble(entity_id, blocked) = action {
+        // TODO split into separate function
         use_energy(entity_id, data);
 
         let entity_pos = data.entities.pos[&entity_id];
@@ -496,12 +529,14 @@ pub fn handle_action(entity_id: EntityId,
             }
         }
     } else if let Action::Reform(entity_id, pos) = action {
+        // TODO split into separate function
         use_energy(entity_id, data);
 
         data.map[pos].surface = Surface::Floor;
         data.map[pos].block_move = true;
         data.map[pos].chr = MAP_WALL;
     } else if let Action::Swap(entity_id, target_id) = action {
+        // TODO split into separate function
         use_energy(entity_id, data);
 
         let start_pos = data.entities.pos[&entity_id];
@@ -509,10 +544,12 @@ pub fn handle_action(entity_id: EntityId,
         data.entities.move_to(entity_id, end_pos);
         data.entities.move_to(target_id, start_pos);
     } else if let Action::PassWall(entity_id, pos) = action {
+        // TODO split into separate function
         use_energy(entity_id, data);
 
         data.entities.move_to(entity_id, pos);
     } else if let Action::Push(entity_id, direction) = action {
+        // TODO split into separate function
         use_energy(entity_id, data);
 
         let pos = data.entities.pos[&entity_id];
