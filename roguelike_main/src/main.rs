@@ -14,7 +14,6 @@ use std::path::Path;
 use std::str::FromStr;
 
 use sdl2::image::LoadTexture;
-use sdl2::keyboard::Scancode;
 use sdl2::render::{WindowCanvas, Texture, TextureCreator};
 use sdl2::video::WindowContext;
 use sdl2::ttf::Sdl2TtfContext;
@@ -213,17 +212,17 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         }
 
         /* Step the Game Forward */
-        let game_result: GameResult;
         {
             let _logic_timer = timer!("LOGIC");
             let dt = Instant::now().duration_since(frame_time);
-            game_result = game.step_game(input_action, dt.as_secs_f32());
+            game.step_game(input_action, dt.as_secs_f32());
             frame_time = Instant::now();
         }
 
         if game.settings.state == GameState::Win {
             display.clear_level_state();
-        } else if game_result == GameResult::Stop || game.settings.exiting {
+        } else if game.settings.state == GameState::Exit || game.settings.exiting {
+            // TODO settings.exiting is overtaken by GameState::Exit
             game.settings.running = false;
         }
 

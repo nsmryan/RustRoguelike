@@ -20,7 +20,7 @@ use crate::generation::{make_energy, make_dagger, make_sword};
 
 pub fn resolve_messages(data: &mut GameData,
                         msg_log: &mut MsgLog,
-                        _settings: &mut GameSettings,
+                        settings: &mut GameSettings,
                         rng: &mut SmallRng,
                         config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
@@ -163,27 +163,27 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::AddClass(class) => {
-                match classes[class_index] {
+                match class {
                     EntityClass::General => {
-                        data.entities.class[&player_id] = classes[class_index];
+                        data.entities.class[&player_id] = class;
                         data.entities.add_skill(player_id, Skill::Blink);
                     }
 
                     EntityClass::Monolith => {
-                        data.entities.class[&player_id] = classes[class_index];
+                        data.entities.class[&player_id] = class;
                         data.entities.add_skill(player_id, Skill::PassWall);
                         data.entities.add_skill(player_id, Skill::Rubble);
                         data.entities.add_skill(player_id, Skill::Reform);
                     }
 
                     EntityClass::Grass => {
-                        data.entities.class[&player_id] = classes[class_index];
+                        data.entities.class[&player_id] = class;
                         data.entities.add_skill(player_id, Skill::GrassThrow);
                         data.entities.add_skill(player_id, Skill::GrassBlade);
                     }
 
                     EntityClass::Clockwork => {
-                        data.entities.class[&player_id] = classes[class_index];
+                        data.entities.class[&player_id] = class;
                         data.entities.add_skill(player_id, Skill::Push);
                     }
                 }
@@ -191,25 +191,25 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::SwapPrimaryItem => {
                 // TODO make a message for this, and allow resolve to do this.
-                if item_primary_at(player_id, &mut game.data.entities, 0) &&
-                   item_primary_at(player_id, &mut game.data.entities, 1) {
-                       let temp_id = game.data.entities.inventory[&player_id][0];
+                if item_primary_at(player_id, &mut data.entities, 0) &&
+                   item_primary_at(player_id, &mut data.entities, 1) {
+                       let temp_id = data.entities.inventory[&player_id][0];
 
-                       game.data.entities.inventory[&player_id][0] = 
-                           game.data.entities.inventory[&player_id][1];
+                       data.entities.inventory[&player_id][0] = 
+                           data.entities.inventory[&player_id][1];
 
-                       game.data.entities.inventory[&player_id][1] = temp_id;
+                       data.entities.inventory[&player_id][1] = temp_id;
                }
             }
 
-            Msg::MoveMode(entity_id, mode) => {
-                data.entities.move_mode[entity_id] = new_move_mode;
+            Msg::MoveMode(entity_id, new_move_mode) => {
+                data.entities.move_mode[&entity_id] = new_move_mode;
                 // update entities movement reach with their new move mode
-                data.entities.movement[entity_id] = reach_by_mode(data.entities.move_mode[entity_id]);
+                data.entities.movement[&entity_id] = reach_by_mode(data.entities.move_mode[&entity_id]);
             }
 
             Msg::DropItem(entity_id, item_index) => {
-                action_result = inventory_drop_item(item_index, data, settings, msg_log);
+                inventory_drop_item(entity_id, item_index as usize, data, settings, msg_log);
             }
 
             _ => {
@@ -789,13 +789,13 @@ pub fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Opti
     return None;
 }
 
-pub fn inventory_drop_item(item_index: usize,
+pub fn inventory_drop_item(entity_id: EntityId,
+                           item_index: usize,
                            data: &mut GameData,
                            settings: &mut GameSettings,
                            msg_log: &mut MsgLog) {
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = data.entities.pos[&player_id];
-    let item_id = data.entities.inventory[&player_id][item_index];
+    let player_pos = data.entities.pos[&entity_id];
+    let item_id = data.entities.inventory[&entity_id][item_index];
 
     // Find a place to drop the item, without placing it on the same tile
     // as another item.
@@ -807,7 +807,7 @@ pub fn inventory_drop_item(item_index: usize,
         // TODO(&mut) move to resolve
         for pos in positions {
             if data.item_at_pos(pos).is_none() {
-                data.entities.remove_item(player_id, item_id);
+                data.entities.remove_item(entity_id, item_id);
                 data.entities.set_pos(item_id, pos);
 
                 settings.state = GameState::Playing;
@@ -822,7 +822,7 @@ pub fn inventory_drop_item(item_index: usize,
     }
 
     if !found_tile {
-        msg_log.log(Msg::DropFailed(player_id));
+        msg_log.log(Msg::DropFailed(entity_id));
     }
 }
 

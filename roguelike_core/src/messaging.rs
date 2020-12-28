@@ -65,7 +65,7 @@ pub enum Msg {
     Collided(EntityId, Pos),
     Yell(EntityId, Pos),
     GameState(GameState),
-    MoveMode(MoveMode),
+    MoveMode(EntityId, MoveMode),
     TriedRunWithHeavyEquipment,
     SpawnedObject(EntityId, EntityType, Pos, EntityName),
     SwordSwing(EntityId, Pos), // entity, position swung at
@@ -207,18 +207,18 @@ impl Msg {
                 }
             }
 
-            Msg::MoveMode(move_mode) => {
+            Msg::MoveMode(entity_id, move_mode) => {
                 match move_mode {
                     MoveMode::Sneak => {
-                        return "Sneaking".to_string();
+                        return format!("{:?} is now sneaking", entity_id);
                     }
 
                     MoveMode::Walk => {
-                        return "Walking".to_string();
+                        return format!("{:?} is now walking", entity_id);
                     }
 
                     MoveMode::Run => {
-                        return "Running".to_string();
+                        return format!("{:?} is now running", entity_id);
                     }
                 }
             }
@@ -288,7 +288,7 @@ impl Msg {
             }
 
             Msg::DropItem(entity_id, item_index) => {
-                let item_id = data.entities.inventory[entity_id][item_id];
+                let item_id = data.entities.inventory[entity_id][*item_index as usize];
                 return format!("{:?} dropped a {:?}!", data.entities.name[entity_id], item_id);
             }
 

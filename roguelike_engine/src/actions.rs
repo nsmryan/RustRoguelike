@@ -3,14 +3,13 @@ use std::fmt;
 
 use serde::{Serialize, Deserialize};
 
-use roguelike_core::movement::{Direction, Action, Reach, Movement};
+use roguelike_core::movement::{Direction, Action, Reach};
 use roguelike_core::types::*;
 use roguelike_core::movement;
-use roguelike_core::utils::{reach_by_mode, item_primary_at, add_pos, sub_pos};
+use roguelike_core::utils::{add_pos, sub_pos};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
-use roguelike_core::line::line;
 
 use crate::game::*;
 use crate::selection::*;
@@ -33,8 +32,8 @@ pub enum ActionLoc {
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct ActionResult {
-    turn: Action,
-    new_state: Option<GameState>,
+    pub turn: Action,
+    pub new_state: Option<GameState>,
 }
 
 impl Default for ActionResult {
@@ -45,7 +44,7 @@ impl Default for ActionResult {
 
 impl ActionResult {
     pub fn new(turn: Action, new_state: Option<GameState>) -> ActionResult {
-        return ActionResult { turn, result, new_state };
+        return ActionResult { turn, new_state };
     }
 }
 
@@ -223,8 +222,8 @@ impl FromStr for InputAction {
 pub fn inventory_use_item(item_index: usize,
                           data: &GameData,
                           settings: &mut GameSettings,
-                          msg_log: &mut MsgLog) -> ActionResult {
-    let mut action_result = Default::default();
+                          _msg_log: &mut MsgLog) -> ActionResult {
+    let mut action_result: ActionResult = Default::default();
 
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let item_id = data.entities.inventory[&player_id][item_index];
@@ -242,7 +241,7 @@ pub fn inventory_use_item(item_index: usize,
             Selection::new(SelectionType::WithinRadius(PLAYER_THROW_DIST), SelectionAction::Throw);
     }
 
-    action_result.state = Some(GameState::Selection);
+    action_result.new_state = Some(GameState::Selection);
 
     return action_result;
 }
@@ -251,7 +250,7 @@ pub fn inventory_select_item(item_index: usize,
                              data: &GameData,
                              settings: &mut GameSettings,
                              msg_log: &mut MsgLog) -> ActionResult {
-    let mut action_result = Default::default();
+    let mut action_result: ActionResult = Default::default();
 
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let num_items = data.entities.inventory[&player_id].len();
@@ -264,7 +263,7 @@ pub fn inventory_select_item(item_index: usize,
             }
 
             InventoryAction::Drop => {
-                msg_log.log(Msg::DropItem(player_id, item_index);
+                msg_log.log(Msg::DropItem(player_id, item_index as u64));
             }
         }
     }
@@ -276,11 +275,11 @@ pub fn handle_input_inventory(input: InputAction,
                               data: &GameData,
                               settings: &mut GameSettings,
                               msg_log: &mut MsgLog) -> ActionResult {
-    let action_result = Default::default();
+    let mut action_result: ActionResult = Default::default();
 
     match input {
         InputAction::Inventory => {
-            action_result.state = Some(GameState::Playing);
+            action_result.new_state = Some(GameState::Playing);
         }
 
         InputAction::SelectItem(item_index) => {
@@ -288,11 +287,11 @@ pub fn handle_input_inventory(input: InputAction,
         }
 
         InputAction::Esc => {
-            action_result.state = Some(GameState::Playing);
+            action_result.new_state = Some(GameState::Playing);
         }
 
         InputAction::Exit => {
-            action_result.state = Some(GameState::ConfirmQuit);
+            action_result.new_state = Some(GameState::ConfirmQuit);
         }
 
         _ => {
@@ -307,15 +306,15 @@ pub fn handle_input_skill_menu(input: InputAction,
                                settings: &mut GameSettings,
                                msg_log: &mut MsgLog,
                                config: &Config) -> ActionResult {
-    let action_result = Default::default();
+    let mut action_result: ActionResult = Default::default();
 
     match input {
         InputAction::Inventory => {
-            action_result.state = Some(GameState::Inventory);
+            action_result.new_state = Some(GameState::Inventory);
         }
 
         InputAction::SkillMenu => {
-            action_result.state = Some(GameState::Playing);
+            action_result.new_state = Some(GameState::Playing);
         }
 
         InputAction::SelectItem(skill_index) => {
@@ -325,11 +324,11 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::Esc => {
-            action_result.state = Some(GameState::Playing);
+            action_result.new_state = Some(GameState::Playing);
         }
 
         InputAction::Exit => {
-            action_result.state = Some(GameState::ConfirmQuit);
+            action_result.new_state = Some(GameState::ConfirmQuit);
         }
 
         _ => {
@@ -340,18 +339,18 @@ pub fn handle_input_skill_menu(input: InputAction,
 }
 
 pub fn handle_input_class_menu(input: InputAction,
-                               data: &mut GameData,
+                               _data: &GameData,
                                settings: &mut GameSettings,
                                msg_log: &mut MsgLog) -> ActionResult {
-    let action_result = Default::default();
+    let mut action_result: ActionResult = Default::default();
 
     match input {
         InputAction::Inventory => {
-            action_result.state = Some(GameState::Inventory);
+            action_result.new_state = Some(GameState::Inventory);
         }
 
         InputAction::ClassMenu => {
-            action_result.state = Some(GameState::Playing);
+            action_result.new_state = Some(GameState::Playing);
         }
 
         InputAction::SelectItem(class_index) => {
@@ -361,16 +360,16 @@ pub fn handle_input_class_menu(input: InputAction,
                 settings.selection.only_visible = false;
 
                 msg_log.log(Msg::AddClass(classes[class_index]));
-                action_result.state = Some(GameState::Playing);
+                action_result.new_state = Some(GameState::Playing);
             }
         }
 
         InputAction::Esc => {
-            action_result.state = Some(GameState::Playing);
+            action_result.new_state = Some(GameState::Playing);
         }
 
         InputAction::Exit => {
-            action_result.state = Some(GameState::ConfirmQuit);
+            action_result.new_state = Some(GameState::ConfirmQuit);
         }
 
         _ => {
@@ -381,15 +380,15 @@ pub fn handle_input_class_menu(input: InputAction,
 }
 
 pub fn handle_input_confirm_quit(input: InputAction) -> ActionResult {
-    let action_result: ActionResult = Default::default();
+    let mut action_result: ActionResult = Default::default();
 
     match input {
         InputAction::Esc => {
-            action_result.state = Some(GameState::Playing);
+            action_result.new_state = Some(GameState::Playing);
         }
 
         InputAction::Exit => {
-            action_result.state = Some(GameState::Exit);
+            action_result.new_state = Some(GameState::Exit);
         }
 
         _ => {
@@ -404,23 +403,21 @@ pub fn handle_input_selection(input: InputAction,
                               settings: &mut GameSettings,
                               config: &Config,
                               msg_log: &mut MsgLog) -> ActionResult {
-    let mut action_result = Default::default();
+    let mut action_result: ActionResult = Default::default();
 
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    let mut player_turn: Action = Action::none();
-
     match input {
         InputAction::Inventory => {
-            action_result.state = Some(GameState::Inventory);
+            action_result.new_state = Some(GameState::Inventory);
         }
 
         InputAction::Exit => {
-            action_result.state = Some(GameState::ConfirmQuit);
+            action_result.new_state = Some(GameState::ConfirmQuit);
         }
 
         InputAction::Esc => {
-            action_result.state = Some(GameState::Playing);
+            action_result.new_state = Some(GameState::Playing);
             settings.draw_selection_overlay = false;
         }
 
@@ -435,7 +432,7 @@ pub fn handle_input_selection(input: InputAction,
             if let Some(action) = maybe_action {
                 // TODO(&mut) move to resolve, or allow settings to change
                 // exit selection state
-                action_result.state = Some(GameState::Playing);
+                action_result.new_state = Some(GameState::Playing);
                 msg_log.log(Msg::GameState(settings.state));
                 // TODO(&mut) move to resolve, or allow settings to change
                 settings.draw_selection_overlay = false;
@@ -466,12 +463,12 @@ pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> Actio
 
         (InputAction::CursorApply(mode, target), true) => {
             let cursor_pos = game.settings.cursor_pos;
-            let player_pos = game.data.entities.pos[&player_id];
-            let must_reach = false;
-            let traps_block = true;
-            let path = game.data.path_between(player_pos, cursor_pos, Reach::single(1), must_reach, traps_block, None);
 
             // TODO is this needed somewhere to pathfind?
+            //let player_pos = game.data.entities.pos[&player_id];
+            //let must_reach = false;
+            //let traps_block = true;
+            //let path = game.data.path_between(player_pos, cursor_pos, Reach::single(1), must_reach, traps_block, None);
             //let mut action_loc = ActionLoc::None;
             //if path.len() > 1 {
             //    let target_pos = path[1];
@@ -501,7 +498,7 @@ pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> Actio
         }
 
         (InputAction::Pass, true) => {
-            player_turn = Action::Pass;
+            action_result.turn = Action::Pass;
         }
 
         (InputAction::Move(move_action), true) => {
@@ -512,7 +509,7 @@ pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> Actio
 
         (InputAction::DropItem, true) => {
             game.settings.inventory_action = InventoryAction::Drop;
-            action_result.state = Some(GameState::Inventory);
+            action_result.new_state = Some(GameState::Inventory);
         }
 
         (InputAction::Pickup, true) => {
@@ -546,27 +543,27 @@ pub fn handle_input_playing(game: &mut Game, input_action: InputAction) -> Actio
 
         (InputAction::Inventory, true) => {
             game.settings.inventory_action = InventoryAction::Use;
-            action_result.state = Some(GameState::Inventory);
+            action_result.new_state = Some(GameState::Inventory);
         }
 
         (InputAction::SkillMenu, true) => {
-            action_result.state = Some(GameState::SkillMenu);
+            action_result.new_state = Some(GameState::SkillMenu);
         }
 
         (InputAction::ClassMenu, true) => {
-            action_result.state = Some(GameState::ClassMenu);
+            action_result.new_state = Some(GameState::ClassMenu);
         }
 
         (InputAction::Exit, _) => {
-            action_result.state = Some(GameState::ConfirmQuit);
+            action_result.new_state = Some(GameState::ConfirmQuit);
         }
 
         (InputAction::SwapPrimaryItem, _) => {
-            game.msg_log(Msg::SwapPrimaryItem);
+            game.msg_log.log(Msg::SwapPrimaryItem);
         }
 
         (InputAction::Interact, _) => {
-            action_result.state = Some(GameState::Selection);
+            action_result.new_state = Some(GameState::Selection);
             let reach = Reach::single(1);
             game.settings.selection =
                 Selection::new(SelectionType::WithinReach(reach), SelectionAction::Interact);
@@ -624,7 +621,7 @@ pub fn pickup_item(entity_id: EntityId, data: &GameData) -> Action {
 pub fn decrease_move_mode(entity_id: EntityId, data: &GameData, msg_log: &mut MsgLog) {
     let new_move_mode = 
         data.entities.move_mode[&entity_id].decrease();
-    msg_log.log(Msg::MoveMode(new_move_mode));
+    msg_log.log(Msg::MoveMode(entity_id, new_move_mode));
 }
 
 pub fn increase_move_mode(entity_id: EntityId, data: &GameData, msg_log: &mut MsgLog) {
@@ -737,14 +734,14 @@ pub fn handle_skill(skill_index: usize,
     if let Some(selection) = selection {
         match action_loc {
             ActionLoc::Place(pos) => {
-                turn = selection.action.action_from_pos(pos, data);
+                turn = selection.action.action_from_pos(pos, selection.item, data);
                 dbg!(turn);
             }
 
             ActionLoc::Dir(dir) => {
                 let player_pos = data.entities.pos[&player_id];
                 if let Some(pos) = selection.typ.offset_pos(player_pos, dir) {
-                    turn = selection.action.action_from_pos(pos, data);
+                    turn = selection.action.action_from_pos(pos, selection.item, data);
                     dbg!(turn, dir, pos, player_pos);
                 }
             }
@@ -828,7 +825,7 @@ pub fn chord(loc: ActionLoc,
                     // alternate item use means drop or throw item
                     match loc {
                         ActionLoc::None => {
-                            msg_log.log(Msg::DropItem(player_id, target as usize);
+                            msg_log.log(Msg::DropItem(player_id, target as u64));
                         }
 
                         ActionLoc::Place(pos) => {

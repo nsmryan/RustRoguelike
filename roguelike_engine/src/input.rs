@@ -2,7 +2,6 @@ use serde::{Serialize, Deserialize};
 
 use roguelike_core::types::*;
 use roguelike_core::movement::Direction;
-use roguelike_core::config::Config;
 
 use crate::game::*;
 use crate::actions::*;

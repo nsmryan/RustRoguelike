@@ -1060,9 +1060,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
     // render cursor if enabled
     if game.config.use_cursor {
-        let cursor_id = game.data.find_by_name(EntityName::Cursor).unwrap();
-
-        let cursor_pos = game.data.entities.pos[&cursor_id];
+        let cursor_pos = game.settings.cursor_pos;
 
         let (cell_width, cell_height) = panel.cell_dims();
         let cell_width = cell_width as i32;
@@ -1072,9 +1070,9 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         let color = sdl2_color(game.config.color_orange);
         panel.target.set_draw_color(color);
         let pos_end = Pos::new(pos.x + cell_width, pos.y + cell_height);
-        panel.target.draw_line(pos.to_tuple(), pos_end.to_tuple());
+        panel.target.draw_line(pos.to_tuple(), pos_end.to_tuple()).unwrap();
 
-        panel.target.draw_line(move_x(pos, cell_width).to_tuple(), move_y(pos, cell_height).to_tuple());
+        panel.target.draw_line(move_x(pos, cell_width).to_tuple(), move_y(pos, cell_height).to_tuple()).unwrap();
 
         // TODO render a shadow cursor for the position you will step too
     }

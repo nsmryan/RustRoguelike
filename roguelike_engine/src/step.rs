@@ -198,7 +198,7 @@ pub fn test_game_step() {
 pub fn test_running() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone()).unwrap();
-    let mut input_action = InputAction::None;
+    let mut input_action;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     game.data.map = Map::from_dims(10, 10);

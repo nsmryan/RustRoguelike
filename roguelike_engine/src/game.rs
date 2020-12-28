@@ -14,10 +14,11 @@ use roguelike_core::movement::*;
 
 
 use crate::actions;
-use crate::actions::InputAction;
+use crate::actions::{InputAction, ActionResult};
 use crate::generation::*;
 use crate::make_map::{make_map, Vault, parse_vault};
 use crate::selection::*;
+use crate::resolve::resolve_messages;
 use crate::step::step_logic;
 #[cfg(test)]
 use crate::make_map::*;
@@ -112,7 +113,7 @@ impl Game {
             //}
         //}
 
-        let action_result;
+        let action_result: ActionResult;
         match self.settings.state {
             GameState::Playing => {
                 action_result = actions::handle_input_playing(self, input_action);
@@ -128,7 +129,7 @@ impl Game {
 
             GameState::Inventory => {
                 action_result = 
-                    actions::handle_input_inventory(input,
+                    actions::handle_input_inventory(input_action,
                                                     &self.data,
                                                     &mut self.settings,
                                                     &mut self.msg_log);
@@ -137,37 +138,33 @@ impl Game {
             GameState::Selection => {
                 self.settings.draw_selection_overlay = true;
 
-                let player_turn =
-                    actions::handle_input_selection(input,
+                action_result =
+                    actions::handle_input_selection(input_action,
                                                    &self.data,
                                                    &mut self.settings,
                                                    &self.config,
                                                    &mut self.msg_log);
-                action_result = ActionResult::new(player_turn, None);
             }
 
             GameState::SkillMenu => {
-                let player_turn = 
-                    actions::handle_input_skill_menu(input,
+                action_result = 
+                    actions::handle_input_skill_menu(input_action,
                                                      &self.data,
                                                      &mut self.settings,
                                                      &mut self.msg_log,
                                                      &self.config);
-                action_result = ActionResult::new(player_turn, None);
             }
 
             GameState::ClassMenu => {
-                let player_turn =
-                    actions::handle_input_class_menu(input,
+                action_result =
+                    actions::handle_input_class_menu(input_action,
                                                      &self.data,
                                                      &mut self.settings,
                                                      &mut self.msg_log);
-                action_result = ActionResult::new(player_turn, None);
             }
 
             GameState::ConfirmQuit => {
-                let player_turn = actions::handle_input_confirm_quit(input);
-                action_result = ActionResult::new(player_turn, None);
+                action_result = actions::handle_input_confirm_quit(input_action);
             }
 
             GameState::Exit => {
@@ -176,20 +173,20 @@ impl Game {
         }
 
         if let Some(state) = action_result.new_state {
-            settings.state = state;
-            msg_log.log(Msg::GameState(settings.state));
+            self.settings.state = state;
+            self.msg_log.log(Msg::GameState(self.settings.state));
         }
 
         // TODO consider moving this out? is state changing separate from carrying out the game
         // logic?
         if action_result.turn == Action::NoAction {
-            resolve_messages(&mut game.data,
-                             &mut game.msg_log,
-                             &mut game.settings,
-                             &mut game.rng,
-                             &game.config);
+            resolve_messages(&mut self.data,
+                             &mut self.msg_log,
+                             &mut self.settings,
+                             &mut self.rng,
+                             &self.config);
         } else {
-            let finsished_level = step_logic(self, player_turn);
+            let finsished_level = step_logic(self, action_result.turn);
             if finsished_level {
                 // TODO can we check for the last level, and either win or move on?
                 //self.settings.state = GameState::Win;
@@ -202,7 +199,7 @@ impl Game {
 
                 //settings.level_num += 1;
 
-                //make_map(&config.map_load.clone(), game);
+                //make_map(&config.map_load.clone(), self);
             }
         }
 
@@ -210,7 +207,7 @@ impl Game {
         //    return GameResult::Stop;
         //}
 
-        return game.settings.state != GameState::Exit;
+        return self.settings.state != GameState::Exit;
 
         // TODO this shouldn't be necessary anymore
         //while let Some(msg) = self.msg_log.pop() {
@@ -266,7 +263,7 @@ pub struct GameSettings {
     pub inventory_action: InventoryAction,
     pub level_num: usize,
     pub running: bool,
-    pub cursor_pos,
+    pub cursor_pos: Pos,
 }
 
 impl GameSettings {

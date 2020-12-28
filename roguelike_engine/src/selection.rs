@@ -26,9 +26,8 @@ impl SelectionAction {
 
         match self {
             SelectionAction::Throw => {
-                let player_id = data.find_by_name(EntityName::Player).unwrap();
                 let item_id = item_id.expect("Throwing an item, but nothing selected!");
-                action = Action::ThrowItem(pos, *item_id);
+                action = Action::ThrowItem(pos, item_id);
             }
 
             SelectionAction::Hammer => {
@@ -46,9 +45,8 @@ impl SelectionAction {
             }
 
             SelectionAction::PlaceTrap => {
-                let player_id = data.find_by_name(EntityName::Player).unwrap();
                 let trap_id = item_id.expect("Throwing a trap, but nothing selected!");
-                action = Action::PlaceTrap(pos, *trap_id);
+                action = Action::PlaceTrap(pos, trap_id);
             }
 
             SelectionAction::GrassThrow => {
@@ -169,6 +167,7 @@ impl Selection {
             typ,
             action,
             only_visible: false,
+            item: None,
         };
     }
 
@@ -209,7 +208,7 @@ impl Selection {
         let maybe_selected_pos: Option<Pos> = self.selected_pos(pos, selected, fov_radius, data);
 
         if let Some(selected_pos) = maybe_selected_pos {
-            return Some(self.action.action_from_pos(selected_pos, self.item_id, data));
+            return Some(self.action.action_from_pos(selected_pos, self.item, data));
         } else {
             return None;
         }

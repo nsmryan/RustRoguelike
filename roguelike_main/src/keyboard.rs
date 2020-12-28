@@ -1,13 +1,10 @@
 use sdl2::event::Event;
 use sdl2::mouse::MouseButton;
-use sdl2::keyboard::{Keycode, Scancode, Mod};
+use sdl2::keyboard::Keycode;
 
 use roguelike_core::types::*;
-use roguelike_core::movement::Direction;
-use roguelike_core::config::Config;
 
 use roguelike_engine::game::*;
-use roguelike_engine::actions::*;
 use roguelike_engine::input::*;
 
 use crate::display::*;
