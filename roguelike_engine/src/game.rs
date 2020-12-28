@@ -78,69 +78,12 @@ impl Game {
         actions::handle_input_universal(input_action, self);
 
         // TODO add a handle_input function to actions that takes action, data, settings, log, config
-        let action_result: ActionResult;
-        match self.settings.state {
-            GameState::Playing => {
-                action_result =
-                    actions::handle_input_playing(input_action,
-                                                  &self.data,
-                                                  &mut self.settings,
-                                                  &mut self.msg_log,
-                                                  &self.config);
-            }
-
-            GameState::Win => {
-                action_result = Default::default();
-            }
-
-            GameState::Lose => {
-                action_result = Default::default();
-            }
-
-            GameState::Inventory => {
-                action_result = 
-                    actions::handle_input_inventory(input_action,
-                                                    &self.data,
-                                                    &mut self.settings,
-                                                    &mut self.msg_log);
-            }
-
-            GameState::Selection => {
-                self.settings.draw_selection_overlay = true;
-
-                action_result =
-                    actions::handle_input_selection(input_action,
-                                                   &self.data,
-                                                   &mut self.settings,
-                                                   &self.config,
-                                                   &mut self.msg_log);
-            }
-
-            GameState::SkillMenu => {
-                action_result = 
-                    actions::handle_input_skill_menu(input_action,
-                                                     &self.data,
-                                                     &mut self.settings,
-                                                     &mut self.msg_log,
-                                                     &self.config);
-            }
-
-            GameState::ClassMenu => {
-                action_result =
-                    actions::handle_input_class_menu(input_action,
-                                                     &self.data,
-                                                     &mut self.settings,
-                                                     &mut self.msg_log);
-            }
-
-            GameState::ConfirmQuit => {
-                action_result = actions::handle_input_confirm_quit(input_action);
-            }
-
-            GameState::Exit => {
-                action_result = Default::default();
-            }
-        }
+        let action_result: ActionResult =
+            action::handle_input(input_action,
+                                 &self.data,
+                                 &mut self.settings,
+                                 &mut self.msg_log,
+                                 &self.config);
 
         if let Some(state) = action_result.new_state {
             self.settings.state = state;
