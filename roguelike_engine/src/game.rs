@@ -20,8 +20,6 @@ use crate::make_map::{make_map, Vault, parse_vault};
 use crate::selection::*;
 use crate::resolve::resolve_messages;
 use crate::step::step_logic;
-#[cfg(test)]
-use crate::make_map::*;
 
 
 pub struct Game {
@@ -74,48 +72,16 @@ impl Game {
     }
 
     // TODO be sure to handle the input action exit, win, and lose
-    // TODO returns whether to continue the game
     pub fn step_game(&mut self, input_action: InputAction, dt: f32) -> bool {
         self.settings.time += dt;
 
-        // TODO these are universal actions- they can be executed regardless of mode
-        //InputAction::ExploreAll
-        //    for x in 0..game.data.map.width() {
-        //        for y in 0..game.data.map.height() {
-        //            let pos = Pos::new(x, y);
-        //            game.data.map[pos].explored = true;
-        //        }
-        //    }
-        //}
-        //InputAction::RegenerateMap
-        //    let _position = make_map::make_map(&game.config.map_load.clone(), game);
-        //}
-        //InputAction::GodMode
-        //    // TODO hmmm... add a message, or resolve at higher level as a universal action
-        //    let god_mode_hp = 10000;
-        //    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-        //    game.data.entities.fighter[&player_id].hp = god_mode_hp;
-        //    game.data.entities.fighter[&player_id].max_hp = god_mode_hp;
-        //    game.data.entities.energy[&player_id] = 1000;
+        actions::handle_input_universal(input_action, self);
 
-        //    // toggle god mode flag
-        //    game.settings.god_mode = !game.settings.god_mode;
-        //}
-
-        // TODO console
-        //InputAction::ToggleConsole
-            //if game.settings.state == GameState::Console {
-            //    game.settings.state = GameState::Playing;
-            //} else {
-            //    //game.console.time_at_open = game.settings.time;
-            //    //game.console.height = 0;
-            //    //game.settings.state = GameState::Console;
-            //}
-        //}
-
+        // TODO add a handle_input function to actions that takes action, data, settings, log, config
         let action_result: ActionResult;
         match self.settings.state {
             GameState::Playing => {
+                // TODO need to fix up handle_input_playing to refactor step_game
                 action_result = actions::handle_input_playing(self, input_action);
             }
 
@@ -177,8 +143,6 @@ impl Game {
             self.msg_log.log(Msg::GameState(self.settings.state));
         }
 
-        // TODO consider moving this out? is state changing separate from carrying out the game
-        // logic?
         if action_result.turn == Action::NoAction {
             resolve_messages(&mut self.data,
                              &mut self.msg_log,
@@ -188,63 +152,20 @@ impl Game {
         } else {
             let finsished_level = step_logic(self, action_result.turn);
             if finsished_level {
-                // TODO can we check for the last level, and either win or move on?
-                //self.settings.state = GameState::Win;
+                let player_id = self.data.find_by_name(EntityName::Player).unwrap();
+                let key_id = self.data.is_in_inventory(player_id, Item::Goal).expect("Won level without goal!");
+                self.data.entities.remove_item(player_id, key_id);
 
-                //let player_id = data.find_by_name(EntityName::Player).unwrap();
-                //let key_id = data.is_in_inventory(player_id, Item::Goal).expect("Won level without goal!");
-                //data.entities.remove_item(player_id, key_id);
+                self.settings.state = GameState::Playing;
 
-                //settings.state = GameState::Playing;
+                self.settings.level_num += 1;
 
-                //settings.level_num += 1;
-
-                //make_map(&config.map_load.clone(), self);
+                make_map(&self.config.map_load.clone(), self);
             }
         }
 
-        //if self.settings.exiting {
-        //    return GameResult::Stop;
-        //}
-
         return self.settings.state != GameState::Exit;
-
-        // TODO this shouldn't be necessary anymore
-        //while let Some(msg) = self.msg_log.pop() {
-        //    let msg_line = msg.msg_line(&self.data);
-        //    if msg_line.len() > 0 {
-        //        println!("msg: {}", msg_line);
-        //    }
-        //}
     }
-
-//    fn step_console(&mut self) -> GameResult {
-//        let input = self.input_action;
-//        self.input_action = InputAction::None;
-//
-//        let time_since_open = self.settings.time - self.console.time_at_open;
-//        let lerp_amount = clampf(time_since_open / self.config.console_speed, 0.0, 1.0);
-//        self.console.height = lerp(self.console.height as f32,
-//                                   self.config.console_max_height as f32,
-//                                   lerp_amount) as u32;
-//        if (self.console.height as i32 - self.config.console_max_height as i32).abs() < 2 {
-//            self.console.height = self.config.console_max_height;
-//        }
-//
-//        if self.key_input.len() > 0 {
-//            // TODO add console back in
-//            //actions::handle_input_console(input,
-//            //                              &mut self.key_input,
-//            //                              &mut self.console,
-//            //                              &mut self.data,
-//            //                              &mut self.display,
-//            //                              &mut self.settings,
-//            //                              &self.config,
-//            //                              &mut self.msg_log);
-//        }
-//
-//        return GameResult::Continue;
-//    }
 }
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
@@ -255,7 +176,6 @@ pub struct GameSettings {
     pub state: GameState,
     pub draw_selection_overlay: bool,
     pub overlay: bool,
-    pub console: bool,
     pub time: f32,
     pub render_map: bool,
     pub selection: Selection,
@@ -274,7 +194,6 @@ impl GameSettings {
             state: GameState::Playing,
             draw_selection_overlay: false,
             overlay: false,
-            console: false,
             time: 0.0,
             render_map: true,
             selection: Selection::default(),

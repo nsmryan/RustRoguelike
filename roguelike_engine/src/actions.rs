@@ -206,6 +206,37 @@ impl FromStr for InputAction {
     }
 }
 
+pub fn handle_input_universal(input_action: InputAction, game: &mut Game) {
+    match input_action {
+        InputAction::ExploreAll => {
+            for x in 0..game.data.map.width() {
+                for y in 0..game.data.map.height() {
+                    let pos = Pos::new(x, y);
+                    game.data.map[pos].explored = true;
+                }
+            }
+        }
+
+        InputAction::RegenerateMap => {
+            let _position = make_map::make_map(&game.config.map_load.clone(), game);
+        }
+
+        InputAction::GodMode => {
+            // TODO hmmm... add a message, or resolve at higher level as a universal action
+            let god_mode_hp = 10000;
+            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+            game.data.entities.fighter[&player_id].hp = god_mode_hp;
+            game.data.entities.fighter[&player_id].max_hp = god_mode_hp;
+            game.data.entities.energy[&player_id] = 1000;
+
+            // toggle god mode flag
+            game.settings.god_mode = !game.settings.god_mode;
+        }
+
+        _ => {}
+    }
+}
+
 //pub fn handle_input_console(input: InputAction,
 //                            key_input: &mut Vec<(KeyDir, Keycode)>,
 //                            console: &mut Console,
