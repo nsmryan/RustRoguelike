@@ -359,9 +359,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
     }
 
-    if game.data.find_by_name(EntityName::Cursor).is_none() {
-        make_cursor(&mut game.data.entities, player_position, &game.config, &mut game.msg_log);
-    }
+    game.settings.cursor_pos = player_position;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     game.data.entities.pos[&player_id] = player_position;

@@ -21,14 +21,13 @@ pub enum SelectionAction {
 }
 
 impl SelectionAction {
-    pub fn action_from_pos(&self, pos: Pos, data: &GameData) -> Action {
+    pub fn action_from_pos(&self, pos: Pos, item_id: Option<EntityId>, data: &GameData) -> Action {
         let mut action: Action;
 
         match self {
             SelectionAction::Throw => {
                 let player_id = data.find_by_name(EntityName::Player).unwrap();
-                let item_id =
-                    data.entities.selected_item.get(&player_id).expect("Throwing an item, but nothing selected!");
+                let item_id = item_id.expect("Throwing an item, but nothing selected!");
                 action = Action::ThrowItem(pos, *item_id);
             }
 
@@ -48,8 +47,7 @@ impl SelectionAction {
 
             SelectionAction::PlaceTrap => {
                 let player_id = data.find_by_name(EntityName::Player).unwrap();
-                let trap_id =
-                    data.entities.selected_item.get(&player_id).expect("Placing a trap, but nothing selected!");
+                let trap_id = item_id.expect("Throwing a trap, but nothing selected!");
                 action = Action::PlaceTrap(pos, *trap_id);
             }
 
@@ -152,6 +150,7 @@ pub struct Selection {
     pub typ: SelectionType,
     pub action: SelectionAction,
     pub only_visible: bool,
+    pub item: Option<EntityId>,
     // TODO consider adding:
     // SelectionFilter enum with Entity/Wall/Empty/Any
     // position to selection will have to check available positions and find one that matches
@@ -210,7 +209,7 @@ impl Selection {
         let maybe_selected_pos: Option<Pos> = self.selected_pos(pos, selected, fov_radius, data);
 
         if let Some(selected_pos) = maybe_selected_pos {
-            return Some(self.action.action_from_pos(selected_pos, data));
+            return Some(self.action.action_from_pos(selected_pos, self.item_id, data));
         } else {
             return None;
         }

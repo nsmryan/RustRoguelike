@@ -11,34 +11,12 @@ use roguelike_core::movement::*;
 
 
 use crate::game::*;
-use crate::actions::InputAction; //, KeyDirection};
+use crate::actions::InputAction;
 use crate::generation::*;
 use crate::resolve::resolve_messages;
 #[cfg(test)]
 use crate::make_map::*;
 
-
-/// Check whether the exit condition for the game is met.
-fn level_exit_condition_met(data: &GameData) -> bool {
-    // loop over objects in inventory, and check whether any
-    // are the key object.
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = data.entities.pos[&player_id];
-
-    let mut exit_condition = false;
-    if let Some(exit_id) = data.find_by_name(EntityName::Exit) {
-        let exit_pos = data.entities.pos[&exit_id];
-
-        let has_key = data.is_in_inventory(player_id, Item::Goal).is_some();
-
-        //let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
-        let on_exit_tile = exit_pos == player_pos;
-
-        exit_condition = has_key && on_exit_tile;
-    }
-
-    return exit_condition;
-}
 
 pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
     game.msg_log.clear();
@@ -62,9 +40,10 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
     if player_action.takes_turn() && game.data.entities.status[&player_id].alive && !won_level {
         let mut ai_id: Vec<EntityId> = Vec::new();
 
+        // get entitiy ids for any active AI entity
         for key in game.data.entities.ids.iter() {
             if game.data.entities.ai.get(key).is_some()    &&
-               game.data.entities.status[key].alive         &&
+               game.data.entities.status[key].alive        &&
                game.data.entities.limbo.get(key).is_none() &&
                game.data.entities.fighter.get(key).is_some() {
                ai_id.push(*key);
@@ -157,6 +136,28 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
     }
 
     return level_exit_condition_met(&game.data);
+}
+
+/// Check whether the exit condition for the game is met.
+fn level_exit_condition_met(data: &GameData) -> bool {
+    // loop over objects in inventory, and check whether any
+    // are the key object.
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = data.entities.pos[&player_id];
+
+    let mut exit_condition = false;
+    if let Some(exit_id) = data.find_by_name(EntityName::Exit) {
+        let exit_pos = data.entities.pos[&exit_id];
+
+        let has_key = data.is_in_inventory(player_id, Item::Goal).is_some();
+
+        //let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
+        let on_exit_tile = exit_pos == player_pos;
+
+        exit_condition = has_key && on_exit_tile;
+    }
+
+    return exit_condition;
 }
 
 #[test]

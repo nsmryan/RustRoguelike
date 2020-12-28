@@ -425,6 +425,7 @@ pub enum GameState {
     SkillMenu,
     ClassMenu,
     ConfirmQuit,
+    Exit,
 }
 
 impl Default for GameState {
@@ -485,7 +486,6 @@ pub enum ItemClass {
     Primary,
     Secondary,
 }
-
 
 pub type Hp = i32;
 

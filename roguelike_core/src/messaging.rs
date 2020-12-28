@@ -73,7 +73,6 @@ pub enum Msg {
     HammerHitEntity(EntityId, EntityId), // entity, hit entity
     HammerHitWall(EntityId, Blocked),
     Stabbed(EntityId, EntityId), // entity, hit entity
-    ChangeLevel(),
     Action(EntityId, Action),
     FailedBlink(EntityId),
     NotEnoughEnergy(EntityId),
@@ -82,6 +81,9 @@ pub enum Msg {
     PlayerTurn(),
     Triggered(EntityId, EntityId), // trap, entity
     Untriggered(EntityId, EntityId), // trap, entity
+    AddClass(EntityClass),
+    SwapPrimaryItem,
+    DropItem(EntityId, EntityId), // entity, item
 }
 
 impl Msg {
@@ -275,6 +277,19 @@ impl Msg {
 
             Msg::Untriggered(_trap, entity_id) => {
                 return format!("{:?} stepped off something!", data.entities.name[entity_id]);
+            }
+
+            Msg::AddClass(class) => {
+                return format!("Player chose class {:?}!", class);
+            }
+            
+            Msg::SwapPrimaryItem => {
+                return format!("Player swapped primary and secondary item");
+            }
+
+            Msg::DropItem(entity_id, item_index) => {
+                let item_id = data.entities.inventory[entity_id][item_id];
+                return format!("{:?} dropped a {:?}!", data.entities.name[entity_id], item_id);
             }
 
             _ => {

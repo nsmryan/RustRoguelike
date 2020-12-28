@@ -162,6 +162,56 @@ pub fn resolve_messages(data: &mut GameData,
                 triggered(trigger, data, msg_log);
             }
 
+            Msg::AddClass(class) => {
+                match classes[class_index] {
+                    EntityClass::General => {
+                        data.entities.class[&player_id] = classes[class_index];
+                        data.entities.add_skill(player_id, Skill::Blink);
+                    }
+
+                    EntityClass::Monolith => {
+                        data.entities.class[&player_id] = classes[class_index];
+                        data.entities.add_skill(player_id, Skill::PassWall);
+                        data.entities.add_skill(player_id, Skill::Rubble);
+                        data.entities.add_skill(player_id, Skill::Reform);
+                    }
+
+                    EntityClass::Grass => {
+                        data.entities.class[&player_id] = classes[class_index];
+                        data.entities.add_skill(player_id, Skill::GrassThrow);
+                        data.entities.add_skill(player_id, Skill::GrassBlade);
+                    }
+
+                    EntityClass::Clockwork => {
+                        data.entities.class[&player_id] = classes[class_index];
+                        data.entities.add_skill(player_id, Skill::Push);
+                    }
+                }
+            }
+
+            Msg::SwapPrimaryItem => {
+                // TODO make a message for this, and allow resolve to do this.
+                if item_primary_at(player_id, &mut game.data.entities, 0) &&
+                   item_primary_at(player_id, &mut game.data.entities, 1) {
+                       let temp_id = game.data.entities.inventory[&player_id][0];
+
+                       game.data.entities.inventory[&player_id][0] = 
+                           game.data.entities.inventory[&player_id][1];
+
+                       game.data.entities.inventory[&player_id][1] = temp_id;
+               }
+            }
+
+            Msg::MoveMode(entity_id, mode) => {
+                data.entities.move_mode[entity_id] = new_move_mode;
+                // update entities movement reach with their new move mode
+                data.entities.movement[entity_id] = reach_by_mode(data.entities.move_mode[entity_id]);
+            }
+
+            Msg::DropItem(entity_id, item_index) => {
+                action_result = inventory_drop_item(item_index, data, settings, msg_log);
+            }
+
             _ => {
             }
         }
@@ -737,6 +787,43 @@ pub fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Opti
     }
     
     return None;
+}
+
+pub fn inventory_drop_item(item_index: usize,
+                           data: &mut GameData,
+                           settings: &mut GameSettings,
+                           msg_log: &mut MsgLog) {
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = data.entities.pos[&player_id];
+    let item_id = data.entities.inventory[&player_id][item_index];
+
+    // Find a place to drop the item, without placing it on the same tile
+    // as another item.
+    let mut found_tile = false;
+    let mut dist = 1;
+    while !found_tile && dist < 10 {
+        let positions = data.map.floodfill(player_pos, dist);
+
+        // TODO(&mut) move to resolve
+        for pos in positions {
+            if data.item_at_pos(pos).is_none() {
+                data.entities.remove_item(player_id, item_id);
+                data.entities.set_pos(item_id, pos);
+
+                settings.state = GameState::Playing;
+                msg_log.log(Msg::GameState(settings.state));
+
+                found_tile = true;
+                break;
+            }
+        }
+
+        dist += 1;
+    }
+
+    if !found_tile {
+        msg_log.log(Msg::DropFailed(player_id));
+    }
 }
 
 fn process_moved_message(entity_id: EntityId,

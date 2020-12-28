@@ -1,3 +1,5 @@
+use std::default::Default;
+
 use rand::prelude::*;
 
 use serde::{Serialize, Deserialize};
@@ -12,7 +14,7 @@ use roguelike_core::movement::*;
 
 
 use crate::actions;
-use crate::actions::InputAction; //, KeyDirection};
+use crate::actions::InputAction;
 use crate::generation::*;
 use crate::make_map::{make_map, Vault, parse_vault};
 use crate::selection::*;
@@ -70,172 +72,153 @@ impl Game {
         }
     }
 
-    pub fn step_game(&mut self, input_action: InputAction, dt: f32) -> GameResult {
+    // TODO be sure to handle the input action exit, win, and lose
+    // TODO returns whether to continue the game
+    pub fn step_game(&mut self, input_action: InputAction, dt: f32) -> bool {
         self.settings.time += dt;
 
-        let result;
+        // TODO these are universal actions- they can be executed regardless of mode
+        //InputAction::ExploreAll
+        //    for x in 0..game.data.map.width() {
+        //        for y in 0..game.data.map.height() {
+        //            let pos = Pos::new(x, y);
+        //            game.data.map[pos].explored = true;
+        //        }
+        //    }
+        //}
+        //InputAction::RegenerateMap
+        //    let _position = make_map::make_map(&game.config.map_load.clone(), game);
+        //}
+        //InputAction::GodMode
+        //    // TODO hmmm... add a message, or resolve at higher level as a universal action
+        //    let god_mode_hp = 10000;
+        //    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+        //    game.data.entities.fighter[&player_id].hp = god_mode_hp;
+        //    game.data.entities.fighter[&player_id].max_hp = god_mode_hp;
+        //    game.data.entities.energy[&player_id] = 1000;
+
+        //    // toggle god mode flag
+        //    game.settings.god_mode = !game.settings.god_mode;
+        //}
+
+        // TODO console
+        //InputAction::ToggleConsole
+            //if game.settings.state == GameState::Console {
+            //    game.settings.state = GameState::Playing;
+            //} else {
+            //    //game.console.time_at_open = game.settings.time;
+            //    //game.console.height = 0;
+            //    //game.settings.state = GameState::Console;
+            //}
+        //}
+
+        let action_result;
         match self.settings.state {
             GameState::Playing => {
-                result = self.step_playing(input_action);
+                action_result = actions::handle_input_playing(self, input_action);
             }
 
             GameState::Win => {
-                result = self.step_win(input_action);
+                action_result = Default::default();
             }
 
             GameState::Lose => {
-                result = self.step_lose(input_action);
+                action_result = Default::default();
             }
 
             GameState::Inventory => {
-                result = self.step_inventory(input_action);
+                action_result = 
+                    actions::handle_input_inventory(input,
+                                                    &self.data,
+                                                    &mut self.settings,
+                                                    &mut self.msg_log);
             }
 
             GameState::Selection => {
-                result = self.step_selection(input_action);
+                self.settings.draw_selection_overlay = true;
+
+                let player_turn =
+                    actions::handle_input_selection(input,
+                                                   &self.data,
+                                                   &mut self.settings,
+                                                   &self.config,
+                                                   &mut self.msg_log);
+                action_result = ActionResult::new(player_turn, None);
             }
 
             GameState::SkillMenu => {
-                result = self.step_skill_menu(input_action);
+                let player_turn = 
+                    actions::handle_input_skill_menu(input,
+                                                     &self.data,
+                                                     &mut self.settings,
+                                                     &mut self.msg_log,
+                                                     &self.config);
+                action_result = ActionResult::new(player_turn, None);
             }
 
             GameState::ClassMenu => {
-                result = self.step_class_menu(input_action);
+                let player_turn =
+                    actions::handle_input_class_menu(input,
+                                                     &self.data,
+                                                     &mut self.settings,
+                                                     &mut self.msg_log);
+                action_result = ActionResult::new(player_turn, None);
             }
 
             GameState::ConfirmQuit => {
-                result = self.step_confirm_quit(input_action);
+                let player_turn = actions::handle_input_confirm_quit(input);
+                action_result = ActionResult::new(player_turn, None);
+            }
+
+            GameState::Exit => {
+                action_result = Default::default();
             }
         }
 
-        while let Some(msg) = self.msg_log.pop() {
-            let msg_line = msg.msg_line(&self.data);
-            if msg_line.len() > 0 {
-                println!("msg: {}", msg_line);
+        if let Some(state) = action_result.new_state {
+            settings.state = state;
+            msg_log.log(Msg::GameState(settings.state));
+        }
+
+        // TODO consider moving this out? is state changing separate from carrying out the game
+        // logic?
+        if action_result.turn == Action::NoAction {
+            resolve_messages(&mut game.data,
+                             &mut game.msg_log,
+                             &mut game.settings,
+                             &mut game.rng,
+                             &game.config);
+        } else {
+            let finsished_level = step_logic(self, player_turn);
+            if finsished_level {
+                // TODO can we check for the last level, and either win or move on?
+                //self.settings.state = GameState::Win;
+
+                //let player_id = data.find_by_name(EntityName::Player).unwrap();
+                //let key_id = data.is_in_inventory(player_id, Item::Goal).expect("Won level without goal!");
+                //data.entities.remove_item(player_id, key_id);
+
+                //settings.state = GameState::Playing;
+
+                //settings.level_num += 1;
+
+                //make_map(&config.map_load.clone(), game);
             }
         }
 
-        return result;
-    }
+        //if self.settings.exiting {
+        //    return GameResult::Stop;
+        //}
 
-    fn step_win(&mut self, input_action: InputAction) -> GameResult {
-        if matches!(input_action, InputAction::Exit) {
-            return GameResult::Stop;
-        }
+        return game.settings.state != GameState::Exit;
 
-        self.msg_log.log(Msg::ChangeLevel());
-
-        let player_id = self.data.find_by_name(EntityName::Player).unwrap();
-        let key_id = self.data.is_in_inventory(player_id, Item::Goal).expect("Won level without goal!");
-        self.data.entities.remove_item(player_id, key_id);
-
-        self.settings.state = GameState::Playing;
-
-        self.settings.level_num += 1;
-
-        make_map(&self.config.map_load.clone(), self);
-
-        return GameResult::Continue;
-    }
-
-    fn step_lose(&mut self, input_action: InputAction) -> GameResult {
-        if input_action == InputAction::Exit {
-            return GameResult::Stop;
-        }
-
-        return GameResult::Continue;
-    }
-
-    fn step_inventory(&mut self, input_action: InputAction) -> GameResult {
-        let input = input_action;
-
-        actions::handle_input_inventory(input, &mut self.data, &mut self.settings, &mut self.msg_log);
-
-        if self.settings.exiting {
-            return GameResult::Stop;
-        }
-
-        return GameResult::Continue;
-    }
-
-    fn step_skill_menu(&mut self, input_action: InputAction) -> GameResult {
-        let input = input_action;
-
-        let player_action =
-            actions::handle_input_skill_menu(input, &mut self.data, &mut self.settings, &mut self.msg_log, &self.config);
-
-        if player_action != Action::NoAction {
-            let win = step_logic(self, player_action);
-
-            if win {
-                self.settings.state = GameState::Win;
-            }
-        }
-
-        if self.settings.exiting {
-            return GameResult::Stop;
-        }
-
-        return GameResult::Continue;
-    }
-
-    fn step_class_menu(&mut self, input_action: InputAction) -> GameResult {
-        let input = input_action;
-
-        let player_action =
-            actions::handle_input_class_menu(input, &mut self.data, &mut self.settings, &mut self.msg_log);
-
-        if player_action != Action::NoAction {
-            let win = step_logic(self, player_action);
-
-            if win {
-                self.settings.state = GameState::Win;
-            }
-        }
-
-        if self.settings.exiting {
-            return GameResult::Stop;
-        }
-
-        return GameResult::Continue;
-    }
-
-    fn step_confirm_quit(&mut self, input_action: InputAction) -> GameResult {
-        let input = input_action;
-
-        actions::handle_input_confirm_quit(input, &mut self.data, &mut self.settings, &mut self.msg_log);
-
-        if self.settings.exiting {
-            return GameResult::Stop;
-        }
-
-        return GameResult::Continue;
-    }
-
-    fn step_selection(&mut self, input_action: InputAction) -> GameResult {
-        let input = input_action;
-
-        self.settings.draw_selection_overlay = true;
-
-        let player_action =
-            actions::handle_input_selection(input,
-                                           &mut self.data,
-                                           &mut self.settings,
-                                           &self.config,
-                                           &mut self.msg_log);
-
-        if player_action != Action::NoAction {
-            let win = step_logic(self, player_action);
-            if win {
-                self.settings.state = GameState::Win;
-            }
-        }
-
-        if self.settings.exiting {
-            return GameResult::Stop;
-        }
-
-        return GameResult::Continue;
+        // TODO this shouldn't be necessary anymore
+        //while let Some(msg) = self.msg_log.pop() {
+        //    let msg_line = msg.msg_line(&self.data);
+        //    if msg_line.len() > 0 {
+        //        println!("msg: {}", msg_line);
+        //    }
+        //}
     }
 
 //    fn step_console(&mut self) -> GameResult {
@@ -265,29 +248,6 @@ impl Game {
 //
 //        return GameResult::Continue;
 //    }
-
-    fn step_playing(&mut self, input_action: InputAction) -> GameResult {
-        let player_action = actions::handle_input_playing(self, input_action);
-
-        if player_action != Action::NoAction {
-            let win = step_logic(self, player_action);
-            if win {
-                self.settings.state = GameState::Win;
-            }
-        }
-
-        if self.settings.exiting {
-            return GameResult::Stop;
-        }
-
-        return GameResult::Continue;
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
-pub enum GameResult {
-    Continue,
-    Stop,
 }
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
@@ -306,11 +266,11 @@ pub struct GameSettings {
     pub inventory_action: InventoryAction,
     pub level_num: usize,
     pub running: bool,
+    pub cursor_pos,
 }
 
 impl GameSettings {
-    pub fn new(turn_count: usize,
-               god_mode: bool) -> GameSettings {
+    pub fn new(turn_count: usize, god_mode: bool) -> GameSettings {
         return GameSettings {
             turn_count,
             god_mode,
@@ -326,6 +286,7 @@ impl GameSettings {
             inventory_action: InventoryAction::default(),
             level_num: 0,
             running: true,
+            cursor_pos: Pos::new(0, 0),
         };
     }
 }
