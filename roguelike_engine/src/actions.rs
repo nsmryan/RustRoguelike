@@ -797,10 +797,14 @@ pub fn chord(loc: ActionLoc,
             }
 
             ActionLoc::Place(pos) => {
-                let dxy = sub_pos(pos, player_pos);
-                let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+                if pos == player_pos {
+                    turn = Action::Pass;
+                } else {
+                    let dxy = sub_pos(pos, player_pos);
+                    let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
 
-                turn = Action::MoveDir(direction);
+                    turn = Action::MoveDir(direction);
+                }
             }
         }
     } else {
