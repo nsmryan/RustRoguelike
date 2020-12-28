@@ -71,19 +71,17 @@ impl Game {
         }
     }
 
-    // TODO be sure to handle the input action exit, win, and lose
     pub fn step_game(&mut self, input_action: InputAction, dt: f32) -> bool {
         self.settings.time += dt;
 
         actions::handle_input_universal(input_action, self);
 
-        // TODO add a handle_input function to actions that takes action, data, settings, log, config
         let action_result: ActionResult =
-            action::handle_input(input_action,
-                                 &self.data,
-                                 &mut self.settings,
-                                 &mut self.msg_log,
-                                 &self.config);
+            actions::handle_input(input_action,
+                                  &self.data,
+                                  &mut self.settings,
+                                  &mut self.msg_log,
+                                  &self.config);
 
         if let Some(state) = action_result.new_state {
             self.settings.state = state;

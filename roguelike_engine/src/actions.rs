@@ -497,10 +497,10 @@ pub fn handle_input(input_action: InputAction,
     match settings.state {
         GameState::Playing => {
             action_result =
-                actions::handle_input_playing(input_action,
+                handle_input_playing(input_action,
                                               data,
                                               settings,
-                                              .msg_log,
+                                              msg_log,
                                               config);
         }
 
@@ -514,7 +514,7 @@ pub fn handle_input(input_action: InputAction,
 
         GameState::Inventory => {
             action_result = 
-                actions::handle_input_inventory(input_action,
+                handle_input_inventory(input_action,
                                                 data,
                                                 settings,
                                                 msg_log);
@@ -524,7 +524,7 @@ pub fn handle_input(input_action: InputAction,
             settings.draw_selection_overlay = true;
 
             action_result =
-                actions::handle_input_selection(input_action,
+                handle_input_selection(input_action,
                                                data,
                                                settings,
                                                config,
@@ -533,7 +533,7 @@ pub fn handle_input(input_action: InputAction,
 
         GameState::SkillMenu => {
             action_result = 
-                actions::handle_input_skill_menu(input_action,
+                handle_input_skill_menu(input_action,
                                                  data,
                                                  settings,
                                                  msg_log,
@@ -542,14 +542,14 @@ pub fn handle_input(input_action: InputAction,
 
         GameState::ClassMenu => {
             action_result =
-                actions::handle_input_class_menu(input_action,
+                handle_input_class_menu(input_action,
                                                  data,
                                                  settings,
                                                  msg_log);
         }
 
         GameState::ConfirmQuit => {
-            action_result = actions::handle_input_confirm_quit(input_action);
+            action_result = handle_input_confirm_quit(input_action);
         }
 
         GameState::Exit => {
