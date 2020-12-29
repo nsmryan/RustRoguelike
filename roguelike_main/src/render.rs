@@ -381,104 +381,110 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
     let sprite_key = display_state.lookup_spritekey("tiles");
 
-    if let Some(mouse) = mouse_xy {
-        let color = game.config.color_soft_green;
+    let info_pos = 
+        if let Some(mouse) = mouse_xy {
+            mouse
+        } else {
+            game.settings.cursor_pos
+        };
 
-        let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-        let player_pos = game.data.entities.pos[&player_id];
 
-        let object_ids =
-            get_entity_under_mouse(mouse, &mut game.data, &game.config);
+    let color = game.config.color_soft_green;
 
-        let mut y_pos = 1;
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = game.data.entities.pos[&player_id];
 
-        let mut text_list = Vec::new();
+    let object_ids =
+        get_entity_at_pos(info_pos, &mut game.data, &game.config);
 
-        text_list.push(format!("({:>2},{:>2})", mouse.x, mouse.y));
+    let mut y_pos = 1;
 
-        let text_pos = Pos::new(1, y_pos);
+    let mut text_list = Vec::new();
 
-        {
-            let tile_sprite = &mut display_state.sprites[&sprite_key];
-            tile_sprite.draw_text_list(panel,
-                                       &text_list,
-                                       text_pos,
-                                       color);
-        }
-        text_list.clear();
+    text_list.push(format!("({:>2},{:>2})", info_pos.x, info_pos.y));
 
-        y_pos += 1;
+    let text_pos = Pos::new(1, y_pos);
 
-        let in_fov = game.settings.god_mode ||
-                     game.data.map.is_in_fov(player_pos, mouse, game.config.fov_radius_player);
-
-        // only display first object
-        if let Some(obj_id) = object_ids.first() {
-            // only display things in the player's FOV
-            if in_fov {
-                if let Some(fighter) = game.data.entities.fighter.get(obj_id) {
-                    y_pos += 1;
-
-                    let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
-
-                    render_bar(panel,
-                               display_state,
-                               health_percent,
-                               y_pos,
-                               game.config.color_red,
-                               Color::white());
-
-                    y_pos += 2;
-                }
-
-                text_list.push(format!("{:?}", game.data.entities.name[obj_id]));
-
-                text_list.push(format!(""));
-
-                if let Some(direction) = game.data.entities.direction.get(obj_id) {
-                    text_list.push(format!("Facing"));
-                    text_list.push(format!("  {}", direction));
-                    text_list.push(format!(""));
-                }
-
-                if game.data.entities.fighter.get_mut(obj_id).map_or(false, |fighter| fighter.hp <= 0) {
-                    text_list.push(format!("{}", "dead"));
-                } else if let Some(behave) = game.data.entities.behavior.get(obj_id) {
-                    text_list.push(format!("{}", behave.description()));
-                }
-            }
-        }
-
+    {
         let tile_sprite = &mut display_state.sprites[&sprite_key];
-        let text_pos = Pos::new(1, y_pos);
         tile_sprite.draw_text_list(panel,
                                    &text_list,
                                    text_pos,
                                    color);
-        text_list.clear();
+    }
+    text_list.clear();
 
-        y_pos = 10;
+    y_pos += 1;
+
+    let in_fov = game.settings.god_mode ||
+                 game.data.map.is_in_fov(player_pos, info_pos, game.config.fov_radius_player);
+
+    // only display first object
+    if let Some(obj_id) = object_ids.first() {
+        // only display things in the player's FOV
         if in_fov {
-            let text_pos = Pos::new(1, y_pos);
-            text_list.push(format!("Tile is"));
-            text_list.push(format!("{:?}",  game.data.map[mouse].surface));
-            if game.data.map[mouse].bottom_wall != Wall::Empty {
-                text_list.push("Lower wall".to_string());
+            if let Some(fighter) = game.data.entities.fighter.get(obj_id) {
+                y_pos += 1;
+
+                let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
+
+                render_bar(panel,
+                           display_state,
+                           health_percent,
+                           y_pos,
+                           game.config.color_red,
+                           Color::white());
+
+                y_pos += 2;
             }
 
-            if game.data.map[mouse].left_wall != Wall::Empty {
-                text_list.push("Left wall".to_string());
+            text_list.push(format!("{:?}", game.data.entities.name[obj_id]));
+
+            text_list.push(format!(""));
+
+            if let Some(direction) = game.data.entities.direction.get(obj_id) {
+                text_list.push(format!("Facing"));
+                text_list.push(format!("  {}", direction));
+                text_list.push(format!(""));
             }
 
-            if game.data.map[mouse].block_move {
-                text_list.push(format!("blocked"));
+            if game.data.entities.fighter.get_mut(obj_id).map_or(false, |fighter| fighter.hp <= 0) {
+                text_list.push(format!("{}", "dead"));
+            } else if let Some(behave) = game.data.entities.behavior.get(obj_id) {
+                text_list.push(format!("{}", behave.description()));
             }
-
-            tile_sprite.draw_text_list(panel,
-                                       &text_list,
-                                       text_pos,
-                                       color);
         }
+    }
+
+    let tile_sprite = &mut display_state.sprites[&sprite_key];
+    let text_pos = Pos::new(1, y_pos);
+    tile_sprite.draw_text_list(panel,
+                               &text_list,
+                               text_pos,
+                               color);
+    text_list.clear();
+
+    y_pos = 10;
+    if in_fov {
+        let text_pos = Pos::new(1, y_pos);
+        text_list.push(format!("Tile is"));
+        text_list.push(format!("{:?}",  game.data.map[info_pos].surface));
+        if game.data.map[info_pos].bottom_wall != Wall::Empty {
+            text_list.push("Lower wall".to_string());
+        }
+
+        if game.data.map[info_pos].left_wall != Wall::Empty {
+            text_list.push("Left wall".to_string());
+        }
+
+        if game.data.map[info_pos].block_move {
+            text_list.push(format!("blocked"));
+        }
+
+        tile_sprite.draw_text_list(panel,
+                                   &text_list,
+                                   text_pos,
+                                   color);
     }
 }
 
@@ -1158,7 +1164,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     // draw attack and fov position highlights
     if let Some(mouse_xy) = map_mouse_pos {
         // Draw monster attack overlay
-        let object_ids = get_entity_under_mouse(mouse_xy, &mut game.data, &game.config);
+        let object_ids = get_entity_at_pos(mouse_xy, &mut game.data, &game.config);
         for entity_id in object_ids.iter() {
             let pos = game.data.entities.pos[entity_id];
 
@@ -1303,9 +1309,9 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     }
 }
 
-fn get_entity_under_mouse(mouse_pos: Pos,
-                          data: &mut GameData,
-                          config: &Config) -> Vec<EntityId> {
+fn get_entity_at_pos(check_pos: Pos,
+                     data: &mut GameData,
+                     config: &Config) -> Vec<EntityId> {
     let mut object_ids: Vec<EntityId> = Vec::new();
 
     for key in data.entities.ids.iter() {
@@ -1313,8 +1319,8 @@ fn get_entity_under_mouse(mouse_pos: Pos,
         let is_mouse = data.entities.name[key] == EntityName::Mouse;
         let removing = data.entities.needs_removal[key];
 
-        if !removing && !is_mouse && mouse_pos == pos {
-            if data.map.is_in_fov(pos, mouse_pos, config.fov_radius_player) {
+        if !removing && !is_mouse && check_pos == pos {
+            if data.map.is_in_fov(pos, check_pos, config.fov_radius_player) {
                 object_ids.push(*key);
             }
         }
