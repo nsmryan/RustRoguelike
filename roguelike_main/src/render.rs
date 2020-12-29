@@ -11,7 +11,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
-use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, move_x, move_y};
+use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, move_x, move_y, sub_pos};
 use roguelike_core::line::line;
 
 use roguelike_engine::game::*;
@@ -1060,6 +1060,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
     // render cursor if enabled
     if game.config.use_cursor {
+        // render cursor itself
         let cursor_pos = game.settings.cursor_pos;
 
         let (cell_width, cell_height) = panel.cell_dims();
@@ -1074,7 +1075,18 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
         panel.target.draw_line(move_x(pos, cell_width).to_tuple(), move_y(pos, cell_height).to_tuple()).unwrap();
 
-        // TODO render a shadow cursor for the position you will step too
+        // render shadow cursor for next step
+        if cursor_pos != player_pos {
+            let alpha = game.data.entities.color[&player_id].a;
+            game.data.entities.color[&player_id].a = 100;
+            let dxy = sub_pos(cursor_pos, player_pos);
+            let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+            let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
+            game.data.entities.pos[&player_id] = shadow_cursor_pos;
+            render_entity(panel, player_id, display_state, game);
+            game.data.entities.color[&player_id].a = alpha;
+            game.data.entities.pos[&player_id] = player_pos;
+        }
     }
 
     // render FOV if enabled
