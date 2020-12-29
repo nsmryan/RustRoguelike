@@ -58,13 +58,14 @@ direction.
 ## Architecture
 The overall architecture of the game is something like this: inputs are
 received from the system using SDL2, and translated into an internal InputEvent
-structure (keypresses, mouse movement, etc).  This input event is translated
-into an action (InputAction) that describes what the input does in the game's
-current state (without changing its state).
+structure (keypresses, mouse movement, etc). 
+
+This input event is translated into an action (InputAction) that describes what
+the input does in the game's current state (without changing its state).
+This translation is internal to the game, and uses the game's state.
 
 This input action is provided to the step\_game function of the cleverly named
-Game structure.  When the game is stepped it can signal a turn by the
-GameResult structure it returns.
+Game structure.  
 
 The step\_game function dispatches through the game's current state- playing,
 in a menu, etc. This can change the state of the game, and any settings
@@ -72,9 +73,13 @@ in a menu, etc. This can change the state of the game, and any settings
 messages in the messaging system that is used to execute a turn of the game.
 
 
-Once the state system has created messages to modify the game, the resolution
+Once the state system has created messages to modify the game,
+and optionally changed its state, the resolution
 system starts.  This executes each message, using an item, moving, using a
 skill, etc, which may in turn spawn more messages, until there are no more
 messages to process. Then, the other entities in the game get a chance to spawn
 messages, which are themselves resolved until no messages are left.
+This is the only place where game actions occur- there are places that
+generate maps or do other modifications, but each turn is entirely
+a sequence of messages resolved in order.
 
