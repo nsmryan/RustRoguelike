@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
@@ -8,6 +9,8 @@ use crate::types::*;
 use crate::movement::{Reach, MoveMode, check_collision, MoveType, Movement};
 use crate::messaging::*;
 use crate::line::*;
+use crate::config::Config;
+use crate::map::{Map, AoeEffect, Aoe, Wall, astar_neighbors};
 
 
 pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
@@ -42,6 +45,19 @@ pub fn in_direction_of(start: Pos, end: Pos) -> Pos {
     let dy = signedness(dpos.y);
 
     return add_pos(start, Pos::new(dx, dy));
+}
+
+#[test]
+pub fn test_in_direction_of() {
+    let start = Pos::new(1, 1);
+
+    assert_eq!(in_direction_of(start, Pos::new(0, 0)), Pos::new(0, 0));
+    assert_eq!(in_direction_of(start, Pos::new(10, 10)), Pos::new(2, 2));
+    assert_eq!(in_direction_of(start, Pos::new(10, 1)), Pos::new(2, 1));
+    assert_eq!(in_direction_of(start, Pos::new(1, 10)), Pos::new(1, 2));
+    assert_eq!(in_direction_of(start, Pos::new(1, -10)), Pos::new(1, 0));
+    assert_eq!(in_direction_of(start, Pos::new(-10, 1)), Pos::new(0, 1));
+    assert_eq!(in_direction_of(start, Pos::new(-10, -10)), Pos::new(0, 0));
 }
 
 pub fn is_ordinal(delta: Pos) -> bool {
@@ -365,29 +381,6 @@ pub fn move_next_to(start_pos: Pos, end_pos: Pos) -> Pos {
 }
 
 #[test]
-pub fn test_lines() {
-    let dist: i32 = 10; 
-    let offset: i32 = dist / 2;
-
-    for x in 0..dist {
-        for y in 0..dist {
-            let x_offset = x - offset;
-            let y_offset = y - offset;
-            if x_offset == 0 && y_offset == 0 {
-                continue;
-            }
-
-            let start = Pos::new(0, 0);
-            let end = Pos::new(x_offset, y_offset);
-            let path = line(start, end);
-
-            assert!(path[0] != start);
-            assert_eq!(path[path.len() - 1], end);
-        }
-    }
-}
-
-#[test]
 pub fn test_move_next_to() {
     assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(5, 5)), Pos::new(4, 4));
     assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(1, 1)), Pos::new(0, 0));
@@ -396,16 +389,332 @@ pub fn test_move_next_to() {
     assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(5, 0)), Pos::new(4, 0));
 }
 
-#[test]
-pub fn test_in_direction_of() {
-    let start = Pos::new(1, 1);
+pub fn sound_dampening(map: &Map, start_pos: Pos, end_pos: Pos, config: &Config) -> i32 {
+    if distance(start_pos, end_pos) > 1 {
+        panic!("Sound dampening may not work for distances longer then one tile!");
+    }
 
-    assert_eq!(in_direction_of(start, Pos::new(0, 0)), Pos::new(0, 0));
-    assert_eq!(in_direction_of(start, Pos::new(10, 10)), Pos::new(2, 2));
-    assert_eq!(in_direction_of(start, Pos::new(10, 1)), Pos::new(2, 1));
-    assert_eq!(in_direction_of(start, Pos::new(1, 10)), Pos::new(1, 2));
-    assert_eq!(in_direction_of(start, Pos::new(1, -10)), Pos::new(1, 0));
-    assert_eq!(in_direction_of(start, Pos::new(-10, 1)), Pos::new(0, 1));
-    assert_eq!(in_direction_of(start, Pos::new(-10, -10)), Pos::new(0, 0));
+    let mut dampen = 0;
+    if let Some(blocked) = map.path_blocked_move(start_pos, end_pos) {
+        if blocked.blocked_tile {
+            dampen += config.dampen_blocked_tile;
+        } else if blocked.wall_type == Wall::TallWall {
+            dampen += config.dampen_tall_wall;
+        } else if blocked.wall_type == Wall::ShortWall {
+            dampen += config.dampen_short_wall;
+        }
+    }
+
+    return dampen;
+}
+
+// AOE fill uses a floodfill to get potential positions.
+// For Sound, the floodfill dampens based on objects in the environment.
+// For all others, only positions that can be reached from the start position are kept
+pub fn aoe_fill(map: &Map, aoe_effect: AoeEffect, start: Pos, radius: usize, config: &Config) -> Aoe {
+    let flood = 
+        if aoe_effect == AoeEffect::Sound {
+            floodfill_sound(map, start, radius, config)
+        } else {
+            floodfill(map, start, radius)
+        };
+
+    let mut aoe_dists = vec![Vec::new(); radius + 1];
+
+    for pos in flood.iter() {
+        let dist = distance(start, *pos);
+
+        let mut aoe_hit = true;
+        if aoe_effect != AoeEffect::Sound {
+            // must be blocked to and from a position to be blocked.
+            let is_blocked_to = map.path_blocked_move(start, *pos).is_some();
+            let is_blocked_from = map.path_blocked_move(*pos, start).is_some();
+
+            let is_blocked = is_blocked_to && is_blocked_from;
+            if !is_blocked && dist <= radius as i32 {
+                aoe_hit = true;
+            } else {
+                aoe_hit = false;
+            }
+        }
+
+        if aoe_hit {
+            aoe_dists[dist as usize].push(*pos);
+        }
+    }
+
+    return Aoe::new(aoe_effect, aoe_dists);
+}
+
+pub fn floodfill_sound(map: &Map, start: Pos, radius: usize, config: &Config) -> Vec<Pos> {
+    let mut flood: Vec<Pos> = Vec::new();
+
+    let mut seen: HashSet<(Pos, i32)> = HashSet::new();
+    let mut current: Vec<(Pos, i32)> = Vec::new();
+    current.push((start, 0));
+    seen.insert((start, 0));
+    flood.push(start);
+
+    for _index in 0..radius {
+        let last = current.clone();
+        current.clear();
+        for (pos, cost) in last.iter() {
+            let adjacents = map.neighbors(*pos);
+
+            for next_pos in adjacents {
+                let new_cost = 1 + cost + sound_dampening(map, *pos, next_pos, config);
+
+                if new_cost > radius as i32 {
+                    continue;
+                }
+
+                // check if we have seen this position before
+                let maybe_seen = seen.iter()
+                                     .filter(|(last_pos, _last_cost)| *last_pos == next_pos)
+                                     .next()
+                                     .map(|pair| *pair);
+                if let Some((last_pos, last_cost)) = maybe_seen {
+                    // if we have seen it before, but we reached it with more force, still
+                    // mark as seen, but enqueue again.
+                    if last_cost > new_cost {
+                        seen.remove(&(last_pos, last_cost));
+                        seen.insert((next_pos, new_cost));
+                        current.push((next_pos, new_cost));
+
+                        // no need to queue to flood again- the position was already seen
+                    }
+                } else {
+                    // record having seen this position.
+                    seen.insert((next_pos, new_cost));
+                    current.push((next_pos, new_cost));
+                    flood.push(next_pos);
+                }
+            }
+        }
+    }
+
+    return flood;
+}
+
+#[test]
+fn test_floodfill_sound_1() {
+    let config = Config::from_file("../config.yaml");
+
+    let mut map = Map::from_dims(10, 10);
+    // s#..
+    // x#..
+    // ....
+
+    map[(1, 0)].block_move = true;
+    map[(1, 1)].block_move = true;
+
+    let start = Pos::new(0, 0);
+    let radius = 1;
+    let hits = floodfill_sound(&map, start, radius, &config);
+    assert_eq!(2, hits.len());
+    assert!(hits.contains(&Pos::new(0, 0)));
+    assert!(hits.contains(&Pos::new(0, 1)));
+}
+
+#[test]
+fn test_floodfill_sound_2() {
+    let config = Config::from_file("../config.yaml");
+
+    let mut map = Map::from_dims(10, 10);
+    // s#..
+    // x#..
+    // xx..
+
+    map[(1, 0)].block_move = true;
+    map[(1, 1)].block_move = true;
+
+    let start = Pos::new(0, 0);
+    let radius = 2;
+    let hits = floodfill_sound(&map, start, radius, &config);
+    assert_eq!(4, hits.len());
+    assert!(hits.contains(&Pos::new(0, 0)));
+    assert!(hits.contains(&Pos::new(0, 1)));
+    assert!(hits.contains(&Pos::new(0, 2)));
+    assert!(hits.contains(&Pos::new(1, 2)));
+}
+
+#[test]
+fn test_floodfill_sound_3() {
+    let config = Config::from_file("../config.yaml");
+
+    let mut map = Map::from_dims(10, 10);
+    // s#..
+    // x#x.
+    // xxx.
+    // xxx.
+
+    map[(1, 0)].block_move = true;
+    map[(1, 1)].block_move = true;
+
+    let start = Pos::new(0, 0);
+    let radius = 3;
+    let hits = floodfill_sound(&map, start, radius, &config);
+    assert_eq!(9, hits.len());
+    assert!(hits.contains(&Pos::new(0, 0)));
+    assert!(hits.contains(&Pos::new(0, 1)));
+    assert!(hits.contains(&Pos::new(0, 2)));
+    assert!(hits.contains(&Pos::new(0, 3)));
+
+    assert!(hits.contains(&Pos::new(1, 2)));
+    assert!(hits.contains(&Pos::new(1, 3)));
+
+    assert!(hits.contains(&Pos::new(2, 1)));
+    assert!(hits.contains(&Pos::new(2, 2)));
+    assert!(hits.contains(&Pos::new(2, 3)));
+}
+
+#[test]
+fn test_floodfill_sound_through_wall() {
+    let config = Config::from_file("../config.yaml");
+
+    let mut map = Map::from_dims(10, 10);
+    // the sound can only reach (0, 2) by going through
+    // the wall, as it would need to travel 7 tiles
+    // to reach it otherwise
+    // s#..
+    // .#..
+    // .#..
+    // .#..
+
+    map[(1, 0)].block_move = true;
+    map[(1, 1)].block_move = true;
+    map[(1, 2)].block_move = true;
+    map[(1, 3)].block_move = true;
+
+    let start = Pos::new(0, 0);
+    let radius = config.dampen_blocked_tile as usize + 2;
+    let hits = floodfill_sound(&map, start, radius, &config);
+
+    assert!(hits.contains(&Pos::new(2, 0)));
+}
+
+#[test]
+fn test_floodfill_sound_through_tall_wall() {
+    let config = Config::from_file("../config.yaml");
+
+    let mut map = Map::from_dims(10, 10);
+    // the sound can only reach (0, 2) by going through
+    // the wall. The radius is set to just barely allow
+    // the sound to pass through
+    map[(1, 0)].left_wall = Wall::TallWall;
+    map[(1, 1)].left_wall = Wall::TallWall;
+    map[(1, 2)].left_wall = Wall::TallWall;
+    map[(1, 3)].left_wall = Wall::TallWall;
+
+    let start = Pos::new(0, 0);
+    let radius = config.dampen_tall_wall as usize + 2;
+    let hits = floodfill_sound(&map, start, radius, &config);
+
+    assert!(hits.contains(&Pos::new(2, 0)));
+}
+
+#[test]
+fn test_floodfill_sound_through_short_wall() {
+    let config = Config::from_file("../config.yaml");
+
+    let mut map = Map::from_dims(10, 10);
+    // the sound can only reach (0, 2) by going through
+    // the wall. The radius is set to just barely allow
+    // the sound to pass through
+    map[(1, 0)].left_wall = Wall::ShortWall;
+    map[(1, 1)].left_wall = Wall::ShortWall;
+    map[(1, 2)].left_wall = Wall::ShortWall;
+    map[(1, 3)].left_wall = Wall::ShortWall;
+
+    let start = Pos::new(0, 0);
+    let radius = config.dampen_short_wall as usize + 2;
+    let hits = floodfill_sound(&map, start, radius, &config);
+
+    assert!(hits.contains(&Pos::new(2, 0)));
+}
+
+#[test]
+fn test_floodfill_sound_not_through_blocked() {
+    let config = Config::from_file("../config.yaml");
+
+    let mut map = Map::from_dims(10, 10);
+    // the sound can only reach (0, 2) by going through
+    // the wall. The radius is set to just barely allow
+    // passing a short wall, but not enough for a blocked
+    // tile.
+    map[(1, 0)].block_move = true;
+    map[(1, 1)].block_move = true;
+    map[(1, 2)].block_move = true;
+    map[(1, 3)].block_move = true;
+
+    let start = Pos::new(0, 0);
+    let radius = config.dampen_short_wall as usize + 2;
+    let hits = floodfill_sound(&map, start, radius, &config);
+
+    assert!(!hits.contains(&Pos::new(2, 0)));
+}
+
+pub fn floodfill(map: &Map, start: Pos, radius: usize) -> Vec<Pos> {
+    let mut flood: Vec<Pos> = Vec::new();
+
+    let mut seen: Vec<Pos> = Vec::new();
+    let mut current: Vec<Pos> = Vec::new();
+    current.push(start);
+    seen.push(start);
+    flood.push(start);
+
+    for _index in 0..radius {
+        let last = current.clone();
+        current.clear();
+        for pos in last.iter() {
+            let adj = astar_neighbors(map, start, *pos, Some(radius as i32));
+            for (next_pos, _cost) in adj {
+                if !seen.contains(&next_pos) {
+                    // record having seen this position.
+                    seen.push(next_pos);
+                    current.push(next_pos);
+                    flood.push(next_pos);
+                }
+            }
+        }
+    }
+
+    return flood;
+}
+
+#[test]
+fn test_floodfill() {
+    let mut map = Map::from_dims(10, 10);
+
+    let start = Pos::new(5, 5);
+
+    let flood: Vec<Pos> = floodfill(&map, start, 0);
+    assert_eq!(vec!(start), flood);
+
+    let flood: Vec<Pos> = floodfill(&map, start, 1);
+    assert_eq!(9, flood.len());
+
+    map[(5, 5)].left_wall = Wall::ShortWall;
+    map[(5, 6)].left_wall = Wall::ShortWall;
+    map[(5, 4)].left_wall = Wall::ShortWall;
+    let flood: Vec<Pos> = floodfill(&map, start, 1);
+    assert_eq!(6, flood.len());
+
+    map[(6, 3)].left_wall = Wall::ShortWall;
+    map[(5, 3)].left_wall = Wall::ShortWall;
+
+    map[(6, 4)].left_wall = Wall::ShortWall;
+    map[(5, 4)].left_wall = Wall::ShortWall;
+
+    map[(6, 5)].left_wall = Wall::ShortWall;
+    map[(5, 5)].left_wall = Wall::ShortWall;
+    map[start].bottom_wall = Wall::ShortWall;
+    let flood: Vec<Pos> = floodfill(&map, start, 2);
+    assert!(flood.contains(&start));
+    assert!(flood.contains(&Pos::new(5, 4)));
+    assert!(flood.contains(&Pos::new(5, 3)));
+
+    let flood: Vec<Pos> = floodfill(&map, start, 3);
+    assert_eq!(6, flood.len());
 }
 

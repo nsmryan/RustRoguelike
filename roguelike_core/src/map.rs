@@ -380,7 +380,6 @@ impl Map {
         while let Some(blocked) = self.path_blocked(cur_pos, end_pos, blocked_type) {
             blocked_vec.push(blocked);
             cur_pos = blocked.end_pos;
-            //cur_pos = move_towards(blocked.end_pos, end_pos, 1);
         }
         return blocked_vec;
     }
@@ -841,67 +840,6 @@ impl Map {
         return result;
     }
 
-    pub fn aoe_fill(&self, aoe_effect: AoeEffect, start: Pos, radius: usize) -> Aoe {
-        let flood = self.floodfill(start, radius);
-
-        let mut aoe_dists = vec![Vec::new(); radius + 1];
-
-        let blocked_radius = if radius > 2 {
-            radius as i32 - 2
-        } else {
-            0
-        };
-
-        for pos in flood.iter() {
-            let dist = distance(start, *pos);
-
-            // must be blocked to and from a position to dampen.
-            let is_blocked_to = self.path_blocked_move(start, *pos).is_some();
-
-            let is_blocked_from = self.path_blocked_move(*pos, start).is_some();
-
-            let is_blocked = is_blocked_to && is_blocked_from;
-
-            if !is_blocked || (is_blocked && dist <= blocked_radius) {
-                if dist as usize == aoe_dists.len() {
-                    dbg!(dist, radius, pos);
-                }
-                aoe_dists[dist as usize].push(*pos);
-            }
-        }
-        let aoe = Aoe::new(aoe_effect, aoe_dists);
-
-        return aoe;
-    }
-
-    pub fn floodfill(&self, start: Pos, radius: usize) -> Vec<Pos> {
-        let mut flood: Vec<Pos> = Vec::new();
-
-        let mut seen: Vec<Pos> = Vec::new();
-        let mut current: Vec<Pos> = Vec::new();
-        current.push(start);
-        seen.push(start);
-        flood.push(start);
-
-        for _index in 0..radius {
-            let last = current.clone();
-            current.clear();
-            for pos in last.iter() {
-                let adj = astar_neighbors(self, start, *pos, Some(radius as i32));
-                for (next_pos, _cost) in adj {
-                    if !seen.contains(&next_pos) {
-                        // record having seen this position.
-                        seen.push(next_pos);
-                        current.push(next_pos);
-                        flood.push(next_pos);
-                    }
-                }
-            }
-        }
-
-        return flood;
-    }
-
     pub fn get_all_pos(&self) -> Vec<Pos> {
         let (width, height) = self.size();
         return (0..width).cartesian_product(0..height)
@@ -1019,7 +957,7 @@ pub fn astar_path(map: &Map,
     return result;
 }
 
-fn astar_neighbors(map: &Map, start: Pos, pos: Pos, max_dist: Option<i32>) -> SmallVec<[(Pos, i32); 8]> {
+pub fn astar_neighbors(map: &Map, start: Pos, pos: Pos, max_dist: Option<i32>) -> SmallVec<[(Pos, i32); 8]> {
       if let Some(max_dist) = max_dist {
           if distance(start, pos) > max_dist {
               return SmallVec::new();
@@ -1161,42 +1099,6 @@ fn test_blocked_by_wall() {
 
     assert!(map.path_blocked_move(Pos::new(5, 6), Pos::new(5, 5)).is_some());
     assert!(map.path_blocked_move(Pos::new(5, 4), Pos::new(5, 5)).is_some());
-}
-
-#[test]
-fn test_floodfill() {
-    let mut map = Map::from_dims(10, 10);
-
-    let start = Pos::new(5, 5);
-
-    let flood: Vec<Pos> = map.floodfill(start, 0);
-    assert_eq!(vec!(start), flood);
-
-    let flood: Vec<Pos> = map.floodfill(start, 1);
-    assert_eq!(9, flood.len());
-
-    map[(5, 5)].left_wall = Wall::ShortWall;
-    map[(5, 6)].left_wall = Wall::ShortWall;
-    map[(5, 4)].left_wall = Wall::ShortWall;
-    let flood: Vec<Pos> = map.floodfill(start, 1);
-    assert_eq!(6, flood.len());
-
-    map[(6, 3)].left_wall = Wall::ShortWall;
-    map[(5, 3)].left_wall = Wall::ShortWall;
-
-    map[(6, 4)].left_wall = Wall::ShortWall;
-    map[(5, 4)].left_wall = Wall::ShortWall;
-
-    map[(6, 5)].left_wall = Wall::ShortWall;
-    map[(5, 5)].left_wall = Wall::ShortWall;
-    map[start].bottom_wall = Wall::ShortWall;
-    let flood: Vec<Pos> = map.floodfill(start, 2);
-    assert!(flood.contains(&start));
-    assert!(flood.contains(&Pos::new(5, 4)));
-    assert!(flood.contains(&Pos::new(5, 3)));
-
-    let flood: Vec<Pos> = map.floodfill(start, 3);
-    assert_eq!(6, flood.len());
 }
 
 #[test]

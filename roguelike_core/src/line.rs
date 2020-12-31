@@ -137,3 +137,26 @@ pub fn line_between(start: Pos, end: Pos) -> Vec<Pos> {
     return points;
 }
 
+#[test]
+pub fn test_lines() {
+    let dist: i32 = 10; 
+    let offset: i32 = dist / 2;
+
+    for x in 0..dist {
+        for y in 0..dist {
+            let x_offset = x - offset;
+            let y_offset = y - offset;
+            if x_offset == 0 && y_offset == 0 {
+                continue;
+            }
+
+            let start = Pos::new(0, 0);
+            let end = Pos::new(x_offset, y_offset);
+            let path = line(start, end);
+
+            assert!(path[0] != start);
+            assert_eq!(path[path.len() - 1], end);
+        }
+    }
+}
+

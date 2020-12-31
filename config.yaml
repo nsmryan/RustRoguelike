@@ -169,6 +169,9 @@ console_speed: 1.0
 sound_radius_sneak: 1
 sound_radius_walk: 2
 sound_radius_run: 4
+dampen_blocked_tile: 3
+dampen_short_wall: 1
+dampen_tall_wall: 2
 take_screenshot: false
 show_info: true
 use_cursor: true

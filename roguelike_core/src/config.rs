@@ -80,6 +80,9 @@ pub struct Config {
     pub sound_radius_sneak: usize,
     pub sound_radius_walk: usize,
     pub sound_radius_run: usize,
+    pub dampen_blocked_tile: i32,
+    pub dampen_short_wall: i32,
+    pub dampen_tall_wall: i32,
     pub take_screenshot: bool,
     pub show_info: bool,
     pub use_cursor: bool
