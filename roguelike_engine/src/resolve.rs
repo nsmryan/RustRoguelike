@@ -48,7 +48,7 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::Sound(cause_id, source_pos, radius, _should_animate) => {
                 let sound_aoe =
-                    data.map.aoe_fill(AoeEffect::Sound, source_pos, radius);
+                    aoe_fill(&data.map, AoeEffect::Sound, source_pos, radius, config);
 
                 let who_heard =
                     data.within_aoe(&sound_aoe);
@@ -287,7 +287,7 @@ pub fn freeze_trap_triggered(trap: EntityId, cause_id: EntityId, data: &mut Game
     let source_pos = data.entities.pos[&trap];
 
     let freeze_aoe =
-        data.map.aoe_fill(AoeEffect::Freeze, source_pos, config.freeze_trap_radius);
+        aoe_fill(&data.map, AoeEffect::Freeze, source_pos, config.freeze_trap_radius, config);
 
     let who_hit =
         data.within_aoe(&freeze_aoe);
@@ -811,7 +811,7 @@ pub fn throw_item(player_id: EntityId,
 }
 
 pub fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Option<Pos> {
-    let mut potential_positions = data.map.floodfill(pos, BLINK_RADIUS);
+    let mut potential_positions = floodfill(&data.map, pos, BLINK_RADIUS);
     while potential_positions.len() > 0 {
         let ix = rng.gen_range(0, potential_positions.len());
         let rand_pos = potential_positions[ix];
@@ -840,7 +840,7 @@ pub fn inventory_drop_item(entity_id: EntityId,
     let mut found_tile = false;
     let mut dist = 1;
     while !found_tile && dist < 10 {
-        let positions = data.map.floodfill(player_pos, dist);
+        let positions = floodfill(&data.map, player_pos, dist);
 
         // TODO(&mut) move to resolve
         for pos in positions {

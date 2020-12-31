@@ -14,6 +14,7 @@ use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::animation::{Sprite, AnimKey, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use roguelike_core::movement::MoveType;
+use roguelike_core::utils::aoe_fill;
 
 
 type TextureKey = u64;
@@ -563,7 +564,7 @@ impl Display {
                 if should_animate {
                     // NOTE this is a duplicate computation, also done in logic message processing
                     let sound_aoe =
-                        data.map.aoe_fill(AoeEffect::Sound, source_pos, radius);
+                        aoe_fill(&data.map, AoeEffect::Sound, source_pos, radius, config);
 
                     let player_id = data.find_by_name(EntityName::Player).unwrap();
                     let player_pos = data.entities.pos[&player_id];
@@ -581,7 +582,7 @@ impl Display {
             }
 
             Msg::ItemThrow(_thrower, item_id, start, end) => {
-                let sound_aoe = data.map.aoe_fill(AoeEffect::Sound, end, config.sound_radius_stone);
+                let sound_aoe = aoe_fill(&data.map, AoeEffect::Sound, end, config.sound_radius_stone, config);
 
                 let chr = data.entities.chr[&item_id];
                 let item_sprite = self.font_sprite(chr);

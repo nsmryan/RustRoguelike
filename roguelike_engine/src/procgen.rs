@@ -498,7 +498,7 @@ fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
             let pos = Pos::new(x, y);
 
             if !game.data.map[pos].block_move {
-                let count = game.data.map.floodfill(pos, 3).len();
+                let count = floodfill(&game.data.map, pos, 3).len();
                 if count > 28 && count < 35 {
                     potential_grass_pos.push(pos);
                 }

@@ -11,7 +11,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
-use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, move_x, move_y, sub_pos};
+use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, move_x, move_y, sub_pos, floodfill};
 use roguelike_core::line::line;
 
 use roguelike_engine::game::*;
@@ -1290,7 +1290,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
                 if !game.data.map[pos].block_move &&
                    game.data.map[pos].tile_type != TileType::Water {
-                    let near_count = game.data.map.floodfill(pos, 3).len();
+                    let near_count = floodfill(&game.data.map, pos, 3).len();
 
                     let amount = near_count as f32 / 50.0;
                     let adj_color = lerp_color(game.config.color_ice_blue, game.config.color_red, amount);
