@@ -117,16 +117,7 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
 }
 
 pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
-    // find structures-
-    // find blocks that are next to exactly one block (search through all tiles, and
-    // don't accept tiles that are already accepted).
-    //
-    // place grass in open areas and perhaps in very enclosed areas
-    // place rubble near blocks
-    //
-    // place goal and exit, and pathing between them, knocking out tiles that
-    // block the player from completing the level.
-
+    // this is problematic for movement, so ensure they don't occur
     handle_diagonal_full_tile_walls(game);
 
     /* clear out an island */
@@ -162,12 +153,14 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     let mut to_remove: Vec<usize> = Vec::new();
     for (index, structure) in structures.iter().enumerate() {
+        // turn some lone single-tile walls into columns
         if structure.typ == StructureType::Single {
             if game.rng.gen_range(0.0, 1.0) > 0.1 {
                 make_column(&mut game.data.entities, &game.config, structure.blocks[0], &mut game.msg_log);
                 to_remove.push(index);
             }
         } else if structure.typ == StructureType::Line { 
+            // turn some parts of lines into rubble
             if structure.blocks.len() > 5 && num_rubbles < max_rubbles {
                 let index = game.rng.gen_range(0, structure.blocks.len());
                 let block = structure.blocks[index];
@@ -178,6 +171,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
         }
 
         if (structure.typ == StructureType::Line || structure.typ == StructureType::Complex) &&
+            // turn some structures into short or tall walls
            game.rng.gen_range(0.0, 1.0) < 0.5 {
            let wall_type;
            if game.rng.gen_range(0.0, 1.0) < 1.0 {
@@ -201,10 +195,6 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
                    }
                } 
            }
-
-           if game.rng.gen_range(0.0, 1.0) < 0.25 {
-               break;
-           }
         }
     }
 
@@ -218,6 +208,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
         structures.swap_remove(*index);
     }
 
+    // lay down grass with a given dispersion and range from the found tile
     let range_disperse =
         cmds.iter().filter_map(|cmd| {
             if let ProcCmd::Grass(range, disperse) = cmd {
@@ -228,14 +219,17 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     let num_grass_to_place = game.rng.gen_range((range_disperse.0).0, (range_disperse.0).1);
     place_grass(game, num_grass_to_place, *range_disperse.1);
 
+    // clear about the island again to ensure tiles haven't been placed outside
     clear_island(game, island_radius);
 
+    // find a place to put the player
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = find_available_tile(game).unwrap();
     game.data.entities.pos[&player_id] = player_pos;
 
     clear_island(game, island_radius);
 
+    // find a place to put the key and goal, ensuring that they are reachable
     place_key_and_goal(game, player_pos);
 
     place_items(game, cmds);
@@ -246,8 +240,10 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     place_triggers(game, cmds);
 
+    // clear the island once more just in case
     clear_island(game, island_radius);
 
+    // ensure that the map looks okay in 3D
     ensure_iter_and_full_walls(game);
 
     return player_pos;
@@ -341,8 +337,6 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
 fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
     let potential_pos = game.data.get_clear_pos();
 
-    // TODO Should collect locations near walls in a set, and chose a random number of random pos,
-    // without replacement
     let mut near_walls = HashSet::new();
 
     for pos in potential_pos {
@@ -353,7 +347,6 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
         }
     }
 
-    let mut num_gates = 0;
     let max_gates = cmds.iter().filter_map(|cmd| {
         if let ProcCmd::MaxGates(n) = cmd {
             return Some(n);
@@ -361,7 +354,7 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
         return None;
     }).map(|n| *n).next().unwrap_or(0);
 
-    let gate_positions = near_walls.iter().map(|p| *p).collect::<Vec<Pos>>();
+    let mut gate_positions = near_walls.iter().map(|p| *p).collect::<Vec<Pos>>();
 
     // if there are no possible positions, exit early
     if gate_positions.len() == 0 {
@@ -371,14 +364,10 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
     for _ in 0..max_gates {
         let gate_pos_index = game.rng.gen_range(0, gate_positions.len());
         let gate_pos = gate_positions[gate_pos_index];
+        gate_positions.swap_remove(gate_pos_index);
 
         let gate = make_gate_trigger(&mut game.data.entities, &game.config, gate_pos, &mut game.msg_log);
         game.data.entities.gate_pos.insert(gate, Some(gate_pos));
-
-        num_gates += 1;
-        if num_gates >= max_gates {
-            return;
-        }
     }
 }
 
