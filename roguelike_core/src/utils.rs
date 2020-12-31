@@ -91,6 +91,7 @@ pub fn push_attack(entity_id: EntityId,
             damage = data.entities.fighter[&target].hp;
 
             killed = true;
+            msg_log.log(Msg::Crushed(target, other_pos));
 
             // once we crush an entity, we lose the rest of the move
             break;

@@ -374,6 +374,17 @@ impl Map {
         return self.path_blocked(start_pos, end_pos, BlockedType::Move);
     }
 
+    pub fn path_blocked_all(&self, start_pos: Pos, end_pos: Pos, blocked_type: BlockedType) -> Vec<Blocked> {
+        let mut blocked_vec = Vec::new();
+        let mut cur_pos = start_pos;
+        while let Some(blocked) = self.path_blocked(cur_pos, end_pos, blocked_type) {
+            blocked_vec.push(blocked);
+            cur_pos = blocked.end_pos;
+            //cur_pos = move_towards(blocked.end_pos, end_pos, 1);
+        }
+        return blocked_vec;
+    }
+
     pub fn path_blocked(&self, start_pos: Pos, end_pos: Pos, blocked_type: BlockedType) -> Option<Blocked> {
         let dxy = sub_pos(end_pos, start_pos);
 
@@ -1187,3 +1198,32 @@ fn test_floodfill() {
     let flood: Vec<Pos> = map.floodfill(start, 3);
     assert_eq!(6, flood.len());
 }
+
+#[test]
+fn test_path_blocked_all() {
+    let mut map = Map::from_dims(10, 10);
+    map[(3, 5)].left_wall = Wall::ShortWall;
+    map[(4, 5)].block_move = true;
+    map[(5, 5)].block_move = true;
+    map[(6, 5)].left_wall = Wall::TallWall;
+
+    let start_pos = Pos::new(0, 5);
+    let end_pos = Pos::new(9, 5);
+
+    let blocked_positions = map.path_blocked_all(start_pos, end_pos, BlockedType::Move);
+
+    assert_eq!(4, blocked_positions.len());
+
+    assert_eq!(false, blocked_positions[0].blocked_tile);
+    assert_eq!(Wall::ShortWall, blocked_positions[0].wall_type);
+
+    assert_eq!(true, blocked_positions[1].blocked_tile);
+    assert_eq!(Wall::Empty, blocked_positions[1].wall_type);
+
+    assert_eq!(true, blocked_positions[2].blocked_tile);
+    assert_eq!(Wall::Empty, blocked_positions[2].wall_type);
+
+    assert_eq!(false, blocked_positions[3].blocked_tile);
+    assert_eq!(Wall::TallWall, blocked_positions[3].wall_type);
+}
+
