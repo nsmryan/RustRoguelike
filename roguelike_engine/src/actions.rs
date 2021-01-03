@@ -304,6 +304,8 @@ pub fn inventory_select_item(item_index: usize,
 
             InventoryAction::Drop => {
                 msg_log.log(Msg::DropItem(player_id, item_index as u64));
+                settings.state = GameState::Playing;
+                msg_log.log(Msg::GameState(settings.state));
             }
         }
     }
@@ -497,11 +499,7 @@ pub fn handle_input(input_action: InputAction,
     match settings.state {
         GameState::Playing => {
             action_result =
-                handle_input_playing(input_action,
-                                              data,
-                                              settings,
-                                              msg_log,
-                                              config);
+                handle_input_playing(input_action, data, settings, msg_log, config);
         }
 
         GameState::Win => {
@@ -514,38 +512,24 @@ pub fn handle_input(input_action: InputAction,
 
         GameState::Inventory => {
             action_result = 
-                handle_input_inventory(input_action,
-                                                data,
-                                                settings,
-                                                msg_log);
+                handle_input_inventory(input_action, data, settings, msg_log);
         }
 
         GameState::Selection => {
             settings.draw_selection_overlay = true;
 
             action_result =
-                handle_input_selection(input_action,
-                                               data,
-                                               settings,
-                                               config,
-                                               msg_log);
+                handle_input_selection(input_action, data, settings, config, msg_log);
         }
 
         GameState::SkillMenu => {
             action_result = 
-                handle_input_skill_menu(input_action,
-                                                 data,
-                                                 settings,
-                                                 msg_log,
-                                                 config);
+                handle_input_skill_menu(input_action, data, settings, msg_log, config);
         }
 
         GameState::ClassMenu => {
             action_result =
-                handle_input_class_menu(input_action,
-                                                 data,
-                                                 settings,
-                                                 msg_log);
+                handle_input_class_menu(input_action, data, settings, msg_log);
         }
 
         GameState::ConfirmQuit => {
@@ -560,7 +544,6 @@ pub fn handle_input(input_action: InputAction,
     return action_result;
 }
 
-// TODO consider breaking game into components and making GameData &
 pub fn handle_input_playing(input_action: InputAction,
                             data: &GameData,
                             settings: &mut GameSettings,

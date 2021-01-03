@@ -124,14 +124,15 @@ impl GameData {
             EntityType::Player => config.fov_radius_player,
             typ => panic!(format!("Tried to see with object of type {:?}", typ)),
         };
-        
+
+        let stance = self.entities.stance(&entities);
+        let crouching = stance == Stance::Crouched;
+
         if self.entities.typ[&entity_id] == EntityType::Player {
-            // TODO replace false with entity state information
-            return self.map.is_in_fov(pos, other_pos, radius, false);
+            return self.map.is_in_fov(pos, other_pos, radius, crouching);
         } else {
             if let Some(dir) = self.entities.direction.get(&entity_id) {
-                // TODO replace false with entity state information
-                return self.map.is_in_fov_direction(pos, other_pos, radius, *dir, false);
+                return self.map.is_in_fov_direction(pos, other_pos, radius, *dir, crouching);
             } else {
                 panic!(format!("tried to perform is_in_fov on entity without facing"));
             }
@@ -341,6 +342,7 @@ impl GameData {
         self.entities.chr.remove(&id);
         self.entities.name.remove(&id);
         self.entities.fighter.remove(&id);
+        self.entities.stance.remove(&id);
         self.entities.ai.remove(&id);
         self.entities.behavior.remove(&id);
         self.entities.item.remove(&id);
@@ -535,6 +537,13 @@ impl Default for InventoryAction {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+pub enum Stance {
+    Crouched,
+    Standing,
+    Running,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum EntityName {
     Player,
@@ -646,6 +655,7 @@ pub struct Entities {
     pub limbo: CompStore<()>,
     pub status: CompStore<StatusEffect>,
     pub gate_pos: CompStore<Option<Pos>>,
+    pub stance: CompStore<Stance>,
 
     // TODO should end up in animation system instead
     pub animation: CompStore<VecDeque<AnimKey>>,
@@ -831,6 +841,7 @@ impl Entities {
         self.chr.extend(other.chr.iter());
         self.name.extend(other.name.iter());
         self.fighter.extend(other.fighter.iter());
+        self.stance.extend(other.stance.iter());
         self.ai.extend(other.ai.iter());
         self.behavior.extend(other.behavior.iter());
         self.item.extend(other.item.iter());

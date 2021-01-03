@@ -42,6 +42,7 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
     entities.move_mode.insert(player,  MoveMode::Sneak);
     entities.direction.insert(player,  Direction::Up);
     entities.inventory.insert(player,  VecDeque::new());
+    entities.stance.insert(player,  Stance::Standing);
 
     let skill_set = Vec::new();
     entities.skills.insert(player,  skill_set);
@@ -148,6 +149,7 @@ pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
     entities.attack.insert(gol,  Reach::Diag(GOL_ATTACK_DISTANCE));
     entities.status[&gol].alive = true;
     entities.direction.insert(gol,  Direction::from_f32(rand_from_pos(pos)));
+    entities.stance.insert(player,  Stance::Standing);
 
     msg_log.log(Msg::SpawnedObject(gol, entities.typ[&gol], pos, EntityName::Gol));
     
@@ -165,6 +167,7 @@ pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
     entities.attack.insert(spire,  Reach::Single(SPIRE_ATTACK_DISTANCE));
     entities.status[&spire].alive = true;
     entities.direction.insert(spire,  Direction::Up);
+    entities.stance.insert(player,  Stance::Standing);
 
     msg_log.log(Msg::SpawnedObject(spire, entities.typ[&spire], pos, EntityName::Spire));
 
@@ -182,6 +185,7 @@ pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
     entities.attack.insert(elf,  Reach::Single(PAWN_ATTACK_DISTANCE));
     entities.status[&elf].alive = true;
     entities.direction.insert(elf,  Direction::from_f32(rand_from_pos(pos)));
+    entities.stance.insert(player,  Stance::Standing);
 
     msg_log.log(Msg::SpawnedObject(elf, entities.typ[&elf], pos, EntityName::Pawn));
 

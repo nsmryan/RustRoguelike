@@ -133,7 +133,7 @@ impl BlockedType {
     pub fn blocking(&self, wall: Wall) -> bool {
         let empty = wall == Wall::Empty;
         let see_over = wall == Wall::ShortWall && *self == BlockedType::Fov;
-        return empty || see_over;
+        return !empty && !see_over;
     }
 }
 
@@ -1054,6 +1054,33 @@ fn test_blocked_out_corners() {
 
 #[test]
 fn test_blocked_horiz_line() {
+    let mut map = Map::from_dims(10, 10);
+
+    // .....
+    // ...__ middle . is (5, 5)
+    // .....
+    map[(6, 5)].bottom_wall = Wall::ShortWall;
+    map[(7, 5)].bottom_wall = Wall::ShortWall;
+  
+    // down left
+    let blocked = map.path_blocked_move(Pos::new(7, 5), Pos::new(6, 6));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // down right
+    let blocked = map.path_blocked_move(Pos::new(6, 5), Pos::new(7, 6));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // up right
+    let blocked = map.path_blocked_move(Pos::new(6, 6), Pos::new(7, 5));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // up left
+    let blocked = map.path_blocked_move(Pos::new(7, 6), Pos::new(6, 5));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+}
+
+#[test]
+fn test_blocked_vert_line() {
     let mut map = Map::from_dims(10, 10);
 
     // .....
