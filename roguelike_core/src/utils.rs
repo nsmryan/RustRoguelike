@@ -79,7 +79,10 @@ pub fn push_attack(entity_id: EntityId,
     let mut killed = false;
     let mut damage = 0;
 
-    for _ in 0..pos_mag(delta_pos) {
+    let strength = pos_mag(delta_pos);
+    for pos_index in 0..strength {
+        let strength_left = strength - pos_index;
+
         let pos = data.entities.pos[&entity_id];
         let other_pos = data.entities.pos[&target];
         let diff = other_pos - pos;

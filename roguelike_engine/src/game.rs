@@ -91,7 +91,6 @@ impl Game {
         if action_result.turn == Action::NoAction {
             resolve_messages(&mut self.data,
                              &mut self.msg_log,
-                             &mut self.settings,
                              &mut self.rng,
                              &self.config);
         } else {

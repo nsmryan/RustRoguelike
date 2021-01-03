@@ -29,7 +29,7 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
     eprintln!();
     eprintln!("Turn {}:", game.settings.turn_count);
 
-    resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
+    resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
 
     let won_level = level_exit_condition_met(&game.data);
 
@@ -55,7 +55,7 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
            // if changing state, resolve now and allow another action
            if matches!(action, Action::StateChange(_)) {
                 game.msg_log.log(Msg::Action(*key, action));
-                resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
+                resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
                 let backup_action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
                 game.data.entities.action[key] = backup_action;
             }
@@ -64,7 +64,7 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
         for key in ai_id.iter() {
             if let Some(action) = game.data.entities.action.get(key).map(|v| *v) {
                 game.msg_log.log(Msg::Action(*key, action));
-                resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
+                resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
 
                 // check if fighter needs to be removed
                 if let Some(fighter) = game.data.entities.fighter.get(key) {
@@ -86,7 +86,7 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
             if matches!(action, Action::StateChange(_)) {
                 game.msg_log.log(Msg::Action(*key, action));
                 game.data.entities.action[key] = action;
-                resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
+                resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
             }
         }
     }
@@ -95,7 +95,7 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
     // send player turn action in case there is cleanup to perform, or another system
     // needs to know that the turn is finished.
     game.msg_log.log(Msg::PlayerTurn());
-    resolve_messages(&mut game.data, &mut game.msg_log, &mut game.settings, &mut game.rng, &game.config);
+    resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
 
     let mut to_remove: Vec<EntityId> = Vec::new();
 

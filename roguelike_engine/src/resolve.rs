@@ -21,7 +21,6 @@ use crate::generation::{make_energy, make_dagger, make_sword};
 
 pub fn resolve_messages(data: &mut GameData,
                         msg_log: &mut MsgLog,
-                        settings: &mut GameSettings,
                         rng: &mut SmallRng,
                         config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
@@ -210,7 +209,7 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::DropItem(entity_id, item_index) => {
-                inventory_drop_item(entity_id, item_index as usize, data, settings, msg_log);
+                inventory_drop_item(entity_id, item_index as usize, data, msg_log);
             }
 
             _ => {
@@ -253,7 +252,6 @@ pub fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut G
     let first = data.entities.pos[&entity_id];
     let second = data.entities.pos[&hit_entity];
 
-    //push_attack(entity_id, hit_entity, sub_pos(first, second), false, data, msg_log);
     let delta_pos = sub_pos(second, first);
     msg_log.log(Msg::Pushed(entity_id, hit_entity, delta_pos, false));
     msg_log.log_front(Msg::Sound(entity_id, second, config.sound_radius_hammer, true));
@@ -830,7 +828,6 @@ pub fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Opti
 pub fn inventory_drop_item(entity_id: EntityId,
                            item_index: usize,
                            data: &mut GameData,
-                           settings: &mut GameSettings,
                            msg_log: &mut MsgLog) {
     let player_pos = data.entities.pos[&entity_id];
     let item_id = data.entities.inventory[&entity_id][item_index];
@@ -842,14 +839,10 @@ pub fn inventory_drop_item(entity_id: EntityId,
     while !found_tile && dist < 10 {
         let positions = floodfill(&data.map, player_pos, dist);
 
-        // TODO(&mut) move to resolve
         for pos in positions {
             if data.item_at_pos(pos).is_none() {
                 data.entities.remove_item(entity_id, item_id);
                 data.entities.set_pos(item_id, pos);
-
-                settings.state = GameState::Playing;
-                msg_log.log(Msg::GameState(settings.state));
 
                 found_tile = true;
                 break;

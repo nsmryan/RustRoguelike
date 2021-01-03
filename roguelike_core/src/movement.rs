@@ -653,7 +653,7 @@ impl MoveResult {
     }
 }
 
-// Moves the given object with a given offset, returning the square that it collides with, or None
+/// Moves the given object with a given offset, returning the square that it collides with, or None
 /// indicating no collision.
 /// NOTE if the movement carries multiple tiles, then the resulting MoveResult can report that
 /// there is a blocking wall, and on a different location a blocking entity. These are checked
