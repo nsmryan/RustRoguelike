@@ -116,7 +116,7 @@ impl GameData {
         return result;
     }
 
-    pub fn is_in_fov(&mut self, entity_id: EntityId, other_pos: Pos, config: &Config) -> bool {
+    pub fn is_in_fov(&self, entity_id: EntityId, other_pos: Pos, config: &Config) -> bool {
         let pos = self.entities.pos[&entity_id];
 
         let radius: i32 = match self.entities.typ[&entity_id] {
@@ -125,7 +125,7 @@ impl GameData {
             typ => panic!(format!("Tried to see with object of type {:?}", typ)),
         };
 
-        let stance = self.entities.stance(&entities);
+        let stance = self.entities.stance[&entity_id];
         let crouching = stance == Stance::Crouched;
 
         if self.entities.typ[&entity_id] == EntityType::Player {

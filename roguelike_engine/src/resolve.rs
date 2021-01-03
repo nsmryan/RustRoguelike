@@ -225,11 +225,11 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             let player_pos = data.entities.pos[&player_id];
-            if !data.map.is_in_fov(player_pos, *pos, config.fov_radius_player) {
+            //if !data.map.is_in_fov(player_pos, *pos, config.fov_radius_player) {
                 //let heard = Effect::HeardSomething(*pos, settings.turn_count);
                 // TODO move to somewhere else?
                 //display_state.effects.push(heard);
-            }
+            //}
         }
     }
     data.entities.messages[&player_id].clear();

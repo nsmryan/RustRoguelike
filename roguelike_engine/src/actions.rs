@@ -470,7 +470,8 @@ pub fn handle_input_selection(input: InputAction,
                 settings.selection.select(player_pos,
                                           map_cell,
                                           config.fov_radius_player,
-                                          data);
+                                          data,
+                                          config);
             if let Some(action) = maybe_action {
                 // TODO(&mut) move to resolve, or allow settings to change
                 // exit selection state

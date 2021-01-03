@@ -4,6 +4,7 @@ use roguelike_core::types::*;
 use roguelike_core::utils::*;
 use roguelike_core::movement::{Direction, Action, Reach};
 use roguelike_core::map::*;
+use roguelike_core::config::*;
 
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
@@ -171,7 +172,7 @@ impl Selection {
         };
     }
 
-    pub fn selected_pos(&self, pos: Pos, selected: Pos, fov_radius: i32, data: &GameData) -> Option<Pos> {
+    pub fn selected_pos(&self, pos: Pos, selected: Pos, fov_radius: i32, data: &GameData, config: &Config) -> Option<Pos> {
         let mut maybe_selected_pos: Option<Pos>;
 
         match self.typ {
@@ -195,7 +196,8 @@ impl Selection {
 
         if self.only_visible {
             if let Some(selected_pos) = maybe_selected_pos {
-                if !data.map.is_in_fov(pos, selected_pos, fov_radius) {
+                let player_id = data.find_by_name(EntityName::Player).unwrap();
+                if !data.is_in_fov(player_id, selected_pos, config) {
                     maybe_selected_pos = None;
                 }
             }
@@ -204,8 +206,8 @@ impl Selection {
         return maybe_selected_pos;
     }
 
-    pub fn select(&self, pos: Pos, selected: Pos, fov_radius: i32, data: &GameData) -> Option<Action> {
-        let maybe_selected_pos: Option<Pos> = self.selected_pos(pos, selected, fov_radius, data);
+    pub fn select(&self, pos: Pos, selected: Pos, fov_radius: i32, data: &GameData, config: &Config) -> Option<Action> {
+        let maybe_selected_pos: Option<Pos> = self.selected_pos(pos, selected, fov_radius, data, config);
 
         if let Some(selected_pos) = maybe_selected_pos {
             return Some(self.action.action_from_pos(selected_pos, self.item, data));
