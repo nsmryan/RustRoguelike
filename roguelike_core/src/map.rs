@@ -707,60 +707,6 @@ impl Map {
         return false;
     }
 
-    pub fn is_in_fov_lines(&self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
-        if start_pos == end_pos {
-            return true;
-        }
-
-        if !self.is_within_bounds(start_pos) || !self.is_within_bounds(end_pos) {
-            return false;
-        }
-
-        let within_radius = distance(start_pos, end_pos) < radius;
-        if !within_radius {
-            return false;
-        }
-
-        let blocked = self.path_blocked_fov(start_pos, end_pos);
-
-        let visible_back = self.path_blocked_fov(end_pos, start_pos).is_none();
-
-        let mut is_in_fov;
-        if let Some(blocked) = blocked {
-            let at_end = blocked.end_pos == end_pos;
-
-            // in fov if the line going back is not blocked, or its the last position
-            // in the line and it blocks line of sight (its a full tile wall).
-            is_in_fov = visible_back || (at_end && self[end_pos].block_sight && blocked.end_pos == end_pos);
-        } else {
-            is_in_fov = true;
-        }
-
-        fn needs_culling(map: &Map, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
-            let mut cull = false;
-            // if the position is in the FOV, but the line up to the next-to-last square is
-            // different from the current line, then check that line too. This resolves
-            // artifacts where squares are visible even though no squares around them are.
-            let fov_line = line(start_pos, end_pos);
-            let len = fov_line.len();
-            if len >= 3 {
-                let next_to_last = *fov_line.iter().skip(len - 2).next().unwrap();
-                let next_to_line = line(start_pos, next_to_last);
-                if next_to_line.iter().zip(fov_line.iter().skip(len - 1)).any(|pair| pair.0 != pair.1) {
-                    cull = !map.is_in_fov_lines(start_pos, next_to_last, radius);
-                }
-            }
-
-            return cull;
-        }
-
-        if is_in_fov {
-            is_in_fov = !(needs_culling(self, start_pos, end_pos, radius) || needs_culling(self, end_pos, start_pos, radius));
-        }
-
-        return is_in_fov;
-    }
-
     pub fn path_clear_of_obstacles(&self, start: Pos, end: Pos) -> bool {
         let line = line(start, end);
 
