@@ -391,15 +391,14 @@ impl Map {
             return None;
         }
 
-        let line = line(start_pos, end_pos);
-
         let dir = Direction::from_dxy(dxy.x, dxy.y)
                             .expect(&format!("Check for blocking wall with no movement {:?}?", dxy));
 
-        let positions = iter::once(start_pos).chain(line.into_iter());
-
         let mut blocked;
         let mut found_blocker = false;
+
+        let line = line(start_pos, end_pos);
+        let positions = iter::once(start_pos).chain(line.into_iter());
         for (pos, target_pos) in positions.tuple_windows() {
             let (x, y) = (pos.x, pos.y);
 
