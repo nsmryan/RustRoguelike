@@ -22,10 +22,7 @@ use crate::utils::*;
 use crate::config::Config;
 use crate::line::*;
 
-// TODO consider renaming this file- it really just contains
-// GameData and Entities. likely split into separate files.
 
-// TODO consider adding a symbol store to GameData and removing all Strings
 pub type Name = Symbol;
 
 pub type EntityId = u64;
@@ -129,10 +126,12 @@ impl GameData {
         };
         
         if self.entities.typ[&entity_id] == EntityType::Player {
-            return self.map.is_in_fov(pos, other_pos, radius);
+            // TODO replace false with entity state information
+            return self.map.is_in_fov(pos, other_pos, radius, false);
         } else {
             if let Some(dir) = self.entities.direction.get(&entity_id) {
-                return self.map.is_in_fov_direction(pos, other_pos, radius, *dir);
+                // TODO replace false with entity state information
+                return self.map.is_in_fov_direction(pos, other_pos, radius, *dir, false);
             } else {
                 panic!(format!("tried to perform is_in_fov on entity without facing"));
             }
