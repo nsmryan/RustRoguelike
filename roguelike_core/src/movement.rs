@@ -17,6 +17,9 @@ use crate::line::*;
 pub enum Action {
     Move(Movement),
     MoveDir(Direction),
+
+    TryMove(Direction, usize, MoveMode),
+
     StateChange(Behavior),
     Pickup(EntityId),
     ThrowItem(Pos, EntityId), // end position, item id
@@ -86,6 +89,14 @@ impl MoveMode {
             MoveMode::Sneak => MoveMode::Sneak,
             MoveMode::Run => MoveMode::Sneak,
             MoveMode::Walk => panic!("You shouldn't be able to walk!"),
+        }
+    }
+
+    pub fn move_amount(&self) -> usize {
+        match self {
+            MoveMode::Sneak => 1,
+            MoveMode::Walk => 1,
+            MoveMode::Run => 2,
         }
     }
 }
@@ -714,7 +725,7 @@ pub fn entity_move_not_blocked(entity_id: EntityId, move_pos: Pos, delta_pos: Po
           movement = Some(Movement::move_to(move_pos, MoveType::Move));
        }
     } else {
-      movement = Some(Movement::move_to(move_pos, MoveType::Move));
+        movement = Some(Movement::move_to(move_pos, MoveType::Move));
     }
 
     return movement;

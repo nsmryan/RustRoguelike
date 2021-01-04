@@ -188,8 +188,8 @@ impl FromStr for InputAction {
         } else if s.starts_with("chord") {
             let args = s.split(" ").collect::<Vec<&str>>();
             let dir = Direction::from_str(args[1]).ok();
-            let mode = ActionMode::from_str(args[3]).unwrap();
-            let target = args[4].parse::<i32>().unwrap();
+            let mode = ActionMode::from_str(args[2]).unwrap();
+            let target = args[3].parse::<i32>().unwrap();
             return Ok(InputAction::Chord(dir, mode, target));
         } else if s.starts_with("cursormove") {
             let args = s.split(" ").collect::<Vec<&str>>();

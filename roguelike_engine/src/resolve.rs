@@ -30,6 +30,7 @@ pub fn resolve_messages(data: &mut GameData,
         let msg_line = msg.msg_line(data);
         if msg_line.len() > 0 {
             println!("msg: {}", msg_line);
+            println!("\t{:?}", msg);
         }
 
         match msg {
@@ -320,7 +321,6 @@ pub fn triggered(trigger: EntityId, data: &mut GameData, _msg_log: &mut MsgLog) 
 
 pub fn handle_attack(entity_id: EntityId,
                      movement: Movement,
-                     rng: &mut SmallRng,
                      data: &mut GameData,
                      msg_log: &mut MsgLog,
                      config: &Config) {
@@ -354,16 +354,16 @@ pub fn handle_attack(entity_id: EntityId,
     }
 }
 
-pub fn handle_move(entity_id: EntityId,
-                   movement: Movement,
-                   rng: &mut SmallRng,
-                   data: &mut GameData,
-                   msg_log: &mut MsgLog,
-                   config: &Config) {
+fn handle_move(entity_id: EntityId,
+               movement: Movement,
+               rng: &mut SmallRng,
+               data: &mut GameData,
+               msg_log: &mut MsgLog,
+               config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
 
     if movement.attack.is_some() {
-        handle_attack(entity_id, movement, rng, data, msg_log, config);
+        handle_attack(entity_id, movement, data, msg_log, config);
     } else {
         match movement.typ {
             MoveType::Collide => {
@@ -418,6 +418,87 @@ pub fn handle_move(entity_id: EntityId,
     }
 }
 
+pub fn handle_try_move(entity_id: EntityId,
+                       direction: Direction,
+                       amount: usize,
+                       move_mode: MoveMode,
+                       data: &mut GameData,
+                       msg_log: &mut MsgLog,
+                       config: &Config) {
+    if amount == 0 {
+        panic!("Why try to move with amount == 0?");
+    }
+
+    let reach = data.entities.movement[&entity_id];
+    let reach = reach.with_dist(1);
+
+    let maybe_movement = 
+        movement::calculate_move(direction, reach, entity_id, data);
+    if let Some(movement) = maybe_movement {
+        let entity_pos = data.entities.pos[&entity_id];
+
+        if movement.attack.is_some() {
+            handle_attack(entity_id, movement, data, msg_log, config);
+        } else {
+            match movement.typ {
+                MoveType::Collide => {
+                    data.entities.move_to(entity_id, movement.pos);
+
+                    msg_log.log(Msg::Collided(entity_id, movement.pos));
+                }
+
+                MoveType::Pass => {
+                    msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                }
+
+                MoveType::WallKick(_dir_x, _dir_y) => {
+                    data.entities.move_to(entity_id, movement.pos);
+
+                    // TODO could check for enemy and attack
+                    msg_log.log(Msg::WallKick(entity_id, movement.pos));
+                }
+
+                MoveType::Move | MoveType::JumpWall => {
+                    if entity_pos == movement.pos {
+                        panic!("Why did you move without changing location?");
+                    }
+
+                    // TODO if monster, and would hit trap, don't move
+                    // TODO what about if the entity is moved (say, pushed)?
+                    // should check for this, and no do the move at all, likely
+
+                    let traps_block = false;
+                    if data.clear_path(entity_pos, movement.pos, traps_block) {
+                        if movement.typ == MoveType::Move {
+                            msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+
+                            if amount > 1 {
+                                msg_log.log(Msg::Action(entity_id, Action::TryMove(direction, amount - 1, move_mode)));
+                            }
+                        } else {
+                            msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
+                            panic!("Can we even get here? No clear path, but didn't decide to jump a wall?");
+                        }
+                    } else if movement.typ == MoveType::JumpWall {
+                        // no clear path to moved position
+                        msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
+                        msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                    } else {
+                        // TODO move towards position, perhaps emitting a Collide
+                        // message. This is likely causing the jump wall issue!
+                    }
+                }
+            }
+
+            // if entity is attacking, face their target after the move
+            if let Some(Behavior::Attacking(target_id)) = data.entities.behavior.get(&entity_id) {
+                let target_pos = data.entities.pos[target_id];
+                data.entities.face(entity_id, target_pos);
+            }
+        }
+    }
+}
+
 pub fn handle_action(entity_id: EntityId,
                      action: Action,
                      rng: &mut SmallRng,
@@ -426,16 +507,30 @@ pub fn handle_action(entity_id: EntityId,
                      config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
 
-    if let Action::MoveDir(direction) = action {
-        let reach = data.entities.movement[&entity_id];
-        let maybe_movement = 
-            movement::calculate_move(direction, reach, entity_id, data);
-        if let Some(movement) = maybe_movement {
-            handle_move(entity_id, movement, rng, data, msg_log, config);
-        }
-        // TODO need to signal whether a turn was taken
+    if let Action::TryMove(direction, amount, move_mode) = action {
+        handle_try_move(entity_id, direction, amount, move_mode, data, msg_log, config);
+    } else if let Action::MoveDir(direction) = action {
+        let move_mode: MoveMode = 
+            *data.entities.move_mode.get(&entity_id).unwrap_or(&MoveMode::Walk);
+        let amount = move_mode.move_amount();
+        msg_log.log(Msg::Action(entity_id, Action::TryMove(direction, amount, move_mode)));
+
+        //let reach = data.entities.movement[&entity_id];
+        //let maybe_movement = 
+        //    movement::calculate_move(direction, reach, entity_id, data);
+        //if let Some(movement) = maybe_movement {
+        //    handle_move(entity_id, movement, rng, data, msg_log, config);
+        //}
     } else if let Action::Move(movement) = action {
-        handle_move(entity_id, movement, rng, data, msg_log, config);
+        //handle_move(entity_id, movement, rng, data, msg_log, config);
+
+        let move_mode: MoveMode = 
+            *data.entities.move_mode.get(&entity_id).unwrap_or(&MoveMode::Walk);
+        let amount = move_mode.move_amount();
+        let dxy = sub_pos(movement.pos, entity_pos);
+        let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+
+        msg_log.log(Msg::Action(entity_id, Action::TryMove(direction, amount, move_mode)));
     } else if let Action::StateChange(behavior) = action {
         msg_log.log(Msg::StateChange(entity_id, behavior));
     } else if let Action::Yell = action {
@@ -637,7 +732,7 @@ pub fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut GameData, 
             data.map[wall_loc].bottom_wall = Wall::Empty;
         }
 
-        msg_log.log(Msg::Crushed(entity, blocked.end_pos));
+        msg_log.log_front(Msg::Crushed(entity, blocked.end_pos));
     }
 }
 
@@ -686,7 +781,7 @@ pub fn pushed_entity(pusher: EntityId,
         if blocked == None {
             data.remove_entity(pushed);
 
-            msg_log.log(Msg::Crushed(pusher, next_pos));
+            msg_log.log_front(Msg::Crushed(pusher, next_pos));
 
             if pos_on_map(data.entities.pos[&pusher]) {
                 let movement = Movement::step_to(pushed_pos);
@@ -705,6 +800,9 @@ pub fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut
     data.map[pos].surface = Surface::Rubble;
 
     for crushed_id in data.has_entities(pos) {
+        if crushed_id == entity_id {
+            continue;
+        }
         if let Some(fighter) = data.entities.fighter.get(&crushed_id) {
             msg_log.log(Msg::Killed(entity_id, crushed_id, fighter.hp));
         } else if data.entities.item.get(&crushed_id).is_none() &&

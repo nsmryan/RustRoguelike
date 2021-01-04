@@ -313,7 +313,9 @@ impl GameData {
         let other_type = self.entities.typ[&other_id];
 
         // the player can't push the enemies
-        return !(entity_type == EntityType::Player && other_type == EntityType::Enemy);
+        let player_pushing = entity_type == EntityType::Player && other_type == EntityType::Enemy;
+        let enemies_pushing_each_other = entity_type == EntityType::Enemy && other_type == EntityType::Enemy;
+        return !(player_pushing || enemies_pushing_each_other);
     }
 
     pub fn clear_except(&mut self, exceptions: Vec<EntityId>) {
