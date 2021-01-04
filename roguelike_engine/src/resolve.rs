@@ -911,8 +911,8 @@ fn process_moved_message(entity_id: EntityId,
     }
 
     // if running, but didn't move any squares, then decrease speed
-    if matches!(move_type, MoveType::Pass) {
-        if matches!(data.entities.move_mode.get(&entity_id), Some(MoveMode::Run)) {
+    if move_type == MoveType::Pass {
+        if data.entities.move_mode.get(&entity_id) == Some(&MoveMode::Run) {
             data.entities.move_mode[&entity_id].decrease();
         }
     }
