@@ -73,8 +73,8 @@ pub fn resolve_messages(data: &mut GameData,
                 msg_log.log_front(Msg::Sound(entity_id, end, config.sound_radius_run, true));
             }
 
-            Msg::Pushed(pusher, pushed, delta_pos, move_into) => {
-                pushed_entity(pusher, pushed, delta_pos, move_into, data, msg_log);
+            Msg::Pushed(pusher, pushed, direction, push_amount, move_into) => {
+                pushed_entity(pusher, pushed, direction, push_amount, move_into, data, msg_log);
             }
 
             Msg::Yell(entity_id, pos) => {
@@ -258,8 +258,10 @@ fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameD
     let first = data.entities.pos[&entity_id];
     let second = data.entities.pos[&hit_entity];
 
-    let delta_pos = sub_pos(second, first);
-    msg_log.log(Msg::Pushed(entity_id, hit_entity, delta_pos, false));
+    let dxy = sub_pos(second, first);
+    let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+    let amount = 1;
+    msg_log.log(Msg::Pushed(entity_id, hit_entity, direction, amount, false));
     msg_log.log_front(Msg::Sound(entity_id, second, config.sound_radius_hammer, true));
 
     if let Some(fighter) = data.entities.fighter.get(&hit_entity) {
@@ -357,8 +359,8 @@ fn resolve_attack(entity_id: EntityId,
             msg_log.log(Msg::Stabbed(entity_id, target_id));
         }
 
-        Attack::Push(target_id, delta_pos) => {
-            msg_log.log(Msg::Pushed(entity_id, target_id, delta_pos, true));
+        Attack::Push(target_id, direction, amount) => {
+            msg_log.log(Msg::Pushed(entity_id, target_id, direction, amount, true));
         }
     }
 }
@@ -535,7 +537,7 @@ fn resolve_action(entity_id: EntityId,
         use_energy(entity_id, data);
 
         data.entities.move_to(entity_id, pos);
-    } else if let Action::Push(entity_id, direction) = action {
+    } else if let Action::Push(entity_id, direction, amount) = action {
         // TODO split into separate function
         use_energy(entity_id, data);
 
@@ -545,8 +547,9 @@ fn resolve_action(entity_id: EntityId,
         for other_id in data.has_entities(push_pos) {
             if data.entities.typ[&other_id] == EntityType::Enemy {
                 let dxy = sub_pos(push_pos, pos);
+                let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
                 let move_into = false;
-                msg_log.log(Msg::Pushed(entity_id, other_id, dxy, move_into));
+                msg_log.log(Msg::Pushed(entity_id, other_id, direction, amount, move_into));
             }
         }
     }
@@ -707,7 +710,8 @@ fn killed_entity(attacked: EntityId, data: &mut GameData, msg_log: &mut MsgLog, 
 
 fn pushed_entity(pusher: EntityId,
                  pushed: EntityId,
-                 delta_pos: Pos,
+                 direction: Direction,
+                 push_amount: usize,
                  move_into: bool,
                  data: &mut GameData,
                  msg_log: &mut MsgLog) {
@@ -730,7 +734,10 @@ fn pushed_entity(pusher: EntityId,
             }
         }
     } else if data.entities.status[&pushed].alive {
-        push_attack(pusher, pushed, delta_pos, move_into, data, msg_log);
+        push_attack(pusher, pushed, direction, push_amount, move_into, data, msg_log);
+
+        if push_amount > 1 {
+        }
     } else {
         panic!("Tried to push entity {:?}, alive = {}!",
                data.entities.typ[&pushed], data.entities.status[&pushed].alive);

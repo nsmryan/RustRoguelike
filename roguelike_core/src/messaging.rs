@@ -57,7 +57,7 @@ pub enum Msg {
     ItemThrow(EntityId, EntityId, Pos, Pos), // thrower, stone id, start, end
     Attack(EntityId, EntityId, Hp), // attacker, attacked, hp lost
     Killed(EntityId, EntityId, Hp), // attacker, attacked, hp lost
-    Pushed(EntityId, EntityId, Pos, bool), // attacker, attacked, change in position, move into pushed square
+    Pushed(EntityId, EntityId, Direction, usize, bool), // attacker, attacked, direction, amount, move into pushed square
     TryMove(EntityId, Direction, usize, MoveMode),
     Moved(EntityId, MoveType, Pos),
     JumpWall(EntityId, Pos, Pos), // current pos, new pos
@@ -143,7 +143,7 @@ impl Msg {
                 return format!("{:?} killed {:?}", data.entities.name[attacker], data.entities.name[attacked]);
             }
 
-            Msg::Pushed(attacker, attacked, _delta_pos, _move_into) => {
+            Msg::Pushed(attacker, attacked, _direction, _amount, _move_into) => {
                 return format!("{:?} pushed {:?}", data.entities.name[attacker], data.entities.name[attacked]);
             }
 

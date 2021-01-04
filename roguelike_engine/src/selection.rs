@@ -115,7 +115,9 @@ impl SelectionAction {
                 let player_pos = data.entities.pos[&player_id];
                 let dxy = sub_pos(pos, player_pos);
                 let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-                action = Action::Push(player_id, direction);
+                // TODO this might need to be carried around?
+                let push_amount = 1;
+                action = Action::Push(player_id, direction, push_amount);
             }
         }
 

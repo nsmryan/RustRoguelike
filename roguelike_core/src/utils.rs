@@ -6,7 +6,7 @@ use crate::ai::Behavior;
 use crate::constants::{HAMMER_DAMAGE, SWORD_DAMAGE};
 use crate::map::{Surface};
 use crate::types::*;
-use crate::movement::{Reach, MoveMode, check_collision, MoveType, Movement};
+use crate::movement::{Reach, MoveMode, check_collision, MoveType, Movement, Direction};
 use crate::messaging::*;
 use crate::line::*;
 use crate::config::Config;
@@ -72,16 +72,17 @@ pub fn sort_by_distance_to(pos: Pos, positions: &mut Vec<Pos>) {
 
 pub fn push_attack(entity_id: EntityId,
                    target: EntityId,
-                   delta_pos: Pos,
+                   direction: Direction,
+                   amount: usize,
                    move_into: bool,
                    data: &mut GameData,
                    msg_log: &mut MsgLog) {
     let mut killed = false;
     let mut damage = 0;
 
-    let strength = pos_mag(delta_pos);
-    for pos_index in 0..strength {
-        let strength_left = strength - pos_index;
+    let mut _strength_left = amount;
+    for pos_index in 0..amount {
+        let strength_left = amount - pos_index;
 
         let pos = data.entities.pos[&entity_id];
         let other_pos = data.entities.pos[&target];
@@ -99,6 +100,7 @@ pub fn push_attack(entity_id: EntityId,
         }
 
         if move_result.no_collision() {
+            data.entities.status[&target].frozen = 2;
             // if not blocked, push the other entity
             msg_log.log_front(Msg::Moved(target, MoveType::Move, past_pos));
         } else {

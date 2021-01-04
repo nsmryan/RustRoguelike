@@ -33,7 +33,7 @@ pub enum Action {
     Reform(EntityId, Pos),
     Swap(EntityId, EntityId), // casting entity, target entity
     PassWall(EntityId, Pos),
-    Push(EntityId, Direction), // casting entity, target direction
+    Push(EntityId, Direction, usize), // casting entity, target direction, amount
     NoAction,
 }
 
@@ -112,7 +112,7 @@ impl fmt::Display for MoveMode {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Attack {
     Attack(EntityId), // target_id
-    Push(EntityId, Pos), //target_id, delta_pos
+    Push(EntityId, Direction, usize), //target_id, direction, amount
     Stab(EntityId), // target_id
 }
 
@@ -785,8 +785,10 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId,
         let is_column = data.entities.typ[&other_id] == EntityType::Column;
 
         if data.can_push(entity_id, other_id) && !next_tile_water && !(push_is_blocked && is_column) {
+            let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
+            let push_amount = 1;
             // TODO issue 150 this is where pushing comes from. 
-            let attack = Attack::Push(other_id, delta_pos);
+            let attack = Attack::Push(other_id, direction, push_amount);
             movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
         } else {
             movement = None;
@@ -814,8 +816,10 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
         if can_stab(data, entity_id, other_id) {
             attack = Some(Attack::Stab(other_id));
         } else if data.map[next_pos(pos, dxy)].tile_type != TileType::Water {
+            let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
+            let push_amount = 1;
             // TODO issue 150 this is where pushing comes from. 
-            attack = Some(Attack::Push(other_id, delta_pos));
+            attack = Some(Attack::Push(other_id, direction, push_amount));
         } else {
             // water after push, so supress attack
             attack = None;
@@ -841,8 +845,10 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
                 if can_stab(data, entity_id, other_id) {
                     Attack::Stab(other_id)
                 } else {
+                    let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
+                    let push_amount = 1;
                     // TODO issue 150 this is where pushing comes from. 
-                    Attack::Push(other_id, delta_pos)
+                    Attack::Push(other_id, direction, push_amount)
                 };
             let move_pos = move_next_to(pos, entity_pos);
             movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
