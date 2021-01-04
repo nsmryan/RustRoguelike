@@ -30,16 +30,17 @@ pub fn resolve_messages(data: &mut GameData,
         let msg_line = msg.msg_line(data);
         if msg_line.len() > 0 {
             println!("msg: {}", msg_line);
-            println!("\t{:?}", msg);
         }
+        println!("\t{:?}", msg);
 
         match msg {
             Msg::Moved(entity_id, move_type, pos) => {
                 // only perform move if tile does not contain a wall or entity
-                if data.has_blocking_entity(pos).is_none() &&
-                   !data.map[pos].block_move {
-                       process_moved_message(entity_id, move_type, pos, data, msg_log, config);
-                }
+                //if data.has_blocking_entity(pos).is_none() &&
+                //   !data.map[pos].block_move {
+                       //process_moved_message(entity_id, move_type, pos, data, msg_log, config);
+                //}
+               process_moved_message(entity_id, move_type, pos, data, msg_log, config);
             }
 
             Msg::Crushed(entity_id, pos) => {
@@ -331,6 +332,9 @@ pub fn handle_attack(entity_id: EntityId,
                      config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
 
+    // any time an entity attacks, they change to standing stance
+    data.entities.stance[&entity_id] = Stance::Standing;
+
     // we already checked that this unwrap is safe before calling this function
     match attack_info {
         Attack::Attack(target_id) => {
@@ -468,7 +472,7 @@ pub fn handle_action(entity_id: EntityId,
     } else if let Action::Yell = action {
         msg_log.log(Msg::Yell(entity_id, entity_pos));
     } else if let Action::Pass = action {
-        msg_log.log(Msg::Pass());
+        msg_log.log(Msg::Moved(entity_id, MoveType::Pass, entity_pos));
     } else if let Action::ThrowItem(throw_pos, item_id) = action {
         msg_log.log(Msg::ItemThrow(entity_id, item_id, entity_pos, throw_pos));
     } else if let Action::Pickup(item_id) = action {
@@ -894,9 +898,9 @@ fn process_moved_message(entity_id: EntityId,
                          msg_log: &mut MsgLog,
                          config: &Config) {
     // if this move does not change the entity position, exit early
-    if pos == data.entities.pos[&entity_id] {
-        return;
-    }
+    //if pos == data.entities.pos[&entity_id] {
+        //return;
+    //}
 
     let original_pos = data.entities.pos[&entity_id];
 
@@ -910,15 +914,18 @@ fn process_moved_message(entity_id: EntityId,
         }
     }
 
-    // if running, but didn't move any squares, then decrease speed
-    if move_type == MoveType::Pass {
-        if data.entities.move_mode.get(&entity_id) == Some(&MoveMode::Run) {
-            data.entities.move_mode[&entity_id].decrease();
-        }
-    }
-
     // make a noise based on how fast the entity is moving and the terrain
     if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {
+        if let Some(stance) = data.entities.stance.get(&entity_id) {
+            if move_type == MoveType::Pass {
+                data.entities.stance[&entity_id] = stance.waited(*move_mode);
+            } else if *move_mode == MoveMode::Run {
+                data.entities.stance[&entity_id] = Stance::Running;
+            } else if *move_mode == MoveMode::Sneak {
+                data.entities.stance[&entity_id] = Stance::Crouched;
+            }
+        }
+
         let mut sound_radius;
 
         match move_mode {

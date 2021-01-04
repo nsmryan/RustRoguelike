@@ -546,6 +546,17 @@ pub enum Stance {
     Running,
 }
 
+impl Stance {
+    pub fn waited(&self, move_mode: MoveMode) -> Stance {
+        match (self, move_mode) {
+            (Stance::Crouched, MoveMode::Run) => Stance::Standing,
+            (Stance::Standing, MoveMode::Sneak) => Stance::Crouched,
+            (Stance::Running, _) => Stance::Standing,
+            _ => *self,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum EntityName {
     Player,
