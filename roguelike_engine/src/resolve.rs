@@ -514,16 +514,7 @@ pub fn resolve_action(entity_id: EntityId,
         }
         pick_item_up(entity_id, item_id, &mut data.entities, msg_log);
     } else if let Action::Blink(entity_id) = action {
-        // TODO split into separate function
-        use_energy(entity_id, data);
-
-        let entity_pos = data.entities.pos[&entity_id];
-
-        if let Some(blink_pos) = find_blink_pos(entity_pos, rng, data) {
-            data.entities.move_to(entity_id, blink_pos);
-        } else {
-            msg_log.log(Msg::FailedBlink(entity_id));
-        }
+        resolve_blink(entity_id, data, rng, msg_log);
     } else if let Action::Rubble(entity_id, blocked) = action {
         resolve_rubble(entity_id, blocked, data, msg_log);
     } else if let Action::Reform(entity_id, pos) = action {
@@ -563,8 +554,19 @@ pub fn resolve_action(entity_id: EntityId,
     }
 }
 
+fn resolve_blink(entity_id: EntityId, data: &mut GameData, rng: &mut SmallRng, msg_log: &mut MsgLog) {
+    use_energy(entity_id, data);
+
+    let entity_pos = data.entities.pos[&entity_id];
+
+    if let Some(blink_pos) = find_blink_pos(entity_pos, rng, data) {
+        data.entities.move_to(entity_id, blink_pos);
+    } else {
+        msg_log.log(Msg::FailedBlink(entity_id));
+    }
+}
+
 fn resolve_rubble(entity_id: EntityId, blocked: Blocked, data: &mut GameData, msg_log: &mut MsgLog) {
-    // TODO split into separate function
     use_energy(entity_id, data);
 
     let entity_pos = data.entities.pos[&entity_id];
