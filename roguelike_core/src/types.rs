@@ -126,7 +126,7 @@ impl GameData {
         };
 
         let stance = self.entities.stance[&entity_id];
-        let crouching = stance == Stance::Crouched;
+        let crouching = stance == Stance::Crouching;
 
         if self.entities.typ[&entity_id] == EntityType::Player {
             return self.map.is_in_fov(pos, other_pos, radius, crouching);
@@ -541,7 +541,7 @@ impl Default for InventoryAction {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum Stance {
-    Crouched,
+    Crouching,
     Standing,
     Running,
 }
@@ -549,8 +549,8 @@ pub enum Stance {
 impl Stance {
     pub fn waited(&self, move_mode: MoveMode) -> Stance {
         match (self, move_mode) {
-            (Stance::Crouched, MoveMode::Run) => Stance::Standing,
-            (Stance::Standing, MoveMode::Sneak) => Stance::Crouched,
+            (Stance::Crouching, MoveMode::Run) => Stance::Standing,
+            (Stance::Standing, MoveMode::Sneak) => Stance::Crouching,
             (Stance::Running, _) => Stance::Standing,
             _ => *self,
         }

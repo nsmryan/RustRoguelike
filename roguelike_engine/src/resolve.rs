@@ -921,7 +921,7 @@ fn process_moved_message(entity_id: EntityId,
             } else if *move_mode == MoveMode::Run {
                 data.entities.stance[&entity_id] = Stance::Running;
             } else if *move_mode == MoveMode::Sneak {
-                data.entities.stance[&entity_id] = Stance::Crouched;
+                data.entities.stance[&entity_id] = Stance::Crouching;
             }
         }
 

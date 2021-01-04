@@ -735,7 +735,8 @@ pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked:
     let pos = data.entities.pos[&entity_id];
     let mut jumped_wall = false;
 
-    if data.entities.move_mode[&entity_id] == MoveMode::Run {
+    if data.entities.move_mode[&entity_id] == MoveMode::Run &&
+       data.entities.stance[&entity_id] != Stance::Crouching {
         if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
             jumped_wall = true;
         } 
