@@ -525,39 +525,7 @@ pub fn resolve_action(entity_id: EntityId,
             msg_log.log(Msg::FailedBlink(entity_id));
         }
     } else if let Action::Rubble(entity_id, blocked) = action {
-        // TODO split into separate function
-        use_energy(entity_id, data);
-
-        let entity_pos = data.entities.pos[&entity_id];
-
-        data.map[blocked.end_pos].surface = Surface::Rubble;
-        data.map[blocked.end_pos].block_move = false;
-        data.map[blocked.end_pos].chr = ' ' as u8;
-
-        if blocked.wall_type != Wall::Empty {
-            let dxy = sub_pos(blocked.end_pos, entity_pos);
-            match Direction::from_dxy(dxy.x, dxy.y).unwrap() {
-                Direction::Up => {
-                    data.map[blocked.end_pos].bottom_wall = Wall::Empty;
-                }
-
-                Direction::Down => {
-                    data.map[entity_pos].bottom_wall = Wall::Empty;
-                }
-
-                Direction::Left => {
-                    data.map[entity_pos].left_wall = Wall::Empty;
-                }
-                
-                Direction::Right => {
-                    data.map[blocked.end_pos].left_wall = Wall::Empty;
-                }
-
-                _ => {
-                    panic!("Rubble skill doesn't work on diagonals!");
-                }
-            }
-        }
+        resolve_rubble(entity_id, blocked, data, msg_log);
     } else if let Action::Reform(entity_id, pos) = action {
         // TODO split into separate function
         use_energy(entity_id, data);
@@ -590,6 +558,42 @@ pub fn resolve_action(entity_id: EntityId,
                 let dxy = sub_pos(push_pos, pos);
                 let move_into = false;
                 msg_log.log(Msg::Pushed(entity_id, other_id, dxy, move_into));
+            }
+        }
+    }
+}
+
+fn resolve_rubble(entity_id: EntityId, blocked: Blocked, data: &mut GameData, msg_log: &mut MsgLog) {
+    // TODO split into separate function
+    use_energy(entity_id, data);
+
+    let entity_pos = data.entities.pos[&entity_id];
+
+    data.map[blocked.end_pos].surface = Surface::Rubble;
+    data.map[blocked.end_pos].block_move = false;
+    data.map[blocked.end_pos].chr = ' ' as u8;
+
+    if blocked.wall_type != Wall::Empty {
+        let dxy = sub_pos(blocked.end_pos, entity_pos);
+        match Direction::from_dxy(dxy.x, dxy.y).unwrap() {
+            Direction::Up => {
+                data.map[blocked.end_pos].bottom_wall = Wall::Empty;
+            }
+
+            Direction::Down => {
+                data.map[entity_pos].bottom_wall = Wall::Empty;
+            }
+
+            Direction::Left => {
+                data.map[entity_pos].left_wall = Wall::Empty;
+            }
+            
+            Direction::Right => {
+                data.map[blocked.end_pos].left_wall = Wall::Empty;
+            }
+
+            _ => {
+                panic!("Rubble skill doesn't work on diagonals!");
             }
         }
     }
