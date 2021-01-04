@@ -109,11 +109,11 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::Action(entity_id, action) => {
-                handle_action(entity_id, action, rng, data, msg_log, config);
+                resolve_action(entity_id, action, rng, data, msg_log, config);
             }
 
             Msg::TryMove(entity_id, direction, amount, move_mode) => {
-                handle_try_move(entity_id, direction, amount, move_mode, data, msg_log, config);
+                resolve_try_move(entity_id, direction, amount, move_mode, data, msg_log, config);
             }
 
             Msg::PickedUp(entity_id, item_id) => {
@@ -324,12 +324,12 @@ pub fn triggered(trigger: EntityId, data: &mut GameData, _msg_log: &mut MsgLog) 
     }
 }
 
-pub fn handle_attack(entity_id: EntityId,
-                     attack_info: Attack,
-                     attack_pos: Pos,
-                     data: &mut GameData,
-                     msg_log: &mut MsgLog,
-                     config: &Config) {
+pub fn resolve_attack(entity_id: EntityId,
+                      attack_info: Attack,
+                      attack_pos: Pos,
+                      data: &mut GameData,
+                      msg_log: &mut MsgLog,
+                      config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
 
     // any time an entity attacks, they change to standing stance
@@ -363,13 +363,13 @@ pub fn handle_attack(entity_id: EntityId,
     }
 }
 
-pub fn handle_try_move(entity_id: EntityId,
-                       direction: Direction,
-                       amount: usize,
-                       move_mode: MoveMode,
-                       data: &mut GameData,
-                       msg_log: &mut MsgLog,
-                       config: &Config) {
+pub fn resolve_try_move(entity_id: EntityId,
+                        direction: Direction,
+                        amount: usize,
+                        move_mode: MoveMode,
+                        data: &mut GameData,
+                        msg_log: &mut MsgLog,
+                        config: &Config) {
     if amount == 0 {
         panic!("Why try to move with amount == 0?");
     }
@@ -429,6 +429,7 @@ pub fn handle_try_move(entity_id: EntityId,
                         msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
                         msg_log.log(Msg::Moved(entity_id, movement.typ, movement.pos));
                     } else {
+                        panic!("Why would we not have a clear path, but have received this movement?");
                         // TODO move towards position, perhaps emitting a Collide
                         // message. This is likely causing the jump wall issue!
                     }
@@ -444,12 +445,12 @@ pub fn handle_try_move(entity_id: EntityId,
     }
 }
 
-pub fn handle_action(entity_id: EntityId,
-                     action: Action,
-                     rng: &mut SmallRng,
-                     data: &mut GameData,
-                     msg_log: &mut MsgLog,
-                     config: &Config) {
+pub fn resolve_action(entity_id: EntityId,
+                      action: Action,
+                      rng: &mut SmallRng,
+                      data: &mut GameData,
+                      msg_log: &mut MsgLog,
+                      config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
 
     if let Action::MoveDir(direction) = action {
@@ -466,7 +467,7 @@ pub fn handle_action(entity_id: EntityId,
 
         msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
     } else if let Action::Attack(attack_info, attack_pos) = action {
-        handle_attack(entity_id, attack_info, attack_pos, data, msg_log, config);
+        resolve_attack(entity_id, attack_info, attack_pos, data, msg_log, config);
     } else if let Action::StateChange(behavior) = action {
         msg_log.log(Msg::StateChange(entity_id, behavior));
     } else if let Action::Yell = action {
