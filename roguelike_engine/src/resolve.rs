@@ -241,7 +241,7 @@ pub fn resolve_messages(data: &mut GameData,
     data.entities.messages[&player_id].clear();
 }
 
-pub fn hammer_swing(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
+fn hammer_swing(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
     let entity_pos = data.entities.pos[&entity_id];
 
     if let Some(blocked) = data.map.path_blocked_move(entity_pos, pos) {
@@ -254,7 +254,7 @@ pub fn hammer_swing(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log:
     }
 }
 
-pub fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     let first = data.entities.pos[&entity_id];
     let second = data.entities.pos[&hit_entity];
 
@@ -269,7 +269,7 @@ pub fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut G
     }
 }
 
-pub fn sword_swing(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
+fn sword_swing(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
     let mut any_hit_entity = false;
 
     let adj_locs = Reach::single(1).reachables(pos);
@@ -287,7 +287,7 @@ pub fn sword_swing(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: 
     }
 }
 
-pub fn freeze_trap_triggered(trap: EntityId, cause_id: EntityId, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+fn freeze_trap_triggered(trap: EntityId, cause_id: EntityId, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     let source_pos = data.entities.pos[&trap];
 
     let freeze_aoe =
@@ -304,7 +304,7 @@ pub fn freeze_trap_triggered(trap: EntityId, cause_id: EntityId, data: &mut Game
     }
 }
 
-pub fn triggered(trigger: EntityId, data: &mut GameData, _msg_log: &mut MsgLog) {
+fn triggered(trigger: EntityId, data: &mut GameData, _msg_log: &mut MsgLog) {
     if data.entities.name[&trigger] == EntityName::GateTrigger {
         if !data.entities.status[&trigger].active {
             let trigger_pos = data.entities.pos[&trigger];
@@ -324,12 +324,12 @@ pub fn triggered(trigger: EntityId, data: &mut GameData, _msg_log: &mut MsgLog) 
     }
 }
 
-pub fn resolve_attack(entity_id: EntityId,
-                      attack_info: Attack,
-                      attack_pos: Pos,
-                      data: &mut GameData,
-                      msg_log: &mut MsgLog,
-                      config: &Config) {
+fn resolve_attack(entity_id: EntityId,
+                  attack_info: Attack,
+                  attack_pos: Pos,
+                  data: &mut GameData,
+                  msg_log: &mut MsgLog,
+                  config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
 
     // any time an entity attacks, they change to standing stance
@@ -363,13 +363,13 @@ pub fn resolve_attack(entity_id: EntityId,
     }
 }
 
-pub fn resolve_try_move(entity_id: EntityId,
-                        direction: Direction,
-                        amount: usize,
-                        move_mode: MoveMode,
-                        data: &mut GameData,
-                        msg_log: &mut MsgLog,
-                        config: &Config) {
+fn resolve_try_move(entity_id: EntityId,
+                    direction: Direction,
+                    amount: usize,
+                    move_mode: MoveMode,
+                    data: &mut GameData,
+                    msg_log: &mut MsgLog,
+                    config: &Config) {
     if amount == 0 {
         panic!("Why try to move with amount == 0?");
     }
@@ -445,12 +445,12 @@ pub fn resolve_try_move(entity_id: EntityId,
     }
 }
 
-pub fn resolve_action(entity_id: EntityId,
-                      action: Action,
-                      rng: &mut SmallRng,
-                      data: &mut GameData,
-                      msg_log: &mut MsgLog,
-                      config: &Config) {
+fn resolve_action(entity_id: EntityId,
+                  action: Action,
+                  rng: &mut SmallRng,
+                  data: &mut GameData,
+                  msg_log: &mut MsgLog,
+                  config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
 
     if let Action::MoveDir(direction) = action {
@@ -518,14 +518,12 @@ pub fn resolve_action(entity_id: EntityId,
     } else if let Action::Rubble(entity_id, blocked) = action {
         resolve_rubble(entity_id, blocked, data, msg_log);
     } else if let Action::Reform(entity_id, pos) = action {
-        // TODO split into separate function
         use_energy(entity_id, data);
 
         data.map[pos].surface = Surface::Floor;
         data.map[pos].block_move = true;
         data.map[pos].chr = MAP_WALL;
     } else if let Action::Swap(entity_id, target_id) = action {
-        // TODO split into separate function
         use_energy(entity_id, data);
 
         let start_pos = data.entities.pos[&entity_id];
@@ -601,7 +599,7 @@ fn resolve_rubble(entity_id: EntityId, blocked: Blocked, data: &mut GameData, ms
     }
 }
 
-pub fn untriggered(trigger: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
+fn untriggered(trigger: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
     if data.entities.name[&trigger] == EntityName::GateTrigger {
         // if the gate is currently active, raise the wall
         if data.entities.status[&trigger].active {
@@ -636,7 +634,7 @@ pub fn untriggered(trigger: EntityId, data: &mut GameData, msg_log: &mut MsgLog)
     }
 }
 
-pub fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     let entity_pos = data.entities.pos[&entity];
     let hit_pos = blocked.end_pos;
     if data.map[hit_pos].block_move {
@@ -679,7 +677,7 @@ pub fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut GameData, 
     }
 }
 
-pub fn killed_entity(attacked: EntityId, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+fn killed_entity(attacked: EntityId, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     let attacked_pos = data.entities.pos[&attacked];
 
     // if the attacked entities position is not blocked
@@ -707,12 +705,12 @@ pub fn killed_entity(attacked: EntityId, data: &mut GameData, msg_log: &mut MsgL
     data.entities.count_down.insert(attacked, 1);
 }
 
-pub fn pushed_entity(pusher: EntityId,
-                     pushed: EntityId,
-                     delta_pos: Pos,
-                     move_into: bool,
-                     data: &mut GameData,
-                     msg_log: &mut MsgLog) {
+fn pushed_entity(pusher: EntityId,
+                 pushed: EntityId,
+                 delta_pos: Pos,
+                 move_into: bool,
+                 data: &mut GameData,
+                 msg_log: &mut MsgLog) {
     let pushed_pos = data.entities.pos[&pushed];
     let pusher_pos = data.entities.pos[&pusher];
 
@@ -739,7 +737,7 @@ pub fn pushed_entity(pusher: EntityId,
     }
 }
 
-pub fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     data.map[pos].surface = Surface::Rubble;
 
     for crushed_id in data.has_entities(pos) {
@@ -759,7 +757,7 @@ pub fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut
     msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_crushed, true));
 }
 
-pub fn use_energy(entity_id: EntityId, data: &mut GameData) {
+fn use_energy(entity_id: EntityId, data: &mut GameData) {
     let pos = data.entities.pos[&entity_id];
 
     let class = data.entities.class[&entity_id];
@@ -788,10 +786,10 @@ pub fn use_energy(entity_id: EntityId, data: &mut GameData) {
     }
 }
 
-pub fn pick_item_up(entity_id: EntityId,
-                    item_id: EntityId,
-                    entities: &mut Entities,
-                    _msg_log: &mut MsgLog) {
+fn pick_item_up(entity_id: EntityId,
+                item_id: EntityId,
+                entities: &mut Entities,
+                _msg_log: &mut MsgLog) {
     // pick up item
     let item = entities.item[&item_id];
     let item_class = item.class();
@@ -818,17 +816,17 @@ pub fn pick_item_up(entity_id: EntityId,
     entities.set_xy(item_id, -1, -1);
 }
 
-pub fn place_trap(trap_id: EntityId, place_pos: Pos, game_data: &mut GameData) {
+fn place_trap(trap_id: EntityId, place_pos: Pos, game_data: &mut GameData) {
     game_data.entities.set_pos(trap_id, place_pos);
     game_data.entities.armed[&trap_id] = true;
 }
 
-pub fn throw_item(player_id: EntityId,
-                  item_id: EntityId,
-                  start_pos: Pos,
-                  end_pos: Pos,
-                  game_data: &mut GameData,
-                  msg_log: &mut MsgLog) {
+fn throw_item(player_id: EntityId,
+              item_id: EntityId,
+              start_pos: Pos,
+              end_pos: Pos,
+              game_data: &mut GameData,
+              msg_log: &mut MsgLog) {
     let throw_line = line(start_pos, end_pos);
 
     // get target position in direction of player click
@@ -849,7 +847,7 @@ pub fn throw_item(player_id: EntityId,
     game_data.entities.remove_item(player_id, item_id);
 }
 
-pub fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Option<Pos> {
+fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Option<Pos> {
     let mut potential_positions = floodfill(&data.map, pos, BLINK_RADIUS);
     while potential_positions.len() > 0 {
         let ix = rng.gen_range(0, potential_positions.len());
@@ -866,10 +864,10 @@ pub fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Opti
     return None;
 }
 
-pub fn inventory_drop_item(entity_id: EntityId,
-                           item_index: usize,
-                           data: &mut GameData,
-                           msg_log: &mut MsgLog) {
+fn inventory_drop_item(entity_id: EntityId,
+                       item_index: usize,
+                       data: &mut GameData,
+                       msg_log: &mut MsgLog) {
     let player_pos = data.entities.pos[&entity_id];
     let item_id = data.entities.inventory[&entity_id][item_index];
 
