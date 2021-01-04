@@ -201,7 +201,7 @@ pub fn ai_attempt_step(monster_id: EntityId, new_pos: Pos, data: &GameData) -> A
 
     let turn;
     if pos_mag(pos_offset) > 0 {
-        turn = Action::Move(Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move));
+        turn = Action::Move(MoveType::Move, add_pos(monster_pos, pos_offset));
     } else {
         turn = Action::NoAction;
     }
@@ -278,7 +278,7 @@ pub fn ai_attack(monster_id: EntityId,
     } else if let Some(hit_pos) = can_hit_target {
         // can hit their target, so just attack them
         let attack = Attack::Attack(target_id);
-        turn = Action::Move(Movement::attack(hit_pos, MoveType::Move, attack));
+        turn = Action::Attack(attack, hit_pos);
     } else if !data.is_in_fov(monster_id, target_pos, config) {
         // path to target is blocked by a wall- investigate the last known position
         turn = Action::StateChange(Behavior::Investigating(target_pos));
@@ -354,14 +354,14 @@ pub fn ai_investigate(target_pos: Pos,
                 let pos_offset = ai_take_astar_step(monster_id, target_pos, must_reach, &data);
 
                 let movement = Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move);
-                turn = Action::Move(movement);
+                turn = Action::Move(movement.typ, movement.pos);
             }
         }
     }
 
     // if the monster moved, but didn't go anywhere, they stop investigating
-    if let Action::Move(movement) = turn {
-        if movement.pos == monster_pos {
+    if let Action::Move(_typ, move_pos) = turn {
+        if move_pos == monster_pos {
             // NOTE this causes monster to give up whenever they can't reach their goal.
             // the problem is that this might happen in a long corridor, for example, where
             // you might want them to keep trying for a while in case there is a monster

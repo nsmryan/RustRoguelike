@@ -95,14 +95,12 @@ pub fn push_attack(entity_id: EntityId,
         let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
 
         if move_into {
-            let movement = Movement::new(other_pos, MoveType::Move, None);
-            msg_log.log_front(Msg::Moved(entity_id, movement, other_pos));
+            msg_log.log_front(Msg::Moved(entity_id, MoveType::Move, other_pos));
         }
 
         if move_result.no_collision() {
             // if not blocked, push the other entity
-            let movement = Movement::new(past_pos, MoveType::Move, None);
-            msg_log.log_front(Msg::Moved(target, movement, past_pos));
+            msg_log.log_front(Msg::Moved(target, MoveType::Move, past_pos));
         } else {
             // otherwise crush them against the wall/entity
             data.entities.status[&target].alive = false;

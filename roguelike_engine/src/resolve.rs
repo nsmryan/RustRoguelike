@@ -34,11 +34,11 @@ pub fn resolve_messages(data: &mut GameData,
         }
 
         match msg {
-            Msg::Moved(entity_id, movement, pos) => {
+            Msg::Moved(entity_id, move_type, pos) => {
                 // only perform move if tile does not contain a wall or entity
-                if data.has_blocking_entity(movement.pos).is_none() &&
-                   !data.map[movement.pos].block_move {
-                       process_moved_message(entity_id, movement, pos, data, msg_log, config);
+                if data.has_blocking_entity(pos).is_none() &&
+                   !data.map[pos].block_move {
+                       process_moved_message(entity_id, move_type, pos, data, msg_log, config);
                 }
             }
 
@@ -324,14 +324,15 @@ pub fn triggered(trigger: EntityId, data: &mut GameData, _msg_log: &mut MsgLog) 
 }
 
 pub fn handle_attack(entity_id: EntityId,
-                     movement: Movement,
+                     attack_info: Attack,
+                     attack_pos: Pos,
                      data: &mut GameData,
                      msg_log: &mut MsgLog,
                      config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
 
     // we already checked that this unwrap is safe before calling this function
-    match movement.attack.unwrap() {
+    match attack_info {
         Attack::Attack(target_id) => {
             attack(entity_id, target_id, data, msg_log);
         }
@@ -343,8 +344,8 @@ pub fn handle_attack(entity_id: EntityId,
                 data.used_up_item(entity_id);
             }
 
-            if entity_pos != movement.pos {
-                msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+            if entity_pos != attack_pos {
+                msg_log.log(Msg::Moved(entity_id, MoveType::Move, attack_pos));
             }
 
             // this is done after the Moved msg to ensure that the attack
@@ -377,8 +378,8 @@ pub fn handle_try_move(entity_id: EntityId,
     if let Some(movement) = maybe_movement {
         let entity_pos = data.entities.pos[&entity_id];
 
-        if movement.attack.is_some() {
-            handle_attack(entity_id, movement, data, msg_log, config);
+        if let Some(attack) = movement.attack {
+            msg_log.log(Msg::Action(entity_id, Action::Attack(attack, movement.pos)));
         } else {
             match movement.typ {
                 MoveType::Collide => {
@@ -388,7 +389,7 @@ pub fn handle_try_move(entity_id: EntityId,
                 }
 
                 MoveType::Pass => {
-                    msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                    msg_log.log(Msg::Moved(entity_id, MoveType::Pass, movement.pos));
                 }
 
                 MoveType::WallKick(_dir_x, _dir_y) => {
@@ -410,10 +411,10 @@ pub fn handle_try_move(entity_id: EntityId,
                     let traps_block = false;
                     if data.clear_path(entity_pos, movement.pos, traps_block) {
                         if movement.typ == MoveType::Move {
-                            msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                            msg_log.log(Msg::Moved(entity_id, movement.typ, movement.pos));
 
                             if amount > 1 {
-                                msg_log.log(Msg::Action(entity_id, Action::TryMove(direction, amount - 1, move_mode)));
+                                msg_log.log(Msg::TryMove(entity_id, direction, amount - 1, move_mode));
                             }
                         } else {
                             msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
@@ -422,7 +423,7 @@ pub fn handle_try_move(entity_id: EntityId,
                     } else if movement.typ == MoveType::JumpWall {
                         // no clear path to moved position
                         msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
-                        msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
+                        msg_log.log(Msg::Moved(entity_id, movement.typ, movement.pos));
                     } else {
                         // TODO move towards position, perhaps emitting a Collide
                         // message. This is likely causing the jump wall issue!
@@ -452,18 +453,16 @@ pub fn handle_action(entity_id: EntityId,
             *data.entities.move_mode.get(&entity_id).unwrap_or(&MoveMode::Walk);
         let amount = move_mode.move_amount();
         msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
-    } else if let Action::Move(movement) = action {
-        if movement.attack.is_some() {
-            handle_attack(entity_id, movement, data, msg_log, config);
-        } else {
-            let move_mode: MoveMode = 
-                *data.entities.move_mode.get(&entity_id).unwrap_or(&MoveMode::Walk);
-            let amount = move_mode.move_amount();
-            let dxy = sub_pos(movement.pos, entity_pos);
-            let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+    } else if let Action::Move(typ, move_pos) = action {
+        let move_mode: MoveMode = 
+            *data.entities.move_mode.get(&entity_id).unwrap_or(&MoveMode::Walk);
+        let amount = move_mode.move_amount();
+        let dxy = sub_pos(move_pos, entity_pos);
+        let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
 
-            msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
-        }
+        msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
+    } else if let Action::Attack(attack_info, attack_pos) = action {
+        handle_attack(entity_id, attack_info, attack_pos, data, msg_log, config);
     } else if let Action::StateChange(behavior) = action {
         msg_log.log(Msg::StateChange(entity_id, behavior));
     } else if let Action::Yell = action {
@@ -718,7 +717,7 @@ pub fn pushed_entity(pusher: EntityId,
 
             if pos_on_map(data.entities.pos[&pusher]) {
                 let movement = Movement::step_to(pushed_pos);
-                msg_log.log(Msg::Moved(pusher, movement, pushed_pos));
+                msg_log.log(Msg::Moved(pusher, movement.typ, pushed_pos));
             }
         }
     } else if data.entities.status[&pushed].alive {
@@ -834,7 +833,7 @@ pub fn throw_item(player_id: EntityId,
     game_data.entities.set_pos(item_id, start_pos);
 
     let movement = Movement::step_to(end_pos);
-    msg_log.log(Msg::Moved(item_id, movement, end_pos));
+    msg_log.log(Msg::Moved(item_id, movement.typ, end_pos));
 
     game_data.entities.remove_item(player_id, item_id);
 }
@@ -889,7 +888,7 @@ pub fn inventory_drop_item(entity_id: EntityId,
 }
 
 fn process_moved_message(entity_id: EntityId,
-                         movement: Movement,
+                         move_type: MoveType,
                          pos: Pos,
                          data: &mut GameData,
                          msg_log: &mut MsgLog,
@@ -912,7 +911,7 @@ fn process_moved_message(entity_id: EntityId,
     }
 
     // if running, but didn't move any squares, then decrease speed
-    if matches!(movement.typ, MoveType::Pass) {
+    if matches!(move_type, MoveType::Pass) {
         if matches!(data.entities.move_mode.get(&entity_id), Some(MoveMode::Run)) {
             data.entities.move_mode[&entity_id].decrease();
         }

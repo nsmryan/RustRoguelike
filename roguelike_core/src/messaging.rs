@@ -59,7 +59,7 @@ pub enum Msg {
     Killed(EntityId, EntityId, Hp), // attacker, attacked, hp lost
     Pushed(EntityId, EntityId, Pos, bool), // attacker, attacked, change in position, move into pushed square
     TryMove(EntityId, Direction, usize, MoveMode),
-    Moved(EntityId, Movement, Pos),
+    Moved(EntityId, MoveType, Pos),
     JumpWall(EntityId, Pos, Pos), // current pos, new pos
     WallKick(EntityId, Pos),
     StateChange(EntityId, Behavior),
@@ -147,8 +147,8 @@ impl Msg {
                 return format!("{:?} pushed {:?}", data.entities.name[attacker], data.entities.name[attacked]);
             }
 
-            Msg::Moved(entity_id, movement, pos) => {
-                if let MoveType::Pass = movement.typ {
+            Msg::Moved(entity_id, move_type, pos) => {
+                if let MoveType::Pass = move_type {
                     return format!("{:?} passed their turn", data.entities.name[entity_id]);
                 } else {
                     return format!("{:?} moved to {}", data.entities.name[entity_id], pos);

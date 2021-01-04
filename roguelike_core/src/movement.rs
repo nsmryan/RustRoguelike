@@ -15,11 +15,9 @@ use crate::line::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Action {
-    Move(Movement),
+    Move(MoveType, Pos),
     MoveDir(Direction),
-
-    TryMove(Direction, usize, MoveMode),
-
+    Attack(Attack, Pos),
     StateChange(Behavior),
     Pickup(EntityId),
     ThrowItem(Pos, EntityId), // end position, item id
