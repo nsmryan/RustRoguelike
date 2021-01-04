@@ -111,6 +111,10 @@ pub fn resolve_messages(data: &mut GameData,
                 handle_action(entity_id, action, rng, data, msg_log, config);
             }
 
+            Msg::TryMove(entity_id, direction, amount, move_mode) => {
+                handle_try_move(entity_id, direction, amount, move_mode, data, msg_log, config);
+            }
+
             Msg::PickedUp(entity_id, item_id) => {
                 pick_item_up(entity_id, item_id, &mut data.entities, msg_log);
             }
@@ -354,70 +358,6 @@ pub fn handle_attack(entity_id: EntityId,
     }
 }
 
-fn handle_move(entity_id: EntityId,
-               movement: Movement,
-               rng: &mut SmallRng,
-               data: &mut GameData,
-               msg_log: &mut MsgLog,
-               config: &Config) {
-    let entity_pos = data.entities.pos[&entity_id];
-
-    if movement.attack.is_some() {
-        handle_attack(entity_id, movement, data, msg_log, config);
-    } else {
-        match movement.typ {
-            MoveType::Collide => {
-                data.entities.move_to(entity_id, movement.pos);
-
-                msg_log.log(Msg::Collided(entity_id, movement.pos));
-            }
-
-            MoveType::Pass => {
-                msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
-            }
-
-            MoveType::WallKick(_dir_x, _dir_y) => {
-                data.entities.move_to(entity_id, movement.pos);
-
-                // TODO could check for enemy and attack
-                msg_log.log(Msg::WallKick(entity_id, movement.pos));
-            }
-
-            MoveType::Move | MoveType::JumpWall => {
-                // TODO if monster, and would hit trap, don't move
-                // TODO what about if the entity is moved (say, pushed)?
-                // should check for this, and no do the move at all, likely
-                if entity_pos != movement.pos {
-                    let traps_block = false;
-
-                    if data.clear_path(entity_pos, movement.pos, traps_block) {
-                        if movement.typ == MoveType::Move {
-                            msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
-                        } else {
-                            msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
-                        }
-                    } else if movement.typ == MoveType::JumpWall {
-                        // no clear path to moved position
-                        //data.entities.move_to(entity_id, movement.pos);
-                        msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
-                        msg_log.log(Msg::Moved(entity_id, movement, movement.pos));
-                    } else {
-                        // TODO move towards position, perhaps emitting a Collide
-                        // message. This is likely causing the jump wall issue!
-                    }
-                }
-                // else the movement does not change our position, so do nothing
-            }
-        }
-
-        // if entity is attacking, face their target after the move
-        if let Some(Behavior::Attacking(target_id)) = data.entities.behavior.get(&entity_id) {
-            let target_pos = data.entities.pos[target_id];
-            data.entities.face(entity_id, target_pos);
-        }
-    }
-}
-
 pub fn handle_try_move(entity_id: EntityId,
                        direction: Direction,
                        amount: usize,
@@ -507,30 +447,23 @@ pub fn handle_action(entity_id: EntityId,
                      config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
 
-    if let Action::TryMove(direction, amount, move_mode) = action {
-        handle_try_move(entity_id, direction, amount, move_mode, data, msg_log, config);
-    } else if let Action::MoveDir(direction) = action {
+    if let Action::MoveDir(direction) = action {
         let move_mode: MoveMode = 
             *data.entities.move_mode.get(&entity_id).unwrap_or(&MoveMode::Walk);
         let amount = move_mode.move_amount();
-        msg_log.log(Msg::Action(entity_id, Action::TryMove(direction, amount, move_mode)));
-
-        //let reach = data.entities.movement[&entity_id];
-        //let maybe_movement = 
-        //    movement::calculate_move(direction, reach, entity_id, data);
-        //if let Some(movement) = maybe_movement {
-        //    handle_move(entity_id, movement, rng, data, msg_log, config);
-        //}
+        msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
     } else if let Action::Move(movement) = action {
-        //handle_move(entity_id, movement, rng, data, msg_log, config);
+        if movement.attack.is_some() {
+            handle_attack(entity_id, movement, data, msg_log, config);
+        } else {
+            let move_mode: MoveMode = 
+                *data.entities.move_mode.get(&entity_id).unwrap_or(&MoveMode::Walk);
+            let amount = move_mode.move_amount();
+            let dxy = sub_pos(movement.pos, entity_pos);
+            let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
 
-        let move_mode: MoveMode = 
-            *data.entities.move_mode.get(&entity_id).unwrap_or(&MoveMode::Walk);
-        let amount = move_mode.move_amount();
-        let dxy = sub_pos(movement.pos, entity_pos);
-        let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-
-        msg_log.log(Msg::Action(entity_id, Action::TryMove(direction, amount, move_mode)));
+            msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
+        }
     } else if let Action::StateChange(behavior) = action {
         msg_log.log(Msg::StateChange(entity_id, behavior));
     } else if let Action::Yell = action {

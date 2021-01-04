@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::types::*;
 use crate::map::*;
-use crate::movement::{Movement, MoveType, MoveMode, Action};
+use crate::movement::{Movement, MoveType, MoveMode, Action, Direction};
 use crate::ai::Behavior;
 
 
@@ -58,6 +58,7 @@ pub enum Msg {
     Attack(EntityId, EntityId, Hp), // attacker, attacked, hp lost
     Killed(EntityId, EntityId, Hp), // attacker, attacked, hp lost
     Pushed(EntityId, EntityId, Pos, bool), // attacker, attacked, change in position, move into pushed square
+    TryMove(EntityId, Direction, usize, MoveMode),
     Moved(EntityId, Movement, Pos),
     JumpWall(EntityId, Pos, Pos), // current pos, new pos
     WallKick(EntityId, Pos),
@@ -152,6 +153,10 @@ impl Msg {
                 } else {
                     return format!("{:?} moved to {}", data.entities.name[entity_id], pos);
                 }
+            }
+
+            Msg::TryMove(_entity_id, _direction, _amount, _move_mode) => {
+                return "".to_string();
             }
 
             Msg::JumpWall(_entity_id, _start, _end) => {
