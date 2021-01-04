@@ -99,7 +99,7 @@ pub fn push_attack(entity_id: EntityId,
             msg_log.log_front(Msg::Moved(entity_id, MoveType::Move, other_pos));
         }
 
-        if move_result.no_collision() {
+        if move_result.no_collision() && data.entities.status[&target].frozen == 0 {
             data.entities.status[&target].frozen = 2;
             // if not blocked, push the other entity
             msg_log.log_front(Msg::Moved(target, MoveType::Move, past_pos));
