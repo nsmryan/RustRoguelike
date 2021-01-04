@@ -871,6 +871,7 @@ pub fn chord(loc: ActionLoc,
                 increase_move_mode(player_id, data, msg_log);
             }
         }
+        dbg!(data.entities.move_mode[&player_id]);
 
         match loc {
             ActionLoc::None => {

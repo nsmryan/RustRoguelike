@@ -914,9 +914,9 @@ fn process_moved_message(entity_id: EntityId,
         }
     }
 
-    // make a noise based on how fast the entity is moving and the terrain
     if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {
         if let Some(stance) = data.entities.stance.get(&entity_id) {
+            dbg!(move_mode, stance);
             if move_type == MoveType::Pass {
                 data.entities.stance[&entity_id] = stance.waited(*move_mode);
             } else if *move_mode == MoveMode::Run {
@@ -926,22 +926,25 @@ fn process_moved_message(entity_id: EntityId,
             }
         }
 
-        let mut sound_radius;
+        // make a noise based on how fast the entity is moving and the terrain
+        if pos != original_pos {
+            let mut sound_radius;
 
-        match move_mode {
-            MoveMode::Sneak => sound_radius = config.sound_radius_sneak,
-            MoveMode::Walk => sound_radius = config.sound_radius_walk,
-            MoveMode::Run => sound_radius = config.sound_radius_run,
+            match move_mode {
+                MoveMode::Sneak => sound_radius = config.sound_radius_sneak,
+                MoveMode::Walk => sound_radius = config.sound_radius_walk,
+                MoveMode::Run => sound_radius = config.sound_radius_run,
+            }
+
+            if data.map[pos].surface == Surface::Rubble {
+                sound_radius += config.sound_rubble_radius;
+            } else if data.map[pos].surface == Surface::Grass {
+                sound_radius -= config.sound_grass_radius;
+            }
+
+            msg_log.log_front(Msg::Sound(entity_id, pos, sound_radius, true));
         }
-
-        if data.map[pos].surface == Surface::Rubble {
-            sound_radius += config.sound_rubble_radius;
-        } else if data.map[pos].surface == Surface::Grass {
-            sound_radius -= config.sound_grass_radius;
-        }
-
-        msg_log.log_front(Msg::Sound(entity_id, pos, sound_radius, true));
-    } else {
+    } else if pos != original_pos {
         msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_monster, true));
     }
 

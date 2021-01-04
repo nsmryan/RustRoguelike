@@ -452,7 +452,7 @@ impl Map {
                     }
 
                     if self.is_within_bounds(left_wall_pos) &&
-                        self[left_wall_pos].left_wall != Wall::Empty {
+                       blocked_type.blocking(self[left_wall_pos].left_wall) {
                             blocked.wall_type = self[left_wall_pos].left_wall;
                             found_blocker = true;
                     }
@@ -465,7 +465,7 @@ impl Map {
                     }
 
                     if self.is_within_bounds(bottom_wall_pos) &&
-                        self[bottom_wall_pos].bottom_wall != Wall::Empty {
+                       blocked_type.blocking(self[bottom_wall_pos].bottom_wall) {
                             blocked.wall_type = self[bottom_wall_pos].bottom_wall;
                             found_blocker = true;
                     }
@@ -628,7 +628,7 @@ impl Map {
         // see walls (blocking position is the end_pos tile)
         let mut clear_fov_path = true;
         if let Some(blocked) = path_fov {
-            clear_fov_path = end_pos == blocked.end_pos;
+            clear_fov_path = end_pos == blocked.end_pos && blocked.blocked_tile;
         } 
 
         return alg_fov && within_radius && clear_fov_path;

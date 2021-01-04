@@ -122,7 +122,7 @@ impl GameData {
         let radius: i32 = match self.entities.typ[&entity_id] {
             EntityType::Enemy => config.fov_radius_monster,
             EntityType::Player => config.fov_radius_player,
-            typ => panic!(format!("Tried to see with object of type {:?}", typ)),
+            typ => return false, // other things have no FOV
         };
 
         let stance = self.entities.stance[&entity_id];
