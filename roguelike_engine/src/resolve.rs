@@ -916,7 +916,6 @@ fn process_moved_message(entity_id: EntityId,
 
     if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {
         if let Some(stance) = data.entities.stance.get(&entity_id) {
-            dbg!(move_mode, stance);
             if move_type == MoveType::Pass {
                 data.entities.stance[&entity_id] = stance.waited(*move_mode);
             } else if *move_mode == MoveMode::Run {
