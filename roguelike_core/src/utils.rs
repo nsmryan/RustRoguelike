@@ -76,44 +76,42 @@ pub fn push_attack(entity_id: EntityId,
                    amount: usize,
                    move_into: bool,
                    data: &mut GameData,
-                   msg_log: &mut MsgLog) {
+                   msg_log: &mut MsgLog) -> bool {
+    let mut continue_push = true;
+
     let mut killed = false;
     let mut damage = 0;
 
-    let mut _strength_left = amount;
-    for pos_index in 0..amount {
-        let strength_left = amount - pos_index;
+    let pos = data.entities.pos[&entity_id];
+    let other_pos = data.entities.pos[&target];
 
-        let pos = data.entities.pos[&entity_id];
-        let other_pos = data.entities.pos[&target];
-        let diff = other_pos - pos;
+    let push_dxy = direction.into_move();
+    let x_diff = signedness(push_dxy.x);
+    let y_diff = signedness(push_dxy.y);
 
-        let x_diff = signedness(diff.x);
-        let y_diff = signedness(diff.y);
+    let move_result = check_collision(other_pos, x_diff, y_diff, data);
 
-        let move_result = check_collision(other_pos, x_diff, y_diff, data);
+    let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
 
-        let past_pos = move_by(other_pos, Pos::new(x_diff, y_diff));
-
+    if move_result.no_collision() {
         if move_into {
-            msg_log.log_front(Msg::Moved(entity_id, MoveType::Move, other_pos));
+            let move_into_pos = move_towards(pos, other_pos, 1);
+            msg_log.log_front(Msg::Moved(entity_id, MoveType::Move, move_into_pos));
         }
 
-        if move_result.no_collision() && data.entities.status[&target].frozen == 0 {
+        msg_log.log_front(Msg::Moved(target, MoveType::Move, past_pos));
+    } else {
+        if data.entities.status[&target].frozen == 0 {
             data.entities.status[&target].frozen = 2;
-            // if not blocked, push the other entity
-            msg_log.log_front(Msg::Moved(target, MoveType::Move, past_pos));
         } else {
             // otherwise crush them against the wall/entity
-            data.entities.status[&target].alive = false;
-            data.entities.blocks[&target] = false;
             damage = data.entities.fighter[&target].hp;
 
             killed = true;
             msg_log.log_front(Msg::Crushed(target, other_pos));
 
             // once we crush an entity, we lose the rest of the move
-            break;
+            continue_push = false;
         }
     }
 
@@ -122,6 +120,8 @@ pub fn push_attack(entity_id: EntityId,
     } else {
         data.entities.messages[&target].push(Message::Attack(entity_id));
     }
+
+    return continue_push;
 }
 
 pub fn crush(handle: EntityId, target: EntityId, entities: &mut Entities, msg_log: &mut MsgLog) {

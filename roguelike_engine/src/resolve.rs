@@ -734,9 +734,11 @@ fn pushed_entity(pusher: EntityId,
             }
         }
     } else if data.entities.status[&pushed].alive {
-        push_attack(pusher, pushed, direction, push_amount, move_into, data, msg_log);
+        let continue_push = 
+            push_attack(pusher, pushed, direction, push_amount, move_into, data, msg_log);
 
-        if push_amount > 1 {
+        if continue_push && push_amount > 1 {
+            msg_log.log(Msg::Pushed(pusher, pushed, direction, push_amount - 1, move_into));
         }
     } else {
         panic!("Tried to push entity {:?}, alive = {}!",
