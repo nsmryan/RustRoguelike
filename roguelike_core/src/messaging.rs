@@ -22,17 +22,19 @@ impl MsgLog {
     }
 
     pub fn pop(&mut self) -> Option<Msg> {
-        return self.messages.pop_front();
+        let msg = self.messages.pop_front();
+        if let Some(msg) = msg {
+            self.turn_messages.push_back(msg);
+        }
+        return msg;
     }
 
     pub fn log(&mut self, msg: Msg) {
         self.messages.push_back(msg);
-        self.turn_messages.push_back(msg);
     }
 
     pub fn log_front(&mut self, msg: Msg) {
         self.messages.push_front(msg);
-        self.turn_messages.push_front(msg);
     }
 
     pub fn clear(&mut self) {
@@ -43,6 +45,7 @@ impl MsgLog {
 
 #[derive(Copy, Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub enum Msg {
+    StartTurn,
     Pass(),
     Crushed(EntityId, Pos), // object that did the crushing, position
     Sound(EntityId, Pos, usize, bool), // object causing sound, location, radius, whether animation will play
@@ -90,6 +93,10 @@ pub enum Msg {
 impl Msg {
     pub fn msg_line(&self, data: &GameData) -> String {
         match self {
+            Msg::StartTurn => {
+                return "".to_string();
+            }
+
             Msg::Crushed(_obj_id, _pos) => {
                 return "An object has been crushed".to_string();
             }

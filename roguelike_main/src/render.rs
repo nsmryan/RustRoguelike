@@ -1252,14 +1252,25 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 // draw a highlight on that square
                 // don't draw overlay on top of character
                 if movement.pos != game.data.entities.pos[&player_id] {
-                    draw_tile_highlight(panel,
-                                        movement.pos,
-                                        highlight_color);
+                    let dxy = sub_pos(movement.pos, player_pos);
+                    let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+                    let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
+
+                    render_entity_at(player_id, shadow_cursor_pos, game, panel, display_state);
                 }
             }
         }
     }
 
+    // Draw sound tiles overlay
+    if game.settings.overlay {
+        // NOTE this currently does not take into account FOV!
+        for pos in display_state.sound_tiles.iter() {
+            draw_tile_highlight(panel, *pos, highlight_color);
+        }
+    }
+
+    // Outline tiles within FOV for clarity
     if game.settings.overlay {
         let mut highlight_color_fov = game.config.color_light_orange;
         highlight_color_fov.a = game.config.grid_alpha_visible;
@@ -1479,3 +1490,17 @@ pub fn sdl2_color(color: Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
 }
 
+
+pub fn render_entity_at(entity_id: EntityId, render_pos: Pos, game: &mut Game, panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState) {
+    let entity_pos = game.data.entities.pos[&entity_id];
+
+    let alpha = game.data.entities.color[&entity_id].a;
+    game.data.entities.color[&entity_id].a = 200;
+
+    game.data.entities.pos[&entity_id] = render_pos;
+
+    render_entity(panel, entity_id, display_state, game);
+
+    game.data.entities.color[&entity_id].a = alpha;
+    game.data.entities.pos[&entity_id] = entity_pos;
+}

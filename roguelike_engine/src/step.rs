@@ -29,6 +29,8 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
     eprintln!();
     eprintln!("Turn {}:", game.settings.turn_count);
 
+    game.msg_log.log_front(Msg::StartTurn);
+
     resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
 
     let won_level = level_exit_condition_met(&game.data);

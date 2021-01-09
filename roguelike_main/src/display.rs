@@ -382,6 +382,8 @@ pub struct DisplayState {
 
     pub prev_turn_fov: Vec<EntityId>,
     pub current_turn_fov: Vec<EntityId>,
+
+    pub sound_tiles: Vec<Pos>,
 }
 
 impl DisplayState {
@@ -397,6 +399,7 @@ impl DisplayState {
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),
             current_turn_fov: Vec::new(),
+            sound_tiles: Vec::new(),
         };
     }
 
@@ -556,15 +559,25 @@ impl Display {
         self.state.impressions.clear();
         self.state.prev_turn_fov.clear();
         self.state.current_turn_fov.clear();
+        self.state.sound_tiles.clear();
     }
 
     pub fn process_message(&mut self, msg: Msg, data: &mut GameData, config: &Config) {
         match msg {
+            Msg::StartTurn => {
+                self.state.sound_tiles.clear();
+                dbg!("clearing sound tiles");
+            }
+
             Msg::Sound(cause_id, source_pos, radius, should_animate) => {
                 if should_animate {
                     // NOTE this is a duplicate computation, also done in logic message processing
                     let sound_aoe =
                         aoe_fill(&data.map, AoeEffect::Sound, source_pos, radius, config);
+
+                    // Add to this turn's sound tiles list
+                    self.state.sound_tiles.extend(sound_aoe.positions().iter());
+                    dbg!(&self.state.sound_tiles.len());
 
                     let player_id = data.find_by_name(EntityName::Player).unwrap();
                     let player_pos = data.entities.pos[&player_id];
