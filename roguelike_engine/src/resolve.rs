@@ -737,7 +737,9 @@ fn pushed_entity(pusher: EntityId,
         let continue_push = 
             push_attack(pusher, pushed, direction, push_amount, move_into, data, msg_log);
 
+        dbg!(continue_push);
         if continue_push && push_amount > 1 {
+            dbg!(push_amount - 1);
             msg_log.log(Msg::Pushed(pusher, pushed, direction, push_amount - 1, move_into));
         }
     } else {

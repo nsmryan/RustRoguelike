@@ -741,7 +741,6 @@ pub fn use_item(entity_id: EntityId, data: &GameData, settings: &mut GameSetting
     return turn;
 }
 
-// TODO(&mut) make data & and see if compiles
 pub fn handle_skill(skill_index: usize,
                     action_loc: ActionLoc,
                     action_mode: ActionMode,
