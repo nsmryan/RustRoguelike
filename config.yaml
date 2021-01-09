@@ -132,7 +132,7 @@ map_load: #TestVaults
 #VaultFile: "vaults/Vaults - Vault4.csv"
 #FromFile: "maps.txt"
 map_file: map.xp
-idle_speed: 0.3499999940395355
+idle_speed: 5
 draw_mouse_line: false
 draw_star_path: false
 frame_rate: 25

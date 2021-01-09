@@ -413,6 +413,14 @@ impl DisplayState {
         panic!(format!("Could not find sprite '{}'", name));
     }
 
+    pub fn update_animations(&mut self, dt: f32) {
+        for anim in self.animations.values_mut() {
+            if let Some(sprite_anim) = anim.sprite_anim_mut() {
+                sprite_anim.step(dt);
+            }
+        }
+    }
+
     pub fn draw_sprite(&mut self,
                        panel: &mut Panel<&mut WindowCanvas>,
                        sprite: Sprite,

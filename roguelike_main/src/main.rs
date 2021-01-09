@@ -198,6 +198,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
             }
         }
 
+        let misc_timer = timer!("MISC");
         // if there are starting actions to read, pop one off to play
         if let Some(action) = starting_actions.pop() {
             input_action = action;
@@ -213,13 +214,14 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
             action_log.write(input_action.to_string().as_bytes()).unwrap();
             action_log.write("\n".as_bytes()).unwrap();
         }
+        drop(misc_timer);
 
         /* Step the Game Forward */
         {
             let _logic_timer = timer!("LOGIC");
-            let dt = Instant::now().duration_since(frame_time);
-            game.step_game(input_action, dt.as_secs_f32());
+            let dt = Instant::now().duration_since(frame_time).as_secs_f32();
             frame_time = Instant::now();
+            game.step_game(input_action, dt);
         }
 
         if game.settings.state == GameState::Win {

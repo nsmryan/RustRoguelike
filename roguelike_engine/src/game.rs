@@ -70,8 +70,9 @@ impl Game {
             self.vaults.push(parse_vault(vault_file_name, &self.config));
         }
     }
-
+        
     pub fn step_game(&mut self, input_action: InputAction, dt: f32) -> bool {
+        self.settings.dt = dt;
         self.settings.time += dt;
 
         actions::handle_input_universal(input_action, self);
@@ -121,6 +122,7 @@ pub struct GameSettings {
     pub draw_selection_overlay: bool,
     pub overlay: bool,
     pub time: f32,
+    pub dt: f32,
     pub render_map: bool,
     pub selection: Selection,
     pub inventory_action: InventoryAction,
@@ -139,6 +141,7 @@ impl GameSettings {
             draw_selection_overlay: false,
             overlay: false,
             time: 0.0,
+            dt: 0.0,
             render_map: true,
             selection: Selection::default(),
             inventory_action: InventoryAction::default(),

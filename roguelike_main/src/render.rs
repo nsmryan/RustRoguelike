@@ -24,6 +24,8 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     display.targets.canvas_panel.target.set_draw_color(Sdl2Color::RGB(0, 0, 0));
     display.targets.canvas_panel.target.clear();
 
+    display.state.update_animations(game.settings.dt);
+
     /* Split Screen Into Sections */
     let map_rect = display.targets.canvas_panel.get_rect_from_area(&display.targets.map_area);
 
@@ -978,8 +980,6 @@ fn render_animation(anim_key: AnimKey,
                                          color);
                animation_result.sprite = Some(sprite);
 
-               sprite_anim.step();
-
                display_state.animations[&anim_key] =
                    Animation::Between(*sprite_anim, start, end, *dist, blocks_per_sec);
 
@@ -989,14 +989,14 @@ fn render_animation(anim_key: AnimKey,
 
         Animation::Loop(ref mut sprite_anim) => {
            if settings.god_mode || is_in_fov {
+                let player_id = data.find_by_name(EntityName::Player).unwrap();
+
                 let sprite = sprite_anim.sprite();
                 display_state.draw_sprite(panel,
                                           sprite,
                                           pos,
                                           color);
                 animation_result.sprite = Some(sprite);
-
-                sprite_anim.step();
 
                 display_state.animations[&anim_key] =
                    Animation::Loop(*sprite_anim);
@@ -1016,16 +1016,16 @@ fn render_animation(anim_key: AnimKey,
 
         Animation::Once(ref mut sprite_anim) => {
            if settings.god_mode || is_in_fov {
-                let sprite = sprite_anim.sprite();
-                display_state.draw_sprite(panel, sprite, pos, color);
-                animation_result.sprite = Some(sprite);
+                if !sprite_anim.looped {
+                    let sprite = sprite_anim.sprite();
+                    display_state.draw_sprite(panel, sprite, pos, color);
+                    animation_result.sprite = Some(sprite);
 
-                let sprite_done = sprite_anim.step();
+                    display_state.animations[&anim_key] =
+                       Animation::Once(*sprite_anim);
+                }
 
-                display_state.animations[&anim_key] =
-                   Animation::Once(*sprite_anim);
-
-                animation_result.done = sprite_done;
+                animation_result.done = sprite_anim.looped;
             }
         }
     }
