@@ -96,7 +96,7 @@ impl Input {
             }
 
             InputEvent::Alt(dir) => {
-                if dir == KeyDir::Down && self.chording {
+                if dir == KeyDir::Down {
                     self.mode = ActionMode::Alternate;
                 }
 
