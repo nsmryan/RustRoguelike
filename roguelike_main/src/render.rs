@@ -61,10 +61,10 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 
                 let mut panel = panel.with_target(canvas);
                 render_map(&mut panel, display_state, game);
-                render_overlays(&mut panel, display_state, game, mouse_map_pos);
                 render_entities(&mut panel, display_state, game);
                 render_impressions(&mut panel, display_state, game);
                 render_effects(&mut panel, display_state, game);
+                render_overlays(&mut panel, display_state, game, mouse_map_pos);
             }).unwrap();
         }
 
@@ -394,7 +394,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
         };
 
 
-    let color = game.config.color_soft_green;
+    let text_color = game.config.color_soft_green;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
@@ -414,7 +414,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
         tile_sprite.draw_text_list(panel,
                                    &text_list,
                                    text_pos,
-                                   color);
+                                   text_color);
     }
     text_list.clear();
 
@@ -446,14 +446,17 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
             text_list.push(format!(""));
 
-            if let Some(direction) = game.data.entities.direction.get(obj_id) {
-                text_list.push(format!("Facing"));
-                text_list.push(format!("  {}", direction));
-                text_list.push(format!(""));
+            // show facing direction for player and monsters
+            if game.data.entities.typ[obj_id] == EntityType::Player ||
+               game.data.entities.typ[obj_id] == EntityType::Enemy {
+                if let Some(direction) = game.data.entities.direction.get(obj_id) {
+                    text_list.push(format!("Facing"));
+                    text_list.push(format!("  {}", direction));
+                }
             }
 
             if game.data.entities.fighter.get_mut(obj_id).map_or(false, |fighter| fighter.hp <= 0) {
-                text_list.push(format!("{}", "dead"));
+                text_list.push(format!("  {}", "dead"));
             } else if let Some(behave) = game.data.entities.behavior.get(obj_id) {
                 text_list.push(format!("{}", behave.description()));
             }
@@ -465,14 +468,19 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
     tile_sprite.draw_text_list(panel,
                                &text_list,
                                text_pos,
-                               color);
+                               text_color);
+    text_list.push(format!(""));
     text_list.clear();
 
-    y_pos = 10;
+    y_pos = 11;
     if in_fov {
         let text_pos = Pos::new(1, y_pos);
         text_list.push(format!("Tile is"));
-        text_list.push(format!("{:?}",  game.data.map[info_pos].surface));
+        if game.data.map[info_pos].tile_type == TileType::Water {
+            text_list.push("water".to_string());
+        } else {
+            text_list.push(format!("{:?}",  game.data.map[info_pos].surface));
+        }
         if game.data.map[info_pos].bottom_wall != Wall::Empty {
             text_list.push("Lower wall".to_string());
         }
@@ -488,7 +496,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
         tile_sprite.draw_text_list(panel,
                                    &text_list,
                                    text_pos,
-                                   color);
+                                   text_color);
     }
 }
 
@@ -670,16 +678,16 @@ fn render_background(display: &mut Display, game: &mut Game) {
                     game.data.is_in_fov(player_id, map_pos, &game.config) ||
                     game.settings.god_mode;
 
-                sprite.draw_char(&mut panel,
-                                 MAP_EMPTY_CHAR as char,
-                                 map_pos,
-                                 empty_tile_color(&game.config, map_pos, visible));
-
                 let tile = &game.data.map[(x, y)];
-                if tile.tile_type == TileType::Water {
+                if tile.tile_type != TileType::Water {
+                    sprite.draw_char(&mut panel,
+                                     MAP_EMPTY_CHAR as char,
+                                     map_pos,
+                                     empty_tile_color(&game.config, map_pos, visible));
+                } else {
                     let color = tile_color(&game.config, x, y, tile, visible);
                     let chr = tile.chr;
-                    sprite.draw_char(&mut panel, chr as char, map_pos, color);
+                    sprite.draw_char(&mut panel, MAP_EMPTY_CHAR as char, map_pos, color);
                 }
             }
         }
@@ -732,7 +740,9 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
 
             // if the tile is not empty or water, draw it
             let color = tile_color(&game.config, x, y, tile, visible);
-            if chr != MAP_EMPTY_CHAR && tile.tile_type != TileType::Water {
+            if tile.tile_type == TileType::Water {
+                sprite.draw_char(panel, ' ', pos, color);
+            } else if chr != MAP_EMPTY_CHAR {
                 sprite.draw_char(panel, chr as char, pos, color);
             }
 
@@ -1066,7 +1076,9 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         // render cursor itself
         let cursor_pos = game.settings.cursor_pos;
         let tile_sprite = &mut display_state.sprites[&sprite_key];
-        tile_sprite.draw_char(panel, ENTITY_CURSOR as char, cursor_pos, game.config.color_mint_green);
+        let mut color = game.config.color_mint_green;
+        color.a = 230;
+        tile_sprite.draw_char(panel, ENTITY_CURSOR as char, cursor_pos, color);
 
         // render shadow cursor for next step
         if cursor_pos != player_pos {
