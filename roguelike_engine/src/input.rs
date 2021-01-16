@@ -49,14 +49,6 @@ impl Input {
     }
 
     pub fn reset(&mut self) {
-        if !self.chording {
-            self.chorded = false;
-        }
-
-        if !self.moding {
-            self.mode = ActionMode::Primary;
-        }
-
         self.target = -1;
     }
 
@@ -85,12 +77,11 @@ impl Input {
                 match dir {
                     KeyDir::Down => {
                         self.chording = true;
-                        self.chorded = true;
-                        self.mode = ActionMode::Primary;
                     }
 
                     KeyDir::Up => {
                         self.chording = false;
+                        self.reset();
                     }
                 }
             }
@@ -98,9 +89,9 @@ impl Input {
             InputEvent::Alt(dir) => {
                 if dir == KeyDir::Down {
                     self.mode = ActionMode::Alternate;
+                } else {
+                    self.mode = ActionMode::Primary;
                 }
-
-                self.moding = dir == KeyDir::Down;
             }
 
             InputEvent::Char(chr, dir) => {
@@ -113,7 +104,7 @@ impl Input {
                         } else if self.chording {
                             for (index, target_chr) in TARGET_CODES.iter().enumerate() {
                                 if chr == *target_chr {
-                                       self.target = index as i32;
+                                    self.target = index as i32;
                                 }
                             }
                         } else if chr == ' ' {

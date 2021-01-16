@@ -813,19 +813,16 @@ pub fn handle_skill(skill_index: usize,
         }
     }
 
-    dbg!(selection, action_loc);
     if let Some(selection) = selection {
         match action_loc {
             ActionLoc::Place(pos) => {
                 turn = selection.action.action_from_pos(pos, selection.item, data);
-                dbg!(turn);
             }
 
             ActionLoc::Dir(dir) => {
                 let player_pos = data.entities.pos[&player_id];
                 if let Some(pos) = selection.typ.offset_pos(player_pos, dir) {
                     turn = selection.action.action_from_pos(pos, selection.item, data);
-                    dbg!(turn, dir, pos, player_pos);
                 }
             }
 
@@ -839,7 +836,6 @@ pub fn handle_skill(skill_index: usize,
             }
         }
     }
-    dbg!(settings.state);
 
     return turn;
 }
