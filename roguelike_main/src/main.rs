@@ -192,7 +192,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
             for sdl2_event in event_pump.poll_iter() {
                 if let Some(event) = translate_event(sdl2_event, &mut game, &mut display) {
                     let action = input.handle_event(&mut game, event);
-                    // TODO may lose inputs if multiple events create actions!
+                    // NOTE may lose inputs if multiple events create actions!
                     input_action = action;
                 }
             }

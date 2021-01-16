@@ -1080,17 +1080,30 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         color.a = 230;
         tile_sprite.draw_char(panel, ENTITY_CURSOR as char, cursor_pos, color);
 
-        // render shadow cursor for next step
+        // render player ghost
         if cursor_pos != player_pos {
             let alpha = game.data.entities.color[&player_id].a;
             game.data.entities.color[&player_id].a = 100;
+
             let dxy = sub_pos(cursor_pos, player_pos);
             let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-            let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
-            game.data.entities.pos[&player_id] = shadow_cursor_pos;
-            render_entity(panel, player_id, display_state, game);
-            game.data.entities.color[&player_id].a = alpha;
-            game.data.entities.pos[&player_id] = player_pos;
+
+            let mut reach = game.data.entities.movement[&player_id];
+            if game.input.mode == ActionMode::Alternate {
+                increase_move_mode(player_id, data, msg_log);
+                reach = game.data.entities.movement[&player_id];
+            }
+
+            if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {
+                game.data.entities.pos[&player_id] = player_ghost_pos;
+                render_entity(panel, player_id, display_state, game);
+                game.data.entities.color[&player_id].a = alpha;
+                game.data.entities.pos[&player_id] = player_pos;
+            }
+
+            if game.input.mode == ActionMode::Alternate {
+                decrease_move_mode(player_id, data, msg_log);
+            }
         }
     }
 
