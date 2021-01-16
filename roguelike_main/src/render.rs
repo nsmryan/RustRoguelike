@@ -1334,9 +1334,7 @@ fn get_entity_at_pos(check_pos: Pos,
         let removing = data.entities.needs_removal[key];
 
         if !removing && !is_mouse && check_pos == pos {
-            if data.is_in_fov(*key, check_pos, config) {
-                object_ids.push(*key);
-            }
+            object_ids.push(*key);
         }
     }
 
