@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 
 use roguelike_core::types::*;
 use roguelike_core::movement::Direction;
+use roguelike_core::config::Config;
 
 use crate::game::*;
 use crate::actions::*;
@@ -36,16 +37,15 @@ pub enum InputEvent {
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Input {
-    chording: bool,
-    chorded: bool,
-    mode: ActionMode,
-    moding: bool,
-    target: i32,
+    pub chording: bool,
+    pub mode: ActionMode,
+    pub moding: bool,
+    pub target: i32,
 }
 
 impl Input {
     pub fn new() -> Input {
-        return Input { chording: false, chorded: false, mode: ActionMode::Primary, moding: false, target: -1 };
+        return Input { chording: false, mode: ActionMode::Primary, moding: false, target: -1 };
     }
 
     pub fn reset(&mut self) {
@@ -53,8 +53,9 @@ impl Input {
     }
 
     pub fn handle_event(&mut self,
-                        game: &Game,
-                        event: InputEvent) -> InputAction {
+                        settings: &mut GameSettings,
+                        event: InputEvent,
+                        config: &Config) -> InputAction {
         let mut action = InputAction::None;
         match event {
             InputEvent::MousePos(_, _) => {
@@ -111,9 +112,9 @@ impl Input {
                             action = InputAction::CursorApply(self.mode, self.target);
                             self.reset();
                         } else {
-                            action = keyup_to_action(chr, game.settings.state);
+                            action = keyup_to_action(chr, settings.state);
 
-                            if game.config.use_cursor {
+                            if config.use_cursor {
                                if let InputAction::Move(dir) = action {
                                     action = InputAction::CursorMove(dir);
                                }

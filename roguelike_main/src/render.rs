@@ -11,7 +11,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
-use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, move_x, move_y, sub_pos, floodfill};
+use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, move_x, move_y, sub_pos, floodfill, reach_by_mode};
 use roguelike_core::line::line;
 
 use roguelike_engine::game::*;
@@ -1090,8 +1090,8 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
             let mut reach = game.data.entities.movement[&player_id];
             if game.input.mode == ActionMode::Alternate {
-                increase_move_mode(player_id, data, msg_log);
-                reach = game.data.entities.movement[&player_id];
+                let mut move_mode = game.data.entities.move_mode[&player_id];
+                reach = reach_by_mode(move_mode.increase());
             }
 
             if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {
@@ -1099,10 +1099,6 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 render_entity(panel, player_id, display_state, game);
                 game.data.entities.color[&player_id].a = alpha;
                 game.data.entities.pos[&player_id] = player_pos;
-            }
-
-            if game.input.mode == ActionMode::Alternate {
-                decrease_move_mode(player_id, data, msg_log);
             }
         }
     }

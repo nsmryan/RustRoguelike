@@ -20,6 +20,7 @@ use crate::make_map::{make_map, Vault, parse_vault};
 use crate::selection::*;
 use crate::resolve::resolve_messages;
 use crate::step::step_logic;
+use crate::input::*;
 
 
 pub struct Game {
@@ -29,6 +30,7 @@ pub struct Game {
     pub msg_log: MsgLog,
     pub rng: SmallRng,
     pub vaults: Vec<Vault>,
+    pub input: Input,
 }
 
 impl Game {
@@ -54,6 +56,7 @@ impl Game {
             msg_log,
             rng: rng,
             vaults,
+            input: Input::new(),
         };
 
         return Ok(state);
