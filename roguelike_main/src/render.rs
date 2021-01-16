@@ -397,10 +397,9 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
     let color = game.config.color_soft_green;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
 
     let object_ids =
-        get_entity_at_pos(info_pos, &mut game.data, &game.config);
+        get_entity_at_pos(info_pos, &mut game.data);
 
     let mut y_pos = 1;
 
@@ -649,7 +648,6 @@ fn render_background(display: &mut Display, game: &mut Game) {
     display.targets.background_panel.dirty = false;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let pos = game.data.entities.pos[&player_id];
 
     let (map_width, map_height) = game.data.map.size();
 
@@ -691,7 +689,6 @@ fn render_background(display: &mut Display, game: &mut Game) {
 /// Render the map, with environment and walls
 fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
 
     let (map_width, map_height) = game.data.map.size();
 
@@ -876,7 +873,6 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
 
     let pos = game.data.entities.pos[&entity_id];
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
 
     // only draw if within the map (outside is (-1, -1) like if in inventory)
     // and not in limbo.
@@ -989,8 +985,6 @@ fn render_animation(anim_key: AnimKey,
 
         Animation::Loop(ref mut sprite_anim) => {
            if settings.god_mode || is_in_fov {
-                let player_id = data.find_by_name(EntityName::Player).unwrap();
-
                 let sprite = sprite_anim.sprite();
                 display_state.draw_sprite(panel,
                                           sprite,
@@ -1071,18 +1065,8 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     if game.config.use_cursor {
         // render cursor itself
         let cursor_pos = game.settings.cursor_pos;
-
-        let (cell_width, cell_height) = panel.cell_dims();
-        let cell_width = cell_width as i32;
-        let cell_height = cell_height as i32;
-        let pos = Pos::new(cursor_pos.x * cell_width, cursor_pos.y * cell_height);
-
-        let color = sdl2_color(game.config.color_orange);
-        panel.target.set_draw_color(color);
-        let pos_end = Pos::new(pos.x + cell_width, pos.y + cell_height);
-        panel.target.draw_line(pos.to_tuple(), pos_end.to_tuple()).unwrap();
-
-        panel.target.draw_line(move_x(pos, cell_width).to_tuple(), move_y(pos, cell_height).to_tuple()).unwrap();
+        let tile_sprite = &mut display_state.sprites[&sprite_key];
+        tile_sprite.draw_char(panel, ENTITY_CURSOR as char, cursor_pos, game.config.color_mint_green);
 
         // render shadow cursor for next step
         if cursor_pos != player_pos {
@@ -1108,7 +1092,6 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             for x in 0..map_width {
                 let pos = Pos::new(x, y);
 
-                let dir = game.data.entities.direction[&player_id];
                 let is_in_fov =
                     game.data.is_in_fov(player_id, pos, &game.config);
                 if is_in_fov {
@@ -1164,7 +1147,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     // draw attack and fov position highlights
     if let Some(mouse_xy) = map_mouse_pos {
         // Draw monster attack overlay
-        let object_ids = get_entity_at_pos(mouse_xy, &mut game.data, &game.config);
+        let object_ids = get_entity_at_pos(mouse_xy, &mut game.data);
         for entity_id in object_ids.iter() {
             let pos = game.data.entities.pos[entity_id];
 
@@ -1323,9 +1306,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     }
 }
 
-fn get_entity_at_pos(check_pos: Pos,
-                     data: &mut GameData,
-                     config: &Config) -> Vec<EntityId> {
+fn get_entity_at_pos(check_pos: Pos, data: &mut GameData) -> Vec<EntityId> {
     let mut object_ids: Vec<EntityId> = Vec::new();
 
     for key in data.entities.ids.iter() {

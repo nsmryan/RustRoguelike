@@ -122,13 +122,9 @@ pub const MAP_WALL: u8 = 150;
 
 pub const MAP_ROOK: u8 = 130;
 
-pub const ENTITY_GOL: u8 = 152;
+/* Items */
 pub const ENTITY_POLAXE: u8 = 0x8C;
 pub const ENTITY_CASTLE: u8 = 0x85;
-pub const ENTITY_PLAYER: u8 = 139;
-pub const ENTITY_EXIT: u8 = 135;
-pub const ENTITY_CLOAK_GUY: u8 = 141;
-pub const ENTITY_ELF: u8 = 165;
 pub const ENTITY_ORB: u8 = 135;
 pub const ENTITY_KEY: u8 = 235;
 pub const ENTITY_STONE: u8 = 244;
@@ -136,12 +132,32 @@ pub const ENTITY_DAGGER: u8 = 247;
 pub const ENTITY_SWORD: u8 = 248;
 pub const ENTITY_SHIELD: u8 = 255;
 pub const ENTITY_HAMMER: u8 = 251;
-pub const ENTITY_TRAP_SOUND: u8 = 83; // char S
+
+/* Entities */
+pub const ENTITY_GOL: u8 = 152;
+pub const ENTITY_PLAYER: u8 = 139;
+pub const ENTITY_CLOAK_GUY: u8 = 141;
+pub const ENTITY_ELF: u8 = 165;
+
+/* Map Objects */
+pub const ENTITY_EXIT: u8 = 135;
+pub const ENTITY_CURSOR: u8 = 239;
+pub const ENTITY_TRIGGER_1: u8 = 224;
+pub const ENTITY_TRIGGER_2: u8 = 225;
+pub const ENTITY_TRIGGER_3: u8 = 226;
+pub const ENTITY_TRIGGER_4: u8 = 227;
+pub const ENTITY_TRIGGER_5: u8 = 228;
+
+/* Triggers */
+pub const ENTITY_GATE_TRIGGER: u8 = ENTITY_TRIGGER_2;
+
+/* Traps */
 pub const ENTITY_SPIKE_TRAP: u8 = 136;
 pub const ENTITY_BLINK_TRAP: u8 = 6;
-pub const ENTITY_FREEZE_TRAP: u8 = 70; // char F
-pub const ENTITY_GATE_TRIGGER: u8 = 76; // char G
+pub const ENTITY_TRAP_SOUND: u8 = ENTITY_TRIGGER_5;
+pub const ENTITY_FREEZE_TRAP: u8 = ENTITY_TRIGGER_4;
 
+/* Arrows */
 pub const ARROW_RIGHT: u8 = 16;
 pub const ARROW_LEFT: u8 = 17;
 pub const ARROW_UP: u8 = 30;
