@@ -574,7 +574,6 @@ impl Display {
         match msg {
             Msg::StartTurn => {
                 self.state.sound_tiles.clear();
-                dbg!("clearing sound tiles");
             }
 
             Msg::Sound(cause_id, source_pos, radius, should_animate) => {

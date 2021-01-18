@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 
 use roguelike_core::types::*;
 use roguelike_core::movement::Direction;
+use roguelike_core::config::Config;
 
 use crate::game::*;
 use crate::actions::*;
@@ -36,33 +37,25 @@ pub enum InputEvent {
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Input {
-    chording: bool,
-    chorded: bool,
-    mode: ActionMode,
-    moding: bool,
-    target: i32,
+    pub chording: bool,
+    pub mode: ActionMode,
+    pub moding: bool,
+    pub target: i32,
 }
 
 impl Input {
     pub fn new() -> Input {
-        return Input { chording: false, chorded: false, mode: ActionMode::Primary, moding: false, target: -1 };
+        return Input { chording: false, mode: ActionMode::Primary, moding: false, target: -1 };
     }
 
     pub fn reset(&mut self) {
-        if !self.chording {
-            self.chorded = false;
-        }
-
-        if !self.moding {
-            self.mode = ActionMode::Primary;
-        }
-
         self.target = -1;
     }
 
     pub fn handle_event(&mut self,
-                        game: &Game,
-                        event: InputEvent) -> InputAction {
+                        settings: &mut GameSettings,
+                        event: InputEvent,
+                        config: &Config) -> InputAction {
         let mut action = InputAction::None;
         match event {
             InputEvent::MousePos(_, _) => {
@@ -85,12 +78,11 @@ impl Input {
                 match dir {
                     KeyDir::Down => {
                         self.chording = true;
-                        self.chorded = true;
-                        self.mode = ActionMode::Primary;
                     }
 
                     KeyDir::Up => {
                         self.chording = false;
+                        self.reset();
                     }
                 }
             }
@@ -98,9 +90,9 @@ impl Input {
             InputEvent::Alt(dir) => {
                 if dir == KeyDir::Down {
                     self.mode = ActionMode::Alternate;
+                } else {
+                    self.mode = ActionMode::Primary;
                 }
-
-                self.moding = dir == KeyDir::Down;
             }
 
             InputEvent::Char(chr, dir) => {
@@ -113,16 +105,16 @@ impl Input {
                         } else if self.chording {
                             for (index, target_chr) in TARGET_CODES.iter().enumerate() {
                                 if chr == *target_chr {
-                                       self.target = index as i32;
+                                    self.target = index as i32;
                                 }
                             }
                         } else if chr == ' ' {
                             action = InputAction::CursorApply(self.mode, self.target);
                             self.reset();
                         } else {
-                            action = keyup_to_action(chr, game.settings.state);
+                            action = keyup_to_action(chr, settings.state);
 
-                            if game.config.use_cursor {
+                            if config.use_cursor {
                                if let InputAction::Move(dir) = action {
                                     action = InputAction::CursorMove(dir);
                                }

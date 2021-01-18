@@ -11,7 +11,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
-use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, move_x, move_y, sub_pos, floodfill};
+use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, move_x, move_y, sub_pos, floodfill, reach_by_mode};
 use roguelike_core::line::line;
 
 use roguelike_engine::game::*;
@@ -61,10 +61,10 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 
                 let mut panel = panel.with_target(canvas);
                 render_map(&mut panel, display_state, game);
-                render_overlays(&mut panel, display_state, game, mouse_map_pos);
                 render_entities(&mut panel, display_state, game);
                 render_impressions(&mut panel, display_state, game);
                 render_effects(&mut panel, display_state, game);
+                render_overlays(&mut panel, display_state, game, mouse_map_pos);
             }).unwrap();
         }
 
@@ -394,13 +394,12 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
         };
 
 
-    let color = game.config.color_soft_green;
+    let text_color = game.config.color_soft_green;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
 
     let object_ids =
-        get_entity_at_pos(info_pos, &mut game.data, &game.config);
+        get_entity_at_pos(info_pos, &mut game.data);
 
     let mut y_pos = 1;
 
@@ -415,7 +414,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
         tile_sprite.draw_text_list(panel,
                                    &text_list,
                                    text_pos,
-                                   color);
+                                   text_color);
     }
     text_list.clear();
 
@@ -447,14 +446,17 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
             text_list.push(format!(""));
 
-            if let Some(direction) = game.data.entities.direction.get(obj_id) {
-                text_list.push(format!("Facing"));
-                text_list.push(format!("  {}", direction));
-                text_list.push(format!(""));
+            // show facing direction for player and monsters
+            if game.data.entities.typ[obj_id] == EntityType::Player ||
+               game.data.entities.typ[obj_id] == EntityType::Enemy {
+                if let Some(direction) = game.data.entities.direction.get(obj_id) {
+                    text_list.push(format!("Facing"));
+                    text_list.push(format!("  {}", direction));
+                }
             }
 
             if game.data.entities.fighter.get_mut(obj_id).map_or(false, |fighter| fighter.hp <= 0) {
-                text_list.push(format!("{}", "dead"));
+                text_list.push(format!("  {}", "dead"));
             } else if let Some(behave) = game.data.entities.behavior.get(obj_id) {
                 text_list.push(format!("{}", behave.description()));
             }
@@ -466,14 +468,19 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
     tile_sprite.draw_text_list(panel,
                                &text_list,
                                text_pos,
-                               color);
+                               text_color);
+    text_list.push(format!(""));
     text_list.clear();
 
-    y_pos = 10;
+    y_pos = 11;
     if in_fov {
         let text_pos = Pos::new(1, y_pos);
         text_list.push(format!("Tile is"));
-        text_list.push(format!("{:?}",  game.data.map[info_pos].surface));
+        if game.data.map[info_pos].tile_type == TileType::Water {
+            text_list.push("water".to_string());
+        } else {
+            text_list.push(format!("{:?}",  game.data.map[info_pos].surface));
+        }
         if game.data.map[info_pos].bottom_wall != Wall::Empty {
             text_list.push("Lower wall".to_string());
         }
@@ -489,7 +496,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
         tile_sprite.draw_text_list(panel,
                                    &text_list,
                                    text_pos,
-                                   color);
+                                   text_color);
     }
 }
 
@@ -649,7 +656,6 @@ fn render_background(display: &mut Display, game: &mut Game) {
     display.targets.background_panel.dirty = false;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let pos = game.data.entities.pos[&player_id];
 
     let (map_width, map_height) = game.data.map.size();
 
@@ -672,16 +678,16 @@ fn render_background(display: &mut Display, game: &mut Game) {
                     game.data.is_in_fov(player_id, map_pos, &game.config) ||
                     game.settings.god_mode;
 
-                sprite.draw_char(&mut panel,
-                                 MAP_EMPTY_CHAR as char,
-                                 map_pos,
-                                 empty_tile_color(&game.config, map_pos, visible));
-
                 let tile = &game.data.map[(x, y)];
-                if tile.tile_type == TileType::Water {
+                if tile.tile_type != TileType::Water {
+                    sprite.draw_char(&mut panel,
+                                     MAP_EMPTY_CHAR as char,
+                                     map_pos,
+                                     empty_tile_color(&game.config, map_pos, visible));
+                } else {
                     let color = tile_color(&game.config, x, y, tile, visible);
                     let chr = tile.chr;
-                    sprite.draw_char(&mut panel, chr as char, map_pos, color);
+                    sprite.draw_char(&mut panel, MAP_EMPTY_CHAR as char, map_pos, color);
                 }
             }
         }
@@ -691,7 +697,6 @@ fn render_background(display: &mut Display, game: &mut Game) {
 /// Render the map, with environment and walls
 fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
 
     let (map_width, map_height) = game.data.map.size();
 
@@ -735,7 +740,9 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
 
             // if the tile is not empty or water, draw it
             let color = tile_color(&game.config, x, y, tile, visible);
-            if chr != MAP_EMPTY_CHAR && tile.tile_type != TileType::Water {
+            if tile.tile_type == TileType::Water {
+                sprite.draw_char(panel, ' ', pos, color);
+            } else if chr != MAP_EMPTY_CHAR {
                 sprite.draw_char(panel, chr as char, pos, color);
             }
 
@@ -876,7 +883,6 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
 
     let pos = game.data.entities.pos[&entity_id];
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
 
     // only draw if within the map (outside is (-1, -1) like if in inventory)
     // and not in limbo.
@@ -989,8 +995,6 @@ fn render_animation(anim_key: AnimKey,
 
         Animation::Loop(ref mut sprite_anim) => {
            if settings.god_mode || is_in_fov {
-                let player_id = data.find_by_name(EntityName::Player).unwrap();
-
                 let sprite = sprite_anim.sprite();
                 display_state.draw_sprite(panel,
                                           sprite,
@@ -1071,30 +1075,31 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     if game.config.use_cursor {
         // render cursor itself
         let cursor_pos = game.settings.cursor_pos;
+        let tile_sprite = &mut display_state.sprites[&sprite_key];
+        let mut color = game.config.color_mint_green;
+        color.a = 230;
+        tile_sprite.draw_char(panel, ENTITY_CURSOR as char, cursor_pos, color);
 
-        let (cell_width, cell_height) = panel.cell_dims();
-        let cell_width = cell_width as i32;
-        let cell_height = cell_height as i32;
-        let pos = Pos::new(cursor_pos.x * cell_width, cursor_pos.y * cell_height);
-
-        let color = sdl2_color(game.config.color_orange);
-        panel.target.set_draw_color(color);
-        let pos_end = Pos::new(pos.x + cell_width, pos.y + cell_height);
-        panel.target.draw_line(pos.to_tuple(), pos_end.to_tuple()).unwrap();
-
-        panel.target.draw_line(move_x(pos, cell_width).to_tuple(), move_y(pos, cell_height).to_tuple()).unwrap();
-
-        // render shadow cursor for next step
+        // render player ghost
         if cursor_pos != player_pos {
             let alpha = game.data.entities.color[&player_id].a;
             game.data.entities.color[&player_id].a = 100;
+
             let dxy = sub_pos(cursor_pos, player_pos);
             let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-            let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
-            game.data.entities.pos[&player_id] = shadow_cursor_pos;
-            render_entity(panel, player_id, display_state, game);
-            game.data.entities.color[&player_id].a = alpha;
-            game.data.entities.pos[&player_id] = player_pos;
+
+            let mut reach = game.data.entities.movement[&player_id];
+            if game.input.mode == ActionMode::Alternate {
+                let mut move_mode = game.data.entities.move_mode[&player_id];
+                reach = reach_by_mode(move_mode.increase());
+            }
+
+            if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {
+                game.data.entities.pos[&player_id] = player_ghost_pos;
+                render_entity(panel, player_id, display_state, game);
+                game.data.entities.color[&player_id].a = alpha;
+                game.data.entities.pos[&player_id] = player_pos;
+            }
         }
     }
 
@@ -1108,7 +1113,6 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             for x in 0..map_width {
                 let pos = Pos::new(x, y);
 
-                let dir = game.data.entities.direction[&player_id];
                 let is_in_fov =
                     game.data.is_in_fov(player_id, pos, &game.config);
                 if is_in_fov {
@@ -1164,7 +1168,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     // draw attack and fov position highlights
     if let Some(mouse_xy) = map_mouse_pos {
         // Draw monster attack overlay
-        let object_ids = get_entity_at_pos(mouse_xy, &mut game.data, &game.config);
+        let object_ids = get_entity_at_pos(mouse_xy, &mut game.data);
         for entity_id in object_ids.iter() {
             let pos = game.data.entities.pos[entity_id];
 
@@ -1323,9 +1327,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     }
 }
 
-fn get_entity_at_pos(check_pos: Pos,
-                     data: &mut GameData,
-                     config: &Config) -> Vec<EntityId> {
+fn get_entity_at_pos(check_pos: Pos, data: &mut GameData) -> Vec<EntityId> {
     let mut object_ids: Vec<EntityId> = Vec::new();
 
     for key in data.entities.ids.iter() {
@@ -1334,9 +1336,7 @@ fn get_entity_at_pos(check_pos: Pos,
         let removing = data.entities.needs_removal[key];
 
         if !removing && !is_mouse && check_pos == pos {
-            if data.is_in_fov(*key, check_pos, config) {
-                object_ids.push(*key);
-            }
+            object_ids.push(*key);
         }
     }
 

@@ -179,8 +179,6 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
 
     let mut frame_time = Instant::now();
 
-    let mut input = Input::new();
-
     /* Main Game Loop */
     while game.settings.running {
         let _loop_timer = timer!("GAME_LOOP");
@@ -191,8 +189,8 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
             let _input_timer = timer!("INPUT");
             for sdl2_event in event_pump.poll_iter() {
                 if let Some(event) = translate_event(sdl2_event, &mut game, &mut display) {
-                    let action = input.handle_event(&mut game, event);
-                    // TODO may lose inputs if multiple events create actions!
+                    let action = game.input.handle_event(&mut game.settings, event, &game.config);
+                    // NOTE may lose inputs if multiple events create actions!
                     input_action = action;
                 }
             }
