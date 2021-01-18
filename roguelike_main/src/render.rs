@@ -1081,17 +1081,16 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         tile_sprite.draw_char(panel, ENTITY_CURSOR as char, cursor_pos, color);
 
         // render player ghost
-        if cursor_pos != player_pos {
+        if cursor_pos != player_pos && game.input.target == -1 {
             let alpha = game.data.entities.color[&player_id].a;
             game.data.entities.color[&player_id].a = 100;
 
             let dxy = sub_pos(cursor_pos, player_pos);
             let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
 
-            let mut reach = game.data.entities.movement[&player_id];
+            let mut reach = reach_by_mode(MoveMode::Sneak);
             if game.input.mode == ActionMode::Alternate {
-                let mut move_mode = game.data.entities.move_mode[&player_id];
-                reach = reach_by_mode(move_mode.increase());
+                reach = reach_by_mode(MoveMode::Run);
             }
 
             if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {

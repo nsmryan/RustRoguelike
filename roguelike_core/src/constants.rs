@@ -138,15 +138,16 @@ pub const ENTITY_GOL: u8 = 152;
 pub const ENTITY_PLAYER: u8 = 139;
 pub const ENTITY_CLOAK_GUY: u8 = 141;
 pub const ENTITY_ELF: u8 = 165;
+pub const ENTITY_UNKNOWN: u8 = 239;
 
 /* Map Objects */
 pub const ENTITY_EXIT: u8 = 135;
-pub const ENTITY_CURSOR: u8 = 239;
 pub const ENTITY_TRIGGER_1: u8 = 224;
 pub const ENTITY_TRIGGER_2: u8 = 225;
 pub const ENTITY_TRIGGER_3: u8 = 226;
 pub const ENTITY_TRIGGER_4: u8 = 227;
 pub const ENTITY_TRIGGER_5: u8 = 228;
+pub const ENTITY_CURSOR: u8 = 231;
 
 /* Triggers */
 pub const ENTITY_GATE_TRIGGER: u8 = ENTITY_TRIGGER_2;

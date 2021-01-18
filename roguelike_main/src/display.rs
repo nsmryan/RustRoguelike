@@ -964,7 +964,7 @@ pub fn draw_outline_tile(panel: &mut Panel<&mut WindowCanvas>,
                          color: Color) {
     let cell_dims = panel.cell_dims();
 
-    panel.target.set_blend_mode(BlendMode::Blend);
+    panel.target.set_blend_mode(BlendMode::Add);
     panel.target.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
     let rect = Rect::new(cell.x * cell_dims.0 as i32 + 1,
