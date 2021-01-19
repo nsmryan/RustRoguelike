@@ -688,12 +688,6 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
                 game.data.is_in_fov(player_id, pos, &game.config) ||
                 game.settings.god_mode;
 
-            // careful not to set map if not needed- this will clear the fov cache
-            // TODO this seems like it should be somewhere else.
-            if visible && !game.data.map[pos].explored {
-                game.data.map[pos].explored = visible;
-            }
-
             let explored = game.data.map[pos].explored || visible;
 
             let tile = &game.data.map[pos];
