@@ -112,20 +112,16 @@ impl Game {
             }
         }
 
+        /* Check for explored tiles */
         let player_id = self.data.find_by_name(EntityName::Player).unwrap();
-        let (map_width, map_height) = self.data.map.size();
-        for y in 0..map_height {
-            for x in 0..map_width {
-                let pos = Pos::new(x, y);
+        for pos in self.data.map.get_all_pos() {
+            let visible =
+                self.data.is_in_fov(player_id, pos, &self.config) ||
+                self.settings.god_mode;
 
-                let visible =
-                    self.data.is_in_fov(player_id, pos, &self.config) ||
-                    self.settings.god_mode;
-
-                // careful not to set map if not needed- this will clear the fov cache
-                if visible && !self.data.map[pos].explored {
-                    self.data.map[pos].explored = visible;
-                }
+            // careful not to set map if not needed- this will clear the fov cache
+            if visible && !self.data.map[pos].explored {
+                self.data.map[pos].explored = visible;
             }
         }
 
