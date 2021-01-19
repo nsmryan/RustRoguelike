@@ -36,7 +36,8 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     render_panels(display, game, map_rect);
 
     /* Paste Panels on Screen */
-    render_screen(display, game, map_rect);
+    let map_size = game.data.map.size();
+    render_screen(&mut display.targets, map_size, map_rect);
 
     /* Draw Menus */
     render_menus(display, game);
@@ -115,27 +116,26 @@ fn render_panels(display: &mut Display, game: &mut Game, map_rect: Rect) {
 }
 
 
-fn render_screen(display: &mut Display, game: &mut Game, map_rect: Rect) {
+fn render_screen(targets: &mut DisplayTargets, map_size: (i32, i32), map_rect: Rect) {
     // TODO just make the map panel the right size in the first place
     // and re-create it when the map changes.
-    let (map_width, map_height) = game.data.map.size();
-    let src = display.targets.map_panel.get_rect_up_left(map_width as usize, map_height as usize);
-    display.targets.canvas_panel.target.copy(&display.targets.map_panel.target, src, map_rect).unwrap();
+    let src = targets.map_panel.get_rect_up_left(map_size.0 as usize, map_size.1 as usize);
+    targets.canvas_panel.target.copy(&targets.map_panel.target, src, map_rect).unwrap();
 
     /* Draw Inventory Panel */
-    let dst = display.targets.canvas_panel.get_rect_within(&display.targets.inventory_area,
-                                                           display.targets.inventory_panel.num_pixels);
-    display.targets.canvas_panel.target.copy(&display.targets.inventory_panel.target, None, dst).unwrap();
+    let dst = targets.canvas_panel.get_rect_within(&targets.inventory_area,
+                                                   targets.inventory_panel.num_pixels);
+    targets.canvas_panel.target.copy(&targets.inventory_panel.target, None, dst).unwrap();
 
     /* Draw Game Info Panel */
-    let dst = display.targets.canvas_panel.get_rect_within(&display.targets.info_area,
-                                                           display.targets.info_panel.num_pixels);
-    display.targets.canvas_panel.target.copy(&display.targets.info_panel.target, None, dst).unwrap();
+    let dst = targets.canvas_panel.get_rect_within(&targets.info_area,
+                                                   targets.info_panel.num_pixels);
+    targets.canvas_panel.target.copy(&targets.info_panel.target, None, dst).unwrap();
 
     /* Draw Player Info Panel */
-    let dst = display.targets.canvas_panel.get_rect_within(&display.targets.player_area,
-                                                           display.targets.player_panel.num_pixels);
-    display.targets.canvas_panel.target.copy(&display.targets.player_panel.target, None, dst).unwrap();
+    let dst = targets.canvas_panel.get_rect_within(&targets.player_area,
+                                                   targets.player_panel.num_pixels);
+    targets.canvas_panel.target.copy(&targets.player_panel.target, None, dst).unwrap();
 }
 
 fn render_menus(display: &mut Display, game: &mut Game) {
