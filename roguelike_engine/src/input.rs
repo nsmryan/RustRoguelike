@@ -197,7 +197,7 @@ pub fn keyup_to_action(chr: char, game_state: GameState) -> InputAction {
             input_action = InputAction::Yell;
         }
 
-        'v' => {
+        'l' => {
             input_action = InputAction::ExploreAll;
         }
 
@@ -209,11 +209,11 @@ pub fn keyup_to_action(chr: char, game_state: GameState) -> InputAction {
             input_action = InputAction::RegenerateMap;
         }
 
-        'x' => {
+        'e' => {
             input_action = InputAction::IncreaseMoveMode;
         }
 
-        'z' => {
+        'w' => {
             input_action = InputAction::DecreaseMoveMode;
         }
 
@@ -225,7 +225,7 @@ pub fn keyup_to_action(chr: char, game_state: GameState) -> InputAction {
             input_action = InputAction::SkillMenu;
         }
 
-        'c' => {
+        'h' => {
             input_action = InputAction::ClassMenu;
         }
 

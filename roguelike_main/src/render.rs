@@ -11,7 +11,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
-use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, move_x, move_y, sub_pos, floodfill, reach_by_mode};
+use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, move_x, move_y, sub_pos, floodfill, reach_by_mode, map_fill_metric};
 use roguelike_core::line::line;
 
 use roguelike_engine::game::*;
@@ -103,6 +103,15 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     }
 
     /* Paste Panels on Screen */
+    render_panels(display, game, map_rect);
+
+    /* Draw Menus */
+    render_menus(display, game);
+
+    Ok(())
+}
+
+fn render_panels(display: &mut Display, game: &mut Game, map_rect: Rect) {
     // TODO just make the map panel the right size in the first place
     // and re-create it when the map changes.
     let (map_width, map_height) = game.data.map.size();
@@ -123,40 +132,37 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     let dst = display.targets.canvas_panel.get_rect_within(&display.targets.player_area,
                                                            display.targets.player_panel.num_pixels);
     display.targets.canvas_panel.target.copy(&display.targets.player_panel.target, None, dst).unwrap();
+}
 
-    /* Draw Menus */
-    {
-        let canvas_panel = &mut display.targets.canvas_panel;
-        let display_state = &mut display.state;
+fn render_menus(display: &mut Display, game: &mut Game) {
+    let canvas_panel = &mut display.targets.canvas_panel;
+    let display_state = &mut display.state;
 
-        let menu_panel = &mut display.targets.menu_panel;
-        let inventory_panel = &mut display.targets.inventory_panel;
-        let panel = menu_panel.unit();
+    let menu_panel = &mut display.targets.menu_panel;
+    let inventory_panel = &mut display.targets.inventory_panel;
+    let panel = menu_panel.unit();
 
-        let mut draw_menu: bool = true;
-        canvas_panel.target.with_texture_canvas(&mut menu_panel.target, |canvas| {
-            let mut panel = panel.with_target(canvas);
+    let mut draw_menu: bool = true;
+    canvas_panel.target.with_texture_canvas(&mut menu_panel.target, |canvas| {
+        let mut panel = panel.with_target(canvas);
 
-            if game.settings.state == GameState::Inventory {
-                panel.target.copy(&inventory_panel.target, None, None).unwrap();
-            } else if game.settings.state == GameState::SkillMenu {
-                render_skill_menu(&mut panel, display_state, game);
-            } else if game.settings.state == GameState::ClassMenu {
-                render_class_menu(&mut panel, display_state, game);
-            } else if game.settings.state == GameState::ConfirmQuit {
-                render_confirm_quit(&mut panel, display_state, game);
-            } else {
-                draw_menu = false;
-            }
-        }).unwrap();
-
-        if draw_menu {
-            let dst = canvas_panel.get_rect_within(&display.targets.menu_area, menu_panel.num_pixels);
-            canvas_panel.target.copy(&menu_panel.target, None, dst).unwrap();
+        if game.settings.state == GameState::Inventory {
+            panel.target.copy(&inventory_panel.target, None, None).unwrap();
+        } else if game.settings.state == GameState::SkillMenu {
+            render_skill_menu(&mut panel, display_state, game);
+        } else if game.settings.state == GameState::ClassMenu {
+            render_class_menu(&mut panel, display_state, game);
+        } else if game.settings.state == GameState::ConfirmQuit {
+            render_confirm_quit(&mut panel, display_state, game);
+        } else {
+            draw_menu = false;
         }
-    }
+    }).unwrap();
 
-    Ok(())
+    if draw_menu {
+        let dst = canvas_panel.get_rect_within(&display.targets.menu_area, menu_panel.num_pixels);
+        canvas_panel.target.copy(&menu_panel.target, None, dst).unwrap();
+    }
 }
 
 /// Draw an outline and title around an area of the screen
@@ -386,12 +392,13 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
     let sprite_key = display_state.lookup_spritekey("tiles");
 
-    let info_pos = 
-        if let Some(mouse) = mouse_xy {
-            mouse
-        } else {
-            game.settings.cursor_pos
-        };
+    let info_pos = game.settings.cursor_pos;
+    // NOTE this allows mouse support as well
+    //    if let Some(mouse) = mouse_xy {
+    //        mouse
+    //    } else {
+    //        game.settings.cursor_pos
+    //    };
 
 
     let text_color = game.config.color_soft_green;
@@ -1301,27 +1308,20 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
         let mut highlight_color = game.config.color_light_orange;
         highlight_color.a = 50;
-        for y in 0..game.data.map.height() {
-            for x in 0..game.data.map.width() {
-                let pos = Pos::new(x, y);
+        let fill_metric = map_fill_metric(&game.data.map);
 
-                if !game.data.map[pos].block_move &&
-                   game.data.map[pos].tile_type != TileType::Water {
-                    let near_count = floodfill(&game.data.map, pos, 3).len();
+        for (pos, near_count) in fill_metric {
+            let amount = near_count as f32 / 50.0;
+            let adj_color = lerp_color(game.config.color_ice_blue, game.config.color_red, amount);
 
-                    let amount = near_count as f32 / 50.0;
-                    let adj_color = lerp_color(game.config.color_ice_blue, game.config.color_red, amount);
+            let tile_sprite = &mut display_state.sprites[&sprite_key];
+            tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, adj_color);
 
-                    let tile_sprite = &mut display_state.sprites[&sprite_key];
-                    tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, adj_color);
-
-                    let font_sprite = &mut display_state.sprites[&font_key];
-                    font_sprite.draw_text(panel,
-                                          &format!("{}", near_count),
-                                          pos,
-                                          highlight_color);
-                }
-            }
+            let font_sprite = &mut display_state.sprites[&font_key];
+            font_sprite.draw_text(panel,
+                                  &format!("{}", near_count),
+                                  pos,
+                                  highlight_color);
         }
     }
 }
@@ -1503,3 +1503,4 @@ pub fn render_entity_at(entity_id: EntityId, render_pos: Pos, game: &mut Game, p
     game.data.entities.color[&entity_id].a = alpha;
     game.data.entities.pos[&entity_id] = entity_pos;
 }
+

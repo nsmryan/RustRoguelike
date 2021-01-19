@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
@@ -10,7 +11,7 @@ use crate::movement::{Reach, MoveMode, check_collision, MoveType, Movement, Dire
 use crate::messaging::*;
 use crate::line::*;
 use crate::config::Config;
-use crate::map::{Map, AoeEffect, Aoe, Wall, astar_neighbors};
+use crate::map::{Map, AoeEffect, Aoe, Wall, astar_neighbors, TileType};
 
 
 pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
@@ -288,6 +289,29 @@ pub fn reach_by_mode(move_mode: MoveMode) -> Reach {
             Reach::Single(2)
         }
     }
+}
+
+pub fn map_fill_metric(map: &Map) -> HashMap<Pos, usize> {
+    let mut metric_map: HashMap<Pos, usize> = HashMap::new();
+
+    for y in 0..map.height() {
+        for x in 0..map.width() {
+            let pos = Pos::new(x, y);
+            let fill_metric = tile_fill_metric(map, pos);
+            metric_map.insert(pos, fill_metric);
+        }
+    }
+
+    return metric_map;
+}
+
+pub fn tile_fill_metric(map: &Map, pos: Pos) -> usize {
+    if !map[pos].block_move && map[pos].tile_type != TileType::Water {
+        let near_count = floodfill(map, pos, 3).len();
+
+        return near_count;
+    }
+    return 0
 }
 
 pub fn clamp<N: Ord>(val: N, min: N, max: N) -> N {
