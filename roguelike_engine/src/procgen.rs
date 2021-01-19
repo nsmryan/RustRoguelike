@@ -169,9 +169,8 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
             }
         }
 
-        if (structure.typ == StructureType::Line || structure.typ == StructureType::Complex) &&
-            // turn some structures into short or tall walls
-           game.rng.gen_range(0.0, 1.0) < 0.8 {
+        // turn some structures into short or tall walls
+        if structure.typ != StructureType::Single && game.rng.gen_range(0.0, 1.0) < 0.7 {
            let wall_type;
            if game.rng.gen_range(0.0, 1.0) < 1.0 {
                wall_type = Wall::ShortWall;
