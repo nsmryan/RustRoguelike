@@ -336,10 +336,7 @@ fn render_console(display: &mut Display, game: &mut Game) {
 */
 
 fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    render_placard(panel,
-                   display_state,
-                   "Player",
-                   &game.config);
+    render_placard(panel, display_state, "Player", &game.config);
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
@@ -389,10 +386,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
                display_state: &mut DisplayState,
                game: &mut Game,
                mouse_xy: Option<Pos>) {
-    render_placard(panel,
-                   display_state,
-                   "Info",
-                   &game.config);
+    render_placard(panel, display_state, "Info", &game.config);
 
     let sprite_key = display_state.lookup_spritekey("tiles");
 
@@ -422,10 +416,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
     {
         let tile_sprite = &mut display_state.sprites[&sprite_key];
-        tile_sprite.draw_text_list(panel,
-                                   &text_list,
-                                   text_pos,
-                                   text_color);
+        tile_sprite.draw_text_list(panel, &text_list, text_pos, text_color);
     }
     text_list.clear();
 
@@ -476,10 +467,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
     let tile_sprite = &mut display_state.sprites[&sprite_key];
     let text_pos = Pos::new(1, y_pos);
-    tile_sprite.draw_text_list(panel,
-                               &text_list,
-                               text_pos,
-                               text_color);
+    tile_sprite.draw_text_list(panel, &text_list, text_pos, text_color);
     text_list.push(format!(""));
     text_list.clear();
 
@@ -504,10 +492,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
             text_list.push(format!("blocked"));
         }
 
-        tile_sprite.draw_text_list(panel,
-                                   &text_list,
-                                   text_pos,
-                                   text_color);
+        tile_sprite.draw_text_list(panel, &text_list, text_pos, text_color);
     }
 }
 
@@ -515,10 +500,7 @@ fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     // Render header
-    render_placard(panel,
-                   display_state,
-                   "Skills",
-                   &game.config);
+    render_placard(panel, display_state, "Skills", &game.config);
 
     let mut list = Vec::new();
 
@@ -533,18 +515,12 @@ fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
     let sprite_key = display_state.lookup_spritekey("tiles");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
-    tile_sprite.draw_text_list(panel,
-                               &list,
-                               text_pos,
-                               color);
+    tile_sprite.draw_text_list(panel, &list, text_pos, color);
 }
 
 fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     // Render header
-    render_placard(panel,
-                   display_state,
-                   "Choice Class",
-                   &game.config);
+    render_placard(panel, display_state, "Choice Class", &game.config);
 
     let mut list = Vec::new();
 
@@ -559,18 +535,12 @@ fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
     let sprite_key = display_state.lookup_spritekey("tiles");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
-    tile_sprite.draw_text_list(panel,
-                               &list,
-                               text_pos,
-                               color);
+    tile_sprite.draw_text_list(panel, &list, text_pos, color);
 }
 
 fn render_confirm_quit(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     // Render header
-    render_placard(panel,
-                   display_state,
-                   "Quit?",
-                   &game.config);
+    render_placard(panel, display_state, "Quit?", &game.config);
 
     let mut list = Vec::new();
 
@@ -585,19 +555,13 @@ fn render_confirm_quit(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut
     let sprite_key = display_state.lookup_spritekey("tiles");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
-    tile_sprite.draw_text_list(panel,
-                               &list,
-                               text_pos,
-                               color);
+    tile_sprite.draw_text_list(panel, &list, text_pos, color);
 }
 
 /// Render an inventory section within the given area
 fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     // Render header
-    render_placard(panel,
-                  display_state,
-                  "Inventory",
-                  &game.config);
+    render_placard(panel, display_state, "Inventory", &game.config);
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
@@ -640,10 +604,7 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
                 ""
             };
         let item_text = format!(" {:?} {}", game.data.entities.name[obj_id], item_marker);
-        tile_sprite.draw_text(panel,
-                              &item_text,
-                              text_pos,
-                              color);
+        tile_sprite.draw_text(panel, &item_text, text_pos, color);
         
         y_pos += 1;
 
@@ -652,10 +613,7 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
 
     if game.data.entities.inventory[&player_id].len() == 0 {
         let text_pos = Pos::new(1, y_pos);
-        tile_sprite.draw_text(panel,
-                              &format!("empty"),
-                              text_pos,
-                              game.config.color_ice_blue);
+        tile_sprite.draw_text(panel, &format!("empty"), text_pos, game.config.color_ice_blue);
     }
 }
 
