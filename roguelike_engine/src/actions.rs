@@ -559,7 +559,11 @@ pub fn handle_input_playing(input_action: InputAction,
     match (input_action, player_alive) {
         (InputAction::CursorMove(dir), true) => {
             let cursor_pos = settings.cursor_pos;
-            settings.cursor_pos = add_pos(cursor_pos, dir.into_move());
+            let new_pos = add_pos(cursor_pos, dir.into_move());
+
+            if data.map.is_within_bounds(new_pos) {
+                settings.cursor_pos = new_pos;
+            }
         }
 
         (InputAction::CursorApply(mode, target), true) => {

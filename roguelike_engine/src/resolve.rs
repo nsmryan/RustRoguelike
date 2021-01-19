@@ -74,7 +74,7 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::Pushed(pusher, pushed, direction, push_amount, move_into) => {
-                pushed_entity(pusher, pushed, direction, push_amount, move_into, data, msg_log);
+                pushed_entity(pusher, pushed, direction, push_amount, move_into, data, config, msg_log);
             }
 
             Msg::Yell(entity_id, pos) => {
@@ -714,6 +714,7 @@ fn pushed_entity(pusher: EntityId,
                  push_amount: usize,
                  move_into: bool,
                  data: &mut GameData,
+                 config: &Config,
                  msg_log: &mut MsgLog) {
     let pushed_pos = data.entities.pos[&pushed];
     let pusher_pos = data.entities.pos[&pusher];
@@ -735,7 +736,7 @@ fn pushed_entity(pusher: EntityId,
         }
     } else if data.entities.status[&pushed].alive {
         let continue_push = 
-            push_attack(pusher, pushed, direction, push_amount, move_into, data, msg_log);
+            push_attack(pusher, pushed, direction, push_amount, move_into, data, config, msg_log);
 
         dbg!(continue_push);
         if continue_push && push_amount > 1 {

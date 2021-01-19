@@ -77,6 +77,7 @@ pub fn push_attack(entity_id: EntityId,
                    amount: usize,
                    move_into: bool,
                    data: &mut GameData,
+                   config: &Config,
                    msg_log: &mut MsgLog) -> bool {
     let mut continue_push = true;
 
@@ -103,7 +104,7 @@ pub fn push_attack(entity_id: EntityId,
         msg_log.log_front(Msg::Moved(target, MoveType::Move, past_pos));
     } else {
         if data.entities.status[&target].frozen == 0 {
-            data.entities.status[&target].frozen = 2;
+            data.entities.status[&target].frozen = config.push_stun_turns;
         } else {
             // otherwise crush them against the wall/entity
             damage = data.entities.fighter[&target].hp;

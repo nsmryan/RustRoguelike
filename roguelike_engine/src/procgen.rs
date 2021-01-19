@@ -138,7 +138,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     println!();
     println!("{} singles", structures.iter().filter(|s| s.typ == StructureType::Single).count());
     println!("{} lines", structures.iter().filter(|s| s.typ == StructureType::Line).count());
-    println!("{} Ls", structures.iter().filter(|s| s.typ == StructureType::Path).count());
+    println!("{} paths", structures.iter().filter(|s| s.typ == StructureType::Path).count());
     println!("{} complex", structures.iter().filter(|s| s.typ == StructureType::Complex).count());
 
     /* modify structures with rubble, columns, etc */
@@ -155,13 +155,12 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     for (index, structure) in structures.iter().enumerate() {
         // turn some lone single-tile walls into columns
         if structure.typ == StructureType::Single {
-            if game.rng.gen_range(0.0, 1.0) > 0.1 {
+            if game.rng.gen_range(0.0, 1.0) < 0.3 {
                 make_column(&mut game.data.entities, &game.config, structure.blocks[0], &mut game.msg_log);
                 to_remove.push(index);
             }
-        } else if structure.typ == StructureType::Line { 
-            // turn some parts of lines into rubble
-            if structure.blocks.len() > 5 && num_rubbles < max_rubbles {
+        } else if game.rng.gen_range(0.0, 1.0) < 0.3 {
+            if num_rubbles < max_rubbles {
                 let index = game.rng.gen_range(0, structure.blocks.len());
                 let block = structure.blocks[index];
                 game.data.map[block] = Tile::empty();
@@ -172,7 +171,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
         if (structure.typ == StructureType::Line || structure.typ == StructureType::Complex) &&
             // turn some structures into short or tall walls
-           game.rng.gen_range(0.0, 1.0) < 0.5 {
+           game.rng.gen_range(0.0, 1.0) < 0.8 {
            let wall_type;
            if game.rng.gen_range(0.0, 1.0) < 1.0 {
                wall_type = Wall::ShortWall;
@@ -628,8 +627,8 @@ fn clear_island(game: &mut Game, island_radius: i32) {
 }
 
 
-fn process_block(block: Pos, structure: &mut Structure, map: &Map, seen: &mut HashSet<Pos>) {
-    let adjacent = adjacent_blocks(block, map, seen);
+fn process_block(block: Pos, structure: &mut Structure, blocks: &Vec<Pos>, seen: &mut HashSet<Pos>) {
+    let adjacent = adjacent_blocks(block, blocks, seen);
 
     let mut needs_processing = false;
     if adjacent.len() == 1 {
@@ -657,17 +656,17 @@ fn process_block(block: Pos, structure: &mut Structure, map: &Map, seen: &mut Ha
         }
 
         for adj in adjacent.iter() {
-            process_block(*adj, structure, map, seen);
+            process_block(*adj, structure, blocks, seen);
         }
     }
 }
 
-fn adjacent_blocks(block: Pos, map: &Map, seen: &HashSet<Pos>) -> Vec<Pos> {
+fn adjacent_blocks(block: Pos, blocks: &Vec<Pos>, seen: &HashSet<Pos>) -> Vec<Pos> {
     let mut result = Vec::new();
 
     let adjacents = [move_x(block, 1), move_y(block, 1), move_x(block, -1), move_y(block, -1)];
     for adj in adjacents.iter() {
-        if map.is_within_bounds(*adj) && map[*adj].block_move && !seen.contains(&adj) {
+        if blocks.contains(adj) && !seen.contains(&adj) {
             result.push(*adj);
         }
     }
@@ -700,30 +699,32 @@ fn find_structures(map: &Map) -> Vec<Structure> {
     let mut blocks = Vec::new();
     for y in 0..height {
         for x in 0..width {
-            if map[(x, y)].block_move {
+            if map[(x, y)].tile_type.is_wall() {
                 blocks.push(Pos::new(x, y));
             }
         }
     }
 
+    println!("Blocks in structures: {}", blocks.len());
+
     let mut structures = Vec::new();
     let mut seen: HashSet<Pos> = HashSet::new();
-    for block in blocks {
+    for block in blocks.iter() {
         if !seen.contains(&block) {
             let mut structure = Structure::new();
 
-            let adjacent = adjacent_blocks(block, &map, &seen);
+            let adjacent = adjacent_blocks(*block, &blocks, &seen);
 
             if adjacent.len() != 2 {
-                structure.add_block(block);
-                seen.insert(block);
+                structure.add_block(*block);
+                seen.insert(*block);
 
                 if adjacent.len() == 1 {
                     // found start of a structure (line, L, or complex)- process structure
                     structure.typ = StructureType::Line;
-                    process_block(block, &mut structure, map, &mut seen);
+                    process_block(*block, &mut structure, &blocks, &mut seen);
                 } else if adjacent.len() > 2 {
-                    // found part of a complex structure- process all peices
+                    // found part of a complex structure- process all pieces
                     structure.typ = StructureType::Complex;
 
                     for adj in adjacent.iter() {
@@ -731,15 +732,18 @@ fn find_structures(map: &Map) -> Vec<Structure> {
                     }
 
                     for adj in adjacent {
-                        process_block(adj, &mut structure, map, &mut seen);
+                        process_block(adj, &mut structure, &blocks, &mut seen);
                     }
                 }
 
                 structures.push(structure);
             }
             // else we are in the middle of a line, so we will pick it up later
+            // or we have a single block, which uses the default structure type of Single
         }
     }
+
+    println!("Number of structures: {}", structures.len());
 
     return structures;
 }

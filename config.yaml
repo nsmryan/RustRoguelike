@@ -137,7 +137,7 @@ draw_mouse_line: false
 draw_star_path: false
 frame_rate: 25
 item_throw_speed: 30.0
-key_speed: 0.5
+key_speed: 5.0
 player_attack_speed: 2.0
 player_attack_hammer_speed: 1.0
 player_vault_sprite_speed: 2.0
@@ -158,11 +158,12 @@ sound_radius_stone: 3
 sound_radius_player: 3
 sound_radius_hammer: 3
 freeze_trap_radius: 3
+push_stun_turns: 3
 overlay_directions: false
 overlay_player_fov: false
 overlay_fov_alg: false
 overlay_floodfill: false
-fov_radius_monster: 6
+fov_radius_monster: 4
 fov_radius_player: 4
 console_max_height: 400
 console_speed: 1.0

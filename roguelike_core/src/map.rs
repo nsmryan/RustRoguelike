@@ -36,6 +36,18 @@ pub enum TileType {
     Exit,
 }
 
+impl TileType {
+    pub fn is_wall(&self) -> bool {
+        match self {
+            TileType::Empty => false,
+            TileType::ShortWall => true,
+            TileType::Wall => true,
+            TileType::Water => false,
+            TileType::Exit => false,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AoeEffect {
     Sound,
