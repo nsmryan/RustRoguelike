@@ -29,6 +29,23 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     /* Split Screen Into Sections */
     let map_rect = display.targets.canvas_panel.get_rect_from_area(&display.targets.map_area);
 
+    /* Draw Background */
+    render_background(display, game);
+
+    /* Draw Map */
+    render_panels(display, game, map_rect);
+
+    /* Paste Panels on Screen */
+    render_screen(display, game, map_rect);
+
+    /* Draw Menus */
+    render_menus(display, game);
+
+    Ok(())
+}
+
+
+fn render_panels(display: &mut Display, game: &mut Game, map_rect: Rect) {
     /* Determine Mouse Position */
     let mut mouse_map_pos = None;
     if let Some(mouse_id) = game.data.find_by_name(EntityName::Mouse) {
@@ -41,77 +58,64 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     }
     let mouse_map_pos = mouse_map_pos;
 
-    /* Draw Background */
-    render_background(display, game);
+    let canvas = &mut display.targets.canvas_panel.target;
+    let display_state = &mut display.state;
 
-    /* Draw Map */
-    {
-        let canvas = &mut display.targets.canvas_panel.target;
-        let display_state = &mut display.state;
+    if game.settings.render_map {
+        let background = &mut display.targets.background_panel;
+        let panel = background.unit();
 
-        if game.settings.render_map {
-            let background = &mut display.targets.background_panel;
-            let panel = background.unit();
+        canvas.with_texture_canvas(&mut display.targets.map_panel.target, |canvas| {
+            canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
+            canvas.clear();
 
-            canvas.with_texture_canvas(&mut display.targets.map_panel.target, |canvas| {
-                canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
-                canvas.clear();
+            canvas.copy(&background.target, None, None).unwrap();
 
-                canvas.copy(&background.target, None, None).unwrap();
-
-                let mut panel = panel.with_target(canvas);
-                render_map(&mut panel, display_state, game);
-                render_entities(&mut panel, display_state, game);
-                render_impressions(&mut panel, display_state, game);
-                render_effects(&mut panel, display_state, game);
-                render_overlays(&mut panel, display_state, game, mouse_map_pos);
-            }).unwrap();
-        }
-
-        /* Draw Player Info */
-        {
-            let player_panel = &mut display.targets.player_panel;
-            let panel = player_panel.unit();
-
-            canvas.with_texture_canvas(&mut display.targets.player_panel.target, |canvas| {
-                let mut panel = panel.with_target(canvas);
-                render_player_info(&mut panel, display_state, game);
-            }).unwrap();
-        }
-
-        /* Draw Inventory */
-        {
-            let inventory_panel = &mut display.targets.inventory_panel;
-            let panel = inventory_panel.unit();
-
-            canvas.with_texture_canvas(&mut display.targets.inventory_panel.target, |canvas| {
-                let mut panel = panel.with_target(canvas);
-                render_inventory(&mut panel, display_state, game);
-            }).unwrap();
-        }
-
-        /* Draw Game Info */
-        {
-            let info_panel = &mut display.targets.info_panel;
-            let panel = info_panel.unit();
-
-            canvas.with_texture_canvas(&mut display.targets.info_panel.target, |canvas| {
-                let mut panel = panel.with_target(canvas);
-                render_info(&mut panel, display_state, game, mouse_map_pos);
-            }).unwrap();
-        }
+            let mut panel = panel.with_target(canvas);
+            render_map(&mut panel, display_state, game);
+            render_entities(&mut panel, display_state, game);
+            render_impressions(&mut panel, display_state, game);
+            render_effects(&mut panel, display_state, game);
+            render_overlays(&mut panel, display_state, game, mouse_map_pos);
+        }).unwrap();
     }
 
-    /* Paste Panels on Screen */
-    render_panels(display, game, map_rect);
+    /* Draw Player Info */
+    {
+        let player_panel = &mut display.targets.player_panel;
+        let panel = player_panel.unit();
 
-    /* Draw Menus */
-    render_menus(display, game);
+        canvas.with_texture_canvas(&mut display.targets.player_panel.target, |canvas| {
+            let mut panel = panel.with_target(canvas);
+            render_player_info(&mut panel, display_state, game);
+        }).unwrap();
+    }
 
-    Ok(())
+    /* Draw Inventory */
+    {
+        let inventory_panel = &mut display.targets.inventory_panel;
+        let panel = inventory_panel.unit();
+
+        canvas.with_texture_canvas(&mut display.targets.inventory_panel.target, |canvas| {
+            let mut panel = panel.with_target(canvas);
+            render_inventory(&mut panel, display_state, game);
+        }).unwrap();
+    }
+
+    /* Draw Game Info */
+    {
+        let info_panel = &mut display.targets.info_panel;
+        let panel = info_panel.unit();
+
+        canvas.with_texture_canvas(&mut display.targets.info_panel.target, |canvas| {
+            let mut panel = panel.with_target(canvas);
+            render_info(&mut panel, display_state, game, mouse_map_pos);
+        }).unwrap();
+    }
 }
 
-fn render_panels(display: &mut Display, game: &mut Game, map_rect: Rect) {
+
+fn render_screen(display: &mut Display, game: &mut Game, map_rect: Rect) {
     // TODO just make the map panel the right size in the first place
     // and re-create it when the map changes.
     let (map_width, map_height) = game.data.map.size();
