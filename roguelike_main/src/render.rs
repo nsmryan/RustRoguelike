@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use noise::NoiseFn;
 use noise::Perlin;
 
@@ -893,26 +895,40 @@ fn render_impressions(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
     }
 }
 
+fn render_order(typ: EntityType) -> usize {
+    match typ {
+        EntityType::Player => 7,
+        EntityType::Enemy => 5,
+        EntityType::Item => 4,
+        EntityType::Column => 6,
+        EntityType::Energy => 3,
+        EntityType::Trigger => 1,
+        EntityType::Other => 2,
+    }
+}
+
 /// Render each object in the game, filtering for objects not currently visible
 fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     display_state.drawn_sprites.clear();
 
-    // step each objects animation
-    for entity in game.data.entities.ids.clone() {
-        if entity != player_id {
-            let maybe_sprite = render_entity(panel, entity, display_state, game);
+    let mut ids = game.data.entities.ids.clone();
 
-            if let Some(sprite) = maybe_sprite {
-                display_state.drawn_sprites.insert(entity, sprite);
-            }
+    let compare_render_order = |id0: &EntityId, id1: &EntityId| -> Ordering {
+        let order0 = render_order(game.data.entities.typ[id0]);
+        let order1 = render_order(game.data.entities.typ[id1]);
+        return order0.cmp(&order1);
+    };
+
+    ids.sort_unstable_by(compare_render_order);
+
+    for entity_id in ids.iter() {
+        let maybe_sprite = render_entity(panel, *entity_id, display_state, game);
+
+        if let Some(sprite) = maybe_sprite {
+            display_state.drawn_sprites.insert(*entity_id, sprite);
         }
-    }
-
-    let maybe_sprite = render_entity(panel, player_id, display_state, game);
-    if let Some(sprite) = maybe_sprite {
-        display_state.drawn_sprites.insert(player_id, sprite);
     }
 }
 
