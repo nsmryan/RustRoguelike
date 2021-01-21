@@ -896,15 +896,10 @@ fn render_impressions(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 }
 
 fn render_order(typ: EntityType) -> usize {
-    match typ {
-        EntityType::Player => 7,
-        EntityType::Enemy => 5,
-        EntityType::Item => 4,
-        EntityType::Column => 6,
-        EntityType::Energy => 3,
-        EntityType::Trigger => 1,
-        EntityType::Other => 2,
-    }
+    let order = &[ EntityType::Player, EntityType::Enemy,
+                   EntityType::Item, EntityType::Column,
+                   EntityType::Trigger, EntityType::Other];
+    return order.iter().position(typ).unwrap();
 }
 
 /// Render each object in the game, filtering for objects not currently visible
