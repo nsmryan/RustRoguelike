@@ -151,23 +151,7 @@ impl Input {
                                 self.target = index as i32;
                             }
                         }
-
-                        if (self.chording || self.target != -1) && chr.is_ascii_digit() {
-                            let dir = from_digit(chr);
-                            action = InputAction::Chord(dir, self.mode, self.target);
-                            self.reset();
-                        } else if chr == ' ' {
-                            action = InputAction::CursorApply(self.mode, self.target);
-                            self.reset();
-                        } else {
-                            action = keyup_to_action(chr, settings.state);
-
-                            if config.use_cursor {
-                               if let InputAction::Move(dir) = action {
-                                    action = InputAction::CursorMove(dir);
-                               }
-                            }
-                        }
+                        action = self.key_to_action(chr, dir);
                     }
 
                     KeyDir::Down => {
@@ -216,6 +200,29 @@ impl Input {
                         action = InputAction::MouseButton(clicked, dir);
                     }
                 }
+            }
+        }
+
+        return action;
+    }
+
+    fn key_to_action(&self, chr: char, dir: Direction) -> InputAction {
+        let mut input_action = InputAction::None;
+
+        if (self.chording || self.target != -1) && chr.is_ascii_digit() {
+            let dir = from_digit(chr);
+            action = InputAction::Chord(dir, self.mode, self.target);
+            self.reset();
+        } else if chr == ' ' {
+            action = InputAction::CursorApply(self.mode, self.target);
+            self.reset();
+        } else {
+            action = keyup_to_action(chr, settings.state);
+
+            if config.use_cursor {
+               if let InputAction::Move(dir) = action {
+                    action = InputAction::CursorMove(dir);
+               }
             }
         }
 
