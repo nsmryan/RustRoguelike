@@ -850,7 +850,6 @@ fn throw_item(player_id: EntityId,
         end_pos = blocked.start_pos;
     }
 
-    // TODO(&mut) move to resolve
     game_data.entities.set_pos(item_id, start_pos);
 
     let movement = Movement::step_to(end_pos);

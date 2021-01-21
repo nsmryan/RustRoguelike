@@ -600,7 +600,11 @@ impl Display {
                 }
             }
 
-            Msg::ItemThrow(_thrower, item_id, start, end) => {
+            Msg::ItemThrow(_thrower, item_id, start, _end) => {
+                // NOTE we use the entities position instead of 'end' because we
+                // want where it hit, not where it was thrown to.
+                let end = data.entities.pos[&item_id];
+
                 let sound_aoe = aoe_fill(&data.map, AoeEffect::Sound, end, config.sound_radius_stone, config);
 
                 let chr = data.entities.chr[&item_id];
