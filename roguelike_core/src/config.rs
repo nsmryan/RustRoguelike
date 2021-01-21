@@ -86,7 +86,8 @@ pub struct Config {
     pub dampen_tall_wall: i32,
     pub take_screenshot: bool,
     pub show_info: bool,
-    pub use_cursor: bool
+    pub use_cursor: bool,
+    pub repeat_delay: f32,
 }
 
 impl Config {

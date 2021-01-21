@@ -1,3 +1,7 @@
+use std::time::{Duration, Instant};
+use std::collections::HashMap;
+use std::cmp::Ord;
+
 use serde::{Serialize, Deserialize};
 
 use roguelike_core::types::*;
@@ -13,6 +17,7 @@ const TARGET_CODES: &[char] = &['z', 'x', 'c', 'v', 'b'];
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum KeyDir {
     Up,
+    Held,
     Down,
 }
 
@@ -21,6 +26,22 @@ pub enum MouseClick {
     Left,
     Right,
     Middle,
+}
+
+#[derive(Clone, Debug, Copy, PartialEq, PartialOrd)]
+pub struct HeldState {
+    down_time: Instant,
+    repetitions: usize,
+}
+
+impl HeldState {
+    pub fn new(down_time: Instant, repetitions: usize) -> HeldState {
+        return HeldState { down_time, repetitions };
+    }
+
+    pub fn repeated(&self) -> HeldState {
+        return HeldState::new(self.down_time, self.repetitions + 1);
+    }
 }
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq)]
@@ -35,17 +56,23 @@ pub enum InputEvent {
     Quit,
 }
 
-#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Debug)]
 pub struct Input {
     pub chording: bool,
     pub mode: ActionMode,
     pub moding: bool,
     pub target: i32,
+    pub char_held: HashMap<char, HeldState>,
 }
 
 impl Input {
     pub fn new() -> Input {
-        return Input { chording: false, mode: ActionMode::Primary, moding: false, target: -1 };
+        return Input { chording: false,
+                       mode: ActionMode::Primary,
+                       moding: false,
+                       target: -1,
+                       char_held: HashMap::new()
+        };
     }
 
     pub fn reset(&mut self) {
@@ -55,8 +82,18 @@ impl Input {
     pub fn handle_event(&mut self,
                         settings: &mut GameSettings,
                         event: InputEvent,
+                        time: Instant,
                         config: &Config) -> InputAction {
         let mut action = InputAction::None;
+
+        if let InputEvent::Char(chr, dir) = event {
+            if dir == KeyDir::Down {
+                let seconds = time.elapsed().as_secs_f32();
+                let held_state = HeldState { down_time: time, repetitions: 0 };
+                self.char_held.insert(chr, held_state);
+            }
+        }
+
         match event {
             InputEvent::MousePos(_, _) => {
                 // we don't use the mouse position within the game
@@ -84,6 +121,8 @@ impl Input {
                         self.chording = false;
                         self.reset();
                     }
+
+                    KeyDir::Held => {}
                 }
             }
 
@@ -98,16 +137,25 @@ impl Input {
             InputEvent::Char(chr, dir) => {
                 match dir {
                     KeyDir::Up => {
+                        if let Some(held_state) = self.char_held.get(&chr) {
+                            if held_state.repetitions > 0 {
+                                return action;
+                            }
+                        }
+                        self.char_held.remove(&chr);
+
+                        // NOTE this could be moved to the normal mapping as it doesn't
+                        // rely on ctrl anymore
+                        for (index, target_chr) in TARGET_CODES.iter().enumerate() {
+                            if chr == *target_chr {
+                                self.target = index as i32;
+                            }
+                        }
+
                         if (self.chording || self.target != -1) && chr.is_ascii_digit() {
                             let dir = from_digit(chr);
                             action = InputAction::Chord(dir, self.mode, self.target);
                             self.reset();
-                        } else if self.chording {
-                            for (index, target_chr) in TARGET_CODES.iter().enumerate() {
-                                if chr == *target_chr {
-                                    self.target = index as i32;
-                                }
-                            }
                         } else if chr == ' ' {
                             action = InputAction::CursorApply(self.mode, self.target);
                             self.reset();
@@ -125,6 +173,22 @@ impl Input {
                     KeyDir::Down => {
                         if chr == 'o' {
                             action = InputAction::OverlayOn;
+                        }
+                    }
+
+                    KeyDir::Held => {
+                        // handle repetitions for held keys (only spacebar for now)
+                        if let Some(held_state) = self.char_held.get(&chr) {
+                            let held_state = *held_state;
+                            let time_since = time.duration_since(held_state.down_time).as_secs_f32();
+
+                            let new_repeats = (time_since / config.repeat_delay) as usize;
+                            if chr == ' ' && new_repeats > held_state.repetitions {
+                                action = InputAction::CursorApply(self.mode, self.target);
+                                self.reset();
+
+                                self.char_held.insert(chr, held_state.repeated());
+                            }
                         }
                     }
                 }

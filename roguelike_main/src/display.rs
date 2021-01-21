@@ -584,7 +584,6 @@ impl Display {
 
                     // Add to this turn's sound tiles list
                     self.state.sound_tiles.extend(sound_aoe.positions().iter());
-                    dbg!(&self.state.sound_tiles.len());
 
                     let player_id = data.find_by_name(EntityName::Player).unwrap();
                     let player_pos = data.entities.pos[&player_id];

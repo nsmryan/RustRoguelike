@@ -607,8 +607,6 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Move(direction), true) => {
-            let player_id = data.find_by_name(EntityName::Player).unwrap();
-
             action_result.turn = Action::MoveDir(direction);
         }
 
@@ -870,7 +868,6 @@ pub fn chord(loc: ActionLoc,
                 increase_move_mode(player_id, data, msg_log);
             }
         }
-        dbg!(data.entities.move_mode[&player_id]);
 
         match loc {
             ActionLoc::None => {

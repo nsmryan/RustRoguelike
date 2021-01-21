@@ -225,7 +225,7 @@ pub fn resolve_messages(data: &mut GameData,
 
     /* Process Player Messages */
     for message in data.entities.messages[&player_id].iter() {
-        if let Message::Sound(obj_id, pos) = message {
+        if let Message::Sound(obj_id, _pos) = message {
             if *obj_id == player_id {
                 panic!("Player sent themselves a message?")
             }
@@ -331,7 +331,7 @@ fn resolve_attack(entity_id: EntityId,
                   attack_pos: Pos,
                   data: &mut GameData,
                   msg_log: &mut MsgLog,
-                  config: &Config) {
+                  _config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
 
     // any time an entity attacks, they change to standing stance
@@ -371,7 +371,7 @@ fn resolve_try_move(entity_id: EntityId,
                     move_mode: MoveMode,
                     data: &mut GameData,
                     msg_log: &mut MsgLog,
-                    config: &Config) {
+                    _config: &Config) {
     if amount == 0 {
         panic!("Why try to move with amount == 0?");
     }
@@ -460,7 +460,7 @@ fn resolve_action(entity_id: EntityId,
             *data.entities.move_mode.get(&entity_id).unwrap_or(&MoveMode::Walk);
         let amount = move_mode.move_amount();
         msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
-    } else if let Action::Move(typ, move_pos) = action {
+    } else if let Action::Move(_typ, move_pos) = action {
         let move_mode: MoveMode = 
             *data.entities.move_mode.get(&entity_id).unwrap_or(&MoveMode::Walk);
         let amount = move_mode.move_amount();

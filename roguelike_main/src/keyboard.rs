@@ -16,19 +16,20 @@ pub fn translate_event(event: Event, game: &mut Game, display: &mut Display) -> 
             return Some(InputEvent::Quit);
         }
 
-        // NOTE could merge KeyDown and KeyUp
         Event::KeyDown {keycode, repeat, ..} => {
+            let mut dir = KeyDir::Down;
+
             if repeat {
-                return None;
+                dir = KeyDir::Held;
             }
 
             if let Some(key) = keycode {
                 if let Some(chr) = keycode_to_char(key) {
-                    return Some(InputEvent::Char(chr, KeyDir::Down));
+                    return Some(InputEvent::Char(chr, dir));
                 } else if key == Keycode::LCtrl || key == Keycode::RCtrl {
-                    return Some(InputEvent::Ctrl(KeyDir::Down));
+                    return Some(InputEvent::Ctrl(dir));
                 } else if key == Keycode::LAlt || key == Keycode::RAlt {
-                    return Some(InputEvent::Alt(KeyDir::Down));
+                    return Some(InputEvent::Alt(dir));
                 } else {
                     // NOTE could check for LShift, RShift
                     return None;
