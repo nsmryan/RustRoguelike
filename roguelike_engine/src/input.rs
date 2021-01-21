@@ -151,7 +151,7 @@ impl Input {
                                 self.target = index as i32;
                             }
                         }
-                        action = self.key_to_action(chr, dir);
+                        action = self.key_to_action(chr, dir, settings, config);
                     }
 
                     KeyDir::Down => {
@@ -167,9 +167,8 @@ impl Input {
                             let time_since = time.duration_since(held_state.down_time).as_secs_f32();
 
                             let new_repeats = (time_since / config.repeat_delay) as usize;
-                            if chr == ' ' && new_repeats > held_state.repetitions {
-                                action = InputAction::CursorApply(self.mode, self.target);
-                                self.reset();
+                            if new_repeats > held_state.repetitions {
+                                action = self.key_to_action(chr, dir, settings, config);
 
                                 self.char_held.insert(chr, held_state.repeated());
                             }
@@ -206,8 +205,8 @@ impl Input {
         return action;
     }
 
-    fn key_to_action(&self, chr: char, dir: Direction) -> InputAction {
-        let mut input_action = InputAction::None;
+    fn key_to_action(&mut self, chr: char, dir: KeyDir, settings: &GameSettings, config: &Config) -> InputAction {
+        let mut action = InputAction::None;
 
         if (self.chording || self.target != -1) && chr.is_ascii_digit() {
             let dir = from_digit(chr);
