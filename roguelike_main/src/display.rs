@@ -538,13 +538,19 @@ impl Display {
         let player_id = data.find_by_name(EntityName::Player).unwrap();
 
         if entity_id == player_id {
+            let stance = data.entities.stance[&entity_id];
+
             let key;
-            if data.using(entity_id, Item::Dagger) {
+            if data.using(entity_id, Item::Dagger) && stance == Stance::Crouching {
+                key = self.loop_sprite("player_crouch_dagger", config.idle_speed);
+            } else if data.using(entity_id, Item::Dagger) {
                 key = self.loop_sprite("player_idle_dagger", config.idle_speed);
             } else if data.using(entity_id, Item::Hammer) {
                 key = self.loop_sprite("player_idle_hammer", config.idle_speed);
             } else if data.using(entity_id, Item::Shield) {
                 key = self.loop_sprite("player_idle_shield", config.idle_speed);
+            } else if stance == Stance::Crouching {
+                key = self.loop_sprite("player_crouching", config.idle_speed);
             } else {
                 key = self.loop_sprite("player_idle", config.idle_speed);
             }
@@ -631,10 +637,8 @@ impl Display {
             }
 
             Msg::Moved(entity_id, move_type, _pos) => {
-                if move_type != MoveType::Pass {
-                    if let Some(anim_key) = self.get_idle_animation(entity_id, data, config) {
-                        data.entities.set_animation(entity_id, anim_key);
-                    }
+                if let Some(anim_key) = self.get_idle_animation(entity_id, data, config) {
+                    data.entities.set_animation(entity_id, anim_key);
                 }
             }
 

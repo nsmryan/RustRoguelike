@@ -193,7 +193,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
                     // NOTE may lose inputs if multiple events create actions!
                     input_action = action;
                 }
-            }        
+            }
         }
 
         let misc_timer = timer!("MISC");
@@ -319,6 +319,8 @@ fn load_font(ttf_context: &Sdl2TtfContext,
 
 fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display: &mut Display) {
     load_sprite(texture_creator, display, "animations/player/Player_Idle.png", "player_idle", 1);
+    load_sprite(texture_creator, display, "animations/player/Player_Crouch.png", "player_crouching", 1);
+    load_sprite(texture_creator, display, "animations/player/Player_Idle_Dagger_Crouch.png", "player_crouch_dagger", 1);
     load_sprite(texture_creator, display, "animations/player/player_attack.png", "player_attack", 1);
     load_sprite(texture_creator, display, "animations/player/player_attack_Hammer.png", "player_attack_hammer", 1);
     load_sprite(texture_creator, display, "animations/player/player_attack_Dagger.png", "player_attack_dagger", 1);
