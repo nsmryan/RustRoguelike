@@ -9,8 +9,6 @@ use std::fs;
 use std::io::{BufRead, Write};
 use std::time::{Duration, Instant};
 use std::path::Path;
-//use std::collections::hash_map::DefaultHasher;
-//use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
 use sdl2::image::LoadTexture;
@@ -150,18 +148,15 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_context: sdl2::Sdl) -> Result<(), String> {
     // read in the recorded action log, if one is provided
     let mut starting_actions = Vec::new();
-    dbg!(&opts.replay);
     if let Some(replay_file) = opts.replay {
         let file =
             std::fs::File::open(&replay_file).expect(&format!("Could not open replay file '{}'", &replay_file));
         for line in std::io::BufReader::new(file).lines() {
-            dbg!(&line);
             if let Ok(action) = InputAction::from_str(&line.unwrap()) {
                 starting_actions.push(action);
             }
         }
     }
-    dbg!(&starting_actions);
 
     let mut config_modified_time = fs::metadata(CONFIG_NAME).unwrap().modified().unwrap();
 
