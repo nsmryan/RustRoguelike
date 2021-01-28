@@ -1,0 +1,15 @@
+slower
+slower
+down
+down
+down
+pickup
+downleft
+downleft
+use
+right
+down
+left
+down
+click 558 534 17 16
+up

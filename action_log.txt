@@ -1,0 +1,5 @@
+use
+godmode
+mousebutton Middle Down
+mousebutton Middle Up
+regenmap

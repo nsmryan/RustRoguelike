@@ -1,0 +1,7 @@
+down
+slower
+slower
+downleft
+inventory
+selectitem 0
+click 565 593 17 18
