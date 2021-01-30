@@ -12,7 +12,6 @@ use roguelike_core::movement::Action;
 #[cfg(test)]
 use roguelike_core::movement::*;
 
-
 use crate::actions;
 use crate::actions::{InputAction, ActionResult};
 use crate::generation::*;

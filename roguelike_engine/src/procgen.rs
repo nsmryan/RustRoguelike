@@ -452,36 +452,123 @@ fn place_monsters(game: &mut Game, player_pos: Pos, cmds: &Vec<ProcCmd>) {
     }
 }
 
+// TODO choose based on frequency given by tags
 fn place_vaults(game: &mut Game) {
-    if game.rng.gen_range(0.0, 1.0) < 0.99 {
-        let vault_index = game.rng.gen_range(0, game.vaults.len());
-        println!("Placing vault {}", vault_index);
+    for _ in 0..10 {
+        if game.rng.gen_range(0.0, 1.0) < 0.99 {
+            let vault_index = game.rng.gen_range(0, game.vaults.len());
+            let vault_index = 18;//game.rng.gen_range(0, game.vaults.len());
 
-        let (width, height) = game.data.map.size();
-        let offset = Pos::new(game.rng.gen_range(0, width), game.rng.gen_range(0, height));
+            let (width, height) = game.data.map.size();
+            let offset = Pos::new(game.rng.gen_range(0, width), game.rng.gen_range(0, height));
 
-        let vault = &game.vaults[vault_index];
-        if offset.x + vault.data.map.size().0  < width &&
-           offset.y + vault.data.map.size().1 < height {
-            place_vault(&mut game.data, vault, offset);
+            let vault = &game.vaults[vault_index];
+            println!("Placing vault {} at {}", vault_index, offset);
+            place_vault(&mut game.data, vault, offset, &mut game.rng);
         }
     }
 }
 
-pub fn place_vault(data: &mut GameData, vault: &Vault, offset: Pos) {
+fn mirror_in_x(pos: Pos, width: i32) -> Pos {
+    return Pos::new(width - pos.x, pos.y);
+}
+
+fn mirror_in_y(pos: Pos, height: i32) -> Pos {
+    return Pos::new(pos.x, height - pos.y);
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug)]
+pub enum Rotation {
+    Degrees0,
+    Degrees90,
+    Degrees180,
+    Degrees270,
+}
+
+impl Rotation {
+    pub fn rotate(&self, pos: Pos, width: i32, height: i32) -> Pos {
+        let mut result = pos;
+        match self {
+            Rotation::Degrees0 => {
+            }
+            Rotation::Degrees90 => {
+                // 90 degrees: swap x and y, mirror in x
+                result = Pos::new(result.y, result.x);
+                result = mirror_in_x(result, width);
+            }
+            Rotation::Degrees180 => {
+                // 180 degrees: mirror in x, mirror in y
+                result = mirror_in_x(result, width);
+                result = mirror_in_y(result, height);
+            }
+            Rotation::Degrees270 => {
+                // 270: swap x and y, mirror in y
+                result = Pos::new(result.y, result.x);
+                result = mirror_in_y(result, height);
+            }
+        }
+
+        return result;
+    }
+}
+
+#[test]
+fn test_rotation() {
+    let pos = Pos::new(0, 0);
+    let width = 10;
+    let height = 20;
+
+    assert_eq!(pos, Rotation::Degrees0.rotate(pos, width, height));
+    assert_eq!(Pos::new(width, 0), Rotation::Degrees90.rotate(pos, width, height));
+    assert_eq!(Pos::new(width, height), Rotation::Degrees180.rotate(pos, width, height));
+    assert_eq!(Pos::new(0, height), Rotation::Degrees270.rotate(pos, width, height));
+}
+
+
+// TODO rotate and mirror according to tags
+pub fn place_vault(data: &mut GameData, vault: &Vault, offset: Pos, rng: &mut SmallRng) {
+                        
+    let mirror = !vault.tags.contains(&VaultTag::NoMirror) && rng.gen_range(0.0, 1.0) < 0.5;
+
+    let mut rotation = Rotation::Degrees0;
+    if !vault.tags.contains(&VaultTag::NoRotate) && rng.gen_range(0.0, 1.0) < 0.5 {
+        let index = rng.gen_range(0.0, 3.0 as f64).round() as usize;
+        let rotations = &[Rotation::Degrees0, Rotation::Degrees90, Rotation::Degrees180, Rotation::Degrees270];
+        rotation = rotations[index];
+        dbg!(rotation);
+    }
+
+    place_vault_with(data, vault, offset, rotation, mirror);
+}
+
+pub fn place_vault_with(data: &mut GameData, vault: &Vault, offset: Pos, rotation: Rotation, mirror: bool) {
     let (width, height) = vault.data.map.size();
 
     for x in 0..width {
         for y in 0..height {
-            let pos = add_pos(offset, Pos::new(x, y));
-            data.map[pos] = vault.data.map[(x, y)];
+            let mut pos = Pos::new(x, y);
+            if mirror {
+                pos = mirror_in_x(pos, width);
+            }
+            pos = rotation.rotate(pos, width, height);
+            pos = add_pos(offset, pos);
+            if data.map.is_within_bounds(pos) {
+                data.map[pos] = vault.data.map[(x, y)];
+            }
         }
     }
 
     let mut entities = vault.data.entities.clone();
     for id in vault.data.entities.ids.iter() {
-        entities.pos[id] = 
-            add_pos(offset, entities.pos[id]);
+        let mut entity_pos = entities.pos[id];
+        if mirror {
+            entity_pos = mirror_in_x(entity_pos, width);
+        }
+        entity_pos = rotation.rotate(entity_pos, width, height);
+        entity_pos = add_pos(offset, entity_pos);
+        if data.map.is_within_bounds(entity_pos) {
+            entities.pos[id] = entity_pos;
+        }
     }
 
     data.entities.merge(&entities);
@@ -686,14 +773,15 @@ fn test_adjacent_blocks() {
 
     let mut seen = HashSet::new();
 
-    assert_eq!(4, adjacent_blocks(Pos::new(2, 2), &map, &seen).len());
-    assert_eq!(2, adjacent_blocks(Pos::new(1, 1), &map, &seen).len());
-    assert_eq!(1, adjacent_blocks(Pos::new(2, 1), &map, &seen).len());
+    let blocks = find_structural_blocks(&map);
+    assert_eq!(4, adjacent_blocks(Pos::new(2, 2), &blocks, &seen).len());
+    assert_eq!(2, adjacent_blocks(Pos::new(1, 1), &blocks, &seen).len());
+    assert_eq!(1, adjacent_blocks(Pos::new(2, 1), &blocks, &seen).len());
     seen.insert(Pos::new(1, 2));
-    assert_eq!(3, adjacent_blocks(Pos::new(2, 2), &map, &seen).len());
+    assert_eq!(3, adjacent_blocks(Pos::new(2, 2), &blocks, &seen).len());
 }
 
-fn find_structures(map: &Map) -> Vec<Structure> {
+fn find_structural_blocks(map: &Map) -> Vec<Pos> {
     let (width, height) = map.size();
     let mut blocks = Vec::new();
     for y in 0..height {
@@ -703,6 +791,12 @@ fn find_structures(map: &Map) -> Vec<Structure> {
             }
         }
     }
+
+    return blocks;
+}
+
+fn find_structures(map: &Map) -> Vec<Structure> {
+    let mut blocks = find_structural_blocks(map);
 
     println!("Blocks in structures: {}", blocks.len());
 

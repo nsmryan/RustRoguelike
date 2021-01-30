@@ -13,6 +13,7 @@ pub const INVENTORY_HEIGHT: usize = 500;
 /* General Settings */
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
 pub const BLINK_RADIUS: usize = 4;
+pub const TILE_FILL_METRIC_DIST: usize = 3;
 
 /* Monster Settings */
 pub const MAX_MONSTERS: i32 = 15;

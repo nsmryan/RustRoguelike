@@ -4,7 +4,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use crate::ai::Behavior;
-use crate::constants::{HAMMER_DAMAGE, SWORD_DAMAGE};
+use crate::constants::{HAMMER_DAMAGE, SWORD_DAMAGE, TILE_FILL_METRIC_DIST};
 use crate::map::{Surface};
 use crate::types::*;
 use crate::movement::{Reach, MoveMode, check_collision, MoveType, Movement, Direction};
@@ -308,7 +308,7 @@ pub fn map_fill_metric(map: &Map) -> HashMap<Pos, usize> {
 
 pub fn tile_fill_metric(map: &Map, pos: Pos) -> usize {
     if !map[pos].block_move && map[pos].tile_type != TileType::Water {
-        let near_count = floodfill(map, pos, 3).len();
+        let near_count = floodfill(map, pos, TILE_FILL_METRIC_DIST).len();
 
         return near_count;
     }

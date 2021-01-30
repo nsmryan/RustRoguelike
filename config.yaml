@@ -128,8 +128,8 @@ grid_alpha_overlay: 150
 # TestCorner: test map with corners of different types
 # TestPlayer: test map for player interactions
 map_load: #TestVaults
-    ProcGen: "map1.yaml"
-#VaultFile: "vaults/Vaults - Vault4.csv"
+#ProcGen: "map1.yaml"
+    VaultFile: "vaults/Vaults - Vault28.csv"
 #FromFile: "maps.txt"
 map_file: map.xp
 idle_speed: 5
@@ -177,3 +177,4 @@ take_screenshot: false
 show_info: true
 use_cursor: true
 repeat_delay: 0.5
+write_map_distribution: true

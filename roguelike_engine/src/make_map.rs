@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::str::FromStr;
+use std::io::Write;
 
 use rexpaint::*;
 
@@ -11,6 +12,7 @@ use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
+use roguelike_core::utils::tile_fill_metric;
 
 use crate::generation::*;
 use crate::game::*;
@@ -21,9 +23,10 @@ use crate::procgen::*;
 pub enum VaultTag {
     Medium,
     Rare,
-    NoRot,
+    NoRotate,
     NoMirror,
     NoReplace,
+    Common,
 }
 
 
@@ -40,11 +43,13 @@ impl FromStr for VaultTag {
         } else if s == "rare" {
             return Ok(VaultTag::Rare);
         } else if s == "norot" {
-            return Ok(VaultTag::NoRot);
+            return Ok(VaultTag::NoRotate);
         } else if s == "nomirror" {
             return Ok(VaultTag::NoMirror);
         } else if s == "noreplace" {
             return Ok(VaultTag::NoReplace);
+        } else if s == "common" {
+            return Ok(VaultTag::Common);
         }
 
         return Err(format!("Could not decode vault tag '{}'", original_str));
@@ -113,6 +118,8 @@ fn test_remove_commas() {
 
 /// Read Vault file into Vault structure
 pub fn parse_vault(file_name: &str, config: &Config) -> Vault {
+    println!("{}", file_name);
+
     let file_contents =
         std::fs::read_to_string(file_name).expect(&format!("Could not read {}", file_name));
 
@@ -148,7 +155,6 @@ fn parse_ascii_chars(lines: Vec<Vec<char>>, config: &Config) -> Vault {
     let tile_map = vec![vec![Tile::empty(); height]; width];
     let mut vault = Vault::new(tile_map, Vec::new());
 
-    println!("{}, {}", width, height);
     for y in 0..height {
         for x in 0..width {
             let tile_chr = lines[y * 2][x * 2 + 1];
@@ -181,7 +187,7 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos,
             tile = Tile::wall_with(MAP_WALL as char);
         }
 
-        '"' => {
+        '"' | '`' => {
             tile = Tile::grass();
         }
 
@@ -227,7 +233,7 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos,
 
         _ => {
             tile = Tile::empty();
-            dbg!(format!("Unexpected char '{}'", tile_chr));
+            println!("Unexpected char '{}' in {}", tile_chr, pos);
         }
     }
 
@@ -289,8 +295,9 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
             let square = (game.vaults.len() as f32).sqrt().ceil() as u32;
             let max_dim = std::cmp::max(max_width, max_height);
 
-            game.data.map = Map::from_dims(std::cmp::min(MAP_WIDTH as u32, max_dim as u32 * square as u32),
-                                           std::cmp::min(MAP_HEIGHT as u32, max_dim as u32 * square as u32));
+            let map_width = std::cmp::min(MAP_WIDTH as u32, max_dim as u32 * square as u32);
+            let map_height = std::cmp::min(MAP_HEIGHT as u32, max_dim as u32 * square as u32);
+            game.data.map = Map::from_dims(map_width, map_height);
 
             let vaults = game.vaults.clone();
             for (index, vault) in vaults.iter().enumerate() {
@@ -299,17 +306,22 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
                 let offset = Pos::new(max_width * x_pos as i32 + 2 * x_pos as i32,
                                       max_height * y_pos as i32 + 2 * y_pos as i32);
 
-                let (width, height) = vault.data.map.size();
-                if offset.x + width < MAP_WIDTH && offset.y + height < MAP_HEIGHT {
-                    place_vault(&mut game.data, vault, offset);
-                }
+                place_vault(&mut game.data, vault, offset, &mut game.rng);
             }
         }
 
         MapLoadConfig::VaultFile(file_name) => {
             let vault: Vault = parse_vault(&format!("resources/{}", file_name), &game.config);
+            let (vault_width, vault_height) = vault.data.map.size();
+            let map_width = 3 * vault_width;
+            let map_height = 3 * vault_height;
 
-            game.data.map = Map::with_vec(vault.data.map.tiles);
+            //game.data.map = Map::with_vec(vault.data.map.tiles);
+            game.data.map = Map::from_dims(map_width as u32, map_height as u32);
+            place_vault_with(&mut game.data, &vault, Pos::new(0, 0), Rotation::Degrees0, false);
+            place_vault_with(&mut game.data, &vault, Pos::new(2*vault_width, 0), Rotation::Degrees90, false);
+            place_vault_with(&mut game.data, &vault, Pos::new(0, 2*vault_height), Rotation::Degrees180, false);
+            place_vault_with(&mut game.data, &vault, Pos::new(2*vault_width, 2*vault_height), Rotation::Degrees270, false);
 
             player_position = Pos::new(4, 4);
         }
@@ -363,6 +375,21 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     game.data.entities.pos[&player_id] = player_position;
+
+    if game.config.write_map_distribution {
+        let max = (2 * TILE_FILL_METRIC_DIST + 1).pow(2);
+        let mut counts = vec![0; max + 1];
+
+        for pos in game.data.map.get_all_pos() {
+            let amount = tile_fill_metric(&game.data.map, pos);
+            counts[amount] += 1;
+        }
+
+        let mut file = File::create("map_emptiness_distribution.txt").unwrap();
+        for (index, count) in counts.iter().enumerate() {
+            write!(file, "{} {}\n", index, count);
+        }
+    }
 }
 
 pub fn read_map_xp(config: &Config,

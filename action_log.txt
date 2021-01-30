@@ -1,0 +1,3 @@
+mousebutton Left Down
+mousebutton Left Up
+godmode

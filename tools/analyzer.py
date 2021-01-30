@@ -1,6 +1,6 @@
 import time
 from math import cos, sin
-from dearpygui.dearpygui import *
+from dearpygui.core import *
 
 
 class Frame:
