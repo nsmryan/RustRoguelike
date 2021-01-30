@@ -32,3 +32,8 @@ tags
 
 # Project Specific
 issue_logs/
+
+# Game-specific files
+action_log.txtt
+game.log
+*.vim
