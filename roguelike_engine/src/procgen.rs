@@ -470,11 +470,11 @@ fn place_vaults(game: &mut Game) {
 }
 
 fn mirror_in_x(pos: Pos, width: i32) -> Pos {
-    return Pos::new(width - pos.x, pos.y);
+    return Pos::new(width - pos.x - 1, pos.y);
 }
 
 fn mirror_in_y(pos: Pos, height: i32) -> Pos {
-    return Pos::new(pos.x, height - pos.y);
+    return Pos::new(pos.x, height - pos.y - 1);
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug)]
@@ -541,25 +541,116 @@ pub fn place_vault(data: &mut GameData, vault: &Vault, offset: Pos, rng: &mut Sm
     place_vault_with(data, vault, offset, rotation, mirror);
 }
 
-pub fn place_vault_with(data: &mut GameData, vault: &Vault, offset: Pos, rotation: Rotation, mirror: bool) {
+pub fn reorient_vault(vault: &Vault, rotation: Rotation, mirror: bool) -> Vault {
     let (width, height) = vault.data.map.size();
 
+    let mut actual_vault = vault.clone();
+
+    let mut left_walls = Vec::new();
+    let mut bottom_walls = Vec::new();
     for x in 0..width {
         for y in 0..height {
+            let orig_pos = Pos::new(x, y);
+            
             let mut pos = Pos::new(x, y);
             if mirror {
                 pos = mirror_in_x(pos, width);
             }
             pos = rotation.rotate(pos, width, height);
-            pos = add_pos(offset, pos);
-            if data.map.is_within_bounds(pos) {
-                data.map[pos] = vault.data.map[(x, y)];
+            actual_vault.data.map[pos] = vault.data.map[orig_pos];
+
+            if vault.data.map[orig_pos].left_wall != Wall::Empty {
+                left_walls.push((pos, vault.data.map[orig_pos].left_wall));
+            }
+
+            if vault.data.map[orig_pos].bottom_wall != Wall::Empty {
+                bottom_walls.push((pos, vault.data.map[orig_pos].bottom_wall));
             }
         }
     }
 
-    let mut entities = vault.data.entities.clone();
-    for id in vault.data.entities.ids.iter() {
+    for x in 0..width {
+        for y in 0..height {
+            let pos = Pos::new(x, y);
+            actual_vault.data.map[pos].left_wall = Wall::Empty;
+            actual_vault.data.map[pos].bottom_wall = Wall::Empty;
+        }
+    }
+
+    for (wall_pos, wall_type) in left_walls {
+        match rotation {
+            Rotation::Degrees0 => {
+                actual_vault.data.map[wall_pos].left_wall = wall_type;
+            }
+
+            Rotation::Degrees90 => {
+                let new_wall_pos = move_y(wall_pos, -1);
+                if actual_vault.data.map.is_within_bounds(new_wall_pos) {
+                    actual_vault.data.map[new_wall_pos].bottom_wall = wall_type;
+                }
+            }
+
+            Rotation::Degrees180 => {
+                let new_wall_pos = move_x(wall_pos, 1);
+                if actual_vault.data.map.is_within_bounds(new_wall_pos) {
+                    actual_vault.data.map[new_wall_pos].left_wall = wall_type;
+                }
+            }
+
+            Rotation::Degrees270 => {
+                actual_vault.data.map[wall_pos].bottom_wall = wall_type;
+            }
+        }
+    }
+
+    for (wall_pos, wall_type) in bottom_walls {
+        match rotation {
+            Rotation::Degrees0 => {
+                actual_vault.data.map[wall_pos].bottom_wall = wall_type;
+            }
+
+            Rotation::Degrees90 => {
+                actual_vault.data.map[wall_pos].left_wall = wall_type;
+            }
+
+            Rotation::Degrees180 => {
+                let new_wall_pos = move_y(wall_pos, -1);
+                if actual_vault.data.map.is_within_bounds(new_wall_pos) {
+                    actual_vault.data.map[new_wall_pos].bottom_wall = wall_type;
+                }
+            }
+
+            Rotation::Degrees270 => {
+                let new_wall_pos = move_x(wall_pos, 1);
+                if actual_vault.data.map.is_within_bounds(new_wall_pos) {
+                    actual_vault.data.map[new_wall_pos].left_wall = wall_type;
+                }
+            }
+        }
+    }
+
+    return actual_vault;
+}
+
+pub fn place_vault_with(data: &mut GameData, vault: &Vault, offset: Pos, rotation: Rotation, mirror: bool) {
+    let (width, height) = vault.data.map.size();
+
+    let actual_vault = reorient_vault(vault, rotation, mirror);
+
+    // update map with vault tiles
+    for x in 0..width {
+        for y in 0..height {
+            let mut pos = Pos::new(x, y);
+            pos = add_pos(offset, pos);
+            if data.map.is_within_bounds(pos) {
+                data.map[pos] = actual_vault.data.map[(x, y)];
+            }
+        }
+    }
+
+    // move entities to their new place in the map
+    let mut entities = actual_vault.data.entities.clone();
+    for id in actual_vault.data.entities.ids.iter() {
         let mut entity_pos = entities.pos[id];
         if mirror {
             entity_pos = mirror_in_x(entity_pos, width);
@@ -571,6 +662,7 @@ pub fn place_vault_with(data: &mut GameData, vault: &Vault, offset: Pos, rotatio
         }
     }
 
+    // add new entities to entity system
     data.entities.merge(&entities);
 }
 
