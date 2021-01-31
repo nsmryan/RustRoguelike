@@ -15,11 +15,12 @@ use roguelike_core::movement::*;
 use crate::actions;
 use crate::actions::{InputAction, ActionResult};
 use crate::generation::*;
-use crate::make_map::{make_map, Vault, parse_vault};
+use crate::make_map::make_map;
 use crate::selection::*;
 use crate::resolve::resolve_messages;
 use crate::step::step_logic;
 use crate::input::*;
+use crate::vault::*;
 
 
 pub struct Game {
@@ -46,7 +47,7 @@ impl Game {
         let player_id = make_player(&mut data.entities, &config, &mut msg_log);
         data.entities.pos[&player_id] = Pos::new(-1, -1);
 
-        let vaults = Vec::new();
+        let vaults: Vec<Vault> = Vec::new();
 
         let state = Game {
             config,
