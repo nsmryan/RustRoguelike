@@ -40,6 +40,14 @@ pub fn signedness(value: i32) -> i32 {
     }
 }
 
+pub fn mirror_in_x(pos: Pos, width: i32) -> Pos {
+    return Pos::new(width - pos.x - 1, pos.y);
+}
+
+pub fn mirror_in_y(pos: Pos, height: i32) -> Pos {
+    return Pos::new(pos.x, height - pos.y - 1);
+}
+
 pub fn in_direction_of(start: Pos, end: Pos) -> Pos {
     let dpos = sub_pos(end, start);
     let dx = signedness(dpos.x);

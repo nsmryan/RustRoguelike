@@ -275,6 +275,150 @@ impl Tile {
 }
 
 
+#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug)]
+pub enum Rotation {
+    Degrees0,
+    Degrees90,
+    Degrees180,
+    Degrees270,
+}
+
+impl Rotation {
+    pub fn rotate(&self, pos: Pos, width: i32, height: i32) -> Pos {
+        let mut result = pos;
+        match self {
+            Rotation::Degrees0 => {
+            }
+            Rotation::Degrees90 => {
+                // 90 degrees: swap x and y, mirror in x
+                result = Pos::new(result.y, result.x);
+                result = mirror_in_x(result, width);
+            }
+            Rotation::Degrees180 => {
+                // 180 degrees: mirror in x, mirror in y
+                result = mirror_in_x(result, width);
+                result = mirror_in_y(result, height);
+            }
+            Rotation::Degrees270 => {
+                // 270: swap x and y, mirror in y
+                result = Pos::new(result.y, result.x);
+                result = mirror_in_y(result, height);
+            }
+        }
+
+        return result;
+    }
+}
+
+#[test]
+fn test_rotation() {
+    let pos = Pos::new(0, 0);
+    let width = 10;
+    let height = 20;
+
+    assert_eq!(pos, Rotation::Degrees0.rotate(pos, width, height));
+    assert_eq!(Pos::new(width, 0), Rotation::Degrees90.rotate(pos, width, height));
+    assert_eq!(Pos::new(width, height), Rotation::Degrees180.rotate(pos, width, height));
+    assert_eq!(Pos::new(0, height), Rotation::Degrees270.rotate(pos, width, height));
+}
+
+pub fn reorient_map(map: &Map, rotation: Rotation, mirror: bool) -> Map {
+    let (width, height) = map.size();
+
+    let (mut new_width, mut new_height) = (width, height);
+    if rotation == Rotation::Degrees90 || rotation == Rotation::Degrees270 {
+        new_width = height;
+        new_height = width;
+    }
+    let mut new_map = Map::from_dims(new_width as u32, new_height as u32);
+
+    let mut left_walls = Vec::new();
+    let mut bottom_walls = Vec::new();
+    for x in 0..width {
+        for y in 0..height {
+            let orig_pos = Pos::new(x, y);
+            
+            let mut pos = Pos::new(x, y);
+            if mirror {
+                pos = mirror_in_x(pos, width);
+            }
+            pos = rotation.rotate(pos, new_width, new_height);
+            new_map[pos] = map[orig_pos];
+
+            if map[orig_pos].left_wall != Wall::Empty {
+                left_walls.push((pos, map[orig_pos].left_wall));
+            }
+
+            if map[orig_pos].bottom_wall != Wall::Empty {
+                bottom_walls.push((pos, map[orig_pos].bottom_wall));
+            }
+        }
+    }
+
+    for x in 0..new_width {
+        for y in 0..new_height {
+            let pos = Pos::new(x, y);
+            new_map[pos].left_wall = Wall::Empty;
+            new_map[pos].bottom_wall = Wall::Empty;
+        }
+    }
+
+    for (wall_pos, wall_type) in left_walls {
+        match rotation {
+            Rotation::Degrees0 => {
+                new_map[wall_pos].left_wall = wall_type;
+            }
+
+            Rotation::Degrees90 => {
+                let new_wall_pos = move_y(wall_pos, -1);
+                if new_map.is_within_bounds(new_wall_pos) {
+                    new_map[new_wall_pos].bottom_wall = wall_type;
+                }
+            }
+
+            Rotation::Degrees180 => {
+                let new_wall_pos = move_x(wall_pos, 1);
+                if new_map.is_within_bounds(new_wall_pos) {
+                    new_map[new_wall_pos].left_wall = wall_type;
+                }
+            }
+
+            Rotation::Degrees270 => {
+                new_map[wall_pos].bottom_wall = wall_type;
+            }
+        }
+    }
+
+    for (wall_pos, wall_type) in bottom_walls {
+        match rotation {
+            Rotation::Degrees0 => {
+                new_map[wall_pos].bottom_wall = wall_type;
+            }
+
+            Rotation::Degrees90 => {
+                new_map[wall_pos].left_wall = wall_type;
+            }
+
+            Rotation::Degrees180 => {
+                let new_wall_pos = move_y(wall_pos, -1);
+                if new_map.is_within_bounds(new_wall_pos) {
+                    new_map[new_wall_pos].bottom_wall = wall_type;
+                }
+            }
+
+            Rotation::Degrees270 => {
+                let new_wall_pos = move_x(wall_pos, 1);
+                if new_map.is_within_bounds(new_wall_pos) {
+                    new_map[new_wall_pos].left_wall = wall_type;
+                }
+            }
+        }
+    }
+
+    return new_map;
+}
+
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Obstacle {
     Block,

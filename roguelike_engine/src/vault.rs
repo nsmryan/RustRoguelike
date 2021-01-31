@@ -6,6 +6,7 @@ use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
+use roguelike_core::utils::*;
 
 use crate::generation::*;
 use crate::game::*;
@@ -20,7 +21,6 @@ pub enum VaultTag {
     NoReplace,
     Common,
 }
-
 
 impl FromStr for VaultTag {
     type Err = String;
@@ -48,6 +48,7 @@ impl FromStr for VaultTag {
     }
 }
 
+
 #[derive(Clone, PartialEq, Debug)]
 pub struct Vault {
     pub data: GameData,
@@ -64,6 +65,7 @@ impl Vault {
         return Vault { data: GameData::empty(0, 0), tags: Vec::new() };
     }
 }
+
 
 fn remove_commas(s: String) -> String {
     let s = s.chars().collect::<Vec<char>>();
