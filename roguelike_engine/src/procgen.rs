@@ -63,6 +63,7 @@ pub enum ProcCmd {
     Rubble(usize),
     Columns(usize),
     SeedFile(String),
+    Vaults(usize), // maximum number of vaults
 }
 
 impl ProcCmd {
@@ -130,7 +131,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
             return None;
     }).map(|r| *r).next().unwrap_or(0);
 
-    place_vaults(game);
+    place_vaults(game, cmds);
 
     clear_island(game, island_radius);
 
@@ -454,17 +455,19 @@ fn place_monsters(game: &mut Game, player_pos: Pos, cmds: &Vec<ProcCmd>) {
 }
 
 // TODO choose based on frequency given by tags
-fn place_vaults(game: &mut Game) {
-    for _ in 0..10 {
-        if game.rng.gen_range(0.0, 1.0) < 0.99 {
-            let vault_index = game.rng.gen_range(0, game.vaults.len());
+fn place_vaults(game: &mut Game, cmds: &Vec<ProcCmd>) {
+    for cmd in cmds.iter() {
+        if let ProcCmd::Vaults(max) = cmd {
+            for _ in 0..*max {
+                let vault_index = game.rng.gen_range(0, game.vaults.len());
 
-            let (width, height) = game.data.map.size();
-            let offset = Pos::new(game.rng.gen_range(0, width), game.rng.gen_range(0, height));
+                let (width, height) = game.data.map.size();
+                let offset = Pos::new(game.rng.gen_range(0, width), game.rng.gen_range(0, height));
 
-            let vault = &game.vaults[vault_index];
-            println!("Placing vault {} at {}", vault_index, offset);
-            place_vault(&mut game.data, vault, offset, &mut game.rng);
+                let vault = &game.vaults[vault_index];
+                println!("Placing vault {} at {}", vault_index, offset);
+                place_vault(&mut game.data, vault, offset, &mut game.rng);
+            }
         }
     }
 }
@@ -517,7 +520,15 @@ pub fn place_vault_with(data: &mut GameData, vault: &Vault, offset: Pos, rotatio
     }
 
     // add new entities to entity system
+    //println!("_________");
+    //println!("{:?}", &entities.ids);
+    //println!("_________");
+    //println!("{:?}data.entities.ids);
+    //println!("{:?}", &data.entities.ids);
     data.entities.merge(&entities);
+    //println!("{:?}", &data.entities.ids);
+    //println!("_________");
+    //println!("_________");
 }
 
 fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {

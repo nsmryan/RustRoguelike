@@ -31,7 +31,9 @@ proc read_dist {} {
     set lines [split $data "\n"]
     set points [list]
     foreach line $lines {
-        lappend points [split $line " "]
+        if { $line != "" } {
+            lappend points [split $line " "]
+        }
     }
 
     return $points
@@ -91,6 +93,9 @@ $plot dataconfig dist -colour white
 $plot background axes black
 $plot background plot grey
 
+label .total_label -text 0 -justify center -background black -foreground white
+pack .total_label -fill x
+
 canvas .hist -width $width -height $height
 set hist [Plotchart::createHistogram .hist {0 50 10} {0 50 10}]
 pack .hist -side bottom -fill x
@@ -100,9 +105,17 @@ $hist dataconfig dist -colour white -style filled -fillcolour white
 
 
 proc update_plot {} {
-    global plot hist updating
+    global plot hist updating .total_label
 
-    plot_dist $plot $hist [read_dist]
+    set dist [read_dist]
+    plot_dist $plot $hist $dist
+
+    set total 0
+    foreach pair $dist {
+        lassign $pair num count
+        incr total [expr $num * $count]
+    }
+    .total_label configure -text $total
 
     set updating [after 1000 update_plot]
 }

@@ -848,39 +848,63 @@ impl Entities {
         }
     }
 
+    // NOTE cloning entities may not remap all entity ids that an entity tracks!
+    // this could cause subtle problems, so this is really only for level generation.
+    pub fn clone_entity(&mut self, other: &Entities, entity_id: EntityId) {
+        let new_id = OBJECT_ID_COUNT.fetch_add(1, Ordering::SeqCst);
+
+        self.ids.push(new_id);
+
+        // this macro simply clones a component and inserts into the self
+        // entity map with the new id.
+        macro_rules! move_component {
+            ($comp_name:ident) => {
+                if let Some($comp_name) = other.$comp_name.get(&entity_id) {
+                    self.$comp_name.insert(new_id, $comp_name.clone());
+                }
+            }
+        }
+
+        move_component!(pos);
+        move_component!(chr);
+        move_component!(name);
+        move_component!(fighter);
+        move_component!(stance);
+        move_component!(ai);
+        move_component!(behavior);
+        move_component!(item);
+        move_component!(movement);
+        move_component!(attack);
+        move_component!(trap);
+        move_component!(energy);
+        move_component!(count_down);
+        move_component!(move_mode);
+        move_component!(direction);
+        move_component!(selected_item);
+        move_component!(action);
+        move_component!(class);
+        move_component!(skills);
+        move_component!(limbo);
+        move_component!(animation);
+        move_component!(sound);
+        move_component!(typ);
+        move_component!(status);
+        move_component!(gate_pos);
+        move_component!(color);
+        move_component!(blocks);
+        move_component!(needs_removal);
+        move_component!(messages);
+
+        // NOTE this might not work if entity IDs are left!
+        if let Some(inventory) = other.inventory.get(&entity_id) { 
+            assert_eq!(0, inventory.len());
+        }
+    }
+
     pub fn merge(&mut self, other: &Entities) {
-        self.ids.extend(other.ids.iter());
-        self.pos.extend(other.pos.iter());
-        self.chr.extend(other.chr.iter());
-        self.name.extend(other.name.iter());
-        self.fighter.extend(other.fighter.iter());
-        self.stance.extend(other.stance.iter());
-        self.ai.extend(other.ai.iter());
-        self.behavior.extend(other.behavior.iter());
-        self.item.extend(other.item.iter());
-        self.movement.extend(other.movement.iter());
-        self.attack.extend(other.attack.iter());
-        self.inventory.extend(other.inventory.iter().map(|(k, v)| (*k, v.clone())));
-        self.trap.extend(other.trap.iter());
-        self.armed.extend(other.armed.iter());
-        self.energy.extend(other.energy.iter());
-        self.count_down.extend(other.count_down.iter());
-        self.move_mode.extend(other.move_mode.iter());
-        self.direction.extend(other.direction.iter());
-        self.selected_item.extend(other.selected_item.iter());
-        self.action.extend(other.action.iter());
-        self.class.extend(other.class.iter());
-        self.skills.extend(other.skills.iter().map(|(k, v)| (*k, v.clone())));
-        self.limbo.extend(other.limbo.iter());
-        self.animation.extend(other.animation.iter().map(|(k, v)| (*k, v.clone())));
-        self.sound.extend(other.sound.iter());
-        self.typ.extend(other.typ.iter());
-        self.status.extend(other.status.iter());
-        self.gate_pos.extend(other.gate_pos.iter());
-        self.color.extend(other.color.iter());
-        self.blocks.extend(other.blocks.iter());
-        self.needs_removal.extend(other.needs_removal.iter());
-        self.messages.extend(other.messages.iter().map(|(k, v)| (*k, v.clone())));
+        for id in other.ids.iter() {
+            self.clone_entity(other, *id);
+        }
     }
 }
 

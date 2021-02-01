@@ -127,9 +127,10 @@ grid_alpha_overlay: 150
 # Empty: empty map, used in unit tests 
 # TestCorner: test map with corners of different types
 # TestPlayer: test map for player interactions
+# ProcGen: procedurally generated map, given a filename in resources/procgen
 map_load: #TestVaults
-#ProcGen: "map1.yaml"
-    VaultFile: "vaults/Vaults - Vault25.csv"
+    ProcGen: "map1.yaml"
+#VaultFile: "vaults/Vaults - Vault25.csv"
 #FromFile: "maps.txt"
 map_file: map.xp
 idle_speed: 5

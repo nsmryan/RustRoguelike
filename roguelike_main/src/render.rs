@@ -912,6 +912,8 @@ fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Dis
 
     let compare_render_order = |id0: &EntityId, id1: &EntityId| -> Ordering {
         let order0 = render_order(game.data.entities.typ[id0]);
+        //dbg!(game.data.entities.pos[id1]);
+        //dbg!(game.data.entities.name[id1]);
         let order1 = render_order(game.data.entities.typ[id1]);
         return order0.cmp(&order1);
     };

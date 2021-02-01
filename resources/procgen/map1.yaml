@@ -77,3 +77,6 @@
 # Seed file is a png used to generate the map with the WFC algorithm
 # This must be in the resoures/procgen/ directory
 - SeedFile: "wfc_seed_1.png"
+
+# The number of vaults to generate in a map
+- Vaults: 8
