@@ -1,4 +1,0 @@
-cursormove Up
-chord Some(Up) Alternate -1
-chord Some(Down) Alternate -1
-chord Some(Down) Alternate -1
