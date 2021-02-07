@@ -1014,17 +1014,18 @@ fn process_moved_message(entity_id: EntityId,
 
     // Resolve triggers
     for key in data.entities.ids.iter() {
-        if data.entities.typ[key] == EntityType::Trigger && // key is a trigger
-           data.entities.pos[key] == data.entities.pos[&entity_id] {
+        // key is a trigger
+        if data.entities.typ[key] == EntityType::Trigger {
+            // stepped on trigger
+           if data.entities.pos[key] == data.entities.pos[&entity_id] {
                msg_log.log_front(Msg::Triggered(*key, entity_id));
-        }
-    }
+           }
 
-    for key in data.entities.ids.iter() {
-        if data.entities.typ[key] == EntityType::Trigger && // key is a trigger
-           data.entities.pos[key] == original_pos        &&
-           data.entities.status[key].active {
+            // stepped off of trigger
+           if data.entities.pos[key] == original_pos &&
+              data.entities.status[key].active {
                msg_log.log_front(Msg::Untriggered(*key, entity_id));
+           }
         }
     }
 }
