@@ -177,5 +177,5 @@ dampen_tall_wall: 2
 take_screenshot: false
 show_info: true
 use_cursor: true
-repeat_delay: 0.5
+repeat_delay: 0.35
 write_map_distribution: true
