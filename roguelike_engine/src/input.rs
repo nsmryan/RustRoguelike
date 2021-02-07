@@ -129,7 +129,7 @@ impl Input {
             InputEvent::Alt(dir) => {
                 if dir == KeyDir::Down {
                     self.mode = ActionMode::Alternate;
-                } else {
+                } else if dir == KeyDir::Up {
                     self.mode = ActionMode::Primary;
                 }
             }
