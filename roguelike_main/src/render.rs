@@ -1152,6 +1152,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             let pos = game.data.entities.pos[entity_id];
 
             if game.data.is_in_fov(player_id, pos, &game.config) &&
+               *entity_id != player_id &&
                game.data.entities.status[entity_id].alive {
                render_attack_overlay(panel, display_state, game, *entity_id);
                render_fov_overlay(panel, display_state, game, *entity_id);
