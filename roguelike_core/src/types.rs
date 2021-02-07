@@ -280,6 +280,7 @@ impl GameData {
         return within;
     }
 
+    // check whether the entitiy could see a location if it were facing towards that position.
     pub fn could_see(&mut self, entity_id: EntityId, target_pos: Pos, config: &Config) -> bool {
         let current_facing = self.entities.direction[&entity_id];
         self.entities.face(entity_id, target_pos);
@@ -289,23 +290,6 @@ impl GameData {
         self.entities.direction[&entity_id] = current_facing;
 
         return visible;
-    }
-
-    pub fn all_within_fov(&mut self, entity_id: EntityId, config: &Config) -> Vec<EntityId> {
-        // NOTE(perf) unnecessary allocation
-        let mut in_fov: Vec<EntityId> = Vec::new();
-
-        let ids = self.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>();
-        for other_id in ids {
-            if entity_id != other_id {
-                let pos = self.entities.pos[&other_id];
-                if self.is_in_fov(entity_id, pos, config) {
-                    in_fov.push(other_id);
-                }
-            }
-        }
-
-        return in_fov;
     }
 
     pub fn can_push(&self, entity_id: EntityId, other_id: EntityId) -> bool {
@@ -318,6 +302,7 @@ impl GameData {
         return !(player_pushing || enemies_pushing_each_other);
     }
 
+    // clear all entities, except those in the given vector.
     pub fn clear_except(&mut self, exceptions: Vec<EntityId>) {
         let mut dont_clear: Vec<EntityId> = Vec::new();
 

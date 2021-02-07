@@ -137,9 +137,10 @@ impl Input {
             InputEvent::Char(chr, dir) => {
                 match dir {
                     KeyDir::Up => {
+                        // if key was held, do nothing when it is up to avoid a final press
                         if let Some(held_state) = self.char_held.get(&chr) {
                             if held_state.repetitions > 0 {
-                                return action;
+                                return InputAction::None;
                             }
                         }
                         self.char_held.remove(&chr);
@@ -151,8 +152,7 @@ impl Input {
                                 self.target = index as i32;
                             }
                         }
-                        action = self.key_to_action(chr, dir, settings, config);
-                    }
+                        action = self.key_to_action(chr, dir, settings, config); }
 
                     KeyDir::Down => {
                         if chr == 'o' {
@@ -161,7 +161,6 @@ impl Input {
                     }
 
                     KeyDir::Held => {
-                        // handle repetitions for held keys (only spacebar for now)
                         if let Some(held_state) = self.char_held.get(&chr) {
                             let held_state = *held_state;
                             let time_since = time.duration_since(held_state.down_time).as_secs_f32();
