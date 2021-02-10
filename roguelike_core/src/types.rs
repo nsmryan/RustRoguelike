@@ -187,6 +187,29 @@ impl GameData {
         return None;
     }
 
+    pub fn count_down(&mut self) {
+        let mut to_remove = Vec::new();
+        for entity_id in self.entities.ids.iter() {
+            if let Some(ref mut count) = self.entities.count_down.get_mut(entity_id) {
+                if **count == 0 {
+                    to_remove.push(*entity_id);
+                } else {
+                    **count -= 1;
+                }
+            }
+
+            if self.entities.needs_removal[entity_id] &&
+               self.entities.animation[entity_id].len() == 0 {
+                to_remove.push(*entity_id);
+            }
+        }
+
+        // remove objects waiting removal
+        for key in to_remove {
+            self.remove_entity(key);
+        }
+    }
+
     pub fn has_entities(&self, pos: Pos) -> Vec<EntityId> {
         let mut entities = Vec::new();
         for (key, other_pos) in self.entities.pos.iter() {
@@ -352,6 +375,7 @@ impl GameData {
         self.entities.typ.remove(&id);
         self.entities.status.remove(&id);
         self.entities.gate_pos.remove(&id);
+        self.entities.took_turn.remove(&id);
         self.entities.color.remove(&id);
         self.entities.blocks.remove(&id);
         self.entities.needs_removal.remove(&id);
@@ -654,6 +678,7 @@ pub struct Entities {
     pub status: CompStore<StatusEffect>,
     pub gate_pos: CompStore<Option<Pos>>,
     pub stance: CompStore<Stance>,
+    pub took_turn: CompStore<bool>,
 
     // TODO should end up in animation system instead
     pub animation: CompStore<VecDeque<AnimKey>>,
@@ -700,6 +725,7 @@ impl Entities {
         self.messages.insert(id,  Vec::new());
         self.needs_removal.insert(id,  false);
         self.status.insert(id,  StatusEffect::default());
+        self.took_turn.insert(id,  false);
 
         return id;
     }
@@ -827,6 +853,20 @@ impl Entities {
         self.animation[&entity_id].push_back(key);
     }
 
+    pub fn active_ais(&self) -> Vec<EntityId> {
+        let mut ai_ids = Vec::new();
+        // get entity ids for any active AI entity
+        for key in self.ids.iter() {
+            if self.ai.get(key).is_some()    &&
+               self.status[key].alive        &&
+               self.limbo.get(key).is_none() &&
+               self.fighter.get(key).is_some() {
+               ai_ids.push(*key);
+           }
+        }
+        return ai_ids;
+    }
+
     pub fn add_skill(&mut self, entity_id: EntityId, skill: Skill) {
         if !self.skills[&entity_id].iter().any(|s| *s == skill) {
             self.skills[&entity_id].push(skill);
@@ -875,6 +915,7 @@ impl Entities {
         move_component!(typ);
         move_component!(status);
         move_component!(gate_pos);
+        move_component!(took_turn);
         move_component!(color);
         move_component!(blocks);
         move_component!(needs_removal);

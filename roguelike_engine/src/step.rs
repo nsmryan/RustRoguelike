@@ -21,6 +21,10 @@ use crate::make_map::*;
 pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
+    for id in game.data.entities.ids.iter() {
+        game.data.entities.took_turn[id] = false;
+    }
+
     game.data.entities.action[&player_id] = player_action;
 
     /* Actions */
@@ -37,60 +41,10 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
 
     // resolve enemy action
     let monster = timer!("MONSTER");
-    if player_action.takes_turn() && game.data.entities.status[&player_id].alive && !won_level {
-        let mut ai_id: Vec<EntityId> = Vec::new();
-
-        // get entitiy ids for any active AI entity
-        for key in game.data.entities.ids.iter() {
-            if game.data.entities.ai.get(key).is_some()    &&
-               game.data.entities.status[key].alive        &&
-               game.data.entities.limbo.get(key).is_none() &&
-               game.data.entities.fighter.get(key).is_some() {
-               ai_id.push(*key);
-           }
-        }
-
-        for key in ai_id.iter() {
-           let action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
-           game.data.entities.action[key] = action;
-
-           // if changing state, resolve now and allow another action
-           if matches!(action, Action::StateChange(_)) {
-                game.msg_log.log(Msg::Action(*key, action));
-                resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
-                let backup_action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
-                game.data.entities.action[key] = backup_action;
-            }
-        }
-
-        for key in ai_id.iter() {
-            if let Some(action) = game.data.entities.action.get(key).map(|v| *v) {
-                game.msg_log.log(Msg::Action(*key, action));
-                resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
-
-                // check if fighter needs to be removed
-                if let Some(fighter) = game.data.entities.fighter.get(key) {
-                    if fighter.hp <= 0 {
-                        game.data.entities.status[key].alive = false;
-                        game.data.entities.blocks[key] = false;
-                        game.data.entities.chr[key] = '%';
-                        game.data.entities.fighter.remove(key);
-                    }
-                }
-            }
-        }
-
-        for key in ai_id.iter() {
-            // if there are remaining messages for an entity, clear them
-            game.data.entities.messages[key].clear();
-
-            let action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
-            if matches!(action, Action::StateChange(_)) {
-                game.msg_log.log(Msg::Action(*key, action));
-                game.data.entities.action[key] = action;
-                resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
-            }
-        }
+    if game.data.entities.took_turn[&player_id] &&
+       game.data.entities.status[&player_id].alive &&
+       !won_level {
+        step_ai(game);
     }
     drop(monster);
 
@@ -110,28 +64,10 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
         }
     }
 
-    // perform count down
-    for entity_id in game.data.entities.ids.iter() {
-        if let Some(ref mut count) = game.data.entities.count_down.get_mut(entity_id) {
-            if **count == 0 {
-                to_remove.push(*entity_id);
-            } else {
-                **count -= 1;
-            }
-        }
+    // perform count down, removing entities that ask to be removed
+    game.data.count_down();
 
-        if game.data.entities.needs_removal[entity_id] &&
-           game.data.entities.animation[entity_id].len() == 0 {
-            to_remove.push(*entity_id);
-        }
-    }
-
-    // remove objects waiting removal
-    for key in to_remove {
-        game.data.remove_entity(key);
-    }
-
-    if player_action.takes_turn() {
+    if game.data.entities.took_turn[&player_id] {
         game.settings.turn_count += 1;
     }
 
@@ -300,3 +236,48 @@ pub fn test_hammer_small_wall() {
     assert_ne!(Surface::Rubble, game.data.map[pawn_pos].surface);
 }
 
+fn step_ai(game: &mut Game) {
+    let mut ai_ids: Vec<EntityId> = game.data.entities.active_ais();
+
+    for key in ai_ids.iter() {
+       let action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
+       game.data.entities.action[key] = action;
+
+       // if changing state, resolve now and allow another action
+       if matches!(action, Action::StateChange(_)) {
+            game.msg_log.log(Msg::Action(*key, action));
+            resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
+            let backup_action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
+            game.data.entities.action[key] = backup_action;
+        }
+    }
+
+    for key in ai_ids.iter() {
+        if let Some(action) = game.data.entities.action.get(key).map(|v| *v) {
+            game.msg_log.log(Msg::Action(*key, action));
+            resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
+
+            // check if fighter needs to be removed
+            if let Some(fighter) = game.data.entities.fighter.get(key) {
+                if fighter.hp <= 0 {
+                    game.data.entities.status[key].alive = false;
+                    game.data.entities.blocks[key] = false;
+                    game.data.entities.chr[key] = '%';
+                    game.data.entities.fighter.remove(key);
+                }
+            }
+        }
+    }
+
+    for key in ai_ids.iter() {
+        // if there are remaining messages for an entity, clear them
+        game.data.entities.messages[key].clear();
+
+        let action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
+        if matches!(action, Action::StateChange(_)) {
+            game.msg_log.log(Msg::Action(*key, action));
+            game.data.entities.action[key] = action;
+            resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
+        }
+    }
+}

@@ -45,14 +45,6 @@ impl Action {
     pub fn is_none(&self) -> bool {
         return *self == Action::NoAction;
     }
-
-    pub fn takes_turn(&self) -> bool {
-        use Action::*;
-        match self {
-            NoAction | StateChange(_) | Pickup(_) => return false,
-            _ => return true,
-        }
-    }
 }
 
 

@@ -15,7 +15,6 @@ use roguelike_core::utils::*;
 use roguelike_core::map::*;
 use roguelike_core::line::line;
 
-use crate::game::GameSettings;
 use crate::generation::{make_energy, make_dagger, make_sword};
 
 
@@ -79,6 +78,7 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::Yell(entity_id, pos) => {
                 msg_log.log_front(Msg::Sound(entity_id, pos, config.yell_radius, true));
+                data.entities.took_turn[&entity_id] = true;
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
@@ -252,6 +252,8 @@ fn hammer_swing(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mu
         msg_log.log_front(Msg::HammerHitEntity(entity_id, hit_entity));
         data.used_up_item(entity_id);
     }
+
+    data.entities.took_turn[&entity_id] = true;
 }
 
 fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
@@ -287,6 +289,8 @@ fn sword_swing(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut
     if any_hit_entity {
         data.used_up_item(entity_id);
     }
+
+    data.entities.took_turn[&entity_id] = true;
 }
 
 fn freeze_trap_triggered(trap: EntityId, cause_id: EntityId, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
@@ -488,8 +492,10 @@ fn resolve_action(entity_id: EntityId,
         }
     } else if let Action::ArmDisarmTrap(trap_id) = action {
         data.entities.armed[&trap_id] = !data.entities.armed[&trap_id];
+        data.entities.took_turn[&entity_id] = true;
     } else if let Action::PlaceTrap(place_pos, trap_id) = action {
         place_trap(trap_id, place_pos, data);
+        data.entities.took_turn[&entity_id] = true;
     } else if let Action::GrassThrow(entity_id, direction) = action {
         use_energy(entity_id, data);
 
@@ -499,6 +505,7 @@ fn resolve_action(entity_id: EntityId,
         if data.map[grass_pos].tile_type == TileType::Empty {
             data.map[grass_pos].surface = Surface::Grass;
         }
+        data.entities.took_turn[&entity_id] = true;
     } else if let Action::GrassBlade(entity_id, action_mode) = action {
         use_energy(entity_id, data);
 
@@ -514,6 +521,7 @@ fn resolve_action(entity_id: EntityId,
                 item_id = make_dagger(&mut data.entities, config, pos, msg_log);
             }
         }
+        // pick_item_up takes the turn, so we don't have to set took_turn here
         pick_item_up(entity_id, item_id, &mut data.entities, msg_log);
     } else if let Action::Blink(entity_id) = action {
         resolve_blink(entity_id, data, rng, msg_log);
@@ -525,6 +533,7 @@ fn resolve_action(entity_id: EntityId,
         data.map[pos].surface = Surface::Floor;
         data.map[pos].block_move = true;
         data.map[pos].chr = MAP_WALL;
+        data.entities.took_turn[&entity_id] = true;
     } else if let Action::Swap(entity_id, target_id) = action {
         use_energy(entity_id, data);
 
@@ -532,11 +541,14 @@ fn resolve_action(entity_id: EntityId,
         let end_pos = data.entities.pos[&target_id];
         data.entities.move_to(entity_id, end_pos);
         data.entities.move_to(target_id, start_pos);
+
+        data.entities.took_turn[&entity_id] = true;
     } else if let Action::PassWall(entity_id, pos) = action {
-        // TODO split into separate function
         use_energy(entity_id, data);
 
         data.entities.move_to(entity_id, pos);
+
+        data.entities.took_turn[&entity_id] = true;
     } else if let Action::Push(entity_id, direction, amount) = action {
         // TODO split into separate function
         use_energy(entity_id, data);
@@ -552,6 +564,7 @@ fn resolve_action(entity_id: EntityId,
                 msg_log.log(Msg::Pushed(entity_id, other_id, direction, amount, move_into));
             }
         }
+        data.entities.took_turn[&entity_id] = true;
     }
 }
 
@@ -565,6 +578,8 @@ fn resolve_blink(entity_id: EntityId, data: &mut GameData, rng: &mut SmallRng, m
     } else {
         msg_log.log(Msg::FailedBlink(entity_id));
     }
+
+    data.entities.took_turn[&entity_id] = true;
 }
 
 fn resolve_rubble(entity_id: EntityId, blocked: Blocked, data: &mut GameData, msg_log: &mut MsgLog) {
@@ -600,6 +615,8 @@ fn resolve_rubble(entity_id: EntityId, blocked: Blocked, data: &mut GameData, ms
             }
         }
     }
+
+    data.entities.took_turn[&entity_id] = true;
 }
 
 fn untriggered(trigger: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
@@ -738,7 +755,6 @@ fn pushed_entity(pusher: EntityId,
         let continue_push = 
             push_attack(pusher, pushed, direction, push_amount, move_into, data, config, msg_log);
 
-        dbg!(continue_push);
         if continue_push && push_amount > 1 {
             dbg!(push_amount - 1);
             msg_log.log(Msg::Pushed(pusher, pushed, direction, push_amount - 1, move_into));
@@ -747,6 +763,7 @@ fn pushed_entity(pusher: EntityId,
         panic!("Tried to push entity {:?}, alive = {}!",
                data.entities.typ[&pushed], data.entities.status[&pushed].alive);
     }
+    data.entities.took_turn[&pusher] = true;
 }
 
 fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
@@ -826,18 +843,20 @@ fn pick_item_up(entity_id: EntityId,
     }
 
     entities.set_xy(item_id, -1, -1);
+
+    entities.took_turn[&entity_id] = true;
 }
 
-fn place_trap(trap_id: EntityId, place_pos: Pos, game_data: &mut GameData) {
-    game_data.entities.set_pos(trap_id, place_pos);
-    game_data.entities.armed[&trap_id] = true;
+fn place_trap(trap_id: EntityId, place_pos: Pos, data: &mut GameData) {
+    data.entities.set_pos(trap_id, place_pos);
+    data.entities.armed[&trap_id] = true;
 }
 
 fn throw_item(player_id: EntityId,
               item_id: EntityId,
               start_pos: Pos,
               end_pos: Pos,
-              game_data: &mut GameData,
+              data: &mut GameData,
               msg_log: &mut MsgLog) {
     let throw_line = line(start_pos, end_pos);
 
@@ -845,17 +864,18 @@ fn throw_item(player_id: EntityId,
     let mut end_pos =
         Pos::from(throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap());
 
-    if let Some(blocked) = game_data.map.path_blocked_move(start_pos, end_pos) {
+    if let Some(blocked) = data.map.path_blocked_move(start_pos, end_pos) {
         // the start pos of the blocked struct is the last reached position
         end_pos = blocked.start_pos;
     }
 
-    game_data.entities.set_pos(item_id, start_pos);
+    data.entities.set_pos(item_id, start_pos);
 
     let movement = Movement::step_to(end_pos);
     msg_log.log(Msg::Moved(item_id, movement.typ, end_pos));
 
-    game_data.entities.remove_item(player_id, item_id);
+    data.entities.remove_item(player_id, item_id);
+    data.entities.took_turn[&player_id] = true;
 }
 
 fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Option<Pos> {
@@ -902,9 +922,12 @@ fn inventory_drop_item(entity_id: EntityId,
         dist += 1;
     }
 
-    if !found_tile {
+    if found_tile {
+        data.entities.took_turn[&entity_id] = true;
+    } else {
         msg_log.log(Msg::DropFailed(entity_id));
     }
+
 }
 
 fn process_moved_message(entity_id: EntityId,
@@ -921,6 +944,7 @@ fn process_moved_message(entity_id: EntityId,
     let original_pos = data.entities.pos[&entity_id];
 
     data.entities.move_to(entity_id, pos);
+    data.entities.took_turn[&entity_id] = true;
 
     // if entity is a monster, which is also alert, and there is a path to the player,
     // then face the player

@@ -569,17 +569,6 @@ pub fn handle_input_playing(input_action: InputAction,
         (InputAction::CursorApply(mode, target), true) => {
             let cursor_pos = settings.cursor_pos;
 
-            // TODO is this needed somewhere to pathfind?
-            //let player_pos = data.entities.pos[&player_id];
-            //let must_reach = false;
-            //let traps_block = true;
-            //let path = data.path_between(player_pos, cursor_pos, Reach::single(1), must_reach, traps_block, None);
-            //let mut action_loc = ActionLoc::None;
-            //if path.len() > 1 {
-            //    let target_pos = path[1];
-            //    action_loc = ActionLoc::Place(target_pos);
-            //}
-
             action_result.turn =
                 chord(ActionLoc::Place(cursor_pos),
                       mode,
@@ -859,72 +848,101 @@ pub fn chord(loc: ActionLoc,
 
     // if no target selection, then it is a move
     if target == -1 {
+        turn = chord_move(loc, mode, data, msg_log);
+    } else {
+        turn = chord_selection(loc, mode, target, data, settings, config, msg_log);
+    }
+
+    return turn;
+}
+
+fn chord_move(loc: ActionLoc,
+              mode: ActionMode,
+              data: &GameData,
+              msg_log: &mut MsgLog) -> Action {
+    let mut turn = Action::none();
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = data.entities.pos[&player_id];
+
+    match mode {
+        ActionMode::Primary => {
+            decrease_move_mode(player_id, data, msg_log);
+        }
+
+        ActionMode::Alternate => {
+            increase_move_mode(player_id, data, msg_log);
+        }
+    }
+
+    match loc {
+        ActionLoc::None => {
+            turn = Action::Pass;
+        }
+
+        ActionLoc::Dir(direction) => {
+            turn = Action::MoveDir(direction); // handle_move(player_id, direction, data);
+        }
+
+        ActionLoc::Place(pos) => {
+            if pos == player_pos {
+                turn = Action::Pass;
+            } else {
+                let dxy = sub_pos(pos, player_pos);
+                let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+
+                turn = Action::MoveDir(direction);
+            }
+        }
+    }
+
+    return turn;
+}
+
+fn chord_selection(loc: ActionLoc,
+                   mode: ActionMode,
+                   target: i32,
+                   data: &GameData,
+                   settings: &mut GameSettings,
+                   config: &Config,
+                   msg_log: &mut MsgLog) -> Action {
+    let mut turn = Action::none();
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = data.entities.pos[&player_id];
+
+    let num_items_in_inventory = data.entities.inventory[&player_id].len() as i32;
+    if target >= 2 {
+        // the minus 2 here comes from the primary and secondary item, after which comes
+        // the skills
+        let skill_index = (target - 2) as usize;
+        if skill_index < data.entities.skills[&player_id].len() {
+            turn = handle_skill(skill_index, loc, mode, data, settings, msg_log, config);
+        }
+    } else if target < num_items_in_inventory {
         match mode {
             ActionMode::Primary => {
-                decrease_move_mode(player_id, data, msg_log);
+                // primary item use is the item's main action
+                turn = use_item(player_id, data, settings, msg_log);
             }
 
             ActionMode::Alternate => {
-                increase_move_mode(player_id, data, msg_log);
-            }
-        }
+                // alternate item use means drop or throw item
+                match loc {
+                    ActionLoc::None => {
+                        msg_log.log(Msg::DropItem(player_id, target as u64));
+                    }
 
-        match loc {
-            ActionLoc::None => {
-                turn = Action::Pass;
-            }
+                    ActionLoc::Place(pos) => {
+                        let item_id = data.entities.inventory[&player_id][target as usize];
+                        turn = Action::ThrowItem(pos, item_id);
+                    }
 
-            ActionLoc::Dir(direction) => {
-                turn = Action::MoveDir(direction); // handle_move(player_id, direction, data);
-            }
-
-            ActionLoc::Place(pos) => {
-                if pos == player_pos {
-                    turn = Action::Pass;
-                } else {
-                    let dxy = sub_pos(pos, player_pos);
-                    let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-
-                    turn = Action::MoveDir(direction);
-                }
-            }
-        }
-    } else {
-        let num_items_in_inventory = data.entities.inventory[&player_id].len() as i32;
-        if target >= 2 {
-            // the minus 2 here comes from the primary and secondary item, after which comes
-            // the skills
-            let skill_index = (target - 2) as usize;
-            if skill_index < data.entities.skills[&player_id].len() {
-                turn = handle_skill(skill_index, loc, mode, data, settings, msg_log, config);
-            }
-        } else if target < num_items_in_inventory {
-            match mode {
-                ActionMode::Primary => {
-                    // primary item use is the item's main action
-                    turn = use_item(player_id, data, settings, msg_log);
-                }
-
-                ActionMode::Alternate => {
-                    // alternate item use means drop or throw item
-                    match loc {
-                        ActionLoc::None => {
-                            msg_log.log(Msg::DropItem(player_id, target as u64));
-                        }
-
-                        ActionLoc::Place(pos) => {
-                            let item_id = data.entities.inventory[&player_id][target as usize];
-                            turn = Action::ThrowItem(pos, item_id);
-                        }
-
-                        ActionLoc::Dir(direction) => {
-                            let start = data.entities.pos[&player_id];
-                            let max_end = direction.offset_pos(start, PLAYER_THROW_DIST as i32);
-                            let end = data.map.path_blocked_move(start, max_end)
-                                                   .map_or(max_end, |b| b.end_pos);
-                            let item_id = data.entities.inventory[&player_id][target as usize];
-                            turn = Action::ThrowItem(end, item_id);
-                        }
+                    ActionLoc::Dir(direction) => {
+                        let start = data.entities.pos[&player_id];
+                        let max_end = direction.offset_pos(start, PLAYER_THROW_DIST as i32);
+                        let end = data.map.path_blocked_move(start, max_end)
+                                               .map_or(max_end, |b| b.end_pos);
+                        let item_id = data.entities.inventory[&player_id][target as usize];
+                        turn = Action::ThrowItem(end, item_id);
                     }
                 }
             }
@@ -933,4 +951,3 @@ pub fn chord(loc: ActionLoc,
 
     return turn;
 }
-
