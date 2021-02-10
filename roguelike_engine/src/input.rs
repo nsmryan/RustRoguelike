@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use std::collections::HashMap;
 use std::cmp::Ord;
 
@@ -205,7 +205,7 @@ impl Input {
     }
 
     fn key_to_action(&mut self, chr: char, dir: KeyDir, settings: &GameSettings, config: &Config) -> InputAction {
-        let mut action = InputAction::None;
+        let mut action;
 
         if (self.chording || self.target != -1) && chr.is_ascii_digit() {
             let dir = from_digit(chr);

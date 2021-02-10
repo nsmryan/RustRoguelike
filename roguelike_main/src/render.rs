@@ -50,6 +50,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 
 fn render_panels(display: &mut Display, game: &mut Game, map_rect: Rect) {
     /* Determine Mouse Position */
+    /* Removed in favor of the cursor
     let mut mouse_map_pos = None;
     if let Some(mouse_id) = game.data.find_by_name(EntityName::Mouse) {
         let mouse_pos = (display.mouse_state.x, display.mouse_state.y);
@@ -60,6 +61,9 @@ fn render_panels(display: &mut Display, game: &mut Game, map_rect: Rect) {
         }
     }
     let mouse_map_pos = mouse_map_pos;
+    */
+
+    let mouse_map_pos = Some(game.settings.cursor_pos); //mouse_map_pos;
 
     let canvas = &mut display.targets.canvas_panel.target;
     let display_state = &mut display.state;
@@ -1148,6 +1152,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             let pos = game.data.entities.pos[entity_id];
 
             if game.data.is_in_fov(player_id, pos, &game.config) &&
+               *entity_id != player_id &&
                game.data.entities.status[entity_id].alive {
                render_attack_overlay(panel, display_state, game, *entity_id);
                render_fov_overlay(panel, display_state, game, *entity_id);

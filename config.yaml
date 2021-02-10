@@ -15,9 +15,9 @@ color_light_green:
   b: 32
   a: 255
 color_tile_blue_light:
-  r: 4
-  g: 30
-  b: 50
+  r: 10
+  g: 40
+  b: 63
   a: 255
 color_tile_blue_dark:
   r: 2
@@ -179,7 +179,7 @@ show_info: true
 use_cursor: true
 
 # delay before a key is repeated (seconds)
-repeat_delay: 0.5
+repeat_delay: 0.35
 
 # whether to write out a map distribution file
 write_map_distribution: true

@@ -317,9 +317,9 @@ fn test_rotation() {
     let height = 20;
 
     assert_eq!(pos, Rotation::Degrees0.rotate(pos, width, height));
-    assert_eq!(Pos::new(width, 0), Rotation::Degrees90.rotate(pos, width, height));
-    assert_eq!(Pos::new(width, height), Rotation::Degrees180.rotate(pos, width, height));
-    assert_eq!(Pos::new(0, height), Rotation::Degrees270.rotate(pos, width, height));
+    assert_eq!(Pos::new(width - 1, 0), Rotation::Degrees90.rotate(pos, width, height));
+    assert_eq!(Pos::new(width - 1, height - 1), Rotation::Degrees180.rotate(pos, width, height));
+    assert_eq!(Pos::new(0, height - 1), Rotation::Degrees270.rotate(pos, width, height));
 }
 
 pub fn reorient_map(map: &Map, rotation: Rotation, mirror: bool) -> Map {
