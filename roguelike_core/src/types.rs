@@ -118,46 +118,36 @@ impl GameData {
 
     // NOTE duplicate code with pos_in_fov
     pub fn is_in_fov(&self, entity_id: EntityId, other_id: EntityId, config: &Config) -> bool {
-        let pos = self.entities.pos[&entity_id];
-
-        let radius: i32 = match self.entities.typ[&entity_id] {
-            EntityType::Enemy => config.fov_radius_monster,
-            EntityType::Player => config.fov_radius_player,
-            typ => return false, // other things have no FOV
-        };
-
-        let stance = self.entities.stance[&entity_id];
-        let other_stance = self.entities.stance[&other_id];
+        let stance = *self.entities.stance.get(&entity_id).unwrap_or(&Stance::Standing);
+        let other_stance = *self.entities.stance.get(&other_id).unwrap_or(&Stance::Standing);
         let crouching = stance == Stance::Crouching || other_stance == Stance::Crouching;
-
-        if self.entities.typ[&entity_id] == EntityType::Player {
-            return self.map.is_in_fov(pos, other_pos, radius, crouching);
-        } else {
-            if let Some(dir) = self.entities.direction.get(&entity_id) {
-                return self.map.is_in_fov_direction(pos, other_pos, radius, *dir, crouching);
-            } else {
-                panic!(format!("tried to perform is_in_fov on entity without facing"));
-            }
-        }
+        let other_pos = self.entities.pos[&other_id];
+        
+        return self.pos_in_fov_with_height(entity_id, other_pos, config, crouching);
     }
 
     pub fn pos_in_fov(&self, entity_id: EntityId, other_pos: Pos, config: &Config) -> bool {
-        let pos = self.entities.pos[&entity_id];
+        let stance = self.entities.stance[&entity_id];
+        let crouching = stance == Stance::Crouching;
 
+        return self.pos_in_fov_with_height(entity_id, other_pos, config, crouching);
+    }
+
+    fn pos_in_fov_with_height(&self, entity_id: EntityId, other_pos: Pos, config: &Config, crouching: bool) -> bool {
         let radius: i32 = match self.entities.typ[&entity_id] {
             EntityType::Enemy => config.fov_radius_monster,
             EntityType::Player => config.fov_radius_player,
             typ => return false, // other things have no FOV
         };
 
-        let stance = self.entities.stance[&entity_id];
-        let crouching = stance == Stance::Crouching;
+        let pos = self.entities.pos[&entity_id];
 
         if self.entities.typ[&entity_id] == EntityType::Player {
             return self.map.is_in_fov(pos, other_pos, radius, crouching);
         } else {
             if let Some(dir) = self.entities.direction.get(&entity_id) {
                 return self.map.is_in_fov_direction(pos, other_pos, radius, *dir, crouching);
+
             } else {
                 panic!(format!("tried to perform is_in_fov on entity without facing"));
             }
@@ -333,7 +323,7 @@ impl GameData {
         let current_facing = self.entities.direction[&entity_id];
         self.entities.face(entity_id, target_pos);
 
-        let visible = self.is_in_fov(entity_id, target_pos, config);
+        let visible = self.pos_in_fov(entity_id, target_pos, config);
 
         self.entities.direction[&entity_id] = current_facing;
 

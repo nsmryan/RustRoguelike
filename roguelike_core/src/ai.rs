@@ -116,7 +116,7 @@ pub fn ai_pos_that_hit_target(monster_id: EntityId,
 
             data.entities.set_pos(monster_id, attackable_pos);
             data.entities.face(monster_id, target_pos);
-            let can_hit = ai_can_hit_target(data, monster_id, target_pos, &attack, config).is_some();
+            let can_hit = ai_can_hit_target(data, monster_id, target_id, &attack, config).is_some();
 
             if can_hit {
                 potential_move_targets.push(attackable_pos);
@@ -141,7 +141,7 @@ pub fn ai_fov_cost(monster_id: EntityId,
     let cur_dir = data.entities.direction[&monster_id];
     data.entities.face(monster_id, target_pos);
     let cost =
-        if data.is_in_fov(monster_id, target_pos, config) {
+        if data.pos_in_fov(monster_id, target_pos, config) {
              NOT_IN_FOV_COST
         } else {
             0
@@ -270,7 +270,7 @@ pub fn ai_attack(monster_id: EntityId,
 
 
     let can_hit_target =
-        ai_can_hit_target(data, monster_id, target_pos, &attack_reach, config);
+        ai_can_hit_target(data, monster_id, target_id, &attack_reach, config);
 
     if data.entities.is_dead(target_id) {
         // if AI target is no longer alive
@@ -279,7 +279,7 @@ pub fn ai_attack(monster_id: EntityId,
         // can hit their target, so just attack them
         let attack = Attack::Attack(target_id);
         turn = Action::Attack(attack, hit_pos);
-    } else if !data.is_in_fov(monster_id, target_pos, config) {
+    } else if !data.is_in_fov(monster_id, target_id, config) {
         // path to target is blocked by a wall- investigate the last known position
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else {
@@ -298,7 +298,7 @@ pub fn ai_idle(monster_id: EntityId,
 
     let mut turn = Action::none();
 
-    if data.is_in_fov(monster_id, player_pos, config) {
+    if data.is_in_fov(monster_id, player_id, config) {
         data.entities.face(monster_id, player_pos);
         turn = Action::StateChange(Behavior::Attacking(player_id));
     } else if let Some(Message::Attack(entity_id)) = data.entities.was_attacked(monster_id) {
@@ -336,7 +336,7 @@ pub fn ai_investigate(target_pos: Pos,
         data.entities.face(monster_id, player_pos);
     }
                
-    let in_fov = data.is_in_fov(monster_id, player_pos, config);
+    let in_fov = data.is_in_fov(monster_id, player_id, config);
 
     if in_fov {
         data.entities.face(monster_id, player_pos);
@@ -375,18 +375,19 @@ pub fn ai_investigate(target_pos: Pos,
 
 fn ai_can_hit_target(data: &mut GameData,
                      monster_id: EntityId,
-                     target_pos: Pos,
+                     target_id: EntityId,
                      reach: &Reach,
                      config: &Config) -> Option<Pos> {
     let mut hit_pos = None;
     let monster_pos = data.entities.pos[&monster_id];
+    let target_pos = data.entities.pos[&target_id];
 
     // don't allow hitting from the same tile...
     if target_pos == monster_pos {
         return None;
     }
 
-    let within_fov = data.is_in_fov(monster_id, target_pos, config);
+    let within_fov = data.is_in_fov(monster_id, target_id, config);
 
     let clear_path = data.clear_path_up_to(monster_pos, target_pos, false);
 

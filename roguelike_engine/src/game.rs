@@ -116,7 +116,7 @@ impl Game {
         let player_id = self.data.find_by_name(EntityName::Player).unwrap();
         for pos in self.data.map.get_all_pos() {
             let visible =
-                self.data.is_in_fov(player_id, pos, &self.config) ||
+                self.data.pos_in_fov(player_id, pos, &self.config) ||
                 self.settings.god_mode;
 
             // careful not to set map if not needed- this will clear the fov cache

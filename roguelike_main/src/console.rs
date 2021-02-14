@@ -208,7 +208,7 @@ impl Console {
 
                 let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-                let can_see = data.is_in_fov(player_id, Pos::new(x, y), config);
+                let can_see = data.pos_in_fov(player_id, Pos::new(x, y), config);
 
                 if can_see {
                     self.output.push(format!("yes"));

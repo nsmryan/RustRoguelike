@@ -442,7 +442,7 @@ fn place_monsters(game: &mut Game, player_pos: Pos, cmds: &Vec<ProcCmd>) {
                     _ => { id = None; },
                 }
                 if let Some(id) = id {
-                    if game.data.is_in_fov(id, player_pos, &game.config) {
+                    if game.data.pos_in_fov(id, player_pos, &game.config) {
                         game.data.entities.direction[&id] = 
                             game.data.entities.direction[&id].reverse();
                     }

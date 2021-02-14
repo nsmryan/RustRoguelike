@@ -199,7 +199,7 @@ impl Selection {
         if self.only_visible {
             if let Some(selected_pos) = maybe_selected_pos {
                 let player_id = data.find_by_name(EntityName::Player).unwrap();
-                if !data.is_in_fov(player_id, selected_pos, config) {
+                if !data.pos_in_fov(player_id, selected_pos, config) {
                     maybe_selected_pos = None;
                 }
             }
