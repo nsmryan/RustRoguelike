@@ -166,9 +166,11 @@ impl Input {
 
                             let new_repeats = (time_since / config.repeat_delay) as usize;
                             if new_repeats > held_state.repetitions {
-                                action = self.key_to_action(chr, dir, settings, config);
+                                if chr != 'o' {
+                                    action = self.key_to_action(chr, dir, settings, config);
 
-                                self.char_held.insert(chr, held_state.repeated());
+                                    self.char_held.insert(chr, held_state.repeated());
+                                }
                             }
                         }
                     }
