@@ -88,7 +88,6 @@ impl Input {
 
         if let InputEvent::Char(chr, dir) = event {
             if dir == KeyDir::Down {
-                let seconds = time.elapsed().as_secs_f32();
                 let held_state = HeldState { down_time: time, repetitions: 0 };
                 self.char_held.insert(chr, held_state);
             }
@@ -204,7 +203,7 @@ impl Input {
         return action;
     }
 
-    fn key_to_action(&mut self, chr: char, dir: KeyDir, settings: &GameSettings, config: &Config) -> InputAction {
+    fn key_to_action(&mut self, chr: char, _dir: KeyDir, settings: &GameSettings, config: &Config) -> InputAction {
         let mut action;
 
         if (self.chording || self.target != -1) && chr.is_ascii_digit() {

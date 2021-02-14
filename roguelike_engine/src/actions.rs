@@ -469,7 +469,6 @@ pub fn handle_input_selection(input: InputAction,
             let maybe_action =
                 settings.selection.select(player_pos,
                                           map_cell,
-                                          config.fov_radius_player,
                                           data,
                                           config);
             if let Some(action) = maybe_action {

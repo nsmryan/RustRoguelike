@@ -53,8 +53,6 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
     game.msg_log.log(Msg::PlayerTurn());
     resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
 
-    let mut to_remove: Vec<EntityId> = Vec::new();
-
     // check status effects
     for entity_id in game.data.entities.ids.iter() {
         if let Some(mut status) = game.data.entities.status.get_mut(entity_id) {
@@ -237,7 +235,7 @@ pub fn test_hammer_small_wall() {
 }
 
 fn step_ai(game: &mut Game) {
-    let mut ai_ids: Vec<EntityId> = game.data.entities.active_ais();
+    let ai_ids: Vec<EntityId> = game.data.entities.active_ais();
 
     for key in ai_ids.iter() {
        let action = ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);

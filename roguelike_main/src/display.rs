@@ -636,7 +636,7 @@ impl Display {
                 }
             }
 
-            Msg::Moved(entity_id, move_type, _pos) => {
+            Msg::Moved(entity_id, _move_type, _pos) => {
                 if let Some(anim_key) = self.get_idle_animation(entity_id, data, config) {
                     data.entities.set_animation(entity_id, anim_key);
                 }
@@ -767,7 +767,6 @@ impl Display {
 
                 // save all entities currently in the FOV
                 for entity_id in data.entities.ids.clone() {
-                    let pos = data.entities.pos[&entity_id];
                     if entity_id != player_id &&
                        data.is_in_fov(player_id, entity_id, config) {
                         self.state.current_turn_fov.push(entity_id);

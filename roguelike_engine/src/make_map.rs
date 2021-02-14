@@ -159,7 +159,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
 
         let mut file = File::create("map_emptiness_distribution.txt").unwrap();
         for (index, count) in counts.iter().enumerate() {
-            write!(file, "{} {}\n", index, count);
+            write!(file, "{} {}\n", index, count).unwrap();
         }
     }
 }

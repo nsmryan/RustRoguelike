@@ -230,7 +230,7 @@ pub fn resolve_messages(data: &mut GameData,
                 panic!("Player sent themselves a message?")
             }
 
-            let player_pos = data.entities.pos[&player_id];
+            //let player_pos = data.entities.pos[&player_id];
             //if !data.map.is_in_fov(player_pos, *pos, config.fov_radius_player) {
                 //let heard = Effect::HeardSomething(*pos, settings.turn_count);
                 // TODO move to somewhere else?

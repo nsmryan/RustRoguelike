@@ -48,7 +48,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 }
 
 
-fn render_panels(display: &mut Display, game: &mut Game, map_rect: Rect) {
+fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
     /* Determine Mouse Position */
     /* Removed in favor of the cursor
     let mut mouse_map_pos = None;
@@ -391,7 +391,7 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 fn render_info(panel: &mut Panel<&mut WindowCanvas>,
                display_state: &mut DisplayState,
                game: &mut Game,
-               mouse_xy: Option<Pos>) {
+               _mouse_xy: Option<Pos>) {
     render_placard(panel, display_state, "Info", &game.config);
 
     let sprite_key = display_state.lookup_spritekey("tiles");
@@ -663,7 +663,6 @@ fn render_background(display: &mut Display, game: &mut Game) {
                                      empty_tile_color(&game.config, map_pos, visible));
                 } else {
                     let color = tile_color(&game.config, x, y, tile, visible);
-                    let chr = tile.chr;
                     sprite.draw_char(&mut panel, MAP_EMPTY_CHAR as char, map_pos, color);
                 }
             }
@@ -910,8 +909,6 @@ fn render_order(typ: EntityType) -> usize {
 
 /// Render each object in the game, filtering for objects not currently visible
 fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-
     display_state.drawn_sprites.clear();
 
     let mut ids = game.data.entities.ids.clone();
@@ -1152,8 +1149,6 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         // Draw monster attack overlay
         let object_ids = get_entity_at_pos(mouse_xy, &mut game.data);
         for entity_id in object_ids.iter() {
-            let pos = game.data.entities.pos[entity_id];
-
             if game.data.is_in_fov(player_id, *entity_id, &game.config) &&
                *entity_id != player_id &&
                game.data.entities.status[entity_id].alive {
@@ -1216,8 +1211,8 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 let selected_pos =
                     game.settings.selection.selected_pos(player_pos,
                                                          mouse_pos,
-                                                         game.config.fov_radius_player,
-                                                         &mut game.data, &game.config);
+                                                         &mut game.data,
+                                                         &game.config);
 
                 if let Some(pos) = selected_pos {
                     tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, highlight_color);

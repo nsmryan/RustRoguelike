@@ -33,7 +33,6 @@ use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
 use roguelike_engine::actions::*;
 use roguelike_engine::make_map::{make_map, read_map_xp};
-use roguelike_engine::input::*;
 
 use crate::throttler::*;
 use crate::render::*;

@@ -753,7 +753,7 @@ fn find_structural_blocks(map: &Map) -> Vec<Pos> {
 }
 
 fn find_structures(map: &Map) -> Vec<Structure> {
-    let mut blocks = find_structural_blocks(map);
+    let blocks = find_structural_blocks(map);
 
     println!("Blocks in structures: {}", blocks.len());
 
