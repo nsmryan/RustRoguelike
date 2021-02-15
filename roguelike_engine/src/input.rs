@@ -166,9 +166,11 @@ impl Input {
 
                             let new_repeats = (time_since / config.repeat_delay) as usize;
                             if new_repeats > held_state.repetitions {
-                                if chr != 'o' {
-                                    action = self.key_to_action(chr, dir, settings, config);
+                                action = self.key_to_action(chr, dir, settings, config);
 
+                                if action == InputAction::OverlayOff {
+                                    action = InputAction::None;
+                                } else {
                                     self.char_held.insert(chr, held_state.repeated());
                                 }
                             }
