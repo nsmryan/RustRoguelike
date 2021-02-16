@@ -26,3 +26,4 @@ roguelike_engine = { path = "../roguelike_engine" }
 [lib]
 name = "rust_roguelike"
 crate-type = ["cdylib"]
+

@@ -48,7 +48,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 }
 
 
-fn render_panels(display: &mut Display, game: &mut Game, map_rect: Rect) {
+fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
     /* Determine Mouse Position */
     /* Removed in favor of the cursor
     let mut mouse_map_pos = None;
@@ -794,7 +794,7 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
         match effect {
             Effect::HeardSomething(pos, created_turn) => {
                 sprite.draw_char(panel,
-                                 ENTITY_ELF as char,
+                                 ENTITY_UNKNOWN as char,
                                  *pos,
                                  game.config.color_warm_grey);
 
