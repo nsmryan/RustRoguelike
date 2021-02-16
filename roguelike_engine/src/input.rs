@@ -139,8 +139,10 @@ impl Input {
             InputEvent::Alt(dir) => {
                 if dir == KeyDir::Down {
                     self.mode = ActionMode::Alternate;
+                    self.moding = true;
                 } else if dir == KeyDir::Up {
                     self.mode = ActionMode::Primary;
+                    self.moding = false;
                 }
             }
 
@@ -217,7 +219,7 @@ impl Input {
     fn key_to_action(&mut self, chr: char, dir: KeyDir, settings: &GameSettings, config: &Config) -> InputAction {
         let mut action;
 
-        if (self.chording || self.target != -1) && chr.is_ascii_digit() {
+        if (self.chording || self.moding || self.target != -1) && chr.is_ascii_digit() {
             let dir = from_digit(chr);
             action = InputAction::Chord(dir, self.mode, self.target);
             self.reset();
