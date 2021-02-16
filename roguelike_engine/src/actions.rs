@@ -53,7 +53,6 @@ pub enum InputAction {
     MouseButton(MouseClick, KeyDir),
     Pickup,
     DropItem,
-    SwapPrimaryItem,
     Inventory,
     SkillMenu,
     ClassMenu,
@@ -98,7 +97,6 @@ impl fmt::Display for InputAction {
             InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
             InputAction::Pickup => write!(f, "pickup"),
             InputAction::DropItem => write!(f, "drop"),
-            InputAction::SwapPrimaryItem => write!(f, "swapitem"),
             InputAction::Inventory => write!(f, "inventory"),
             InputAction::SkillMenu => write!(f, "skill"),
             InputAction::ClassMenu => write!(f, "class"),
@@ -175,8 +173,6 @@ impl FromStr for InputAction {
             let cell_x = args[3].parse::<i32>().unwrap();
             let cell_y = args[4].parse::<i32>().unwrap();
             return Ok(InputAction::MapClick(Pos::new(loc_x, loc_y), Pos::new(cell_x, cell_y)));
-        } else if s == "swapitem" {
-            return Ok(InputAction::SwapPrimaryItem);
         } else if s == "skill" {
             return Ok(InputAction::SkillMenu);
         } else if s == "class" {
@@ -656,10 +652,6 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::Exit, _) => {
             action_result.new_state = Some(GameState::ConfirmQuit);
-        }
-
-        (InputAction::SwapPrimaryItem, _) => {
-            msg_log.log(Msg::SwapPrimaryItem);
         }
 
         (InputAction::Interact, _) => {
