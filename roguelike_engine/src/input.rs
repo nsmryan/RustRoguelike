@@ -48,6 +48,7 @@ impl HeldState {
 pub enum InputEvent {
     Char(char, KeyDir),
     Ctrl(KeyDir),
+    Shift(KeyDir),
     Alt(KeyDir),
     MousePos(i32, i32),
     MouseButton(MouseClick, Pos, Option<Pos>, KeyDir), // button clicked, mouse position, screen square, keydir
@@ -61,6 +62,7 @@ pub struct Input {
     pub chording: bool,
     pub mode: ActionMode,
     pub moding: bool,
+    pub shifting: bool,
     pub target: i32,
     pub char_held: HashMap<char, HeldState>,
 }
@@ -70,6 +72,7 @@ impl Input {
         return Input { chording: false,
                        mode: ActionMode::Primary,
                        moding: false,
+                       shifting: false,
                        target: -1,
                        char_held: HashMap::new()
         };
@@ -123,6 +126,13 @@ impl Input {
                     }
 
                     KeyDir::Held => {}
+                }
+            }
+
+            InputEvent::Shift(dir) => {
+                if dir != KeyDir::Held {
+                    self.shifting = dir == KeyDir::Down;
+                    dbg!(self.shifting);
                 }
             }
 
@@ -219,7 +229,7 @@ impl Input {
 
             if config.use_cursor {
                if let InputAction::Move(dir) = action {
-                    action = InputAction::CursorMove(dir);
+                   action = InputAction::CursorMove(dir, self.shifting);
                }
             }
         }

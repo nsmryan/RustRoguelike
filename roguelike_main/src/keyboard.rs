@@ -30,8 +30,9 @@ pub fn translate_event(event: Event, game: &mut Game, display: &mut Display) -> 
                     return Some(InputEvent::Ctrl(dir));
                 } else if key == Keycode::LAlt || key == Keycode::RAlt {
                     return Some(InputEvent::Alt(dir));
+                } else if key == Keycode::LShift || key == Keycode::RShift {
+                    return Some(InputEvent::Shift(dir));
                 } else {
-                    // NOTE could check for LShift, RShift
                     return None;
                 }
             }
@@ -55,6 +56,8 @@ pub fn translate_event(event: Event, game: &mut Game, display: &mut Display) -> 
                     return Some(InputEvent::Tab);
                 } else if key == Keycode::Escape {
                     return Some(InputEvent::Esc);
+                } else if key == Keycode::LShift || key == Keycode::RShift {
+                    return Some(InputEvent::Shift(KeyDir::Up));
                 } else {
                     // NOTE could check for LShift, RShift
                     return None;
