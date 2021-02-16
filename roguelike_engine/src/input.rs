@@ -108,7 +108,7 @@ impl Input {
             }
 
             InputEvent::Tab => {
-                action = InputAction::SwapPrimaryItem;
+                action = InputAction::CursorReturn;
             }
 
             InputEvent::Ctrl(dir) => {

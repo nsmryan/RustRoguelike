@@ -73,6 +73,7 @@ pub enum InputAction {
     Interact,
     Chord(Option<Direction>, ActionMode, ActionTarget),
     CursorMove(Direction),
+    CursorReturn,
     CursorApply(ActionMode, ActionTarget),
     None,
 }
@@ -117,6 +118,7 @@ impl fmt::Display for InputAction {
             InputAction::Interact => write!(f, "interact"),
             InputAction::Chord(dir, mode, target) => write!(f, "chord {:?} {:?} {:?}", dir, mode, target),
             InputAction::CursorMove(dir) => write!(f, "cursormove {:?}", dir),
+            InputAction::CursorReturn => write!(f, "cursorreturn"),
             InputAction::CursorApply(mode, target) => write!(f, "cursorapply {:?} {:?}", mode, target),
             InputAction::None => write!(f, "none"),
         }
@@ -195,6 +197,8 @@ impl FromStr for InputAction {
             let args = s.split(" ").collect::<Vec<&str>>();
             let dir = Direction::from_str(args[1]).unwrap();
             return Ok(InputAction::CursorMove(dir));
+        } else if s.starts_with("cursorreturn") {
+            return Ok(InputAction::CursorReturn);
         } else if s.starts_with("cursorapply") {
             let args = s.split(" ").collect::<Vec<&str>>();
             let mode = ActionMode::from_str(args[1]).unwrap();
@@ -557,7 +561,11 @@ pub fn handle_input_playing(input_action: InputAction,
     let player_alive = data.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
-        (InputAction::CursorMove(dir), true) => {
+        (InputAction::CursorReturn, _) => {
+            settings.cursor_pos = data.entities.pos[&player_id];
+        }
+
+        (InputAction::CursorMove(dir), _) => {
             let cursor_pos = settings.cursor_pos;
             let new_pos = add_pos(cursor_pos, dir.into_move());
 
