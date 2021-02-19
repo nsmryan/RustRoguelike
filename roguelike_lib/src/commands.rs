@@ -4,6 +4,23 @@ use roguelike_core::types::*;
 use roguelike_engine::game::*;
 
 
+// TODO
+// generation: make each entity, remove entity
+// components: get and set
+// map: create from MapConfigs
+//      redo map with current config
+//      get/set tiles
+// input: step from key
+// action: step from InputAction
+//
+// possibly:
+// inject messages?
+// change settings
+// change config
+// line positions?
+// blocked pos, blocked path, etc
+// fov
+
 pub enum Command {
     PlayerId,
     Pos(u64),
@@ -60,6 +77,9 @@ pub fn execute(command: &Command, game: &mut Game) -> String {
             game.settings.running = false;
             return "".to_string();
         }
+
+        // let action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
+        // game.step_game(input_action, dt);
     }
 }
 

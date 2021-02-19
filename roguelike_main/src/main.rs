@@ -97,10 +97,12 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let video = sdl_context.video()?;
     let window = video.window("Rust Roguelike", SCREEN_WIDTH, SCREEN_HEIGHT)
-        .position_centered().build().map_err(|e| e.to_string())?;
+                      .position_centered().build().map_err(|e| e.to_string())?;
 
     let canvas = window.into_canvas()
-        .accelerated().build().map_err(|e| e.to_string())?;
+                       .accelerated()
+                       .build()
+                       .map_err(|e| e.to_string())?;
     let texture_creator = canvas.texture_creator();
 
     /* Create Display Structures */
@@ -121,9 +123,6 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
     /* Create Game Structure */
     let mut game = Game::new(seed, config.clone())?;
-    let stone_id = make_stone(&mut game.data.entities, &game.config, Pos::new(-1, -1), &mut game.msg_log);
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    game.data.entities.inventory[&player_id].push_back(stone_id);
 
     game.load_vaults("resources/vaults/");
 

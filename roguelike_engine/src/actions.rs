@@ -258,7 +258,6 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) {
 //    }
 //}
 
-// TODO(&mut) remove &mut from data
 pub fn inventory_use_item(item_index: usize,
                           data: &GameData,
                           settings: &mut GameSettings,
@@ -473,8 +472,6 @@ pub fn handle_input_selection(input: InputAction,
                                           data,
                                           config);
             if let Some(action) = maybe_action {
-                // TODO(&mut) move to resolve, or allow settings to change
-                // exit selection state
                 action_result.new_state = Some(GameState::Playing);
                 msg_log.log(Msg::GameState(settings.state));
                 // TODO(&mut) move to resolve, or allow settings to change
@@ -608,8 +605,8 @@ pub fn handle_input_playing(input_action: InputAction,
             action_result.turn = pickup_item(player_id, data);
         }
 
+        // TODO this should be removeable
         (InputAction::MapClick(_map_loc, _map_cell), _) => {
-            // TODO this should be removeable
             action_result.turn = Action::none();
         }
 
@@ -833,8 +830,6 @@ pub fn handle_skill(skill_index: usize,
 
 // TODO consider creating a Chord struct with loc, mode, target
 // to simplify passing around and calling this function
-// TODO consider splitting into three functions:
-// targeted, non-targeted
 pub fn chord(loc: ActionLoc,
              mode: ActionMode,
              target: i32,

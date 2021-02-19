@@ -18,6 +18,8 @@ pub fn main() {
     let config = Config::from_file(CONFIG_NAME);
     let mut game = Game::new(0, config).unwrap();
 
+    make_map(&config.map_load, &mut game);
+
     while game.settings.running {
         let msg = iter.next().unwrap().unwrap();
 
