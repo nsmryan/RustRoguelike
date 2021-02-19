@@ -1,12 +1,13 @@
 use std::str::FromStr;
+use std::time::Instant;
 
 use roguelike_core::types::*;
+use roguelike_engine::input::*;
 use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
 
 
 // TODO
-// generation: remove entity
 // components: get and set
 // map: create from MapConfigs
 //      redo map with current config
@@ -23,12 +24,50 @@ use roguelike_engine::generation::*;
 // fov
 // convenience, like nearby entity ids, or all entity list
 
+// MousePos(i32, i32),
+// MouseButton(MouseClick, Pos, Option<Pos>, KeyDir),
+// Esc,
+// Tab,
+// Quit,
+
+//  Move(Direction),
+//  Pass,
+//  MapClick(Pos, Pos), // map loc, map cell
+//  MouseButton(MouseClick, KeyDir),
+//  Pickup,
+//  DropItem,
+//  SwapPrimaryItem,
+//  Inventory,
+//  SkillMenu,
+//  ClassMenu,
+//  Exit,
+//  Esc,
+//  ExploreAll,
+//  RegenerateMap,
+//  GodMode,
+//  Yell,
+//  IncreaseMoveMode,
+//  DecreaseMoveMode,
+//  OverlayOn,
+//  OverlayOff,
+//  SelectItem(usize),
+//  ToggleConsole,
+//  UseItem,
+//  Interact,
+//  Chord(Option<Direction>, ActionMode, ActionTarget),
+//  CursorMove(Direction),
+//  CursorApply(ActionMode, ActionTarget),
+//  None,
+
 pub enum GameCmd {
     PlayerId,
     Pos(u64),
     SetPos(u64, i32, i32),
     Make(EntityName, i32, i32),
     Remove(u64),
+    Key(char, KeyDir),
+    Ctrl(KeyDir),
+    Alt(KeyDir),
     Exit,
 }
 
@@ -62,6 +101,16 @@ impl FromStr for GameCmd {
         } else if cmd == "remove" {
             let id = args[1].parse::<u64>().unwrap();
             return Ok(GameCmd::Remove(id));
+        } else if cmd == "key" {
+            let chr = args[1].parse::<char>().unwrap();
+            let dir = args[2].parse::<KeyDir>().unwrap();
+            return Ok(GameCmd::Key(chr, dir));
+        } else if cmd == "ctrl" {
+            let dir = args[1].parse::<KeyDir>().unwrap();
+            return Ok(GameCmd::Ctrl(dir));
+        } else if cmd == "alt" {
+            let dir = args[1].parse::<KeyDir>().unwrap();
+            return Ok(GameCmd::Alt(dir));
         } else if cmd == "exit" {
             return Ok(GameCmd::Exit);
         }
@@ -104,6 +153,37 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
             
         GameCmd::Remove(id) => {
             game.data.remove_entity(*id);
+            return "".to_string();
+        }
+
+        GameCmd::Key(chr, dir) => {
+            // TODO this isn't really correct...
+            let time = Instant::now();
+            let dt = Instant::now().duration_since(time).as_secs_f32();
+
+            let input_event = InputEvent::Char(*chr, *dir);
+            let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
+            game.step_game(input_action, dt);
+            return "".to_string();
+        }
+
+        GameCmd::Ctrl(dir) => {
+            let time = Instant::now();
+            let dt = Instant::now().duration_since(time).as_secs_f32();
+
+            let input_event = InputEvent::Ctrl(*dir);
+            let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
+            game.step_game(input_action, dt);
+            return "".to_string();
+        }
+
+        GameCmd::Alt(dir) => {
+            let time = Instant::now();
+            let dt = Instant::now().duration_since(time).as_secs_f32();
+
+            let input_event = InputEvent::Alt(*dir);
+            let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
+            game.step_game(input_action, dt);
             return "".to_string();
         }
 

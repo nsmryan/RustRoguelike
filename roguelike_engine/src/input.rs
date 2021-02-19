@@ -1,6 +1,7 @@
 use std::time::Instant;
 use std::collections::HashMap;
 use std::cmp::Ord;
+use std::str::FromStr;
 
 use serde::{Serialize, Deserialize};
 
@@ -19,6 +20,23 @@ pub enum KeyDir {
     Up,
     Held,
     Down,
+}
+
+impl FromStr for KeyDir {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+
+        if s == "down" {
+            return Ok(KeyDir::Down);
+        } else if s == "up" {
+            return Ok(KeyDir::Up);
+        }
+
+        panic!(format!("KeyDir {} unexpected", s));
+    }
 }
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
