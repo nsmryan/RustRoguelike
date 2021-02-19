@@ -13,7 +13,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
-use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, move_x, move_y, sub_pos, floodfill, reach_by_mode, map_fill_metric};
+use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, sub_pos, reach_by_mode, map_fill_metric};
 use roguelike_core::line::line;
 
 use roguelike_engine::game::*;

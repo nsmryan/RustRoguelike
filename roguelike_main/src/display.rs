@@ -13,7 +13,6 @@ use roguelike_core::config::*;
 use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::animation::{Sprite, AnimKey, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
-use roguelike_core::movement::MoveType;
 use roguelike_core::utils::aoe_fill;
 
 

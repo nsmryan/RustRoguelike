@@ -10,6 +10,8 @@ use std::io::{BufRead, Write};
 use std::time::{Duration, Instant};
 use std::path::Path;
 use std::str::FromStr;
+use std::thread;
+use std::sync::mpsc;
 
 use sdl2::image::LoadTexture;
 use sdl2::render::{WindowCanvas, Texture, TextureCreator};
@@ -33,7 +35,8 @@ use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
 use roguelike_engine::actions::*;
 use roguelike_engine::make_map::{make_map, read_map_xp};
-use roguelike_engine::input::*;
+
+use roguelike_lib::commands::*;
 
 use crate::throttler::*;
 use crate::render::*;
@@ -171,11 +174,29 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
 
     let mut event_pump = sdl_context.event_pump()?;
 
+    let (mut io_send, mut io_recv) = mpsc::channel();
+    thread::spawn(move || {
+        let stdin = std::io::stdin();
+        let mut stdin = stdin.lock().lines();
+
+        for line in stdin {
+            io_send.send(line.unwrap());
+        }
+    });
+
     let mut frame_time = Instant::now();
 
     /* Main Game Loop */
     while game.settings.running {
         let _loop_timer = timer!("GAME_LOOP");
+
+        // check for commands to execute
+        if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(0)) {
+            let cmd = msg.parse::<GameCmd>()
+                         .expect(&format!("Unexpected command {}", msg));
+            let result = execute_game_command(&cmd, &mut game);
+            println!("{}", result);
+        }
 
         let mut input_action: InputAction = InputAction::None;
         /* Handle Events */
@@ -189,7 +210,6 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
                 }
             }
         }
-
         let misc_timer = timer!("MISC");
         // if there are starting actions to read, pop one off to play
         if let Some(action) = starting_actions.pop() {

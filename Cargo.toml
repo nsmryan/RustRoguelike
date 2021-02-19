@@ -11,7 +11,7 @@ lto = false
 [workspace]
 members = [
   "roguelike_core",
-  "roguelike_main",
   "roguelike_engine",
   "roguelike_lib",
+  "roguelike_main",
  ]

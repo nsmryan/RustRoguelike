@@ -63,7 +63,6 @@ pub fn make_column(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
 
     return object;
 }
-
 pub fn make_energy(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let object = entities.create_entity(pos.x, pos.y, EntityType::Energy, ENTITY_BLINK_TRAP as char, config.color_light_green, EntityName::Energy, false);
 
@@ -130,7 +129,7 @@ pub fn make_mouse(entities: &mut Entities, _config: &Config, msg_log: &mut MsgLo
     mouse
 }
 
-pub fn make_cursor(entities: &mut Entities, pos: Pos, _config: &Config, msg_log: &mut MsgLog) -> EntityId {
+pub fn make_cursor(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let cursor = entities.create_entity(pos.x, pos.y, EntityType::Other, ' ', Color::white(), EntityName::Cursor, false);
 
     msg_log.log(Msg::SpawnedObject(cursor, entities.typ[&cursor], Pos::new(-1, -1), EntityName::Cursor));
@@ -270,6 +269,33 @@ pub fn make_stone(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
     msg_log.log(Msg::SpawnedObject(stone, entities.typ[&stone], pos, EntityName::Stone));
 
     return stone;
+}
+
+pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: EntityName, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    match entity_name {
+        EntityName::Column => make_column(entities, config, pos, msg_log),
+        EntityName::Energy => make_energy(entities, config, pos, msg_log),
+        EntityName::Dagger => make_dagger(entities, config, pos, msg_log),
+        EntityName::Hammer => make_hammer(entities, config, pos, msg_log),
+        EntityName::Sword => make_sword(entities, config, pos, msg_log),
+        EntityName::Shield => make_shield(entities, config, pos, msg_log),
+        EntityName::Key => make_key(entities, config, pos, msg_log),
+        EntityName::Mouse => make_mouse(entities, config, msg_log),
+        EntityName::Cursor => make_cursor(entities, config, pos, msg_log),
+        EntityName::Gol => make_gol(entities, config, pos, msg_log),
+        EntityName::Spire => make_spire(entities, config, pos, msg_log),
+        EntityName::Pawn => make_pawn(entities, config, pos, msg_log),
+        EntityName::SoundTrap => make_sound_trap(entities, config, pos, msg_log),
+        EntityName::SpikeTrap => make_spike_trap(entities, config, pos, msg_log),
+        EntityName::FreezeTrap => make_freeze_trap(entities, config, pos, msg_log),
+        EntityName::BlinkTrap => make_blink_trap(entities, config, pos, msg_log),
+        EntityName::GateTrigger => make_gate_trigger(entities, config, pos, msg_log),
+        EntityName::Exit => make_exit(entities, config, pos, msg_log),
+        EntityName::Stone => make_stone(entities, config, pos, msg_log),
+        _ => {
+            panic!(format!("Cannot create {:?} this way", entity_name));
+        }
+    }
 }
 
 pub fn make_island(data: &mut GameData,

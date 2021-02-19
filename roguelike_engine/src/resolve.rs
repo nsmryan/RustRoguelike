@@ -230,7 +230,7 @@ pub fn resolve_messages(data: &mut GameData,
                 panic!("Player sent themselves a message?")
             }
 
-            let player_pos = data.entities.pos[&player_id];
+            let _player_pos = data.entities.pos[&player_id];
             //if !data.map.is_in_fov(player_pos, *pos, config.fov_radius_player) {
                 //let heard = Effect::HeardSomething(*pos, settings.turn_count);
                 // TODO move to somewhere else?
@@ -582,7 +582,7 @@ fn resolve_blink(entity_id: EntityId, data: &mut GameData, rng: &mut SmallRng, m
     data.entities.took_turn[&entity_id] = true;
 }
 
-fn resolve_rubble(entity_id: EntityId, blocked: Blocked, data: &mut GameData, msg_log: &mut MsgLog) {
+fn resolve_rubble(entity_id: EntityId, blocked: Blocked, data: &mut GameData, _msg_log: &mut MsgLog) {
     use_energy(entity_id, data);
 
     let entity_pos = data.entities.pos[&entity_id];

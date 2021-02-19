@@ -839,7 +839,6 @@ pub fn chord(loc: ActionLoc,
              msg_log: &mut MsgLog) -> Action {
     let mut turn = Action::none();
     let player_id = data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = data.entities.pos[&player_id];
 
     // if no target selection, then it is a move
     if target == -1 {
@@ -855,7 +854,7 @@ fn chord_move(loc: ActionLoc,
               mode: ActionMode,
               data: &GameData,
               msg_log: &mut MsgLog) -> Action {
-    let mut turn = Action::none();
+    let turn;
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
 
@@ -902,7 +901,6 @@ fn chord_selection(loc: ActionLoc,
                    msg_log: &mut MsgLog) -> Action {
     let mut turn = Action::none();
     let player_id = data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = data.entities.pos[&player_id];
 
     let num_items_in_inventory = data.entities.inventory[&player_id].len() as i32;
     if target >= 2 {

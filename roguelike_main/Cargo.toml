@@ -26,4 +26,10 @@ bmp = "0.5"
 
 roguelike_core = { path = "../roguelike_core" }
 roguelike_engine = { path = "../roguelike_engine" }
+roguelike_lib = { path = "../roguelike_lib" }
+
+[[bin]]
+name = "rl"
+path = "src/main.rs"
+
 

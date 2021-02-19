@@ -9,7 +9,6 @@ use roguelike_core::config::*;
 use roguelike_core::utils::*;
 
 use crate::generation::*;
-use crate::game::*;
 
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Debug)]

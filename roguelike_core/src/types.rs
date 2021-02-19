@@ -597,6 +597,62 @@ impl Default for EntityName {
     }
 }
 
+impl FromStr for EntityName {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+
+        if s == "player" {
+            return Ok(EntityName::Player);
+        } else if s == "gol" {
+            return Ok(EntityName::Gol);
+        } else if s == "pawn" {
+            return Ok(EntityName::Pawn);
+        } else if s == "column" {
+            return Ok(EntityName::Column);
+        } else if s == "key" {
+            return Ok(EntityName::Key);
+        } else if s == "exit" {
+            return Ok(EntityName::Exit);
+        } else if s == "dagger" {
+            return Ok(EntityName::Dagger);
+        } else if s == "hammer" {
+            return Ok(EntityName::Hammer);
+        } else if s == "sword" {
+            return Ok(EntityName::Sword);
+        } else if s == "shield" {
+            return Ok(EntityName::Shield);
+        } else if s == "spire" {
+            return Ok(EntityName::Spire);
+        } else if s == "spiketrap" {
+            return Ok(EntityName::SpikeTrap);
+        } else if s == "blinktrap" {
+            return Ok(EntityName::BlinkTrap);
+        } else if s == "freezetrap" {
+            return Ok(EntityName::FreezeTrap);
+        } else if s == "soundtrap" {
+            return Ok(EntityName::SoundTrap);
+        } else if s == "gatetrigger" {
+            return Ok(EntityName::GateTrigger);
+        } else if s == "stone" {
+            return Ok(EntityName::Stone);
+        } else if s == "mouse" {
+            return Ok(EntityName::Mouse);
+        } else if s == "cursor" {
+            return Ok(EntityName::Cursor);
+        } else if s == "energy" {
+            return Ok(EntityName::Energy);
+        } else if s == "other" {
+            return Ok(EntityName::Other);
+        }
+
+        panic!(format!("EntityName {} not expected!", s));
+    }
+}
+
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum EntityType {
     Player,
