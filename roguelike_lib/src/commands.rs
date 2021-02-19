@@ -6,7 +6,7 @@ use roguelike_engine::generation::*;
 
 
 // TODO
-// generation: make each entity, remove entity
+// generation: remove entity
 // components: get and set
 // map: create from MapConfigs
 //      redo map with current config
@@ -21,12 +21,14 @@ use roguelike_engine::generation::*;
 // line positions?
 // blocked pos, blocked path, etc
 // fov
+// convenience, like nearby entity ids, or all entity list
 
 pub enum GameCmd {
     PlayerId,
     Pos(u64),
     SetPos(u64, i32, i32),
     Make(EntityName, i32, i32),
+    Remove(u64),
     Exit,
 }
 
@@ -56,7 +58,10 @@ impl FromStr for GameCmd {
             let x  = args[2].parse::<i32>().unwrap();
             let y  = args[3].parse::<i32>().unwrap();
 
-            return Ok(GameCmd::Make(entity_name, x, y*));
+            return Ok(GameCmd::Make(entity_name, x, y));
+        } else if cmd == "remove" {
+            let id = args[1].parse::<u64>().unwrap();
+            return Ok(GameCmd::Remove(id));
         } else if cmd == "exit" {
             return Ok(GameCmd::Exit);
         }
@@ -97,6 +102,11 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
             return format!("{}", id);
         }
             
+        GameCmd::Remove(id) => {
+            game.data.remove_entity(*id);
+            return "".to_string();
+        }
+
         // let action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
         // game.step_game(input_action, dt);
     }
