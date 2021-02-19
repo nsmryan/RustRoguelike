@@ -27,3 +27,6 @@ roguelike_engine = { path = "../roguelike_engine" }
 name = "rust_roguelike"
 crate-type = ["cdylib"]
 
+[[bin]]
+name = "rust_cmds"
+path = "src/main.rs"
