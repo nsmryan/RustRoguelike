@@ -118,6 +118,7 @@ impl Input {
                 match dir {
                     KeyDir::Down => {
                         self.chording = true;
+                        self.mode = ActionMode::Primary;
                     }
 
                     KeyDir::Up => {
@@ -132,7 +133,6 @@ impl Input {
             InputEvent::Shift(dir) => {
                 if dir != KeyDir::Held {
                     self.shifting = dir == KeyDir::Down;
-                    dbg!(self.shifting);
                 }
             }
 
@@ -141,7 +141,6 @@ impl Input {
                     self.mode = ActionMode::Alternate;
                     self.moding = true;
                 } else if dir == KeyDir::Up {
-                    self.mode = ActionMode::Primary;
                     self.moding = false;
                 }
             }
@@ -164,7 +163,12 @@ impl Input {
                                 self.target = index as i32;
                             }
                         }
-                        action = self.key_to_action(chr, dir, settings, config); }
+                        action = self.key_to_action(chr, dir, settings, config);
+
+                        if !self.moding {
+                          self.mode = ActionMode::Primary;
+                        }
+                    }
 
                     KeyDir::Down => {
                         if chr == 'o' {
