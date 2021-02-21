@@ -65,6 +65,7 @@ pub enum GameCmd {
     SetPos(u64, i32, i32),
     Make(EntityName, i32, i32),
     Remove(u64),
+    ListEntities,
     Key(char, KeyDir),
     Ctrl(KeyDir),
     Alt(KeyDir),
@@ -72,7 +73,7 @@ pub enum GameCmd {
 }
 
 impl FromStr for GameCmd {
-    type Err = String;
+    TYPe Err = String;
 
     fn from_str(string: &str) -> Result<Self, Self::Err> {
         let s: &mut str = &mut string.to_string();
@@ -101,6 +102,8 @@ impl FromStr for GameCmd {
         } else if cmd == "remove" {
             let id = args[1].parse::<u64>().unwrap();
             return Ok(GameCmd::Remove(id));
+        } else if cmd == "list_entities" {
+            return Ok(GameCmd::ListEntities);
         } else if cmd == "key" {
             let chr = args[1].parse::<char>().unwrap();
             let dir = args[2].parse::<KeyDir>().unwrap();
@@ -153,6 +156,11 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
             
         GameCmd::Remove(id) => {
             game.data.remove_entity(*id);
+            return "".to_string();
+        }
+
+        GameCmd::ListEntities(id) => {
+
             return "".to_string();
         }
 
