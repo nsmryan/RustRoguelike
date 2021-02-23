@@ -3,6 +3,7 @@ use std::time::Instant;
 
 use roguelike_core::types::*;
 use roguelike_core::movement::*;
+use roguelike_core::map::*;
 
 use roguelike_engine::input::*;
 use roguelike_engine::game::*;
@@ -32,41 +33,16 @@ use roguelike_engine::generation::*;
 // Tab,
 // Quit,
 
-//  Move(Direction),
-//  Pass,
-//  MapClick(Pos, Pos), // map loc, map cell
-//  MouseButton(MouseClick, KeyDir),
-//  Pickup,
-//  DropItem,
-//  SwapPrimaryItem,
-//  Inventory,
-//  SkillMenu,
-//  ClassMenu,
-//  Exit,
-//  Esc,
-//  ExploreAll,
-//  RegenerateMap,
-//  GodMode,
-//  Yell,
-//  IncreaseMoveMode,
-//  DecreaseMoveMode,
-//  OverlayOn,
-//  OverlayOff,
-//  SelectItem(usize),
-//  ToggleConsole,
-//  UseItem,
-//  Interact,
-//  Chord(Option<Direction>, ActionMode, ActionTarget),
-//  CursorMove(Direction),
-//  CursorApply(ActionMode, ActionTarget),
-//  None,
-
 pub enum GameCmd {
     PlayerId,
     Pos(u64),
     SetPos(u64, i32, i32),
     Facing(u64),
     SetFacing(u64, Direction),
+    TileWalls(i32, i32),
+    SetTileWalls(i32, i32, TileType, Wall, Wall), // type, left, bottom
+    Surface(i32, i32),
+    SetSurface(i32, i32, Surface),
     Make(EntityName, i32, i32),
     Remove(u64),
     ListEntities,
@@ -83,6 +59,7 @@ impl FromStr for GameCmd {
         let s: &mut str = &mut string.to_string();
         s.make_ascii_lowercase();
 
+        // TODO probably next() for cmd and have only arguments in args
         let args = s.split(" ").collect::<Vec<&str>>();
         let cmd = args[0];
 
@@ -96,6 +73,34 @@ impl FromStr for GameCmd {
                 let x  = args[2].parse::<i32>().unwrap();
                 let y  = args[3].parse::<i32>().unwrap();
                 return Ok(GameCmd::SetPos(id, x, y));
+            }
+        } else if cmd == "facing" {
+            let id = args[1].parse::<u64>().unwrap();
+            if args.len() == 2 {
+                return Ok(GameCmd::Facing(id));
+            } else {
+                let dir  = args[2].parse::<Direction>().unwrap();
+                return Ok(GameCmd::SetFacing(id, dir));
+            }
+        } else if cmd == "tile_walls" {
+            let x  = args[1].parse::<i32>().unwrap();
+            let y  = args[2].parse::<i32>().unwrap();
+            if args.len() == 3 {
+                return Ok(GameCmd::TileWalls(x, y));
+            } else {
+                let typ     = args[3].parse::<TileType>().unwrap();
+                let left    = args[4].parse::<Wall>().unwrap();
+                let bottom  = args[5].parse::<Wall>().unwrap();
+                return Ok(GameCmd::SetTileWalls(x, y, typ, left, bottom));
+            }
+        } else if cmd == "surface" {
+            let x  = args[1].parse::<i32>().unwrap();
+            let y  = args[2].parse::<i32>().unwrap();
+            if args.len() == 3 {
+                return Ok(GameCmd::Surface(x, y));
+            } else {
+                let surface  = args[3].parse::<Surface>().unwrap();
+                return Ok(GameCmd::SetSurface(x, y, surface));
             }
         } else if cmd == "facing" {
             let id = args[1].parse::<u64>().unwrap();
@@ -158,6 +163,27 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
 
         GameCmd::SetFacing(id, dir) => {
             game.data.entities.direction[id] = *dir;
+            return "".to_string();
+        }
+
+        GameCmd::TileWalls(x, y) => {
+            let tile = game.data.map[(*x, *y)];
+            return format!("{} {} {}", tile.tile_type, tile.left_wall, tile.bottom_wall);
+        }
+
+        GameCmd::SetTileWalls(x, y, typ, left_wall, bottom_wall) => {
+            game.data.map[(*x, *y)].tile_type = *typ;
+            game.data.map[(*x, *y)].left_wall = *left_wall;
+            game.data.map[(*x, *y)].bottom_wall = *bottom_wall;
+            return "".to_string();
+        }
+
+        GameCmd::Surface(x, y) => {
+            return game.data.map[(*x, *y)].surface.to_string();
+        }
+
+        GameCmd::SetSurface(x, y, surface) => {
+            game.data.map[(*x, *y)].surface = *surface;
             return "".to_string();
         }
 
