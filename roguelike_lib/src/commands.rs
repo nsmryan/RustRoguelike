@@ -2,6 +2,8 @@ use std::str::FromStr;
 use std::time::Instant;
 
 use roguelike_core::types::*;
+use roguelike_core::movement::*;
+
 use roguelike_engine::input::*;
 use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
@@ -63,6 +65,8 @@ pub enum GameCmd {
     PlayerId,
     Pos(u64),
     SetPos(u64, i32, i32),
+    Facing(u64),
+    SetFacing(u64, Direction),
     Make(EntityName, i32, i32),
     Remove(u64),
     ListEntities,
@@ -92,6 +96,14 @@ impl FromStr for GameCmd {
                 let x  = args[2].parse::<i32>().unwrap();
                 let y  = args[3].parse::<i32>().unwrap();
                 return Ok(GameCmd::SetPos(id, x, y));
+            }
+        } else if cmd == "facing" {
+            let id = args[1].parse::<u64>().unwrap();
+            if args.len() == 2 {
+                return Ok(GameCmd::Facing(id));
+            } else {
+                let dir  = args[2].parse::<Direction>().unwrap();
+                return Ok(GameCmd::SetFacing(id, dir));
             }
         } else if cmd == "make" {
             let entity_name = args[1].parse::<EntityName>().unwrap();
@@ -136,6 +148,16 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
 
         GameCmd::SetPos(id, x, y) => {
             game.data.entities.pos[id] = Pos::new(*x, *y);
+            return "".to_string();
+        }
+
+        GameCmd::Facing(id) => {
+            let dir = game.data.entities.direction[id];
+            return format!("{}", dir);
+        }
+
+        GameCmd::SetFacing(id, dir) => {
+            game.data.entities.direction[id] = *dir;
             return "".to_string();
         }
 
