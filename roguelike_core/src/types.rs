@@ -597,6 +597,34 @@ impl Default for EntityName {
     }
 }
 
+impl fmt::Display for EntityName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EntityName::Player => write!(f, "player"),
+            EntityName::Gol => write!(f, "gol"),
+            EntityName::Pawn => write!(f, "pawn"),
+            EntityName::Column => write!(f, "column"),
+            EntityName::Key => write!(f, "key"),
+            EntityName::Exit => write!(f, "exit"),
+            EntityName::Dagger => write!(f, "dagger"),
+            EntityName::Hammer => write!(f, "hammer"),
+            EntityName::Sword => write!(f, "sword"),
+            EntityName::Shield => write!(f, "shield"),
+            EntityName::Spire => write!(f, "spire"),
+            EntityName::SpikeTrap => write!(f, "spiketrap"),
+            EntityName::BlinkTrap => write!(f, "blinktrap"),
+            EntityName::FreezeTrap => write!(f, "freezetrap"),
+            EntityName::SoundTrap => write!(f, "soundtrap"),
+            EntityName::GateTrigger => write!(f, "gatetrigger"),
+            EntityName::Stone => write!(f, "stone"),
+            EntityName::Mouse => write!(f, "mouse"),
+            EntityName::Cursor => write!(f, "cursor"),
+            EntityName::Energy => write!(f, "energy"),
+            EntityName::Other => write!(f, "other"),
+        }
+    }
+}
+
 impl FromStr for EntityName {
     type Err = String;
 
@@ -662,6 +690,47 @@ pub enum EntityType {
     Energy,
     Trigger,
     Other,
+}
+
+impl fmt::Display for EntityType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EntityType::Player => write!(f, "player"),
+            EntityType::Enemy => write!(f, "enemy"),
+            EntityType::Item => write!(f, "item"),
+            EntityType::Column => write!(f, "column"),
+            EntityType::Energy => write!(f, "energy"),
+            EntityType::Trigger => write!(f, "trigger"),
+            EntityType::Other => write!(f, "other"),
+        }
+    }
+}
+
+impl FromStr for EntityType {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+
+        if s == "player" {
+            return Ok(EntityType::Player);
+        } else if s == "enemy" {
+            return Ok(EntityType::Enemy);
+        } else if s == "item" {
+            return Ok(EntityType::Item);
+        } else if s == "column" {
+            return Ok(EntityType::Column);
+        } else if s == "energy" {
+            return Ok(EntityType::Energy);
+        } else if s == "trigger" {
+            return Ok(EntityType::Trigger);
+        } else if s == "other" {
+            return Ok(EntityType::Other);
+        }
+
+        panic!(format!("EntityType {} not expected!", s));
+    }
 }
 
 impl Default for EntityType {

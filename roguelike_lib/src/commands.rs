@@ -14,9 +14,6 @@ use roguelike_engine::generation::*;
 // components: get and set
 // map: create from MapConfigs
 //      redo map with current config
-//      get/set tiles
-// input: step from key
-// action: step from InputAction
 //
 // possibly:
 // inject messages?
@@ -25,7 +22,7 @@ use roguelike_engine::generation::*;
 // line positions?
 // blocked pos, blocked path, etc
 // fov
-// convenience, like nearby entity ids, or all entity list
+// convenience, like visible entity ids
 
 // MousePos(i32, i32),
 // MouseButton(MouseClick, Pos, Option<Pos>, KeyDir),
@@ -43,6 +40,8 @@ pub enum GameCmd {
     SetTileWalls(i32, i32, TileType, Wall, Wall), // type, left, bottom
     Surface(i32, i32),
     SetSurface(i32, i32, Surface),
+    EntityName(u64),
+    EntityType(u64),
     Make(EntityName, i32, i32),
     Remove(u64),
     ListEntities,
@@ -102,14 +101,12 @@ impl FromStr for GameCmd {
                 let surface  = args[3].parse::<Surface>().unwrap();
                 return Ok(GameCmd::SetSurface(x, y, surface));
             }
-        } else if cmd == "facing" {
+        } else if cmd == "entity_name" {
             let id = args[1].parse::<u64>().unwrap();
-            if args.len() == 2 {
-                return Ok(GameCmd::Facing(id));
-            } else {
-                let dir  = args[2].parse::<Direction>().unwrap();
-                return Ok(GameCmd::SetFacing(id, dir));
-            }
+            return Ok(GameCmd::EntityName(id));
+        } else if cmd == "entity_type" {
+            let id = args[1].parse::<u64>().unwrap();
+            return Ok(GameCmd::EntityType(id));
         } else if cmd == "make" {
             let entity_name = args[1].parse::<EntityName>().unwrap();
             let x  = args[2].parse::<i32>().unwrap();
@@ -201,10 +198,18 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
                                  &mut game.msg_log);
             return format!("{}", id);
         }
-            
+
         GameCmd::Remove(id) => {
             game.data.remove_entity(*id);
             return "".to_string();
+        }
+
+        GameCmd::EntityName(id) => {
+            return game.data.entities.name[id].to_string();
+        }
+
+        GameCmd::EntityType(id) => {
+            return game.data.entities.typ[id].to_string();
         }
 
         GameCmd::ListEntities => {
