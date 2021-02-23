@@ -3,6 +3,7 @@ name = "roguelike_main"
 version = "0.1.0"
 authors = ["nsmryan <nsmryan@gmail.com>"]
 edition = "2018"
+default-run="rl"
 
 [dependencies]
 rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
@@ -31,5 +32,4 @@ roguelike_lib = { path = "../roguelike_lib" }
 [[bin]]
 name = "rl"
 path = "src/main.rs"
-
 

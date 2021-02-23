@@ -73,7 +73,7 @@ pub enum GameCmd {
 }
 
 impl FromStr for GameCmd {
-    TYPe Err = String;
+    type Err = String;
 
     fn from_str(string: &str) -> Result<Self, Self::Err> {
         let s: &mut str = &mut string.to_string();
@@ -102,7 +102,7 @@ impl FromStr for GameCmd {
         } else if cmd == "remove" {
             let id = args[1].parse::<u64>().unwrap();
             return Ok(GameCmd::Remove(id));
-        } else if cmd == "list_entities" {
+        } else if cmd == "ids" {
             return Ok(GameCmd::ListEntities);
         } else if cmd == "key" {
             let chr = args[1].parse::<char>().unwrap();
@@ -118,7 +118,7 @@ impl FromStr for GameCmd {
             return Ok(GameCmd::Exit);
         }
 
-        panic!(format!("GameCmd {} not expected!", cmd));
+        return Err("OUTPUT: error '{}' not expected!".to_string());
     }
 }
 
@@ -159,9 +159,13 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
             return "".to_string();
         }
 
-        GameCmd::ListEntities(id) => {
-
-            return "".to_string();
+        GameCmd::ListEntities => {
+            let ids = game.data.entities.ids.iter()
+                          .map(|id| id.to_string())
+                          .collect::<Vec<String>>()
+                          .join(" ");
+                 
+            return ids;
         }
 
         GameCmd::Key(chr, dir) => {

@@ -193,10 +193,12 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
 
         // check for commands to execute
         if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(0)) {
-            let cmd = msg.parse::<GameCmd>()
-                         .expect(&format!("Unexpected command {}", msg));
-            let result = execute_game_command(&cmd, &mut game);
-            println!("{}", result);
+            if let Ok(cmd) = msg.parse::<GameCmd>() {
+                let result = execute_game_command(&cmd, &mut game);
+                println!("OUTPUT: {}", result);
+            } else {
+                println!("OUTPUT: error '{}' unexpected", msg);
+            }
         }
 
         let mut input_action: InputAction = InputAction::None;
