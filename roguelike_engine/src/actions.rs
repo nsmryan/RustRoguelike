@@ -6,7 +6,7 @@ use serde::{Serialize, Deserialize};
 use roguelike_core::movement::{Direction, Action, Reach};
 use roguelike_core::types::*;
 use roguelike_core::movement;
-use roguelike_core::utils::{add_pos, sub_pos};
+use roguelike_core::utils::{add_pos, sub_pos, scale_pos};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
@@ -53,7 +53,6 @@ pub enum InputAction {
     MouseButton(MouseClick, KeyDir),
     Pickup,
     DropItem,
-    SwapPrimaryItem,
     Inventory,
     SkillMenu,
     ClassMenu,
@@ -72,7 +71,8 @@ pub enum InputAction {
     UseItem,
     Interact,
     Chord(Option<Direction>, ActionMode, ActionTarget),
-    CursorMove(Direction),
+    CursorMove(Direction, bool), // move direction, is long
+    CursorReturn,
     CursorApply(ActionMode, ActionTarget),
     None,
 }
@@ -97,7 +97,6 @@ impl fmt::Display for InputAction {
             InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
             InputAction::Pickup => write!(f, "pickup"),
             InputAction::DropItem => write!(f, "drop"),
-            InputAction::SwapPrimaryItem => write!(f, "swapitem"),
             InputAction::Inventory => write!(f, "inventory"),
             InputAction::SkillMenu => write!(f, "skill"),
             InputAction::ClassMenu => write!(f, "class"),
@@ -116,7 +115,8 @@ impl fmt::Display for InputAction {
             InputAction::UseItem => write!(f, "use"),
             InputAction::Interact => write!(f, "interact"),
             InputAction::Chord(dir, mode, target) => write!(f, "chord {:?} {:?} {:?}", dir, mode, target),
-            InputAction::CursorMove(dir) => write!(f, "cursormove {:?}", dir),
+            InputAction::CursorMove(dir, long) => write!(f, "cursormove {:?} {}", dir, long),
+            InputAction::CursorReturn => write!(f, "cursorreturn"),
             InputAction::CursorApply(mode, target) => write!(f, "cursorapply {:?} {:?}", mode, target),
             InputAction::None => write!(f, "none"),
         }
@@ -173,8 +173,6 @@ impl FromStr for InputAction {
             let cell_x = args[3].parse::<i32>().unwrap();
             let cell_y = args[4].parse::<i32>().unwrap();
             return Ok(InputAction::MapClick(Pos::new(loc_x, loc_y), Pos::new(cell_x, cell_y)));
-        } else if s == "swapitem" {
-            return Ok(InputAction::SwapPrimaryItem);
         } else if s == "skill" {
             return Ok(InputAction::SkillMenu);
         } else if s == "class" {
@@ -194,7 +192,10 @@ impl FromStr for InputAction {
         } else if s.starts_with("cursormove") {
             let args = s.split(" ").collect::<Vec<&str>>();
             let dir = Direction::from_str(args[1]).unwrap();
-            return Ok(InputAction::CursorMove(dir));
+            let long = bool::from_str(args[2]).unwrap();
+            return Ok(InputAction::CursorMove(dir, long));
+        } else if s.starts_with("cursorreturn") {
+            return Ok(InputAction::CursorReturn);
         } else if s.starts_with("cursorapply") {
             let args = s.split(" ").collect::<Vec<&str>>();
             let mode = ActionMode::from_str(args[1]).unwrap();
@@ -554,9 +555,20 @@ pub fn handle_input_playing(input_action: InputAction,
     let player_alive = data.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
-        (InputAction::CursorMove(dir), true) => {
+        (InputAction::CursorReturn, _) => {
+            settings.cursor_pos = data.entities.pos[&player_id];
+        }
+
+        (InputAction::CursorMove(dir, long), _) => {
             let cursor_pos = settings.cursor_pos;
-            let new_pos = add_pos(cursor_pos, dir.into_move());
+            let dist = 
+                if long {
+                    config.cursor_long
+                } else {
+                    1
+                };
+            let dir_move = scale_pos(dir.into_move(), dist);
+            let new_pos = add_pos(cursor_pos, dir_move);
 
             if data.map.is_within_bounds(new_pos) {
                 settings.cursor_pos = new_pos;
@@ -645,10 +657,6 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::Exit, _) => {
             action_result.new_state = Some(GameState::ConfirmQuit);
-        }
-
-        (InputAction::SwapPrimaryItem, _) => {
-            msg_log.log(Msg::SwapPrimaryItem);
         }
 
         (InputAction::Interact, _) => {

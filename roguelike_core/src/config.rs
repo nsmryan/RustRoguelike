@@ -87,8 +87,10 @@ pub struct Config {
     pub take_screenshot: bool,
     pub show_info: bool,
     pub use_cursor: bool,
+    pub cursor_long: i32,
     pub repeat_delay: f32,
     pub write_map_distribution: bool,
+    pub print_key_log: bool,
 }
 
 impl Config {
@@ -104,3 +106,4 @@ impl Config {
         return config
     }
 }
+

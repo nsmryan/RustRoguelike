@@ -137,11 +137,11 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     /* detect structures left */
     let mut structures = find_structures(&game.data.map);
-    println!();
-    println!("{} singles", structures.iter().filter(|s| s.typ == StructureType::Single).count());
-    println!("{} lines", structures.iter().filter(|s| s.typ == StructureType::Line).count());
-    println!("{} paths", structures.iter().filter(|s| s.typ == StructureType::Path).count());
-    println!("{} complex", structures.iter().filter(|s| s.typ == StructureType::Complex).count());
+    eprintln!();
+    eprintln!("{} singles", structures.iter().filter(|s| s.typ == StructureType::Single).count());
+    eprintln!("{} lines", structures.iter().filter(|s| s.typ == StructureType::Line).count());
+    eprintln!("{} paths", structures.iter().filter(|s| s.typ == StructureType::Path).count());
+    eprintln!("{} complex", structures.iter().filter(|s| s.typ == StructureType::Complex).count());
 
     /* modify structures with rubble, columns, etc */
     let max_rubbles =
@@ -465,7 +465,7 @@ fn place_vaults(game: &mut Game, cmds: &Vec<ProcCmd>) {
                 let offset = Pos::new(game.rng.gen_range(0, width), game.rng.gen_range(0, height));
 
                 let vault = &game.vaults[vault_index];
-                println!("Placing vault {} at {}", vault_index, offset);
+                eprintln!("Placing vault {} at {}", vault_index, offset);
                 place_vault(&mut game.data, vault, offset, &mut game.rng);
             }
         }
@@ -520,15 +520,15 @@ pub fn place_vault_with(data: &mut GameData, vault: &Vault, offset: Pos, rotatio
     }
 
     // add new entities to entity system
-    //println!("_________");
-    //println!("{:?}", &entities.ids);
-    //println!("_________");
-    //println!("{:?}data.entities.ids);
-    //println!("{:?}", &data.entities.ids);
+    //eprintln!("_________");
+    //eprintln!("{:?}", &entities.ids);
+    //eprintln!("_________");
+    //eprintln!("{:?}data.entities.ids);
+    //eprintln!("{:?}", &data.entities.ids);
     data.entities.merge(&entities);
-    //println!("{:?}", &data.entities.ids);
-    //println!("_________");
-    //println!("_________");
+    //eprintln!("{:?}", &data.entities.ids);
+    //eprintln!("_________");
+    //eprintln!("_________");
 }
 
 fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
@@ -755,7 +755,7 @@ fn find_structural_blocks(map: &Map) -> Vec<Pos> {
 fn find_structures(map: &Map) -> Vec<Structure> {
     let blocks = find_structural_blocks(map);
 
-    println!("Blocks in structures: {}", blocks.len());
+    eprintln!("Blocks in structures: {}", blocks.len());
 
     let mut structures = Vec::new();
     let mut seen: HashSet<Pos> = HashSet::new();
@@ -793,7 +793,7 @@ fn find_structures(map: &Map) -> Vec<Structure> {
         }
     }
 
-    println!("Number of structures: {}", structures.len());
+    eprintln!("Number of structures: {}", structures.len());
 
     return structures;
 }

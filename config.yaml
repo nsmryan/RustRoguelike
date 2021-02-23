@@ -177,9 +177,11 @@ dampen_tall_wall: 2
 take_screenshot: false
 show_info: true
 use_cursor: true
+cursor_long: 3
 
 # delay before a key is repeated (seconds)
 repeat_delay: 0.35
 
 # whether to write out a map distribution file
 write_map_distribution: true
+print_key_log: true
