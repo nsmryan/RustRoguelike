@@ -28,9 +28,9 @@ pub fn resolve_messages(data: &mut GameData,
     while let Some(msg) = msg_log.pop() {
         let msg_line = msg.msg_line(data);
         if msg_line.len() > 0 {
-            println!("msg: {}", msg_line);
+            println!("CONSOLE: {}", msg_line);
         }
-        println!("\t{:?}", msg);
+        println!("MSG_DBG: {:?}", msg);
 
         match msg {
             Msg::Moved(entity_id, move_type, pos) => {
@@ -756,7 +756,6 @@ fn pushed_entity(pusher: EntityId,
             push_attack(pusher, pushed, direction, push_amount, move_into, data, config, msg_log);
 
         if continue_push && push_amount > 1 {
-            dbg!(push_amount - 1);
             msg_log.log(Msg::Pushed(pusher, pushed, direction, push_amount - 1, move_into));
         }
     } else {

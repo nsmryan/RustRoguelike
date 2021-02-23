@@ -15,6 +15,7 @@ use sdl2::image::LoadTexture;
 use sdl2::render::{WindowCanvas, Texture, TextureCreator};
 use sdl2::video::WindowContext;
 use sdl2::ttf::Sdl2TtfContext;
+use sdl2::event::Event;
 
 use walkdir::WalkDir;
 
@@ -183,6 +184,9 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         {
             let _input_timer = timer!("INPUT");
             for sdl2_event in event_pump.poll_iter() {
+                if game.config.print_key_log {
+                    print_event(&sdl2_event);
+                }
                 if let Some(event) = translate_event(sdl2_event, &mut game, &mut display) {
                     let action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
                     // NOTE may lose inputs if multiple events create actions!
@@ -267,6 +271,21 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
 
     return Ok(());
 }
+
+fn print_event(event: &Event) {
+    match event {
+        Event::KeyDown { timestamp, keycode, scancode, keymod, repeat, .. } => {
+            println!("KEY: {} down {} {} {} {}", timestamp, keycode.unwrap(), scancode.unwrap(), keymod, repeat);
+        }
+
+        Event::KeyUp { timestamp, keycode, scancode, keymod, repeat, .. } => {
+            println!("KEY: {} up   {} {} {} {}", timestamp, keycode.unwrap(), scancode.unwrap(), keymod, repeat);
+        }
+        
+        _ => {}
+    }
+}
+
 
 pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), String> {
     game.settings.god_mode = true;
