@@ -34,11 +34,6 @@ pub fn resolve_messages(data: &mut GameData,
 
         match msg {
             Msg::Moved(entity_id, move_type, pos) => {
-                // only perform move if tile does not contain a wall or entity
-                //if data.has_blocking_entity(pos).is_none() &&
-                //   !data.map[pos].block_move {
-                       //process_moved_message(entity_id, move_type, pos, data, msg_log, config);
-                //}
                process_moved_message(entity_id, move_type, pos, data, msg_log, config);
             }
 
@@ -935,11 +930,7 @@ fn process_moved_message(entity_id: EntityId,
                          data: &mut GameData,
                          msg_log: &mut MsgLog,
                          config: &Config) {
-    // if this move does not change the entity position, exit early
-    //if pos == data.entities.pos[&entity_id] {
-        //return;
-    //}
-
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
     let original_pos = data.entities.pos[&entity_id];
 
     data.entities.move_to(entity_id, pos);
@@ -999,7 +990,6 @@ fn process_moved_message(entity_id: EntityId,
     }
 
     // check if player walks on energy
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
     if entity_id == player_id {
         for other_id in data.entities.ids.clone().iter() {
             if data.entities.pos[other_id] == pos && 
