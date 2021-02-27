@@ -34,6 +34,8 @@ pub enum GameCmd {
     PlayerId,
     Pos(u64),
     SetPos(u64, i32, i32),
+    Hp(u64),
+    SetHp(u64, i32),
     Facing(u64),
     SetFacing(u64, Direction),
     TileWalls(i32, i32),
@@ -72,6 +74,14 @@ impl FromStr for GameCmd {
                 let x  = args[2].parse::<i32>().unwrap();
                 let y  = args[3].parse::<i32>().unwrap();
                 return Ok(GameCmd::SetPos(id, x, y));
+            }
+        } else if cmd == "hp" {
+            let id = args[1].parse::<u64>().unwrap();
+            if args.len() == 2 {
+                return Ok(GameCmd::Hp(id));
+            } else {
+                let hp  = args[2].parse::<i32>().unwrap();
+                return Ok(GameCmd::SetHp(id, hp));
             }
         } else if cmd == "facing" {
             let id = args[1].parse::<u64>().unwrap();
@@ -150,6 +160,16 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
 
         GameCmd::SetPos(id, x, y) => {
             game.data.entities.pos[id] = Pos::new(*x, *y);
+            return "".to_string();
+        }
+
+        GameCmd::Hp(id) => {
+            let hp = game.data.entities.fighter[id].hp;
+            return format!("{}", hp);
+        }
+
+        GameCmd::SetHp(id, hp) => {
+            game.data.entities.fighter[id].hp = *hp;
             return "".to_string();
         }
 
