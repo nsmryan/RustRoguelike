@@ -40,6 +40,21 @@ impl FromStr for KeyDir {
 }
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+pub enum CursorState {
+    Absolute,
+    Relative,
+}
+
+impl CursorState {
+    pub fn toggle(&self) -> CursorState {
+        match self {
+            CursorState::Absolute => CursorState::Relative,
+            CursorState::Relative => CursorState::Absolute,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum MouseClick {
     Left,
     Right,
@@ -277,6 +292,10 @@ pub fn keyup_to_action(chr: char, game_state: GameState) -> InputAction {
     match chr {
         'a' => {
             input_action = InputAction::Interact;
+        }
+
+        'r' => {
+            input_action = InputAction::CursorStateToggle;
         }
 
         'q' => {

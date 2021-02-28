@@ -2,11 +2,15 @@
 This Rust Roguelike is a Roguelike written in Rust.
 
 
-This is tested on Windows, and can be made to work on Linux. A simple
+This is tested on Windows and Linux. On Linux (and on a Mac, although
+this is untested), make sure the SDL2 is installed. On Windows this repository
+contains the necessary SDL2 files.
+
+Then just run:
 ```bash
 cargo run
 ```
-should download all dependecies and get it running. If you are playing and not developing,
+which will download all dependecies and get it running. If you are playing and not developing,
 consider
 ```bash
 cargo run --release
@@ -15,6 +19,8 @@ to get a smoother experience, but not that it will take some time the first time
 run (several minutes).
 
 ## Key Map
+NOTE the input system is under development, and may not match this description!
+
   * 0,1,2,3,4,6,7,8,9: directional movement, or a selection in a menu
   * 5: pass turn
   * Up/Down/Left/Right Arrow: directional movement

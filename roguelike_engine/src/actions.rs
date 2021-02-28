@@ -73,6 +73,7 @@ pub enum InputAction {
     Chord(Option<Direction>, ActionMode, ActionTarget),
     CursorMove(Direction, bool), // move direction, is long
     CursorReturn,
+    CursorStateToggle,
     CursorApply(ActionMode, ActionTarget),
     None,
 }
@@ -117,6 +118,7 @@ impl fmt::Display for InputAction {
             InputAction::Chord(dir, mode, target) => write!(f, "chord {:?} {:?} {:?}", dir, mode, target),
             InputAction::CursorMove(dir, long) => write!(f, "cursormove {:?} {}", dir, long),
             InputAction::CursorReturn => write!(f, "cursorreturn"),
+            InputAction::CursorStateToggle => write!(f, "cursorstatetoggle"),
             InputAction::CursorApply(mode, target) => write!(f, "cursorapply {:?} {:?}", mode, target),
             InputAction::None => write!(f, "none"),
         }
@@ -196,6 +198,8 @@ impl FromStr for InputAction {
             return Ok(InputAction::CursorMove(dir, long));
         } else if s.starts_with("cursorreturn") {
             return Ok(InputAction::CursorReturn);
+        } else if s.starts_with("cursorstatetoggle") {
+            return Ok(InputAction::CursorStateToggle);
         } else if s.starts_with("cursorapply") {
             let args = s.split(" ").collect::<Vec<&str>>();
             let mode = ActionMode::from_str(args[1]).unwrap();
@@ -557,6 +561,10 @@ pub fn handle_input_playing(input_action: InputAction,
     match (input_action, player_alive) {
         (InputAction::CursorReturn, _) => {
             settings.cursor_pos = data.entities.pos[&player_id];
+        }
+
+        (InputAction::CursorStateToggle, _) => {
+            settings.cursor_state = settings.cursor_state.toggle();
         }
 
         (InputAction::CursorMove(dir, long), _) => {

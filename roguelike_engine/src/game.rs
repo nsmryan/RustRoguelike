@@ -144,6 +144,7 @@ pub struct GameSettings {
     pub inventory_action: InventoryAction,
     pub level_num: usize,
     pub running: bool,
+    pub cursor_state: CursorState,
     pub cursor_pos: Pos,
 }
 
@@ -163,6 +164,7 @@ impl GameSettings {
             inventory_action: InventoryAction::default(),
             level_num: 0,
             running: true,
+            cursor_state: CursorState::Absolute,
             cursor_pos: Pos::new(0, 0),
         };
     }
