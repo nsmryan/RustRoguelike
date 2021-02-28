@@ -800,6 +800,7 @@ dependencies = [
  "rand 0.7.3",
  "roguelike_core",
  "roguelike_engine",
+ "roguelike_lib",
  "sdl2",
  "simple-logging",
  "walkdir",

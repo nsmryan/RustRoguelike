@@ -23,6 +23,10 @@ simple-logging = "2.0"
 roguelike_core = { path = "../roguelike_core" }
 roguelike_engine = { path = "../roguelike_engine" }
 
-[lib]
-name = "rust_roguelike"
-crate-type = ["cdylib"]
+#[lib]
+#name = "rust_roguelike"
+#crate-type = ["cdylib"]
+
+#[[bin]]
+#name = "rust_cmds"
+#path = "src/main.rs"

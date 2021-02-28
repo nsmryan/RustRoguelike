@@ -1,12 +1,14 @@
 use std::time::Instant;
 use std::collections::HashMap;
 use std::cmp::Ord;
+use std::str::FromStr;
 
 use serde::{Serialize, Deserialize};
 
 use roguelike_core::types::*;
 use roguelike_core::movement::Direction;
 use roguelike_core::config::Config;
+use roguelike_core::utils::{add_pos, sub_pos, scale_pos, in_direction_of};
 
 use crate::game::*;
 use crate::actions::*;
@@ -20,6 +22,85 @@ pub enum KeyDir {
     Held,
     Down,
 }
+
+impl FromStr for KeyDir {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+
+        if s == "down" {
+            return Ok(KeyDir::Down);
+        } else if s == "up" {
+            return Ok(KeyDir::Up);
+        }
+
+        panic!(format!("KeyDir {} unexpected", s));
+    }
+}
+
+#[derive(Clone, Debug, Copy, PartialEq, Serialize, Deserialize)]
+pub enum Cursor {
+    Absolute(Pos),
+    Relative(Pos),
+}
+
+impl Cursor {
+    pub fn new() -> Cursor {
+        return Cursor::Absolute(Pos::new(0, 0));
+    }
+
+    pub fn pos(&self, target_pos: Pos) -> Pos {
+        match self {
+            Cursor::Absolute(pos) => *pos,
+            Cursor::Relative(offset) => add_pos(target_pos, *offset),
+        }
+    }
+
+    pub fn toggle(&mut self, target_pos: Pos) {
+        match self {
+            Cursor::Absolute(pos) => {
+                let towards_pos = in_direction_of(target_pos, *pos);
+                *self = Cursor::Relative(sub_pos(towards_pos, target_pos));
+            }
+
+            Cursor::Relative(offset) => {
+                *self = Cursor::Absolute(add_pos(target_pos, *offset));
+            }
+        }
+    }
+
+    pub fn return_cursor(&mut self, target_pos: Pos) {
+        match self {
+            Cursor::Absolute(_) => *self = Cursor::Absolute(target_pos),
+            Cursor::Relative(_) => *self = Cursor::Relative(Pos::new(0, 0)),
+        }
+    }
+
+    pub fn move_by(&mut self, target_pos: Pos, dir: Direction, dist: i32, map_size: (i32, i32)) {
+        let mut new_pos: Pos = self.pos(target_pos);
+
+        let dir_move: Pos = scale_pos(dir.into_move(), dist);
+
+        let moved_pos: Pos = 
+            match self {
+                Cursor::Absolute(pos) => add_pos(*pos, dir_move),
+                Cursor::Relative(_) => add_pos(target_pos, dir_move),
+            };
+
+        if moved_pos.x >= 0 && moved_pos.y >= 0 &&
+           moved_pos.x < map_size.0 && moved_pos.y < map_size.1 {
+            new_pos = moved_pos;
+        }
+
+        match self {
+            Cursor::Absolute(_) => *self = Cursor::Absolute(new_pos),
+            Cursor::Relative(offset) => *self = Cursor::Relative(sub_pos(new_pos, target_pos)),
+        }
+    }
+}
+
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum MouseClick {
@@ -91,7 +172,6 @@ impl Input {
 
         if let InputEvent::Char(chr, dir) = event {
             if dir == KeyDir::Down {
-                let seconds = time.elapsed().as_secs_f32();
                 let held_state = HeldState { down_time: time, repetitions: 0 };
                 self.char_held.insert(chr, held_state);
             }
@@ -220,7 +300,7 @@ impl Input {
         return action;
     }
 
-    fn key_to_action(&mut self, chr: char, dir: KeyDir, settings: &GameSettings, config: &Config) -> InputAction {
+    fn key_to_action(&mut self, chr: char, _dir: KeyDir, settings: &GameSettings, config: &Config) -> InputAction {
         let mut action;
 
         if (self.chording || self.moding || self.target != -1) && chr.is_ascii_digit() {
@@ -260,6 +340,10 @@ pub fn keyup_to_action(chr: char, game_state: GameState) -> InputAction {
     match chr {
         'a' => {
             input_action = InputAction::Interact;
+        }
+
+        'r' => {
+            input_action = InputAction::CursorStateToggle;
         }
 
         'q' => {

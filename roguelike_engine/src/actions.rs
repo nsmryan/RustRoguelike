@@ -6,10 +6,11 @@ use serde::{Serialize, Deserialize};
 use roguelike_core::movement::{Direction, Action, Reach};
 use roguelike_core::types::*;
 use roguelike_core::movement;
-use roguelike_core::utils::{add_pos, sub_pos, scale_pos};
+use roguelike_core::utils::{scale_pos};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
+use roguelike_core::utils::{sub_pos};
 
 use crate::game::*;
 use crate::selection::*;
@@ -73,6 +74,7 @@ pub enum InputAction {
     Chord(Option<Direction>, ActionMode, ActionTarget),
     CursorMove(Direction, bool), // move direction, is long
     CursorReturn,
+    CursorStateToggle,
     CursorApply(ActionMode, ActionTarget),
     None,
 }
@@ -117,6 +119,7 @@ impl fmt::Display for InputAction {
             InputAction::Chord(dir, mode, target) => write!(f, "chord {:?} {:?} {:?}", dir, mode, target),
             InputAction::CursorMove(dir, long) => write!(f, "cursormove {:?} {}", dir, long),
             InputAction::CursorReturn => write!(f, "cursorreturn"),
+            InputAction::CursorStateToggle => write!(f, "cursorstatetoggle"),
             InputAction::CursorApply(mode, target) => write!(f, "cursorapply {:?} {:?}", mode, target),
             InputAction::None => write!(f, "none"),
         }
@@ -196,6 +199,8 @@ impl FromStr for InputAction {
             return Ok(InputAction::CursorMove(dir, long));
         } else if s.starts_with("cursorreturn") {
             return Ok(InputAction::CursorReturn);
+        } else if s.starts_with("cursorstatetoggle") {
+            return Ok(InputAction::CursorStateToggle);
         } else if s.starts_with("cursorapply") {
             let args = s.split(" ").collect::<Vec<&str>>();
             let mode = ActionMode::from_str(args[1]).unwrap();
@@ -259,7 +264,6 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) {
 //    }
 //}
 
-// TODO(&mut) remove &mut from data
 pub fn inventory_use_item(item_index: usize,
                           data: &GameData,
                           settings: &mut GameSettings,
@@ -474,8 +478,6 @@ pub fn handle_input_selection(input: InputAction,
                                           data,
                                           config);
             if let Some(action) = maybe_action {
-                // TODO(&mut) move to resolve, or allow settings to change
-                // exit selection state
                 action_result.new_state = Some(GameState::Playing);
                 msg_log.log(Msg::GameState(settings.state));
                 // TODO(&mut) move to resolve, or allow settings to change
@@ -554,32 +556,35 @@ pub fn handle_input_playing(input_action: InputAction,
     let mut action_result: ActionResult = Default::default();
 
     let player_id = data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = data.entities.pos[&player_id];
 
     let player_alive = data.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
         (InputAction::CursorReturn, _) => {
-            settings.cursor_pos = data.entities.pos[&player_id];
+            settings.cursor.return_cursor(player_pos);
+        }
+
+        (InputAction::CursorStateToggle, _) => {
+            settings.cursor.toggle(player_pos);
         }
 
         (InputAction::CursorMove(dir, long), _) => {
-            let cursor_pos = settings.cursor_pos;
-            let dist = 
+            let dist =
                 if long {
                     config.cursor_long
                 } else {
                     1
                 };
-            let dir_move = scale_pos(dir.into_move(), dist);
-            let new_pos = add_pos(cursor_pos, dir_move);
 
-            if data.map.is_within_bounds(new_pos) {
-                settings.cursor_pos = new_pos;
-            }
+            settings.cursor.move_by(player_pos,
+                                    dir,
+                                    dist,
+                                    data.map.size());
         }
 
         (InputAction::CursorApply(mode, target), true) => {
-            let cursor_pos = settings.cursor_pos;
+            let cursor_pos = settings.cursor.pos(player_pos);
 
             action_result.turn =
                 chord(ActionLoc::Place(cursor_pos),
@@ -620,8 +625,8 @@ pub fn handle_input_playing(input_action: InputAction,
             action_result.turn = pickup_item(player_id, data);
         }
 
+        // TODO this should be removeable
         (InputAction::MapClick(_map_loc, _map_cell), _) => {
-            // TODO this should be removeable
             action_result.turn = Action::none();
         }
 
@@ -841,8 +846,6 @@ pub fn handle_skill(skill_index: usize,
 
 // TODO consider creating a Chord struct with loc, mode, target
 // to simplify passing around and calling this function
-// TODO consider splitting into three functions:
-// targeted, non-targeted
 pub fn chord(loc: ActionLoc,
              mode: ActionMode,
              target: i32,
@@ -852,7 +855,6 @@ pub fn chord(loc: ActionLoc,
              msg_log: &mut MsgLog) -> Action {
     let mut turn = Action::none();
     let player_id = data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = data.entities.pos[&player_id];
 
     // if no target selection, then it is a move
     if target == -1 {
@@ -868,7 +870,7 @@ fn chord_move(loc: ActionLoc,
               mode: ActionMode,
               data: &GameData,
               msg_log: &mut MsgLog) -> Action {
-    let mut turn = Action::none();
+    let turn;
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
 
@@ -915,7 +917,6 @@ fn chord_selection(loc: ActionLoc,
                    msg_log: &mut MsgLog) -> Action {
     let mut turn = Action::none();
     let player_id = data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = data.entities.pos[&player_id];
 
     let num_items_in_inventory = data.entities.inventory[&player_id].len() as i32;
     if target >= 2 {
@@ -959,3 +960,4 @@ fn chord_selection(loc: ActionLoc,
 
     return turn;
 }
+

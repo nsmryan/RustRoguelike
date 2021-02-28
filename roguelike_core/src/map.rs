@@ -2,6 +2,8 @@ use std::ops::{Index, IndexMut};
 use std::collections::{HashSet, HashMap};
 use std::iter;
 use std::cell::RefCell;
+use std::str::FromStr;
+use std::fmt;
 
 use rand::prelude::*;
 
@@ -34,6 +36,40 @@ pub enum TileType {
     Wall,
     Water,
     Exit,
+}
+
+impl fmt::Display for TileType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TileType::Empty => write!(f, "empty"),
+            TileType::ShortWall => write!(f, "short_wall"),
+            TileType::Wall => write!(f, "wall"),
+            TileType::Water => write!(f, "water"),
+            TileType::Exit => write!(f, "exit"),
+        }
+    }
+}
+
+impl FromStr for TileType {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "empty" {
+            return Ok(TileType::Empty);
+        } else if s == "short_wall" {
+            return Ok(TileType::ShortWall);
+        } else if s == "wall" {
+            return Ok(TileType::Wall);
+        } else if s == "water" {
+            return Ok(TileType::Water);
+        } else if s == "exit" {
+            return Ok(TileType::Exit);
+        }
+
+        return Err(format!("Could not parse '{}' as TileType", s));
+    }
 }
 
 impl TileType {
@@ -133,6 +169,35 @@ pub enum Surface {
     Rubble,
     Grass,
 }
+
+impl fmt::Display for Surface {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Surface::Floor => write!(f, "floor"),
+            Surface::Rubble => write!(f, "rubble"),
+            Surface::Grass => write!(f, "grass"),
+        }
+    }
+}
+
+impl FromStr for Surface {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "floor" {
+            return Ok(Surface::Floor);
+        } else if s == "rubble" {
+            return Ok(Surface::Rubble);
+        } else if s == "grass" {
+            return Ok(Surface::Grass);
+        }
+
+        return Err(format!("Could not parse '{}' as Surface", s));
+    }
+}
+
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum BlockedType {
@@ -441,6 +506,35 @@ pub enum Wall {
     Empty,
     ShortWall,
     TallWall,
+}
+
+impl fmt::Display for Wall {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Wall::Empty => write!(f, "empty"),
+            Wall::ShortWall => write!(f, "short_wall"),
+            Wall::TallWall => write!(f, "tall_wall"),
+        }
+    }
+}
+
+impl FromStr for Wall {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "empty" {
+            return Ok(Wall::Empty);
+        } else if s == "short_wall" {
+            return Ok(Wall::ShortWall);
+        } else if s == "wall" {
+            return Ok(Wall::TallWall);
+        } else if s == "water" {
+        }
+
+        return Err(format!("Could not parse '{}' as Wall", s));
+    }
 }
 
 impl Wall {

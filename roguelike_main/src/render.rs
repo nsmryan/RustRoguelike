@@ -13,7 +13,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
-use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, move_x, move_y, sub_pos, floodfill, reach_by_mode, map_fill_metric};
+use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, sub_pos, reach_by_mode, map_fill_metric};
 use roguelike_core::line::line;
 
 use roguelike_engine::game::*;
@@ -48,7 +48,7 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 }
 
 
-fn render_panels(display: &mut Display, game: &mut Game, map_rect: Rect) {
+fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
     /* Determine Mouse Position */
     /* Removed in favor of the cursor
     let mut mouse_map_pos = None;
@@ -63,7 +63,10 @@ fn render_panels(display: &mut Display, game: &mut Game, map_rect: Rect) {
     let mouse_map_pos = mouse_map_pos;
     */
 
-    let mouse_map_pos = Some(game.settings.cursor_pos); //mouse_map_pos;
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = game.data.entities.pos[&player_id];
+
+    let mouse_map_pos = Some(game.settings.cursor.pos(player_pos)); //mouse_map_pos;
 
     let canvas = &mut display.targets.canvas_panel.target;
     let display_state = &mut display.state;
@@ -394,9 +397,10 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
                mouse_xy: Option<Pos>) {
     render_placard(panel, display_state, "Info", &game.config);
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = game.data.entities.pos[&player_id];
 
-    let info_pos = game.settings.cursor_pos;
+    let info_pos = game.settings.cursor.pos(player_pos);
     // NOTE this allows mouse support as well
     //    if let Some(mouse) = mouse_xy {
     //        mouse
@@ -419,6 +423,8 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
     text_list.push(format!("({:>2},{:>2})", info_pos.x, info_pos.y));
 
     let text_pos = Pos::new(1, y_pos);
+
+    let sprite_key = display_state.lookup_spritekey("tiles");
 
     {
         let tile_sprite = &mut display_state.sprites[&sprite_key];
@@ -794,7 +800,7 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
         match effect {
             Effect::HeardSomething(pos, created_turn) => {
                 sprite.draw_char(panel,
-                                 ENTITY_ELF as char,
+                                 ENTITY_UNKNOWN as char,
                                  *pos,
                                  game.config.color_warm_grey);
 
@@ -1054,7 +1060,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     // render cursor if enabled
     if game.config.use_cursor {
         // render cursor itself
-        let cursor_pos = game.settings.cursor_pos;
+        let cursor_pos = game.settings.cursor.pos(player_pos);
         let tile_sprite = &mut display_state.sprites[&sprite_key];
         let mut color = game.config.color_mint_green;
         color.a = 230;

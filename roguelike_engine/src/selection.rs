@@ -174,7 +174,7 @@ impl Selection {
         };
     }
 
-    pub fn selected_pos(&self, pos: Pos, selected: Pos, fov_radius: i32, data: &GameData, config: &Config) -> Option<Pos> {
+    pub fn selected_pos(&self, pos: Pos, selected: Pos, _fov_radius: i32, data: &GameData, config: &Config) -> Option<Pos> {
         let mut maybe_selected_pos: Option<Pos>;
 
         match self.typ {

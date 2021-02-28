@@ -122,7 +122,7 @@ impl GameData {
         let radius: i32 = match self.entities.typ[&entity_id] {
             EntityType::Enemy => config.fov_radius_monster,
             EntityType::Player => config.fov_radius_player,
-            typ => return false, // other things have no FOV
+            _ => return false, // other things have no FOV
         };
 
         let stance = self.entities.stance[&entity_id];
@@ -597,6 +597,90 @@ impl Default for EntityName {
     }
 }
 
+impl fmt::Display for EntityName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EntityName::Player => write!(f, "player"),
+            EntityName::Gol => write!(f, "gol"),
+            EntityName::Pawn => write!(f, "pawn"),
+            EntityName::Column => write!(f, "column"),
+            EntityName::Key => write!(f, "key"),
+            EntityName::Exit => write!(f, "exit"),
+            EntityName::Dagger => write!(f, "dagger"),
+            EntityName::Hammer => write!(f, "hammer"),
+            EntityName::Sword => write!(f, "sword"),
+            EntityName::Shield => write!(f, "shield"),
+            EntityName::Spire => write!(f, "spire"),
+            EntityName::SpikeTrap => write!(f, "spiketrap"),
+            EntityName::BlinkTrap => write!(f, "blinktrap"),
+            EntityName::FreezeTrap => write!(f, "freezetrap"),
+            EntityName::SoundTrap => write!(f, "soundtrap"),
+            EntityName::GateTrigger => write!(f, "gatetrigger"),
+            EntityName::Stone => write!(f, "stone"),
+            EntityName::Mouse => write!(f, "mouse"),
+            EntityName::Cursor => write!(f, "cursor"),
+            EntityName::Energy => write!(f, "energy"),
+            EntityName::Other => write!(f, "other"),
+        }
+    }
+}
+
+impl FromStr for EntityName {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+
+        if s == "player" {
+            return Ok(EntityName::Player);
+        } else if s == "gol" {
+            return Ok(EntityName::Gol);
+        } else if s == "pawn" {
+            return Ok(EntityName::Pawn);
+        } else if s == "column" {
+            return Ok(EntityName::Column);
+        } else if s == "key" {
+            return Ok(EntityName::Key);
+        } else if s == "exit" {
+            return Ok(EntityName::Exit);
+        } else if s == "dagger" {
+            return Ok(EntityName::Dagger);
+        } else if s == "hammer" {
+            return Ok(EntityName::Hammer);
+        } else if s == "sword" {
+            return Ok(EntityName::Sword);
+        } else if s == "shield" {
+            return Ok(EntityName::Shield);
+        } else if s == "spire" {
+            return Ok(EntityName::Spire);
+        } else if s == "spiketrap" {
+            return Ok(EntityName::SpikeTrap);
+        } else if s == "blinktrap" {
+            return Ok(EntityName::BlinkTrap);
+        } else if s == "freezetrap" {
+            return Ok(EntityName::FreezeTrap);
+        } else if s == "soundtrap" {
+            return Ok(EntityName::SoundTrap);
+        } else if s == "gatetrigger" {
+            return Ok(EntityName::GateTrigger);
+        } else if s == "stone" {
+            return Ok(EntityName::Stone);
+        } else if s == "mouse" {
+            return Ok(EntityName::Mouse);
+        } else if s == "cursor" {
+            return Ok(EntityName::Cursor);
+        } else if s == "energy" {
+            return Ok(EntityName::Energy);
+        } else if s == "other" {
+            return Ok(EntityName::Other);
+        }
+
+        panic!(format!("EntityName {} not expected!", s));
+    }
+}
+
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum EntityType {
     Player,
@@ -606,6 +690,47 @@ pub enum EntityType {
     Energy,
     Trigger,
     Other,
+}
+
+impl fmt::Display for EntityType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EntityType::Player => write!(f, "player"),
+            EntityType::Enemy => write!(f, "enemy"),
+            EntityType::Item => write!(f, "item"),
+            EntityType::Column => write!(f, "column"),
+            EntityType::Energy => write!(f, "energy"),
+            EntityType::Trigger => write!(f, "trigger"),
+            EntityType::Other => write!(f, "other"),
+        }
+    }
+}
+
+impl FromStr for EntityType {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+
+        if s == "player" {
+            return Ok(EntityType::Player);
+        } else if s == "enemy" {
+            return Ok(EntityType::Enemy);
+        } else if s == "item" {
+            return Ok(EntityType::Item);
+        } else if s == "column" {
+            return Ok(EntityType::Column);
+        } else if s == "energy" {
+            return Ok(EntityType::Energy);
+        } else if s == "trigger" {
+            return Ok(EntityType::Trigger);
+        } else if s == "other" {
+            return Ok(EntityType::Other);
+        }
+
+        panic!(format!("EntityType {} not expected!", s));
+    }
 }
 
 impl Default for EntityType {
