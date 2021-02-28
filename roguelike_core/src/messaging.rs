@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::types::*;
 use crate::map::*;
-use crate::movement::{Movement, MoveType, MoveMode, Action, Direction};
+use crate::movement::{MoveType, MoveMode, Action, Direction};
 use crate::ai::Behavior;
 
 

@@ -6,10 +6,11 @@ use serde::{Serialize, Deserialize};
 use roguelike_core::movement::{Direction, Action, Reach};
 use roguelike_core::types::*;
 use roguelike_core::movement;
-use roguelike_core::utils::{add_pos, sub_pos, scale_pos};
+use roguelike_core::utils::{scale_pos};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
+use roguelike_core::utils::{sub_pos};
 
 use crate::game::*;
 use crate::selection::*;
@@ -555,36 +556,35 @@ pub fn handle_input_playing(input_action: InputAction,
     let mut action_result: ActionResult = Default::default();
 
     let player_id = data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = data.entities.pos[&player_id];
 
     let player_alive = data.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
         (InputAction::CursorReturn, _) => {
-            settings.cursor_pos = data.entities.pos[&player_id];
+            settings.cursor.return_cursor(player_pos);
         }
 
         (InputAction::CursorStateToggle, _) => {
-            settings.cursor_state = settings.cursor_state.toggle();
+            settings.cursor.toggle(player_pos);
         }
 
         (InputAction::CursorMove(dir, long), _) => {
-            let cursor_pos = settings.cursor_pos;
-            let dist = 
+            let dist =
                 if long {
                     config.cursor_long
                 } else {
                     1
                 };
-            let dir_move = scale_pos(dir.into_move(), dist);
-            let new_pos = add_pos(cursor_pos, dir_move);
 
-            if data.map.is_within_bounds(new_pos) {
-                settings.cursor_pos = new_pos;
-            }
+            settings.cursor.move_by(player_pos,
+                                    dir,
+                                    dist,
+                                    data.map.size());
         }
 
         (InputAction::CursorApply(mode, target), true) => {
-            let cursor_pos = settings.cursor_pos;
+            let cursor_pos = settings.cursor.pos(player_pos);
 
             action_result.turn =
                 chord(ActionLoc::Place(cursor_pos),
@@ -960,3 +960,4 @@ fn chord_selection(loc: ActionLoc,
 
     return turn;
 }
+

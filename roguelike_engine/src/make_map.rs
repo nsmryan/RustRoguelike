@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::io::BufReader;
-use std::str::FromStr;
 use std::io::Write;
 
 use rexpaint::*;
@@ -143,7 +142,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
     }
 
-    game.settings.cursor_pos = player_position;
+    game.settings.cursor.return_cursor(player_position);
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     game.data.entities.pos[&player_id] = player_position;

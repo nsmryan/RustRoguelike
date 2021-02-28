@@ -63,7 +63,10 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
     let mouse_map_pos = mouse_map_pos;
     */
 
-    let mouse_map_pos = Some(game.settings.cursor_pos); //mouse_map_pos;
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = game.data.entities.pos[&player_id];
+
+    let mouse_map_pos = Some(game.settings.cursor.pos(player_pos)); //mouse_map_pos;
 
     let canvas = &mut display.targets.canvas_panel.target;
     let display_state = &mut display.state;
@@ -394,9 +397,10 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
                mouse_xy: Option<Pos>) {
     render_placard(panel, display_state, "Info", &game.config);
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = game.data.entities.pos[&player_id];
 
-    let info_pos = game.settings.cursor_pos;
+    let info_pos = game.settings.cursor.pos(player_pos);
     // NOTE this allows mouse support as well
     //    if let Some(mouse) = mouse_xy {
     //        mouse
@@ -419,6 +423,8 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
     text_list.push(format!("({:>2},{:>2})", info_pos.x, info_pos.y));
 
     let text_pos = Pos::new(1, y_pos);
+
+    let sprite_key = display_state.lookup_spritekey("tiles");
 
     {
         let tile_sprite = &mut display_state.sprites[&sprite_key];
@@ -1054,7 +1060,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     // render cursor if enabled
     if game.config.use_cursor {
         // render cursor itself
-        let cursor_pos = game.settings.cursor_pos;
+        let cursor_pos = game.settings.cursor.pos(player_pos);
         let tile_sprite = &mut display_state.sprites[&sprite_key];
         let mut color = game.config.color_mint_green;
         color.a = 230;

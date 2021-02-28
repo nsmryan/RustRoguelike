@@ -7,7 +7,7 @@ use crate::ai::Behavior;
 use crate::constants::{HAMMER_DAMAGE, SWORD_DAMAGE, TILE_FILL_METRIC_DIST};
 use crate::map::{Surface};
 use crate::types::*;
-use crate::movement::{Reach, MoveMode, check_collision, MoveType, Movement, Direction};
+use crate::movement::{Reach, MoveMode, check_collision, MoveType, Direction};
 use crate::messaging::*;
 use crate::line::*;
 use crate::config::Config;
@@ -82,7 +82,6 @@ pub fn sort_by_distance_to(pos: Pos, positions: &mut Vec<Pos>) {
 pub fn push_attack(entity_id: EntityId,
                    target: EntityId,
                    direction: Direction,
-                   amount: usize,
                    move_into: bool,
                    data: &mut GameData,
                    config: &Config,
