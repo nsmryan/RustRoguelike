@@ -677,8 +677,8 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::UseItem, _) => {
-            action_result.turn =
-                use_item(player_id, data, settings, msg_log);
+            let pos = data.entities.pos[&player_id];
+            action_result.turn = Action::UseItem(pos);
         }
 
         (_, _) => {
@@ -686,25 +686,6 @@ pub fn handle_input_playing(input_action: InputAction,
     }
 
     return action_result;
-}
-
-pub fn use_item(entity_id: EntityId, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) -> Action {
-    let mut turn: Action = Action::none();
-
-    if data.using(entity_id, Item::Hammer) {
-        settings.state = GameState::Selection;
-
-        let reach = Reach::Horiz(1);
-        settings.selection =
-            Selection::new(SelectionType::WithinReach(reach), SelectionAction::Hammer);
-
-        msg_log.log(Msg::GameState(settings.state));
-    } else if data.using(entity_id, Item::Sword) {
-        let pos = data.entities.pos[&entity_id];
-        turn = Action::UseItem(pos);
-    }
-
-    return turn;
 }
 
 pub fn handle_skill(skill_index: usize,
@@ -892,7 +873,8 @@ fn chord_selection(loc: ActionLoc,
         match mode {
             ActionMode::Primary => {
                 // primary item use is the item's main action
-                turn = use_item(player_id, data, settings, msg_log);
+                let pos = data.entities.pos[&player_id];
+                turn = Action::UseItem(pos);
             }
 
             ActionMode::Alternate => {
