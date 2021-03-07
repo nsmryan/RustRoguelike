@@ -277,8 +277,7 @@ pub fn ai_attack(monster_id: EntityId,
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else if let Some(hit_pos) = can_hit_target {
         // can hit their target, so just attack them
-        let attack = Attack::Attack(target_id);
-        turn = Action::Attack(attack, hit_pos);
+        turn = Action::Move(MoveType::Move, hit_pos);
     } else if !data.is_in_fov(monster_id, target_pos, config) {
         // path to target is blocked by a wall- investigate the last known position
         turn = Action::StateChange(Behavior::Investigating(target_pos));

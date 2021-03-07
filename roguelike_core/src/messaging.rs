@@ -6,6 +6,7 @@ use crate::types::*;
 use crate::map::*;
 use crate::movement::{MoveType, MoveMode, Action, Direction};
 use crate::ai::Behavior;
+use crate::movement::Attack;
 
 
 pub struct MsgLog {
@@ -58,6 +59,7 @@ pub enum Msg {
     PlayerDeath,
     PickedUp(EntityId, EntityId), // entity, item id
     ItemThrow(EntityId, EntityId, Pos, Pos), // thrower, stone id, start, end
+    TryAttack(EntityId, Attack, Pos), // attacker, attack description, attack pos
     Attack(EntityId, EntityId, Hp), // attacker, attacked, hp lost
     Killed(EntityId, EntityId, Hp), // attacker, attacked, hp lost
     Pushed(EntityId, EntityId, Direction, usize, bool), // attacker, attacked, direction, amount, move into pushed square
@@ -140,6 +142,10 @@ impl Msg {
                 return "Item throw".to_string();
             }
 
+            Msg::TryAttack(_entity_id, _attack_info, _attack_pos) => {
+                return "".to_string();
+            }
+
             Msg::Attack(attacker, attacked, damage) => {
                 return format!("{:?} attacked {:?} for {} damage",
                                data.entities.name[attacker],
@@ -220,7 +226,7 @@ impl Msg {
                 }
             }
 
-            Msg::ChangeMoveMode(entity_id, _increase) => {
+            Msg::ChangeMoveMode(_entity_id, _increase) => {
                 return "".to_string();
             }
 

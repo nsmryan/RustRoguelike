@@ -103,6 +103,10 @@ pub fn resolve_messages(data: &mut GameData,
                 hammer_hit_wall(entity_id, blocked, data, msg_log, config);
             }
 
+            Msg::TryAttack(entity_id, attack_info, attack_pos) => {
+                resolve_attack(entity_id, attack_info, attack_pos, data, msg_log, config);
+            }
+
             Msg::Action(entity_id, action) => {
                 resolve_action(entity_id, action, rng, data, msg_log, config);
             }
@@ -389,7 +393,7 @@ fn resolve_try_move(entity_id: EntityId,
         let entity_pos = data.entities.pos[&entity_id];
 
         if let Some(attack) = movement.attack {
-            msg_log.log(Msg::Action(entity_id, Action::Attack(attack, movement.pos)));
+            msg_log.log(Msg::TryAttack(entity_id, attack, movement.pos));
         } else {
             match movement.typ {
                 MoveType::Collide => {
@@ -472,8 +476,6 @@ fn resolve_action(entity_id: EntityId,
         let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
 
         msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
-    } else if let Action::Attack(attack_info, attack_pos) = action {
-        resolve_attack(entity_id, attack_info, attack_pos, data, msg_log, config);
     } else if let Action::StateChange(behavior) = action {
         msg_log.log(Msg::StateChange(entity_id, behavior));
     } else if let Action::Yell = action {
