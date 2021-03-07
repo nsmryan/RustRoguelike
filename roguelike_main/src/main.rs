@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 mod throttler;
 mod render;
-mod console;
 mod display;
 mod keyboard;
 

@@ -243,27 +243,6 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) {
     }
 }
 
-//pub fn handle_input_console(input: InputAction,
-//                            key_input: &mut Vec<(KeyDir, Keycode)>,
-//                            console: &mut Console,
-//                            game_data: &mut GameData,
-//                            display_state: &mut DisplayState,
-//                            settings: &mut GameSettings,
-//                            config: &Config,
-//                            msg_log: &mut MsgLog) {
-//    match input {
-//        InputAction::ToggleConsole => {
-//            settings.state = GameState::Playing;
-//        }
-//
-//        _ => {
-//            for (dir, key) in key_input.iter() {
-//                console.eval(*key, *dir, game_data, display_state, settings, config, msg_log);
-//            }
-//        }
-//    }
-//}
-
 pub fn inventory_use_item(item_index: usize,
                           data: &GameData,
                           settings: &mut GameSettings,
