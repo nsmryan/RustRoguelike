@@ -69,6 +69,7 @@ pub enum Msg {
     Collided(EntityId, Pos),
     Yell(EntityId, Pos),
     GameState(GameState),
+    ChangeMoveMode(EntityId, bool), // true = increase, false = decrease
     MoveMode(EntityId, MoveMode),
     TriedRunWithHeavyEquipment,
     SpawnedObject(EntityId, EntityType, Pos, EntityName),
@@ -217,6 +218,10 @@ impl Msg {
                         panic!();
                     }
                 }
+            }
+
+            Msg::ChangeMoveMode(entity_id, _increase) => {
+                return "".to_string();
             }
 
             Msg::MoveMode(entity_id, move_mode) => {

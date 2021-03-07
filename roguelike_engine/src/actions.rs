@@ -635,11 +635,13 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::IncreaseMoveMode, true) => {
-            increase_move_mode(player_id, data, msg_log);
+            // NOTE this could be an action instead of direct message
+            msg_log.log(Msg::ChangeMoveMode(player_id, true));
         }
 
         (InputAction::DecreaseMoveMode, true) => {
-            decrease_move_mode(player_id, data, msg_log);
+            // NOTE this could be an action instead of direct message
+            msg_log.log(Msg::ChangeMoveMode(player_id, false));
         }
 
         (InputAction::OverlayOn, _) => {
@@ -684,26 +686,6 @@ pub fn handle_input_playing(input_action: InputAction,
     }
 
     return action_result;
-}
-
-pub fn decrease_move_mode(entity_id: EntityId, data: &GameData, msg_log: &mut MsgLog) {
-    let new_move_mode = 
-        data.entities.move_mode[&entity_id].decrease();
-    msg_log.log(Msg::MoveMode(entity_id, new_move_mode));
-}
-
-pub fn increase_move_mode(entity_id: EntityId, data: &GameData, msg_log: &mut MsgLog) {
-    let holding_shield = data.using(entity_id, Item::Shield);
-    let holding_hammer = data.using(entity_id, Item::Hammer);
-
-    let move_mode = data.entities.move_mode.get(&entity_id).expect("Player should have a move mode");
-    let new_move_mode = move_mode.increase();
-
-    if new_move_mode == movement::MoveMode::Run && (holding_shield || holding_hammer) {
-        msg_log.log(Msg::TriedRunWithHeavyEquipment);
-    } else {
-        msg_log.log(Msg::MoveMode(entity_id, new_move_mode));
-    }
 }
 
 pub fn use_item(entity_id: EntityId, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) -> Action {
@@ -856,11 +838,11 @@ fn chord_move(loc: ActionLoc,
 
     match mode {
         ActionMode::Primary => {
-            decrease_move_mode(player_id, data, msg_log);
+            msg_log.log(Msg::ChangeMoveMode(player_id, false));
         }
 
         ActionMode::Alternate => {
-            increase_move_mode(player_id, data, msg_log);
+            msg_log.log(Msg::ChangeMoveMode(player_id, true));
         }
     }
 

@@ -205,8 +205,13 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::MoveMode(entity_id, new_move_mode) => {
                 data.entities.move_mode[&entity_id] = new_move_mode;
+
                 // update entities movement reach with their new move mode
                 data.entities.movement[&entity_id] = reach_by_mode(data.entities.move_mode[&entity_id]);
+            }
+
+            Msg::ChangeMoveMode(entity_id, increase) => {
+                change_move_mode(entity_id, increase, data, msg_log);
             }
 
             Msg::DropItem(entity_id, item_index) => {
@@ -889,6 +894,31 @@ fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Option<P
     }
     
     return None;
+}
+
+fn change_move_mode(entity_id: EntityId,
+                    increase: bool,
+                    data: &mut GameData,
+                    msg_log: &mut MsgLog) {
+    if increase {
+        let holding_shield = data.using(entity_id, Item::Shield);
+        let holding_hammer = data.using(entity_id, Item::Hammer);
+
+        let move_mode = data.entities 
+                            .move_mode
+                            .get(&entity_id)
+                            .expect("Entity should have had a move mode!");
+        let new_move_mode = move_mode.increase();
+
+        if new_move_mode == movement::MoveMode::Run && (holding_shield || holding_hammer) {
+            msg_log.log(Msg::TriedRunWithHeavyEquipment);
+        } else {
+            msg_log.log(Msg::MoveMode(entity_id, new_move_mode));
+        }
+    } else {
+        let new_move_mode = data.entities.move_mode[&entity_id].decrease();
+        msg_log.log(Msg::MoveMode(entity_id, new_move_mode));
+    }
 }
 
 fn inventory_drop_item(entity_id: EntityId,
