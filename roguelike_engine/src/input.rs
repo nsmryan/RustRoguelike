@@ -398,10 +398,6 @@ pub fn keyup_to_action(chr: char, game_state: GameState) -> InputAction {
             input_action = InputAction::ClassMenu;
         }
 
-        '`' => {
-            input_action = InputAction::ToggleConsole;
-        }
-
         'u' => {
             input_action = InputAction::UseItem;
         }

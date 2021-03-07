@@ -104,11 +104,6 @@ color_light_grey:
   g: 132
   b: 132
   a: 255
-color_console:
-  r: 0x76
-  g: 0x30
-  b: 0
-  a: 200
 load_map_file_every_frame: false
 tile_noise_scaler: 4.0
 highlight_player_move: 226
@@ -166,8 +161,6 @@ overlay_fov_alg: false
 overlay_floodfill: false
 fov_radius_monster: 4
 fov_radius_player: 4
-console_max_height: 400
-console_speed: 1.0
 sound_radius_sneak: 1
 sound_radius_walk: 2
 sound_radius_run: 3

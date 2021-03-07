@@ -37,7 +37,6 @@ NOTE the input system is under development, and may not match this description!
   * X: increase movement speed (sneak -> walk -> run)
   * Z: Decrease movement speed (run -> walk -> sneak)
   * O: holding space creates an overlay with additional information about the current situation
-  * BackQuote: open the developer console (currently disabled)
   * U: use the current primary weapon
 
 In addition, there is a pair of input systems called the Chord and the Cursor.
