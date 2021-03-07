@@ -179,7 +179,12 @@ impl GameData {
 
     pub fn item_at_pos(&self, pos: Pos) -> Option<EntityId> {
         for key in self.entities.ids.iter() {
-            if self.entities.pos[key] == pos && self.entities.item.get(key).is_some() {
+            let is_disarmed_trap =
+                self.entities.trap.get(key).is_some() &&
+                self.entities.armed.get(key) == Some(&false);
+            let is_item = self.entities.item.get(key).is_some();
+
+            if self.entities.pos[key] == pos && (is_item || is_disarmed_trap) {
                 return Some(*key);
             }
         }

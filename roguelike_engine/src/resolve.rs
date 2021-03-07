@@ -477,8 +477,10 @@ fn resolve_action(entity_id: EntityId,
         msg_log.log(Msg::Moved(entity_id, MoveType::Pass, entity_pos));
     } else if let Action::ThrowItem(throw_pos, item_id) = action {
         msg_log.log(Msg::ItemThrow(entity_id, item_id, entity_pos, throw_pos));
-    } else if let Action::Pickup(item_id) = action {
-        msg_log.log(Msg::PickedUp(entity_id, item_id));
+    } else if let Action::Pickup = action {
+        if let Some(item_id) = data.item_at_pos(entity_pos) {
+            msg_log.log(Msg::PickedUp(entity_id, item_id));
+        }
     } else if let Action::UseItem(pos) = action {
         if data.using(entity_id, Item::Hammer) {
             msg_log.log(Msg::HammerSwing(entity_id, pos));

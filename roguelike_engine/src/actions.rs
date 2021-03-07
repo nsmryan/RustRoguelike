@@ -622,7 +622,7 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Pickup, true) => {
-            action_result.turn = pickup_item(player_id, data);
+            action_result.turn = Action::Pickup;
         }
 
         // TODO this should be removeable
@@ -684,26 +684,6 @@ pub fn handle_input_playing(input_action: InputAction,
     }
 
     return action_result;
-}
-
-pub fn pickup_item(entity_id: EntityId, data: &GameData) -> Action {
-    let mut turn: Action = Action::none();
-
-    let pos = data.entities.pos[&entity_id];
-
-    for key in data.entities.pos.keys() {
-        let is_item = data.entities.item.get(key).is_some();
-        let is_disarmed_trap =
-            data.entities.trap.get(key).is_some() &&
-            data.entities.armed.get(key) == Some(&false);
-
-        if data.entities.pos[key] == pos && (is_item || is_disarmed_trap) {
-            turn = Action::Pickup(*key);
-            break;
-        }
-    }
-
-    return turn;
 }
 
 pub fn decrease_move_mode(entity_id: EntityId, data: &GameData, msg_log: &mut MsgLog) {

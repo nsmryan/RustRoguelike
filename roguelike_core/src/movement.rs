@@ -19,7 +19,7 @@ pub enum Action {
     MoveDir(Direction),
     Attack(Attack, Pos),
     StateChange(Behavior),
-    Pickup(EntityId),
+    Pickup,
     ThrowItem(Pos, EntityId), // end position, item id
     Pass,
     Yell,
