@@ -1,8 +1,12 @@
 
 
-set rl [open "|target/debug/roguelike_main"]
+set rl [open "|target/debug/roguelike_main" w+]
 
-puts hello world
+puts $rl "player_id"
+
+while { set line [gets $rl] } {
+    puts $line
+}
 
 exit
 

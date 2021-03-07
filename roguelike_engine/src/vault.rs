@@ -104,7 +104,7 @@ fn test_remove_commas() {
 
 /// Read Vault file into Vault structure
 pub fn parse_vault(file_name: &str, config: &Config) -> Vault {
-    println!("{}", file_name);
+    eprintln!("{}", file_name);
 
     let file_contents =
         std::fs::read_to_string(file_name).expect(&format!("Could not read {}", file_name));
@@ -219,7 +219,7 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos,
 
         _ => {
             tile = Tile::empty();
-            println!("Unexpected char '{}' in {}", tile_chr, pos);
+            eprintln!("Unexpected char '{}' in {}", tile_chr, pos);
         }
     }
 
