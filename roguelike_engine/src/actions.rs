@@ -57,7 +57,7 @@ pub enum InputAction {
     UseItem,
     Interact,
     Chord(Option<Direction>, ActionMode, ActionTarget),
-    CursorMove(Direction, bool), // move direction, is long
+    CursorMove(Direction, bool, bool), // move direction, is relative, is long
     CursorReturn,
     CursorToggle,
     CursorApply(ActionMode, ActionTarget),
@@ -117,7 +117,7 @@ impl fmt::Display for InputAction {
             InputAction::UseItem => write!(f, "use"),
             InputAction::Interact => write!(f, "interact"),
             InputAction::Chord(dir, mode, target) => write!(f, "chord {:?} {:?} {:?}", dir, mode, target),
-            InputAction::CursorMove(dir, long) => write!(f, "cursormove {:?} {}", dir, long),
+            InputAction::CursorMove(dir, relative, long) => write!(f, "cursormove {:?} {} {}", dir, relative, long),
             InputAction::CursorReturn => write!(f, "cursorreturn"),
             InputAction::CursorApply(mode, target) => write!(f, "cursorapply {:?} {:?}", mode, target),
             InputAction::CursorToggle => write!(f, "cursortoggle"),
@@ -214,8 +214,9 @@ impl FromStr for InputAction {
         } else if s.starts_with("cursormove") {
             let args = s.split(" ").collect::<Vec<&str>>();
             let dir = Direction::from_str(args[1]).unwrap();
-            let long = bool::from_str(args[2]).unwrap();
-            return Ok(InputAction::CursorMove(dir, long));
+            let relative = bool::from_str(args[2]).unwrap();
+            let long = bool::from_str(args[3]).unwrap();
+            return Ok(InputAction::CursorMove(dir, relative, long));
         } else if s.starts_with("cursorreturn") {
             return Ok(InputAction::CursorReturn);
         } else if s.starts_with("cursorapply") {
@@ -565,7 +566,7 @@ pub fn handle_input_playing(input_action: InputAction,
             }
         }
 
-        (InputAction::CursorMove(dir, long), _) => {
+        (InputAction::CursorMove(dir, relative, long), _) => {
             let cursor_pos = settings.cursor.expect("CursorMove outside of cursor mode?");
 
             let dist =
@@ -576,7 +577,13 @@ pub fn handle_input_playing(input_action: InputAction,
                 };
 
             let dir_move: Pos = scale_pos(dir.into_move(), dist);
-            let new_pos = add_pos(cursor_pos, dir_move);
+
+            let new_pos;
+            if relative {
+                new_pos = add_pos(player_pos, dir_move);
+            } else {
+                new_pos = add_pos(cursor_pos, dir_move);
+            }
 
             settings.cursor = Some(data.map.clamp(new_pos));
         }

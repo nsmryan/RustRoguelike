@@ -323,8 +323,7 @@ impl Input {
                 action = InputAction::Pass;
             } else if let Some(dir) = from_digit(chr) {
                 if self.cursor {
-                   // TODO consider absolute vs relative as part of CursorMove?
-                   action = InputAction::CursorMove(dir, self.shift);
+                   action = InputAction::CursorMove(dir, self.ctrl, self.shift);
                 } else {
                     action = InputAction::Move(dir, self.move_mode());
                 }
