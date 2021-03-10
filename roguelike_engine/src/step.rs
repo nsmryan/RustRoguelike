@@ -5,7 +5,7 @@ use roguelike_core::config::*;
 use roguelike_core::ai::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::Msg;
-use roguelike_core::movement::{Direction, Action};
+use roguelike_core::movement::{Direction, Action, MoveMode};
 #[cfg(test)]
 use roguelike_core::movement::*;
 
@@ -150,7 +150,7 @@ pub fn test_running() {
     game.step_game(input_action, 0.1);
 
     assert!(game.data.entities.ids.contains(&gol));
-    input_action = InputAction::Move(Direction::Down);
+    input_action = InputAction::Move(Direction::Down, MoveMode::Walk);
     game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(gol_pos, player_pos);
@@ -165,7 +165,7 @@ pub fn test_running() {
 
     game.data.map[(7, 5)].tile_type = TileType::Water;
 
-    input_action = InputAction::Move(Direction::Right);
+    input_action = InputAction::Move(Direction::Right, MoveMode::Walk);
     game.step_game(input_action, 0.1);
     assert_eq!(Pos::new(5, 5), game.data.entities.pos[&player_id]);
     assert_eq!(Pos::new(6, 5), game.data.entities.pos[&pawn]);

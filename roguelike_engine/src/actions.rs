@@ -3,7 +3,7 @@ use std::fmt;
 
 use serde::{Serialize, Deserialize};
 
-use roguelike_core::movement::{Direction, Action, Reach};
+use roguelike_core::movement::{Direction, Action, Reach, MoveMode};
 use roguelike_core::types::*;
 use roguelike_core::movement;
 use roguelike_core::utils::{scale_pos};
@@ -48,12 +48,21 @@ pub type ActionTarget = i32;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum InputAction {
-    Move(Direction),
+    Move(Direction, MoveMode),
+    TileApply(ActionTarget),
     Pass,
-    MapClick(Pos, Pos), // map loc, map cell
-    MouseButton(MouseClick, KeyDir),
     Pickup,
     DropItem,
+    Yell,
+    UseItem,
+    Interact,
+    Chord(Option<Direction>, ActionMode, ActionTarget),
+    CursorMove(Direction, bool), // move direction, is long
+    CursorReturn,
+    CursorStateToggle,
+    CursorApply(ActionMode, ActionTarget),
+    MapClick(Pos, Pos), // map loc, map cell
+    MouseButton(MouseClick, KeyDir),
     Inventory,
     SkillMenu,
     ClassMenu,
@@ -62,37 +71,30 @@ pub enum InputAction {
     ExploreAll,
     RegenerateMap,
     GodMode,
-    Yell,
     IncreaseMoveMode,
     DecreaseMoveMode,
     OverlayOn,
     OverlayOff,
     SelectItem(usize),
-    UseItem,
-    Interact,
-    Chord(Option<Direction>, ActionMode, ActionTarget),
-    CursorMove(Direction, bool), // move direction, is long
-    CursorReturn,
-    CursorStateToggle,
-    CursorApply(ActionMode, ActionTarget),
     None,
 }
 
 impl fmt::Display for InputAction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            InputAction::Move(direction) => {
+            InputAction::Move(direction, move_mode) => {
                 match direction {
-                    Direction::Left => write!(f, "left"),
-                    Direction::Right => write!(f, "right"),
-                    Direction::Up => write!(f, "up"),
-                    Direction::Down => write!(f, "down"),
-                    Direction::DownLeft => write!(f, "downleft"),
-                    Direction::DownRight => write!(f, "downright"),
-                    Direction::UpLeft => write!(f, "upleft"),
-                    Direction::UpRight => write!(f, "upright"),
+                    Direction::Left => write!(f, "left {}", move_mode),
+                    Direction::Right => write!(f, "right {}", move_mode),
+                    Direction::Up => write!(f, "up {}", move_mode),
+                    Direction::Down => write!(f, "down {}", move_mode),
+                    Direction::DownLeft => write!(f, "downleft {}", move_mode),
+                    Direction::DownRight => write!(f, "downright {}", move_mode),
+                    Direction::UpLeft => write!(f, "upleft {}", move_mode),
+                    Direction::UpRight => write!(f, "upright {}", move_mode),
                 }
             },
+            InputAction::TileApply(action_target) => unimplemented!(),
             InputAction::Pass => write!(f, "pass"),
             InputAction::MapClick(loc, cell) => write!(f, "click {} {} {} {}", loc.x, loc.y, cell.x, cell.y),
             InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
@@ -132,21 +134,40 @@ impl FromStr for InputAction {
         s.make_ascii_lowercase();
 
         if s == "left" {
-            return Ok(InputAction::Move(Direction::Left));
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let move_mode = args[1].parse::<MoveMode>().unwrap();
+            return Ok(InputAction::Move(Direction::Left, move_mode));
         } else if s == "right" {
-            return Ok(InputAction::Move(Direction::Right));
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let move_mode = args[1].parse::<MoveMode>().unwrap();
+            return Ok(InputAction::Move(Direction::Right, move_mode));
         } else if s == "up" {
-            return Ok(InputAction::Move(Direction::Up));
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let move_mode = args[1].parse::<MoveMode>().unwrap();
+            return Ok(InputAction::Move(Direction::Up, move_mode));
         } else if s == "down" {
-            return Ok(InputAction::Move(Direction::Down));
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let move_mode = args[1].parse::<MoveMode>().unwrap();
+            return Ok(InputAction::Move(Direction::Down, move_mode));
         } else if s == "upleft" {
-            return Ok(InputAction::Move(Direction::UpLeft));
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let move_mode = args[1].parse::<MoveMode>().unwrap();
+            return Ok(InputAction::Move(Direction::UpLeft, move_mode));
         } else if s == "upright" {
-            return Ok(InputAction::Move(Direction::UpRight));
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let move_mode = args[1].parse::<MoveMode>().unwrap();
+            return Ok(InputAction::Move(Direction::UpRight, move_mode));
         } else if s == "downleft" {
-            return Ok(InputAction::Move(Direction::DownLeft));
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let move_mode = args[1].parse::<MoveMode>().unwrap();
+            return Ok(InputAction::Move(Direction::DownLeft, move_mode));
         } else if s == "downright" {
-            return Ok(InputAction::Move(Direction::DownRight));
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let move_mode = args[1].parse::<MoveMode>().unwrap();
+            return Ok(InputAction::Move(Direction::DownRight, move_mode));
+        } else if s == "apply" {
+            // TODO return an input action
+            unimplemented!()
         } else if s == "pass" {
             return Ok(InputAction::Pass);
         } else if s == "pickup" {
@@ -589,8 +610,8 @@ pub fn handle_input_playing(input_action: InputAction,
             action_result.turn = Action::Pass;
         }
 
-        (InputAction::Move(direction), true) => {
-            action_result.turn = Action::MoveDir(direction);
+        (InputAction::Move(direction, move_mode), true) => {
+            action_result.turn = Action::MoveDir(direction, move_mode);
         }
 
         (InputAction::DropItem, true) => {
@@ -794,13 +815,16 @@ fn chord_move(loc: ActionLoc,
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
 
+    let mut move_mode = MoveMode::Walk;
     match mode {
         ActionMode::Primary => {
-            msg_log.log(Msg::ChangeMoveMode(player_id, false));
+            move_mode = MoveMode::Sneak;
+            //msg_log.log(Msg::ChangeMoveMode(player_id, false));
         }
 
         ActionMode::Alternate => {
-            msg_log.log(Msg::ChangeMoveMode(player_id, true));
+            move_mode = MoveMode::Run;
+            //msg_log.log(Msg::ChangeMoveMode(player_id, true));
         }
     }
 
@@ -810,7 +834,7 @@ fn chord_move(loc: ActionLoc,
         }
 
         ActionLoc::Dir(direction) => {
-            turn = Action::MoveDir(direction); // handle_move(player_id, direction, data);
+            turn = Action::MoveDir(direction, move_mode); // handle_move(player_id, direction, data);
         }
 
         ActionLoc::Place(pos) => {
@@ -820,7 +844,7 @@ fn chord_move(loc: ActionLoc,
                 let dxy = sub_pos(pos, player_pos);
                 let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
 
-                turn = Action::MoveDir(direction);
+                turn = Action::MoveDir(direction, move_mode);
             }
         }
     }

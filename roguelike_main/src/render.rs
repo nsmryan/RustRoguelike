@@ -1017,7 +1017,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
 
             let mut reach = reach_by_mode(MoveMode::Sneak);
-            if game.input.mode == ActionMode::Alternate {
+            if !game.input.cursor && game.input.shift {
                 reach = reach_by_mode(MoveMode::Run);
             }
 

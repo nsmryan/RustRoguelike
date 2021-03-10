@@ -16,7 +16,7 @@ use crate::line::*;
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Action {
     Move(MoveType, Pos),
-    MoveDir(Direction),
+    MoveDir(Direction, MoveMode),
     StateChange(Behavior),
     Pickup,
     ThrowItem(Pos, EntityId), // end position, item id
@@ -54,6 +54,34 @@ pub enum MoveMode {
     Run,
 }
 
+impl fmt::Display for MoveMode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MoveMode::Sneak => write!(f, "sneak"),
+            MoveMode::Walk => write!(f, "walk"),
+            MoveMode::Run => write!(f, "run"),
+        }
+    }
+}
+
+impl FromStr for MoveMode {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "sneak" {
+            return Ok(MoveMode::Sneak);
+        } else if s == "walk" {
+            return Ok(MoveMode::Walk);
+        } else if s == "run" {
+            return Ok(MoveMode::Run);
+        }
+
+        return Err(format!("Could not parse '{}' as MoveMode", s));
+    }
+}
+
 impl Default for MoveMode {
     fn default() -> MoveMode {
         return MoveMode::Sneak;
@@ -86,16 +114,6 @@ impl MoveMode {
             MoveMode::Sneak => 1,
             MoveMode::Walk => 1,
             MoveMode::Run => 2,
-        }
-    }
-}
-
-impl fmt::Display for MoveMode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            MoveMode::Sneak => write!(f, "sneaking"),
-            MoveMode::Walk => write!(f, "walking"),
-            MoveMode::Run => write!(f, "running"),
         }
     }
 }

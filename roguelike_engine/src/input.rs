@@ -8,6 +8,7 @@ use serde::{Serialize, Deserialize};
 use roguelike_core::types::*;
 use roguelike_core::movement::Direction;
 use roguelike_core::config::Config;
+use roguelike_core::movement::MoveMode;
 use roguelike_core::utils::{add_pos, sub_pos, scale_pos, in_direction_of};
 
 use crate::game::*;
@@ -140,27 +141,41 @@ pub enum InputEvent {
 
 #[derive(Clone, Debug)]
 pub struct Input {
-    pub chording: bool,
-    pub mode: ActionMode,
-    pub moding: bool,
-    pub shifting: bool,
+    pub ctrl: bool,
+    pub alt: bool,
+    pub shift: bool,
     pub target: i32,
+    pub cursor: bool,
     pub char_held: HashMap<char, HeldState>,
 }
 
 impl Input {
     pub fn new() -> Input {
-        return Input { chording: false,
-                       mode: ActionMode::Primary,
-                       moding: false,
-                       shifting: false,
+        return Input { ctrl: false,
+                       alt: false,
+                       shift: false,
                        target: -1,
+                       cursor: false,
                        char_held: HashMap::new()
         };
     }
 
-    pub fn reset(&mut self) {
-        self.target = -1;
+    pub fn move_mode(&self) -> MoveMode {
+        if self.shift {
+            return MoveMode::Run;
+        } else if self.alt {
+            return MoveMode::Sneak;
+        } else {
+            return MoveMode::Walk;
+        }
+    }
+
+    pub fn is_held(&self, chr: char) -> bool {
+        if let Some(held_state) = self.char_held.get(&chr) {
+            return held_state.repetitions > 0;
+        }
+
+        return false;
     }
 
     pub fn handle_event(&mut self,
@@ -170,6 +185,7 @@ impl Input {
                         config: &Config) -> InputAction {
         let mut action = InputAction::None;
 
+        // remember characters that are pressed down
         if let InputEvent::Char(chr, dir) = event {
             if dir == KeyDir::Down {
                 let held_state = HeldState { down_time: time, repetitions: 0 };
@@ -195,33 +211,20 @@ impl Input {
             }
 
             InputEvent::Ctrl(dir) => {
-                match dir {
-                    KeyDir::Down => {
-                        self.chording = true;
-                        self.mode = ActionMode::Primary;
-                    }
-
-                    KeyDir::Up => {
-                        self.chording = false;
-                        self.reset();
-                    }
-
-                    KeyDir::Held => {}
+                if dir != KeyDir::Held {
+                    self.ctrl = dir == KeyDir::Down;
                 }
             }
 
             InputEvent::Shift(dir) => {
                 if dir != KeyDir::Held {
-                    self.shifting = dir == KeyDir::Down;
+                    self.shift = dir == KeyDir::Down;
                 }
             }
 
             InputEvent::Alt(dir) => {
-                if dir == KeyDir::Down {
-                    self.mode = ActionMode::Alternate;
-                    self.moding = true;
-                } else if dir == KeyDir::Up {
-                    self.moding = false;
+                if dir != KeyDir::Held {
+                    self.alt = dir == KeyDir::Down;
                 }
             }
 
@@ -229,30 +232,39 @@ impl Input {
                 match dir {
                     KeyDir::Up => {
                         // if key was held, do nothing when it is up to avoid a final press
-                        if let Some(held_state) = self.char_held.get(&chr) {
-                            if held_state.repetitions > 0 {
-                                return InputAction::None;
-                            }
+                        if self.is_held(chr) {
+                            return InputAction::None;
                         }
                         self.char_held.remove(&chr);
 
-                        // NOTE this could be moved to the normal mapping as it doesn't
-                        // rely on ctrl anymore
+                        // NOTE this could be moved to the normal mapping
                         for (index, target_chr) in TARGET_CODES.iter().enumerate() {
                             if chr == *target_chr {
-                                self.target = index as i32;
+                                let target = index as i32;
+
+                                if self.cursor {
+                                    self.target = -1;
+                                    return InputAction::TileApply(target);
+                                } else {
+                                    // target keys don't do anything outside of cursor mode,
+                                    // so just return here.
+                                    return InputAction::None;
+                                }
                             }
                         }
-                        action = self.key_to_action(chr, dir, settings, config);
 
-                        if !self.moding {
-                          self.mode = ActionMode::Primary;
-                        }
+                        action = self.key_to_action(chr, settings, config);
                     }
 
                     KeyDir::Down => {
                         if chr == 'o' {
                             action = InputAction::OverlayOn;
+                        }
+
+                        for (index, target_chr) in TARGET_CODES.iter().enumerate() {
+                            if chr == *target_chr {
+                                self.target = index as i32;
+                            }
                         }
                     }
 
@@ -263,7 +275,7 @@ impl Input {
 
                             let new_repeats = (time_since / config.repeat_delay) as usize;
                             if new_repeats > held_state.repetitions {
-                                action = self.key_to_action(chr, dir, settings, config);
+                                action = self.key_to_action(chr, settings, config);
 
                                 self.char_held.insert(chr, held_state.repeated());
                             }
@@ -300,42 +312,38 @@ impl Input {
         return action;
     }
 
-    fn key_to_action(&mut self, chr: char, _dir: KeyDir, settings: &GameSettings, config: &Config) -> InputAction {
+    fn key_to_action(&mut self, chr: char, settings: &GameSettings, config: &Config) -> InputAction {
         let mut action;
 
-        if (self.chording || self.moding || self.target != -1) && chr.is_ascii_digit() {
-            let dir = from_digit(chr);
-            action = InputAction::Chord(dir, self.mode, self.target);
-            self.reset();
-        } else if chr == ' ' {
-            action = InputAction::CursorApply(self.mode, self.target);
-            self.reset();
-        } else {
-            action = keyup_to_action(chr, settings.state);
-
-            if config.use_cursor {
-               if let InputAction::Move(dir) = action {
-                   action = InputAction::CursorMove(dir, self.shifting);
-               }
+        // handle numeric characters first
+        if chr.is_ascii_digit() {
+            if settings.state.is_menu() {
+                action = InputAction::SelectItem(chr.to_digit(10).unwrap() as usize);
+            } else if chr == '5' {
+                action = InputAction::Pass;
+            } else if let Some(dir) = from_digit(chr) {
+                if self.cursor {
+                   // TODO consider absolute vs relative as part of CursorMove?
+                   action = InputAction::CursorMove(dir, self.shift);
+                } else {
+                    action = InputAction::Move(dir, self.move_mode());
+                }
+            } else {
+                action = InputAction::None;
             }
+        } else if chr == ' ' {
+            self.cursor = !self.cursor;
+            action = InputAction::None;
+        } else {
+            action = alpha_up_to_action(chr);
         }
 
         return action;
     }
 }
 
-pub fn keyup_to_action(chr: char, game_state: GameState) -> InputAction {
+pub fn alpha_up_to_action(chr: char) -> InputAction {
     let input_action: InputAction;
-
-    if chr.is_ascii_digit() {
-        if game_state.is_menu() {
-            return InputAction::SelectItem(chr.to_digit(10).unwrap() as usize);
-        } else if chr == '5' {
-            return InputAction::Pass;
-        } else if let Some(dir) = from_digit(chr) {
-            return InputAction::Move(dir);
-        }
-    }
 
     match chr {
         'a' => {

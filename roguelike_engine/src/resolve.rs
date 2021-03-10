@@ -463,9 +463,7 @@ fn resolve_action(entity_id: EntityId,
                   config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
 
-    if let Action::MoveDir(direction) = action {
-        let move_mode: MoveMode = 
-            *data.entities.move_mode.get(&entity_id).unwrap_or(&MoveMode::Walk);
+    if let Action::MoveDir(direction, move_mode) = action {
         let amount = move_mode.move_amount();
         msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
     } else if let Action::Move(_typ, move_pos) = action {
