@@ -163,7 +163,7 @@ impl Input {
     pub fn move_mode(&self) -> MoveMode {
         if self.shift {
             return MoveMode::Run;
-        } else if self.alt {
+        } else if self.ctrl {
             return MoveMode::Sneak;
         } else {
             return MoveMode::Walk;
@@ -333,7 +333,7 @@ impl Input {
             }
         } else if chr == ' ' {
             self.cursor = !self.cursor;
-            action = InputAction::None;
+            action = InputAction::CursorToggle;
         } else {
             action = alpha_up_to_action(chr);
         }
@@ -348,10 +348,6 @@ pub fn alpha_up_to_action(chr: char) -> InputAction {
     match chr {
         'a' => {
             input_action = InputAction::Interact;
-        }
-
-        'r' => {
-            input_action = InputAction::CursorStateToggle;
         }
 
         'q' => {

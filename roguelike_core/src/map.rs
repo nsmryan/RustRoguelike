@@ -1080,6 +1080,13 @@ impl Map {
                          .filter(|pos| self[*pos].tile_type == TileType::Wall)
                          .collect::<Vec<Pos>>();
     }
+
+    pub fn clamp(&self, pos: Pos) -> Pos {
+        let (width, height) = self.size();
+        let new_x = std::cmp::min(width, std::cmp::max(0, pos.x));
+        let new_y = std::cmp::min(height, std::cmp::max(0, pos.y));
+        return Pos::new(new_x, new_y);
+    }
 }
 
 impl Index<(i32, i32)> for Map {

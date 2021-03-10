@@ -66,7 +66,7 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
-    let mouse_map_pos = Some(game.settings.cursor.pos(player_pos)); //mouse_map_pos;
+    let mouse_map_pos = game.settings.cursor;
 
     let canvas = &mut display.targets.canvas_panel.target;
     let display_state = &mut display.state;
@@ -342,111 +342,104 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
-    let info_pos = game.settings.cursor.pos(player_pos);
-    // NOTE this allows mouse support as well
-    //    if let Some(mouse) = mouse_xy {
-    //        mouse
-    //    } else {
-    //        game.settings.cursor_pos
-    //    };
+    if let Some(info_pos) = game.settings.cursor {
+        let text_color = game.config.color_soft_green;
 
+        let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
-    let text_color = game.config.color_soft_green;
+        let object_ids =
+            get_entity_at_pos(info_pos, &mut game.data);
 
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+        let mut y_pos = 1;
 
-    let object_ids =
-        get_entity_at_pos(info_pos, &mut game.data);
+        let mut text_list = Vec::new();
 
-    let mut y_pos = 1;
+        text_list.push(format!("({:>2},{:>2})", info_pos.x, info_pos.y));
 
-    let mut text_list = Vec::new();
+        let text_pos = Pos::new(1, y_pos);
 
-    text_list.push(format!("({:>2},{:>2})", info_pos.x, info_pos.y));
+        let sprite_key = display_state.lookup_spritekey("tiles");
 
-    let text_pos = Pos::new(1, y_pos);
+        {
+            let tile_sprite = &mut display_state.sprites[&sprite_key];
+            tile_sprite.draw_text_list(panel, &text_list, text_pos, text_color);
+        }
+        text_list.clear();
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+        y_pos += 1;
 
-    {
-        let tile_sprite = &mut display_state.sprites[&sprite_key];
-        tile_sprite.draw_text_list(panel, &text_list, text_pos, text_color);
-    }
-    text_list.clear();
+        let in_fov = game.settings.god_mode ||
+                     game.data.is_in_fov(player_id, info_pos, &game.config);
 
-    y_pos += 1;
+        // only display first object
+        if let Some(obj_id) = object_ids.first() {
+            // only display things in the player's FOV
+            if in_fov {
+                if let Some(fighter) = game.data.entities.fighter.get(obj_id) {
+                    y_pos += 1;
 
-    let in_fov = game.settings.god_mode ||
-                 game.data.is_in_fov(player_id, info_pos, &game.config);
+                    let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
 
-    // only display first object
-    if let Some(obj_id) = object_ids.first() {
-        // only display things in the player's FOV
-        if in_fov {
-            if let Some(fighter) = game.data.entities.fighter.get(obj_id) {
-                y_pos += 1;
+                    render_bar(panel,
+                               display_state,
+                               health_percent,
+                               y_pos,
+                               game.config.color_red,
+                               Color::white());
 
-                let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
+                    y_pos += 2;
+                }
 
-                render_bar(panel,
-                           display_state,
-                           health_percent,
-                           y_pos,
-                           game.config.color_red,
-                           Color::white());
+                text_list.push(format!("{:?}", game.data.entities.name[obj_id]));
 
-                y_pos += 2;
-            }
+                text_list.push(format!(""));
 
-            text_list.push(format!("{:?}", game.data.entities.name[obj_id]));
+                // show facing direction for player and monsters
+                if game.data.entities.typ[obj_id] == EntityType::Player ||
+                   game.data.entities.typ[obj_id] == EntityType::Enemy {
+                    if let Some(direction) = game.data.entities.direction.get(obj_id) {
+                        text_list.push(format!("Facing"));
+                        text_list.push(format!("  {}", direction));
+                    }
+                }
 
-            text_list.push(format!(""));
-
-            // show facing direction for player and monsters
-            if game.data.entities.typ[obj_id] == EntityType::Player ||
-               game.data.entities.typ[obj_id] == EntityType::Enemy {
-                if let Some(direction) = game.data.entities.direction.get(obj_id) {
-                    text_list.push(format!("Facing"));
-                    text_list.push(format!("  {}", direction));
+                if game.data.entities.fighter.get_mut(obj_id).map_or(false, |fighter| fighter.hp <= 0) {
+                    text_list.push(format!("  {}", "dead"));
+                } else if let Some(behave) = game.data.entities.behavior.get(obj_id) {
+                    text_list.push(format!("{}", behave.description()));
                 }
             }
-
-            if game.data.entities.fighter.get_mut(obj_id).map_or(false, |fighter| fighter.hp <= 0) {
-                text_list.push(format!("  {}", "dead"));
-            } else if let Some(behave) = game.data.entities.behavior.get(obj_id) {
-                text_list.push(format!("{}", behave.description()));
-            }
         }
-    }
 
-    let tile_sprite = &mut display_state.sprites[&sprite_key];
-    let text_pos = Pos::new(1, y_pos);
-    tile_sprite.draw_text_list(panel, &text_list, text_pos, text_color);
-    text_list.push(format!(""));
-    text_list.clear();
-
-    y_pos = 11;
-    if in_fov {
+        let tile_sprite = &mut display_state.sprites[&sprite_key];
         let text_pos = Pos::new(1, y_pos);
-        text_list.push(format!("Tile is"));
-        if game.data.map[info_pos].tile_type == TileType::Water {
-            text_list.push("water".to_string());
-        } else {
-            text_list.push(format!("{:?}",  game.data.map[info_pos].surface));
-        }
-        if game.data.map[info_pos].bottom_wall != Wall::Empty {
-            text_list.push("Lower wall".to_string());
-        }
-
-        if game.data.map[info_pos].left_wall != Wall::Empty {
-            text_list.push("Left wall".to_string());
-        }
-
-        if game.data.map[info_pos].block_move {
-            text_list.push(format!("blocked"));
-        }
-
         tile_sprite.draw_text_list(panel, &text_list, text_pos, text_color);
+        text_list.push(format!(""));
+        text_list.clear();
+
+        y_pos = 11;
+        if in_fov {
+            let text_pos = Pos::new(1, y_pos);
+            text_list.push(format!("Tile is"));
+            if game.data.map[info_pos].tile_type == TileType::Water {
+                text_list.push("water".to_string());
+            } else {
+                text_list.push(format!("{:?}",  game.data.map[info_pos].surface));
+            }
+            if game.data.map[info_pos].bottom_wall != Wall::Empty {
+                text_list.push("Lower wall".to_string());
+            }
+
+            if game.data.map[info_pos].left_wall != Wall::Empty {
+                text_list.push("Left wall".to_string());
+            }
+
+            if game.data.map[info_pos].block_move {
+                text_list.push(format!("blocked"));
+            }
+
+            tile_sprite.draw_text_list(panel, &text_list, text_pos, text_color);
+        }
     }
 }
 
@@ -1002,30 +995,31 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     // render cursor if enabled
     if game.config.use_cursor {
         // render cursor itself
-        let cursor_pos = game.settings.cursor.pos(player_pos);
-        let tile_sprite = &mut display_state.sprites[&sprite_key];
-        let mut color = game.config.color_mint_green;
-        color.a = 230;
-        tile_sprite.draw_char(panel, ENTITY_CURSOR as char, cursor_pos, color);
+        if let Some(cursor_pos) = game.settings.cursor {
+            let tile_sprite = &mut display_state.sprites[&sprite_key];
+            let mut color = game.config.color_mint_green;
+            color.a = 230;
+            tile_sprite.draw_char(panel, ENTITY_CURSOR as char, cursor_pos, color);
 
-        // render player ghost
-        if cursor_pos != player_pos && game.input.target == -1 {
-            let alpha = game.data.entities.color[&player_id].a;
-            game.data.entities.color[&player_id].a = 100;
+            // render player ghost
+            if cursor_pos != player_pos && game.input.target == -1 {
+                let alpha = game.data.entities.color[&player_id].a;
+                game.data.entities.color[&player_id].a = 100;
 
-            let dxy = sub_pos(cursor_pos, player_pos);
-            let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+                let dxy = sub_pos(cursor_pos, player_pos);
+                let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
 
-            let mut reach = reach_by_mode(MoveMode::Sneak);
-            if !game.input.cursor && game.input.shift {
-                reach = reach_by_mode(MoveMode::Run);
-            }
+                let mut reach = reach_by_mode(MoveMode::Sneak);
+                if !game.input.cursor && game.input.shift {
+                    reach = reach_by_mode(MoveMode::Run);
+                }
 
-            if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {
-                game.data.entities.pos[&player_id] = player_ghost_pos;
-                render_entity(panel, player_id, display_state, game);
-                game.data.entities.color[&player_id].a = alpha;
-                game.data.entities.pos[&player_id] = player_pos;
+                if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {
+                    game.data.entities.pos[&player_id] = player_ghost_pos;
+                    render_entity(panel, player_id, display_state, game);
+                    game.data.entities.color[&player_id].a = alpha;
+                    game.data.entities.pos[&player_id] = player_pos;
+                }
             }
         }
     }

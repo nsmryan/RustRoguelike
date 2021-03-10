@@ -10,7 +10,7 @@ use roguelike_core::utils::{scale_pos};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
-use roguelike_core::utils::{sub_pos};
+use roguelike_core::utils::{sub_pos, add_pos};
 
 use crate::game::*;
 use crate::selection::*;
@@ -59,7 +59,7 @@ pub enum InputAction {
     Chord(Option<Direction>, ActionMode, ActionTarget),
     CursorMove(Direction, bool), // move direction, is long
     CursorReturn,
-    CursorStateToggle,
+    CursorToggle,
     CursorApply(ActionMode, ActionTarget),
     MapClick(Pos, Pos), // map loc, map cell
     MouseButton(MouseClick, KeyDir),
@@ -119,8 +119,8 @@ impl fmt::Display for InputAction {
             InputAction::Chord(dir, mode, target) => write!(f, "chord {:?} {:?} {:?}", dir, mode, target),
             InputAction::CursorMove(dir, long) => write!(f, "cursormove {:?} {}", dir, long),
             InputAction::CursorReturn => write!(f, "cursorreturn"),
-            InputAction::CursorStateToggle => write!(f, "cursorstatetoggle"),
             InputAction::CursorApply(mode, target) => write!(f, "cursorapply {:?} {:?}", mode, target),
+            InputAction::CursorToggle => write!(f, "cursortoggle"),
             InputAction::None => write!(f, "none"),
         }
     }
@@ -218,13 +218,13 @@ impl FromStr for InputAction {
             return Ok(InputAction::CursorMove(dir, long));
         } else if s.starts_with("cursorreturn") {
             return Ok(InputAction::CursorReturn);
-        } else if s.starts_with("cursorstatetoggle") {
-            return Ok(InputAction::CursorStateToggle);
         } else if s.starts_with("cursorapply") {
             let args = s.split(" ").collect::<Vec<&str>>();
             let mode = ActionMode::from_str(args[1]).unwrap();
             let target = args[2].parse::<i32>().unwrap();
             return Ok(InputAction::CursorApply(mode, target));
+        } else if s.starts_with("cursortoggle") {
+            return Ok(InputAction::CursorToggle);
         } else {
             return Err(format!("Could not parse '{}' as InputAction", s));
         }
@@ -560,14 +560,14 @@ pub fn handle_input_playing(input_action: InputAction,
 
     match (input_action, player_alive) {
         (InputAction::CursorReturn, _) => {
-            settings.cursor.return_cursor(player_pos);
-        }
-
-        (InputAction::CursorStateToggle, _) => {
-            settings.cursor.toggle(player_pos);
+            if settings.cursor.is_some() {
+                settings.cursor = Some(player_pos);
+            }
         }
 
         (InputAction::CursorMove(dir, long), _) => {
+            let cursor_pos = settings.cursor.expect("CursorMove outside of cursor mode?");
+
             let dist =
                 if long {
                     config.cursor_long
@@ -575,14 +575,14 @@ pub fn handle_input_playing(input_action: InputAction,
                     1
                 };
 
-            settings.cursor.move_by(player_pos,
-                                    dir,
-                                    dist,
-                                    data.map.size());
+            let dir_move: Pos = scale_pos(dir.into_move(), dist);
+            let new_pos = add_pos(cursor_pos, dir_move);
+
+            settings.cursor = Some(data.map.clamp(new_pos));
         }
 
         (InputAction::CursorApply(mode, target), true) => {
-            let cursor_pos = settings.cursor.pos(player_pos);
+            let cursor_pos = settings.cursor.expect("CursorApply outside of cursor mode?");
 
             action_result.turn =
                 chord(ActionLoc::Place(cursor_pos),
@@ -592,6 +592,14 @@ pub fn handle_input_playing(input_action: InputAction,
                       settings,
                       config,
                       msg_log);
+        }
+
+        (InputAction::CursorToggle, true) => {
+            if settings.cursor.is_none() {
+                settings.cursor = Some(player_pos);
+            } else {
+                settings.cursor = None;
+            }
         }
 
         (InputAction::Chord(dir, mode, target), true) => {
