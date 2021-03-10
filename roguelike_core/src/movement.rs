@@ -93,9 +93,9 @@ impl MoveMode {
         match self {
             // Removed Walking (issue 151), so sneak -> run
             // MoveMode::Sneak => MoveMode::Walk,
-            MoveMode::Sneak => MoveMode::Run,
+            MoveMode::Sneak => MoveMode::Walk,
             MoveMode::Run => MoveMode::Run,
-            MoveMode::Walk => panic!("You shouldn't be able to walk!"),
+            MoveMode::Walk => MoveMode::Run,
         }
     }
 
@@ -104,8 +104,8 @@ impl MoveMode {
             // Removed Walking (issue 151), so run -> sneak
             // MoveMode::Sneak => MoveMode::Walk,
             MoveMode::Sneak => MoveMode::Sneak,
-            MoveMode::Run => MoveMode::Sneak,
-            MoveMode::Walk => panic!("You shouldn't be able to walk!"),
+            MoveMode::Run => MoveMode::Walk,
+            MoveMode::Walk => MoveMode::Sneak,
         }
     }
 
