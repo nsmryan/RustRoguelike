@@ -41,67 +41,6 @@ impl FromStr for KeyDir {
     }
 }
 
-#[derive(Clone, Debug, Copy, PartialEq, Serialize, Deserialize)]
-pub enum Cursor {
-    Absolute(Pos),
-    Relative(Pos),
-}
-
-impl Cursor {
-    pub fn new() -> Cursor {
-        return Cursor::Absolute(Pos::new(0, 0));
-    }
-
-    pub fn pos(&self, target_pos: Pos) -> Pos {
-        match self {
-            Cursor::Absolute(pos) => *pos,
-            Cursor::Relative(offset) => add_pos(target_pos, *offset),
-        }
-    }
-
-    pub fn toggle(&mut self, target_pos: Pos) {
-        match self {
-            Cursor::Absolute(pos) => {
-                let towards_pos = in_direction_of(target_pos, *pos);
-                *self = Cursor::Relative(sub_pos(towards_pos, target_pos));
-            }
-
-            Cursor::Relative(offset) => {
-                *self = Cursor::Absolute(add_pos(target_pos, *offset));
-            }
-        }
-    }
-
-    pub fn return_cursor(&mut self, target_pos: Pos) {
-        match self {
-            Cursor::Absolute(_) => *self = Cursor::Absolute(target_pos),
-            Cursor::Relative(_) => *self = Cursor::Relative(Pos::new(0, 0)),
-        }
-    }
-
-    pub fn move_by(&mut self, target_pos: Pos, dir: Direction, dist: i32, map_size: (i32, i32)) {
-        let mut new_pos: Pos = self.pos(target_pos);
-
-        let dir_move: Pos = scale_pos(dir.into_move(), dist);
-
-        let moved_pos: Pos = 
-            match self {
-                Cursor::Absolute(pos) => add_pos(*pos, dir_move),
-                Cursor::Relative(_) => add_pos(target_pos, dir_move),
-            };
-
-        if moved_pos.x >= 0 && moved_pos.y >= 0 &&
-           moved_pos.x < map_size.0 && moved_pos.y < map_size.1 {
-            new_pos = moved_pos;
-        }
-
-        match self {
-            Cursor::Absolute(_) => *self = Cursor::Absolute(new_pos),
-            Cursor::Relative(offset) => *self = Cursor::Relative(sub_pos(new_pos, target_pos)),
-        }
-    }
-}
-
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum MouseClick {

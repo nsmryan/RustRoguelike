@@ -94,7 +94,7 @@ impl fmt::Display for InputAction {
                     Direction::UpRight => write!(f, "upright {}", move_mode),
                 }
             },
-            InputAction::TileApply(action_target) => unimplemented!(),
+            InputAction::TileApply(action_target) => write!(f, "tileapply {}", action_target),
             InputAction::Pass => write!(f, "pass"),
             InputAction::MapClick(loc, cell) => write!(f, "click {} {} {} {}", loc.x, loc.y, cell.x, cell.y),
             InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
@@ -165,9 +165,10 @@ impl FromStr for InputAction {
             let args = s.split(" ").collect::<Vec<&str>>();
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::DownRight, move_mode));
-        } else if s == "apply" {
-            // TODO return an input action
-            unimplemented!()
+        } else if s == "tileapply" {
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let target = args[1].parse::<ActionTarget>().unwrap();
+            return Ok(InputAction::TileApply(target));
         } else if s == "pass" {
             return Ok(InputAction::Pass);
         } else if s == "pickup" {
@@ -586,6 +587,19 @@ pub fn handle_input_playing(input_action: InputAction,
             }
 
             settings.cursor = Some(data.map.clamp(new_pos));
+        }
+
+        (InputAction::TileApply(target), true) => {
+            let cursor_pos = settings.cursor.expect("TileApply outside of cursor mode?");
+
+            action_result.turn =
+                chord(ActionLoc::Place(cursor_pos),
+                      ActionMode::Alternate,
+                      target,
+                      data,
+                      settings,
+                      config,
+                      msg_log);
         }
 
         (InputAction::CursorApply(mode, target), true) => {
