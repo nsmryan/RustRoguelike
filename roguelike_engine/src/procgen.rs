@@ -22,7 +22,6 @@ use roguelike_core::line::*;
 
 use crate::generation::*;
 use crate::game::*;
-use crate::make_map::*;
 use crate::vault::*;
 
 

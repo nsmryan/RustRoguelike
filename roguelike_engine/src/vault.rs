@@ -1,4 +1,3 @@
-use std::fs::File;
 use std::str::FromStr;
 
 use roguelike_core::constants::*;
@@ -6,7 +5,6 @@ use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
-use roguelike_core::utils::*;
 
 use crate::generation::*;
 

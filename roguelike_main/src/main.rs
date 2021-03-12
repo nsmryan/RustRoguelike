@@ -174,13 +174,13 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
 
     let mut event_pump = sdl_context.event_pump()?;
 
-    let (mut io_send, mut io_recv) = mpsc::channel();
+    let (io_send, io_recv) = mpsc::channel();
     thread::spawn(move || {
         let stdin = std::io::stdin();
-        let mut stdin = stdin.lock().lines();
+        let stdin = stdin.lock().lines();
 
         for line in stdin {
-            io_send.send(line.unwrap());
+            io_send.send(line.unwrap()).unwrap();
         }
     });
 

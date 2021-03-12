@@ -635,7 +635,7 @@ impl Display {
                 }
             }
 
-            Msg::Moved(entity_id, move_type, _pos) => {
+            Msg::Moved(entity_id, _move_type, _pos) => {
                 if let Some(anim_key) = self.get_idle_animation(entity_id, data, config) {
                     data.entities.set_animation(entity_id, anim_key);
                 }

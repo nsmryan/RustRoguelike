@@ -5,7 +5,6 @@ use serde::{Serialize, Deserialize};
 
 use roguelike_core::movement::{Direction, Action, Reach, MoveMode};
 use roguelike_core::types::*;
-use roguelike_core::movement;
 use roguelike_core::utils::{scale_pos};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
@@ -823,12 +822,10 @@ pub fn chord(loc: ActionLoc,
              settings: &mut GameSettings,
              config: &Config,
              msg_log: &mut MsgLog) -> Action {
-    let mut turn = Action::none();
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
-
     // if no target selection, then it is a move
+    let turn;
     if target == -1 {
-        turn = chord_move(loc, mode, data, msg_log);
+        turn = chord_move(loc, mode, data);
     } else {
         turn = chord_selection(loc, mode, target, data, settings, config, msg_log);
     }
@@ -838,13 +835,12 @@ pub fn chord(loc: ActionLoc,
 
 fn chord_move(loc: ActionLoc,
               mode: ActionMode,
-              data: &GameData,
-              msg_log: &mut MsgLog) -> Action {
+              data: &GameData) -> Action {
     let turn;
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
 
-    let mut move_mode = MoveMode::Walk;
+    let move_mode;
     match mode {
         ActionMode::Primary => {
             move_mode = MoveMode::Sneak;

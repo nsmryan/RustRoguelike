@@ -567,20 +567,27 @@ fn resolve_action(entity_id: EntityId,
     } else if let Action::Push(entity_id, direction, amount) = action {
         // TODO split into separate function
         use_energy(entity_id, data);
-
-        let pos = data.entities.pos[&entity_id];
-
-        let push_pos = direction.offset_pos(pos, 1);
-        for other_id in data.has_entities(push_pos) {
-            if data.entities.typ[&other_id] == EntityType::Enemy {
-                let dxy = sub_pos(push_pos, pos);
-                let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-                let move_into = false;
-                msg_log.log(Msg::Pushed(entity_id, other_id, direction, amount, move_into));
-            }
-        }
-        data.entities.took_turn[&entity_id] = true;
+        resolve_push(entity_id, direction, amount, data, msg_log);
     }
+}
+
+fn resolve_push(entity_id: EntityId,
+                direction: Direction,
+                amount: usize,
+                data: &mut GameData,
+                msg_log: &mut MsgLog) {
+    let pos = data.entities.pos[&entity_id];
+
+    let push_pos = direction.offset_pos(pos, 1);
+    for other_id in data.has_entities(push_pos) {
+        if data.entities.typ[&other_id] == EntityType::Enemy {
+            let dxy = sub_pos(push_pos, pos);
+            let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+            let move_into = false;
+            msg_log.log(Msg::Pushed(entity_id, other_id, direction, amount, move_into));
+        }
+    }
+    data.entities.took_turn[&entity_id] = true;
 }
 
 fn resolve_blink(entity_id: EntityId, data: &mut GameData, rng: &mut SmallRng, msg_log: &mut MsgLog) {

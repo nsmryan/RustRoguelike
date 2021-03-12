@@ -63,9 +63,6 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
     let mouse_map_pos = mouse_map_pos;
     */
 
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
-
     let mouse_map_pos = game.settings.cursor;
 
     let canvas = &mut display.targets.canvas_panel.target;
@@ -336,11 +333,8 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 fn render_info(panel: &mut Panel<&mut WindowCanvas>,
                display_state: &mut DisplayState,
                game: &mut Game,
-               mouse_xy: Option<Pos>) {
+               _mouse_xy: Option<Pos>) {
     render_placard(panel, display_state, "Info", &game.config);
-
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
 
     if let Some(info_pos) = game.settings.cursor {
         let text_color = game.config.color_soft_green;
@@ -602,7 +596,6 @@ fn render_background(display: &mut Display, game: &mut Game) {
                                      empty_tile_color(&game.config, map_pos, visible));
                 } else {
                     let color = tile_color(&game.config, x, y, tile, visible);
-                    let chr = tile.chr;
                     sprite.draw_char(&mut panel, MAP_EMPTY_CHAR as char, map_pos, color);
                 }
             }
@@ -849,8 +842,6 @@ fn render_order(typ: EntityType) -> usize {
 
 /// Render each object in the game, filtering for objects not currently visible
 fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-
     display_state.drawn_sprites.clear();
 
     let mut ids = game.data.entities.ids.clone();

@@ -9,7 +9,6 @@ use roguelike_core::types::*;
 use roguelike_core::movement::Direction;
 use roguelike_core::config::Config;
 use roguelike_core::movement::MoveMode;
-use roguelike_core::utils::{add_pos, sub_pos, scale_pos, in_direction_of};
 
 use crate::game::*;
 use crate::actions::*;
@@ -192,7 +191,7 @@ impl Input {
                             }
                         }
 
-                        action = self.key_to_action(chr, settings, config);
+                        action = self.key_to_action(chr, settings);
                     }
 
                     KeyDir::Down => {
@@ -214,7 +213,7 @@ impl Input {
 
                             let new_repeats = (time_since / config.repeat_delay) as usize;
                             if new_repeats > held_state.repetitions {
-                                action = self.key_to_action(chr, settings, config);
+                                action = self.key_to_action(chr, settings);
 
                                 self.char_held.insert(chr, held_state.repeated());
                             }
@@ -251,8 +250,8 @@ impl Input {
         return action;
     }
 
-    fn key_to_action(&mut self, chr: char, settings: &GameSettings, config: &Config) -> InputAction {
-        let mut action;
+    fn key_to_action(&mut self, chr: char, settings: &GameSettings) -> InputAction {
+        let action;
 
         // handle numeric characters first
         if chr.is_ascii_digit() {
