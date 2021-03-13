@@ -37,6 +37,10 @@ pub fn resolve_messages(data: &mut GameData,
                process_moved_message(entity_id, move_type, pos, data, msg_log, config);
             }
 
+            Msg::Interact(entity_id, pos) => {
+               process_interaction(entity_id, pos, data, msg_log, config);
+            }
+
             Msg::Crushed(entity_id, pos) => {
                 crushed(entity_id, pos, data, msg_log, config);
             }
@@ -489,6 +493,8 @@ fn resolve_action(entity_id: EntityId,
         msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
     } else if let Action::StateChange(behavior) = action {
         msg_log.log(Msg::StateChange(entity_id, behavior));
+    } else if let Action::Interact(pos) = action {
+        msg_log.log(Msg::Interact(entity_id, pos));
     } else if let Action::Yell = action {
         msg_log.log(Msg::Yell(entity_id, entity_pos));
     } else if let Action::Pass = action {
@@ -974,6 +980,19 @@ fn inventory_drop_item(entity_id: EntityId,
         msg_log.log(Msg::DropFailed(entity_id));
     }
 
+}
+
+fn process_interaction(entity_id: EntityId,
+                       interact_pos: Pos,
+                       data: &mut GameData, 
+                       msg_log: &mut MsgLog,
+                       _config: &Config) {
+    for other_id  in data.has_entity(interact_pos) {
+        if let Some(_trap) = data.entities.trap.get(&other_id) {
+            msg_log.log(Msg::Action(entity_id, Action::ArmDisarmTrap(other_id)));
+            break;
+        }
+    }
 }
 
 fn process_moved_message(entity_id: EntityId,

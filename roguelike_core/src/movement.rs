@@ -17,6 +17,7 @@ use crate::line::*;
 pub enum Action {
     Move(MoveType, Pos),
     MoveDir(Direction, MoveMode),
+    Interact(Pos),
     StateChange(Behavior),
     Pickup,
     ThrowItem(Pos, EntityId), // end position, item id

@@ -54,7 +54,7 @@ pub enum InputAction {
     DropItem,
     Yell,
     UseItem,
-    Interact,
+    Interact(Option<Direction>),
     Chord(Option<Direction>, ActionMode, ActionTarget),
     CursorMove(Direction, bool, bool), // move direction, is relative, is long
     CursorReturn,
@@ -114,7 +114,7 @@ impl fmt::Display for InputAction {
             InputAction::OverlayOff => write!(f, "overlayoff"),
             InputAction::SelectItem(item) => write!(f, "selectitem {}", item),
             InputAction::UseItem => write!(f, "use"),
-            InputAction::Interact => write!(f, "interact"),
+            InputAction::Interact(dir) => write!(f, "interact {:?}", dir),
             InputAction::Chord(dir, mode, target) => write!(f, "chord {:?} {:?} {:?}", dir, mode, target),
             InputAction::CursorMove(dir, relative, long) => write!(f, "cursormove {:?} {} {}", dir, relative, long),
             InputAction::CursorReturn => write!(f, "cursorreturn"),
@@ -185,7 +185,9 @@ impl FromStr for InputAction {
             let selection = args[1].parse::<usize>().unwrap();
             return Ok(InputAction::SelectItem(selection));
         } else if s == "interact" {
-            return Ok(InputAction::Interact);
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let dir = args[1].parse::<Direction>().ok();
+            return Ok(InputAction::Interact(dir));
         } else if s == "godmode" {
             return Ok(InputAction::GodMode);
         } else if s.starts_with("click") {
@@ -695,11 +697,17 @@ pub fn handle_input_playing(input_action: InputAction,
             action_result.new_state = Some(GameState::ConfirmQuit);
         }
 
-        (InputAction::Interact, _) => {
-            action_result.new_state = Some(GameState::Selection);
-            let reach = Reach::single(1);
-            settings.selection =
-                Selection::new(SelectionType::WithinReach(reach), SelectionAction::Interact);
+        (InputAction::Interact(dir), _) => {
+        let pos = data.entities.pos[&player_id];
+
+        let interact_pos = 
+            if let Some(dir) = dir {
+                dir.offset_pos(pos, 1)
+            } else {
+                pos
+            };
+
+            action_result.turn = Action::Interact(interact_pos);
         }
 
         (InputAction::UseItem, _) => {

@@ -9,41 +9,6 @@ use crate::ai::Behavior;
 use crate::movement::Attack;
 
 
-pub struct MsgLog {
-    pub messages: VecDeque<Msg>,
-    pub turn_messages: VecDeque<Msg>,
-}
-
-impl MsgLog {
-    pub fn new() -> MsgLog {
-        return MsgLog {
-            messages: VecDeque::new(),
-            turn_messages: VecDeque::new(),
-        };
-    }
-
-    pub fn pop(&mut self) -> Option<Msg> {
-        let msg = self.messages.pop_front();
-        if let Some(msg) = msg {
-            self.turn_messages.push_back(msg);
-        }
-        return msg;
-    }
-
-    pub fn log(&mut self, msg: Msg) {
-        self.messages.push_back(msg);
-    }
-
-    pub fn log_front(&mut self, msg: Msg) {
-        self.messages.push_front(msg);
-    }
-
-    pub fn clear(&mut self) {
-        self.messages.clear();
-        self.turn_messages.clear();
-    }
-}
-
 #[derive(Copy, Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub enum Msg {
     StartTurn,
@@ -65,6 +30,7 @@ pub enum Msg {
     Pushed(EntityId, EntityId, Direction, usize, bool), // attacker, attacked, direction, amount, move into pushed square
     TryMove(EntityId, Direction, usize, MoveMode),
     Moved(EntityId, MoveType, Pos),
+    Interact(EntityId, Pos),
     JumpWall(EntityId, Pos, Pos), // current pos, new pos
     WallKick(EntityId, Pos),
     StateChange(EntityId, Behavior),
@@ -159,6 +125,10 @@ impl Msg {
 
             Msg::Pushed(attacker, attacked, _direction, _amount, _move_into) => {
                 return format!("{:?} pushed {:?}", data.entities.name[attacker], data.entities.name[attacked]);
+            }
+
+            Msg::Interact(_entity_id, _pos) => {
+                return "".to_string();
             }
 
             Msg::Moved(entity_id, move_type, pos) => {
@@ -319,6 +289,41 @@ impl Msg {
                 return "".to_string();
             }
         }
+    }
+}
+
+pub struct MsgLog {
+    pub messages: VecDeque<Msg>,
+    pub turn_messages: VecDeque<Msg>,
+}
+
+impl MsgLog {
+    pub fn new() -> MsgLog {
+        return MsgLog {
+            messages: VecDeque::new(),
+            turn_messages: VecDeque::new(),
+        };
+    }
+
+    pub fn pop(&mut self) -> Option<Msg> {
+        let msg = self.messages.pop_front();
+        if let Some(msg) = msg {
+            self.turn_messages.push_back(msg);
+        }
+        return msg;
+    }
+
+    pub fn log(&mut self, msg: Msg) {
+        self.messages.push_back(msg);
+    }
+
+    pub fn log_front(&mut self, msg: Msg) {
+        self.messages.push_front(msg);
+    }
+
+    pub fn clear(&mut self) {
+        self.messages.clear();
+        self.turn_messages.clear();
     }
 }
 

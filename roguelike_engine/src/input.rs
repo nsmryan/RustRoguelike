@@ -258,10 +258,16 @@ impl Input {
             if settings.state.is_menu() {
                 action = InputAction::SelectItem(chr.to_digit(10).unwrap() as usize);
             } else if chr == '5' {
-                action = InputAction::Pass;
+                if self.alt {
+                    action = InputAction::Interact(None);
+                } else {
+                    action = InputAction::Pass;
+                }
             } else if let Some(dir) = from_digit(chr) {
                 if self.cursor {
                    action = InputAction::CursorMove(dir, self.ctrl, self.shift);
+                } else if self.alt {
+                    action = InputAction::Interact(Some(dir));
                 } else {
                     action = InputAction::Move(dir, self.move_mode());
                 }
@@ -283,10 +289,6 @@ pub fn alpha_up_to_action(chr: char) -> InputAction {
     let input_action: InputAction;
 
     match chr {
-        'a' => {
-            input_action = InputAction::Interact;
-        }
-
         'q' => {
             input_action = InputAction::Exit;
         }
