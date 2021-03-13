@@ -395,18 +395,18 @@ fn resolve_try_move(entity_id: EntityId,
             msg_log.log(Msg::TryAttack(entity_id, attack, movement.pos));
         } else {
             // otherwise attempt to resolve a movement
-            resolve_try_move_mode(entity_id, direction, amount, move_mode, movement, data, msg_log);
+            resolve_try_movement(entity_id, direction, amount, move_mode, movement, data, msg_log);
         }
     }
 }
 
-fn resolve_try_move_mode(entity_id: EntityId,
-                         direction: Direction,
-                         amount: usize,
-                         move_mode: MoveMode,
-                         movement: Movement,
-                         data: &mut GameData,
-                         msg_log: &mut MsgLog) {
+fn resolve_try_movement(entity_id: EntityId,
+                        direction: Direction,
+                        amount: usize,
+                        move_mode: MoveMode,
+                        movement: Movement,
+                        data: &mut GameData,
+                        msg_log: &mut MsgLog) {
     let entity_pos = data.entities.pos[&entity_id];
 
     match movement.typ {
@@ -1004,6 +1004,8 @@ fn process_moved_message(entity_id: EntityId,
                 data.entities.stance[&entity_id] = Stance::Running;
             } else if *move_mode == MoveMode::Sneak {
                 data.entities.stance[&entity_id] = Stance::Crouching;
+            } else if *move_mode == MoveMode::Walk && *stance == Stance::Crouching {
+                data.entities.stance[&entity_id] = Stance::Standing;
             }
         }
 
