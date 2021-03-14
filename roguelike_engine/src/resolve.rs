@@ -987,10 +987,18 @@ fn process_interaction(entity_id: EntityId,
                        data: &mut GameData, 
                        msg_log: &mut MsgLog,
                        _config: &Config) {
-    for other_id  in data.has_entity(interact_pos) {
-        if let Some(_trap) = data.entities.trap.get(&other_id) {
-            msg_log.log(Msg::Action(entity_id, Action::ArmDisarmTrap(other_id)));
-            break;
+    let pos = data.entities.pos[&entity_id];
+
+    if pos == interact_pos {
+        if let Some(item_id) = data.item_at_pos(pos) {
+            msg_log.log(Msg::Action(entity_id, Action::Pickup));
+        }
+    } else {
+        for other_id in data.has_entity(interact_pos) {
+            if data.entities.trap.get(&other_id).is_some() {
+                msg_log.log(Msg::Action(entity_id, Action::ArmDisarmTrap(other_id)));
+                break;
+            }
         }
     }
 }
