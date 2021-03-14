@@ -281,8 +281,11 @@ impl Msg {
             }
 
             Msg::DropItem(entity_id, item_index) => {
-                let item_id = data.entities.inventory[entity_id][*item_index as usize];
-                return format!("{:?} dropped a {:?}!", data.entities.name[entity_id], item_id);
+                if let Some(item_id) = data.entities.inventory[entity_id].get(*item_index as usize) {
+                    return format!("{:?} dropped a {:?}!", data.entities.name[entity_id], item_id);
+                } else {
+                    return "".to_string();
+                }
             }
 
             _ => {

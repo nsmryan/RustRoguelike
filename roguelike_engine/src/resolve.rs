@@ -952,34 +952,34 @@ fn inventory_drop_item(entity_id: EntityId,
                        data: &mut GameData,
                        msg_log: &mut MsgLog) {
     let player_pos = data.entities.pos[&entity_id];
-    let item_id = data.entities.inventory[&entity_id][item_index];
 
-    // Find a place to drop the item, without placing it on the same tile
-    // as another item.
-    let mut found_tile = false;
-    let mut dist = 1;
-    while !found_tile && dist < 10 {
-        let positions = floodfill(&data.map, player_pos, dist);
+    if let Some(item_id) = data.entities.inventory[&entity_id].get(item_index).map(|v| *v) {
+        // Find a place to drop the item, without placing it on the same tile
+        // as another item.
+        let mut found_tile = false;
+        let mut dist = 1;
+        while !found_tile && dist < 10 {
+            let positions = floodfill(&data.map, player_pos, dist);
 
-        for pos in positions {
-            if data.item_at_pos(pos).is_none() {
-                data.entities.remove_item(entity_id, item_id);
-                data.entities.set_pos(item_id, pos);
+            for pos in positions {
+                if data.item_at_pos(pos).is_none() {
+                    data.entities.remove_item(entity_id, item_id);
+                    data.entities.set_pos(item_id, pos);
 
-                found_tile = true;
-                break;
+                    found_tile = true;
+                    break;
+                }
             }
+
+            dist += 1;
         }
 
-        dist += 1;
+        if found_tile {
+            data.entities.took_turn[&entity_id] = true;
+        } else {
+            msg_log.log(Msg::DropFailed(entity_id));
+        }
     }
-
-    if found_tile {
-        data.entities.took_turn[&entity_id] = true;
-    } else {
-        msg_log.log(Msg::DropFailed(entity_id));
-    }
-
 }
 
 fn process_interaction(entity_id: EntityId,
