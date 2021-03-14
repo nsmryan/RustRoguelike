@@ -260,6 +260,8 @@ impl Input {
             } else if chr == '5' {
                 if self.alt {
                     action = InputAction::Interact(None);
+                } else if self.target != -1 {
+                    action = InputAction::DropTargetItem(self.target);
                 } else {
                     action = InputAction::Pass;
                 }

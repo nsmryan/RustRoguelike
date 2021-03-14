@@ -52,6 +52,7 @@ pub enum InputAction {
     Pass,
     Pickup,
     DropItem,
+    DropTargetItem(i32),
     Yell,
     UseItem,
     Interact(Option<Direction>),
@@ -99,6 +100,7 @@ impl fmt::Display for InputAction {
             InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
             InputAction::Pickup => write!(f, "pickup"),
             InputAction::DropItem => write!(f, "drop"),
+            InputAction::DropTargetItem(target) => write!(f, "droptarget {}", target),
             InputAction::Inventory => write!(f, "inventory"),
             InputAction::SkillMenu => write!(f, "skill"),
             InputAction::ClassMenu => write!(f, "class"),
@@ -174,6 +176,10 @@ impl FromStr for InputAction {
             return Ok(InputAction::Pickup);
         } else if s == "drop" {
             return Ok(InputAction::DropItem);
+        } else if s == "droptarget" {
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let target = args[1].parse::<ActionTarget>().unwrap();
+            return Ok(InputAction::DropTargetItem(target));
         } else if s == "yell" {
             return Ok(InputAction::Yell);
         } else if s == "inventory" {
@@ -622,6 +628,10 @@ pub fn handle_input_playing(input_action: InputAction,
             } else {
                 settings.cursor = None;
             }
+        }
+
+        (InputAction::DropTargetItem(target), true) => {
+            msg_log.log(Msg::DropItem(player_id, target as u64));
         }
 
         (InputAction::Chord(dir, mode, target), true) => {
