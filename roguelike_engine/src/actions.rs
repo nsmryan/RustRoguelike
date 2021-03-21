@@ -756,8 +756,10 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::Blink => {
-            turn = Action::Blink(player_id);
+            msg_log.log(Msg::Blink(player_id));
 
+            // TODO this is no longer necessary when Selection is removed. same goes
+            // for other skills
             settings.state = GameState::Playing;
             msg_log.log(Msg::GameState(settings.state));
         }

@@ -71,6 +71,11 @@ pub fn resolve_messages(data: &mut GameData,
                 msg_log.log_front(Msg::Sound(entity_id, end, config.sound_radius_run, true));
             }
 
+
+            Msg::Blink(entity_id) => {
+                resolve_blink(entity_id, data, rng, msg_log);
+            }
+
             Msg::Pushed(pusher, pushed, direction, push_amount, move_into) => {
                 pushed_entity(pusher, pushed, direction, push_amount, move_into, data, config, msg_log);
             }
@@ -537,8 +542,6 @@ fn resolve_action(entity_id: EntityId,
         }
         // pick_item_up takes the turn, so we don't have to set took_turn here
         pick_item_up(entity_id, item_id, &mut data.entities);
-    } else if let Action::Blink(entity_id) = action {
-        resolve_blink(entity_id, data, rng, msg_log);
     } else if let Action::Rubble(entity_id, blocked) = action {
         resolve_rubble(entity_id, blocked, data, msg_log);
     } else if let Action::Reform(entity_id, pos) = action {

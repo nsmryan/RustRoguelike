@@ -18,6 +18,7 @@ pub enum Msg {
     SoundTrapTriggered(EntityId, EntityId), // trap, entity
     SpikeTrapTriggered(EntityId, EntityId), // trap, entity
     BlinkTrapTriggered(EntityId, EntityId), // trap, entity
+    Blink(EntityId),
     FreezeTrapTriggered(EntityId, EntityId), // trap, entity
     GateTriggered(EntityId, EntityId), // trap, entity
     Froze(EntityId, usize), // entity, num turns
@@ -76,6 +77,11 @@ impl Msg {
 
             Msg::BlinkTrapTriggered(_trap, _entity_id) => {
                 return "Blink trap triggered".to_string();
+            }
+
+            Msg::Blink(entity_id) => {
+                return format!("{:?} blinked",
+                               data.entities.name[entity_id].clone());
             }
 
             Msg::SoundTrapTriggered(_trap, _entity_id) => {
