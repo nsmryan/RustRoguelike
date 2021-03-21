@@ -75,7 +75,8 @@ pub fn resolve_messages(data: &mut GameData,
                 pushed_entity(pusher, pushed, direction, push_amount, move_into, data, config, msg_log);
             }
 
-            Msg::Yell(entity_id, pos) => {
+            Msg::Yell(entity_id) => {
+                let pos = data.entities.pos[&entity_id];
                 msg_log.log_front(Msg::Sound(entity_id, pos, config.yell_radius, true));
                 data.entities.took_turn[&entity_id] = true;
             }
@@ -493,10 +494,6 @@ fn resolve_action(entity_id: EntityId,
         msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
     } else if let Action::StateChange(behavior) = action {
         msg_log.log(Msg::StateChange(entity_id, behavior));
-    } else if let Action::Interact(pos) = action {
-        msg_log.log(Msg::Interact(entity_id, pos));
-    } else if let Action::Yell = action {
-        msg_log.log(Msg::Yell(entity_id, entity_pos));
     } else if let Action::Pass = action {
         msg_log.log(Msg::Moved(entity_id, MoveType::Pass, entity_pos));
     } else if let Action::ThrowItem(throw_pos, item_id) = action {

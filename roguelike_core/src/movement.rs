@@ -17,12 +17,10 @@ use crate::line::*;
 pub enum Action {
     Move(MoveType, Pos),
     MoveDir(Direction, MoveMode),
-    Interact(Pos),
     StateChange(Behavior),
     Pickup,
     ThrowItem(Pos, EntityId), // end position, item id
     Pass,
-    Yell,
     UseItem(Pos, EntityId), // position to use item, item id
     ArmDisarmTrap(EntityId),
     PlaceTrap(Pos, EntityId), // position to place, trap id

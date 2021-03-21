@@ -652,7 +652,7 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Yell, true) => {
-            action_result.turn = Action::Yell;
+            msg_log.log(Msg::Yell(player_id));
         }
 
         (InputAction::IncreaseMoveMode, true) => {
@@ -700,7 +700,8 @@ pub fn handle_input_playing(input_action: InputAction,
                 pos
             };
 
-            action_result.turn = Action::Interact(interact_pos);
+            //action_result.turn = Action::Interact(interact_pos);
+            msg_log.log(Msg::Interact(player_id, interact_pos));
         }
 
         (InputAction::UseItem(dir, target), _) => {

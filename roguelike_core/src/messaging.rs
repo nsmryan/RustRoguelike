@@ -35,7 +35,7 @@ pub enum Msg {
     WallKick(EntityId, Pos),
     StateChange(EntityId, Behavior),
     Collided(EntityId, Pos),
-    Yell(EntityId, Pos),
+    Yell(EntityId),
     GameState(GameState),
     ChangeMoveMode(EntityId, bool), // true = increase, false = decrease
     MoveMode(EntityId, MoveMode),
@@ -155,7 +155,7 @@ impl Msg {
                 return format!("Changed state to {:?}", *behavior);
             }
 
-            Msg::Yell(entity_id, _pos) => {
+            Msg::Yell(entity_id) => {
                 return format!("{:?} yelled", data.entities.name[entity_id]);
             }
 
