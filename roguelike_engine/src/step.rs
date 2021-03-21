@@ -106,29 +106,27 @@ pub fn test_game_step() {
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(0, 0), player_pos);
 
-    input_action = InputAction::Move(Direction::Right);
+    input_action = InputAction::Move(Direction::Right, MoveMode::Walk);
     game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(1, 0), player_pos);
 
-    input_action = InputAction::Move(Direction::Down);
+    input_action = InputAction::Move(Direction::Down, MoveMode::Walk);
     game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(1, 1), player_pos);
 
-    input_action = InputAction::Move(Direction::Left);
+    input_action = InputAction::Move(Direction::Left, MoveMode::Walk);
     game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(0, 1), player_pos);
 
-    input_action = InputAction::Move(Direction::Up);
+    input_action = InputAction::Move(Direction::Up, MoveMode::Walk);
     game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(0, 0), player_pos);
 }
 
-// TODO issue 151 removes walking and 150 removes pushing
-//      so this test no longer makes any sense.
 pub fn test_running() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone()).unwrap();
@@ -192,10 +190,7 @@ pub fn test_hammer_small_wall() {
 
     game.data.entities.inventory[&player_id].push_front(hammer);
 
-    input_action = InputAction::UseItem;
-    game.step_game(input_action, 0.1);
-
-    input_action = InputAction::MapClick(gol_pos, gol_pos);
+    input_action = InputAction::UseItem(Direction::Down, 0);
     game.step_game(input_action, 0.1);
 
     for msg in game.msg_log.turn_messages.iter() {
@@ -219,7 +214,7 @@ pub fn test_hammer_small_wall() {
     let hammer = make_hammer(&mut game.data.entities, &game.config, Pos::new(4, 7), &mut game.msg_log);
     game.data.entities.inventory[&player_id].push_front(hammer);
 
-    input_action = InputAction::UseItem;
+    input_action = InputAction::UseItem(Direction::Left, 0);
     game.step_game(input_action, 0.1);
 
     input_action = InputAction::MapClick(pawn_pos, pawn_pos);
