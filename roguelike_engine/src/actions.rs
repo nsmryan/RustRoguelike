@@ -56,7 +56,6 @@ pub enum InputAction {
     Yell,
     UseItem(Direction, ActionTarget),
     Interact(Option<Direction>),
-    Chord(Option<Direction>, ActionMode, ActionTarget),
     CursorMove(Direction, bool, bool), // move direction, is relative, is long
     CursorReturn,
     CursorToggle,
@@ -117,7 +116,6 @@ impl fmt::Display for InputAction {
             InputAction::SelectItem(item) => write!(f, "selectitem {}", item),
             InputAction::UseItem(dir, target) => write!(f, "use, {:?} {}", dir, target),
             InputAction::Interact(dir) => write!(f, "interact {:?}", dir),
-            InputAction::Chord(dir, mode, target) => write!(f, "chord {:?} {:?} {:?}", dir, mode, target),
             InputAction::CursorMove(dir, relative, long) => write!(f, "cursormove {:?} {} {}", dir, relative, long),
             InputAction::CursorReturn => write!(f, "cursorreturn"),
             InputAction::CursorApply(mode, target) => write!(f, "cursorapply {:?} {:?}", mode, target),
@@ -216,12 +214,6 @@ impl FromStr for InputAction {
             return Ok(InputAction::IncreaseMoveMode);
         } else if s == "slower" {
             return Ok(InputAction::DecreaseMoveMode);
-        } else if s.starts_with("chord") {
-            let args = s.split(" ").collect::<Vec<&str>>();
-            let dir = Direction::from_str(args[1]).ok();
-            let mode = ActionMode::from_str(args[2]).unwrap();
-            let target = args[3].parse::<i32>().unwrap();
-            return Ok(InputAction::Chord(dir, mode, target));
         } else if s.starts_with("cursormove") {
             let args = s.split(" ").collect::<Vec<&str>>();
             let dir = Direction::from_str(args[1]).unwrap();
@@ -637,18 +629,6 @@ pub fn handle_input_playing(input_action: InputAction,
             msg_log.log(Msg::DropItem(player_id, target as u64));
         }
 
-        (InputAction::Chord(dir, mode, target), true) => {
-            let loc = dir.map_or(ActionLoc::None, |dir| ActionLoc::Dir(dir));
-            action_result.turn =
-                chord(loc,
-                      mode,
-                      target, 
-                      data,
-                      settings,
-                      config,
-                      msg_log);
-        }
-
         (InputAction::Pass, true) => {
             action_result.turn = Action::Pass;
         }
@@ -836,8 +816,6 @@ pub fn handle_skill(skill_index: usize,
     return turn;
 }
 
-// TODO consider creating a Chord struct with loc, mode, target
-// to simplify passing around and calling this function
 pub fn chord(loc: ActionLoc,
              mode: ActionMode,
              target: i32,
