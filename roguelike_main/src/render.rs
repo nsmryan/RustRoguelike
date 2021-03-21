@@ -521,7 +521,7 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
                 color = game.config.color_light_grey;
             }
 
-            Some(Item::Goal) => {
+            Some(Item::Key) => {
                 color = game.config.color_red;
             }
             

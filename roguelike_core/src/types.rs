@@ -497,7 +497,7 @@ impl FromStr for ActionMode {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Item {
     Stone,
-    Goal,
+    Key,
     Dagger,
     Shield,
     Hammer,
@@ -508,11 +508,60 @@ pub enum Item {
     FreezeTrap,
 }
 
+impl fmt::Display for Item {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Item::Stone => write!(f, "stone"),
+            Item::Key => write!(f, "key"),
+            Item::Dagger => write!(f, "dagger"),
+            Item::Shield => write!(f, "shield"),
+            Item::Hammer => write!(f, "hammer"),
+            Item::Sword => write!(f, "sword"),
+            Item::SpikeTrap => write!(f, "spiketrap"),
+            Item::SoundTrap => write!(f, "soundtrap"),
+            Item::BlinkTrap => write!(f, "blinktrap"),
+            Item::FreezeTrap => write!(f, "freezetrap"),
+        }
+    }
+}
+
+impl FromStr for Item {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "stone" {
+            return Ok(Item::Stone);
+        } else if s == "key" {
+            return Ok(Item::Key);
+        } else if s == "dagger" {
+            return Ok(Item::Dagger);
+        } else if s == "shield" {
+            return Ok(Item::Shield);
+        } else if s == "hammer" {
+            return Ok(Item::Hammer);
+        } else if s == "sword" {
+            return Ok(Item::Sword);
+        } else if s == "spiketrap" {
+            return Ok(Item::SpikeTrap);
+        } else if s == "soundtrap" {
+            return Ok(Item::SoundTrap);
+        } else if s == "blinktrap" {
+            return Ok(Item::BlinkTrap);
+        } else if s == "freezetrap" {
+            return Ok(Item::FreezeTrap);
+        }
+
+        return Err(format!("Could not parse '{}' as Item", s));
+    }
+}
+
 impl Item {
     pub fn class(&self) -> ItemClass {
         match self {
             Item::Stone => ItemClass::Secondary,
-            Item::Goal => ItemClass::Secondary,
+            Item::Key => ItemClass::Secondary,
             Item::Dagger => ItemClass::Primary,
             Item::Shield => ItemClass::Primary,
             Item::Hammer => ItemClass::Primary,
@@ -521,6 +570,21 @@ impl Item {
             Item::SoundTrap => ItemClass::Secondary,
             Item::BlinkTrap => ItemClass::Secondary,
             Item::FreezeTrap => ItemClass::Secondary,
+        }
+    }
+
+    pub fn name(&self) -> EntityName {
+        match self {
+            Item::Stone => EntityName::Stone,
+            Item::Key => EntityName::Key,
+            Item::Dagger => EntityName::Dagger,
+            Item::Shield => EntityName::Shield,
+            Item::Hammer => EntityName::Hammer,
+            Item::Sword => EntityName::Sword,
+            Item::SpikeTrap => EntityName::SpikeTrap,
+            Item::SoundTrap => EntityName::SoundTrap,
+            Item::BlinkTrap => EntityName::BlinkTrap,
+            Item::FreezeTrap => EntityName::FreezeTrap,
         }
     }
 }
@@ -836,6 +900,31 @@ impl Entities {
     pub fn remove_item(&mut self, entity_id: EntityId, item_id: EntityId) {
         let index = self.inventory[&entity_id].iter().position(|id| *id == item_id).unwrap();
         self.inventory[&entity_id].remove(index);
+    }
+
+    pub fn pick_up_item(&mut self, entity_id: EntityId, item_id: EntityId) {
+        let item = self.item[&item_id];
+        let item_class = item.class();
+
+        match item_class {
+            ItemClass::Primary => {
+                if item_primary_at(entity_id, self, 0) &&
+                   item_primary_at(entity_id, self, 1) {
+                    self.inventory[&entity_id][0] = item_id;
+
+                    let obj_pos = self.pos[&entity_id];
+                    self.set_pos(entity_id, obj_pos);
+                } else {
+                    self.inventory[&entity_id].push_front(item_id);
+                }
+            }
+
+            ItemClass::Secondary => {
+                self.inventory[&entity_id].push_back(item_id);
+            }
+        }
+
+        self.set_xy(item_id, -1, -1);
     }
 
     pub fn create_entity(&mut self, x: i32, y: i32, typ: EntityType, chr: char, color: Color, name: EntityName, blocks: bool) -> EntityId {

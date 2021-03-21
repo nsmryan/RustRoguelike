@@ -83,7 +83,7 @@ fn level_exit_condition_met(data: &GameData) -> bool {
     if let Some(exit_id) = data.find_by_name(EntityName::Exit) {
         let exit_pos = data.entities.pos[&exit_id];
 
-        let has_key = data.is_in_inventory(player_id, Item::Goal).is_some();
+        let has_key = data.is_in_inventory(player_id, Item::Key).is_some();
 
         //let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
         let on_exit_tile = exit_pos == player_pos;

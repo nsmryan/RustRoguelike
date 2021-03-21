@@ -23,7 +23,7 @@ pub enum Action {
     ThrowItem(Pos, EntityId), // end position, item id
     Pass,
     Yell,
-    UseItem(Pos), // item used towards position, or just player pos
+    UseItem(Pos, EntityId), // position to use item, item id
     ArmDisarmTrap(EntityId),
     PlaceTrap(Pos, EntityId), // position to place, trap id
     Blink(EntityId),
@@ -324,6 +324,11 @@ impl Direction {
         } else {
             panic!(format!("Direction should not exist {:?}", (dx, dy)));
         }
+    }
+
+    pub fn from_positions(start: Pos, end: Pos) -> Option<Direction> {
+        let dxy = sub_pos(end, start);
+        return Direction::from_dxy(dxy.x, dxy.y);
     }
 
     pub fn reverse(&self) -> Direction {

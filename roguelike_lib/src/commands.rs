@@ -46,6 +46,7 @@ pub enum GameCmd {
     EntityType(u64),
     Make(EntityName, i32, i32),
     Remove(u64),
+    Give(Item),
     ListEntities,
     Key(char, KeyDir),
     Ctrl(KeyDir),
@@ -126,6 +127,9 @@ impl FromStr for GameCmd {
         } else if cmd == "remove" {
             let id = args[1].parse::<u64>().unwrap();
             return Ok(GameCmd::Remove(id));
+        } else if cmd == "give" {
+            let item = args[1].parse::<Item>().unwrap();
+            return Ok(GameCmd::Give(item));
         } else if cmd == "ids" {
             return Ok(GameCmd::ListEntities);
         } else if cmd == "key" {
@@ -221,6 +225,14 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
 
         GameCmd::Remove(id) => {
             game.data.remove_entity(*id);
+            return "".to_string();
+        }
+
+        GameCmd::Give(item) => {
+            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+            let pos = game.data.entities.pos[&player_id];
+            let item_id = make_item(&mut game.data.entities, &game.config, *item, pos, &mut game.msg_log);
+            game.data.entities.pick_up_item(player_id, item_id);
             return "".to_string();
         }
 

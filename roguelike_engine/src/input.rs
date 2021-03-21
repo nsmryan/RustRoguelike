@@ -270,6 +270,9 @@ impl Input {
                    action = InputAction::CursorMove(dir, self.ctrl, self.shift);
                 } else if self.alt {
                     action = InputAction::Interact(Some(dir));
+                } else if self.target != -1 {
+                    action = InputAction::UseItem(dir, self.target);
+                    self.target = -1;
                 } else {
                     action = InputAction::Move(dir, self.move_mode());
                 }
@@ -341,10 +344,6 @@ pub fn alpha_up_to_action(chr: char) -> InputAction {
 
         'h' => {
             input_action = InputAction::ClassMenu;
-        }
-
-        'u' => {
-            input_action = InputAction::UseItem;
         }
 
         _ => {

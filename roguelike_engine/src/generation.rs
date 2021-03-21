@@ -114,7 +114,7 @@ pub fn make_shield(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
 pub fn make_key(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let key = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_KEY as char, config.color_orange, EntityName::Key, false);
     
-    entities.item.insert(key,  Item::Goal);
+    entities.item.insert(key,  Item::Key);
 
     msg_log.log(Msg::SpawnedObject(key, entities.typ[&key], pos, EntityName::Key));
 
@@ -269,6 +269,10 @@ pub fn make_stone(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
     msg_log.log(Msg::SpawnedObject(stone, entities.typ[&stone], pos, EntityName::Stone));
 
     return stone;
+}
+
+pub fn make_item(entities: &mut Entities, config: &Config, item: Item, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    return make_entity(entities, config, item.name(), pos, msg_log);
 }
 
 pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: EntityName, pos: Pos, msg_log: &mut MsgLog) -> EntityId {

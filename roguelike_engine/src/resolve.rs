@@ -120,7 +120,7 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::PickedUp(entity_id, item_id) => {
-                pick_item_up(entity_id, item_id, &mut data.entities, msg_log);
+                pick_item_up(entity_id, item_id, &mut data.entities);
             }
 
             Msg::StateChange(entity_id, behavior) => {
@@ -505,12 +505,8 @@ fn resolve_action(entity_id: EntityId,
         if let Some(item_id) = data.item_at_pos(entity_pos) {
             msg_log.log(Msg::PickedUp(entity_id, item_id));
         }
-    } else if let Action::UseItem(pos) = action {
-        if data.using(entity_id, Item::Hammer) {
-            msg_log.log(Msg::HammerSwing(entity_id, pos));
-        } else if data.using(entity_id, Item::Sword) {
-            msg_log.log(Msg::SwordSwing(entity_id, pos));
-        }
+    } else if let Action::UseItem(pos, item_id) = action {
+        use_item(entity_id, pos, item_id, data, msg_log);
     } else if let Action::ArmDisarmTrap(trap_id) = action {
         data.entities.armed[&trap_id] = !data.entities.armed[&trap_id];
         data.entities.took_turn[&entity_id] = true;
@@ -543,7 +539,7 @@ fn resolve_action(entity_id: EntityId,
             }
         }
         // pick_item_up takes the turn, so we don't have to set took_turn here
-        pick_item_up(entity_id, item_id, &mut data.entities, msg_log);
+        pick_item_up(entity_id, item_id, &mut data.entities);
     } else if let Action::Blink(entity_id) = action {
         resolve_blink(entity_id, data, rng, msg_log);
     } else if let Action::Rubble(entity_id, blocked) = action {
@@ -844,33 +840,8 @@ fn use_energy(entity_id: EntityId, data: &mut GameData) {
 
 fn pick_item_up(entity_id: EntityId,
                 item_id: EntityId,
-                entities: &mut Entities,
-                _msg_log: &mut MsgLog) {
-    // pick up item
-    let item = entities.item[&item_id];
-    let item_class = item.class();
-
-    // TODO(&mut) move to resolve
-    match item_class {
-        ItemClass::Primary => {
-            if item_primary_at(entity_id, entities, 0) &&
-               item_primary_at(entity_id, entities, 1) {
-                entities.inventory[&entity_id][0] = item_id;
-
-                let obj_pos = entities.pos[&entity_id];
-                entities.set_pos(entity_id, obj_pos);
-            } else {
-                entities.inventory[&entity_id].push_front(item_id);
-            }
-        }
-
-        ItemClass::Secondary => {
-            entities.inventory[&entity_id].push_back(item_id);
-        }
-    }
-
-    entities.set_xy(item_id, -1, -1);
-
+                entities: &mut Entities) {
+    entities.pick_up_item(entity_id, item_id);
     entities.took_turn[&entity_id] = true;
 }
 
@@ -990,7 +961,7 @@ fn process_interaction(entity_id: EntityId,
     let pos = data.entities.pos[&entity_id];
 
     if pos == interact_pos {
-        if let Some(item_id) = data.item_at_pos(pos) {
+        if let Some(_item_id) = data.item_at_pos(pos) {
             msg_log.log(Msg::Action(entity_id, Action::Pickup));
         }
     } else {
@@ -999,6 +970,64 @@ fn process_interaction(entity_id: EntityId,
                 msg_log.log(Msg::Action(entity_id, Action::ArmDisarmTrap(other_id)));
                 break;
             }
+        }
+    }
+}
+
+fn use_item(entity_id: EntityId,
+            pos: Pos,
+            item_id: EntityId,
+            data: &mut GameData,
+            msg_log: &mut MsgLog) {
+    let item = data.entities.item[&item_id];
+
+    match item {
+        Item::Stone => {
+            let start = data.entities.pos[&entity_id];
+            let direction = Direction::from_positions(start, pos).unwrap();
+            let max_end = direction.offset_pos(start, PLAYER_THROW_DIST as i32);
+            let end = data.map.path_blocked_move(start, max_end)
+                               .map_or(max_end, |b| b.end_pos);
+            msg_log.log(Msg::ItemThrow(entity_id, item_id, start, end));
+        }
+
+        Item::Key => {
+        }
+
+        Item::Dagger => {
+            panic!("Dagger is used by moving right now. UseItem might be better");
+            //msg_log.log(Msg::TryAttack(entity_id, Attack::Stab(target_id), pos))
+        }
+
+        Item::Shield => {
+        }
+
+        Item::Hammer => {
+            msg_log.log(Msg::HammerSwing(entity_id, pos));
+        }
+
+        Item::Sword => {
+            msg_log.log(Msg::SwordSwing(entity_id, pos));
+        }
+
+        Item::SpikeTrap => {
+            place_trap(item_id, pos, data);
+            data.entities.took_turn[&entity_id] = true;
+        }
+
+        Item::SoundTrap => {
+            place_trap(item_id, pos, data);
+            data.entities.took_turn[&entity_id] = true;
+        }
+
+        Item::BlinkTrap => {
+            place_trap(item_id, pos, data);
+            data.entities.took_turn[&entity_id] = true;
+        }
+
+        Item::FreezeTrap => {
+            place_trap(item_id, pos, data);
+            data.entities.took_turn[&entity_id] = true;
         }
     }
 }

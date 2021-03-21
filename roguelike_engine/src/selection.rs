@@ -32,7 +32,9 @@ impl SelectionAction {
             }
 
             SelectionAction::Hammer => {
-                action = Action::UseItem(pos);
+                // TODO this code can all probably be removed
+                //action = Action::UseItem(pos);
+                action = Action::NoAction;
             }
 
             SelectionAction::Interact => {

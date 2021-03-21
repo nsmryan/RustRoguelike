@@ -101,7 +101,7 @@ impl Game {
             let finsished_level = step_logic(self, action_result.turn);
             if finsished_level {
                 let player_id = self.data.find_by_name(EntityName::Player).unwrap();
-                let key_id = self.data.is_in_inventory(player_id, Item::Goal).expect("Won level without goal!");
+                let key_id = self.data.is_in_inventory(player_id, Item::Key).expect("Won level without key!");
                 self.data.entities.remove_item(player_id, key_id);
 
                 self.settings.state = GameState::Playing;

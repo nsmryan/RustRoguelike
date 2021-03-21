@@ -54,7 +54,7 @@ pub enum InputAction {
     DropItem,
     DropTargetItem(i32),
     Yell,
-    UseItem,
+    UseItem(Direction, ActionTarget),
     Interact(Option<Direction>),
     Chord(Option<Direction>, ActionMode, ActionTarget),
     CursorMove(Direction, bool, bool), // move direction, is relative, is long
@@ -115,7 +115,7 @@ impl fmt::Display for InputAction {
             InputAction::OverlayOn => write!(f, "overlayon"),
             InputAction::OverlayOff => write!(f, "overlayoff"),
             InputAction::SelectItem(item) => write!(f, "selectitem {}", item),
-            InputAction::UseItem => write!(f, "use"),
+            InputAction::UseItem(dir, target) => write!(f, "use, {:?} {}", dir, target),
             InputAction::Interact(dir) => write!(f, "interact {:?}", dir),
             InputAction::Chord(dir, mode, target) => write!(f, "chord {:?} {:?} {:?}", dir, mode, target),
             InputAction::CursorMove(dir, relative, long) => write!(f, "cursormove {:?} {} {}", dir, relative, long),
@@ -185,7 +185,10 @@ impl FromStr for InputAction {
         } else if s == "inventory" {
             return Ok(InputAction::Inventory);
         } else if s == "use" {
-            return Ok(InputAction::UseItem);
+            let args = s.split(" ").collect::<Vec<&str>>();
+            let direction = args[1].parse::<Direction>().unwrap();
+            let target = args[1].parse::<ActionTarget>().unwrap();
+            return Ok(InputAction::UseItem(direction, target));
         } else if s.starts_with("selectitem") {
             let args = s.split(" ").collect::<Vec<&str>>();
             let selection = args[1].parse::<usize>().unwrap();
@@ -720,9 +723,11 @@ pub fn handle_input_playing(input_action: InputAction,
             action_result.turn = Action::Interact(interact_pos);
         }
 
-        (InputAction::UseItem, _) => {
+        (InputAction::UseItem(dir, target), _) => {
             let pos = data.entities.pos[&player_id];
-            action_result.turn = Action::UseItem(pos);
+            let use_pos = dir.offset_pos(pos, 1);
+            let item_id = data.entities.inventory[&player_id][target as usize];
+            action_result.turn = Action::UseItem(use_pos, item_id);
         }
 
         (_, _) => {
@@ -914,11 +919,20 @@ fn chord_selection(loc: ActionLoc,
             turn = handle_skill(skill_index, loc, mode, data, settings, msg_log, config);
         }
     } else if target < num_items_in_inventory {
+        let item_id = data.entities.inventory[&player_id][target as usize];
+        
         match mode {
             ActionMode::Primary => {
-                // primary item use is the item's main action
-                let pos = data.entities.pos[&player_id];
-                turn = Action::UseItem(pos);
+                match loc {
+                    ActionLoc::Dir(dir) => {
+                        // primary item use is the item's main action
+                        let pos = data.entities.pos[&player_id];
+                        let use_pos = dir.offset_pos(pos, 1);
+                        turn = Action::UseItem(use_pos, item_id);
+                    }
+
+                    _ => panic!("Is this even possible anymore?"),
+                }
             }
 
             ActionMode::Alternate => {
@@ -929,7 +943,6 @@ fn chord_selection(loc: ActionLoc,
                     }
 
                     ActionLoc::Place(pos) => {
-                        let item_id = data.entities.inventory[&player_id][target as usize];
                         turn = Action::ThrowItem(pos, item_id);
                     }
 
@@ -938,7 +951,6 @@ fn chord_selection(loc: ActionLoc,
                         let max_end = direction.offset_pos(start, PLAYER_THROW_DIST as i32);
                         let end = data.map.path_blocked_move(start, max_end)
                                                .map_or(max_end, |b| b.end_pos);
-                        let item_id = data.entities.inventory[&player_id][target as usize];
                         turn = Action::ThrowItem(end, item_id);
                     }
                 }
