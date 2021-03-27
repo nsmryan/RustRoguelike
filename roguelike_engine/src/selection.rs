@@ -27,8 +27,7 @@ impl SelectionAction {
 
         match self {
             SelectionAction::Throw => {
-                let item_id = item_id.expect("Throwing an item, but nothing selected!");
-                action = Action::ThrowItem(pos, item_id);
+                panic!("This should no longer be used!");
             }
 
             SelectionAction::Hammer => {

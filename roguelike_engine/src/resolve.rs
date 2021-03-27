@@ -499,10 +499,6 @@ fn resolve_action(entity_id: EntityId,
         msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
     } else if let Action::StateChange(behavior) = action {
         msg_log.log(Msg::StateChange(entity_id, behavior));
-    } else if let Action::Pass = action {
-        msg_log.log(Msg::Moved(entity_id, MoveType::Pass, entity_pos));
-    } else if let Action::ThrowItem(throw_pos, item_id) = action {
-        msg_log.log(Msg::ItemThrow(entity_id, item_id, entity_pos, throw_pos));
     } else if let Action::UseItem(pos, item_id) = action {
         use_item(entity_id, pos, item_id, data, msg_log);
     } else if let Action::ArmDisarmTrap(trap_id) = action {

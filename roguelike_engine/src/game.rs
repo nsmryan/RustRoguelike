@@ -92,12 +92,7 @@ impl Game {
             self.msg_log.log(Msg::GameState(self.settings.state));
         }
 
-        if action_result.turn == Action::NoAction {
-            resolve_messages(&mut self.data,
-                             &mut self.msg_log,
-                             &mut self.rng,
-                             &self.config);
-        } else {
+        if input_action != InputAction::None || self.msg_log.messages.len() > 0 {
             let finsished_level = step_logic(self, action_result.turn);
             if finsished_level {
                 let player_id = self.data.find_by_name(EntityName::Player).unwrap();

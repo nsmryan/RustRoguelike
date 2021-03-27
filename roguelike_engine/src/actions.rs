@@ -3,7 +3,7 @@ use std::fmt;
 
 use serde::{Serialize, Deserialize};
 
-use roguelike_core::movement::{Direction, Action, Reach, MoveMode};
+use roguelike_core::movement::{Direction, Action, Reach, MoveMode, MoveType};
 use roguelike_core::types::*;
 use roguelike_core::utils::{scale_pos};
 use roguelike_core::messaging::{Msg, MsgLog};
@@ -630,7 +630,7 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Pass, true) => {
-            action_result.turn = Action::Pass;
+            msg_log.log(Msg::Moved(player_id, MoveType::Pass, player_pos));
         }
 
         (InputAction::Move(direction, move_mode), true) => {
@@ -830,7 +830,7 @@ pub fn chord(loc: ActionLoc,
     // if no target selection, then it is a move
     let turn;
     if target == -1 {
-        turn = chord_move(loc, mode, data);
+        turn = chord_move(loc, mode, data, msg_log);
     } else {
         turn = chord_selection(loc, mode, target, data, settings, config, msg_log);
     }
@@ -840,7 +840,8 @@ pub fn chord(loc: ActionLoc,
 
 fn chord_move(loc: ActionLoc,
               mode: ActionMode,
-              data: &GameData) -> Action {
+              data: &GameData,
+              msg_log: &mut MsgLog) -> Action {
     let turn;
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
@@ -860,7 +861,8 @@ fn chord_move(loc: ActionLoc,
 
     match loc {
         ActionLoc::None => {
-            turn = Action::Pass;
+            msg_log.log(Msg::Moved(player_id, MoveType::Pass, player_pos));
+            turn = Action::none();
         }
 
         ActionLoc::Dir(direction) => {
@@ -869,7 +871,8 @@ fn chord_move(loc: ActionLoc,
 
         ActionLoc::Place(pos) => {
             if pos == player_pos {
-                turn = Action::Pass;
+                msg_log.log(Msg::Moved(player_id, MoveType::Pass, pos));
+                turn = Action::none();
             } else {
                 let dxy = sub_pos(pos, player_pos);
                 let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
@@ -918,6 +921,8 @@ fn chord_selection(loc: ActionLoc,
             }
 
             ActionMode::Alternate => {
+                let player_pos = data.entities.pos[&player_id];
+
                 // alternate item use means drop or throw item
                 match loc {
                     ActionLoc::None => {
@@ -925,7 +930,7 @@ fn chord_selection(loc: ActionLoc,
                     }
 
                     ActionLoc::Place(pos) => {
-                        turn = Action::ThrowItem(pos, item_id);
+                        msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, pos));
                     }
 
                     ActionLoc::Dir(direction) => {
@@ -933,7 +938,8 @@ fn chord_selection(loc: ActionLoc,
                         let max_end = direction.offset_pos(start, PLAYER_THROW_DIST as i32);
                         let end = data.map.path_blocked_move(start, max_end)
                                                .map_or(max_end, |b| b.end_pos);
-                        turn = Action::ThrowItem(end, item_id);
+
+                        msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, end));
                     }
                 }
             }
