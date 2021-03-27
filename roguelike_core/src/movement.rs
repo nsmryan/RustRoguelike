@@ -18,7 +18,6 @@ pub enum Action {
     Move(MoveType, Pos),
     MoveDir(Direction, MoveMode),
     StateChange(Behavior),
-    Pickup,
     ThrowItem(Pos, EntityId), // end position, item id
     Pass,
     UseItem(Pos, EntityId), // position to use item, item id

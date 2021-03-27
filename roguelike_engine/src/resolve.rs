@@ -125,8 +125,8 @@ pub fn resolve_messages(data: &mut GameData,
                 resolve_try_move(entity_id, direction, amount, move_mode, data, msg_log);
             }
 
-            Msg::PickedUp(entity_id, item_id) => {
-                pick_item_up(entity_id, item_id, &mut data.entities);
+            Msg::PickUp(entity_id) => {
+                pick_item_up(entity_id, data, msg_log);
             }
 
             Msg::StateChange(entity_id, behavior) => {
@@ -503,10 +503,6 @@ fn resolve_action(entity_id: EntityId,
         msg_log.log(Msg::Moved(entity_id, MoveType::Pass, entity_pos));
     } else if let Action::ThrowItem(throw_pos, item_id) = action {
         msg_log.log(Msg::ItemThrow(entity_id, item_id, entity_pos, throw_pos));
-    } else if let Action::Pickup = action {
-        if let Some(item_id) = data.item_at_pos(entity_pos) {
-            msg_log.log(Msg::PickedUp(entity_id, item_id));
-        }
     } else if let Action::UseItem(pos, item_id) = action {
         use_item(entity_id, pos, item_id, data, msg_log);
     } else if let Action::ArmDisarmTrap(trap_id) = action {
@@ -540,8 +536,9 @@ fn resolve_action(entity_id: EntityId,
                 item_id = make_dagger(&mut data.entities, config, pos, msg_log);
             }
         }
-        // pick_item_up takes the turn, so we don't have to set took_turn here
-        pick_item_up(entity_id, item_id, &mut data.entities);
+
+        data.entities.pick_up_item(entity_id, item_id);
+        data.entities.took_turn[&entity_id] = true;
     } else if let Action::Rubble(entity_id, blocked) = action {
         resolve_rubble(entity_id, blocked, data, msg_log);
     } else if let Action::Reform(entity_id, pos) = action {
@@ -838,11 +835,15 @@ fn use_energy(entity_id: EntityId, data: &mut GameData) {
     }
 }
 
-fn pick_item_up(entity_id: EntityId,
-                item_id: EntityId,
-                entities: &mut Entities) {
-    entities.pick_up_item(entity_id, item_id);
-    entities.took_turn[&entity_id] = true;
+fn pick_item_up(entity_id: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
+    let entity_pos = data.entities.pos[&entity_id];
+
+    if let Some(item_id) = data.item_at_pos(entity_pos) {
+        data.entities.pick_up_item(entity_id, item_id);
+        msg_log.log(Msg::PickedUp(entity_id, item_id));
+
+        data.entities.took_turn[&entity_id] = true;
+    }
 }
 
 fn place_trap(trap_id: EntityId, place_pos: Pos, data: &mut GameData) {
@@ -962,7 +963,7 @@ fn process_interaction(entity_id: EntityId,
 
     if pos == interact_pos {
         if let Some(_item_id) = data.item_at_pos(pos) {
-            msg_log.log(Msg::Action(entity_id, Action::Pickup));
+            msg_log.log(Msg::PickUp(entity_id));
         }
     } else {
         for other_id in data.has_entity(interact_pos) {

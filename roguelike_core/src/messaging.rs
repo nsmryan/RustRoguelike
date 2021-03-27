@@ -23,7 +23,8 @@ pub enum Msg {
     GateTriggered(EntityId, EntityId), // trap, entity
     Froze(EntityId, usize), // entity, num turns
     PlayerDeath,
-    PickedUp(EntityId, EntityId), // entity, item id
+    PickedUp(EntityId, EntityId), // entity, item
+    PickUp(EntityId), // entity trying to pick up an item
     ItemThrow(EntityId, EntityId, Pos, Pos), // thrower, stone id, start, end
     TryAttack(EntityId, Attack, Pos), // attacker, attack description, attack pos
     Attack(EntityId, EntityId, Hp), // attacker, attacked, hp lost
@@ -104,10 +105,14 @@ impl Msg {
                 return "Player died!".to_string();
             }
 
-            Msg::PickedUp(entity_id, item) => {
+            Msg::PickUp(entity_id) => {
+                return "".to_string();
+            }
+
+            Msg::PickedUp(entity_id, item_id) => {
                 return format!("{:?} picked up a {:?}",
                                data.entities.name[entity_id].clone(),
-                               data.entities.name[item].clone());
+                               data.entities.name[item_id].clone());
             }
 
             Msg::ItemThrow(_thrower, _item, _start, _end) => {

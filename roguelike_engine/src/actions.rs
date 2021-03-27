@@ -643,7 +643,7 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Pickup, true) => {
-            action_result.turn = Action::Pickup;
+            msg_log.log(Msg::PickUp(player_id));
         }
 
         // TODO this should be removeable
@@ -707,8 +707,9 @@ pub fn handle_input_playing(input_action: InputAction,
         (InputAction::UseItem(dir, target), _) => {
             let pos = data.entities.pos[&player_id];
             let use_pos = dir.offset_pos(pos, 1);
-            let item_id = data.entities.inventory[&player_id][target as usize];
-            action_result.turn = Action::UseItem(use_pos, item_id);
+            if let Some(item_id) = data.entities.inventory[&player_id].get(target as usize) {
+                action_result.turn = Action::UseItem(use_pos, *item_id);
+            }
         }
 
         (_, _) => {
