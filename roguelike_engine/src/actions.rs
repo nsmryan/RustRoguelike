@@ -776,9 +776,13 @@ pub fn handle_skill(skill_index: usize,
             turn = Action::NoAction;
 
             let player_id = data.find_by_name(EntityName::Player).unwrap();
-            if data.map[skill_pos].surface == Surface::Rubble &&
-               data.has_blocking_entity(skill_pos).is_none() {
-                turn = Action::Reform(player_id, skill_pos);
+            let player_pos = data.entities.pos[&player_id];
+
+            if distance(player_pos, skill_pos) == 1 {
+                if data.map[skill_pos].surface == Surface::Rubble &&
+                   data.has_blocking_entity(skill_pos).is_none() {
+                    turn = Action::Reform(player_id, skill_pos);
+                }
             }
         }
 
