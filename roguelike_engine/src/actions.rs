@@ -408,8 +408,7 @@ pub fn handle_input_class_menu(input: InputAction,
         InputAction::SelectItem(class_index) => {
             let classes = EntityClass::classes();
             if class_index < classes.len() {
-                // TODO comment what this means, and how it is used
-
+                // give player skills from a particular class
                 msg_log.log(Msg::AddClass(classes[class_index]));
                 action_result.new_state = Some(GameState::Playing);
             }
@@ -603,12 +602,10 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::IncreaseMoveMode, true) => {
-            // NOTE this could be an action instead of direct message
             msg_log.log(Msg::ChangeMoveMode(player_id, true));
         }
 
         (InputAction::DecreaseMoveMode, true) => {
-            // NOTE this could be an action instead of direct message
             msg_log.log(Msg::ChangeMoveMode(player_id, false));
         }
 
@@ -647,7 +644,6 @@ pub fn handle_input_playing(input_action: InputAction,
                 pos
             };
 
-            //action_result.turn = Action::Interact(interact_pos);
             msg_log.log(Msg::Interact(player_id, interact_pos));
         }
 
@@ -888,7 +884,7 @@ fn chord_selection(loc: ActionLoc,
     } else {
         let num_items_in_inventory = data.entities.inventory[&player_id].len() as i32;
 
-        if target < num_items_in_inventory {
+        if target >= num_items_in_inventory {
             return Action::none();
         }
 
