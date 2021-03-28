@@ -105,7 +105,7 @@ impl Msg {
                 return "Player died!".to_string();
             }
 
-            Msg::PickUp(entity_id) => {
+            Msg::PickUp(_entity_id) => {
                 return "".to_string();
             }
 
@@ -182,10 +182,6 @@ impl Msg {
 
                     GameState::Playing => {
                         return "".to_string();
-                    }
-
-                    GameState::Selection => {
-                        return "Selecting a location".to_string();
                     }
 
                     GameState::SkillMenu => {

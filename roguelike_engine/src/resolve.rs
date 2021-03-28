@@ -118,7 +118,7 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::Action(entity_id, action) => {
-                resolve_action(entity_id, action, rng, data, msg_log, config);
+                resolve_action(entity_id, action, data, msg_log, config);
             }
 
             Msg::TryMove(entity_id, direction, amount, move_mode) => {
@@ -479,7 +479,6 @@ fn resolve_try_movement(entity_id: EntityId,
 
 fn resolve_action(entity_id: EntityId,
                   action: Action,
-                  rng: &mut SmallRng,
                   data: &mut GameData,
                   msg_log: &mut MsgLog,
                   config: &Config) {

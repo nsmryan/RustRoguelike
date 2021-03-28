@@ -1138,22 +1138,6 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 }
             }
         }
-
-        if game.settings.draw_selection_overlay {
-            // mouse pos at 0, 0 occurs when the mouse has not moved since startup.
-            // this may cause a weirdness on the corner of the map
-            if mouse_pos != Pos::new(0, 0) {
-                let selected_pos =
-                    game.settings.selection.selected_pos(player_pos,
-                                                         mouse_pos,
-                                                         game.config.fov_radius_player,
-                                                         &mut game.data, &game.config);
-
-                if let Some(pos) = selected_pos {
-                    tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, highlight_color);
-                }
-            }
-        }
     }
 
     // Draw player movement overlay

@@ -8,7 +8,6 @@ use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
-use roguelike_core::movement::Action;
 #[cfg(test)]
 use roguelike_core::movement::*;
 
@@ -16,8 +15,6 @@ use crate::actions;
 use crate::actions::{InputAction, ActionResult};
 use crate::generation::*;
 use crate::make_map::make_map;
-use crate::selection::*;
-use crate::resolve::resolve_messages;
 use crate::step::step_logic;
 use crate::input::*;
 use crate::vault::*;
@@ -130,12 +127,10 @@ pub struct GameSettings {
     pub god_mode: bool,
     pub map_type: MapGenType,
     pub state: GameState,
-    pub draw_selection_overlay: bool,
     pub overlay: bool,
     pub time: f32,
     pub dt: f32,
     pub render_map: bool,
-    pub selection: Selection,
     pub inventory_action: InventoryAction,
     pub level_num: usize,
     pub running: bool,
@@ -149,12 +144,10 @@ impl GameSettings {
             god_mode,
             map_type: MapGenType::Island,
             state: GameState::Playing,
-            draw_selection_overlay: false,
             overlay: false,
             time: 0.0,
             dt: 0.0,
             render_map: true,
-            selection: Selection::default(),
             inventory_action: InventoryAction::default(),
             level_num: 0,
             running: true,

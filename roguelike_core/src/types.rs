@@ -440,7 +440,6 @@ pub enum GameState {
     Win,
     Lose,
     Inventory,
-    Selection,
     SkillMenu,
     ClassMenu,
     ConfirmQuit,
