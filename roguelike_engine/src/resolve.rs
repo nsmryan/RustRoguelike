@@ -232,6 +232,29 @@ pub fn resolve_messages(data: &mut GameData,
                 inventory_drop_item(entity_id, item_index as usize, data, msg_log);
             }
 
+            Msg::GrassThrow(entity_id, direction) => {
+                use_energy(entity_id, data);
+
+                let pos = data.entities.pos[&entity_id];
+
+                let grass_pos = direction.offset_pos(pos, 1);
+                if data.map[grass_pos].tile_type == TileType::Empty {
+                    data.map[grass_pos].surface = Surface::Grass;
+                }
+                data.entities.took_turn[&entity_id] = true;
+            }
+
+            Msg::Rubble(entity_id, rubble_pos) => {
+                let pos = data.entities.pos[&entity_id];
+                let blocked = data.map.path_blocked_move(pos, rubble_pos);
+
+                if let Some(blocked) = blocked {
+                    if data.has_blocking_entity(rubble_pos).is_none() {
+                        resolve_rubble(entity_id, blocked, data, msg_log);
+                    }
+                }
+            }
+
             _ => {
             }
         }
@@ -506,16 +529,6 @@ fn resolve_action(entity_id: EntityId,
     } else if let Action::PlaceTrap(place_pos, trap_id) = action {
         place_trap(trap_id, place_pos, data);
         data.entities.took_turn[&entity_id] = true;
-    } else if let Action::GrassThrow(entity_id, direction) = action {
-        use_energy(entity_id, data);
-
-        let pos = data.entities.pos[&entity_id];
-
-        let grass_pos = direction.offset_pos(pos, 1);
-        if data.map[grass_pos].tile_type == TileType::Empty {
-            data.map[grass_pos].surface = Surface::Grass;
-        }
-        data.entities.took_turn[&entity_id] = true;
     } else if let Action::GrassBlade(entity_id, action_mode) = action {
         use_energy(entity_id, data);
 
@@ -534,8 +547,6 @@ fn resolve_action(entity_id: EntityId,
 
         data.entities.pick_up_item(entity_id, item_id);
         data.entities.took_turn[&entity_id] = true;
-    } else if let Action::Rubble(entity_id, blocked) = action {
-        resolve_rubble(entity_id, blocked, data, msg_log);
     } else if let Action::Reform(entity_id, pos) = action {
         use_energy(entity_id, data);
 

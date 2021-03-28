@@ -59,6 +59,8 @@ pub enum Msg {
     AddClass(EntityClass),
     SwapPrimaryItem,
     DropItem(EntityId, EntityId), // entity, item
+    GrassThrow(EntityId, Direction),
+    Rubble(EntityId, Pos),
 }
 
 impl Msg {
@@ -293,6 +295,14 @@ impl Msg {
                 } else {
                     return "".to_string();
                 }
+            }
+
+            Msg::GrassThrow(entity_id, direction) => {
+                return format!("{:?} threw grass {}", data.entities.name[entity_id], direction);
+            }
+
+            Msg::Rubble(entity_id, pos) => {
+                return format!("{:?} turned a wall to rubble at {}", data.entities.name[entity_id], pos);
             }
 
             _ => {

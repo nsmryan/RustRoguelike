@@ -665,7 +665,7 @@ pub fn handle_skill(skill_index: usize,
                     action_loc: ActionLoc,
                     action_mode: ActionMode,
                     data: &GameData, 
-                    settings: &mut GameSettings, 
+                    _settings: &mut GameSettings, 
                     msg_log: &mut MsgLog,
                     _config: &Config) -> Action {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
@@ -716,7 +716,7 @@ pub fn handle_skill(skill_index: usize,
             let player_pos = data.entities.pos[&player_id];
             let dxy = sub_pos(skill_pos, player_pos);
             if let Some(direction) = Direction::from_dxy(dxy.x, dxy.y) {
-                turn = Action::GrassThrow(player_id, direction);
+                msg_log.log(Msg::GrassThrow(player_id, direction));
             }
         }
 
@@ -756,13 +756,7 @@ pub fn handle_skill(skill_index: usize,
             let player_pos = data.entities.pos[&player_id];
 
             if distance(player_pos, skill_pos) == 1 {
-                let blocked = data.map.path_blocked_move(player_pos, skill_pos);
-
-                if let Some(blocked) = blocked {
-                    if data.has_blocking_entity(skill_pos).is_none() {
-                        turn = Action::Rubble(player_id, blocked);
-                    }
-                }
+                msg_log.log(Msg::Rubble(player_id, skill_pos));
             }
         }
 
