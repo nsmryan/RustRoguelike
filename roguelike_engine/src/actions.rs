@@ -715,23 +715,17 @@ pub fn handle_skill(skill_index: usize,
             let player_id = data.find_by_name(EntityName::Player).unwrap();
             let player_pos = data.entities.pos[&player_id];
             let dxy = sub_pos(skill_pos, player_pos);
-            let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-            turn = Action::GrassThrow(player_id, direction);
+            if let Some(direction) = Direction::from_dxy(dxy.x, dxy.y) {
+                turn = Action::GrassThrow(player_id, direction);
+            }
         }
 
         Skill::GrassBlade => {
             turn = Action::GrassBlade(player_id, action_mode);
-            settings.state = GameState::Playing;
-            msg_log.log(Msg::GameState(settings.state));
         }
 
         Skill::Blink => {
             msg_log.log(Msg::Blink(player_id));
-
-            // TODO this state change is no longer necessary when Selection
-            // is removed. same goes for other skills
-            settings.state = GameState::Playing;
-            msg_log.log(Msg::GameState(settings.state));
         }
 
         Skill::PassWall => {
@@ -800,7 +794,6 @@ pub fn handle_skill(skill_index: usize,
             let player_pos = data.entities.pos[&player_id];
             let dxy = sub_pos(skill_pos, player_pos);
             let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-            // TODO this might need to be carried around?
             let push_amount = 1;
             turn = Action::Push(player_id, direction, push_amount);
         }
