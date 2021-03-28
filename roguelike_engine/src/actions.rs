@@ -9,7 +9,7 @@ use roguelike_core::utils::{scale_pos};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
-use roguelike_core::utils::{sub_pos, add_pos, next_pos};
+use roguelike_core::utils::{sub_pos, add_pos, next_from_to};
 use roguelike_core::map::{Surface};
 
 use crate::game::*;
@@ -744,7 +744,8 @@ pub fn handle_skill(skill_index: usize,
             
             if let Some(blocked) = blocked {
                 if data.map[blocked.end_pos].block_move {
-                    let next = next_pos(player_pos, blocked.end_pos);
+                    let next = next_from_to(player_pos, blocked.end_pos);
+                    dbg!(skill_pos, blocked.end_pos, next);
                     if  !data.map[next].block_move {
                         turn = Action::PassWall(player_id, next);
                     }
