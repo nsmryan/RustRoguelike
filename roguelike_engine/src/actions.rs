@@ -5,11 +5,10 @@ use serde::{Serialize, Deserialize};
 
 use roguelike_core::movement::{Direction, Action, Reach, MoveMode, MoveType};
 use roguelike_core::types::*;
-use roguelike_core::utils::{scale_pos};
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
-use roguelike_core::utils::{sub_pos, add_pos, next_from_to};
+use roguelike_core::utils::{scale_pos, distance, sub_pos, add_pos, next_from_to};
 use roguelike_core::map::{Surface};
 
 use crate::game::*;
@@ -740,17 +739,20 @@ pub fn handle_skill(skill_index: usize,
 
             let player_id = data.find_by_name(EntityName::Player).unwrap();
             let player_pos = data.entities.pos[&player_id];
-            let blocked = data.map.path_blocked_move(player_pos, skill_pos);
-            
-            if let Some(blocked) = blocked {
-                if data.map[blocked.end_pos].block_move {
-                    let next = next_from_to(player_pos, blocked.end_pos);
-                    dbg!(skill_pos, blocked.end_pos, next);
-                    if  !data.map[next].block_move {
-                        turn = Action::PassWall(player_id, next);
+
+            if distance(player_pos, skill_pos) == 1 {
+                let blocked = data.map.path_blocked_move(player_pos, skill_pos);
+                
+                if let Some(blocked) = blocked {
+                    if data.map[blocked.end_pos].block_move {
+                        let next = next_from_to(player_pos, blocked.end_pos);
+                        dbg!(skill_pos, blocked.end_pos, next);
+                        if  !data.map[next].block_move {
+                            turn = Action::PassWall(player_id, next);
+                        }
+                    } else {
+                        turn = Action::PassWall(player_id, skill_pos);
                     }
-                } else {
-                    turn = Action::PassWall(player_id, skill_pos);
                 }
             }
         }
@@ -758,11 +760,14 @@ pub fn handle_skill(skill_index: usize,
         Skill::Rubble => {
             let player_id = data.find_by_name(EntityName::Player).unwrap();
             let player_pos = data.entities.pos[&player_id];
-            let blocked = data.map.path_blocked_move(player_pos, skill_pos);
 
-            if let Some(blocked) = blocked {
-                if data.has_blocking_entity(skill_pos).is_none() {
-                    turn = Action::Rubble(player_id, blocked);
+            if distance(player_pos, skill_pos) == 1 {
+                let blocked = data.map.path_blocked_move(player_pos, skill_pos);
+
+                if let Some(blocked) = blocked {
+                    if data.has_blocking_entity(skill_pos).is_none() {
+                        turn = Action::Rubble(player_id, blocked);
+                    }
                 }
             }
         }
