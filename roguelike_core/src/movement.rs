@@ -21,9 +21,7 @@ pub enum Action {
     UseItem(Pos, EntityId), // position to use item, item id
     ArmDisarmTrap(EntityId),
     PlaceTrap(Pos, EntityId), // position to place, trap id
-    GrassThrow(EntityId, Direction), // entity throwing, direction thrown
     GrassBlade(EntityId, ActionMode),
-    Rubble(EntityId, Blocked),
     Reform(EntityId, Pos),
     Swap(EntityId, EntityId), // casting entity, target entity
     PassWall(EntityId, Pos),
