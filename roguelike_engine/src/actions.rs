@@ -721,7 +721,7 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::GrassBlade => {
-            turn = Action::GrassBlade(player_id, action_mode);
+            msg_log.log(Msg::GrassBlade(player_id, action_mode));
         }
 
         Skill::Blink => {
@@ -740,7 +740,6 @@ pub fn handle_skill(skill_index: usize,
                 if let Some(blocked) = blocked {
                     if data.map[blocked.end_pos].block_move {
                         let next = next_from_to(player_pos, blocked.end_pos);
-                        dbg!(skill_pos, blocked.end_pos, next);
                         if  !data.map[next].block_move {
                             turn = Action::PassWall(player_id, next);
                         }
@@ -761,16 +760,11 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::Reform => {
-            turn = Action::NoAction;
-
             let player_id = data.find_by_name(EntityName::Player).unwrap();
             let player_pos = data.entities.pos[&player_id];
 
             if distance(player_pos, skill_pos) == 1 {
-                if data.map[skill_pos].surface == Surface::Rubble &&
-                   data.has_blocking_entity(skill_pos).is_none() {
-                    turn = Action::Reform(player_id, skill_pos);
-                }
+                msg_log.log(Msg::Reform(player_id, skill_pos));
             }
         }
 

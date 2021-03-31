@@ -255,6 +255,38 @@ pub fn resolve_messages(data: &mut GameData,
                 }
             }
 
+            Msg::GrassBlade(entity_id, action_mode) => {
+                use_energy(entity_id, data);
+
+                let pos = data.entities.pos[&entity_id];
+
+                let item_id;
+                match action_mode {
+                    ActionMode::Primary => {
+                        item_id = make_sword(&mut data.entities, config, pos, msg_log);
+                    }
+
+                    ActionMode::Alternate => {
+                        item_id = make_dagger(&mut data.entities, config, pos, msg_log);
+                    }
+                }
+
+                data.entities.pick_up_item(entity_id, item_id);
+                data.entities.took_turn[&entity_id] = true;
+            }
+
+            Msg::Reform(entity_id, pos) => {
+                if data.map[pos].surface == Surface::Rubble &&
+                   data.has_blocking_entity(pos).is_none() {
+                    use_energy(entity_id, data);
+
+                    data.map[pos].surface = Surface::Floor;
+                    data.map[pos].block_move = true;
+                    data.map[pos].chr = MAP_WALL;
+                    data.entities.took_turn[&entity_id] = true;
+                }
+            }
+
             _ => {
             }
         }
@@ -528,31 +560,6 @@ fn resolve_action(entity_id: EntityId,
         data.entities.took_turn[&entity_id] = true;
     } else if let Action::PlaceTrap(place_pos, trap_id) = action {
         place_trap(trap_id, place_pos, data);
-        data.entities.took_turn[&entity_id] = true;
-    } else if let Action::GrassBlade(entity_id, action_mode) = action {
-        use_energy(entity_id, data);
-
-        let pos = data.entities.pos[&entity_id];
-
-        let item_id;
-        match action_mode {
-            ActionMode::Primary => {
-                item_id = make_sword(&mut data.entities, config, pos, msg_log);
-            }
-
-            ActionMode::Alternate => {
-                item_id = make_dagger(&mut data.entities, config, pos, msg_log);
-            }
-        }
-
-        data.entities.pick_up_item(entity_id, item_id);
-        data.entities.took_turn[&entity_id] = true;
-    } else if let Action::Reform(entity_id, pos) = action {
-        use_energy(entity_id, data);
-
-        data.map[pos].surface = Surface::Floor;
-        data.map[pos].block_move = true;
-        data.map[pos].chr = MAP_WALL;
         data.entities.took_turn[&entity_id] = true;
     } else if let Action::Swap(entity_id, target_id) = action {
         use_energy(entity_id, data);
