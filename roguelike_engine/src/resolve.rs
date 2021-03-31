@@ -287,6 +287,25 @@ pub fn resolve_messages(data: &mut GameData,
                 }
             }
 
+            Msg::Swap(entity_id, target_id) => {
+                use_energy(entity_id, data);
+
+                let start_pos = data.entities.pos[&entity_id];
+                let end_pos = data.entities.pos[&target_id];
+                data.entities.move_to(entity_id, end_pos);
+                data.entities.move_to(target_id, start_pos);
+
+                data.entities.took_turn[&entity_id] = true;
+            }
+
+            Msg::PassWall(entity_id, pos) => {
+                use_energy(entity_id, data);
+
+                data.entities.move_to(entity_id, pos);
+
+                data.entities.took_turn[&entity_id] = true;
+            }
+
             _ => {
             }
         }
@@ -560,21 +579,6 @@ fn resolve_action(entity_id: EntityId,
         data.entities.took_turn[&entity_id] = true;
     } else if let Action::PlaceTrap(place_pos, trap_id) = action {
         place_trap(trap_id, place_pos, data);
-        data.entities.took_turn[&entity_id] = true;
-    } else if let Action::Swap(entity_id, target_id) = action {
-        use_energy(entity_id, data);
-
-        let start_pos = data.entities.pos[&entity_id];
-        let end_pos = data.entities.pos[&target_id];
-        data.entities.move_to(entity_id, end_pos);
-        data.entities.move_to(target_id, start_pos);
-
-        data.entities.took_turn[&entity_id] = true;
-    } else if let Action::PassWall(entity_id, pos) = action {
-        use_energy(entity_id, data);
-
-        data.entities.move_to(entity_id, pos);
-
         data.entities.took_turn[&entity_id] = true;
     } else if let Action::Push(entity_id, direction, amount) = action {
         // TODO split into separate function

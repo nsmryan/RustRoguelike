@@ -63,6 +63,8 @@ pub enum Msg {
     GrassBlade(EntityId, ActionMode),
     Rubble(EntityId, Pos),
     Reform(EntityId, Pos),
+    Swap(EntityId, EntityId), // casting entity, entity to swap with
+    PassWall(EntityId, Pos),
 }
 
 impl Msg {
@@ -313,6 +315,14 @@ impl Msg {
 
             Msg::Reform(entity_id, _pos) => {
                 return format!("{:?} turns rubble into wall", data.entities.name[entity_id]);
+            }
+
+            Msg::Swap(entity_id, other_id) => {
+                return format!("{:?} swaps with {:?}", data.entities.name[entity_id], data.entities.name[other_id]);
+            }
+            
+           Msg::PassWall(entity_id, pos) => { 
+                return format!("{:?} passes through {}", data.entities.name[entity_id], pos);
             }
 
             _ => {

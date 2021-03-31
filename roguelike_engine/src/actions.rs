@@ -742,9 +742,10 @@ pub fn handle_skill(skill_index: usize,
                         let next = next_from_to(player_pos, blocked.end_pos);
                         if  !data.map[next].block_move {
                             turn = Action::PassWall(player_id, next);
+                            msg_log.log(Msg::PassWall(player_id, next));
                         }
                     } else {
-                        turn = Action::PassWall(player_id, skill_pos);
+                        msg_log.log(Msg::PassWall(player_id, skill_pos));
                     }
                 }
             }
@@ -773,7 +774,7 @@ pub fn handle_skill(skill_index: usize,
 
             let player_id = data.find_by_name(EntityName::Player).unwrap();
             if let Some(entity_id) = data.has_blocking_entity(skill_pos) {
-                turn = Action::Swap(player_id, entity_id);
+                msg_log.log(Msg::Swap(player_id, entity_id));
             }
         }
 
