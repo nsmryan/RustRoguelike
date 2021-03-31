@@ -29,6 +29,7 @@ pub enum Msg {
     TryAttack(EntityId, Attack, Pos), // attacker, attack description, attack pos
     Attack(EntityId, EntityId, Hp), // attacker, attacked, hp lost
     Killed(EntityId, EntityId, Hp), // attacker, attacked, hp lost
+    Push(EntityId, Direction, usize), // attacker, direction, amount
     Pushed(EntityId, EntityId, Direction, usize, bool), // attacker, attacked, direction, amount, move into pushed square
     TryMove(EntityId, Direction, usize, MoveMode),
     Moved(EntityId, MoveType, Pos),
@@ -67,6 +68,7 @@ pub enum Msg {
     PassWall(EntityId, Pos),
     UseItem(EntityId, Pos, EntityId), // holding entity, position, item id
     ArmDisarmTrap(EntityId, EntityId), // acting entity, trap id
+    PlaceTrap(EntityId, Pos, EntityId), // placing entity, position, trap id
 }
 
 impl Msg {
@@ -140,6 +142,10 @@ impl Msg {
 
             Msg::Killed(attacker, attacked, _damage) => {
                 return format!("{:?} killed {:?}", data.entities.name[attacker], data.entities.name[attacked]);
+            }
+
+            Msg::Push(_attacker, _direction, _amount) => {
+                return "".to_string();
             }
 
             Msg::Pushed(attacker, attacked, _direction, _amount, _move_into) => {
@@ -333,6 +339,10 @@ impl Msg {
 
             Msg::ArmDisarmTrap(entity_id, trap_id) => {
                 return format!("{:?} fiddles with {:?}", data.entities.name[entity_id], data.entities.name[trap_id]);
+            }
+
+            Msg::PlaceTrap(entity_id, pos, trap_id) => {
+                return format!("{:?} place {:?} at {}", data.entities.name[entity_id], data.entities.name[trap_id], pos);
             }
 
             _ => {

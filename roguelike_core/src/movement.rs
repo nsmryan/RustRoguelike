@@ -18,8 +18,6 @@ pub enum Action {
     Move(MoveType, Pos),
     MoveDir(Direction, MoveMode),
     StateChange(Behavior),
-    PlaceTrap(Pos, EntityId), // position to place, trap id
-    Push(EntityId, Direction, usize), // casting entity, target direction, amount
     NoAction,
 }
 

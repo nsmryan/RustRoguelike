@@ -782,7 +782,7 @@ pub fn handle_skill(skill_index: usize,
             let dxy = sub_pos(skill_pos, player_pos);
             let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
             let push_amount = 1;
-            turn = Action::Push(player_id, direction, push_amount);
+            msg_log.log(Msg::Push(player_id, direction, push_amount));
         }
     }
 

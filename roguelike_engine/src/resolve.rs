@@ -315,6 +315,17 @@ pub fn resolve_messages(data: &mut GameData,
                 data.entities.took_turn[&entity_id] = true;
             }
 
+            Msg::PlaceTrap(entity_id, place_pos, trap_id) => {
+                place_trap(trap_id, place_pos, data);
+                data.entities.took_turn[&entity_id] = true;
+            }
+
+
+            Msg::Push(entity_id, direction, amount) => {
+                use_energy(entity_id, data);
+                resolve_push(entity_id, direction, amount, data, msg_log);
+            }
+
             _ => {
             }
         }
@@ -581,13 +592,6 @@ fn resolve_action(entity_id: EntityId,
         msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
     } else if let Action::StateChange(behavior) = action {
         msg_log.log(Msg::StateChange(entity_id, behavior));
-    } else if let Action::PlaceTrap(place_pos, trap_id) = action {
-        place_trap(trap_id, place_pos, data);
-        data.entities.took_turn[&entity_id] = true;
-    } else if let Action::Push(entity_id, direction, amount) = action {
-        // TODO split into separate function
-        use_energy(entity_id, data);
-        resolve_push(entity_id, direction, amount, data, msg_log);
     }
 }
 
