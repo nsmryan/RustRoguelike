@@ -306,6 +306,15 @@ pub fn resolve_messages(data: &mut GameData,
                 data.entities.took_turn[&entity_id] = true;
             }
 
+            Msg::UseItem(entity_id, pos, item_id) => {
+                use_item(entity_id, pos, item_id, data, msg_log);
+            }
+
+            Msg::ArmDisarmTrap(entity_id, trap_id) => {
+                data.entities.armed[&trap_id] = !data.entities.armed[&trap_id];
+                data.entities.took_turn[&entity_id] = true;
+            }
+
             _ => {
             }
         }
@@ -555,7 +564,7 @@ fn resolve_action(entity_id: EntityId,
                   action: Action,
                   data: &mut GameData,
                   msg_log: &mut MsgLog,
-                  config: &Config) {
+                  _config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
 
     if let Action::MoveDir(direction, move_mode) = action {
@@ -572,11 +581,6 @@ fn resolve_action(entity_id: EntityId,
         msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
     } else if let Action::StateChange(behavior) = action {
         msg_log.log(Msg::StateChange(entity_id, behavior));
-    } else if let Action::UseItem(pos, item_id) = action {
-        use_item(entity_id, pos, item_id, data, msg_log);
-    } else if let Action::ArmDisarmTrap(trap_id) = action {
-        data.entities.armed[&trap_id] = !data.entities.armed[&trap_id];
-        data.entities.took_turn[&entity_id] = true;
     } else if let Action::PlaceTrap(place_pos, trap_id) = action {
         place_trap(trap_id, place_pos, data);
         data.entities.took_turn[&entity_id] = true;
@@ -985,7 +989,7 @@ fn process_interaction(entity_id: EntityId,
     } else {
         for other_id in data.has_entity(interact_pos) {
             if data.entities.trap.get(&other_id).is_some() {
-                msg_log.log(Msg::Action(entity_id, Action::ArmDisarmTrap(other_id)));
+                msg_log.log(Msg::ArmDisarmTrap(entity_id, other_id));
                 break;
             }
         }

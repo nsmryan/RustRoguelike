@@ -65,6 +65,8 @@ pub enum Msg {
     Reform(EntityId, Pos),
     Swap(EntityId, EntityId), // casting entity, entity to swap with
     PassWall(EntityId, Pos),
+    UseItem(EntityId, Pos, EntityId), // holding entity, position, item id
+    ArmDisarmTrap(EntityId, EntityId), // acting entity, trap id
 }
 
 impl Msg {
@@ -323,6 +325,14 @@ impl Msg {
             
            Msg::PassWall(entity_id, pos) => { 
                 return format!("{:?} passes through {}", data.entities.name[entity_id], pos);
+            }
+
+            Msg::UseItem(entity_id, pos, item_id) => {
+                return format!("{:?} used {:?} on {}", data.entities.name[entity_id], data.entities.name[item_id], pos);
+            }
+
+            Msg::ArmDisarmTrap(entity_id, trap_id) => {
+                return format!("{:?} fiddles with {:?}", data.entities.name[entity_id], data.entities.name[trap_id]);
             }
 
             _ => {

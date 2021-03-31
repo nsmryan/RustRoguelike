@@ -9,7 +9,6 @@ use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
 use roguelike_core::utils::{scale_pos, distance, sub_pos, add_pos, next_from_to};
-use roguelike_core::map::{Surface};
 
 use crate::game::*;
 use crate::input::*;
@@ -650,7 +649,7 @@ pub fn handle_input_playing(input_action: InputAction,
             let pos = data.entities.pos[&player_id];
             let use_pos = dir.offset_pos(pos, 1);
             if let Some(item_id) = data.entities.inventory[&player_id].get(target as usize) {
-                action_result.turn = Action::UseItem(use_pos, *item_id);
+                msg_log.log(Msg::UseItem(player_id, use_pos, *item_id));
             }
         }
 
@@ -741,7 +740,6 @@ pub fn handle_skill(skill_index: usize,
                     if data.map[blocked.end_pos].block_move {
                         let next = next_from_to(player_pos, blocked.end_pos);
                         if  !data.map[next].block_move {
-                            turn = Action::PassWall(player_id, next);
                             msg_log.log(Msg::PassWall(player_id, next));
                         }
                     } else {
@@ -889,7 +887,7 @@ fn chord_selection(loc: ActionLoc,
                         // primary item use is the item's main action
                         let pos = data.entities.pos[&player_id];
                         let use_pos = dir.offset_pos(pos, 1);
-                        turn = Action::UseItem(use_pos, item_id);
+                        msg_log.log(Msg::UseItem(player_id, use_pos, item_id));
                     }
 
                     _ => panic!("Is this even possible anymore?"),
