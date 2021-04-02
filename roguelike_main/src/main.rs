@@ -206,7 +206,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
             let _input_timer = timer!("INPUT");
             for sdl2_event in event_pump.poll_iter() {
                 if game.config.print_key_log {
-                    print_event(&sdl2_event);
+                    //print_event(&sdl2_event);
                 }
                 if let Some(event) = translate_event(sdl2_event, &mut game, &mut display) {
                     let action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);

@@ -387,9 +387,16 @@ fn ai_can_hit_target(data: &mut GameData,
 
     let within_fov = data.is_in_fov(monster_id, target_pos, config);
 
-    let clear_path = data.clear_path_up_to(monster_pos, target_pos, false);
+    let traps_block = false;
 
-    if within_fov && clear_path {
+    // both clear_path_up_to and path_blocked_move are used here because
+    // clear_path_up_to checks for entities, not including the target pos
+    // which contains the player, while path_blocked_move only checks the map
+    // up to and including the player pos.
+    let clear_path = data.clear_path_up_to(monster_pos, target_pos, traps_block);
+    let clear_map = data.map.path_blocked_move(monster_pos, target_pos).is_none();
+
+    if within_fov && clear_path && clear_map {
         // get all locations they can hit
         let positions: Vec<Pos> = reach.reachables(monster_pos);
 
