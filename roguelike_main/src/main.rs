@@ -6,17 +6,18 @@ mod keyboard;
 
 use std::fs;
 use std::io::{BufRead, Write, stdout};
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 use std::path::Path;
 use std::str::FromStr;
 use std::thread;
-use std::sync::mpsc;
+use std::sync::mpsc::{self, Receiver};
 
 use sdl2::image::LoadTexture;
 use sdl2::render::{WindowCanvas, Texture, TextureCreator};
 use sdl2::video::WindowContext;
 use sdl2::ttf::Sdl2TtfContext;
 use sdl2::event::Event;
+use sdl2::EventPump;
 
 use walkdir::WalkDir;
 
@@ -113,7 +114,6 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
     /* Load Textures */
     load_sprites(&texture_creator, &mut display);
-
     load_sprite(&texture_creator, &mut display, "resources/rexpaint16x16.png", "tiles", 16);
 
     let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
@@ -172,20 +172,10 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
     let frame_ms = 1000 / game.config.frame_rate as u64;
     let fps_throttler = Throttler::new(Duration::from_millis(frame_ms));
 
+
+    let io_recv = spawn_input_reader();
+
     let mut event_pump = sdl_context.event_pump()?;
-
-    let (io_send, io_recv) = mpsc::channel();
-    thread::spawn(move || {
-        let stdin = std::io::stdin();
-        let stdin = stdin.lock().lines();
-
-        for line in stdin {
-            let text = line.unwrap();
-            if !text.is_empty() {
-                io_send.send(text).unwrap();
-            }
-        }
-    });
 
     let mut frame_time = Instant::now();
 
@@ -193,110 +183,93 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
     while game.settings.running {
         let _loop_timer = timer!("GAME_LOOP");
 
-        // check for commands to execute
-        if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(0)) {
-            if let Ok(cmd) = msg.parse::<GameCmd>() {
-                let result = execute_game_command(&cmd, &mut game);
-                if !result.is_empty() {
-                    println!("OUTPUT: {}", result);
-                    stdout().flush().unwrap();
-                }
-            } else {
-                println!("OUTPUT: error '{}' unexpected", msg);
-                stdout().flush().unwrap();
-            }
-        }
-
-        let mut input_action: InputAction = InputAction::None;
-        /* Handle Events */
+        /* Input */
+        let mut input_action: InputAction;
         {
             let _input_timer = timer!("INPUT");
-            for sdl2_event in event_pump.poll_iter() {
-                if game.config.print_key_log {
-                    //print_event(&sdl2_event);
-                }
-                if let Some(event) = translate_event(sdl2_event, &mut game, &mut display) {
-                    let action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
-                    // NOTE may lose inputs if multiple events create actions!
-                    input_action = action;
-                }
+
+            // check for commands to execute
+            process_commands(&io_recv, &mut game);
+
+            input_action = process_input_events(frame_time, &mut event_pump, &mut game, &mut display);
+        }
+
+        /* Misc */
+        {
+            let _misc_timer = timer!("MISC");
+            // if there are starting actions to read, pop one off to play
+            if let Some(action) = starting_actions.pop() {
+                input_action = action;
+            }
+
+           if input_action == InputAction::Exit {
+                game.settings.running = false;
+           }
+
+            /* Record Inputs to Log File */
+            if input_action != InputAction::None && input_action != InputAction::Exit {
+                action_log.write(input_action.to_string().as_bytes()).unwrap();
+                action_log.write("\n".as_bytes()).unwrap();
             }
         }
-        let misc_timer = timer!("MISC");
-        // if there are starting actions to read, pop one off to play
-        if let Some(action) = starting_actions.pop() {
-            input_action = action;
-        }
 
-       if input_action == InputAction::Exit {
-            game.settings.running = false;
-       }
-
-        /* Record Inputs to Log File */
-        if input_action != InputAction::None &&
-           input_action != InputAction::Exit {
-            action_log.write(input_action.to_string().as_bytes()).unwrap();
-            action_log.write("\n".as_bytes()).unwrap();
-        }
-        drop(misc_timer);
-
-        /* Step the Game Forward */
+        /* Logic */
         {
             let _logic_timer = timer!("LOGIC");
             let dt = Instant::now().duration_since(frame_time).as_secs_f32();
             frame_time = Instant::now();
             game.step_game(input_action, dt);
+
+            if game.settings.state == GameState::Win {
+                display.clear_level_state();
+            } else if game.settings.state == GameState::Exit {
+                game.settings.running = false;
+            }
         }
 
-        if game.settings.state == GameState::Win {
-            display.clear_level_state();
-        } else if game.settings.state == GameState::Exit {
-            game.settings.running = false;
-        }
-
-        /* Update Display */
+        /* Display */
         {
             let _display_timer = timer!("DISPLAY");
-            for msg in game.msg_log.turn_messages.iter() {
-                display.process_message(*msg, &mut game.data, &game.config);
-            }
-
-            /* Draw the Game to the Screen */
-            render_all(&mut display, &mut game)?;
-
-            display.update_display();
+            update_display(&mut game, &mut display)?;
         }
 
         game.msg_log.clear();
 
-        /* Reload map if configured to do so */
-        let config_timer = timer!("CONFIG");
-        if game.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
-            let player = game.data.find_by_name(EntityName::Player).unwrap();
-
-            let map_file = format!("resources/{}", game.config.map_file);
-            game.data.entities.clear();
-            let player_pos = read_map_xp(&game.config, &mut game.data, &mut game.msg_log, &map_file);
-            game.data.entities.set_pos(player, Pos::from(player_pos));
+        /* Configuration */
+        {
+            let _config_timer = timer!("CONFIG");
+            reload_config(&mut config_modified_time, &mut game);
         }
-
-        /* Reload Configuration */
-        if let Ok(current_config_modified_time) = fs::metadata(CONFIG_NAME) {
-            let current_config_modified_time = current_config_modified_time.modified().unwrap();
-            if current_config_modified_time != config_modified_time {
-                config_modified_time = current_config_modified_time;
-                game.config = Config::from_file(CONFIG_NAME);
-            }
-        }
-        drop(config_timer);
 
         /* Wait until the next tick to loop */
-        let wait_timer = timer!("WAIT");
-        fps_throttler.wait();
-        drop(wait_timer);
+        {
+            let _wait_timer = timer!("WAIT");
+            fps_throttler.wait();
+        }
     }
 
     return Ok(());
+}
+
+fn reload_config(config_modified_time: &mut SystemTime, game: &mut Game) {
+    /* Reload map if configured to do so */
+    if game.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
+        let player = game.data.find_by_name(EntityName::Player).unwrap();
+
+        let map_file = format!("resources/{}", game.config.map_file);
+        game.data.entities.clear();
+        let player_pos = read_map_xp(&game.config, &mut game.data, &mut game.msg_log, &map_file);
+        game.data.entities.set_pos(player, Pos::from(player_pos));
+    }
+
+    /* Reload Configuration */
+    if let Ok(current_config_modified_time) = fs::metadata(CONFIG_NAME) {
+        let current_config_modified_time = current_config_modified_time.modified().unwrap();
+        if current_config_modified_time != *config_modified_time {
+            *config_modified_time = current_config_modified_time;
+            game.config = Config::from_file(CONFIG_NAME);
+        }
+    }
 }
 
 fn print_event(event: &Event) {
@@ -358,6 +331,69 @@ fn load_font(ttf_context: &Sdl2TtfContext,
     }).unwrap();
 
     return font_texture;
+}
+
+fn update_display(game: &mut Game, display: &mut Display) -> Result<(), String> {
+    for msg in game.msg_log.turn_messages.iter() {
+        display.process_message(*msg, &mut game.data, &game.config);
+    }
+
+    /* Draw the Game to the Screen */
+    render_all(display, game)?;
+
+    display.update_display();
+
+    return Ok(());
+}
+
+fn process_input_events(frame_time: Instant, event_pump: &mut EventPump, game: &mut Game, display: &mut Display) -> InputAction {
+    let mut input_action: InputAction = InputAction::None;
+
+    for sdl2_event in event_pump.poll_iter() {
+        if game.config.print_key_log {
+            //print_event(&sdl2_event);
+        }
+        if let Some(event) = translate_event(sdl2_event, game, display) {
+            let action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
+            // NOTE may lose inputs if multiple events create actions!
+            input_action = action;
+        }
+    }
+
+    return input_action;
+}
+
+fn process_commands(io_recv: &Receiver<String>, game: &mut Game) {
+    if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(0)) {
+        if let Ok(cmd) = msg.parse::<GameCmd>() {
+            let result = execute_game_command(&cmd, game);
+            if !result.is_empty() {
+                println!("OUTPUT: {}", result);
+                stdout().flush().unwrap();
+            }
+        } else {
+            println!("OUTPUT: error '{}' unexpected", msg);
+            stdout().flush().unwrap();
+        }
+    }
+}
+
+fn spawn_input_reader() -> Receiver<String> {
+    let (io_send, io_recv) = mpsc::channel();
+
+    thread::spawn(move || {
+        let stdin = std::io::stdin();
+        let stdin = stdin.lock().lines();
+
+        for line in stdin {
+            let text = line.unwrap();
+            if !text.is_empty() {
+                io_send.send(text).unwrap();
+            }
+        }
+    });
+
+    return io_recv;
 }
 
 fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display: &mut Display) {
