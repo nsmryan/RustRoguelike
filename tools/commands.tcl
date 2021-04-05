@@ -19,14 +19,4 @@ proc downleft { } { key 1 }
 proc downright { } { key 3 }
 proc pass {} { key 5 }
 
-puts $rl "player_id"
-flush $rl
-
-up; down; left; right
-
-while { [set line [gets $rl]] != "" } {
-    puts $line
-}
-
-exit
 
