@@ -34,6 +34,8 @@ tags
 issue_logs/
 
 # Game-specific files
-action_log.txtt
+action_log.txt
 game.log
 *.vim
+
+map_emptiness_distribution.txt

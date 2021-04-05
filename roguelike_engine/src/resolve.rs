@@ -1,3 +1,5 @@
+use std::io::stdout;
+use std::io::Write;
 use rand::prelude::*;
 
 #[allow(unused_imports)]
@@ -29,8 +31,10 @@ pub fn resolve_messages(data: &mut GameData,
         let msg_line = msg.msg_line(data);
         if msg_line.len() > 0 {
             println!("CONSOLE: {}", msg_line);
+            stdout().flush().unwrap();
         }
         println!("MSG_DBG: {:?}", msg);
+        stdout().flush().unwrap();
 
         match msg {
             Msg::Moved(entity_id, move_type, pos) => {

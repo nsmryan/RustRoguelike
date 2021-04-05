@@ -5,7 +5,7 @@ mod display;
 mod keyboard;
 
 use std::fs;
-use std::io::{BufRead, Write};
+use std::io::{BufRead, Write, stdout};
 use std::time::{Duration, Instant};
 use std::path::Path;
 use std::str::FromStr;
@@ -180,7 +180,10 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         let stdin = stdin.lock().lines();
 
         for line in stdin {
-            io_send.send(line.unwrap()).unwrap();
+            let text = line.unwrap();
+            if !text.is_empty() {
+                io_send.send(text).unwrap();
+            }
         }
     });
 
@@ -194,9 +197,13 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(0)) {
             if let Ok(cmd) = msg.parse::<GameCmd>() {
                 let result = execute_game_command(&cmd, &mut game);
-                println!("OUTPUT: {}", result);
+                if !result.is_empty() {
+                    println!("OUTPUT: {}", result);
+                    stdout().flush().unwrap();
+                }
             } else {
                 println!("OUTPUT: error '{}' unexpected", msg);
+                stdout().flush().unwrap();
             }
         }
 
@@ -296,10 +303,12 @@ fn print_event(event: &Event) {
     match event {
         Event::KeyDown { timestamp, keycode, scancode, keymod, repeat, .. } => {
             println!("KEY: {} down {} {} {} {}", timestamp, keycode.unwrap(), scancode.unwrap(), keymod, repeat);
+            stdout().flush().unwrap();
         }
 
         Event::KeyUp { timestamp, keycode, scancode, keymod, repeat, .. } => {
             println!("KEY: {} up   {} {} {} {}", timestamp, keycode.unwrap(), scancode.unwrap(), keymod, repeat);
+            stdout().flush().unwrap();
         }
         
         _ => {}
