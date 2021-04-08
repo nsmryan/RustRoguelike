@@ -12,7 +12,7 @@ use crate::movement::Attack;
 #[derive(Copy, Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub enum Msg {
     StartTurn,
-    Pass(),
+    Pass,
     Crushed(EntityId, Pos), // object that did the crushing, position
     Sound(EntityId, Pos, usize, bool), // object causing sound, location, radius, whether animation will play
     SoundTrapTriggered(EntityId, EntityId), // trap, entity
@@ -70,6 +70,18 @@ pub enum Msg {
     ArmDisarmTrap(EntityId, EntityId), // acting entity, trap id
     PlaceTrap(EntityId, Pos, EntityId), // placing entity, position, trap id
 }
+
+impl fmt::Display for Msg {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Msg::StartTurn => write!(f, "startturn"),
+            Msg::Pass => write!(f, "pass"),
+            Msg::Crushed(entity_id, pos) => write!(f, "crushed {} {} {}", entity_id, pos.x, pos.y),
+            Msg::Sound(entity_id, pos, loc, animate) => write!(f, "crushed {} {} {}", entity_id, pos.x, pos.y),
+        }
+    }
+}
+
 
 impl Msg {
     pub fn msg_line(&self, data: &GameData) -> String {
