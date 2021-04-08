@@ -736,7 +736,7 @@ impl Display {
             }
 
             Msg::SpawnedObject(entity_id, _typ, _pos, _name) => {
-                if data.entities.ids.contains(&entity_id) {
+                if config.idle_animations && data.entities.ids.contains(&entity_id) {
                     let mut anim_desc = None;
                     if data.entities.typ[&entity_id] == EntityType::Player {
                         anim_desc = Some(("player_idle", config.idle_speed));

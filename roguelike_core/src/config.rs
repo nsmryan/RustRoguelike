@@ -88,6 +88,7 @@ pub struct Config {
     pub repeat_delay: f32,
     pub write_map_distribution: bool,
     pub print_key_log: bool,
+    pub idle_animations: bool,
 }
 
 impl Config {
