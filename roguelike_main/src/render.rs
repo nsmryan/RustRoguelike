@@ -593,10 +593,10 @@ fn render_background(display: &mut Display, game: &mut Game) {
                     sprite.draw_char(&mut panel,
                                      MAP_EMPTY_CHAR as char,
                                      map_pos,
-                                     empty_tile_color(&game.config, map_pos, visible));
+                                     Color::white());
                 } else {
                     let color = tile_color(&game.config, x, y, tile, visible);
-                    sprite.draw_char(&mut panel, MAP_EMPTY_CHAR as char, map_pos, color);
+                    sprite.draw_char(&mut panel, MAP_EMPTY_CHAR as char, map_pos, Color::white());
                 }
             }
         }
@@ -632,30 +632,25 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
 
             let tile = &game.data.map[pos];
 
-            let wall_color =
-                if explored {
-                    game.config.color_light_brown
-                } else {
-                    game.config.color_dark_brown
-                };
+            let wall_color = Color::white();
 
             let chr = tile.chr;
 
             // if the tile is not empty or water, draw it
             let color = tile_color(&game.config, x, y, tile, visible);
             if tile.tile_type == TileType::Water {
-                sprite.draw_char(panel, ' ', pos, color);
+                sprite.draw_char(panel, MAP_WATER as char, pos, Color::white());
             } else if chr != MAP_EMPTY_CHAR {
-                sprite.draw_char(panel, chr as char, pos, color);
+                sprite.draw_char(panel, chr as char, pos, Color::white());
             }
 
             match tile.surface {
                 Surface::Rubble => {
-                    sprite.draw_char(panel, MAP_RUBBLE as char, pos, color);
+                    sprite.draw_char(panel, MAP_RUBBLE as char, pos, Color::white());
                 }
 
                 Surface::Grass => {
-                    sprite.draw_char(panel, MAP_RUBBLE as char, pos, game.config.color_light_green);
+                    sprite.draw_char(panel, MAP_GRASS as char, pos, Color::white()); //game.config.color_light_green);
                 }
 
                 Surface::Floor => {
@@ -1233,17 +1228,18 @@ fn get_entity_at_pos(check_pos: Pos, data: &mut GameData) -> Vec<EntityId> {
     return object_ids;
 }
 
+// NOTE maybe add variation in tile colors back in
 fn empty_tile_color(config: &Config, pos: Pos, visible: bool) -> Color {
     let perlin = Perlin::new();
 
     let low_color;
     let high_color;
     if visible {
-        low_color = config.color_tile_blue_light;
-        high_color = config.color_tile_blue_dark;
+        low_color = config.color_medium_grey;
+        high_color = config.color_light_grey;
     } else {
-        low_color = config.color_tile_blue_dark;
-        high_color = config.color_very_dark_blue;
+        low_color = config.color_medium_grey;
+        high_color = config.color_light_grey;
     }
     let color =
         lerp_color(low_color,

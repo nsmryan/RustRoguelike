@@ -18,6 +18,7 @@ pub enum Action {
     Move(MoveType, Pos),
     MoveDir(Direction, MoveMode),
     StateChange(Behavior),
+    Attack(Pos),
     NoAction,
 }
 

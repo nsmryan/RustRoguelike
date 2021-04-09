@@ -594,6 +594,12 @@ fn resolve_action(entity_id: EntityId,
         let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
 
         msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
+    } else if let Action::Attack(hit_pos) = action {
+        if let Some(target_id) = data.has_entity(hit_pos) {
+            if data.entities.fighter.get(&target_id).is_some() {
+                msg_log.log(Msg::TryAttack(entity_id, Attack::Attack(target_id), hit_pos));
+            }
+        }
     } else if let Action::StateChange(behavior) = action {
         msg_log.log(Msg::StateChange(entity_id, behavior));
     }

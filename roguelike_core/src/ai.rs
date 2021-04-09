@@ -6,6 +6,7 @@ use crate::movement::*;
 use crate::messaging::*;
 use crate::utils::*;
 use crate::config::Config;
+use crate::map::{BlockedType};
 
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -277,7 +278,7 @@ pub fn ai_attack(monster_id: EntityId,
         turn = Action::StateChange(Behavior::Investigating(target_pos));
     } else if let Some(hit_pos) = can_hit_target {
         // can hit their target, so just attack them
-        turn = Action::Move(MoveType::Move, hit_pos);
+        turn = Action::Attack(hit_pos);
     } else if !data.is_in_fov(monster_id, target_pos, config) {
         // path to target is blocked by a wall- investigate the last known position
         turn = Action::StateChange(Behavior::Investigating(target_pos));
@@ -394,7 +395,8 @@ fn ai_can_hit_target(data: &mut GameData,
     // which contains the player, while path_blocked_move only checks the map
     // up to and including the player pos.
     let clear_path = data.clear_path_up_to(monster_pos, target_pos, traps_block);
-    let clear_map = data.map.path_blocked_move(monster_pos, target_pos).is_none();
+    //let clear_map = data.map.path_blocked_move(monster_pos, target_pos).is_none();
+    let clear_map = data.map.path_blocked(monster_pos, target_pos, BlockedType::Fov).is_none();
 
     if within_fov && clear_path && clear_map {
         // get all locations they can hit

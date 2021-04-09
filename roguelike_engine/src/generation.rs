@@ -29,7 +29,7 @@ pub enum MapGenType {
 
 
 pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLog) -> EntityId {
-    let player = entities.create_entity(0, 0, EntityType::Player, '@', Color::white(), EntityName::Player, true);
+    let player = entities.create_entity(0, 0, EntityType::Player, ENTITY_PLAYER as char, Color::white(), EntityName::Player, true);
 
     entities.status[&player].alive = true;
     entities.fighter.insert(player,
@@ -57,14 +57,14 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
 }
 
 pub fn make_column(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let object = entities.create_entity(pos.x, pos.y, EntityType::Column, MAP_COLUMN as char, config.color_light_grey, EntityName::Column, true);
+    let object = entities.create_entity(pos.x, pos.y, EntityType::Column, MAP_COLUMN as char, Color::white(), EntityName::Column, true);
 
     msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Column));
 
     return object;
 }
 pub fn make_energy(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let object = entities.create_entity(pos.x, pos.y, EntityType::Energy, ENTITY_BLINK_TRAP as char, config.color_light_green, EntityName::Energy, false);
+    let object = entities.create_entity(pos.x, pos.y, EntityType::Energy, ENTITY_BLINK_TRAP as char, Color::white(), EntityName::Energy, false);
 
     msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Energy));
 
@@ -72,7 +72,7 @@ pub fn make_energy(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
 }
 
 pub fn make_dagger(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_DAGGER as char, config.color_light_grey, EntityName::Dagger, false);
+    let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_DAGGER as char, Color::white(), EntityName::Dagger, false);
 
     entities.item.insert(object,  Item::Dagger);
 
@@ -82,7 +82,7 @@ pub fn make_dagger(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
 }
 
 pub fn make_hammer(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_HAMMER as char, config.color_light_grey, EntityName::Hammer, false);
+    let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_HAMMER as char, Color::white(), EntityName::Hammer, false);
 
     entities.item.insert(object,  Item::Hammer);
 
@@ -92,7 +92,7 @@ pub fn make_hammer(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
 }
 
 pub fn make_sword(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SWORD as char, config.color_light_grey, EntityName::Sword, false);
+    let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SWORD as char, Color::white(), EntityName::Sword, false);
 
     entities.item.insert(object,  Item::Sword);
 
@@ -102,7 +102,7 @@ pub fn make_sword(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
 }
 
 pub fn make_shield(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SHIELD as char, config.color_light_grey, EntityName::Shield, false);
+    let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SHIELD as char, Color::white(), EntityName::Shield, false);
 
     entities.item.insert(object,  Item::Shield);
 
@@ -112,7 +112,7 @@ pub fn make_shield(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
 }
 
 pub fn make_key(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let key = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_KEY as char, config.color_orange, EntityName::Key, false);
+    let key = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_KEY as char, Color::white(), EntityName::Key, false);
     
     entities.item.insert(key,  Item::Key);
 
@@ -138,12 +138,11 @@ pub fn make_cursor(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
 }
 
 pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let gol = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{98}', config.color_orange, EntityName::Gol, true);
+    let gol = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{98}', Color::white(), EntityName::Gol, true);
 
     entities.fighter.insert(gol,  Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, });
     entities.ai.insert(gol,  Ai::Basic);
     entities.behavior.insert(gol,  Behavior::Idle);
-    entities.color.insert(gol,  config.color_light_orange);
     entities.movement.insert(gol,  Reach::Single(GOL_MOVE_DISTANCE));
     entities.attack.insert(gol,  Reach::Diag(GOL_ATTACK_DISTANCE));
     entities.status[&gol].alive = true;
@@ -156,12 +155,11 @@ pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
 } 
 
 pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let spire = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{15}', config.color_orange, EntityName::Spire, true);
+    let spire = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{15}', Color::white(), EntityName::Spire, true);
 
     entities.fighter.insert(spire,  Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, });
     entities.ai.insert(spire,  Ai::Basic);
     entities.behavior.insert(spire,  Behavior::Idle);
-    entities.color.insert(spire,  config.color_mint_green);
     entities.movement.insert(spire,  Reach::Single(SPIRE_MOVE_DISTANCE));
     entities.attack.insert(spire,  Reach::Single(SPIRE_ATTACK_DISTANCE));
     entities.status[&spire].alive = true;
@@ -174,12 +172,11 @@ pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
 }
 
 pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let elf = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{A5}', config.color_orange, EntityName::Pawn, true);
+    let elf = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{A5}', Color::white(), EntityName::Pawn, true);
 
     entities.fighter.insert(elf,  Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, });
     entities.ai.insert(elf,  Ai::Basic);
     entities.behavior.insert(elf,  Behavior::Idle);
-    entities.color.insert(elf,  config.color_ice_blue);
     entities.movement.insert(elf,  Reach::Single(PAWN_MOVE_DISTANCE));
     entities.attack.insert(elf,  Reach::Single(PAWN_ATTACK_DISTANCE));
     entities.status[&elf].alive = true;
@@ -192,7 +189,7 @@ pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
 }
 
 pub fn make_sound_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let sound = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_TRAP_SOUND as char, config.color_ice_blue, EntityName::SoundTrap, false);
+    let sound = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_TRAP_SOUND as char, Color::white(), EntityName::SoundTrap, false);
 
     entities.trap.insert(sound,  Trap::Sound);
     entities.armed.insert(sound,  true);
@@ -204,7 +201,7 @@ pub fn make_sound_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_l
 }
 
 pub fn make_spike_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let spikes = entities.create_entity(pos.x, pos.y, EntityType::Item, MAP_TALL_SPIKES as char, config.color_ice_blue, EntityName::SpikeTrap, false);
+    let spikes = entities.create_entity(pos.x, pos.y, EntityType::Item, MAP_TALL_SPIKES as char, Color::white(), EntityName::SpikeTrap, false);
 
     entities.trap.insert(spikes,  Trap::Spikes);
     entities.armed.insert(spikes,  true);
@@ -216,7 +213,7 @@ pub fn make_spike_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_l
 }
 
 pub fn make_blink_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let blink = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_BLINK_TRAP as char, config.color_ice_blue, EntityName::BlinkTrap, false);
+    let blink = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_BLINK_TRAP as char, Color::white(), EntityName::BlinkTrap, false);
 
     entities.trap.insert(blink,  Trap::Blink);
     entities.armed.insert(blink,  true);
@@ -228,7 +225,7 @@ pub fn make_blink_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_l
 }
 
 pub fn make_freeze_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let freeze = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_FREEZE_TRAP as char, config.color_ice_blue, EntityName::FreezeTrap, false);
+    let freeze = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_FREEZE_TRAP as char, Color::white(), EntityName::FreezeTrap, false);
 
     entities.trap.insert(freeze,  Trap::Freeze);
     entities.armed.insert(freeze,  true);
@@ -240,7 +237,7 @@ pub fn make_freeze_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_
 }
 
 pub fn make_gate_trigger(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let gate = entities.create_entity(pos.x, pos.y, EntityType::Trigger, ENTITY_GATE_TRIGGER as char, config.color_ice_blue, EntityName::GateTrigger, false);
+    let gate = entities.create_entity(pos.x, pos.y, EntityType::Trigger, ENTITY_GATE_TRIGGER as char, Color::white(), EntityName::GateTrigger, false);
 
     entities.gate_pos.insert(gate, None);
 
@@ -250,9 +247,7 @@ pub fn make_gate_trigger(entities: &mut Entities, config: &Config, pos: Pos, msg
 }
 
 pub fn make_exit(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let exit = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_EXIT as char, config.color_orange, EntityName::Exit, false);
-
-    entities.color.insert(exit,  config.color_ice_blue);
+    let exit = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_EXIT as char, Color::white(), EntityName::Exit, false);
 
     msg_log.log(Msg::SpawnedObject(exit, entities.typ[&exit], pos, EntityName::Exit));
 
@@ -260,7 +255,7 @@ pub fn make_exit(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
 }
 
 pub fn make_stone(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let stone = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_STONE as char, config.color_light_grey, EntityName::Stone, true);
+    let stone = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_STONE as char, Color::white(), EntityName::Stone, true);
 
     entities.item.insert(stone,  Item::Stone);
     entities.status[&stone].alive = false;

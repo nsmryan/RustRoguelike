@@ -71,8 +71,8 @@ pub const MAP_LAYER_ENVIRONMENT: usize = 1;
 pub const MAP_LAYER_ENTITIES: usize = 2;
 
 pub const MAP_GROUND: u8 = 154;
-pub const MAP_WATER_XP: u8 = 224;
-pub const MAP_WATER: u8 = 219;
+pub const MAP_WATER_XP: u8 = 171;
+pub const MAP_WATER: u8 = 171;
 pub const MAP_EMPTY: u8 = 32;
 pub const MAP_EMPTY_CHAR: u8 = 219; // all white square
 
@@ -84,7 +84,7 @@ pub const MAP_STATUE_5: u8 = 132;
 pub const MAP_STATUE_6: u8 = 151;
 
 pub const MAP_COLUMN: u8 = 42;
-pub const MAP_RUBBLE: u8 = 15;
+pub const MAP_RUBBLE: u8 = 233;
 pub const MAP_GRASS: u8 = 234;
 
 pub const MAP_TALL_SPIKES: u8 = 136;
