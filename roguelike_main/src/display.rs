@@ -16,6 +16,361 @@ use roguelike_core::animation::{Sprite, AnimKey, Effect, SpriteKey, Animation, S
 use roguelike_core::utils::aoe_fill;
 
 
+pub struct Display {
+    pub state: DisplayState,
+    pub targets: DisplayTargets,
+    pub mouse_state: MouseState,
+}
+
+impl Display {
+    pub fn new(canvas: WindowCanvas) -> Display {
+        return Display { state: DisplayState::new(),
+                         targets: DisplayTargets::new(canvas),
+                         mouse_state: Default::default(),
+        };
+    }
+
+    pub fn update_display(&mut self) {
+        self.targets.canvas_panel.target.present();
+    }
+
+    pub fn save_screenshot(&mut self, name: &str) {
+        let format = PixelFormatEnum::RGB24;
+        let (width, height) = self.targets.canvas_panel.target.output_size().unwrap();
+
+        let pixels = self.targets.canvas_panel.target.read_pixels(None, format).unwrap();
+
+        let mut shot = Image::new(width, height);
+
+        for x in 0..width {
+            for y in 0..height {
+                let index = (x + y * width) as usize * 3;
+                let pixel = bmp::Pixel::new(pixels[index + 0],
+                                            pixels[index + 1],
+                                            pixels[index + 2]);
+                shot.set_pixel(x, y, pixel);
+            }
+        }
+
+        shot.save(format!("{}.bmp", name)).unwrap();
+    }
+
+    pub fn add_spritesheet(&mut self, name: String, texture: Texture, rows: usize) {
+        let sprite_sheet = SpriteSheet::new(name, texture, rows);
+        let sprite_key = self.state.next_sprite_key;
+        self.state.next_sprite_key += 1;
+        self.state.sprites.insert(sprite_key, sprite_sheet);
+    }
+
+    pub fn sprite_exists(&self, name: &str) -> bool {
+        for (_key, sprite_sheet) in self.state.sprites.iter() {
+            if sprite_sheet.name == *name {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// Create a sprite by looking up a texture and constructing the
+    /// SpriteAnim structure.
+    pub fn new_sprite(&self, name: String, speed: f32) -> SpriteAnim {
+        let sprite_key = self.state.lookup_spritekey(&name);
+        let max_index = self.state.sprites[&sprite_key].num_sprites;
+        return SpriteAnim::make_anim(name, sprite_key, max_index as f32, speed);
+    }
+
+    pub fn font_sprite(&self, chr: char) -> SpriteAnim {
+        let sprite_key = self.state.lookup_spritekey(&"font".to_string());
+        return SpriteAnim::new(format!("{}", chr),
+                               sprite_key,
+                               chr as i32 as SpriteIndex,
+                               chr as i32 as SpriteIndex,
+                               0.0);
+    }
+
+    /// Create and play a looping sprite
+    pub fn loop_sprite(&mut self, sprite_name: &str, speed: f32) -> AnimKey {
+        let sprite_anim = self.new_sprite(sprite_name.to_string(), speed);
+        
+        let anim = Animation::Loop(sprite_anim);
+
+        let key = self.play_animation(anim);
+
+        return key;
+    }
+
+    pub fn get_idle_animation(&mut self, entity_id: EntityId, data: &mut GameData, config: &Config) -> Option<AnimKey> {
+        let player_id = data.find_by_name(EntityName::Player).unwrap();
+
+        if entity_id == player_id {
+            let stance = data.entities.stance[&entity_id];
+
+            let key;
+            if data.using(entity_id, Item::Dagger) && stance == Stance::Crouching {
+                key = self.loop_sprite("player_crouch_dagger", config.idle_speed);
+            } else if data.using(entity_id, Item::Dagger) {
+                key = self.loop_sprite("player_idle_dagger", config.idle_speed);
+            } else if data.using(entity_id, Item::Hammer) {
+                key = self.loop_sprite("player_idle_hammer", config.idle_speed);
+            } else if data.using(entity_id, Item::Shield) {
+                key = self.loop_sprite("player_idle_shield", config.idle_speed);
+            } else if stance == Stance::Crouching {
+                key = self.loop_sprite("player_crouching", config.idle_speed);
+            } else {
+                key = self.loop_sprite("player_idle", config.idle_speed);
+            }
+            return Some(key);
+        }
+
+        return None;
+    }
+
+    /// Add an animation to the current animation system, returning
+    /// a key used to reference this animation
+    pub fn play_animation(&mut self, animation: Animation) -> AnimKey {
+        let anim_key = self.state.next_anim_key;
+        self.state.next_anim_key += 1;
+        self.state.animations.insert(anim_key, animation);
+        return anim_key;
+    }
+
+    pub fn clear_level_state(&mut self) {
+        self.state.impressions.clear();
+        self.state.prev_turn_fov.clear();
+        self.state.current_turn_fov.clear();
+        self.state.sound_tiles.clear();
+    }
+
+    pub fn process_message(&mut self, msg: Msg, data: &mut GameData, config: &Config) {
+        match msg {
+            Msg::StartTurn => {
+                self.state.sound_tiles.clear();
+            }
+
+            Msg::Sound(cause_id, source_pos, radius, should_animate) => {
+                if should_animate {
+                    // NOTE this is a duplicate computation, also done in logic message processing
+                    let sound_aoe =
+                        aoe_fill(&data.map, AoeEffect::Sound, source_pos, radius, config);
+
+                    // Add to this turn's sound tiles list
+                    self.state.sound_tiles.extend(sound_aoe.positions().iter());
+
+                    let player_id = data.find_by_name(EntityName::Player).unwrap();
+                    let player_pos = data.entities.pos[&player_id];
+
+                    // only play the sound effect if the player position is included
+                    let sound_hits_player = sound_aoe.positions().iter().any(|pos| *pos == player_pos);
+                    let sound_from_monster = data.entities.typ.get(&cause_id) == Some(&EntityType::Enemy);
+                    let player_can_see_source = data.is_in_fov(player_id, source_pos, config);
+                    let visible_monster_sound = sound_from_monster && player_can_see_source;
+                    if !visible_monster_sound && sound_hits_player {
+                        let sound_effect = Effect::Sound(sound_aoe, 0.0);
+                        self.state.play_effect(sound_effect);
+                    }
+                }
+            }
+
+            Msg::ItemThrow(_thrower, item_id, start, _end) => {
+                // NOTE we use the entities position instead of 'end' because we
+                // want where it hit, not where it was thrown to.
+                let end = data.entities.pos[&item_id];
+
+                let sound_aoe = aoe_fill(&data.map, AoeEffect::Sound, end, config.sound_radius_stone, config);
+
+                let chr = data.entities.chr[&item_id];
+                let item_sprite = self.font_sprite(chr);
+
+                let move_anim = Animation::Between(item_sprite, start, end, 0.0, config.item_throw_speed);
+                let item_anim = Animation::PlayEffect(Effect::Sound(sound_aoe, 0.0));
+                let loop_anim = Animation::Loop(item_sprite);
+
+                let move_key = self.play_animation(move_anim);
+                let item_key = self.play_animation(item_anim);
+                let loop_key = self.play_animation(loop_anim);
+
+                data.entities.animation[&item_id].clear();
+                data.entities.animation[&item_id].push_back(move_key);
+                data.entities.animation[&item_id].push_back(item_key);
+                data.entities.animation[&item_id].push_back(loop_key);
+            }
+
+            Msg::PickedUp(entity_id, _item_id) => {
+                if let Some(anim_key) = self.get_idle_animation(entity_id, data, config) {
+                    data.entities.set_animation(entity_id, anim_key);
+                }
+            }
+
+            Msg::Moved(entity_id, _move_type, _pos) => {
+                if let Some(anim_key) = self.get_idle_animation(entity_id, data, config) {
+                    data.entities.set_animation(entity_id, anim_key);
+                }
+            }
+
+            Msg::Killed(_attacker, attacked, _damage) => {
+                if data.entities.typ[&attacked] != EntityType::Player {
+                    data.entities.animation[&attacked].clear();
+
+                    let sprite_name = format!("{:?}_die", data.entities.name[&attacked]);
+                    if self.sprite_exists(&sprite_name) {
+                        let sprite = self.new_sprite(sprite_name, 1.0);
+                        let anim = self.play_animation(Animation::Once(sprite));
+                        data.entities.animation[&attacked].clear();
+                        data.entities.animation[&attacked].push_front(anim);
+                    }
+                }
+            }
+
+            Msg::HammerSwing(entity_id, _pos) => {
+                if data.entities.typ[&entity_id] == EntityType::Player {
+                    let attack_sprite =
+                        self.new_sprite("player_attack_hammer".to_string(), config.player_attack_hammer_speed);
+                    let attack_anim = Animation::Once(attack_sprite);
+                    let attack_key = self.play_animation(attack_anim);
+
+                    data.entities.animation[&entity_id].clear();
+                    data.entities.animation[&entity_id].push_back(attack_key);
+
+                    if let Some(idle_key) = self.get_idle_animation(entity_id, data, config) {
+                        data.entities.animation[&entity_id].push_back(idle_key);
+                    }
+                }
+            }
+
+            Msg::Stabbed(entity_id, _hit_entity) => {
+                if data.entities.typ[&entity_id] == EntityType::Player {
+                    let attack_sprite =
+                        self.new_sprite("player_attack_dagger".to_string(), config.player_attack_speed);
+                    let attack_anim = Animation::Once(attack_sprite);
+                    let attack_key = self.play_animation(attack_anim);
+
+                    data.entities.animation[&entity_id].clear();
+                    data.entities.animation[&entity_id].push_back(attack_key);
+
+                    if let Some(idle_key) = self.get_idle_animation(entity_id, data, config) {
+                        data.entities.animation[&entity_id].push_back(idle_key);
+                    }
+                }
+            }
+
+            Msg::SwordSwing(entity_id, _pos) => {
+                if data.entities.typ[&entity_id] == EntityType::Player {
+                    if let Some(idle_key) = self.get_idle_animation(entity_id, data, config) {
+                        data.entities.animation[&entity_id].clear();
+                        data.entities.animation[&entity_id].push_back(idle_key);
+                    }
+                }
+            }
+
+            Msg::Attack(attacker, _attacked, _damage) => {
+                if data.entities.typ[&attacker] == EntityType::Player {
+                    let attack_sprite =
+                        self.new_sprite("player_attack".to_string(), config.player_attack_speed);
+                    let attack_anim = Animation::Once(attack_sprite);
+                    let attack_key = self.play_animation(attack_anim);
+
+
+                    data.entities.animation[&attacker].clear();
+                    data.entities.animation[&attacker].push_back(attack_key);
+
+                    if let Some(idle_key) = self.get_idle_animation(attacker, data, config) {
+                        data.entities.animation[&attacker].push_back(idle_key);
+                    }
+                }
+            }
+
+            Msg::JumpWall(_jumper, _start, _end) => {
+                /* This animation does not work
+                if data.entities.typ[&jumper] == EntityType::Player {
+                    let jump_sprite =
+                        self.new_sprite("player_vault".to_string(), config.player_vault_sprite_speed)
+                                          .unwrap();
+                    let jump_anim = Animation::Between(jump_sprite, start, end, 0.0, config.player_vault_move_speed);
+                    let jump_key = self.play_animation(jump_anim);
+
+                    let idle_sprite =
+                        self.new_sprite("player_idle".to_string(), config.idle_speed)
+                                          .unwrap();
+                    let idle_anim = Animation::Loop(idle_sprite);
+                    let idle_key = self.play_animation(idle_anim);
+
+                    data.entities.animation[&jumper].clear();
+                    data.entities.animation[&jumper].push_back(jump_key);
+                    data.entities.animation[&jumper].push_back(idle_key);
+                }
+                */
+            }
+
+            Msg::SpawnedObject(entity_id, _typ, _pos, _name) => {
+                if data.entities.ids.contains(&entity_id) {
+                    let mut anim_desc = None;
+                    if data.entities.typ[&entity_id] == EntityType::Player {
+                        anim_desc = Some(("player_idle", config.idle_speed));
+                    } else if data.entities.name[&entity_id] == EntityName::Key {
+                        anim_desc = Some(("key", config.key_speed));
+                    } else if data.entities.name[&entity_id] == EntityName::SpikeTrap {
+                        anim_desc = Some(("spikes", config.idle_speed));
+                    } else if data.entities.name[&entity_id] == EntityName::Pawn {
+                        anim_desc = Some(("elf_idle", config.idle_speed));
+                    } else if data.entities.name[&entity_id] == EntityName::Gol {
+                        anim_desc = Some(("gol_idle", config.idle_speed));
+                    }
+
+                    if let Some((name, speed)) = anim_desc {
+                        let anim_key = self.loop_sprite(name, speed);
+                        data.entities.animation[&entity_id].push_front(anim_key);
+                    }
+                }
+            }
+
+            Msg::PlayerTurn => {
+                let player_id = data.find_by_name(EntityName::Player).unwrap();
+
+                self.state.prev_turn_fov.clear();
+                self.state.prev_turn_fov.extend(self.state.current_turn_fov.iter());
+                self.state.current_turn_fov.clear();
+
+                for entity_id in data.entities.ids.clone() {
+                    let pos = data.entities.pos[&entity_id];
+                    if entity_id != player_id && data.is_in_fov(player_id, pos, config) {
+                        self.state.current_turn_fov.push(entity_id);
+                    }
+                }
+
+                for entity_id in self.state.prev_turn_fov.iter() {
+                    if data.entities.typ.get(entity_id) != Some(&EntityType::Enemy) {
+                        continue;
+                    }
+
+                    let pos = data.entities.pos[entity_id];
+                    if !data.is_in_fov(player_id, pos, config) {
+                        if let Some(sprite) = self.state.drawn_sprites.get(entity_id) {
+                            self.state.impressions.push(Impression::new(*sprite, pos));
+                        }
+                    }
+                }
+
+                /* Remove impressions that are currently visible */
+                let mut impressions_visible = Vec::new();
+                for (index, impression) in self.state.impressions.iter().enumerate() {
+                    if data.is_in_fov(player_id, impression.pos, config) {
+                        impressions_visible.push(index);
+                    }
+                }
+                impressions_visible.sort();
+                impressions_visible.reverse();
+                for index in impressions_visible.iter() {
+                    self.state.impressions.swap_remove(*index);
+                }
+            }
+
+            _ => {
+            }
+        }
+    }
+}
+
 type TextureKey = u64;
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
@@ -446,361 +801,6 @@ impl DisplayState {
 
     pub fn play_effect(&mut self, effect: Effect) {
         self.effects.push(effect);
-    }
-}
-
-pub struct Display {
-    pub state: DisplayState,
-    pub targets: DisplayTargets,
-    pub mouse_state: MouseState,
-}
-
-impl Display {
-    pub fn new(canvas: WindowCanvas) -> Display {
-        return Display { state: DisplayState::new(),
-                         targets: DisplayTargets::new(canvas),
-                         mouse_state: Default::default(),
-        };
-    }
-
-    pub fn update_display(&mut self) {
-        self.targets.canvas_panel.target.present();
-    }
-
-    pub fn save_screenshot(&mut self, name: &str) {
-        let format = PixelFormatEnum::RGB24;
-        let (width, height) = self.targets.canvas_panel.target.output_size().unwrap();
-
-        let pixels = self.targets.canvas_panel.target.read_pixels(None, format).unwrap();
-
-        let mut shot = Image::new(width, height);
-
-        for x in 0..width {
-            for y in 0..height {
-                let index = (x + y * width) as usize * 3;
-                let pixel = bmp::Pixel::new(pixels[index + 0],
-                                            pixels[index + 1],
-                                            pixels[index + 2]);
-                shot.set_pixel(x, y, pixel);
-            }
-        }
-
-        shot.save(format!("{}.bmp", name)).unwrap();
-    }
-
-    pub fn add_spritesheet(&mut self, name: String, texture: Texture, rows: usize) {
-        let sprite_sheet = SpriteSheet::new(name, texture, rows);
-        let sprite_key = self.state.next_sprite_key;
-        self.state.next_sprite_key += 1;
-        self.state.sprites.insert(sprite_key, sprite_sheet);
-    }
-
-    pub fn sprite_exists(&self, name: &str) -> bool {
-        for (_key, sprite_sheet) in self.state.sprites.iter() {
-            if sprite_sheet.name == *name {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /// Create a sprite by looking up a texture and constructing the
-    /// SpriteAnim structure.
-    pub fn new_sprite(&self, name: String, speed: f32) -> SpriteAnim {
-        let sprite_key = self.state.lookup_spritekey(&name);
-        let max_index = self.state.sprites[&sprite_key].num_sprites;
-        return SpriteAnim::make_anim(name, sprite_key, max_index as f32, speed);
-    }
-
-    pub fn font_sprite(&self, chr: char) -> SpriteAnim {
-        let sprite_key = self.state.lookup_spritekey(&"font".to_string());
-        return SpriteAnim::new(format!("{}", chr),
-                               sprite_key,
-                               chr as i32 as SpriteIndex,
-                               chr as i32 as SpriteIndex,
-                               0.0);
-    }
-
-    /// Create and play a looping sprite
-    pub fn loop_sprite(&mut self, sprite_name: &str, speed: f32) -> AnimKey {
-        let sprite_anim = self.new_sprite(sprite_name.to_string(), speed);
-        
-        let anim = Animation::Loop(sprite_anim);
-
-        let key = self.play_animation(anim);
-
-        return key;
-    }
-
-    pub fn get_idle_animation(&mut self, entity_id: EntityId, data: &mut GameData, config: &Config) -> Option<AnimKey> {
-        let player_id = data.find_by_name(EntityName::Player).unwrap();
-
-        if entity_id == player_id {
-            let stance = data.entities.stance[&entity_id];
-
-            let key;
-            if data.using(entity_id, Item::Dagger) && stance == Stance::Crouching {
-                key = self.loop_sprite("player_crouch_dagger", config.idle_speed);
-            } else if data.using(entity_id, Item::Dagger) {
-                key = self.loop_sprite("player_idle_dagger", config.idle_speed);
-            } else if data.using(entity_id, Item::Hammer) {
-                key = self.loop_sprite("player_idle_hammer", config.idle_speed);
-            } else if data.using(entity_id, Item::Shield) {
-                key = self.loop_sprite("player_idle_shield", config.idle_speed);
-            } else if stance == Stance::Crouching {
-                key = self.loop_sprite("player_crouching", config.idle_speed);
-            } else {
-                key = self.loop_sprite("player_idle", config.idle_speed);
-            }
-            return Some(key);
-        }
-
-        return None;
-    }
-
-    /// Add an animation to the current animation system, returning
-    /// a key used to reference this animation
-    pub fn play_animation(&mut self, animation: Animation) -> AnimKey {
-        let anim_key = self.state.next_anim_key;
-        self.state.next_anim_key += 1;
-        self.state.animations.insert(anim_key, animation);
-        return anim_key;
-    }
-
-    pub fn clear_level_state(&mut self) {
-        self.state.impressions.clear();
-        self.state.prev_turn_fov.clear();
-        self.state.current_turn_fov.clear();
-        self.state.sound_tiles.clear();
-    }
-
-    pub fn process_message(&mut self, msg: Msg, data: &mut GameData, config: &Config) {
-        match msg {
-            Msg::StartTurn => {
-                self.state.sound_tiles.clear();
-            }
-
-            Msg::Sound(cause_id, source_pos, radius, should_animate) => {
-                if should_animate {
-                    // NOTE this is a duplicate computation, also done in logic message processing
-                    let sound_aoe =
-                        aoe_fill(&data.map, AoeEffect::Sound, source_pos, radius, config);
-
-                    // Add to this turn's sound tiles list
-                    self.state.sound_tiles.extend(sound_aoe.positions().iter());
-
-                    let player_id = data.find_by_name(EntityName::Player).unwrap();
-                    let player_pos = data.entities.pos[&player_id];
-
-                    // only play the sound effect if the player position is included
-                    let sound_hits_player = sound_aoe.positions().iter().any(|pos| *pos == player_pos);
-                    let sound_from_monster = data.entities.typ.get(&cause_id) == Some(&EntityType::Enemy);
-                    let player_can_see_source = data.is_in_fov(player_id, source_pos, config);
-                    let visible_monster_sound = sound_from_monster && player_can_see_source;
-                    if !visible_monster_sound && sound_hits_player {
-                        let sound_effect = Effect::Sound(sound_aoe, 0.0);
-                        self.state.play_effect(sound_effect);
-                    }
-                }
-            }
-
-            Msg::ItemThrow(_thrower, item_id, start, _end) => {
-                // NOTE we use the entities position instead of 'end' because we
-                // want where it hit, not where it was thrown to.
-                let end = data.entities.pos[&item_id];
-
-                let sound_aoe = aoe_fill(&data.map, AoeEffect::Sound, end, config.sound_radius_stone, config);
-
-                let chr = data.entities.chr[&item_id];
-                let item_sprite = self.font_sprite(chr);
-
-                let move_anim = Animation::Between(item_sprite, start, end, 0.0, config.item_throw_speed);
-                let item_anim = Animation::PlayEffect(Effect::Sound(sound_aoe, 0.0));
-                let loop_anim = Animation::Loop(item_sprite);
-
-                let move_key = self.play_animation(move_anim);
-                let item_key = self.play_animation(item_anim);
-                let loop_key = self.play_animation(loop_anim);
-
-                data.entities.animation[&item_id].clear();
-                data.entities.animation[&item_id].push_back(move_key);
-                data.entities.animation[&item_id].push_back(item_key);
-                data.entities.animation[&item_id].push_back(loop_key);
-            }
-
-            Msg::PickedUp(entity_id, _item_id) => {
-                if let Some(anim_key) = self.get_idle_animation(entity_id, data, config) {
-                    data.entities.set_animation(entity_id, anim_key);
-                }
-            }
-
-            Msg::Moved(entity_id, _move_type, _pos) => {
-                if let Some(anim_key) = self.get_idle_animation(entity_id, data, config) {
-                    data.entities.set_animation(entity_id, anim_key);
-                }
-            }
-
-            Msg::Killed(_attacker, attacked, _damage) => {
-                if data.entities.typ[&attacked] != EntityType::Player {
-                    data.entities.animation[&attacked].clear();
-
-                    let sprite_name = format!("{:?}_die", data.entities.name[&attacked]);
-                    if self.sprite_exists(&sprite_name) {
-                        let sprite = self.new_sprite(sprite_name, 1.0);
-                        let anim = self.play_animation(Animation::Once(sprite));
-                        data.entities.animation[&attacked].clear();
-                        data.entities.animation[&attacked].push_front(anim);
-                    }
-                }
-            }
-
-            Msg::HammerSwing(entity_id, _pos) => {
-                if data.entities.typ[&entity_id] == EntityType::Player {
-                    let attack_sprite =
-                        self.new_sprite("player_attack_hammer".to_string(), config.player_attack_hammer_speed);
-                    let attack_anim = Animation::Once(attack_sprite);
-                    let attack_key = self.play_animation(attack_anim);
-
-                    data.entities.animation[&entity_id].clear();
-                    data.entities.animation[&entity_id].push_back(attack_key);
-
-                    if let Some(idle_key) = self.get_idle_animation(entity_id, data, config) {
-                        data.entities.animation[&entity_id].push_back(idle_key);
-                    }
-                }
-            }
-
-            Msg::Stabbed(entity_id, _hit_entity) => {
-                if data.entities.typ[&entity_id] == EntityType::Player {
-                    let attack_sprite =
-                        self.new_sprite("player_attack_dagger".to_string(), config.player_attack_speed);
-                    let attack_anim = Animation::Once(attack_sprite);
-                    let attack_key = self.play_animation(attack_anim);
-
-                    data.entities.animation[&entity_id].clear();
-                    data.entities.animation[&entity_id].push_back(attack_key);
-
-                    if let Some(idle_key) = self.get_idle_animation(entity_id, data, config) {
-                        data.entities.animation[&entity_id].push_back(idle_key);
-                    }
-                }
-            }
-
-            Msg::SwordSwing(entity_id, _pos) => {
-                if data.entities.typ[&entity_id] == EntityType::Player {
-                    if let Some(idle_key) = self.get_idle_animation(entity_id, data, config) {
-                        data.entities.animation[&entity_id].clear();
-                        data.entities.animation[&entity_id].push_back(idle_key);
-                    }
-                }
-            }
-
-            Msg::Attack(attacker, _attacked, _damage) => {
-                if data.entities.typ[&attacker] == EntityType::Player {
-                    let attack_sprite =
-                        self.new_sprite("player_attack".to_string(), config.player_attack_speed);
-                    let attack_anim = Animation::Once(attack_sprite);
-                    let attack_key = self.play_animation(attack_anim);
-
-
-                    data.entities.animation[&attacker].clear();
-                    data.entities.animation[&attacker].push_back(attack_key);
-
-                    if let Some(idle_key) = self.get_idle_animation(attacker, data, config) {
-                        data.entities.animation[&attacker].push_back(idle_key);
-                    }
-                }
-            }
-
-            Msg::JumpWall(_jumper, _start, _end) => {
-                /* This animation does not work
-                if data.entities.typ[&jumper] == EntityType::Player {
-                    let jump_sprite =
-                        self.new_sprite("player_vault".to_string(), config.player_vault_sprite_speed)
-                                          .unwrap();
-                    let jump_anim = Animation::Between(jump_sprite, start, end, 0.0, config.player_vault_move_speed);
-                    let jump_key = self.play_animation(jump_anim);
-
-                    let idle_sprite =
-                        self.new_sprite("player_idle".to_string(), config.idle_speed)
-                                          .unwrap();
-                    let idle_anim = Animation::Loop(idle_sprite);
-                    let idle_key = self.play_animation(idle_anim);
-
-                    data.entities.animation[&jumper].clear();
-                    data.entities.animation[&jumper].push_back(jump_key);
-                    data.entities.animation[&jumper].push_back(idle_key);
-                }
-                */
-            }
-
-            Msg::SpawnedObject(entity_id, _typ, _pos, _name) => {
-                if data.entities.ids.contains(&entity_id) {
-                    let mut anim_desc = None;
-                    if data.entities.typ[&entity_id] == EntityType::Player {
-                        anim_desc = Some(("player_idle", config.idle_speed));
-                    } else if data.entities.name[&entity_id] == EntityName::Key {
-                        anim_desc = Some(("key", config.key_speed));
-                    } else if data.entities.name[&entity_id] == EntityName::SpikeTrap {
-                        anim_desc = Some(("spikes", config.idle_speed));
-                    } else if data.entities.name[&entity_id] == EntityName::Pawn {
-                        anim_desc = Some(("elf_idle", config.idle_speed));
-                    } else if data.entities.name[&entity_id] == EntityName::Gol {
-                        anim_desc = Some(("gol_idle", config.idle_speed));
-                    }
-
-                    if let Some((name, speed)) = anim_desc {
-                        let anim_key = self.loop_sprite(name, speed);
-                        data.entities.animation[&entity_id].push_front(anim_key);
-                    }
-                }
-            }
-
-            Msg::PlayerTurn() => {
-                let player_id = data.find_by_name(EntityName::Player).unwrap();
-
-                self.state.prev_turn_fov.clear();
-                self.state.prev_turn_fov.extend(self.state.current_turn_fov.iter());
-                self.state.current_turn_fov.clear();
-
-                for entity_id in data.entities.ids.clone() {
-                    let pos = data.entities.pos[&entity_id];
-                    if entity_id != player_id && data.is_in_fov(player_id, pos, config) {
-                        self.state.current_turn_fov.push(entity_id);
-                    }
-                }
-
-                for entity_id in self.state.prev_turn_fov.iter() {
-                    if data.entities.typ.get(entity_id) != Some(&EntityType::Enemy) {
-                        continue;
-                    }
-
-                    let pos = data.entities.pos[entity_id];
-                    if !data.is_in_fov(player_id, pos, config) {
-                        if let Some(sprite) = self.state.drawn_sprites.get(entity_id) {
-                            self.state.impressions.push(Impression::new(*sprite, pos));
-                        }
-                    }
-                }
-
-                /* Remove impressions that are currently visible */
-                let mut impressions_visible = Vec::new();
-                for (index, impression) in self.state.impressions.iter().enumerate() {
-                    if data.is_in_fov(player_id, impression.pos, config) {
-                        impressions_visible.push(index);
-                    }
-                }
-                impressions_visible.sort();
-                impressions_visible.reverse();
-                for index in impressions_visible.iter() {
-                    self.state.impressions.swap_remove(*index);
-                }
-            }
-
-            _ => {
-            }
-        }
     }
 }
 

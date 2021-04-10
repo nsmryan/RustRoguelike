@@ -50,7 +50,7 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
 
     // send player turn action in case there is cleanup to perform, or another system
     // needs to know that the turn is finished.
-    game.msg_log.log(Msg::PlayerTurn());
+    game.msg_log.log(Msg::PlayerTurn);
     resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
 
     // check status effects

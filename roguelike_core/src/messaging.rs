@@ -1,3 +1,4 @@
+use std::fmt;
 use std::collections::VecDeque;
 
 use serde::{Serialize, Deserialize};
@@ -43,7 +44,6 @@ pub enum Msg {
     ChangeMoveMode(EntityId, bool), // true = increase, false = decrease
     MoveMode(EntityId, MoveMode),
     TriedRunWithHeavyEquipment,
-    SpawnedObject(EntityId, EntityType, Pos, EntityName),
     SwordSwing(EntityId, Pos), // entity, position swung at
     HammerSwing(EntityId, Pos), // entity, position swung at
     HammerHitEntity(EntityId, EntityId), // entity, hit entity
@@ -54,7 +54,7 @@ pub enum Msg {
     NotEnoughEnergy(EntityId),
     DropFailed(EntityId),
     DroppedItem(EntityId, EntityId),
-    PlayerTurn(),
+    PlayerTurn,
     Triggered(EntityId, EntityId), // trap, entity
     Untriggered(EntityId, EntityId), // trap, entity
     AddClass(EntityClass),
@@ -69,6 +69,7 @@ pub enum Msg {
     UseItem(EntityId, Pos, EntityId), // holding entity, position, item id
     ArmDisarmTrap(EntityId, EntityId), // acting entity, trap id
     PlaceTrap(EntityId, Pos, EntityId), // placing entity, position, trap id
+    SpawnedObject(EntityId, EntityType, Pos, EntityName),
 }
 
 impl fmt::Display for Msg {
@@ -77,7 +78,81 @@ impl fmt::Display for Msg {
             Msg::StartTurn => write!(f, "startturn"),
             Msg::Pass => write!(f, "pass"),
             Msg::Crushed(entity_id, pos) => write!(f, "crushed {} {} {}", entity_id, pos.x, pos.y),
-            Msg::Sound(entity_id, pos, loc, animate) => write!(f, "crushed {} {} {}", entity_id, pos.x, pos.y),
+            Msg::Sound(entity_id, pos, radius, animate) => write!(f, "sound {} {} {} {} {}", entity_id, pos.x, pos.y, radius, animate),
+            Msg::SoundTrapTriggered(trap_id, entity_id) => write!(f, "sound_trap_triggered {} {}", trap_id, entity_id),
+            Msg::SpikeTrapTriggered(trap_id, entity_id) => write!(f, "spike_trap_triggered {} {}", trap_id, entity_id),
+            Msg::BlinkTrapTriggered(trap_id, entity_id) => write!(f, "blink_trap_triggered {} {}", trap_id, entity_id),
+            Msg::Blink(entity_id) => write!(f, "blink {}", entity_id),
+            Msg::FreezeTrapTriggered(trap_id, entity_id) => write!(f, "freeze_trap_triggered {} {}", trap_id, entity_id),
+            Msg::GateTriggered(trap_id, entity_id) => write!(f, "gate_triggered {} {}", trap_id, entity_id),
+            Msg::Froze(entity_id, turns) => write!(f, "froze {} {}", entity_id, turns),
+            Msg::PlayerDeath => write!(f, "player_death"),
+            Msg::PickedUp(entity_id, item_id) => write!(f, "picked_up {} {}", entity_id, item_id),
+            Msg::PickUp(entity_id) => write!(f, "pickup {}", entity_id),
+            Msg::ItemThrow(entity_id, item_id, start, end) => write!(f, "item_throw {} {} {} {} {} {}", entity_id, item_id, start.x, start.y, end.x, end.y),
+            Msg::TryAttack(entity_id, attack, pos) => {
+                match attack {
+                    Attack::Attack(target_id) => write!(f, "try_attack {} {} {} {}", entity_id, target_id, pos.x, pos.y),
+                    Attack::Push(target_id, direction, amount) => write!(f, "try_push {} {} {} {} {} {}", entity_id, target_id, pos.x, pos.y, direction, amount),
+                    Attack::Stab(target_id) => write!(f, "try_stab {} {} {} {}", entity_id, target_id, pos.x, pos.y),
+                }
+            }
+            Msg::Attack(entity_id, target_id, hp) => write!(f, "attack {} {} {}", entity_id, target_id, hp),
+            Msg::Killed(entity_id, target_id, hp) => write!(f, "killed {} {} {}", entity_id, target_id, hp),
+            Msg::Push(entity_id, direction, amount) => write!(f, "pushed {} {} {}", entity_id, direction, amount),
+            Msg::Pushed(entity_id, target_id, direction, amount, follow) => write!(f, "pushed {} {} {} {} {}", entity_id, target_id, direction, amount, follow),
+            Msg::TryMove(entity_id, direction, amount, move_mode) => write!(f, "try_mode {} {} {} {}", entity_id, direction, amount, move_mode),
+            Msg::Moved(entity_id, move_type, pos) => write!(f, "moved {} {} {} {}", entity_id, move_type, pos.x, pos.y),
+            Msg::Interact(entity_id, pos) => write!(f, "interact {} {} {}", entity_id, pos.x, pos.y),
+            Msg::JumpWall(entity_id, pos, new_pos) => write!(f, "jump_wall {} {} {} {} {}", entity_id, pos.x, pos.y, new_pos.x, new_pos.y),
+            Msg::WallKick(entity_id, pos) => write!(f, "wall_kick {} {} {}", entity_id, pos.y, pos.y),
+            Msg::StateChange(entity_id, behavior) => {
+                match behavior {
+                    Behavior::Idle => write!(f, "state_change_idle {}", entity_id),
+                    Behavior::Investigating(pos) => write!(f, "state_change_investigating {} {} {}", entity_id, pos.x, pos.y),
+                    Behavior::Attacking(target_id) => write!(f, "state_change_attacking {} {}", entity_id, target_id),
+                }
+            }
+            Msg::Collided(entity_id, pos) => write!(f, "collided {} {} {}", entity_id, pos.x, pos.y),
+            Msg::Yell(entity_id) => write!(f, "yell {}", entity_id),
+            Msg::GameState(state) => write!(f, "game_state {}", state),
+            Msg::ChangeMoveMode(entity_id, upwards) => write!(f, "chage_move_mode {} {}", entity_id, upwards),
+            Msg::MoveMode(entity_id, move_mode) => write!(f, "move_mode {} {}", entity_id, move_mode),
+            Msg::TriedRunWithHeavyEquipment => write!(f, "tried_run_with_heavy_equipment"),
+            Msg::SwordSwing(entity_id, pos) => write!(f, "sword_swing {} {} {}", entity_id, pos.x, pos.y),
+            Msg::HammerSwing(entity_id, pos) => write!(f, "hammer_swing {} {} {}", entity_id, pos.x, pos.y),
+            Msg::HammerHitEntity(entity_id, target_id) => write!(f, "hammer_hit_entity {} {}", entity_id, target_id),
+            Msg::HammerHitWall(entity_id, blocked) => write!(f, "hammer_hit_wall {} {} {} {} {} {}", entity_id, blocked.start_pos, blocked.end_pos, blocked.direction, blocked.blocked_tile, blocked.wall_type),
+            Msg::Stabbed(entity_id, target_id) => write!(f, "stabbed {} {}", entity_id, target_id),
+            // TODO this needs to be worked out
+            Msg::Action(entity_id, action) => {
+                match action {
+                    Action::Move(move_type, pos) => write!(f, "action_move {} {} {} {}", entity_id, move_type, pos.x, pos.y),
+                    Action::MoveDir(direction, move_mode) => write!(f, "action_move_dir {} {} {}", entity_id, direction, move_mode),
+                    Action::StateChange(behavior) => write!(f, "action_state_change {} {}", entity_id, behavior),
+                    Action::NoAction => write!(f, "action_none {}", entity_id),
+                }
+            }
+            Msg::FailedBlink(entity_id) => write!(f, "failed_blink {}", entity_id),
+            Msg::NotEnoughEnergy(entity_id) => write!(f, "not_enough_energy {}", entity_id),
+            Msg::DropFailed(entity_id) => write!(f, "drop_failed {}", entity_id),
+            Msg::DroppedItem(entity_id, trap_id) => write!(f, "dropped_item {} {}", entity_id, trap_id),
+            Msg::PlayerTurn => write!(f, "player_turn"),
+            Msg::Triggered(trap_id, entity_id) => write!(f, "triggered {} {}", trap_id, entity_id),
+            Msg::Untriggered(trap_id, entity_id) => write!(f, "untriggered {} {}", trap_id, entity_id),
+            Msg::AddClass(entity_class) => write!(f, "add_class {}", entity_class),
+            Msg::SwapPrimaryItem => write!(f, "swap_primary_item"),
+            Msg::DropItem(entity_id, item_id) => write!(f, "drop_item {} {}", entity_id, item_id),
+            Msg::GrassThrow(entity_id, direction) => write!(f, "grass_throw {} {}", entity_id, direction),
+            Msg::GrassBlade(entity_id, action_mode) => write!(f, "grass_blade {} {}", entity_id, action_mode),
+            Msg::Rubble(entity_id, pos) => write!(f, "rubble {} {} {}", entity_id, pos.x, pos.y),
+            Msg::Reform(entity_id, pos) => write!(f, "reform {} {} {}", entity_id, pos.x, pos.y),
+            Msg::Swap(entity_id, target_id) => write!(f, "swap {} {}", entity_id, target_id),
+            Msg::PassWall(entity_id, pos) => write!(f, "pass_wall {} {} {}", entity_id, pos.x, pos.y),
+            Msg::UseItem(entity_id, pos, item_id) => write!(f, "use_item {} {} {} {}", entity_id, pos.x, pos.y, item_id),
+            Msg::ArmDisarmTrap(entity_id, trap_id) => write!(f, "arm_disarm_trap {} {}", entity_id, trap_id),
+            Msg::PlaceTrap(entity_id, pos, trap_id) => write!(f, "place_trap {} {} {} {}", entity_id, pos.x, pos.y, trap_id),
+            Msg::SpawnedObject(entity_id, entity_type, pos, entity_name) => write!(f, "spawned {} {} {} {} {}", entity_id, entity_type, pos.x, pos.y, entity_name),
         }
     }
 }
@@ -94,7 +169,7 @@ impl Msg {
                 return "An object has been crushed".to_string();
             }
 
-            Msg::Pass() => {
+            Msg::Pass => {
                 return "Player passed their turn".to_string();
             }
 
@@ -289,7 +364,7 @@ impl Msg {
                 return format!("{:?} tried to drop an item, but its too crowded!", data.entities.name[entity_id]);
             }
 
-            Msg::PlayerTurn() => {
+            Msg::PlayerTurn => {
                 return "".to_string();
             }
 
@@ -355,6 +430,10 @@ impl Msg {
 
             Msg::PlaceTrap(entity_id, pos, trap_id) => {
                 return format!("{:?} place {:?} at {}", data.entities.name[entity_id], data.entities.name[trap_id], pos);
+            }
+
+            Msg::SpawnedObject(_entity_id, _entity_type, _pos, _entity_name) => {
+                return "".to_string();
             }
 
             _ => {

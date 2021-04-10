@@ -33,7 +33,7 @@ pub fn resolve_messages(data: &mut GameData,
             println!("CONSOLE: {}", msg_line);
             stdout().flush().unwrap();
         }
-        println!("MSG_DBG: {:?}", msg);
+        println!("MSG_DBG: {}", msg);
         stdout().flush().unwrap();
 
         match msg {
@@ -528,7 +528,7 @@ fn resolve_try_movement(entity_id: EntityId,
             msg_log.log(Msg::Moved(entity_id, MoveType::Pass, movement.pos));
         }
 
-        MoveType::WallKick(_dir_x, _dir_y) => {
+        MoveType::WallKick => {
             data.entities.move_to(entity_id, movement.pos);
 
             // TODO could check for enemy and attack

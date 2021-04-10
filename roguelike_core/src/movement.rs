@@ -115,9 +115,22 @@ pub enum MoveType {
     Move,
     Pass,
     JumpWall,
-    WallKick(i32, i32),
+    WallKick,
     Collide,
 }
+
+impl fmt::Display for MoveType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MoveType::Move => write!(f, "move"),
+            MoveType::Pass => write!(f, "pass"),
+            MoveType::JumpWall => write!(f, "jumpwall"),
+            MoveType::WallKick => write!(f, "wallkick"),
+            MoveType::Collide => write!(f, "collide"),
+        }
+    }
+}
+
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Movement {

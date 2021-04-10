@@ -58,7 +58,6 @@ pub enum InputAction {
     CursorReturn,
     CursorToggle,
     CursorApply(ActionMode, ActionTarget),
-    // TODO this may be unused and should be removed
     MapClick(Pos, Pos), // map loc, map cell
     MouseButton(MouseClick, KeyDir),
     Inventory,

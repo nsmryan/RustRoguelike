@@ -446,6 +446,21 @@ pub enum GameState {
     Exit,
 }
 
+impl fmt::Display for GameState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            GameState::Playing => write!(f, "playing"),
+            GameState::Win => write!(f, "win"),
+            GameState::Lose => write!(f, "lose"),
+            GameState::Inventory => write!(f, "inventory"),
+            GameState::SkillMenu => write!(f, "skillmenu"),
+            GameState::ClassMenu => write!(f, "classmenu"),
+            GameState::ConfirmQuit => write!(f, "confirmquit"),
+            GameState::Exit => write!(f, "exit"),
+        }
+    }
+}
+
 impl Default for GameState {
     fn default() -> GameState {
         return GameState::Playing;
@@ -813,6 +828,17 @@ pub enum EntityClass {
     Grass,
     Monolith,
     Clockwork,
+}
+
+impl fmt::Display for EntityClass {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            EntityClass::General => write!(f, "general"),
+            EntityClass::Grass => write!(f, "grass"),
+            EntityClass::Monolith => write!(f, "monolith"),
+            EntityClass::Clockwork => write!(f, "clockword"),
+        }
+    }
 }
 
 impl Default for EntityClass {

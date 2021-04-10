@@ -1,3 +1,5 @@
+use std::fmt;
+
 use serde::{Serialize, Deserialize};
 
 use crate::constants::*;
@@ -18,6 +20,16 @@ pub enum Behavior {
     Idle,
     Investigating(Pos),
     Attacking(EntityId),
+}
+
+impl fmt::Display for Behavior {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Behavior::Idle => write!(f, "idle"),
+            Behavior::Investigating(pos) => write!(f, "investigating {} {}", pos.x, pos.y),
+            Behavior::Attacking(entity_id) => write!(f, "attacking {}", entity_id),
+        }
+    }
 }
 
 impl Default for Behavior {
