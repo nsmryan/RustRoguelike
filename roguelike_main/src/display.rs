@@ -722,21 +722,29 @@ impl DisplayTargets {
 }
 
 pub struct DisplayState {
+    // sprite state
     pub sprites: IndexMap<SpriteKey, SpriteSheet>,
     pub next_sprite_key: i64,
 
+    // currently active effects
     pub effects: Vec<Effect>,
 
+    // animation information
     pub animations: IndexMap<AnimKey, Animation>,
     pub next_anim_key: i64,
 
 
+    // sprites drawn this frame
     pub drawn_sprites: IndexMap<EntityId, Sprite>,
+
+    // impressions left on map
     pub impressions: Vec<Impression>,
 
+    // FOV information used when drawing
     pub prev_turn_fov: Vec<EntityId>,
     pub current_turn_fov: Vec<EntityId>,
 
+    // tiles that heard a sound
     pub sound_tiles: Vec<Pos>,
 }
 

@@ -403,6 +403,9 @@ fn load_sprite(texture_creator: &TextureCreator<WindowContext>,
     display.add_spritesheet(sprite_name.to_string(), texture, rows);
 }
 
+/// load a ttf font file and render all ascii characters onto a 16x16 grid.
+/// the resulting texture is then used for rendering by copying character squares
+/// for individual ascii characters.
 fn load_font(ttf_context: &Sdl2TtfContext,
              texture_creator: &TextureCreator<WindowContext>,
              canvas: &mut WindowCanvas,

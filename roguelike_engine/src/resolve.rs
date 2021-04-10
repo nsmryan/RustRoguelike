@@ -33,7 +33,7 @@ pub fn resolve_messages(data: &mut GameData,
             println!("CONSOLE: {}", msg_line);
             stdout().flush().unwrap();
         }
-        println!("MSG_DBG: {}", msg);
+        println!("MSG: {}", msg);
         stdout().flush().unwrap();
 
         match msg {
