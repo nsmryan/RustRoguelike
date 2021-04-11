@@ -5,7 +5,7 @@ authors = ["nsmryan <nsmryan@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
+rand = {version = "0.8", default-features = false, features = ["small_rng", "std"] }
 
 serde = "1.0"
 serde_derive = "1.0"

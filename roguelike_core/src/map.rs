@@ -1141,13 +1141,13 @@ pub fn near_tile_type(map: &Map, position: Pos, tile_type: TileType) -> bool {
 }
 
 pub fn random_offset(rng: &mut SmallRng, radius: i32) -> Pos {
-    return Pos::new(rng.gen_range(-radius, radius),
-                    rng.gen_range(-radius, radius));
+    return Pos::new(rng.gen_range(-radius..radius),
+                    rng.gen_range(-radius..radius));
 }
 
 pub fn pos_in_radius(pos: Pos, radius: i32, rng: &mut SmallRng) -> Pos {
-    let offset = Vector2D::new(rng.gen_range(-radius, radius),
-                               rng.gen_range(-radius, radius));
+    let offset = Vector2D::new(rng.gen_range(-radius..radius),
+                               rng.gen_range(-radius..radius));
     return pos + offset;
 }
 

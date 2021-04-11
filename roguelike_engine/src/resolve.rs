@@ -909,7 +909,7 @@ fn throw_item(player_id: EntityId,
 fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Option<Pos> {
     let mut potential_positions = floodfill(&data.map, pos, BLINK_RADIUS);
     while potential_positions.len() > 0 {
-        let ix = rng.gen_range(0, potential_positions.len());
+        let ix = rng.gen_range(0..potential_positions.len());
         let rand_pos = potential_positions[ix];
 
         if data.has_blocking_entity(rand_pos).is_none() &&

@@ -24,6 +24,6 @@ logging_timer = "1.0"
 wfc_image = "0.11"
 image = { version = "*", default-features = false, features = ["png"] }
 
-rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
+rand = {version = "0.8", default-features = false, features = ["small_rng", "std"] }
 
 roguelike_core = { path = "../roguelike_core" }

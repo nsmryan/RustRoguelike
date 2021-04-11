@@ -6,13 +6,13 @@ edition = "2018"
 default-run="rl"
 
 [dependencies]
-rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
+rand = {version = "0.8", default-features = false, features = ["small_rng", "std"] }
 
 sdl2 = { version = "0.34", features = ["image", "unsafe_textures", "ttf"] }
 
 indexmap = "1.3"
 
-noise = { version = "0.6", default-features = false }
+noise = { version = "0.7", default-features = false }
 
 log = "0.4"
 simple-logging = "2.0"
