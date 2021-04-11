@@ -17,7 +17,8 @@ pub fn main() {
     let mut iter = stdin.lock().lines();
 
     let config = Config::from_file(CONFIG_NAME);
-    let mut game = Game::new(0, config.clone()).unwrap();
+    let seed = 1;
+    let mut game = Game::new(seed, config.clone()).unwrap();
 
     make_map(&config.map_load, &mut game);
 

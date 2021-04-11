@@ -42,7 +42,7 @@ impl fmt::Display for TileType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TileType::Empty => write!(f, "empty"),
-            TileType::ShortWall => write!(f, "short_wall"),
+            TileType::ShortWall => write!(f, "shortwall"),
             TileType::Wall => write!(f, "wall"),
             TileType::Water => write!(f, "water"),
             TileType::Exit => write!(f, "exit"),
@@ -58,7 +58,7 @@ impl FromStr for TileType {
         s.make_ascii_lowercase();
         if s == "empty" {
             return Ok(TileType::Empty);
-        } else if s == "short_wall" {
+        } else if s == "shortwall" {
             return Ok(TileType::ShortWall);
         } else if s == "wall" {
             return Ok(TileType::Wall);
@@ -512,8 +512,8 @@ impl fmt::Display for Wall {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Wall::Empty => write!(f, "empty"),
-            Wall::ShortWall => write!(f, "short_wall"),
-            Wall::TallWall => write!(f, "tall_wall"),
+            Wall::ShortWall => write!(f, "shortwall"),
+            Wall::TallWall => write!(f, "tallwall"),
         }
     }
 }
@@ -526,7 +526,7 @@ impl FromStr for Wall {
         s.make_ascii_lowercase();
         if s == "empty" {
             return Ok(Wall::Empty);
-        } else if s == "short_wall" {
+        } else if s == "shortwall" {
             return Ok(Wall::ShortWall);
         } else if s == "wall" {
             return Ok(Wall::TallWall);

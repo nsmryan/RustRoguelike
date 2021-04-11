@@ -9,7 +9,6 @@ rand = {version = "0.7.0", default-features = false, features = ["small_rng", "s
 
 serde = "1.0"
 serde_derive = "1.0"
-serde_json = "1.0"
 
 num = "0.2"
 
@@ -27,6 +26,6 @@ roguelike_engine = { path = "../roguelike_engine" }
 #name = "rust_roguelike"
 #crate-type = ["cdylib"]
 
-#[[bin]]
-#name = "rust_cmds"
-#path = "src/main.rs"
+[[bin]]
+name = "rl_engine"
+path = "src/main.rs"

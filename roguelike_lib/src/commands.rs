@@ -38,6 +38,7 @@ pub enum GameCmd {
     SetHp(u64, i32),
     Facing(u64),
     SetFacing(u64, Direction),
+    MapSize,
     TileWalls(i32, i32),
     SetTileWalls(i32, i32, TileType, Wall, Wall), // type, left, bottom
     Surface(i32, i32),
@@ -92,6 +93,8 @@ impl FromStr for GameCmd {
                 let dir  = args[2].parse::<Direction>().unwrap();
                 return Ok(GameCmd::SetFacing(id, dir));
             }
+        } else if cmd == "map_size" {
+            return Ok(GameCmd::MapSize);
         } else if cmd == "tile_walls" {
             let x  = args[1].parse::<i32>().unwrap();
             let y  = args[2].parse::<i32>().unwrap();
@@ -185,6 +188,10 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         GameCmd::SetFacing(id, dir) => {
             game.data.entities.direction[id] = *dir;
             return "".to_string();
+        }
+
+        GameCmd::MapSize => {
+            return format!("{} {}", game.data.map.width(), game.data.map.height());
         }
 
         GameCmd::TileWalls(x, y) => {
