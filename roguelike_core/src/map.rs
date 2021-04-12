@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::str::FromStr;
 use std::fmt;
 
-use rand::prelude::*;
+use oorandom::Rand32;
 
 use pathfinding::directed::astar::astar;
 
@@ -1140,14 +1140,14 @@ pub fn near_tile_type(map: &Map, position: Pos, tile_type: TileType) -> bool {
     return near_given_tile;
 }
 
-pub fn random_offset(rng: &mut SmallRng, radius: i32) -> Pos {
-    return Pos::new(rng.gen_range(-radius..radius),
-                    rng.gen_range(-radius..radius));
+pub fn random_offset(rng: &mut Rand32, radius: i32) -> Pos {
+    return Pos::new(rng_range_i32(rng, -radius, radius),
+                    rng_range_i32(rng, -radius, radius));
 }
 
-pub fn pos_in_radius(pos: Pos, radius: i32, rng: &mut SmallRng) -> Pos {
-    let offset = Vector2D::new(rng.gen_range(-radius..radius),
-                               rng.gen_range(-radius..radius));
+pub fn pos_in_radius(pos: Pos, radius: i32, rng: &mut Rand32) -> Pos {
+    let offset = Vector2D::new(rng_range_i32(rng, -radius, radius),
+                               rng_range_i32(rng, -radius, radius));
     return pos + offset;
 }
 

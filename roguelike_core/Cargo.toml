@@ -8,6 +8,7 @@ edition = "2018"
 indexmap = { version = "1.3", features = ["serde-1"] }
 
 rand = {version = "0.8", default-features = false, features = ["small_rng", "std"] }
+oorandom = "11.1"
 
 pathfinding = "2.0"
 

@@ -1,6 +1,6 @@
 use std::default::Default;
 
-use rand::prelude::*;
+use oorandom::Rand32;
 
 use serde::{Serialize, Deserialize};
 
@@ -25,7 +25,7 @@ pub struct Game {
     pub data: GameData,
     pub settings: GameSettings,
     pub msg_log: MsgLog,
-    pub rng: SmallRng,
+    pub rng: Rand32,
     pub vaults: Vec<Vault>,
     pub input: Input,
 }
@@ -33,7 +33,7 @@ pub struct Game {
 impl Game {
     pub fn new(seed: u64, config: Config) -> Result<Game, String> {
         let entities = Entities::new();
-        let rng: SmallRng = SeedableRng::seed_from_u64(seed);
+        let rng: Rand32 = Rand32::new(seed);
 
         let mut msg_log = MsgLog::new();
 

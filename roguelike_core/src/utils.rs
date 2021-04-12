@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
+use oorandom::Rand32;
+
 use crate::ai::Behavior;
 use crate::constants::{HAMMER_DAMAGE, SWORD_DAMAGE, TILE_FILL_METRIC_DIST};
 use crate::map::{Surface};
@@ -13,6 +15,31 @@ use crate::line::*;
 use crate::config::Config;
 use crate::map::{Map, AoeEffect, Aoe, Wall, astar_neighbors, TileType};
 
+
+pub fn rng_bool(rng: &mut Rand32) -> bool {
+    return (rng.rand_u32() & 1) == 1;
+}
+
+pub fn rng_trial(rng: &mut Rand32, prob: f32) -> bool {
+    return rng.rand_float() < prob;
+}
+
+pub fn rng_range(rng: &mut Rand32, low: f32, high: f32) -> f32 {
+    let r = rng.rand_float();
+    return low + r * (high - low);
+}
+
+pub fn rng_range_i32(rng: &mut Rand32, low: i32, high: i32) -> i32 {
+    let r = rng.rand_i32();
+    let r = r - low;
+    return low + r % (high - low);
+}
+
+pub fn rng_range_u32(rng: &mut Rand32, low: u32, high: u32) -> u32 {
+    let r = rng.rand_u32();
+    let r = r - low;
+    return low + r % (high - low);
+}
 
 pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
     //return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt() as i32;

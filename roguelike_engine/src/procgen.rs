@@ -2,8 +2,7 @@ use std::fs::File;
 use std::io::{Read, BufReader};
 use std::collections::HashSet;
 
-use rand::prelude::*;
-use rand::rngs::SmallRng;
+use oorandom::Rand32;
 
 use serde::{Serialize, Deserialize};
 
@@ -80,7 +79,7 @@ impl ProcCmd {
     }
 }
 
-pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut SmallRng) -> Map {
+pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut Rand32) -> Map {
     let mut new_map = Map::from_dims(width, height);
 
     let file = File::open(template_file).unwrap();
@@ -157,13 +156,13 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     for (index, structure) in structures.iter().enumerate() {
         // turn some lone single-tile walls into columns
         if structure.typ == StructureType::Single {
-            if game.rng.gen_range(0.0..1.0) < 0.3 {
+            if rng_range(&mut game.rng, 0.0, 1.0) < 0.3 {
                 make_column(&mut game.data.entities, &game.config, structure.blocks[0], &mut game.msg_log);
                 to_remove.push(index);
             }
-        } else if game.rng.gen_range(0.0..1.0) < 0.3 {
+        } else if rng_range(&mut game.rng, 0.0, 1.0) < 0.3 {
             if num_rubbles < max_rubbles {
-                let index = game.rng.gen_range(0..structure.blocks.len());
+                let index = rng_range(&mut game.rng, 0, structure.blocks.len());
                 let block = structure.blocks[index];
                 game.data.map[block] = Tile::empty();
                 game.data.map[block].surface = Surface::Rubble;
@@ -172,9 +171,9 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
         }
 
         // turn some structures into short or tall walls
-        if structure.typ != StructureType::Single && game.rng.gen_range(0.0..1.0) < 0.7 {
+        if structure.typ != StructureType::Single && rng_range(&mut game.rng, 0.0..1.0) < 0.7 {
            let wall_type;
-           if game.rng.gen_range(0.0..1.0) < 1.0 {
+           if rng_range(&mut game.rng, 0.0..1.0) < 1.0 {
                wall_type = Wall::ShortWall;
            } else {
                wall_type = Wall::TallWall;
@@ -218,7 +217,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     }).next().unwrap_or((&(0, 0), &0));
     let high = (range_disperse.0).1;
     let low = (range_disperse.0).0;
-    let num_grass_to_place = game.rng.gen_range(low..high);
+    let num_grass_to_place = rng_range(&mut game.rng, low..high);
     place_grass(game, num_grass_to_place, *range_disperse.1);
 
     // clear about the island again to ensure tiles haven't been placed outside
@@ -308,7 +307,7 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
 
     for cmd in cmds.iter() {
         if let ProcCmd::Items(typ, min, max) = cmd {
-            let num_gen = game.rng.gen_range(*min..*max + 1);
+            let num_gen = rng_range(*&mut game.rng, min..*max + 1);
             for _ in 0..num_gen {
                 num_items += 1;
                 if num_items >= max_items {
@@ -321,7 +320,7 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
                     break;
                 }
 
-                let index = game.rng.gen_range(0..len);
+                let index = rng_range(&mut game.rng, 0..len);
                 let pos = potential_pos[index];
 
                 match typ {
@@ -364,7 +363,7 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
     }
 
     for _ in 0..max_gates {
-        let gate_pos_index = game.rng.gen_range(0..gate_positions.len());
+        let gate_pos_index = rng_range(&mut game.rng, 0..gate_positions.len());
         let gate_pos = gate_positions[gate_pos_index];
         gate_positions.swap_remove(gate_pos_index);
 
@@ -386,7 +385,7 @@ fn place_traps(game: &mut Game, cmds: &Vec<ProcCmd>) {
 
     for cmd in cmds.iter() {
         if let ProcCmd::Traps(typ, min, max) = cmd {
-            let num_gen = game.rng.gen_range(*min..*max + 1);
+            let num_gen = rng_range(*&mut game.rng, min..*max + 1);
             for _ in 0..num_gen {
                 num_traps += 1;
                 if num_traps >= max_traps {
@@ -399,7 +398,7 @@ fn place_traps(game: &mut Game, cmds: &Vec<ProcCmd>) {
                     return;
                 }
 
-                let index = game.rng.gen_range(0..len);
+                let index = rng_range(&mut game.rng, 0..len);
                 let pos = potential_pos[index];
 
                 match typ {
@@ -424,7 +423,7 @@ fn place_monsters(game: &mut Game, player_pos: Pos, cmds: &Vec<ProcCmd>) {
 
     for cmd in cmds.iter() {
         if let ProcCmd::Entities(typ, min, max) = cmd {
-            let num_gen = game.rng.gen_range(*min..*max);
+            let num_gen = game.rng.rng_range(game.rng, *min, *max);
 
             for _ in 0..num_gen {
                 let len = potential_pos.len();
@@ -433,7 +432,7 @@ fn place_monsters(game: &mut Game, player_pos: Pos, cmds: &Vec<ProcCmd>) {
                     break;
                 }
 
-                let index = game.rng.gen_range(0..len);
+                let index = rng_range(&mut game.rng, 0, len);
                 let pos = potential_pos[index];
 
                 let id;
@@ -461,10 +460,10 @@ fn place_vaults(game: &mut Game, cmds: &Vec<ProcCmd>) {
     for cmd in cmds.iter() {
         if let ProcCmd::Vaults(max) = cmd {
             for _ in 0..*max {
-                let vault_index = game.rng.gen_range(0..game.vaults.len());
+                let vault_index = rng_range_u32(&mut game.rng, 0, game.vaults.len() as u32) as usize;
 
                 let (width, height) = game.data.map.size();
-                let offset = Pos::new(game.rng.gen_range(0..width), game.rng.gen_range(0..height));
+                let offset = Pos::new(rng_range_i32(&mut game.rng, 0, width), rng_range_i32(&mut game.rng, 0, height));
 
                 let vault = &game.vaults[vault_index];
                 eprintln!("Placing vault {} at {}", vault_index, offset);
@@ -475,13 +474,13 @@ fn place_vaults(game: &mut Game, cmds: &Vec<ProcCmd>) {
 }
 
 // TODO rotate and mirror according to tags
-pub fn place_vault(data: &mut GameData, vault: &Vault, offset: Pos, rng: &mut SmallRng) {
+pub fn place_vault(data: &mut GameData, vault: &Vault, offset: Pos, rng: &mut Rand32) {
                         
-    let mirror = !vault.tags.contains(&VaultTag::NoMirror) && rng.gen_range(0.0..1.0) < 0.5;
+    let mirror = !vault.tags.contains(&VaultTag::NoMirror) && rng_range(rng, 0.0, 1.0) < 0.5;
 
     let mut rotation = Rotation::Degrees0;
-    if !vault.tags.contains(&VaultTag::NoRotate) && rng.gen_range(0.0..1.0) < 0.5 {
-        let rand = rng.gen_range(0.0..3.0 as f64).round();
+    if !vault.tags.contains(&VaultTag::NoRotate) && rng_range(rng, 0.0, 1.0) < 0.5 {
+        let rand = rng_range(rng, 0.0, 3.0 as f64).round();
         let index = rand as usize;
         let rotations = &[Rotation::Degrees0, Rotation::Degrees90, Rotation::Degrees180, Rotation::Degrees270];
         rotation = rotations[index];
@@ -556,8 +555,8 @@ fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
         game.data.map[pos].surface = Surface::Grass;
 
         for _ in 0..4 {
-            let offset_pos = Pos::new(pos.x + game.rng.gen_range(0..disperse),
-                                      pos.y + game.rng.gen_range(0..disperse));
+            let offset_pos = Pos::new(pos.x + rng_range_i32(rng, 0, disperse),
+                                      pos.y + rng_range_i32(rng, 0, disperse));
             if game.data.map.is_within_bounds(offset_pos) &&
                !game.data.map[offset_pos].block_move {
                 game.data.map[offset_pos].surface = Surface::Grass;
@@ -577,7 +576,7 @@ fn find_available_tile(game: &mut Game) -> Option<Pos> {
             let pos = Pos::new(x, y);
 
             if !game.data.map[pos].block_move && game.data.has_blocking_entity(pos).is_none() {
-                if game.rng.gen_range(0.0..1.0) < (1.0 / index) {
+                if rng_range(&mut game.rng, 0.0, 1.0) < (1.0 / index) {
                     avail_pos = Some(pos);
                 }
 
@@ -882,14 +881,14 @@ pub fn place_line(map: &mut Map, start: Pos, end: Pos, tile: Tile) -> Vec<Pos> {
     positions
 }
 
-pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut SmallRng) {
+pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut Rand32) {
     match obstacle {
         Obstacle::Block => {
             map.tiles[pos.x as usize][pos.y as usize] = Tile::wall();
         }
 
         Obstacle::Wall => {
-            let end_pos = if rng.gen_bool(0.5) {
+            let end_pos = if rng_trial(rng, 0.5) {
                 move_x(pos, 3)
             } else {
                 move_y(pos, 3)
@@ -898,7 +897,7 @@ pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut Small
         }
 
         Obstacle::ShortWall => {
-            let end_pos = if rng.gen_bool(0.5) {
+            let end_pos = if rng_trial(rng, 0.5) {
                 move_x(pos, 3)
             } else {
                 move_y(pos, 3)
@@ -912,11 +911,11 @@ pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut Small
 
         Obstacle::LShape => {
             let mut dir = 1;
-            if rng.gen_bool(0.5) {
+            if rng_trial(rng, 0.5) {
                 dir = -1;
             }
 
-            if rng.gen_bool(0.5) {
+            if rng_trial(rng, 0.5) {
                 for x in 0..3 {
                     map.tiles[pos.x as usize + x][pos.y as usize] = Tile::wall();
                 }
@@ -938,8 +937,8 @@ pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut Small
             positions.append(&mut place_line(map, move_by(pos, Pos::new(-size, -size)), move_by(pos, Pos::new(size, -size)), Tile::wall()));
             positions.append(&mut place_line(map, move_by(pos, Pos::new(size, -size)),  move_by(pos, Pos::new(size,  size)), Tile::wall()));
 
-            for _ in 0..rng.gen_range(0..10) {
-                positions.swap_remove(rng.gen_range(0..positions.len()));
+            for _ in 0..rng_range_u32(rng, 0, 10) {
+                positions.swap_remove(rng_range_u32(rng, 0, positions.len() as u32) as usize);
             }
         }
     }

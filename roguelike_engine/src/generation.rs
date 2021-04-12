@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use rand::prelude::*;
+use oorandom::Rand32;
 
 use serde::{Serialize, Deserialize};
 
@@ -305,7 +305,7 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
 pub fn make_island(data: &mut GameData,
                    config: &Config,
                    msg_log: &mut MsgLog,
-                   rng: &mut SmallRng) -> Pos {
+                   rng: &mut Rand32) -> Pos {
     let center = Pos::new(data.map.width() / 2, data.map.height() / 2);
 
     let mut water_tile_positions = Vec::new();
@@ -341,7 +341,7 @@ pub fn make_island(data: &mut GameData,
     }
 
     /* add buildings */
-    for _ in 0..rng.gen_range(3..5) {
+    for _ in 0..rng_range(rng, 3, 5) {
         let rand_pos = random_offset(rng, ISLAND_RADIUS);
         let pos = Pos::new(center.x + rand_pos.x, center.y + rand_pos.y);
         add_obstacle(&mut data.map, pos, Obstacle::Building, rng);
@@ -409,8 +409,8 @@ pub fn make_island(data: &mut GameData,
         }
     }
 
-    let x = rng.gen_range(0..data.map.width());
-    let y = rng.gen_range(0..data.map.height());
+    let x = rng_range(rng, 0, data.map.width());
+    let y = rng_range(rng, 0, data.map.height());
     let pos = Pos::new(x, y);
 
     if !data.has_blocking_entity(pos).is_some()  {
@@ -440,7 +440,7 @@ pub fn make_island(data: &mut GameData,
         }
     }
     // choose a random edge position
-    let edge_pos = edge_positions[rng.gen_range(0..edge_positions.len())];
+    let edge_pos = edge_positions[rng_range(rng, 0, edge_positions.len())];
 
     // make the random edge position the exit
     data.map.tiles[edge_pos.x as usize][edge_pos.y as usize] = Tile::exit();

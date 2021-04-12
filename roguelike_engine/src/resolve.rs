@@ -1,9 +1,10 @@
 use std::io::stdout;
 use std::io::Write;
-use rand::prelude::*;
 
 #[allow(unused_imports)]
 use log::{trace, error};
+
+use oorandom::Rand32;
 
 use roguelike_core::types::*;
 use roguelike_core::ai::{Behavior};
@@ -22,7 +23,7 @@ use crate::generation::{make_energy, make_dagger, make_sword};
 
 pub fn resolve_messages(data: &mut GameData,
                         msg_log: &mut MsgLog,
-                        rng: &mut SmallRng,
+                        rng: &mut Rand32,
                         config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
@@ -909,7 +910,7 @@ fn throw_item(player_id: EntityId,
 fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Option<Pos> {
     let mut potential_positions = floodfill(&data.map, pos, BLINK_RADIUS);
     while potential_positions.len() > 0 {
-        let ix = rng.gen_range(0..potential_positions.len());
+        let ix = rng_range(rng, 0, potential_positions.len());
         let rand_pos = potential_positions[ix];
 
         if data.has_blocking_entity(rand_pos).is_none() &&
