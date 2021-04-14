@@ -41,6 +41,25 @@ pub fn rng_range_u32(rng: &mut Rand32, low: u32, high: u32) -> u32 {
     return low + r % (high - low);
 }
 
+pub fn choose<A: Copy>(rng: &mut Rand32, items: &Vec<A>) -> Option<A> {
+    if items.len() > 0 {
+        return Some(items[rng_range_u32(rng, 0, items.len() as u32) as usize]);
+    } else {
+        return None;
+    }
+}
+
+pub fn shuffle<A>(rng: &mut Rand32, items: &mut Vec<A>) {
+    let len = items.len();
+
+    for index in 0..(len - 1) {
+        if rng_bool(rng) {
+            let swap_pos = rng_range_u32(rng, index as u32 + 1, len as u32) as usize;
+            items.swap(index, swap_pos);
+        }
+    }
+}
+
 pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
     //return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt() as i32;
     let line = line(pos1, pos2);

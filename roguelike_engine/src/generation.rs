@@ -11,7 +11,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::messaging::*;
 use roguelike_core::config::*;
-use roguelike_core::utils::{rand_from_pos, distance, rng_range_u32, rng_range_i32};
+use roguelike_core::utils::{rand_from_pos, distance, rng_range_u32, rng_range_i32, choose};
 
 use crate::game::*;
 use crate::procgen::*;
@@ -326,13 +326,13 @@ pub fn make_island(data: &mut GameData,
     }
 
     /* add obstacles */
-    let obstacles = Obstacle::all_obstacles();
+    let obstacles: Vec<Obstacle> = Obstacle::all_obstacles();
 
     for _ in 0..ISLAND_NUM_OBSTACLES {
         let rand_pos = random_offset(rng, ISLAND_RADIUS);
         let pos = Pos::new(center.x + rand_pos.x, center.y + rand_pos.y);
 
-        let obstacle = *obstacles.choose(rng).unwrap();
+        let obstacle = choose(rng, &obstacles).unwrap();
 
         // Buildings are generated separately, so don't add them in random generation
         if obstacle != Obstacle::Building {
@@ -359,7 +359,7 @@ pub fn make_island(data: &mut GameData,
     /* random additions */
     for _ in 0..ISLAND_NUM_ADDITION_ATTEMPTS {
         let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
-        let obstacle = *obstacles.choose(rng).unwrap();
+        let obstacle = choose(rng, &obstacles).unwrap();
 
         if data.map[pos].tile_type == TileType::Wall {
             add_obstacle(&mut data.map, pos, obstacle, rng);

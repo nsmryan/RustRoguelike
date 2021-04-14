@@ -97,7 +97,7 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
                         Orientation::DiagonallyFlippedClockwise270];
 
     let seed: [u8; 32] = [rng.rand_u32() as u8; 32];
-    let small_rng = SmallRng::from_seed(seed);
+    let mut small_rng = SmallRng::from_seed(seed);
     let map_image = 
         wfc_image::generate_image_with_rng(&seed_image,
                                            core::num::NonZeroU32::new(3).unwrap(),
@@ -553,7 +553,8 @@ fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
             }
         }
     }
-    potential_grass_pos.shuffle(&mut game.rng);
+
+    shuffle(&mut game.rng, &mut potential_grass_pos);
     let num_grass_to_place = std::cmp::min(num_grass_to_place, potential_grass_pos.len());
     for pos_index in 0..num_grass_to_place {
         let pos = potential_grass_pos[pos_index];
