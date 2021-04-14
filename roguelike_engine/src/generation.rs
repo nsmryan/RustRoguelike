@@ -11,7 +11,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::messaging::*;
 use roguelike_core::config::*;
-use roguelike_core::utils::{rand_from_pos, distance};
+use roguelike_core::utils::{rand_from_pos, distance, rng_range_u32, rng_range_i32};
 
 use crate::game::*;
 use crate::procgen::*;
@@ -341,7 +341,7 @@ pub fn make_island(data: &mut GameData,
     }
 
     /* add buildings */
-    for _ in 0..rng_range(rng, 3, 5) {
+    for _ in 0..rng_range_u32(rng, 3, 5) {
         let rand_pos = random_offset(rng, ISLAND_RADIUS);
         let pos = Pos::new(center.x + rand_pos.x, center.y + rand_pos.y);
         add_obstacle(&mut data.map, pos, Obstacle::Building, rng);
@@ -409,8 +409,8 @@ pub fn make_island(data: &mut GameData,
         }
     }
 
-    let x = rng_range(rng, 0, data.map.width());
-    let y = rng_range(rng, 0, data.map.height());
+    let x = rng_range_i32(rng, 0, data.map.width());
+    let y = rng_range_i32(rng, 0, data.map.height());
     let pos = Pos::new(x, y);
 
     if !data.has_blocking_entity(pos).is_some()  {
@@ -440,7 +440,7 @@ pub fn make_island(data: &mut GameData,
         }
     }
     // choose a random edge position
-    let edge_pos = edge_positions[rng_range(rng, 0, edge_positions.len())];
+    let edge_pos = edge_positions[rng_range_u32(rng, 0, edge_positions.len() as u32) as usize];
 
     // make the random edge position the exit
     data.map.tiles[edge_pos.x as usize][edge_pos.y as usize] = Tile::exit();

@@ -685,6 +685,7 @@ dependencies = [
  "image",
  "log",
  "logging_timer",
+ "oorandom",
  "pathfinding",
  "rand 0.8.3",
  "rexpaint",

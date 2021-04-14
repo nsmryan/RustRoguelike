@@ -619,7 +619,7 @@ fn resolve_push(entity_id: EntityId,
     data.entities.took_turn[&entity_id] = true;
 }
 
-fn resolve_blink(entity_id: EntityId, data: &mut GameData, rng: &mut SmallRng, msg_log: &mut MsgLog) {
+fn resolve_blink(entity_id: EntityId, data: &mut GameData, rng: &mut Rand32, msg_log: &mut MsgLog) {
     use_energy(entity_id, data);
 
     let entity_pos = data.entities.pos[&entity_id];
@@ -907,10 +907,10 @@ fn throw_item(player_id: EntityId,
     data.entities.took_turn[&player_id] = true;
 }
 
-fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Option<Pos> {
+fn find_blink_pos(pos: Pos, rng: &mut Rand32, data: &mut GameData) -> Option<Pos> {
     let mut potential_positions = floodfill(&data.map, pos, BLINK_RADIUS);
     while potential_positions.len() > 0 {
-        let ix = rng_range(rng, 0, potential_positions.len());
+        let ix = rng_range_u32(rng, 0, potential_positions.len() as u32) as usize;
         let rand_pos = potential_positions[ix];
 
         if data.has_blocking_entity(rand_pos).is_none() &&

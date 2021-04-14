@@ -2,11 +2,13 @@ use std::fs::File;
 use std::io::{Read, BufReader};
 use std::collections::HashSet;
 
-use oorandom::Rand32;
-
 use serde::{Serialize, Deserialize};
 
 use pathfinding::directed::astar::astar;
+
+use oorandom::Rand32;
+use rand::rngs::SmallRng;
+use rand::{SeedableRng};
 
 use wfc_image::*;
 use image;
@@ -93,6 +95,9 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
                         Orientation::DiagonallyFlippedClockwise90,
                         Orientation::DiagonallyFlippedClockwise180,
                         Orientation::DiagonallyFlippedClockwise270];
+
+    let seed: [u8; 32] = [rng.rand_u32() as u8; 32];
+    let small_rng = SmallRng::from_seed(seed);
     let map_image = 
         wfc_image::generate_image_with_rng(&seed_image,
                                            core::num::NonZeroU32::new(3).unwrap(),
@@ -101,7 +106,7 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
                                            wfc_image::wrap::WrapNone,
                                            ForbidNothing,
                                            wfc_image::retry::NumTimes(3),
-                                           rng).unwrap();
+                                           &mut small_rng).unwrap();
     map_image.save("wfc_map.png").unwrap();
 
     for x in 0..width {
@@ -162,7 +167,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
             }
         } else if rng_range(&mut game.rng, 0.0, 1.0) < 0.3 {
             if num_rubbles < max_rubbles {
-                let index = rng_range(&mut game.rng, 0, structure.blocks.len());
+                let index = rng_range_u32(&mut game.rng, 0, structure.blocks.len() as u32) as usize;
                 let block = structure.blocks[index];
                 game.data.map[block] = Tile::empty();
                 game.data.map[block].surface = Surface::Rubble;
@@ -171,9 +176,9 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
         }
 
         // turn some structures into short or tall walls
-        if structure.typ != StructureType::Single && rng_range(&mut game.rng, 0.0..1.0) < 0.7 {
+        if structure.typ != StructureType::Single && rng_range(&mut game.rng, 0.0, 1.0) < 0.7 {
            let wall_type;
-           if rng_range(&mut game.rng, 0.0..1.0) < 1.0 {
+           if rng_range(&mut game.rng, 0.0, 1.0) < 1.0 {
                wall_type = Wall::ShortWall;
            } else {
                wall_type = Wall::TallWall;
@@ -215,9 +220,9 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
             };
             return None;
     }).next().unwrap_or((&(0, 0), &0));
-    let high = (range_disperse.0).1;
-    let low = (range_disperse.0).0;
-    let num_grass_to_place = rng_range(&mut game.rng, low..high);
+    let high = (range_disperse.0).1 as u32;
+    let low = (range_disperse.0).0 as u32;
+    let num_grass_to_place = rng_range_u32(&mut game.rng, low, high) as usize;
     place_grass(game, num_grass_to_place, *range_disperse.1);
 
     // clear about the island again to ensure tiles haven't been placed outside
@@ -307,7 +312,7 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
 
     for cmd in cmds.iter() {
         if let ProcCmd::Items(typ, min, max) = cmd {
-            let num_gen = rng_range(*&mut game.rng, min..*max + 1);
+            let num_gen = rng_range_u32(&mut game.rng, *min as u32, (*max + 1) as u32) as usize;
             for _ in 0..num_gen {
                 num_items += 1;
                 if num_items >= max_items {
@@ -320,7 +325,7 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
                     break;
                 }
 
-                let index = rng_range(&mut game.rng, 0..len);
+                let index = rng_range_u32(&mut game.rng, 0, len as u32) as usize;
                 let pos = potential_pos[index];
 
                 match typ {
@@ -363,7 +368,7 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
     }
 
     for _ in 0..max_gates {
-        let gate_pos_index = rng_range(&mut game.rng, 0..gate_positions.len());
+        let gate_pos_index = rng_range_u32(&mut game.rng, 0, gate_positions.len() as u32) as usize;
         let gate_pos = gate_positions[gate_pos_index];
         gate_positions.swap_remove(gate_pos_index);
 
@@ -385,7 +390,7 @@ fn place_traps(game: &mut Game, cmds: &Vec<ProcCmd>) {
 
     for cmd in cmds.iter() {
         if let ProcCmd::Traps(typ, min, max) = cmd {
-            let num_gen = rng_range(*&mut game.rng, min..*max + 1);
+            let num_gen = rng_range_u32(&mut game.rng, *min as u32, (*max + 1) as u32);
             for _ in 0..num_gen {
                 num_traps += 1;
                 if num_traps >= max_traps {
@@ -398,7 +403,7 @@ fn place_traps(game: &mut Game, cmds: &Vec<ProcCmd>) {
                     return;
                 }
 
-                let index = rng_range(&mut game.rng, 0..len);
+                let index = rng_range_u32(&mut game.rng, 0, len as u32) as usize;
                 let pos = potential_pos[index];
 
                 match typ {
@@ -423,7 +428,7 @@ fn place_monsters(game: &mut Game, player_pos: Pos, cmds: &Vec<ProcCmd>) {
 
     for cmd in cmds.iter() {
         if let ProcCmd::Entities(typ, min, max) = cmd {
-            let num_gen = game.rng.rng_range(game.rng, *min, *max);
+            let num_gen = rng_range_u32(&mut game.rng, *min as u32, *max as u32) as usize;
 
             for _ in 0..num_gen {
                 let len = potential_pos.len();
@@ -432,7 +437,7 @@ fn place_monsters(game: &mut Game, player_pos: Pos, cmds: &Vec<ProcCmd>) {
                     break;
                 }
 
-                let index = rng_range(&mut game.rng, 0, len);
+                let index = rng_range_u32(&mut game.rng, 0, len as u32) as usize;
                 let pos = potential_pos[index];
 
                 let id;
@@ -480,7 +485,7 @@ pub fn place_vault(data: &mut GameData, vault: &Vault, offset: Pos, rng: &mut Ra
 
     let mut rotation = Rotation::Degrees0;
     if !vault.tags.contains(&VaultTag::NoRotate) && rng_range(rng, 0.0, 1.0) < 0.5 {
-        let rand = rng_range(rng, 0.0, 3.0 as f64).round();
+        let rand = rng_range(rng, 0.0, 3.0).round();
         let index = rand as usize;
         let rotations = &[Rotation::Degrees0, Rotation::Degrees90, Rotation::Degrees180, Rotation::Degrees270];
         rotation = rotations[index];
@@ -555,8 +560,8 @@ fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
         game.data.map[pos].surface = Surface::Grass;
 
         for _ in 0..4 {
-            let offset_pos = Pos::new(pos.x + rng_range_i32(rng, 0, disperse),
-                                      pos.y + rng_range_i32(rng, 0, disperse));
+            let offset_pos = Pos::new(pos.x + rng_range_i32(&mut game.rng, 0, disperse),
+                                      pos.y + rng_range_i32(&mut game.rng, 0, disperse));
             if game.data.map.is_within_bounds(offset_pos) &&
                !game.data.map[offset_pos].block_move {
                 game.data.map[offset_pos].surface = Surface::Grass;
