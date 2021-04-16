@@ -3,21 +3,28 @@ name = "roguelike_main"
 version = "0.1.0"
 authors = ["nsmryan <nsmryan@gmail.com>"]
 edition = "2018"
+default-run="rl"
 
 [dependencies]
-tcod = "0.13"
+sdl2 = { version = "0.34", features = ["image", "unsafe_textures", "ttf"] }
 
-rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
-serde = "1.0"
-serde_yaml = "0.8"
-serde_derive = "1.0"
-num = "0.2"
+indexmap = "1.3"
 
-sdl2 = { version = "0.32", features = ["image", "unsafe_textures"] }
+oorandom = "11.1"
 
-slotmap = "0.4"
+log = "0.4"
+simple-logging = "2.0"
+logging_timer = "1.0"
 
-walkdir = "2"
+gumdrop = "0.8"
+
+bmp = "0.5"
 
 roguelike_core = { path = "../roguelike_core" }
 roguelike_engine = { path = "../roguelike_engine" }
+roguelike_lib = { path = "../roguelike_lib" }
+
+[[bin]]
+name = "rl"
+path = "src/main.rs"
+

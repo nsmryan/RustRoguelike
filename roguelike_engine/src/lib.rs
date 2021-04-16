@@ -1,9 +1,9 @@
 pub mod game;
-pub mod display;
-pub mod input;
-pub mod plat;
-pub mod read_map;
+pub mod make_map;
 pub mod actions;
 pub mod generation;
-pub mod render;
-pub mod throttler;
+pub mod resolve;
+pub mod procgen;
+pub mod step;
+pub mod input;
+pub mod vault;

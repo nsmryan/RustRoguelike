@@ -1,0 +1,23 @@
+[package]
+name = "roguelike_lib"
+version = "0.1.0"
+authors = ["nsmryan <nsmryan@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+serde = "1.0"
+serde_derive = "1.0"
+
+log = "0.4"
+simple-logging = "2.0"
+
+roguelike_core = { path = "../roguelike_core" }
+roguelike_engine = { path = "../roguelike_engine" }
+
+#[lib]
+#name = "rust_roguelike"
+#crate-type = ["cdylib"]
+
+[[bin]]
+name = "rl_engine"
+path = "src/main.rs"

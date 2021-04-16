@@ -15,9 +15,9 @@ color_light_green:
   b: 32
   a: 255
 color_tile_blue_light:
-  r: 4
-  g: 30
-  b: 50
+  r: 10
+  g: 40
+  b: 63
   a: 255
 color_tile_blue_dark:
   r: 2
@@ -104,33 +104,77 @@ color_light_grey:
   g: 132
   b: 132
   a: 255
-fov_distance: 10
 load_map_file_every_frame: false
 tile_noise_scaler: 4.0
 highlight_player_move: 226
-highlight_attack: 90
+highlight_alpha_attack: 25
 sound_alpha: 86
 grid_alpha: 8
-grid_alpha_visible: 30
+grid_alpha_visible: 80
 grid_alpha_overlay: 150
-map_load: FromFile
+## Valid values for map_load
+# FromFile(filename): load from map.xp file
+# FromVaultFile(filename): load a given vault as the level
+# TestWall: test map for checking wall interactions
+# TestRandom: test random generation
+# TestMap: test map for unit tests
+# Random: generated map, not currently working
+# Empty: empty map, used in unit tests 
+# TestCorner: test map with corners of different types
+# TestPlayer: test map for player interactions
+# ProcGen: procedurally generated map, given a filename in resources/procgen
+map_load: #TestVaults
+    ProcGen: "map1.yaml"
+#VaultFile: "vaults/Vaults - Vault25.csv"
+#FromFile: "maps.txt"
 map_file: map.xp
-idle_speed: 0.3499999940395355
+idle_speed: 5
 draw_mouse_line: false
 draw_star_path: false
-rate: 30
+frame_rate: 25
 item_throw_speed: 30.0
-goal_speed: 0.5
+key_speed: 5.0
 player_attack_speed: 2.0
+player_attack_hammer_speed: 1.0
+player_vault_sprite_speed: 2.0
+player_vault_move_speed: 2.0
 sound_timeout: 0.5
-player_yell_radius: 4
+yell_radius: 4
+swap_radius: 4
 fog_of_war: true
 player_health: 3
 explored_alpha: 150
 sound_rubble_radius: 1
+sound_grass_radius: 1
 sound_radius_crushed: 3
 sound_radius_attack: 3
+sound_radius_trap: 3
+sound_radius_monster: 3
+sound_radius_stone: 3
+sound_radius_player: 3
+sound_radius_hammer: 3
+freeze_trap_radius: 3
+push_stun_turns: 3
 overlay_directions: false
 overlay_player_fov: false
-fov_radius_monster: 6
-fov_radius_player: 10
+overlay_fov_alg: false
+overlay_floodfill: false
+fov_radius_monster: 4
+fov_radius_player: 4
+sound_radius_sneak: 1
+sound_radius_walk: 2
+sound_radius_run: 3
+dampen_blocked_tile: 3
+dampen_short_wall: 1
+dampen_tall_wall: 2
+take_screenshot: false
+show_info: true
+use_cursor: true
+cursor_long: 3
+
+# delay before a key is repeated (seconds)
+repeat_delay: 0.35
+
+# whether to write out a map distribution file
+write_map_distribution: true
+print_key_log: true

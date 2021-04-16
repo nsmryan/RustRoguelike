@@ -7,4 +7,5 @@ pub mod ai;
 pub mod animation;
 pub mod utils;
 pub mod messaging;
-
+pub mod line;
+pub mod perlin;

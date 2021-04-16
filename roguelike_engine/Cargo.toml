@@ -5,24 +5,26 @@ authors = ["nsmryan <nsmryan@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-sdl2 = { version = "0.32", features = ["image", "unsafe_textures"] }
-
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 serde_yaml = "0.8"
 
-slotmap = "0.4"
-
-tcod = "0.13"
-
-noise = { version = "0.6", default-features = false }
-
 rexpaint = "*"
+
+euclid = { version = "0.20", features = ["serde"] }
 
 symbol = "0.1"
 
-mint = "0.5.1"
+pathfinding = "2.0"
 
-rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
+log = "0.4"
+simple-logging = "2.0"
+logging_timer = "1.0"
+
+wfc_image = "0.11"
+image = { version = "*", default-features = false, features = ["png"] }
+
+rand = {version = "0.8", default-features = false, features = ["small_rng", "std"] }
+oorandom = "11.1"
 
 roguelike_core = { path = "../roguelike_core" }

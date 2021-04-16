@@ -1,28 +1,23 @@
 use std::iter::Iterator;
 use std::fmt;
-
-use tcod::line::*;
+use std::str::FromStr;
 
 use euclid::*;
 
-use crate::constants::*;
+use serde::{Serialize, Deserialize};
+
 use crate::types::*;
 use crate::utils::*;
-use crate::map::{Wall, Blocked};
-use crate::messaging::{MsgLog, Msg};
+use crate::map::{Wall, Blocked, TileType};
 use crate::ai::Behavior;
+use crate::line::*;
 
 
-pub type Loudness = usize;
-
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Action {
-    Move(Movement),
+    Move(MoveType, Pos),
+    MoveDir(Direction, MoveMode),
     StateChange(Behavior),
-    Pickup(ObjectId),
-    ThrowItem(Pos, usize), // end position, inventory index
-    Pass,
-    Yell,
     NoAction,
 }
 
@@ -37,65 +32,140 @@ impl Action {
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum MoveMode {
     Sneak,
     Walk,
     Run,
 }
 
+impl fmt::Display for MoveMode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MoveMode::Sneak => write!(f, "sneak"),
+            MoveMode::Walk => write!(f, "walk"),
+            MoveMode::Run => write!(f, "run"),
+        }
+    }
+}
+
+impl FromStr for MoveMode {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "sneak" {
+            return Ok(MoveMode::Sneak);
+        } else if s == "walk" {
+            return Ok(MoveMode::Walk);
+        } else if s == "run" {
+            return Ok(MoveMode::Run);
+        }
+
+        return Err(format!("Could not parse '{}' as MoveMode", s));
+    }
+}
+
+impl Default for MoveMode {
+    fn default() -> MoveMode {
+        return MoveMode::Sneak;
+    }
+}
+
 impl MoveMode {
     pub fn increase(&self) -> MoveMode {
         match self {
+            // Removed Walking (issue 151), so sneak -> run
+            // MoveMode::Sneak => MoveMode::Walk,
             MoveMode::Sneak => MoveMode::Walk,
-            MoveMode::Walk => MoveMode::Run,
             MoveMode::Run => MoveMode::Run,
+            MoveMode::Walk => MoveMode::Run,
         }
     }
 
     pub fn decrease(&self) -> MoveMode {
         match self {
+            // Removed Walking (issue 151), so run -> sneak
+            // MoveMode::Sneak => MoveMode::Walk,
             MoveMode::Sneak => MoveMode::Sneak,
-            MoveMode::Walk => MoveMode::Sneak,
             MoveMode::Run => MoveMode::Walk,
+            MoveMode::Walk => MoveMode::Sneak,
         }
     }
-}
 
-impl fmt::Display for MoveMode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn move_amount(&self) -> usize {
         match self {
-            MoveMode::Sneak => write!(f, "sneaking"),
-            MoveMode::Walk => write!(f, "walking"),
-            MoveMode::Run => write!(f, "running"),
+            MoveMode::Sneak => 1,
+            MoveMode::Walk => 1,
+            MoveMode::Run => 2,
         }
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Attack {
-    Attack(ObjectId), // target_id
-    Push(ObjectId, Pos), //target_id, delta_pos
-    Stab(ObjectId), // target_id
+    Attack(EntityId), // target_id
+    Push(EntityId, Direction, usize), //target_id, direction, amount
+    Stab(EntityId), // target_id
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum MoveType {
     Move,
     Pass,
     JumpWall,
-    WallKick(i32, i32),
+    WallKick,
     Collide,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+impl fmt::Display for MoveType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MoveType::Move => write!(f, "move"),
+            MoveType::Pass => write!(f, "pass"),
+            MoveType::JumpWall => write!(f, "jumpwall"),
+            MoveType::WallKick => write!(f, "wallkick"),
+            MoveType::Collide => write!(f, "collide"),
+        }
+    }
+}
+
+
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Movement {
     pub pos: Pos,
     pub typ: MoveType,
     pub attack: Option<Attack>,
 }
 
+impl Default for Movement {
+    fn default() -> Movement {
+        return Movement {
+            pos: Pos::new(0, 0),
+            typ: MoveType::Pass,
+            attack: None,
+        };
+    }
+}
+
 impl Movement {
+    pub fn step_to(pos: Pos) -> Movement {
+        return Movement {
+            pos: pos,
+            typ: MoveType::Move,
+            attack: None,
+        };
+    }
+
+    pub fn new(pos: Pos, typ: MoveType, attack: Option<Attack>) -> Movement {
+        return Movement {
+            pos,
+            typ,
+            attack,
+        };
+    }
+
     pub fn move_to(pos: Pos, typ: MoveType) -> Movement {
         return Movement {
             pos,
@@ -135,8 +205,6 @@ impl Cardinal {
         } else if dx < 0 && dy == 0 {
             Some(Cardinal::Left)
         } else {
-            // NOTE this makes diagonal moves always create a certain facing.
-            // could use previous position as well.
             if let Some(_dir) = last {
                 if dx > 0 && dy > 0 {
                     Some(Cardinal::Right)
@@ -175,7 +243,7 @@ impl Cardinal {
 }
 
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum Direction {
     Left,
     Right,
@@ -185,6 +253,49 @@ pub enum Direction {
     DownRight,
     UpLeft,
     UpRight,
+}
+
+impl fmt::Display for Direction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Direction::Left => write!(f, "left"),
+            Direction::Right => write!(f, "right"),
+            Direction::Up => write!(f, "up"),
+            Direction::Down => write!(f, "down"),
+            Direction::DownLeft => write!(f, "down/left"),
+            Direction::DownRight => write!(f, "down/right"),
+            Direction::UpLeft => write!(f, "up/left"),
+            Direction::UpRight => write!(f, "up/right"),
+        }
+    }
+}
+
+impl FromStr for Direction {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "left" {
+            return Ok(Direction::Left);
+        } else if s == "right" {
+            return Ok(Direction::Right);
+        } else if s == "up" {
+            return Ok(Direction::Up);
+        } else if s == "down" {
+            return Ok(Direction::Down);
+        } else if s == "upright" {
+            return Ok(Direction::UpRight);
+        } else if s == "upleft" {
+            return Ok(Direction::UpLeft);
+        } else if s == "downright" {
+            return Ok(Direction::DownRight);
+        } else if s == "downleft" {
+            return Ok(Direction::DownLeft);
+        }
+
+        return Err(format!("Could not parse '{}' as Direction", s));
+    }
 }
 
 impl Direction {
@@ -212,16 +323,50 @@ impl Direction {
         }
     }
 
-    pub fn into_move(self) -> (i32, i32) {
+    pub fn from_positions(start: Pos, end: Pos) -> Option<Direction> {
+        let dxy = sub_pos(end, start);
+        return Direction::from_dxy(dxy.x, dxy.y);
+    }
+
+    pub fn reverse(&self) -> Direction {
         match self {
-            Direction::Left => (-1, 0),
-            Direction::Right => (1, 0),
-            Direction::Up => (0, -1),
-            Direction::Down => (0, 1),
-            Direction::DownLeft => (-1, 1),
-            Direction::DownRight => (1, 1),
-            Direction::UpLeft => (-1, -1),
-            Direction::UpRight => (1, -1),
+            Direction::Left => Direction::Right,
+            Direction::Right => Direction::Left,
+            Direction::Up => Direction::Down,
+            Direction::Down => Direction::Up,
+            Direction::DownLeft => Direction::UpRight,
+            Direction::DownRight => Direction::UpLeft,
+            Direction::UpLeft => Direction::DownRight,
+            Direction::UpRight => Direction::DownLeft,
+        }
+    }
+
+    pub fn horiz(self) -> bool {
+        match self {
+            Direction::Left | Direction::Right |
+            Direction::Up | Direction::Down => true,
+            _ => false,
+        }
+    }
+
+    pub fn diag(self) -> bool {
+        match self {
+            Direction::DownLeft | Direction::DownRight |
+            Direction::UpLeft   | Direction::UpRight => true,
+            _ => false,
+        }
+    }
+
+    pub fn into_move(&self) -> Pos {
+        match self {
+            Direction::Left => Pos::new(-1, 0),
+            Direction::Right => Pos::new(1, 0),
+            Direction::Up => Pos::new(0, -1),
+            Direction::Down => Pos::new(0, 1),
+            Direction::DownLeft => Pos::new(-1, 1),
+            Direction::DownRight => Pos::new(1, 1),
+            Direction::UpLeft => Pos::new(-1, -1),
+            Direction::UpRight => Pos::new(1, -1),
         }
     }
 
@@ -235,9 +380,53 @@ impl Direction {
                     Direction::UpLeft,
                     Direction::UpRight);
     }
+
+    pub fn from_f32(flt: f32) -> Direction {
+        let index = (flt * 8.0) as usize;
+        let dirs = Direction::move_actions();
+        return dirs[index];
+    }
+
+    pub fn offset_pos(&self, pos: Pos, amount: i32) -> Pos {
+        let mov = self.into_move();
+        return add_pos(pos, scale_pos(mov, amount));
+    }
+
+    pub fn turn_amount(&self, dir: Direction) -> i32 {
+        use Direction::*;
+        let dirs = vec![DownLeft, Left, UpLeft, Up, UpRight, Right, DownRight, Down];
+        let count = dirs.len() as i32;
+
+        let start_ix = dirs.iter().position(|d| *d == *self).unwrap() as i32;
+        let end_ix = dirs.iter().position(|d| *d == dir).unwrap() as i32;
+
+        if (end_ix - start_ix).abs() < 4 {
+            return end_ix - start_ix;
+        } else if end_ix > start_ix {
+            return (count - end_ix) + start_ix;
+        } else {
+            return (count - start_ix) + end_ix;
+        }
+    }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[test]
+pub fn test_direction_turn_amount() {
+    assert_eq!(-1, Direction::Up.turn_amount(Direction::UpLeft));
+    assert_eq!(1, Direction::Up.turn_amount(Direction::UpRight));
+
+    for move_action in Direction::move_actions() {
+        assert_eq!(0, move_action.turn_amount(move_action));
+    }
+
+    assert_eq!(1, Direction::Down.turn_amount(Direction::DownLeft));
+    assert_eq!(-1, Direction::Down.turn_amount(Direction::DownRight));
+
+    assert_eq!(1, Direction::Left.turn_amount(Direction::UpLeft));
+    assert_eq!(-1, Direction::Left.turn_amount(Direction::DownLeft));
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Reach {
     Single(usize),
     Diag(usize),
@@ -245,6 +434,80 @@ pub enum Reach {
 }
 
 impl Reach {
+    pub fn new() -> Reach {
+        return Reach::Single(1);
+    }
+
+    pub fn single(dist: usize) -> Reach {
+        return Reach::Single(dist);
+    }
+
+    pub fn diag(dist: usize) -> Reach {
+        return Reach::Diag(dist);
+    }
+
+    pub fn horiz(dist: usize) -> Reach {
+        return Reach::Horiz(dist);
+    }
+
+    pub fn dist(&self) -> usize {
+        match self {
+            Reach::Single(dist) => *dist,
+            Reach::Diag(dist) => *dist,
+            Reach::Horiz(dist) => *dist,
+        }
+    }
+
+    pub fn with_dist(&self, dist: usize) -> Reach {
+        match self {
+            Reach::Single(_) => Reach::Single(dist),
+            Reach::Diag(_) => Reach::Diag(dist),
+            Reach::Horiz(_) => Reach::Horiz(dist),
+        }
+    }
+
+    pub fn furthest_in_direction(&self, pos: Pos, dir: Direction) -> Option<Pos> {
+        let valid = 
+            match self {
+                Reach::Diag(_) => dir.diag(),
+                Reach::Horiz(_) => dir.horiz(),
+                Reach::Single(_) => true,
+            };
+
+        if valid {
+            return Some(dir.offset_pos(pos, self.dist() as i32));
+        } else {
+            return None;
+        }
+    }
+
+    pub fn closest_to(&self, pos: Pos, other: Pos) -> Pos {
+        let offsets = self.offsets();
+
+        let mut closest: Pos = *offsets.get(0).expect(&format!("Reach had 0 options {:?}?", self));
+
+        for offset in offsets {
+            let other_pos = add_pos(pos, offset);
+            if distance(other, other_pos) < distance(other, closest) {
+                closest = other_pos;
+            }
+        }
+
+        return closest;
+    }
+
+    pub fn attacks_with_reach(&self, move_action: &Direction) -> Vec<Pos> {
+        let mut positions = Vec::new();
+
+        if let Some(pos) = self.move_with_reach(move_action) {
+            for pos in line_inclusive(Pos::new(0, 0), pos) {
+                positions.push(Pos::from(pos));
+            }
+        }
+
+        return positions;
+    }
+
     pub fn move_with_reach(&self, move_action: &Direction) -> Option<Pos> {
         match self {
             Reach::Single(dist) => {
@@ -294,6 +557,13 @@ impl Reach {
         }
     }
 
+    pub fn reachables(&self, start: Pos) -> Vec<Pos> {
+        let offsets = self.offsets();
+        return offsets.iter()
+                      .map(|off| add_pos(start, *off))
+                      .collect::<Vec<Pos>>();
+    }
+
     pub fn offsets(&self) -> Vec<Pos> {
         let end_points: Vec<Pos>;
 
@@ -310,7 +580,7 @@ impl Reach {
             Reach::Horiz(dist) => {
                 let dist = (*dist) as i32;
                 let mut offsets = vec!();
-                for dist in 1..dist {
+                for dist in 1..=dist {
                     offsets.push((dist, 0));
                     offsets.push((0, dist));
                     offsets.push((-1 * dist, 0));
@@ -323,7 +593,7 @@ impl Reach {
             Reach::Diag(dist) => {
                 let mut offsets = vec!();
                 let dist = (*dist) as i32;
-                for dist in 1..dist {
+                for dist in 1..=dist {
                     offsets.push((dist, dist));
                     offsets.push((-1 * dist, dist));
                     offsets.push((dist, -1 * dist));
@@ -335,7 +605,7 @@ impl Reach {
 
         let mut offsets = Vec::new();
         for end in end_points {
-            for pos in Line::new((0, 0), end.to_tuple()) {
+            for pos in line_inclusive(Pos::new(0, 0), end) {
                 offsets.push(Pos::from(pos));
             }
         }
@@ -344,81 +614,48 @@ impl Reach {
     }
 }
 
+#[test]
+pub fn test_reach_offsets_horiz() {
+    let horiz = Reach::Horiz(1);
+    let offsets = horiz.offsets();
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Momentum {
-    pub mx: i32,
-    pub my: i32,
-    pub max: i32,
+    let expected_pos =
+        vec!((1, 0), (-1, 0), (0, 1), (0, -1)).iter()
+                                              .map(|p| Pos::from(*p))
+                                              .collect::<Vec<Pos>>();
+    assert!(offsets.iter().all(|p| expected_pos.iter().any(|other| other == p)));
 }
 
-impl Default for Momentum {
-    fn default() -> Momentum {
-        Momentum {
-            mx: 0,
-            my: 0,
-            max: MAX_MOMENTUM,
-        }
-    }
+#[test]
+pub fn test_reach_offsets_diag() {
+    let horiz = Reach::Diag(1);
+    let offsets = horiz.offsets();
+
+    let expected_pos =
+        vec!((1, 1), (-1, 1), (1, -1), (-1, -1)).iter()
+                                              .map(|p| Pos::from(*p))
+                                              .collect::<Vec<Pos>>();
+    assert!(offsets.iter().all(|p| expected_pos.iter().any(|other| other == p)));
 }
 
-impl Momentum {
-    pub fn running(&mut self) -> bool {
-        return self.magnitude() != 0;
-    }
+#[test]
+pub fn test_reach_offsets_single() {
+    let horiz = Reach::Single(1);
+    let offsets = horiz.offsets();
 
-    pub fn at_maximum(&self) -> bool {
-        return self.magnitude() == MAX_MOMENTUM;
-    }
-        
-    pub fn magnitude(&self) -> i32 {
-        if self.mx.abs() > self.my.abs() {
-            return self.mx.abs();
-        } else {
-            return self.my.abs();
-        }
-    }
+    let expected_pos_vec =
+        vec!((1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1));
 
-    pub fn diagonal(&self) -> bool {
-        return self.mx.abs() != 0 && self.my.abs() != 0;
-    }
+    let expected_pos = expected_pos_vec.iter()
+                                       .map(|p| Pos::from(*p))
+                                       .collect::<Vec<Pos>>();
 
-    pub fn moved(&mut self, dx: i32, dy: i32) {
-        // if the movement is in the opposite direction, and we have some momentum
-        // currently, lose our momentum.
-
-        if self.mx != 0 && dx.signum() != self.mx.signum() {
-            self.mx = 0;
-        } else {
-            self.mx = clamp(self.mx + dx.signum(), -self.max, self.max);
-        }
-
-        if self.my != 0 && dy.signum() != self.my.signum() {
-            self.my = 0;
-        } else {
-            self.my = clamp(self.my + dy.signum(), -self.max, self.max);
-        }
-    }
-
-    pub fn set_momentum(&mut self, mx: i32, my: i32) {
-        self.mx = mx;
-        self.my = my;
-    }
-
-    pub fn along(&self, dx: i32, dy: i32) -> bool {
-        return (self.mx * dx + self.my * dy) > 0;
-    }
-
-    pub fn clear(&mut self) {
-        self.mx = 0;
-        self.my = 0;
-    }
+    assert!(offsets.iter().all(|p| expected_pos.iter().any(|other| other == p)));
 }
-
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MoveResult {
-    entity: Option<ObjectId>,
+    entity: Option<EntityId>,
     blocked: Option<Blocked>,
     move_pos: Pos,
 }
@@ -432,133 +669,9 @@ impl MoveResult {
         };
     }
 
-    pub fn no_collsion(&self) -> bool {
+    pub fn no_collision(&self) -> bool {
         return self.blocked.is_none() && self.entity.is_none();
     }
-}
-
-pub fn player_move_or_attack(movement: Movement,
-                             data: &mut GameData,
-                             msg_log: &mut MsgLog) -> Action {
-    use Action::*;
-
-    let player_action: Action;
-
-    let player_handle = data.find_player().unwrap();
-
-    match movement.attack {
-        None => {
-            match movement.typ {
-                MoveType::Collide => {
-                    data.objects[player_handle].move_to(movement.pos);
-                    player_action = Move(movement);
-
-                    msg_log.log(Msg::Collided(player_handle, movement.pos));
-                }
-
-                MoveType::Pass => {
-                    player_action = Action::none();
-                    msg_log.log(Msg::Moved(player_handle, movement, movement.pos));
-                }
-
-                MoveType::Move | MoveType::JumpWall => {
-                    let player_pos = data.objects[player_handle].pos();
-
-                    if player_pos != movement.pos {
-                        data.objects[player_handle].move_to(movement.pos);
-
-                        player_action = Move(movement);
-
-                        if movement.typ == MoveType::Move {
-                            msg_log.log(Msg::Moved(player_handle, movement, movement.pos));
-                        } else {
-                            msg_log.log(Msg::JumpWall(player_handle, movement.pos));
-                        }
-                    } else {
-                        player_action = NoAction;
-                    }
-                }
-
-                MoveType::WallKick(_dir_x, _dir_y) => {
-                    data.objects[player_handle].move_to(movement.pos);
-
-                    // TODO could check for enemy and attack
-                    player_action = Move(movement);
-
-                    msg_log.log(Msg::WallKick(player_handle, movement.pos));
-                }
-            }
-        }
-
-        Some(Attack::Push(target_handle, delta_pos)) => {
-            if data.objects[target_handle].typ == ObjType::Column {
-                let pos = data.objects[player_handle].pos();
-                    let next_pos = next_pos(pos, sub_pos(movement.pos, pos));
-
-                // if there is a path to the next tile, move it.
-                let diff = sub_pos(movement.pos, pos);
-                let blocked =
-                    data.map.is_blocked_by_wall(movement.pos, diff.x, diff.y); 
-
-                if blocked == None {
-                    data.objects[player_handle].move_to(movement.pos);
-
-                    data.objects.remove(target_handle);
-
-                    if let Some(hit_entity) = data.is_blocked_tile(next_pos) {
-                        crush(target_handle, hit_entity, &mut data.objects, msg_log);
-                    }
-
-                    player_action = Move(movement);
-
-                    msg_log.log(Msg::Crushed(player_handle, next_pos, ObjType::Column));
-                } else {
-                    player_action = NoAction;
-                }
-            } else if data.objects[target_handle].alive {
-                push_attack(player_handle, target_handle, delta_pos, data, msg_log);
-                player_action = Move(movement);
-            } else {
-                dbg!(data.objects[target_handle].typ);
-                //player_action = NoAction;
-                panic!("What did you push?");
-            }
-        }
-
-        Some(Attack::Attack(target_handle)) => {
-            attack(player_handle, target_handle, data, msg_log);
-
-            let target_pos = data.objects[target_handle].pos();
-            data.objects[player_handle].move_next_to(target_pos);
-
-            player_action = Move(movement);
-        }
-
-        Some(Attack::Stab(target_handle)) => {
-            // if enemy is aware of the enemy, just push instead
-            if data.objects[target_handle].behavior.map_or(false, |beh| beh.is_aware()) {
-                panic!("This shouldn't actually be possible- stabbing a aware enemy");
-            } else {
-                // otherwise enemy is not aware, so stab them
-                stab(player_handle, target_handle, &mut data.objects, msg_log);
-            }
-
-            // dagger is one use only- remove it from inventory
-            let dagger_ix =
-                data.objects[player_handle]
-                    .inventory
-                    .iter()
-                    .position(|item| data.objects[*item].item == Some(Item::Dagger))
-                    .expect("Stabbed without a dagger!");
-            data.objects[player_handle].inventory.remove(dagger_ix);
-
-            data.objects[player_handle].move_to(movement.pos);
-
-            player_action = Move(movement);
-        }
-    }
-
-    return player_action;
 }
 
 /// Moves the given object with a given offset, returning the square that it collides with, or None
@@ -576,18 +689,18 @@ pub fn check_collision(pos: Pos,
 
     // if no movement occurs, no need to check walls and entities.
     if !(dx == 0 && dy == 0) {
-        if let Some(blocked) = data.map.is_blocked_by_wall(pos, dx, dy) {
+        if let Some(blocked) = data.map.path_blocked_move(pos, Pos::new(pos.x + dx, pos.y + dy)) {
             result.blocked = Some(blocked);
             result.move_pos = blocked.start_pos;
         } 
 
         // check for collision with an enitity
-        let move_line = Line::new(pos.to_tuple(), (pos.x + dx, pos.y + dy));
+        let move_line = line_inclusive(pos, Pos::new(pos.x + dx, pos.y + dy));
 
         for line_tuple in move_line {
             let line_pos = Pos::from(line_tuple);
 
-            if let Some(key) = data.is_blocked_tile(line_pos) {
+            if let Some(key) = data.has_blocking_entity(line_pos) {
                 result.move_pos = last_pos;
                 result.entity = Some(key);
                 break;
@@ -608,16 +721,172 @@ pub fn check_collision(pos: Pos,
     return result;
 }
 
-pub fn calculate_move(action: Direction,
+pub fn entity_move_not_blocked(entity_id: EntityId, move_pos: Pos, delta_pos: Pos, data: &GameData) -> Option<Movement> {
+    let movement: Option<Movement>;
+
+    let pos = data.entities.pos[&entity_id];
+
+    let next_pos = next_pos(pos, delta_pos);
+    if let Some(other_id) = data.has_blocking_entity(next_pos) {
+        if can_stab(data, entity_id, other_id) {
+           let attack = Attack::Stab(other_id);
+           movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
+       } else {
+          movement = Some(Movement::move_to(move_pos, MoveType::Move));
+       }
+    } else {
+        movement = Some(Movement::move_to(move_pos, MoveType::Move));
+    }
+
+    return movement;
+}
+
+pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked: &Blocked, data: &GameData) -> Option<Movement> {
+    let mut movement: Option<Movement>;
+
+    let pos = data.entities.pos[&entity_id];
+    let mut jumped_wall = false;
+
+    if data.entities.move_mode[&entity_id] == MoveMode::Run &&
+       data.entities.stance[&entity_id] != Stance::Crouching {
+        if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
+            jumped_wall = true;
+        } 
+    }
+
+    if jumped_wall {
+        let new_pos = blocked.end_pos;
+
+        movement = Some(Movement::move_to(new_pos, MoveType::JumpWall));
+
+        let next_pos = next_pos(pos, delta_pos);
+        if let Some(other_id) = data.has_blocking_entity(next_pos) {
+            if can_stab(data, entity_id, other_id) {
+               let attack = Attack::Stab(other_id);
+               movement = Some(Movement::attack(new_pos, MoveType::JumpWall, attack));
+           }
+        }
+    } else {
+        // else move up to the wall (start_pos is just before the colliding tile)
+        movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
+    }
+
+    return movement;
+}
+
+pub fn entity_move_blocked_by_entity(entity_id: EntityId,
+                                     other_id: EntityId,
+                                     move_pos: Pos,
+                                     delta_pos: Pos,
+                                     data: &GameData) -> Option<Movement> {
+    let movement: Option<Movement>;
+
+    let pos = data.entities.pos[&entity_id];
+    if can_stab(data, entity_id, other_id) {
+        let attack = Attack::Stab(other_id);
+        movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
+    } else if data.entities.blocks[&other_id] {
+        let other_pos = data.entities.pos[&other_id];
+        let next = next_pos(pos, delta_pos);
+        if !data.map.is_within_bounds(next) {
+            return None;
+        }
+
+        let next_tile_water = data.map[next].tile_type == TileType::Water;
+        let push_is_blocked = data.map.path_blocked_move(other_pos, next).is_some();
+        let is_column = data.entities.typ[&other_id] == EntityType::Column;
+
+        if data.can_push(entity_id, other_id) && !next_tile_water && !(push_is_blocked && is_column) {
+            let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
+            let push_amount = 1;
+            // TODO issue 150 this is where pushing comes from. 
+            let attack = Attack::Push(other_id, direction, push_amount);
+            movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
+        } else {
+            movement = None;
+        }
+    } else {
+        movement = Some(Movement::move_to(move_pos, MoveType::Move));
+    }
+
+    return movement;
+}
+
+pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: EntityId, blocked: &Blocked, delta_pos: Pos, data: &GameData) -> Option<Movement> {
+    let movement: Option<Movement>;
+
+    let entity_pos = data.entities.pos[&other_id];
+    let pos = data.entities.pos[&entity_id];
+
+    let entity_dist = distance(pos, entity_pos);
+    let wall_dist = distance(pos, blocked.end_pos);
+
+    // We reach entity first, wall second
+    if entity_dist < wall_dist {
+        let dxy = sub_pos(entity_pos, pos);
+        let attack: Option<Attack>;
+        if can_stab(data, entity_id, other_id) {
+            attack = Some(Attack::Stab(other_id));
+        } else if data.map[next_pos(pos, dxy)].tile_type != TileType::Water {
+            let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
+            let push_amount = 1;
+            // TODO issue 150 this is where pushing comes from. 
+            attack = Some(Attack::Push(other_id, direction, push_amount));
+        } else {
+            // water after push, so supress attack
+            attack = None;
+        }
+
+        if let Some(attack) = attack {
+            let move_pos = move_next_to(pos, entity_pos);
+            movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
+        } else {
+            movement = None;
+        }
+    } else if entity_dist > wall_dist {
+        // we reach wall first, entity second
+        let mut jumped_wall = false;
+        if data.entities.move_mode[&entity_id] == MoveMode::Run {
+            if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
+                jumped_wall = true;
+            } 
+        }
+
+        if jumped_wall {
+            let attack =
+                if can_stab(data, entity_id, other_id) {
+                    Attack::Stab(other_id)
+                } else {
+                    let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
+                    let push_amount = 1;
+                    // TODO issue 150 this is where pushing comes from. 
+                    Attack::Push(other_id, direction, push_amount)
+                };
+            let move_pos = move_next_to(pos, entity_pos);
+            movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
+        } else {
+            // can't jump the wall- just move up to it.
+            movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
+        }
+    } else {
+        // entity and wall are together- between-tile wall in front of entity
+        // move up to the wall- we can't jump it or attack through it
+        movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
+    }
+
+    return movement;
+}
+
+pub fn calculate_move(dir: Direction,
                       reach: Reach,
-                      object_id: ObjectId,
+                      entity_id: EntityId,
                       data: &GameData) -> Option<Movement> {
     let mut movement: Option<Movement>;
 
-    let pos = data.objects[object_id].pos();
+    let pos = data.entities.pos[&entity_id];
 
-    // get the location we would move to given the input action
-    if let Some(delta_pos) = reach.move_with_reach(&action) {
+    // get the location we would move to given the input direction
+    if let Some(delta_pos) = reach.move_with_reach(&dir) {
         let (dx, dy) = delta_pos.to_tuple();
 
         // check if movement collides with a blocked location or an entity
@@ -625,111 +894,23 @@ pub fn calculate_move(action: Direction,
 
         match (move_result.blocked, move_result.entity) {
             // both blocked by wall and by entity
-            (Some(blocked), Some(entity)) => {
-                let entity_pos = data.objects[entity].pos();
-
-                let entity_dist = distance(pos, entity_pos);
-                let wall_dist = distance(pos, blocked.start_pos);
-
-                if entity_dist < wall_dist {
-                    let attack =
-                        if can_stab(data, object_id, entity) {
-                            Attack::Stab(entity)
-                        } else {
-                            Attack::Push(entity, delta_pos)
-                        };
-                    let move_pos = move_next_to(pos, entity_pos);
-                    movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
-                } else if entity_dist > wall_dist {
-                    // wall is first
-                    let mut jumped_wall = false;
-                    if data.objects[object_id].move_mode.unwrap() == MoveMode::Run {
-                        if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
-                            jumped_wall = true;
-                        } 
-                    }
-
-                    if jumped_wall {
-                        let attack =
-                            if can_stab(data, object_id, entity) {
-                                Attack::Stab(entity)
-                            } else {
-                                Attack::Push(entity, delta_pos)
-                            };
-                        let move_pos = move_next_to(pos, entity_pos);
-                        movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
-                    } else {
-                        // can't jump the wall- just move up to it.
-                        movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
-                    }
-                } else {
-                    // entity and wall are together
-                    // move up to the wall- we can't jump it or attack through it
-                    movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
-                }
+            (Some(blocked), Some(other_id)) => {
+                movement = entity_move_blocked_by_entity_and_wall(entity_id, other_id, &blocked, delta_pos, data);
             }
 
             // blocked by entity only
-            (None, Some(entity)) => {
-                if can_stab(data, object_id, entity) {
-                    let attack = Attack::Stab(entity);
-                    movement = Some(Movement::attack(move_result.move_pos, MoveType::Move, attack));
-                    dbg!();
-                } else if data.objects[entity].blocks {
-                    let attack = Attack::Push(entity, delta_pos);
-                    movement = Some(Movement::attack(add_pos(pos, delta_pos), MoveType::Move, attack));
-                    dbg!();
-                } else {
-                    movement = Some(Movement::move_to(move_result.move_pos, MoveType::Move));
-                    dbg!();
-                }
+            (None, Some(other_id)) => {
+                movement = entity_move_blocked_by_entity(entity_id, other_id, move_result.move_pos, delta_pos, data);
             }
 
             // blocked by wall only
             (Some(blocked), None) => {
-                let mut jumped_wall = false;
-
-                if data.objects[object_id].move_mode.unwrap() == MoveMode::Run {
-                    if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
-                        jumped_wall = true;
-                    } 
-                }
-
-                if jumped_wall {
-                    // if we jump the wall, we have to recheck for collisions for the
-                    // remaining move distance.
-                    let (dx, dy) = dxy(blocked.end_pos, add_pos(pos, delta_pos));
-                    let next_move_result = check_collision(blocked.end_pos, dx, dy, data);
-                    let new_pos = next_move_result.move_pos;
-
-                    movement = Some(Movement::move_to(new_pos, MoveType::JumpWall));
-
-                    let next_pos = next_pos(pos, delta_pos);
-                    if let Some(other_id) = data.is_blocked_tile(next_pos) {
-                        if can_stab(data, object_id, other_id) {
-                           let attack = Attack::Stab(other_id);
-                           movement = Some(Movement::attack(new_pos, MoveType::JumpWall, attack));
-                       }
-                    }
-                } else {
-                    // else move up to the wall (start_pos is just before the colliding tile)
-                    movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
-                }
+                movement = entity_move_blocked_by_wall(entity_id, delta_pos, &blocked, data);
             }
 
             // not blocked at all
             (None, None) => {
-                let next_pos = next_pos(pos, delta_pos);
-                if let Some(other_id) = data.is_blocked_tile(next_pos) {
-                    if can_stab(data, object_id, other_id) {
-                       let attack = Attack::Stab(other_id);
-                       movement = Some(Movement::attack(move_result.move_pos, MoveType::Move, attack));
-                   } else {
-                      movement = Some(Movement::move_to(move_result.move_pos, MoveType::Move));
-                   }
-                } else {
-                  movement = Some(Movement::move_to(move_result.move_pos, MoveType::Move));
-                }
+                movement = entity_move_not_blocked(entity_id, move_result.move_pos, delta_pos, data);
             }
         }
     } else {

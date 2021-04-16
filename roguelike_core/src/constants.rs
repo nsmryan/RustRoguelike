@@ -4,24 +4,19 @@ pub const CONFIG_FILE_NAME: &str = &"config.json";
 pub const FONT_WIDTH: i32 = 16;
 pub const FONT_HEIGHT: i32 = 16;
 
-pub const SCREEN_WIDTH: u32 = 1000;
+pub const SCREEN_WIDTH: u32 = 1120;
 pub const SCREEN_HEIGHT: u32 = 800;
 
-/* Sound */
-pub const SOUND_RADIUS: usize = 3;
-pub const SOUND_RADIUS_SNEAK: usize = 2;
-pub const SOUND_RADIUS_WALK: usize = 3;
-pub const SOUND_RADIUS_RUN: usize = 5;
-pub const SOUND_RADIUS_STONE: usize = 3;
-pub const SOUND_RADIUS_MONSTER_MOVE: usize = 4;
+pub const INVENTORY_WIDTH: usize = 300;
+pub const INVENTORY_HEIGHT: usize = 500;
 
 /* General Settings */
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
+pub const BLINK_RADIUS: usize = 4;
+pub const TILE_FILL_METRIC_DIST: usize = 3;
 
 /* Monster Settings */
 pub const MAX_MONSTERS: i32 = 15;
-
-pub const MONSTER_FOV_RADIUS: i32 = 6;
 
 pub const GOL_ATTACK_DISTANCE: usize = 5;
 pub const GOL_MOVE_DISTANCE: usize = 1;
@@ -37,11 +32,19 @@ pub const KEY_MOVE_DISTANCE: usize = 2;
 
 pub const MAX_MOMENTUM: i32 = 2;
 
-pub const SPIKE_DAMAGE: i32 = 5;
+pub const SPIKE_DAMAGE: i32 = 20;
+pub const HAMMER_DAMAGE: i32 = 40;
+pub const SWORD_DAMAGE: i32 = 20;
+
+pub const TRIGGER_WALL_DAMAGE: i32 = 20;
+
+pub const NOT_IN_FOV_COST: usize = 5;
+
+/* Trap Settings */
+pub const FREEZE_TRAP_NUM_TURNS: usize = 3;
 
 /* Player */
 pub const PLAYER_THROW_DIST: usize = 5;
-pub const PLAYER_FOV_RADIUS: i32 = 10;
 
 /* UI */
 pub const BAR_WIDTH: u32 = 20;
@@ -52,13 +55,11 @@ pub const MSG_X: u32 = BAR_WIDTH + 2;
 pub const MSG_WIDTH: u32 = SCREEN_WIDTH - BAR_WIDTH - 2;
 pub const MSG_HEIGHT: u32 = PANEL_HEIGHT - 1;
 
-pub const INVENTORY_WIDTH: i32 = 50;
-
 /* Map and View */
 pub const MAP_WIDTH: i32 = 30;
 pub const MAP_HEIGHT: i32 = 30;
 
-pub const FOV_LIGHT_WALLS: bool = true;
+pub const ISLAND_DISTANCE: i32 = 7;
 
 pub const ISLAND_RADIUS: i32 = 15;
 pub const ISLAND_NUM_OBSTACLES: i32 = 15;
@@ -70,7 +71,8 @@ pub const MAP_LAYER_ENVIRONMENT: usize = 1;
 pub const MAP_LAYER_ENTITIES: usize = 2;
 
 pub const MAP_GROUND: u8 = 154;
-pub const MAP_WATER: u8 = 224;
+pub const MAP_WATER_XP: u8 = 224;
+pub const MAP_WATER: u8 = 219;
 pub const MAP_EMPTY: u8 = 32;
 pub const MAP_EMPTY_CHAR: u8 = 219; // all white square
 
@@ -83,6 +85,7 @@ pub const MAP_STATUE_6: u8 = 151;
 
 pub const MAP_COLUMN: u8 = 42;
 pub const MAP_RUBBLE: u8 = 15;
+pub const MAP_GRASS: u8 = 234;
 
 pub const MAP_TALL_SPIKES: u8 = 136;
 pub const MAP_WIDE_SPIKES: u8 = 137;
@@ -112,29 +115,51 @@ pub const MAP_DOT_TOP_RIGHT: u8 = 146;
 pub const MAP_DOT_BOTTOM_LEFT: u8 = 161;
 pub const MAP_DOT_BOTTOM_RIGHT: u8 = 162;
 
-pub const MAP_DOT_MIDDLE: u8 = 249;
 pub const MAP_SMALL_DOT_MIDDLE: u8 = 250;
+pub const MAP_FULL: u8 = 13;
 pub const MAP_STAR: u8 = 15;
 pub const MAP_ORB: u8 = 135;
 pub const MAP_WALL: u8 = 150;
 
 pub const MAP_ROOK: u8 = 130;
 
-pub const ENTITY_GOL: u8 = 152;
+/* Items */
 pub const ENTITY_POLAXE: u8 = 0x8C;
 pub const ENTITY_CASTLE: u8 = 0x85;
-pub const ENTITY_PLAYER: u8 = 0x40;
-pub const ENTITY_SWIRL_CIRCLE: u8 = 0x15;
-pub const ENTITY_HERO: u8 = 139;
-pub const ENTITY_CLOAK_GUY: u8 = 141;
-pub const ENTITY_ELF: u8 = 165;
 pub const ENTITY_ORB: u8 = 135;
-pub const ENTITY_GOAL: u8 = 253;
+pub const ENTITY_KEY: u8 = 235;
 pub const ENTITY_STONE: u8 = 244;
 pub const ENTITY_DAGGER: u8 = 247;
+pub const ENTITY_SWORD: u8 = 248;
 pub const ENTITY_SHIELD: u8 = 255;
-pub const ENTITY_TRAP_SOUND: u8 = 83; // char S
+pub const ENTITY_HAMMER: u8 = 251;
 
+/* Entities */
+pub const ENTITY_GOL: u8 = 152;
+pub const ENTITY_PLAYER: u8 = 139;
+pub const ENTITY_CLOAK_GUY: u8 = 141;
+pub const ENTITY_ELF: u8 = 165;
+pub const ENTITY_UNKNOWN: u8 = 239;
+
+/* Map Objects */
+pub const ENTITY_EXIT: u8 = 135;
+pub const ENTITY_TRIGGER_1: u8 = 224;
+pub const ENTITY_TRIGGER_2: u8 = 225;
+pub const ENTITY_TRIGGER_3: u8 = 226;
+pub const ENTITY_TRIGGER_4: u8 = 227;
+pub const ENTITY_TRIGGER_5: u8 = 228;
+pub const ENTITY_CURSOR: u8 = 231;
+
+/* Triggers */
+pub const ENTITY_GATE_TRIGGER: u8 = ENTITY_TRIGGER_2;
+
+/* Traps */
+pub const ENTITY_SPIKE_TRAP: u8 = 136;
+pub const ENTITY_BLINK_TRAP: u8 = 6;
+pub const ENTITY_TRAP_SOUND: u8 = ENTITY_TRIGGER_5;
+pub const ENTITY_FREEZE_TRAP: u8 = ENTITY_TRIGGER_4;
+
+/* Arrows */
 pub const ARROW_RIGHT: u8 = 16;
 pub const ARROW_LEFT: u8 = 17;
 pub const ARROW_UP: u8 = 30;

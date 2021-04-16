@@ -1,0 +1,82 @@
+---
+# Island creates an island with a given radius
+- Island: 10
+# Entities takes a entity type,
+# a min number, and a max number of entities of that type
+# entity types: Player, Gol, Pawn, Column, Key, Sound, Exit,
+#               Dagger, Hammer, Sword, Shield, Spire, Spike,
+#               BlinkTrap, Stone, Mouse, Energy, Other,
+- Entities: 
+    - Gol:
+    - 1
+    - 4
+- Entities: 
+    - Pawn
+    - 2
+    - 4
+# Item takes a item type,
+# a min number, and a max number of entities of that type
+# Item types are: Stone, Goal, Dagger, Shield, Hammer, Sword, SpikeTrap, SoundTrap, BlinkTrap,
+- Items: 
+    - Dagger
+    - 0
+    - 1
+- Items: 
+    - Stone
+    - 0
+    - 3
+- Items: 
+    - Hammer
+    - 0
+    - 1
+- Items: 
+    - Sword
+    - 0
+    - 1
+- Items: 
+    - Shield
+    - 0
+    - 1
+# MaxItems limits the number of items that can appear of any type
+- MaxItems: 3
+
+- Traps: 
+    - Spikes
+    - 0
+    - 2
+- Traps: 
+    - Blink
+    - 0
+    - 2
+- Traps: 
+    - Sound
+    - 0
+    - 2
+- Traps: 
+    - Freeze
+    - 1
+    - 5
+# MaxTraps limits the number of traps that can appear of any type
+- MaxTraps: 6
+
+# MaxGates limits the number of trigger gates that can appear
+- MaxGates: 3
+
+# Grass takes a min and max number of grassed locations.
+# it also takes the dispersion (the distance from the center that the grass can lay)
+- Grass: 
+    - - 4
+      - 13
+    - 5
+# Columns indicates that some walls should be replaced with columns
+- Columns: 5
+
+# Rubble indicates that some walls should be replaced with columns
+- Rubble: 10
+
+# Seed file is a png used to generate the map with the WFC algorithm
+# This must be in the resoures/procgen/ directory
+- SeedFile: "wfc_seed_1.png"
+
+# The number of vaults to generate in a map
+- Vaults: 8

@@ -1,27 +1,93 @@
 use std::ops::{Index, IndexMut};
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
+use std::iter;
+use std::cell::RefCell;
+use std::str::FromStr;
+use std::fmt;
 
-use rand::prelude::*;
+use oorandom::Rand32;
 
 use pathfinding::directed::astar::astar;
 
-use tcod::line::*;
+use symmetric_shadowcasting::Pos as SymPos;
+use symmetric_shadowcasting::compute_fov;
 
-use doryen_fov::{MapData, FovAlgorithm, FovRestrictive};
+use smallvec::SmallVec;
+
+use itertools::Itertools;
+
+use log::trace;
 
 use euclid::*;
 
 use serde_derive::*;
 
 use crate::types::*;
+use crate::constants::*;
 use crate::utils::*;
 use crate::movement::Direction;
-use crate::constants::*;
+use crate::line::*;
 
 
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum TileType {
+    Empty,
+    ShortWall,
+    Wall,
+    Water,
+    Exit,
+}
+
+impl fmt::Display for TileType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TileType::Empty => write!(f, "empty"),
+            TileType::ShortWall => write!(f, "shortwall"),
+            TileType::Wall => write!(f, "wall"),
+            TileType::Water => write!(f, "water"),
+            TileType::Exit => write!(f, "exit"),
+        }
+    }
+}
+
+impl FromStr for TileType {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "empty" {
+            return Ok(TileType::Empty);
+        } else if s == "shortwall" {
+            return Ok(TileType::ShortWall);
+        } else if s == "wall" {
+            return Ok(TileType::Wall);
+        } else if s == "water" {
+            return Ok(TileType::Water);
+        } else if s == "exit" {
+            return Ok(TileType::Exit);
+        }
+
+        return Err(format!("Could not parse '{}' as TileType", s));
+    }
+}
+
+impl TileType {
+    pub fn is_wall(&self) -> bool {
+        match self {
+            TileType::Empty => false,
+            TileType::ShortWall => true,
+            TileType::Wall => true,
+            TileType::Water => false,
+            TileType::Exit => false,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AoeEffect {
     Sound,
+    Freeze,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -53,7 +119,7 @@ impl Aoe {
 
 /// This structure describes a movement between two
 /// tiles that was blocked due to a wall or blocked tile.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Blocked {
     pub start_pos: Pos,
     pub end_pos: Pos,
@@ -77,14 +143,18 @@ impl Blocked {
     }
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum MapLoadConfig {
     Random,
+    TestMap,
     TestWall,
+    Empty,
     TestCorner,
     TestPlayer,
-    FromFile,
-    Animations,
+    TestVaults,
+    FromFile(String),
+    VaultFile(String),
+    ProcGen(String),
 }
 
 impl Default for MapLoadConfig {
@@ -97,104 +167,320 @@ impl Default for MapLoadConfig {
 pub enum Surface {
     Floor,
     Rubble,
+    Grass,
+}
+
+impl fmt::Display for Surface {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Surface::Floor => write!(f, "floor"),
+            Surface::Rubble => write!(f, "rubble"),
+            Surface::Grass => write!(f, "grass"),
+        }
+    }
+}
+
+impl FromStr for Surface {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "floor" {
+            return Ok(Surface::Floor);
+        } else if s == "rubble" {
+            return Ok(Surface::Rubble);
+        } else if s == "grass" {
+            return Ok(Surface::Grass);
+        }
+
+        return Err(format!("Could not parse '{}' as Surface", s));
+    }
+}
+
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum BlockedType {
+    Fov,
+    FovLow,
+    Move,
+}
+
+impl BlockedType {
+    pub fn blocking(&self, wall: Wall) -> bool {
+        let empty = wall == Wall::Empty;
+        let see_over = wall == Wall::ShortWall && *self == BlockedType::Fov;
+        return !empty && !see_over;
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[repr(C, packed)]
 pub struct Tile {
-    pub blocked: bool,
+    pub block_move: bool,
     pub block_sight: bool,
     pub explored: bool,
     pub tile_type: TileType,
-    pub sound: Option<(i32, i32)>,
     pub bottom_wall: Wall,
     pub left_wall: Wall,
-    pub chr: Option<char>,
+    pub chr: u8,
     pub surface: Surface,
 }
 
 impl Tile {
     pub fn empty() -> Self {
-        Tile { blocked: false,
-        block_sight: false,
-        explored: false,
-        tile_type: TileType::Empty,
-        sound: None,
-        bottom_wall: Wall::Empty,
-        left_wall: Wall::Empty,
-        chr: Some(' '),
-        surface: Surface::Floor,
+        Tile {
+            block_move: false,
+            block_sight: false,
+            explored: false,
+            tile_type: TileType::Empty,
+            bottom_wall: Wall::Empty,
+            left_wall: Wall::Empty,
+            chr: ' ' as u8,
+            surface: Surface::Floor,
         }
     }
 
     pub fn water() -> Self {
-        Tile { blocked: true,
-        block_sight: false,
-        explored: false,
-        tile_type: TileType::Water,
-        sound: None,
-        bottom_wall: Wall::Empty,
-        left_wall: Wall::Empty,
-        chr: Some(' '),
-        surface: Surface::Floor,
+        Tile {
+            block_move: true,
+            block_sight: false,
+            explored: false,
+            tile_type: TileType::Water,
+            bottom_wall: Wall::Empty,
+            left_wall: Wall::Empty,
+            chr: ' ' as u8,
+            surface: Surface::Floor,
         }
     }
 
-    pub fn wall() -> Self {
-        return Tile::wall_with(None);
+    pub fn grass() -> Self {
+        let mut tile = Tile::empty();
+        tile.surface = Surface::Grass;
+        return tile;
     }
 
-    pub fn wall_with(chr: Option<char>) -> Self {
-        Tile { blocked: true,
-        block_sight: true,
-        explored: false,
-        tile_type: TileType::Wall,
-        sound: None,
-        bottom_wall: Wall::Empty,
-        left_wall: Wall::Empty,
-        chr: chr,
-        surface: Surface::Floor,
+    pub fn rubble() -> Self {
+        let mut tile = Tile::empty();
+        tile.surface = Surface::Rubble;
+        return tile;
+    }
+
+    pub fn wall() -> Self {
+        return Tile::wall_with(MAP_WALL as char);
+    }
+
+    pub fn wall_with(chr: char) -> Self {
+        Tile { block_move: true,
+               block_sight: true,
+               explored: false,
+               tile_type: TileType::Wall,
+               bottom_wall: Wall::Empty,
+               left_wall: Wall::Empty,
+               chr: chr as u8,
+               surface: Surface::Floor,
         }
     }
 
     pub fn short_wall() -> Self {
-        return Tile::short_wall_with(None);
+        return Tile::short_wall_with(' ');
     }
 
-    pub fn short_wall_with(chr: Option<char>) -> Self {
-        Tile { blocked: true,
-        block_sight: false,
-        explored: false,
-        tile_type: TileType::ShortWall,
-        sound: None,
-        bottom_wall: Wall::Empty,
-        left_wall: Wall::Empty,
-        chr: chr,
-        surface: Surface::Floor,
+    pub fn short_wall_with(chr: char) -> Self {
+        Tile {
+            block_move: true,
+            block_sight: false,
+            explored: false,
+            tile_type: TileType::ShortWall,
+            bottom_wall: Wall::Empty,
+            left_wall: Wall::Empty,
+            chr: chr as u8,
+            surface: Surface::Floor,
         }
     }
 
     pub fn exit() -> Self {
-        Tile { blocked: false,
-        block_sight: false,
-        explored: false,
-        tile_type: TileType::Exit,
-        sound: None,
-        bottom_wall: Wall::Empty,
-        left_wall: Wall::Empty,
-        chr: None,
-        surface: Surface::Floor,
+        Tile {
+            block_move: false,
+            block_sight: false,
+            explored: false,
+            tile_type: TileType::Exit,
+            bottom_wall: Wall::Empty,
+            left_wall: Wall::Empty,
+            chr: ' ' as u8,
+            surface: Surface::Floor,
+        }
+    }
+
+    pub fn does_tile_block(self, block_type: BlockedType) -> bool {
+        match block_type {
+            BlockedType::Fov => {
+                return self.block_sight;
+            }
+
+            BlockedType::FovLow => {
+                return self.block_sight;
+            }
+
+            BlockedType::Move => {
+                return self.block_move;
+            }
+        }
+    }
+
+    pub fn shorten(&mut self) {
+        if self.bottom_wall == Wall::TallWall {
+            self.bottom_wall = Wall::ShortWall;
+        }
+
+        if self.left_wall == Wall::TallWall {
+            self.left_wall = Wall::ShortWall;
         }
     }
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum TileType {
-    Empty,
-    ShortWall,
-    Wall,
-    Water,
-    Exit,
+#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug)]
+pub enum Rotation {
+    Degrees0,
+    Degrees90,
+    Degrees180,
+    Degrees270,
+}
+
+impl Rotation {
+    pub fn rotate(&self, pos: Pos, width: i32, height: i32) -> Pos {
+        let mut result = pos;
+        match self {
+            Rotation::Degrees0 => {
+            }
+            Rotation::Degrees90 => {
+                // 90 degrees: swap x and y, mirror in x
+                result = Pos::new(result.y, result.x);
+                result = mirror_in_x(result, width);
+            }
+            Rotation::Degrees180 => {
+                // 180 degrees: mirror in x, mirror in y
+                result = mirror_in_x(result, width);
+                result = mirror_in_y(result, height);
+            }
+            Rotation::Degrees270 => {
+                // 270: swap x and y, mirror in y
+                result = Pos::new(result.y, result.x);
+                result = mirror_in_y(result, height);
+            }
+        }
+
+        return result;
+    }
+}
+
+#[test]
+fn test_rotation() {
+    let pos = Pos::new(0, 0);
+    let width = 10;
+    let height = 20;
+
+    assert_eq!(pos, Rotation::Degrees0.rotate(pos, width, height));
+    assert_eq!(Pos::new(width - 1, 0), Rotation::Degrees90.rotate(pos, width, height));
+    assert_eq!(Pos::new(width - 1, height - 1), Rotation::Degrees180.rotate(pos, width, height));
+    assert_eq!(Pos::new(0, height - 1), Rotation::Degrees270.rotate(pos, width, height));
+}
+
+pub fn reorient_map(map: &Map, rotation: Rotation, mirror: bool) -> Map {
+    let (width, height) = map.size();
+
+    let (mut new_width, mut new_height) = (width, height);
+    if rotation == Rotation::Degrees90 || rotation == Rotation::Degrees270 {
+        new_width = height;
+        new_height = width;
+    }
+    let mut new_map = Map::from_dims(new_width as u32, new_height as u32);
+
+    let mut left_walls = Vec::new();
+    let mut bottom_walls = Vec::new();
+    for x in 0..width {
+        for y in 0..height {
+            let orig_pos = Pos::new(x, y);
+            
+            let mut pos = Pos::new(x, y);
+            if mirror {
+                pos = mirror_in_x(pos, width);
+            }
+            pos = rotation.rotate(pos, new_width, new_height);
+            new_map[pos] = map[orig_pos];
+
+            if map[orig_pos].left_wall != Wall::Empty {
+                left_walls.push((pos, map[orig_pos].left_wall));
+            }
+
+            if map[orig_pos].bottom_wall != Wall::Empty {
+                bottom_walls.push((pos, map[orig_pos].bottom_wall));
+            }
+        }
+    }
+
+    for x in 0..new_width {
+        for y in 0..new_height {
+            let pos = Pos::new(x, y);
+            new_map[pos].left_wall = Wall::Empty;
+            new_map[pos].bottom_wall = Wall::Empty;
+        }
+    }
+
+    for (wall_pos, wall_type) in left_walls {
+        match rotation {
+            Rotation::Degrees0 => {
+                new_map[wall_pos].left_wall = wall_type;
+            }
+
+            Rotation::Degrees90 => {
+                let new_wall_pos = move_y(wall_pos, -1);
+                if new_map.is_within_bounds(new_wall_pos) {
+                    new_map[new_wall_pos].bottom_wall = wall_type;
+                }
+            }
+
+            Rotation::Degrees180 => {
+                let new_wall_pos = move_x(wall_pos, 1);
+                if new_map.is_within_bounds(new_wall_pos) {
+                    new_map[new_wall_pos].left_wall = wall_type;
+                }
+            }
+
+            Rotation::Degrees270 => {
+                new_map[wall_pos].bottom_wall = wall_type;
+            }
+        }
+    }
+
+    for (wall_pos, wall_type) in bottom_walls {
+        match rotation {
+            Rotation::Degrees0 => {
+                new_map[wall_pos].bottom_wall = wall_type;
+            }
+
+            Rotation::Degrees90 => {
+                new_map[wall_pos].left_wall = wall_type;
+            }
+
+            Rotation::Degrees180 => {
+                let new_wall_pos = move_y(wall_pos, -1);
+                if new_map.is_within_bounds(new_wall_pos) {
+                    new_map[new_wall_pos].bottom_wall = wall_type;
+                }
+            }
+
+            Rotation::Degrees270 => {
+                let new_wall_pos = move_x(wall_pos, 1);
+                if new_map.is_within_bounds(new_wall_pos) {
+                    new_map[new_wall_pos].left_wall = wall_type;
+                }
+            }
+        }
+    }
+
+    return new_map;
 }
 
 
@@ -222,6 +508,35 @@ pub enum Wall {
     TallWall,
 }
 
+impl fmt::Display for Wall {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Wall::Empty => write!(f, "empty"),
+            Wall::ShortWall => write!(f, "shortwall"),
+            Wall::TallWall => write!(f, "tallwall"),
+        }
+    }
+}
+
+impl FromStr for Wall {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "empty" {
+            return Ok(Wall::Empty);
+        } else if s == "shortwall" {
+            return Ok(Wall::ShortWall);
+        } else if s == "wall" {
+            return Ok(Wall::TallWall);
+        } else if s == "water" {
+        }
+
+        return Err(format!("Could not parse '{}' as Wall", s));
+    }
+}
+
 impl Wall {
     pub fn no_wall(&self) -> bool {
         match self {
@@ -232,42 +547,30 @@ impl Wall {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Map {
     pub tiles: Vec<Vec<Tile>>,
-    fov: MapData,
-    fov_pos: Pos,
-    fov_radius: i32,
+    pub fov_cache: RefCell<HashMap<Pos, Vec<Pos>>>,
 }
 
 impl Map {
     pub fn with_vec(tiles: Vec<Vec<Tile>>) -> Map {
-        let width = tiles.len();
-        let height = tiles[0].len();
-        let mut map =
+        let map =
             Map {
                 tiles,
-                fov: MapData::new(width, height),
-                fov_pos: Pos::new(0, 0),
-                fov_radius: PLAYER_FOV_RADIUS,
+                fov_cache: RefCell::new(HashMap::new()),
             };
-
-        map.update_map();
 
         return map;
     }
 
-    pub fn from_dims(width: usize, height: usize) -> Map {
-        let tiles = vec!(vec!(Tile::empty(); height); width);
-        let mut map =
+    pub fn from_dims(width: u32, height: u32) -> Map {
+        let tiles = vec!(vec!(Tile::empty(); height as usize); width as usize);
+        let map =
             Map {
                 tiles,
-                fov: MapData::new(width, height),
-                fov_pos: Pos::new(0, 0),
-                fov_radius: PLAYER_FOV_RADIUS,
+                fov_cache: RefCell::new(HashMap::new()),
             };
-
-        map.update_map();
 
         return map;
     }
@@ -276,56 +579,95 @@ impl Map {
         let map =
             Map {
                 tiles: Vec::new(),
-                fov: MapData::new(1, 1),
-                fov_pos: Pos::new(0, 0),
-                fov_radius: PLAYER_FOV_RADIUS,
+                fov_cache: RefCell::new(HashMap::new()),
             };
 
         return map;
     }
 
-    pub fn blocked_left(&self, pos: Pos) -> bool {
-        return self[pos].left_wall != Wall::Empty;
+    pub fn blocked_left(&self, pos: Pos, blocked_type: BlockedType) -> bool {
+        let offset = Pos::new(pos.x - 1, pos.y);
+        if !self.is_within_bounds(offset) || !self.is_within_bounds(pos) {
+            return true;
+        }
+
+        let blocking_wall = blocked_type.blocking(self[pos].left_wall);
+        let blocking_tile = self[offset].does_tile_block(blocked_type);
+        return blocking_wall || blocking_tile;
     }
 
-    pub fn blocked_right(&self, pos: Pos) -> bool {
+    pub fn blocked_right(&self, pos: Pos, blocked_type: BlockedType) -> bool {
         let offset = Pos::new(pos.x + 1, pos.y);
-        return self.is_within_bounds(pos) &&
-            self[offset].left_wall != Wall::Empty;
+        if !self.is_within_bounds(pos) || !self.is_within_bounds(pos) { 
+            return true;
+        }
+
+        let blocking_wall = blocked_type.blocking(self[offset].left_wall);
+        let blocking_tile = self[offset].does_tile_block(blocked_type);
+        return blocking_wall || blocking_tile;
     }
 
-    pub fn blocked_down(&self, pos: Pos) -> bool {
-        return self[pos].bottom_wall != Wall::Empty;
+    pub fn blocked_down(&self, pos: Pos, blocked_type: BlockedType) -> bool {
+        let offset = Pos::new(pos.x, pos.y + 1);
+        if !self.is_within_bounds(pos) || !self.is_within_bounds(pos) {
+            return true;
+        }
+
+        let blocking_wall = blocked_type.blocking(self[pos].bottom_wall);
+        let blocking_tile = self[offset].does_tile_block(blocked_type);
+        return blocking_wall || blocking_tile;
     }
 
-    pub fn blocked_up(&self, pos: Pos) -> bool {
+    pub fn blocked_up(&self, pos: Pos, blocked_type: BlockedType) -> bool {
         let offset = Pos::new(pos.x, pos.y - 1);
-        return self.is_within_bounds(offset) &&
-            self[offset].bottom_wall != Wall::Empty;
+        if !self.is_within_bounds(pos) || !self.is_within_bounds(pos) {
+            return true;
+        }
+
+        let blocking_wall = blocked_type.blocking(self[offset].bottom_wall);
+        let blocking_tile = self[offset].does_tile_block(blocked_type);
+        return blocking_wall || blocking_tile;
     }
 
-    pub fn is_blocked_by_wall(&self, start_pos: Pos, dx: i32, dy: i32) -> Option<Blocked> {
-        let (end_x, end_y) = (start_pos.x + dx, start_pos.y + dy);
+    pub fn path_blocked_fov(&self, start_pos: Pos, end_pos: Pos) -> Option<Blocked> {
+        return self.path_blocked(start_pos, end_pos, BlockedType::Fov);
+    }
 
-        let line = Line::new((start_pos.x, start_pos.y), (end_x, end_y));
+    pub fn path_blocked_fov_low(&self, start_pos: Pos, end_pos: Pos) -> Option<Blocked> {
+        return self.path_blocked(start_pos, end_pos, BlockedType::FovLow);
+    }
 
-        if dx == 0 && dy == 0 {
+    pub fn path_blocked_move(&self, start_pos: Pos, end_pos: Pos) -> Option<Blocked> {
+        return self.path_blocked(start_pos, end_pos, BlockedType::Move);
+    }
+
+    pub fn path_blocked_all(&self, start_pos: Pos, end_pos: Pos, blocked_type: BlockedType) -> Vec<Blocked> {
+        let mut blocked_vec = Vec::new();
+        let mut cur_pos = start_pos;
+        while let Some(blocked) = self.path_blocked(cur_pos, end_pos, blocked_type) {
+            blocked_vec.push(blocked);
+            cur_pos = blocked.end_pos;
+        }
+        return blocked_vec;
+    }
+
+    pub fn path_blocked(&self, start_pos: Pos, end_pos: Pos, blocked_type: BlockedType) -> Option<Blocked> {
+        let dxy = sub_pos(end_pos, start_pos);
+
+        if dxy.x == 0 && dxy.y == 0 {
             return None;
         }
 
-        let dir = Direction::from_dxy(dx, dy).expect("Check for blocking wall with no movement?");
-
-        let mut positions = Vec::new();
-        // ensure that the starting position is looked at (could just extend dx/dy by 1)
-        positions.push(start_pos.to_tuple());
-        positions.extend(line.into_iter());
+        let dir = Direction::from_dxy(dxy.x, dxy.y)
+                            .expect(&format!("Check for blocking wall with no movement {:?}?", dxy));
 
         let mut blocked;
         let mut found_blocker = false;
-        for pair in positions.windows(2) {
-            let (x, y) = pair[0];
-            let pos = Pos::from(pair[0]);
-            let target_pos = Pos::from(pair[1]);
+
+        let line = line(start_pos, end_pos);
+        let positions = iter::once(start_pos).chain(line.into_iter());
+        for (pos, target_pos) in positions.tuple_windows() {
+            let (x, y) = (pos.x, pos.y);
 
             blocked = Blocked::new(pos, target_pos, dir, false, Wall::Empty);
 
@@ -333,148 +675,157 @@ impl Map {
             if !self.is_within_bounds(target_pos) {
                 blocked.blocked_tile = true;
 
-                // continueing to check after finding an out-of-bounds
+                // continuing to check after finding an out-of-bounds
                 // position results in a panic, so stop now.
                 return Some(blocked);
             }
 
             // if moving into a blocked tile, we are blocked
-            if self[target_pos].blocked {
+            if self[target_pos].does_tile_block(blocked_type) {
                 blocked.blocked_tile = true;
                 found_blocker = true;
             }
 
             let move_dir = target_pos - Vector2D::new(x, y);
 
-            // horizontal
-            if move_dir.y == 0 && move_dir.x != 0 {
-                let mut left_wall_pos = pos;
-                if move_dir.x >= 1 {
-                    left_wall_pos = Pos::new(x + move_dir.x, y);
+            // used for diagonal movement checks
+            let x_moved = Pos::new(target_pos.x, y);
+            let y_moved = Pos::new(x, target_pos.y);
+            
+            let direction = Direction::from_dxy(move_dir.x, move_dir.y).unwrap();
+            match direction {
+                Direction::Right | Direction::Left => {
+                    let mut left_wall_pos = pos;
+                    // moving right
+                    if move_dir.x >= 1 {
+                        left_wall_pos = Pos::new(x + move_dir.x, y);
+                    }
 
-                    let wall_type = self[left_wall_pos].left_wall;
                     if self.is_within_bounds(left_wall_pos) &&
-                        wall_type != Wall::Empty {
-                            blocked.wall_type = wall_type;
+                       blocked_type.blocking(self[left_wall_pos].left_wall) {
+                            blocked.wall_type = self[left_wall_pos].left_wall;
                             found_blocker = true;
-                        }
-                } else {
-                    let wall_type = self[left_wall_pos].left_wall;
-                    if wall_type != Wall::Empty {
-                        blocked.wall_type = wall_type;
-                        found_blocker = true;
                     }
                 }
-                // vertical 
-            } else if move_dir.x == 0 && move_dir.y != 0 {
-                let mut bottom_wall_pos = Pos::new(x, y + move_dir.y);
-                if move_dir.y >= 1 {
-                    bottom_wall_pos = pos;
 
-                    let wall_type = self[bottom_wall_pos].bottom_wall;
-                    if wall_type != Wall::Empty {
-                        blocked.wall_type = wall_type;
-                        found_blocker = true;
+                Direction::Up | Direction::Down => {
+                    let mut bottom_wall_pos = Pos::new(x, y + move_dir.y);
+                    if move_dir.y >= 1 {
+                        bottom_wall_pos = pos;
                     }
-                } else {
-                    let wall_type = self[bottom_wall_pos].bottom_wall;
+
                     if self.is_within_bounds(bottom_wall_pos) &&
-                        wall_type != Wall::Empty {
-                            blocked.wall_type = wall_type;
+                       blocked_type.blocking(self[bottom_wall_pos].bottom_wall) {
+                            blocked.wall_type = self[bottom_wall_pos].bottom_wall;
                             found_blocker = true;
-                        }
+                    }
                 }
-            } else { // diagonal
-                // check for corners
-                let x_moved = Pos::new(target_pos.x, y);
-                let y_moved = Pos::new(x, target_pos.y);
 
-                // down right
-                if move_dir.x > 0 && move_dir.y > 0 {
-                    if self.blocked_right(pos) && self.blocked_down(pos) {
+                Direction::DownRight => {
+                    if self.blocked_right(pos, blocked_type) && self.blocked_down(pos, blocked_type) {
                         blocked.wall_type = self[pos].bottom_wall;
                         found_blocker = true;
                     }
 
-                    if self.blocked_right(move_y(pos, -1)) && self.blocked_down(move_x(pos, 1)) {
+                    if self.blocked_right(move_y(pos, 1), blocked_type) &&
+                       self.blocked_down(move_x(pos, 1), blocked_type) {
+                        let blocked_pos = add_pos(pos, Pos::new(1, 0));
+                        if self.is_within_bounds(blocked_pos) {
+                            blocked.wall_type = self[blocked_pos].bottom_wall;
+                        }
+                        found_blocker = true;
+                    }
+
+                    if self.blocked_right(pos, blocked_type) &&
+                       self.blocked_right(y_moved, blocked_type) {
+                        blocked.wall_type = self[move_x(pos, 1)].left_wall;
+                        found_blocker = true;
+                    }
+
+                    if self.blocked_down(pos, blocked_type) &&
+                       self.blocked_down(x_moved, blocked_type) {
+                        blocked.wall_type = self[pos].bottom_wall;
+                        found_blocker = true;
+                    }
+                }
+
+                Direction::UpRight => {
+                    if self.blocked_up(pos, blocked_type) && self.blocked_right(pos, blocked_type) {
+                        blocked.wall_type = self[move_y(pos, -1)].bottom_wall;
+                        found_blocker = true;
+                    }
+
+                    if self.blocked_up(move_x(pos, 1), blocked_type) &&
+                       self.blocked_right(move_y(pos, -1), blocked_type) {
+                        let blocked_pos = add_pos(pos, Pos::new(1, -1));
+                        if self.is_within_bounds(blocked_pos) {
+                            blocked.wall_type = self[blocked_pos].bottom_wall;
+                        }
+                        found_blocker = true;
+                    }
+
+                    if self.blocked_right(pos, blocked_type) && self.blocked_right(y_moved, blocked_type) {
+                        blocked.wall_type = self[move_x(pos, 1)].left_wall;
+                        found_blocker = true;
+                    }
+
+                    if self.blocked_up(pos, blocked_type) && self.blocked_up(x_moved, blocked_type) {
+                        blocked.wall_type = self[move_y(pos, -1)].bottom_wall;
+                        found_blocker = true;
+                    }
+                }
+
+                Direction::DownLeft => {
+                    if self.blocked_left(pos, blocked_type) && self.blocked_down(pos, blocked_type) {
+                        blocked.wall_type = self[pos].left_wall;
+                        found_blocker = true;
+                    }
+
+                    if self.blocked_left(move_y(pos, 1), blocked_type) &&
+                       self.blocked_down(move_x(pos, -1), blocked_type) {
                         let blocked_pos = add_pos(pos, Pos::new(-1, 1));
-                        blocked.wall_type = self[blocked_pos].bottom_wall;
+                        if self.is_within_bounds(blocked_pos) {
+                            blocked.wall_type = self[blocked_pos].left_wall;
+                        }
                         found_blocker = true;
                     }
 
-                    if self.blocked_right(pos) && self.blocked_right(y_moved) {
-                        blocked.wall_type = self[move_x(pos, 1)].left_wall;
-                        found_blocker = true;
-                    }
-
-                    if self.blocked_down(pos) && self.blocked_down(x_moved) {
-                        blocked.wall_type = self[pos].bottom_wall;
-                        found_blocker = true;
-                    }
-                    // up right
-                } else if move_dir.x > 0 && move_dir.y < 0 {
-                    if self.blocked_up(pos) && self.blocked_right(pos) {
-                        blocked.wall_type = self[move_y(pos, -1)].bottom_wall;
-                        found_blocker = true;
-                    }
-
-                    if self.blocked_up(move_x(pos, 1)) && self.blocked_right(move_y(pos, -1)) {
-                        let blocked_pos = add_pos(pos, Pos::new(1, -1));
-                        blocked.wall_type = self[blocked_pos].bottom_wall;
-                        found_blocker = true;
-                    }
-
-                    if self.blocked_right(pos) && self.blocked_right(y_moved) {
-                        blocked.wall_type = self[move_x(pos, 1)].left_wall;
-                        found_blocker = true;
-                    }
-
-                    if self.blocked_up(pos) && self.blocked_up(x_moved) {
-                        blocked.wall_type = self[move_y(pos, -1)].bottom_wall;
-                        found_blocker = true;
-                    }
-                    // down left
-                } else if move_dir.x < 0 && move_dir.y > 0 {
-                    if self.blocked_left(pos) && self.blocked_down(pos) {
+                    if self.blocked_left(pos, blocked_type) && self.blocked_left(y_moved, blocked_type) {
                         blocked.wall_type = self[pos].left_wall;
                         found_blocker = true;
                     }
 
-                    if self.blocked_left(move_y(pos, 1)) && self.blocked_down(move_x(pos, -1)) {
-                        let blocked_pos = add_pos(pos, Pos::new(1, -1));
-                        blocked.wall_type = self[blocked_pos].left_wall;
-                        found_blocker = true;
-                    }
-
-                    if self.blocked_left(pos) && self.blocked_left(y_moved) {
-                        blocked.wall_type = self[pos].left_wall;
-                        found_blocker = true;
-                    }
-
-                    if self.blocked_down(pos) && self.blocked_down(x_moved) {
+                    if self.blocked_down(pos, blocked_type) && self.blocked_down(x_moved, blocked_type) {
                         blocked.wall_type = self[pos].bottom_wall;
                         found_blocker = true;
                     }
-                    // up left
-                } else {
-                    if self.blocked_left(move_y(pos, -1)) && self.blocked_up(move_x(pos, -1)) {
+                }
+
+                Direction::UpLeft => {
+                    if self.blocked_left(move_y(pos, -1), blocked_type) &&
+                       self.blocked_up(move_x(pos, -1), blocked_type) {
                         let blocked_pos = add_pos(pos, Pos::new(-1, -1));
-                        blocked.wall_type = self[blocked_pos].left_wall;
+                        if self.is_within_bounds(blocked_pos) {
+                            blocked.wall_type = self[blocked_pos].left_wall;
+                        }
                         found_blocker = true;
                     }
 
-                    if self.blocked_left(pos) && self.blocked_up(pos) {
+                    if self.blocked_left(pos, blocked_type) && self.blocked_up(pos, blocked_type) {
                         blocked.wall_type = self[pos].left_wall;
                         found_blocker = true;
                     }
 
-                    if self.blocked_left(pos) && self.blocked_left(y_moved) {
+                    if self.blocked_left(pos, blocked_type) && self.blocked_left(y_moved, blocked_type) {
                         blocked.wall_type = self[pos].left_wall;
                         found_blocker = true;
                     }
 
-                    if self.blocked_up(pos) && self.blocked_up(x_moved) {
-                        blocked.wall_type = self[move_y(pos, -1)].bottom_wall;
+                    if self.blocked_up(pos, blocked_type) && self.blocked_up(x_moved, blocked_type) {
+                        let blocked_pos = move_y(pos, -1);
+                        if self.is_within_bounds(blocked_pos) {
+                            blocked.wall_type = self[blocked_pos].bottom_wall;
+                        }
                         found_blocker = true;
                     }
                 }
@@ -511,10 +862,65 @@ impl Map {
         return self.tiles[0].len() as i32;
     }
 
-    pub fn is_in_fov_direction(&mut self, start_pos: Pos, end_pos: Pos, radius: i32, dir: Direction) -> bool {
+    pub fn is_in_fov(&self, start_pos: Pos, end_pos: Pos, radius: i32, low: bool) -> bool {
+        let alg_fov = self.is_in_fov_shadowcast(start_pos, end_pos);
+        
+        let path_fov =
+            if low {
+                self.path_blocked_fov_low(start_pos, end_pos)
+            } else {
+                self.path_blocked_fov(start_pos, end_pos)
+            };
+
+        let within_radius = distance_maximum(start_pos, end_pos) <= radius;
+
+        // make sure there is a clear path, but allow the player to
+        // see walls (blocking position is the end_pos tile)
+        let mut clear_fov_path = true;
+        if let Some(blocked) = path_fov {
+            clear_fov_path = end_pos == blocked.end_pos && blocked.blocked_tile;
+        } 
+
+        return alg_fov && within_radius && clear_fov_path;
+    }
+
+    pub fn is_in_fov_shadowcast(&self, start_pos: Pos, end_pos: Pos) -> bool {
+        if let Some(visible) = self.fov_cache.borrow_mut().get(&start_pos) {
+            return visible.contains(&end_pos);
+        }
+
+        // NOTE(perf) this pre-allocation speeds up FOV significantly
+        let mut visible_positions = Vec::with_capacity(120);
+
+        let mut mark_fov = |sym_pos: SymPos| {
+            let pos = Pos::new(sym_pos.0 as i32, sym_pos.1 as i32);
+            visible_positions.push(pos);
+        };
+
+        let mut is_blocking = |sym_pos: SymPos| {
+            let pos = Pos::new(sym_pos.0 as i32, sym_pos.1 as i32);
+
+            if !self.is_within_bounds(pos) {
+                return true;
+            }
+
+            let blocked_sight = self[pos].block_sight;
+
+            return blocked_sight;
+        };
+
+        compute_fov((start_pos.x as isize, start_pos.y as isize), &mut is_blocking, &mut mark_fov);
+
+        let in_fov = visible_positions.contains(&end_pos);
+        self.fov_cache.borrow_mut().insert(start_pos, visible_positions);
+
+        return in_fov;
+    }
+
+    pub fn is_in_fov_direction(&self, start_pos: Pos, end_pos: Pos, radius: i32, dir: Direction, low: bool) -> bool {
         if start_pos == end_pos {
             return true;
-        } else if self.is_in_fov(start_pos, end_pos, radius) {
+        } else if self.is_in_fov(start_pos, end_pos, radius, low) {
             let pos_diff = sub_pos(end_pos, start_pos);
             let x_sig = pos_diff.x.signum();
             let y_sig = pos_diff.y.signum();
@@ -572,41 +978,11 @@ impl Map {
         return false;
     }
 
-    pub fn is_in_fov(&mut self, start_pos: Pos, end_pos: Pos, radius: i32) -> bool {
-        if start_pos == end_pos {
-            return true;
-        }
-
-        if self.fov_pos != start_pos {
-            self.compute_fov(start_pos, radius);
-        }
-
-        let offset = Pos::new(end_pos.x - start_pos.x,
-                              end_pos.y - start_pos.y);
-        let blocked =
-            self.is_blocked_by_wall(start_pos, offset.x, offset.y);
-
-        let wall_in_path =
-            blocked.map_or(false, |blocked| {
-                let at_end = blocked.end_pos == end_pos;
-                let visible_wall = blocked.blocked_tile && blocked.wall_type.no_wall();
-                return !(at_end && visible_wall);
-            });
-
-        let is_visible =
-            self.fov.is_in_fov(end_pos.x as usize, end_pos.y as usize);
-
-        let within_radius = distance(start_pos, end_pos) < radius;
-
-        return !wall_in_path && is_visible && within_radius;
-    }
-
-    // this function is like clear_path, but only looks for terrain, not objects like monsters
-    pub fn clear_path_obstacles(&self, start: Pos, end: Pos) -> bool {
-        let line = Line::new(start.to_tuple(), end.to_tuple());
+    pub fn path_clear_of_obstacles(&self, start: Pos, end: Pos) -> bool {
+        let line = line(start, end);
 
         let path_blocked =
-            line.into_iter().any(|point| self[Pos::from(point)].blocked);
+            line.into_iter().any(|point| self[Pos::from(point)].block_move);
 
         return !path_blocked;
     }
@@ -619,7 +995,7 @@ impl Map {
         // duplicates will be removed, leaving only points within the radius.
         for x in (start.x - radius)..(start.x + radius) {
             for y in (start.y - radius)..(start.y + radius) {
-                let line = Line::new(start.to_tuple(), (x, y));
+                let line = line(start, Pos::new(x, y));
 
                 // get points to the edge of square, filtering for points within the given radius
                 for point in line.into_iter() {
@@ -634,15 +1010,46 @@ impl Map {
         return circle_positions.iter().map(|pos| *pos).collect();
     }
 
-    pub fn reachable_neighbors(&self, pos: Pos) -> Vec<Pos> {
+    pub fn neighbors(&self, pos: Pos) -> SmallVec<[Pos; 8]> {
         let neighbors = [(1, 0),  (1, 1),  (0, 1), 
-        (-1, 1), (-1, 0), (-1, -1),
-        (0, -1), (1, -1)];
+                         (-1, 1), (-1, 0), (-1, -1),
+                         (0, -1), (1, -1)];
 
-        let mut result = Vec::new();
+        let mut result = SmallVec::new();
+        for delta in neighbors.iter() {
+            let new_pos = pos + Vector2D::new(delta.0, delta.1);
+            if self.is_within_bounds(new_pos) {
+                result.push(new_pos);
+            }
+        }
+
+        return result;
+    }
+
+    pub fn cardinal_neighbors(&self, pos: Pos) -> SmallVec<[Pos; 4]> {
+        let neighbors = [(1, 0), (0, 1), (-1, 0), (0, -1),];
+
+        let mut result = SmallVec::new();
+        for delta in neighbors.iter() {
+            let new_pos = pos + Vector2D::new(delta.0, delta.1);
+            if self.is_within_bounds(new_pos) {
+                result.push(new_pos);
+            }
+        }
+
+        return result;
+    }
+
+    pub fn reachable_neighbors(&self, pos: Pos) -> SmallVec<[Pos; 8]> {
+        let neighbors = [(1, 0),  (1, 1),  (0, 1), 
+                         (-1, 1), (-1, 0), (-1, -1),
+                         (0, -1), (1, -1)];
+
+        let mut result = SmallVec::new();
 
         for delta in neighbors.iter() {
-            if self.is_blocked_by_wall(pos, delta.0, delta.1).is_none() {
+            let end_pos = Pos::new(pos.x + delta.0, pos.y + delta.1);
+            if self.path_blocked_move(pos, end_pos).is_none() {
                 result.push(pos + Vector2D::new(delta.0, delta.1));
             }
         }
@@ -650,87 +1057,35 @@ impl Map {
         return result;
     }
 
-    pub fn astar(&self, start: Pos, end: Pos) -> Vec<Pos> {
-        let result;
-
-        let maybe_results = 
-            astar(&start,
-                  |&pos| self.reachable_neighbors(pos)
-                  .iter()
-                  .map(|pos| (*pos, 1))
-                  .collect::<Vec<(Pos, i32)>>()
-                  ,
-                  |&pos| distance(pos, end) as i32,
-                  |&pos| pos == end);
-
-        if let Some((results, _cost)) = maybe_results {
-            result = results;
-        } else {
-            result = Vec::new();
-        }
-
-        return result;
+    pub fn get_all_pos(&self) -> Vec<Pos> {
+        let (width, height) = self.size();
+        return (0..width).cartesian_product(0..height)
+                         .map(|pair| Pos::from(pair))
+                         .collect::<Vec<Pos>>();
     }
 
-    pub fn set_cell(&mut self, x: i32, y: i32, transparent: bool) {
-        self.fov.set_transparent(x as usize, y as usize, transparent);
+    pub fn get_empty_pos(&self) -> Vec<Pos> {
+        let (width, height) = self.size();
+        return (0..width).cartesian_product(0..height)
+                         .map(|pair| Pos::from(pair))
+                         .filter(|pos| self[*pos].tile_type != TileType::Wall)
+                         .filter(|pos| self[*pos].tile_type != TileType::Water)
+                         .collect::<Vec<Pos>>();
     }
 
-    pub fn compute_fov(&mut self, pos: Pos, view_radius: i32) {
-        self.fov_pos = pos;
-        self.fov_radius = view_radius;
-        FovRestrictive::new().compute_fov(&mut self.fov,
-                                          pos.x as usize,
-                                          pos.y as usize,
-                                          view_radius as usize,
-                                          true);
+    pub fn get_wall_pos(&self) -> Vec<Pos> {
+        let (width, height) = self.size();
+        return (0..width).cartesian_product(0..height)
+                         .map(|pair| Pos::from(pair))
+                         .filter(|pos| self[*pos].tile_type == TileType::Wall)
+                         .collect::<Vec<Pos>>();
     }
 
-    pub fn update_map(&mut self) {
-        let dims = (self.width(), self.height());
-
-        for y in 0..dims.1 {
-            for x in 0..dims.0 {
-                let transparent = !self.tiles[x as usize][y as usize].block_sight;
-                self.fov.set_transparent(x as usize, y as usize, transparent);
-            }
-        }
-
-        self.compute_fov(self.fov_pos, self.fov_radius);
-    }
-
-    pub fn aoe_fill(&self, aoe_effect: AoeEffect, start: Pos, radius: usize) -> Aoe {
-        let mut effect_targets: Vec<Vec<Pos>> = vec![Vec::new(); radius + 1];
-
-        for effect_x in 0..self.width() {
-            for effect_y in 0..self.height() {
-                let effect_pos = Pos::new(effect_x, effect_y);
-                let dist = distance(Pos::new(start.x, start.y), Pos::new(effect_x, effect_y));
-                if dist > 0 && dist <= radius as i32 {
-                    effect_targets[dist as usize].push(effect_pos);
-                }
-            }
-        }
-
-        let mut aoe_dists = vec![Vec::new(); radius + 1];
-        for (dist, positions) in effect_targets.iter().enumerate() {
-            for cur_pos in positions {
-                
-                let dt = *cur_pos - start;
-                let is_blocked = self.is_blocked_by_wall(start, dt.x, dt.y).is_some();
-                let effective_radius = if is_blocked && radius > 2 {
-                    radius - 2
-                } else {
-                    radius
-                };
-                if self.astar(start, *cur_pos).len() <= effective_radius &&
-                   !aoe_dists[dist].contains(cur_pos) {
-                    aoe_dists[dist].push(*cur_pos);
-                }
-            }
-        }
-
-        return Aoe::new(aoe_effect, aoe_dists);
+    pub fn clamp(&self, pos: Pos) -> Pos {
+        let (width, height) = self.size();
+        let new_x = std::cmp::min(width - 1, std::cmp::max(0, pos.x));
+        let new_y = std::cmp::min(height - 1, std::cmp::max(0, pos.y));
+        return Pos::new(new_x, new_y);
     }
 }
 
@@ -744,6 +1099,7 @@ impl Index<(i32, i32)> for Map {
 
 impl IndexMut<(i32, i32)> for Map {
     fn index_mut(&mut self, index: (i32, i32)) -> &mut Tile {
+        self.fov_cache.borrow_mut().clear();
         &mut self.tiles[index.0 as usize][index.1 as usize]
     }
 }
@@ -758,6 +1114,7 @@ impl Index<Pos> for Map {
 
 impl IndexMut<Pos> for Map {
     fn index_mut(&mut self, index: Pos) -> &mut Tile {
+        self.fov_cache.borrow_mut().clear();
         &mut self.tiles[index.x as usize][index.y as usize]
     }
 }
@@ -783,107 +1140,58 @@ pub fn near_tile_type(map: &Map, position: Pos, tile_type: TileType) -> bool {
     return near_given_tile;
 }
 
-pub fn random_offset(rng: &mut SmallRng, radius: i32) -> Pos {
-    return Pos::new(rng.gen_range(-radius, radius),
-                    rng.gen_range(-radius, radius));
+pub fn random_offset(rng: &mut Rand32, radius: i32) -> Pos {
+    return Pos::new(rng_range_i32(rng, -radius, radius),
+                    rng_range_i32(rng, -radius, radius));
 }
 
-pub fn pos_in_radius(pos: Pos, radius: i32, rng: &mut SmallRng) -> Pos {
-    let offset = Vector2D::new(rng.gen_range(-radius, radius),
-                               rng.gen_range(-radius, radius));
+pub fn pos_in_radius(pos: Pos, radius: i32, rng: &mut Rand32) -> Pos {
+    let offset = Vector2D::new(rng_range_i32(rng, -radius, radius),
+                               rng_range_i32(rng, -radius, radius));
     return pos + offset;
 }
 
-pub fn place_block(map: &mut Map, start: Pos, width: i32, tile: Tile) -> Vec<Pos> {
-    let mut positions = Vec::new();
+pub fn astar_path(map: &Map,
+                  start: Pos,
+                  end: Pos,
+                  max_dist: Option<i32>,
+                  cost_fn: Option<fn(Pos, Pos, &Map) -> i32>) -> Vec<Pos> {
+    let result;
 
-    for x in 0..width {
-        for y in 0..width {
-            let pos = start + Vector2D::new(x, y);
-            map[pos] = tile;
-            positions.push(pos);
-        }
+    trace!("astar_path {} {}", start, end);
+
+    let maybe_results = 
+        astar(&start,
+              |&pos| astar_neighbors(map, start, pos, max_dist),
+              |&pos| {
+                  if let Some(fun) = &cost_fn { 
+                      fun(start, pos, map)
+                  } else {
+                      distance(pos, end) as i32
+                  }
+              },
+              |&pos| pos == end);
+
+    if let Some((results, _cost)) = maybe_results {
+        result = results.iter().map(|p| *p).collect::<Vec<Pos>>();
+    } else {
+        result = Vec::new();
     }
 
-    return positions;
+    return result;
 }
 
-pub fn place_line(map: &mut Map, start: Pos, end: Pos, tile: Tile) -> Vec<Pos> {
-    let mut positions = Vec::new();
-    let mut line = Line::new(start.to_tuple(), end.to_tuple());
+pub fn astar_neighbors(map: &Map, start: Pos, pos: Pos, max_dist: Option<i32>) -> SmallVec<[(Pos, i32); 8]> {
+      if let Some(max_dist) = max_dist {
+          if distance(start, pos) > max_dist {
+              return SmallVec::new();
+          }
+      }
 
-    while let Some(pos) = line.step() {
-        let pos = Pos::from(pos);
-        if map.is_within_bounds(pos) {
-            map[pos] = tile;
-            positions.push(pos);
-        }
-    }
-
-    positions
-}
-
-pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut SmallRng) {
-    match obstacle {
-        Obstacle::Block => {
-            map.tiles[pos.x as usize][pos.y as usize] = Tile::wall();
-        }
-
-        Obstacle::Wall => {
-            let end_pos = if rng.gen_bool(0.5) {
-                move_x(pos, 3)
-            } else {
-                move_y(pos, 3)
-            };
-            place_line(map, pos, end_pos, Tile::wall());
-        }
-
-        Obstacle::ShortWall => {
-            let end_pos = if rng.gen_bool(0.5) {
-                move_x(pos, 3)
-            } else {
-                move_y(pos, 3)
-            };
-            place_line(map, pos, end_pos, Tile::short_wall());
-        }
-
-        Obstacle::Square => {
-            place_block(map, pos, 2, Tile::wall());
-        }
-
-        Obstacle::LShape => {
-            let mut dir = 1;
-            if rng.gen_bool(0.5) {
-                dir = -1;
-            }
-
-            if rng.gen_bool(0.5) {
-                for x in 0..3 {
-                    map.tiles[pos.x as usize + x][pos.y as usize] = Tile::wall();
-                }
-                map.tiles[pos.x as usize][(pos.y + dir) as usize] = Tile::wall();
-            } else {
-                for y in 0..3 {
-                    map.tiles[pos.x as usize][pos.y as usize + y] = Tile::wall();
-                }
-                map.tiles[(pos.x + dir) as usize][pos.y as usize] = Tile::wall();
-            }
-        }
-
-        Obstacle::Building => {
-            let size = 2;
-
-            let mut positions = vec!();
-            positions.append(&mut place_line(map, move_by(pos, Pos::new(-size, size)),  move_by(pos, Pos::new(size,  size)), Tile::wall()));
-            positions.append(&mut place_line(map, move_by(pos, Pos::new(-size, size)),  move_by(pos, Pos::new(-size, -size)), Tile::wall()));
-            positions.append(&mut place_line(map, move_by(pos, Pos::new(-size, -size)), move_by(pos, Pos::new(size, -size)), Tile::wall()));
-            positions.append(&mut place_line(map, move_by(pos, Pos::new(size, -size)),  move_by(pos, Pos::new(size,  size)), Tile::wall()));
-
-            for _ in 0..rng.gen_range(0, 10) {
-                positions.swap_remove(rng.gen_range(0, positions.len()));
-            }
-        }
-    }
+      map.reachable_neighbors(pos)
+         .iter()
+         .map(|pos| (*pos, 1))
+         .collect::<SmallVec<[(Pos, i32); 8]>>()
 }
 
 #[test]
@@ -893,16 +1201,14 @@ fn test_blocked_by_wall_right() {
     let pos = Pos::new(5, 5);
     map[pos].left_wall = Wall::ShortWall;
   
-    map.update_map();
-
     let left_of_wall = Pos::new(4, 5);
-    let blocked = map.is_blocked_by_wall(left_of_wall, 1, 0);
+    let blocked = map.path_blocked_move(left_of_wall, add_pos(left_of_wall, Pos::new(1, 0)));
     assert_eq!(blocked.map(|b| b.wall_type == Wall::ShortWall), Some(true));
 
-    assert!(map.is_blocked_by_wall(pos, 1, 0).is_none());
+    assert!(map.path_blocked_move(pos, add_pos(pos, Pos::new(1, 0))).is_none());
 
     let two_left_of_wall = Pos::new(3, 5);
-    assert_eq!(map.is_blocked_by_wall(two_left_of_wall, 1, 0), None);
+    assert_eq!(map.path_blocked_move(two_left_of_wall, add_pos(two_left_of_wall, Pos::new(1, 0))), None);
 }
 
 #[test]
@@ -912,12 +1218,10 @@ fn test_blocked_by_wall_up() {
     let pos = Pos::new(5, 5);
     map[pos].bottom_wall = Wall::ShortWall;
   
-    map.update_map();
-
-    let blocked = map.is_blocked_by_wall(Pos::new(5, 6), 0, -1);
+    let blocked = map.path_blocked_move(Pos::new(5, 6), Pos::new(5, 5));
     assert_eq!(blocked.map(|b| b.wall_type), Some(Wall::ShortWall));
-    assert!(map.is_blocked_by_wall(Pos::new(5, 5), 0, -1).is_none());
-    assert!(map.is_blocked_by_wall(Pos::new(5, 4), 0, -1).is_none());
+    assert!(map.path_blocked_move(Pos::new(5, 5), Pos::new(5, 4)).is_none());
+    assert!(map.path_blocked_move(Pos::new(5, 4), Pos::new(5, 3)).is_none());
 }
 
 #[test]
@@ -927,12 +1231,10 @@ fn test_blocked_by_wall_down() {
     let pos = Pos::new(5, 5);
     map[pos].bottom_wall = Wall::ShortWall;
   
-    map.update_map();
-
-    let blocked = map.is_blocked_by_wall(Pos::new(5, 5), 0, 1);
+    let blocked = map.path_blocked_move(Pos::new(5, 5), Pos::new(5, 6));
     assert_eq!(blocked.map(|b| b.wall_type), Some(Wall::ShortWall));
-    assert!(map.is_blocked_by_wall(Pos::new(5, 6), 0, 1).is_none());
-    assert!(map.is_blocked_by_wall(Pos::new(5, 7), 0, 1).is_none());
+    assert!(map.path_blocked_move(Pos::new(5, 6), Pos::new(5, 7)).is_none());
+    assert!(map.path_blocked_move(Pos::new(5, 7), Pos::new(5, 8)).is_none());
 }
 
 #[test]
@@ -942,12 +1244,123 @@ fn test_blocked_by_wall_left() {
     let pos = Pos::new(5, 5);
     map[pos].left_wall = Wall::ShortWall;
   
-    map.update_map();
-
-    let blocked = map.is_blocked_by_wall(Pos::new(5, 5), -1, 0);
+    let blocked = map.path_blocked_move(Pos::new(5, 5), Pos::new(4, 5));
     assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
-    assert!(map.is_blocked_by_wall(Pos::new(4, 5), -1, 0).is_none());
-    assert!(map.is_blocked_by_wall(Pos::new(6, 5), -1, 0).is_none());
+    assert!(map.path_blocked_move(Pos::new(4, 5), Pos::new(3, 5)).is_none());
+    assert!(map.path_blocked_move(Pos::new(6, 5), Pos::new(5, 5)).is_none());
+}
+
+#[test]
+fn test_blocked_in_corners() {
+    let mut map = Map::from_dims(10, 10);
+
+    // .....
+    // ._|_. middle | is (5, 5)
+    // ..|..
+    // .....
+    map[(5, 5)].left_wall = Wall::ShortWall;
+    map[(5, 5)].bottom_wall = Wall::ShortWall;
+    map[(4, 5)].bottom_wall = Wall::ShortWall;
+    map[(5, 6)].left_wall = Wall::ShortWall;
+  
+    // down left
+    let blocked = map.path_blocked_move(Pos::new(5, 5), Pos::new(4, 6));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // down right
+    let blocked = map.path_blocked_move(Pos::new(4, 5), Pos::new(5, 6));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // up right
+    let blocked = map.path_blocked_move(Pos::new(4, 6), Pos::new(5, 5));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // up left
+    let blocked = map.path_blocked_move(Pos::new(6, 6), Pos::new(4, 5));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+}
+
+#[test]
+fn test_blocked_out_corners() {
+    let mut map = Map::from_dims(10, 10);
+
+    // ._...
+    // |_|.. middle _ is (5, 5)
+    // .....
+    map[(5, 5)].left_wall = Wall::ShortWall;
+    map[(5, 5)].bottom_wall = Wall::ShortWall;
+    map[(6, 5)].left_wall = Wall::ShortWall;
+    map[(5, 4)].bottom_wall = Wall::ShortWall;
+  
+    // down left
+    let blocked = map.path_blocked_move(Pos::new(6, 4), Pos::new(5, 5));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // down right
+    let blocked = map.path_blocked_move(Pos::new(4, 5), Pos::new(5, 5));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // up right
+    let blocked = map.path_blocked_move(Pos::new(4, 6), Pos::new(5, 5));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // up left
+    let blocked = map.path_blocked_move(Pos::new(6, 6), Pos::new(5, 5));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+}
+
+#[test]
+fn test_blocked_horiz_line() {
+    let mut map = Map::from_dims(10, 10);
+
+    // .....
+    // ...__ middle . is (5, 5)
+    // .....
+    map[(6, 5)].bottom_wall = Wall::ShortWall;
+    map[(7, 5)].bottom_wall = Wall::ShortWall;
+  
+    // down left
+    let blocked = map.path_blocked_move(Pos::new(7, 5), Pos::new(6, 6));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // down right
+    let blocked = map.path_blocked_move(Pos::new(6, 5), Pos::new(7, 6));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // up right
+    let blocked = map.path_blocked_move(Pos::new(6, 6), Pos::new(7, 5));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // up left
+    let blocked = map.path_blocked_move(Pos::new(7, 6), Pos::new(6, 5));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+}
+
+#[test]
+fn test_blocked_vert_line() {
+    let mut map = Map::from_dims(10, 10);
+
+    // .....
+    // ...__ middle . is (5, 5)
+    // .....
+    map[(6, 5)].bottom_wall = Wall::ShortWall;
+    map[(7, 5)].bottom_wall = Wall::ShortWall;
+  
+    // down left
+    let blocked = map.path_blocked_move(Pos::new(7, 5), Pos::new(6, 6));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // down right
+    let blocked = map.path_blocked_move(Pos::new(6, 5), Pos::new(7, 6));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // up right
+    let blocked = map.path_blocked_move(Pos::new(6, 6), Pos::new(7, 5));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
+
+    // up left
+    let blocked = map.path_blocked_move(Pos::new(7, 6), Pos::new(6, 5));
+    assert_eq!(blocked.map(|blocked| blocked.wall_type), Some(Wall::ShortWall));
 }
 
 #[test]
@@ -958,12 +1371,10 @@ fn test_fov_blocked_by_wall_right() {
     for wall_y_pos in 2..8 {
         let pos: Pos = Pos::new(5, wall_y_pos);
         map[pos] = Tile::empty();
-        map[pos].left_wall = Wall::ShortWall;
+        map[pos].block_sight = true;
     }
   
-    map.update_map();
-
-    assert!(map.is_in_fov(Pos::new(4, 5), Pos::new(9, 5), radius) == false);
+    assert_eq!(false, map.is_in_fov(Pos::new(4, 5), Pos::new(9, 5), radius, false));
 }
 
 #[test]
@@ -972,14 +1383,13 @@ fn test_fov_blocked_by_wall_left() {
     let mut map = Map::from_dims(10, 10);
 
     for wall_y_pos in 2..8 {
-        let pos: Pos = Pos::new(5, wall_y_pos);
+        let pos: Pos = Pos::new(6, wall_y_pos);
         map[pos] = Tile::empty();
-        map[pos].left_wall = Wall::ShortWall;
+        map[pos].block_sight = true;
+        map[pos].block_move = true;
     }
   
-    map.update_map();
-
-    assert!(map.is_in_fov(Pos::new(9, 5), Pos::new(4, 5), radius) == false);
+    assert_eq!(false, map.is_in_fov(Pos::new(9, 5), Pos::new(4, 5), radius, false));
 }
 
 #[test]
@@ -988,14 +1398,13 @@ fn test_fov_blocked_by_wall_up() {
     let mut map = Map::from_dims(10, 10);
 
     for wall_x_pos in 2..8 {
-        let pos: (i32, i32) = (wall_x_pos, 5);
+        let pos: (i32, i32) = (wall_x_pos, 6);
         map[pos] = Tile::empty();
-        map[pos].bottom_wall = Wall::ShortWall;
+        map[pos].block_sight = true;
+        map[pos].block_move = true;
     }
   
-    map.update_map();
-
-    assert!(map.is_in_fov(Pos::new(5, 9), Pos::new(5, 5), radius) == false);
+    assert_eq!(false, map.is_in_fov(Pos::new(5, 9), Pos::new(5, 5), radius, false));
 }
 
 #[test]
@@ -1004,13 +1413,56 @@ fn test_fov_blocked_by_wall_down() {
     let mut map = Map::from_dims(10, 10);
 
     for wall_x_pos in 2..8 {
-        let pos: (i32, i32) = (wall_x_pos, 5);
+        let pos: (i32, i32) = (wall_x_pos, 4);
         map[pos] = Tile::empty();
-        map[pos].bottom_wall = Wall::ShortWall;
+        map[pos].block_sight = true;
+        map[pos].block_move = true;
     }
   
-    map.update_map();
+    assert_eq!(false, map.is_in_fov(Pos::new(5, 1), Pos::new(5, 6), radius, false));
+}
 
-    assert!(map.is_in_fov(Pos::new(5, 1), Pos::new(5, 6), radius) == false);
+#[test]
+fn test_blocked_by_wall() {
+    let mut map = Map::from_dims(10, 10);
+
+    map[(5, 5)] = Tile::water();
+  
+    assert!(map.path_blocked_move(Pos::new(4, 5), Pos::new(5, 5)).is_some());
+    assert!(map.path_blocked_move(Pos::new(4, 5), Pos::new(7, 5)).is_some());
+    assert!(map.path_blocked_move(Pos::new(3, 5), Pos::new(6, 5)).is_some());
+
+    assert!(map.path_blocked_move(Pos::new(6, 5), Pos::new(5, 5)).is_some());
+
+    assert!(map.path_blocked_move(Pos::new(5, 6), Pos::new(5, 5)).is_some());
+    assert!(map.path_blocked_move(Pos::new(5, 4), Pos::new(5, 5)).is_some());
+}
+
+#[test]
+fn test_path_blocked_all() {
+    let mut map = Map::from_dims(10, 10);
+    map[(3, 5)].left_wall = Wall::ShortWall;
+    map[(4, 5)].block_move = true;
+    map[(5, 5)].block_move = true;
+    map[(6, 5)].left_wall = Wall::TallWall;
+
+    let start_pos = Pos::new(0, 5);
+    let end_pos = Pos::new(9, 5);
+
+    let blocked_positions = map.path_blocked_all(start_pos, end_pos, BlockedType::Move);
+
+    assert_eq!(4, blocked_positions.len());
+
+    assert_eq!(false, blocked_positions[0].blocked_tile);
+    assert_eq!(Wall::ShortWall, blocked_positions[0].wall_type);
+
+    assert_eq!(true, blocked_positions[1].blocked_tile);
+    assert_eq!(Wall::Empty, blocked_positions[1].wall_type);
+
+    assert_eq!(true, blocked_positions[2].blocked_tile);
+    assert_eq!(Wall::Empty, blocked_positions[2].wall_type);
+
+    assert_eq!(false, blocked_positions[3].blocked_tile);
+    assert_eq!(Wall::TallWall, blocked_positions[3].wall_type);
 }
 

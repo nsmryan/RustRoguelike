@@ -1,7 +1,12 @@
+use std::fs::File;
+use std::io::Read;
+
 use crate::types::*;
 use crate::map::*;
 
+
 use serde_derive::*;
+use serde_yaml;
 
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -27,11 +32,10 @@ pub struct Config {
     pub color_warm_grey: Color,
     pub color_soft_green: Color,
     pub color_light_grey: Color,
-    pub fov_distance: i32,
     pub load_map_file_every_frame: bool,
     pub tile_noise_scaler: f64,
     pub highlight_player_move: u8,
-    pub highlight_attack: u8,
+    pub highlight_alpha_attack: u8,
     pub sound_alpha: u8,
     pub grid_alpha: u8,
     pub grid_alpha_visible: u8,
@@ -41,21 +45,62 @@ pub struct Config {
     pub idle_speed: f32,
     pub draw_mouse_line: bool,
     pub draw_star_path: bool,
-    pub rate: usize,
+    pub frame_rate: usize,
     pub item_throw_speed: f32,
-    pub goal_speed: f32,
+    pub key_speed: f32,
     pub player_attack_speed: f32,
+    pub player_attack_hammer_speed: f32,
+    pub player_vault_sprite_speed: f32,
+    pub player_vault_move_speed: f32,
     pub sound_timeout: f32,
-    pub player_yell_radius: usize,
+    pub yell_radius: usize,
+    pub swap_radius: usize,
     pub fog_of_war: bool,
     pub player_health: i32,
     pub explored_alpha: u8,
     pub sound_rubble_radius: usize,
+    pub sound_grass_radius: usize,
     pub sound_radius_crushed: usize,
     pub sound_radius_attack: usize,
+    pub sound_radius_trap: usize,
+    pub sound_radius_monster: usize,
+    pub sound_radius_stone: usize,
+    pub sound_radius_player: usize,
+    pub sound_radius_hammer: usize,
+    pub freeze_trap_radius: usize,
+    pub push_stun_turns: usize,
     pub overlay_directions: bool,
     pub overlay_player_fov: bool,
+    pub overlay_fov_alg: bool,
+    pub overlay_floodfill: bool,
     pub fov_radius_monster: i32,
     pub fov_radius_player: i32,
+    pub sound_radius_sneak: usize,
+    pub sound_radius_walk: usize,
+    pub sound_radius_run: usize,
+    pub dampen_blocked_tile: i32,
+    pub dampen_short_wall: i32,
+    pub dampen_tall_wall: i32,
+    pub take_screenshot: bool,
+    pub show_info: bool,
+    pub use_cursor: bool,
+    pub cursor_long: i32,
+    pub repeat_delay: f32,
+    pub write_map_distribution: bool,
+    pub print_key_log: bool,
+}
+
+impl Config {
+    pub fn from_file(file_name: &str) -> Config {
+        let mut file =
+            File::open(file_name).expect(&format!("Could not open/parse config file {}", file_name));
+        let mut config_string = String::new();
+        file.read_to_string(&mut config_string)
+            .expect(&format!("Could not read contents of {}", file_name));
+
+        let config = serde_yaml::from_str(&config_string).expect(&format!("Could not parse {} file!", file_name));
+
+        return config
+    }
 }
 
