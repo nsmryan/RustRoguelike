@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 
-use noise::NoiseFn;
-use noise::Perlin;
+use oorandom::Rand32;
 
 use sdl2::render::{BlendMode, WindowCanvas};
 use sdl2::rect::Rect;
@@ -14,6 +13,7 @@ use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
 use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, sub_pos, reach_by_mode, map_fill_metric};
+use roguelike_core::perlin::Perlin;
 use roguelike_core::line::line;
 
 use roguelike_engine::game::*;
@@ -593,7 +593,7 @@ fn render_background(display: &mut Display, game: &mut Game) {
                     sprite.draw_char(&mut panel,
                                      MAP_EMPTY_CHAR as char,
                                      map_pos,
-                                     empty_tile_color(&game.config, map_pos, visible));
+                                     empty_tile_color(&game.config, map_pos, visible, &mut game.rng));
                 } else {
                     let color = tile_color(&game.config, x, y, tile, visible);
                     sprite.draw_char(&mut panel, MAP_EMPTY_CHAR as char, map_pos, color);
@@ -1233,8 +1233,8 @@ fn get_entity_at_pos(check_pos: Pos, data: &mut GameData) -> Vec<EntityId> {
     return object_ids;
 }
 
-fn empty_tile_color(config: &Config, pos: Pos, visible: bool) -> Color {
-    let perlin = Perlin::new();
+fn empty_tile_color(config: &Config, pos: Pos, visible: bool, rng: &mut Rand32) -> Color {
+    let simplex = Perlin::new(rng);
 
     let low_color;
     let high_color;
@@ -1248,8 +1248,8 @@ fn empty_tile_color(config: &Config, pos: Pos, visible: bool) -> Color {
     let color =
         lerp_color(low_color,
                    high_color,
-                   perlin.get([pos.x as f64 / config.tile_noise_scaler,
-                               pos.y as f64 / config.tile_noise_scaler]) as f32);
+                   simplex.noise2d(pos.x as f64 / config.tile_noise_scaler,
+                                   pos.y as f64 / config.tile_noise_scaler) as f32);
 
    return color;
 }
