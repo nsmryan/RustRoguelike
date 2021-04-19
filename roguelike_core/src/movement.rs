@@ -262,10 +262,10 @@ impl fmt::Display for Direction {
             Direction::Right => write!(f, "right"),
             Direction::Up => write!(f, "up"),
             Direction::Down => write!(f, "down"),
-            Direction::DownLeft => write!(f, "down/left"),
-            Direction::DownRight => write!(f, "down/right"),
-            Direction::UpLeft => write!(f, "up/left"),
-            Direction::UpRight => write!(f, "up/right"),
+            Direction::DownLeft => write!(f, "downleft"),
+            Direction::DownRight => write!(f, "downright"),
+            Direction::UpLeft => write!(f, "upleft"),
+            Direction::UpRight => write!(f, "upright"),
         }
     }
 }

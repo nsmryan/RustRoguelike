@@ -30,15 +30,21 @@ pub fn rng_range(rng: &mut Rand32, low: f32, high: f32) -> f32 {
 }
 
 pub fn rng_range_i32(rng: &mut Rand32, low: i32, high: i32) -> i32 {
-    let r = rng.rand_i32();
-    let r = r - low;
-    return low + r % (high - low);
+    if low == high {
+        return low;
+    } else {
+        let r = rng.rand_i32();
+        let r = r - low;
+        return low + r % (high - low);
+    }
 }
 
 pub fn rng_range_u32(rng: &mut Rand32, low: u32, high: u32) -> u32 {
-    let r = rng.rand_u32();
-    let r = r - low;
-    return low + r % (high - low);
+    if low == high {
+        return low;
+    } else {
+        return rng.rand_range(low..high);
+    }
 }
 
 pub fn choose<A: Copy>(rng: &mut Rand32, items: &Vec<A>) -> Option<A> {

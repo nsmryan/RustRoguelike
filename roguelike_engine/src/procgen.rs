@@ -148,6 +148,52 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     eprintln!("{} complex", structures.iter().filter(|s| s.typ == StructureType::Complex).count());
 
     /* modify structures with rubble, columns, etc */
+    modify_structures(game, cmds, &mut structures);
+
+    // lay down grass with a given dispersion and range from the found tile
+    let range_disperse =
+        cmds.iter().filter_map(|cmd| {
+            if let ProcCmd::Grass(range, disperse) = cmd {
+                return Some((range, disperse)) 
+            };
+            return None;
+    }).next().unwrap_or((&(0, 0), &0));
+    let high = (range_disperse.0).1 as u32;
+    let low = (range_disperse.0).0 as u32;
+    let num_grass_to_place = rng_range_u32(&mut game.rng, low, high) as usize;
+    place_grass(game, num_grass_to_place, *range_disperse.1);
+
+    // clear about the island again to ensure tiles haven't been placed outside
+    clear_island(game, island_radius);
+
+    // find a place to put the player
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = find_available_tile(game).unwrap();
+    game.data.entities.pos[&player_id] = player_pos;
+
+    clear_island(game, island_radius);
+
+    // find a place to put the key and goal, ensuring that they are reachable
+    place_key_and_goal(game, player_pos);
+
+    place_items(game, cmds);
+
+    place_monsters(game, player_pos, cmds);
+
+    place_traps(game, cmds);
+
+    place_triggers(game, cmds);
+
+    // clear the island once more just in case
+    clear_island(game, island_radius);
+
+    // ensure that the map looks okay in 3D
+    ensure_iter_and_full_walls(game);
+
+    return player_pos;
+}
+
+fn modify_structures(game: &mut Game, cmds: &Vec<ProcCmd>, structures: &mut Vec<Structure>) {
     let max_rubbles =
         cmds.iter().filter_map(|cmd| {
             if let ProcCmd::Rubble(num_rubble) = cmd {
@@ -211,48 +257,6 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
         }
         structures.swap_remove(*index);
     }
-
-    // lay down grass with a given dispersion and range from the found tile
-    let range_disperse =
-        cmds.iter().filter_map(|cmd| {
-            if let ProcCmd::Grass(range, disperse) = cmd {
-                return Some((range, disperse)) 
-            };
-            return None;
-    }).next().unwrap_or((&(0, 0), &0));
-    let high = (range_disperse.0).1 as u32;
-    let low = (range_disperse.0).0 as u32;
-    let num_grass_to_place = rng_range_u32(&mut game.rng, low, high) as usize;
-    place_grass(game, num_grass_to_place, *range_disperse.1);
-
-    // clear about the island again to ensure tiles haven't been placed outside
-    clear_island(game, island_radius);
-
-    // find a place to put the player
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = find_available_tile(game).unwrap();
-    game.data.entities.pos[&player_id] = player_pos;
-
-    clear_island(game, island_radius);
-
-    // find a place to put the key and goal, ensuring that they are reachable
-    place_key_and_goal(game, player_pos);
-
-    place_items(game, cmds);
-
-    place_monsters(game, player_pos, cmds);
-
-    place_traps(game, cmds);
-
-    place_triggers(game, cmds);
-
-    // clear the island once more just in case
-    clear_island(game, island_radius);
-
-    // ensure that the map looks okay in 3D
-    ensure_iter_and_full_walls(game);
-
-    return player_pos;
 }
 
 /// Look for intertile walls that are adjacent to full tile walls.
@@ -465,11 +469,12 @@ fn place_vaults(game: &mut Game, cmds: &Vec<ProcCmd>) {
     for cmd in cmds.iter() {
         if let ProcCmd::Vaults(max) = cmd {
             for _ in 0..*max {
-                let vault_index = rng_range_u32(&mut game.rng, 0, game.vaults.len() as u32) as usize;
-
                 let (width, height) = game.data.map.size();
-                let offset = Pos::new(rng_range_i32(&mut game.rng, 0, width), rng_range_i32(&mut game.rng, 0, height));
+                let x = rng_range_i32(&mut game.rng, 0, width);
+                let y = rng_range_i32(&mut game.rng, 0, height);
+                let offset = Pos::new(x, y);
 
+                let vault_index = rng_range_u32(&mut game.rng, 0, game.vaults.len() as u32) as usize;
                 let vault = &game.vaults[vault_index];
                 eprintln!("Placing vault {} at {}", vault_index, offset);
                 place_vault(&mut game.data, vault, offset, &mut game.rng);

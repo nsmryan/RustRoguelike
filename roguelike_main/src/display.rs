@@ -302,7 +302,7 @@ impl Display {
                 */
             }
 
-            Msg::SpawnedObject(entity_id, _typ, _pos, _name) => {
+            Msg::SpawnedObject(entity_id, _typ, _pos, _name, _facing) => {
                 if data.entities.ids.contains(&entity_id) {
                     let mut anim_desc = None;
                     if data.entities.typ[&entity_id] == EntityType::Player {

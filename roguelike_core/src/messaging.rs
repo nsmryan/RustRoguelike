@@ -69,7 +69,7 @@ pub enum Msg {
     UseItem(EntityId, Pos, EntityId), // holding entity, position, item id
     ArmDisarmTrap(EntityId, EntityId), // acting entity, trap id
     PlaceTrap(EntityId, Pos, EntityId), // placing entity, position, trap id
-    SpawnedObject(EntityId, EntityType, Pos, EntityName),
+    SpawnedObject(EntityId, EntityType, Pos, EntityName, Direction),
 }
 
 impl fmt::Display for Msg {
@@ -152,7 +152,7 @@ impl fmt::Display for Msg {
             Msg::UseItem(entity_id, pos, item_id) => write!(f, "use_item {} {} {} {}", entity_id, pos.x, pos.y, item_id),
             Msg::ArmDisarmTrap(entity_id, trap_id) => write!(f, "arm_disarm_trap {} {}", entity_id, trap_id),
             Msg::PlaceTrap(entity_id, pos, trap_id) => write!(f, "place_trap {} {} {} {}", entity_id, pos.x, pos.y, trap_id),
-            Msg::SpawnedObject(entity_id, entity_type, pos, entity_name) => write!(f, "spawned {} {} {} {} {}", entity_id, entity_type, pos.x, pos.y, entity_name),
+            Msg::SpawnedObject(entity_id, entity_type, pos, entity_name, facing) => write!(f, "spawned {} {} {} {} {} {}", entity_id, entity_type, pos.x, pos.y, entity_name, facing),
         }
     }
 }
@@ -432,7 +432,7 @@ impl Msg {
                 return format!("{:?} place {:?} at {}", data.entities.name[entity_id], data.entities.name[trap_id], pos);
             }
 
-            Msg::SpawnedObject(_entity_id, _entity_type, _pos, _entity_name) => {
+            Msg::SpawnedObject(_entity_id, _entity_type, _pos, _entity_name, _facing) => {
                 return "".to_string();
             }
 

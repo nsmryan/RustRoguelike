@@ -1,7 +1,9 @@
 mod commands;
 
-use std::io;
-use std::io::{BufRead};
+use std::io::{BufRead, Write, stdout};
+use std::sync::mpsc::{self, Receiver};
+use std::thread;
+use std::time::Duration;
 
 use roguelike_core::config::*;
 use roguelike_engine::game::*;
@@ -13,23 +15,46 @@ use crate::commands::*;
 const CONFIG_NAME: &str = "config.yaml";
 
 pub fn main() {
-    let stdin = io::stdin();
-    let mut iter = stdin.lock().lines();
-
     let config = Config::from_file(CONFIG_NAME);
     let seed = 1;
     let mut game = Game::new(seed, config.clone()).unwrap();
+    game.load_vaults("resources/vaults/");
 
     make_map(&config.map_load, &mut game);
 
+    let io_recv = spawn_input_reader();
+
     while game.settings.running {
-        let msg = iter.next().unwrap().unwrap();
 
-        let cmd = msg.parse::<GameCmd>()
-                     .expect(&format!("Unexpected command {}", msg));
+        if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(100)) {
+            if let Ok(cmd) = msg.parse::<GameCmd>() {
+                let result = execute_game_command(&cmd, &mut game);
+                println!("OUTPUT: {}", result);
+                stdout().flush().unwrap();
+            }
+        }
 
-        let result = execute_game_command(&cmd, &mut game);
-        println!("{}", result);
+        while let Some(msg) = game.msg_log.pop() {
+            println!("MSG: {}", msg);
+            stdout().flush().unwrap();
+        }
     }
 }
 
+fn spawn_input_reader() -> Receiver<String> {
+    let (io_send, io_recv) = mpsc::channel();
+
+    thread::spawn(move || {
+        let stdin = std::io::stdin();
+        let stdin = stdin.lock().lines();
+
+        for line in stdin {
+            let text = line.unwrap();
+            if !text.is_empty() {
+                io_send.send(text).unwrap();
+            }
+        }
+    });
+
+    return io_recv;
+}
