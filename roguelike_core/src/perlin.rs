@@ -80,15 +80,6 @@ pub struct Perlin {
 }
 
 impl Perlin {
-    /// Initializes a new Perlin instance with a random seed using XorShiftRng.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use noisy::gen::Perlin;
-    ///
-    /// let perlin = Perlin::new();
-    /// ```
     pub fn new(rng: &mut Rand32) -> Perlin {
         let p: Vec<u8> = (0..256).map(|_| (rng.rand_u32() & 0xFF) as u8).collect();
         let perm: Vec<u8> = (0..512).map(|idx:i32| {p[(idx & 255) as usize]}).collect();
@@ -96,16 +87,6 @@ impl Perlin {
         Perlin { perm: perm }
     }
 
-    /// Given an x coordinate, return a value in the interval [-1, 1].
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use noisy::gen::{NoiseGen, Perlin};
-    ///
-    /// let perlin = Perlin::new();
-    /// let val = perlin.noise1d(123.0 * 0.04);
-    /// ```
     pub fn noise1d(&self, xin: f64) -> f64 {
         let ix0: i64 = fast_floor(xin); // Integer part of x
         let fx0: f64 = xin - ix0 as f64; // Fractional part of x
@@ -131,19 +112,6 @@ impl Perlin {
         0.188 * lerp(s, nx0, nx1)
     }
 
-    /// Given a (x, y) coordinate, return a value in the interval [-1, 1].
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use noisy::gen::{NoiseGen, Perlin};
-    ///
-    /// let perlin = Perlin::new();
-    /// let val = perlin.noise2d(
-    ///     123.0 * 0.04,
-    ///     132.0 * 0.04
-    /// );
-    /// ```
     pub fn noise2d(&self, xin: f64, yin: f64) -> f64 {
         let ix0: i64 = fast_floor(xin); // Integer part of x
         let iy0: i64 = fast_floor(yin); // Integer part of y
@@ -181,20 +149,6 @@ impl Perlin {
         0.507 * lerp(s, n0, n1)
     }
 
-    /// Given a (x, y, z) coordinate, return a value in the interval [-1, 1].
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use noisy::gen::{NoiseGen, Perlin};
-    ///
-    /// let perlin = Perlin::new();
-    /// let val = perlin.noise3d(
-    ///     123.0 * 0.04,
-    ///     231.0 * 0.04,
-    ///     321.0 * 0.04
-    /// );
-    /// ```
     pub fn noise3d(&self, xin: f64, yin: f64, zin: f64) -> f64 {
         let ix0: i64 = fast_floor(xin); // Integer part of x
         let iy0: i64 = fast_floor(yin); // Integer part of y

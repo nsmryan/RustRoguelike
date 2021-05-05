@@ -6,8 +6,6 @@ use roguelike_core::ai::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::Msg;
 use roguelike_core::movement::{Direction, Action, MoveMode};
-#[cfg(test)]
-use roguelike_core::movement::*;
 
 
 use crate::game::*;
@@ -99,12 +97,11 @@ pub fn test_game_step() {
     let mut config = Config::from_file("../config.yaml");
     config.map_load = MapLoadConfig::Empty;
     let mut game = Game::new(0, config.clone()).unwrap();
-    let mut input_action = InputAction::None;
+    let mut input_action;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     make_map(&MapLoadConfig::Empty, &mut game);
-    let player_pos = game.data.entities.pos[&player_id];
-    assert_eq!(Pos::new(0, 0), player_pos);
+    game.data.entities.pos[&player_id] = Pos::new(0, 0);
 
     input_action = InputAction::Move(Direction::Right, MoveMode::Walk);
     game.step_game(input_action, 0.1);
@@ -173,7 +170,7 @@ pub fn test_running() {
 pub fn test_hammer_small_wall() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone()).unwrap();
-    let mut input_action = InputAction::None;
+    let mut input_action;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     game.data.map = Map::from_dims(10, 10);

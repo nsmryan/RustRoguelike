@@ -8,8 +8,6 @@ use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
-#[cfg(test)]
-use roguelike_core::movement::*;
 
 use crate::actions;
 use crate::actions::{InputAction, ActionResult};

@@ -732,7 +732,6 @@ fn adjacent_blocks(block: Pos, blocks: &Vec<Pos>, seen: &HashSet<Pos>) -> Vec<Po
 #[test]
 fn test_adjacent_blocks() {
     let mut map = Map::from_dims(5, 5);
-    let mid = Pos::new(2, 2);
     map[(2, 2)] = Tile::wall();
 
     map[(1, 2)] = Tile::wall();
