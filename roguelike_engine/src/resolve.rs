@@ -331,6 +331,10 @@ pub fn resolve_messages(data: &mut GameData,
                 resolve_push(entity_id, direction, amount, data, msg_log);
             }
 
+            Msg::FaceTowards(entity_id, pos) => {
+                data.entities.face(entity_id, pos);
+            }
+
             _ => {
             }
         }

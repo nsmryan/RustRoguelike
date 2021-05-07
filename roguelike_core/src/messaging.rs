@@ -70,6 +70,7 @@ pub enum Msg {
     ArmDisarmTrap(EntityId, EntityId), // acting entity, trap id
     PlaceTrap(EntityId, Pos, EntityId), // placing entity, position, trap id
     SpawnedObject(EntityId, EntityType, Pos, EntityName, Direction),
+    FaceTowards(EntityId, Pos),
 }
 
 impl fmt::Display for Msg {
@@ -153,6 +154,7 @@ impl fmt::Display for Msg {
             Msg::ArmDisarmTrap(entity_id, trap_id) => write!(f, "arm_disarm_trap {} {}", entity_id, trap_id),
             Msg::PlaceTrap(entity_id, pos, trap_id) => write!(f, "place_trap {} {} {} {}", entity_id, pos.x, pos.y, trap_id),
             Msg::SpawnedObject(entity_id, entity_type, pos, entity_name, facing) => write!(f, "spawned {} {} {} {} {} {}", entity_id, entity_type, pos.x, pos.y, entity_name, facing),
+            Msg::FaceTowards(entity_id, pos) => write!(f, "face_towards {} {} {}", entity_id, pos.x, pos.y),
         }
     }
 }
@@ -436,6 +438,9 @@ impl Msg {
                 return "".to_string();
             }
 
+            Msg::FaceTowards(_entity_id, _pos) => {
+                return "".to_string();
+            }
             _ => {
                 return "".to_string();
             }
