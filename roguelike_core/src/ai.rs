@@ -56,13 +56,11 @@ impl Behavior {
 pub fn ai_take_turn(monster_id: EntityId,
                     data: &mut GameData,
                     config: &Config,
-                    msg_log: &mut MsgLog) -> Action {
-    let mut turn: Action = Action::NoAction;
-
+                    msg_log: &mut MsgLog) {
     if data.entities.status[&monster_id].alive {
         match data.entities.ai.get(&monster_id) {
             Some(Ai::Basic) => {
-                turn = basic_ai_take_turn(monster_id, data, msg_log, config);
+                basic_ai_take_turn(monster_id, data, msg_log, config);
             }
 
             None => {
@@ -70,20 +68,16 @@ pub fn ai_take_turn(monster_id: EntityId,
             }
         }
     }
-
-    return turn;
 }
 
 pub fn basic_ai_take_turn(monster_id: EntityId,
                           data: &mut GameData,
                           msg_log: &mut MsgLog,
-                          config: &Config) -> Action {
+                          config: &Config) {
     let monster_pos = data.entities.pos[&monster_id];
 
     if data.map.is_within_bounds(monster_pos) {
-        if data.entities.status[&monster_id].frozen > 0 {
-            return Action::none();
-        } else {
+        if data.entities.status[&monster_id].frozen == 0 {
             match data.entities.behavior[&monster_id] {
                 Behavior::Idle => {
                     ai_idle(monster_id, data, msg_log, config);
@@ -94,51 +88,23 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
                 }
 
                 Behavior::Attacking(object_id) => {
-                    return ai_attack(monster_id, object_id, data, config);
+                    ai_attack(monster_id, object_id, data, msg_log);
                 }
             }
         }
     }
-
-    return Action::none();
 }
 
 pub fn ai_attack(monster_id: EntityId,
                  target_id: EntityId,
                  data: &mut GameData,
-                 config: &Config) -> Action {
+                 msg_log: &mut MsgLog) {
     let target_pos = data.entities.pos[&target_id];
 
-    let turn: Action;
-
-    let attack_reach = data.entities.attack[&monster_id];
-
-    let old_dir = data.entities.direction[&monster_id];
-
-    data.entities.face(monster_id, target_pos);
-
-
-    let can_hit_target =
-        ai_can_hit_target(data, monster_id, target_pos, &attack_reach, config);
-
-    if data.entities.is_dead(target_id) {
-        // TODO state change message. do not take turn here so we can investigate
-        // if AI target is no longer alive
-        turn = Action::StateChange(Behavior::Investigating(target_pos));
-    } else if let Some(hit_pos) = can_hit_target {
-        // TODO emit move message. ensure took_turn gets set there or here
-        // can hit their target, so just attack them
-        turn = Action::Move(MoveType::Move, hit_pos);
-    } else if !data.is_in_fov(monster_id, target_pos, config) {
-        // TODO state change message. do not take turn here so we can investigate
-        // path to target is blocked by a wall- investigate the last known position
-        turn = Action::StateChange(Behavior::Investigating(target_pos));
-    } else {
-        // can see target, but can't hit them. try to move to a position where we can hit them
-        turn = ai_move_to_attack_pos(monster_id, target_id, old_dir, data, config);
-    }
-
-    return turn;
+    // we need to turn towards the target first, so the
+    // rest of the processing is done in the AIAttack message
+    msg_log.log(Msg::FaceTowards(monster_id, target_pos));
+    msg_log.log(Msg::AiAttack(monster_id));
 }
 
 pub fn ai_idle(monster_id: EntityId,
@@ -306,30 +272,27 @@ pub fn ai_target_pos_cost(monster_id: EntityId,
     return Some((cost, next_pos));
 }
 
-pub fn ai_attempt_step(monster_id: EntityId, new_pos: Pos, data: &GameData) -> Action {
+pub fn ai_attempt_step(monster_id: EntityId, new_pos: Pos, data: &GameData) -> Option<Pos> {
     let monster_pos = data.entities.pos[&monster_id];
 
     let pos_offset = ai_take_astar_step(monster_id, new_pos, true, &data);
 
-    let turn;
+    let step_pos;
     if pos_mag(pos_offset) > 0 {
-        // TODO emit move message instead of returning a turn
-        turn = Action::Move(MoveType::Move, add_pos(monster_pos, pos_offset));
+        step_pos = Some(add_pos(monster_pos, pos_offset));
     } else {
-        // TODO remove the action return- it likely can be removed entirely once messages are
-        // used here.
-        turn = Action::NoAction;
+        step_pos = None;
     }
 
-    return turn;
+    return step_pos;
 }
 
 
-fn ai_can_hit_target(data: &mut GameData,
-                     monster_id: EntityId,
-                     target_pos: Pos,
-                     reach: &Reach,
-                     config: &Config) -> Option<Pos> {
+pub fn ai_can_hit_target(data: &mut GameData,
+                         monster_id: EntityId,
+                         target_pos: Pos,
+                         reach: &Reach,
+                         config: &Config) -> Option<Pos> {
     let mut hit_pos = None;
     let monster_pos = data.entities.pos[&monster_id];
 
@@ -367,10 +330,11 @@ fn ai_can_hit_target(data: &mut GameData,
 
 pub fn ai_move_to_attack_pos(monster_id: EntityId,
                              target_id: EntityId,
-                             old_dir: Direction,
                              data: &mut GameData,
-                             config: &Config) -> Action {
+                             config: &Config) -> Option<Pos> {
     let monster_pos = data.entities.pos[&monster_id];
+
+    let old_dir = data.entities.direction[&monster_id];
 
     let mut new_pos = monster_pos;
 
@@ -406,8 +370,8 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     }
 
     // step towards the closest location that lets us hit the target
-    let turn = ai_attempt_step(monster_id, new_pos, &data);
-    return turn;
+    let maybe_pos = ai_attempt_step(monster_id, new_pos, &data);
+    return maybe_pos;
 }
 
 fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, data: &GameData) -> Option<i32> {

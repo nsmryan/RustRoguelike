@@ -7,7 +7,7 @@ use log::{trace, error};
 use oorandom::Rand32;
 
 use roguelike_core::types::*;
-use roguelike_core::ai::{Behavior};
+use roguelike_core::ai::{Behavior, ai_move_to_attack_pos, ai_can_hit_target, ai_take_turn};
 use roguelike_core::map::{Surface, AoeEffect};
 use roguelike_core::messaging::{MsgLog, Msg};
 use roguelike_core::constants::*;
@@ -136,6 +136,13 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::StateChange(entity_id, behavior) => {
                 data.entities.behavior[&entity_id] = behavior;
+
+                // if the entity hasn't completed a turn, the state change continues their turn.
+                // NOTE this might be better off as a message! emit it every time a state change
+                // occurs?
+                if !data.entities.took_turn[&entity_id] {
+                   ai_take_turn(entity_id, data, config, msg_log);
+                }
             }
 
             Msg::SpikeTrapTriggered(trap, entity_id) => {
@@ -333,6 +340,14 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::FaceTowards(entity_id, pos) => {
                 data.entities.face(entity_id, pos);
+            }
+
+            Msg::AiAttack(entity_id) => {
+                if let Behavior::Attacking(target_id) = data.entities.behavior[&entity_id] {
+                    resolve_ai_attack(entity_id, target_id, data, msg_log, config);
+                } else {
+                    panic!("ai attacking but not in attack state!");
+                }
             }
 
             _ => {
@@ -1197,3 +1212,37 @@ fn process_moved_message(entity_id: EntityId,
     }
 }
 
+fn resolve_ai_attack(entity_id: EntityId,
+                     target_id: EntityId,
+                     data: &mut GameData,
+                     msg_log: &mut MsgLog,
+                     config: &Config) {
+    let target_pos = data.entities.pos[&target_id];
+
+    let attack_reach = data.entities.attack[&entity_id];
+    let can_hit_target =
+        ai_can_hit_target(data, entity_id, target_pos, &attack_reach, config);
+
+    if data.entities.is_dead(target_id) {
+        msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
+    } else if let Some(hit_pos) = can_hit_target {
+        let entity_pos = data.entities.pos[&entity_id];
+        let direction = Direction::from_positions(hit_pos, entity_pos).unwrap();
+        msg_log.log(Msg::TryMove(entity_id, direction, 1, MoveMode::Walk));
+    } else if !data.is_in_fov(entity_id, target_pos, config) {
+        msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
+    } else {
+        // can see target, but can't hit them. try to move to a position where we can hit them
+        let maybe_pos = ai_move_to_attack_pos(entity_id, target_id, data, config);
+
+        if let Some(move_pos) = maybe_pos {
+            // try to move in the given direction
+            let entity_pos = data.entities.pos[&entity_id];
+            let direction = Direction::from_positions(move_pos, entity_pos).unwrap();
+            msg_log.log(Msg::TryMove(entity_id, direction, 1, MoveMode::Walk));
+        } else {
+            // if we can't move anywhere, we just end our turn
+            data.entities.took_turn[&entity_id] = true;
+        }
+    }
+}
