@@ -86,7 +86,6 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
             match data.entities.behavior[&monster_id] {
                 Behavior::Idle => {
                     ai_idle(monster_id, data, msg_log, config);
-                    return Action::NoAction
                 }
 
                 Behavior::Investigating(target_pos) => {
@@ -98,10 +97,9 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
                 }
             }
         }
-    } else {
-        // position outside of map- return empty turn
-        return Action::none();
     }
+
+    return Action::none();
 }
 
 pub fn ai_attack(monster_id: EntityId,

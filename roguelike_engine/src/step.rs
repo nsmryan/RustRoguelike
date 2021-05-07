@@ -329,3 +329,37 @@ fn test_ai_idle_was_attacked() {
     assert_eq!(game.msg_log.messages[1], Msg::StateChange(gol, Behavior::Attacking(player_id)));
 }
 
+#[test]
+fn test_ai_idle_heard_sound() {
+    let config = Config::from_file("../config.yaml");
+    let mut game = Game::new(0, config).unwrap();
+    make_map(&MapLoadConfig::Empty, &mut game);
+
+    let start_pos = Pos::new(0, 0);
+    let gol = make_gol(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    game.data.entities.pos[&player_id] = add_pos(start_pos, Pos::new(1, 1));
+
+    game.msg_log.clear();
+    // move the player a tile away
+
+    game.data.entities.pos[&player_id] = add_pos(start_pos, Pos::new(3, 0));
+
+    // place a wall between the player and the gol
+    game.data.map[(2, 0)] = Tile::wall();
+
+    // check that no messages are created as the monster can't see the player
+    ai_idle(gol, &mut game.data, &mut game.msg_log, &game.config);
+    dbg!(&game.msg_log.messages);
+    assert_eq!(0, game.msg_log.messages.len());
+
+    // if the monster hears a sound, they investigate
+    let sound_pos = Pos::new(0, 1);
+    game.data.entities.messages[&gol].push(Message::Sound(player_id, sound_pos));
+    ai_idle(gol, &mut game.data, &mut game.msg_log, &game.config);
+
+    assert_eq!(game.msg_log.messages[0], Msg::FaceTowards(gol, sound_pos));
+    assert_eq!(game.msg_log.messages[1], Msg::StateChange(gol, Behavior::Investigating(sound_pos)));
+}
+
