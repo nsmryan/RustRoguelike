@@ -52,6 +52,7 @@ impl Behavior {
     }
 }
 
+// TODO StateChange will likely have to attempt another ai_take_turn
 pub fn ai_take_turn(monster_id: EntityId,
                     data: &mut GameData,
                     config: &Config,
@@ -89,7 +90,7 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
                 }
 
                 Behavior::Investigating(target_pos) => {
-                    return ai_investigate(target_pos, monster_id, data, msg_log, config);
+                    ai_investigate(target_pos, monster_id, data, msg_log, config);
                 }
 
                 Behavior::Attacking(object_id) => {
@@ -170,13 +171,11 @@ pub fn ai_investigate(target_pos: Pos,
                       monster_id: EntityId,
                       data: &mut GameData,
                       msg_log: &mut MsgLog,
-                      config: &Config) -> Action {
+                      config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     let player_pos = data.entities.pos[&player_id];
     let monster_pos = data.entities.pos[&monster_id];
-
-    let mut turn: Action;
 
     let player_in_fov = data.is_in_fov(monster_id, player_pos, config);
 
@@ -185,44 +184,25 @@ pub fn ai_investigate(target_pos: Pos,
 
         msg_log.log(Msg::FaceTowards(monster_id, player_pos));
         msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(player_id)));
-
-        turn = Action::NoAction;
     } else { // the monster can't see the player
         if let Some(Message::Sound(_entity_id, pos)) = data.entities.heard_sound(monster_id) {
-            // TODO state change message. if not took_turn, then call ai_take_turn again in change
-            turn = Action::StateChange(Behavior::Investigating(pos));
+            msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(pos)));
         } else {
             if target_pos == monster_pos { 
-                // TODO state change message, but also should probably set took_turn here
-                // if the monster reached its target then go back to being idle
-                turn = Action::StateChange(Behavior::Idle);
+                // monster reached their target position
+                data.entities.took_turn[&monster_id] = true;
+                msg_log.log(Msg::StateChange(monster_id, Behavior::Idle));
             } else {
                 // if the monster has not reached its target, move towards the target.
                 let must_reach = false;
                 let pos_offset = ai_take_astar_step(monster_id, target_pos, must_reach, &data);
+                let move_pos = add_pos(monster_pos, pos_offset);
 
-                // TODO use move message instead, and ensure took_turn is set in the message
-                // or, if not, set it here.
-                let movement = Movement::move_to(add_pos(monster_pos, pos_offset), MoveType::Move);
-                turn = Action::Move(movement.typ, movement.pos);
+                let direction = Direction::from_positions(move_pos, monster_pos).unwrap();
+                msg_log.log(Msg::TryMove(monster_id, direction, 1, MoveMode::Walk));
             }
         }
     }
-
-    // TODO likely move this to the move message- if moving a monster, and the monster is
-    // investigating, and they are unable to move, emit the state change message to make them idle.
-    // if the monster moved, but didn't go anywhere, they stop investigating
-    if let Action::Move(_typ, move_pos) = turn {
-        if move_pos == monster_pos {
-            // NOTE this causes monster to give up whenever they can't reach their goal.
-            // the problem is that this might happen in a long corridor, for example, where
-            // you might want them to keep trying for a while in case there is a monster
-            // in front of them.
-            turn = Action::StateChange(Behavior::Idle);
-        }
-    }
-
-    return turn;
 }
 
 pub fn ai_pos_that_hit_target(monster_id: EntityId,

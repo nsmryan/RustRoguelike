@@ -389,3 +389,72 @@ fn test_ai_investigate_player_in_fov() {
     assert_eq!(game.msg_log.messages[1], Msg::StateChange(gol, Behavior::Attacking(player_id)));
 }
 
+#[test]
+fn test_ai_investigate_not_in_fov_heard_sound() {
+    let config = Config::from_file("../config.yaml");
+    let mut game = Game::new(0, config).unwrap();
+    make_map(&MapLoadConfig::Empty, &mut game);
+
+
+    let start_pos = Pos::new(0, 0);
+    let gol = make_gol(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    game.msg_log.clear();
+    game.data.entities.direction[&gol] = Direction::Right;
+
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    game.data.entities.pos[&player_id] = add_pos(start_pos, Pos::new(1, 1));
+
+    let player_pos = game.data.entities.pos[&player_id];
+    game.data.entities.behavior[&gol] = Behavior::Investigating(player_pos);
+
+    // move the player a tile away
+    game.data.entities.pos[&player_id] = add_pos(start_pos, Pos::new(3, 0));
+
+    // place a wall between the player and the gol
+    game.data.map[(2, 0)] = Tile::wall();
+
+    // if the monster hears a sound, they investigate
+    let sound_pos = Pos::new(0, 1);
+    game.data.entities.messages[&gol].push(Message::Sound(player_id, sound_pos));
+    ai_investigate(player_pos, gol, &mut game.data, &mut game.msg_log, &game.config);
+
+    assert_eq!(1, game.msg_log.messages.len());
+    assert_eq!(game.msg_log.messages[0], Msg::StateChange(gol, Behavior::Investigating(sound_pos)));
+}
+
+#[test]
+fn test_ai_investigate_moves() {
+    let config = Config::from_file("../config.yaml");
+    let mut game = Game::new(0, config).unwrap();
+    make_map(&MapLoadConfig::Empty, &mut game);
+
+
+    let start_pos = Pos::new(0, 0);
+    let gol = make_gol(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    game.data.entities.direction[&gol] = Direction::Right;
+
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    game.data.entities.pos[&player_id] = add_pos(start_pos, Pos::new(5, 1));
+
+    game.data.entities.behavior[&gol] = Behavior::Investigating(Pos::new(0, 1));
+
+    // place walls between the player and the gol
+    game.data.map[(2, 0)] = Tile::wall();
+    game.data.map[(2, 1)] = Tile::wall();
+
+    // if the monster hears a sound, they investigate
+    let sound_pos = Pos::new(0, 1);
+    game.msg_log.clear();
+    game.data.entities.messages[&gol].push(Message::Sound(player_id, sound_pos));
+    ai_investigate(sound_pos, gol, &mut game.data, &mut game.msg_log, &game.config);
+
+    assert_eq!(1, game.msg_log.messages.len());
+    assert_eq!(game.msg_log.messages[0], Msg::StateChange(gol, Behavior::Investigating(sound_pos)));
+
+    // if they investigate again, they try to move to the sound
+    game.msg_log.clear();
+    ai_investigate(sound_pos, gol, &mut game.data, &mut game.msg_log, &game.config);
+    assert_eq!(1, game.msg_log.messages.len());
+    let direction = Direction::from_positions(sound_pos, start_pos).unwrap();
+    assert_eq!(game.msg_log.messages[0], Msg::TryMove(gol, direction, 1, MoveMode::Walk));
+}

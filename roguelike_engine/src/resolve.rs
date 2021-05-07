@@ -510,6 +510,14 @@ fn resolve_try_move(entity_id: EntityId,
             // otherwise attempt to resolve a movement
             resolve_try_movement(entity_id, direction, amount, move_mode, movement, data, msg_log);
         }
+    } else {
+        // monsters that are not idle, but their movement does not change their
+        // position will return to idle.
+        if data.entities.behavior[&entity_id] != Behavior::Idle {
+            // this takes up the monster's turn, as they already committed to this movement
+            data.entities.took_turn[&entity_id] = true;
+            msg_log.log(Msg::StateChange(entity_id, Behavior::Idle));
+        }
     }
 }
 
@@ -580,6 +588,7 @@ fn resolve_try_movement(entity_id: EntityId,
     }
 }
 
+// TODO is this necessary once the AI messaging is in place?
 fn resolve_action(entity_id: EntityId,
                   action: Action,
                   data: &mut GameData,
