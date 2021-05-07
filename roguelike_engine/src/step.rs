@@ -342,8 +342,8 @@ fn test_ai_idle_heard_sound() {
     game.data.entities.pos[&player_id] = add_pos(start_pos, Pos::new(1, 1));
 
     game.msg_log.clear();
-    // move the player a tile away
 
+    // move the player a tile away
     game.data.entities.pos[&player_id] = add_pos(start_pos, Pos::new(3, 0));
 
     // place a wall between the player and the gol
@@ -359,7 +359,33 @@ fn test_ai_idle_heard_sound() {
     game.data.entities.messages[&gol].push(Message::Sound(player_id, sound_pos));
     ai_idle(gol, &mut game.data, &mut game.msg_log, &game.config);
 
+    assert_eq!(2, game.msg_log.messages.len());
     assert_eq!(game.msg_log.messages[0], Msg::FaceTowards(gol, sound_pos));
     assert_eq!(game.msg_log.messages[1], Msg::StateChange(gol, Behavior::Investigating(sound_pos)));
+}
+
+#[test]
+fn test_ai_investigate_player_in_fov() {
+    let config = Config::from_file("../config.yaml");
+    let mut game = Game::new(0, config).unwrap();
+    make_map(&MapLoadConfig::Empty, &mut game);
+
+
+    let start_pos = Pos::new(0, 0);
+    let gol = make_gol(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    game.data.entities.direction[&gol] = Direction::Right;
+
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    game.data.entities.pos[&player_id] = add_pos(start_pos, Pos::new(1, 1));
+
+    let player_pos = game.data.entities.pos[&player_id];
+    game.data.entities.behavior[&gol] = Behavior::Investigating(player_pos);
+
+    game.msg_log.clear();
+    ai_investigate(player_pos, gol, &mut game.data, &mut game.msg_log, &game.config);
+
+    assert_eq!(2, game.msg_log.messages.len());
+    assert_eq!(game.msg_log.messages[0], Msg::FaceTowards(gol, player_pos));
+    assert_eq!(game.msg_log.messages[1], Msg::StateChange(gol, Behavior::Attacking(player_id)));
 }
 

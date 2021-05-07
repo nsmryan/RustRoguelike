@@ -89,7 +89,7 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
                 }
 
                 Behavior::Investigating(target_pos) => {
-                    return ai_investigate(target_pos, monster_id, data, config);
+                    return ai_investigate(target_pos, monster_id, data, msg_log, config);
                 }
 
                 Behavior::Attacking(object_id) => {
@@ -169,6 +169,7 @@ pub fn ai_idle(monster_id: EntityId,
 pub fn ai_investigate(target_pos: Pos, 
                       monster_id: EntityId,
                       data: &mut GameData,
+                      msg_log: &mut MsgLog,
                       config: &Config) -> Action {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
@@ -177,18 +178,15 @@ pub fn ai_investigate(target_pos: Pos,
 
     let mut turn: Action;
 
-    // if the player is in FOV, and not blocked by a wall, face the player
-    if data.map.path_blocked_fov(monster_pos, player_pos).is_none() {
-        data.entities.face(monster_id, player_pos);
-    }
-               
-    let in_fov = data.is_in_fov(monster_id, player_pos, config);
+    let player_in_fov = data.is_in_fov(monster_id, player_pos, config);
 
-    if in_fov {
-        // TODO Face message- i think this can replace the facing above for this case
-        data.entities.face(monster_id, player_pos);
-        // TODO state change message. if not took_turn, then call ai_take_turn again in change
-        turn = Action::StateChange(Behavior::Attacking(player_id));
+    if player_in_fov {
+        //let fov_path_clear = data.map.path_blocked_fov(monster_pos, player_pos).is_none();
+
+        msg_log.log(Msg::FaceTowards(monster_id, player_pos));
+        msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(player_id)));
+
+        turn = Action::NoAction;
     } else { // the monster can't see the player
         if let Some(Message::Sound(_entity_id, pos)) = data.entities.heard_sound(monster_id) {
             // TODO state change message. if not took_turn, then call ai_take_turn again in change
