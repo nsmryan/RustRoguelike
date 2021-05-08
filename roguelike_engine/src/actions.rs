@@ -826,7 +826,7 @@ fn chord_move(loc: ActionLoc,
         }
 
         ActionLoc::Dir(direction) => {
-            turn = Action::MoveDir(direction, move_mode); // handle_move(player_id, direction, data);
+            turn = Action::MoveDir(direction, move_mode);
         }
 
         ActionLoc::Place(pos) => {
