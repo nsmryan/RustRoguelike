@@ -601,7 +601,7 @@ fn resolve_try_movement(entity_id: EntityId,
     // if entity is attacking, face their target after the move
     if let Some(Behavior::Attacking(target_id)) = data.entities.behavior.get(&entity_id) {
         let target_pos = data.entities.pos[target_id];
-        data.entities.face(entity_id, target_pos);
+        msg_log.log(Msg::FaceTowards(entity_id, target_pos));
     }
 }
 
@@ -1109,8 +1109,12 @@ fn process_moved_message(entity_id: EntityId,
     // then face the player
     if let Some(target_pos) = data.entities.target(entity_id) {
         if data.could_see(entity_id, target_pos, config) {
-            data.entities.face(entity_id, target_pos);
+            msg_log.log(Msg::FaceTowards(entity_id, target_pos));
         }
+    } else {
+        // else face in the direction we moved
+        let dxy = sub_pos(pos, original_pos);
+        msg_log.log(Msg::FaceTowards(entity_id, add_pos(pos, dxy)));
     }
 
     if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {
