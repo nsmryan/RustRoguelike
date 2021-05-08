@@ -612,8 +612,6 @@ fn resolve_action(entity_id: EntityId,
                   data: &mut GameData,
                   msg_log: &mut MsgLog,
                   _config: &Config) {
-    let entity_pos = data.entities.pos[&entity_id];
-
     if let Action::MoveDir(direction, move_mode) = action {
         data.entities.move_mode[&entity_id] = move_mode;
         let amount = move_mode.move_amount();

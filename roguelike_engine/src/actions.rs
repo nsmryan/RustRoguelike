@@ -368,8 +368,7 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::SelectItem(skill_index) => {
-            action_result.turn =
-                handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, data, settings, msg_log, config);
+            handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, data, settings, msg_log, config);
         }
 
         InputAction::Esc => {
@@ -665,20 +664,20 @@ pub fn handle_skill(skill_index: usize,
                     data: &GameData, 
                     _settings: &mut GameSettings, 
                     msg_log: &mut MsgLog,
-                    _config: &Config) -> Action {
+                    _config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     /* Check for Valid Skill Use */
     // # check if we have enough energy to carry out the skill
     if data.entities.energy[&player_id] <= 0 {
         msg_log.log(Msg::NotEnoughEnergy(player_id));
-        return Action::none();
+        return;
     }
 
     // get the skill in the player's list of skills
     if skill_index >= data.entities.skills[&player_id].len() {
         // NOTE we may want a message indicating that the skill index was invalid
-        return Action::none();
+        return;
     }
 
     let reach = Reach::single(1);
@@ -696,18 +695,16 @@ pub fn handle_skill(skill_index: usize,
             if let Some(pos) = reach.furthest_in_direction(player_pos, dir) {
                 skill_pos = pos;
             } else {
-                return Action::none();
+                return;
             }
         }
 
         ActionLoc::None => {
-            return Action::none();
+            return;
         }
     }
 
     /* Carry Out Skill */
-    let mut turn: Action = Action::none();
-
     match data.entities.skills[&player_id][skill_index] {
         Skill::GrassThrow => {
             let player_id = data.find_by_name(EntityName::Player).unwrap();
@@ -727,8 +724,6 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::PassWall => {
-            turn = Action::NoAction;
-
             let player_id = data.find_by_name(EntityName::Player).unwrap();
             let player_pos = data.entities.pos[&player_id];
 
@@ -767,8 +762,6 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::Swap => {
-            turn = Action::NoAction;
-
             let player_id = data.find_by_name(EntityName::Player).unwrap();
             if let Some(entity_id) = data.has_blocking_entity(skill_pos) {
                 msg_log.log(Msg::Swap(player_id, entity_id));
@@ -784,8 +777,6 @@ pub fn handle_skill(skill_index: usize,
             msg_log.log(Msg::Push(player_id, direction, push_amount));
         }
     }
-
-    return turn;
 }
 
 pub fn chord(loc: ActionLoc,
@@ -800,7 +791,8 @@ pub fn chord(loc: ActionLoc,
     if target == -1 {
         turn = chord_move(loc, mode, data, msg_log);
     } else {
-        turn = chord_selection(loc, mode, target, data, settings, config, msg_log);
+        chord_selection(loc, mode, target, data, settings, config, msg_log);
+        turn = Action::NoAction;
     }
 
     return turn;
@@ -859,8 +851,7 @@ fn chord_selection(loc: ActionLoc,
                    data: &GameData,
                    settings: &mut GameSettings,
                    config: &Config,
-                   msg_log: &mut MsgLog) -> Action {
-    let mut turn = Action::none();
+                   msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     if target >= 2 {
@@ -868,13 +859,13 @@ fn chord_selection(loc: ActionLoc,
         // the skills
         let skill_index = (target - 2) as usize;
         if skill_index < data.entities.skills[&player_id].len() {
-            turn = handle_skill(skill_index, loc, mode, data, settings, msg_log, config);
+            handle_skill(skill_index, loc, mode, data, settings, msg_log, config);
         }
     } else {
         let num_items_in_inventory = data.entities.inventory[&player_id].len() as i32;
 
         if target >= num_items_in_inventory {
-            return Action::none();
+            return;
         }
 
         let item_id = data.entities.inventory[&player_id][target as usize];
@@ -918,7 +909,5 @@ fn chord_selection(loc: ActionLoc,
             }
         }
     }
-
-    return turn;
 }
 
