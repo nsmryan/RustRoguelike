@@ -14,7 +14,6 @@ use crate::line::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Action {
-    Move(MoveType, Pos),
     MoveDir(Direction, MoveMode),
     NoAction,
 }

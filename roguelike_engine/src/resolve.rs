@@ -605,7 +605,8 @@ fn resolve_try_movement(entity_id: EntityId,
     }
 }
 
-// TODO is this necessary once the AI messaging is in place?
+// TODO this is likely no longer necessary- the Action type is only used to
+// spawn this message.
 fn resolve_action(entity_id: EntityId,
                   action: Action,
                   data: &mut GameData,
@@ -617,15 +618,7 @@ fn resolve_action(entity_id: EntityId,
         data.entities.move_mode[&entity_id] = move_mode;
         let amount = move_mode.move_amount();
         msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
-    } else if let Action::Move(_typ, move_pos) = action {
-        let move_mode: MoveMode = 
-            *data.entities.move_mode.get(&entity_id).unwrap_or(&MoveMode::Walk);
-        let amount = move_mode.move_amount();
-        let dxy = sub_pos(move_pos, entity_pos);
-        let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-
-        msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
-    }
+    } 
 }
 
 fn resolve_push(entity_id: EntityId,
