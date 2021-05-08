@@ -340,6 +340,7 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::FaceTowards(entity_id, pos) => {
                 data.entities.face(entity_id, pos);
+                msg_log.log(Msg::Facing(entity_id, data.entities.direction[&entity_id]));
             }
 
             Msg::AiAttack(entity_id) => {
@@ -1225,12 +1226,15 @@ fn resolve_ai_attack(entity_id: EntityId,
         ai_can_hit_target(data, entity_id, target_pos, &attack_reach, config);
 
     if data.entities.is_dead(target_id) {
+        data.entities.took_turn[&entity_id] = true;
         msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
     } else if let Some(hit_pos) = can_hit_target {
         let entity_pos = data.entities.pos[&entity_id];
         let direction = Direction::from_positions(entity_pos, hit_pos).unwrap();
         msg_log.log(Msg::TryMove(entity_id, direction, 1, MoveMode::Walk));
     } else if !data.is_in_fov(entity_id, target_pos, config) {
+        // if we lose the target, end the turn
+        data.entities.took_turn[&entity_id] = true;
         msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
     } else {
         // can see target, but can't hit them. try to move to a position where we can hit them
@@ -1247,3 +1251,4 @@ fn resolve_ai_attack(entity_id: EntityId,
         }
     }
 }
+

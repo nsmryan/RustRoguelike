@@ -62,12 +62,12 @@ pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
         }
     }
 
-    // perform count down, removing entities that ask to be removed
-    game.data.count_down();
-
     if game.data.entities.took_turn[&player_id] {
         game.settings.turn_count += 1;
     }
+
+    // perform count down, removing entities that ask to be removed
+    game.data.count_down();
 
     return level_exit_condition_met(&game.data);
 }
@@ -85,7 +85,6 @@ fn level_exit_condition_met(data: &GameData) -> bool {
 
         let has_key = data.is_in_inventory(player_id, Item::Key).is_some();
 
-        //let on_exit_tile = data.map[player_pos].tile_type == TileType::Exit;
         let on_exit_tile = exit_pos == player_pos;
 
         exit_condition = has_key && on_exit_tile;
