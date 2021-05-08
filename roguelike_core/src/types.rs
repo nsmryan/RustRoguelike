@@ -987,12 +987,11 @@ impl Entities {
         let diff_x = pos.x - self_pos.x;
         let diff_y = pos.y - self_pos.y;
 
-        // TODO this should be replaced by FaceTowards message
-        //if self_pos != pos {
-        //    if let Some(dir) = Direction::from_dxy(diff_x, diff_y) {
-        //        self.direction[&entity_id] = dir;
-        //    }
-        //}
+        if self_pos != pos {
+            if let Some(dir) = Direction::from_dxy(diff_x, diff_y) {
+                self.direction[&entity_id] = dir;
+            }
+        }
 
         self.set_pos(entity_id, pos);
     }
