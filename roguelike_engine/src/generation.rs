@@ -126,7 +126,7 @@ pub fn make_mouse(entities: &mut Entities, _config: &Config, msg_log: &mut MsgLo
 
     msg_log.log(Msg::SpawnedObject(mouse, entities.typ[&mouse], Pos::new(-1, -1), EntityName::Mouse, entities.direction[&mouse]));
 
-    mouse
+    return mouse;
 }
 
 pub fn make_cursor(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
@@ -134,7 +134,7 @@ pub fn make_cursor(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
 
     msg_log.log(Msg::SpawnedObject(cursor, entities.typ[&cursor], Pos::new(-1, -1), EntityName::Cursor, entities.direction[&cursor]));
 
-    cursor
+    return cursor;
 }
 
 pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
@@ -149,6 +149,7 @@ pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
     entities.status[&gol].alive = true;
     entities.direction.insert(gol,  Direction::from_f32(rand_from_pos(pos)));
     entities.stance.insert(gol,  Stance::Standing);
+    entities.move_mode.insert(gol,  MoveMode::Walk);
 
     msg_log.log(Msg::SpawnedObject(gol, entities.typ[&gol], pos, EntityName::Gol, entities.direction[&gol]));
     
@@ -167,6 +168,7 @@ pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
     entities.status[&spire].alive = true;
     entities.direction.insert(spire,  Direction::Up);
     entities.stance.insert(spire,  Stance::Standing);
+    entities.move_mode.insert(spire,  MoveMode::Walk);
 
     msg_log.log(Msg::SpawnedObject(spire, entities.typ[&spire], pos, EntityName::Spire, entities.direction[&spire]));
 
@@ -185,6 +187,7 @@ pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
     entities.status[&elf].alive = true;
     entities.direction.insert(elf,  Direction::from_f32(rand_from_pos(pos)));
     entities.stance.insert(elf,  Stance::Standing);
+    entities.move_mode.insert(elf,  MoveMode::Walk);
 
     msg_log.log(Msg::SpawnedObject(elf, entities.typ[&elf], pos, EntityName::Pawn, entities.direction[&elf]));
 

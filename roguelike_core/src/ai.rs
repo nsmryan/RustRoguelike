@@ -164,7 +164,7 @@ pub fn ai_investigate(target_pos: Pos,
                 let pos_offset = ai_take_astar_step(monster_id, target_pos, must_reach, &data);
                 let move_pos = add_pos(monster_pos, pos_offset);
 
-                let direction = Direction::from_positions(move_pos, monster_pos).unwrap();
+                let direction = Direction::from_positions(monster_pos, move_pos).unwrap();
                 msg_log.log(Msg::TryMove(monster_id, direction, 1, MoveMode::Walk));
             }
         }

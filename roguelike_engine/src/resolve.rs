@@ -528,7 +528,8 @@ fn resolve_try_move(entity_id: EntityId,
     } else {
         // monsters that are not idle, but their movement does not change their
         // position will return to idle.
-        if data.entities.behavior[&entity_id] != Behavior::Idle {
+        if data.entities.behavior.get(&entity_id) != None &&
+           data.entities.behavior.get(&entity_id) != Some(&Behavior::Idle) {
             // this takes up the monster's turn, as they already committed to this movement
             data.entities.took_turn[&entity_id] = true;
             msg_log.log(Msg::StateChange(entity_id, Behavior::Idle));
@@ -1227,7 +1228,7 @@ fn resolve_ai_attack(entity_id: EntityId,
         msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
     } else if let Some(hit_pos) = can_hit_target {
         let entity_pos = data.entities.pos[&entity_id];
-        let direction = Direction::from_positions(hit_pos, entity_pos).unwrap();
+        let direction = Direction::from_positions(entity_pos, hit_pos).unwrap();
         msg_log.log(Msg::TryMove(entity_id, direction, 1, MoveMode::Walk));
     } else if !data.is_in_fov(entity_id, target_pos, config) {
         msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
@@ -1238,7 +1239,7 @@ fn resolve_ai_attack(entity_id: EntityId,
         if let Some(move_pos) = maybe_pos {
             // try to move in the given direction
             let entity_pos = data.entities.pos[&entity_id];
-            let direction = Direction::from_positions(move_pos, entity_pos).unwrap();
+            let direction = Direction::from_positions(entity_pos, move_pos).unwrap();
             msg_log.log(Msg::TryMove(entity_id, direction, 1, MoveMode::Walk));
         } else {
             // if we can't move anywhere, we just end our turn
