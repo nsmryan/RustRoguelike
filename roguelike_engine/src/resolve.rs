@@ -625,8 +625,6 @@ fn resolve_action(entity_id: EntityId,
         let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
 
         msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
-    } else if let Action::StateChange(behavior) = action {
-        msg_log.log(Msg::StateChange(entity_id, behavior));
     }
 }
 

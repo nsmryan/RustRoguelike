@@ -9,7 +9,6 @@ use serde::{Serialize, Deserialize};
 use crate::types::*;
 use crate::utils::*;
 use crate::map::{Wall, Blocked, TileType};
-use crate::ai::Behavior;
 use crate::line::*;
 
 
@@ -17,7 +16,6 @@ use crate::line::*;
 pub enum Action {
     Move(MoveType, Pos),
     MoveDir(Direction, MoveMode),
-    StateChange(Behavior),
     NoAction,
 }
 

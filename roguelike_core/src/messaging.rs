@@ -132,7 +132,6 @@ impl fmt::Display for Msg {
                 match action {
                     Action::Move(move_type, pos) => write!(f, "action_move {} {} {} {}", entity_id, move_type, pos.x, pos.y),
                     Action::MoveDir(direction, move_mode) => write!(f, "action_move_dir {} {} {}", entity_id, direction, move_mode),
-                    Action::StateChange(behavior) => write!(f, "action_state_change {} {}", entity_id, behavior),
                     Action::NoAction => write!(f, "action_none {}", entity_id),
                 }
             }
