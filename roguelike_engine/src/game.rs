@@ -68,7 +68,7 @@ impl Game {
             self.vaults.push(parse_vault(vault_file_name, &self.config));
         }
     }
-        
+
     pub fn step_game(&mut self, input_action: InputAction, dt: f32) -> bool {
         self.settings.dt = dt;
         self.settings.time += dt;
@@ -82,7 +82,7 @@ impl Game {
                               &mut self.msg_log,
                               &self.config);
 
-        if game.msg_log.messages.len() > 0 {
+        if self.msg_log.messages.len() > 0 {
             let finished_level = step_logic(self);
 
             if finished_level {

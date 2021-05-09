@@ -40,7 +40,6 @@ pub enum Msg {
     StateChange(EntityId, Behavior),
     Collided(EntityId, Pos),
     Yell(EntityId),
-    GameState(GameState),
     ChangeMoveMode(EntityId, bool), // true = increase, false = decrease
     MoveMode(EntityId, MoveMode),
     TriedRunWithHeavyEquipment,
@@ -117,7 +116,6 @@ impl fmt::Display for Msg {
             }
             Msg::Collided(entity_id, pos) => write!(f, "collided {} {} {}", entity_id, pos.x, pos.y),
             Msg::Yell(entity_id) => write!(f, "yell {}", entity_id),
-            Msg::GameState(state) => write!(f, "game_state {}", state),
             Msg::ChangeMoveMode(entity_id, upwards) => write!(f, "chage_move_mode {} {}", entity_id, upwards),
             Msg::MoveMode(entity_id, move_mode) => write!(f, "move_mode {} {}", entity_id, move_mode),
             Msg::TriedRunWithHeavyEquipment => write!(f, "tried_run_with_heavy_equipment"),
@@ -269,35 +267,6 @@ impl Msg {
 
             Msg::Collided(_entity_id, _pos) => {
                 return "Collided".to_string();
-            }
-
-            Msg::GameState(game_state) => {
-                match game_state {
-                    GameState::Inventory => {
-                        return "Opened Inventory".to_string();
-                    }
-
-                    GameState::Playing => {
-                        return "".to_string();
-                    }
-
-                    GameState::SkillMenu => {
-                        return "Selecting a skill".to_string();
-                    }
-
-                    GameState::ClassMenu => {
-                        return "Selecting a class".to_string();
-                    }
-
-                    GameState::ConfirmQuit => {
-                        return "Confirm quit".to_string();
-                    }
-
-                    _ => {
-                        dbg!(game_state);
-                        panic!();
-                    }
-                }
             }
 
             Msg::ChangeMoveMode(_entity_id, _increase) => {

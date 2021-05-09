@@ -307,18 +307,15 @@ pub fn handle_input_inventory(input: InputAction,
                               msg_log: &mut MsgLog) {
     match input {
         InputAction::Inventory => {
-            settings.state = GameState::Playing;
-            msg_log.log(Msg::GameState(GameState::Playing));
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::Esc => {
-            settings.state = GameState::Playing;
-            msg_log.log(Msg::GameState(GameState::Playing));
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::Exit => {
-            settings.state = GameState::ConfirmQuit;
-            msg_log.log(Msg::GameState(GameState::ConfirmQuit));
+            change_state(settings, GameState::ConfirmQuit);
         }
 
         _ => {
@@ -333,13 +330,11 @@ pub fn handle_input_skill_menu(input: InputAction,
                                config: &Config) {
     match input {
         InputAction::Inventory => {
-            settings.state = GameState::Inventory;
-            msg_log.log(Msg::GameState(GameState::Inventory));
+            change_state(settings, GameState::Inventory);
         }
 
         InputAction::SkillMenu => {
-            settings.state = GameState::Playing;
-            msg_log.log(Msg::GameState(GameState::Playing));
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::SelectItem(skill_index) => {
@@ -347,13 +342,11 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::Esc => {
-            settings.state = GameState::Playing;
-            msg_log.log(Msg::GameState(GameState::Playing));
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::Exit => {
-            settings.state = GameState::ConfirmQuit;
-            msg_log.log(Msg::GameState(GameState::ConfirmQuit));
+            change_state(settings, GameState::ConfirmQuit);
         }
 
         _ => {
@@ -367,13 +360,11 @@ pub fn handle_input_class_menu(input: InputAction,
                                msg_log: &mut MsgLog) {
     match input {
         InputAction::Inventory => {
-            settings.state = GameState::Inventory;
-            msg_log.log(Msg::GameState(GameState::Inventory));
+            change_state(settings, GameState::Inventory);
         }
 
         InputAction::ClassMenu => {
-            settings.state = GameState::Playing;
-            msg_log.log(Msg::GameState(GameState::Playing));
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::SelectItem(class_index) => {
@@ -382,19 +373,16 @@ pub fn handle_input_class_menu(input: InputAction,
                 // give player skills from a particular class
                 msg_log.log(Msg::AddClass(classes[class_index]));
 
-                settings.state = GameState::Playing;
-                msg_log.log(Msg::GameState(GameState::Playing));
+                change_state(settings, GameState::Playing);
             }
         }
 
         InputAction::Esc => {
-            settings.state = GameState::Playing;
-            msg_log.log(Msg::GameState(GameState::Playing));
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::Exit => {
-            settings.state = GameState::ConfirmQuit;
-            msg_log.log(Msg::GameState(GameState::ConfirmQuit));
+            change_state(settings, GameState::ConfirmQuit);
         }
 
         _ => {
@@ -405,13 +393,11 @@ pub fn handle_input_class_menu(input: InputAction,
 pub fn handle_input_confirm_quit(input: InputAction, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     match input {
         InputAction::Esc => {
-            settings.state = GameState::Playing;
-            msg_log.log(Msg::GameState(GameState::Playing));
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::Exit => {
-            settings.state = GameState::Exit;
-            msg_log.log(Msg::GameState(GameState::Exit));
+            change_state(settings, GameState::Exit);
         }
 
         _ => {
@@ -542,8 +528,7 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::DropItem, true) => {
             settings.inventory_action = InventoryAction::Drop;
-            settings.state = GameState::Inventory;
-            msg_log.log(Msg::GameState(GameState::Inventory));
+            change_state(settings, GameState::Inventory);
         }
 
         (InputAction::Pickup, true) => {
@@ -576,23 +561,19 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::Inventory, true) => {
             settings.inventory_action = InventoryAction::Use;
-            settings.state = GameState::Inventory;
-            msg_log.log(Msg::GameState(GameState::Inventory));
+            change_state(settings, GameState::Inventory);
         }
 
         (InputAction::SkillMenu, true) => {
-            settings.state = GameState::SkillMenu;
-            msg_log.log(Msg::GameState(GameState::SkillMenu));
+            change_state(settings, GameState::SkillMenu);
         }
 
         (InputAction::ClassMenu, true) => {
-            settings.state = GameState::ClassMenu;
-            msg_log.log(Msg::GameState(GameState::ClassMenu));
+            change_state(settings, GameState::ClassMenu);
         }
 
         (InputAction::Exit, _) => {
-            settings.state = GameState::ConfirmQuit;
-            msg_log.log(Msg::GameState(GameState::ConfirmQuit));
+            change_state(settings, GameState::ConfirmQuit);
         }
 
         (InputAction::Interact(dir), _) => {
@@ -863,6 +844,45 @@ fn chord_selection(loc: ActionLoc,
                         msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, end));
                     }
                 }
+            }
+        }
+    }
+}
+
+    
+pub fn change_state(settings: &mut GameSettings, new_state: GameState) {
+    if new_state != settings.state {
+        settings.state = new_state;
+        match new_state {
+            GameState::Inventory => {
+                println!("CONSOLE: Opened Inventory");
+            }
+
+            GameState::Playing => {
+            }
+
+            GameState::SkillMenu => {
+                println!("CONSOLE: Selecting a skill");
+            }
+
+            GameState::ClassMenu => {
+                println!("CONSOLE: Selecting a class");
+            }
+
+            GameState::ConfirmQuit => {
+                println!("CONSOLE: Confirm quit");
+            }
+
+            GameState::Win => {
+                println!("CONSOLE: Won Level!");
+            }
+
+            GameState::Lose => {
+                println!("CONSOLE: Lost Level!");
+            }
+
+            GameState::Exit => {
+                println!("CONSOLE: Exiting");
             }
         }
     }
