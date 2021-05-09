@@ -22,25 +22,6 @@ pub enum ActionLoc {
     None
 }
 
-#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
-pub struct ActionResult {
-    pub movement: Option<(Direction, MoveMode)>,
-    pub new_state: Option<GameState>,
-}
-
-impl Default for ActionResult {
-    fn default() -> ActionResult {
-        return ActionResult::new(None, None);
-    }
-}
-
-impl ActionResult {
-    pub fn new(movement: Option<(Direction, MoveMode)>, new_state: Option<GameState>) -> ActionResult {
-        return ActionResult { movement, new_state };
-    }
-}
-
-
 pub type ActionTarget = i32;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

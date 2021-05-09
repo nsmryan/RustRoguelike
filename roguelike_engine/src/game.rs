@@ -10,7 +10,7 @@ use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
 
 use crate::actions;
-use crate::actions::{InputAction, ActionResult};
+use crate::actions::InputAction;
 use crate::generation::*;
 use crate::make_map::make_map;
 use crate::step::step_logic;
