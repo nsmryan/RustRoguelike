@@ -150,7 +150,9 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         let file =
             std::fs::File::open(&replay_file).expect(&format!("Could not open replay file '{}'", &replay_file));
         for line in std::io::BufReader::new(file).lines() {
-            if let Ok(action) = InputAction::from_str(&line.unwrap()) { starting_actions.push(action);
+            println!("{:?}", &line);
+            if let Ok(action) = InputAction::from_str(&line.unwrap()) { 
+                starting_actions.push(action);
             }
         }
     }
