@@ -82,17 +82,21 @@ impl Game {
                               &mut self.msg_log,
                               &self.config);
 
-        let finsished_level = step_logic(self);
-        if finsished_level {
-            let player_id = self.data.find_by_name(EntityName::Player).unwrap();
-            let key_id = self.data.is_in_inventory(player_id, Item::Key).expect("Won level without key!");
-            self.data.entities.remove_item(player_id, key_id);
+        if game.msg_log.messages.len() > 0 {
+            let finished_level = step_logic(self);
 
-            self.settings.state = GameState::Playing;
+            if finished_level {
+                // NOTE this is not a very general way to handle ending a level.
+                let player_id = self.data.find_by_name(EntityName::Player).unwrap();
+                let key_id = self.data.is_in_inventory(player_id, Item::Key).expect("Won level without key!");
+                self.data.entities.remove_item(player_id, key_id);
 
-            self.settings.level_num += 1;
+                self.settings.state = GameState::Playing;
 
-            make_map(&self.config.map_load.clone(), self);
+                self.settings.level_num += 1;
+
+                make_map(&self.config.map_load.clone(), self);
+            }
         }
 
         /* Check for explored tiles */

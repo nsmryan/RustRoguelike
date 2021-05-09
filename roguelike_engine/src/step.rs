@@ -25,15 +25,6 @@ pub fn step_logic(game: &mut Game) -> bool {
         game.data.entities.took_turn[id] = false;
     }
 
-    /* Actions */
-    // TODO remove this when messages are spawned directly.
-    // then refactor this function to always run, and only update the
-    // rest of the game if the player took their turn.
-    //if let Some((direction, move_mode)) = movement {
-    //    let amount = move_mode.move_amount();
-    //    game.msg_log.log(Msg::TryMove(player_id, direction, amount, move_mode));
-    //}
-
     eprintln!();
     eprintln!("Turn {}:", game.settings.turn_count);
 
