@@ -18,17 +18,19 @@ use crate::resolve::resolve_messages;
 use crate::make_map::*;
 
 
-pub fn step_logic(game: &mut Game, player_action: Action) -> bool {
+pub fn step_logic(game: &mut Game, movement: Option<(Direction, MoveMode)>) -> bool {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     for id in game.data.entities.ids.iter() {
         game.data.entities.took_turn[id] = false;
     }
 
-    game.data.entities.action[&player_id] = player_action;
-
     /* Actions */
-    game.msg_log.log(Msg::Action(player_id, player_action));
+    if let Some((direction, move_mode)) = movement {
+        game.data.entities.move_mode[&player_id] = move_mode;
+        let amount = move_mode.move_amount();
+        game.msg_log.log(Msg::TryMove(player_id, direction, amount, move_mode));
+    }
 
     eprintln!();
     eprintln!("Turn {}:", game.settings.turn_count);

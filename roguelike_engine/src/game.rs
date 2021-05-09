@@ -88,7 +88,7 @@ impl Game {
         }
 
         if input_action != InputAction::None || self.msg_log.messages.len() > 0 {
-            let finsished_level = step_logic(self, action_result.turn);
+            let finsished_level = step_logic(self, action_result.movement);
             if finsished_level {
                 let player_id = self.data.find_by_name(EntityName::Player).unwrap();
                 let key_id = self.data.is_in_inventory(player_id, Item::Key).expect("Won level without key!");
