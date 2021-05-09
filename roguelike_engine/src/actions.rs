@@ -3,7 +3,7 @@ use std::fmt;
 
 use serde::{Serialize, Deserialize};
 
-use roguelike_core::movement::{Direction, Action, Reach, MoveMode, MoveType};
+use roguelike_core::movement::{Direction, Reach, MoveMode, MoveType};
 use roguelike_core::types::*;
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
@@ -303,44 +303,43 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) {
 
 pub fn handle_input_inventory(input: InputAction,
                               _data: &GameData,
-                              _settings: &mut GameSettings,
-                              _msg_log: &mut MsgLog) -> Option<GameState> {
-    let mut new_state = None;
-
+                              settings: &mut GameSettings,
+                              msg_log: &mut MsgLog) {
     match input {
         InputAction::Inventory => {
-            new_state = Some(GameState::Playing);
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(GameState::Playing));
         }
 
         InputAction::Esc => {
-            new_state = Some(GameState::Playing);
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(GameState::Playing));
         }
 
         InputAction::Exit => {
-            new_state = Some(GameState::ConfirmQuit);
+            settings.state = GameState::ConfirmQuit;
+            msg_log.log(Msg::GameState(GameState::ConfirmQuit));
         }
 
         _ => {
         }
     }
-
-    return new_state;
 }
 
 pub fn handle_input_skill_menu(input: InputAction,
                                data: &GameData,
                                settings: &mut GameSettings,
                                msg_log: &mut MsgLog,
-                               config: &Config) -> Option<GameState> {
-    let mut new_state = None;
-
+                               config: &Config) {
     match input {
         InputAction::Inventory => {
-            new_state = Some(GameState::Inventory);
+            settings.state = GameState::Inventory;
+            msg_log.log(Msg::GameState(GameState::Inventory));
         }
 
         InputAction::SkillMenu => {
-            new_state = Some(GameState::Playing);
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(GameState::Playing));
         }
 
         InputAction::SelectItem(skill_index) => {
@@ -348,33 +347,33 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::Esc => {
-            new_state = Some(GameState::Playing);
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(GameState::Playing));
         }
 
         InputAction::Exit => {
-            new_state = Some(GameState::ConfirmQuit);
+            settings.state = GameState::ConfirmQuit;
+            msg_log.log(Msg::GameState(GameState::ConfirmQuit));
         }
 
         _ => {
         }
     }
-
-    return new_state;
 }
 
 pub fn handle_input_class_menu(input: InputAction,
                                _data: &GameData,
-                               _settings: &mut GameSettings,
-                               msg_log: &mut MsgLog) -> Option<GameState> {
-    let mut new_state = None;
-
+                               settings: &mut GameSettings,
+                               msg_log: &mut MsgLog) {
     match input {
         InputAction::Inventory => {
-            new_state = Some(GameState::Inventory);
+            settings.state = GameState::Inventory;
+            msg_log.log(Msg::GameState(GameState::Inventory));
         }
 
         InputAction::ClassMenu => {
-            new_state = Some(GameState::Playing);
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(GameState::Playing));
         }
 
         InputAction::SelectItem(class_index) => {
@@ -382,55 +381,52 @@ pub fn handle_input_class_menu(input: InputAction,
             if class_index < classes.len() {
                 // give player skills from a particular class
                 msg_log.log(Msg::AddClass(classes[class_index]));
-                new_state = Some(GameState::Playing);
+
+                settings.state = GameState::Playing;
+                msg_log.log(Msg::GameState(GameState::Playing));
             }
         }
 
         InputAction::Esc => {
-            new_state = Some(GameState::Playing);
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(GameState::Playing));
         }
 
         InputAction::Exit => {
-            new_state = Some(GameState::ConfirmQuit);
+            settings.state = GameState::ConfirmQuit;
+            msg_log.log(Msg::GameState(GameState::ConfirmQuit));
         }
 
         _ => {
         }
     }
-
-    return new_state;
 }
 
-pub fn handle_input_confirm_quit(input: InputAction) -> Option<GameState> {
-    let mut new_state = None;
-
+pub fn handle_input_confirm_quit(input: InputAction, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     match input {
         InputAction::Esc => {
-            new_state = Some(GameState::Playing);
+            settings.state = GameState::Playing;
+            msg_log.log(Msg::GameState(GameState::Playing));
         }
 
         InputAction::Exit => {
-            new_state = Some(GameState::Exit);
+            settings.state = GameState::Exit;
+            msg_log.log(Msg::GameState(GameState::Exit));
         }
 
         _ => {
         }
     }
-
-    return new_state;
 }
 
 pub fn handle_input(input_action: InputAction,
                     data: &GameData,
                     settings: &mut GameSettings,
                     msg_log: &mut MsgLog,
-                    config: &Config) -> Option<GameState> {
-    let mut new_state = None;
-
+                    config: &Config) {
     match settings.state {
         GameState::Playing => {
-            new_state =
-                handle_input_playing(input_action, data, settings, msg_log, config);
+            handle_input_playing(input_action, data, settings, msg_log, config);
         }
 
         GameState::Win => {
@@ -440,38 +436,31 @@ pub fn handle_input(input_action: InputAction,
         }
 
         GameState::Inventory => {
-            new_state = 
-                handle_input_inventory(input_action, data, settings, msg_log);
+            handle_input_inventory(input_action, data, settings, msg_log);
         }
 
         GameState::SkillMenu => {
-            new_state = 
-                handle_input_skill_menu(input_action, data, settings, msg_log, config);
+            handle_input_skill_menu(input_action, data, settings, msg_log, config);
         }
 
         GameState::ClassMenu => {
-            new_state =
-                handle_input_class_menu(input_action, data, settings, msg_log);
+            handle_input_class_menu(input_action, data, settings, msg_log);
         }
 
         GameState::ConfirmQuit => {
-            new_state = handle_input_confirm_quit(input_action);
+            handle_input_confirm_quit(input_action, settings, msg_log);
         }
 
         GameState::Exit => {
         }
     }
-
-    return new_state;
 }
 
 pub fn handle_input_playing(input_action: InputAction,
                             data: &GameData,
                             settings: &mut GameSettings,
                             msg_log: &mut MsgLog,
-                            config: &Config) -> Option<GameState> {
-    let mut new_state = None;
-
+                            config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
 
@@ -553,7 +542,8 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::DropItem, true) => {
             settings.inventory_action = InventoryAction::Drop;
-            new_state = Some(GameState::Inventory);
+            settings.state = GameState::Inventory;
+            msg_log.log(Msg::GameState(GameState::Inventory));
         }
 
         (InputAction::Pickup, true) => {
@@ -586,19 +576,23 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::Inventory, true) => {
             settings.inventory_action = InventoryAction::Use;
-            new_state = Some(GameState::Inventory);
+            settings.state = GameState::Inventory;
+            msg_log.log(Msg::GameState(GameState::Inventory));
         }
 
         (InputAction::SkillMenu, true) => {
-            new_state = Some(GameState::SkillMenu);
+            settings.state = GameState::SkillMenu;
+            msg_log.log(Msg::GameState(GameState::SkillMenu));
         }
 
         (InputAction::ClassMenu, true) => {
-            new_state = Some(GameState::ClassMenu);
+            settings.state = GameState::ClassMenu;
+            msg_log.log(Msg::GameState(GameState::ClassMenu));
         }
 
         (InputAction::Exit, _) => {
-            new_state = Some(GameState::ConfirmQuit);
+            settings.state = GameState::ConfirmQuit;
+            msg_log.log(Msg::GameState(GameState::ConfirmQuit));
         }
 
         (InputAction::Interact(dir), _) => {
@@ -625,8 +619,6 @@ pub fn handle_input_playing(input_action: InputAction,
         (_, _) => {
         }
     }
-
-    return new_state;
 }
 
 pub fn handle_skill(skill_index: usize,

@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::map::*;
-use roguelike_core::messaging::{Msg, MsgLog};
+use roguelike_core::messaging::MsgLog;
 
 use crate::actions;
 use crate::actions::InputAction;
@@ -75,32 +75,24 @@ impl Game {
 
         actions::handle_input_universal(input_action, self);
 
-        let new_state: Option<GameState> =
-            actions::handle_input(input_action,
-                                  &self.data,
-                                  &mut self.settings,
-                                  &mut self.msg_log,
-                                  &self.config);
+        // all input is handled by modifying settings and spawning messages
+        actions::handle_input(input_action,
+                              &self.data,
+                              &mut self.settings,
+                              &mut self.msg_log,
+                              &self.config);
 
-        if let Some(state) = new_state {
-            // messages can't modify settings, so change it here.
-            self.settings.state = state;
-            self.msg_log.log(Msg::GameState(self.settings.state));
-        }
+        let finsished_level = step_logic(self);
+        if finsished_level {
+            let player_id = self.data.find_by_name(EntityName::Player).unwrap();
+            let key_id = self.data.is_in_inventory(player_id, Item::Key).expect("Won level without key!");
+            self.data.entities.remove_item(player_id, key_id);
 
-        if input_action != InputAction::None || self.msg_log.messages.len() > 0 {
-            let finsished_level = step_logic(self);
-            if finsished_level {
-                let player_id = self.data.find_by_name(EntityName::Player).unwrap();
-                let key_id = self.data.is_in_inventory(player_id, Item::Key).expect("Won level without key!");
-                self.data.entities.remove_item(player_id, key_id);
+            self.settings.state = GameState::Playing;
 
-                self.settings.state = GameState::Playing;
+            self.settings.level_num += 1;
 
-                self.settings.level_num += 1;
-
-                make_map(&self.config.map_load.clone(), self);
-            }
+            make_map(&self.config.map_load.clone(), self);
         }
 
         /* Check for explored tiles */

@@ -122,10 +122,6 @@ pub fn resolve_messages(data: &mut GameData,
                 resolve_attack(entity_id, attack_info, attack_pos, data, msg_log, config);
             }
 
-            Msg::Action(entity_id, action) => {
-                resolve_action(entity_id, action, data, msg_log, config);
-            }
-
             Msg::TryMove(entity_id, direction, amount, move_mode) => {
                 resolve_try_move(entity_id, direction, amount, move_mode, data, msg_log);
             }
@@ -605,19 +601,6 @@ fn resolve_try_movement(entity_id: EntityId,
         let target_pos = data.entities.pos[target_id];
         data.entities.face(entity_id, target_pos);
     }
-}
-
-// TODO this is likely no longer necessary- the Action type is only used to
-// spawn this message.
-fn resolve_action(entity_id: EntityId,
-                  action: Action,
-                  data: &mut GameData,
-                  msg_log: &mut MsgLog,
-                  _config: &Config) {
-    if let Action::MoveDir(direction, move_mode) = action {
-        let amount = move_mode.move_amount();
-        msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
-    } 
 }
 
 fn resolve_push(entity_id: EntityId,
