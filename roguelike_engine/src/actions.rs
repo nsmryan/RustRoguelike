@@ -301,10 +301,7 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) {
 //    return action_result;
 //}
 
-pub fn handle_input_inventory(input: InputAction,
-                              _data: &GameData,
-                              settings: &mut GameSettings,
-                              msg_log: &mut MsgLog) {
+pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings) {
     match input {
         InputAction::Inventory => {
             change_state(settings, GameState::Playing);
@@ -390,7 +387,7 @@ pub fn handle_input_class_menu(input: InputAction,
     }
 }
 
-pub fn handle_input_confirm_quit(input: InputAction, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+pub fn handle_input_confirm_quit(input: InputAction, settings: &mut GameSettings) {
     match input {
         InputAction::Esc => {
             change_state(settings, GameState::Playing);
@@ -422,7 +419,7 @@ pub fn handle_input(input_action: InputAction,
         }
 
         GameState::Inventory => {
-            handle_input_inventory(input_action, data, settings, msg_log);
+            handle_input_inventory(input_action, settings);
         }
 
         GameState::SkillMenu => {
@@ -434,7 +431,7 @@ pub fn handle_input(input_action: InputAction,
         }
 
         GameState::ConfirmQuit => {
-            handle_input_confirm_quit(input_action, settings, msg_log);
+            handle_input_confirm_quit(input_action, settings);
         }
 
         GameState::Exit => {
