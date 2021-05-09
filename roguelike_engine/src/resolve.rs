@@ -512,6 +512,8 @@ fn resolve_try_move(entity_id: EntityId,
         panic!("Why try to move with amount == 0?");
     }
 
+    data.entities.move_mode[&entity_id] = move_mode;
+
     let reach = data.entities.movement[&entity_id];
     let reach = reach.with_dist(1);
 
@@ -613,7 +615,6 @@ fn resolve_action(entity_id: EntityId,
                   msg_log: &mut MsgLog,
                   _config: &Config) {
     if let Action::MoveDir(direction, move_mode) = action {
-        data.entities.move_mode[&entity_id] = move_mode;
         let amount = move_mode.move_amount();
         msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
     } 

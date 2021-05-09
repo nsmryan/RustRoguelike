@@ -5,7 +5,7 @@ use roguelike_core::config::*;
 use roguelike_core::ai::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::Msg;
-use roguelike_core::movement::{Direction, Action, MoveMode};
+use roguelike_core::movement::{Direction, MoveMode};
 #[cfg(test)]
 use roguelike_core::utils::*;
 
@@ -18,7 +18,7 @@ use crate::resolve::resolve_messages;
 use crate::make_map::*;
 
 
-pub fn step_logic(game: &mut Game, movement: Option<(Direction, MoveMode)>) -> bool {
+pub fn step_logic(game: &mut Game) -> bool {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     for id in game.data.entities.ids.iter() {
@@ -26,11 +26,13 @@ pub fn step_logic(game: &mut Game, movement: Option<(Direction, MoveMode)>) -> b
     }
 
     /* Actions */
-    if let Some((direction, move_mode)) = movement {
-        game.data.entities.move_mode[&player_id] = move_mode;
-        let amount = move_mode.move_amount();
-        game.msg_log.log(Msg::TryMove(player_id, direction, amount, move_mode));
-    }
+    // TODO remove this when messages are spawned directly.
+    // then refactor this function to always run, and only update the
+    // rest of the game if the player took their turn.
+    //if let Some((direction, move_mode)) = movement {
+    //    let amount = move_mode.move_amount();
+    //    game.msg_log.log(Msg::TryMove(player_id, direction, amount, move_mode));
+    //}
 
     eprintln!();
     eprintln!("Turn {}:", game.settings.turn_count);

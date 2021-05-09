@@ -75,20 +75,21 @@ impl Game {
 
         actions::handle_input_universal(input_action, self);
 
-        let action_result: ActionResult =
+        let new_state: Option<GameState> =
             actions::handle_input(input_action,
                                   &self.data,
                                   &mut self.settings,
                                   &mut self.msg_log,
                                   &self.config);
 
-        if let Some(state) = action_result.new_state {
+        if let Some(state) = new_state {
+            // messages can't modify settings, so change it here.
             self.settings.state = state;
             self.msg_log.log(Msg::GameState(self.settings.state));
         }
 
         if input_action != InputAction::None || self.msg_log.messages.len() > 0 {
-            let finsished_level = step_logic(self, action_result.movement);
+            let finsished_level = step_logic(self);
             if finsished_level {
                 let player_id = self.data.find_by_name(EntityName::Player).unwrap();
                 let key_id = self.data.is_in_inventory(player_id, Item::Key).expect("Won level without key!");
@@ -104,6 +105,7 @@ impl Game {
 
         /* Check for explored tiles */
         let player_id = self.data.find_by_name(EntityName::Player).unwrap();
+        // TODO make this to a map function like 'explore_from_position'.
         for pos in self.data.map.get_all_pos() {
             let visible =
                 self.data.is_in_fov(player_id, pos, &self.config) ||
