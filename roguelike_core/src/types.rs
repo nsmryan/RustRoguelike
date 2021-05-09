@@ -371,7 +371,6 @@ impl GameData {
         self.entities.move_mode.remove(&id);
         self.entities.direction.remove(&id);
         self.entities.selected_item.remove(&id);
-        self.entities.action.remove(&id);
         self.entities.class.remove(&id);
         self.entities.skills.remove(&id);
         self.entities.limbo.remove(&id);
@@ -890,7 +889,6 @@ pub struct Entities {
     pub move_mode: CompStore<MoveMode>,
     pub direction: CompStore<Direction>,
     pub selected_item: CompStore<EntityId>,
-    pub action: CompStore<Action>,
     pub class: CompStore<EntityClass>,
     pub skills: CompStore<Vec<Skill>>,
     pub limbo: CompStore<()>,
@@ -965,7 +963,6 @@ impl Entities {
         self.blocks.insert(id, blocks);
         self.direction.insert(id, Direction::Up);
         self.animation.insert(id,  VecDeque::new());
-        self.action.insert(id,  Action::NoAction);
         self.messages.insert(id,  Vec::new());
         self.needs_removal.insert(id,  false);
         self.status.insert(id,  StatusEffect::default());
@@ -1150,7 +1147,6 @@ impl Entities {
         move_component!(move_mode);
         move_component!(direction);
         move_component!(selected_item);
-        move_component!(action);
         move_component!(class);
         move_component!(skills);
         move_component!(limbo);

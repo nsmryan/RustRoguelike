@@ -12,23 +12,6 @@ use crate::map::{Wall, Blocked, TileType};
 use crate::line::*;
 
 
-#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
-pub enum Action {
-    MoveDir(Direction, MoveMode),
-    NoAction,
-}
-
-impl Action {
-    pub fn none() -> Action {
-        return Action::NoAction;
-    }
-
-    pub fn is_none(&self) -> bool {
-        return *self == Action::NoAction;
-    }
-}
-
-
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum MoveMode {
     Sneak,

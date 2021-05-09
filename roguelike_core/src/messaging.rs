@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::types::*;
 use crate::map::*;
-use crate::movement::{MoveType, MoveMode, Action, Direction};
+use crate::movement::{MoveType, MoveMode, Direction};
 use crate::ai::Behavior;
 use crate::movement::Attack;
 
@@ -49,7 +49,6 @@ pub enum Msg {
     HammerHitEntity(EntityId, EntityId), // entity, hit entity
     HammerHitWall(EntityId, Blocked),
     Stabbed(EntityId, EntityId), // entity, hit entity
-    Action(EntityId, Action),
     FailedBlink(EntityId),
     NotEnoughEnergy(EntityId),
     DropFailed(EntityId),
@@ -127,13 +126,6 @@ impl fmt::Display for Msg {
             Msg::HammerHitEntity(entity_id, target_id) => write!(f, "hammer_hit_entity {} {}", entity_id, target_id),
             Msg::HammerHitWall(entity_id, blocked) => write!(f, "hammer_hit_wall {} {} {} {} {} {}", entity_id, blocked.start_pos, blocked.end_pos, blocked.direction, blocked.blocked_tile, blocked.wall_type),
             Msg::Stabbed(entity_id, target_id) => write!(f, "stabbed {} {}", entity_id, target_id),
-            // TODO this needs to be worked out
-            Msg::Action(entity_id, action) => {
-                match action {
-                    Action::MoveDir(direction, move_mode) => write!(f, "action_move_dir {} {} {}", entity_id, direction, move_mode),
-                    Action::NoAction => write!(f, "action_none {}", entity_id),
-                }
-            }
             Msg::FailedBlink(entity_id) => write!(f, "failed_blink {}", entity_id),
             Msg::NotEnoughEnergy(entity_id) => write!(f, "not_enough_energy {}", entity_id),
             Msg::DropFailed(entity_id) => write!(f, "drop_failed {}", entity_id),
