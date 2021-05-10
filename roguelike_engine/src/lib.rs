@@ -7,3 +7,4 @@ pub mod procgen;
 pub mod step;
 pub mod input;
 pub mod vault;
+pub mod log;

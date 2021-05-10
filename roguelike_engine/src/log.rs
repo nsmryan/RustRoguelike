@@ -1,0 +1,68 @@
+use std::fmt;
+use std::fs::File;
+use std::io::{stdout, Write};
+
+use serde::{Serialize, Deserialize};
+
+
+pub struct Log {
+    pub action_log: File,
+    pub message_log: File,
+}
+
+impl Log {
+    pub fn new() -> Log {
+        let action_log = File::create("action_log.txt")
+                              .expect("Could not open action_log.txt");
+        let message_log = File::create("messages.txt")
+                               .expect("Could not open messages.txt");
+
+        let log = Log {
+            action_log,
+            message_log,
+        };
+
+        return log;
+    }
+
+    pub fn log_output(&mut self, log_message: &str) {
+        self.log(LogMsgType::Output, log_message);
+    }
+
+    pub fn log_console(&mut self, log_message: &str) {
+        self.log(LogMsgType::Console, log_message);
+    }
+
+    pub fn log_msg(&mut self, log_message: &str) {
+        self.log(LogMsgType::Msg, log_message);
+    }
+
+    pub fn log_key(&mut self, log_message: &str) {
+        self.log(LogMsgType::Key, log_message);
+    }
+
+    pub fn log(&mut self, typ: LogMsgType, log_message: &str) {
+        println!("{}: {}", typ, log_message);
+        stdout().flush().unwrap();
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum LogMsgType {
+    Output,
+    Console,
+    Msg,
+    Key,
+}
+
+impl fmt::Display for LogMsgType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LogMsgType::Output => write!(f, "OUTPUT"),
+            LogMsgType::Console => write!(f, "CONSOLE"),
+            LogMsgType::Msg => write!(f, "MSG"),
+            LogMsgType::Key => write!(f, "KEY"),
+        }
+    }
+}
+

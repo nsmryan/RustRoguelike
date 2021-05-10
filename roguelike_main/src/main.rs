@@ -215,6 +215,15 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
             frame_time = Instant::now();
             game.step_game(input_action, dt);
 
+            for msg_index in 0..game.msg_log.turn_messages.len() {
+                let msg = game.msg_log.turn_messages[msg_index];
+                let msg_line = &msg.msg_line(&game.data);
+                if msg_line.len() > 0 {
+                    game.log_console(msg_line);
+                }
+                game.log_msg(&format!("{}", msg));
+            }
+
             if game.settings.state == GameState::Win {
                 display.clear_level_state();
             } else if game.settings.state == GameState::Exit {

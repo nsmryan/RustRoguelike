@@ -32,6 +32,7 @@ pub struct Game {
 }
 
 impl Game {
+    // TODO I think this can be simplified to return a Game directly
     pub fn new(seed: u64, config: Config) -> Result<Game, String> {
         let entities = Entities::new();
         let rng: Rand32 = Rand32::new(seed);
@@ -123,15 +124,6 @@ impl Game {
                 self.settings.level_num += 1;
 
                 make_map(&self.config.map_load.clone(), self);
-            }
-
-            for msg_index in 0..self.msg_log.turn_messages.len() {
-                let msg = self.msg_log.turn_messages[msg_index];
-                let msg_line = &msg.msg_line(&self.data);
-                if msg_line.len() > 0 {
-                    self.log_console(msg_line);
-                }
-                self.log_msg(&format!("{}", msg));
             }
         }
 
