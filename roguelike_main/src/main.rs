@@ -6,14 +6,13 @@ mod keyboard;
 mod load;
 
 use std::fs;
-use std::io::{BufRead, Write, stdout};
+use std::io::BufRead;
 use std::time::{Duration, Instant, SystemTime};
 use std::path::Path;
 use std::str::FromStr;
 use std::thread;
 use std::sync::mpsc::{self, Receiver};
 
-//use sdl2::event::Event;
 use sdl2::EventPump;
 
 use log::LevelFilter;
@@ -31,6 +30,7 @@ use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
 use roguelike_engine::actions::*;
 use roguelike_engine::make_map::{make_map, read_map_xp};
+use roguelike_engine::log::*;
 
 use roguelike_lib::commands::*;
 
@@ -150,31 +150,31 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         let file =
             std::fs::File::open(&replay_file).expect(&format!("Could not open replay file '{}'", &replay_file));
         for line in std::io::BufReader::new(file).lines() {
-            if let Ok(action) = InputAction::from_str(&line.unwrap()) { starting_actions.push(action);
+            if let Ok(action) = InputAction::from_str(&line.unwrap()) { 
+                starting_actions.push(action);
             }
         }
+
+        // reverse the input log so we can pop actions off start-to-end
+        starting_actions.reverse();
     }
 
     let mut config_modified_time = fs::metadata(CONFIG_NAME).unwrap().modified().unwrap();
 
-    // reverse the input log so we can pop actions off start-to-end
-    starting_actions.reverse();
-
-    /* Action Log */
-    let mut action_log = std::fs::File::create("action_log.txt").unwrap();
+    /* Log */
+    let mut log = Log::new();
 
     /* Setup FPS Throttling */
     let frame_ms = 1000 / game.config.frame_rate as u64;
     let fps_throttler = Throttler::new(Duration::from_millis(frame_ms));
 
-
+    /* Set up Input Handling */
     let io_recv = spawn_input_reader();
 
     let mut event_pump = sdl_context.event_pump()?;
 
-    let mut frame_time = Instant::now();
-
     /* Main Game Loop */
+    let mut frame_time = Instant::now();
     while game.settings.running {
         let _loop_timer = timer!("GAME_LOOP");
 
@@ -184,7 +184,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
             let _input_timer = timer!("INPUT");
 
             // check for commands to execute
-            process_commands(&io_recv, &mut game);
+            process_commands(&io_recv, &mut game, &mut log);
 
             input_action = process_input_events(frame_time, &mut event_pump, &mut game, &mut display);
         }
@@ -192,6 +192,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         /* Misc */
         {
             let _misc_timer = timer!("MISC");
+
             // if there are starting actions to read, pop one off to play
             if let Some(action) = starting_actions.pop() {
                 input_action = action;
@@ -201,11 +202,8 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
                 game.settings.running = false;
            }
 
-            /* Record Inputs to Log File */
-            if input_action != InputAction::None && input_action != InputAction::Exit {
-                action_log.write(input_action.to_string().as_bytes()).unwrap();
-                action_log.write("\n".as_bytes()).unwrap();
-            }
+           /* Record Inputs to Log File */
+           log.log_action(input_action);
         }
 
         /* Logic */
@@ -219,9 +217,9 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
                 let msg = game.msg_log.turn_messages[msg_index];
                 let msg_line = &msg.msg_line(&game.data);
                 if msg_line.len() > 0 {
-                    game.log_console(msg_line);
+                    log.log_console(msg_line);
                 }
-                game.log_msg(&format!("{}", msg));
+                log.log_msg(&format!("{}", msg));
             }
 
             if game.settings.state == GameState::Win {
@@ -335,17 +333,15 @@ fn process_input_events(frame_time: Instant, event_pump: &mut EventPump, game: &
     return input_action;
 }
 
-fn process_commands(io_recv: &Receiver<String>, game: &mut Game) {
+fn process_commands(io_recv: &Receiver<String>, game: &mut Game, log: &mut Log) {
     if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(0)) {
         if let Ok(cmd) = msg.parse::<GameCmd>() {
             let result = execute_game_command(&cmd, game);
             if !result.is_empty() {
-                game.log_output(&result);
-                stdout().flush().unwrap();
+                log.log_output(&result);
             }
         } else {
-            game.log_output(&format!("error '{}' unexpected", msg));
-            stdout().flush().unwrap();
+            log.log_output(&format!("error '{}' unexpected", msg));
         }
     }
 }

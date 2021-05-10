@@ -8,6 +8,7 @@ use std::time::Duration;
 use roguelike_core::config::*;
 use roguelike_engine::game::*;
 use roguelike_engine::make_map::*;
+use roguelike_engine::log::*;
 
 use crate::commands::*;
 
@@ -24,19 +25,21 @@ pub fn main() {
 
     let io_recv = spawn_input_reader();
 
+    let mut log = Log::new();
+
     while game.settings.running {
 
         if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(100)) {
             if let Ok(cmd) = msg.parse::<GameCmd>() {
                 let result = execute_game_command(&cmd, &mut game);
-                game.log_output(&result);
+                log.log_output(&result);
             }
         }
 
         // TODO is this actually necessary? it seems like it should be
         // using turn_messages instead, or done jnternally
         while let Some(msg) = game.msg_log.pop() {
-            game.log_msg(&format!("{}", msg));
+            log.log_msg(&format!("{}", msg));
         }
     }
 }

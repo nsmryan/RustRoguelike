@@ -1,6 +1,3 @@
-use std::io::stdout;
-use std::io::Write;
-
 #[allow(unused_imports)]
 use log::{trace, error};
 

@@ -1,6 +1,4 @@
 use std::default::Default;
-use std::fmt;
-use std::io::{stdout, Write};
 
 use oorandom::Rand32;
 
@@ -73,27 +71,6 @@ impl Game {
         }
     }
 
-    pub fn log_output(&mut self, log_message: &str) {
-        self.log(LogMsgType::Output, log_message);
-    }
-
-    pub fn log_console(&mut self, log_message: &str) {
-        self.log(LogMsgType::Console, log_message);
-    }
-
-    pub fn log_msg(&mut self, log_message: &str) {
-        self.log(LogMsgType::Msg, log_message);
-    }
-
-    pub fn log_key(&mut self, log_message: &str) {
-        self.log(LogMsgType::Key, log_message);
-    }
-
-    pub fn log(&mut self, typ: LogMsgType, log_message: &str) {
-        println!("{}: {}", typ, log_message);
-        stdout().flush().unwrap();
-    }
-        
     pub fn step_game(&mut self, input_action: InputAction, dt: f32) -> bool {
         self.settings.dt = dt;
         self.settings.time += dt;
@@ -176,25 +153,6 @@ impl GameSettings {
             running: true,
             cursor: None,
         };
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum LogMsgType {
-    Output,
-    Console,
-    Msg,
-    Key,
-}
-
-impl fmt::Display for LogMsgType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            LogMsgType::Output => write!(f, "OUTPUT"),
-            LogMsgType::Console => write!(f, "CONSOLE"),
-            LogMsgType::Msg => write!(f, "MSG"),
-            LogMsgType::Key => write!(f, "KEY"),
-        }
     }
 }
 

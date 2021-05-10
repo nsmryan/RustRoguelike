@@ -4,6 +4,7 @@ use std::io::{stdout, Write};
 
 use serde::{Serialize, Deserialize};
 
+use crate::actions::*;
 
 pub struct Log {
     pub action_log: File,
@@ -25,6 +26,13 @@ impl Log {
         return log;
     }
 
+    pub fn log_action(&mut self, input_action: InputAction) {
+        if input_action != InputAction::None {
+            self.action_log.write(input_action.to_string().as_bytes()).unwrap();
+            self.action_log.write("\n".as_bytes()).unwrap();
+        }
+    }
+
     pub fn log_output(&mut self, log_message: &str) {
         self.log(LogMsgType::Output, log_message);
     }
@@ -42,7 +50,9 @@ impl Log {
     }
 
     pub fn log(&mut self, typ: LogMsgType, log_message: &str) {
-        println!("{}: {}", typ, log_message);
+        let log_msg = format!("{}: {}\n", typ, log_message);
+        self.message_log.write(log_msg.as_bytes());
+        print!("{}", log_msg);
         stdout().flush().unwrap();
     }
 }
