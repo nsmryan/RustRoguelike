@@ -190,10 +190,6 @@ pub fn test_hammer_small_wall() {
     input_action = InputAction::UseItem(Direction::Down, 0);
     game.step_game(input_action, 0.1);
 
-    for msg in game.msg_log.turn_messages.iter() {
-        println!("{:?}", msg);
-    }
-
     // gol is no longer in entities list after being crushed
     assert!(game.data.entities.is_dead(gol));
 

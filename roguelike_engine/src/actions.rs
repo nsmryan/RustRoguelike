@@ -129,103 +129,88 @@ impl FromStr for InputAction {
     fn from_str(string: &str) -> Result<Self, Self::Err> {
         let s: &mut str = &mut string.to_string();
         s.make_ascii_lowercase();
+        let args = s.split(" ").collect::<Vec<&str>>();
 
-        if s == "left" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        if args[0] == "left" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::Left, move_mode));
-        } else if s == "right" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "right" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::Right, move_mode));
-        } else if s == "up" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "up" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::Up, move_mode));
-        } else if s == "down" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "down" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::Down, move_mode));
-        } else if s == "upleft" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "upleft" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::UpLeft, move_mode));
-        } else if s == "upright" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "upright" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::UpRight, move_mode));
-        } else if s == "downleft" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "downleft" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::DownLeft, move_mode));
-        } else if s == "downright" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "downright" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::DownRight, move_mode));
-        } else if s == "tileapply" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "tileapply" {
             let target = args[1].parse::<ActionTarget>().unwrap();
             return Ok(InputAction::TileApply(target));
-        } else if s == "pass" {
+        } else if args[0] == "pass" {
             return Ok(InputAction::Pass);
-        } else if s == "pickup" {
+        } else if args[0] == "pickup" {
             return Ok(InputAction::Pickup);
-        } else if s == "drop" {
+        } else if args[0] == "drop" {
             return Ok(InputAction::DropItem);
-        } else if s == "droptarget" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "droptarget" {
             let target = args[1].parse::<ActionTarget>().unwrap();
             return Ok(InputAction::DropTargetItem(target));
-        } else if s == "yell" {
+        } else if args[0] == "yell" {
             return Ok(InputAction::Yell);
-        } else if s == "inventory" {
+        } else if args[0] == "inventory" {
             return Ok(InputAction::Inventory);
-        } else if s == "use" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "use" {
             let direction = args[1].parse::<Direction>().unwrap();
             let target = args[1].parse::<ActionTarget>().unwrap();
             return Ok(InputAction::UseItem(direction, target));
         } else if s.starts_with("selectitem") {
-            let args = s.split(" ").collect::<Vec<&str>>();
             let selection = args[1].parse::<usize>().unwrap();
             return Ok(InputAction::SelectItem(selection));
-        } else if s == "interact" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "interact" {
             let dir = args[1].parse::<Direction>().ok();
             return Ok(InputAction::Interact(dir));
-        } else if s == "godmode" {
+        } else if args[0] == "godmode" {
             return Ok(InputAction::GodMode);
         } else if s.starts_with("click") {
-            let args = s.split(" ").collect::<Vec<&str>>();
             let loc_x = args[1].parse::<i32>().unwrap();
             let loc_y = args[2].parse::<i32>().unwrap();
             let cell_x = args[3].parse::<i32>().unwrap();
             let cell_y = args[4].parse::<i32>().unwrap();
             return Ok(InputAction::MapClick(Pos::new(loc_x, loc_y), Pos::new(cell_x, cell_y)));
-        } else if s == "skill" {
+        } else if args[0] == "skill" {
             return Ok(InputAction::SkillMenu);
-        } else if s == "class" {
+        } else if args[0] == "class" {
             return Ok(InputAction::ClassMenu);
-        } else if s == "esc" {
+        } else if args[0] == "esc" {
             return Ok(InputAction::Esc);
-        } else if s == "faster" {
+        } else if args[0] == "faster" {
             return Ok(InputAction::IncreaseMoveMode);
-        } else if s == "slower" {
+        } else if args[0] == "slower" {
             return Ok(InputAction::DecreaseMoveMode);
-        } else if s.starts_with("cursormove") {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "cursormove" {
             let dir = Direction::from_str(args[1]).unwrap();
             let relative = bool::from_str(args[2]).unwrap();
             let long = bool::from_str(args[3]).unwrap();
             return Ok(InputAction::CursorMove(dir, relative, long));
-        } else if s.starts_with("cursorreturn") {
+        } else if args[0] == "cursorreturn" {
             return Ok(InputAction::CursorReturn);
-        } else if s.starts_with("cursorapply") {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "cursorapply" {
             let mode = ActionMode::from_str(args[1]).unwrap();
             let target = args[2].parse::<i32>().unwrap();
             return Ok(InputAction::CursorApply(mode, target));
-        } else if s.starts_with("cursortoggle") {
+        } else if args[0] == "cursortoggle" {
             return Ok(InputAction::CursorToggle);
         } else {
             return Err(format!("Could not parse '{}' as InputAction", s));

@@ -1,6 +1,6 @@
 mod commands;
 
-use std::io::{BufRead, Write, stdout};
+use std::io::BufRead;
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
 use std::time::Duration;
@@ -29,14 +29,12 @@ pub fn main() {
         if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(100)) {
             if let Ok(cmd) = msg.parse::<GameCmd>() {
                 let result = execute_game_command(&cmd, &mut game);
-                println!("OUTPUT: {}", result);
-                stdout().flush().unwrap();
+                game.log_output(&result);
             }
         }
 
         while let Some(msg) = game.msg_log.pop() {
-            println!("MSG: {}", msg);
-            stdout().flush().unwrap();
+            game.log_msg(&format!("{}", msg));
         }
     }
 }

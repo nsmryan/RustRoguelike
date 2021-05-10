@@ -13,7 +13,7 @@ use std::str::FromStr;
 use std::thread;
 use std::sync::mpsc::{self, Receiver};
 
-use sdl2::event::Event;
+//use sdl2::event::Event;
 use sdl2::EventPump;
 
 use log::LevelFilter;
@@ -267,21 +267,22 @@ fn reload_config(config_modified_time: &mut SystemTime, game: &mut Game) {
     }
 }
 
-fn print_event(event: &Event) {
-    match event {
-        Event::KeyDown { timestamp, keycode, scancode, keymod, repeat, .. } => {
-            println!("KEY: {} down {} {} {} {}", timestamp, keycode.unwrap(), scancode.unwrap(), keymod, repeat);
-            stdout().flush().unwrap();
-        }
-
-        Event::KeyUp { timestamp, keycode, scancode, keymod, repeat, .. } => {
-            println!("KEY: {} up   {} {} {} {}", timestamp, keycode.unwrap(), scancode.unwrap(), keymod, repeat);
-            stdout().flush().unwrap();
-        }
-        
-        _ => {}
-    }
-}
+// NOTE if this gets uncommented, replace printouts with game.log_key
+//fn print_event(game: &mut Game, event: &Event) {
+//    match event {
+//        Event::KeyDown { timestamp, keycode, scancode, keymod, repeat, .. } => {
+//            println!("KEY: {} down {} {} {} {}", timestamp, keycode.unwrap(), scancode.unwrap(), keymod, repeat);
+//            stdout().flush().unwrap();
+//        }
+//
+//        Event::KeyUp { timestamp, keycode, scancode, keymod, repeat, .. } => {
+//            println!("KEY: {} up   {} {} {} {}", timestamp, keycode.unwrap(), scancode.unwrap(), keymod, repeat);
+//            stdout().flush().unwrap();
+//        }
+//        
+//        _ => {}
+//    }
+//}
 
 
 pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), String> {
@@ -330,11 +331,11 @@ fn process_commands(io_recv: &Receiver<String>, game: &mut Game) {
         if let Ok(cmd) = msg.parse::<GameCmd>() {
             let result = execute_game_command(&cmd, game);
             if !result.is_empty() {
-                println!("OUTPUT: {}", result);
+                game.log_output(&result);
                 stdout().flush().unwrap();
             }
         } else {
-            println!("OUTPUT: error '{}' unexpected", msg);
+            game.log_output(&format!("error '{}' unexpected", msg));
             stdout().flush().unwrap();
         }
     }

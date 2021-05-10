@@ -1,4 +1,6 @@
 use std::default::Default;
+use std::fmt;
+use std::io::{stdout, Write};
 
 use oorandom::Rand32;
 
@@ -8,6 +10,7 @@ use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
+use roguelike_core::movement::*;
 
 use crate::actions;
 use crate::actions::{InputAction, ActionResult};
@@ -68,6 +71,27 @@ impl Game {
             self.vaults.push(parse_vault(vault_file_name, &self.config));
         }
     }
+
+    pub fn log_output(&mut self, log_message: &str) {
+        self.log(LogMsgType::Output, log_message);
+    }
+
+    pub fn log_console(&mut self, log_message: &str) {
+        self.log(LogMsgType::Console, log_message);
+    }
+
+    pub fn log_msg(&mut self, log_message: &str) {
+        self.log(LogMsgType::Msg, log_message);
+    }
+
+    pub fn log_key(&mut self, log_message: &str) {
+        self.log(LogMsgType::Key, log_message);
+    }
+
+    pub fn log(&mut self, typ: LogMsgType, log_message: &str) {
+        println!("{}: {}", typ, log_message);
+        stdout().flush().unwrap();
+    }
         
     pub fn step_game(&mut self, input_action: InputAction, dt: f32) -> bool {
         self.settings.dt = dt;
@@ -87,7 +111,7 @@ impl Game {
             self.msg_log.log(Msg::GameState(self.settings.state));
         }
 
-        if input_action != InputAction::None || self.msg_log.messages.len() > 0 {
+        if self.msg_log.messages.len() > 0 || action_result.turn != Action::NoAction {
             let finsished_level = step_logic(self, action_result.turn);
             if finsished_level {
                 let player_id = self.data.find_by_name(EntityName::Player).unwrap();
@@ -99,6 +123,15 @@ impl Game {
                 self.settings.level_num += 1;
 
                 make_map(&self.config.map_load.clone(), self);
+            }
+
+            for msg_index in 0..self.msg_log.turn_messages.len() {
+                let msg = self.msg_log.turn_messages[msg_index];
+                let msg_line = &msg.msg_line(&self.data);
+                if msg_line.len() > 0 {
+                    self.log_console(msg_line);
+                }
+                self.log_msg(&format!("{}", msg));
             }
         }
 
@@ -152,5 +185,45 @@ impl GameSettings {
             cursor: None,
         };
     }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum LogMsgType {
+    Output,
+    Console,
+    Msg,
+    Key,
+}
+
+impl fmt::Display for LogMsgType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LogMsgType::Output => write!(f, "OUTPUT"),
+            LogMsgType::Console => write!(f, "CONSOLE"),
+            LogMsgType::Msg => write!(f, "MSG"),
+            LogMsgType::Key => write!(f, "KEY"),
+        }
+    }
+}
+
+#[test]
+pub fn test_action_log() {
+    let file =
+        std::fs::File::open(&"../resources/test_actions/actions.txt")
+                      .expect(&format!("Could not open replay file '{}'", &replay_file));
+    let mut actions = Vec::new();
+    for line in std::io::BufReader::new(file).lines() {
+        if let Ok(action) = InputAction::from_str(&line.unwrap()) {
+            actions.push(action);
+        }
+    }
+
+    let mut logged_messages: Vec<Msg> = Vec::new();
+    for action in actions {
+        game.step_game(action, 0.1);
+        logged_messages.extend(game.msg_log.turn_messages);
+    }
+
+    dbg!(&logged_messages);
 }
 
