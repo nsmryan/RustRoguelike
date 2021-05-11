@@ -203,10 +203,10 @@ impl GameData {
                 }
             }
 
-            if self.entities.needs_removal[entity_id] &&
-               self.entities.animation[entity_id].len() == 0 {
-                to_remove.push(*entity_id);
-            }
+            //if self.entities.needs_removal[entity_id] &&
+            //   self.entities.animation[entity_id].len() == 0 {
+            //    to_remove.push(*entity_id);
+            //}
         }
 
         // remove objects waiting removal

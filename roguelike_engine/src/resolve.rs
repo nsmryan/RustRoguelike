@@ -782,7 +782,7 @@ fn pushed_entity(pusher: EntityId,
         let blocked = data.map.path_blocked_move(pushed_pos, next_pos); 
 
         if blocked == None {
-            data.remove_entity(pushed);
+            data.entities.count_down.insert(pushed, 1);
 
             msg_log.log_front(Msg::Crushed(pusher, next_pos));
 
@@ -817,8 +817,8 @@ fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut Msg
         } else if data.entities.item.get(&crushed_id).is_none() &&
                   data.entities.name[&crushed_id] != EntityName::Mouse &&
                   data.entities.name[&crushed_id] != EntityName::Cursor {
-            // otherwise, if its not an item or the mouse, just remove the entity
-            data.remove_entity(crushed_id);
+            // the entity will be removed
+            data.entities.count_down.insert(crushed_id, 1);
         }
     }
 
