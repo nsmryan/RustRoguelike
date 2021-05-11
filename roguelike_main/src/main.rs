@@ -49,6 +49,13 @@ pub struct GameOptions {
     #[options(help = "replay from an input log file")]
     pub replay: Option<String>,
 
+    // NOTE add 'check' or something to replay while checking messages
+    //#[options(help = "record a session with the given name", short="d")]
+    //pub record: Option<String>,
+
+    #[options(help = "load using the given map configuration", short="m")]
+    pub map_config: Option<String>,
+
     #[options(help = "log level to record in game.log (OFF, ERROR, WARN, INFO, DEBUG, TRACE)")]
     pub log_level: Option<String>,
 
@@ -58,7 +65,7 @@ pub struct GameOptions {
     #[options(help = "take a screenshot and exit", short="t")]
     pub screenshot: bool,
 
-    #[options(help = "procgen map config", short="m")]
+    #[options(help = "procgen map config", short="g")]
     pub procgen_map: Option<String>,
 
     #[options(help = "display help text")]
@@ -91,8 +98,6 @@ fn main() {
 }
 
 pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
-    let config = Config::from_file(CONFIG_NAME);
-
     /* Create SDL Context */
     let sdl_context = sdl2::init()?;
     let video = sdl_context.video()?;
@@ -121,6 +126,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     display.add_spritesheet("font".to_string(), font_texture, 16);
 
     /* Create Game Structure */
+    let config = Config::from_file(CONFIG_NAME);
     let mut game = Game::new(seed, config.clone())?;
 
     game.load_vaults("resources/vaults/");
@@ -128,19 +134,29 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
 
     /* Load Procgen Data */
+    let mut map_config: MapLoadConfig;
+
     if let Some(procgen_map) = opts.procgen_map.clone() {
-        let map_config = MapLoadConfig::ProcGen(procgen_map);
-        make_map(&map_config, &mut game);
+        map_config = MapLoadConfig::ProcGen(procgen_map);
     } else {
-        make_map(&config.map_load, &mut game);
+        map_config = config.map_load.clone();
     }
 
+    if let Some(map_config_str) = &opts.map_config {
+        let cli_map_config = map_config_str.parse::<MapLoadConfig>()
+                                           .expect("Could not parse map config option!");
+        map_config = cli_map_config;
+    }
+
+    make_map(&map_config, &mut game);
+
+    /* Run Game or Take Screenshot */
     if opts.screenshot {
         take_screenshot(&mut game, &mut display).unwrap();
         return Ok(());
+    } else {
+        return game_loop(game, display, opts, sdl_context);
     }
-
-    return game_loop(game, display, opts, sdl_context);
 }
 
 pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_context: sdl2::Sdl) -> Result<(), String> {

@@ -135,10 +135,10 @@ impl Blocked {
                blocked_tile: bool,
                wall_type: Wall) -> Blocked {
         return Blocked { start_pos,
-        end_pos,
-        direction,
-        blocked_tile,
-        wall_type,
+                         end_pos,
+                         direction,
+                         blocked_tile,
+                         wall_type,
         };
     }
 }
@@ -162,6 +162,59 @@ impl Default for MapLoadConfig {
         return MapLoadConfig::Random;
     }
 }
+
+impl fmt::Display for MapLoadConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MapLoadConfig::Random => write!(f, "random"),
+            MapLoadConfig::TestMap => write!(f, "test_map"),
+            MapLoadConfig::TestWall => write!(f, "test_wall"),
+            MapLoadConfig::Empty => write!(f, "empty"),
+            MapLoadConfig::TestCorner => write!(f, "test_corner"),
+            MapLoadConfig::TestPlayer => write!(f, "test_player"),
+            MapLoadConfig::TestVaults => write!(f, "test_vaults"),
+            MapLoadConfig::FromFile(file) => write!(f, "from_file {}", file),
+            MapLoadConfig::VaultFile(file) => write!(f, "vault_file {}", file),
+            MapLoadConfig::ProcGen(file) => write!(f, "procgen {}", file),
+        }
+    }
+}
+
+impl FromStr for MapLoadConfig {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "random" {
+            return Ok(MapLoadConfig::Random);
+        } else if s == "test_map" {
+            return Ok(MapLoadConfig::TestMap);
+        } else if s == "test_wall" {
+            return Ok(MapLoadConfig::TestWall);
+        } else if s == "empty" {
+            return Ok(MapLoadConfig::Empty);
+        } else if s == "test_corner" {
+            return Ok(MapLoadConfig::TestCorner);
+        } else if s == "test_corner" {
+            return Ok(MapLoadConfig::TestPlayer);
+        } else if s == "test_vaults" {
+            return Ok(MapLoadConfig::TestVaults);
+        } else if s.starts_with("from_file") {
+            let args = s.split(" ").collect::<Vec<&str>>();
+            return Ok(MapLoadConfig::FromFile(args[1].to_string()));
+        } else if s.starts_with("vault_file") {
+            let args = s.split(" ").collect::<Vec<&str>>();
+            return Ok(MapLoadConfig::VaultFile(args[1].to_string()));
+        } else if s.starts_with("procgen") {
+            let args = s.split(" ").collect::<Vec<&str>>();
+            return Ok(MapLoadConfig::ProcGen(args[1].to_string()));
+        }
+
+        return Err(format!("Could not parse '{}' as MapLoadConfig", s));
+    }
+}
+
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Surface {
