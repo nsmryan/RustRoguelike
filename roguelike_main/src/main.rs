@@ -6,7 +6,7 @@ mod keyboard;
 mod load;
 
 use std::fs;
-use std::io::BufRead;
+use std::io::{BufRead, Write};
 use std::time::{Duration, Instant, SystemTime};
 use std::path::Path;
 use std::str::FromStr;
@@ -25,6 +25,7 @@ use roguelike_core::types::*;
 use roguelike_core::config::Config;
 use roguelike_core::constants::*;
 use roguelike_core::map::MapLoadConfig;
+use roguelike_core::messaging::Msg;
 
 use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
@@ -42,16 +43,19 @@ use crate::load::*;
 
 
 const CONFIG_NAME: &str = "config.yaml";
+const MAP_CONFIG_NAME: &str = "map_config.txt";
 
 
 #[derive(Debug, Clone, Options)]
 pub struct GameOptions {
-    #[options(help = "replay from an input log file")]
+    #[options(help = "replay from an input log file", short="r")]
     pub replay: Option<String>,
 
-    // NOTE add 'check' or something to replay while checking messages
-    //#[options(help = "record a session with the given name", short="d")]
-    //pub record: Option<String>,
+    #[options(help = "record a session with the given name", short="d")]
+    pub record: Option<String>,
+
+    #[options(help = "check a previous recorded session against current version", short="c")]
+    pub check: Option<String>,
 
     #[options(help = "load using the given map configuration", short="m")]
     pub map_config: Option<String>,
@@ -133,7 +137,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
     make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
 
-    /* Load Procgen Data */
+    /* Create Map */
     let mut map_config: MapLoadConfig;
 
     if let Some(procgen_map) = opts.procgen_map.clone() {
@@ -150,10 +154,16 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
     make_map(&map_config, &mut game);
 
+    // save map config to a file
+    let mut map_config_file = std::fs::File::create(MAP_CONFIG_NAME).unwrap();
+    map_config_file.write_all(map_config.to_string().as_bytes()).unwrap();
+
     /* Run Game or Take Screenshot */
     if opts.screenshot {
         take_screenshot(&mut game, &mut display).unwrap();
         return Ok(());
+    } else if let Some(record_name) = opts.check {
+        return check_record(game, &record_name);
     } else {
         return game_loop(game, display, opts, sdl_context);
     }
@@ -162,17 +172,8 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_context: sdl2::Sdl) -> Result<(), String> {
     // read in the recorded action log, if one is provided
     let mut starting_actions = Vec::new();
-    if let Some(replay_file) = opts.replay {
-        let file =
-            std::fs::File::open(&replay_file).expect(&format!("Could not open replay file '{}'", &replay_file));
-        for line in std::io::BufReader::new(file).lines() {
-            if let Ok(action) = InputAction::from_str(&line.unwrap()) { 
-                starting_actions.push(action);
-            }
-        }
-
-        // reverse the input log so we can pop actions off start-to-end
-        starting_actions.reverse();
+    if let Some(replay_file) = &opts.replay {
+        starting_actions = read_action_log(&replay_file);
     }
 
     let mut config_modified_time = fs::metadata(CONFIG_NAME).unwrap().modified().unwrap();
@@ -266,7 +267,61 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
         }
     }
 
+    // NOTE we could also just put these files in the right place to begin with...
+    if let Some(record_name) = opts.record {
+        // save recorded logs
+        save_record(&record_name);
+    }
+
     return Ok(());
+}
+
+fn save_record(record_name: &str) {
+    // create log directory if it doesn't exist
+    let path = format!("resources/test_logs/{}", record_name);
+    std::fs::create_dir_all(&path).expect("Could not create record directory!");
+
+    // save all files to the new directory 
+    std::fs::copy(Log::ACTION_LOG_NAME, format!("{}/{}", &path, Log::ACTION_LOG_NAME))
+            .expect("Could not save action log!");
+
+    std::fs::copy(Log::MESSAGE_LOG_NAME, format!("{}/{}", &path, Log::MESSAGE_LOG_NAME))
+            .expect("Could not save message log!");
+
+    std::fs::copy(MAP_CONFIG_NAME, format!("{}/{}", &path, MAP_CONFIG_NAME))
+            .expect("Could not save map config!");
+}
+
+fn read_action_log(replay_file: &str) -> Vec<InputAction> {
+    let mut starting_actions = Vec::new();
+
+    let file =
+        std::fs::File::open(&replay_file).expect(&format!("Could not open replay file '{}'", &replay_file));
+    for line in std::io::BufReader::new(file).lines() {
+        if let Ok(action) = InputAction::from_str(&line.unwrap()) { 
+            starting_actions.push(action);
+        }
+    }
+
+    // reverse the input log so we can pop actions off start-to-end
+    starting_actions.reverse();
+
+    return starting_actions;
+}
+
+fn read_message_log(message_file: &str) -> Vec<String> {
+    let mut message_lines = Vec::new();
+
+    let file =
+        std::fs::File::open(&message_file).expect(&format!("Could not open message file '{}'", &message_file));
+    for line in std::io::BufReader::new(file).lines() {
+        if let Ok(line) = line {
+            message_lines.push(line);
+        }
+    }
+
+    message_lines.reverse();
+    return message_lines;
 }
 
 fn reload_config(config_modified_time: &mut SystemTime, game: &mut Game) {
@@ -307,6 +362,27 @@ fn reload_config(config_modified_time: &mut SystemTime, game: &mut Game) {
 //    }
 //}
 
+fn check_record(mut game: Game, record_name: &str) -> Result<(), String> {
+    let path = format!("resources/test_logs/{}", record_name);
+
+    let map_config_path = format!("{}/{}", path, MAP_CONFIG_NAME);
+    let map_config_string = std::fs::read_to_string(map_config_path).unwrap();
+    let map_config = map_config_string.parse::<MapLoadConfig>().expect("Could not parse map config");
+    make_map(&map_config, &mut game);
+
+    let action_path = format!("{}/{}", path, Log::ACTION_LOG_NAME);
+    let actions = read_action_log(&action_path);
+
+    let message_path = format!("{}/{}", path, Log::MESSAGE_LOG_NAME);
+    let message_log = read_message_log(&message_path);
+
+    // TODO step game forward using 'actions', and record messages as strings
+    // in a Vec.
+    // Check this log against 'message_log', looking for the first difference,
+    // and then if they differ, check whether one is a subset of the other.
+
+    return Ok(());
+}
 
 pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), String> {
     game.settings.god_mode = true;

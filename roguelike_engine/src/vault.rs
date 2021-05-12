@@ -102,7 +102,7 @@ fn test_remove_commas() {
 
 /// Read Vault file into Vault structure
 pub fn parse_vault(file_name: &str, config: &Config) -> Vault {
-    eprintln!("{}", file_name);
+    //eprintln!("{}", file_name);
 
     let file_contents =
         std::fs::read_to_string(file_name).expect(&format!("Could not read {}", file_name));

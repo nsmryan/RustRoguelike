@@ -12,10 +12,13 @@ pub struct Log {
 }
 
 impl Log {
+    pub const ACTION_LOG_NAME: &'static str = "action_log.txt";
+    pub const MESSAGE_LOG_NAME: &'static str = "message_log.txt";
+
     pub fn new() -> Log {
-        let action_log = File::create("action_log.txt")
+        let action_log = File::create(Log::ACTION_LOG_NAME)
                               .expect("Could not open action_log.txt");
-        let message_log = File::create("messages.txt")
+        let message_log = File::create(Log::MESSAGE_LOG_NAME)
                                .expect("Could not open messages.txt");
 
         let log = Log {
