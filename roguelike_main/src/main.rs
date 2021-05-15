@@ -166,14 +166,15 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         return Ok(());
     } else if let Some(record_name) = opts.check {
         let delay = opts.delay.unwrap_or(0);
-        return check_record(game, display, &record_name, delay);
+        let event_pump = sdl_context.event_pump().unwrap();
+        return check_record(game, display, event_pump, &record_name, delay);
     } else {
-        return game_loop(game, display, opts, sdl_context);
+        let event_pump = sdl_context.event_pump().unwrap();
+        return game_loop(game, display, opts, event_pump);
     }
 }
 
-// TODO try to replace sdl_context with event pump
-pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_context: sdl2::Sdl) -> Result<(), String> {
+pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut event_pump: sdl2::EventPump) -> Result<(), String> {
     // read in the recorded action log, if one is provided
     let mut starting_actions = Vec::new();
     if let Some(replay_file) = &opts.replay {
@@ -192,7 +193,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_co
     /* Set up Input Handling */
     let io_recv = spawn_input_reader();
 
-    let mut event_pump = sdl_context.event_pump()?;
+    //let mut event_pump = sdl_context.event_pump()?;
 
     /* Main Game Loop */
     let mut frame_time = Instant::now();
@@ -366,7 +367,7 @@ fn reload_config(config_modified_time: &mut SystemTime, game: &mut Game) {
 //    }
 //}
 
-fn check_record(mut game: Game, mut display: Display, record_name: &str, delay_ms: u64) -> Result<(), String> {
+fn check_record(mut game: Game, mut display: Display, mut event_pump: sdl2::EventPump, record_name: &str, delay_ms: u64) -> Result<(), String> {
     let path = format!("resources/test_logs/{}", record_name);
 
     let map_config_path = format!("{}/{}", path, MAP_CONFIG_NAME);
@@ -397,9 +398,13 @@ fn check_record(mut game: Game, mut display: Display, record_name: &str, delay_m
 
     let delay = Duration::from_millis(delay_ms);
     for action in actions {
-        game.step_game(action, 0.001);
+        game.step_game(action, delay_ms as f32);
+
+        for sdl2_event in event_pump.poll_iter() {
+        }
 
         update_display(&mut game, &mut display)?;
+
         for msg in &game.msg_log.turn_messages {
             new_messages.push(msg.to_string());
         }
