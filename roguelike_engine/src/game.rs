@@ -156,24 +156,3 @@ impl GameSettings {
     }
 }
 
-#[test]
-pub fn test_action_log() {
-    let file =
-        std::fs::File::open(&"../resources/test_actions/actions.txt")
-                      .expect(&format!("Could not open replay file '{}'", &replay_file));
-    let mut actions = Vec::new();
-    for line in std::io::BufReader::new(file).lines() {
-        if let Ok(action) = InputAction::from_str(&line.unwrap()) {
-            actions.push(action);
-        }
-    }
-
-    let mut logged_messages: Vec<Msg> = Vec::new();
-    for action in actions {
-        game.step_game(action, 0.1);
-        logged_messages.extend(game.msg_log.turn_messages);
-    }
-
-    dbg!(&logged_messages);
-}
-
