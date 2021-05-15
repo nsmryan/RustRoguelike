@@ -25,7 +25,6 @@ use roguelike_core::types::*;
 use roguelike_core::config::Config;
 use roguelike_core::constants::*;
 use roguelike_core::map::MapLoadConfig;
-use roguelike_core::messaging::Msg;
 
 use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
@@ -56,6 +55,9 @@ pub struct GameOptions {
 
     #[options(help = "check a previous recorded session against current version", short="c")]
     pub check: Option<String>,
+
+    #[options(help = "delay value in milliseconds used when replaying commands", short="y")]
+    pub delay: Option<u64>,
 
     #[options(help = "load using the given map configuration", short="m")]
     pub map_config: Option<String>,
@@ -163,12 +165,14 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         take_screenshot(&mut game, &mut display).unwrap();
         return Ok(());
     } else if let Some(record_name) = opts.check {
-        return check_record(game, &record_name);
+        let delay = opts.delay.unwrap_or(0);
+        return check_record(game, display, &record_name, delay);
     } else {
         return game_loop(game, display, opts, sdl_context);
     }
 }
 
+// TODO try to replace sdl_context with event pump
 pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, sdl_context: sdl2::Sdl) -> Result<(), String> {
     // read in the recorded action log, if one is provided
     let mut starting_actions = Vec::new();
@@ -362,7 +366,7 @@ fn reload_config(config_modified_time: &mut SystemTime, game: &mut Game) {
 //    }
 //}
 
-fn check_record(mut game: Game, record_name: &str) -> Result<(), String> {
+fn check_record(mut game: Game, mut display: Display, record_name: &str, delay_ms: u64) -> Result<(), String> {
     let path = format!("resources/test_logs/{}", record_name);
 
     let map_config_path = format!("{}/{}", path, MAP_CONFIG_NAME);
@@ -374,12 +378,76 @@ fn check_record(mut game: Game, record_name: &str) -> Result<(), String> {
     let actions = read_action_log(&action_path);
 
     let message_path = format!("{}/{}", path, Log::MESSAGE_LOG_NAME);
-    let message_log = read_message_log(&message_path);
+    let logged_lines = read_message_log(&message_path);
 
-    // TODO step game forward using 'actions', and record messages as strings
-    // in a Vec.
-    // Check this log against 'message_log', looking for the first difference,
-    // and then if they differ, check whether one is a subset of the other.
+    let prefix = "MSG: ";
+    let mut old_messages = logged_lines.iter()
+                                       .filter(|line| line.starts_with(prefix))
+                                       .map(|line| line[prefix.len()..].to_string())
+                                       .collect::<Vec<String>>();
+    old_messages.reverse();
+    let old_messages = old_messages;
+
+    let mut new_messages: Vec<String> = Vec::new();
+
+    for msg in &game.msg_log.turn_messages {
+        new_messages.push(msg.to_string());
+    }
+    game.msg_log.clear();
+
+    let delay = Duration::from_millis(delay_ms);
+    for action in actions {
+        game.step_game(action, 0.001);
+
+        update_display(&mut game, &mut display)?;
+        for msg in &game.msg_log.turn_messages {
+            new_messages.push(msg.to_string());
+        }
+        game.msg_log.clear();
+        std::thread::sleep(delay);
+    }
+
+    /* Compare Logs */ 
+    let mut logs_differ = false; 
+    if old_messages.len() != new_messages.len() {
+        eprintln!("Old log had {} messages, new log has {} messages", old_messages.len(), new_messages.len());
+        logs_differ = true;
+    }
+
+    let mut msg_index = 0;
+    while msg_index < old_messages.len() {
+        if msg_index >= new_messages.len() {
+            eprintln!("Reached end of new messages");
+            logs_differ = true;
+            break;
+        }
+
+        if old_messages[msg_index] != new_messages[msg_index] {
+            eprintln!("First difference on line {}", msg_index);
+            eprintln!("Old log '{}'", old_messages[msg_index]);
+            eprintln!("New log '{}'", new_messages[msg_index]);
+            logs_differ = true;
+            break;
+        }
+        msg_index += 1;
+    }
+
+    if logs_differ {
+        let first_n = std::cmp::min(std::cmp::min(10, old_messages.len()), new_messages.len());
+        eprintln!("");
+        eprintln!("The old log starts with:");
+        for msg_index in 0..first_n {
+            eprintln!("{}", old_messages[msg_index]);
+        }
+
+        eprintln!("");
+
+        eprintln!("The new log starts with:");
+        for msg_index in 0..first_n {
+            eprintln!("{}", new_messages[msg_index]);
+        }
+    }
+
 
     return Ok(());
 }
