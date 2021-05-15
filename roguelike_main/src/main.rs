@@ -6,6 +6,7 @@ mod keyboard;
 mod load;
 
 use std::fs;
+use std::cmp;
 use std::io::{BufRead, Write};
 use std::time::{Duration, Instant, SystemTime};
 use std::path::Path;
@@ -154,14 +155,13 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         map_config = cli_map_config;
     }
 
-    make_map(&map_config, &mut game);
-
     // save map config to a file
     let mut map_config_file = std::fs::File::create(MAP_CONFIG_NAME).unwrap();
     map_config_file.write_all(map_config.to_string().as_bytes()).unwrap();
 
     /* Run Game or Take Screenshot */
     if opts.screenshot {
+        make_map(&map_config, &mut game);
         take_screenshot(&mut game, &mut display).unwrap();
         return Ok(());
     } else if let Some(record_name) = opts.check {
@@ -169,6 +169,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         let event_pump = sdl_context.event_pump().unwrap();
         return check_record(game, display, event_pump, &record_name, delay);
     } else {
+        make_map(&map_config, &mut game);
         let event_pump = sdl_context.event_pump().unwrap();
         return game_loop(game, display, opts, event_pump);
     }
@@ -306,9 +307,6 @@ fn read_action_log(replay_file: &str) -> Vec<InputAction> {
         }
     }
 
-    // reverse the input log so we can pop actions off start-to-end
-    starting_actions.reverse();
-
     return starting_actions;
 }
 
@@ -371,6 +369,7 @@ fn check_record(mut game: Game, mut display: Display, mut event_pump: sdl2::Even
     let map_config_path = format!("{}/{}", path, MAP_CONFIG_NAME);
     let map_config_string = std::fs::read_to_string(map_config_path).unwrap();
     let map_config = map_config_string.parse::<MapLoadConfig>().expect("Could not parse map config");
+    eprintln!("Using map config: {}", &map_config);
     make_map(&map_config, &mut game);
 
     let action_path = format!("{}/{}", path, Log::ACTION_LOG_NAME);
@@ -389,30 +388,34 @@ fn check_record(mut game: Game, mut display: Display, mut event_pump: sdl2::Even
 
     let mut new_messages: Vec<String> = Vec::new();
 
-    for msg in &game.msg_log.turn_messages {
-        new_messages.push(msg.to_string());
-    }
-    update_display(&mut game, &mut display)?;
-    game.msg_log.clear();
-
     let delay = Duration::from_millis(delay_ms);
+    game.step_game(InputAction::None, delay_ms as f32);
     for action in actions {
+        //eprintln!("action: {}", action);
         game.step_game(action, delay_ms as f32);
 
-        for sdl2_event in event_pump.poll_iter() {
+        for _sdl2_event in event_pump.poll_iter() {
         }
 
         update_display(&mut game, &mut display)?;
 
         for msg in &game.msg_log.turn_messages {
+            //eprintln!("MSG: {}", msg);
             new_messages.push(msg.to_string());
         }
         game.msg_log.clear();
         std::thread::sleep(delay);
     }
+    game.step_game(InputAction::Exit, delay_ms as f32);
+    for msg in &game.msg_log.turn_messages {
+        //eprintln!("MSG: {}", msg);
+        new_messages.push(msg.to_string());
+    }
 
     /* Compare Logs */ 
+    eprintln!("");
     let mut logs_differ = false; 
+    let mut first_diff_index = 0;
     if old_messages.len() != new_messages.len() {
         eprintln!("Old log had {} messages, new log has {} messages", old_messages.len(), new_messages.len());
         logs_differ = true;
@@ -423,6 +426,7 @@ fn check_record(mut game: Game, mut display: Display, mut event_pump: sdl2::Even
         if msg_index >= new_messages.len() {
             eprintln!("Reached end of new messages");
             logs_differ = true;
+            first_diff_index = msg_index;
             break;
         }
 
@@ -431,27 +435,62 @@ fn check_record(mut game: Game, mut display: Display, mut event_pump: sdl2::Even
             eprintln!("Old log '{}'", old_messages[msg_index]);
             eprintln!("New log '{}'", new_messages[msg_index]);
             logs_differ = true;
+            first_diff_index = msg_index;
             break;
         }
         msg_index += 1;
     }
 
     if logs_differ {
-        let first_n = std::cmp::min(std::cmp::min(10, old_messages.len()), new_messages.len());
+        let start_diff = if first_diff_index > 5 { first_diff_index } else { 0 };
+        let end_diff = cmp::min(cmp::min(first_diff_index + 5, old_messages.len()), new_messages.len());
         eprintln!("");
         eprintln!("The old log starts with:");
-        for msg_index in 0..first_n {
+        for msg_index in start_diff..end_diff {
             eprintln!("{}", old_messages[msg_index]);
         }
 
         eprintln!("");
 
         eprintln!("The new log starts with:");
-        for msg_index in 0..first_n {
+        for msg_index in start_diff..end_diff {
             eprintln!("{}", new_messages[msg_index]);
         }
-    }
 
+        {
+            let mut new_index = 0;
+            let mut old_index = 0;
+            while old_index < old_messages.len() && new_index < new_messages.len() {
+                if old_messages[old_index] == new_messages[new_index] {
+                    new_index += 1;
+                }
+                old_index += 1;
+            }
+            if new_index != new_messages.len() {
+                eprintln!("New log is not a subset of the old log!");
+            } else {
+                eprintln!("New log is a subset of the old log!");
+            }
+        }
+
+        {
+            let mut new_index = 0;
+            let mut old_index = 0;
+            while old_index < old_messages.len() && new_index < new_messages.len() {
+                if old_messages[old_index] == new_messages[new_index] {
+                    old_index += 1;
+                }
+                new_index += 1;
+            }
+            if old_index != old_messages.len() {
+                eprintln!("Old log is not a subset of the new log!");
+            } else {
+                eprintln!("Old log is a subset of the new log!");
+            }
+        }
+    } else {
+        eprintln!("Logs same!");
+    }
 
     return Ok(());
 }

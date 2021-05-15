@@ -101,7 +101,7 @@ impl fmt::Display for Msg {
             Msg::Killed(entity_id, target_id, hp) => write!(f, "killed {} {} {}", entity_id, target_id, hp),
             Msg::Push(entity_id, direction, amount) => write!(f, "pushed {} {} {}", entity_id, direction, amount),
             Msg::Pushed(entity_id, target_id, direction, amount, follow) => write!(f, "pushed {} {} {} {} {}", entity_id, target_id, direction, amount, follow),
-            Msg::TryMove(entity_id, direction, amount, move_mode) => write!(f, "try_mode {} {} {} {}", entity_id, direction, amount, move_mode),
+            Msg::TryMove(entity_id, direction, amount, move_mode) => write!(f, "try_move {} {} {} {}", entity_id, direction, amount, move_mode),
             Msg::Moved(entity_id, move_type, pos) => write!(f, "moved {} {} {} {}", entity_id, move_type, pos.x, pos.y),
             Msg::Interact(entity_id, pos) => write!(f, "interact {} {} {}", entity_id, pos.x, pos.y),
             Msg::JumpWall(entity_id, pos, new_pos) => write!(f, "jump_wall {} {} {} {} {}", entity_id, pos.x, pos.y, new_pos.x, new_pos.y),
