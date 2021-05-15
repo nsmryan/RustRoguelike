@@ -193,8 +193,6 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
     /* Set up Input Handling */
     let io_recv = spawn_input_reader();
 
-    //let mut event_pump = sdl_context.event_pump()?;
-
     /* Main Game Loop */
     let mut frame_time = Instant::now();
     while game.settings.running {
@@ -394,6 +392,7 @@ fn check_record(mut game: Game, mut display: Display, mut event_pump: sdl2::Even
     for msg in &game.msg_log.turn_messages {
         new_messages.push(msg.to_string());
     }
+    update_display(&mut game, &mut display)?;
     game.msg_log.clear();
 
     let delay = Duration::from_millis(delay_ms);
