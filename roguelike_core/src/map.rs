@@ -706,7 +706,6 @@ impl Map {
 
     pub fn move_blocked(&self, start_pos: Pos, end_pos: Pos, blocked_type: BlockedType) -> Option<Blocked> {
         let dxy = sub_pos(end_pos, start_pos);
-
         if dxy.x == 0 && dxy.y == 0 {
             return None;
         }
@@ -714,7 +713,6 @@ impl Map {
         let dir = Direction::from_dxy(dxy.x, dxy.y)
                             .expect(&format!("Check for blocking wall with no movement {:?}?", dxy));
 
-        let (x, y) = (start_pos.x, start_pos.y);
 
         let mut blocked = Blocked::new(start_pos, end_pos, dir, false, Wall::Empty);
 
@@ -735,6 +733,7 @@ impl Map {
             found_blocker = true;
         }
 
+        let (x, y) = (start_pos.x, start_pos.y);
         let move_dir = end_pos - Vector2D::new(x, y);
 
         // used for diagonal movement checks
