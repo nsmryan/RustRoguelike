@@ -8,6 +8,7 @@ use crate::movement::*;
 use crate::messaging::*;
 use crate::utils::*;
 use crate::config::Config;
+use crate::map::Wall;
 
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -112,9 +113,9 @@ pub fn ai_idle(monster_id: EntityId,
                msg_log: &mut MsgLog,
                config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = data.entities.pos[&player_id];
 
-    if data.is_in_fov(monster_id, player_pos, config) {
+    if ai_is_in_fov(monster_id, player_id, data, config) {
+        let player_pos = data.entities.pos[&player_id];
         msg_log.log(Msg::FaceTowards(monster_id, player_pos));
         msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(player_id)));
     } else if let Some(Message::Attack(entity_id)) = data.entities.was_attacked(monster_id) {
@@ -140,14 +141,13 @@ pub fn ai_investigate(target_pos: Pos,
                       config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    let player_pos = data.entities.pos[&player_id];
     let monster_pos = data.entities.pos[&monster_id];
 
-    let player_in_fov = data.is_in_fov(monster_id, player_pos, config);
+    let player_in_fov = ai_is_in_fov(monster_id, player_id, data, config);
 
     if player_in_fov {
         //let fov_path_clear = data.map.path_blocked_fov(monster_pos, player_pos).is_none();
-
+        let player_pos = data.entities.pos[&player_id];
         msg_log.log(Msg::FaceTowards(monster_id, player_pos));
         msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(player_id)));
     } else { // the monster can't see the player
@@ -301,6 +301,8 @@ pub fn ai_can_hit_target(data: &mut GameData,
         return None;
     }
 
+    // we don't use ai_is_in_fov here because the other checks already
+    // cover blocked movement.
     let within_fov = data.is_in_fov(monster_id, target_pos, config);
 
     let traps_block = false;
@@ -372,6 +374,26 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     // step towards the closest location that lets us hit the target
     let maybe_pos = ai_attempt_step(monster_id, new_pos, &data);
     return maybe_pos;
+}
+
+fn ai_is_in_fov(monster_id: EntityId, target_id: EntityId, data: &mut GameData, config: &Config) -> bool {
+    let monster_pos = data.entities.pos[&monster_id];
+    let target_pos = data.entities.pos[&target_id];
+
+    let within_fov = data.is_in_fov(monster_id, target_pos, config);
+
+    let within_fov = data.is_in_fov(monster_id, target_pos, config);
+    let move_blocked = data.map.path_blocked_move(monster_pos, target_pos);
+
+    if within_fov && move_blocked.is_some() {
+        let move_blocked = move_blocked.unwrap();
+        let blocked_by_short_wall = move_blocked.wall_type == Wall::ShortWall;
+        let target_stance = data.entities.stance[&target_id];
+
+        return blocked_by_short_wall && target_stance != Stance::Crouching;
+    } else {
+        return within_fov;
+    }
 }
 
 fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, data: &GameData) -> Option<i32> {
