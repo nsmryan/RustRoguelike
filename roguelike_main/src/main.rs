@@ -396,7 +396,6 @@ fn check_record(mut game: Game, mut display: Display, mut event_pump: sdl2::Even
     let mut new_messages: Vec<String> = Vec::new();
 
     let delay = Duration::from_millis(delay_ms);
-    game.step_game(InputAction::None, delay_ms as f32);
     for action in actions {
         game.step_game(action, delay_ms as f32);
 
@@ -446,6 +445,7 @@ fn check_record(mut game: Game, mut display: Display, mut event_pump: sdl2::Even
     }
 
     let mut log = Log::new();
+    eprintln!("\nNew Log:");
     for msg in new_messages.iter() {
         log.log_msg(&format!("{}", msg));
     }
@@ -521,11 +521,6 @@ fn rerecord(mut game: Game, mut display: Display, mut event_pump: sdl2::EventPum
     let mut log = Log::new();
 
     let delay = Duration::from_millis(delay_ms);
-    game.step_game(InputAction::None, delay_ms as f32);
-    for msg in &game.msg_log.turn_messages {
-        log.log_msg(&format!("{}", msg));
-    }
-
     for action in actions {
         game.step_game(action, delay_ms as f32);
 

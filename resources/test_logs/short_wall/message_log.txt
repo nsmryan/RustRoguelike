@@ -6,17 +6,6 @@ MSG: spawned 59 column 6 4 column up
 MSG: spawned 60 item 1 5 dagger up
 MSG: spawned 61 item 1 1 sword up
 MSG: spawned 62 other -1 -1 mouse up
-MSG: player_turn
-MSG: startturn
-MSG: spawned 0 player 0 0 player up
-MSG: spawned 57 other -1 -1 mouse up
-MSG: spawned 58 enemy 5 5 gol downleft
-MSG: spawned 59 column 6 4 column up
-MSG: spawned 60 item 1 5 dagger up
-MSG: spawned 61 item 1 1 sword up
-MSG: spawned 62 other -1 -1 mouse up
-MSG: player_turn
-MSG: startturn
 MSG: try_move 0 up 1 walk
 MSG: moved 0 move 1 4
 MSG: sound 0 1 4 2 true
