@@ -1,4 +1,3 @@
-CONSOLE: Starting turn
 MSG: startturn
 MSG: spawned 0 player 0 0 player up
 MSG: spawned 57 other -1 -1 mouse up
@@ -8,192 +7,121 @@ MSG: spawned 60 item 1 5 dagger up
 MSG: spawned 61 item 1 1 sword up
 MSG: spawned 62 other -1 -1 mouse up
 MSG: player_turn
-CONSOLE: Starting turn
+MSG: startturn
+MSG: spawned 0 player 0 0 player up
+MSG: spawned 57 other -1 -1 mouse up
+MSG: spawned 58 enemy 5 5 gol downleft
+MSG: spawned 59 column 6 4 column up
+MSG: spawned 60 item 1 5 dagger up
+MSG: spawned 61 item 1 1 sword up
+MSG: spawned 62 other -1 -1 mouse up
+MSG: player_turn
 MSG: startturn
 MSG: try_move 0 up 1 walk
-CONSOLE: Player moved to (1,4)
 MSG: moved 0 move 1 4
 MSG: sound 0 1 4 2 true
 MSG: face_towards 58 1 4
-CONSOLE: Changed state to Attacking(0)
 MSG: state_change_attacking 58 0
 MSG: facing 58 upleft
 MSG: face_towards 58 1 4
 MSG: ai_attack 58
 MSG: facing 58 upleft
 MSG: try_move 58 down 1 walk
-CONSOLE: Gol moved to (5,6)
 MSG: moved 58 move 5 6
 MSG: sound 58 5 6 2 true
 MSG: player_turn
-CONSOLE: Starting turn
 MSG: startturn
 MSG: try_move 0 up 1 walk
-CONSOLE: Player moved to (1,3)
 MSG: moved 0 move 1 3
 MSG: sound 0 1 3 2 true
 MSG: face_towards 58 1 3
 MSG: ai_attack 58
 MSG: facing 58 upleft
 MSG: try_move 58 down 1 walk
-CONSOLE: Gol moved to (5,7)
 MSG: moved 58 move 5 7
 MSG: sound 58 5 7 2 true
 MSG: player_turn
-CONSOLE: Starting turn
 MSG: startturn
 MSG: try_move 0 upright 1 sneak
-CONSOLE: Player moved to (2,2)
 MSG: moved 0 move 2 2
 MSG: sound 0 2 2 1 true
 MSG: face_towards 58 2 2
 MSG: ai_attack 58
 MSG: facing 58 upleft
-CONSOLE: Changed state to Investigating((2, 2))
 MSG: state_change_investigating 58 2 2
 MSG: player_turn
-CONSOLE: Starting turn
 MSG: startturn
 MSG: try_move 0 upright 1 sneak
-CONSOLE: Player moved to (3,1)
 MSG: moved 0 move 3 1
 MSG: sound 0 3 1 1 true
 MSG: try_move 58 downleft 1 walk
-CONSOLE: Gol moved to (4,8)
 MSG: moved 58 move 4 8
 MSG: sound 58 4 8 2 true
 MSG: player_turn
-CONSOLE: Starting turn
 MSG: startturn
 MSG: try_move 0 right 1 sneak
-CONSOLE: Player moved to (4,1)
 MSG: moved 0 move 4 1
 MSG: sound 0 4 1 1 true
 MSG: try_move 58 upleft 1 walk
-CONSOLE: Gol moved to (3,7)
 MSG: moved 58 move 3 7
 MSG: sound 58 3 7 2 true
 MSG: player_turn
-CONSOLE: Starting turn
 MSG: startturn
 MSG: try_move 0 right 1 sneak
-CONSOLE: Player moved to (5,1)
 MSG: moved 0 move 5 1
 MSG: sound 0 5 1 1 true
 MSG: try_move 58 up 1 walk
-CONSOLE: Gol moved to (3,6)
 MSG: moved 58 move 3 6
 MSG: sound 58 3 6 2 true
 MSG: player_turn
-CONSOLE: Starting turn
 MSG: startturn
 MSG: try_move 0 downright 1 sneak
-CONSOLE: Player moved to (6,2)
 MSG: moved 0 move 6 2
 MSG: sound 0 6 2 1 true
-MSG: face_towards 58 6 2
-CONSOLE: Changed state to Attacking(0)
-MSG: state_change_attacking 58 0
-MSG: facing 58 upright
-MSG: face_towards 58 6 2
-MSG: ai_attack 58
-MSG: facing 58 upright
 MSG: try_move 58 up 1 walk
-CONSOLE: Gol moved to (3,5)
 MSG: moved 58 move 3 5
 MSG: sound 58 3 5 2 true
 MSG: player_turn
-CONSOLE: Starting turn
 MSG: startturn
 MSG: try_move 0 downright 1 sneak
-CONSOLE: Player moved to (7,3)
 MSG: moved 0 move 7 3
 MSG: sound 0 7 3 1 true
-MSG: face_towards 58 7 3
-MSG: ai_attack 58
-MSG: facing 58 upright
 MSG: try_move 58 up 1 walk
-CONSOLE: Gol moved to (3,4)
 MSG: moved 58 move 3 4
 MSG: sound 58 3 4 2 true
 MSG: player_turn
-CONSOLE: Starting turn
 MSG: startturn
 MSG: try_move 0 down 1 sneak
-CONSOLE: Player moved to (7,4)
 MSG: moved 0 move 7 4
 MSG: sound 0 7 4 1 true
-MSG: face_towards 58 7 4
-MSG: ai_attack 58
-MSG: facing 58 right
 MSG: try_move 58 up 1 walk
-CONSOLE: Gol moved to (3,3)
 MSG: moved 58 move 3 3
 MSG: sound 58 3 3 2 true
 MSG: player_turn
-CONSOLE: Starting turn
 MSG: startturn
 MSG: try_move 0 downleft 1 sneak
-CONSOLE: Player moved to (6,5)
 MSG: moved 0 move 6 5
 MSG: sound 0 6 5 1 true
-MSG: face_towards 58 6 5
-MSG: ai_attack 58
-MSG: facing 58 downright
-MSG: try_move 58 up 1 walk
-CONSOLE: Gol moved to (3,2)
-MSG: moved 58 move 3 2
-MSG: sound 58 3 2 2 true
+MSG: try_move 58 upleft 1 walk
+MSG: moved 58 move 2 2
+MSG: sound 58 2 2 2 true
 MSG: player_turn
-CONSOLE: Starting turn
 MSG: startturn
-CONSOLE: Player passed their turn
 MSG: moved 0 pass 6 5
-MSG: face_towards 58 6 5
-MSG: ai_attack 58
-MSG: facing 58 downright
-MSG: try_move 58 upright 1 walk
-CONSOLE: Gol moved to (4,1)
-MSG: moved 58 move 4 1
-MSG: sound 58 4 1 2 true
+MSG: state_change_idle 58
 MSG: player_turn
-CONSOLE: Starting turn
 MSG: startturn
-CONSOLE: Player passed their turn
 MSG: moved 0 pass 6 5
-MSG: face_towards 58 6 5
-MSG: ai_attack 58
-MSG: facing 58 downright
-MSG: try_move 58 downright 1 walk
-CONSOLE: Gol moved to (5,2)
-MSG: moved 58 move 5 2
-MSG: sound 58 5 2 2 true
 MSG: player_turn
-CONSOLE: Starting turn
 MSG: startturn
-CONSOLE: Player passed their turn
 MSG: moved 0 pass 6 5
-MSG: face_towards 58 6 5
-MSG: ai_attack 58
-MSG: facing 58 downright
-MSG: try_move 58 downright 1 walk
-CONSOLE: Gol moved to (6,3)
-MSG: moved 58 move 6 3
-MSG: sound 58 6 3 2 true
 MSG: player_turn
-CONSOLE: Starting turn
 MSG: startturn
 MSG: try_move 0 up 1 walk
 MSG: try_push 0 59 6 4 up 1
-CONSOLE: Player pushed Column
 MSG: pushed 0 59 up 1 true
-CONSOLE: An object has been crushed
 MSG: crushed 0 6 3
 MSG: sound 0 6 3 3 true
-CONSOLE: Player moved to (6,4)
 MSG: moved 0 move 6 4
 MSG: sound 0 6 4 2 true
-CONSOLE: Player killed Gol
-MSG: killed 0 58 10
-MSG: spawned 63 energy 6 3 energy up
 MSG: player_turn

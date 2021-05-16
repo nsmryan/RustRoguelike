@@ -54,6 +54,9 @@ pub struct GameOptions {
     #[options(help = "record a session with the given name", short="d")]
     pub record: Option<String>,
 
+    #[options(help = "re-record a session with the given name", short="o")]
+    pub rerecord: Option<String>,
+
     #[options(help = "check a previous recorded session against current version", short="c")]
     pub check: Option<String>,
 
@@ -168,6 +171,10 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         let delay = opts.delay.unwrap_or(0);
         let event_pump = sdl_context.event_pump().unwrap();
         return check_record(game, display, event_pump, &record_name, delay);
+    } else if let Some(record_name) = opts.rerecord {
+        let delay = opts.delay.unwrap_or(0);
+        let event_pump = sdl_context.event_pump().unwrap();
+        return rerecord(game, display, event_pump, &record_name, delay);
     } else {
         make_map(&map_config, &mut game);
         let event_pump = sdl_context.event_pump().unwrap();
@@ -493,6 +500,52 @@ fn check_record(mut game: Game, mut display: Display, mut event_pump: sdl2::Even
     } else {
         eprintln!("Logs same!");
     }
+
+    return Ok(());
+}
+
+fn rerecord(mut game: Game, mut display: Display, mut event_pump: sdl2::EventPump, record_name: &str, delay_ms: u64) -> Result<(), String> {
+    let path = format!("resources/test_logs/{}", record_name);
+
+    let map_config_path = format!("{}/{}", path, MAP_CONFIG_NAME);
+    let map_config_string = std::fs::read_to_string(map_config_path).unwrap();
+    let map_config = map_config_string.parse::<MapLoadConfig>().expect("Could not parse map config");
+    eprintln!("Using map config: {}", &map_config);
+    make_map(&map_config, &mut game);
+
+    let action_path = format!("{}/{}", path, Log::ACTION_LOG_NAME);
+    let actions = read_action_log(&action_path);
+
+    let message_path = format!("{}/{}", path, Log::MESSAGE_LOG_NAME);
+
+    let mut log = Log::new();
+
+    let delay = Duration::from_millis(delay_ms);
+    game.step_game(InputAction::None, delay_ms as f32);
+    for msg in &game.msg_log.turn_messages {
+        log.log_msg(&format!("{}", msg));
+    }
+
+    for action in actions {
+        game.step_game(action, delay_ms as f32);
+
+        for _sdl2_event in event_pump.poll_iter() { }
+
+        update_display(&mut game, &mut display)?;
+
+        for msg in &game.msg_log.turn_messages {
+            log.log_msg(&format!("{}", msg));
+        }
+        game.msg_log.clear();
+        std::thread::sleep(delay);
+    }
+    game.step_game(InputAction::Exit, delay_ms as f32);
+    for msg in &game.msg_log.turn_messages {
+        log.log_msg(&format!("{}", msg));
+    }
+
+    std::fs::copy(Log::MESSAGE_LOG_NAME, message_path)
+            .expect("Could not save message log!");
 
     return Ok(());
 }
