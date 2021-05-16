@@ -25,9 +25,6 @@ pub fn step_logic(game: &mut Game) -> bool {
         game.data.entities.took_turn[id] = false;
     }
 
-    eprintln!();
-    eprintln!("Turn {}:", game.settings.turn_count);
-
     game.msg_log.log_front(Msg::StartTurn);
 
     resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
@@ -185,10 +182,6 @@ pub fn test_hammer_small_wall() {
 
     input_action = InputAction::UseItem(Direction::Down, 0);
     game.step_game(input_action, 0.1);
-
-    for msg in game.msg_log.turn_messages.iter() {
-        println!("{:?}", msg);
-    }
 
     // gol is no longer in entities list after being crushed
     assert!(game.data.entities.is_dead(gol));

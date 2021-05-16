@@ -1,6 +1,3 @@
-use std::io::stdout;
-use std::io::Write;
-
 #[allow(unused_imports)]
 use log::{trace, error};
 
@@ -29,14 +26,6 @@ pub fn resolve_messages(data: &mut GameData,
 
     /* Handle Message Log */
     while let Some(msg) = msg_log.pop() {
-        let msg_line = msg.msg_line(data);
-        if msg_line.len() > 0 {
-            println!("CONSOLE: {}", msg_line);
-            stdout().flush().unwrap();
-        }
-        println!("MSG: {}", msg);
-        stdout().flush().unwrap();
-
         match msg {
             Msg::Moved(entity_id, move_type, pos) => {
                process_moved_message(entity_id, move_type, pos, data, msg_log, config);
@@ -796,7 +785,7 @@ fn pushed_entity(pusher: EntityId,
         let blocked = data.map.path_blocked_move(pushed_pos, next_pos); 
 
         if blocked == None {
-            data.remove_entity(pushed);
+            data.entities.count_down.insert(pushed, 1);
 
             msg_log.log_front(Msg::Crushed(pusher, next_pos));
 
@@ -831,8 +820,8 @@ fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut Msg
         } else if data.entities.item.get(&crushed_id).is_none() &&
                   data.entities.name[&crushed_id] != EntityName::Mouse &&
                   data.entities.name[&crushed_id] != EntityName::Cursor {
-            // otherwise, if its not an item or the mouse, just remove the entity
-            data.remove_entity(crushed_id);
+            // the entity will be removed
+            data.entities.count_down.insert(crushed_id, 1);
         }
     }
 
