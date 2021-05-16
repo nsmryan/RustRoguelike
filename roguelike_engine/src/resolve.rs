@@ -588,7 +588,7 @@ fn resolve_try_movement(entity_id: EntityId,
     // if entity is attacking, face their target after the move
     if let Some(Behavior::Attacking(target_id)) = data.entities.behavior.get(&entity_id) {
         let target_pos = data.entities.pos[target_id];
-        data.entities.face(entity_id, target_pos);
+        msg_log.log(Msg::FaceTowards(entity_id, target_pos));
     }
 }
 
@@ -1067,14 +1067,6 @@ fn process_moved_message(entity_id: EntityId,
     data.entities.move_to(entity_id, pos);
     data.entities.took_turn[&entity_id] = true;
 
-    // if entity is a monster, which is also alert, and there is a path to the player,
-    // then face the player
-    if let Some(target_pos) = data.entities.target(entity_id) {
-        if data.could_see(entity_id, target_pos, config) {
-            data.entities.face(entity_id, target_pos);
-        }
-    }
-
     if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {
         if let Some(stance) = data.entities.stance.get(&entity_id) {
             if move_type == MoveType::Pass {
@@ -1172,6 +1164,15 @@ fn process_moved_message(entity_id: EntityId,
               data.entities.status[key].active {
                msg_log.log_front(Msg::Untriggered(*key, entity_id));
            }
+        }
+    }
+
+    // if entity is a monster, which is also alert, and there is a path to the player,
+    // then face the player
+    if let Some(target_pos) = data.entities.target(entity_id) {
+        if data.could_see(entity_id, target_pos, config) {
+            msg_log.log_front(Msg::FaceTowards(entity_id, target_pos));
+            //data.entities.face(entity_id, target_pos);
         }
     }
 }
