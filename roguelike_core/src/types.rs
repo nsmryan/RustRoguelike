@@ -131,11 +131,9 @@ impl GameData {
         if self.entities.typ[&entity_id] == EntityType::Player {
             return self.map.is_in_fov(pos, other_pos, radius, crouching);
         } else {
-            if let Some(dir) = self.entities.direction.get(&entity_id) {
-                return self.map.is_in_fov_direction(pos, other_pos, radius, *dir, crouching);
-            } else {
-                panic!(format!("tried to perform is_in_fov on entity without facing"));
-            }
+            let dir = self.entities.direction.get(&entity_id)
+                          .expect("tried to perform is_in_fov on entity without facing");
+            return self.map.is_in_fov_direction(pos, other_pos, radius, *dir, crouching);
         }
     }
 

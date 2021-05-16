@@ -438,6 +438,11 @@ fn check_record(mut game: Game, mut display: Display, mut event_pump: sdl2::Even
         msg_index += 1;
     }
 
+    let mut log = Log::new();
+    for msg in new_messages.iter() {
+        log.log_msg(&format!("{}", msg));
+    }
+
     if logs_differ {
         let start_diff = if first_diff_index > 5 { first_diff_index } else { 0 };
         let end_diff = cmp::min(cmp::min(first_diff_index + 5, old_messages.len()), new_messages.len());
