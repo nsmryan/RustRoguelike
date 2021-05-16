@@ -162,7 +162,7 @@ impl Msg {
     pub fn msg_line(&self, data: &GameData) -> String {
         match self {
             Msg::StartTurn => {
-                return "".to_string();
+                return "Starting turn".to_string();
             }
 
             Msg::Crushed(_obj_id, _pos) => {

@@ -391,7 +391,6 @@ fn check_record(mut game: Game, mut display: Display, mut event_pump: sdl2::Even
     let delay = Duration::from_millis(delay_ms);
     game.step_game(InputAction::None, delay_ms as f32);
     for action in actions {
-        //eprintln!("action: {}", action);
         game.step_game(action, delay_ms as f32);
 
         for _sdl2_event in event_pump.poll_iter() {
@@ -400,7 +399,6 @@ fn check_record(mut game: Game, mut display: Display, mut event_pump: sdl2::Even
         update_display(&mut game, &mut display)?;
 
         for msg in &game.msg_log.turn_messages {
-            //eprintln!("MSG: {}", msg);
             new_messages.push(msg.to_string());
         }
         game.msg_log.clear();
@@ -408,7 +406,6 @@ fn check_record(mut game: Game, mut display: Display, mut event_pump: sdl2::Even
     }
     game.step_game(InputAction::Exit, delay_ms as f32);
     for msg in &game.msg_log.turn_messages {
-        //eprintln!("MSG: {}", msg);
         new_messages.push(msg.to_string());
     }
 
