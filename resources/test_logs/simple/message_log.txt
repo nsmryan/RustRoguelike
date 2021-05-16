@@ -1,0 +1,99 @@
+MSG: startturn
+MSG: spawned 0 player 0 0 player up
+MSG: spawned 57 other -1 -1 mouse up
+MSG: spawned 58 enemy 5 5 gol downleft
+MSG: spawned 59 column 6 4 column up
+MSG: spawned 60 item 1 5 dagger up
+MSG: spawned 61 item 1 1 sword up
+MSG: spawned 62 other -1 -1 mouse up
+MSG: action_none 0
+MSG: player_turn
+MSG: startturn
+MSG: action_move_dir 0 up walk
+MSG: try_move 0 up 1 walk
+CONSOLE: Player moved to (1,4)
+MSG: moved 0 move 1 4
+MSG: sound 0 1 4 2 true
+MSG: action_state_change 58 attacking 0
+CONSOLE: Changed state to Attacking(0)
+MSG: state_change_attacking 58 0
+MSG: action_move 58 move 5 6
+MSG: try_move 58 down 1 walk
+CONSOLE: Gol moved to (5,6)
+MSG: moved 58 move 5 6
+MSG: sound 58 5 6 3 true
+MSG: player_turn
+MSG: startturn
+MSG: action_move_dir 0 up walk
+MSG: try_move 0 up 1 walk
+CONSOLE: Player moved to (1,3)
+MSG: moved 0 move 1 3
+MSG: sound 0 1 3 2 true
+MSG: action_move 58 move 5 7
+MSG: try_move 58 down 1 walk
+CONSOLE: Gol moved to (5,7)
+MSG: moved 58 move 5 7
+MSG: sound 58 5 7 3 true
+MSG: player_turn
+MSG: startturn
+MSG: action_move_dir 0 up walk
+MSG: try_move 0 up 1 walk
+CONSOLE: Player moved to (1,2)
+MSG: moved 0 move 1 2
+MSG: sound 0 1 2 2 true
+MSG: action_state_change 58 investigating 1 2
+CONSOLE: Changed state to Investigating((1, 2))
+MSG: state_change_investigating 58 1 2
+MSG: action_move 58 move 4 8
+MSG: try_move 58 downleft 1 walk
+CONSOLE: Gol moved to (4,8)
+MSG: moved 58 move 4 8
+MSG: sound 58 4 8 3 true
+MSG: player_turn
+MSG: startturn
+MSG: action_move_dir 0 up walk
+MSG: try_move 0 up 1 walk
+CONSOLE: Player moved to (1,1)
+MSG: moved 0 move 1 1
+MSG: sound 0 1 1 2 true
+MSG: action_move 58 move 3 7
+MSG: try_move 58 upleft 1 walk
+CONSOLE: Gol moved to (3,7)
+MSG: moved 58 move 3 7
+MSG: sound 58 3 7 3 true
+MSG: player_turn
+MSG: startturn
+MSG: pickup 0
+MSG: action_none 0
+CONSOLE: Player picked up a Sword
+MSG: picked_up 0 61
+MSG: action_move 58 move 3 6
+MSG: try_move 58 up 1 walk
+CONSOLE: Gol moved to (3,6)
+MSG: moved 58 move 3 6
+MSG: sound 58 3 6 3 true
+MSG: player_turn
+MSG: startturn
+MSG: pickup 0
+MSG: action_none 0
+MSG: player_turn
+MSG: startturn
+MSG: action_move_dir 0 right walk
+MSG: try_move 0 right 1 walk
+CONSOLE: Player moved to (2,1)
+MSG: moved 0 move 2 1
+MSG: sound 0 2 1 2 true
+MSG: action_move 58 move 3 5
+MSG: try_move 58 up 1 walk
+CONSOLE: Gol moved to (3,5)
+MSG: moved 58 move 3 5
+MSG: sound 58 3 5 3 true
+MSG: action_state_change 58 attacking 0
+CONSOLE: Changed state to Attacking(0)
+MSG: state_change_attacking 58 0
+MSG: player_turn
+MSG: startturn
+CONSOLE: Confirm quit
+MSG: game_state confirmquit
+MSG: action_none 0
+MSG: player_turn
