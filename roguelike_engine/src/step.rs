@@ -397,8 +397,6 @@ fn test_ai_investigate_moves() {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     game.data.entities.pos[&player_id] = add_pos(start_pos, Pos::new(5, 1));
 
-    game.data.entities.behavior[&gol] = Behavior::Investigating(Pos::new(0, 1));
-
     // place walls between the player and the gol
     game.data.map[(2, 0)] = Tile::wall();
     game.data.map[(2, 1)] = Tile::wall();
@@ -416,6 +414,6 @@ fn test_ai_investigate_moves() {
     game.msg_log.clear();
     ai_investigate(sound_pos, gol, &mut game.data, &mut game.msg_log, &game.config);
     assert_eq!(1, game.msg_log.messages.len());
-    let direction = Direction::from_positions(sound_pos, start_pos).unwrap();
-    assert_eq!(game.msg_log.messages[0], Msg::TryMove(gol, direction, 1, MoveMode::Walk));
+    let direction = Direction::from_positions(start_pos, sound_pos).unwrap();
+    assert_eq!(Msg::TryMove(gol, direction, 1, MoveMode::Walk), game.msg_log.messages[0]);
 }
