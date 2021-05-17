@@ -215,7 +215,11 @@ impl Input {
                             if new_repeats > held_state.repetitions {
                                 action = self.key_to_action(chr, settings);
 
-                                self.char_held.insert(chr, held_state.repeated());
+                                if action == InputAction::OverlayOff {
+                                    action = InputAction::None;
+                                } else {
+                                    self.char_held.insert(chr, held_state.repeated());
+                                }
                             }
                         }
                     }
