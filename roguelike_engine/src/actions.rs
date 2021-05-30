@@ -15,6 +15,7 @@ use crate::input::*;
 use crate::make_map;
 
 
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ActionLoc {
     Dir(Direction),
@@ -22,23 +23,22 @@ pub enum ActionLoc {
     None
 }
 
-pub type ActionTarget = i32;
-
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum InputAction {
     Move(Direction, MoveMode),
-    TileApply(ActionTarget),
     Pass,
     Pickup,
     DropItem,
-    DropTargetItem(i32),
+    DropItemByIndex(usize),
     Yell,
-    UseItem(Direction, ActionTarget),
+    UseItem(Direction, usize),
     Interact(Option<Direction>),
     CursorMove(Direction, bool, bool), // move direction, is relative, is long
     CursorReturn,
     CursorToggle,
-    CursorApply(ActionMode, ActionTarget),
+    CursorApplyItem(ActionMode, usize),
+    CursorApplySkill(ActionMode, usize),
+    CursorApplyMove(ActionMode),
     MapClick(Pos, Pos), // map loc, map cell
     MouseButton(MouseClick, KeyDir),
     Inventory,
@@ -72,13 +72,12 @@ impl fmt::Display for InputAction {
                     Direction::UpRight => write!(f, "upright {}", move_mode),
                 }
             },
-            InputAction::TileApply(action_target) => write!(f, "tileapply {}", action_target),
             InputAction::Pass => write!(f, "pass"),
             InputAction::MapClick(loc, cell) => write!(f, "click {} {} {} {}", loc.x, loc.y, cell.x, cell.y),
             InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
             InputAction::Pickup => write!(f, "pickup"),
             InputAction::DropItem => write!(f, "drop"),
-            InputAction::DropTargetItem(target) => write!(f, "droptarget {}", target),
+            InputAction::DropItemByIndex(target) => write!(f, "droptarget {}", target),
             InputAction::Inventory => write!(f, "inventory"),
             InputAction::SkillMenu => write!(f, "skill"),
             InputAction::ClassMenu => write!(f, "class"),
@@ -95,9 +94,11 @@ impl fmt::Display for InputAction {
             InputAction::SelectItem(item) => write!(f, "selectitem {}", item),
             InputAction::UseItem(dir, target) => write!(f, "use, {:?} {}", dir, target),
             InputAction::Interact(dir) => write!(f, "interact {:?}", dir),
+            InputAction::CursorApplyItem(action_mode, index) => write!(f, "cursorapplyitem {:?} {}", action_mode, index),
+            InputAction::CursorApplySkill(action_mode, index) => write!(f, "cursorapplyskill {:?} {}", action_mode, index),
+            InputAction::CursorApplyMove(action_mode) => write!(f, "cursorapplymove {:?}", action_mode),
             InputAction::CursorMove(dir, relative, long) => write!(f, "cursormove {:?} {} {}", dir, relative, long),
             InputAction::CursorReturn => write!(f, "cursorreturn"),
-            InputAction::CursorApply(mode, target) => write!(f, "cursorapply {:?} {:?}", mode, target),
             InputAction::CursorToggle => write!(f, "cursortoggle"),
             InputAction::None => write!(f, "none"),
         }
@@ -136,9 +137,6 @@ impl FromStr for InputAction {
         } else if args[0] == "downright" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::DownRight, move_mode));
-        } else if args[0] == "tileapply" {
-            let target = args[1].parse::<ActionTarget>().unwrap();
-            return Ok(InputAction::TileApply(target));
         } else if args[0] == "pass" {
             return Ok(InputAction::Pass);
         } else if args[0] == "pickup" {
@@ -146,15 +144,15 @@ impl FromStr for InputAction {
         } else if args[0] == "drop" {
             return Ok(InputAction::DropItem);
         } else if args[0] == "droptarget" {
-            let target = args[1].parse::<ActionTarget>().unwrap();
-            return Ok(InputAction::DropTargetItem(target));
+            let target = args[1].parse::<usize>().unwrap();
+            return Ok(InputAction::DropItemByIndex(target));
         } else if args[0] == "yell" {
             return Ok(InputAction::Yell);
         } else if args[0] == "inventory" {
             return Ok(InputAction::Inventory);
         } else if args[0] == "use" {
             let direction = args[1].parse::<Direction>().unwrap();
-            let target = args[1].parse::<ActionTarget>().unwrap();
+            let target = args[1].parse::<usize>().unwrap();
             return Ok(InputAction::UseItem(direction, target));
         } else if s.starts_with("selectitem") {
             let selection = args[1].parse::<usize>().unwrap();
@@ -187,10 +185,17 @@ impl FromStr for InputAction {
             return Ok(InputAction::CursorMove(dir, relative, long));
         } else if args[0] == "cursorreturn" {
             return Ok(InputAction::CursorReturn);
-        } else if args[0] == "cursorapply" {
+        } else if args[0] == "cursorapplyitem" {
             let mode = ActionMode::from_str(args[1]).unwrap();
-            let target = args[2].parse::<i32>().unwrap();
-            return Ok(InputAction::CursorApply(mode, target));
+            let target = args[2].parse::<usize>().unwrap();
+            return Ok(InputAction::CursorApplyItem(mode, target));
+        } else if args[0] == "cursorapplyskill" {
+            let mode = ActionMode::from_str(args[1]).unwrap();
+            let target = args[2].parse::<usize>().unwrap();
+            return Ok(InputAction::CursorApplySkill(mode, target));
+        } else if args[0] == "cursorapplymove" {
+            let mode = ActionMode::from_str(args[1]).unwrap();
+            return Ok(InputAction::CursorApplyMove(mode));
         } else if args[0] == "cursortoggle" {
             return Ok(InputAction::CursorToggle);
         } else {
@@ -463,28 +468,25 @@ pub fn handle_input_playing(input_action: InputAction,
             settings.cursor = Some(data.map.clamp(new_pos));
         }
 
-        (InputAction::TileApply(target), true) => {
-            let cursor_pos = settings.cursor.expect("TileApply outside of cursor mode?");
+        (InputAction::CursorApplyMove(mode), true) => {
+            let cursor_pos = settings.cursor.expect("CursorApplyMove outside of cursor mode?");
 
-            chord(ActionLoc::Place(cursor_pos),
-                  ActionMode::Alternate,
-                  target,
-                  data,
-                  settings,
-                  config,
-                  msg_log);
+            chord_move(ActionLoc::Place(cursor_pos), mode, data, msg_log);
         }
 
-        (InputAction::CursorApply(mode, target), true) => {
-            let cursor_pos = settings.cursor.expect("CursorApply outside of cursor mode?");
+        (InputAction::CursorApplyItem(mode, target), true) => {
+            let cursor_pos = settings.cursor.expect("CursorApplyItem outside of cursor mode?");
 
-            chord(ActionLoc::Place(cursor_pos),
-                  mode,
-                  target,
-                  data,
-                  settings,
-                  config,
-                  msg_log);
+            chord_item(ActionLoc::Place(cursor_pos), mode, target, data, settings, config, msg_log);
+        }
+
+        (InputAction::CursorApplySkill(mode, skill_index), true) => {
+            let cursor_pos = settings.cursor.expect("CursorApplySkill outside of cursor mode?");
+
+            if skill_index < data.entities.skills[&player_id].len() {
+                let loc = ActionLoc::Place(cursor_pos);
+                handle_skill(skill_index, loc, mode, data, settings, msg_log, config);
+            }
         }
 
         (InputAction::CursorToggle, true) => {
@@ -495,8 +497,11 @@ pub fn handle_input_playing(input_action: InputAction,
             }
         }
 
-        (InputAction::DropTargetItem(target), true) => {
-            msg_log.log(Msg::DropItem(player_id, target as u64));
+        (InputAction::DropItemByIndex(target), true) => {
+            if target < data.entities.inventory[&player_id].len() {
+                let item_id = data.entities.inventory[&player_id][target];
+                msg_log.log(Msg::DropItem(player_id, item_id));
+            }
         }
 
         (InputAction::Pass, true) => {
@@ -705,22 +710,6 @@ pub fn handle_skill(skill_index: usize,
     }
 }
 
-pub fn chord(loc: ActionLoc,
-             mode: ActionMode,
-             target: i32,
-             data: &GameData,
-             settings: &mut GameSettings,
-             config: &Config,
-             msg_log: &mut MsgLog) {
-    if target == -1 {
-        // if no target selection, then it is a move
-        chord_move(loc, mode, data, msg_log);
-    } else {
-        // if there is a target, then it is a selection
-        chord_selection(loc, mode, target, data, settings, config, msg_log);
-    }
-}
-
 fn chord_move(loc: ActionLoc,
               mode: ActionMode,
               data: &GameData,
@@ -765,66 +754,57 @@ fn chord_move(loc: ActionLoc,
     }
 }
 
-fn chord_selection(loc: ActionLoc,
-                   mode: ActionMode,
-                   target: i32,
-                   data: &GameData,
-                   settings: &mut GameSettings,
-                   config: &Config,
-                   msg_log: &mut MsgLog) {
+fn chord_item(loc: ActionLoc,
+              mode: ActionMode,
+              target: usize,
+              data: &GameData,
+              settings: &mut GameSettings,
+              config: &Config,
+              msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    if target >= 2 {
-        // the minus 2 here comes from the primary and secondary item, after which comes
-        // the skills
-        let skill_index = (target - 2) as usize;
-        if skill_index < data.entities.skills[&player_id].len() {
-            handle_skill(skill_index, loc, mode, data, settings, msg_log, config);
-        }
-    } else {
-        let num_items_in_inventory = data.entities.inventory[&player_id].len() as i32;
+    let num_items_in_inventory = data.entities.inventory[&player_id].len();
 
-        if target >= num_items_in_inventory {
-            return;
-        }
+    if target >= num_items_in_inventory {
+        return;
+    }
 
-        let item_id = data.entities.inventory[&player_id][target as usize];
-        
-        match mode {
-            ActionMode::Primary => {
-                match loc {
-                    ActionLoc::Dir(dir) => {
-                        // primary item use is the item's main action
-                        let pos = data.entities.pos[&player_id];
-                        let use_pos = dir.offset_pos(pos, 1);
-                        msg_log.log(Msg::UseItem(player_id, use_pos, item_id));
-                    }
-
-                    _ => panic!("Is this even possible anymore?"),
+    let item_id = data.entities.inventory[&player_id][target as usize];
+    
+    match mode {
+        ActionMode::Primary => {
+            match loc {
+                ActionLoc::Dir(dir) => {
+                    // primary item use is the item's main action
+                    let pos = data.entities.pos[&player_id];
+                    let use_pos = dir.offset_pos(pos, 1);
+                    msg_log.log(Msg::UseItem(player_id, use_pos, item_id));
                 }
+
+                _ => panic!("Is this even possible anymore?"),
             }
+        }
 
-            ActionMode::Alternate => {
-                let player_pos = data.entities.pos[&player_id];
+        ActionMode::Alternate => {
+            let player_pos = data.entities.pos[&player_id];
 
-                // alternate item use means drop or throw item
-                match loc {
-                    ActionLoc::None => {
-                        msg_log.log(Msg::DropItem(player_id, target as u64));
-                    }
+            // alternate item use means drop or throw item
+            match loc {
+                ActionLoc::None => {
+                    msg_log.log(Msg::DropItem(player_id, item_id));
+                }
 
-                    ActionLoc::Place(pos) => {
-                        msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, pos));
-                    }
+                ActionLoc::Place(pos) => {
+                    msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, pos));
+                }
 
-                    ActionLoc::Dir(direction) => {
-                        let start = data.entities.pos[&player_id];
-                        let max_end = direction.offset_pos(start, PLAYER_THROW_DIST as i32);
-                        let end = data.map.path_blocked_move(start, max_end)
-                                               .map_or(max_end, |b| b.end_pos);
+                ActionLoc::Dir(direction) => {
+                    let start = data.entities.pos[&player_id];
+                    let max_end = direction.offset_pos(start, PLAYER_THROW_DIST as i32);
+                    let end = data.map.path_blocked_move(start, max_end)
+                                           .map_or(max_end, |b| b.end_pos);
 
-                        msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, end));
-                    }
+                    msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, end));
                 }
             }
         }

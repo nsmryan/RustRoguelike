@@ -995,7 +995,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             tile_sprite.draw_char(panel, ENTITY_CURSOR as char, cursor_pos, color);
 
             // render player ghost
-            if cursor_pos != player_pos && game.input.target == -1 {
+            if cursor_pos != player_pos && game.input.target == None {
                 let alpha = game.data.entities.color[&player_id].a;
                 game.data.entities.color[&player_id].a = 100;
 
