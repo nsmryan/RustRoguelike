@@ -384,8 +384,6 @@ pub fn ai_is_in_fov(monster_id: EntityId, target_id: EntityId, data: &mut GameDa
     let target_pos = data.entities.pos[&target_id];
 
     let within_fov = data.pos_in_fov(monster_id, target_pos, config);
-
-    let within_fov = data.pos_in_fov(monster_id, target_pos, config);
     let move_blocked = data.map.path_blocked_move(monster_pos, target_pos);
 
     if within_fov && move_blocked.is_some() {

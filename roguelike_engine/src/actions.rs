@@ -477,7 +477,7 @@ pub fn handle_input_playing(input_action: InputAction,
         (InputAction::CursorApplyItem(mode, target), true) => {
             let cursor_pos = settings.cursor.expect("CursorApplyItem outside of cursor mode?");
 
-            chord_item(ActionLoc::Place(cursor_pos), mode, target, data, settings, config, msg_log);
+            chord_item(ActionLoc::Place(cursor_pos), mode, target, data, msg_log);
         }
 
         (InputAction::CursorApplySkill(mode, skill_index), true) => {
@@ -758,8 +758,6 @@ fn chord_item(loc: ActionLoc,
               mode: ActionMode,
               target: usize,
               data: &GameData,
-              settings: &mut GameSettings,
-              config: &Config,
               msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 

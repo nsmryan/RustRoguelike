@@ -1,10 +1,8 @@
 use std::fs;
 use std::time::Duration;
-use std::io::{BufRead, Write};
+use std::io::BufRead;
 use std::str::FromStr;
 use std::cmp;
-
-use sdl2::EventPump;
 
 use roguelike_core::map::MapLoadConfig;
 
@@ -52,7 +50,7 @@ pub fn check_all_records(game: &mut Game, display: &mut Display, event_pump: &mu
         }
     }
 
-    if (count_differ != 0) {
+    if count_differ != 0 {
         eprintln!("{}/{} tests had differing logs!", count_differ, num_cases);
     } else {
         eprintln!("{} all same!", num_cases);
