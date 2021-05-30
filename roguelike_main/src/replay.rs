@@ -34,7 +34,9 @@ pub fn check_all_records(game: &mut Game, display: &mut Display, event_pump: &mu
 
         let record_path = path.as_path().to_str().unwrap();
         let record_name = record_path.rsplit("/").next().unwrap();
-        let result = check_record(game, display, event_pump, record_name, delay_ms);
+
+        let mut local_game = game.clone();
+        let result = check_record(&mut local_game, display, event_pump, record_name, delay_ms);
 
         results.push((record_name.to_string(), result));
     }
@@ -204,14 +206,40 @@ fn check_record(game: &mut Game, display: &mut Display, event_pump: &mut sdl2::E
     return result;
 }
 
-pub fn rerecord(mut game: Game, mut display: Display, mut event_pump: sdl2::EventPump, record_name: &str, delay_ms: u64) -> Result<(), String> {
+pub fn rerecord_all(game: &mut Game, display: &mut Display, event_pump: &mut sdl2::EventPump, delay_ms: u64) -> Result<(), String> {
+    let mut results: Vec<String> = Vec::new();
+
+    for entry in fs::read_dir("resources/test_logs/").unwrap() {
+        let path = entry.unwrap().path();
+
+        let record_path = path.as_path().to_str().unwrap();
+        let record_name = record_path.rsplit("/").next().unwrap();
+
+        let mut local_game = game.clone();
+        rerecord_single(&mut local_game, display, event_pump, record_name, delay_ms)?;
+
+        results.push(record_name.to_string());
+    }
+
+    for result in results {
+        eprintln!("re-recorded '{}'", result);
+    }
+
+    return Ok(());
+}
+
+pub fn rerecord_single(game: &mut Game, display: &mut Display, event_pump: &mut sdl2::EventPump, record_name: &str, delay_ms: u64) -> Result<(), String> {
+    return rerecord(game, display, event_pump, record_name, delay_ms);
+}
+
+fn rerecord(game: &mut Game, display: &mut Display, event_pump: &mut sdl2::EventPump, record_name: &str, delay_ms: u64) -> Result<(), String> {
     let path = format!("resources/test_logs/{}", record_name);
 
     let map_config_path = format!("{}/{}", path, MAP_CONFIG_NAME);
     let map_config_string = std::fs::read_to_string(map_config_path).unwrap();
     let map_config = map_config_string.parse::<MapLoadConfig>().expect("Could not parse map config");
     eprintln!("Using map config: {}", &map_config);
-    make_map(&map_config, &mut game);
+    make_map(&map_config, game);
 
     let action_path = format!("{}/{}", path, Log::ACTION_LOG_NAME);
     let actions = read_action_log(&action_path);
@@ -226,7 +254,7 @@ pub fn rerecord(mut game: Game, mut display: Display, mut event_pump: sdl2::Even
 
         for _sdl2_event in event_pump.poll_iter() { }
 
-        update_display(&mut game, &mut display)?;
+        update_display(game, display)?;
 
         for msg in &game.msg_log.turn_messages {
             log.log_msg(&format!("{}", msg));

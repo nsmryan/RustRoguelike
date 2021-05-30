@@ -420,6 +420,7 @@ impl Msg {
     }
 }
 
+#[derive(Clone)]
 pub struct MsgLog {
     pub messages: VecDeque<Msg>,
     pub turn_messages: VecDeque<Msg>,

@@ -17,8 +17,10 @@ MSG: ai_attack 58
 MSG: facing 58 upleft
 MSG: try_move 58 down 1 walk
 MSG: moved 58 move 5 6
+MSG: face_towards 58 1 4
 MSG: sound 58 5 6 2 true
 MSG: face_towards 58 1 4
+MSG: facing 58 upleft
 MSG: facing 58 upleft
 MSG: player_turn
 MSG: startturn
@@ -30,8 +32,10 @@ MSG: ai_attack 58
 MSG: facing 58 upleft
 MSG: try_move 58 down 1 walk
 MSG: moved 58 move 5 7
+MSG: face_towards 58 1 3
 MSG: sound 58 5 7 2 true
 MSG: face_towards 58 1 3
+MSG: facing 58 upleft
 MSG: facing 58 upleft
 MSG: player_turn
 MSG: startturn
@@ -65,7 +69,9 @@ MSG: moved 0 move 5 1
 MSG: sound 0 5 1 1 true
 MSG: try_move 58 up 1 walk
 MSG: moved 58 move 3 6
+MSG: face_towards 58 2 2
 MSG: sound 58 3 6 2 true
+MSG: facing 58 upleft
 MSG: player_turn
 MSG: startturn
 MSG: try_move 0 downright 1 sneak
@@ -73,7 +79,9 @@ MSG: moved 0 move 6 2
 MSG: sound 0 6 2 1 true
 MSG: try_move 58 up 1 walk
 MSG: moved 58 move 3 5
+MSG: face_towards 58 2 2
 MSG: sound 58 3 5 2 true
+MSG: facing 58 upleft
 MSG: player_turn
 MSG: startturn
 MSG: try_move 0 downright 1 sneak
@@ -81,7 +89,9 @@ MSG: moved 0 move 7 3
 MSG: sound 0 7 3 1 true
 MSG: try_move 58 up 1 walk
 MSG: moved 58 move 3 4
+MSG: face_towards 58 2 2
 MSG: sound 58 3 4 2 true
+MSG: facing 58 upleft
 MSG: player_turn
 MSG: startturn
 MSG: try_move 0 down 1 sneak
@@ -89,7 +99,9 @@ MSG: moved 0 move 7 4
 MSG: sound 0 7 4 1 true
 MSG: try_move 58 up 1 walk
 MSG: moved 58 move 3 3
+MSG: face_towards 58 2 2
 MSG: sound 58 3 3 2 true
+MSG: facing 58 upleft
 MSG: player_turn
 MSG: startturn
 MSG: try_move 0 downleft 1 sneak
@@ -97,7 +109,9 @@ MSG: moved 0 move 6 5
 MSG: sound 0 6 5 1 true
 MSG: try_move 58 upleft 1 walk
 MSG: moved 58 move 2 2
+MSG: face_towards 58 2 2
 MSG: sound 58 2 2 2 true
+MSG: facing 58 upleft
 MSG: player_turn
 MSG: startturn
 MSG: moved 0 pass 6 5

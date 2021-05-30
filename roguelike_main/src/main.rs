@@ -178,8 +178,12 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         }
     } else if let Some(record_name) = opts.rerecord {
         let delay = opts.delay.unwrap_or(0);
-        let event_pump = sdl_context.event_pump().unwrap();
-        return rerecord(game, display, event_pump, &record_name, delay);
+        let mut event_pump = sdl_context.event_pump().unwrap();
+        if record_name == "all" {
+            return rerecord_all(&mut game, &mut display, &mut event_pump, delay);
+        } else {
+            return rerecord_single(&mut game, &mut display, &mut event_pump, &record_name, delay);
+        }
     } else {
         make_map(&map_config, &mut game);
         let event_pump = sdl_context.event_pump().unwrap();

@@ -18,6 +18,7 @@ use crate::input::*;
 use crate::vault::*;
 
 
+#[derive(Clone)]
 pub struct Game {
     pub config: Config,
     pub data: GameData,
