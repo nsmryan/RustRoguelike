@@ -127,9 +127,10 @@ impl GameData {
         };
 
         let stance = self.entities.stance[&entity_id];
-        let other_stance = self.entities.stance[&other_id];
-        let crouching = stance == Stance::Crouching || other_stance == Stance::Crouching;
+        let other_stance = self.entities.stance.get(&other_id).unwrap_or(&Stance::Standing);
+        let crouching = stance == Stance::Crouching || other_stance == &Stance::Crouching;
 
+        let other_pos = self.entities.pos[&other_id];
         if self.entities.typ[&entity_id] == EntityType::Player {
             return self.map.is_in_fov(pos, other_pos, radius, crouching);
         } else {
@@ -331,12 +332,12 @@ impl GameData {
         return within;
     }
 
-    // check whether the entitiy could see a location if it were facing towards that position.
+    // check whether the entity could see a location if it were facing towards that position.
     pub fn could_see(&mut self, entity_id: EntityId, target_pos: Pos, config: &Config) -> bool {
         let current_facing = self.entities.direction[&entity_id];
         self.entities.face(entity_id, target_pos);
 
-        let visible = self.is_in_fov(entity_id, target_pos, config);
+        let visible = self.pos_in_fov(entity_id, target_pos, config);
 
         self.entities.direction[&entity_id] = current_facing;
 

@@ -178,7 +178,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     place_items(game, cmds);
 
-    place_monsters(game, player_pos, cmds);
+    place_monsters(game, player_id, cmds);
 
     place_traps(game, cmds);
 
@@ -421,7 +421,9 @@ fn place_traps(game: &mut Game, cmds: &Vec<ProcCmd>) {
     }
 }
 
-fn place_monsters(game: &mut Game, player_pos: Pos, cmds: &Vec<ProcCmd>) {
+fn place_monsters(game: &mut Game, player_id: EntityId, cmds: &Vec<ProcCmd>) {
+    let player_pos = game.data.entities.pos[&player_id];
+
     // get empty positions, but make sure they are not close to the player
     let mut potential_pos = 
         game.data.get_clear_pos()
@@ -452,7 +454,7 @@ fn place_monsters(game: &mut Game, player_pos: Pos, cmds: &Vec<ProcCmd>) {
                     _ => { id = None; },
                 }
                 if let Some(id) = id {
-                    if game.data.is_in_fov(id, player_pos, &game.config) {
+                    if game.data.is_in_fov(id, player_id, &game.config) {
                         game.data.entities.direction[&id] = 
                             game.data.entities.direction[&id].reverse();
                     }

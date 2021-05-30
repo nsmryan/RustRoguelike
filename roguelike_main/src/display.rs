@@ -163,7 +163,7 @@ impl Display {
                     // only play the sound effect if the player position is included
                     let sound_hits_player = sound_aoe.positions().iter().any(|pos| *pos == player_pos);
                     let sound_from_monster = data.entities.typ.get(&cause_id) == Some(&EntityType::Enemy);
-                    let player_can_see_source = data.is_in_fov(player_id, source_pos, config);
+                    let player_can_see_source = data.is_in_fov(player_id, cause_id, config);
                     let visible_monster_sound = sound_from_monster && player_can_see_source;
                     if !visible_monster_sound && sound_hits_player {
                         let sound_effect = Effect::Sound(sound_aoe, 0.0);
@@ -332,8 +332,7 @@ impl Display {
                 self.state.current_turn_fov.clear();
 
                 for entity_id in data.entities.ids.clone() {
-                    let pos = data.entities.pos[&entity_id];
-                    if entity_id != player_id && data.is_in_fov(player_id, pos, config) {
+                    if entity_id != player_id && data.is_in_fov(player_id, entity_id, config) {
                         self.state.current_turn_fov.push(entity_id);
                     }
                 }
@@ -343,9 +342,9 @@ impl Display {
                         continue;
                     }
 
-                    let pos = data.entities.pos[entity_id];
-                    if !data.is_in_fov(player_id, pos, config) {
+                    if !data.is_in_fov(player_id, *entity_id, config) {
                         if let Some(sprite) = self.state.drawn_sprites.get(entity_id) {
+                            let pos = data.entities.pos[entity_id];
                             self.state.impressions.push(Impression::new(*sprite, pos));
                         }
                     }
@@ -354,7 +353,7 @@ impl Display {
                 /* Remove impressions that are currently visible */
                 let mut impressions_visible = Vec::new();
                 for (index, impression) in self.state.impressions.iter().enumerate() {
-                    if data.is_in_fov(player_id, impression.pos, config) {
+                    if data.pos_in_fov(player_id, impression.pos, config) {
                         impressions_visible.push(index);
                     }
                 }

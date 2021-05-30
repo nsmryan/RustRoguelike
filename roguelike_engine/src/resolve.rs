@@ -4,7 +4,7 @@ use log::{trace, error};
 use oorandom::Rand32;
 
 use roguelike_core::types::*;
-use roguelike_core::ai::{Behavior, ai_move_to_attack_pos, ai_can_hit_target, ai_take_turn};
+use roguelike_core::ai::{Behavior, ai_move_to_attack_pos, ai_can_hit_target, ai_take_turn, ai_is_in_fov};
 use roguelike_core::map::{Surface, AoeEffect};
 use roguelike_core::messaging::{MsgLog, Msg};
 use roguelike_core::constants::*;
@@ -1195,7 +1195,7 @@ fn resolve_ai_attack(entity_id: EntityId,
         let entity_pos = data.entities.pos[&entity_id];
         let direction = Direction::from_positions(entity_pos, hit_pos).unwrap();
         msg_log.log(Msg::TryMove(entity_id, direction, 1, MoveMode::Walk));
-    } else if !data.is_in_fov(entity_id, target_pos, config) {
+    } else if !ai_is_in_fov(entity_id, target_id, data, config) {
         // if we lose the target, end the turn
         data.entities.took_turn[&entity_id] = true;
         msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));

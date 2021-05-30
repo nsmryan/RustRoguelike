@@ -219,7 +219,7 @@ pub fn ai_fov_cost(monster_id: EntityId,
     let cur_dir = data.entities.direction[&monster_id];
     data.entities.face(monster_id, target_pos);
     let cost =
-        if data.is_in_fov(monster_id, target_pos, config) {
+        if data.pos_in_fov(monster_id, target_pos, config) {
              NOT_IN_FOV_COST
         } else {
             0
@@ -303,7 +303,7 @@ pub fn ai_can_hit_target(data: &mut GameData,
 
     // we don't use ai_is_in_fov here because the other checks already
     // cover blocked movement.
-    let within_fov = data.is_in_fov(monster_id, target_pos, config);
+    let within_fov = data.pos_in_fov(monster_id, target_pos, config);
 
     let traps_block = false;
 
@@ -376,13 +376,14 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     return maybe_pos;
 }
 
-fn ai_is_in_fov(monster_id: EntityId, target_id: EntityId, data: &mut GameData, config: &Config) -> bool {
+// NOTE perhaps this should be merged into is_in_fov?
+pub fn ai_is_in_fov(monster_id: EntityId, target_id: EntityId, data: &mut GameData, config: &Config) -> bool {
     let monster_pos = data.entities.pos[&monster_id];
     let target_pos = data.entities.pos[&target_id];
 
-    let within_fov = data.is_in_fov(monster_id, target_pos, config);
+    let within_fov = data.pos_in_fov(monster_id, target_pos, config);
 
-    let within_fov = data.is_in_fov(monster_id, target_pos, config);
+    let within_fov = data.pos_in_fov(monster_id, target_pos, config);
     let move_blocked = data.map.path_blocked_move(monster_pos, target_pos);
 
     if within_fov && move_blocked.is_some() {
