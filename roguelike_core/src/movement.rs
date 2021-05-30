@@ -810,7 +810,6 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
         } else if data.map[next_pos(pos, dxy)].tile_type != TileType::Water {
             let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
             let push_amount = 1;
-            // TODO issue 150 this is where pushing comes from. 
             attack = Some(Attack::Push(other_id, direction, push_amount));
         } else {
             // water after push, so supress attack
@@ -839,7 +838,6 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
                 } else {
                     let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
                     let push_amount = 1;
-                    // TODO issue 150 this is where pushing comes from. 
                     Attack::Push(other_id, direction, push_amount)
                 };
             let move_pos = move_next_to(pos, entity_pos);
@@ -852,6 +850,13 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
         // entity and wall are together- between-tile wall in front of entity
         // move up to the wall- we can't jump it or attack through it
         movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
+
+        // TODO issue #248 when can attack/push/move?
+        //let move_pos = move_next_to(pos, entity_pos);
+        //let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
+        //let push_amount = 1;
+        //let attack = Attack::Push(other_id, direction, push_amount);
+        //movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
     }
 
     return movement;

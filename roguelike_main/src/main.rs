@@ -4,9 +4,9 @@ mod render;
 mod display;
 mod keyboard;
 mod load;
+mod replay;
 
 use std::fs;
-use std::cmp;
 use std::io::{BufRead, Write};
 use std::time::{Duration, Instant, SystemTime};
 use std::path::Path;
@@ -40,10 +40,10 @@ use crate::render::*;
 use crate::display::*;
 use crate::keyboard::*;
 use crate::load::*;
+use crate::replay::*;
 
 
-const CONFIG_NAME: &str = "config.yaml";
-const MAP_CONFIG_NAME: &str = "map_config.txt";
+pub const CONFIG_NAME: &str = "config.yaml";
 
 
 #[derive(Debug, Clone, Options)]
@@ -169,8 +169,13 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         return Ok(());
     } else if let Some(record_name) = opts.check {
         let delay = opts.delay.unwrap_or(0);
-        let event_pump = sdl_context.event_pump().unwrap();
-        return check_record(game, display, event_pump, &record_name, delay);
+        let mut event_pump = sdl_context.event_pump().unwrap();
+
+        if record_name == "all" {
+            return check_all_records(&mut game, &mut display, &mut event_pump, delay);
+        } else {
+            return check_single_record(&mut game, &mut display, &mut event_pump, &record_name, delay);
+        }
     } else if let Some(record_name) = opts.rerecord {
         let delay = opts.delay.unwrap_or(0);
         let event_pump = sdl_context.event_pump().unwrap();
@@ -303,35 +308,6 @@ fn save_record(record_name: &str) {
             .expect("Could not save map config!");
 }
 
-fn read_action_log(replay_file: &str) -> Vec<InputAction> {
-    let mut starting_actions = Vec::new();
-
-    let file =
-        std::fs::File::open(&replay_file).expect(&format!("Could not open replay file '{}'", &replay_file));
-    for line in std::io::BufReader::new(file).lines() {
-        if let Ok(action) = InputAction::from_str(&line.unwrap()) { 
-            starting_actions.push(action);
-        }
-    }
-
-    return starting_actions;
-}
-
-fn read_message_log(message_file: &str) -> Vec<String> {
-    let mut message_lines = Vec::new();
-
-    let file =
-        std::fs::File::open(&message_file).expect(&format!("Could not open message file '{}'", &message_file));
-    for line in std::io::BufReader::new(file).lines() {
-        if let Ok(line) = line {
-            message_lines.push(line);
-        }
-    }
-
-    message_lines.reverse();
-    return message_lines;
-}
-
 fn reload_config(config_modified_time: &mut SystemTime, game: &mut Game) {
     /* Reload map if configured to do so */
     if game.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
@@ -369,181 +345,6 @@ fn reload_config(config_modified_time: &mut SystemTime, game: &mut Game) {
 //        _ => {}
 //    }
 //}
-
-fn check_record(mut game: Game, mut display: Display, mut event_pump: sdl2::EventPump, record_name: &str, delay_ms: u64) -> Result<(), String> {
-    let path = format!("resources/test_logs/{}", record_name);
-
-    let map_config_path = format!("{}/{}", path, MAP_CONFIG_NAME);
-    let map_config_string = std::fs::read_to_string(map_config_path).unwrap();
-    let map_config = map_config_string.parse::<MapLoadConfig>().expect("Could not parse map config");
-    eprintln!("Using map config: {}", &map_config);
-    make_map(&map_config, &mut game);
-
-    let action_path = format!("{}/{}", path, Log::ACTION_LOG_NAME);
-    let actions = read_action_log(&action_path);
-
-    let message_path = format!("{}/{}", path, Log::MESSAGE_LOG_NAME);
-    let logged_lines = read_message_log(&message_path);
-
-    let prefix = "MSG: ";
-    let mut old_messages = logged_lines.iter()
-                                       .filter(|line| line.starts_with(prefix))
-                                       .map(|line| line[prefix.len()..].to_string())
-                                       .collect::<Vec<String>>();
-    old_messages.reverse();
-    let old_messages = old_messages;
-
-    let mut new_messages: Vec<String> = Vec::new();
-
-    let delay = Duration::from_millis(delay_ms);
-    for action in actions {
-        game.step_game(action, delay_ms as f32);
-
-        for _sdl2_event in event_pump.poll_iter() {
-        }
-
-        update_display(&mut game, &mut display)?;
-
-        for msg in &game.msg_log.turn_messages {
-            new_messages.push(msg.to_string());
-        }
-        game.msg_log.clear();
-        std::thread::sleep(delay);
-    }
-    game.step_game(InputAction::Exit, delay_ms as f32);
-    for msg in &game.msg_log.turn_messages {
-        new_messages.push(msg.to_string());
-    }
-
-    /* Compare Logs */ 
-    eprintln!("");
-    let mut logs_differ = false; 
-    let mut first_diff_index = 0;
-    if old_messages.len() != new_messages.len() {
-        eprintln!("Old log had {} messages, new log has {} messages", old_messages.len(), new_messages.len());
-        logs_differ = true;
-    }
-
-    let mut msg_index = 0;
-    while msg_index < old_messages.len() {
-        if msg_index >= new_messages.len() {
-            eprintln!("Reached end of new messages");
-            logs_differ = true;
-            first_diff_index = msg_index;
-            break;
-        }
-
-        if old_messages[msg_index] != new_messages[msg_index] {
-            eprintln!("First difference on line {}", msg_index);
-            eprintln!("Old log '{}'", old_messages[msg_index]);
-            eprintln!("New log '{}'", new_messages[msg_index]);
-            logs_differ = true;
-            first_diff_index = msg_index;
-            break;
-        }
-        msg_index += 1;
-    }
-
-    let mut log = Log::new();
-    eprintln!("\nNew Log:");
-    for msg in new_messages.iter() {
-        log.log_msg(&format!("{}", msg));
-    }
-
-    if logs_differ {
-        let start_diff = if first_diff_index > 5 { first_diff_index } else { 0 };
-        let end_diff = cmp::min(cmp::min(first_diff_index + 5, old_messages.len()), new_messages.len());
-        eprintln!("");
-        eprintln!("The old log starts with:");
-        for msg_index in start_diff..end_diff {
-            eprintln!("{}", old_messages[msg_index]);
-        }
-
-        eprintln!("");
-
-        eprintln!("The new log starts with:");
-        for msg_index in start_diff..end_diff {
-            eprintln!("{}", new_messages[msg_index]);
-        }
-
-        {
-            let mut new_index = 0;
-            let mut old_index = 0;
-            while old_index < old_messages.len() && new_index < new_messages.len() {
-                if old_messages[old_index] == new_messages[new_index] {
-                    new_index += 1;
-                }
-                old_index += 1;
-            }
-            if new_index != new_messages.len() {
-                eprintln!("New log is not a subset of the old log!");
-            } else {
-                eprintln!("New log is a subset of the old log!");
-            }
-        }
-
-        {
-            let mut new_index = 0;
-            let mut old_index = 0;
-            while old_index < old_messages.len() && new_index < new_messages.len() {
-                if old_messages[old_index] == new_messages[new_index] {
-                    old_index += 1;
-                }
-                new_index += 1;
-            }
-            if old_index != old_messages.len() {
-                eprintln!("Old log is not a subset of the new log!");
-            } else {
-                eprintln!("Old log is a subset of the new log!");
-            }
-        }
-    } else {
-        eprintln!("Logs same!");
-    }
-
-    return Ok(());
-}
-
-fn rerecord(mut game: Game, mut display: Display, mut event_pump: sdl2::EventPump, record_name: &str, delay_ms: u64) -> Result<(), String> {
-    let path = format!("resources/test_logs/{}", record_name);
-
-    let map_config_path = format!("{}/{}", path, MAP_CONFIG_NAME);
-    let map_config_string = std::fs::read_to_string(map_config_path).unwrap();
-    let map_config = map_config_string.parse::<MapLoadConfig>().expect("Could not parse map config");
-    eprintln!("Using map config: {}", &map_config);
-    make_map(&map_config, &mut game);
-
-    let action_path = format!("{}/{}", path, Log::ACTION_LOG_NAME);
-    let actions = read_action_log(&action_path);
-
-    let message_path = format!("{}/{}", path, Log::MESSAGE_LOG_NAME);
-
-    let mut log = Log::new();
-
-    let delay = Duration::from_millis(delay_ms);
-    for action in actions {
-        game.step_game(action, delay_ms as f32);
-
-        for _sdl2_event in event_pump.poll_iter() { }
-
-        update_display(&mut game, &mut display)?;
-
-        for msg in &game.msg_log.turn_messages {
-            log.log_msg(&format!("{}", msg));
-        }
-        game.msg_log.clear();
-        std::thread::sleep(delay);
-    }
-    game.step_game(InputAction::Exit, delay_ms as f32);
-    for msg in &game.msg_log.turn_messages {
-        log.log_msg(&format!("{}", msg));
-    }
-
-    std::fs::copy(Log::MESSAGE_LOG_NAME, message_path)
-            .expect("Could not save message log!");
-
-    return Ok(());
-}
 
 pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), String> {
     game.settings.god_mode = true;
