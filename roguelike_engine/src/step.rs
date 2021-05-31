@@ -89,7 +89,7 @@ fn level_exit_condition_met(data: &GameData) -> bool {
 pub fn test_game_step() {
     let mut config = Config::from_file("../config.yaml");
     config.map_load = MapLoadConfig::Empty;
-    let mut game = Game::new(0, config.clone()).unwrap();
+    let mut game = Game::new(0, config.clone());
     let mut input_action;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -119,7 +119,7 @@ pub fn test_game_step() {
 
 pub fn test_running() {
     let config = Config::from_file("../config.yaml");
-    let mut game = Game::new(0, config.clone()).unwrap();
+    let mut game = Game::new(0, config.clone());
     let mut input_action;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -162,7 +162,7 @@ pub fn test_running() {
 #[test]
 pub fn test_hammer_small_wall() {
     let config = Config::from_file("../config.yaml");
-    let mut game = Game::new(0, config.clone()).unwrap();
+    let mut game = Game::new(0, config.clone());
     let mut input_action;
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -231,7 +231,7 @@ fn step_ai(game: &mut Game) {
 #[test]
 fn test_ai_idle_player_in_fov() {
     let config = Config::from_file("../config.yaml");
-    let mut game = Game::new(0, config).unwrap();
+    let mut game = Game::new(0, config);
     make_map(&MapLoadConfig::Empty, &mut game);
 
     let start_pos = Pos::new(1, 1);
@@ -252,7 +252,7 @@ fn test_ai_idle_player_in_fov() {
 #[test]
 fn test_ai_idle_was_attacked() {
     let config = Config::from_file("../config.yaml");
-    let mut game = Game::new(0, config).unwrap();
+    let mut game = Game::new(0, config);
     make_map(&MapLoadConfig::Empty, &mut game);
 
     let start_pos = Pos::new(0, 0);
@@ -286,7 +286,7 @@ fn test_ai_idle_was_attacked() {
 #[test]
 fn test_ai_idle_heard_sound() {
     let config = Config::from_file("../config.yaml");
-    let mut game = Game::new(0, config).unwrap();
+    let mut game = Game::new(0, config);
     make_map(&MapLoadConfig::Empty, &mut game);
 
     let start_pos = Pos::new(0, 0);
@@ -321,7 +321,7 @@ fn test_ai_idle_heard_sound() {
 #[test]
 fn test_ai_investigate_player_in_fov() {
     let config = Config::from_file("../config.yaml");
-    let mut game = Game::new(0, config).unwrap();
+    let mut game = Game::new(0, config);
     make_map(&MapLoadConfig::Empty, &mut game);
 
 
@@ -346,7 +346,7 @@ fn test_ai_investigate_player_in_fov() {
 #[test]
 fn test_ai_investigate_not_in_fov_heard_sound() {
     let config = Config::from_file("../config.yaml");
-    let mut game = Game::new(0, config).unwrap();
+    let mut game = Game::new(0, config);
     make_map(&MapLoadConfig::Empty, &mut game);
 
 
@@ -379,7 +379,7 @@ fn test_ai_investigate_not_in_fov_heard_sound() {
 #[test]
 fn test_ai_investigate_moves() {
     let config = Config::from_file("../config.yaml");
-    let mut game = Game::new(0, config).unwrap();
+    let mut game = Game::new(0, config);
     make_map(&MapLoadConfig::Empty, &mut game);
 
 

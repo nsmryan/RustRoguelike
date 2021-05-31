@@ -18,7 +18,7 @@ const CONFIG_NAME: &str = "config.yaml";
 pub fn main() {
     let config = Config::from_file(CONFIG_NAME);
     let seed = 1;
-    let mut game = Game::new(seed, config.clone()).unwrap();
+    let mut game = Game::new(seed, config.clone());
     game.load_vaults("resources/vaults/");
 
     make_map(&config.map_load, &mut game);

@@ -30,8 +30,7 @@ pub struct Game {
 }
 
 impl Game {
-    // TODO I think this can be simplified to return a Game directly
-    pub fn new(seed: u64, config: Config) -> Result<Game, String> {
+    pub fn new(seed: u64, config: Config) -> Game {
         let entities = Entities::new();
         let rng: Rand32 = Rand32::new(seed);
 
@@ -56,7 +55,7 @@ impl Game {
             input: Input::new(),
         };
 
-        return Ok(state);
+        return state;
     }
 
     pub fn load_vaults(&mut self, path: &str) {

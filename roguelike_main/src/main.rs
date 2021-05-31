@@ -137,7 +137,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
     /* Create Game Structure */
     let config = Config::from_file(CONFIG_NAME);
-    let mut game = Game::new(seed, config.clone())?;
+    let mut game = Game::new(seed, config.clone());
 
     game.load_vaults("resources/vaults/");
 
