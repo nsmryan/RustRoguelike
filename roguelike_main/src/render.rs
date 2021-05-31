@@ -1230,7 +1230,7 @@ fn get_entity_at_pos(check_pos: Pos, data: &mut GameData) -> Vec<EntityId> {
     return object_ids;
 }
 
-fn empty_tile_color(config: &Config, pos: Pos, visible: bool) -> Color {
+fn empty_tile_color(config: &Config, pos: Pos, visible: bool, rng: &mut Rand32) -> Color {
     let low_color;
     let high_color;
     if visible {
@@ -1240,6 +1240,8 @@ fn empty_tile_color(config: &Config, pos: Pos, visible: bool) -> Color {
         low_color = config.color_medium_grey;
         high_color = config.color_light_grey;
     }
+
+    let simplex = Perlin::new(rng);
     let color =
         lerp_color(low_color,
                    high_color,

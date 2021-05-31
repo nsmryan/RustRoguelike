@@ -177,9 +177,6 @@ repeat_delay: 0.35
 
 # whether to write out a map distribution file
 write_map_distribution: true
-<<<<<<< HEAD
 print_key_log: true
 idle_animations: false
-=======
 recording: true
->>>>>>> develop
