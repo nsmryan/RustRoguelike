@@ -196,7 +196,7 @@ impl FromStr for MapLoadConfig {
             return Ok(MapLoadConfig::Empty);
         } else if s == "test_corner" {
             return Ok(MapLoadConfig::TestCorner);
-        } else if s == "test_corner" {
+        } else if s == "test_player" {
             return Ok(MapLoadConfig::TestPlayer);
         } else if s == "test_vaults" {
             return Ok(MapLoadConfig::TestVaults);

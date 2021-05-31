@@ -5,6 +5,12 @@ use std::str::FromStr;
 use std::cmp;
 
 use roguelike_core::map::MapLoadConfig;
+#[cfg(test)]
+use roguelike_core::config::*;
+#[cfg(test)]
+use roguelike_core::movement::*;
+#[cfg(test)]
+use roguelike_core::types::*;
 
 use roguelike_engine::game::*;
 use roguelike_engine::actions::*;
@@ -21,6 +27,126 @@ pub enum ReplayResult {
     NewSubsetOld,
     OldSubsetNew,
     Different,
+}
+
+#[derive(Clone, Debug)]
+pub struct Recording {
+    states: Vec<Game>,
+    inputs: Vec<InputAction>,
+    cursor: usize,
+}
+
+impl Recording {
+    pub fn new(game: &Game) -> Recording {
+        let mut states = Vec::new();
+        states.push(game.clone());
+        return Recording {
+            states: states,
+            inputs: Vec::new(),
+            cursor: 0,
+        };
+    }
+
+    pub fn forward(self: &mut Recording) -> Option<Game> {
+        if let Some(action) = self.inputs.get(self.cursor) {
+            let mut game = self.states[self.states.len() - 1].clone();
+            game.step_game(*action, 0.1);
+            let return_game = game.clone();
+            self.states.push(game);
+            self.cursor = std::cmp::min(self.cursor + 1, self.inputs.len());
+            return Some(return_game);
+        } else {
+            return None;
+        }
+    }
+    
+    pub fn backward(self: &mut Recording) -> Game {
+        if self.cursor > 0 {
+            self.cursor = self.cursor - 1;
+            self.states.pop();
+        }
+
+        return self.states[self.states.len() - 1].clone();
+    }
+
+    pub fn action(self: &mut Recording, game: &Game, action: InputAction) {
+        self.states.push(game.clone());
+        self.inputs.insert(self.cursor, action);
+        self.cursor += 1;
+    }
+
+    pub fn clear(self: &mut Recording) {
+        let original = self.states[0].clone();
+        self.states.clear();
+        self.states.push(original);
+        self.inputs.clear();
+        self.cursor = 0;
+    }
+}
+
+#[test]
+pub fn test_recording() {
+    let mut config = Config::from_file("../config.yaml");
+    config.map_load = MapLoadConfig::TestPlayer;
+    let mut game = Game::new(0, config.clone()).unwrap();
+    let mut input_action;
+
+    make_map(&config.map_load, &mut game);
+
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let starting_pos = game.data.entities.pos[&player_id];
+
+    
+    // starting at (0,0)
+    let mut recording = Recording::new(&game);
+
+    // walk right (1, 0)
+    input_action = InputAction::Move(Direction::Right, MoveMode::Walk);
+    game.step_game(input_action, 0.1);
+    recording.action(&game, input_action);
+    let step1_pos = game.data.entities.pos[&player_id];
+    assert_eq!(starting_pos.x + 1, step1_pos.x);
+    assert_eq!(starting_pos.y, step1_pos.y);
+
+    // walk down (1, 1)
+    input_action = InputAction::Move(Direction::Down, MoveMode::Walk);
+    game.step_game(input_action, 0.1);
+    recording.action(&game, input_action);
+    let step2_pos = game.data.entities.pos[&player_id];
+    assert_eq!(starting_pos.x + 1, step2_pos.x);
+    assert_eq!(starting_pos.y + 1, step2_pos.y);
+
+    // undo the walk down (1, 0)
+    let game = recording.backward();
+    let step1_pos = game.data.entities.pos[&player_id];
+    assert_eq!(starting_pos.x + 1, step1_pos.x);
+    assert_eq!(starting_pos.y, step1_pos.y);
+
+    // undo the walk right (0, 0)
+    let mut game = recording.backward();
+    let step0_pos = game.data.entities.pos[&player_id];
+    assert_eq!(starting_pos.x, step0_pos.x);
+    assert_eq!(starting_pos.y, step0_pos.y);
+
+    // go down first, and then replay the previous actions (0, 1)
+    input_action = InputAction::Move(Direction::Down, MoveMode::Walk);
+    game.step_game(input_action, 0.1);
+    recording.action(&game, input_action);
+    let step1_2_pos = game.data.entities.pos[&player_id];
+    assert_eq!(starting_pos.x, step1_2_pos.x);
+    assert_eq!(starting_pos.y + 1, step1_2_pos.y);
+
+    // replay walk right (1, 1)
+    let game = recording.forward().unwrap();
+    let step2_2_pos = game.data.entities.pos[&player_id];
+    assert_eq!(starting_pos.x + 1, step2_2_pos.x);
+    assert_eq!(starting_pos.y + 1, step2_2_pos.y);
+
+    // replay walk down (1, 2)
+    let game = recording.forward().unwrap();
+    let step3_2_pos = game.data.entities.pos[&player_id];
+    assert_eq!(starting_pos.x + 1, step3_2_pos.x);
+    assert_eq!(starting_pos.y + 2, step3_2_pos.y);
 }
 
 

@@ -191,6 +191,8 @@ pub fn keycode_to_char(key: Keycode) -> Option<char> {
         Keycode::Kp9 => Some('9'),
         Keycode::KpPeriod => Some('.'),
         Keycode::KpSpace => Some(' '),
+        Keycode::LeftBracket => Some('['),
+        Keycode::RightBracket => Some(']'),
         Keycode::Backquote => Some('`'),
         _ => None,
     }
