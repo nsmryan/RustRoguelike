@@ -1,16 +1,16 @@
+use std::fs;
+
 use sdl2::image::LoadTexture;
 use sdl2::render::{WindowCanvas, Texture, TextureCreator};
 use sdl2::video::WindowContext;
 use sdl2::ttf::Sdl2TtfContext;
-
-use walkdir::WalkDir;
 
 use roguelike_core::constants::*;
 
 use crate::display::*;
 
 
-fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display: &mut Display) {
+pub fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display: &mut Display) {
     load_sprite(texture_creator, display, "animations/player/Player_Idle.png", "player_idle", 1);
     load_sprite(texture_creator, display, "animations/player/Player_Crouch.png", "player_crouching", 1);
     load_sprite(texture_creator, display, "animations/player/Player_Idle_Dagger_Crouch.png", "player_crouch_dagger", 1);
@@ -29,19 +29,20 @@ fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display: &mut D
     load_sprite(texture_creator, display, "resources/rexpaint16x16.png", "font", 16);
     load_sprite(texture_creator, display, "animations/traps/McMuffin.png", "key", 1);
 
-    for entry in WalkDir::new("animations/autoload/") {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        let file_name = entry.file_name().to_string_lossy().to_string();
-        if let Ok(metadata) = entry.metadata() {
+    for entry in fs::read_dir("animations/autoload/").unwrap() {
+        let path = entry.unwrap().path();
+
+        let file_name = path.as_path().to_str().unwrap();
+        let sprite_name = path.as_path().file_stem().unwrap().to_str().unwrap();
+        if let Ok(metadata) = path.metadata() {
             if metadata.is_file() && file_name.ends_with("png") {
-                load_sprite(texture_creator, display, path.to_str().unwrap(), &file_name, 1);
+                load_sprite(texture_creator, display, file_name, &sprite_name, 1);
             }
         }
     }
 }
 
-fn load_sprite(texture_creator: &TextureCreator<WindowContext>,
+pub fn load_sprite(texture_creator: &TextureCreator<WindowContext>,
                display: &mut Display,
                path: &str,
                sprite_name: &str,
@@ -50,7 +51,10 @@ fn load_sprite(texture_creator: &TextureCreator<WindowContext>,
     display.add_spritesheet(sprite_name.to_string(), texture, rows);
 }
 
-fn load_font(ttf_context: &Sdl2TtfContext,
+/// load a ttf font file and render all ascii characters onto a 16x16 grid.
+/// the resulting texture is then used for rendering by copying character squares
+/// for individual ascii characters.
+pub fn load_font(ttf_context: &Sdl2TtfContext,
              texture_creator: &TextureCreator<WindowContext>,
              canvas: &mut WindowCanvas,
              file_name: String,

@@ -46,6 +46,8 @@ pub const FREEZE_TRAP_NUM_TURNS: usize = 3;
 /* Player */
 pub const PLAYER_THROW_DIST: usize = 5;
 
+pub const PLAYER_MAX_ITEMS: usize = 3;
+
 /* UI */
 pub const BAR_WIDTH: u32 = 20;
 pub const PANEL_HEIGHT: u32 = 7;

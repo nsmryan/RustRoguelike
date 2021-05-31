@@ -1,16 +1,14 @@
-use std::io::stdout;
-use std::io::Write;
-use rand::prelude::*;
-
 #[allow(unused_imports)]
 use log::{trace, error};
 
+use oorandom::Rand32;
+
 use roguelike_core::types::*;
-use roguelike_core::ai::{Behavior};
+use roguelike_core::ai::{Behavior, ai_move_to_attack_pos, ai_can_hit_target, ai_take_turn, ai_is_in_fov};
 use roguelike_core::map::{Surface, AoeEffect};
 use roguelike_core::messaging::{MsgLog, Msg};
 use roguelike_core::constants::*;
-use roguelike_core::movement::{MoveMode, MoveType, Action, Attack, Movement, Direction, Reach};
+use roguelike_core::movement::{MoveMode, MoveType, Attack, Movement, Direction, Reach};
 use roguelike_core::movement;
 use roguelike_core::config::*;
 use roguelike_core::utils::*;
@@ -22,20 +20,12 @@ use crate::generation::{make_energy, make_dagger, make_sword};
 
 pub fn resolve_messages(data: &mut GameData,
                         msg_log: &mut MsgLog,
-                        rng: &mut SmallRng,
+                        rng: &mut Rand32,
                         config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     /* Handle Message Log */
     while let Some(msg) = msg_log.pop() {
-        let msg_line = msg.msg_line(data);
-        if msg_line.len() > 0 {
-            println!("CONSOLE: {}", msg_line);
-            stdout().flush().unwrap();
-        }
-        println!("MSG_DBG: {:?}", msg);
-        stdout().flush().unwrap();
-
         match msg {
             Msg::Moved(entity_id, move_type, pos) => {
                process_moved_message(entity_id, move_type, pos, data, msg_log, config);
@@ -121,10 +111,6 @@ pub fn resolve_messages(data: &mut GameData,
                 resolve_attack(entity_id, attack_info, attack_pos, data, msg_log, config);
             }
 
-            Msg::Action(entity_id, action) => {
-                resolve_action(entity_id, action, data, msg_log, config);
-            }
-
             Msg::TryMove(entity_id, direction, amount, move_mode) => {
                 resolve_try_move(entity_id, direction, amount, move_mode, data, msg_log);
             }
@@ -135,6 +121,13 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::StateChange(entity_id, behavior) => {
                 data.entities.behavior[&entity_id] = behavior;
+
+                // if the entity hasn't completed a turn, the state change continues their turn.
+                // NOTE this might be better off as a message! emit it every time a state change
+                // occurs?
+                if !data.entities.took_turn[&entity_id] {
+                   ai_take_turn(entity_id, data, config, msg_log);
+                }
             }
 
             Msg::SpikeTrapTriggered(trap, entity_id) => {
@@ -330,6 +323,19 @@ pub fn resolve_messages(data: &mut GameData,
                 resolve_push(entity_id, direction, amount, data, msg_log);
             }
 
+            Msg::FaceTowards(entity_id, pos) => {
+                data.entities.face(entity_id, pos);
+                msg_log.log(Msg::Facing(entity_id, data.entities.direction[&entity_id]));
+            }
+
+            Msg::AiAttack(entity_id) => {
+                if let Behavior::Attacking(target_id) = data.entities.behavior[&entity_id] {
+                    resolve_ai_attack(entity_id, target_id, data, msg_log, config);
+                } else {
+                    panic!("ai attacking but not in attack state!");
+                }
+            }
+
             _ => {
             }
         }
@@ -491,6 +497,8 @@ fn resolve_try_move(entity_id: EntityId,
         panic!("Why try to move with amount == 0?");
     }
 
+    data.entities.move_mode[&entity_id] = move_mode;
+
     let reach = data.entities.movement[&entity_id];
     let reach = reach.with_dist(1);
 
@@ -504,6 +512,15 @@ fn resolve_try_move(entity_id: EntityId,
         } else {
             // otherwise attempt to resolve a movement
             resolve_try_movement(entity_id, direction, amount, move_mode, movement, data, msg_log);
+        }
+    } else {
+        // monsters that are not idle, but their movement does not change their
+        // position will return to idle.
+        if data.entities.behavior.get(&entity_id) != None &&
+           data.entities.behavior.get(&entity_id) != Some(&Behavior::Idle) {
+            // this takes up the monster's turn, as they already committed to this movement
+            data.entities.took_turn[&entity_id] = true;
+            msg_log.log(Msg::StateChange(entity_id, Behavior::Idle));
         }
     }
 }
@@ -528,7 +545,7 @@ fn resolve_try_movement(entity_id: EntityId,
             msg_log.log(Msg::Moved(entity_id, MoveType::Pass, movement.pos));
         }
 
-        MoveType::WallKick(_dir_x, _dir_y) => {
+        MoveType::WallKick => {
             data.entities.move_to(entity_id, movement.pos);
 
             // TODO could check for enemy and attack
@@ -571,37 +588,7 @@ fn resolve_try_movement(entity_id: EntityId,
     // if entity is attacking, face their target after the move
     if let Some(Behavior::Attacking(target_id)) = data.entities.behavior.get(&entity_id) {
         let target_pos = data.entities.pos[target_id];
-        data.entities.face(entity_id, target_pos);
-    }
-}
-
-fn resolve_action(entity_id: EntityId,
-                  action: Action,
-                  data: &mut GameData,
-                  msg_log: &mut MsgLog,
-                  _config: &Config) {
-    let entity_pos = data.entities.pos[&entity_id];
-
-    if let Action::MoveDir(direction, move_mode) = action {
-        data.entities.move_mode[&entity_id] = move_mode;
-        let amount = move_mode.move_amount();
-        msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
-    } else if let Action::Move(_typ, move_pos) = action {
-        let move_mode: MoveMode = 
-            *data.entities.move_mode.get(&entity_id).unwrap_or(&MoveMode::Walk);
-        let amount = move_mode.move_amount();
-        let dxy = sub_pos(move_pos, entity_pos);
-        let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-
-        msg_log.log(Msg::TryMove(entity_id, direction, amount, move_mode));
-    } else if let Action::Attack(hit_pos) = action {
-        if let Some(target_id) = data.has_entity(hit_pos) {
-            if data.entities.fighter.get(&target_id).is_some() {
-                msg_log.log(Msg::TryAttack(entity_id, Attack::Attack(target_id), hit_pos));
-            }
-        }
-    } else if let Action::StateChange(behavior) = action {
-        msg_log.log(Msg::StateChange(entity_id, behavior));
+        msg_log.log(Msg::FaceTowards(entity_id, target_pos));
     }
 }
 
@@ -624,7 +611,7 @@ fn resolve_push(entity_id: EntityId,
     data.entities.took_turn[&entity_id] = true;
 }
 
-fn resolve_blink(entity_id: EntityId, data: &mut GameData, rng: &mut SmallRng, msg_log: &mut MsgLog) {
+fn resolve_blink(entity_id: EntityId, data: &mut GameData, rng: &mut Rand32, msg_log: &mut MsgLog) {
     use_energy(entity_id, data);
 
     let entity_pos = data.entities.pos[&entity_id];
@@ -798,7 +785,7 @@ fn pushed_entity(pusher: EntityId,
         let blocked = data.map.path_blocked_move(pushed_pos, next_pos); 
 
         if blocked == None {
-            data.remove_entity(pushed);
+            data.entities.count_down.insert(pushed, 1);
 
             msg_log.log_front(Msg::Crushed(pusher, next_pos));
 
@@ -833,8 +820,8 @@ fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut Msg
         } else if data.entities.item.get(&crushed_id).is_none() &&
                   data.entities.name[&crushed_id] != EntityName::Mouse &&
                   data.entities.name[&crushed_id] != EntityName::Cursor {
-            // otherwise, if its not an item or the mouse, just remove the entity
-            data.remove_entity(crushed_id);
+            // the entity will be removed
+            data.entities.count_down.insert(crushed_id, 1);
         }
     }
 
@@ -912,10 +899,10 @@ fn throw_item(player_id: EntityId,
     data.entities.took_turn[&player_id] = true;
 }
 
-fn find_blink_pos(pos: Pos, rng: &mut SmallRng, data: &mut GameData) -> Option<Pos> {
+fn find_blink_pos(pos: Pos, rng: &mut Rand32, data: &mut GameData) -> Option<Pos> {
     let mut potential_positions = floodfill(&data.map, pos, BLINK_RADIUS);
     while potential_positions.len() > 0 {
-        let ix = rng.gen_range(0, potential_positions.len());
+        let ix = rng_range_u32(rng, 0, potential_positions.len() as u32) as usize;
         let rand_pos = potential_positions[ix];
 
         if data.has_blocking_entity(rand_pos).is_none() &&
@@ -1080,14 +1067,6 @@ fn process_moved_message(entity_id: EntityId,
     data.entities.move_to(entity_id, pos);
     data.entities.took_turn[&entity_id] = true;
 
-    // if entity is a monster, which is also alert, and there is a path to the player,
-    // then face the player
-    if let Some(target_pos) = data.entities.target(entity_id) {
-        if data.could_see(entity_id, target_pos, config) {
-            data.entities.face(entity_id, target_pos);
-        }
-    }
-
     if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {
         if let Some(stance) = data.entities.stance.get(&entity_id) {
             if move_type == MoveType::Pass {
@@ -1185,6 +1164,53 @@ fn process_moved_message(entity_id: EntityId,
               data.entities.status[key].active {
                msg_log.log_front(Msg::Untriggered(*key, entity_id));
            }
+        }
+    }
+
+    // if entity is a monster, which is also alert, and there is a path to the player,
+    // then face the player
+    if let Some(target_pos) = data.entities.target(entity_id) {
+        if data.could_see(entity_id, target_pos, config) {
+            msg_log.log_front(Msg::FaceTowards(entity_id, target_pos));
+            //data.entities.face(entity_id, target_pos);
+        }
+    }
+}
+
+fn resolve_ai_attack(entity_id: EntityId,
+                     target_id: EntityId,
+                     data: &mut GameData,
+                     msg_log: &mut MsgLog,
+                     config: &Config) {
+    let target_pos = data.entities.pos[&target_id];
+
+    let attack_reach = data.entities.attack[&entity_id];
+    let can_hit_target =
+        ai_can_hit_target(data, entity_id, target_pos, &attack_reach, config);
+
+    if data.entities.is_dead(target_id) {
+        data.entities.took_turn[&entity_id] = true;
+        msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
+    } else if let Some(hit_pos) = can_hit_target {
+        let entity_pos = data.entities.pos[&entity_id];
+        let direction = Direction::from_positions(entity_pos, hit_pos).unwrap();
+        msg_log.log(Msg::TryMove(entity_id, direction, 1, MoveMode::Walk));
+    } else if !ai_is_in_fov(entity_id, target_id, data, config) {
+        // if we lose the target, end the turn
+        data.entities.took_turn[&entity_id] = true;
+        msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
+    } else {
+        // can see target, but can't hit them. try to move to a position where we can hit them
+        let maybe_pos = ai_move_to_attack_pos(entity_id, target_id, data, config);
+
+        if let Some(move_pos) = maybe_pos {
+            // try to move in the given direction
+            let entity_pos = data.entities.pos[&entity_id];
+            let direction = Direction::from_positions(entity_pos, move_pos).unwrap();
+            msg_log.log(Msg::TryMove(entity_id, direction, 1, MoveMode::Walk));
+        } else {
+            // if we can't move anywhere, we just end our turn
+            data.entities.took_turn[&entity_id] = true;
         }
     }
 }

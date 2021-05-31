@@ -9,28 +9,7 @@ use serde::{Serialize, Deserialize};
 use crate::types::*;
 use crate::utils::*;
 use crate::map::{Wall, Blocked, TileType};
-use crate::ai::Behavior;
 use crate::line::*;
-
-
-#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
-pub enum Action {
-    Move(MoveType, Pos),
-    MoveDir(Direction, MoveMode),
-    StateChange(Behavior),
-    Attack(Pos),
-    NoAction,
-}
-
-impl Action {
-    pub fn none() -> Action {
-        return Action::NoAction;
-    }
-
-    pub fn is_none(&self) -> bool {
-        return *self == Action::NoAction;
-    }
-}
 
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -116,9 +95,22 @@ pub enum MoveType {
     Move,
     Pass,
     JumpWall,
-    WallKick(i32, i32),
+    WallKick,
     Collide,
 }
+
+impl fmt::Display for MoveType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MoveType::Move => write!(f, "move"),
+            MoveType::Pass => write!(f, "pass"),
+            MoveType::JumpWall => write!(f, "jumpwall"),
+            MoveType::WallKick => write!(f, "wallkick"),
+            MoveType::Collide => write!(f, "collide"),
+        }
+    }
+}
+
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Movement {
@@ -250,10 +242,10 @@ impl fmt::Display for Direction {
             Direction::Right => write!(f, "right"),
             Direction::Up => write!(f, "up"),
             Direction::Down => write!(f, "down"),
-            Direction::DownLeft => write!(f, "down/left"),
-            Direction::DownRight => write!(f, "down/right"),
-            Direction::UpLeft => write!(f, "up/left"),
-            Direction::UpRight => write!(f, "up/right"),
+            Direction::DownLeft => write!(f, "downleft"),
+            Direction::DownRight => write!(f, "downright"),
+            Direction::UpLeft => write!(f, "upleft"),
+            Direction::UpRight => write!(f, "upright"),
         }
     }
 }
@@ -818,7 +810,6 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
         } else if data.map[next_pos(pos, dxy)].tile_type != TileType::Water {
             let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
             let push_amount = 1;
-            // TODO issue 150 this is where pushing comes from. 
             attack = Some(Attack::Push(other_id, direction, push_amount));
         } else {
             // water after push, so supress attack
@@ -847,7 +838,6 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
                 } else {
                     let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
                     let push_amount = 1;
-                    // TODO issue 150 this is where pushing comes from. 
                     Attack::Push(other_id, direction, push_amount)
                 };
             let move_pos = move_next_to(pos, entity_pos);
@@ -860,6 +850,13 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
         // entity and wall are together- between-tile wall in front of entity
         // move up to the wall- we can't jump it or attack through it
         movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
+
+        // TODO issue #248 when can attack/push/move?
+        //let move_pos = move_next_to(pos, entity_pos);
+        //let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
+        //let push_amount = 1;
+        //let attack = Attack::Push(other_id, direction, push_amount);
+        //movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
     }
 
     return movement;

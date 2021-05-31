@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use rand::prelude::*;
+use oorandom::Rand32;
 
 use serde::{Serialize, Deserialize};
 
@@ -11,13 +11,13 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::messaging::*;
 use roguelike_core::config::*;
-use roguelike_core::utils::{rand_from_pos, distance};
+use roguelike_core::utils::{rand_from_pos, distance, rng_range_u32, rng_range_i32, choose};
 
 use crate::game::*;
 use crate::procgen::*;
 
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum MapGenType {
     Island,
     WallTest,
@@ -51,7 +51,7 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
 
     entities.energy.insert(player, 3);
 
-    msg_log.log(Msg::SpawnedObject(player, entities.typ[&player], Pos::new(0, 0), EntityName::Player));
+    msg_log.log(Msg::SpawnedObject(player, entities.typ[&player], Pos::new(0, 0), EntityName::Player, entities.direction[&player]));
 
     return player;
 }
@@ -59,14 +59,14 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
 pub fn make_column(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let object = entities.create_entity(pos.x, pos.y, EntityType::Column, MAP_COLUMN as char, Color::white(), EntityName::Column, true);
 
-    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Column));
+    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Column, entities.direction[&object]));
 
     return object;
 }
 pub fn make_energy(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let object = entities.create_entity(pos.x, pos.y, EntityType::Energy, ENTITY_BLINK_TRAP as char, Color::white(), EntityName::Energy, false);
 
-    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Energy));
+    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Energy, entities.direction[&object]));
 
     return object;
 }
@@ -76,7 +76,7 @@ pub fn make_dagger(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
 
     entities.item.insert(object,  Item::Dagger);
 
-    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Dagger));
+    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Dagger, entities.direction[&object]));
 
     return object;
 }
@@ -86,7 +86,7 @@ pub fn make_hammer(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
 
     entities.item.insert(object,  Item::Hammer);
 
-    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Hammer));
+    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Hammer, entities.direction[&object]));
 
     return object;
 }
@@ -96,7 +96,7 @@ pub fn make_sword(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
 
     entities.item.insert(object,  Item::Sword);
 
-    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Sword));
+    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Sword, entities.direction[&object]));
 
     return object;
 }
@@ -106,7 +106,7 @@ pub fn make_shield(entities: &mut Entities, config: &Config, pos: Pos, msg_log: 
 
     entities.item.insert(object,  Item::Shield);
 
-    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Shield));
+    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Shield, entities.direction[&object]));
 
     return object;
 }
@@ -116,7 +116,7 @@ pub fn make_key(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
     
     entities.item.insert(key,  Item::Key);
 
-    msg_log.log(Msg::SpawnedObject(key, entities.typ[&key], pos, EntityName::Key));
+    msg_log.log(Msg::SpawnedObject(key, entities.typ[&key], pos, EntityName::Key, entities.direction[&key]));
 
     return key;
 }
@@ -124,17 +124,17 @@ pub fn make_key(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
 pub fn make_mouse(entities: &mut Entities, _config: &Config, msg_log: &mut MsgLog) -> EntityId {
     let mouse = entities.create_entity(-1, -1, EntityType::Other, ' ', Color::white(), EntityName::Mouse, false);
 
-    msg_log.log(Msg::SpawnedObject(mouse, entities.typ[&mouse], Pos::new(-1, -1), EntityName::Mouse));
+    msg_log.log(Msg::SpawnedObject(mouse, entities.typ[&mouse], Pos::new(-1, -1), EntityName::Mouse, entities.direction[&mouse]));
 
-    mouse
+    return mouse;
 }
 
 pub fn make_cursor(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let cursor = entities.create_entity(pos.x, pos.y, EntityType::Other, ' ', Color::white(), EntityName::Cursor, false);
 
-    msg_log.log(Msg::SpawnedObject(cursor, entities.typ[&cursor], Pos::new(-1, -1), EntityName::Cursor));
+    msg_log.log(Msg::SpawnedObject(cursor, entities.typ[&cursor], Pos::new(-1, -1), EntityName::Cursor, entities.direction[&cursor]));
 
-    cursor
+    return cursor;
 }
 
 pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
@@ -148,8 +148,9 @@ pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
     entities.status[&gol].alive = true;
     entities.direction.insert(gol,  Direction::from_f32(rand_from_pos(pos)));
     entities.stance.insert(gol,  Stance::Standing);
+    entities.move_mode.insert(gol,  MoveMode::Walk);
 
-    msg_log.log(Msg::SpawnedObject(gol, entities.typ[&gol], pos, EntityName::Gol));
+    msg_log.log(Msg::SpawnedObject(gol, entities.typ[&gol], pos, EntityName::Gol, entities.direction[&gol]));
     
     return gol;
 } 
@@ -165,8 +166,9 @@ pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
     entities.status[&spire].alive = true;
     entities.direction.insert(spire,  Direction::Up);
     entities.stance.insert(spire,  Stance::Standing);
+    entities.move_mode.insert(spire,  MoveMode::Walk);
 
-    msg_log.log(Msg::SpawnedObject(spire, entities.typ[&spire], pos, EntityName::Spire));
+    msg_log.log(Msg::SpawnedObject(spire, entities.typ[&spire], pos, EntityName::Spire, entities.direction[&spire]));
 
     return spire;
 }
@@ -182,8 +184,9 @@ pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
     entities.status[&elf].alive = true;
     entities.direction.insert(elf,  Direction::from_f32(rand_from_pos(pos)));
     entities.stance.insert(elf,  Stance::Standing);
+    entities.move_mode.insert(elf,  MoveMode::Walk);
 
-    msg_log.log(Msg::SpawnedObject(elf, entities.typ[&elf], pos, EntityName::Pawn));
+    msg_log.log(Msg::SpawnedObject(elf, entities.typ[&elf], pos, EntityName::Pawn, entities.direction[&elf]));
 
     return elf;
 }
@@ -195,7 +198,7 @@ pub fn make_sound_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_l
     entities.armed.insert(sound,  true);
     entities.item.insert(sound,  Item::SoundTrap);
 
-    msg_log.log(Msg::SpawnedObject(sound, entities.typ[&sound], pos, EntityName::SoundTrap));
+    msg_log.log(Msg::SpawnedObject(sound, entities.typ[&sound], pos, EntityName::SoundTrap, entities.direction[&sound]));
 
     return sound;
 }
@@ -207,7 +210,7 @@ pub fn make_spike_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_l
     entities.armed.insert(spikes,  true);
     entities.item.insert(spikes,  Item::SpikeTrap);
 
-    msg_log.log(Msg::SpawnedObject(spikes, entities.typ[&spikes], pos, EntityName::SpikeTrap));
+    msg_log.log(Msg::SpawnedObject(spikes, entities.typ[&spikes], pos, EntityName::SpikeTrap, entities.direction[&spikes]));
 
     return spikes;
 }
@@ -219,7 +222,7 @@ pub fn make_blink_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_l
     entities.armed.insert(blink,  true);
     entities.item.insert(blink,  Item::BlinkTrap);
 
-    msg_log.log(Msg::SpawnedObject(blink, entities.typ[&blink], pos, EntityName::BlinkTrap));
+    msg_log.log(Msg::SpawnedObject(blink, entities.typ[&blink], pos, EntityName::BlinkTrap, entities.direction[&blink]));
 
     return blink;
 }
@@ -231,7 +234,7 @@ pub fn make_freeze_trap(entities: &mut Entities, config: &Config, pos: Pos, msg_
     entities.armed.insert(freeze,  true);
     entities.item.insert(freeze,  Item::FreezeTrap);
 
-    msg_log.log(Msg::SpawnedObject(freeze, entities.typ[&freeze], pos, EntityName::FreezeTrap));
+    msg_log.log(Msg::SpawnedObject(freeze, entities.typ[&freeze], pos, EntityName::FreezeTrap, entities.direction[&freeze]));
 
     return freeze;
 }
@@ -241,7 +244,7 @@ pub fn make_gate_trigger(entities: &mut Entities, config: &Config, pos: Pos, msg
 
     entities.gate_pos.insert(gate, None);
 
-    msg_log.log(Msg::SpawnedObject(gate, entities.typ[&gate], pos, EntityName::GateTrigger));
+    msg_log.log(Msg::SpawnedObject(gate, entities.typ[&gate], pos, EntityName::GateTrigger, entities.direction[&gate]));
 
     return gate;
 }
@@ -249,7 +252,7 @@ pub fn make_gate_trigger(entities: &mut Entities, config: &Config, pos: Pos, msg
 pub fn make_exit(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let exit = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_EXIT as char, Color::white(), EntityName::Exit, false);
 
-    msg_log.log(Msg::SpawnedObject(exit, entities.typ[&exit], pos, EntityName::Exit));
+    msg_log.log(Msg::SpawnedObject(exit, entities.typ[&exit], pos, EntityName::Exit, entities.direction[&exit]));
 
     return exit;
 }
@@ -261,7 +264,7 @@ pub fn make_stone(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
     entities.status[&stone].alive = false;
     entities.blocks.insert(stone,  false);
 
-    msg_log.log(Msg::SpawnedObject(stone, entities.typ[&stone], pos, EntityName::Stone));
+    msg_log.log(Msg::SpawnedObject(stone, entities.typ[&stone], pos, EntityName::Stone, entities.direction[&stone]));
 
     return stone;
 }
@@ -300,7 +303,7 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
 pub fn make_island(data: &mut GameData,
                    config: &Config,
                    msg_log: &mut MsgLog,
-                   rng: &mut SmallRng) -> Pos {
+                   rng: &mut Rand32) -> Pos {
     let center = Pos::new(data.map.width() / 2, data.map.height() / 2);
 
     let mut water_tile_positions = Vec::new();
@@ -321,13 +324,13 @@ pub fn make_island(data: &mut GameData,
     }
 
     /* add obstacles */
-    let obstacles = Obstacle::all_obstacles();
+    let obstacles: Vec<Obstacle> = Obstacle::all_obstacles();
 
     for _ in 0..ISLAND_NUM_OBSTACLES {
         let rand_pos = random_offset(rng, ISLAND_RADIUS);
         let pos = Pos::new(center.x + rand_pos.x, center.y + rand_pos.y);
 
-        let obstacle = *obstacles.choose(rng).unwrap();
+        let obstacle = choose(rng, &obstacles).unwrap();
 
         // Buildings are generated separately, so don't add them in random generation
         if obstacle != Obstacle::Building {
@@ -336,7 +339,7 @@ pub fn make_island(data: &mut GameData,
     }
 
     /* add buildings */
-    for _ in 0..rng.gen_range(3, 5) {
+    for _ in 0..rng_range_u32(rng, 3, 5) {
         let rand_pos = random_offset(rng, ISLAND_RADIUS);
         let pos = Pos::new(center.x + rand_pos.x, center.y + rand_pos.y);
         add_obstacle(&mut data.map, pos, Obstacle::Building, rng);
@@ -354,7 +357,7 @@ pub fn make_island(data: &mut GameData,
     /* random additions */
     for _ in 0..ISLAND_NUM_ADDITION_ATTEMPTS {
         let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
-        let obstacle = *obstacles.choose(rng).unwrap();
+        let obstacle = choose(rng, &obstacles).unwrap();
 
         if data.map[pos].tile_type == TileType::Wall {
             add_obstacle(&mut data.map, pos, obstacle, rng);
@@ -404,8 +407,8 @@ pub fn make_island(data: &mut GameData,
         }
     }
 
-    let x = rng.gen_range(0, data.map.width());
-    let y = rng.gen_range(0, data.map.height());
+    let x = rng_range_i32(rng, 0, data.map.width());
+    let y = rng_range_i32(rng, 0, data.map.height());
     let pos = Pos::new(x, y);
 
     if !data.has_blocking_entity(pos).is_some()  {
@@ -435,7 +438,7 @@ pub fn make_island(data: &mut GameData,
         }
     }
     // choose a random edge position
-    let edge_pos = edge_positions[rng.gen_range(0, edge_positions.len())];
+    let edge_pos = edge_positions[rng_range_u32(rng, 0, edge_positions.len() as u32) as usize];
 
     // make the random edge position the exit
     data.map.tiles[edge_pos.x as usize][edge_pos.y as usize] = Tile::exit();

@@ -116,7 +116,33 @@ impl GameData {
         return result;
     }
 
-    pub fn is_in_fov(&self, entity_id: EntityId, other_pos: Pos, config: &Config) -> bool {
+    // NOTE duplicate code with pos_in_fov
+    pub fn is_in_fov(&self, entity_id: EntityId, other_id: EntityId, config: &Config) -> bool {
+        let pos = self.entities.pos[&entity_id];
+
+        let radius: i32 = match self.entities.typ[&entity_id] {
+            EntityType::Enemy => config.fov_radius_monster,
+            EntityType::Player => config.fov_radius_player,
+            _ => return false, // other things have no FOV
+        };
+
+        let stance = self.entities.stance[&entity_id];
+        let other_stance = self.entities.stance.get(&other_id).unwrap_or(&Stance::Standing);
+        let crouching = stance == Stance::Crouching || other_stance == &Stance::Crouching;
+
+        let other_pos = self.entities.pos[&other_id];
+        if self.entities.typ[&entity_id] == EntityType::Player {
+            return self.map.is_in_fov(pos, other_pos, radius, crouching);
+        } else {
+            if let Some(dir) = self.entities.direction.get(&entity_id) {
+                return self.map.is_in_fov_direction(pos, other_pos, radius, *dir, crouching);
+            } else {
+                panic!(format!("tried to perform is_in_fov on entity without facing"));
+            }
+        }
+    }
+
+    pub fn pos_in_fov(&self, entity_id: EntityId, other_pos: Pos, config: &Config) -> bool {
         let pos = self.entities.pos[&entity_id];
 
         let radius: i32 = match self.entities.typ[&entity_id] {
@@ -131,11 +157,9 @@ impl GameData {
         if self.entities.typ[&entity_id] == EntityType::Player {
             return self.map.is_in_fov(pos, other_pos, radius, crouching);
         } else {
-            if let Some(dir) = self.entities.direction.get(&entity_id) {
-                return self.map.is_in_fov_direction(pos, other_pos, radius, *dir, crouching);
-            } else {
-                panic!(format!("tried to perform is_in_fov on entity without facing"));
-            }
+            let dir = self.entities.direction.get(&entity_id)
+                          .expect("tried to perform is_in_fov on entity without facing");
+            return self.map.is_in_fov_direction(pos, other_pos, radius, *dir, crouching);
         }
     }
 
@@ -203,10 +227,10 @@ impl GameData {
                 }
             }
 
-            if self.entities.needs_removal[entity_id] &&
-               self.entities.animation[entity_id].len() == 0 {
-                to_remove.push(*entity_id);
-            }
+            //if self.entities.needs_removal[entity_id] &&
+            //   self.entities.animation[entity_id].len() == 0 {
+            //    to_remove.push(*entity_id);
+            //}
         }
 
         // remove objects waiting removal
@@ -308,12 +332,12 @@ impl GameData {
         return within;
     }
 
-    // check whether the entitiy could see a location if it were facing towards that position.
+    // check whether the entity could see a location if it were facing towards that position.
     pub fn could_see(&mut self, entity_id: EntityId, target_pos: Pos, config: &Config) -> bool {
         let current_facing = self.entities.direction[&entity_id];
         self.entities.face(entity_id, target_pos);
 
-        let visible = self.is_in_fov(entity_id, target_pos, config);
+        let visible = self.pos_in_fov(entity_id, target_pos, config);
 
         self.entities.direction[&entity_id] = current_facing;
 
@@ -371,7 +395,6 @@ impl GameData {
         self.entities.move_mode.remove(&id);
         self.entities.direction.remove(&id);
         self.entities.selected_item.remove(&id);
-        self.entities.action.remove(&id);
         self.entities.class.remove(&id);
         self.entities.skills.remove(&id);
         self.entities.limbo.remove(&id);
@@ -444,6 +467,21 @@ pub enum GameState {
     ClassMenu,
     ConfirmQuit,
     Exit,
+}
+
+impl fmt::Display for GameState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            GameState::Playing => write!(f, "playing"),
+            GameState::Win => write!(f, "win"),
+            GameState::Lose => write!(f, "lose"),
+            GameState::Inventory => write!(f, "inventory"),
+            GameState::SkillMenu => write!(f, "skillmenu"),
+            GameState::ClassMenu => write!(f, "classmenu"),
+            GameState::ConfirmQuit => write!(f, "confirmquit"),
+            GameState::Exit => write!(f, "exit"),
+        }
+    }
 }
 
 impl Default for GameState {
@@ -815,6 +853,17 @@ pub enum EntityClass {
     Clockwork,
 }
 
+impl fmt::Display for EntityClass {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            EntityClass::General => write!(f, "general"),
+            EntityClass::Grass => write!(f, "grass"),
+            EntityClass::Monolith => write!(f, "monolith"),
+            EntityClass::Clockwork => write!(f, "clockword"),
+        }
+    }
+}
+
 impl Default for EntityClass {
     fn default() -> EntityClass {
         return EntityClass::General;
@@ -864,7 +913,6 @@ pub struct Entities {
     pub move_mode: CompStore<MoveMode>,
     pub direction: CompStore<Direction>,
     pub selected_item: CompStore<EntityId>,
-    pub action: CompStore<Action>,
     pub class: CompStore<EntityClass>,
     pub skills: CompStore<Vec<Skill>>,
     pub limbo: CompStore<()>,
@@ -939,7 +987,6 @@ impl Entities {
         self.blocks.insert(id, blocks);
         self.direction.insert(id, Direction::Up);
         self.animation.insert(id,  VecDeque::new());
-        self.action.insert(id,  Action::NoAction);
         self.messages.insert(id,  Vec::new());
         self.needs_removal.insert(id,  false);
         self.status.insert(id,  StatusEffect::default());
@@ -1124,7 +1171,6 @@ impl Entities {
         move_component!(move_mode);
         move_component!(direction);
         move_component!(selected_item);
-        move_component!(action);
         move_component!(class);
         move_component!(skills);
         move_component!(limbo);

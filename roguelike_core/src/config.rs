@@ -89,6 +89,7 @@ pub struct Config {
     pub write_map_distribution: bool,
     pub print_key_log: bool,
     pub idle_animations: bool,
+    pub recording: bool,
 }
 
 impl Config {

@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 
-use noise::NoiseFn;
-use noise::Perlin;
+use oorandom::Rand32;
 
 use sdl2::render::{BlendMode, WindowCanvas};
 use sdl2::rect::Rect;
@@ -14,6 +13,7 @@ use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
 use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, sub_pos, reach_by_mode, map_fill_metric};
+use roguelike_core::perlin::Perlin;
 use roguelike_core::line::line;
 
 use roguelike_engine::game::*;
@@ -362,11 +362,13 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
         y_pos += 1;
 
-        let in_fov = game.settings.god_mode ||
-                     game.data.is_in_fov(player_id, info_pos, &game.config);
+        let mut in_fov = false;
 
         // only display first object
         if let Some(obj_id) = object_ids.first() {
+            in_fov = game.settings.god_mode ||
+                     game.data.is_in_fov(player_id, *obj_id, &game.config);
+
             // only display things in the player's FOV
             if in_fov {
                 if let Some(fighter) = game.data.entities.fighter.get(obj_id) {
@@ -585,7 +587,7 @@ fn render_background(display: &mut Display, game: &mut Game) {
                 let map_pos = Pos::new(x, y);
 
                 let visible =
-                    game.data.is_in_fov(player_id, map_pos, &game.config) ||
+                    game.data.pos_in_fov(player_id, map_pos, &game.config) ||
                     game.settings.god_mode;
 
                 let tile = &game.data.map[(x, y)];
@@ -625,7 +627,7 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
 
             // Render game stuff
             let visible =
-                game.data.is_in_fov(player_id, pos, &game.config) ||
+                game.data.pos_in_fov(player_id, pos, &game.config) ||
                 game.settings.god_mode;
 
             let explored = game.data.map[pos].explored || visible;
@@ -787,7 +789,7 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
     if game.data.map.is_within_bounds(pos) &&
        game.data.entities.limbo.get(&entity_id).is_none() {
         let is_in_fov = 
-           game.data.is_in_fov(player_id, pos, &game.config) ||
+           game.data.is_in_fov(player_id, entity_id, &game.config) ||
            game.settings.god_mode;
 
         if let Some(anim_key) = game.data.entities.animation[&entity_id].get(0) {
@@ -988,7 +990,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             tile_sprite.draw_char(panel, ENTITY_CURSOR as char, cursor_pos, color);
 
             // render player ghost
-            if cursor_pos != player_pos && game.input.target == -1 {
+            if cursor_pos != player_pos && game.input.target == None {
                 let alpha = game.data.entities.color[&player_id].a;
                 game.data.entities.color[&player_id].a = 100;
 
@@ -1021,7 +1023,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 let pos = Pos::new(x, y);
 
                 let is_in_fov =
-                    game.data.is_in_fov(player_id, pos, &game.config);
+                    game.data.pos_in_fov(player_id, pos, &game.config);
                 if is_in_fov {
                     tile_sprite.draw_char(panel, MAP_GROUND as char, pos, game.config.color_light_green);
                 }
@@ -1046,7 +1048,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 continue;
             }
 
-            if game.data.is_in_fov(player_id, pos, &game.config) &&
+            if game.data.is_in_fov(player_id, *entity_id, &game.config) &&
                game.data.entities.status[entity_id].alive {
                 if let Some(dir) = game.data.entities.direction.get(entity_id) {
                     // display.draw_tile_edge(pos, area, direction_color, dir);
@@ -1079,7 +1081,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         for entity_id in object_ids.iter() {
             let pos = game.data.entities.pos[entity_id];
 
-            if game.data.is_in_fov(player_id, pos, &game.config) &&
+            if game.data.pos_in_fov(player_id, pos, &game.config) &&
                *entity_id != player_id &&
                game.data.entities.status[entity_id].alive {
                render_attack_overlay(panel, display_state, game, *entity_id);
@@ -1097,7 +1099,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
             if entity_id != player_id &&
                game.data.map.is_within_bounds(pos) &&
-               game.data.is_in_fov(player_id, pos, &game.config) &&
+               game.data.pos_in_fov(player_id, pos, &game.config) &&
                game.data.entities.status[&entity_id].alive {
                render_attack_overlay(panel,
                                      display_state,
@@ -1174,7 +1176,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         for y in 0..game.data.map.height() {
             for x in 0..game.data.map.width() {
                 let pos = Pos::new(x, y);
-                let in_fov = game.data.is_in_fov(player_id, pos, &game.config);
+                let in_fov = game.data.pos_in_fov(player_id, pos, &game.config);
                 if in_fov {
                     draw_outline_tile(panel, pos, highlight_color_fov);
                 }
@@ -1228,10 +1230,7 @@ fn get_entity_at_pos(check_pos: Pos, data: &mut GameData) -> Vec<EntityId> {
     return object_ids;
 }
 
-// NOTE maybe add variation in tile colors back in
 fn empty_tile_color(config: &Config, pos: Pos, visible: bool) -> Color {
-    let perlin = Perlin::new();
-
     let low_color;
     let high_color;
     if visible {
@@ -1244,8 +1243,8 @@ fn empty_tile_color(config: &Config, pos: Pos, visible: bool) -> Color {
     let color =
         lerp_color(low_color,
                    high_color,
-                   perlin.get([pos.x as f64 / config.tile_noise_scaler,
-                               pos.y as f64 / config.tile_noise_scaler]) as f32);
+                   simplex.noise2d(pos.x as f64 / config.tile_noise_scaler,
+                                   pos.y as f64 / config.tile_noise_scaler) as f32);
 
    return color;
 }
@@ -1309,7 +1308,7 @@ fn render_attack_overlay(panel: &mut Panel<&mut WindowCanvas>,
                      let in_bounds = game.data.map.is_within_bounds(*pos);
                      let traps_block = false;
                      let clear = game.data.clear_path(object_pos, *pos, traps_block);
-                     let player_can_see = game.data.is_in_fov(player_id, *pos, &game.config);
+                     let player_can_see = game.data.pos_in_fov(player_id, *pos, &game.config);
                      // check for player position so it gets highligted, even
                      // though the player causes 'clear_path' to fail.
                      return player_can_see && in_bounds && (clear || *pos == player_pos);
@@ -1335,8 +1334,8 @@ fn render_fov_overlay(panel: &mut Panel<&mut WindowCanvas>,
         for x in 0..game.data.map.width() {
             let map_pos = Pos::new(x, y);
 
-            let visible = game.data.is_in_fov(entity_id, map_pos, &game.config) &&
-                          game.data.is_in_fov(player_id, map_pos, &game.config);
+            let visible = game.data.pos_in_fov(entity_id, map_pos, &game.config) &&
+                          game.data.pos_in_fov(player_id, map_pos, &game.config);
 
 
             if visible {
@@ -1362,7 +1361,7 @@ fn render_movement_overlay(panel: &mut Panel<&mut WindowCanvas>,
 
     if let Some(reach) = game.data.entities.movement.get(&entity_id) {
         for move_pos in reach.reachables(entity_pos) {
-            let visible = game.data.is_in_fov(player_id, move_pos, &game.config);
+            let visible = game.data.pos_in_fov(player_id, move_pos, &game.config);
             if visible {
                 let chr = game.data.entities.chr[&entity_id];
 

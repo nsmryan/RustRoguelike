@@ -9,8 +9,6 @@ serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 serde_yaml = "0.8"
 
-slotmap = "0.4"
-
 rexpaint = "*"
 
 euclid = { version = "0.20", features = ["serde"] }
@@ -19,15 +17,14 @@ symbol = "0.1"
 
 pathfinding = "2.0"
 
-mint = "0.5.1"
-
 log = "0.4"
 simple-logging = "2.0"
 logging_timer = "1.0"
 
-wfc_image = "0.10"
+wfc_image = "0.11"
 image = { version = "*", default-features = false, features = ["png"] }
 
-rand = {version = "0.7.0", default-features = false, features = ["small_rng", "std"] }
+rand = {version = "0.8", default-features = false, features = ["small_rng", "std"] }
+oorandom = "11.1"
 
 roguelike_core = { path = "../roguelike_core" }

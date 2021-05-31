@@ -3,7 +3,7 @@ use std::fmt;
 
 use serde::{Serialize, Deserialize};
 
-use roguelike_core::movement::{Direction, Action, Reach, MoveMode, MoveType};
+use roguelike_core::movement::{Direction, Reach, MoveMode, MoveType};
 use roguelike_core::types::*;
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
@@ -15,6 +15,7 @@ use crate::input::*;
 use crate::make_map;
 
 
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ActionLoc {
     Dir(Direction),
@@ -22,43 +23,22 @@ pub enum ActionLoc {
     None
 }
 
-#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
-pub struct ActionResult {
-    pub turn: Action,
-    pub new_state: Option<GameState>,
-}
-
-impl Default for ActionResult {
-    fn default() -> ActionResult {
-        return ActionResult::new(Action::NoAction, None);
-    }
-}
-
-impl ActionResult {
-    pub fn new(turn: Action, new_state: Option<GameState>) -> ActionResult {
-        return ActionResult { turn, new_state };
-    }
-}
-
-
-pub type ActionTarget = i32;
-
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum InputAction {
     Move(Direction, MoveMode),
-    TileApply(ActionTarget),
     Pass,
     Pickup,
     DropItem,
-    DropTargetItem(i32),
+    DropItemByIndex(usize),
     Yell,
-    UseItem(Direction, ActionTarget),
+    UseItem(Direction, usize),
     Interact(Option<Direction>),
     CursorMove(Direction, bool, bool), // move direction, is relative, is long
     CursorReturn,
     CursorToggle,
-    CursorApply(ActionMode, ActionTarget),
-    // TODO this may be unused and should be removed
+    CursorApplyItem(ActionMode, usize),
+    CursorApplySkill(ActionMode, usize),
+    CursorApplyMove(ActionMode),
     MapClick(Pos, Pos), // map loc, map cell
     MouseButton(MouseClick, KeyDir),
     Inventory,
@@ -92,13 +72,12 @@ impl fmt::Display for InputAction {
                     Direction::UpRight => write!(f, "upright {}", move_mode),
                 }
             },
-            InputAction::TileApply(action_target) => write!(f, "tileapply {}", action_target),
             InputAction::Pass => write!(f, "pass"),
             InputAction::MapClick(loc, cell) => write!(f, "click {} {} {} {}", loc.x, loc.y, cell.x, cell.y),
             InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
             InputAction::Pickup => write!(f, "pickup"),
             InputAction::DropItem => write!(f, "drop"),
-            InputAction::DropTargetItem(target) => write!(f, "droptarget {}", target),
+            InputAction::DropItemByIndex(target) => write!(f, "droptarget {}", target),
             InputAction::Inventory => write!(f, "inventory"),
             InputAction::SkillMenu => write!(f, "skill"),
             InputAction::ClassMenu => write!(f, "class"),
@@ -115,9 +94,11 @@ impl fmt::Display for InputAction {
             InputAction::SelectItem(item) => write!(f, "selectitem {}", item),
             InputAction::UseItem(dir, target) => write!(f, "use, {:?} {}", dir, target),
             InputAction::Interact(dir) => write!(f, "interact {:?}", dir),
+            InputAction::CursorApplyItem(action_mode, index) => write!(f, "cursorapplyitem {:?} {}", action_mode, index),
+            InputAction::CursorApplySkill(action_mode, index) => write!(f, "cursorapplyskill {:?} {}", action_mode, index),
+            InputAction::CursorApplyMove(action_mode) => write!(f, "cursorapplymove {:?}", action_mode),
             InputAction::CursorMove(dir, relative, long) => write!(f, "cursormove {:?} {} {}", dir, relative, long),
             InputAction::CursorReturn => write!(f, "cursorreturn"),
-            InputAction::CursorApply(mode, target) => write!(f, "cursorapply {:?} {:?}", mode, target),
             InputAction::CursorToggle => write!(f, "cursortoggle"),
             InputAction::None => write!(f, "none"),
         }
@@ -130,103 +111,92 @@ impl FromStr for InputAction {
     fn from_str(string: &str) -> Result<Self, Self::Err> {
         let s: &mut str = &mut string.to_string();
         s.make_ascii_lowercase();
+        let args = s.split(" ").collect::<Vec<&str>>();
 
-        if s == "left" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        if args[0] == "left" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::Left, move_mode));
-        } else if s == "right" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "right" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::Right, move_mode));
-        } else if s == "up" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "up" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::Up, move_mode));
-        } else if s == "down" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "down" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::Down, move_mode));
-        } else if s == "upleft" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "upleft" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::UpLeft, move_mode));
-        } else if s == "upright" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "upright" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::UpRight, move_mode));
-        } else if s == "downleft" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "downleft" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::DownLeft, move_mode));
-        } else if s == "downright" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "downright" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::DownRight, move_mode));
-        } else if s == "tileapply" {
-            let args = s.split(" ").collect::<Vec<&str>>();
-            let target = args[1].parse::<ActionTarget>().unwrap();
-            return Ok(InputAction::TileApply(target));
-        } else if s == "pass" {
+        } else if args[0] == "pass" {
             return Ok(InputAction::Pass);
-        } else if s == "pickup" {
+        } else if args[0] == "pickup" {
             return Ok(InputAction::Pickup);
-        } else if s == "drop" {
+        } else if args[0] == "drop" {
             return Ok(InputAction::DropItem);
-        } else if s == "droptarget" {
-            let args = s.split(" ").collect::<Vec<&str>>();
-            let target = args[1].parse::<ActionTarget>().unwrap();
-            return Ok(InputAction::DropTargetItem(target));
-        } else if s == "yell" {
+        } else if args[0] == "droptarget" {
+            let target = args[1].parse::<usize>().unwrap();
+            return Ok(InputAction::DropItemByIndex(target));
+        } else if args[0] == "yell" {
             return Ok(InputAction::Yell);
-        } else if s == "inventory" {
+        } else if args[0] == "inventory" {
             return Ok(InputAction::Inventory);
-        } else if s == "use" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "use" {
             let direction = args[1].parse::<Direction>().unwrap();
-            let target = args[1].parse::<ActionTarget>().unwrap();
+            let target = args[1].parse::<usize>().unwrap();
             return Ok(InputAction::UseItem(direction, target));
         } else if s.starts_with("selectitem") {
-            let args = s.split(" ").collect::<Vec<&str>>();
             let selection = args[1].parse::<usize>().unwrap();
             return Ok(InputAction::SelectItem(selection));
-        } else if s == "interact" {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "interact" {
             let dir = args[1].parse::<Direction>().ok();
             return Ok(InputAction::Interact(dir));
-        } else if s == "godmode" {
+        } else if args[0] == "godmode" {
             return Ok(InputAction::GodMode);
         } else if s.starts_with("click") {
-            let args = s.split(" ").collect::<Vec<&str>>();
             let loc_x = args[1].parse::<i32>().unwrap();
             let loc_y = args[2].parse::<i32>().unwrap();
             let cell_x = args[3].parse::<i32>().unwrap();
             let cell_y = args[4].parse::<i32>().unwrap();
             return Ok(InputAction::MapClick(Pos::new(loc_x, loc_y), Pos::new(cell_x, cell_y)));
-        } else if s == "skill" {
+        } else if args[0] == "skill" {
             return Ok(InputAction::SkillMenu);
-        } else if s == "class" {
+        } else if args[0] == "class" {
             return Ok(InputAction::ClassMenu);
-        } else if s == "esc" {
+        } else if args[0] == "esc" {
             return Ok(InputAction::Esc);
-        } else if s == "faster" {
+        } else if args[0] == "faster" {
             return Ok(InputAction::IncreaseMoveMode);
-        } else if s == "slower" {
+        } else if args[0] == "slower" {
             return Ok(InputAction::DecreaseMoveMode);
-        } else if s.starts_with("cursormove") {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "cursormove" {
             let dir = Direction::from_str(args[1]).unwrap();
             let relative = bool::from_str(args[2]).unwrap();
             let long = bool::from_str(args[3]).unwrap();
             return Ok(InputAction::CursorMove(dir, relative, long));
-        } else if s.starts_with("cursorreturn") {
+        } else if args[0] == "cursorreturn" {
             return Ok(InputAction::CursorReturn);
-        } else if s.starts_with("cursorapply") {
-            let args = s.split(" ").collect::<Vec<&str>>();
+        } else if args[0] == "cursorapplyitem" {
             let mode = ActionMode::from_str(args[1]).unwrap();
-            let target = args[2].parse::<i32>().unwrap();
-            return Ok(InputAction::CursorApply(mode, target));
-        } else if s.starts_with("cursortoggle") {
+            let target = args[2].parse::<usize>().unwrap();
+            return Ok(InputAction::CursorApplyItem(mode, target));
+        } else if args[0] == "cursorapplyskill" {
+            let mode = ActionMode::from_str(args[1]).unwrap();
+            let target = args[2].parse::<usize>().unwrap();
+            return Ok(InputAction::CursorApplySkill(mode, target));
+        } else if args[0] == "cursorapplymove" {
+            let mode = ActionMode::from_str(args[1]).unwrap();
+            return Ok(InputAction::CursorApplyMove(mode));
+        } else if args[0] == "cursortoggle" {
             return Ok(InputAction::CursorToggle);
         } else {
             return Err(format!("Could not parse '{}' as InputAction", s));
@@ -321,86 +291,67 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) {
 //    return action_result;
 //}
 
-pub fn handle_input_inventory(input: InputAction,
-                              _data: &GameData,
-                              _settings: &mut GameSettings,
-                              _msg_log: &mut MsgLog) -> ActionResult {
-    let mut action_result: ActionResult = Default::default();
-
+pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings) {
     match input {
         InputAction::Inventory => {
-            action_result.new_state = Some(GameState::Playing);
-        }
-
-        InputAction::SelectItem(_item_index) => {
-            // TODO remove with selection system
-            //inventory_select_item(item_index, data, settings, msg_log);
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::Esc => {
-            action_result.new_state = Some(GameState::Playing);
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::Exit => {
-            action_result.new_state = Some(GameState::ConfirmQuit);
+            change_state(settings, GameState::ConfirmQuit);
         }
 
         _ => {
         }
     }
-
-    return action_result;
 }
 
 pub fn handle_input_skill_menu(input: InputAction,
                                data: &GameData,
                                settings: &mut GameSettings,
                                msg_log: &mut MsgLog,
-                               config: &Config) -> ActionResult {
-    let mut action_result: ActionResult = Default::default();
-
+                               config: &Config) {
     match input {
         InputAction::Inventory => {
-            action_result.new_state = Some(GameState::Inventory);
+            change_state(settings, GameState::Inventory);
         }
 
         InputAction::SkillMenu => {
-            action_result.new_state = Some(GameState::Playing);
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::SelectItem(skill_index) => {
-            action_result.turn =
-                handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, data, settings, msg_log, config);
+            handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, data, settings, msg_log, config);
         }
 
         InputAction::Esc => {
-            action_result.new_state = Some(GameState::Playing);
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::Exit => {
-            action_result.new_state = Some(GameState::ConfirmQuit);
+            change_state(settings, GameState::ConfirmQuit);
         }
 
         _ => {
         }
     }
-
-    return action_result;
 }
 
 pub fn handle_input_class_menu(input: InputAction,
                                _data: &GameData,
-                               _settings: &mut GameSettings,
-                               msg_log: &mut MsgLog) -> ActionResult {
-    let mut action_result: ActionResult = Default::default();
-
+                               settings: &mut GameSettings,
+                               msg_log: &mut MsgLog) {
     match input {
         InputAction::Inventory => {
-            action_result.new_state = Some(GameState::Inventory);
+            change_state(settings, GameState::Inventory);
         }
 
         InputAction::ClassMenu => {
-            action_result.new_state = Some(GameState::Playing);
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::SelectItem(class_index) => {
@@ -408,99 +359,81 @@ pub fn handle_input_class_menu(input: InputAction,
             if class_index < classes.len() {
                 // give player skills from a particular class
                 msg_log.log(Msg::AddClass(classes[class_index]));
-                action_result.new_state = Some(GameState::Playing);
+
+                change_state(settings, GameState::Playing);
             }
         }
 
         InputAction::Esc => {
-            action_result.new_state = Some(GameState::Playing);
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::Exit => {
-            action_result.new_state = Some(GameState::ConfirmQuit);
+            change_state(settings, GameState::ConfirmQuit);
         }
 
         _ => {
         }
     }
-
-    return action_result;
 }
 
-pub fn handle_input_confirm_quit(input: InputAction) -> ActionResult {
-    let mut action_result: ActionResult = Default::default();
-
+pub fn handle_input_confirm_quit(input: InputAction, settings: &mut GameSettings) {
     match input {
         InputAction::Esc => {
-            action_result.new_state = Some(GameState::Playing);
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::Exit => {
-            action_result.new_state = Some(GameState::Exit);
+            change_state(settings, GameState::Exit);
         }
 
         _ => {
         }
     }
-
-    return action_result;
 }
 
 pub fn handle_input(input_action: InputAction,
                     data: &GameData,
                     settings: &mut GameSettings,
                     msg_log: &mut MsgLog,
-                    config: &Config) -> ActionResult {
-    let action_result: ActionResult;
-
+                    config: &Config) {
     match settings.state {
         GameState::Playing => {
-            action_result =
-                handle_input_playing(input_action, data, settings, msg_log, config);
+            handle_input_playing(input_action, data, settings, msg_log, config);
         }
 
         GameState::Win => {
-            action_result = Default::default();
         }
 
         GameState::Lose => {
-            action_result = Default::default();
         }
 
         GameState::Inventory => {
-            action_result = 
-                handle_input_inventory(input_action, data, settings, msg_log);
+            handle_input_inventory(input_action, settings);
         }
 
         GameState::SkillMenu => {
-            action_result = 
-                handle_input_skill_menu(input_action, data, settings, msg_log, config);
+            handle_input_skill_menu(input_action, data, settings, msg_log, config);
         }
 
         GameState::ClassMenu => {
-            action_result =
-                handle_input_class_menu(input_action, data, settings, msg_log);
+            handle_input_class_menu(input_action, data, settings, msg_log);
         }
 
         GameState::ConfirmQuit => {
-            action_result = handle_input_confirm_quit(input_action);
+            handle_input_confirm_quit(input_action, settings);
         }
 
         GameState::Exit => {
-            action_result = Default::default();
         }
     }
-
-    return action_result;
 }
 
 pub fn handle_input_playing(input_action: InputAction,
                             data: &GameData,
                             settings: &mut GameSettings,
                             msg_log: &mut MsgLog,
-                            config: &Config) -> ActionResult {
-    let mut action_result: ActionResult = Default::default();
-
+                            config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
 
@@ -535,30 +468,25 @@ pub fn handle_input_playing(input_action: InputAction,
             settings.cursor = Some(data.map.clamp(new_pos));
         }
 
-        (InputAction::TileApply(target), true) => {
-            let cursor_pos = settings.cursor.expect("TileApply outside of cursor mode?");
+        (InputAction::CursorApplyMove(mode), true) => {
+            let cursor_pos = settings.cursor.expect("CursorApplyMove outside of cursor mode?");
 
-            action_result.turn =
-                chord(ActionLoc::Place(cursor_pos),
-                      ActionMode::Alternate,
-                      target,
-                      data,
-                      settings,
-                      config,
-                      msg_log);
+            chord_move(ActionLoc::Place(cursor_pos), mode, data, msg_log);
         }
 
-        (InputAction::CursorApply(mode, target), true) => {
-            let cursor_pos = settings.cursor.expect("CursorApply outside of cursor mode?");
+        (InputAction::CursorApplyItem(mode, target), true) => {
+            let cursor_pos = settings.cursor.expect("CursorApplyItem outside of cursor mode?");
 
-            action_result.turn =
-                chord(ActionLoc::Place(cursor_pos),
-                      mode,
-                      target,
-                      data,
-                      settings,
-                      config,
-                      msg_log);
+            chord_item(ActionLoc::Place(cursor_pos), mode, target, data, msg_log);
+        }
+
+        (InputAction::CursorApplySkill(mode, skill_index), true) => {
+            let cursor_pos = settings.cursor.expect("CursorApplySkill outside of cursor mode?");
+
+            if skill_index < data.entities.skills[&player_id].len() {
+                let loc = ActionLoc::Place(cursor_pos);
+                handle_skill(skill_index, loc, mode, data, settings, msg_log, config);
+            }
         }
 
         (InputAction::CursorToggle, true) => {
@@ -569,8 +497,11 @@ pub fn handle_input_playing(input_action: InputAction,
             }
         }
 
-        (InputAction::DropTargetItem(target), true) => {
-            msg_log.log(Msg::DropItem(player_id, target as u64));
+        (InputAction::DropItemByIndex(target), true) => {
+            if target < data.entities.inventory[&player_id].len() {
+                let item_id = data.entities.inventory[&player_id][target];
+                msg_log.log(Msg::DropItem(player_id, item_id));
+            }
         }
 
         (InputAction::Pass, true) => {
@@ -578,12 +509,13 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Move(direction, move_mode), true) => {
-            action_result.turn = Action::MoveDir(direction, move_mode);
+            let move_amount = move_mode.move_amount();
+            msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
         }
 
         (InputAction::DropItem, true) => {
             settings.inventory_action = InventoryAction::Drop;
-            action_result.new_state = Some(GameState::Inventory);
+            change_state(settings, GameState::Inventory);
         }
 
         (InputAction::Pickup, true) => {
@@ -592,7 +524,6 @@ pub fn handle_input_playing(input_action: InputAction,
 
         // TODO this should be removeable
         (InputAction::MapClick(_map_loc, _map_cell), _) => {
-            action_result.turn = Action::none();
         }
 
         (InputAction::Yell, true) => {
@@ -617,19 +548,19 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::Inventory, true) => {
             settings.inventory_action = InventoryAction::Use;
-            action_result.new_state = Some(GameState::Inventory);
+            change_state(settings, GameState::Inventory);
         }
 
         (InputAction::SkillMenu, true) => {
-            action_result.new_state = Some(GameState::SkillMenu);
+            change_state(settings, GameState::SkillMenu);
         }
 
         (InputAction::ClassMenu, true) => {
-            action_result.new_state = Some(GameState::ClassMenu);
+            change_state(settings, GameState::ClassMenu);
         }
 
         (InputAction::Exit, _) => {
-            action_result.new_state = Some(GameState::ConfirmQuit);
+            change_state(settings, GameState::ConfirmQuit);
         }
 
         (InputAction::Interact(dir), _) => {
@@ -656,8 +587,6 @@ pub fn handle_input_playing(input_action: InputAction,
         (_, _) => {
         }
     }
-
-    return action_result;
 }
 
 pub fn handle_skill(skill_index: usize,
@@ -666,20 +595,20 @@ pub fn handle_skill(skill_index: usize,
                     data: &GameData, 
                     _settings: &mut GameSettings, 
                     msg_log: &mut MsgLog,
-                    _config: &Config) -> Action {
+                    _config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     /* Check for Valid Skill Use */
     // # check if we have enough energy to carry out the skill
     if data.entities.energy[&player_id] <= 0 {
         msg_log.log(Msg::NotEnoughEnergy(player_id));
-        return Action::none();
+        return;
     }
 
     // get the skill in the player's list of skills
     if skill_index >= data.entities.skills[&player_id].len() {
         // NOTE we may want a message indicating that the skill index was invalid
-        return Action::none();
+        return;
     }
 
     let reach = Reach::single(1);
@@ -697,18 +626,16 @@ pub fn handle_skill(skill_index: usize,
             if let Some(pos) = reach.furthest_in_direction(player_pos, dir) {
                 skill_pos = pos;
             } else {
-                return Action::none();
+                return;
             }
         }
 
         ActionLoc::None => {
-            return Action::none();
+            return;
         }
     }
 
     /* Carry Out Skill */
-    let mut turn: Action = Action::none();
-
     match data.entities.skills[&player_id][skill_index] {
         Skill::GrassThrow => {
             let player_id = data.find_by_name(EntityName::Player).unwrap();
@@ -728,8 +655,6 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::PassWall => {
-            turn = Action::NoAction;
-
             let player_id = data.find_by_name(EntityName::Player).unwrap();
             let player_pos = data.entities.pos[&player_id];
 
@@ -768,8 +693,6 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::Swap => {
-            turn = Action::NoAction;
-
             let player_id = data.find_by_name(EntityName::Player).unwrap();
             if let Some(entity_id) = data.has_blocking_entity(skill_pos) {
                 msg_log.log(Msg::Swap(player_id, entity_id));
@@ -785,33 +708,12 @@ pub fn handle_skill(skill_index: usize,
             msg_log.log(Msg::Push(player_id, direction, push_amount));
         }
     }
-
-    return turn;
-}
-
-pub fn chord(loc: ActionLoc,
-             mode: ActionMode,
-             target: i32,
-             data: &GameData,
-             settings: &mut GameSettings,
-             config: &Config,
-             msg_log: &mut MsgLog) -> Action {
-    // if no target selection, then it is a move
-    let turn;
-    if target == -1 {
-        turn = chord_move(loc, mode, data, msg_log);
-    } else {
-        turn = chord_selection(loc, mode, target, data, settings, config, msg_log);
-    }
-
-    return turn;
 }
 
 fn chord_move(loc: ActionLoc,
               mode: ActionMode,
               data: &GameData,
-              msg_log: &mut MsgLog) -> Action {
-    let turn;
+              msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
 
@@ -831,95 +733,118 @@ fn chord_move(loc: ActionLoc,
     match loc {
         ActionLoc::None => {
             msg_log.log(Msg::Moved(player_id, MoveType::Pass, player_pos));
-            turn = Action::none();
         }
 
         ActionLoc::Dir(direction) => {
-            turn = Action::MoveDir(direction, move_mode); // handle_move(player_id, direction, data);
+            let move_amount = move_mode.move_amount();
+            msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
         }
 
         ActionLoc::Place(pos) => {
             if pos == player_pos {
                 msg_log.log(Msg::Moved(player_id, MoveType::Pass, pos));
-                turn = Action::none();
             } else {
                 let dxy = sub_pos(pos, player_pos);
                 let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
 
-                turn = Action::MoveDir(direction, move_mode);
+                let move_amount = move_mode.move_amount();
+                msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
             }
         }
     }
-
-    return turn;
 }
 
-fn chord_selection(loc: ActionLoc,
-                   mode: ActionMode,
-                   target: i32,
-                   data: &GameData,
-                   settings: &mut GameSettings,
-                   config: &Config,
-                   msg_log: &mut MsgLog) -> Action {
-    let mut turn = Action::none();
+fn chord_item(loc: ActionLoc,
+              mode: ActionMode,
+              target: usize,
+              data: &GameData,
+              msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    if target >= 2 {
-        // the minus 2 here comes from the primary and secondary item, after which comes
-        // the skills
-        let skill_index = (target - 2) as usize;
-        if skill_index < data.entities.skills[&player_id].len() {
-            turn = handle_skill(skill_index, loc, mode, data, settings, msg_log, config);
-        }
-    } else {
-        let num_items_in_inventory = data.entities.inventory[&player_id].len() as i32;
+    let num_items_in_inventory = data.entities.inventory[&player_id].len();
 
-        if target >= num_items_in_inventory {
-            return Action::none();
-        }
+    if target >= num_items_in_inventory {
+        return;
+    }
 
-        let item_id = data.entities.inventory[&player_id][target as usize];
-        
-        match mode {
-            ActionMode::Primary => {
-                match loc {
-                    ActionLoc::Dir(dir) => {
-                        // primary item use is the item's main action
-                        let pos = data.entities.pos[&player_id];
-                        let use_pos = dir.offset_pos(pos, 1);
-                        msg_log.log(Msg::UseItem(player_id, use_pos, item_id));
-                    }
-
-                    _ => panic!("Is this even possible anymore?"),
+    let item_id = data.entities.inventory[&player_id][target as usize];
+    
+    match mode {
+        ActionMode::Primary => {
+            match loc {
+                ActionLoc::Dir(dir) => {
+                    // primary item use is the item's main action
+                    let pos = data.entities.pos[&player_id];
+                    let use_pos = dir.offset_pos(pos, 1);
+                    msg_log.log(Msg::UseItem(player_id, use_pos, item_id));
                 }
+
+                _ => panic!("Is this even possible anymore?"),
             }
+        }
 
-            ActionMode::Alternate => {
-                let player_pos = data.entities.pos[&player_id];
+        ActionMode::Alternate => {
+            let player_pos = data.entities.pos[&player_id];
 
-                // alternate item use means drop or throw item
-                match loc {
-                    ActionLoc::None => {
-                        msg_log.log(Msg::DropItem(player_id, target as u64));
-                    }
+            // alternate item use means drop or throw item
+            match loc {
+                ActionLoc::None => {
+                    msg_log.log(Msg::DropItem(player_id, item_id));
+                }
 
-                    ActionLoc::Place(pos) => {
-                        msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, pos));
-                    }
+                ActionLoc::Place(pos) => {
+                    msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, pos));
+                }
 
-                    ActionLoc::Dir(direction) => {
-                        let start = data.entities.pos[&player_id];
-                        let max_end = direction.offset_pos(start, PLAYER_THROW_DIST as i32);
-                        let end = data.map.path_blocked_move(start, max_end)
-                                               .map_or(max_end, |b| b.end_pos);
+                ActionLoc::Dir(direction) => {
+                    let start = data.entities.pos[&player_id];
+                    let max_end = direction.offset_pos(start, PLAYER_THROW_DIST as i32);
+                    let end = data.map.path_blocked_move(start, max_end)
+                                           .map_or(max_end, |b| b.end_pos);
 
-                        msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, end));
-                    }
+                    msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, end));
                 }
             }
         }
     }
+}
 
-    return turn;
+    
+pub fn change_state(settings: &mut GameSettings, new_state: GameState) {
+    if new_state != settings.state {
+        settings.state = new_state;
+        match new_state {
+            GameState::Inventory => {
+                println!("CONSOLE: Opened Inventory");
+            }
+
+            GameState::Playing => {
+            }
+
+            GameState::SkillMenu => {
+                println!("CONSOLE: Selecting a skill");
+            }
+
+            GameState::ClassMenu => {
+                println!("CONSOLE: Selecting a class");
+            }
+
+            GameState::ConfirmQuit => {
+                println!("CONSOLE: Confirm quit");
+            }
+
+            GameState::Win => {
+                println!("CONSOLE: Won Level!");
+            }
+
+            GameState::Lose => {
+                println!("CONSOLE: Lost Level!");
+            }
+
+            GameState::Exit => {
+                println!("CONSOLE: Exiting");
+            }
+        }
+    }
 }
 

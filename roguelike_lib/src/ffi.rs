@@ -18,7 +18,7 @@ use roguelike_engine::make_map::read_map_xp;
 use roguelike_engine::actions::*;
 
 
-// TODO pass map back and forth
+// TODO Remove all of this
 
 
 #[no_mangle]

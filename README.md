@@ -63,7 +63,7 @@ direction.
 ## Architecture
 The overall architecture of the game is something like this: inputs are
 received from the system using SDL2, and translated into an internal InputEvent
-structure (keypresses, mouse movement, etc). 
+structure (keypresses, mouse movement, etc).
 
 This input event is translated into an action (InputAction) that describes what
 the input does in the game's current state (without changing its state).
@@ -74,17 +74,71 @@ Game structure.
 
 The step\_game function dispatches through the game's current state- playing,
 in a menu, etc. This can change the state of the game, and any settings
-(GameSettings), but does not modify the game's data (GameData). It can place
+(GameSettings), but does not modify the game's data (GameData). It can only place
 messages in the messaging system that is used to execute a turn of the game.
 
 
-Once the state system has created messages to modify the game,
-and optionally changed its state, the resolution
-system starts.  This executes each message, using an item, moving, using a
-skill, etc, which may in turn spawn more messages, until there are no more
-messages to process. Then, the other entities in the game get a chance to spawn
-messages, which are themselves resolved until no messages are left.
-This is the only place where game actions occur- there are places that
-generate maps or do other modifications, but each turn is entirely
-a sequence of messages resolved in order.
+Once the state system has created messages to modify the game, and optionally
+changed its state, the resolution system starts.  This executes each message,
+using an item, moving, using a skill, etc, which may in turn spawn more
+messages, until there are no more messages to process.
 
+Message processing may set the took\_turn flag for an entitity, and if the
+player is marked as having taken a turn then the other entities in the game get
+a chance to spawn messages. These messages are then themselves resolved until
+no messages are left.
+
+This is the only place where game actions occur- there are places that generate
+maps or do other modifications, but each turn is entirely handled as a sequence
+of messages resolved in order.
+
+
+### Types
+The main structures are: 
+
+    * Game: this structure holds the GameData, as well as settings, configuration, logging, random
+    number generation- generally data needed to run the game but not necessarily within the game world.
+        * GameData: this structure is simply an Entities and a Map. It is the core structure of the game,
+            holding the entire game world and all its entities. This structure provides some functions such
+            as FOV which take into account both the map and the entities, where the lower level functions
+            can't use both types of information.
+            * Entities: this structure contains all components, and a vector of ids which identify
+            each entity. The id can be used to index a component to get that entities data if it exists.
+            * Map: this is a grid of Tile structures, with information on blocking movement, sight, the
+            types of surfaces, etc. This structure has many functions for FOV, pathing, floodfill, and others.
+        * Config: the game's static configuration, read from config.yaml.
+        * MsgLog: the message log is used to both print a console log for the user (classic Roguelike style),
+        as well as to drive the game's logic. The messages are processed by the game engine to change game
+        state, as well as provided to the display system to change the display state.
+    * InputAction: the input actions are all actions that the player can perform, including navigating menus
+    or quitting the game.
+    * Msg: the messages put in the message log. This contains all changes that can occur to the game state, 
+      including movements, attacks, triggering traps, using skills, and starting and ending a turn.
+
+
+There are a number of ancillary structures such as Vaults for parts of maps, GameSettings for mutable data like
+the current turn or whether the overlay is on, ProcCmd for controlling level generation, and others.
+
+### Design
+There are some design considerations that have a sigificant effect on the game's code. One is that no
+part of the codebase keeps links to other parts- it is all a sinlge big data structure (Game), which is
+taken apart and passed to functions to mutate it and have side effects. This keeps changes to state
+in constrained locations, which helps with finding the location and sequence of state changes.
+
+
+In addition, many components do not make changes themselves, but emit structures that are then processed.
+This allows things like recording actions, and testing components. A good example is the input system
+processing inputs to game actions, and then to messages.
+
+
+The game is also split into layered crates within a workspace, such that the roguelike\_core knows
+about the core types, but not how the game is displayed or how maps are generated (for example),
+
+
+while roguelike\_engine knows about actions, procedural generation, and handling inputs, but not
+displaying or the main loop.
+
+
+Finally roguelike\_main is the main loop, as well as the SDL2 display system. This is split into
+display data with the animations, textures, screen layout, etc, and then a rendering function
+which does all the drawing to the screen using the display data and game's state (Game).
