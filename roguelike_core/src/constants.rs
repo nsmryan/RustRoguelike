@@ -152,6 +152,11 @@ pub const ENTITY_TRIGGER_4: u8 = 227;
 pub const ENTITY_TRIGGER_5: u8 = 228;
 pub const ENTITY_CURSOR: u8 = 231;
 
+pub const SHADOW_FULLTILE_RIGHT: u8 = 172;
+pub const SHADOW_FULLTILE_TOP: u8 = 173;
+pub const SHADOW_INTERTILE_TOP: u8 = 174;
+pub const SHADOW_INTERTILE_LEFT: u8 = 175;
+
 /* Triggers */
 pub const ENTITY_GATE_TRIGGER: u8 = ENTITY_TRIGGER_2;
 
