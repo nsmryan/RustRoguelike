@@ -38,7 +38,6 @@ use roguelike_lib::commands::*;
 use crate::throttler::*;
 use crate::render::*;
 use crate::display::*;
-use crate::keyboard::*;
 use crate::load::*;
 use crate::replay::*;
 
@@ -381,7 +380,7 @@ fn process_input_events(frame_time: Instant, event_pump: &mut EventPump, game: &
         if game.config.print_key_log {
             //print_event(&sdl2_event);
         }
-        if let Some(event) = translate_event(sdl2_event, game, display) {
+        if let Some(event) = keyboard::translate_event(sdl2_event, game, display) {
             let action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
             // NOTE may lose inputs if multiple events create actions!
             input_action = action;

@@ -23,6 +23,50 @@ pub enum ReplayResult {
     Different,
 }
 
+#[derive(Clone, Debug)]
+pub struct Recording {
+    states: Vec<Game>,
+    inputs: Vec<InputAction>,
+    cursor: usize,
+}
+
+impl Recording {
+    pub fn new() -> Recording {
+        return Recording {
+            states: Vec::new(),
+            inputs: Vec::new(),
+            cursor: 0,
+        };
+    }
+
+    pub fn forward(self: &mut Recording) -> Option<Game> {
+        if let Some(action) = self.inputs.get(self.cursor) {
+            let mut game = self.states[self.states.len() - 1].clone();
+            game.step_game(*action, 0.1);
+            let return_game = game.clone();
+            self.states.push(game);
+            self.cursor = std::cmp::min(self.cursor + 1, self.inputs.len());
+            return Some(return_game);
+        } else {
+            return None;
+        }
+    }
+    
+    pub fn backward(self: &mut Recording) -> Option<Game> {
+        if self.cursor > 0 {
+            self.cursor = self.cursor - 1;
+        }
+
+        return self.states.pop();
+    }
+
+    pub fn action(self: &mut Recording, game: &Game, action: InputAction) {
+        self.states.push(game.clone());
+        self.inputs.insert(self.cursor, action);
+        self.cursor += 1;
+    }
+}
+
 
 pub const MAP_CONFIG_NAME: &str = "map_config.txt";
 

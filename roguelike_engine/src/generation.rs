@@ -17,7 +17,7 @@ use crate::game::*;
 use crate::procgen::*;
 
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum MapGenType {
     Island,
     WallTest,

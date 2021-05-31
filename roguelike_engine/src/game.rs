@@ -18,7 +18,7 @@ use crate::input::*;
 use crate::vault::*;
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Game {
     pub config: Config,
     pub data: GameData,
@@ -119,7 +119,7 @@ impl Game {
     }
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct GameSettings {
     pub turn_count: usize,
     pub god_mode: bool,
