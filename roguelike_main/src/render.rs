@@ -648,12 +648,12 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
 
             let explored = game.data.map[pos].explored || visible;
 
-            let tile = &game.data.map[pos];
+            let tile = game.data.map[pos];
 
             let chr = tile.chr;
 
             // if the tile is not empty or water, draw it
-            let color = tile_color(&game.config, x, y, tile, visible);
+            let color = tile_color(&game.config, x, y, &tile, visible);
             if tile.tile_type == TileType::Water {
                 sprite.draw_char(panel, MAP_WATER as char, pos, Color::white());
             } else if chr != MAP_EMPTY_CHAR {
@@ -663,7 +663,19 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
             render_surface(panel, sprite, tile.surface, pos);
 
             /* draw the between-tile walls appropriate to this tile */
-            render_itertile_walls(panel, &mut game.data.map, sprite, pos);
+            render_itertile_walls(panel, &mut game.data.map, sprite, pos, &game.config);
+
+            /* render full tile wall shadows */
+            if tile.tile_type == TileType::Wall {
+                if x - 1 > 0 {
+                    let shadow_pos = Pos::new(x - 1, y);
+                    sprite.draw_char(panel, SHADOW_FULLTILE_RIGHT as char, shadow_pos, game.config.color_shadow);
+                }
+                if y + 1 < map_height {
+                    let shadow_pos = Pos::new(x, y + 1);
+                    sprite.draw_char(panel, SHADOW_FULLTILE_TOP as char, shadow_pos, game.config.color_shadow);
+                }
+            }
 
             // apply a FoW darkening to cells
             if game.config.fog_of_war && !visible {
@@ -678,7 +690,11 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
     }
 }
 
-fn render_itertile_walls(panel: &mut Panel<&mut WindowCanvas>, map: &Map, sprite: &mut SpriteSheet, pos: Pos) {
+fn render_itertile_walls(panel: &mut Panel<&mut WindowCanvas>,
+                         map: &Map,
+                         sprite: &mut SpriteSheet,
+                         pos: Pos,
+                         config: &Config) {
     let (x, y) = pos.to_tuple();
     let tile = map[pos];
     let wall_color = Color::white();
@@ -693,7 +709,6 @@ fn render_itertile_walls(panel: &mut Panel<&mut WindowCanvas>, map: &Map, sprite
     // Left walls
     if tile.left_wall == Wall::ShortWall {
         sprite.draw_char(panel, MAP_THIN_WALL_LEFT as char, pos, wall_color);
-
     } else if tile.left_wall == Wall::TallWall {
         sprite.draw_char(panel, MAP_THICK_WALL_LEFT as char, pos, wall_color);
     }
@@ -704,6 +719,7 @@ fn render_itertile_walls(panel: &mut Panel<&mut WindowCanvas>, map: &Map, sprite
         let right_tile = &map[right_pos];
         if right_tile.left_wall == Wall::ShortWall {
             sprite.draw_char(panel, MAP_THIN_WALL_RIGHT as char, pos, wall_color);
+            sprite.draw_char(panel, SHADOW_INTERTILE_LEFT as char, pos, config.color_shadow);
         } else if right_tile.left_wall == Wall::TallWall {
             sprite.draw_char(panel, MAP_THICK_WALL_RIGHT as char, pos, wall_color);
         }
@@ -715,6 +731,7 @@ fn render_itertile_walls(panel: &mut Panel<&mut WindowCanvas>, map: &Map, sprite
         let up_tile = &map[up_pos];
         if up_tile.bottom_wall == Wall::ShortWall {
             sprite.draw_char(panel, MAP_THIN_WALL_TOP as char, pos, wall_color);
+            sprite.draw_char(panel, SHADOW_INTERTILE_TOP as char, pos, config.color_shadow);
         } else if up_tile.bottom_wall == Wall::TallWall {
             sprite.draw_char(panel, MAP_THICK_WALL_TOP as char, pos, wall_color);
         }

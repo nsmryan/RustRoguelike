@@ -104,6 +104,11 @@ color_light_grey:
   g: 132
   b: 132
   a: 255
+color_shadow:
+  r: 255
+  g: 255
+  b: 255
+  a: 200
 load_map_file_every_frame: false
 tile_noise_scaler: 4.0
 highlight_player_move: 226
