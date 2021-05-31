@@ -60,19 +60,27 @@ impl Recording {
         }
     }
     
-    pub fn backward(self: &mut Recording) -> Option<Game> {
+    pub fn backward(self: &mut Recording) -> Game {
         if self.cursor > 0 {
             self.cursor = self.cursor - 1;
             self.states.pop();
         }
 
-        return Some(self.states[self.states.len() - 1].clone());
+        return self.states[self.states.len() - 1].clone();
     }
 
     pub fn action(self: &mut Recording, game: &Game, action: InputAction) {
         self.states.push(game.clone());
         self.inputs.insert(self.cursor, action);
         self.cursor += 1;
+    }
+
+    pub fn clear(self: &mut Recording) {
+        let original = self.states[0].clone();
+        self.states.clear();
+        self.states.push(original);
+        self.inputs.clear();
+        self.cursor = 0;
     }
 }
 
@@ -109,13 +117,13 @@ pub fn test_recording() {
     assert_eq!(starting_pos.y + 1, step2_pos.y);
 
     // undo the walk down (1, 0)
-    let game = recording.backward().unwrap();
+    let game = recording.backward();
     let step1_pos = game.data.entities.pos[&player_id];
     assert_eq!(starting_pos.x + 1, step1_pos.x);
     assert_eq!(starting_pos.y, step1_pos.y);
 
     // undo the walk right (0, 0)
-    let mut game = recording.backward().unwrap();
+    let mut game = recording.backward();
     let step0_pos = game.data.entities.pos[&player_id];
     assert_eq!(starting_pos.x, step0_pos.x);
     assert_eq!(starting_pos.y, step0_pos.y);

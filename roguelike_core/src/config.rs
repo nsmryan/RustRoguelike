@@ -87,7 +87,7 @@ pub struct Config {
     pub cursor_long: i32,
     pub repeat_delay: f32,
     pub write_map_distribution: bool,
-    pub print_key_log: bool,
+    pub recording: bool,
 }
 
 impl Config {

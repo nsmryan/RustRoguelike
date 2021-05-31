@@ -30,6 +30,7 @@ use roguelike_core::map::MapLoadConfig;
 use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
 use roguelike_engine::actions::*;
+use roguelike_engine::input::*;
 use roguelike_engine::make_map::{make_map, read_map_xp};
 use roguelike_engine::log::*;
 
@@ -38,6 +39,7 @@ use roguelike_lib::commands::*;
 use crate::throttler::*;
 use crate::render::*;
 use crate::display::*;
+use crate::keyboard::*;
 use crate::load::*;
 use crate::replay::*;
 
@@ -136,7 +138,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
     /* Create Game Structure */
     let config = Config::from_file(CONFIG_NAME);
-    let mut game = Game::new(seed, config.clone())?;
+    let mut game = Game::new(seed, config.clone()).unwrap();
 
     game.load_vaults("resources/vaults/");
 
@@ -202,6 +204,9 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
     /* Log */
     let mut log = Log::new();
 
+    /* Recording */
+    let mut recording = Recording::new(&game);
+
     /* Setup FPS Throttling */
     let frame_ms = 1000 / game.config.frame_rate as u64;
     let fps_throttler = Throttler::new(Duration::from_millis(frame_ms));
@@ -215,14 +220,28 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
         let _loop_timer = timer!("GAME_LOOP");
 
         /* Input */
-        let mut input_action: InputAction;
+        let mut input_action: InputAction = InputAction::None;
         {
             let _input_timer = timer!("INPUT");
 
             // check for commands to execute
             process_commands(&io_recv, &mut game, &mut log);
 
-            input_action = process_input_events(frame_time, &mut event_pump, &mut game, &mut display);
+            //input_action = process_input_events(frame_time, &mut event_pump, &mut game, &mut display);
+            for sdl2_event in event_pump.poll_iter() {
+                if let Some(event) = keyboard::translate_event(sdl2_event, &mut game, &mut display) {
+                    if game.config.recording && matches!(event, InputEvent::Char('[', KeyDir::Up)) {
+                        game = recording.backward();
+                    } else if game.config.recording && matches!(event, InputEvent::Char(']', KeyDir::Up)) {
+                        if let Some(new_game) = recording.forward() {
+                            game = new_game;
+                        }
+                    } else {
+                        // NOTE may lose inputs if multiple events create actions!
+                        input_action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
+                    }
+                }
+            }
         }
 
         /* Misc */
@@ -248,6 +267,10 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
             let dt = Instant::now().duration_since(frame_time).as_secs_f32();
             frame_time = Instant::now();
             game.step_game(input_action, dt);
+            
+            if game.config.recording && input_action != InputAction::None {
+                recording.action(&game, input_action);
+            }
 
             for msg_index in 0..game.msg_log.turn_messages.len() {
                 let msg = game.msg_log.turn_messages[msg_index];
@@ -332,23 +355,6 @@ fn reload_config(config_modified_time: &mut SystemTime, game: &mut Game) {
     }
 }
 
-// NOTE if this gets uncommented, replace printouts with game.log_key
-//fn print_event(game: &mut Game, event: &Event) {
-//    match event {
-//        Event::KeyDown { timestamp, keycode, scancode, keymod, repeat, .. } => {
-//            println!("KEY: {} down {} {} {} {}", timestamp, keycode.unwrap(), scancode.unwrap(), keymod, repeat);
-//            stdout().flush().unwrap();
-//        }
-//
-//        Event::KeyUp { timestamp, keycode, scancode, keymod, repeat, .. } => {
-//            println!("KEY: {} up   {} {} {} {}", timestamp, keycode.unwrap(), scancode.unwrap(), keymod, repeat);
-//            stdout().flush().unwrap();
-//        }
-//        
-//        _ => {}
-//    }
-//}
-
 pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), String> {
     game.settings.god_mode = true;
 
@@ -373,22 +379,19 @@ fn update_display(game: &mut Game, display: &mut Display) -> Result<(), String> 
     return Ok(());
 }
 
-fn process_input_events(frame_time: Instant, event_pump: &mut EventPump, game: &mut Game, display: &mut Display) -> InputAction {
-    let mut input_action: InputAction = InputAction::None;
-
-    for sdl2_event in event_pump.poll_iter() {
-        if game.config.print_key_log {
-            //print_event(&sdl2_event);
-        }
-        if let Some(event) = keyboard::translate_event(sdl2_event, game, display) {
-            let action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
-            // NOTE may lose inputs if multiple events create actions!
-            input_action = action;
-        }
-    }
-
-    return input_action;
-}
+//fn process_input_events(frame_time: Instant, event_pump: &mut EventPump, game: &mut Game, display: &mut Display) -> InputAction {
+//    let mut input_action: InputAction = InputAction::None;
+//
+//    for sdl2_event in event_pump.poll_iter() {
+//        if let Some(event) = keyboard::translate_event(sdl2_event, game, display) {
+//            let action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
+//            // NOTE may lose inputs if multiple events create actions!
+//            input_action = action;
+//        }
+//    }
+//
+//    return input_action;
+//}
 
 fn process_commands(io_recv: &Receiver<String>, game: &mut Game, log: &mut Log) {
     if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(0)) {
