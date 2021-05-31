@@ -201,10 +201,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
 
     let mut config_modified_time = fs::metadata(CONFIG_NAME).unwrap().modified().unwrap();
 
-    /* Log */
     let mut log = Log::new();
-
-    /* Recording */
     let mut recording = Recording::new(&game);
 
     /* Setup FPS Throttling */
@@ -283,6 +280,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
 
             if game.settings.state == GameState::Win {
                 display.clear_level_state();
+                recording.clear();
             } else if game.settings.state == GameState::Exit {
                 game.settings.running = false;
             }
