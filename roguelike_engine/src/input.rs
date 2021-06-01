@@ -238,7 +238,10 @@ impl Input {
                             if new_repeats > held_state.repetitions {
                                 action = self.key_to_action(chr, settings);
 
-                                if action == InputAction::OverlayOff {
+                                if action == InputAction::OverlayOff   ||
+                                   action == InputAction::Inventory    ||
+                                   action == InputAction::SkillMenu    ||
+                                   action == InputAction::ClassMenu {
                                     action = InputAction::None;
                                 } else {
                                     self.char_held.insert(chr, held_state.repeated());
