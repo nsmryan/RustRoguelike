@@ -243,6 +243,11 @@ impl Input {
                                    action == InputAction::SkillMenu    ||
                                    action == InputAction::ClassMenu {
                                     action = InputAction::None;
+                                } else if action == InputAction::CursorToggle {
+                                    // this is a little kludgy, but we have to untoggle cursor
+                                    // mode as it was toggled by key_to_action.
+                                    self.cursor = !self.cursor;
+                                    action = InputAction::None;
                                 } else {
                                     self.char_held.insert(chr, held_state.repeated());
                                 }
