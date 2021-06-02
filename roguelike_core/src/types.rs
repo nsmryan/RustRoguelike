@@ -173,6 +173,22 @@ impl GameData {
         return None;
     }
 
+    pub fn get_entities_at_pos(&mut self, check_pos: Pos) -> Vec<EntityId> {
+        let mut object_ids: Vec<EntityId> = Vec::new();
+
+        for key in self.entities.ids.iter() {
+            let pos = self.entities.pos[key];
+            let is_mouse = self.entities.name[key] == EntityName::Mouse;
+            let removing = self.entities.needs_removal[key];
+
+            if !removing && !is_mouse && check_pos == pos {
+                object_ids.push(*key);
+            }
+        }
+
+        return object_ids;
+    }
+
     pub fn clear_path_up_to(&self, start: Pos, end: Pos, traps_block: bool) -> bool {
         let up_to = move_next_to(start, end);
 
