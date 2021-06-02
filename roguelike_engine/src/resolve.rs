@@ -1192,9 +1192,8 @@ fn resolve_ai_attack(entity_id: EntityId,
         data.entities.took_turn[&entity_id] = true;
         msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
     } else if let Some(hit_pos) = can_hit_target {
-        let entity_pos = data.entities.pos[&entity_id];
-        let direction = Direction::from_positions(entity_pos, hit_pos).unwrap();
-        msg_log.log(Msg::TryMove(entity_id, direction, 1, MoveMode::Walk));
+        let attack_info = Attack::Attack(target_id);
+        msg_log.log(Msg::TryAttack(entity_id, attack_info, target_pos));
     } else if !ai_is_in_fov(entity_id, target_id, data, config) {
         // if we lose the target, end the turn
         data.entities.took_turn[&entity_id] = true;
