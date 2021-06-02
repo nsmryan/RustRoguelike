@@ -49,6 +49,7 @@ pub enum GameCmd {
     Remove(u64),
     Give(Item),
     ListEntities,
+    ListEntitiesPos(i32, i32),
     Key(char, KeyDir),
     Ctrl(KeyDir),
     Alt(KeyDir),
@@ -135,6 +136,10 @@ impl FromStr for GameCmd {
             return Ok(GameCmd::Give(item));
         } else if cmd == "ids" {
             return Ok(GameCmd::ListEntities);
+        } else if cmd == "ids_pos" {
+            let x  = args[1].parse::<i32>().unwrap();
+            let y  = args[2].parse::<i32>().unwrap();
+            return Ok(GameCmd::ListEntitiesPos(x, y));
         } else if cmd == "key" {
             let chr = args[1].parse::<char>().unwrap();
             let dir = args[2].parse::<KeyDir>().unwrap();
@@ -192,6 +197,8 @@ impl GameCmd {
             return "give";
         } else if matches!(self, GameCmd::ListEntities) {
             return "ids";
+        } else if matches!(self, GameCmd::ListEntitiesPos(_, _)) {
+            return "ids_pos";
         } else if matches!(self, GameCmd::Key(_, _)) {
             return "key";
         } else if matches!(self, GameCmd::Ctrl(_)) {
@@ -314,6 +321,15 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
                           .collect::<Vec<String>>()
                           .join(" ");
                  
+            return format!("{} {}", name, ids);
+        }
+
+        GameCmd::ListEntitiesPos(x, y) => {
+            let ids = game.data.get_entities_at_pos(Pos::new(*x, *y))
+                               .iter()
+                               .map(|id| id.to_string())
+                               .collect::<Vec<String>>()
+                               .join(" ");
             return format!("{} {}", name, ids);
         }
 

@@ -341,8 +341,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
         let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
-        let object_ids =
-            get_entity_at_pos(info_pos, &mut game.data);
+        let object_ids = game.data.get_entities_at_pos(info_pos);
 
         let mut y_pos = 1;
 
@@ -1082,7 +1081,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     // draw attack and fov position highlights
     if let Some(mouse_xy) = map_mouse_pos {
         // Draw monster attack overlay
-        let object_ids = get_entity_at_pos(mouse_xy, &mut game.data);
+        let object_ids = game.data.get_entities_at_pos(mouse_xy);
         for entity_id in object_ids.iter() {
             let pos = game.data.entities.pos[entity_id];
 
@@ -1217,22 +1216,6 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                                   highlight_color);
         }
     }
-}
-
-fn get_entity_at_pos(check_pos: Pos, data: &mut GameData) -> Vec<EntityId> {
-    let mut object_ids: Vec<EntityId> = Vec::new();
-
-    for key in data.entities.ids.iter() {
-        let pos = data.entities.pos[key];
-        let is_mouse = data.entities.name[key] == EntityName::Mouse;
-        let removing = data.entities.needs_removal[key];
-
-        if !removing && !is_mouse && check_pos == pos {
-            object_ids.push(*key);
-        }
-    }
-
-    return object_ids;
 }
 
 fn empty_tile_color(config: &Config, pos: Pos, visible: bool, rng: &mut Rand32) -> Color {
