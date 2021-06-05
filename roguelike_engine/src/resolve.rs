@@ -15,7 +15,7 @@ use roguelike_core::utils::*;
 use roguelike_core::map::*;
 use roguelike_core::line::line;
 
-use crate::generation::{make_energy, make_dagger, make_sword};
+use crate::generation::{make_energy, make_dagger, make_sword, make_light};
 
 
 pub fn resolve_messages(data: &mut GameData,
@@ -201,6 +201,11 @@ pub fn resolve_messages(data: &mut GameData,
                         data.entities.class[&player_id] = class;
                         data.entities.add_skill(player_id, Skill::Push);
                     }
+
+                    EntityClass::Hierophant => {
+                        data.entities.class[&player_id] = class;
+                        data.entities.add_skill(player_id, Skill::Illuminate);
+                    }
                 }
             }
 
@@ -248,6 +253,16 @@ pub fn resolve_messages(data: &mut GameData,
             Msg::GrassShoes(entity_id, _action_mode) => {
                 if use_energy(entity_id, data) {
                     data.entities.status[&entity_id].soft_steps = SKILL_GRASS_SHOES_TURNS;
+                    data.entities.took_turn[&entity_id] = true;
+                }
+            }
+
+            Msg::Illuminate(entity_id, amount) => {
+                if use_energy(entity_id, data) {
+                    let entity_pos = data.entities.pos[&entity_id];
+                    let light = make_light(&mut data.entities, config, entity_pos, msg_log);
+                    data.entities.status[&light].illuminate = amount;
+
                     data.entities.took_turn[&entity_id] = true;
                 }
             }
@@ -882,6 +897,13 @@ fn use_energy(entity_id: EntityId, data: &mut GameData) -> bool {
         }
 
         EntityClass::Clockwork => {
+        }
+
+        EntityClass::Hierophant => {
+            if data.entities.energy[&entity_id] > 0 {
+                enough_energy = true;
+                data.entities.energy[&entity_id] -= 1;
+            }
         }
     }
 

@@ -450,6 +450,7 @@ pub enum Skill {
     Reform,
     Swap,
     Push,
+    Illuminate,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Default)]
@@ -880,6 +881,7 @@ pub enum EntityClass {
     Grass,
     Monolith,
     Clockwork,
+    Hierophant,
 }
 
 impl fmt::Display for EntityClass {
@@ -889,6 +891,7 @@ impl fmt::Display for EntityClass {
             EntityClass::Grass => write!(f, "grass"),
             EntityClass::Monolith => write!(f, "monolith"),
             EntityClass::Clockwork => write!(f, "clockword"),
+            EntityClass::Hierophant => write!(f, "hierophant"),
         }
     }
 }
@@ -902,7 +905,7 @@ impl Default for EntityClass {
 impl EntityClass {
     pub fn classes() -> Vec<EntityClass> {
         use EntityClass::*;
-        return vec!(General, Grass, Monolith, Clockwork);
+        return vec!(General, Grass, Monolith, Clockwork, Hierophant);
     }
 }
 

@@ -45,6 +45,7 @@ pub const SKILL_GRASS_SHOES_TURNS: usize = 6;
 
 /* Item Settings */
 pub const LANTERN_ILLUMINATE_RADIUS: usize = 2;
+pub const ILLUMINATE_AMOUNT: usize = LANTERN_ILLUMINATE_RADIUS;
 
 /* Trap Settings */
 pub const FREEZE_TRAP_NUM_TURNS: usize = 3;

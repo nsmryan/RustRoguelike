@@ -61,6 +61,7 @@ pub enum Msg {
     GrassThrow(EntityId, Direction),
     GrassShoes(EntityId, ActionMode),
     GrassBlade(EntityId, ActionMode),
+    Illuminate(EntityId, usize), // entity, amount
     Rubble(EntityId, Pos),
     Reform(EntityId, Pos),
     Swap(EntityId, EntityId), // casting entity, entity to swap with
@@ -138,6 +139,7 @@ impl fmt::Display for Msg {
             Msg::GrassThrow(entity_id, direction) => write!(f, "grass_throw {} {}", entity_id, direction),
             Msg::GrassShoes(entity_id, action_mode) => write!(f, "grass_shoes {} {}", entity_id, action_mode),
             Msg::GrassBlade(entity_id, action_mode) => write!(f, "grass_blade {} {}", entity_id, action_mode),
+            Msg::Illuminate(entity_id, amount) => write!(f, "illuminate {} {}", entity_id, amount),
             Msg::Rubble(entity_id, pos) => write!(f, "rubble {} {} {}", entity_id, pos.x, pos.y),
             Msg::Reform(entity_id, pos) => write!(f, "reform {} {} {}", entity_id, pos.x, pos.y),
             Msg::Swap(entity_id, target_id) => write!(f, "swap {} {}", entity_id, target_id),
@@ -373,6 +375,10 @@ impl Msg {
 
             Msg::GrassBlade(entity_id, _action_mode) => {
                 return format!("{:?} used grass blade", data.entities.name[entity_id]);
+            }
+
+            Msg::Illuminate(entity_id, _amount) => {
+                return format!("{:?} illuminated their surroundings", data.entities.name[entity_id]);
             }
 
             Msg::Rubble(entity_id, pos) => {

@@ -713,6 +713,10 @@ pub fn handle_skill(skill_index: usize,
             let push_amount = 1;
             msg_log.log(Msg::Push(player_id, direction, push_amount));
         }
+
+        Skill::Illuminate => {
+            msg_log.log(Msg::Illuminate(player_id, ILLUMINATE_AMOUNT));
+        }
     }
 }
 

@@ -129,6 +129,15 @@ pub fn make_mouse(entities: &mut Entities, _config: &Config, msg_log: &mut MsgLo
     return mouse;
 }
 
+pub fn make_light(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let light = entities.create_entity(pos.x, pos.y, EntityType::Other, ' ', Color::white(), EntityName::Other, false);
+
+    entities.status[&light].illuminate = 3;
+    msg_log.log(Msg::SpawnedObject(light, entities.typ[&light], pos, EntityName::Other, entities.direction[&light]));
+
+    return light;
+}
+
 pub fn make_cursor(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let cursor = entities.create_entity(pos.x, pos.y, EntityType::Other, ' ', Color::white(), EntityName::Cursor, false);
 
