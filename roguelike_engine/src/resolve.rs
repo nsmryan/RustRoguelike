@@ -847,6 +847,7 @@ fn use_energy(entity_id: EntityId, data: &mut GameData) -> bool {
     //let skill_class = data.entities.skill[&entit_id].class();
 
     // NOTE this uses the entity's class, not the skill's class
+    let has_energy = data.entities.energy[&entity_id] > 0;
     let mut enough_energy: bool = false;
     match class {
         EntityClass::General => {
@@ -857,14 +858,24 @@ fn use_energy(entity_id: EntityId, data: &mut GameData) -> bool {
         }
 
         EntityClass::Grass => {
-            if data.map[pos].surface == Surface::Grass {
+            let free_energy = data.map[pos].surface == Surface::Grass;
+            if free_energy || has_energy {
+                if !free_energy && has_energy {
+                    data.entities.energy[&entity_id] -= 1;
+                }
+
                 enough_energy = true;
                 data.map[pos].surface = Surface::Floor;
             }
         }
 
         EntityClass::Monolith => {
-            if data.map[pos].surface == Surface::Rubble {
+            let free_energy = data.map[pos].surface == Surface::Rubble;
+            if free_energy || has_energy {
+                if !free_energy && has_energy {
+                    data.entities.energy[&entity_id] -= 1;
+                }
+
                 enough_energy = true;
                 data.map[pos].surface = Surface::Floor;
             }
