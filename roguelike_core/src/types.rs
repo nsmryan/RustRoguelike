@@ -897,6 +897,7 @@ impl EntityClass {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct StatusEffect {
     pub frozen: usize, // turns
+    pub soft_steps: usize, // turns
     pub active: bool,
     pub alive: bool,
 }

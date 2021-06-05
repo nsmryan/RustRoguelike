@@ -51,6 +51,10 @@ pub fn step_logic(game: &mut Game) -> bool {
             if status.frozen > 0 {
                 status.frozen -= 1;
             }
+
+            if status.soft_steps > 0 {
+                status.soft_steps -= 1;
+            }
         }
     }
 

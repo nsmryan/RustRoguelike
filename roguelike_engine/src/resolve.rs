@@ -247,10 +247,7 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::GrassShoes(entity_id, _action_mode) => {
                 if use_energy(entity_id, data) {
-                    let pos = data.entities.pos[&entity_id];
-                    if data.map[pos].surface == Surface::Grass {
-                        data.map[pos].surface = Surface::Floor;
-                    }
+                    data.entities.status[&entity_id].soft_steps = SKILL_GRASS_SHOES_TURNS;
                     data.entities.took_turn[&entity_id] = true;
                 }
             }
@@ -1117,6 +1114,10 @@ fn process_moved_message(entity_id: EntityId,
                 sound_radius += config.sound_rubble_radius;
             } else if data.map[pos].surface == Surface::Grass {
                 sound_radius -= config.sound_grass_radius;
+            }
+
+            if data.entities.status[&entity_id].soft_steps > 0 {
+                sound_radius -= 1;
             }
 
             msg_log.log_front(Msg::Sound(entity_id, pos, sound_radius, true));

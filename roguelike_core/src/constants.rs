@@ -40,6 +40,9 @@ pub const TRIGGER_WALL_DAMAGE: i32 = 20;
 
 pub const NOT_IN_FOV_COST: usize = 5;
 
+/* Skill Settings */
+pub const SKILL_GRASS_SHOES_TURNS: usize = 6;
+
 /* Trap Settings */
 pub const FREEZE_TRAP_NUM_TURNS: usize = 3;
 
