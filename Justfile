@@ -53,3 +53,6 @@ flame:
 
 clean:
   RUSTFLAGS="-C link-arg=-fuse-ld=lld" cargo clean
+
+sloc:
+  cloc */src/*.rs

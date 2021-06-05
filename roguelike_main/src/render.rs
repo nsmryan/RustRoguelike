@@ -566,8 +566,6 @@ fn render_background(display: &mut Display, game: &mut Game) {
     }
     display.targets.background_panel.dirty = false;
 
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = display.state.lookup_spritekey("tiles");
@@ -585,9 +583,9 @@ fn render_background(display: &mut Display, game: &mut Game) {
             for x in 0..map_width {
                 let map_pos = Pos::new(x, y);
 
-                let visible =
-                    game.data.pos_in_fov(player_id, map_pos, &game.config) ||
-                    game.settings.god_mode;
+                //let visible =
+                //    game.data.pos_in_fov(player_id, map_pos, &game.config) ||
+                //    game.settings.god_mode;
 
                 let tile = &game.data.map[(x, y)];
                 if tile.tile_type != TileType::Water {
@@ -596,7 +594,6 @@ fn render_background(display: &mut Display, game: &mut Game) {
                                      map_pos,
                                      Color::white());
                 } else {
-                    let color = tile_color(&game.config, x, y, tile, visible);
                     sprite.draw_char(&mut panel, MAP_EMPTY_CHAR as char, map_pos, Color::white());
                 }
             }
@@ -645,14 +642,12 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
                 game.data.pos_in_fov(player_id, pos, &game.config) ||
                 game.settings.god_mode;
 
-            let explored = game.data.map[pos].explored || visible;
-
             let tile = game.data.map[pos];
 
             let chr = tile.chr;
 
             // if the tile is not empty or water, draw it
-            let color = tile_color(&game.config, x, y, &tile, visible);
+            //let color = tile_color(&game.config, x, y, &tile, visible);
             if tile.tile_type == TileType::Water {
                 sprite.draw_char(panel, MAP_WATER as char, pos, Color::white());
             } else if chr != MAP_EMPTY_CHAR {

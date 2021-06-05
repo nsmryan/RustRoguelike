@@ -439,6 +439,7 @@ pub enum Trap {
 pub enum Skill {
     GrassThrow,
     GrassBlade,
+    GrassShoes,
     Blink,
     PassWall,
     Rubble,

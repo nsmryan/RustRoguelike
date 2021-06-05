@@ -8,7 +8,6 @@ use crate::movement::*;
 use crate::messaging::*;
 use crate::utils::*;
 use crate::config::Config;
-use crate::map::{BlockedType};
 use crate::map::Wall;
 
 

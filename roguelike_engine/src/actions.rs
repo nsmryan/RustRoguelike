@@ -326,6 +326,7 @@ pub fn handle_input_skill_menu(input: InputAction,
 
         InputAction::SelectItem(skill_index) => {
             handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, data, settings, msg_log, config);
+            change_state(settings, GameState::Playing);
         }
 
         InputAction::Esc => {
@@ -631,7 +632,8 @@ pub fn handle_skill(skill_index: usize,
         }
 
         ActionLoc::None => {
-            return;
+            //NOTE this used to return, but now uses current position.
+            skill_pos = data.entities.pos[&player_id];
         }
     }
 
@@ -652,6 +654,10 @@ pub fn handle_skill(skill_index: usize,
 
         Skill::Blink => {
             msg_log.log(Msg::Blink(player_id));
+        }
+
+        Skill::GrassShoes => {
+            msg_log.log(Msg::GrassShoes(player_id, action_mode));
         }
 
         Skill::PassWall => {

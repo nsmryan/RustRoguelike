@@ -67,7 +67,9 @@ pub fn resolve_messages(data: &mut GameData,
 
 
             Msg::Blink(entity_id) => {
-                resolve_blink(entity_id, data, rng, msg_log);
+                if use_energy(entity_id, data) {
+                    resolve_blink(entity_id, data, rng, msg_log);
+                }
             }
 
             Msg::Pushed(pusher, pushed, direction, push_amount, move_into) => {
@@ -192,6 +194,7 @@ pub fn resolve_messages(data: &mut GameData,
                         data.entities.class[&player_id] = class;
                         data.entities.add_skill(player_id, Skill::GrassThrow);
                         data.entities.add_skill(player_id, Skill::GrassBlade);
+                        data.entities.add_skill(player_id, Skill::GrassShoes);
                     }
 
                     EntityClass::Clockwork => {
@@ -230,15 +233,26 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::GrassThrow(entity_id, direction) => {
-                use_energy(entity_id, data);
+                if use_energy(entity_id, data) {
 
-                let pos = data.entities.pos[&entity_id];
+                    let pos = data.entities.pos[&entity_id];
 
-                let grass_pos = direction.offset_pos(pos, 1);
-                if data.map[grass_pos].tile_type == TileType::Empty {
-                    data.map[grass_pos].surface = Surface::Grass;
+                    let grass_pos = direction.offset_pos(pos, 1);
+                    if data.map[grass_pos].tile_type == TileType::Empty {
+                        data.map[grass_pos].surface = Surface::Grass;
+                    }
+                    data.entities.took_turn[&entity_id] = true;
                 }
-                data.entities.took_turn[&entity_id] = true;
+            }
+
+            Msg::GrassShoes(entity_id, _action_mode) => {
+                if use_energy(entity_id, data) {
+                    let pos = data.entities.pos[&entity_id];
+                    if data.map[pos].surface == Surface::Grass {
+                        data.map[pos].surface = Surface::Floor;
+                    }
+                    data.entities.took_turn[&entity_id] = true;
+                }
             }
 
             Msg::Rubble(entity_id, rubble_pos) => {
@@ -247,60 +261,64 @@ pub fn resolve_messages(data: &mut GameData,
 
                 if let Some(blocked) = blocked {
                     if data.has_blocking_entity(rubble_pos).is_none() {
-                        resolve_rubble(entity_id, blocked, data, msg_log);
+                        if use_energy(entity_id, data) {
+                            resolve_rubble(entity_id, blocked, data, msg_log);
+                        }
                     }
                 }
             }
 
             Msg::GrassBlade(entity_id, action_mode) => {
-                use_energy(entity_id, data);
+                if use_energy(entity_id, data) {
 
-                let pos = data.entities.pos[&entity_id];
+                    let pos = data.entities.pos[&entity_id];
 
-                let item_id;
-                match action_mode {
-                    ActionMode::Primary => {
-                        item_id = make_sword(&mut data.entities, config, pos, msg_log);
+                    let item_id;
+                    match action_mode {
+                        ActionMode::Primary => {
+                            item_id = make_sword(&mut data.entities, config, pos, msg_log);
+                        }
+
+                        ActionMode::Alternate => {
+                            item_id = make_dagger(&mut data.entities, config, pos, msg_log);
+                        }
                     }
 
-                    ActionMode::Alternate => {
-                        item_id = make_dagger(&mut data.entities, config, pos, msg_log);
-                    }
+                    data.entities.pick_up_item(entity_id, item_id);
+                    data.entities.took_turn[&entity_id] = true;
                 }
-
-                data.entities.pick_up_item(entity_id, item_id);
-                data.entities.took_turn[&entity_id] = true;
             }
 
             Msg::Reform(entity_id, pos) => {
                 if data.map[pos].surface == Surface::Rubble &&
                    data.has_blocking_entity(pos).is_none() {
-                    use_energy(entity_id, data);
-
-                    data.map[pos].surface = Surface::Floor;
-                    data.map[pos].block_move = true;
-                    data.map[pos].chr = MAP_WALL;
-                    data.entities.took_turn[&entity_id] = true;
+                    if use_energy(entity_id, data) {
+                        data.map[pos].surface = Surface::Floor;
+                        data.map[pos].block_move = true;
+                        data.map[pos].chr = MAP_WALL;
+                        data.entities.took_turn[&entity_id] = true;
+                    }
                 }
             }
 
             Msg::Swap(entity_id, target_id) => {
-                use_energy(entity_id, data);
+                if use_energy(entity_id, data) {
 
-                let start_pos = data.entities.pos[&entity_id];
-                let end_pos = data.entities.pos[&target_id];
-                data.entities.move_to(entity_id, end_pos);
-                data.entities.move_to(target_id, start_pos);
+                    let start_pos = data.entities.pos[&entity_id];
+                    let end_pos = data.entities.pos[&target_id];
+                    data.entities.move_to(entity_id, end_pos);
+                    data.entities.move_to(target_id, start_pos);
 
-                data.entities.took_turn[&entity_id] = true;
+                    data.entities.took_turn[&entity_id] = true;
+                }
             }
 
             Msg::PassWall(entity_id, pos) => {
-                use_energy(entity_id, data);
+                if use_energy(entity_id, data) {
+                    data.entities.move_to(entity_id, pos);
 
-                data.entities.move_to(entity_id, pos);
-
-                data.entities.took_turn[&entity_id] = true;
+                    data.entities.took_turn[&entity_id] = true;
+                }
             }
 
             Msg::UseItem(entity_id, pos, item_id) => {
@@ -319,8 +337,9 @@ pub fn resolve_messages(data: &mut GameData,
 
 
             Msg::Push(entity_id, direction, amount) => {
-                use_energy(entity_id, data);
-                resolve_push(entity_id, direction, amount, data, msg_log);
+                if use_energy(entity_id, data) {
+                    resolve_push(entity_id, direction, amount, data, msg_log);
+                }
             }
 
             Msg::FaceTowards(entity_id, pos) => {
@@ -612,8 +631,6 @@ fn resolve_push(entity_id: EntityId,
 }
 
 fn resolve_blink(entity_id: EntityId, data: &mut GameData, rng: &mut Rand32, msg_log: &mut MsgLog) {
-    use_energy(entity_id, data);
-
     let entity_pos = data.entities.pos[&entity_id];
 
     if let Some(blink_pos) = find_blink_pos(entity_pos, rng, data) {
@@ -626,8 +643,6 @@ fn resolve_blink(entity_id: EntityId, data: &mut GameData, rng: &mut Rand32, msg
 }
 
 fn resolve_rubble(entity_id: EntityId, blocked: Blocked, data: &mut GameData, _msg_log: &mut MsgLog) {
-    use_energy(entity_id, data);
-
     let entity_pos = data.entities.pos[&entity_id];
 
     data.map[blocked.end_pos].surface = Surface::Rubble;
@@ -828,26 +843,32 @@ fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut Msg
     msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_crushed, true));
 }
 
-fn use_energy(entity_id: EntityId, data: &mut GameData) {
+fn use_energy(entity_id: EntityId, data: &mut GameData) -> bool {
     let pos = data.entities.pos[&entity_id];
 
     let class = data.entities.class[&entity_id];
     //let skill_class = data.entities.skill[&entit_id].class();
 
     // NOTE this uses the entity's class, not the skill's class
+    let mut enough_energy: bool = false;
     match class {
         EntityClass::General => {
-            data.entities.energy[&entity_id] -= 1;
+            if data.entities.energy[&entity_id] > 0 {
+                enough_energy = true;
+                data.entities.energy[&entity_id] -= 1;
+            }
         }
 
         EntityClass::Grass => {
             if data.map[pos].surface == Surface::Grass {
+                enough_energy = true;
                 data.map[pos].surface = Surface::Floor;
             }
         }
 
         EntityClass::Monolith => {
             if data.map[pos].surface == Surface::Rubble {
+                enough_energy = true;
                 data.map[pos].surface = Surface::Floor;
             }
         }
@@ -855,6 +876,8 @@ fn use_energy(entity_id: EntityId, data: &mut GameData) {
         EntityClass::Clockwork => {
         }
     }
+
+    return enough_energy;
 }
 
 fn pick_item_up(entity_id: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
@@ -1191,7 +1214,7 @@ fn resolve_ai_attack(entity_id: EntityId,
     if data.entities.is_dead(target_id) {
         data.entities.took_turn[&entity_id] = true;
         msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
-    } else if let Some(hit_pos) = can_hit_target {
+    } else if let Some(_hit_pos) = can_hit_target {
         let attack_info = Attack::Attack(target_id);
         msg_log.log(Msg::TryAttack(entity_id, attack_info, target_pos));
     } else if !ai_is_in_fov(entity_id, target_id, data, config) {

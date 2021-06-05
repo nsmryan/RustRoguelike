@@ -14,8 +14,6 @@ use std::str::FromStr;
 use std::thread;
 use std::sync::mpsc::{self, Receiver};
 
-use sdl2::EventPump;
-
 use log::LevelFilter;
 use simple_logging;
 use logging_timer::timer;
@@ -39,7 +37,6 @@ use roguelike_lib::commands::*;
 use crate::throttler::*;
 use crate::render::*;
 use crate::display::*;
-use crate::keyboard::*;
 use crate::load::*;
 use crate::replay::*;
 

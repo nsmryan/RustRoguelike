@@ -15,7 +15,7 @@ use crate::game::*;
 use crate::actions::*;
 
 
-const TARGET_CODES: &[char] = &['z', 'x', 'c', 'v', 'b'];
+const TARGET_CODES: &[char] = &['z', 'x', 'c', 'v', 'b', 'n'];
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum KeyDir {
@@ -209,6 +209,8 @@ impl Input {
                                 } else {
                                     // target keys don't do anything outside of cursor mode,
                                     // so just return here.
+                                    // NOTE should we still allow skills, but only ones that make
+                                    // sense with no location?
                                     return InputAction::None;
                                 }
                             }

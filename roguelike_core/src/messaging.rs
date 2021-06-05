@@ -59,6 +59,7 @@ pub enum Msg {
     SwapPrimaryItem,
     DropItem(EntityId, EntityId), // entity, item
     GrassThrow(EntityId, Direction),
+    GrassShoes(EntityId, ActionMode),
     GrassBlade(EntityId, ActionMode),
     Rubble(EntityId, Pos),
     Reform(EntityId, Pos),
@@ -135,6 +136,7 @@ impl fmt::Display for Msg {
             Msg::SwapPrimaryItem => write!(f, "swap_primary_item"),
             Msg::DropItem(entity_id, item_id) => write!(f, "drop_item {} {}", entity_id, item_id),
             Msg::GrassThrow(entity_id, direction) => write!(f, "grass_throw {} {}", entity_id, direction),
+            Msg::GrassShoes(entity_id, action_mode) => write!(f, "grass_shoes {} {}", entity_id, action_mode),
             Msg::GrassBlade(entity_id, action_mode) => write!(f, "grass_blade {} {}", entity_id, action_mode),
             Msg::Rubble(entity_id, pos) => write!(f, "rubble {} {} {}", entity_id, pos.x, pos.y),
             Msg::Reform(entity_id, pos) => write!(f, "reform {} {} {}", entity_id, pos.x, pos.y),
@@ -363,6 +365,10 @@ impl Msg {
 
             Msg::GrassThrow(entity_id, direction) => {
                 return format!("{:?} threw grass {}", data.entities.name[entity_id], direction);
+            }
+
+            Msg::GrassShoes(entity_id, _action_mode) => {
+                return format!("{:?} used grass shoes", data.entities.name[entity_id]);
             }
 
             Msg::GrassBlade(entity_id, _action_mode) => {
