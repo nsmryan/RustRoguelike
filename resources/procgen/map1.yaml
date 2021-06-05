@@ -37,8 +37,12 @@
     - Shield
     - 0
     - 1
+- Items: 
+    - Lantern
+    - 5
+    - 10
 # MaxItems limits the number of items that can appear of any type
-- MaxItems: 3
+- MaxItems: 5
 
 - Traps: 
     - Spikes

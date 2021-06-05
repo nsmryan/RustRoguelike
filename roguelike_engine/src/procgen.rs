@@ -337,6 +337,8 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
                     Item::Sword => { make_sword(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                     Item::Shield => { make_shield(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                     Item::Hammer => { make_hammer(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    Item::Stone => { make_stone(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    Item::Lantern => { make_lantern(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                     _ => {},
                 }
             }

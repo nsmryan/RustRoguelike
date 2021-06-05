@@ -43,6 +43,9 @@ pub const NOT_IN_FOV_COST: usize = 5;
 /* Skill Settings */
 pub const SKILL_GRASS_SHOES_TURNS: usize = 6;
 
+/* Item Settings */
+pub const LANTERN_ILLUMINATE_RADIUS: usize = 2;
+
 /* Trap Settings */
 pub const FREEZE_TRAP_NUM_TURNS: usize = 3;
 
@@ -138,6 +141,7 @@ pub const ENTITY_DAGGER: u8 = 247;
 pub const ENTITY_SWORD: u8 = 248;
 pub const ENTITY_SHIELD: u8 = 255;
 pub const ENTITY_HAMMER: u8 = 251;
+pub const ENTITY_LANTERN: u8 = 134;
 
 /* Entities */
 pub const ENTITY_GOL: u8 = 152;

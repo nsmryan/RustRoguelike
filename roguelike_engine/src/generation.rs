@@ -269,6 +269,19 @@ pub fn make_stone(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
     return stone;
 }
 
+pub fn make_lantern(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let lantern = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_LANTERN as char, Color::white(), EntityName::Lantern, true);
+
+    entities.item.insert(lantern,  Item::Lantern);
+    entities.status[&lantern].illuminate = LANTERN_ILLUMINATE_RADIUS;
+    entities.status[&lantern].alive = false;
+    entities.blocks.insert(lantern,  false);
+
+    msg_log.log(Msg::SpawnedObject(lantern, entities.typ[&lantern], pos, EntityName::Lantern, entities.direction[&lantern]));
+
+    return lantern;
+}
+
 pub fn make_item(entities: &mut Entities, config: &Config, item: Item, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     return make_entity(entities, config, item.name(), pos, msg_log);
 }

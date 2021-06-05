@@ -1064,6 +1064,10 @@ fn use_item(entity_id: EntityId,
             msg_log.log(Msg::SwordSwing(entity_id, pos));
         }
 
+        Item::Lantern => {
+            data.entities.pos[&item_id] = pos;
+        }
+
         Item::SpikeTrap => {
             place_trap(item_id, pos, data);
             data.entities.took_turn[&entity_id] = true;

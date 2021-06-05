@@ -116,8 +116,24 @@ impl GameData {
         return result;
     }
 
-    // NOTE duplicate code with pos_in_fov
     pub fn is_in_fov(&self, entity_id: EntityId, other_id: EntityId, config: &Config) -> bool {
+        let stance = self.entities.stance[&entity_id];
+        let other_stance = self.entities.stance.get(&other_id).unwrap_or(&Stance::Standing);
+        let crouching = stance == Stance::Crouching || other_stance == &Stance::Crouching;
+
+        let other_pos = self.entities.pos[&other_id];
+
+        return self.fov_check(entity_id, other_pos, crouching, config);
+    }
+
+    pub fn pos_in_fov(&self, entity_id: EntityId, other_pos: Pos, config: &Config) -> bool {
+        let stance = self.entities.stance[&entity_id];
+        let crouching = stance == Stance::Crouching;
+
+        return self.fov_check(entity_id, other_pos, crouching, config);
+    }
+
+    fn fov_check(&self, entity_id: EntityId, other_pos: Pos, crouching: bool, config: &Config) -> bool {
         let pos = self.entities.pos[&entity_id];
 
         let radius: i32 = match self.entities.typ[&entity_id] {
@@ -126,40 +142,28 @@ impl GameData {
             _ => return false, // other things have no FOV
         };
 
-        let stance = self.entities.stance[&entity_id];
-        let other_stance = self.entities.stance.get(&other_id).unwrap_or(&Stance::Standing);
-        let crouching = stance == Stance::Crouching || other_stance == &Stance::Crouching;
-
-        let other_pos = self.entities.pos[&other_id];
         if self.entities.typ[&entity_id] == EntityType::Player {
-            return self.map.is_in_fov(pos, other_pos, radius, crouching);
+            let mut can_see = self.map.is_in_fov(pos, other_pos, radius, crouching);
+
+            for id in self.entities.ids.iter() {
+                if can_see {
+                    break;
+                }
+
+                if self.entities.status[id].illuminate != 0 && self.entities.pos[id].x >= 0 {
+                    let illuminate_pos = self.entities.pos[id];
+                    let illuminate_radius = self.entities.status[id].illuminate as i32;
+                    can_see |= self.map.is_in_fov(illuminate_pos, other_pos, illuminate_radius, crouching);
+                }
+            }
+
+            return can_see;
         } else {
             if let Some(dir) = self.entities.direction.get(&entity_id) {
                 return self.map.is_in_fov_direction(pos, other_pos, radius, *dir, crouching);
             } else {
                 panic!(format!("tried to perform is_in_fov on entity without facing"));
             }
-        }
-    }
-
-    pub fn pos_in_fov(&self, entity_id: EntityId, other_pos: Pos, config: &Config) -> bool {
-        let pos = self.entities.pos[&entity_id];
-
-        let radius: i32 = match self.entities.typ[&entity_id] {
-            EntityType::Enemy => config.fov_radius_monster,
-            EntityType::Player => config.fov_radius_player,
-            _ => return false, // other things have no FOV
-        };
-
-        let stance = self.entities.stance[&entity_id];
-        let crouching = stance == Stance::Crouching;
-
-        if self.entities.typ[&entity_id] == EntityType::Player {
-            return self.map.is_in_fov(pos, other_pos, radius, crouching);
-        } else {
-            let dir = self.entities.direction.get(&entity_id)
-                          .expect("tried to perform is_in_fov on entity without facing");
-            return self.map.is_in_fov_direction(pos, other_pos, radius, *dir, crouching);
         }
     }
 
@@ -556,6 +560,7 @@ pub enum Item {
     Shield,
     Hammer,
     Sword,
+    Lantern,
     SpikeTrap,
     SoundTrap,
     BlinkTrap,
@@ -571,6 +576,7 @@ impl fmt::Display for Item {
             Item::Shield => write!(f, "shield"),
             Item::Hammer => write!(f, "hammer"),
             Item::Sword => write!(f, "sword"),
+            Item::Lantern => write!(f, "lantern"),
             Item::SpikeTrap => write!(f, "spiketrap"),
             Item::SoundTrap => write!(f, "soundtrap"),
             Item::BlinkTrap => write!(f, "blinktrap"),
@@ -620,6 +626,7 @@ impl Item {
             Item::Shield => ItemClass::Primary,
             Item::Hammer => ItemClass::Primary,
             Item::Sword => ItemClass::Primary,
+            Item::Lantern => ItemClass::Secondary,
             Item::SpikeTrap => ItemClass::Secondary,
             Item::SoundTrap => ItemClass::Secondary,
             Item::BlinkTrap => ItemClass::Secondary,
@@ -635,6 +642,7 @@ impl Item {
             Item::Shield => EntityName::Shield,
             Item::Hammer => EntityName::Hammer,
             Item::Sword => EntityName::Sword,
+            Item::Lantern => EntityName::Lantern,
             Item::SpikeTrap => EntityName::SpikeTrap,
             Item::SoundTrap => EntityName::SoundTrap,
             Item::BlinkTrap => EntityName::BlinkTrap,
@@ -701,6 +709,7 @@ pub enum EntityName {
     Hammer,
     Sword,
     Shield,
+    Lantern,
     Spire,
     SpikeTrap,
     BlinkTrap,
@@ -732,6 +741,7 @@ impl fmt::Display for EntityName {
             EntityName::Dagger => write!(f, "dagger"),
             EntityName::Hammer => write!(f, "hammer"),
             EntityName::Sword => write!(f, "sword"),
+            EntityName::Lantern => write!(f, "lantern"),
             EntityName::Shield => write!(f, "shield"),
             EntityName::Spire => write!(f, "spire"),
             EntityName::SpikeTrap => write!(f, "spiketrap"),
@@ -773,6 +783,8 @@ impl FromStr for EntityName {
             return Ok(EntityName::Hammer);
         } else if s == "sword" {
             return Ok(EntityName::Sword);
+        } else if s == "lantern" {
+            return Ok(EntityName::Lantern);
         } else if s == "shield" {
             return Ok(EntityName::Shield);
         } else if s == "spire" {
@@ -898,6 +910,7 @@ impl EntityClass {
 pub struct StatusEffect {
     pub frozen: usize, // turns
     pub soft_steps: usize, // turns
+    pub illuminate: usize, // radius
     pub active: bool,
     pub alive: bool,
 }
