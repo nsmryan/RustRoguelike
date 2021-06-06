@@ -451,6 +451,7 @@ pub enum Skill {
     Swap,
     Push,
     Illuminate,
+    Heal,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Default)]

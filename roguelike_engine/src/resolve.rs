@@ -205,6 +205,7 @@ pub fn resolve_messages(data: &mut GameData,
                     EntityClass::Hierophant => {
                         data.entities.class[&player_id] = class;
                         data.entities.add_skill(player_id, Skill::Illuminate);
+                        data.entities.add_skill(player_id, Skill::Heal);
                     }
                 }
             }
@@ -262,6 +263,16 @@ pub fn resolve_messages(data: &mut GameData,
                     let entity_pos = data.entities.pos[&entity_id];
                     let light = make_light(&mut data.entities, config, entity_pos, msg_log);
                     data.entities.status[&light].illuminate = amount;
+
+                    data.entities.took_turn[&entity_id] = true;
+                }
+            }
+
+            Msg::Heal(entity_id, amount) => {
+                if use_energy(entity_id, data) {
+                    data.entities.fighter[&entity_id].hp = 
+                        std::cmp::min(data.entities.fighter[&entity_id].max_hp,
+                                      data.entities.fighter[&entity_id].hp + amount as i32);
 
                     data.entities.took_turn[&entity_id] = true;
                 }
