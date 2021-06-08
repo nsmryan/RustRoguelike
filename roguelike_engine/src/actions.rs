@@ -721,6 +721,10 @@ pub fn handle_skill(skill_index: usize,
         Skill::Heal => {
             msg_log.log(Msg::Heal(player_id, SKILL_HEAL_AMOUNT));
         }
+
+        Skill::FarSight => {
+            msg_log.log(Msg::FarSight(player_id, SKILL_FARSIGHT_FOV_AMOUNT));
+        }
     }
 }
 

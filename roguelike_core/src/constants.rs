@@ -44,6 +44,7 @@ pub const NOT_IN_FOV_COST: usize = 5;
 pub const SKILL_GRASS_SHOES_TURNS: usize = 6;
 pub const SKILL_ILLUMINATE_RADIUS: usize = LANTERN_ILLUMINATE_RADIUS;
 pub const SKILL_HEAL_AMOUNT: usize = LANTERN_ILLUMINATE_RADIUS;
+pub const SKILL_FARSIGHT_FOV_AMOUNT: usize = 1;
 
 /* Item Settings */
 pub const LANTERN_ILLUMINATE_RADIUS: usize = 2;

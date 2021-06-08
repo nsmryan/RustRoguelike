@@ -116,6 +116,20 @@ impl GameData {
         return result;
     }
 
+    pub fn fov_radius(&self, entity_id: EntityId, config: &Config) -> i32 {
+        let mut radius: i32 = match self.entities.typ[&entity_id] {
+            EntityType::Enemy => config.fov_radius_monster,
+            EntityType::Player => config.fov_radius_player,
+            _ => panic!("{} does not have a FOV radius!", self.entities.name[&entity_id]),
+        };
+
+        if let Some(status) = self.entities.status.get(&entity_id) {
+            radius += status.extra_fov as i32;
+        }
+
+        return radius;
+    }
+
     pub fn is_in_fov(&self, entity_id: EntityId, other_id: EntityId, config: &Config) -> bool {
         let stance = self.entities.stance[&entity_id];
         let other_stance = self.entities.stance.get(&other_id).unwrap_or(&Stance::Standing);
@@ -136,11 +150,7 @@ impl GameData {
     fn fov_check(&self, entity_id: EntityId, other_pos: Pos, crouching: bool, config: &Config) -> bool {
         let pos = self.entities.pos[&entity_id];
 
-        let radius: i32 = match self.entities.typ[&entity_id] {
-            EntityType::Enemy => config.fov_radius_monster,
-            EntityType::Player => config.fov_radius_player,
-            _ => return false, // other things have no FOV
-        };
+        let radius: i32 = self.fov_radius(entity_id, config);
 
         if self.entities.typ[&entity_id] == EntityType::Player {
             let mut can_see = self.map.is_in_fov(pos, other_pos, radius, crouching);
@@ -452,6 +462,7 @@ pub enum Skill {
     Push,
     Illuminate,
     Heal,
+    FarSight,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Default)]
@@ -915,6 +926,7 @@ pub struct StatusEffect {
     pub frozen: usize, // turns
     pub soft_steps: usize, // turns
     pub illuminate: usize, // radius
+    pub extra_fov: usize, // amount
     pub active: bool,
     pub alive: bool,
 }

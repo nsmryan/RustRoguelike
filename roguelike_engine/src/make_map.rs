@@ -199,7 +199,7 @@ pub fn read_map_xp(config: &Config,
                             MAP_GROUND => {
                             }
 
-                            MAP_WATER | MAP_WATER_XP => {
+                            MAP_WATER => {
                                 data.map[pos] = Tile::water();
                                 data.map[pos].chr = MAP_WATER;
                             }

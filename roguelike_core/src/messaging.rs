@@ -63,6 +63,7 @@ pub enum Msg {
     GrassBlade(EntityId, ActionMode),
     Illuminate(EntityId, usize), // entity, amount
     Heal(EntityId, usize), // entity, amount
+    FarSight(EntityId, usize), // entity, amount
     Rubble(EntityId, Pos),
     Reform(EntityId, Pos),
     Swap(EntityId, EntityId), // casting entity, entity to swap with
@@ -142,6 +143,7 @@ impl fmt::Display for Msg {
             Msg::GrassBlade(entity_id, action_mode) => write!(f, "grass_blade {} {}", entity_id, action_mode),
             Msg::Illuminate(entity_id, amount) => write!(f, "illuminate {} {}", entity_id, amount),
             Msg::Heal(entity_id, amount) => write!(f, "heal {} {}", entity_id, amount),
+            Msg::FarSight(entity_id, amount) => write!(f, "farsight {} {}", entity_id, amount),
             Msg::Rubble(entity_id, pos) => write!(f, "rubble {} {} {}", entity_id, pos.x, pos.y),
             Msg::Reform(entity_id, pos) => write!(f, "reform {} {} {}", entity_id, pos.x, pos.y),
             Msg::Swap(entity_id, target_id) => write!(f, "swap {} {}", entity_id, target_id),
@@ -386,6 +388,11 @@ impl Msg {
             Msg::Heal(entity_id, amount) => {
                 return format!("{:?} healed by {}", data.entities.name[entity_id], amount);
             }
+
+            Msg::FarSight(entity_id, amount) => {
+                return format!("{:?} has farsight ({})", data.entities.name[entity_id], amount);
+            }
+
             Msg::Rubble(entity_id, pos) => {
                 return format!("{:?} turned a wall to rubble at {}", data.entities.name[entity_id], pos);
             }

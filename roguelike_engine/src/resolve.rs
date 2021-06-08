@@ -206,6 +206,7 @@ pub fn resolve_messages(data: &mut GameData,
                         data.entities.class[&player_id] = class;
                         data.entities.add_skill(player_id, Skill::Illuminate);
                         data.entities.add_skill(player_id, Skill::Heal);
+                        data.entities.add_skill(player_id, Skill::FarSight);
                     }
                 }
             }
@@ -274,6 +275,13 @@ pub fn resolve_messages(data: &mut GameData,
                         std::cmp::min(data.entities.fighter[&entity_id].max_hp,
                                       data.entities.fighter[&entity_id].hp + amount as i32);
 
+                    data.entities.took_turn[&entity_id] = true;
+                }
+            }
+
+            Msg::FarSight(entity_id, amount) => {
+                if use_energy(entity_id, data) {
+                    data.entities.status[&entity_id].extra_fov += amount;
                     data.entities.took_turn[&entity_id] = true;
                 }
             }
