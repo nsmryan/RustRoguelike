@@ -369,7 +369,7 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::Push(entity_id, direction, amount) => {
                 if use_energy(entity_id, data) {
-                    resolve_push(entity_id, direction, amount, data, msg_log);
+                    resolve_push_skill(entity_id, direction, amount, data, msg_log);
                 }
             }
 
@@ -642,11 +642,11 @@ fn resolve_try_movement(entity_id: EntityId,
     }
 }
 
-fn resolve_push(entity_id: EntityId,
-                direction: Direction,
-                amount: usize,
-                data: &mut GameData,
-                msg_log: &mut MsgLog) {
+fn resolve_push_skill(entity_id: EntityId,
+                      direction: Direction,
+                      amount: usize,
+                      data: &mut GameData,
+                      msg_log: &mut MsgLog) {
     let pos = data.entities.pos[&entity_id];
 
     let push_pos = direction.offset_pos(pos, 1);
@@ -656,6 +656,7 @@ fn resolve_push(entity_id: EntityId,
             let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
             let move_into = false;
             msg_log.log(Msg::Pushed(entity_id, other_id, direction, amount, move_into));
+            msg_log.log(Msg::Froze(other_id, SKILL_PUSH_STUN_TURNS));
         }
     }
     data.entities.took_turn[&entity_id] = true;
@@ -916,6 +917,10 @@ fn use_energy(entity_id: EntityId, data: &mut GameData) -> bool {
         }
 
         EntityClass::Clockwork => {
+            if data.entities.energy[&entity_id] > 0 {
+                enough_energy = true;
+                data.entities.energy[&entity_id] -= 1;
+            }
         }
 
         EntityClass::Hierophant => {
