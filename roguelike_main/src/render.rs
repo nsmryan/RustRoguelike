@@ -462,7 +462,7 @@ fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
 
 fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     // Render header
-    render_placard(panel, display_state, "Choice Class", &game.config);
+    render_placard(panel, display_state, "Choose Class", &game.config);
 
     let mut list = Vec::new();
 

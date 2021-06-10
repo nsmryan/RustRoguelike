@@ -15,7 +15,7 @@ use crate::game::*;
 use crate::actions::*;
 
 
-const TARGET_CODES: &[char] = &['z', 'x', 'c', 'v', 'b', 'n'];
+const TARGET_CODES: &[char] = &['z', 'x', 'c', 'a', 's', 'd'];
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum KeyDir {
@@ -377,7 +377,7 @@ pub fn alpha_up_to_action(chr: char) -> InputAction {
             input_action = InputAction::OverlayOff;
         }
 
-        's' => {
+        'j' => {
             input_action = InputAction::SkillMenu;
         }
 
