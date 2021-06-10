@@ -155,6 +155,7 @@ pub const ENTITY_PLAYER: u8 = 139;
 pub const ENTITY_CLOAK_GUY: u8 = 141;
 pub const ENTITY_ELF: u8 = 165;
 pub const ENTITY_UNKNOWN: u8 = 239;
+pub const ENTITY_ENERGY: u8 = 6;
 
 /* Map Objects */
 pub const ENTITY_EXIT: u8 = 135;

@@ -64,7 +64,7 @@ pub fn make_column(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
     return object;
 }
 pub fn make_energy(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let object = entities.create_entity(pos.x, pos.y, EntityType::Energy, ENTITY_BLINK_TRAP as char, Color::white(), EntityName::Energy, false);
+    let object = entities.create_entity(pos.x, pos.y, EntityType::Energy, ENTITY_ENERGY as char, Color::white(), EntityName::Energy, false);
 
     msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Energy, entities.direction[&object]));
 
