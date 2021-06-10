@@ -715,7 +715,7 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::Illuminate => {
-            msg_log.log(Msg::Illuminate(player_id, ILLUMINATE_AMOUNT));
+            msg_log.log(Msg::Illuminate(player_id, skill_pos, ILLUMINATE_AMOUNT));
         }
 
         Skill::Heal => {

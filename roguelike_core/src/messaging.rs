@@ -61,7 +61,7 @@ pub enum Msg {
     GrassThrow(EntityId, Direction),
     GrassShoes(EntityId, ActionMode),
     GrassBlade(EntityId, ActionMode),
-    Illuminate(EntityId, usize), // entity, amount
+    Illuminate(EntityId, Pos, usize), // entity, position, amount
     Heal(EntityId, usize), // entity, amount
     FarSight(EntityId, usize), // entity, amount
     Sprint(EntityId, Direction, usize), // entity, direction, amount
@@ -142,7 +142,7 @@ impl fmt::Display for Msg {
             Msg::GrassThrow(entity_id, direction) => write!(f, "grass_throw {} {}", entity_id, direction),
             Msg::GrassShoes(entity_id, action_mode) => write!(f, "grass_shoes {} {}", entity_id, action_mode),
             Msg::GrassBlade(entity_id, action_mode) => write!(f, "grass_blade {} {}", entity_id, action_mode),
-            Msg::Illuminate(entity_id, amount) => write!(f, "illuminate {} {}", entity_id, amount),
+            Msg::Illuminate(entity_id, pos, amount) => write!(f, "illuminate {} {} {} {}", entity_id, pos.x, pos.y, amount),
             Msg::Heal(entity_id, amount) => write!(f, "heal {} {}", entity_id, amount),
             Msg::FarSight(entity_id, amount) => write!(f, "farsight {} {}", entity_id, amount),
             Msg::Sprint(entity_id, direction, amount) => write!(f, "sprint {} {} {}", entity_id, direction, amount),
@@ -383,7 +383,7 @@ impl Msg {
                 return format!("{:?} used grass blade", data.entities.name[entity_id]);
             }
 
-            Msg::Illuminate(entity_id, _amount) => {
+            Msg::Illuminate(entity_id, _pos, _amount) => {
                 return format!("{:?} illuminated their surroundings", data.entities.name[entity_id]);
             }
 

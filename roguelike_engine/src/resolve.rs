@@ -262,10 +262,10 @@ pub fn resolve_messages(data: &mut GameData,
                 }
             }
 
-            Msg::Illuminate(entity_id, amount) => {
+            Msg::Illuminate(entity_id, pos, amount) => {
                 if use_energy(entity_id, data) {
                     let entity_pos = data.entities.pos[&entity_id];
-                    let light = make_light(&mut data.entities, config, entity_pos, msg_log);
+                    let light = make_light(&mut data.entities, config, pos, msg_log);
                     data.entities.status[&light].illuminate = amount;
 
                     data.entities.took_turn[&entity_id] = true;
@@ -950,8 +950,6 @@ fn pick_item_up(entity_id: EntityId, data: &mut GameData, msg_log: &mut MsgLog) 
     if let Some(item_id) = data.item_at_pos(entity_pos) {
         data.entities.pick_up_item(entity_id, item_id);
         msg_log.log(Msg::PickedUp(entity_id, item_id));
-
-        data.entities.took_turn[&entity_id] = true;
     }
 }
 
