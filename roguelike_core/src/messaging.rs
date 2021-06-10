@@ -64,6 +64,7 @@ pub enum Msg {
     Illuminate(EntityId, usize), // entity, amount
     Heal(EntityId, usize), // entity, amount
     FarSight(EntityId, usize), // entity, amount
+    Sprint(EntityId, Direction, usize), // entity, direction, amount
     Rubble(EntityId, Pos),
     Reform(EntityId, Pos),
     Swap(EntityId, EntityId), // casting entity, entity to swap with
@@ -144,6 +145,7 @@ impl fmt::Display for Msg {
             Msg::Illuminate(entity_id, amount) => write!(f, "illuminate {} {}", entity_id, amount),
             Msg::Heal(entity_id, amount) => write!(f, "heal {} {}", entity_id, amount),
             Msg::FarSight(entity_id, amount) => write!(f, "farsight {} {}", entity_id, amount),
+            Msg::Sprint(entity_id, direction, amount) => write!(f, "sprint {} {} {}", entity_id, direction, amount),
             Msg::Rubble(entity_id, pos) => write!(f, "rubble {} {} {}", entity_id, pos.x, pos.y),
             Msg::Reform(entity_id, pos) => write!(f, "reform {} {} {}", entity_id, pos.x, pos.y),
             Msg::Swap(entity_id, target_id) => write!(f, "swap {} {}", entity_id, target_id),
@@ -391,6 +393,10 @@ impl Msg {
 
             Msg::FarSight(entity_id, amount) => {
                 return format!("{:?} has farsight ({})", data.entities.name[entity_id], amount);
+            }
+
+            Msg::Sprint(entity_id, direction, amount) => {
+                return format!("{:?} has sprinted!", data.entities.name[entity_id]);
             }
 
             Msg::Rubble(entity_id, pos) => {

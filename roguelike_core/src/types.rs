@@ -463,6 +463,7 @@ pub enum Skill {
     Illuminate,
     Heal,
     FarSight,
+    Sprint,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Default)]

@@ -177,10 +177,13 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::AddClass(class) => {
+                data.entities.skills[&player_id].clear();
+
                 match class {
                     EntityClass::General => {
                         data.entities.class[&player_id] = class;
                         data.entities.add_skill(player_id, Skill::Blink);
+                        data.entities.add_skill(player_id, Skill::Sprint);
                     }
 
                     EntityClass::Monolith => {
@@ -282,6 +285,13 @@ pub fn resolve_messages(data: &mut GameData,
             Msg::FarSight(entity_id, amount) => {
                 if use_energy(entity_id, data) {
                     data.entities.status[&entity_id].extra_fov += amount;
+                    data.entities.took_turn[&entity_id] = true;
+                }
+            }
+
+            Msg::Sprint(entity_id, direction, amount) => {
+                if use_energy(entity_id, data) {
+                    msg_log.log(Msg::TryMove(entity_id, direction, amount, MoveMode::Run));
                     data.entities.took_turn[&entity_id] = true;
                 }
             }

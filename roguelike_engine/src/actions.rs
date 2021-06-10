@@ -637,12 +637,14 @@ pub fn handle_skill(skill_index: usize,
         }
     }
 
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = data.entities.pos[&player_id];
+    let dxy = sub_pos(skill_pos, player_pos);
+    let direction: Option<Direction> = Direction::from_dxy(dxy.x, dxy.y);
+
     /* Carry Out Skill */
     match data.entities.skills[&player_id][skill_index] {
         Skill::GrassThrow => {
-            let player_id = data.find_by_name(EntityName::Player).unwrap();
-            let player_pos = data.entities.pos[&player_id];
-            let dxy = sub_pos(skill_pos, player_pos);
             if let Some(direction) = Direction::from_dxy(dxy.x, dxy.y) {
                 msg_log.log(Msg::GrassThrow(player_id, direction));
             }
@@ -706,12 +708,10 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::Push => {
-            let player_id = data.find_by_name(EntityName::Player).unwrap();
-            let player_pos = data.entities.pos[&player_id];
-            let dxy = sub_pos(skill_pos, player_pos);
-            let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
             let push_amount = 1;
-            msg_log.log(Msg::Push(player_id, direction, push_amount));
+            if let Some(direction) = direction {
+                msg_log.log(Msg::Push(player_id, direction, push_amount));
+            }
         }
 
         Skill::Illuminate => {
@@ -724,6 +724,12 @@ pub fn handle_skill(skill_index: usize,
 
         Skill::FarSight => {
             msg_log.log(Msg::FarSight(player_id, SKILL_FARSIGHT_FOV_AMOUNT));
+        }
+
+        Skill::Sprint => {
+            if let Some(direction) = direction {
+                msg_log.log(Msg::Sprint(player_id, direction, SKILL_SPRINT_AMOUNT));
+            }
         }
     }
 }
