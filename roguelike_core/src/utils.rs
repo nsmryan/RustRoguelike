@@ -33,9 +33,8 @@ pub fn rng_range_i32(rng: &mut Rand32, low: i32, high: i32) -> i32 {
     if low == high {
         return low;
     } else {
-        let r = rng.rand_i32();
-        let r = r - low;
-        return low + r % (high - low);
+        let r = rng.rand_i32().abs();
+        return low + (r % (high - low));
     }
 }
 

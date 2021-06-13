@@ -122,6 +122,16 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
     return new_map;
 }
 
+fn check_map(game: &Game) {
+    for wall_pos in game.data.map.get_wall_pos() {
+        for id in game.data.entities.ids.iter() {
+            if wall_pos == game.data.entities.pos[id] {
+                panic!("A wall overlapped with an entity!");
+            }
+        }
+    }
+}
+
 pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     // this is problematic for movement, so ensure they don't occur
     handle_diagonal_full_tile_walls(game);
@@ -189,6 +199,8 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     // ensure that the map looks okay in 3D
     ensure_iter_and_full_walls(game);
+
+    check_map(game);
 
     return player_pos;
 }
@@ -509,16 +521,28 @@ pub fn place_vault_with(data: &mut GameData, vault: &Vault, offset: Pos, rotatio
 
     let (width, height) = actual_vault.data.map.size();
 
+    let mut entities_to_remove: Vec<EntityId> = Vec::new();
     // update map with vault tiles
-    for x in 0..width {
-        for y in 0..height {
-            let mut pos = Pos::new(x, y);
-            pos = add_pos(offset, pos);
-            if data.map.is_within_bounds(pos) {
-                data.map[pos] = actual_vault.data.map[(x, y)];
+    for pos in actual_vault.data.map.get_all_pos() {
+        let map_pos = add_pos(offset, pos);
+        if data.map.is_within_bounds(map_pos) {
+            data.map[map_pos] = actual_vault.data.map[pos];
+        }
+
+        for entity_id in data.get_entities_at_pos(map_pos) {
+            if data.entities.typ[&entity_id] == EntityType::Player {
+                data.map[map_pos] = Tile::empty();
+            } else {
+                entities_to_remove.push(entity_id);
             }
         }
     }
+    for remove_id in entities_to_remove {
+        data.remove_entity(remove_id);
+    }
+
+    let mut entities_to_remove: Vec<EntityId> = Vec::new();
+    let mut vault_entities_to_remove: Vec<EntityId> = Vec::new();
 
     // move entities to their new place in the map
     let mut entities = actual_vault.data.entities.clone();
@@ -531,19 +555,31 @@ pub fn place_vault_with(data: &mut GameData, vault: &Vault, offset: Pos, rotatio
         entity_pos = add_pos(offset, entity_pos);
         if data.map.is_within_bounds(entity_pos) {
             entities.pos[id] = entity_pos;
+        } else {
+            vault_entities_to_remove.push(*id);
+            continue;
+        }
+
+        // look for entities already at this position
+        for entity_id in data.get_entities_at_pos(entity_pos) {
+            if data.entities.typ[&entity_id] == EntityType::Player {
+                // remove vault entity to avoid removing player
+                vault_entities_to_remove.push(*id);
+            } else {
+                entities_to_remove.push(entity_id);
+            }
         }
     }
 
-    // add new entities to entity system
-    //eprintln!("_________");
-    //eprintln!("{:?}", &entities.ids);
-    //eprintln!("_________");
-    //eprintln!("{:?}data.entities.ids);
-    //eprintln!("{:?}", &data.entities.ids);
+    for remove_id in vault_entities_to_remove {
+        actual_vault.data.remove_entity(remove_id);
+    }
+
+    for remove_id in entities_to_remove {
+        data.remove_entity(remove_id);
+    }
+
     data.entities.merge(&entities);
-    //eprintln!("{:?}", &data.entities.ids);
-    //eprintln!("_________");
-    //eprintln!("_________");
 }
 
 fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
