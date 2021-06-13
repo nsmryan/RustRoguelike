@@ -155,6 +155,7 @@ pub fn resolve_messages(data: &mut GameData,
 
                 if let Some(blink_pos) = find_blink_pos(source_pos, rng, data) {
                     data.entities.move_to(entity_id, blink_pos);
+                    data.entities.status[&entity_id].blinked = true;
                 }
             }
 
@@ -555,6 +556,11 @@ fn resolve_try_move(entity_id: EntityId,
                     msg_log: &mut MsgLog) {
     if amount == 0 {
         panic!("Why try to move with amount == 0?");
+    }
+
+    // blinking uses up movement
+    if data.entities.status[&entity_id].blinked {
+        return;
     }
 
     data.entities.move_mode[&entity_id] = move_mode;
@@ -1231,6 +1237,7 @@ fn process_moved_message(entity_id: EntityId,
             }
 
             Trap::Blink => {
+                data.entities.status[&entity_id].blinked = true;
                 msg_log.log(Msg::BlinkTrapTriggered(*trap, entity_id));
                 data.entities.needs_removal[trap] = true;
             }

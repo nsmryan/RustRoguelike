@@ -928,6 +928,7 @@ pub struct StatusEffect {
     pub soft_steps: usize, // turns
     pub illuminate: usize, // radius
     pub extra_fov: usize, // amount
+    pub blinked: bool,
     pub active: bool,
     pub alive: bool,
 }

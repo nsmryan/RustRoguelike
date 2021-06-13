@@ -136,6 +136,12 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
             game.data.map = new_map;
             player_position = Pos::from(position);
         }
+
+        MapLoadConfig::TestTraps => {
+            let (new_map, position) = make_trap_test_map(&mut game.data.entities, &game.config, &mut game.msg_log);
+            game.data.map = new_map;
+            player_position = Pos::from(position);
+        }
     }
 
     if game.data.find_by_name(EntityName::Mouse).is_none() {

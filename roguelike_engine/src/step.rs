@@ -23,6 +23,7 @@ pub fn step_logic(game: &mut Game) -> bool {
 
     for id in game.data.entities.ids.iter() {
         game.data.entities.took_turn[id] = false;
+        game.data.entities.status[id].blinked = false;
     }
 
     game.msg_log.log_front(Msg::StartTurn);

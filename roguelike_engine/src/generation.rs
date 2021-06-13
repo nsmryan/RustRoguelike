@@ -607,3 +607,17 @@ pub fn make_corner_test_map(entities: &mut Entities,
     return (map, Pos::from(position));
 }
 
+pub fn make_trap_test_map(entities: &mut Entities,
+                          config: &Config,
+                          msg_log: &mut MsgLog) -> (Map, Pos) {
+    let mut map = Map::from_dims(11, 11);
+    let position = (1, 4);
+
+    make_spike_trap(entities, config, Pos::new(3, 2), msg_log);
+    make_sound_trap(entities, config, Pos::new(3, 3), msg_log);
+    make_freeze_trap(entities, config, Pos::new(3, 4), msg_log);
+    make_blink_trap(entities, config, Pos::new(3, 5), msg_log);
+
+    return (map, Pos::from(position));
+}
+
