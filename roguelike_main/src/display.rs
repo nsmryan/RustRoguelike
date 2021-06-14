@@ -312,9 +312,9 @@ impl Display {
                     } else if data.entities.name[&entity_id] == EntityName::SpikeTrap {
                         anim_desc = Some(("spikes", config.idle_speed));
                     } else if data.entities.name[&entity_id] == EntityName::Pawn {
-                        anim_desc = Some(("elf_idle", config.idle_speed));
+                        //anim_desc = Some(("elf_idle", config.idle_speed));
                     } else if data.entities.name[&entity_id] == EntityName::Gol {
-                        anim_desc = Some(("gol_idle", config.idle_speed));
+                        //anim_desc = Some(("gol_idle", config.idle_speed));
                     }
 
                     if let Some((name, speed)) = anim_desc {

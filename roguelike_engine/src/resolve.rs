@@ -170,7 +170,8 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::Untriggered(trigger, _entity_id) => {
-                untriggered(trigger, data, msg_log);
+                // NOTE nothing untriggers yet
+                //untriggered(trigger, data, msg_log);
             }
 
             Msg::Triggered(trigger, _entity_id) => {
@@ -743,8 +744,6 @@ fn resolve_rubble(entity_id: EntityId, blocked: Blocked, data: &mut GameData, _m
 
     data.entities.took_turn[&entity_id] = true;
 }
-
-fn untriggered(trigger: EntityId, data: &mut GameData, msg_log: &mut MsgLog) { }
 
 fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     let entity_pos = data.entities.pos[&entity];
