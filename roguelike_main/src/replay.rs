@@ -88,7 +88,7 @@ impl Recording {
 pub fn test_recording() {
     let mut config = Config::from_file("../config.yaml");
     config.map_load = MapLoadConfig::TestPlayer;
-    let mut game = Game::new(0, config.clone()).unwrap();
+    let mut game = Game::new(0, config.clone());
     let mut input_action;
 
     make_map(&config.map_load, &mut game);

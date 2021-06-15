@@ -501,6 +501,9 @@ fn triggered(trigger: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
             let mut maybe_wall_pos = None;
             // raise the gate
             data.entities.status[&trigger].active = false;
+
+            // only raise if no entities are on the square.
+            // otherwise wait for a move that leaves the trigger unblocked.
             if let Some(wall_pos) = data.entities.gate_pos[&trigger] {
                 if data.has_entity(wall_pos).is_none() {
                     data.map[wall_pos] = Tile::wall();
