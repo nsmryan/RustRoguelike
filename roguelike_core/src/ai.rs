@@ -89,7 +89,7 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
                 }
 
                 Behavior::Attacking(object_id) => {
-                    ai_attack(monster_id, object_id, data, msg_log);
+                    ai_attack(monster_id, object_id, data, msg_log, config);
                 }
             }
         }
@@ -99,7 +99,8 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
 pub fn ai_attack(monster_id: EntityId,
                  target_id: EntityId,
                  data: &mut GameData,
-                 msg_log: &mut MsgLog) {
+                 msg_log: &mut MsgLog,
+                 config: &Config) {
     let target_pos = data.entities.pos[&target_id];
 
     // we need to turn towards the target first, so the
@@ -114,12 +115,18 @@ pub fn ai_idle(monster_id: EntityId,
                config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
+    if config.sound_golem_idle_radius > 0 {
+        let should_animate = true;
+        let monster_pos = data.entities.pos[&monster_id];
+        msg_log.log(Msg::Sound(monster_id, monster_pos, config.sound_golem_idle_radius, should_animate));
+    }
+
     if ai_is_in_fov(monster_id, player_id, data, config) {
         let player_pos = data.entities.pos[&player_id];
         msg_log.log(Msg::FaceTowards(monster_id, player_pos));
         msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(player_id)));
     } else if let Some(Message::Attack(entity_id)) = data.entities.was_attacked(monster_id) {
-        let entity_pos = data.entities.pos[&entity_id];
+    let entity_pos = data.entities.pos[&entity_id];
         msg_log.log(Msg::FaceTowards(monster_id, entity_pos));
         msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(entity_id)));
     } else if let Some(Message::Sound(entity_id, sound_pos)) = data.entities.heard_sound(monster_id) {

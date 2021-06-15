@@ -165,6 +165,7 @@ impl GameData {
                     break;
                 }
 
+                // check for illumination that might make this tile visible.
                 if self.entities.status[id].illuminate != 0 && self.entities.pos[id].x >= 0 {
                     let illuminate_pos = self.entities.pos[id];
                     let illuminate_radius = self.entities.status[id].illuminate as i32;
