@@ -26,7 +26,7 @@ pub enum ActionLoc {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum InputAction {
     Move(Direction, MoveMode),
-    Pass,
+    Pass(MoveMode),
     Pickup,
     DropItem,
     DropItemByIndex(usize),
@@ -72,7 +72,7 @@ impl fmt::Display for InputAction {
                     Direction::UpRight => write!(f, "upright {}", move_mode),
                 }
             },
-            InputAction::Pass => write!(f, "pass"),
+            InputAction::Pass(move_mode) => write!(f, "pass {}", move_mode),
             InputAction::MapClick(loc, cell) => write!(f, "click {} {} {} {}", loc.x, loc.y, cell.x, cell.y),
             InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
             InputAction::Pickup => write!(f, "pickup"),
@@ -138,7 +138,8 @@ impl FromStr for InputAction {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::DownRight, move_mode));
         } else if args[0] == "pass" {
-            return Ok(InputAction::Pass);
+            let move_mode = args[1].parse::<MoveMode>().unwrap();
+            return Ok(InputAction::Pass(move_mode));
         } else if args[0] == "pickup" {
             return Ok(InputAction::Pickup);
         } else if args[0] == "drop" {
@@ -505,8 +506,9 @@ pub fn handle_input_playing(input_action: InputAction,
             }
         }
 
-        (InputAction::Pass, true) => {
-            msg_log.log(Msg::Moved(player_id, MoveType::Pass, player_pos));
+        (InputAction::Pass(move_mode), true) => {
+            let direction = data.entities.direction[&player_id];
+            msg_log.log(Msg::TryMove(player_id, direction, 0, move_mode));
         }
 
         (InputAction::Move(direction, move_mode), true) => {
@@ -756,7 +758,8 @@ fn chord_move(loc: ActionLoc,
 
     match loc {
         ActionLoc::None => {
-            msg_log.log(Msg::Moved(player_id, MoveType::Pass, player_pos));
+            let direction = data.entities.direction[&player_id];
+            msg_log.log(Msg::TryMove(player_id, direction, 0, move_mode));
         }
 
         ActionLoc::Dir(direction) => {

@@ -579,10 +579,6 @@ fn resolve_try_move(entity_id: EntityId,
                     move_mode: MoveMode,
                     data: &mut GameData,
                     msg_log: &mut MsgLog) {
-    if amount == 0 {
-        panic!("Why try to move with amount == 0?");
-    }
-
     // blinking uses up movement
     if data.entities.status[&entity_id].blinked {
         return;
@@ -594,7 +590,11 @@ fn resolve_try_move(entity_id: EntityId,
     let reach = reach.with_dist(1);
 
     let maybe_movement = 
-        movement::calculate_move(direction, reach, entity_id, data);
+        if amount == 0 {
+            Some(Movement::pass(data.entities.pos[&entity_id]))
+        } else {
+            movement::calculate_move(direction, reach, entity_id, data)
+        };
 
     if let Some(movement) = maybe_movement {
         if let Some(attack) = movement.attack {

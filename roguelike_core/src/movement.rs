@@ -146,6 +146,10 @@ impl Movement {
         };
     }
 
+    pub fn pass(pos: Pos) -> Movement {
+        return Movement::new(pos, MoveType::Pass, None);
+    }
+
     pub fn move_to(pos: Pos, typ: MoveType) -> Movement {
         return Movement {
             pos,

@@ -301,7 +301,7 @@ impl Input {
                     if let Some(Target::Item(index)) = self.target {
                         action = InputAction::DropItemByIndex(index);
                     } else {
-                        action = InputAction::Pass;
+                        action = InputAction::Pass(self.move_mode());
                     }
                 }
             } else if let Some(dir) = from_digit(chr) {

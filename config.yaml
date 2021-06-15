@@ -168,7 +168,7 @@ fov_radius_monster: 4
 fov_radius_player: 4
 sound_radius_sneak: 1
 sound_radius_walk: 2
-sound_radius_run: 3
+sound_radius_run: 4
 dampen_blocked_tile: 3
 dampen_short_wall: 1
 dampen_tall_wall: 2
