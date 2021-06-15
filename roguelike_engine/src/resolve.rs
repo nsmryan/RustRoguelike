@@ -502,18 +502,10 @@ fn triggered(trigger: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
             // raise the gate
             data.entities.status[&trigger].active = false;
             if let Some(wall_pos) = data.entities.gate_pos[&trigger] {
-                data.map[wall_pos] = Tile::wall();
-                data.entities.gate_pos[&trigger] = None;
-                maybe_wall_pos = Some(wall_pos);
-            }
-
-            // if the gate was raised, kill entities in that spot
-            if let Some(wall_pos) = maybe_wall_pos {
-                for key in data.entities.ids.iter() {
-                    if data.entities.pos[key] == wall_pos &&
-                       data.entities.status[key].alive {
-                        msg_log.log(Msg::Killed(trigger, *key, TRIGGER_WALL_DAMAGE));
-                    }
+                if data.has_entity(wall_pos).is_none() {
+                    data.map[wall_pos] = Tile::wall();
+                    data.entities.gate_pos[&trigger] = None;
+                    maybe_wall_pos = Some(wall_pos);
                 }
             }
         } else {
@@ -1253,6 +1245,15 @@ fn process_moved_message(entity_id: EntityId,
               data.entities.status[key].active {
                msg_log.log_front(Msg::Untriggered(*key, entity_id));
            }
+
+           if !data.entities.status[key].active {
+               if let Some(wall_pos) = data.entities.gate_pos[key] {
+                   if data.has_entity(wall_pos).is_none() {
+                       data.map[wall_pos] = Tile::wall();
+                       data.entities.gate_pos[key] = None;
+                   }
+               }
+            }
         }
     }
 
