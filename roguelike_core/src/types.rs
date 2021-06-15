@@ -711,6 +711,34 @@ impl Stance {
     }
 }
 
+impl fmt::Display for Stance {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Stance::Crouching => write!(f, "crouching"),
+            Stance::Standing => write!(f, "standing"),
+            Stance::Running => write!(f, "running"),
+        }
+    }
+}
+
+impl FromStr for Stance {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "crouching" {
+            return Ok(Stance::Crouching);
+        } else if s == "standing" {
+            return Ok(Stance::Standing);
+        } else if s == "running" {
+            return Ok(Stance::Running);
+        }
+
+        return Err(format!("Could not parse '{}' as Stance", s));
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum EntityName {
     Player,
