@@ -247,10 +247,6 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
                 input_action = action;
             }
 
-           if input_action == InputAction::Exit {
-                game.settings.running = false;
-           }
-
            /* Record Inputs to Log File */
            log.log_action(input_action);
         }

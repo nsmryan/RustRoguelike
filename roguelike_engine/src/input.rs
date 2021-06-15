@@ -243,6 +243,7 @@ impl Input {
                                 if action == InputAction::OverlayOff   ||
                                    action == InputAction::Inventory    ||
                                    action == InputAction::SkillMenu    ||
+                                   action == InputAction::Exit         ||
                                    action == InputAction::ClassMenu {
                                     action = InputAction::None;
                                 } else if action == InputAction::CursorToggle {
