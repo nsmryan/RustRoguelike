@@ -751,6 +751,8 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
     let sprite_key = display_state.lookup_spritekey("tiles");
     let sprite = &mut display_state.sprites[&sprite_key];
 
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+
     for (index, effect) in effects.iter_mut().enumerate() {
         match effect {
             Effect::HeardSomething(pos, created_turn) => {
@@ -778,7 +780,8 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                     //            tiles and simply pasting them, perhaps saving time from not
                     //            needing to blend.
                     for pos in dist_positions.iter() {
-                        if !game.data.map[*pos].block_move {
+                        if !game.data.map[*pos].block_move &&
+                           game.data.pos_in_fov(player_id, *pos, &game.config) {
                            draw_tile_highlight(panel, *pos, highlight_color);
                         }
                     }
