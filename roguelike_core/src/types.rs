@@ -21,6 +21,7 @@ use crate::animation::AnimKey;
 use crate::utils::*;
 use crate::config::Config;
 use crate::line::*;
+use crate::constants::*;
 
 
 pub type Name = Symbol;
@@ -148,6 +149,10 @@ impl GameData {
     }
 
     fn fov_check(&self, entity_id: EntityId, other_pos: Pos, crouching: bool, config: &Config) -> bool {
+        if other_pos.x < 0 || other_pos.y < 0 {
+            return false;
+        }
+
         let pos = self.entities.pos[&entity_id];
 
         let radius: i32 = self.fov_radius(entity_id, config);
@@ -163,7 +168,12 @@ impl GameData {
                 if self.entities.status[id].illuminate != 0 && self.entities.pos[id].x >= 0 {
                     let illuminate_pos = self.entities.pos[id];
                     let illuminate_radius = self.entities.status[id].illuminate as i32;
-                    can_see |= self.map.is_in_fov(illuminate_pos, other_pos, illuminate_radius, crouching);
+                    let illuminated = self.map.is_in_fov(illuminate_pos, other_pos, illuminate_radius, crouching);
+
+                    let illuminated_see = self.map.is_in_fov(pos, other_pos, ILLUMINATE_FOV_RADIUS, crouching);
+                    let blocked = self.map[other_pos].block_sight;
+
+                    can_see |= illuminated && illuminated_see && !blocked;
                 }
             }
 

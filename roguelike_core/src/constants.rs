@@ -14,6 +14,7 @@ pub const INVENTORY_HEIGHT: usize = 500;
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
 pub const BLINK_RADIUS: usize = 4;
 pub const TILE_FILL_METRIC_DIST: usize = 3;
+pub const ILLUMINATE_FOV_RADIUS: i32 = 1000;
 
 /* Monster Settings */
 pub const MAX_MONSTERS: i32 = 15;
