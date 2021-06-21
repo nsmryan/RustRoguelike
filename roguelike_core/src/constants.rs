@@ -167,6 +167,7 @@ pub const ENTITY_TRIGGER_3: u8 = 226;
 pub const ENTITY_TRIGGER_4: u8 = 227;
 pub const ENTITY_TRIGGER_5: u8 = 228;
 pub const ENTITY_CURSOR: u8 = 231;
+pub const ENTITY_UNKNOWN_GOLEM_MARKER: u8 = 239;
 
 pub const SHADOW_FULLTILE_RIGHT: u8 = 172;
 pub const SHADOW_FULLTILE_TOP: u8 = 173;

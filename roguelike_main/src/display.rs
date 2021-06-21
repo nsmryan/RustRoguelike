@@ -168,6 +168,10 @@ impl Display {
                     if !visible_monster_sound && sound_hits_player {
                         let sound_effect = Effect::Sound(sound_aoe, 0.0);
                         self.state.play_effect(sound_effect);
+
+                        let pos = data.entities.pos[&cause_id];
+                        let impression_sprite = Sprite::char(ENTITY_UNKNOWN as char);
+                        self.state.impressions.push(Impression::new(impression_sprite, pos));
                     }
                 }
             }
@@ -353,7 +357,12 @@ impl Display {
                 /* Remove impressions that are currently visible */
                 let mut impressions_visible = Vec::new();
                 for (index, impression) in self.state.impressions.iter().enumerate() {
-                    if data.pos_in_fov(player_id, impression.pos, config) {
+                    data.entities.status[&player_id].extra_fov += 1;
+                    let is_in_fov_ext = 
+                       data.pos_in_fov(player_id, impression.pos, &config);
+                    data.entities.status[&player_id].extra_fov -= 1;
+
+                    if is_in_fov_ext {
                         impressions_visible.push(index);
                     }
                 }

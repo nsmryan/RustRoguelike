@@ -148,7 +148,8 @@ yell_radius: 4
 swap_radius: 4
 fog_of_war: true
 player_health: 3
-explored_alpha: 150
+explored_alpha: 160
+fov_edge_alpha: 80
 sound_rubble_radius: 1
 sound_grass_radius: 1
 sound_radius_crushed: 3
@@ -169,7 +170,7 @@ fov_radius_player: 4
 sound_radius_sneak: 1
 sound_radius_walk: 2
 sound_radius_run: 4
-sound_golem_idle_radius: 5
+sound_golem_idle_radius: 0
 dampen_blocked_tile: 3
 dampen_short_wall: 1
 dampen_tall_wall: 2

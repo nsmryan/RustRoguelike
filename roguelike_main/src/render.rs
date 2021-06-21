@@ -678,8 +678,15 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
 
             // apply a FoW darkening to cells
             if game.config.fog_of_war && !visible {
+                game.data.entities.status[&player_id].extra_fov += 1;
+                let is_in_fov_ext = 
+                   game.data.pos_in_fov(player_id, pos, &game.config);
+                game.data.entities.status[&player_id].extra_fov -= 1;
+
                 let mut blackout_color = Color::black();
-                if game.data.map[pos].explored {
+                if is_in_fov_ext {
+                    blackout_color.a = game.config.fov_edge_alpha
+                } else if game.data.map[pos].explored {
                     blackout_color.a = game.config.explored_alpha
                 }
                 
@@ -755,17 +762,6 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
 
     for (index, effect) in effects.iter_mut().enumerate() {
         match effect {
-            Effect::HeardSomething(pos, created_turn) => {
-                sprite.draw_char(panel,
-                                 ENTITY_UNKNOWN as char,
-                                 *pos,
-                                 game.config.color_warm_grey);
-
-                if *created_turn != game.settings.turn_count {
-                    remove_indices.push(index);
-                }
-            }
-
             Effect::Sound(sound_aoe, sound_dt) => {
                 let mut highlight_color = game.config.color_warm_grey;
 
@@ -840,15 +836,25 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
                 game.data.entities.animation[&entity_id].pop_front();
             }
         } else {
-            // NOTE the needs_removal can probably be removed
-            let needs_removal = game.data.entities.needs_removal[&entity_id];
-            if is_in_fov && !needs_removal {
+            if is_in_fov {
                 let color = game.data.entities.color[&entity_id];
 
                 let chr = game.data.entities.chr[&entity_id];
                 let sprite = Sprite::char(chr);
                 display_state.draw_sprite(panel, sprite, pos, color);
                 animation_result.sprite = Some(sprite);
+            } else if game.data.entities.typ[&entity_id] == EntityType::Enemy {
+                game.data.entities.status[&player_id].extra_fov += 1;
+                let is_in_fov_ext = 
+                   game.data.is_in_fov(player_id, entity_id, &game.config);
+                game.data.entities.status[&player_id].extra_fov -= 1;
+
+                if is_in_fov_ext {
+                    if display_state.impressions.iter().all(|impresssion| impresssion.pos != pos) {
+                        let impression_sprite = Sprite::char(ENTITY_UNKNOWN as char);
+                        display_state.impressions.push(Impression::new(impression_sprite, pos));
+                    }
+                }
             }
         }
     }

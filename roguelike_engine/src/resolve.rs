@@ -50,6 +50,9 @@ pub fn resolve_messages(data: &mut GameData,
                     if obj_id != cause_id {
                         // TODO replace with an Alerted message
                         data.entities.messages[&obj_id].push(Message::Sound(cause_id, source_pos));
+
+                        if obj_id == player_id && !data.is_in_fov(player_id, cause_id, config) {
+                        }
                     }
                 }
             }
@@ -416,11 +419,8 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             let _player_pos = data.entities.pos[&player_id];
-            //if !data.map.is_in_fov(player_pos, *pos, config.fov_radius_player) {
-                //let heard = Effect::HeardSomething(*pos, settings.turn_count);
-                // TODO move to somewhere else?
-                //display_state.effects.push(heard);
-            //}
+
+            // TODO need to add impression if not in FOV (#274)
         }
     }
     data.entities.messages[&player_id].clear();
