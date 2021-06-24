@@ -15,6 +15,7 @@ use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
 use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, sub_pos, reach_by_mode, map_fill_metric};
 use roguelike_core::perlin::Perlin;
 use roguelike_core::line::line;
+use roguelike_core::ai::*;
 
 use roguelike_engine::game::*;
 
@@ -1075,9 +1076,8 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     highlight_color.a = game.config.highlight_player_move;
 
     // draw direction overlays
-    let mut direction_color = Color::white();
-
     {
+        let direction_color = Color::white();
         let tile_sprite = &mut display_state.sprites[&sprite_key];
         for entity_id in game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>().iter() {
             let pos = game.data.entities.pos[entity_id];
@@ -1248,6 +1248,56 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                                   &format!("{}", near_count),
                                   pos,
                                   highlight_color);
+        }
+    }
+
+    // draw alertness overlays
+    {
+        let alertness_color = game.config.color_pink;
+        let scale = 0.5;
+        let tile_sprite = &mut display_state.sprites[&sprite_key];
+        for entity_id in game.data.entities.ids.iter() {
+            let pos = game.data.entities.pos[entity_id];
+
+            if pos.x == -1 && pos.y == -1 {
+                continue;
+            }
+
+            if game.data.is_in_fov(player_id, *entity_id, &game.config) {
+                if let Some(behavior) = game.data.entities.behavior.get(entity_id) {
+                    match behavior {
+                        Behavior::Idle => {
+                            tile_sprite.draw_sprite_direction(panel,
+                                                              ASTERISK as usize,
+                                                              Some(Direction::UpRight),
+                                                              pos,
+                                                              scale,
+                                                              alertness_color,
+                                                              0.0);
+                        }
+
+                        Behavior::Investigating(_) => {
+                            tile_sprite.draw_sprite_direction(panel,
+                                                              QUESTION_MARK as usize,
+                                                              Some(Direction::UpRight),
+                                                              pos,
+                                                              scale,
+                                                              alertness_color,
+                                                              0.0);
+                        }
+
+                        Behavior::Attacking(_) => {
+                            tile_sprite.draw_sprite_direction(panel,
+                                                              EXCLAMATION_POINT as usize,
+                                                              Some(Direction::UpRight),
+                                                              pos,
+                                                              scale,
+                                                              alertness_color,
+                                                              0.0);
+                        }
+                    }
+                }
+            }
         }
     }
 }

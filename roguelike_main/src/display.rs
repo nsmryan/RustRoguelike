@@ -14,6 +14,7 @@ use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::animation::{Sprite, AnimKey, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use roguelike_core::utils::aoe_fill;
+use roguelike_core::movement::Direction;
 
 
 pub struct Display {
@@ -960,15 +961,7 @@ impl SpriteSheet {
                             rotation: f64) {
         let cell_dims = panel.cell_dims();
 
-        let (num_cells_x, _num_cells_y) = self.num_cells();
-        let sprite_x = index % num_cells_x;
-        let sprite_y = index / num_cells_x;
-
-        let (sprite_width, sprite_height) = self.sprite_dims();
-        let src = Rect::new((sprite_x * sprite_width) as i32,
-                            (sprite_y * sprite_height) as i32,
-                            sprite_width as u32,
-                            sprite_height as u32);
+        let src = self.sprite_src(index);
 
         let (cell_width, cell_height) = cell_dims;
 
@@ -988,6 +981,100 @@ impl SpriteSheet {
                        None,
                        false,
                        false).unwrap();
+    }
+
+    pub fn draw_sprite_direction(&mut self,
+                                 panel: &mut Panel<&mut WindowCanvas>,
+                                 index: usize,
+                                 direction: Option<Direction>,
+                                 pos: Pos,
+                                 scale: f32,
+                                 color: Color,
+                                 rotation: f64) {
+        let cell_dims = panel.cell_dims();
+
+        let src = self.sprite_src(index);
+
+        let (cell_width, cell_height) = cell_dims;
+        let dst_width = (cell_width as f32 * scale) as u32;
+        let dst_height = (cell_height as f32 * scale) as u32;
+
+        let x_margin = ((cell_width - dst_width) / 2) as i32;
+        let y_margin = ((cell_height - dst_height) / 2) as i32;
+
+        let mut dst_x = pos.x * cell_width as i32;
+        let mut dst_y = pos.y * cell_height as i32;
+        match direction {
+            None => {
+                dst_x += x_margin;
+                dst_y += y_margin;
+            }
+            
+            Some(Direction::Left) => {
+                dst_y += y_margin;
+            }
+
+            Some(Direction::Right) => {
+                dst_x += cell_width as i32 - dst_width as i32;
+                dst_y += y_margin;
+            }
+
+            Some(Direction::Up) => {
+                dst_x += x_margin;
+            }
+
+            Some(Direction::Down) => {
+                dst_x += x_margin;
+                dst_y += cell_height as i32 - dst_height as i32;
+            }
+
+            Some(Direction::DownLeft) => {
+                dst_y += cell_height as i32 - dst_height as i32;
+            }
+
+            Some(Direction::DownRight) => {
+                dst_x += cell_width as i32 - dst_width as i32;
+                dst_y += cell_height as i32 - dst_height as i32;
+            }
+
+            Some(Direction::UpLeft) => {
+            }
+
+            Some(Direction::UpRight) => {
+                dst_x += cell_width as i32  - dst_width as i32;
+            }
+        }
+
+        let dst = Rect::new(dst_x,
+                            dst_y,
+                            dst_width,
+                            dst_height);
+
+        panel.target.set_blend_mode(BlendMode::Blend);
+        self.texture.set_color_mod(color.r, color.g, color.b);
+        self.texture.set_alpha_mod(color.a);
+
+        panel.target.copy_ex(&self.texture,
+                       Some(src),
+                       Some(dst),
+                       rotation,
+                       None,
+                       false,
+                       false).unwrap();
+    }
+
+    fn sprite_src(&mut self, index: usize) -> Rect {
+        let (num_cells_x, _num_cells_y) = self.num_cells();
+        let sprite_x = index % num_cells_x;
+        let sprite_y = index / num_cells_x;
+
+        let (sprite_width, sprite_height) = self.sprite_dims();
+        let src = Rect::new((sprite_x * sprite_width) as i32,
+                            (sprite_y * sprite_height) as i32,
+                            sprite_width as u32,
+                            sprite_height as u32);
+
+        return src;
     }
 }
 

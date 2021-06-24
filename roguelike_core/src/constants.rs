@@ -189,3 +189,8 @@ pub const ARROW_LEFT: u8 = 17;
 pub const ARROW_UP: u8 = 30;
 pub const ARROW_DOWN: u8 = 31;
 
+/* Characters */
+pub const EXCLAMATION_POINT: u8 = '!' as u8;
+pub const QUESTION_MARK: u8 = '?' as u8;
+pub const ASTERISK: u8 = 244;
+
