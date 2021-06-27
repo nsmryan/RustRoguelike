@@ -322,11 +322,11 @@ pub fn resolve_messages(data: &mut GameData,
 
                     match action_mode {
                         ActionMode::Primary => {
-                            //item_id = make_sword(&mut data.entities, config, pos, msg_log);
+                            // TODO anything?
                         }
 
                         ActionMode::Alternate => {
-                            //item_id = make_dagger(&mut data.entities, config, pos, msg_log);
+                            // TODO anything?
                         }
                     }
 
@@ -335,9 +335,6 @@ pub fn resolve_messages(data: &mut GameData,
 
                     for target_id in targets {
                         if data.entities.typ[&target_id] == EntityType::Enemy {
-                            // TODO make stab only kill if unaware, stuns otherwise
-                            // TODO stabbing moves player into other pos. need to remove or allow
-                            // disable
                             let attack = Attack::Stab(target_id, false);
                             resolve_attack(entity_id, attack, attack_pos, data, msg_log, config);
 

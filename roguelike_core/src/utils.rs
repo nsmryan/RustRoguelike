@@ -14,6 +14,7 @@ use crate::messaging::*;
 use crate::line::*;
 use crate::config::Config;
 use crate::map::{Map, AoeEffect, Aoe, Wall, astar_neighbors, TileType};
+use crate::constants::*;
 
 
 pub fn rng_bool(rng: &mut Rand32) -> bool {
@@ -253,18 +254,22 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: 
     }
 }
 
-pub fn stab(handle: EntityId, target: EntityId, entities: &mut Entities, msg_log: &mut MsgLog) {
+pub fn stab(entity_id: EntityId, target: EntityId, entities: &mut Entities, msg_log: &mut MsgLog) {
     let damage = entities.fighter.get(&target).map_or(0, |f| f.hp);
 
     if damage != 0 {
-        msg_log.log(Msg::Attack(handle, target, damage));
+        if entities.behavior[&target] == Behavior::Idle {
+            msg_log.log(Msg::Attack(entity_id, target, damage));
 
-        entities.status[&target].alive = false;
-        entities.blocks[&target] = false;
+            entities.status[&target].alive = false;
+            entities.blocks[&target] = false;
 
-        msg_log.log(Msg::Killed(handle, target, damage));
+            msg_log.log(Msg::Killed(entity_id, target, damage));
 
-        entities.messages[&target].push(Message::Attack(handle));
+            entities.messages[&target].push(Message::Attack(entity_id));
+        } else {
+            msg_log.log(Msg::Froze(target, STAB_STUN_TURNS))
+        }
     } else {
         panic!("Stabbed an enemy with no hp?");
     }

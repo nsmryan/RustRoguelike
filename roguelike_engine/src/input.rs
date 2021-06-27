@@ -224,6 +224,11 @@ impl Input {
                             action = InputAction::OverlayOn;
                         }
 
+                        if chr == ' ' {
+                            self.cursor = !self.cursor;
+                            action = InputAction::CursorToggle;
+                        }
+
                         for (index, target_chr) in TARGET_CODES.iter().enumerate() {
                             if chr == *target_chr {
                                 self.target = Some(Target::from_index(index as usize));
@@ -249,7 +254,7 @@ impl Input {
                                 } else if action == InputAction::CursorToggle {
                                     // this is a little kludgy, but we have to untoggle cursor
                                     // mode as it was toggled by key_to_action.
-                                    self.cursor = !self.cursor;
+                                    //self.cursor = !self.cursor;
                                     action = InputAction::None;
                                 } else {
                                     self.char_held.insert(chr, held_state.repeated());
@@ -320,8 +325,9 @@ impl Input {
                 action = InputAction::None;
             }
         } else if chr == ' ' {
-            self.cursor = !self.cursor;
-            action = InputAction::CursorToggle;
+            //self.cursor = !self.cursor;
+            //action = InputAction::CursorToggle;
+            action = InputAction::None;
         } else {
             action = alpha_up_to_action(chr);
         }

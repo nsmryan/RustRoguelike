@@ -1442,7 +1442,7 @@ fn render_attack_overlay(panel: &mut Panel<&mut WindowCanvas>,
                      let in_bounds = game.data.map.is_within_bounds(*pos);
                      let traps_block = false;
                      let clear = game.data.clear_path(object_pos, *pos, traps_block);
-                     let player_can_see = game.data.pos_in_fov(player_id, *pos, &game.config);
+                     let player_can_see = in_bounds && game.data.pos_in_fov(player_id, *pos, &game.config);
                      // check for player position so it gets highligted, even
                      // though the player causes 'clear_path' to fail.
                      return player_can_see && in_bounds && (clear || *pos == player_pos);

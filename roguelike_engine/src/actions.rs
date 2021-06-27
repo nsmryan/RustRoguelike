@@ -449,52 +449,54 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::CursorMove(dir, relative, long), _) => {
-            let cursor_pos = settings.cursor.expect("CursorMove outside of cursor mode?");
+            if let Some(cursor_pos) = settings.cursor {
+                let dist =
+                    if long {
+                        config.cursor_long
+                    } else {
+                        1
+                    };
 
-            let dist =
-                if long {
-                    config.cursor_long
+                let dir_move: Pos = scale_pos(dir.into_move(), dist);
+
+                let new_pos;
+                if relative {
+                    new_pos = add_pos(player_pos, dir_move);
                 } else {
-                    1
-                };
+                    new_pos = add_pos(cursor_pos, dir_move);
+                }
 
-            let dir_move: Pos = scale_pos(dir.into_move(), dist);
-
-            let new_pos;
-            if relative {
-                new_pos = add_pos(player_pos, dir_move);
-            } else {
-                new_pos = add_pos(cursor_pos, dir_move);
+                settings.cursor = Some(data.map.clamp(new_pos));
             }
-
-            settings.cursor = Some(data.map.clamp(new_pos));
         }
 
         (InputAction::CursorApplyMove(mode), true) => {
-            let cursor_pos = settings.cursor.expect("CursorApplyMove outside of cursor mode?");
-
-            chord_move(ActionLoc::Place(cursor_pos), mode, data, msg_log);
+            if let Some(cursor_pos) = settings.cursor {
+                chord_move(ActionLoc::Place(cursor_pos), mode, data, msg_log);
+            }
         }
 
         (InputAction::CursorApplyItem(mode, target), true) => {
-            let cursor_pos = settings.cursor.expect("CursorApplyItem outside of cursor mode?");
-
-            chord_item(ActionLoc::Place(cursor_pos), mode, target, data, msg_log);
+            if let Some(cursor_pos) = settings.cursor {
+                chord_item(ActionLoc::Place(cursor_pos), mode, target, data, msg_log);
+            }
         }
 
         (InputAction::CursorApplySkill(mode, skill_index), true) => {
-            let cursor_pos = settings.cursor.expect("CursorApplySkill outside of cursor mode?");
-
-            if skill_index < data.entities.skills[&player_id].len() {
-                let loc = ActionLoc::Place(cursor_pos);
-                handle_skill(skill_index, loc, mode, data, settings, msg_log, config);
+            if let Some(cursor_pos) = settings.cursor {
+                if skill_index < data.entities.skills[&player_id].len() {
+                    let loc = ActionLoc::Place(cursor_pos);
+                    handle_skill(skill_index, loc, mode, data, settings, msg_log, config);
+                }
             }
         }
 
         (InputAction::CursorToggle, true) => {
             if settings.cursor.is_none() {
                 settings.cursor = Some(player_pos);
+                dbg!();
             } else {
+                dbg!();
                 settings.cursor = None;
             }
         }
