@@ -629,6 +629,7 @@ fn render_wall_shadows(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut
     let shadow_sprite_key = display_state.lookup_spritekey("shadows");
 
     let (map_width, map_height) = game.data.map.size();
+    // TODO make the numeric literals used here into globals in constants.rs
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);

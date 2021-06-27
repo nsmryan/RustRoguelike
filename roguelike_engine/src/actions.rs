@@ -653,7 +653,9 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::GrassBlade => {
-            msg_log.log(Msg::GrassBlade(player_id, action_mode));
+            if let Some(direction) = Direction::from_dxy(dxy.x, dxy.y) {
+                msg_log.log(Msg::GrassBlade(player_id, action_mode, direction));
+            }
         }
 
         Skill::Blink => {

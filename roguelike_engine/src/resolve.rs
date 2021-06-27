@@ -50,9 +50,6 @@ pub fn resolve_messages(data: &mut GameData,
                     if obj_id != cause_id {
                         // TODO replace with an Alerted message
                         data.entities.messages[&obj_id].push(Message::Sound(cause_id, source_pos));
-
-                        if obj_id == player_id && !data.is_in_fov(player_id, cause_id, config) {
-                        }
                     }
                 }
             }
@@ -319,24 +316,35 @@ pub fn resolve_messages(data: &mut GameData,
                 }
             }
 
-            Msg::GrassBlade(entity_id, action_mode) => {
+            Msg::GrassBlade(entity_id, action_mode, direction) => {
                 if use_energy(entity_id, data) {
-
                     let pos = data.entities.pos[&entity_id];
 
-                    let item_id;
                     match action_mode {
                         ActionMode::Primary => {
-                            item_id = make_sword(&mut data.entities, config, pos, msg_log);
+                            //item_id = make_sword(&mut data.entities, config, pos, msg_log);
                         }
 
                         ActionMode::Alternate => {
-                            item_id = make_dagger(&mut data.entities, config, pos, msg_log);
+                            //item_id = make_dagger(&mut data.entities, config, pos, msg_log);
                         }
                     }
 
-                    data.entities.pick_up_item(entity_id, item_id);
-                    data.entities.took_turn[&entity_id] = true;
+                    let attack_pos = direction.offset_pos(pos, 1);
+                    let targets = data.get_entities_at_pos(attack_pos);
+
+                    for target_id in targets {
+                        if data.entities.typ[&target_id] == EntityType::Enemy {
+                            // TODO make stab only kill if unaware, stuns otherwise
+                            // TODO stabbing moves player into other pos. need to remove or allow
+                            // disable
+                            let attack = Attack::Stab(target_id);
+                            resolve_attack(entity_id, attack, attack_pos, data, msg_log, config);
+
+                            data.entities.took_turn[&entity_id] = true;
+                            break;
+                        }
+                    }
                 }
             }
 
