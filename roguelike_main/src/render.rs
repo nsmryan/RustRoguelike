@@ -630,8 +630,76 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = display_state.lookup_spritekey("tiles");
-    let sprite = &mut display_state.sprites[&sprite_key];
 
+    // Render Wall Shadows (full tile and intertile walls, left and down)
+    let shadow_sprite_key = display_state.lookup_spritekey("shadows");
+    for y in 0..map_height {
+        for x in 0..map_width {
+            let pos = Pos::new(x, y);
+            let tile = game.data.map[pos];
+
+            /* render full tile wall shadows */
+            if tile.tile_type == TileType::Wall {
+                if x - 1 > 0 {
+                    // left
+                    let shadow_pos = Pos::new(x - 1, y);
+                    let shadow_left_upper = Sprite::sprite(2, shadow_sprite_key);
+                    display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
+                }
+
+                if x - 1 > 0 && y + 1 < map_height {
+                    let shadow_pos = Pos::new(x - 1, y + 1);
+                    let shadow_left_lower = Sprite::sprite(6, shadow_sprite_key);
+                    display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
+                }
+
+                if y + 1 < map_height {
+                    // lower
+                    let shadow_lower_right = Sprite::sprite(1, shadow_sprite_key);
+                    let shadow_pos = Pos::new(x, y + 1);
+                    display_state.draw_sprite(panel, shadow_lower_right, shadow_pos, game.config.color_shadow);
+                }
+
+                if y + 1 < map_height && x - 1 > 0 {
+                    let shadow_lower_left = Sprite::sprite(0, shadow_sprite_key);
+                    let shadow_pos = Pos::new(x - 1, y + 1);
+                    display_state.draw_sprite(panel, shadow_lower_left, shadow_pos, game.config.color_shadow);
+                }
+            } else if tile.left_wall == Wall::ShortWall {
+                if x - 1 > 0 {
+                    // left
+                    if x - 1 > 0 {
+                        let shadow_pos = Pos::new(x - 1, y);
+                        let shadow_left_upper = Sprite::sprite(3, shadow_sprite_key);
+                        display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
+                    }
+
+                    if x - 1 > 0 && y + 1 < map_height {
+                        let shadow_pos = Pos::new(x - 1, y + 1);
+                        let shadow_left_lower = Sprite::sprite(7, shadow_sprite_key);
+                        display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
+                    }
+                }
+            } else if tile.bottom_wall == Wall::ShortWall {
+                if y + 1 < map_height {
+                    // lower
+                    if y + 1 < map_height {
+                        let shadow_lower_right = Sprite::sprite(5, shadow_sprite_key);
+                        let shadow_pos = Pos::new(x, y + 1);
+                        display_state.draw_sprite(panel, shadow_lower_right, shadow_pos, game.config.color_shadow);
+                    }
+
+                    if y + 1 < map_height && x - 1 > 0 {
+                        let shadow_lower_left = Sprite::sprite(4, shadow_sprite_key);
+                        let shadow_pos = Pos::new(x - 1, y + 1);
+                        display_state.draw_sprite(panel, shadow_lower_left, shadow_pos, game.config.color_shadow);
+                    }
+                }
+            }
+        }
+    }
+
+    let sprite = &mut display_state.sprites[&sprite_key];
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
@@ -653,7 +721,6 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
             let chr = tile.chr;
 
             // if the tile is not empty or water, draw it
-            //let color = tile_color(&game.config, x, y, &tile, visible);
             if tile.tile_type == TileType::Water {
                 sprite.draw_char(panel, MAP_WATER as char, pos, Color::white());
             } else if chr != MAP_EMPTY_CHAR {
@@ -664,18 +731,6 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
 
             /* draw the between-tile walls appropriate to this tile */
             render_itertile_walls(panel, &mut game.data.map, sprite, pos, &game.config);
-
-            /* render full tile wall shadows */
-            if tile.tile_type == TileType::Wall {
-                if x - 1 > 0 {
-                    let shadow_pos = Pos::new(x - 1, y);
-                    sprite.draw_char(panel, SHADOW_FULLTILE_RIGHT as char, shadow_pos, game.config.color_shadow);
-                }
-                if y + 1 < map_height {
-                    let shadow_pos = Pos::new(x, y + 1);
-                    sprite.draw_char(panel, SHADOW_FULLTILE_TOP as char, shadow_pos, game.config.color_shadow);
-                }
-            }
 
             // apply a FoW darkening to cells
             if game.config.fog_of_war && !visible {
