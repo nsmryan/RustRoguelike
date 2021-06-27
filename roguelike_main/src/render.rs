@@ -80,6 +80,7 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
             canvas.copy(&background.target, None, None).unwrap();
 
             let mut panel = panel.with_target(canvas);
+            render_wall_shadows(&mut panel, display_state, game);
             render_map(&mut panel, display_state, game);
             render_entities(&mut panel, display_state, game);
             render_impressions(&mut panel, display_state, game);
@@ -623,16 +624,11 @@ fn render_surface(panel: &mut Panel<&mut WindowCanvas>, sprite: &mut SpriteSheet
     }
 }
 
-/// Render the map, with environment and walls
-fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+/// Render Wall Shadows (full tile and intertile walls, left and down)
+fn render_wall_shadows(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+    let shadow_sprite_key = display_state.lookup_spritekey("shadows");
 
     let (map_width, map_height) = game.data.map.size();
-
-    let sprite_key = display_state.lookup_spritekey("tiles");
-
-    // Render Wall Shadows (full tile and intertile walls, left and down)
-    let shadow_sprite_key = display_state.lookup_spritekey("shadows");
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
@@ -698,7 +694,15 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
             }
         }
     }
+}
 
+/// Render the map, with environment and walls
+fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+
+    let (map_width, map_height) = game.data.map.size();
+
+    let sprite_key = display_state.lookup_spritekey("tiles");
     let sprite = &mut display_state.sprites[&sprite_key];
     for y in 0..map_height {
         for x in 0..map_width {
