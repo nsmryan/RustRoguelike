@@ -985,61 +985,10 @@ impl Map {
         if start_pos == end_pos {
             return true;
         } else if self.is_in_fov(start_pos, end_pos, radius, low) {
-            let pos_diff = sub_pos(end_pos, start_pos);
-            let x_sig = pos_diff.x.signum();
-            let y_sig = pos_diff.y.signum();
-
-            match dir {
-                Direction::Up => {
-                    if y_sig < 1 {
-                        return true;
-                    }
-                }
-
-                Direction::Down => {
-                    if y_sig > -1 {
-                        return true;
-                    }
-                }
-
-                Direction::Left => {
-                    if x_sig < 1 {
-                        return true;
-                    }
-                }
-
-                Direction::Right => {
-                    if x_sig > -1 {
-                        return true;
-                    }
-                }
-                Direction::DownLeft => {
-                    if pos_diff.x - pos_diff.y < 0 {
-                        return true;
-                    }
-                }
-
-                Direction::DownRight => {
-                    if pos_diff.x + pos_diff.y >= 0 {
-                        return true;
-                    }
-                }
-
-                Direction::UpLeft => {
-                    if pos_diff.x + pos_diff.y <= 0 {
-                        return true;
-                    }
-                }
-
-                Direction::UpRight => {
-                    if pos_diff.x - pos_diff.y > 0 {
-                        return true;
-                    }
-                }
-            }
+            return visible_in_direction(start_pos, end_pos, dir);
+        } else {
+            return false;
         }
-            
-        return false;
     }
 
     pub fn path_clear_of_obstacles(&self, start: Pos, end: Pos) -> bool {

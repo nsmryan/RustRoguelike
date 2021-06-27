@@ -250,12 +250,9 @@ pub fn resolve_messages(data: &mut GameData,
                     let pos = data.entities.pos[&entity_id];
                     let crouching = false;
 
-                    for grass_pos in data.map.get_all_pos() {
-                        let radius = SKILL_GRASS_THROW_RADIUS as i32;
-                        if data.map.is_in_fov_direction(pos, grass_pos, radius, direction, crouching) {
-                            if data.map[grass_pos].tile_type == TileType::Empty {
-                                data.map[grass_pos].surface = Surface::Grass;
-                            }
+                    for grass_pos in Cone::new(pos, direction, SKILL_GRASS_THROW_RADIUS as i32) {
+                        if data.map[grass_pos].tile_type == TileType::Empty {
+                            data.map[grass_pos].surface = Surface::Grass;
                         }
                     }
                     data.entities.took_turn[&entity_id] = true;

@@ -377,8 +377,7 @@ impl Direction {
     }
 
     pub fn turn_amount(&self, dir: Direction) -> i32 {
-        use Direction::*;
-        let dirs = vec![DownLeft, Left, UpLeft, Up, UpRight, Right, DownRight, Down];
+        let dirs = Direction::directions();
         let count = dirs.len() as i32;
 
         let start_ix = dirs.iter().position(|d| *d == *self).unwrap() as i32;
@@ -390,6 +389,38 @@ impl Direction {
             return (count - end_ix) + start_ix;
         } else {
             return (count - start_ix) + end_ix;
+        }
+    }
+
+    pub fn directions() -> Vec<Direction> {
+        use Direction::*;
+        let dirs = vec![DownLeft, Left, UpLeft, Up, UpRight, Right, DownRight, Down];
+        return dirs;
+    }
+
+    pub fn clockwise(&self) -> Direction {
+        match self {
+            Direction::Left => Direction::UpLeft,
+            Direction::Right => Direction::DownRight,
+            Direction::Up => Direction::UpRight,
+            Direction::Down => Direction::DownLeft,
+            Direction::DownLeft => Direction::Left,
+            Direction::DownRight => Direction::Down,
+            Direction::UpLeft => Direction::Up,
+            Direction::UpRight => Direction::Right,
+        }
+    }
+
+    pub fn counterclockwise(&self) -> Direction {
+        match self {
+            Direction::Left => Direction::DownLeft,
+            Direction::Right => Direction::UpRight,
+            Direction::Up => Direction::UpLeft,
+            Direction::Down => Direction::DownRight,
+            Direction::DownLeft => Direction::Down,
+            Direction::DownRight => Direction::Right,
+            Direction::UpLeft => Direction::Left,
+            Direction::UpRight => Direction::Up,
         }
     }
 }
@@ -408,6 +439,30 @@ pub fn test_direction_turn_amount() {
 
     assert_eq!(1, Direction::Left.turn_amount(Direction::UpLeft));
     assert_eq!(-1, Direction::Left.turn_amount(Direction::DownLeft));
+}
+
+#[test]
+pub fn test_direction_clockwise() {
+    let mut dir = Direction::Right;
+
+    for _ in 0..8 {
+        let new_dir = dir.clockwise();
+        assert_eq!(1, dir.turn_amount(new_dir));
+        let dir = new_dir;
+    }
+    assert_eq!(Direction::Right, dir);
+}
+
+#[test]
+pub fn test_direction_counterclockwise() {
+    let mut dir = Direction::Right;
+
+    for _ in 0..8 {
+        let new_dir = dir.counterclockwise();
+        assert_eq!(-1, dir.turn_amount(new_dir));
+        let dir = new_dir;
+    }
+    assert_eq!(Direction::Right, dir);
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
