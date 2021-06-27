@@ -87,7 +87,7 @@ impl MoveMode {
 pub enum Attack {
     Attack(EntityId), // target_id
     Push(EntityId, Direction, usize), //target_id, direction, amount
-    Stab(EntityId), // target_id
+    Stab(EntityId, bool), // target_id, move into space
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -713,7 +713,7 @@ pub fn entity_move_not_blocked(entity_id: EntityId, move_pos: Pos, delta_pos: Po
     let next_pos = next_pos(pos, delta_pos);
     if let Some(other_id) = data.has_blocking_entity(next_pos) {
         if can_stab(data, entity_id, other_id) {
-           let attack = Attack::Stab(other_id);
+           let attack = Attack::Stab(other_id, true);
            movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
        } else {
           movement = Some(Movement::move_to(move_pos, MoveType::Move));
@@ -746,7 +746,7 @@ pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked:
         let next_pos = next_pos(pos, delta_pos);
         if let Some(other_id) = data.has_blocking_entity(next_pos) {
             if can_stab(data, entity_id, other_id) {
-               let attack = Attack::Stab(other_id);
+               let attack = Attack::Stab(other_id, true);
                movement = Some(Movement::attack(new_pos, MoveType::JumpWall, attack));
            }
         }
@@ -767,7 +767,7 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId,
 
     let pos = data.entities.pos[&entity_id];
     if can_stab(data, entity_id, other_id) {
-        let attack = Attack::Stab(other_id);
+        let attack = Attack::Stab(other_id, true);
         movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
     } else if data.entities.blocks[&other_id] {
         let other_pos = data.entities.pos[&other_id];
@@ -810,7 +810,7 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
         let dxy = sub_pos(entity_pos, pos);
         let attack: Option<Attack>;
         if can_stab(data, entity_id, other_id) {
-            attack = Some(Attack::Stab(other_id));
+            attack = Some(Attack::Stab(other_id, true));
         } else if data.map[next_pos(pos, dxy)].tile_type != TileType::Water {
             let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
             let push_amount = 1;
@@ -838,7 +838,7 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
         if jumped_wall {
             let attack =
                 if can_stab(data, entity_id, other_id) {
-                    Attack::Stab(other_id)
+                    Attack::Stab(other_id, true)
                 } else {
                     let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
                     let push_amount = 1;

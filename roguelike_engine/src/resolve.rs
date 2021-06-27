@@ -338,7 +338,7 @@ pub fn resolve_messages(data: &mut GameData,
                             // TODO make stab only kill if unaware, stuns otherwise
                             // TODO stabbing moves player into other pos. need to remove or allow
                             // disable
-                            let attack = Attack::Stab(target_id);
+                            let attack = Attack::Stab(target_id, false);
                             resolve_attack(entity_id, attack, attack_pos, data, msg_log, config);
 
                             data.entities.took_turn[&entity_id] = true;
@@ -554,14 +554,14 @@ fn resolve_attack(entity_id: EntityId,
             attack(entity_id, target_id, data, msg_log);
         }
 
-        Attack::Stab(target_id) => {
+        Attack::Stab(target_id, move_into) => {
             stab(entity_id, target_id, &mut data.entities, msg_log);
 
             if data.using(entity_id, Item::Dagger) {
                 data.used_up_item(entity_id);
             }
 
-            if entity_pos != attack_pos {
+            if move_into && entity_pos != attack_pos {
                 msg_log.log(Msg::Moved(entity_id, MoveType::Move, attack_pos));
             }
 

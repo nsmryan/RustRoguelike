@@ -100,7 +100,7 @@ impl fmt::Display for Msg {
                 match attack {
                     Attack::Attack(target_id) => write!(f, "try_attack {} {} {} {}", entity_id, target_id, pos.x, pos.y),
                     Attack::Push(target_id, direction, amount) => write!(f, "try_push {} {} {} {} {} {}", entity_id, target_id, pos.x, pos.y, direction, amount),
-                    Attack::Stab(target_id) => write!(f, "try_stab {} {} {} {}", entity_id, target_id, pos.x, pos.y),
+                    Attack::Stab(target_id, move_into) => write!(f, "try_stab {} {} {} {} {}", entity_id, target_id, pos.x, pos.y, move_into),
                 }
             }
             Msg::Attack(entity_id, target_id, hp) => write!(f, "attack {} {} {}", entity_id, target_id, hp),
