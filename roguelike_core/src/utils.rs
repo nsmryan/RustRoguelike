@@ -974,23 +974,3 @@ pub fn test_cone_up() {
     assert_eq!(Pos::new(2, -2), positions[8]);
 }
 
-pub fn test_cone_upright() {
-    let start = Pos::new(0, 0);
-    let cone = Cone::new(start, Direction::UpRight, 3); 
-    let positions = cone.collect::<Vec<Pos>>();
-
-    assert_eq!(9, positions.len());
-
-    assert_eq!(start, positions[0]);
-
-    assert_eq!(Pos::new(0, -2), positions[1]);
-    assert_eq!(Pos::new(1, -1), positions[2]);
-    assert_eq!(Pos::new(2, 0), positions[3]);
-
-    assert_eq!(Pos::new(-1, -4), positions[4]);
-    assert_eq!(Pos::new(0, -3), positions[5]);
-    assert_eq!(Pos::new(1, -2), positions[6]);
-    assert_eq!(Pos::new(2, -1), positions[7]);
-    assert_eq!(Pos::new(3, 0), positions[8]);
-}
-
