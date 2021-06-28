@@ -914,15 +914,28 @@ impl Iterator for Cone {
     type Item = Pos;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let cone_width = self.cur_length * 2 + 1;
+        let cur_pos;
+        let cone_width;
 
-        let len_pos = self.dir.offset_pos(self.start, self.cur_length);
+        if self.dir.diag() {
+            cone_width = self.cur_length + 1;
 
-        let left_dir = self.dir.counterclockwise().counterclockwise();
-        let left_most = left_dir.offset_pos(len_pos, self.cur_length);
+            let left_dir = self.dir.counterclockwise();
+            let leftmost_pos = left_dir.offset_pos(self.start, self.cur_length);
 
-        let right_dir = self.dir.clockwise().clockwise();
-        let cur_pos = right_dir.offset_pos(left_most, self.within_length);
+            let right_dir = self.dir.clockwise().clockwise();
+            cur_pos = right_dir.offset_pos(leftmost_pos, self.within_length);
+        } else {
+            cone_width = self.cur_length * 2 + 1;
+
+            let len_pos = self.dir.offset_pos(self.start, self.cur_length);
+
+            let left_dir = self.dir.counterclockwise().counterclockwise();
+            let left_most = left_dir.offset_pos(len_pos, self.cur_length);
+
+            let right_dir = self.dir.clockwise().clockwise();
+            cur_pos = right_dir.offset_pos(left_most, self.within_length);
+        }
 
         if self.within_length + 1 == cone_width {
             self.cur_length += 1;
