@@ -425,6 +425,7 @@ impl GameData {
         self.entities.stance.remove(&id);
         self.entities.ai.remove(&id);
         self.entities.behavior.remove(&id);
+        self.entities.attack_type.remove(&id);
         self.entities.item.remove(&id);
         self.entities.movement.remove(&id);
         self.entities.attack.remove(&id);
@@ -990,6 +991,7 @@ pub struct Entities {
     pub fighter: CompStore<Fighter>,
     pub ai: CompStore<Ai>,
     pub behavior: CompStore<Behavior>,
+    pub attack_type: CompStore<AttackType>,
     pub item: CompStore<Item>,
     pub movement: CompStore<Reach>,
     pub attack: CompStore<Reach>,
@@ -1250,6 +1252,7 @@ impl Entities {
         move_component!(stance);
         move_component!(ai);
         move_component!(behavior);
+        move_component!(attack_type);
         move_component!(item);
         move_component!(movement);
         move_component!(attack);

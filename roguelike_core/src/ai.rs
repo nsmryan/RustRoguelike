@@ -53,7 +53,6 @@ impl Behavior {
     }
 }
 
-// TODO StateChange will likely have to attempt another ai_take_turn
 pub fn ai_take_turn(monster_id: EntityId,
                     data: &mut GameData,
                     config: &Config,
@@ -319,11 +318,10 @@ pub fn ai_can_hit_target(data: &mut GameData,
     // which contains the player, while path_blocked_move only checks the map
     // up to and including the player pos.
     let clear_path = data.clear_path_up_to(monster_pos, target_pos, traps_block);
-    // TODO issue #248 indicates that hitting should not be restricted by inter-tile walls.
-    //let clear_map = data.map.path_blocked_move(monster_pos, target_pos).is_none();
+    let clear_map = data.entities.attack_type[&monster_id] == AttackType::Ranged ||
+                    data.map.path_blocked_move(monster_pos, target_pos).is_none();
 
-    //if within_fov && clear_path && clear_map {
-    if within_fov && clear_path {
+    if within_fov && clear_path && clear_map {
         // get all locations they can hit
         let positions: Vec<Pos> = reach.reachables(monster_pos);
 

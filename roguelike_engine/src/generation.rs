@@ -57,58 +57,58 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
 }
 
 pub fn make_column(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let object = entities.create_entity(pos.x, pos.y, EntityType::Column, MAP_COLUMN as char, Color::white(), EntityName::Column, true);
+    let id = entities.create_entity(pos.x, pos.y, EntityType::Column, MAP_COLUMN as char, Color::white(), EntityName::Column, true);
 
-    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Column, entities.direction[&object]));
+    msg_log.log(Msg::SpawnedObject(id, entities.typ[&id], pos, EntityName::Column, entities.direction[&id]));
 
-    return object;
+    return id;
 }
 pub fn make_energy(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let object = entities.create_entity(pos.x, pos.y, EntityType::Energy, ENTITY_ENERGY as char, Color::white(), EntityName::Energy, false);
+    let id = entities.create_entity(pos.x, pos.y, EntityType::Energy, ENTITY_ENERGY as char, Color::white(), EntityName::Energy, false);
 
-    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Energy, entities.direction[&object]));
+    msg_log.log(Msg::SpawnedObject(id, entities.typ[&id], pos, EntityName::Energy, entities.direction[&id]));
 
-    return object;
+    return id;
 }
 
 pub fn make_dagger(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_DAGGER as char, Color::white(), EntityName::Dagger, false);
+    let id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_DAGGER as char, Color::white(), EntityName::Dagger, false);
 
-    entities.item.insert(object,  Item::Dagger);
+    entities.item.insert(id,  Item::Dagger);
 
-    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Dagger, entities.direction[&object]));
+    msg_log.log(Msg::SpawnedObject(id, entities.typ[&id], pos, EntityName::Dagger, entities.direction[&id]));
 
-    return object;
+    return id;
 }
 
 pub fn make_hammer(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_HAMMER as char, Color::white(), EntityName::Hammer, false);
+    let id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_HAMMER as char, Color::white(), EntityName::Hammer, false);
 
-    entities.item.insert(object,  Item::Hammer);
+    entities.item.insert(id,  Item::Hammer);
 
-    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Hammer, entities.direction[&object]));
+    msg_log.log(Msg::SpawnedObject(id, entities.typ[&id], pos, EntityName::Hammer, entities.direction[&id]));
 
-    return object;
+    return id;
 }
 
 pub fn make_sword(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SWORD as char, Color::white(), EntityName::Sword, false);
+    let id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SWORD as char, Color::white(), EntityName::Sword, false);
 
-    entities.item.insert(object,  Item::Sword);
+    entities.item.insert(id,  Item::Sword);
 
-    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Sword, entities.direction[&object]));
+    msg_log.log(Msg::SpawnedObject(id, entities.typ[&id], pos, EntityName::Sword, entities.direction[&id]));
 
-    return object;
+    return id;
 }
 
 pub fn make_shield(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let object = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SHIELD as char, Color::white(), EntityName::Shield, false);
+    let id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SHIELD as char, Color::white(), EntityName::Shield, false);
 
-    entities.item.insert(object,  Item::Shield);
+    entities.item.insert(id,  Item::Shield);
 
-    msg_log.log(Msg::SpawnedObject(object, entities.typ[&object], pos, EntityName::Shield, entities.direction[&object]));
+    msg_log.log(Msg::SpawnedObject(id, entities.typ[&id], pos, EntityName::Shield, entities.direction[&id]));
 
-    return object;
+    return id;
 }
 
 pub fn make_key(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
@@ -147,57 +147,60 @@ pub fn make_cursor(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
 }
 
 pub fn make_gol(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let gol = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{98}', Color::white(), EntityName::Gol, true);
+    let id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{98}', Color::white(), EntityName::Gol, true);
 
-    entities.fighter.insert(gol,  Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, });
-    entities.ai.insert(gol,  Ai::Basic);
-    entities.behavior.insert(gol,  Behavior::Idle);
-    entities.movement.insert(gol,  Reach::Single(GOL_MOVE_DISTANCE));
-    entities.attack.insert(gol,  Reach::Diag(GOL_ATTACK_DISTANCE));
-    entities.status[&gol].alive = true;
-    entities.direction.insert(gol,  Direction::from_f32(rand_from_pos(pos)));
-    entities.stance.insert(gol,  Stance::Standing);
-    entities.move_mode.insert(gol,  MoveMode::Walk);
+    entities.fighter.insert(id,  Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, });
+    entities.ai.insert(id,  Ai::Basic);
+    entities.behavior.insert(id,  Behavior::Idle);
+    entities.movement.insert(id,  Reach::Single(GOL_MOVE_DISTANCE));
+    entities.attack.insert(id,  Reach::Diag(GOL_ATTACK_DISTANCE));
+    entities.status[&id].alive = true;
+    entities.direction.insert(id,  Direction::from_f32(rand_from_pos(pos)));
+    entities.stance.insert(id,  Stance::Standing);
+    entities.move_mode.insert(id,  MoveMode::Walk);
+    entities.attack_type.insert(id,  AttackType::Ranged);
 
-    msg_log.log(Msg::SpawnedObject(gol, entities.typ[&gol], pos, EntityName::Gol, entities.direction[&gol]));
+    msg_log.log(Msg::SpawnedObject(id, entities.typ[&id], pos, EntityName::Gol, entities.direction[&id]));
     
-    return gol;
+    return id;
 } 
 
 pub fn make_spire(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let spire = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{15}', Color::white(), EntityName::Spire, true);
+    let id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{15}', Color::white(), EntityName::Spire, true);
 
-    entities.fighter.insert(spire,  Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, });
-    entities.ai.insert(spire,  Ai::Basic);
-    entities.behavior.insert(spire,  Behavior::Idle);
-    entities.movement.insert(spire,  Reach::Single(SPIRE_MOVE_DISTANCE));
-    entities.attack.insert(spire,  Reach::Single(SPIRE_ATTACK_DISTANCE));
-    entities.status[&spire].alive = true;
-    entities.direction.insert(spire,  Direction::Up);
-    entities.stance.insert(spire,  Stance::Standing);
-    entities.move_mode.insert(spire,  MoveMode::Walk);
+    entities.fighter.insert(id,  Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, });
+    entities.ai.insert(id,  Ai::Basic);
+    entities.behavior.insert(id,  Behavior::Idle);
+    entities.movement.insert(id,  Reach::Single(SPIRE_MOVE_DISTANCE));
+    entities.attack.insert(id,  Reach::Single(SPIRE_ATTACK_DISTANCE));
+    entities.status[&id].alive = true;
+    entities.direction.insert(id,  Direction::Up);
+    entities.stance.insert(id,  Stance::Standing);
+    entities.move_mode.insert(id,  MoveMode::Walk);
+    entities.attack_type.insert(id,  AttackType::Melee);
 
-    msg_log.log(Msg::SpawnedObject(spire, entities.typ[&spire], pos, EntityName::Spire, entities.direction[&spire]));
+    msg_log.log(Msg::SpawnedObject(id, entities.typ[&id], pos, EntityName::Spire, entities.direction[&id]));
 
-    return spire;
+    return id;
 }
 
 pub fn make_pawn(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let elf = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{A5}', Color::white(), EntityName::Pawn, true);
+    let id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{A5}', Color::white(), EntityName::Pawn, true);
 
-    entities.fighter.insert(elf,  Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, });
-    entities.ai.insert(elf,  Ai::Basic);
-    entities.behavior.insert(elf,  Behavior::Idle);
-    entities.movement.insert(elf,  Reach::Single(PAWN_MOVE_DISTANCE));
-    entities.attack.insert(elf,  Reach::Single(PAWN_ATTACK_DISTANCE));
-    entities.status[&elf].alive = true;
-    entities.direction.insert(elf,  Direction::from_f32(rand_from_pos(pos)));
-    entities.stance.insert(elf,  Stance::Standing);
-    entities.move_mode.insert(elf,  MoveMode::Walk);
+    entities.fighter.insert(id,  Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, });
+    entities.ai.insert(id,  Ai::Basic);
+    entities.behavior.insert(id,  Behavior::Idle);
+    entities.movement.insert(id,  Reach::Single(PAWN_MOVE_DISTANCE));
+    entities.attack.insert(id,  Reach::Single(PAWN_ATTACK_DISTANCE));
+    entities.status[&id].alive = true;
+    entities.direction.insert(id,  Direction::from_f32(rand_from_pos(pos)));
+    entities.stance.insert(id,  Stance::Standing);
+    entities.move_mode.insert(id,  MoveMode::Walk);
+    entities.attack_type.insert(id,  AttackType::Melee);
 
-    msg_log.log(Msg::SpawnedObject(elf, entities.typ[&elf], pos, EntityName::Pawn, entities.direction[&elf]));
+    msg_log.log(Msg::SpawnedObject(id, entities.typ[&id], pos, EntityName::Pawn, entities.direction[&id]));
 
-    return elf;
+    return id;
 }
 
 pub fn make_sound_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
@@ -565,6 +568,7 @@ pub fn make_wall_test_map(entities: &mut Entities,
     map[(4, 4)].bottom_wall = Wall::ShortWall;
     map[(5, 4)].bottom_wall = Wall::ShortWall;
   
+    //make_pawn(entities, config, Pos::new(5, 5), msg_log);
     make_gol(entities, config, Pos::new(5, 5), msg_log);
     make_column(entities, config, Pos::new(6, 4), msg_log);
 
