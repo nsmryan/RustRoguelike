@@ -368,15 +368,17 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
         y_pos += 1;
 
-        let mut in_fov = false;
+        let mut tile_in_fov = game.data.pos_in_fov(player_id, info_pos, &game.config);
+
+        let mut entity_in_fov = false;
 
         // only display first object
         if let Some(obj_id) = object_ids.first() {
-            in_fov = game.settings.god_mode ||
-                     game.data.is_in_fov(player_id, *obj_id, &game.config);
+            entity_in_fov = game.settings.god_mode ||
+                            game.data.is_in_fov(player_id, *obj_id, &game.config);
 
             // only display things in the player's FOV
-            if in_fov {
+            if entity_in_fov {
                 if let Some(fighter) = game.data.entities.fighter.get(obj_id) {
                     y_pos += 1;
 
@@ -420,7 +422,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
         text_list.clear();
 
         y_pos = 11;
-        if in_fov {
+        if tile_in_fov {
             let text_pos = Pos::new(1, y_pos);
             text_list.push(format!("Tile is"));
             if game.data.map[info_pos].tile_type == TileType::Water {
