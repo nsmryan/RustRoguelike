@@ -63,8 +63,11 @@ pub fn step_logic(game: &mut Game) -> bool {
         game.settings.turn_count += 1;
     }
 
-    // perform count down, removing entities that ask to be removed
-    game.data.count_down();
+    // perform count down of entities waiting to be removed
+    game.data.entities.count_down();
+
+    // clean up removable entities
+    game.data.entities.clean_entities();
 
     return level_exit_condition_met(&game.data);
 }

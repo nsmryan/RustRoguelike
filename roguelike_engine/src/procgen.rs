@@ -538,7 +538,7 @@ pub fn place_vault_with(data: &mut GameData, vault: &Vault, offset: Pos, rotatio
         }
     }
     for remove_id in entities_to_remove {
-        data.remove_entity(remove_id);
+        data.entities.remove_entity(remove_id);
     }
 
     let mut entities_to_remove: Vec<EntityId> = Vec::new();
@@ -572,11 +572,11 @@ pub fn place_vault_with(data: &mut GameData, vault: &Vault, offset: Pos, rotatio
     }
 
     for remove_id in vault_entities_to_remove {
-        actual_vault.data.remove_entity(remove_id);
+        actual_vault.data.entities.remove_entity(remove_id);
     }
 
     for remove_id in entities_to_remove {
-        data.remove_entity(remove_id);
+        data.entities.remove_entity(remove_id);
     }
 
     data.entities.merge(&entities);
@@ -714,7 +714,7 @@ fn clear_island(game: &mut Game, island_radius: i32) {
                 game.data.map[pos].chr = MAP_WATER;
 
                 for entity_id in game.data.has_entities(pos).clone() {
-                    game.data.remove_entity(entity_id);
+                    game.data.entities.remove_entity(entity_id);
                 }
             }
         }

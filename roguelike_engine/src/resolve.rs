@@ -1215,23 +1215,24 @@ fn process_moved_message(entity_id: EntityId,
         match data.entities.trap[trap] {
             Trap::Spikes => {
                 msg_log.log(Msg::SpikeTrapTriggered(*trap, entity_id));
-                data.entities.needs_removal[trap] = true;
+                data.entities.mark_for_removal(*trap);
             }
 
             Trap::Sound => {
                 msg_log.log(Msg::SoundTrapTriggered(*trap, entity_id));
                 data.entities.needs_removal[trap] = true;
+                data.entities.mark_for_removal(*trap);
             }
 
             Trap::Blink => {
                 data.entities.status[&entity_id].blinked = true;
                 msg_log.log(Msg::BlinkTrapTriggered(*trap, entity_id));
-                data.entities.needs_removal[trap] = true;
+                data.entities.mark_for_removal(*trap);
             }
 
             Trap::Freeze => {
                 msg_log.log(Msg::FreezeTrapTriggered(*trap, entity_id));
-                data.entities.needs_removal[trap] = true;
+                data.entities.mark_for_removal(*trap);
             }
         }
     }

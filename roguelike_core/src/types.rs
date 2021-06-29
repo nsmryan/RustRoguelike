@@ -204,9 +204,8 @@ impl GameData {
         for key in self.entities.ids.iter() {
             let pos = self.entities.pos[key];
             let is_mouse = self.entities.name[key] == EntityName::Mouse;
-            let removing = self.entities.needs_removal[key];
 
-            if !removing && !is_mouse && check_pos == pos {
+            if !is_mouse && check_pos == pos {
                 object_ids.push(*key);
             }
         }
@@ -255,29 +254,6 @@ impl GameData {
         }
 
         return None;
-    }
-
-    pub fn count_down(&mut self) {
-        let mut to_remove = Vec::new();
-        for entity_id in self.entities.ids.iter() {
-            if let Some(ref mut count) = self.entities.count_down.get_mut(entity_id) {
-                if **count == 0 {
-                    to_remove.push(*entity_id);
-                } else {
-                    **count -= 1;
-                }
-            }
-
-            //if self.entities.needs_removal[entity_id] &&
-            //   self.entities.animation[entity_id].len() == 0 {
-            //    to_remove.push(*entity_id);
-            //}
-        }
-
-        // remove objects waiting removal
-        for key in to_remove {
-            self.remove_entity(key);
-        }
     }
 
     pub fn has_entities(&self, pos: Pos) -> Vec<EntityId> {
@@ -354,7 +330,7 @@ impl GameData {
         }
 
         if let Some(item_id) = option_item_id {
-            self.remove_entity(item_id);
+            self.entities.mark_for_removal(entity_id);
             self.entities.inventory[&entity_id].remove(0);
         }
     }
@@ -409,47 +385,9 @@ impl GameData {
 
         for id in self.entities.ids.clone().iter() {
             if !dont_clear.contains(&id) {
-                self.remove_entity(*id);
+                self.entities.remove_entity(*id);
             }
         }
-    }
-
-    pub fn remove_entity(&mut self, id: EntityId) {
-        let ix_pos = self.entities.ids.iter().position(|val| *val == id).unwrap();
-        self.entities.ids.remove(ix_pos);
-
-        self.entities.pos.remove(&id);
-        self.entities.chr.remove(&id);
-        self.entities.name.remove(&id);
-        self.entities.fighter.remove(&id);
-        self.entities.stance.remove(&id);
-        self.entities.ai.remove(&id);
-        self.entities.behavior.remove(&id);
-        self.entities.attack_type.remove(&id);
-        self.entities.item.remove(&id);
-        self.entities.movement.remove(&id);
-        self.entities.attack.remove(&id);
-        self.entities.inventory.remove(&id);
-        self.entities.trap.remove(&id);
-        self.entities.armed.remove(&id);
-        self.entities.energy.remove(&id);
-        self.entities.count_down.remove(&id);
-        self.entities.move_mode.remove(&id);
-        self.entities.direction.remove(&id);
-        self.entities.selected_item.remove(&id);
-        self.entities.class.remove(&id);
-        self.entities.skills.remove(&id);
-        self.entities.limbo.remove(&id);
-        self.entities.animation.remove(&id);
-        self.entities.sound.remove(&id);
-        self.entities.typ.remove(&id);
-        self.entities.status.remove(&id);
-        self.entities.gate_pos.remove(&id);
-        self.entities.took_turn.remove(&id);
-        self.entities.color.remove(&id);
-        self.entities.blocks.remove(&id);
-        self.entities.needs_removal.remove(&id);
-        self.entities.messages.remove(&id);
     }
 }
 
@@ -1228,6 +1166,45 @@ impl Entities {
         }
     }
 
+    pub fn mark_for_removal(&mut self, entity_id: EntityId) {
+        // removing the player is handled specially
+        if self.typ[&entity_id] != EntityType::Player {
+            self.needs_removal[&entity_id] = true;
+            self.pos[&entity_id] = Pos::new(-1, -1);
+        }
+    }
+
+    pub fn count_down(&mut self) {
+        let mut to_remove = Vec::new();
+        for entity_id in self.ids.iter() {
+            if let Some(ref mut count) = self.count_down.get_mut(entity_id) {
+                if **count == 0 {
+                    to_remove.push(*entity_id);
+                } else {
+                    **count -= 1;
+                }
+            }
+        }
+
+        // remove objects waiting removal
+        for key in to_remove {
+            self.mark_for_removal(key);
+        }
+    }
+
+    pub fn clean_entities(&mut self) {
+        let mut remove_ids: Vec<EntityId> = Vec::new();
+        for id in self.ids.iter() {
+            if self.needs_removal[id] {
+                remove_ids.push(*id);
+            }
+        }
+
+        for id in remove_ids {
+            self.remove_entity(id);
+        }
+    }
+
     // NOTE cloning entities may not remap all entity ids that an entity tracks!
     // this could cause subtle problems, so this is really only for level generation.
     pub fn clone_entity(&mut self, other: &Entities, entity_id: EntityId) {
@@ -1286,6 +1263,44 @@ impl Entities {
         for id in other.ids.iter() {
             self.clone_entity(other, *id);
         }
+    }
+
+    pub fn remove_entity(&mut self, id: EntityId) {
+        let ix_pos = self.ids.iter().position(|val| *val == id).unwrap();
+        self.ids.remove(ix_pos);
+
+        self.pos.remove(&id);
+        self.chr.remove(&id);
+        self.name.remove(&id);
+        self.fighter.remove(&id);
+        self.stance.remove(&id);
+        self.ai.remove(&id);
+        self.behavior.remove(&id);
+        self.attack_type.remove(&id);
+        self.item.remove(&id);
+        self.movement.remove(&id);
+        self.attack.remove(&id);
+        self.inventory.remove(&id);
+        self.trap.remove(&id);
+        self.armed.remove(&id);
+        self.energy.remove(&id);
+        self.count_down.remove(&id);
+        self.move_mode.remove(&id);
+        self.direction.remove(&id);
+        self.selected_item.remove(&id);
+        self.class.remove(&id);
+        self.skills.remove(&id);
+        self.limbo.remove(&id);
+        self.animation.remove(&id);
+        self.sound.remove(&id);
+        self.typ.remove(&id);
+        self.status.remove(&id);
+        self.gate_pos.remove(&id);
+        self.took_turn.remove(&id);
+        self.color.remove(&id);
+        self.blocks.remove(&id);
+        self.needs_removal.remove(&id);
+        self.messages.remove(&id);
     }
 }
 
