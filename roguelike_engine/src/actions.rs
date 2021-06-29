@@ -232,6 +232,10 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) {
             game.settings.god_mode = !game.settings.god_mode;
         }
 
+        InputAction::Exit => {
+            change_state(&mut game.settings, GameState::Exit);
+        }
+
         _ => {}
     }
 }
@@ -303,7 +307,7 @@ pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings) {
         }
 
         InputAction::Exit => {
-            change_state(settings, GameState::ConfirmQuit);
+            change_state(settings, GameState::Exit);
         }
 
         _ => {
@@ -335,7 +339,7 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::Exit => {
-            change_state(settings, GameState::ConfirmQuit);
+            change_state(settings, GameState::Exit);
         }
 
         _ => {
@@ -371,7 +375,7 @@ pub fn handle_input_class_menu(input: InputAction,
         }
 
         InputAction::Exit => {
-            change_state(settings, GameState::ConfirmQuit);
+            change_state(settings, GameState::Exit);
         }
 
         _ => {
@@ -565,7 +569,7 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Exit, _) => {
-            change_state(settings, GameState::ConfirmQuit);
+            change_state(settings, GameState::Exit);
         }
 
         (InputAction::Interact(dir), _) => {

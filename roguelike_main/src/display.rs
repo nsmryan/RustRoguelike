@@ -320,7 +320,7 @@ impl Display {
                         //anim_desc = Some(("elf_idle", config.idle_speed));
                     } else if data.entities.name[&entity_id] == EntityName::Gol {
                         //anim_desc = Some(("gol_idle", config.idle_speed));
-                    } else if data.entities.name[&entity_id] == EntityName::Gol {
+                    } else if data.entities.name[&entity_id] == EntityName::Lantern {
                         anim_desc = Some(("lantern", config.idle_speed));
                     }
 

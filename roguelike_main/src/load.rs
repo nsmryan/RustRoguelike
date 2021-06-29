@@ -28,7 +28,7 @@ pub fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display: &m
     load_sprite(texture_creator, display, "animations/traps/DamageTrap.png", "spikes", 1);
     load_sprite(texture_creator, display, "resources/rexpaint16x16.png", "font", 16);
     load_sprite(texture_creator, display, "animations/traps/McMuffin.png", "key", 1);
-    load_sprite(texture_creator, display, "animations/FireLamp/Lantern_idle.png", "lantern", 1);
+    load_sprite(texture_creator, display, "animations/FireLamp/Lantern_Idle.png", "lantern", 1);
     load_sprite(texture_creator, display, "resources/shadowtiles.png", "shadows", 2);
 
     for entry in fs::read_dir("animations/autoload/").unwrap() {
