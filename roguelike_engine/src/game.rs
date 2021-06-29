@@ -74,14 +74,15 @@ impl Game {
         self.settings.dt = dt;
         self.settings.time += dt;
 
-        actions::handle_input_universal(input_action, self);
+        let input_handled = actions::handle_input_universal(input_action, self);
 
-        // all input is handled by modifying settings and spawning messages
-        actions::handle_input(input_action,
-                              &self.data,
-                              &mut self.settings,
-                              &mut self.msg_log,
-                              &self.config);
+        if !input_handled {
+            actions::handle_input(input_action,
+                                  &self.data,
+                                  &mut self.settings,
+                                  &mut self.msg_log,
+                                  &self.config);
+        }
 
         if self.msg_log.messages.len() > 0 {
             let finished_level = step_logic(self);

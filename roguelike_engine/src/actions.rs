@@ -46,6 +46,7 @@ pub enum InputAction {
     ClassMenu,
     Exit,
     Esc,
+    ForceExit,
     ExploreAll,
     RegenerateMap,
     GodMode,
@@ -83,6 +84,7 @@ impl fmt::Display for InputAction {
             InputAction::ClassMenu => write!(f, "class"),
             InputAction::Exit => write!(f, "exit"),
             InputAction::Esc => write!(f, "esc"),
+            InputAction::ForceExit => write!(f, "force_exit"),
             InputAction::ExploreAll => write!(f, "exploreall"),
             InputAction::RegenerateMap => write!(f, "regenmap"),
             InputAction::GodMode => write!(f, "godmode"),
@@ -175,6 +177,8 @@ impl FromStr for InputAction {
             return Ok(InputAction::ClassMenu);
         } else if args[0] == "esc" {
             return Ok(InputAction::Esc);
+        } else if args[0] == "force_exit" {
+            return Ok(InputAction::ForceExit);
         } else if args[0] == "faster" {
             return Ok(InputAction::IncreaseMoveMode);
         } else if args[0] == "slower" {
@@ -205,7 +209,7 @@ impl FromStr for InputAction {
     }
 }
 
-pub fn handle_input_universal(input_action: InputAction, game: &mut Game) {
+pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> bool {
     match input_action {
         InputAction::ExploreAll => {
             for x in 0..game.data.map.width() {
@@ -214,10 +218,13 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) {
                     game.data.map[pos].explored = true;
                 }
             }
+
+            return true;
         }
 
         InputAction::RegenerateMap => {
             let _position = make_map::make_map(&game.config.map_load.clone(), game);
+            return true;
         }
 
         InputAction::GodMode => {
@@ -230,13 +237,26 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) {
 
             // toggle god mode flag
             game.settings.god_mode = !game.settings.god_mode;
+            return true;
+        }
+
+        InputAction::ForceExit => {
+            change_state(&mut game.settings, GameState::Exit);
+            return true;
         }
 
         InputAction::Exit => {
-            change_state(&mut game.settings, GameState::Exit);
+            if game.settings.state != GameState::ConfirmQuit {
+                change_state(&mut game.settings, GameState::ConfirmQuit);
+                return true;
+            } else {
+                return false;
+            }
         }
 
-        _ => {}
+        _ => {
+            return false;
+        }
     }
 }
 
@@ -306,10 +326,6 @@ pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings) {
             change_state(settings, GameState::Playing);
         }
 
-        InputAction::Exit => {
-            change_state(settings, GameState::Exit);
-        }
-
         _ => {
         }
     }
@@ -336,10 +352,6 @@ pub fn handle_input_skill_menu(input: InputAction,
 
         InputAction::Esc => {
             change_state(settings, GameState::Playing);
-        }
-
-        InputAction::Exit => {
-            change_state(settings, GameState::Exit);
         }
 
         _ => {
@@ -372,10 +384,6 @@ pub fn handle_input_class_menu(input: InputAction,
 
         InputAction::Esc => {
             change_state(settings, GameState::Playing);
-        }
-
-        InputAction::Exit => {
-            change_state(settings, GameState::Exit);
         }
 
         _ => {
@@ -566,10 +574,6 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::ClassMenu, true) => {
             change_state(settings, GameState::ClassMenu);
-        }
-
-        (InputAction::Exit, _) => {
-            change_state(settings, GameState::Exit);
         }
 
         (InputAction::Interact(dir), _) => {
@@ -844,8 +848,8 @@ fn chord_item(loc: ActionLoc,
     }
 }
 
-    
-pub fn change_state(settings: &mut GameSettings, new_state: GameState) {
+// TODO is this println okay to leave in? seems like it should be in stderr?
+fn change_state(settings: &mut GameSettings, new_state: GameState) {
     if new_state != settings.state {
         settings.state = new_state;
         match new_state {

@@ -153,7 +153,7 @@ impl Input {
             }
 
             InputEvent::Quit => {
-                action = InputAction::Exit;
+                action = InputAction::ForceExit;
             }
 
             InputEvent::Esc => {
