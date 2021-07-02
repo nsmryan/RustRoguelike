@@ -228,7 +228,6 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
         }
 
         InputAction::GodMode => {
-            // TODO hmmm... add a message, or resolve at higher level as a universal action
             let god_mode_hp = 10000;
             let player_id = game.data.find_by_name(EntityName::Player).unwrap();
             game.data.entities.fighter[&player_id].hp = god_mode_hp;
@@ -260,62 +259,6 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
     }
 }
 
-// TODO remove with selection system
-//pub fn inventory_use_item(item_index: usize,
-//                          data: &GameData,
-//                          settings: &mut GameSettings,
-//                          _msg_log: &mut MsgLog) -> ActionResult {
-//    let mut action_result: ActionResult = Default::default();
-//
-//    let player_id = data.find_by_name(EntityName::Player).unwrap();
-//    let item_id = data.entities.inventory[&player_id][item_index];
-//    settings.selection.item = Some(item_id);
-//
-//    settings.selection.only_visible = false;
-//
-//    // if the item is a trap, set it.
-//    // otherwise, throw it.
-//    if data.entities.trap.get(&item_id).is_some() {
-//        settings.selection =
-//            Selection::new(SelectionType::WithinReach(Reach::single(1)), SelectionAction::PlaceTrap);
-//    } else {
-//        settings.selection =
-//            Selection::new(SelectionType::WithinRadius(PLAYER_THROW_DIST), SelectionAction::Throw);
-//    }
-//
-//    action_result.new_state = Some(GameState::Selection);
-//
-//    return action_result;
-//}
-//
-//// TODO remove with selection system
-//pub fn inventory_select_item(item_index: usize,
-//                             data: &GameData,
-//                             settings: &mut GameSettings,
-//                             msg_log: &mut MsgLog) -> ActionResult {
-//    let mut action_result: ActionResult = Default::default();
-//
-//    let player_id = data.find_by_name(EntityName::Player).unwrap();
-//    let num_items = data.entities.inventory[&player_id].len();
-//
-//    // if item index is not in the player's inventory, do nothing
-//    if item_index < num_items {
-//        match settings.inventory_action {
-//            InventoryAction::Use => {
-//                action_result = inventory_use_item(item_index, data, settings, msg_log);
-//            }
-//
-//            InventoryAction::Drop => {
-//                msg_log.log(Msg::DropItem(player_id, item_index as u64));
-//                settings.state = GameState::Playing;
-//                msg_log.log(Msg::GameState(settings.state));
-//            }
-//        }
-//    }
-//
-//    return action_result;
-//}
-
 pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings) {
     match input {
         InputAction::Inventory => {
@@ -324,6 +267,14 @@ pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings) {
 
         InputAction::Esc => {
             change_state(settings, GameState::Playing);
+        }
+
+        InputAction::SkillMenu => {
+            change_state(settings, GameState::SkillMenu);
+        }
+
+        InputAction::ClassMenu => {
+            change_state(settings, GameState::ClassMenu);
         }
 
         _ => {
@@ -343,6 +294,10 @@ pub fn handle_input_skill_menu(input: InputAction,
 
         InputAction::SkillMenu => {
             change_state(settings, GameState::Playing);
+        }
+
+        InputAction::ClassMenu => {
+            change_state(settings, GameState::ClassMenu);
         }
 
         InputAction::SelectItem(skill_index) => {
@@ -370,6 +325,10 @@ pub fn handle_input_class_menu(input: InputAction,
 
         InputAction::ClassMenu => {
             change_state(settings, GameState::Playing);
+        }
+
+        InputAction::SkillMenu => {
+            change_state(settings, GameState::SkillMenu);
         }
 
         InputAction::SelectItem(class_index) => {

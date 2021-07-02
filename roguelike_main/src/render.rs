@@ -1326,36 +1326,45 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             }
 
             if game.data.is_in_fov(player_id, *entity_id, &game.config) {
-                if let Some(behavior) = game.data.entities.behavior.get(entity_id) {
-                    match behavior {
-                        Behavior::Idle => {
-                            tile_sprite.draw_sprite_direction(panel,
-                                                              ASTERISK as usize,
-                                                              Some(Direction::UpRight),
-                                                              pos,
-                                                              scale,
-                                                              alertness_color,
-                                                              0.0);
-                        }
+                let mut status_drawn: bool = false;
+                if let Some(status) = game.data.entities.status.get(entity_id) {
+                    if status.frozen > 0 {
+                        status_drawn = true;
+                        tile_sprite.draw_sprite_direction(panel,
+                                                          ASTERISK as usize,
+                                                          Some(Direction::UpRight),
+                                                          pos,
+                                                          scale,
+                                                          alertness_color,
+                                                          0.0);
+                    }
+                }
 
-                        Behavior::Investigating(_) => {
-                            tile_sprite.draw_sprite_direction(panel,
-                                                              QUESTION_MARK as usize,
-                                                              Some(Direction::UpRight),
-                                                              pos,
-                                                              scale,
-                                                              alertness_color,
-                                                              0.0);
-                        }
+                if status_drawn {
+                    if let Some(behavior) = game.data.entities.behavior.get(entity_id) {
+                        match behavior {
+                            Behavior::Idle => {
+                            }
 
-                        Behavior::Attacking(_) => {
-                            tile_sprite.draw_sprite_direction(panel,
-                                                              EXCLAMATION_POINT as usize,
-                                                              Some(Direction::UpRight),
-                                                              pos,
-                                                              scale,
-                                                              alertness_color,
-                                                              0.0);
+                            Behavior::Investigating(_) => {
+                                tile_sprite.draw_sprite_direction(panel,
+                                                                  QUESTION_MARK as usize,
+                                                                  Some(Direction::UpRight),
+                                                                  pos,
+                                                                  scale,
+                                                                  alertness_color,
+                                                                  0.0);
+                            }
+
+                            Behavior::Attacking(_) => {
+                                tile_sprite.draw_sprite_direction(panel,
+                                                                  EXCLAMATION_POINT as usize,
+                                                                  Some(Direction::UpRight),
+                                                                  pos,
+                                                                  scale,
+                                                                  alertness_color,
+                                                                  0.0);
+                            }
                         }
                     }
                 }

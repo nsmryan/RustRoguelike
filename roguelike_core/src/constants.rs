@@ -44,7 +44,7 @@ pub const NOT_IN_FOV_COST: usize = 5;
 
 /* Skill Settings */
 pub const SKILL_GRASS_SHOES_TURNS: usize = 6;
-pub const SKILL_GRASS_THROW_RADIUS: usize = 3;
+pub const SKILL_GRASS_THROW_RADIUS: usize = 4;
 pub const SKILL_ILLUMINATE_RADIUS: usize = LANTERN_ILLUMINATE_RADIUS;
 pub const SKILL_HEAL_AMOUNT: usize = LANTERN_ILLUMINATE_RADIUS;
 pub const SKILL_FARSIGHT_FOV_AMOUNT: usize = 1;
@@ -191,7 +191,7 @@ pub const ARROW_UP: u8 = 30;
 pub const ARROW_DOWN: u8 = 31;
 
 /* Characters */
-pub const EXCLAMATION_POINT: u8 = '!' as u8;
-pub const QUESTION_MARK: u8 = '?' as u8;
-pub const ASTERISK: u8 = 244;
+pub const EXCLAMATION_POINT: u8 = 33 as u8;
+pub const QUESTION_MARK: u8 = 63 as u8;
+pub const ASTERISK: u8 = 239; // NOTE there is no asterisk currently, so this is a marker
 
