@@ -345,7 +345,7 @@ impl Tile {
 
     pub fn short_wall_with(chr: char) -> Self {
         Tile {
-            block_move: true,
+            block_move: false,
             block_sight: false,
             explored: false,
             tile_type: TileType::ShortWall,

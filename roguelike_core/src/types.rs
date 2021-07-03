@@ -55,6 +55,7 @@ impl GameData {
                        .iter()
                        .map(|pos| *pos)
                        .filter(|pos| self.has_blocking_entity(*pos).is_none())
+                       .filter(|pos| !self.map[*pos].block_move)
                        .collect::<Vec<Pos>>();
     }
 

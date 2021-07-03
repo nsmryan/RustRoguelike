@@ -522,24 +522,20 @@ pub fn place_vault_with(data: &mut GameData, vault: &Vault, offset: Pos, rotatio
 
     let (width, height) = actual_vault.data.map.size();
 
-    let mut entities_to_remove: Vec<EntityId> = Vec::new();
     // update map with vault tiles
-    for pos in actual_vault.data.map.get_all_pos() {
-        let map_pos = add_pos(offset, pos);
+    for vault_pos in actual_vault.data.map.get_all_pos() {
+        let map_pos = add_pos(offset, vault_pos);
         if data.map.is_within_bounds(map_pos) {
-            data.map[map_pos] = actual_vault.data.map[pos];
-        }
+            data.map[map_pos] = actual_vault.data.map[vault_pos];
 
-        for entity_id in data.get_entities_at_pos(map_pos) {
-            if data.entities.typ[&entity_id] == EntityType::Player {
-                data.map[map_pos] = Tile::empty();
-            } else {
-                entities_to_remove.push(entity_id);
+            for entity_id in data.get_entities_at_pos(map_pos) {
+                if data.entities.typ[&entity_id] == EntityType::Player {
+                    data.map[vault_pos] = Tile::empty();
+                } else {
+                    data.entities.remove_entity(entity_id);
+                }
             }
         }
-    }
-    for remove_id in entities_to_remove {
-        data.entities.remove_entity(remove_id);
     }
 
     let mut entities_to_remove: Vec<EntityId> = Vec::new();
@@ -554,7 +550,7 @@ pub fn place_vault_with(data: &mut GameData, vault: &Vault, offset: Pos, rotatio
         }
         entity_pos = rotation.rotate(entity_pos, width, height);
         entity_pos = add_pos(offset, entity_pos);
-        if data.map.is_within_bounds(entity_pos) {
+        if data.map.is_within_bounds(entity_pos) && !data.map[entity_pos].block_move {
             entities.pos[id] = entity_pos;
         } else {
             vault_entities_to_remove.push(*id);
@@ -573,7 +569,7 @@ pub fn place_vault_with(data: &mut GameData, vault: &Vault, offset: Pos, rotatio
     }
 
     for remove_id in vault_entities_to_remove {
-        actual_vault.data.entities.remove_entity(remove_id);
+        entities.remove_entity(remove_id);
     }
 
     for remove_id in entities_to_remove {
@@ -621,19 +617,15 @@ fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
 fn find_available_tile(game: &mut Game) -> Option<Pos> {
     let mut avail_pos = None;
 
-    let (width, height) = game.data.map.size();
+    let potential_pos = game.data.get_clear_pos();
     let mut index = 1.0;
-    for x in 0..width {
-        for y in 0..height {
-            let pos = Pos::new(x, y);
-
-            if !game.data.map[pos].block_move && game.data.has_blocking_entity(pos).is_none() {
-                if rng_range(&mut game.rng, 0.0, 1.0) < (1.0 / index) {
-                    avail_pos = Some(pos);
-                }
-
-                index += 1.0;
+    for pos in potential_pos {
+        if game.data.has_blocking_entity(pos).is_none() {
+            if rng_range(&mut game.rng, 0.0, 1.0) < (1.0 / index) {
+                avail_pos = Some(pos);
             }
+
+            index += 1.0;
         }
     }
 
