@@ -4,6 +4,18 @@ This Rust Roguelike is a Roguelike written in Rust. It is a Roguelike with a foc
 on movement, use of space, stealth, and some resource management. 
 
 
+Some unusual aspects that make this game interesting:
+
+    * Intertile walls- walls that are between two tiles instead of within a tile
+    * A varied movement system which allows slow sneaking movement, normal walking, and running,
+    each with different levels of visibility, levels of noise, movement distance, and capabilities (such as
+    jumping over short walls while running).
+    * A stealth system based on noise level and visiblilty, with various factors effecting LoS.
+    * Unusual classes like 'clockwork', 'monolith', 'grass', or 'heirophant' with their own unique skills.
+    * A control scheme designed around simplicity and immediacy, while also providing a high level of
+      information to the player to allow careful consideration of their moves.
+
+
 ## Building
 
 This is tested on Windows and Linux. On Linux (and on a Mac, although
