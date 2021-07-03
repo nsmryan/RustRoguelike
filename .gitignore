@@ -39,3 +39,12 @@ issue_logs/
 *.vim
 
 map_emptiness_distribution.txt
+screenshot.bmp
+action_log.txt
+actions.txt
+game.log
+map_config.txt
+message_log.txt
+messages.txt
+*.code-workspace
+.vscode/*
