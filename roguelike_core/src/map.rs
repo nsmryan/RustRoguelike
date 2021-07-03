@@ -775,6 +775,9 @@ impl Map {
 
             Direction::DownRight => {
                 if self.blocked_right(start_pos, blocked_type) && self.blocked_down(start_pos, blocked_type) {
+                    if start_pos.x > 10000 && start_pos.y > 10000 {
+                        dbg!(start_pos);
+                    }
                     blocked.wall_type = self[start_pos].bottom_wall;
                     found_blocker = true;
                 }
@@ -894,6 +897,9 @@ impl Map {
         let line = line(start_pos, end_pos);
         let positions = iter::once(start_pos).chain(line.into_iter());
         for (pos, target_pos) in positions.tuple_windows() {
+            if pos.x > 10000 && pos.y > 10000 {
+                dbg!(pos);
+            }
             let blocked = self.move_blocked(pos, target_pos, blocked_type);
             if blocked.is_some() {
                 return blocked;

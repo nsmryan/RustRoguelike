@@ -1136,6 +1136,33 @@ fn use_item(entity_id: EntityId,
     }
 }
 
+fn make_move_sound(entity_id: EntityId,
+                   pos: Pos,
+                   move_mode: MoveMode,
+                   data: &mut GameData,
+                   msg_log: &mut MsgLog,
+                   config: &Config) {
+    let mut sound_radius;
+
+    match move_mode {
+        MoveMode::Sneak => sound_radius = config.sound_radius_sneak,
+        MoveMode::Walk => sound_radius = config.sound_radius_walk,
+        MoveMode::Run => sound_radius = config.sound_radius_run,
+    }
+
+    if data.map[pos].surface == Surface::Rubble {
+        sound_radius += config.sound_rubble_radius;
+    } else if data.map[pos].surface == Surface::Grass {
+        sound_radius -= config.sound_grass_radius;
+    }
+
+    if data.entities.status[&entity_id].soft_steps > 0 {
+        sound_radius -= 1;
+    }
+
+    msg_log.log_front(Msg::Sound(entity_id, pos, sound_radius, true));
+}
+
 fn process_moved_message(entity_id: EntityId,
                          move_type: MoveType,
                          pos: Pos,
@@ -1163,41 +1190,14 @@ fn process_moved_message(entity_id: EntityId,
 
         // make a noise based on how fast the entity is moving and the terrain
         if pos != original_pos {
-            let mut sound_radius;
-
-            match move_mode {
-                MoveMode::Sneak => sound_radius = config.sound_radius_sneak,
-                MoveMode::Walk => sound_radius = config.sound_radius_walk,
-                MoveMode::Run => sound_radius = config.sound_radius_run,
-            }
-
-            if data.map[pos].surface == Surface::Rubble {
-                sound_radius += config.sound_rubble_radius;
-            } else if data.map[pos].surface == Surface::Grass {
-                sound_radius -= config.sound_grass_radius;
-            }
-
-            if data.entities.status[&entity_id].soft_steps > 0 {
-                sound_radius -= 1;
-            }
-
-            msg_log.log_front(Msg::Sound(entity_id, pos, sound_radius, true));
+            make_move_sound(entity_id, pos, *move_mode, data, msg_log, config);
         }
     } else if pos != original_pos {
         msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_monster, true));
     }
 
     // get a list of triggered traps
-    let mut traps: Vec<EntityId> = Vec::new();
-    for key in data.entities.ids.iter() {
-        if data.entities.trap.get(key).is_some()           && // key is a trap
-           data.entities.armed.get(key) == Some(&true)     && // trap is armed
-           data.entities.status[&entity_id].alive          && // entity is alive
-           data.entities.fighter.get(&entity_id).is_some() && // entity is a fighter
-           data.entities.pos[key] == data.entities.pos[&entity_id] {
-            traps.push(*key);
-        }
-    }
+    let traps: Vec<EntityId> = data.entities.triggered_traps(data.entities.pos[&entity_id]);
 
     // check if player walks on energy
     if entity_id == player_id {

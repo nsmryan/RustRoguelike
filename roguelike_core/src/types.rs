@@ -703,6 +703,7 @@ pub enum EntityName {
     Shield,
     Lantern,
     Spire,
+    Armil,
     SpikeTrap,
     BlinkTrap,
     FreezeTrap,
@@ -736,6 +737,7 @@ impl fmt::Display for EntityName {
             EntityName::Lantern => write!(f, "lantern"),
             EntityName::Shield => write!(f, "shield"),
             EntityName::Spire => write!(f, "spire"),
+            EntityName::Armil => write!(f, "armil"),
             EntityName::SpikeTrap => write!(f, "spiketrap"),
             EntityName::BlinkTrap => write!(f, "blinktrap"),
             EntityName::FreezeTrap => write!(f, "freezetrap"),
@@ -781,6 +783,8 @@ impl FromStr for EntityName {
             return Ok(EntityName::Shield);
         } else if s == "spire" {
             return Ok(EntityName::Spire);
+        } else if s == "armil" {
+            return Ok(EntityName::Armil);
         } else if s == "spiketrap" {
             return Ok(EntityName::SpikeTrap);
         } else if s == "blinktrap" {
@@ -1091,6 +1095,20 @@ impl Entities {
         }
     }
 
+    pub fn triggered_traps(&self, pos: Pos) -> Vec<EntityId> {
+        let mut traps: Vec<EntityId> = Vec::new();
+        for key in self.ids.iter() {
+            if self.trap.get(key).is_some()       && // key is a trap
+               self.armed.get(key) == Some(&true) && // trap is armed
+               !self.needs_removal[key]           && // not being removed
+               self.pos[key] == pos {
+                traps.push(*key);
+            }
+        }
+
+        return traps;
+    }
+
     pub fn was_attacked(&mut self, entity_id: EntityId) -> Option<Message> {
         if let Some(index) = self.messages[&entity_id].iter().position(|msg| matches!(msg, Message::Attack(_))) {
             return Some(self.messages[&entity_id].remove(index));
@@ -1170,7 +1188,6 @@ impl Entities {
         // removing the player is handled specially
         if self.typ[&entity_id] != EntityType::Player {
             self.needs_removal[&entity_id] = true;
-            self.pos[&entity_id] = Pos::new(-1, -1);
         }
     }
 

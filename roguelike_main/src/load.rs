@@ -25,6 +25,7 @@ pub fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display: &m
     load_sprite(texture_creator, display, "animations/monster1/Gol_Idle.png", "gol_idle", 1);
     load_sprite(texture_creator, display, "animations/monster1/Gol_Die.png", "gol_die", 1);
     load_sprite(texture_creator, display, "animations/monster3/Pawn_Idle.png", "elf_idle", 1);
+    load_sprite(texture_creator, display, "animations/monster4/Armil_Idle.png", "armil_idle", 1);
     load_sprite(texture_creator, display, "animations/traps/DamageTrap.png", "spikes", 1);
     load_sprite(texture_creator, display, "resources/rexpaint16x16.png", "font", 16);
     load_sprite(texture_creator, display, "animations/traps/McMuffin.png", "key", 1);

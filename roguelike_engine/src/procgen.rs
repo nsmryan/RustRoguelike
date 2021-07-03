@@ -465,6 +465,7 @@ fn place_monsters(game: &mut Game, player_id: EntityId, cmds: &Vec<ProcCmd>) {
                     EntityName::Gol => { id = Some(make_gol(&mut game.data.entities, &game.config, pos, &mut game.msg_log)); },
                     EntityName::Pawn => { id = Some(make_pawn(&mut game.data.entities, &game.config, pos, &mut game.msg_log)); },
                     EntityName::Spire => { id = Some(make_spire(&mut game.data.entities, &game.config, pos, &mut game.msg_log)); },
+                    EntityName::Armil => { id = Some(make_armil(&mut game.data.entities, &game.config, pos, &mut game.msg_log)); },
                     _ => { id = None; },
                 }
                 if let Some(id) = id {

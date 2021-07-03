@@ -203,6 +203,24 @@ pub fn make_pawn(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &
     return id;
 }
 
+pub fn make_armil(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{98}', Color::white(), EntityName::Armil, true);
+
+    entities.fighter.insert(id,  Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, });
+    entities.ai.insert(id,  Ai::Basic);
+    entities.behavior.insert(id,  Behavior::Idle);
+    entities.movement.insert(id,  Reach::Single(ARMIL_MOVE_DISTANCE));
+    entities.status[&id].alive = true;
+    entities.direction.insert(id,  Direction::from_f32(rand_from_pos(pos)));
+    entities.stance.insert(id,  Stance::Standing);
+    entities.move_mode.insert(id,  MoveMode::Walk);
+    entities.attack_type.insert(id,  AttackType::Push);
+
+    msg_log.log(Msg::SpawnedObject(id, entities.typ[&id], pos, EntityName::Armil, entities.direction[&id]));
+    
+    return id;
+} 
+
 pub fn make_sound_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let sound = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_TRAP_SOUND as char, Color::white(), EntityName::SoundTrap, false);
 

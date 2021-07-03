@@ -94,6 +94,7 @@ pub enum Attack {
 pub enum AttackType {
     Melee,
     Ranged,
+    Push,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
