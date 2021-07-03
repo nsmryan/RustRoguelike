@@ -251,7 +251,7 @@ pub fn resolve_messages(data: &mut GameData,
                     let crouching = false;
 
                     for grass_pos in Cone::new(pos, direction, SKILL_GRASS_THROW_RADIUS as i32) {
-                        if data.map[grass_pos].tile_type == TileType::Empty {
+                        if data.map.is_within_bounds(grass_pos) && data.map[grass_pos].tile_type == TileType::Empty {
                             data.map[grass_pos].surface = Surface::Grass;
                         }
                     }
