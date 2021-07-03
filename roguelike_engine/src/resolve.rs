@@ -1196,9 +1196,6 @@ fn process_moved_message(entity_id: EntityId,
         msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_monster, true));
     }
 
-    // get a list of triggered traps
-    let traps: Vec<EntityId> = data.entities.triggered_traps(data.entities.pos[&entity_id]);
-
     // check if player walks on energy
     if entity_id == player_id {
         for other_id in data.entities.ids.clone().iter() {
@@ -1209,6 +1206,25 @@ fn process_moved_message(entity_id: EntityId,
             }
         }
     }
+
+    resolve_triggered_traps(entity_id, original_pos, data, msg_log, config);
+
+    // if entity is a monster, which is also alert, and there is a path to the player,
+    // then face the player
+    if let Some(target_pos) = data.entities.target(entity_id) {
+        if data.could_see(entity_id, target_pos, config) {
+            msg_log.log_front(Msg::FaceTowards(entity_id, target_pos));
+        }
+    }
+}
+
+fn resolve_triggered_traps(entity_id: EntityId,
+                           original_pos: Pos,
+                           data: &mut GameData,
+                           msg_log: &mut MsgLog,
+                           config: &Config) {
+    // get a list of triggered traps
+    let traps: Vec<EntityId> = data.entities.triggered_traps(data.entities.pos[&entity_id]);
 
     // Check if the entity hit a trap
     for trap in traps.iter() {
@@ -1262,15 +1278,8 @@ fn process_moved_message(entity_id: EntityId,
             }
         }
     }
-
-    // if entity is a monster, which is also alert, and there is a path to the player,
-    // then face the player
-    if let Some(target_pos) = data.entities.target(entity_id) {
-        if data.could_see(entity_id, target_pos, config) {
-            msg_log.log_front(Msg::FaceTowards(entity_id, target_pos));
-        }
-    }
 }
+
 
 fn resolve_ai_attack(entity_id: EntityId,
                      target_id: EntityId,
