@@ -99,7 +99,7 @@ pub fn ai_attack(monster_id: EntityId,
                  target_id: EntityId,
                  data: &mut GameData,
                  msg_log: &mut MsgLog,
-                 config: &Config) {
+                 _config: &Config) {
     let target_pos = data.entities.pos[&target_id];
 
     // we need to turn towards the target first, so the

@@ -312,28 +312,27 @@ impl GameData {
         return None;
     }
 
-    pub fn using(&self, entity_id: EntityId, item: Item) -> bool {
+    pub fn using(&self, entity_id: EntityId, item: Item) -> Option<EntityId> {
         if let Some(inventory) = self.entities.inventory.get(&entity_id) {
             if let Some(item_id) = inventory.get(0) {
-                return self.entities.item[item_id] == item;
+                if self.entities.item[item_id] == item {
+                    return Some(*item_id);
+                }
             }
         }
 
-        return false;
+        return None;
     }
 
-    pub fn used_up_item(&mut self, entity_id: EntityId) {
-        let mut option_item_id = None;
+    pub fn used_up_item(&mut self, entity_id: EntityId, item_id: EntityId) {
         if let Some(inventory) = self.entities.inventory.get_mut(&entity_id) {
-            if let Some(item_id) = inventory.get(0) {
-                option_item_id = Some(*item_id);
-            }
+            let item_index = inventory.iter()
+                                      .position(|id| *id == item_id)
+                                      .expect("Item wasn't in inventory!");
+            inventory.remove(item_index);
         }
 
-        if let Some(item_id) = option_item_id {
-            self.entities.mark_for_removal(entity_id);
-            self.entities.inventory[&entity_id].remove(0);
-        }
+        self.entities.mark_for_removal(item_id);
     }
 
     pub fn within_aoe(&mut self, aoe: &Aoe) -> Vec<EntityId> {

@@ -390,7 +390,7 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
         let gate_pos = gate_positions[gate_pos_index];
         gate_positions.swap_remove(gate_pos_index);
 
-        let gate = make_gate_trigger(&mut game.data.entities, &game.config, gate_pos, &mut game.msg_log);
+        make_gate_trigger(&mut game.data.entities, &game.config, gate_pos, &mut game.msg_log);
         //game.data.entities.gate_pos.insert(gate, Some(gate_pos));
     }
 }

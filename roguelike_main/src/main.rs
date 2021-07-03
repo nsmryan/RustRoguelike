@@ -98,7 +98,7 @@ fn main() {
     eprintln!("Seed: {} (0x{:X})", seed, seed);
 
     let log_level =
-        opts.log_level.clone().map_or(LevelFilter::Trace,
+        opts.log_level.clone().map_or(LevelFilter::Off,
                                       |level_str| LevelFilter::from_str(&level_str).expect("Log level unexpected!"));
     simple_logging::log_to_file("game.log", log_level).unwrap();
 

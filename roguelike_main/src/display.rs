@@ -108,13 +108,13 @@ impl Display {
             let stance = data.entities.stance[&entity_id];
 
             let key;
-            if data.using(entity_id, Item::Dagger) && stance == Stance::Crouching {
+            if data.using(entity_id, Item::Dagger).is_none() && stance == Stance::Crouching {
                 key = self.loop_sprite("player_crouch_dagger", config.idle_speed);
-            } else if data.using(entity_id, Item::Dagger) {
+            } else if data.using(entity_id, Item::Dagger).is_none() {
                 key = self.loop_sprite("player_idle_dagger", config.idle_speed);
-            } else if data.using(entity_id, Item::Hammer) {
+            } else if data.using(entity_id, Item::Hammer).is_none() {
                 key = self.loop_sprite("player_idle_hammer", config.idle_speed);
-            } else if data.using(entity_id, Item::Shield) {
+            } else if data.using(entity_id, Item::Shield).is_none() {
                 key = self.loop_sprite("player_idle_shield", config.idle_speed);
             } else if stance == Stance::Crouching {
                 key = self.loop_sprite("player_crouching", config.idle_speed);
@@ -227,7 +227,7 @@ impl Display {
                 }
             }
 
-            Msg::HammerSwing(entity_id, _pos) => {
+            Msg::HammerSwing(entity_id, _item_id, _pos) => {
                 if data.entities.typ[&entity_id] == EntityType::Player {
                     let attack_sprite =
                         self.new_sprite("player_attack_hammer".to_string(), config.player_attack_hammer_speed);
@@ -259,7 +259,7 @@ impl Display {
                 }
             }
 
-            Msg::SwordSwing(entity_id, _pos) => {
+            Msg::SwordSwing(entity_id, _item_id, _pos) => {
                 if data.entities.typ[&entity_id] == EntityType::Player {
                     if let Some(idle_key) = self.get_idle_animation(entity_id, data, config) {
                         data.entities.animation[&entity_id].clear();

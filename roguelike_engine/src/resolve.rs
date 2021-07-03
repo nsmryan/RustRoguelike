@@ -15,7 +15,7 @@ use roguelike_core::utils::*;
 use roguelike_core::map::*;
 use roguelike_core::line::line;
 
-use crate::generation::{make_energy, make_dagger, make_sword, make_light};
+use crate::generation::{make_energy, make_light};
 
 
 pub fn resolve_messages(data: &mut GameData,
@@ -92,12 +92,12 @@ pub fn resolve_messages(data: &mut GameData,
                 msg_log.log_front(Msg::Sound(attacker, pos, config.sound_radius_attack, true)); 
             }
 
-            Msg::SwordSwing(entity_id, pos) => {
-                sword_swing(entity_id, pos, data, msg_log);
+            Msg::SwordSwing(entity_id, item_id, pos) => {
+                sword_swing(entity_id, item_id, pos, data, msg_log);
             }
 
-            Msg::HammerSwing(entity_id, pos) => {
-                hammer_swing(entity_id, pos, data, msg_log);
+            Msg::HammerSwing(entity_id, item_id, pos) => {
+                hammer_swing(entity_id, item_id, pos, data, msg_log);
             }
 
             // TODO Consider making this a Push message, splitting out that code from Action as well
@@ -169,13 +169,13 @@ pub fn resolve_messages(data: &mut GameData,
                 freeze_trap_triggered(trap, cause_id, data, msg_log, config);
             }
 
-            Msg::Untriggered(trigger, _entity_id) => {
+            Msg::Untriggered(_trigger, _entity_id) => {
                 // NOTE nothing untriggers yet
                 //untriggered(trigger, data, msg_log);
             }
 
             Msg::Triggered(trigger, _entity_id) => {
-                triggered(trigger, data, msg_log);
+                triggered(trigger, data);
             }
 
             Msg::AddClass(class) => {
@@ -248,7 +248,6 @@ pub fn resolve_messages(data: &mut GameData,
                 if use_energy(entity_id, data) {
 
                     let pos = data.entities.pos[&entity_id];
-                    let crouching = false;
 
                     for grass_pos in Cone::new(pos, direction, SKILL_GRASS_THROW_RADIUS as i32) {
                         if data.map.is_within_bounds(grass_pos) && data.map[grass_pos].tile_type == TileType::Empty {
@@ -268,7 +267,6 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::Illuminate(entity_id, pos, amount) => {
                 if use_energy(entity_id, data) {
-                    let entity_pos = data.entities.pos[&entity_id];
                     let light = make_light(&mut data.entities, config, pos, msg_log);
                     data.entities.status[&light].illuminate = amount;
 
@@ -428,16 +426,16 @@ pub fn resolve_messages(data: &mut GameData,
     data.entities.messages[&player_id].clear();
 }
 
-fn hammer_swing(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
+fn hammer_swing(entity_id: EntityId, item_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
     let entity_pos = data.entities.pos[&entity_id];
 
     if let Some(blocked) = data.map.path_blocked_move(entity_pos, pos) {
         msg_log.log_front(Msg::HammerHitWall(entity_id, blocked));
-        data.used_up_item(entity_id);
+        data.used_up_item(entity_id, item_id);
     } else if let Some(hit_entity) = data.has_blocking_entity(pos) {
         // we hit another entity!
         msg_log.log_front(Msg::HammerHitEntity(entity_id, hit_entity));
-        data.used_up_item(entity_id);
+        data.used_up_item(entity_id, item_id);
     }
 
     data.entities.took_turn[&entity_id] = true;
@@ -460,7 +458,7 @@ fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameD
     }
 }
 
-fn sword_swing(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
+fn sword_swing(entity_id: EntityId, item_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
     let mut any_hit_entity = false;
 
     let adj_locs = Reach::single(1).reachables(pos);
@@ -474,7 +472,7 @@ fn sword_swing(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut
     }
 
     if any_hit_entity {
-        data.used_up_item(entity_id);
+        data.used_up_item(entity_id, item_id);
     }
 
     data.entities.took_turn[&entity_id] = true;
@@ -497,10 +495,9 @@ fn freeze_trap_triggered(trap: EntityId, cause_id: EntityId, data: &mut GameData
     }
 }
 
-fn triggered(trigger: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
+fn triggered(trigger: EntityId, data: &mut GameData) {
     if data.entities.name[&trigger] == EntityName::GateTrigger {
         if data.entities.status[&trigger].active {
-            let mut maybe_wall_pos = None;
             // raise the gate
             data.entities.status[&trigger].active = false;
 
@@ -510,7 +507,6 @@ fn triggered(trigger: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
                 if data.has_entity(wall_pos).is_none() {
                     data.map[wall_pos] = Tile::wall();
                     data.entities.gate_pos[&trigger] = None;
-                    maybe_wall_pos = Some(wall_pos);
                 }
             }
         } else {
@@ -551,8 +547,8 @@ fn resolve_attack(entity_id: EntityId,
         Attack::Stab(target_id, move_into) => {
             stab(entity_id, target_id, &mut data.entities, msg_log);
 
-            if data.using(entity_id, Item::Dagger) {
-                data.used_up_item(entity_id);
+            if let Some(item_id) = data.using(entity_id, Item::Dagger) {
+                data.used_up_item(entity_id, item_id);
             }
 
             if move_into && entity_pos != attack_pos {
@@ -998,8 +994,8 @@ fn change_move_mode(entity_id: EntityId,
                     data: &mut GameData,
                     msg_log: &mut MsgLog) {
     if increase {
-        let holding_shield = data.using(entity_id, Item::Shield);
-        let holding_hammer = data.using(entity_id, Item::Hammer);
+        let holding_shield = data.using(entity_id, Item::Shield).is_none();
+        let holding_hammer = data.using(entity_id, Item::Hammer).is_none();
 
         let move_mode = data.entities 
                             .move_mode
@@ -1103,11 +1099,11 @@ fn use_item(entity_id: EntityId,
         }
 
         Item::Hammer => {
-            msg_log.log(Msg::HammerSwing(entity_id, pos));
+            msg_log.log(Msg::HammerSwing(entity_id, item_id, pos));
         }
 
         Item::Sword => {
-            msg_log.log(Msg::SwordSwing(entity_id, pos));
+            msg_log.log(Msg::SwordSwing(entity_id, item_id, pos));
         }
 
         Item::Lantern => {
@@ -1207,7 +1203,7 @@ fn process_moved_message(entity_id: EntityId,
         }
     }
 
-    resolve_triggered_traps(entity_id, original_pos, data, msg_log, config);
+    resolve_triggered_traps(entity_id, original_pos, data, msg_log);
 
     // if entity is a monster, which is also alert, and there is a path to the player,
     // then face the player
@@ -1221,8 +1217,7 @@ fn process_moved_message(entity_id: EntityId,
 fn resolve_triggered_traps(entity_id: EntityId,
                            original_pos: Pos,
                            data: &mut GameData,
-                           msg_log: &mut MsgLog,
-                           config: &Config) {
+                           msg_log: &mut MsgLog) {
     // get a list of triggered traps
     let traps: Vec<EntityId> = data.entities.triggered_traps(data.entities.pos[&entity_id]);
 

@@ -368,14 +368,10 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
         y_pos += 1;
 
-        let mut tile_in_fov = game.data.pos_in_fov(player_id, info_pos, &game.config);
-
-        let mut entity_in_fov = false;
-
         // only display first object
         if let Some(obj_id) = object_ids.first() {
-            entity_in_fov = game.settings.god_mode ||
-                            game.data.is_in_fov(player_id, *obj_id, &game.config);
+            let entity_in_fov = game.settings.god_mode ||
+                                game.data.is_in_fov(player_id, *obj_id, &game.config);
 
             // only display things in the player's FOV
             if entity_in_fov {
@@ -422,6 +418,8 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
         text_list.clear();
 
         y_pos = 11;
+
+        let tile_in_fov = game.data.pos_in_fov(player_id, info_pos, &game.config);
         if tile_in_fov {
             let text_pos = Pos::new(1, y_pos);
             text_list.push(format!("Tile is"));
@@ -818,8 +816,8 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
 
     let mut effects = display_state.effects.clone();
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
-    let sprite = &mut display_state.sprites[&sprite_key];
+    //let sprite_key = display_state.lookup_spritekey("tiles");
+    //let sprite = &mut display_state.sprites[&sprite_key];
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 

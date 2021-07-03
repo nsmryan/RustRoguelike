@@ -632,7 +632,7 @@ pub fn make_corner_test_map(entities: &mut Entities,
 pub fn make_trap_test_map(entities: &mut Entities,
                           config: &Config,
                           msg_log: &mut MsgLog) -> (Map, Pos) {
-    let mut map = Map::from_dims(11, 11);
+    let map = Map::from_dims(11, 11);
     let position = (1, 4);
 
     make_spike_trap(entities, config, Pos::new(3, 2), msg_log);

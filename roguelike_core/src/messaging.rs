@@ -43,8 +43,8 @@ pub enum Msg {
     ChangeMoveMode(EntityId, bool), // true = increase, false = decrease
     MoveMode(EntityId, MoveMode),
     TriedRunWithHeavyEquipment,
-    SwordSwing(EntityId, Pos), // entity, position swung at
-    HammerSwing(EntityId, Pos), // entity, position swung at
+    SwordSwing(EntityId, EntityId, Pos), // entity, item, position swung at
+    HammerSwing(EntityId, EntityId, Pos), // entity, item, position swung at
     HammerHitEntity(EntityId, EntityId), // entity, hit entity
     HammerHitWall(EntityId, Blocked),
     Stabbed(EntityId, EntityId), // entity, hit entity
@@ -124,8 +124,8 @@ impl fmt::Display for Msg {
             Msg::ChangeMoveMode(entity_id, upwards) => write!(f, "chage_move_mode {} {}", entity_id, upwards),
             Msg::MoveMode(entity_id, move_mode) => write!(f, "move_mode {} {}", entity_id, move_mode),
             Msg::TriedRunWithHeavyEquipment => write!(f, "tried_run_with_heavy_equipment"),
-            Msg::SwordSwing(entity_id, pos) => write!(f, "sword_swing {} {} {}", entity_id, pos.x, pos.y),
-            Msg::HammerSwing(entity_id, pos) => write!(f, "hammer_swing {} {} {}", entity_id, pos.x, pos.y),
+            Msg::SwordSwing(entity_id, item_id, pos) => write!(f, "sword_swing {} {} {} {}", entity_id, item_id, pos.x, pos.y),
+            Msg::HammerSwing(entity_id, item_id, pos) => write!(f, "hammer_swing {} {} {} {}", entity_id, item_id, pos.x, pos.y),
             Msg::HammerHitEntity(entity_id, target_id) => write!(f, "hammer_hit_entity {} {}", entity_id, target_id),
             Msg::HammerHitWall(entity_id, blocked) => write!(f, "hammer_hit_wall {} {} {} {} {} {}", entity_id, blocked.start_pos, blocked.end_pos, blocked.direction, blocked.blocked_tile, blocked.wall_type),
             Msg::Stabbed(entity_id, target_id) => write!(f, "stabbed {} {}", entity_id, target_id),
@@ -303,11 +303,11 @@ impl Msg {
                 return "Your equipment is too heavy to run!".to_string();
             }
 
-            Msg::SwordSwing(entity_id, _pos) => {
+            Msg::SwordSwing(entity_id, _item_id, _pos) => {
                 return format!("{:?} swung their sword", data.entities.name[entity_id]);
             }
 
-            Msg::HammerSwing(entity_id, _pos) => {
+            Msg::HammerSwing(entity_id, _item_id, _pos) => {
                 return format!("{:?} swung their hammer", data.entities.name[entity_id]);
             }
 
@@ -395,7 +395,7 @@ impl Msg {
                 return format!("{:?} has farsight ({})", data.entities.name[entity_id], amount);
             }
 
-            Msg::Sprint(entity_id, direction, amount) => {
+            Msg::Sprint(entity_id, _direction, _amount) => {
                 return format!("{:?} has sprinted!", data.entities.name[entity_id]);
             }
 
