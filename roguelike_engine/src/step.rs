@@ -19,6 +19,9 @@ use crate::make_map::*;
 
 
 pub fn step_logic(game: &mut Game) -> bool {
+    // clean up removable entities
+    game.data.entities.clean_entities();
+
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     for id in game.data.entities.ids.iter() {
@@ -65,9 +68,6 @@ pub fn step_logic(game: &mut Game) -> bool {
 
     // perform count down of entities waiting to be removed
     game.data.entities.count_down();
-
-    // clean up removable entities
-    game.data.entities.clean_entities();
 
     return level_exit_condition_met(&game.data);
 }
