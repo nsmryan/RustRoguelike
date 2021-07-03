@@ -1,7 +1,10 @@
 # Rust Roguelike
 
-This Rust Roguelike is a Roguelike written in Rust.
+This Rust Roguelike is a Roguelike written in Rust. It is a Roguelike with a focus
+on movement, use of space, stealth, and some resource management. 
 
+
+## Building
 
 This is tested on Windows and Linux. On Linux (and on a Mac, although
 this is untested), make sure SDL2 is installed. On Windows the repository
@@ -19,47 +22,102 @@ cargo run --release
 to get a smoother experience, but note that it will take some time the first time it is
 run (several minutes).
 
-## Key Map
+## Gameplay
 
-NOTE the input system is under development, and may not match this description!
+### Key Map
 
-  * 0,1,2,3,4,6,7,8,9: directional movement, or a selection in a menu
-  * 5: pass turn
-  * Up/Down/Left/Right Arrow: directional movement
-  * A: interact with environment (arm/disarm traps)
-  * Q: exit game
-  * G: pickup (get) item under the player
-  * D: drop item
-  * I: open inventory menu
-  * Y: yell
-  * V: explore all cells
-  * Esc: exit current action
-  * Tab: swap primary weapons if holding two primary weapons
-  * T: god mode
-  * X: increase movement speed (sneak -> walk -> run)
-  * Z: Decrease movement speed (run -> walk -> sneak)
-  * O: holding space creates an overlay with additional information about the current situation
-  * U: use the current primary weapon
-
-In addition, there is a pair of input systems called the Chord and the Cursor.
-
-The chord system involves holding control, optionally alt (for the alternative action)
-and selecting either one of ZXCVB (which coorespond to your primary and secondary
-inventory positions, and then your skills) or moving. The alternate action for
-items is to throw them (as opposed to using them), and for a skill, depends on the
-particular skill.
-
-If an item or skill is selected, either press Space to apply, press 5 (to apply, but also
-to have the action apply to the tile occupied by the player), or press a direction. For
-skills which require a direction, such as throwing, then a direction on the numpad
-or number keys can be used.
+There are two gameplay modes: cursor mode and direct mode.
 
 
-The cursor system uses a cursor to select a tile. Space can be used to 'apply' the cursor
-action, which by default is to move towards a tile. The chord system can be used to
-add actions to the cursor, which will apply when 'Space' is pressed.
-This can, for example, be used to throw an item on a particular tile instead of in a
-direction.
+In direct mode, movement keys move the player and items can be used.
+
+Cursor mode is entered using the 'space' key. In cursor mode the movement keys
+move a cursor around the map. This cursor can be used to inspect tiles, use skills,
+and throw items.
+
+#### Movement
+
+Move with the number keys. The arrow keys also work, but do not allow diagonal movement.
+
+The number '5' key passes your turn.
+
+#### Items
+
+Items are mapped to 'z' (first item), 'x' (second item), and 'c' (third item).
+
+Items can be used in multiple ways. Holding the item's key and pressing a direction
+will use the item in that direction, such as to swing a hammer towards a wall or
+golem.
+
+Items can also be thrown by pressing their key while in cursor mode. This throws
+them towards the cursor's location.
+
+
+Items can be picked up with the 'g' key (to 'get' the item).
+
+Items can be dropped by throwing them on the same tile that the player is on,
+or using them in the '5' direction (the 'pass turn' key).
+
+
+#### Skills
+
+Skills are mapped to 'a' (first skill), 's' (second skill), and 'd' (third skill).
+Skills can be used by pressing their key in cursor mode.
+
+#### Menus
+
+There are several menus that help you understand the game or select options.
+
+The 'h' key opens the class menu, allowing you to select a class.
+
+The 'j' key opens the skill menu, listing your current skills. 
+
+The 'i' key opens the inventory menu, listing your current items. 
+
+The 'esc' key can be used to exit a menu.
+
+
+#### Other
+
+Holding alt and pressing a directional key will 'interact' with the tile in that direction,
+such as to disarm or arm a trap.
+
+The 'o' key shows an information overlay while it is held. This shows golem Fov, attack positions,
+and other information.
+
+The 'y' will cause your character to yell, making noise.
+
+The 'q' key will prompt to exit the game, and pressing 'q' again will exit.
+
+The 't' key is a debugging key which makes you invincible and shows you the map. It
+can be pressed again to hide the map.
+
+The 'p' key is a debugging key which regenerates a new level.
+
+
+### Sound
+
+The game has a sound system in which different actions make different amounts of
+sound. The golems may hear a sound and investigate its source, possibly causing them
+to discover the player. Actions like running or yelling make a lot of sound, while
+sneaking and using most skills make little to no sound.
+
+Some skills effect the amount of sound movement takes, and the surface of a tile
+can dampen sounds (grass), or make them louder (rubble).
+
+### Traps
+
+The game contains traps of various types. Walking on a trap triggers it if the 
+trap is armed. Traps can be disarmed by interacting with them, and then armed
+again by interacting again.
+
+A disarmed trap can be picked up, allowing the player to carry traps around and
+place and rearm them.
+
+### Triggers
+
+In addition to traps, there are stationary triggers which cannot be disarmed or
+picked up.
 
 
 ## Architecture
@@ -78,17 +136,17 @@ Game structure.
 The step\_game function dispatches through the game's current state- playing,
 in a menu, etc. This can change the state of the game, and any settings
 (GameSettings), but does not modify the game's data (GameData). It can only place
-messages in the messaging system that is used to execute a turn of the game.
+messages in the message queue that is used to execute a turn of the game.
 
 
-Once the state system has created messages to modify the game, and optionally
-changed its state, the resolution system starts.  This executes each message,
+Once the state system has created its messages, and optionally
+changed its state, the resolution system starts.  This executes each message- 
 using an item, moving, using a skill, etc, which may in turn spawn more
-messages, until there are no more messages to process.
+messages- until there are no more messages to process.
 
 Message processing may set the took\_turn flag for an entitity, and if the
 player is marked as having taken a turn then the other entities in the game get
-a chance to spawn messages. These messages are then themselves resolved until
+a chance to spawn messages. These messages are themselves resolved until
 no messages are left.
 
 This is the only place where game actions occur- there are places that generate
@@ -118,6 +176,10 @@ The main structures are:
     or quitting the game.
     * Msg: the messages put in the message log. This contains all changes that can occur to the game state, 
       including movements, attacks, triggering traps, using skills, and starting and ending a turn.
+    * Input: the state of the input system. This type contains information on modifier keys and which other
+      keys are held, and uses this information to map key presses into inputs to the game.
+    * Display: the display state contains SDL2 types, loaded textures, sprite and animation information, as well
+      as screen layout. It is used in render the game to the screen.
 
 
 There are a number of ancillary structures such as Vaults for parts of maps, GameSettings for mutable data like
@@ -138,8 +200,6 @@ processing inputs to game actions, and then to messages.
 
 The game is also split into layered crates within a workspace, such that the roguelike\_core knows
 about the core types, but not how the game is displayed or how maps are generated (for example),
-
-
 while roguelike\_engine knows about actions, procedural generation, and handling inputs, but not
 displaying or the main loop.
 
@@ -147,6 +207,11 @@ displaying or the main loop.
 Finally roguelike\_main is the main loop, as well as the SDL2 display system. This is split into
 display data with the animations, textures, screen layout, etc, and then a rendering function
 which does all the drawing to the screen using the display data and game's state (Game).
+
+
+This split allows roguelike\_lib to compile a binary that is separate from SDL2 and can be integrated
+into other systems.
+
 
 ### Interesting Internal Features
 
