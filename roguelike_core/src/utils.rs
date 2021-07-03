@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
+use oorandom::Rand32;
+
 use crate::ai::Behavior;
 use crate::constants::{HAMMER_DAMAGE, SWORD_DAMAGE, TILE_FILL_METRIC_DIST};
 use crate::map::{Surface};
@@ -12,7 +14,57 @@ use crate::messaging::*;
 use crate::line::*;
 use crate::config::Config;
 use crate::map::{Map, AoeEffect, Aoe, Wall, astar_neighbors, TileType};
+use crate::constants::*;
 
+
+pub fn rng_bool(rng: &mut Rand32) -> bool {
+    return (rng.rand_u32() & 1) == 1;
+}
+
+pub fn rng_trial(rng: &mut Rand32, prob: f32) -> bool {
+    return rng.rand_float() < prob;
+}
+
+pub fn rng_range(rng: &mut Rand32, low: f32, high: f32) -> f32 {
+    let r = rng.rand_float();
+    return low + r * (high - low);
+}
+
+pub fn rng_range_i32(rng: &mut Rand32, low: i32, high: i32) -> i32 {
+    if low == high {
+        return low;
+    } else {
+        let r = rng.rand_i32().abs();
+        return low + (r % (high - low));
+    }
+}
+
+pub fn rng_range_u32(rng: &mut Rand32, low: u32, high: u32) -> u32 {
+    if low == high {
+        return low;
+    } else {
+        return rng.rand_range(low..high);
+    }
+}
+
+pub fn choose<A: Copy>(rng: &mut Rand32, items: &Vec<A>) -> Option<A> {
+    if items.len() > 0 {
+        return Some(items[rng_range_u32(rng, 0, items.len() as u32) as usize]);
+    } else {
+        return None;
+    }
+}
+
+pub fn shuffle<A>(rng: &mut Rand32, items: &mut Vec<A>) {
+    let len = items.len();
+
+    for index in 0..(len - 1) {
+        if rng_bool(rng) {
+            let swap_pos = rng_range_u32(rng, index as u32 + 1, len as u32) as usize;
+            items.swap(index, swap_pos);
+        }
+    }
+}
 
 pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
     //return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt() as i32;
@@ -202,18 +254,22 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: 
     }
 }
 
-pub fn stab(handle: EntityId, target: EntityId, entities: &mut Entities, msg_log: &mut MsgLog) {
+pub fn stab(entity_id: EntityId, target: EntityId, entities: &mut Entities, msg_log: &mut MsgLog) {
     let damage = entities.fighter.get(&target).map_or(0, |f| f.hp);
 
     if damage != 0 {
-        msg_log.log(Msg::Attack(handle, target, damage));
+        if entities.behavior[&target] == Behavior::Idle {
+            msg_log.log(Msg::Attack(entity_id, target, damage));
 
-        entities.status[&target].alive = false;
-        entities.blocks[&target] = false;
+            entities.status[&target].alive = false;
+            entities.blocks[&target] = false;
 
-        msg_log.log(Msg::Killed(handle, target, damage));
+            msg_log.log(Msg::Killed(entity_id, target, damage));
 
-        entities.messages[&target].push(Message::Attack(handle));
+            entities.messages[&target].push(Message::Attack(entity_id));
+        } else {
+            msg_log.log(Msg::Froze(target, STAB_STUN_TURNS))
+        }
     } else {
         panic!("Stabbed an enemy with no hp?");
     }
@@ -751,5 +807,170 @@ fn test_floodfill() {
 
     let flood: Vec<Pos> = floodfill(&map, start, 3);
     assert_eq!(6, flood.len());
+}
+
+pub fn visible_in_direction(start_pos: Pos, end_pos: Pos, dir: Direction) -> bool {
+    let pos_diff = sub_pos(end_pos, start_pos);
+    let x_sig = pos_diff.x.signum();
+    let y_sig = pos_diff.y.signum();
+
+    match dir {
+        Direction::Up => {
+            if y_sig < 1 {
+                return true;
+            }
+        }
+
+        Direction::Down => {
+            if y_sig > -1 {
+                return true;
+            }
+        }
+
+        Direction::Left => {
+            if x_sig < 1 {
+                return true;
+            }
+        }
+
+        Direction::Right => {
+            if x_sig > -1 {
+                return true;
+            }
+        }
+        Direction::DownLeft => {
+            if pos_diff.x - pos_diff.y < 0 {
+                return true;
+            }
+        }
+
+        Direction::DownRight => {
+            if pos_diff.x + pos_diff.y >= 0 {
+                return true;
+            }
+        }
+
+        Direction::UpLeft => {
+            if pos_diff.x + pos_diff.y <= 0 {
+                return true;
+            }
+        }
+
+        Direction::UpRight => {
+            if pos_diff.x - pos_diff.y > 0 {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+#[test]
+pub fn test_visible_in_direction() {
+    let dir = Direction::Up;
+
+    let start_pos = Pos::new(0, 0);
+    let end_pos = Pos::new(1, 0);
+    assert!(visible_in_direction(start_pos, end_pos, dir));
+
+    let end_pos = Pos::new(-1, 0);
+    assert!(visible_in_direction(start_pos, end_pos, dir));
+
+    let end_pos = Pos::new(-1, 0);
+    assert!(visible_in_direction(start_pos, end_pos, dir));
+
+    let end_pos = Pos::new(0, -1);
+    assert!(visible_in_direction(start_pos, end_pos, dir));
+
+    let end_pos = Pos::new(1, -1);
+    assert!(visible_in_direction(start_pos, end_pos, dir));
+
+    let end_pos = Pos::new(-1, -1);
+    assert!(visible_in_direction(start_pos, end_pos, dir));
+
+    let end_pos = Pos::new(2, -2);
+    assert!(visible_in_direction(start_pos, end_pos, dir));
+
+    let end_pos = Pos::new(-2, -2);
+    assert!(visible_in_direction(start_pos, end_pos, dir));
+}
+
+pub struct Cone {
+    start: Pos,
+    dir: Direction,
+    length: i32,
+    cur_length: i32,
+    within_length: i32,
+}
+
+impl Cone {
+    pub fn new(start: Pos, dir: Direction, length: i32) -> Cone {
+        return Cone { start, dir, length, cur_length: 0, within_length: 0 };
+    }
+}
+
+impl Iterator for Cone {
+    type Item = Pos;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let cur_pos;
+        let cone_width;
+
+        if self.dir.diag() {
+            cone_width = self.cur_length + 1;
+
+            let left_dir = self.dir.counterclockwise();
+            let leftmost_pos = left_dir.offset_pos(self.start, self.cur_length);
+
+            let right_dir = self.dir.clockwise().clockwise();
+            cur_pos = right_dir.offset_pos(leftmost_pos, self.within_length);
+        } else {
+            cone_width = self.cur_length * 2 + 1;
+
+            let len_pos = self.dir.offset_pos(self.start, self.cur_length);
+
+            let left_dir = self.dir.counterclockwise().counterclockwise();
+            let left_most = left_dir.offset_pos(len_pos, self.cur_length);
+
+            let right_dir = self.dir.clockwise().clockwise();
+            cur_pos = right_dir.offset_pos(left_most, self.within_length);
+        }
+
+        if self.within_length + 1 == cone_width {
+            self.cur_length += 1;
+            self.within_length = 0;
+        } else {
+            self.within_length += 1;
+        }
+
+        if self.cur_length == self.length && self.within_length > 0 {
+            return None;
+        } else {
+            return Some(cur_pos);
+        }
+    }
+}
+
+#[test]
+pub fn test_cone_up() {
+    let start = Pos::new(0, 0);
+    let cone = Cone::new(start, Direction::Up, 3); 
+    let positions = cone.collect::<Vec<Pos>>();
+    dbg!(&positions);
+
+    assert_eq!(9, positions.len());
+
+    assert_eq!(start, positions[0]);
+
+    assert_eq!(Pos::new(-1, -1), positions[1]);
+    assert_eq!(Pos::new(0, -1), positions[2]);
+    assert_eq!(Pos::new(1, -1), positions[3]);
+
+    assert_eq!(Pos::new(-2, -2), positions[4]);
+    assert_eq!(Pos::new(-1, -2), positions[5]);
+    assert_eq!(Pos::new(0, -2), positions[6]);
+    assert_eq!(Pos::new(1, -2), positions[7]);
+    assert_eq!(Pos::new(2, -2), positions[8]);
 }
 

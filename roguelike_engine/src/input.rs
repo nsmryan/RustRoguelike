@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 use serde::{Serialize, Deserialize};
 
+use roguelike_core::constants::*;
 use roguelike_core::types::*;
 use roguelike_core::movement::Direction;
 use roguelike_core::config::Config;
@@ -14,7 +15,7 @@ use crate::game::*;
 use crate::actions::*;
 
 
-const TARGET_CODES: &[char] = &['z', 'x', 'c', 'v', 'b'];
+const TARGET_CODES: &[char] = &['z', 'x', 'c', 'a', 's', 'd'];
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum KeyDir {
@@ -40,6 +41,21 @@ impl FromStr for KeyDir {
     }
 }
 
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+pub enum Target {
+    Item(usize),
+    Skill(usize),
+}
+
+impl Target {
+    pub fn from_index(index: usize) -> Target {
+        if index < PLAYER_MAX_ITEMS {
+            return Target::Item(index);
+        } else {
+            return Target::Skill(index - PLAYER_MAX_ITEMS);
+        }
+    }
+}
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum MouseClick {
@@ -82,7 +98,7 @@ pub struct Input {
     pub ctrl: bool,
     pub alt: bool,
     pub shift: bool,
-    pub target: i32,
+    pub target: Option<Target>,
     pub cursor: bool,
     pub char_held: HashMap<char, HeldState>,
 }
@@ -92,7 +108,7 @@ impl Input {
         return Input { ctrl: false,
                        alt: false,
                        shift: false,
-                       target: -1,
+                       target: None,
                        cursor: false,
                        char_held: HashMap::new()
         };
@@ -137,7 +153,7 @@ impl Input {
             }
 
             InputEvent::Quit => {
-                action = InputAction::Exit;
+                action = InputAction::ForceExit;
             }
 
             InputEvent::Esc => {
@@ -178,14 +194,23 @@ impl Input {
                         // NOTE this could be moved to the normal mapping
                         for (index, target_chr) in TARGET_CODES.iter().enumerate() {
                             if chr == *target_chr {
-                                let target = index as i32;
+                                let target = Target::from_index(index as usize);
 
                                 if self.cursor {
-                                    self.target = -1;
-                                    return InputAction::TileApply(target);
+                                    self.target = None;
+
+                                    if let Target::Item(index) = target {
+                                        // alternate is used so you throw items
+                                        return InputAction::CursorApplyItem(ActionMode::Alternate, index);
+                                    } else if let Target::Skill(index) = target {
+                                        // TODO should this be primary or alternate?
+                                        return InputAction::CursorApplySkill(ActionMode::Alternate, index);
+                                    }
                                 } else {
                                     // target keys don't do anything outside of cursor mode,
                                     // so just return here.
+                                    // NOTE should we still allow skills, but only ones that make
+                                    // sense with no location?
                                     return InputAction::None;
                                 }
                             }
@@ -199,9 +224,14 @@ impl Input {
                             action = InputAction::OverlayOn;
                         }
 
+                        if chr == ' ' {
+                            self.cursor = !self.cursor;
+                            action = InputAction::CursorToggle;
+                        }
+
                         for (index, target_chr) in TARGET_CODES.iter().enumerate() {
                             if chr == *target_chr {
-                                self.target = index as i32;
+                                self.target = Some(Target::from_index(index as usize));
                             }
                         }
                     }
@@ -215,7 +245,20 @@ impl Input {
                             if new_repeats > held_state.repetitions {
                                 action = self.key_to_action(chr, settings);
 
-                                self.char_held.insert(chr, held_state.repeated());
+                                if action == InputAction::OverlayOff   ||
+                                   action == InputAction::Inventory    ||
+                                   action == InputAction::SkillMenu    ||
+                                   action == InputAction::Exit         ||
+                                   action == InputAction::ClassMenu {
+                                    action = InputAction::None;
+                                } else if action == InputAction::CursorToggle {
+                                    // this is a little kludgy, but we have to untoggle cursor
+                                    // mode as it was toggled by key_to_action.
+                                    //self.cursor = !self.cursor;
+                                    action = InputAction::None;
+                                } else {
+                                    self.char_held.insert(chr, held_state.repeated());
+                                }
                             }
                         }
                     }
@@ -260,19 +303,21 @@ impl Input {
             } else if chr == '5' {
                 if self.alt {
                     action = InputAction::Interact(None);
-                } else if self.target != -1 {
-                    action = InputAction::DropTargetItem(self.target);
                 } else {
-                    action = InputAction::Pass;
+                    if let Some(Target::Item(index)) = self.target {
+                        action = InputAction::DropItemByIndex(index);
+                    } else {
+                        action = InputAction::Pass(self.move_mode());
+                    }
                 }
             } else if let Some(dir) = from_digit(chr) {
                 if self.cursor {
                    action = InputAction::CursorMove(dir, self.ctrl, self.shift);
                 } else if self.alt {
                     action = InputAction::Interact(Some(dir));
-                } else if self.target != -1 {
-                    action = InputAction::UseItem(dir, self.target);
-                    self.target = -1;
+                } else if let Some(Target::Item(index)) = self.target {
+                    action = InputAction::UseItem(dir, index);
+                    self.target = None;
                 } else {
                     action = InputAction::Move(dir, self.move_mode());
                 }
@@ -280,8 +325,9 @@ impl Input {
                 action = InputAction::None;
             }
         } else if chr == ' ' {
-            self.cursor = !self.cursor;
-            action = InputAction::CursorToggle;
+            //self.cursor = !self.cursor;
+            //action = InputAction::CursorToggle;
+            action = InputAction::None;
         } else {
             action = alpha_up_to_action(chr);
         }
@@ -338,7 +384,7 @@ pub fn alpha_up_to_action(chr: char) -> InputAction {
             input_action = InputAction::OverlayOff;
         }
 
-        's' => {
+        'j' => {
             input_action = InputAction::SkillMenu;
         }
 

@@ -1,5 +1,4 @@
 
-
 set rl [open "|target/debug/rl" w+]
 
 proc key { chr } {

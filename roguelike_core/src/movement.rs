@@ -9,27 +9,7 @@ use serde::{Serialize, Deserialize};
 use crate::types::*;
 use crate::utils::*;
 use crate::map::{Wall, Blocked, TileType};
-use crate::ai::Behavior;
 use crate::line::*;
-
-
-#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
-pub enum Action {
-    Move(MoveType, Pos),
-    MoveDir(Direction, MoveMode),
-    StateChange(Behavior),
-    NoAction,
-}
-
-impl Action {
-    pub fn none() -> Action {
-        return Action::NoAction;
-    }
-
-    pub fn is_none(&self) -> bool {
-        return *self == Action::NoAction;
-    }
-}
 
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -107,7 +87,14 @@ impl MoveMode {
 pub enum Attack {
     Attack(EntityId), // target_id
     Push(EntityId, Direction, usize), //target_id, direction, amount
-    Stab(EntityId), // target_id
+    Stab(EntityId, bool), // target_id, move into space
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum AttackType {
+    Melee,
+    Ranged,
+    Push,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -115,9 +102,22 @@ pub enum MoveType {
     Move,
     Pass,
     JumpWall,
-    WallKick(i32, i32),
+    WallKick,
     Collide,
 }
+
+impl fmt::Display for MoveType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MoveType::Move => write!(f, "move"),
+            MoveType::Pass => write!(f, "pass"),
+            MoveType::JumpWall => write!(f, "jumpwall"),
+            MoveType::WallKick => write!(f, "wallkick"),
+            MoveType::Collide => write!(f, "collide"),
+        }
+    }
+}
+
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Movement {
@@ -151,6 +151,10 @@ impl Movement {
             typ,
             attack,
         };
+    }
+
+    pub fn pass(pos: Pos) -> Movement {
+        return Movement::new(pos, MoveType::Pass, None);
     }
 
     pub fn move_to(pos: Pos, typ: MoveType) -> Movement {
@@ -249,10 +253,10 @@ impl fmt::Display for Direction {
             Direction::Right => write!(f, "right"),
             Direction::Up => write!(f, "up"),
             Direction::Down => write!(f, "down"),
-            Direction::DownLeft => write!(f, "down/left"),
-            Direction::DownRight => write!(f, "down/right"),
-            Direction::UpLeft => write!(f, "up/left"),
-            Direction::UpRight => write!(f, "up/right"),
+            Direction::DownLeft => write!(f, "downleft"),
+            Direction::DownRight => write!(f, "downright"),
+            Direction::UpLeft => write!(f, "upleft"),
+            Direction::UpRight => write!(f, "upright"),
         }
     }
 }
@@ -380,8 +384,7 @@ impl Direction {
     }
 
     pub fn turn_amount(&self, dir: Direction) -> i32 {
-        use Direction::*;
-        let dirs = vec![DownLeft, Left, UpLeft, Up, UpRight, Right, DownRight, Down];
+        let dirs = Direction::directions();
         let count = dirs.len() as i32;
 
         let start_ix = dirs.iter().position(|d| *d == *self).unwrap() as i32;
@@ -393,6 +396,38 @@ impl Direction {
             return (count - end_ix) + start_ix;
         } else {
             return (count - start_ix) + end_ix;
+        }
+    }
+
+    pub fn directions() -> Vec<Direction> {
+        use Direction::*;
+        let dirs = vec![DownLeft, Left, UpLeft, Up, UpRight, Right, DownRight, Down];
+        return dirs;
+    }
+
+    pub fn clockwise(&self) -> Direction {
+        match self {
+            Direction::Left => Direction::UpLeft,
+            Direction::Right => Direction::DownRight,
+            Direction::Up => Direction::UpRight,
+            Direction::Down => Direction::DownLeft,
+            Direction::DownLeft => Direction::Left,
+            Direction::DownRight => Direction::Down,
+            Direction::UpLeft => Direction::Up,
+            Direction::UpRight => Direction::Right,
+        }
+    }
+
+    pub fn counterclockwise(&self) -> Direction {
+        match self {
+            Direction::Left => Direction::DownLeft,
+            Direction::Right => Direction::UpRight,
+            Direction::Up => Direction::UpLeft,
+            Direction::Down => Direction::DownRight,
+            Direction::DownLeft => Direction::Down,
+            Direction::DownRight => Direction::Right,
+            Direction::UpLeft => Direction::Left,
+            Direction::UpRight => Direction::Up,
         }
     }
 }
@@ -411,6 +446,30 @@ pub fn test_direction_turn_amount() {
 
     assert_eq!(1, Direction::Left.turn_amount(Direction::UpLeft));
     assert_eq!(-1, Direction::Left.turn_amount(Direction::DownLeft));
+}
+
+#[test]
+pub fn test_direction_clockwise() {
+    let mut dir = Direction::Right;
+
+    for _ in 0..8 {
+        let new_dir = dir.clockwise();
+        assert_eq!(1, dir.turn_amount(new_dir));
+        let dir = new_dir;
+    }
+    assert_eq!(Direction::Right, dir);
+}
+
+#[test]
+pub fn test_direction_counterclockwise() {
+    let mut dir = Direction::Right;
+
+    for _ in 0..8 {
+        let new_dir = dir.counterclockwise();
+        assert_eq!(-1, dir.turn_amount(new_dir));
+        let dir = new_dir;
+    }
+    assert_eq!(Direction::Right, dir);
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -716,7 +775,7 @@ pub fn entity_move_not_blocked(entity_id: EntityId, move_pos: Pos, delta_pos: Po
     let next_pos = next_pos(pos, delta_pos);
     if let Some(other_id) = data.has_blocking_entity(next_pos) {
         if can_stab(data, entity_id, other_id) {
-           let attack = Attack::Stab(other_id);
+           let attack = Attack::Stab(other_id, true);
            movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
        } else {
           movement = Some(Movement::move_to(move_pos, MoveType::Move));
@@ -749,7 +808,7 @@ pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked:
         let next_pos = next_pos(pos, delta_pos);
         if let Some(other_id) = data.has_blocking_entity(next_pos) {
             if can_stab(data, entity_id, other_id) {
-               let attack = Attack::Stab(other_id);
+               let attack = Attack::Stab(other_id, true);
                movement = Some(Movement::attack(new_pos, MoveType::JumpWall, attack));
            }
         }
@@ -770,7 +829,7 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId,
 
     let pos = data.entities.pos[&entity_id];
     if can_stab(data, entity_id, other_id) {
-        let attack = Attack::Stab(other_id);
+        let attack = Attack::Stab(other_id, true);
         movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
     } else if data.entities.blocks[&other_id] {
         let other_pos = data.entities.pos[&other_id];
@@ -813,11 +872,10 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
         let dxy = sub_pos(entity_pos, pos);
         let attack: Option<Attack>;
         if can_stab(data, entity_id, other_id) {
-            attack = Some(Attack::Stab(other_id));
+            attack = Some(Attack::Stab(other_id, true));
         } else if data.map[next_pos(pos, dxy)].tile_type != TileType::Water {
             let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
             let push_amount = 1;
-            // TODO issue 150 this is where pushing comes from. 
             attack = Some(Attack::Push(other_id, direction, push_amount));
         } else {
             // water after push, so supress attack
@@ -842,11 +900,10 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
         if jumped_wall {
             let attack =
                 if can_stab(data, entity_id, other_id) {
-                    Attack::Stab(other_id)
+                    Attack::Stab(other_id, true)
                 } else {
                     let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
                     let push_amount = 1;
-                    // TODO issue 150 this is where pushing comes from. 
                     Attack::Push(other_id, direction, push_amount)
                 };
             let move_pos = move_next_to(pos, entity_pos);
@@ -859,6 +916,13 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
         // entity and wall are together- between-tile wall in front of entity
         // move up to the wall- we can't jump it or attack through it
         movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
+
+        // TODO issue #248 when can attack/push/move?
+        //let move_pos = move_next_to(pos, entity_pos);
+        //let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
+        //let push_amount = 1;
+        //let attack = Attack::Push(other_id, direction, push_amount);
+        //movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
     }
 
     return movement;

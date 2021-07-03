@@ -1,0 +1,15 @@
+up walk
+up walk
+upright sneak
+upright sneak
+right sneak
+right sneak
+downright sneak
+downright sneak
+down sneak
+downleft sneak
+pass
+pass
+pass
+up walk
+exit

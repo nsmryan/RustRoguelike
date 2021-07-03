@@ -14,6 +14,8 @@ pub const INVENTORY_HEIGHT: usize = 500;
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
 pub const BLINK_RADIUS: usize = 4;
 pub const TILE_FILL_METRIC_DIST: usize = 3;
+pub const ILLUMINATE_FOV_RADIUS: i32 = 1000;
+pub const STAB_STUN_TURNS: usize = 3;
 
 /* Monster Settings */
 pub const MAX_MONSTERS: i32 = 15;
@@ -26,6 +28,8 @@ pub const SPIRE_MOVE_DISTANCE: usize = 1;
 
 pub const PAWN_MOVE_DISTANCE: usize = 1;
 pub const PAWN_ATTACK_DISTANCE: usize = 1;
+
+pub const ARMIL_MOVE_DISTANCE: usize = 1;
 
 pub const KEY_ATTACK_DISTANCE: usize = 3;
 pub const KEY_MOVE_DISTANCE: usize = 2;
@@ -40,11 +44,26 @@ pub const TRIGGER_WALL_DAMAGE: i32 = 20;
 
 pub const NOT_IN_FOV_COST: usize = 5;
 
+/* Skill Settings */
+pub const SKILL_GRASS_SHOES_TURNS: usize = 6;
+pub const SKILL_GRASS_THROW_RADIUS: usize = 4;
+pub const SKILL_ILLUMINATE_RADIUS: usize = LANTERN_ILLUMINATE_RADIUS;
+pub const SKILL_HEAL_AMOUNT: usize = LANTERN_ILLUMINATE_RADIUS;
+pub const SKILL_FARSIGHT_FOV_AMOUNT: usize = 1;
+pub const SKILL_PUSH_STUN_TURNS: usize = 3;
+pub const SKILL_SPRINT_AMOUNT: usize = 3;
+
+/* Item Settings */
+pub const LANTERN_ILLUMINATE_RADIUS: usize = 2;
+pub const ILLUMINATE_AMOUNT: usize = LANTERN_ILLUMINATE_RADIUS;
+
 /* Trap Settings */
 pub const FREEZE_TRAP_NUM_TURNS: usize = 3;
 
 /* Player */
 pub const PLAYER_THROW_DIST: usize = 5;
+
+pub const PLAYER_MAX_ITEMS: usize = 3;
 
 /* UI */
 pub const BAR_WIDTH: u32 = 20;
@@ -71,8 +90,8 @@ pub const MAP_LAYER_ENVIRONMENT: usize = 1;
 pub const MAP_LAYER_ENTITIES: usize = 2;
 
 pub const MAP_GROUND: u8 = 154;
-pub const MAP_WATER_XP: u8 = 224;
-pub const MAP_WATER: u8 = 219;
+pub const MAP_WATER_XP: u8 = 171;
+pub const MAP_WATER: u8 = 171;
 pub const MAP_EMPTY: u8 = 32;
 pub const MAP_EMPTY_CHAR: u8 = 219; // all white square
 
@@ -84,7 +103,7 @@ pub const MAP_STATUE_5: u8 = 132;
 pub const MAP_STATUE_6: u8 = 151;
 
 pub const MAP_COLUMN: u8 = 42;
-pub const MAP_RUBBLE: u8 = 15;
+pub const MAP_RUBBLE: u8 = 233;
 pub const MAP_GRASS: u8 = 234;
 
 pub const MAP_TALL_SPIKES: u8 = 136;
@@ -133,6 +152,7 @@ pub const ENTITY_DAGGER: u8 = 247;
 pub const ENTITY_SWORD: u8 = 248;
 pub const ENTITY_SHIELD: u8 = 255;
 pub const ENTITY_HAMMER: u8 = 251;
+pub const ENTITY_LANTERN: u8 = 134;
 
 /* Entities */
 pub const ENTITY_GOL: u8 = 152;
@@ -140,6 +160,7 @@ pub const ENTITY_PLAYER: u8 = 139;
 pub const ENTITY_CLOAK_GUY: u8 = 141;
 pub const ENTITY_ELF: u8 = 165;
 pub const ENTITY_UNKNOWN: u8 = 239;
+pub const ENTITY_ENERGY: u8 = 6;
 
 /* Map Objects */
 pub const ENTITY_EXIT: u8 = 135;
@@ -149,13 +170,19 @@ pub const ENTITY_TRIGGER_3: u8 = 226;
 pub const ENTITY_TRIGGER_4: u8 = 227;
 pub const ENTITY_TRIGGER_5: u8 = 228;
 pub const ENTITY_CURSOR: u8 = 231;
+pub const ENTITY_UNKNOWN_GOLEM_MARKER: u8 = 239;
+
+pub const SHADOW_FULLTILE_RIGHT: u8 = 172;
+pub const SHADOW_FULLTILE_TOP: u8 = 173;
+pub const SHADOW_INTERTILE_TOP: u8 = 174;
+pub const SHADOW_INTERTILE_LEFT: u8 = 175;
 
 /* Triggers */
 pub const ENTITY_GATE_TRIGGER: u8 = ENTITY_TRIGGER_2;
 
 /* Traps */
 pub const ENTITY_SPIKE_TRAP: u8 = 136;
-pub const ENTITY_BLINK_TRAP: u8 = 6;
+pub const ENTITY_BLINK_TRAP: u8 = ENTITY_TRIGGER_1;
 pub const ENTITY_TRAP_SOUND: u8 = ENTITY_TRIGGER_5;
 pub const ENTITY_FREEZE_TRAP: u8 = ENTITY_TRIGGER_4;
 
@@ -164,4 +191,9 @@ pub const ARROW_RIGHT: u8 = 16;
 pub const ARROW_LEFT: u8 = 17;
 pub const ARROW_UP: u8 = 30;
 pub const ARROW_DOWN: u8 = 31;
+
+/* Characters */
+pub const EXCLAMATION_POINT: u8 = 33 as u8;
+pub const QUESTION_MARK: u8 = 63 as u8;
+pub const ASTERISK: u8 = 239; // NOTE there is no asterisk currently, so this is a marker
 

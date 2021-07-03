@@ -14,6 +14,10 @@
     - Pawn
     - 2
     - 4
+- Entities: 
+    - Armil:
+    - 1
+    - 4
 # Item takes a item type,
 # a min number, and a max number of entities of that type
 # Item types are: Stone, Goal, Dagger, Shield, Hammer, Sword, SpikeTrap, SoundTrap, BlinkTrap,
@@ -37,8 +41,12 @@
     - Shield
     - 0
     - 1
+- Items: 
+    - Lantern
+    - 5
+    - 10
 # MaxItems limits the number of items that can appear of any type
-- MaxItems: 3
+- MaxItems: 5
 
 - Traps: 
     - Spikes

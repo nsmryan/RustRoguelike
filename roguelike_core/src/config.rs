@@ -32,6 +32,7 @@ pub struct Config {
     pub color_warm_grey: Color,
     pub color_soft_green: Color,
     pub color_light_grey: Color,
+    pub color_shadow: Color,
     pub load_map_file_every_frame: bool,
     pub tile_noise_scaler: f64,
     pub highlight_player_move: u8,
@@ -58,7 +59,9 @@ pub struct Config {
     pub fog_of_war: bool,
     pub player_health: i32,
     pub explored_alpha: u8,
+    pub fov_edge_alpha: u8,
     pub sound_rubble_radius: usize,
+    pub sound_golem_idle_radius: usize,
     pub sound_grass_radius: usize,
     pub sound_radius_crushed: usize,
     pub sound_radius_attack: usize,
@@ -88,6 +91,8 @@ pub struct Config {
     pub repeat_delay: f32,
     pub write_map_distribution: bool,
     pub print_key_log: bool,
+    pub idle_animations: bool,
+    pub recording: bool,
 }
 
 impl Config {

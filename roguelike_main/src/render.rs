@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 
-use noise::NoiseFn;
-use noise::Perlin;
+use oorandom::Rand32;
 
 use sdl2::render::{BlendMode, WindowCanvas};
 use sdl2::rect::Rect;
@@ -14,7 +13,9 @@ use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
 use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, sub_pos, reach_by_mode, map_fill_metric};
+use roguelike_core::perlin::Perlin;
 use roguelike_core::line::line;
+use roguelike_core::ai::*;
 
 use roguelike_engine::game::*;
 
@@ -79,6 +80,7 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
             canvas.copy(&background.target, None, None).unwrap();
 
             let mut panel = panel.with_target(canvas);
+            render_wall_shadows(&mut panel, display_state, game);
             render_map(&mut panel, display_state, game);
             render_entities(&mut panel, display_state, game);
             render_impressions(&mut panel, display_state, game);
@@ -306,8 +308,6 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
     let energy = game.data.entities.energy[&player_id];
     render_pips(panel, display_state, energy, 3, game.config.color_light_green);
 
-    list.push(format!("position:"));
-
     list.push(format!(" ({}, {})", 
                       game.data.entities.pos[&player_id].x,
                       game.data.entities.pos[&player_id].y));
@@ -318,7 +318,14 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
     list.push(format!("{}", move_mode.to_string()));
 
     let stance = game.data.entities.stance[&player_id];
-    list.push(format!("{:?}", stance));
+    list.push(format!("{}", stance));
+
+    list.push(format!(""));
+    if let Some(class) = game.data.entities.class.get(&player_id) {
+        list.push(format!("{}", class));
+    } else {
+        list.push(format!(""));
+    }
 
     list.push(format!(""));
     list.push(format!("turn {}", game.settings.turn_count));
@@ -341,8 +348,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
         let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
-        let object_ids =
-            get_entity_at_pos(info_pos, &mut game.data);
+        let object_ids = game.data.get_entities_at_pos(info_pos);
 
         let mut y_pos = 1;
 
@@ -362,13 +368,17 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
         y_pos += 1;
 
-        let in_fov = game.settings.god_mode ||
-                     game.data.is_in_fov(player_id, info_pos, &game.config);
+        let mut tile_in_fov = game.data.pos_in_fov(player_id, info_pos, &game.config);
+
+        let mut entity_in_fov = false;
 
         // only display first object
         if let Some(obj_id) = object_ids.first() {
+            entity_in_fov = game.settings.god_mode ||
+                            game.data.is_in_fov(player_id, *obj_id, &game.config);
+
             // only display things in the player's FOV
-            if in_fov {
+            if entity_in_fov {
                 if let Some(fighter) = game.data.entities.fighter.get(obj_id) {
                     y_pos += 1;
 
@@ -412,7 +422,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
         text_list.clear();
 
         y_pos = 11;
-        if in_fov {
+        if tile_in_fov {
             let text_pos = Pos::new(1, y_pos);
             text_list.push(format!("Tile is"));
             if game.data.map[info_pos].tile_type == TileType::Water {
@@ -461,7 +471,7 @@ fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
 
 fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     // Render header
-    render_placard(panel, display_state, "Choice Class", &game.config);
+    render_placard(panel, display_state, "Choose Class", &game.config);
 
     let mut list = Vec::new();
 
@@ -565,8 +575,6 @@ fn render_background(display: &mut Display, game: &mut Game) {
     }
     display.targets.background_panel.dirty = false;
 
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = display.state.lookup_spritekey("tiles");
@@ -584,23 +592,111 @@ fn render_background(display: &mut Display, game: &mut Game) {
             for x in 0..map_width {
                 let map_pos = Pos::new(x, y);
 
-                let visible =
-                    game.data.is_in_fov(player_id, map_pos, &game.config) ||
-                    game.settings.god_mode;
+                //let visible =
+                //    game.data.pos_in_fov(player_id, map_pos, &game.config) ||
+                //    game.settings.god_mode;
 
                 let tile = &game.data.map[(x, y)];
                 if tile.tile_type != TileType::Water {
                     sprite.draw_char(&mut panel,
                                      MAP_EMPTY_CHAR as char,
                                      map_pos,
-                                     empty_tile_color(&game.config, map_pos, visible));
+                                     Color::white());
                 } else {
-                    let color = tile_color(&game.config, x, y, tile, visible);
-                    sprite.draw_char(&mut panel, MAP_EMPTY_CHAR as char, map_pos, color);
+                    sprite.draw_char(&mut panel, MAP_EMPTY_CHAR as char, map_pos, Color::white());
                 }
             }
         }
     }).unwrap();
+}
+
+fn render_surface(panel: &mut Panel<&mut WindowCanvas>, sprite: &mut SpriteSheet, surface: Surface, pos: Pos) {
+    match surface {
+        Surface::Rubble => {
+            sprite.draw_char(panel, MAP_RUBBLE as char, pos, Color::white());
+        }
+
+        Surface::Grass => {
+            sprite.draw_char(panel, MAP_GRASS as char, pos, Color::white()); //game.config.color_light_green);
+        }
+
+        Surface::Floor => {
+            // Nothing to draw
+        }
+    }
+}
+
+/// Render Wall Shadows (full tile and intertile walls, left and down)
+fn render_wall_shadows(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+    let shadow_sprite_key = display_state.lookup_spritekey("shadows");
+
+    let (map_width, map_height) = game.data.map.size();
+    // TODO make the numeric literals used here into globals in constants.rs
+    for y in 0..map_height {
+        for x in 0..map_width {
+            let pos = Pos::new(x, y);
+            let tile = game.data.map[pos];
+
+            /* render full tile wall shadows */
+            if tile.tile_type == TileType::Wall {
+                if x - 1 > 0 {
+                    // left
+                    let shadow_pos = Pos::new(x - 1, y);
+                    let shadow_left_upper = Sprite::sprite(2, shadow_sprite_key);
+                    display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
+                }
+
+                if x - 1 > 0 && y + 1 < map_height {
+                    let shadow_pos = Pos::new(x - 1, y + 1);
+                    let shadow_left_lower = Sprite::sprite(6, shadow_sprite_key);
+                    display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
+                }
+
+                if y + 1 < map_height {
+                    // lower
+                    let shadow_lower_right = Sprite::sprite(1, shadow_sprite_key);
+                    let shadow_pos = Pos::new(x, y + 1);
+                    display_state.draw_sprite(panel, shadow_lower_right, shadow_pos, game.config.color_shadow);
+                }
+
+                if y + 1 < map_height && x - 1 > 0 {
+                    let shadow_lower_left = Sprite::sprite(0, shadow_sprite_key);
+                    let shadow_pos = Pos::new(x - 1, y + 1);
+                    display_state.draw_sprite(panel, shadow_lower_left, shadow_pos, game.config.color_shadow);
+                }
+            } else if tile.left_wall == Wall::ShortWall {
+                if x - 1 > 0 {
+                    // left
+                    if x - 1 > 0 {
+                        let shadow_pos = Pos::new(x - 1, y);
+                        let shadow_left_upper = Sprite::sprite(3, shadow_sprite_key);
+                        display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
+                    }
+
+                    if x - 1 > 0 && y + 1 < map_height {
+                        let shadow_pos = Pos::new(x - 1, y + 1);
+                        let shadow_left_lower = Sprite::sprite(7, shadow_sprite_key);
+                        display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
+                    }
+                }
+            } else if tile.bottom_wall == Wall::ShortWall {
+                if y + 1 < map_height {
+                    // lower
+                    if y + 1 < map_height {
+                        let shadow_lower_right = Sprite::sprite(5, shadow_sprite_key);
+                        let shadow_pos = Pos::new(x, y + 1);
+                        display_state.draw_sprite(panel, shadow_lower_right, shadow_pos, game.config.color_shadow);
+                    }
+
+                    if y + 1 < map_height && x - 1 > 0 {
+                        let shadow_lower_left = Sprite::sprite(4, shadow_sprite_key);
+                        let shadow_pos = Pos::new(x - 1, y + 1);
+                        display_state.draw_sprite(panel, shadow_lower_left, shadow_pos, game.config.color_shadow);
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// Render the map, with environment and walls
@@ -611,7 +707,6 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
 
     let sprite_key = display_state.lookup_spritekey("tiles");
     let sprite = &mut display_state.sprites[&sprite_key];
-
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
@@ -625,87 +720,89 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
 
             // Render game stuff
             let visible =
-                game.data.is_in_fov(player_id, pos, &game.config) ||
+                game.data.pos_in_fov(player_id, pos, &game.config) ||
                 game.settings.god_mode;
 
-            let explored = game.data.map[pos].explored || visible;
-
-            let tile = &game.data.map[pos];
-
-            let wall_color =
-                if explored {
-                    game.config.color_light_brown
-                } else {
-                    game.config.color_dark_brown
-                };
+            let tile = game.data.map[pos];
 
             let chr = tile.chr;
 
             // if the tile is not empty or water, draw it
-            let color = tile_color(&game.config, x, y, tile, visible);
             if tile.tile_type == TileType::Water {
-                sprite.draw_char(panel, ' ', pos, color);
+                sprite.draw_char(panel, MAP_WATER as char, pos, Color::white());
             } else if chr != MAP_EMPTY_CHAR {
-                sprite.draw_char(panel, chr as char, pos, color);
+                sprite.draw_char(panel, chr as char, pos, Color::white());
             }
 
-            match tile.surface {
-                Surface::Rubble => {
-                    sprite.draw_char(panel, MAP_RUBBLE as char, pos, color);
-                }
+            render_surface(panel, sprite, tile.surface, pos);
 
-                Surface::Grass => {
-                    sprite.draw_char(panel, MAP_RUBBLE as char, pos, game.config.color_light_green);
-                }
-
-                Surface::Floor => {
-                    // Nothing to draw
-                }
-            }
-
-            // finally, draw the between-tile walls appropriate to this tile
-            if tile.bottom_wall == Wall::ShortWall {
-                sprite.draw_char(panel, MAP_THIN_WALL_BOTTOM as char, pos, wall_color);
-            } else if tile.bottom_wall == Wall::TallWall {
-                sprite.draw_char(panel, MAP_THICK_WALL_BOTTOM as char, pos, wall_color);
-            }
-
-            if tile.left_wall == Wall::ShortWall {
-                sprite.draw_char(panel, MAP_THIN_WALL_LEFT as char, pos, wall_color);
-
-            } else if tile.left_wall == Wall::TallWall {
-                sprite.draw_char(panel, MAP_THICK_WALL_LEFT as char, pos, wall_color);
-            }
-
-            if x + 1 < map_width {
-                let right_pos = Pos::new(pos.x + 1, pos.y);
-                let right_tile = &game.data.map[right_pos];
-                if right_tile.left_wall == Wall::ShortWall {
-                sprite.draw_char(panel, MAP_THIN_WALL_RIGHT as char, pos, wall_color);
-                } else if right_tile.left_wall == Wall::TallWall {
-                sprite.draw_char(panel, MAP_THICK_WALL_RIGHT as char, pos, wall_color);
-                }
-            }
-
-            if y - 1 >= 0 {
-                let up_pos = Pos::new(pos.x, pos.y - 1);
-                let up_tile = &game.data.map[up_pos];
-                if up_tile.bottom_wall == Wall::ShortWall {
-                    sprite.draw_char(panel, MAP_THIN_WALL_TOP as char, pos, wall_color);
-                } else if up_tile.bottom_wall == Wall::TallWall {
-                    sprite.draw_char(panel, MAP_THICK_WALL_TOP as char, pos, wall_color);
-                }
-            }
+            /* draw the between-tile walls appropriate to this tile */
+            render_itertile_walls(panel, &mut game.data.map, sprite, pos, &game.config);
 
             // apply a FoW darkening to cells
             if game.config.fog_of_war && !visible {
+                game.data.entities.status[&player_id].extra_fov += 1;
+                let is_in_fov_ext = 
+                   game.data.pos_in_fov(player_id, pos, &game.config);
+                game.data.entities.status[&player_id].extra_fov -= 1;
+
                 let mut blackout_color = Color::black();
-                if game.data.map[pos].explored {
+                if is_in_fov_ext {
+                    blackout_color.a = game.config.fov_edge_alpha
+                } else if game.data.map[pos].explored {
                     blackout_color.a = game.config.explored_alpha
                 }
                 
                 sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, blackout_color);
             }
+        }
+    }
+}
+
+fn render_itertile_walls(panel: &mut Panel<&mut WindowCanvas>,
+                         map: &Map,
+                         sprite: &mut SpriteSheet,
+                         pos: Pos,
+                         config: &Config) {
+    let (x, y) = pos.to_tuple();
+    let tile = map[pos];
+    let wall_color = Color::white();
+
+    // Lower walls
+    if tile.bottom_wall == Wall::ShortWall {
+        sprite.draw_char(panel, MAP_THIN_WALL_BOTTOM as char, pos, wall_color);
+    } else if tile.bottom_wall == Wall::TallWall {
+        sprite.draw_char(panel, MAP_THICK_WALL_BOTTOM as char, pos, wall_color);
+    }
+
+    // Left walls
+    if tile.left_wall == Wall::ShortWall {
+        sprite.draw_char(panel, MAP_THIN_WALL_LEFT as char, pos, wall_color);
+    } else if tile.left_wall == Wall::TallWall {
+        sprite.draw_char(panel, MAP_THICK_WALL_LEFT as char, pos, wall_color);
+    }
+
+    // Right walls
+    if x + 1 < map.width() {
+        let right_pos = Pos::new(pos.x + 1, pos.y);
+        let right_tile = &map[right_pos];
+        if right_tile.left_wall == Wall::ShortWall {
+            sprite.draw_char(panel, MAP_THIN_WALL_RIGHT as char, pos, wall_color);
+            sprite.draw_char(panel, SHADOW_INTERTILE_LEFT as char, pos, config.color_shadow);
+        } else if right_tile.left_wall == Wall::TallWall {
+            sprite.draw_char(panel, MAP_THICK_WALL_RIGHT as char, pos, wall_color);
+        }
+    }
+
+    // Upper walls
+    if y - 1 >= 0 {
+        let up_pos = Pos::new(pos.x, pos.y - 1);
+        let up_tile = &map[up_pos];
+        if up_tile.bottom_wall == Wall::ShortWall {
+            sprite.draw_char(panel, MAP_THIN_WALL_TOP as char, pos, wall_color);
+            sprite.draw_char(panel, SHADOW_INTERTILE_TOP as char, pos, config.color_shadow);
+        } else if up_tile.bottom_wall == Wall::TallWall {
+            sprite.draw_char(panel, MAP_THICK_WALL_TOP as char, pos, wall_color);
         }
     }
 }
@@ -724,19 +821,10 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
     let sprite_key = display_state.lookup_spritekey("tiles");
     let sprite = &mut display_state.sprites[&sprite_key];
 
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+
     for (index, effect) in effects.iter_mut().enumerate() {
         match effect {
-            Effect::HeardSomething(pos, created_turn) => {
-                sprite.draw_char(panel,
-                                 ENTITY_UNKNOWN as char,
-                                 *pos,
-                                 game.config.color_warm_grey);
-
-                if *created_turn != game.settings.turn_count {
-                    remove_indices.push(index);
-                }
-            }
-
             Effect::Sound(sound_aoe, sound_dt) => {
                 let mut highlight_color = game.config.color_warm_grey;
 
@@ -751,7 +839,8 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                     //            tiles and simply pasting them, perhaps saving time from not
                     //            needing to blend.
                     for pos in dist_positions.iter() {
-                        if !game.data.map[*pos].block_move {
+                        if !game.data.map[*pos].block_move &&
+                           game.data.pos_in_fov(player_id, *pos, &game.config) {
                            draw_tile_highlight(panel, *pos, highlight_color);
                         }
                     }
@@ -792,7 +881,7 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
     if game.data.map.is_within_bounds(pos) &&
        game.data.entities.limbo.get(&entity_id).is_none() {
         let is_in_fov = 
-           game.data.is_in_fov(player_id, pos, &game.config) ||
+           game.data.is_in_fov(player_id, entity_id, &game.config) ||
            game.settings.god_mode;
 
         if let Some(anim_key) = game.data.entities.animation[&entity_id].get(0) {
@@ -810,15 +899,25 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
                 game.data.entities.animation[&entity_id].pop_front();
             }
         } else {
-            // NOTE the needs_removal can probably be removed
-            let needs_removal = game.data.entities.needs_removal[&entity_id];
-            if is_in_fov && !needs_removal {
+            if is_in_fov {
                 let color = game.data.entities.color[&entity_id];
 
                 let chr = game.data.entities.chr[&entity_id];
                 let sprite = Sprite::char(chr);
                 display_state.draw_sprite(panel, sprite, pos, color);
                 animation_result.sprite = Some(sprite);
+            } else if game.data.entities.typ[&entity_id] == EntityType::Enemy {
+                game.data.entities.status[&player_id].extra_fov += 1;
+                let is_in_fov_ext = 
+                   game.data.is_in_fov(player_id, entity_id, &game.config);
+                game.data.entities.status[&player_id].extra_fov -= 1;
+
+                if is_in_fov_ext {
+                    if display_state.impressions.iter().all(|impresssion| impresssion.pos != pos) {
+                        let impression_sprite = Sprite::char(ENTITY_UNKNOWN as char);
+                        display_state.impressions.push(Impression::new(impression_sprite, pos));
+                    }
+                }
             }
         }
     }
@@ -993,7 +1092,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             tile_sprite.draw_char(panel, ENTITY_CURSOR as char, cursor_pos, color);
 
             // render player ghost
-            if cursor_pos != player_pos && game.input.target == -1 {
+            if cursor_pos != player_pos && game.input.target == None {
                 let alpha = game.data.entities.color[&player_id].a;
                 game.data.entities.color[&player_id].a = 100;
 
@@ -1026,7 +1125,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 let pos = Pos::new(x, y);
 
                 let is_in_fov =
-                    game.data.is_in_fov(player_id, pos, &game.config);
+                    game.data.pos_in_fov(player_id, pos, &game.config);
                 if is_in_fov {
                     tile_sprite.draw_char(panel, MAP_GROUND as char, pos, game.config.color_light_green);
                 }
@@ -1039,10 +1138,8 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     highlight_color.a = game.config.highlight_player_move;
 
     // draw direction overlays
-    let mut direction_color = game.config.color_soft_green;
-    direction_color.a /= 2;
-
     {
+        let direction_color = Color::white();
         let tile_sprite = &mut display_state.sprites[&sprite_key];
         for entity_id in game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>().iter() {
             let pos = game.data.entities.pos[entity_id];
@@ -1051,7 +1148,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 continue;
             }
 
-            if game.data.is_in_fov(player_id, pos, &game.config) &&
+            if game.data.is_in_fov(player_id, *entity_id, &game.config) &&
                game.data.entities.status[entity_id].alive {
                 if let Some(dir) = game.data.entities.direction.get(entity_id) {
                     // display.draw_tile_edge(pos, area, direction_color, dir);
@@ -1080,11 +1177,11 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     // draw attack and fov position highlights
     if let Some(mouse_xy) = map_mouse_pos {
         // Draw monster attack overlay
-        let object_ids = get_entity_at_pos(mouse_xy, &mut game.data);
+        let object_ids = game.data.get_entities_at_pos(mouse_xy);
         for entity_id in object_ids.iter() {
             let pos = game.data.entities.pos[entity_id];
 
-            if game.data.is_in_fov(player_id, pos, &game.config) &&
+            if game.data.pos_in_fov(player_id, pos, &game.config) &&
                *entity_id != player_id &&
                game.data.entities.status[entity_id].alive {
                render_attack_overlay(panel, display_state, game, *entity_id);
@@ -1102,7 +1199,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
             if entity_id != player_id &&
                game.data.map.is_within_bounds(pos) &&
-               game.data.is_in_fov(player_id, pos, &game.config) &&
+               game.data.pos_in_fov(player_id, pos, &game.config) &&
                game.data.entities.status[&entity_id].alive {
                render_attack_overlay(panel,
                                      display_state,
@@ -1179,7 +1276,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         for y in 0..game.data.map.height() {
             for x in 0..game.data.map.width() {
                 let pos = Pos::new(x, y);
-                let in_fov = game.data.is_in_fov(player_id, pos, &game.config);
+                let in_fov = game.data.pos_in_fov(player_id, pos, &game.config);
                 if in_fov {
                     draw_outline_tile(panel, pos, highlight_color_fov);
                 }
@@ -1215,41 +1312,84 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                                   highlight_color);
         }
     }
-}
 
-fn get_entity_at_pos(check_pos: Pos, data: &mut GameData) -> Vec<EntityId> {
-    let mut object_ids: Vec<EntityId> = Vec::new();
+    // draw alertness overlays
+    {
+        let alertness_color = game.config.color_pink;
+        let scale = 0.5;
+        let tile_sprite = &mut display_state.sprites[&sprite_key];
+        for entity_id in game.data.entities.ids.iter() {
+            let pos = game.data.entities.pos[entity_id];
 
-    for key in data.entities.ids.iter() {
-        let pos = data.entities.pos[key];
-        let is_mouse = data.entities.name[key] == EntityName::Mouse;
-        let removing = data.entities.needs_removal[key];
+            if pos.x == -1 && pos.y == -1 {
+                continue;
+            }
 
-        if !removing && !is_mouse && check_pos == pos {
-            object_ids.push(*key);
+            if game.data.is_in_fov(player_id, *entity_id, &game.config) {
+                let mut status_drawn: bool = false;
+                if let Some(status) = game.data.entities.status.get(entity_id) {
+                    if status.frozen > 0 {
+                        status_drawn = true;
+                        tile_sprite.draw_sprite_direction(panel,
+                                                          ASTERISK as usize,
+                                                          Some(Direction::UpRight),
+                                                          pos,
+                                                          scale,
+                                                          alertness_color,
+                                                          0.0);
+                    }
+                }
+
+                if status_drawn {
+                    if let Some(behavior) = game.data.entities.behavior.get(entity_id) {
+                        match behavior {
+                            Behavior::Idle => {
+                            }
+
+                            Behavior::Investigating(_) => {
+                                tile_sprite.draw_sprite_direction(panel,
+                                                                  QUESTION_MARK as usize,
+                                                                  Some(Direction::UpRight),
+                                                                  pos,
+                                                                  scale,
+                                                                  alertness_color,
+                                                                  0.0);
+                            }
+
+                            Behavior::Attacking(_) => {
+                                tile_sprite.draw_sprite_direction(panel,
+                                                                  EXCLAMATION_POINT as usize,
+                                                                  Some(Direction::UpRight),
+                                                                  pos,
+                                                                  scale,
+                                                                  alertness_color,
+                                                                  0.0);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
-
-    return object_ids;
 }
 
-fn empty_tile_color(config: &Config, pos: Pos, visible: bool) -> Color {
-    let perlin = Perlin::new();
-
+fn empty_tile_color(config: &Config, pos: Pos, visible: bool, rng: &mut Rand32) -> Color {
     let low_color;
     let high_color;
     if visible {
-        low_color = config.color_tile_blue_light;
-        high_color = config.color_tile_blue_dark;
+        low_color = config.color_medium_grey;
+        high_color = config.color_light_grey;
     } else {
-        low_color = config.color_tile_blue_dark;
-        high_color = config.color_very_dark_blue;
+        low_color = config.color_medium_grey;
+        high_color = config.color_light_grey;
     }
+
+    let simplex = Perlin::new(rng);
     let color =
         lerp_color(low_color,
                    high_color,
-                   perlin.get([pos.x as f64 / config.tile_noise_scaler,
-                               pos.y as f64 / config.tile_noise_scaler]) as f32);
+                   simplex.noise2d(pos.x as f64 / config.tile_noise_scaler,
+                                   pos.y as f64 / config.tile_noise_scaler) as f32);
 
    return color;
 }
@@ -1313,7 +1453,7 @@ fn render_attack_overlay(panel: &mut Panel<&mut WindowCanvas>,
                      let in_bounds = game.data.map.is_within_bounds(*pos);
                      let traps_block = false;
                      let clear = game.data.clear_path(object_pos, *pos, traps_block);
-                     let player_can_see = game.data.is_in_fov(player_id, *pos, &game.config);
+                     let player_can_see = in_bounds && game.data.pos_in_fov(player_id, *pos, &game.config);
                      // check for player position so it gets highligted, even
                      // though the player causes 'clear_path' to fail.
                      return player_can_see && in_bounds && (clear || *pos == player_pos);
@@ -1339,8 +1479,8 @@ fn render_fov_overlay(panel: &mut Panel<&mut WindowCanvas>,
         for x in 0..game.data.map.width() {
             let map_pos = Pos::new(x, y);
 
-            let visible = game.data.is_in_fov(entity_id, map_pos, &game.config) &&
-                          game.data.is_in_fov(player_id, map_pos, &game.config);
+            let visible = game.data.pos_in_fov(entity_id, map_pos, &game.config) &&
+                          game.data.pos_in_fov(player_id, map_pos, &game.config);
 
 
             if visible {
@@ -1366,7 +1506,7 @@ fn render_movement_overlay(panel: &mut Panel<&mut WindowCanvas>,
 
     if let Some(reach) = game.data.entities.movement.get(&entity_id) {
         for move_pos in reach.reachables(entity_pos) {
-            let visible = game.data.is_in_fov(player_id, move_pos, &game.config);
+            let visible = game.data.pos_in_fov(player_id, move_pos, &game.config);
             if visible {
                 let chr = game.data.entities.chr[&entity_id];
 

@@ -136,6 +136,12 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
             game.data.map = new_map;
             player_position = Pos::from(position);
         }
+
+        MapLoadConfig::TestTraps => {
+            let (new_map, position) = make_trap_test_map(&mut game.data.entities, &game.config, &mut game.msg_log);
+            game.data.map = new_map;
+            player_position = Pos::from(position);
+        }
     }
 
     if game.data.find_by_name(EntityName::Mouse).is_none() {
@@ -143,7 +149,8 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     }
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    game.data.entities.pos[&player_id] = player_position;
+    //game.msg_log.log(Msg::Moved(player_id, MoveType::Move, player_position));
+    game.data.entities.move_to(player_id, player_position);
 
     if game.config.write_map_distribution {
         let max = (2 * TILE_FILL_METRIC_DIST + 1).pow(2);
@@ -198,7 +205,7 @@ pub fn read_map_xp(config: &Config,
                             MAP_GROUND => {
                             }
 
-                            MAP_WATER | MAP_WATER_XP => {
+                            MAP_WATER => {
                                 data.map[pos] = Tile::water();
                                 data.map[pos].chr = MAP_WATER;
                             }

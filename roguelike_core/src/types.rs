@@ -21,6 +21,7 @@ use crate::animation::AnimKey;
 use crate::utils::*;
 use crate::config::Config;
 use crate::line::*;
+use crate::constants::*;
 
 
 pub type Name = Symbol;
@@ -116,20 +117,68 @@ impl GameData {
         return result;
     }
 
-    pub fn is_in_fov(&self, entity_id: EntityId, other_pos: Pos, config: &Config) -> bool {
-        let pos = self.entities.pos[&entity_id];
-
-        let radius: i32 = match self.entities.typ[&entity_id] {
+    pub fn fov_radius(&self, entity_id: EntityId, config: &Config) -> i32 {
+        let mut radius: i32 = match self.entities.typ[&entity_id] {
             EntityType::Enemy => config.fov_radius_monster,
             EntityType::Player => config.fov_radius_player,
-            _ => return false, // other things have no FOV
+            _ => panic!("{} does not have a FOV radius!", self.entities.name[&entity_id]),
         };
 
+        if let Some(status) = self.entities.status.get(&entity_id) {
+            radius += status.extra_fov as i32;
+        }
+
+        return radius;
+    }
+
+    pub fn is_in_fov(&self, entity_id: EntityId, other_id: EntityId, config: &Config) -> bool {
+        let stance = self.entities.stance[&entity_id];
+        let other_stance = self.entities.stance.get(&other_id).unwrap_or(&Stance::Standing);
+        let crouching = stance == Stance::Crouching || other_stance == &Stance::Crouching;
+
+        let other_pos = self.entities.pos[&other_id];
+
+        return self.fov_check(entity_id, other_pos, crouching, config);
+    }
+
+    pub fn pos_in_fov(&self, entity_id: EntityId, other_pos: Pos, config: &Config) -> bool {
         let stance = self.entities.stance[&entity_id];
         let crouching = stance == Stance::Crouching;
 
+        return self.fov_check(entity_id, other_pos, crouching, config);
+    }
+
+    fn fov_check(&self, entity_id: EntityId, other_pos: Pos, crouching: bool, config: &Config) -> bool {
+        if other_pos.x < 0 || other_pos.y < 0 {
+            return false;
+        }
+
+        let pos = self.entities.pos[&entity_id];
+
+        let radius: i32 = self.fov_radius(entity_id, config);
+
         if self.entities.typ[&entity_id] == EntityType::Player {
-            return self.map.is_in_fov(pos, other_pos, radius, crouching);
+            let mut can_see = self.map.is_in_fov(pos, other_pos, radius, crouching);
+
+            for id in self.entities.ids.iter() {
+                if can_see {
+                    break;
+                }
+
+                // check for illumination that might make this tile visible.
+                if !self.entities.needs_removal[id] && self.entities.status[id].illuminate != 0 {
+                    let illuminate_pos = self.entities.pos[id];
+                    let illuminate_radius = self.entities.status[id].illuminate as i32;
+                    let illuminated = self.map.is_in_fov(illuminate_pos, other_pos, illuminate_radius, crouching);
+
+                    let illuminated_see = self.map.is_in_fov(pos, other_pos, ILLUMINATE_FOV_RADIUS, crouching);
+                    let blocked = self.map[other_pos].block_sight;
+
+                    can_see |= illuminated && illuminated_see && !blocked;
+                }
+            }
+
+            return can_see;
         } else {
             if let Some(dir) = self.entities.direction.get(&entity_id) {
                 return self.map.is_in_fov_direction(pos, other_pos, radius, *dir, crouching);
@@ -147,6 +196,21 @@ impl GameData {
         }
 
         return None;
+    }
+
+    pub fn get_entities_at_pos(&mut self, check_pos: Pos) -> Vec<EntityId> {
+        let mut object_ids: Vec<EntityId> = Vec::new();
+
+        for key in self.entities.ids.iter() {
+            let pos = self.entities.pos[key];
+            let is_mouse = self.entities.name[key] == EntityName::Mouse;
+
+            if !is_mouse && check_pos == pos {
+                object_ids.push(*key);
+            }
+        }
+
+        return object_ids;
     }
 
     pub fn clear_path_up_to(&self, start: Pos, end: Pos, traps_block: bool) -> bool {
@@ -190,29 +254,6 @@ impl GameData {
         }
 
         return None;
-    }
-
-    pub fn count_down(&mut self) {
-        let mut to_remove = Vec::new();
-        for entity_id in self.entities.ids.iter() {
-            if let Some(ref mut count) = self.entities.count_down.get_mut(entity_id) {
-                if **count == 0 {
-                    to_remove.push(*entity_id);
-                } else {
-                    **count -= 1;
-                }
-            }
-
-            if self.entities.needs_removal[entity_id] &&
-               self.entities.animation[entity_id].len() == 0 {
-                to_remove.push(*entity_id);
-            }
-        }
-
-        // remove objects waiting removal
-        for key in to_remove {
-            self.remove_entity(key);
-        }
     }
 
     pub fn has_entities(&self, pos: Pos) -> Vec<EntityId> {
@@ -289,7 +330,7 @@ impl GameData {
         }
 
         if let Some(item_id) = option_item_id {
-            self.remove_entity(item_id);
+            self.entities.mark_for_removal(entity_id);
             self.entities.inventory[&entity_id].remove(0);
         }
     }
@@ -308,12 +349,12 @@ impl GameData {
         return within;
     }
 
-    // check whether the entitiy could see a location if it were facing towards that position.
+    // check whether the entity could see a location if it were facing towards that position.
     pub fn could_see(&mut self, entity_id: EntityId, target_pos: Pos, config: &Config) -> bool {
         let current_facing = self.entities.direction[&entity_id];
         self.entities.face(entity_id, target_pos);
 
-        let visible = self.is_in_fov(entity_id, target_pos, config);
+        let visible = self.pos_in_fov(entity_id, target_pos, config);
 
         self.entities.direction[&entity_id] = current_facing;
 
@@ -344,47 +385,9 @@ impl GameData {
 
         for id in self.entities.ids.clone().iter() {
             if !dont_clear.contains(&id) {
-                self.remove_entity(*id);
+                self.entities.remove_entity(*id);
             }
         }
-    }
-
-    pub fn remove_entity(&mut self, id: EntityId) {
-        let ix_pos = self.entities.ids.iter().position(|val| *val == id).unwrap();
-        self.entities.ids.remove(ix_pos);
-
-        self.entities.pos.remove(&id);
-        self.entities.chr.remove(&id);
-        self.entities.name.remove(&id);
-        self.entities.fighter.remove(&id);
-        self.entities.stance.remove(&id);
-        self.entities.ai.remove(&id);
-        self.entities.behavior.remove(&id);
-        self.entities.item.remove(&id);
-        self.entities.movement.remove(&id);
-        self.entities.attack.remove(&id);
-        self.entities.inventory.remove(&id);
-        self.entities.trap.remove(&id);
-        self.entities.armed.remove(&id);
-        self.entities.energy.remove(&id);
-        self.entities.count_down.remove(&id);
-        self.entities.move_mode.remove(&id);
-        self.entities.direction.remove(&id);
-        self.entities.selected_item.remove(&id);
-        self.entities.action.remove(&id);
-        self.entities.class.remove(&id);
-        self.entities.skills.remove(&id);
-        self.entities.limbo.remove(&id);
-        self.entities.animation.remove(&id);
-        self.entities.sound.remove(&id);
-        self.entities.typ.remove(&id);
-        self.entities.status.remove(&id);
-        self.entities.gate_pos.remove(&id);
-        self.entities.took_turn.remove(&id);
-        self.entities.color.remove(&id);
-        self.entities.blocks.remove(&id);
-        self.entities.needs_removal.remove(&id);
-        self.entities.messages.remove(&id);
     }
 }
 
@@ -400,12 +403,17 @@ pub enum Trap {
 pub enum Skill {
     GrassThrow,
     GrassBlade,
+    GrassShoes,
     Blink,
     PassWall,
     Rubble,
     Reform,
     Swap,
     Push,
+    Illuminate,
+    Heal,
+    FarSight,
+    Sprint,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Default)]
@@ -444,6 +452,21 @@ pub enum GameState {
     ClassMenu,
     ConfirmQuit,
     Exit,
+}
+
+impl fmt::Display for GameState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            GameState::Playing => write!(f, "playing"),
+            GameState::Win => write!(f, "win"),
+            GameState::Lose => write!(f, "lose"),
+            GameState::Inventory => write!(f, "inventory"),
+            GameState::SkillMenu => write!(f, "skillmenu"),
+            GameState::ClassMenu => write!(f, "classmenu"),
+            GameState::ConfirmQuit => write!(f, "confirmquit"),
+            GameState::Exit => write!(f, "exit"),
+        }
+    }
 }
 
 impl Default for GameState {
@@ -501,6 +524,7 @@ pub enum Item {
     Shield,
     Hammer,
     Sword,
+    Lantern,
     SpikeTrap,
     SoundTrap,
     BlinkTrap,
@@ -516,6 +540,7 @@ impl fmt::Display for Item {
             Item::Shield => write!(f, "shield"),
             Item::Hammer => write!(f, "hammer"),
             Item::Sword => write!(f, "sword"),
+            Item::Lantern => write!(f, "lantern"),
             Item::SpikeTrap => write!(f, "spiketrap"),
             Item::SoundTrap => write!(f, "soundtrap"),
             Item::BlinkTrap => write!(f, "blinktrap"),
@@ -565,6 +590,7 @@ impl Item {
             Item::Shield => ItemClass::Primary,
             Item::Hammer => ItemClass::Primary,
             Item::Sword => ItemClass::Primary,
+            Item::Lantern => ItemClass::Secondary,
             Item::SpikeTrap => ItemClass::Secondary,
             Item::SoundTrap => ItemClass::Secondary,
             Item::BlinkTrap => ItemClass::Secondary,
@@ -580,6 +606,7 @@ impl Item {
             Item::Shield => EntityName::Shield,
             Item::Hammer => EntityName::Hammer,
             Item::Sword => EntityName::Sword,
+            Item::Lantern => EntityName::Lantern,
             Item::SpikeTrap => EntityName::SpikeTrap,
             Item::SoundTrap => EntityName::SoundTrap,
             Item::BlinkTrap => EntityName::BlinkTrap,
@@ -634,6 +661,34 @@ impl Stance {
     }
 }
 
+impl fmt::Display for Stance {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Stance::Crouching => write!(f, "crouching"),
+            Stance::Standing => write!(f, "standing"),
+            Stance::Running => write!(f, "running"),
+        }
+    }
+}
+
+impl FromStr for Stance {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "crouching" {
+            return Ok(Stance::Crouching);
+        } else if s == "standing" {
+            return Ok(Stance::Standing);
+        } else if s == "running" {
+            return Ok(Stance::Running);
+        }
+
+        return Err(format!("Could not parse '{}' as Stance", s));
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum EntityName {
     Player,
@@ -646,7 +701,9 @@ pub enum EntityName {
     Hammer,
     Sword,
     Shield,
+    Lantern,
     Spire,
+    Armil,
     SpikeTrap,
     BlinkTrap,
     FreezeTrap,
@@ -677,8 +734,10 @@ impl fmt::Display for EntityName {
             EntityName::Dagger => write!(f, "dagger"),
             EntityName::Hammer => write!(f, "hammer"),
             EntityName::Sword => write!(f, "sword"),
+            EntityName::Lantern => write!(f, "lantern"),
             EntityName::Shield => write!(f, "shield"),
             EntityName::Spire => write!(f, "spire"),
+            EntityName::Armil => write!(f, "armil"),
             EntityName::SpikeTrap => write!(f, "spiketrap"),
             EntityName::BlinkTrap => write!(f, "blinktrap"),
             EntityName::FreezeTrap => write!(f, "freezetrap"),
@@ -718,10 +777,14 @@ impl FromStr for EntityName {
             return Ok(EntityName::Hammer);
         } else if s == "sword" {
             return Ok(EntityName::Sword);
+        } else if s == "lantern" {
+            return Ok(EntityName::Lantern);
         } else if s == "shield" {
             return Ok(EntityName::Shield);
         } else if s == "spire" {
             return Ok(EntityName::Spire);
+        } else if s == "armil" {
+            return Ok(EntityName::Armil);
         } else if s == "spiketrap" {
             return Ok(EntityName::SpikeTrap);
         } else if s == "blinktrap" {
@@ -813,6 +876,19 @@ pub enum EntityClass {
     Grass,
     Monolith,
     Clockwork,
+    Hierophant,
+}
+
+impl fmt::Display for EntityClass {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            EntityClass::General => write!(f, "general"),
+            EntityClass::Grass => write!(f, "grass"),
+            EntityClass::Monolith => write!(f, "monolith"),
+            EntityClass::Clockwork => write!(f, "clockword"),
+            EntityClass::Hierophant => write!(f, "hierophant"),
+        }
+    }
 }
 
 impl Default for EntityClass {
@@ -824,13 +900,17 @@ impl Default for EntityClass {
 impl EntityClass {
     pub fn classes() -> Vec<EntityClass> {
         use EntityClass::*;
-        return vec!(General, Grass, Monolith, Clockwork);
+        return vec!(General, Grass, Monolith, Clockwork, Hierophant);
     }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct StatusEffect {
     pub frozen: usize, // turns
+    pub soft_steps: usize, // turns
+    pub illuminate: usize, // radius
+    pub extra_fov: usize, // amount
+    pub blinked: bool,
     pub active: bool,
     pub alive: bool,
 }
@@ -853,6 +933,7 @@ pub struct Entities {
     pub fighter: CompStore<Fighter>,
     pub ai: CompStore<Ai>,
     pub behavior: CompStore<Behavior>,
+    pub attack_type: CompStore<AttackType>,
     pub item: CompStore<Item>,
     pub movement: CompStore<Reach>,
     pub attack: CompStore<Reach>,
@@ -864,7 +945,6 @@ pub struct Entities {
     pub move_mode: CompStore<MoveMode>,
     pub direction: CompStore<Direction>,
     pub selected_item: CompStore<EntityId>,
-    pub action: CompStore<Action>,
     pub class: CompStore<EntityClass>,
     pub skills: CompStore<Vec<Skill>>,
     pub limbo: CompStore<()>,
@@ -939,7 +1019,6 @@ impl Entities {
         self.blocks.insert(id, blocks);
         self.direction.insert(id, Direction::Up);
         self.animation.insert(id,  VecDeque::new());
-        self.action.insert(id,  Action::NoAction);
         self.messages.insert(id,  Vec::new());
         self.needs_removal.insert(id,  false);
         self.status.insert(id,  StatusEffect::default());
@@ -1014,6 +1093,20 @@ impl Entities {
                 self.status[&entity].alive = false;
             }
         }
+    }
+
+    pub fn triggered_traps(&self, pos: Pos) -> Vec<EntityId> {
+        let mut traps: Vec<EntityId> = Vec::new();
+        for key in self.ids.iter() {
+            if self.trap.get(key).is_some()       && // key is a trap
+               self.armed.get(key) == Some(&true) && // trap is armed
+               !self.needs_removal[key]           && // not being removed
+               self.pos[key] == pos {
+                traps.push(*key);
+            }
+        }
+
+        return traps;
     }
 
     pub fn was_attacked(&mut self, entity_id: EntityId) -> Option<Message> {
@@ -1091,6 +1184,44 @@ impl Entities {
         }
     }
 
+    pub fn mark_for_removal(&mut self, entity_id: EntityId) {
+        // removing the player is handled specially
+        if self.typ[&entity_id] != EntityType::Player {
+            self.needs_removal[&entity_id] = true;
+        }
+    }
+
+    pub fn count_down(&mut self) {
+        let mut to_remove = Vec::new();
+        for entity_id in self.ids.iter() {
+            if let Some(ref mut count) = self.count_down.get_mut(entity_id) {
+                if **count == 0 {
+                    to_remove.push(*entity_id);
+                } else {
+                    **count -= 1;
+                }
+            }
+        }
+
+        // remove objects waiting removal
+        for key in to_remove {
+            self.mark_for_removal(key);
+        }
+    }
+
+    pub fn clean_entities(&mut self) {
+        let mut remove_ids: Vec<EntityId> = Vec::new();
+        for id in self.ids.iter() {
+            if self.needs_removal[id] {
+                remove_ids.push(*id);
+            }
+        }
+
+        for id in remove_ids {
+            self.remove_entity(id);
+        }
+    }
+
     // NOTE cloning entities may not remap all entity ids that an entity tracks!
     // this could cause subtle problems, so this is really only for level generation.
     pub fn clone_entity(&mut self, other: &Entities, entity_id: EntityId) {
@@ -1115,6 +1246,7 @@ impl Entities {
         move_component!(stance);
         move_component!(ai);
         move_component!(behavior);
+        move_component!(attack_type);
         move_component!(item);
         move_component!(movement);
         move_component!(attack);
@@ -1124,7 +1256,6 @@ impl Entities {
         move_component!(move_mode);
         move_component!(direction);
         move_component!(selected_item);
-        move_component!(action);
         move_component!(class);
         move_component!(skills);
         move_component!(limbo);
@@ -1149,6 +1280,44 @@ impl Entities {
         for id in other.ids.iter() {
             self.clone_entity(other, *id);
         }
+    }
+
+    pub fn remove_entity(&mut self, id: EntityId) {
+        let ix_pos = self.ids.iter().position(|val| *val == id).unwrap();
+        self.ids.remove(ix_pos);
+
+        self.pos.remove(&id);
+        self.chr.remove(&id);
+        self.name.remove(&id);
+        self.fighter.remove(&id);
+        self.stance.remove(&id);
+        self.ai.remove(&id);
+        self.behavior.remove(&id);
+        self.attack_type.remove(&id);
+        self.item.remove(&id);
+        self.movement.remove(&id);
+        self.attack.remove(&id);
+        self.inventory.remove(&id);
+        self.trap.remove(&id);
+        self.armed.remove(&id);
+        self.energy.remove(&id);
+        self.count_down.remove(&id);
+        self.move_mode.remove(&id);
+        self.direction.remove(&id);
+        self.selected_item.remove(&id);
+        self.class.remove(&id);
+        self.skills.remove(&id);
+        self.limbo.remove(&id);
+        self.animation.remove(&id);
+        self.sound.remove(&id);
+        self.typ.remove(&id);
+        self.status.remove(&id);
+        self.gate_pos.remove(&id);
+        self.took_turn.remove(&id);
+        self.color.remove(&id);
+        self.blocks.remove(&id);
+        self.needs_removal.remove(&id);
+        self.messages.remove(&id);
     }
 }
 
