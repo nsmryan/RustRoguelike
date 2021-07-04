@@ -108,13 +108,13 @@ impl Display {
             let stance = data.entities.stance[&entity_id];
 
             let key;
-            if data.using(entity_id, Item::Dagger).is_none() && stance == Stance::Crouching {
+            if data.using(entity_id, Item::Dagger).is_some() && stance == Stance::Crouching {
                 key = self.loop_sprite("player_crouch_dagger", config.idle_speed);
-            } else if data.using(entity_id, Item::Dagger).is_none() {
+            } else if data.using(entity_id, Item::Dagger).is_some() {
                 key = self.loop_sprite("player_idle_dagger", config.idle_speed);
-            } else if data.using(entity_id, Item::Hammer).is_none() {
+            } else if data.using(entity_id, Item::Hammer).is_some() {
                 key = self.loop_sprite("player_idle_hammer", config.idle_speed);
-            } else if data.using(entity_id, Item::Shield).is_none() {
+            } else if data.using(entity_id, Item::Shield).is_some() {
                 key = self.loop_sprite("player_idle_shield", config.idle_speed);
             } else if stance == Stance::Crouching {
                 key = self.loop_sprite("player_crouching", config.idle_speed);
