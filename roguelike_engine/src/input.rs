@@ -297,12 +297,8 @@ impl Input {
                    action == InputAction::Inventory    ||
                    action == InputAction::SkillMenu    ||
                    action == InputAction::Exit         ||
+                   action == InputAction::CursorToggle ||
                    action == InputAction::ClassMenu {
-                    action = InputAction::None;
-                } else if action == InputAction::CursorToggle {
-                    // this is a little kludgy, but we have to untoggle cursor
-                    // mode as it was toggled by key_to_action.
-                    //self.cursor = !self.cursor;
                     action = InputAction::None;
                 } else {
                     self.char_held.insert(chr, held_state.repeated());
@@ -361,8 +357,6 @@ impl Input {
                 action = InputAction::None;
             }
         } else if chr == ' ' {
-            //self.cursor = !self.cursor;
-            //action = InputAction::CursorToggle;
             action = InputAction::None;
         } else {
             action = alpha_up_to_action(chr);
@@ -436,7 +430,7 @@ pub fn alpha_up_to_action(chr: char) -> InputAction {
     return input_action;
 }
 
-pub fn from_digit(chr: char) -> Option<Direction> {
+fn from_digit(chr: char) -> Option<Direction> {
     match chr {
         '4' => Some(Direction::Left),
         '6' => Some(Direction::Right),
