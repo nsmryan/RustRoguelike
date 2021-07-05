@@ -114,13 +114,16 @@ MSG: sound 58 2 2 2 true
 MSG: facing 58 upleft
 MSG: player_turn
 MSG: startturn
+MSG: try_move 0 downleft 0 sneak
 MSG: moved 0 pass 6 5
 MSG: state_change_idle 58
 MSG: player_turn
 MSG: startturn
+MSG: try_move 0 downleft 0 sneak
 MSG: moved 0 pass 6 5
 MSG: player_turn
 MSG: startturn
+MSG: try_move 0 downleft 0 sneak
 MSG: moved 0 pass 6 5
 MSG: player_turn
 MSG: startturn

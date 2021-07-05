@@ -33,6 +33,8 @@ impl FromStr for KeyDir {
 
         if s == "down" {
             return Ok(KeyDir::Down);
+        } else if s == "held" {
+            return Ok(KeyDir::Held);
         } else if s == "up" {
             return Ok(KeyDir::Up);
         }
@@ -183,114 +185,148 @@ impl Input {
             }
 
             InputEvent::Char(chr, dir) => {
-                match dir {
-                    KeyDir::Up => {
-                        // if key was held, do nothing when it is up to avoid a final press
-                        if self.is_held(chr) {
-                            return InputAction::None;
-                        }
-                        self.char_held.remove(&chr);
+                action = self.handle_char(chr, dir, time, settings, config);
+            }
 
-                        // NOTE this could be moved to the normal mapping
-                        for (index, target_chr) in TARGET_CODES.iter().enumerate() {
-                            if chr == *target_chr {
-                                let target = Target::from_index(index as usize);
+            InputEvent::MouseButton(clicked, mouse_pos, target_pos, dir) => {
+                action = self.handle_mouse_button(clicked, mouse_pos, target_pos, dir);
+            }
+        }
 
-                                if self.cursor {
-                                    self.target = None;
+        return action;
+    }
 
-                                    if let Target::Item(index) = target {
-                                        // alternate is used so you throw items
-                                        return InputAction::CursorApplyItem(ActionMode::Alternate, index);
-                                    } else if let Target::Skill(index) = target {
-                                        // TODO should this be primary or alternate?
-                                        return InputAction::CursorApplySkill(ActionMode::Alternate, index);
-                                    }
-                                } else {
-                                    // target keys don't do anything outside of cursor mode,
-                                    // so just return here.
-                                    // NOTE should we still allow skills, but only ones that make
-                                    // sense with no location?
-                                    return InputAction::None;
-                                }
-                            }
-                        }
+    fn handle_mouse_button(&mut self, clicked: MouseClick, mouse_pos: Pos, target_pos: Option<Pos>, dir: KeyDir) -> InputAction {
+        let mut action = InputAction::MouseButton(clicked, dir);
 
-                        action = self.key_to_action(chr, settings);
-                    }
+        let down = dir == KeyDir::Down;
+        match clicked {
+            MouseClick::Left => {
 
-                    KeyDir::Down => {
-                        if chr == 'o' {
-                            action = InputAction::OverlayOn;
-                        }
-
-                        if chr == ' ' {
-                            self.cursor = !self.cursor;
-                            action = InputAction::CursorToggle;
-                        }
-
-                        for (index, target_chr) in TARGET_CODES.iter().enumerate() {
-                            if chr == *target_chr {
-                                self.target = Some(Target::from_index(index as usize));
-                            }
-                        }
-                    }
-
-                    KeyDir::Held => {
-                        if let Some(held_state) = self.char_held.get(&chr) {
-                            let held_state = *held_state;
-                            let time_since = time.duration_since(held_state.down_time).as_secs_f32();
-
-                            let new_repeats = (time_since / config.repeat_delay) as usize;
-                            if new_repeats > held_state.repetitions {
-                                action = self.key_to_action(chr, settings);
-
-                                if action == InputAction::OverlayOff   ||
-                                   action == InputAction::Inventory    ||
-                                   action == InputAction::SkillMenu    ||
-                                   action == InputAction::Exit         ||
-                                   action == InputAction::ClassMenu {
-                                    action = InputAction::None;
-                                } else if action == InputAction::CursorToggle {
-                                    // this is a little kludgy, but we have to untoggle cursor
-                                    // mode as it was toggled by key_to_action.
-                                    //self.cursor = !self.cursor;
-                                    action = InputAction::None;
-                                } else {
-                                    self.char_held.insert(chr, held_state.repeated());
-                                }
-                            }
-                        }
+                if down {
+                    if let Some(target_pos) = target_pos {
+                        action = InputAction::MapClick(mouse_pos, target_pos);
                     }
                 }
             }
 
-            InputEvent::MouseButton(clicked, mouse_pos, target_pos, dir) => {
+            MouseClick::Middle => {
                 action = InputAction::MouseButton(clicked, dir);
+            }
 
-                let down = dir == KeyDir::Down;
-                match clicked {
-                    MouseClick::Left => {
+            MouseClick::Right => {
+                action = InputAction::MouseButton(clicked, dir);
+            }
+        }
 
-                        if down {
-                            if let Some(target_pos) = target_pos {
-                                action = InputAction::MapClick(mouse_pos, target_pos);
-                            }
-                        }
+        return action;
+    }
+
+    fn handle_char_up(&mut self, chr: char, dir: KeyDir, settings: &GameSettings) -> InputAction {
+        let mut action = InputAction::None;
+
+        // if key was held, do nothing when it is up to avoid a final press
+        if self.is_held(chr) {
+            return InputAction::None;
+        }
+        self.char_held.remove(&chr);
+
+        // NOTE this could be moved to the normal mapping
+        for (index, target_chr) in TARGET_CODES.iter().enumerate() {
+            if chr == *target_chr {
+                let target = Target::from_index(index as usize);
+
+                if self.cursor {
+                    self.target = None;
+
+                    if let Target::Item(index) = target {
+                        // alternate is used so you throw items
+                        return InputAction::CursorApplyItem(ActionMode::Alternate, index);
+                    } else if let Target::Skill(index) = target {
+                        // TODO should this be primary or alternate?
+                        return InputAction::CursorApplySkill(ActionMode::Alternate, index);
                     }
+                } else {
+                    // target keys don't do anything outside of cursor mode,
+                    // so just return here.
+                    // NOTE should we still allow skills, but only ones that make
+                    // sense with no location?
+                    return InputAction::None;
+                }
+            }
+        }
 
-                    MouseClick::Middle => {
-                        action = InputAction::MouseButton(clicked, dir);
-                    }
+        action = self.key_to_action(chr, settings);
 
-                    MouseClick::Right => {
-                        action = InputAction::MouseButton(clicked, dir);
-                    }
+        return action;
+    }
+
+    fn handle_char_down(&mut self, chr: char, dir: KeyDir) -> InputAction {
+        let mut action = InputAction::None;
+
+        if chr == 'o' {
+            action = InputAction::OverlayOn;
+        }
+
+        if chr == ' ' {
+            self.cursor = !self.cursor;
+            action = InputAction::CursorToggle;
+        }
+
+        for (index, target_chr) in TARGET_CODES.iter().enumerate() {
+            if chr == *target_chr {
+                self.target = Some(Target::from_index(index as usize));
+            }
+        }
+
+        return action;
+    }
+
+    fn handle_char_held(&mut self, chr: char, dir: KeyDir, time: Instant, settings: &GameSettings, config: &Config) -> InputAction {
+        let mut action = InputAction::None;
+
+        if let Some(held_state) = self.char_held.get(&chr) {
+            let held_state = *held_state;
+            let time_since = time.duration_since(held_state.down_time).as_secs_f32();
+
+            let new_repeats = (time_since / config.repeat_delay) as usize;
+            if new_repeats > held_state.repetitions {
+                action = self.key_to_action(chr, settings);
+
+                if action == InputAction::OverlayOff   ||
+                   action == InputAction::Inventory    ||
+                   action == InputAction::SkillMenu    ||
+                   action == InputAction::Exit         ||
+                   action == InputAction::ClassMenu {
+                    action = InputAction::None;
+                } else if action == InputAction::CursorToggle {
+                    // this is a little kludgy, but we have to untoggle cursor
+                    // mode as it was toggled by key_to_action.
+                    //self.cursor = !self.cursor;
+                    action = InputAction::None;
+                } else {
+                    self.char_held.insert(chr, held_state.repeated());
                 }
             }
         }
 
         return action;
+    }
+
+    fn handle_char(&mut self, chr: char, dir: KeyDir, time: Instant, settings: &GameSettings, config: &Config) -> InputAction {
+        match dir {
+            KeyDir::Up => {
+                return self.handle_char_up(chr, dir, settings);
+            }
+
+            KeyDir::Down => {
+                return self.handle_char_down(chr, dir);
+            }
+
+            KeyDir::Held => {
+                return self.handle_char_held(chr, dir, time, settings, config);
+            }
+        }
     }
 
     fn key_to_action(&mut self, chr: char, settings: &GameSettings) -> InputAction {

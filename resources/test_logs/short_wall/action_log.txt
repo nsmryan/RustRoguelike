@@ -8,8 +8,8 @@ downright sneak
 downright sneak
 down sneak
 downleft sneak
-pass
-pass
-pass
+pass sneak
+pass sneak
+pass sneak
 up walk
 exit

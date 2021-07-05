@@ -58,9 +58,6 @@ MSG: player_turn
 MSG: startturn
 MSG: pickup 0
 MSG: picked_up 0 66
-MSG: try_move 63 upleft 1 walk
-MSG: moved 63 move 3 7
-MSG: sound 63 3 7 2 true
 MSG: player_turn
 MSG: startturn
 MSG: pickup 0
@@ -69,9 +66,7 @@ MSG: startturn
 MSG: try_move 0 right 1 walk
 MSG: moved 0 move 2 1
 MSG: sound 0 2 1 2 true
-MSG: try_move 63 up 1 walk
-MSG: moved 63 move 3 6
-MSG: face_towards 63 1 2
-MSG: sound 63 3 6 2 true
-MSG: facing 63 upleft
+MSG: try_move 63 upleft 1 walk
+MSG: moved 63 move 3 7
+MSG: sound 63 3 7 2 true
 MSG: player_turn
