@@ -831,7 +831,7 @@ fn pushed_entity(pusher: EntityId,
         let blocked = data.map.path_blocked_move(pushed_pos, next_pos); 
 
         if blocked == None {
-            data.entities.count_down.insert(pushed, 1);
+            data.entities.mark_for_removal(pushed);
 
             msg_log.log_front(Msg::Crushed(pusher, next_pos));
 
@@ -867,7 +867,7 @@ fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut Msg
                   data.entities.name[&crushed_id] != EntityName::Mouse &&
                   data.entities.name[&crushed_id] != EntityName::Cursor {
             // the entity will be removed
-            data.entities.count_down.insert(crushed_id, 1);
+            data.entities.mark_for_removal(crushed_id);
         }
     }
 
@@ -994,8 +994,8 @@ fn change_move_mode(entity_id: EntityId,
                     data: &mut GameData,
                     msg_log: &mut MsgLog) {
     if increase {
-        let holding_shield = data.using(entity_id, Item::Shield).is_none();
-        let holding_hammer = data.using(entity_id, Item::Hammer).is_none();
+        let holding_shield = data.using(entity_id, Item::Shield).is_some();
+        let holding_hammer = data.using(entity_id, Item::Hammer).is_some();
 
         let move_mode = data.entities 
                             .move_mode

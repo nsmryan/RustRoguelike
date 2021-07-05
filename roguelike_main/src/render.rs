@@ -954,10 +954,12 @@ fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Dis
     ids.sort_unstable_by(compare_render_order);
 
     for entity_id in ids.iter() {
-        let maybe_sprite = render_entity(panel, *entity_id, display_state, game);
+        if !game.data.entities.needs_removal[entity_id] {
+            let maybe_sprite = render_entity(panel, *entity_id, display_state, game);
 
-        if let Some(sprite) = maybe_sprite {
-            display_state.drawn_sprites.insert(*entity_id, sprite);
+            if let Some(sprite) = maybe_sprite {
+                display_state.drawn_sprites.insert(*entity_id, sprite);
+            }
         }
     }
 }

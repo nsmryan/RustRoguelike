@@ -198,7 +198,7 @@ pub fn crush(handle: EntityId, target: EntityId, entities: &mut Entities, msg_lo
 }
 
 pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
-    if data.using(entity, Item::Hammer).is_none() {
+    if data.using(entity, Item::Hammer).is_some() {
         data.entities.status[&target].alive = false;
         data.entities.blocks[&target] = false;
 
@@ -213,7 +213,7 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: 
         if data.map[hit_pos].surface == Surface::Floor {
             data.map[hit_pos].surface = Surface::Rubble;
         }
-    } else if data.using(target, Item::Shield).is_none() {
+    } else if data.using(target, Item::Shield).is_some() {
         let pos = data.entities.pos[&entity];
         let other_pos = data.entities.pos[&target];
         let diff = other_pos - pos;
@@ -230,7 +230,7 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: 
 
             data.entities.messages[&target].push(Message::Attack(entity));
         }
-    } else if data.using(entity, Item::Sword).is_none() {
+    } else if data.using(entity, Item::Sword).is_some() {
         msg_log.log(Msg::Attack(entity, target, SWORD_DAMAGE));
         msg_log.log(Msg::Killed(entity, target, SWORD_DAMAGE));
     } else {
@@ -442,7 +442,7 @@ pub fn can_stab(data: &GameData, entity: EntityId, target: EntityId) -> bool {
 
     // NOTE this is not generic- uses EntityType::Enemy
     let is_enemy = data.entities.typ[&target] == EntityType::Enemy;
-    let using_dagger = data.using(entity, Item::Dagger).is_none();
+    let using_dagger = data.using(entity, Item::Dagger).is_some();
     let clear_path = data.clear_path_up_to(entity_pos, target_pos, false);
     let not_attacking = !matches!(data.entities.behavior.get(&target), Some(Behavior::Attacking(_)));
 

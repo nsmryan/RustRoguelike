@@ -118,12 +118,8 @@ impl GameData {
         return result;
     }
 
-    pub fn fov_radius(&self, entity_id: EntityId, config: &Config) -> i32 {
-        let mut radius: i32 = match self.entities.typ[&entity_id] {
-            EntityType::Enemy => config.fov_radius_monster,
-            EntityType::Player => config.fov_radius_player,
-            _ => panic!("{} does not have a FOV radius!", self.entities.name[&entity_id]),
-        };
+    pub fn fov_radius(&self, entity_id: EntityId) -> i32 {
+        let mut radius: i32 = self.entities.fov_radius[&entity_id];
 
         if let Some(status) = self.entities.status.get(&entity_id) {
             radius += status.extra_fov as i32;
@@ -156,7 +152,7 @@ impl GameData {
 
         let pos = self.entities.pos[&entity_id];
 
-        let radius: i32 = self.fov_radius(entity_id, config);
+        let radius: i32 = self.fov_radius(entity_id);
 
         if self.entities.typ[&entity_id] == EntityType::Player {
             let mut can_see = self.map.is_in_fov(pos, other_pos, radius, crouching);
@@ -933,6 +929,7 @@ pub struct Entities {
     pub fighter: CompStore<Fighter>,
     pub ai: CompStore<Ai>,
     pub behavior: CompStore<Behavior>,
+    pub fov_radius: CompStore<i32>,
     pub attack_type: CompStore<AttackType>,
     pub item: CompStore<Item>,
     pub movement: CompStore<Reach>,
@@ -1246,6 +1243,7 @@ impl Entities {
         move_component!(stance);
         move_component!(ai);
         move_component!(behavior);
+        move_component!(fov_radius);
         move_component!(attack_type);
         move_component!(item);
         move_component!(movement);
@@ -1293,6 +1291,7 @@ impl Entities {
         self.stance.remove(&id);
         self.ai.remove(&id);
         self.behavior.remove(&id);
+        self.fov_radius.remove(&id);
         self.attack_type.remove(&id);
         self.item.remove(&id);
         self.movement.remove(&id);

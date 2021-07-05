@@ -123,11 +123,21 @@ pub fn ai_idle(monster_id: EntityId,
     if ai_is_in_fov(monster_id, player_id, data, config) {
         let player_pos = data.entities.pos[&player_id];
         msg_log.log(Msg::FaceTowards(monster_id, player_pos));
-        msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(player_id)));
+
+        if data.entities.attack.get(&monster_id).is_some() {
+            msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(player_id)));
+        } else {
+            msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(player_pos)));
+        }
     } else if let Some(Message::Attack(entity_id)) = data.entities.was_attacked(monster_id) {
     let entity_pos = data.entities.pos[&entity_id];
         msg_log.log(Msg::FaceTowards(monster_id, entity_pos));
-        msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(entity_id)));
+
+        if data.entities.attack.get(&monster_id).is_some() {
+            msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(entity_id)));
+        } else {
+            msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(entity_pos)));
+        }
     } else if let Some(Message::Sound(entity_id, sound_pos)) = data.entities.heard_sound(monster_id) {
         let is_player = entity_id == player_id;
 
@@ -155,7 +165,16 @@ pub fn ai_investigate(target_pos: Pos,
         //let fov_path_clear = data.map.path_blocked_fov(monster_pos, player_pos).is_none();
         let player_pos = data.entities.pos[&player_id];
         msg_log.log(Msg::FaceTowards(monster_id, player_pos));
-        msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(player_id)));
+
+        if data.entities.attack.get(&monster_id).is_some() {
+            msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(player_id)));
+        } else {
+            // if the monster cannot attack, just keep walking towards the target.
+            ai_move_towards_target(player_pos, monster_id, data, msg_log);
+
+            data.entities.took_turn[&monster_id] = true;
+            msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(player_pos)));
+        }
     } else { // the monster can't see the player
         if let Some(Message::Sound(_entity_id, pos)) = data.entities.heard_sound(monster_id) {
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(pos)));
@@ -165,15 +184,22 @@ pub fn ai_investigate(target_pos: Pos,
                 data.entities.took_turn[&monster_id] = true;
                 msg_log.log(Msg::StateChange(monster_id, Behavior::Idle));
             } else {
-                // if the monster has not reached its target, move towards the target.
-                let must_reach = false;
-                let pos_offset = ai_take_astar_step(monster_id, target_pos, must_reach, &data);
-                let move_pos = add_pos(monster_pos, pos_offset);
-
-                let direction = Direction::from_positions(monster_pos, move_pos).unwrap();
-                msg_log.log(Msg::TryMove(monster_id, direction, 1, MoveMode::Walk));
+                ai_move_towards_target(target_pos, monster_id, data, msg_log);
             }
         }
+    }
+}
+
+fn ai_move_towards_target(target_pos: Pos, monster_id: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
+    let monster_pos = data.entities.pos[&monster_id];
+
+    // if the monster has not reached its target, move towards the target.
+    let must_reach = false;
+    let pos_offset = ai_take_astar_step(monster_id, target_pos, must_reach, &data);
+    let move_pos = add_pos(monster_pos, pos_offset);
+
+    if let Some(direction) = Direction::from_positions(monster_pos, move_pos) {
+        msg_log.log(Msg::TryMove(monster_id, direction, 1, MoveMode::Walk));
     }
 }
 
