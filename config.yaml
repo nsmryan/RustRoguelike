@@ -187,4 +187,4 @@ repeat_delay: 0.35
 write_map_distribution: false
 print_key_log: false
 idle_animations: false
-recording: false
+recording: true
