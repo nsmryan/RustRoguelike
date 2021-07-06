@@ -134,6 +134,7 @@ map_load: #TestVaults
 #FromFile: "maps.txt"
 map_file: map.xp
 idle_speed: 5
+fire_speed: 7
 draw_mouse_line: false
 draw_star_path: false
 frame_rate: 25
@@ -183,7 +184,7 @@ cursor_long: 3
 repeat_delay: 0.35
 
 # whether to write out a map distribution file
-write_map_distribution: true
-print_key_log: true
+write_map_distribution: false
+print_key_log: false
 idle_animations: false
-recording: true
+recording: false

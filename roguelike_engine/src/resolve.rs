@@ -811,7 +811,7 @@ fn killed_entity(attacked: EntityId, data: &mut GameData, msg_log: &mut MsgLog, 
 
     data.entities.limbo.insert(attacked, ());
 
-    data.entities.count_down.insert(attacked, 1);
+    data.entities.mark_for_removal(attacked);
 }
 
 fn pushed_entity(pusher: EntityId,

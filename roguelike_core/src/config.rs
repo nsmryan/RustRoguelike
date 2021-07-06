@@ -93,6 +93,7 @@ pub struct Config {
     pub print_key_log: bool,
     pub idle_animations: bool,
     pub recording: bool,
+    pub fire_speed: f32,
 }
 
 impl Config {

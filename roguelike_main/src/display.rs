@@ -323,7 +323,7 @@ impl Display {
                     } else if data.entities.name[&entity_id] == EntityName::Armil {
                         anim_desc = Some(("armil_idle", config.idle_speed));
                     } else if data.entities.name[&entity_id] == EntityName::Lantern {
-                        anim_desc = Some(("lantern", config.idle_speed));
+                        anim_desc = Some(("lantern", config.fire_speed));
                     }
 
                     if let Some((name, speed)) = anim_desc {
