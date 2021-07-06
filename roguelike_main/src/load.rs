@@ -11,28 +11,28 @@ use crate::display::*;
 
 
 pub fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display: &mut Display) {
-    load_sprite(texture_creator, display, "animations/player/Player_Idle.png", "player_idle", 1);
-    load_sprite(texture_creator, display, "animations/player/Player_Crouch.png", "player_crouching", 1);
-    load_sprite(texture_creator, display, "animations/player/Player_Idle_Dagger_Crouch.png", "player_crouch_dagger", 1);
-    load_sprite(texture_creator, display, "animations/player/player_attack.png", "player_attack", 1);
-    load_sprite(texture_creator, display, "animations/player/player_attack_Hammer.png", "player_attack_hammer", 1);
-    load_sprite(texture_creator, display, "animations/player/player_attack_Dagger.png", "player_attack_dagger", 1);
-    load_sprite(texture_creator, display, "animations/player/Player_Idle_Dagger.png", "player_idle_dagger", 1);
-    load_sprite(texture_creator, display, "animations/player/Player_Idle_Hammer.png", "player_idle_hammer", 1);
-    load_sprite(texture_creator, display, "animations/player/Player_Idle_Shield.png", "player_idle_shield", 1);
-    load_sprite(texture_creator, display, "animations/player/player_vault.png", "player_vault", 1);
-    load_sprite(texture_creator, display, "animations/player/player_wallkick.png", "player_wall_kick", 1);
-    load_sprite(texture_creator, display, "animations/monster1/Gol_Idle.png", "gol_idle", 1);
-    load_sprite(texture_creator, display, "animations/monster1/Gol_Die.png", "gol_die", 1);
-    load_sprite(texture_creator, display, "animations/monster3/Pawn_Idle.png", "elf_idle", 1);
-    load_sprite(texture_creator, display, "animations/monster4/Armil_Idle.png", "armil_idle", 1);
-    load_sprite(texture_creator, display, "animations/traps/DamageTrap.png", "spikes", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/Player_Idle.png", "player_idle", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/Player_Crouch.png", "player_crouching", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/Player_Idle_Dagger_Crouch.png", "player_crouch_dagger", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/player_attack.png", "player_attack", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/player_attack_Hammer.png", "player_attack_hammer", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/player_attack_Dagger.png", "player_attack_dagger", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/Player_Idle_Dagger.png", "player_idle_dagger", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/Player_Idle_Hammer.png", "player_idle_hammer", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/Player_Idle_Shield.png", "player_idle_shield", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/player_vault.png", "player_vault", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/player_wallkick.png", "player_wall_kick", 1);
+    load_sprite(texture_creator, display, "resources/animations/monster1/Gol_Idle.png", "gol_idle", 1);
+    load_sprite(texture_creator, display, "resources/animations/monster1/Gol_Die.png", "gol_die", 1);
+    load_sprite(texture_creator, display, "resources/animations/monster3/Pawn_Idle.png", "elf_idle", 1);
+    load_sprite(texture_creator, display, "resources/animations/monster4/Armil_Idle.png", "armil_idle", 1);
+    load_sprite(texture_creator, display, "resources/animations/traps/DamageTrap.png", "spikes", 1);
     load_sprite(texture_creator, display, "resources/rexpaint16x16.png", "font", 16);
-    load_sprite(texture_creator, display, "animations/traps/McMuffin.png", "key", 1);
-    load_sprite(texture_creator, display, "animations/FireLamp/Lantern_Idle.png", "lantern", 1);
+    load_sprite(texture_creator, display, "resources/animations/traps/McMuffin.png", "key", 1);
+    load_sprite(texture_creator, display, "resources/animations/FireLamp/Lantern_Idle.png", "lantern", 1);
     load_sprite(texture_creator, display, "resources/shadowtiles.png", "shadows", 2);
 
-    for entry in fs::read_dir("animations/autoload/").unwrap() {
+    for entry in fs::read_dir("resources/animations/autoload/").unwrap() {
         let path = entry.unwrap().path();
 
         let file_name = path.as_path().to_str().unwrap();
