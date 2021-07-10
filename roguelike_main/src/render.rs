@@ -958,7 +958,7 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
                 let sprite = Sprite::char(chr);
                 display_state.draw_sprite(panel, sprite, pos, color);
                 animation_result.sprite = Some(sprite);
-                }
+            }
         } else {
             if game.data.entities.typ[&entity_id] == EntityType::Enemy {
                 game.data.entities.status[&player_id].extra_fov += 1;
