@@ -524,7 +524,6 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
     // Render each object's name in inventory
     let mut y_pos = 2;
     let mut item_index = 0;
-    let item_ids = game.data.entities.inventory[&player_id].clone();
 
     let mut index = 0;
     while index < game.data.entities.inventory[&player_id].len() {
