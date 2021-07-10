@@ -1203,7 +1203,9 @@ fn process_moved_message(entity_id: EntityId,
         }
     }
 
-    resolve_triggered_traps(entity_id, original_pos, data, msg_log);
+    if original_pos != pos {
+        resolve_triggered_traps(entity_id, original_pos, data, msg_log);
+    }
 
     // if entity is a monster, which is also alert, and there is a path to the player,
     // then face the player
