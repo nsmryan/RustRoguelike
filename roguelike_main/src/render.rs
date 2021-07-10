@@ -526,9 +526,13 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
     let mut item_index = 0;
     let item_ids = game.data.entities.inventory[&player_id].clone();
 
-    for (index, obj_id) in item_ids.iter().enumerate() {
+    let mut index = 0;
+    while index < game.data.entities.inventory[&player_id].len() {
+        let obj_id = game.data.entities.inventory[&player_id][index];
+        index += 1;
+
         let color;
-        match &game.data.entities.item.get(obj_id) {
+        match &game.data.entities.item.get(&obj_id) {
             Some(Item::Stone) => {
                 color = game.config.color_light_grey;
             }
@@ -556,7 +560,7 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
             } else {
                 ""
             };
-        let item_text = format!(" {:?} {}", game.data.entities.name[obj_id], item_marker);
+        let item_text = format!(" {:?} {}", game.data.entities.name[&obj_id], item_marker);
         tile_sprite.draw_text(panel, &item_text, text_pos, color);
         
         y_pos += 1;
