@@ -981,7 +981,10 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
 
 fn render_impressions(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     // check for entities that have left FOV and make an impression for them
-    for impression in display_state.impressions.clone() {
+    let mut index = 0;
+    while index < display_state.impressions.len() {
+        let impression = display_state.impressions[index];
+        index += 1;
         display_state.draw_sprite(panel, impression.sprite, impression.pos, game.config.color_light_grey);
     }
 }
