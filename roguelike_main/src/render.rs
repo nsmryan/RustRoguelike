@@ -990,7 +990,11 @@ fn render_impressions(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 }
 
 fn render_entity_type(typ: EntityType, panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    for entity_id in game.data.entities.ids.clone() {
+    let mut index = 0;
+    while index < game.data.entities.ids.len() {
+        let entity_id = game.data.entities.ids[index];
+        index += 1;
+
         if !game.data.entities.needs_removal[&entity_id] && game.data.entities.typ[&entity_id] == typ {
             let maybe_sprite = render_entity(panel, entity_id, display_state, game);
 
