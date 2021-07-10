@@ -936,35 +936,36 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
            game.data.is_in_fov(player_id, entity_id, &game.config) ||
            game.settings.god_mode;
 
-        if let Some(anim_key) = game.data.entities.animation[&entity_id].get(0) {
-            animation_result = 
-                render_animation(*anim_key,
-                                 entity_id,
-                                 is_in_fov,
-                                 panel,
-                                 display_state,
-                                 &mut game.data,
-                                 &game.settings,
-                                 &game.config);
+        if is_in_fov {
+            if let Some(anim_key) = game.data.entities.animation[&entity_id].get(0) {
+                animation_result = 
+                    render_animation(*anim_key,
+                                     entity_id,
+                                     is_in_fov,
+                                     panel,
+                                     display_state,
+                                     &mut game.data,
+                                     &game.settings,
+                                     &game.config);
 
-            if animation_result.done {
-                game.data.entities.animation[&entity_id].pop_front();
-            }
-        } else {
-            if is_in_fov {
+                if animation_result.done {
+                    game.data.entities.animation[&entity_id].pop_front();
+                }
+            } else {
                 let color = game.data.entities.color[&entity_id];
 
                 let chr = game.data.entities.chr[&entity_id];
                 let sprite = Sprite::char(chr);
                 display_state.draw_sprite(panel, sprite, pos, color);
                 animation_result.sprite = Some(sprite);
-            } else if game.data.entities.typ[&entity_id] == EntityType::Enemy {
+                }
+        } else {
+            if game.data.entities.typ[&entity_id] == EntityType::Enemy {
                 game.data.entities.status[&player_id].extra_fov += 1;
                 let is_in_fov_ext = 
                    game.data.is_in_fov(player_id, entity_id, &game.config);
                 game.data.entities.status[&player_id].extra_fov -= 1;
 
-                dbg!(is_in_fov_ext);
                 if is_in_fov_ext {
                     if display_state.impressions.iter().all(|impresssion| impresssion.pos != pos) {
                         let impression_sprite = Sprite::char(ENTITY_UNKNOWN as char);
