@@ -4,6 +4,7 @@ use std::time::Instant;
 use roguelike_core::types::*;
 use roguelike_core::movement::*;
 use roguelike_core::map::*;
+use roguelike_core::messaging::*;
 
 use roguelike_engine::input::*;
 use roguelike_engine::game::*;
@@ -47,6 +48,7 @@ pub enum GameCmd {
     EntityType(u64),
     Make(EntityName, i32, i32),
     Remove(u64),
+    Kill(u64),
     Give(Item),
     ListEntities,
     ListEntitiesPos(i32, i32),
@@ -131,6 +133,9 @@ impl FromStr for GameCmd {
         } else if cmd == "remove" {
             let id = args[1].parse::<u64>().unwrap();
             return Ok(GameCmd::Remove(id));
+        } else if cmd == "kill" {
+            let id = args[1].parse::<u64>().unwrap();
+            return Ok(GameCmd::Kill(id));
         } else if cmd == "give" {
             let item = args[1].parse::<Item>().unwrap();
             return Ok(GameCmd::Give(item));
@@ -193,6 +198,8 @@ impl GameCmd {
             return "make";
         } else if matches!(self, GameCmd::Remove(_)) {
             return "remove";
+        } else if matches!(self, GameCmd::Kill(_)) {
+            return "kill";
         } else if matches!(self, GameCmd::Give(_)) {
             return "give";
         } else if matches!(self, GameCmd::ListEntities) {
@@ -296,6 +303,12 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
 
         GameCmd::Remove(id) => {
             game.data.entities.remove_entity(*id);
+            return "".to_string();
+        }
+
+        GameCmd::Kill(id) => {
+            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+            game.msg_log.log(Msg::Killed(player_id, *id, 1000));
             return "".to_string();
         }
 

@@ -944,7 +944,6 @@ pub struct Entities {
     pub selected_item: CompStore<EntityId>,
     pub class: CompStore<EntityClass>,
     pub skills: CompStore<Vec<Skill>>,
-    pub limbo: CompStore<()>,
     pub status: CompStore<StatusEffect>,
     pub gate_pos: CompStore<Option<Pos>>,
     pub stance: CompStore<Stance>,
@@ -1152,7 +1151,8 @@ impl Entities {
     }
 
     pub fn is_dead(&self, entity_id: EntityId) -> bool {
-        return !self.ids.contains(&entity_id) || self.limbo.get(&entity_id).is_some();
+        return !self.ids.contains(&entity_id) || self.needs_removal[&entity_id] ||
+            matches!(self.fighter.get(&entity_id), Some(Fighter { hp: 0, .. } ));
     }
 
     /// Set the entity's animation, removing any old animations in play
@@ -1167,7 +1167,7 @@ impl Entities {
         for key in self.ids.iter() {
             if self.ai.get(key).is_some()    &&
                self.status[key].alive        &&
-               self.limbo.get(key).is_none() &&
+               !self.needs_removal[key] &&
                self.fighter.get(key).is_some() {
                ai_ids.push(*key);
            }
@@ -1256,7 +1256,6 @@ impl Entities {
         move_component!(selected_item);
         move_component!(class);
         move_component!(skills);
-        move_component!(limbo);
         move_component!(animation);
         move_component!(sound);
         move_component!(typ);
@@ -1306,7 +1305,6 @@ impl Entities {
         self.selected_item.remove(&id);
         self.class.remove(&id);
         self.skills.remove(&id);
-        self.limbo.remove(&id);
         self.animation.remove(&id);
         self.sound.remove(&id);
         self.typ.remove(&id);

@@ -809,8 +809,6 @@ fn killed_entity(attacked: EntityId, data: &mut GameData, msg_log: &mut MsgLog, 
 
     data.entities.blocks[&attacked] = false;
 
-    data.entities.limbo.insert(attacked, ());
-
     data.entities.mark_for_removal(attacked);
 }
 

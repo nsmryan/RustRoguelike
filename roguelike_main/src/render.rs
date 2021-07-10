@@ -931,7 +931,7 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
     // only draw if within the map (outside is (-1, -1) like if in inventory)
     // and not in limbo.
     if game.data.map.is_within_bounds(pos) &&
-       game.data.entities.limbo.get(&entity_id).is_none() {
+       !game.data.entities.needs_removal[&entity_id] {
         let is_in_fov = 
            game.data.is_in_fov(player_id, entity_id, &game.config) ||
            game.settings.god_mode;
@@ -964,6 +964,7 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
                    game.data.is_in_fov(player_id, entity_id, &game.config);
                 game.data.entities.status[&player_id].extra_fov -= 1;
 
+                dbg!(is_in_fov_ext);
                 if is_in_fov_ext {
                     if display_state.impressions.iter().all(|impresssion| impresssion.pos != pos) {
                         let impression_sprite = Sprite::char(ENTITY_UNKNOWN as char);
