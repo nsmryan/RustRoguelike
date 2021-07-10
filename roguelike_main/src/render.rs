@@ -80,9 +80,15 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
             canvas.copy(&background.target, None, None).unwrap();
 
             let mut panel = panel.with_target(canvas);
-            render_wall_shadows(&mut panel, display_state, game);
+
+            render_entity_type(EntityType::Item, &mut panel, display_state, game);
+            render_entity_type(EntityType::Trigger, &mut panel, display_state, game);
             render_map(&mut panel, display_state, game);
-            render_entities(&mut panel, display_state, game);
+            render_entity_type(EntityType::Energy, &mut panel, display_state, game);
+            render_entity_type(EntityType::Enemy, &mut panel, display_state, game);
+            render_entity_type(EntityType::Column, &mut panel, display_state, game);
+            render_entity_type(EntityType::Player, &mut panel, display_state, game);
+            render_entity_type(EntityType::Other, &mut panel, display_state, game);
             render_impressions(&mut panel, display_state, game);
             render_effects(&mut panel, display_state, game);
             render_overlays(&mut panel, display_state, game, mouse_map_pos);
@@ -625,73 +631,72 @@ fn render_surface(panel: &mut Panel<&mut WindowCanvas>, sprite: &mut SpriteSheet
 }
 
 /// Render Wall Shadows (full tile and intertile walls, left and down)
-fn render_wall_shadows(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_wall_shadow(pos: Pos, panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     let shadow_sprite_key = display_state.lookup_spritekey("shadows");
 
+    let tile = game.data.map[pos];
+
     let (map_width, map_height) = game.data.map.size();
-    // TODO make the numeric literals used here into globals in constants.rs
-    for y in 0..map_height {
-        for x in 0..map_width {
-            let pos = Pos::new(x, y);
-            let tile = game.data.map[pos];
+    let (x, y) = pos.to_tuple();
 
-            /* render full tile wall shadows */
-            if tile.tile_type == TileType::Wall {
-                if x - 1 > 0 {
-                    // left
-                    let shadow_pos = Pos::new(x - 1, y);
-                    let shadow_left_upper = Sprite::sprite(2, shadow_sprite_key);
-                    display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
-                }
+    /* render full tile wall shadows */
+    if tile.tile_type == TileType::Wall {
+        if x - 1 > 0 && game.data.map[(x - 1, y)].tile_type != TileType::Wall {
+            // left
+            let shadow_pos = Pos::new(x - 1, y);
+            let shadow_left_upper = Sprite::sprite(2, shadow_sprite_key);
+            display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
+        }
 
-                if x - 1 > 0 && y + 1 < map_height {
-                    let shadow_pos = Pos::new(x - 1, y + 1);
-                    let shadow_left_lower = Sprite::sprite(6, shadow_sprite_key);
-                    display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
-                }
+        if x - 1 > 0 && y + 1 < map_height {
+            let shadow_pos = Pos::new(x - 1, y + 1);
+            let shadow_left_lower = Sprite::sprite(6, shadow_sprite_key);
+            display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
+        }
 
-                if y + 1 < map_height {
-                    // lower
-                    let shadow_lower_right = Sprite::sprite(1, shadow_sprite_key);
-                    let shadow_pos = Pos::new(x, y + 1);
-                    display_state.draw_sprite(panel, shadow_lower_right, shadow_pos, game.config.color_shadow);
-                }
+        if y + 1 < map_height  && game.data.map[(x, y + 1)].tile_type != TileType::Wall{
+            // lower
+            let shadow_lower_right = Sprite::sprite(1, shadow_sprite_key);
+            let shadow_pos = Pos::new(x, y + 1);
+            display_state.draw_sprite(panel, shadow_lower_right, shadow_pos, game.config.color_shadow);
+        }
 
-                if y + 1 < map_height && x - 1 > 0 {
-                    let shadow_lower_left = Sprite::sprite(0, shadow_sprite_key);
-                    let shadow_pos = Pos::new(x - 1, y + 1);
-                    display_state.draw_sprite(panel, shadow_lower_left, shadow_pos, game.config.color_shadow);
-                }
-            } else if tile.left_wall == Wall::ShortWall {
-                if x - 1 > 0 {
-                    // left
-                    if x - 1 > 0 {
-                        let shadow_pos = Pos::new(x - 1, y);
-                        let shadow_left_upper = Sprite::sprite(3, shadow_sprite_key);
-                        display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
-                    }
+        if y + 1 < map_height && x - 1 > 0 {
+            let shadow_lower_left = Sprite::sprite(0, shadow_sprite_key);
+            let shadow_pos = Pos::new(x - 1, y + 1);
+            display_state.draw_sprite(panel, shadow_lower_left, shadow_pos, game.config.color_shadow);
+        }
+    } else if tile.left_wall == Wall::ShortWall {
+        if x - 1 > 0 {
+            // left
+            if x - 1 > 0 {
+                let shadow_pos = Pos::new(x - 1, y);
+                let shadow_left_upper = Sprite::sprite(3, shadow_sprite_key);
+                // NOTE This creates a shadow over the left part of an intertile wall...
+                //display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
+            }
 
-                    if x - 1 > 0 && y + 1 < map_height {
-                        let shadow_pos = Pos::new(x - 1, y + 1);
-                        let shadow_left_lower = Sprite::sprite(7, shadow_sprite_key);
-                        display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
-                    }
-                }
-            } else if tile.bottom_wall == Wall::ShortWall {
-                if y + 1 < map_height {
-                    // lower
-                    if y + 1 < map_height {
-                        let shadow_lower_right = Sprite::sprite(5, shadow_sprite_key);
-                        let shadow_pos = Pos::new(x, y + 1);
-                        display_state.draw_sprite(panel, shadow_lower_right, shadow_pos, game.config.color_shadow);
-                    }
+            // left down
+            if x - 1 > 0 && y + 1 < map_height {
+                let shadow_pos = Pos::new(x - 1, y + 1);
+                let shadow_left_lower = Sprite::sprite(7, shadow_sprite_key);
+                display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
+            }
+        }
+    } else if tile.bottom_wall == Wall::ShortWall {
+        if y + 1 < map_height {
+            // lower
+            if y + 1 < map_height {
+                let shadow_lower_right = Sprite::sprite(5, shadow_sprite_key);
+                let shadow_pos = Pos::new(x, y + 1);
+                display_state.draw_sprite(panel, shadow_lower_right, shadow_pos, game.config.color_shadow);
+            }
 
-                    if y + 1 < map_height && x - 1 > 0 {
-                        let shadow_lower_left = Sprite::sprite(4, shadow_sprite_key);
-                        let shadow_pos = Pos::new(x - 1, y + 1);
-                        display_state.draw_sprite(panel, shadow_lower_left, shadow_pos, game.config.color_shadow);
-                    }
-                }
+            // left down
+            if y + 1 < map_height && x - 1 > 0 {
+                let shadow_lower_left = Sprite::sprite(4, shadow_sprite_key);
+                let shadow_pos = Pos::new(x - 1, y + 1);
+                display_state.draw_sprite(panel, shadow_lower_left, shadow_pos, game.config.color_shadow);
             }
         }
     }
@@ -704,7 +709,6 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = display_state.lookup_spritekey("tiles");
-    let sprite = &mut display_state.sprites[&sprite_key];
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
@@ -727,15 +731,25 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
 
             // if the tile is not empty or water, draw it
             if tile.tile_type == TileType::Water {
+                let sprite = &mut display_state.sprites[&sprite_key];
                 sprite.draw_char(panel, MAP_WATER as char, pos, Color::white());
             } else if chr != MAP_EMPTY_CHAR {
+                let sprite = &mut display_state.sprites[&sprite_key];
                 sprite.draw_char(panel, chr as char, pos, Color::white());
             }
 
-            render_surface(panel, sprite, tile.surface, pos);
+            {
+                let sprite = &mut display_state.sprites[&sprite_key];
+                render_surface(panel, sprite, tile.surface, pos);
+            }
+
+            render_wall_shadow(pos, panel, display_state, game);
 
             /* draw the between-tile walls appropriate to this tile */
-            render_itertile_walls(panel, &mut game.data.map, sprite, pos, &game.config);
+            {
+                let sprite = &mut display_state.sprites[&sprite_key];
+                render_itertile_walls(panel, &mut game.data.map, sprite, pos, &game.config);
+            }
 
             // apply a FoW darkening to cells
             if game.config.fog_of_war && !visible {
@@ -751,6 +765,7 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
                     blackout_color.a = game.config.explored_alpha
                 }
                 
+                let sprite = &mut display_state.sprites[&sprite_key];
                 sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, blackout_color);
             }
         }
@@ -930,6 +945,20 @@ fn render_impressions(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
     }
 }
 
+fn render_entity_type(typ: EntityType, panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+    for entity_id in game.data.entities.ids.clone() {
+        if !game.data.entities.needs_removal[&entity_id] && game.data.entities.typ[&entity_id] == typ {
+            let maybe_sprite = render_entity(panel, entity_id, display_state, game);
+
+            if let Some(sprite) = maybe_sprite {
+                display_state.drawn_sprites.insert(entity_id, sprite);
+            }
+        }
+    }
+}
+
+// TODO this has been replaced by render_entity_type
+/*
 fn render_order(typ: EntityType) -> usize {
     let order = &[ EntityType::Other, EntityType::Trigger,
                    EntityType::Column, EntityType::Item, EntityType::Energy,
@@ -945,8 +974,6 @@ fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Dis
 
     let compare_render_order = |id0: &EntityId, id1: &EntityId| -> Ordering {
         let order0 = render_order(game.data.entities.typ[id0]);
-        //dbg!(game.data.entities.pos[id1]);
-        //dbg!(game.data.entities.name[id1]);
         let order1 = render_order(game.data.entities.typ[id1]);
         return order0.cmp(&order1);
     };
@@ -963,6 +990,7 @@ fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Dis
         }
     }
 }
+*/
 
 fn render_animation(anim_key: AnimKey,
                     entity_id: EntityId,
