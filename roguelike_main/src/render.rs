@@ -1210,16 +1210,20 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     {
         let direction_color = Color::white();
         let tile_sprite = &mut display_state.sprites[&sprite_key];
-        for entity_id in game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>().iter() {
-            let pos = game.data.entities.pos[entity_id];
+        let mut index = 0;
+        while index < game.data.entities.ids.len() {
+            let entity_id = game.data.entities.ids[index];
+            index += 1;
+
+            let pos = game.data.entities.pos[&entity_id];
 
             if pos.x == -1 && pos.y == -1 {
                 continue;
             }
 
-            if game.data.is_in_fov(player_id, *entity_id, &game.config) &&
-               game.data.entities.status[entity_id].alive {
-                if let Some(dir) = game.data.entities.direction.get(entity_id) {
+            if game.data.is_in_fov(player_id, entity_id, &game.config) &&
+               game.data.entities.status[&entity_id].alive {
+                if let Some(dir) = game.data.entities.direction.get(&entity_id) {
                     // display.draw_tile_edge(pos, area, direction_color, dir);
 
                     let rotation = match dir {
