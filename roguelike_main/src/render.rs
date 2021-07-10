@@ -870,11 +870,12 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
 
                 let dxy = sub_pos(*end, *start);
                 let dir = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-                let mut rotation = 0.0;
-                let mut sprite_index = GOLEM_ATTACK_DIAG;
+                let rotation;
+                let sprite_index;
                 match dir {
                     Direction::Right | Direction::Left => {
                         sprite_index = GOLEM_ATTACK_HORIZ;
+                        rotation = 0.0;
                     }
 
                     Direction::Up | Direction::Down => {
@@ -883,10 +884,13 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                     }
 
                     Direction::UpRight | Direction::DownLeft => {
+                        rotation = 0.0;
+                        sprite_index = GOLEM_ATTACK_DIAG;
                     }
 
                     Direction::DownRight | Direction::UpLeft => {
                         rotation = 90.0;
+                        sprite_index = GOLEM_ATTACK_DIAG;
                     }
                 };
 
@@ -894,7 +898,7 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                     tile_sprite.draw_sprite_at_cell(panel,
                                                     sprite_index as usize,
                                                     pos,
-                                                    game.config.color_soft_green,
+                                                    Color::white(),
                                                     rotation);
                 }
 
