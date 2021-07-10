@@ -188,3 +188,4 @@ write_map_distribution: false
 print_key_log: false
 idle_animations: false
 recording: true
+beam_duration: 5

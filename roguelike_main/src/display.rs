@@ -268,7 +268,7 @@ impl Display {
                 }
             }
 
-            Msg::Attack(attacker, _attacked, _damage) => {
+            Msg::Attack(attacker, attacked, _damage) => {
                 if data.entities.typ[&attacker] == EntityType::Player {
                     let attack_sprite =
                         self.new_sprite("player_attack".to_string(), config.player_attack_speed);
@@ -282,6 +282,11 @@ impl Display {
                     if let Some(idle_key) = self.get_idle_animation(attacker, data, config) {
                         data.entities.animation[&attacker].push_back(idle_key);
                     }
+                } else {
+                    let attacker_pos = data.entities.pos[&attacker];
+                    let attacked_pos = data.entities.pos[&attacked];
+                    let beam_effect = Effect::Beam(config.beam_duration, attacker_pos, attacked_pos);
+                    self.state.play_effect(beam_effect);
                 }
             }
 

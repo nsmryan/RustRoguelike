@@ -831,7 +831,8 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
     while index < display_state.effects.len() {
         let mut effect_complete = false;
 
-        match &mut display_state.effects[index] {
+        let mut effect = display_state.effects[index].clone();
+        match &mut effect {
             Effect::Sound(sound_aoe, sound_dt) => {
                 let mut highlight_color = game.config.color_warm_grey;
 
@@ -863,9 +864,48 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                 }
             }
 
-            Effect::Beam(start, end) => {
+            Effect::Beam(remaining, start, end) => {
+                let sprite_key = display_state.lookup_spritekey("tiles");
+                let tile_sprite = &mut display_state.sprites[&sprite_key];
+
+                let dxy = sub_pos(*end, *start);
+                let dir = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+                let mut rotation = 0.0;
+                let mut sprite_index = GOLEM_ATTACK_DIAG;
+                match dir {
+                    Direction::Right | Direction::Left => {
+                        sprite_index = GOLEM_ATTACK_HORIZ;
+                    }
+
+                    Direction::Up | Direction::Down => {
+                        sprite_index = GOLEM_ATTACK_HORIZ;
+                        rotation = 90.0;
+                    }
+
+                    Direction::UpRight | Direction::DownLeft => {
+                    }
+
+                    Direction::DownRight | Direction::UpLeft => {
+                        rotation = 90.0;
+                    }
+                };
+
+                for pos in line(*start, *end) {
+                    tile_sprite.draw_sprite_at_cell(panel,
+                                                    sprite_index as usize,
+                                                    pos,
+                                                    game.config.color_soft_green,
+                                                    rotation);
+                }
+
+                if *remaining == 0 {
+                    effect_complete = true;
+                } else {
+                    *remaining -= 1;
+                }
             }
         }
+        display_state.effects[index] = effect;
 
         if effect_complete {
             display_state.effects.swap_remove(index);

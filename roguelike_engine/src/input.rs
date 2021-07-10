@@ -223,7 +223,7 @@ impl Input {
     }
 
     fn handle_char_up(&mut self, chr: char, settings: &GameSettings) -> InputAction {
-        let mut action;
+        let action;
 
         // if key was held, do nothing when it is up to avoid a final press
         if self.is_held(chr) {

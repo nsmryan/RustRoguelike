@@ -94,6 +94,7 @@ pub struct Config {
     pub idle_animations: bool,
     pub recording: bool,
     pub fire_speed: f32,
+    pub beam_duration: usize,
 }
 
 impl Config {

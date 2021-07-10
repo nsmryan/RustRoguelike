@@ -17,8 +17,8 @@ pub const TILE_FILL_METRIC_DIST: usize = 3;
 pub const ILLUMINATE_FOV_RADIUS: i32 = 1000;
 pub const STAB_STUN_TURNS: usize = 3;
 
-pub const GOLEM_ATTACK_DIAG: usize = 197;
-pub const GOLEM_ATTACK_HORIZ: usize = 198;
+pub const GOLEM_ATTACK_DIAG: u8 = 180;
+pub const GOLEM_ATTACK_HORIZ: u8 = 181;
 
 /* Monster Settings */
 pub const MAX_MONSTERS: i32 = 15;
