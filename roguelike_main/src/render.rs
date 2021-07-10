@@ -827,17 +827,13 @@ fn render_itertile_walls(panel: &mut Panel<&mut WindowCanvas>,
 fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                   display_state: &mut DisplayState,
                   game: &mut Game) {
-    let mut remove_indices = Vec::new();
-
-    let mut effects = display_state.effects.clone();
-
-    //let sprite_key = display_state.lookup_spritekey("tiles");
-    //let sprite = &mut display_state.sprites[&sprite_key];
-
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
-    for (index, effect) in effects.iter_mut().enumerate() {
-        match effect {
+    let mut index = 0;
+    while index < display_state.effects.len() {
+        let mut effect_complete = false;
+
+        match &mut display_state.effects[index] {
             Effect::Sound(sound_aoe, sound_dt) => {
                 let mut highlight_color = game.config.color_warm_grey;
 
@@ -860,7 +856,7 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                 }
 
                 if *sound_dt >= game.config.sound_timeout {
-                    remove_indices.push(index);
+                    effect_complete = true;
                 } else {
                     *sound_dt += 1.0 / game.config.frame_rate as f32;
                     if *sound_dt > game.config.sound_timeout {
@@ -869,15 +865,13 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                 }
             }
         }
-    }
 
-    remove_indices.sort();
-    remove_indices.reverse();
-    for index in remove_indices {
-        effects.swap_remove(index);
+        if effect_complete {
+            display_state.effects.swap_remove(index);
+        } else {
+            index += 1;
+        }
     }
-
-    display_state.effects = effects;
 }
 
 fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
