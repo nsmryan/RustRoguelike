@@ -12,6 +12,7 @@ pub type SpriteIndex = f32;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Effect {
     Sound(Aoe, f32), // area of effect, time since start
+    Beam(Pos, Pos), // start, end
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

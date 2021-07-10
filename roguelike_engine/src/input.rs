@@ -222,8 +222,8 @@ impl Input {
         return action;
     }
 
-    fn handle_char_up(&mut self, chr: char, dir: KeyDir, settings: &GameSettings) -> InputAction {
-        let mut action = InputAction::None;
+    fn handle_char_up(&mut self, chr: char, settings: &GameSettings) -> InputAction {
+        let mut action;
 
         // if key was held, do nothing when it is up to avoid a final press
         if self.is_held(chr) {
@@ -261,7 +261,7 @@ impl Input {
         return action;
     }
 
-    fn handle_char_down(&mut self, chr: char, dir: KeyDir) -> InputAction {
+    fn handle_char_down(&mut self, chr: char) -> InputAction {
         let mut action = InputAction::None;
 
         if chr == 'o' {
@@ -282,7 +282,7 @@ impl Input {
         return action;
     }
 
-    fn handle_char_held(&mut self, chr: char, dir: KeyDir, time: Instant, settings: &GameSettings, config: &Config) -> InputAction {
+    fn handle_char_held(&mut self, chr: char, time: Instant, settings: &GameSettings, config: &Config) -> InputAction {
         let mut action = InputAction::None;
 
         if let Some(held_state) = self.char_held.get(&chr) {
@@ -312,15 +312,15 @@ impl Input {
     fn handle_char(&mut self, chr: char, dir: KeyDir, time: Instant, settings: &GameSettings, config: &Config) -> InputAction {
         match dir {
             KeyDir::Up => {
-                return self.handle_char_up(chr, dir, settings);
+                return self.handle_char_up(chr, settings);
             }
 
             KeyDir::Down => {
-                return self.handle_char_down(chr, dir);
+                return self.handle_char_down(chr);
             }
 
             KeyDir::Held => {
-                return self.handle_char_held(chr, dir, time, settings, config);
+                return self.handle_char_held(chr, time, settings, config);
             }
         }
     }

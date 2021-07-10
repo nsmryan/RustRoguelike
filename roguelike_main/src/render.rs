@@ -1,5 +1,3 @@
-use std::cmp::Ordering;
-
 use oorandom::Rand32;
 
 use sdl2::render::{BlendMode, WindowCanvas};
@@ -636,7 +634,7 @@ fn render_wall_shadow(pos: Pos, panel: &mut Panel<&mut WindowCanvas>, display_st
 
     let tile = game.data.map[pos];
 
-    let (map_width, map_height) = game.data.map.size();
+    let (_map_width, map_height) = game.data.map.size();
     let (x, y) = pos.to_tuple();
 
     /* render full tile wall shadows */
@@ -670,9 +668,9 @@ fn render_wall_shadow(pos: Pos, panel: &mut Panel<&mut WindowCanvas>, display_st
         if x - 1 > 0 {
             // left
             if x - 1 > 0 {
-                let shadow_pos = Pos::new(x - 1, y);
-                let shadow_left_upper = Sprite::sprite(3, shadow_sprite_key);
                 // NOTE This creates a shadow over the left part of an intertile wall...
+                //let shadow_pos = Pos::new(x - 1, y);
+                //let shadow_left_upper = Sprite::sprite(3, shadow_sprite_key);
                 //display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
             }
 
@@ -863,6 +861,9 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                         *sound_dt = game.config.sound_timeout;
                     }
                 }
+            }
+
+            Effect::Beam(start, end) => {
             }
         }
 
