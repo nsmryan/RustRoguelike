@@ -48,20 +48,6 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 
 
 fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
-    /* Determine Mouse Position */
-    /* Removed in favor of the cursor
-    let mut mouse_map_pos = None;
-    if let Some(mouse_id) = game.data.find_by_name(EntityName::Mouse) {
-        let mouse_pos = (display.mouse_state.x, display.mouse_state.y);
-        if let Some(mouse_cell) = cell_within_rect(map_rect, game.data.map.size(), mouse_pos) {
-            // NOTE this should be done as an action MapClick
-            game.data.entities.set_xy(mouse_id, mouse_cell.0 as i32, mouse_cell.1 as i32);
-            mouse_map_pos = Some(Pos::new(mouse_cell.0 as i32, mouse_cell.1 as i32));
-        }
-    }
-    let mouse_map_pos = mouse_map_pos;
-    */
-
     let mouse_map_pos = game.settings.cursor;
 
     let canvas = &mut display.targets.canvas_panel.target;
@@ -640,62 +626,66 @@ fn render_wall_shadow(pos: Pos, panel: &mut Panel<&mut WindowCanvas>, display_st
     let (_map_width, map_height) = game.data.map.size();
     let (x, y) = pos.to_tuple();
 
+    let left_valid = x - 1 > 0;
+    let down_valid = y + 1 < map_height;
+    let down_left_valid = left_valid && down_valid;
+    let left_wall = left_valid && game.data.map[(x - 1, y)].tile_type == TileType::Wall;
+    let down_wall = down_valid && game.data.map[(x, y + 1)].tile_type == TileType::Wall;
+    let down_left_wall = down_left_valid && game.data.map[(x - 1, y + 1)].tile_type == TileType::Wall;
+
     /* render full tile wall shadows */
     if tile.tile_type == TileType::Wall {
-        if x - 1 > 0 && game.data.map[(x - 1, y)].tile_type != TileType::Wall {
+        if left_valid && !left_wall {
             // left
             let shadow_pos = Pos::new(x - 1, y);
-            let shadow_left_upper = Sprite::sprite(2, shadow_sprite_key);
+            let shadow_left_upper = Sprite::sprite(SHADOW_FULLTILE_LEFT as u32, shadow_sprite_key);
             display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
         }
 
-        if x - 1 > 0 && y + 1 < map_height {
+        if down_left_valid && !down_left_wall {
             let shadow_pos = Pos::new(x - 1, y + 1);
-            let shadow_left_lower = Sprite::sprite(6, shadow_sprite_key);
+            let shadow_left_lower = Sprite::sprite(SHADOW_FULLTILE_LEFT_DOWN as u32, shadow_sprite_key);
             display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
         }
 
-        if y + 1 < map_height  && game.data.map[(x, y + 1)].tile_type != TileType::Wall{
+        if down_valid && !down_wall {
             // lower
-            let shadow_lower_right = Sprite::sprite(1, shadow_sprite_key);
+            let shadow_lower_right = Sprite::sprite(SHADOW_FULLTILE_DOWN as u32, shadow_sprite_key);
             let shadow_pos = Pos::new(x, y + 1);
             display_state.draw_sprite(panel, shadow_lower_right, shadow_pos, game.config.color_shadow);
         }
 
-        if y + 1 < map_height && x - 1 > 0 {
-            let shadow_lower_left = Sprite::sprite(0, shadow_sprite_key);
+        if down_left_valid && !down_left_wall {
+            let shadow_lower_left = Sprite::sprite(SHADOW_FULLTILE_DOWN_LEFT as u32, shadow_sprite_key);
             let shadow_pos = Pos::new(x - 1, y + 1);
             display_state.draw_sprite(panel, shadow_lower_left, shadow_pos, game.config.color_shadow);
         }
     } else if tile.left_wall == Wall::ShortWall {
-        if x - 1 > 0 {
-            // left
-            if x - 1 > 0 {
-                // NOTE This creates a shadow over the left part of an intertile wall...
-                //let shadow_pos = Pos::new(x - 1, y);
-                //let shadow_left_upper = Sprite::sprite(3, shadow_sprite_key);
-                //display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
-            }
+        // left
+        if left_valid {
+            let shadow_pos = Pos::new(x - 1, y);
+            let shadow_left_upper = Sprite::sprite(SHADOW_INTERTILE_LEFT as u32, shadow_sprite_key);
+            display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
+        }
 
-            // left down
-            if x - 1 > 0 && y + 1 < map_height {
-                let shadow_pos = Pos::new(x - 1, y + 1);
-                let shadow_left_lower = Sprite::sprite(7, shadow_sprite_key);
-                display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
-            }
+        // left down
+        if down_left_valid {
+            let shadow_pos = Pos::new(x - 1, y + 1);
+            let shadow_left_lower = Sprite::sprite(SHADOW_INTERTILE_LEFT_DOWN as u32, shadow_sprite_key);
+            display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
         }
     } else if tile.bottom_wall == Wall::ShortWall {
-        if y + 1 < map_height {
+        if down_valid {
             // lower
-            if y + 1 < map_height {
-                let shadow_lower_right = Sprite::sprite(5, shadow_sprite_key);
+            if down_valid {
+                let shadow_lower_right = Sprite::sprite(SHADOW_INTERTILE_DOWN as u32, shadow_sprite_key);
                 let shadow_pos = Pos::new(x, y + 1);
                 display_state.draw_sprite(panel, shadow_lower_right, shadow_pos, game.config.color_shadow);
             }
 
             // left down
-            if y + 1 < map_height && x - 1 > 0 {
-                let shadow_lower_left = Sprite::sprite(4, shadow_sprite_key);
+            if down_left_valid {
+                let shadow_lower_left = Sprite::sprite(SHADOW_INTERTILE_DOWN_LEFT as u32, shadow_sprite_key);
                 let shadow_pos = Pos::new(x - 1, y + 1);
                 display_state.draw_sprite(panel, shadow_lower_left, shadow_pos, game.config.color_shadow);
             }
@@ -802,7 +792,6 @@ fn render_itertile_walls(panel: &mut Panel<&mut WindowCanvas>,
         let right_tile = &map[right_pos];
         if right_tile.left_wall == Wall::ShortWall {
             sprite.draw_char(panel, MAP_THIN_WALL_RIGHT as char, pos, wall_color);
-            sprite.draw_char(panel, SHADOW_INTERTILE_LEFT as char, pos, config.color_shadow);
         } else if right_tile.left_wall == Wall::TallWall {
             sprite.draw_char(panel, MAP_THICK_WALL_RIGHT as char, pos, wall_color);
         }
@@ -814,7 +803,6 @@ fn render_itertile_walls(panel: &mut Panel<&mut WindowCanvas>,
         let up_tile = &map[up_pos];
         if up_tile.bottom_wall == Wall::ShortWall {
             sprite.draw_char(panel, MAP_THIN_WALL_TOP as char, pos, wall_color);
-            sprite.draw_char(panel, SHADOW_INTERTILE_TOP as char, pos, config.color_shadow);
         } else if up_tile.bottom_wall == Wall::TallWall {
             sprite.draw_char(panel, MAP_THICK_WALL_TOP as char, pos, wall_color);
         }
