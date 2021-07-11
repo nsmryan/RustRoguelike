@@ -175,10 +175,15 @@ pub const ENTITY_TRIGGER_5: u8 = 228;
 pub const ENTITY_CURSOR: u8 = 231;
 pub const ENTITY_UNKNOWN_GOLEM_MARKER: u8 = 239;
 
-pub const SHADOW_FULLTILE_RIGHT: u8 = 172;
-pub const SHADOW_FULLTILE_TOP: u8 = 173;
-pub const SHADOW_INTERTILE_TOP: u8 = 174;
-pub const SHADOW_INTERTILE_LEFT: u8 = 175;
+pub const SHADOW_FULLTILE_LEFT: u8 = 2;
+pub const SHADOW_FULLTILE_LEFT_DOWN: u8 = 6;
+pub const SHADOW_FULLTILE_DOWN: u8 = 1;
+pub const SHADOW_FULLTILE_DOWN_LEFT: u8 = 0;
+
+pub const SHADOW_INTERTILE_LEFT: u8 = 3;
+pub const SHADOW_INTERTILE_LEFT_DOWN: u8 = 7;
+pub const SHADOW_INTERTILE_DOWN: u8 = 5;
+pub const SHADOW_INTERTILE_DOWN_LEFT: u8 = 4;
 
 /* Triggers */
 pub const ENTITY_GATE_TRIGGER: u8 = ENTITY_TRIGGER_2;
