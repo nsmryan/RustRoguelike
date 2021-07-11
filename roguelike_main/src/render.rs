@@ -1236,22 +1236,44 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 if let Some(dir) = game.data.entities.direction.get(&entity_id) {
                     // display.draw_tile_edge(pos, area, direction_color, dir);
 
-                    let rotation = match dir {
-                        Direction::Up => -90.0,
-                        Direction::Down => 90.0,
-                        Direction::Right => 0.0,
-                        Direction::Left => 180.0,
-                        Direction::DownLeft => 135.0,
-                        Direction::DownRight => 45.0,
-                        Direction::UpLeft => -135.0,
-                        Direction::UpRight => -45.0,
+                    let sprite_index;
+                    let rotation: f64;
+                    match dir {
+                        Direction::Up => {
+                            rotation = -90.0;
+                            sprite_index = ARROW_HORIZ;
+                        }
+                        Direction::Down => {
+                            rotation = 90.0;
+                            sprite_index = ARROW_HORIZ;
+                        }
+                        Direction::Right => {
+                            rotation = 0.0;
+                            sprite_index = ARROW_HORIZ;
+                        }
+                        Direction::Left => {
+                            rotation = 180.0;
+                            sprite_index = ARROW_HORIZ;
+                        }
+                        Direction::DownLeft => {
+                            rotation = -180.0;
+                            sprite_index = ARROW_DIAG;
+                        }
+                        Direction::DownRight => {
+                            rotation = 90.0;
+                            sprite_index = ARROW_DIAG;
+                        }
+                        Direction::UpLeft => {
+                            rotation = -90.0;
+                            sprite_index = ARROW_DIAG;
+                        }
+                        Direction::UpRight => {
+                            rotation = 0.0;
+                            sprite_index = ARROW_DIAG;
+                        }
                     };
 
-                    tile_sprite.draw_sprite_at_cell(panel,
-                                                    ARROW_RIGHT as usize,
-                                                    pos,
-                                                    direction_color,
-                                                    rotation);
+                    tile_sprite.draw_sprite_at_cell(panel, sprite_index as usize, pos, direction_color, rotation);
                 }
             }
         }

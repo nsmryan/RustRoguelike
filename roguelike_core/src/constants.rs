@@ -190,10 +190,8 @@ pub const ENTITY_TRAP_SOUND: u8 = ENTITY_TRIGGER_5;
 pub const ENTITY_FREEZE_TRAP: u8 = ENTITY_TRIGGER_4;
 
 /* Arrows */
-pub const ARROW_RIGHT: u8 = 16;
-pub const ARROW_LEFT: u8 = 17;
-pub const ARROW_UP: u8 = 30;
-pub const ARROW_DOWN: u8 = 31;
+pub const ARROW_HORIZ: u8 = 16;
+pub const ARROW_DIAG: u8 = 17;
 
 /* Characters */
 pub const EXCLAMATION_POINT: u8 = 33 as u8;
