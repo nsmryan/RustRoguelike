@@ -1131,6 +1131,7 @@ fn use_item(entity_id: EntityId,
 }
 
 fn make_move_sound(entity_id: EntityId,
+                   original_pos: Pos,
                    pos: Pos,
                    move_mode: MoveMode,
                    data: &mut GameData,
@@ -1155,6 +1156,7 @@ fn make_move_sound(entity_id: EntityId,
     }
 
     msg_log.log_front(Msg::Sound(entity_id, pos, sound_radius, true));
+    msg_log.log_front(Msg::Sound(entity_id, original_pos, sound_radius, true));
 }
 
 fn process_moved_message(entity_id: EntityId,
@@ -1184,9 +1186,10 @@ fn process_moved_message(entity_id: EntityId,
 
         // make a noise based on how fast the entity is moving and the terrain
         if pos != original_pos {
-            make_move_sound(entity_id, pos, *move_mode, data, msg_log, config);
+            make_move_sound(entity_id, original_pos, pos, *move_mode, data, msg_log, config);
         }
     } else if pos != original_pos {
+        msg_log.log_front(Msg::Sound(entity_id, original_pos, config.sound_radius_monster, true));
         msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_monster, true));
     }
 
