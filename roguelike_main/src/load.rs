@@ -22,6 +22,14 @@ pub fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display: &m
     load_sprite(texture_creator, display, "resources/animations/player/Player_Idle_Shield.png", "player_idle_shield", 1);
     load_sprite(texture_creator, display, "resources/animations/player/player_vault.png", "player_vault", 1);
     load_sprite(texture_creator, display, "resources/animations/player/player_wallkick.png", "player_wall_kick", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/Player_CrouchIdleDownRight.png", "player_crouch_down_right", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/Player_CrouchIdleRight.png", "player_crouch_right", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/Player_CrouchIdleUp.png", "player_crouch_up", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/Player_CrouchIdleUpRight.png", "player_crouch_up_right", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/PlayerIdle_RightDown.png", "player_stand_down_right", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/PlayerIdle_Right.png", "player_stand_right", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/PlayerIdle_Down.png", "player_stand_down", 1);
+    load_sprite(texture_creator, display, "resources/animations/player/PlayerIdle_RightUp.png", "player_stand_up_right", 1);
     load_sprite(texture_creator, display, "resources/animations/monster1/Gol_Idle.png", "gol_idle", 1);
     load_sprite(texture_creator, display, "resources/animations/monster1/Gol_Die.png", "gol_die", 1);
     load_sprite(texture_creator, display, "resources/animations/monster3/Pawn_Idle.png", "elf_idle", 1);

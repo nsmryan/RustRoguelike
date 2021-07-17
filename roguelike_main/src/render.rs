@@ -767,7 +767,7 @@ fn render_itertile_walls(panel: &mut Panel<&mut WindowCanvas>,
                          map: &Map,
                          sprite: &mut SpriteSheet,
                          pos: Pos,
-                         config: &Config) {
+                         _config: &Config) {
     let (x, y) = pos.to_tuple();
     let tile = map[pos];
     let wall_color = Color::white();

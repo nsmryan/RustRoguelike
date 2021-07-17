@@ -207,7 +207,7 @@ pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
     return entity_id;
 }
 
-pub fn make_armil(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+pub fn make_armil(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{98}', Color::white(), EntityName::Armil, true);
 
     entities.fighter.insert(entity_id,  Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, });
