@@ -19,11 +19,19 @@ pub enum Effect {
 pub struct Sprite {
     pub index: u32, 
     pub key: SpriteKey,
+    pub flip_horiz: bool,
+    pub flip_vert: bool,
 }
 
 impl Sprite {
     pub fn new(index: u32, key: SpriteKey) -> Sprite {
-        return Sprite { index, key };
+        let flip_vert = false;
+        let flip_horiz = false;
+        return Sprite { index, key, flip_horiz, flip_vert };
+    }
+
+    pub fn with_flip(index: u32, key: SpriteKey, flip_horiz: bool, flip_vert: bool) -> Sprite {
+        return Sprite { index, key, flip_horiz, flip_vert };
     }
 }
 
@@ -36,6 +44,8 @@ pub struct SpriteAnim {
     pub max_index: SpriteIndex,
     pub speed: f32,
     pub looped: bool,
+    pub flip_horiz: bool,
+    pub flip_vert: bool,
 }
 
 impl SpriteAnim {
@@ -44,6 +54,8 @@ impl SpriteAnim {
                index: SpriteIndex,
                max_index: SpriteIndex,
                speed: f32) -> SpriteAnim {
+        let flip_vert = false;
+        let flip_horiz = false;
         return SpriteAnim { name: name.into(),
                         sprite_key,
                         index,
@@ -51,6 +63,8 @@ impl SpriteAnim {
                         max_index,
                         speed,
                         looped: false,
+                        flip_horiz,
+                        flip_vert,
         };
     }
 
@@ -69,7 +83,7 @@ impl SpriteAnim {
     }
 
     pub fn sprite(&self) -> Sprite {
-        return Sprite::new(self.index as u32, self.sprite_key);
+        return Sprite::with_flip(self.index as u32, self.sprite_key, self.flip_horiz, self.flip_vert);
     }
 }
 

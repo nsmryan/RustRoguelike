@@ -890,7 +890,9 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                                                     sprite_index as usize,
                                                     pos,
                                                     Color::white(),
-                                                    rotation);
+                                                    rotation,
+                                                    false,
+                                                    false);
                 }
 
                 if *remaining == 0 {
@@ -1162,7 +1164,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                         }
                     };
 
-                    tile_sprite.draw_sprite_at_cell(panel, sprite_index as usize, pos, direction_color, rotation);
+                    tile_sprite.draw_sprite_at_cell(panel, sprite_index as usize, pos, direction_color, rotation, false, false);
                 }
             }
         }

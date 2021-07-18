@@ -110,67 +110,25 @@ impl Display {
     pub fn get_idle_animation(&mut self, entity_id: EntityId, data: &mut GameData, config: &Config) -> Option<Animation> {
         let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-        if entity_id == player_id {
+        let name = data.entities.name[&entity_id];
+
+        if name == EntityName::Player || name == EntityName::Gol || name == EntityName::Pawn {
+            let name = data.entities.name[&entity_id];
             let stance = data.entities.stance[&entity_id];
+            let direction = data.entities.direction[&entity_id];
 
-            if data.using(entity_id, Item::Dagger).is_some() && stance == Stance::Crouching {
-                return Some(self.loop_sprite("player_crouch_dagger", config.idle_speed));
-            } else if data.using(entity_id, Item::Dagger).is_some() {
-                return Some(self.loop_sprite("player_idle_dagger", config.idle_speed));
-            } else if data.using(entity_id, Item::Hammer).is_some() {
-                return Some(self.loop_sprite("player_idle_hammer", config.idle_speed));
-            } else if data.using(entity_id, Item::Shield).is_some() {
-                return Some(self.loop_sprite("player_idle_shield", config.idle_speed));
-            } else if stance == Stance::Crouching {
-                let mut sprite;
-                // TODO get names correct, and add horiz/vert flip
-                match data.entities.direction[&player_id] {
-                    Direction::Up => {
-                        sprite = self.loop_sprite("player_crouch_up", config.idle_speed);
-                    }
+            let sheet_direction = sheet_direction(direction);
+            let sheet_name = format!("{}_{}_{}", name, stance, sheet_direction);
 
-                    Direction::Down => {
-                        sprite = self.loop_sprite("player_crouch_down", config.idle_speed);
-                    }
+            let mut anim = self.loop_sprite(&sheet_name, config.idle_speed);
+            anim.sprite_anim_mut().unwrap().flip_horiz = needs_flip_horiz(direction);
 
-                    Direction::Left => {
-                        sprite = self.loop_sprite("player_crouch_down", config.idle_speed);
-                    }
-
-                    Direction::Right => {
-                        sprite = self.loop_sprite("player_crouch_down", config.idle_speed);
-                    }
-
-                    Direction::UpRight => {
-                        sprite = self.loop_sprite("player_crouch_down", config.idle_speed);
-                    }
-
-                    Direction::UpLeft => {
-                        sprite = self.loop_sprite("player_crouch_down", config.idle_speed);
-                    }
-
-                    Direction::DownRight => {
-                        sprite = self.loop_sprite("player_crouch_down", config.idle_speed);
-                    }
-
-                    Direction::DownLeft => {
-                        sprite = self.loop_sprite("player_crouch_down", config.idle_speed);
-                    }
-                }
-
-                return Some(sprite);
-            } else {
-                return Some(self.loop_sprite("player_crouch", config.idle_speed));
-            }
+            return Some(anim);
         } else {
             if data.entities.name[&entity_id] == EntityName::Key {
                 return Some(self.loop_sprite("key", config.idle_speed));
             } else if data.entities.name[&entity_id] == EntityName::SpikeTrap {
                 return Some(self.loop_sprite("trap_damage", config.idle_speed));
-            } else if data.entities.name[&entity_id] == EntityName::Pawn {
-                return Some(self.loop_sprite("pawn_idle", config.idle_speed));
-            } else if data.entities.name[&entity_id] == EntityName::Gol {
-                return Some(self.loop_sprite("gol_idle", config.idle_speed));
             } else if data.entities.name[&entity_id] == EntityName::Armil {
                 return Some(self.loop_sprite("armil_idle", config.idle_speed));
             } else if data.entities.name[&entity_id] == EntityName::Lantern {
@@ -247,10 +205,8 @@ impl Display {
                 self.play_idle_animation(entity_id, data, config);
             }
 
-            Msg::Moved(entity_id, move_type, _pos) => {
-                if move_type != MoveType::Pass {
-                    self.play_idle_animation(entity_id, data, config);
-                }
+            Msg::Facing(entity_id, _pos) => {
+                self.play_idle_animation(entity_id, data, config);
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
@@ -797,7 +753,7 @@ impl DisplayState {
                        pos: Pos,
                        color: Color) {
         let sprite_sheet = &mut self.sprites[&sprite.key];
-        sprite_sheet.draw_sprite_at_cell(panel, sprite.index as usize, pos, color, 0.0);
+        sprite_sheet.draw_sprite_at_cell(panel, sprite.index as usize, pos, color, 0.0, sprite.flip_horiz, sprite.flip_vert);
     }
 
     pub fn play_effect(&mut self, effect: Effect) {
@@ -904,7 +860,7 @@ impl SpriteSheet {
                      color: Color) {
         let mut pos = cell;
         for chr in text.chars() {
-            self.draw_sprite_at_cell(panel, chr as usize, pos, color, 0.0);
+            self.draw_sprite_at_cell(panel, chr as usize, pos, color, 0.0, false, false);
             pos.x += 1;
         }
     }
@@ -914,7 +870,7 @@ impl SpriteSheet {
                      chr: char,
                      cell: Pos,
                      color: Color) {
-        self.draw_sprite_at_cell(panel, chr as usize, cell, color, 0.0);
+        self.draw_sprite_at_cell(panel, chr as usize, cell, color, 0.0, false, false);
     }
 
     pub fn draw_sprite_at_cell(&mut self,
@@ -922,12 +878,14 @@ impl SpriteSheet {
                                index: usize,
                                cell: Pos,
                                color: Color,
-                               rotation: f64) {
+                               rotation: f64,
+                               flip_horiz: bool,
+                               flip_vert: bool) {
         let (cell_width, cell_height) = panel.cell_dims();
 
         let pos = Pos::new(cell.x * cell_width as i32, cell.y * cell_height as i32);
 
-        self.draw_sprite_full(panel, index, pos, color, rotation, false, false);
+        self.draw_sprite_full(panel, index, pos, color, rotation, flip_horiz, flip_vert);
     }
 
     pub fn draw_sprite_full(&mut self,
@@ -1117,3 +1075,28 @@ pub fn cell_within_rect(rect: Rect, area_cell_dims: (i32, i32), pixel_pos: (i32,
     return None;
 }
 
+fn sheet_direction(direction: Direction) -> Direction {
+    match direction {
+        Direction::Up => return Direction::Up,
+        Direction::Down => return Direction::Down,
+        Direction::Left => return Direction::Right,
+        Direction::Right => return Direction::Right,
+        Direction::UpRight => return Direction::UpRight,
+        Direction::UpLeft => return Direction::DownRight,
+        Direction::DownRight => return Direction::DownRight,
+        Direction::DownLeft => return Direction::UpRight,
+    }
+}
+
+fn needs_flip_horiz(direction: Direction) -> bool {
+    match direction {
+        Direction::Up => return false,
+        Direction::Down => return false,
+        Direction::Left => return true,
+        Direction::Right => return false,
+        Direction::UpRight => return false,
+        Direction::UpLeft => return true,
+        Direction::DownRight => return false,
+        Direction::DownLeft => return true,
+    }
+}
