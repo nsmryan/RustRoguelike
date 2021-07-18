@@ -18,6 +18,10 @@
     - Armil:
     - 1
     - 4
+- Entities: 
+    - Rook:
+    - 1
+    - 4
 # Item takes a item type,
 # a min number, and a max number of entities of that type
 # Item types are: Stone, Goal, Dagger, Shield, Hammer, Sword, SpikeTrap, SoundTrap, BlinkTrap,

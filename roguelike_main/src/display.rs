@@ -112,7 +112,7 @@ impl Display {
 
         let name = data.entities.name[&entity_id];
 
-        if name == EntityName::Player || name == EntityName::Gol || name == EntityName::Pawn {
+        if name == EntityName::Player || name == EntityName::Gol || name == EntityName::Pawn || name == EntityName::Rook {
             let name = data.entities.name[&entity_id];
             let stance = data.entities.stance[&entity_id];
             let direction = data.entities.direction[&entity_id];

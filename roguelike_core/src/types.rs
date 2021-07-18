@@ -689,6 +689,7 @@ pub enum EntityName {
     Player,
     Gol,
     Pawn,
+    Rook,
     Column,
     Key,
     Exit,
@@ -723,6 +724,7 @@ impl fmt::Display for EntityName {
             EntityName::Player => write!(f, "player"),
             EntityName::Gol => write!(f, "gol"),
             EntityName::Pawn => write!(f, "pawn"),
+            EntityName::Rook => write!(f, "rook"),
             EntityName::Column => write!(f, "column"),
             EntityName::Key => write!(f, "key"),
             EntityName::Exit => write!(f, "exit"),
@@ -760,6 +762,8 @@ impl FromStr for EntityName {
             return Ok(EntityName::Gol);
         } else if s == "pawn" {
             return Ok(EntityName::Pawn);
+        } else if s == "rook" {
+            return Ok(EntityName::Rook);
         } else if s == "column" {
             return Ok(EntityName::Column);
         } else if s == "key" {
