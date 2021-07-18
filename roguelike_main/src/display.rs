@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use bmp::Image;
 
 use sdl2::render::{Texture, WindowCanvas, TextureCreator, BlendMode};
@@ -12,9 +14,9 @@ use roguelike_core::constants::*;
 use roguelike_core::config::*;
 use roguelike_core::messaging::*;
 use roguelike_core::map::*;
-use roguelike_core::animation::{Sprite, AnimKey, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
+use roguelike_core::animation::{Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use roguelike_core::utils::aoe_fill;
-use roguelike_core::movement::Direction;
+use roguelike_core::movement::{Direction, MoveType};
 
 
 pub struct Display {
@@ -56,8 +58,8 @@ impl Display {
         shot.save(format!("{}.bmp", name)).unwrap();
     }
 
-    pub fn add_spritesheet(&mut self, name: String, texture: Texture, rows: usize) {
-        let sprite_sheet = SpriteSheet::new(name, texture, rows);
+    pub fn add_spritesheet(&mut self, name: String, texture: Texture) {
+        let sprite_sheet = SpriteSheet::new(name, texture);
         let sprite_key = self.state.next_sprite_key;
         self.state.next_sprite_key += 1;
         self.state.sprites.insert(sprite_key, sprite_sheet);
@@ -78,7 +80,7 @@ impl Display {
     pub fn new_sprite(&self, name: String, speed: f32) -> SpriteAnim {
         let sprite_key = self.state.lookup_spritekey(&name);
         let max_index = self.state.sprites[&sprite_key].num_sprites;
-        return SpriteAnim::make_anim(name, sprite_key, max_index as f32, speed);
+        return SpriteAnim::new(name, sprite_key, 0.0, max_index as f32, speed);
     }
 
     pub fn font_sprite(&self, chr: char) -> SpriteAnim {
@@ -91,49 +93,68 @@ impl Display {
     }
 
     /// Create and play a looping sprite
-    pub fn loop_sprite(&mut self, sprite_name: &str, speed: f32) -> AnimKey {
+    pub fn loop_sprite(&mut self, sprite_name: &str, speed: f32) -> Animation {
         let sprite_anim = self.new_sprite(sprite_name.to_string(), speed);
         
         let anim = Animation::Loop(sprite_anim);
 
-        let key = self.play_animation(anim);
-
-        return key;
+        return anim;
     }
 
-    pub fn get_idle_animation(&mut self, entity_id: EntityId, data: &mut GameData, config: &Config) -> Option<AnimKey> {
+    pub fn play_idle_animation(&mut self, entity_id: EntityId, data: &mut GameData, config: &Config) {
+        if let Some(anim) = self.get_idle_animation(entity_id, data, config) {
+            self.state.play_animation(entity_id, anim);
+        }
+    }
+
+    pub fn get_idle_animation(&mut self, entity_id: EntityId, data: &mut GameData, config: &Config) -> Option<Animation> {
         let player_id = data.find_by_name(EntityName::Player).unwrap();
 
         if entity_id == player_id {
             let stance = data.entities.stance[&entity_id];
 
-            let key;
             if data.using(entity_id, Item::Dagger).is_some() && stance == Stance::Crouching {
-                key = self.loop_sprite("player_crouch_dagger", config.idle_speed);
+                return Some(self.loop_sprite("player_crouch_dagger", config.idle_speed));
             } else if data.using(entity_id, Item::Dagger).is_some() {
-                key = self.loop_sprite("player_idle_dagger", config.idle_speed);
+                return Some(self.loop_sprite("player_idle_dagger", config.idle_speed));
             } else if data.using(entity_id, Item::Hammer).is_some() {
-                key = self.loop_sprite("player_idle_hammer", config.idle_speed);
+                return Some(self.loop_sprite("player_idle_hammer", config.idle_speed));
             } else if data.using(entity_id, Item::Shield).is_some() {
-                key = self.loop_sprite("player_idle_shield", config.idle_speed);
+                return Some(self.loop_sprite("player_idle_shield", config.idle_speed));
             } else if stance == Stance::Crouching {
-                key = self.loop_sprite("player_crouching", config.idle_speed);
+                match data.entities.direction[&player_id] {
+                    Direction::Up => {
+                        return Some(self.loop_sprite("player_crouch_up", config.idle_speed));
+                    }
+
+                    Direction::Down => {
+                        return Some(self.loop_sprite("player_crouch_up", config.idle_speed));
+                    }
+
+                    _ => {
+                        // TODO finish directional animation system
+                    }
+                }
             } else {
-                key = self.loop_sprite("player_idle", config.idle_speed);
+                return Some(self.loop_sprite("player_idle", config.idle_speed));
             }
-            return Some(key);
+        } else {
+            if data.entities.name[&entity_id] == EntityName::Key {
+                return Some(self.loop_sprite("key", config.idle_speed));
+            } else if data.entities.name[&entity_id] == EntityName::SpikeTrap {
+                return Some(self.loop_sprite("spikes", config.idle_speed));
+            } else if data.entities.name[&entity_id] == EntityName::Pawn {
+                return Some(self.loop_sprite("pawn_idle", config.idle_speed));
+            } else if data.entities.name[&entity_id] == EntityName::Gol {
+                return Some(self.loop_sprite("gol_idle", config.idle_speed));
+            } else if data.entities.name[&entity_id] == EntityName::Armil {
+                return Some(self.loop_sprite("armil_idle", config.idle_speed));
+            } else if data.entities.name[&entity_id] == EntityName::Lantern {
+                return Some(self.loop_sprite("lantern_idle", config.fire_speed));
+            }
         }
 
         return None;
-    }
-
-    /// Add an animation to the current animation system, returning
-    /// a key used to reference this animation
-    pub fn play_animation(&mut self, animation: Animation) -> AnimKey {
-        let anim_key = self.state.next_anim_key;
-        self.state.next_anim_key += 1;
-        self.state.animations.insert(anim_key, animation);
-        return anim_key;
     }
 
     pub fn clear_level_state(&mut self) {
@@ -171,14 +192,16 @@ impl Display {
                         self.state.play_effect(sound_effect);
 
                         let pos = data.entities.pos[&cause_id];
-                        let impression_sprite = Sprite::char(ENTITY_UNKNOWN as char);
+                        // NOTE it is slightly odd to look up this sprite sheet here...
+                        let tiles = self.state.lookup_spritekey("tiles");
+                        let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
                         self.state.impressions.push(Impression::new(impression_sprite, pos));
                     }
                 }
             }
 
             Msg::ItemThrow(_thrower, item_id, start, _end) => {
-                // NOTE we use the entities position instead of 'end' because we
+                // NOTE we use the entity's position instead of 'end' because we
                 // want where it hit, not where it was thrown to.
                 let end = data.entities.pos[&item_id];
 
@@ -191,38 +214,29 @@ impl Display {
                 let item_anim = Animation::PlayEffect(Effect::Sound(sound_aoe, 0.0));
                 let loop_anim = Animation::Loop(item_sprite);
 
-                let move_key = self.play_animation(move_anim);
-                let item_key = self.play_animation(item_anim);
-                let loop_key = self.play_animation(loop_anim);
-
-                data.entities.animation[&item_id].clear();
-                data.entities.animation[&item_id].push_back(move_key);
-                data.entities.animation[&item_id].push_back(item_key);
-                data.entities.animation[&item_id].push_back(loop_key);
+                self.state.play_animation(item_id, move_anim);
+                self.state.append_animation(item_id, item_anim);
+                self.state.append_animation(item_id, loop_anim);
             }
 
             Msg::PickedUp(entity_id, _item_id) => {
-                if let Some(anim_key) = self.get_idle_animation(entity_id, data, config) {
-                    data.entities.set_animation(entity_id, anim_key);
-                }
+                self.play_idle_animation(entity_id, data, config);
             }
 
-            Msg::Moved(entity_id, _move_type, _pos) => {
-                if let Some(anim_key) = self.get_idle_animation(entity_id, data, config) {
-                    data.entities.set_animation(entity_id, anim_key);
+            Msg::Moved(entity_id, move_type, _pos) => {
+                if move_type != MoveType::Pass {
+                    self.play_idle_animation(entity_id, data, config);
                 }
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
                 if data.entities.typ[&attacked] != EntityType::Player {
-                    data.entities.animation[&attacked].clear();
+                    self.state.clear_animations(attacked);
 
-                    let sprite_name = format!("{:?}_die", data.entities.name[&attacked]);
+                    let sprite_name = format!("{:?}_death", data.entities.name[&attacked]);
                     if self.sprite_exists(&sprite_name) {
                         let sprite = self.new_sprite(sprite_name, 1.0);
-                        let anim = self.play_animation(Animation::Once(sprite));
-                        data.entities.animation[&attacked].clear();
-                        data.entities.animation[&attacked].push_front(anim);
+                        self.state.play_animation(attacked, Animation::Once(sprite));
                     }
                 }
             }
@@ -232,13 +246,10 @@ impl Display {
                     let attack_sprite =
                         self.new_sprite("player_attack_hammer".to_string(), config.player_attack_hammer_speed);
                     let attack_anim = Animation::Once(attack_sprite);
-                    let attack_key = self.play_animation(attack_anim);
+                    self.state.play_animation(entity_id, attack_anim);
 
-                    data.entities.animation[&entity_id].clear();
-                    data.entities.animation[&entity_id].push_back(attack_key);
-
-                    if let Some(idle_key) = self.get_idle_animation(entity_id, data, config) {
-                        data.entities.animation[&entity_id].push_back(idle_key);
+                    if let Some(idle_anim) = self.get_idle_animation(entity_id, data, config) {
+                        self.state.append_animation(entity_id, idle_anim);
                     }
                 }
             }
@@ -248,22 +259,18 @@ impl Display {
                     let attack_sprite =
                         self.new_sprite("player_attack_dagger".to_string(), config.player_attack_speed);
                     let attack_anim = Animation::Once(attack_sprite);
-                    let attack_key = self.play_animation(attack_anim);
+                    self.state.play_animation(entity_id, attack_anim);
 
-                    data.entities.animation[&entity_id].clear();
-                    data.entities.animation[&entity_id].push_back(attack_key);
-
-                    if let Some(idle_key) = self.get_idle_animation(entity_id, data, config) {
-                        data.entities.animation[&entity_id].push_back(idle_key);
+                    if let Some(idle_anim) = self.get_idle_animation(entity_id, data, config) {
+                        self.state.append_animation(entity_id, idle_anim);
                     }
                 }
             }
 
             Msg::SwordSwing(entity_id, _item_id, _pos) => {
                 if data.entities.typ[&entity_id] == EntityType::Player {
-                    if let Some(idle_key) = self.get_idle_animation(entity_id, data, config) {
-                        data.entities.animation[&entity_id].clear();
-                        data.entities.animation[&entity_id].push_back(idle_key);
+                    if let Some(idle_anim) = self.get_idle_animation(entity_id, data, config) {
+                        self.state.play_animation(entity_id, idle_anim);
                     }
                 }
             }
@@ -273,14 +280,10 @@ impl Display {
                     let attack_sprite =
                         self.new_sprite("player_attack".to_string(), config.player_attack_speed);
                     let attack_anim = Animation::Once(attack_sprite);
-                    let attack_key = self.play_animation(attack_anim);
+                    self.state.play_animation(attacker, attack_anim);
 
-
-                    data.entities.animation[&attacker].clear();
-                    data.entities.animation[&attacker].push_back(attack_key);
-
-                    if let Some(idle_key) = self.get_idle_animation(attacker, data, config) {
-                        data.entities.animation[&attacker].push_back(idle_key);
+                    if let Some(idle_anim) = self.get_idle_animation(attacker, data, config) {
+                        self.state.play_animation(attacker, idle_anim);
                     }
                 } else {
                     let attacker_pos = data.entities.pos[&attacker];
@@ -291,51 +294,15 @@ impl Display {
             }
 
             Msg::JumpWall(_jumper, _start, _end) => {
-                /* This animation does not work
-                if data.entities.typ[&jumper] == EntityType::Player {
-                    let jump_sprite =
-                        self.new_sprite("player_vault".to_string(), config.player_vault_sprite_speed)
-                                          .unwrap();
-                    let jump_anim = Animation::Between(jump_sprite, start, end, 0.0, config.player_vault_move_speed);
-                    let jump_key = self.play_animation(jump_anim);
-
-                    let idle_sprite =
-                        self.new_sprite("player_idle".to_string(), config.idle_speed)
-                                          .unwrap();
-                    let idle_anim = Animation::Loop(idle_sprite);
-                    let idle_key = self.play_animation(idle_anim);
-
-                    data.entities.animation[&jumper].clear();
-                    data.entities.animation[&jumper].push_back(jump_key);
-                    data.entities.animation[&jumper].push_back(idle_key);
-                }
-                */
+                // This animation does not work
             }
 
             Msg::SpawnedObject(entity_id, _typ, _pos, _name, _facing) => {
-                if data.entities.ids.contains(&entity_id) {
-                    let mut anim_desc = None;
-                    if data.entities.typ[&entity_id] == EntityType::Player {
-                        anim_desc = Some(("player_idle", config.idle_speed));
-                    } else if data.entities.name[&entity_id] == EntityName::Key {
-                        anim_desc = Some(("key", config.key_speed));
-                    } else if data.entities.name[&entity_id] == EntityName::SpikeTrap {
-                        anim_desc = Some(("spikes", config.idle_speed));
-                    } else if data.entities.name[&entity_id] == EntityName::Pawn {
-                        anim_desc = Some(("elf_idle", config.idle_speed));
-                    } else if data.entities.name[&entity_id] == EntityName::Gol {
-                        anim_desc = Some(("gol_idle", config.idle_speed));
-                    } else if data.entities.name[&entity_id] == EntityName::Armil {
-                        anim_desc = Some(("armil_idle", config.idle_speed));
-                    } else if data.entities.name[&entity_id] == EntityName::Lantern {
-                        anim_desc = Some(("lantern", config.fire_speed));
-                    }
-
-                    if let Some((name, speed)) = anim_desc {
-                        let anim_key = self.loop_sprite(name, speed);
-                        data.entities.animation[&entity_id].push_front(anim_key);
-                    }
+                if !data.entities.ids.contains(&entity_id) {
+                    panic!("Drawing entity that was created and removed within the same frame?");
                 }
+
+                self.play_idle_animation(entity_id, data, config);
             }
 
             Msg::PlayerTurn => {
@@ -748,9 +715,8 @@ pub struct DisplayState {
     pub effects: Vec<Effect>,
 
     // animation information
-    pub animations: IndexMap<AnimKey, Animation>,
+    pub animations: IndexMap<EntityId, VecDeque<Animation>>,
     pub next_anim_key: i64,
-
 
     // sprites drawn this frame
     pub drawn_sprites: IndexMap<EntityId, Sprite>,
@@ -773,7 +739,7 @@ impl DisplayState {
             sprites: IndexMap::new(),
             next_sprite_key: 0,
             effects: Vec::new(),
-            animations: IndexMap::new(),
+            animations: IndexMap::<EntityId, VecDeque<Animation>>::new(),
             next_anim_key: 0,
             drawn_sprites: IndexMap::new(),
             impressions: Vec::new(),
@@ -790,27 +756,15 @@ impl DisplayState {
             }
         }
 
-        //Msg::SpawnedObject(entity_id, _typ, _pos, _name) => {
-        //    if config.idle_animations && data.entities.ids.contains(&entity_id) {
-        //        let mut anim_desc = None;
-        //        if data.entities.typ[&entity_id] == EntityType::Player {
-        //            anim_desc = Some(("player_idle", config.idle_speed));
-        //        } else if data.entities.name[&entity_id] == EntityName::Key {
-        //            anim_desc = Some(("key", config.key_speed));
-        //        } else if data.entities.name[&entity_id] == EntityName::SpikeTrap {
-        //            anim_desc = Some(("spikes", config.idle_speed));
-        //        } else if data.entities.name[&entity_id] == EntityName::Pawn {
-        //            anim_desc = Some(("elf_idle", config.idle_speed));
-        //        } else if data.entities.name[&entity_id] == EntityName::Gol {
-        //            anim_desc = Some(("gol_idle", config.idle_speed));
-        //        }
         panic!(format!("Could not find sprite '{}'", name));
     }
 
     pub fn update_animations(&mut self, dt: f32) {
-        for anim in self.animations.values_mut() {
-            if let Some(sprite_anim) = anim.sprite_anim_mut() {
-                sprite_anim.step(dt);
+        for anims in self.animations.values_mut() {
+            if let Some(anim) = anims.get_mut(0) {
+                if let Some(sprite_anim) = anim.sprite_anim_mut() {
+                    sprite_anim.step(dt);
+                }
             }
         }
     }
@@ -820,44 +774,38 @@ impl DisplayState {
                        sprite: Sprite,
                        pos: Pos,
                        color: Color) {
-
-        let sprite_index;
-        let sprite_key;
-        match sprite {
-            Sprite::Sprite(index, key) => {
-                sprite_index = index as usize;
-                sprite_key = key;
-            },
-
-            Sprite::Char(chr) => {
-                sprite_index = chr as usize;
-                sprite_key = self.lookup_spritekey("tiles");
-            },
-        }
-
-        let sprite = &mut self.sprites[&sprite_key];
-        sprite.draw_sprite_at_cell(panel, sprite_index, pos, color, 0.0);
+        let sprite_sheet = &mut self.sprites[&sprite.key];
+        sprite_sheet.draw_sprite_at_cell(panel, sprite.index as usize, pos, color, 0.0);
     }
 
     pub fn play_effect(&mut self, effect: Effect) {
         self.effects.push(effect);
     }
-}
 
+    pub fn play_animation(&mut self, entity_id: EntityId, animation: Animation) {
+        // ensure that the entity has an animation vec. This is called on entity
+        // spawn, so it is not necessary in the other animation functions.
+        if self.animations.get(&entity_id).is_none() {
+            self.animations[&entity_id] = VecDeque::new();
+        }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct AnimationResult {
-    pub done: bool,
-    pub sprite: Option<Sprite>,
-}
+        self.clear_animations(entity_id);
+        self.append_animation(entity_id, animation);
+    }
 
-impl AnimationResult {
-    pub fn new() -> AnimationResult {
-        let sprite: Option<Sprite> = None;
-        let done = false;
-        return AnimationResult { done, sprite};
+    pub fn append_animation(&mut self, entity_id: EntityId, animation: Animation) {
+        self.animations[&entity_id].push_back(animation);
+    }
+
+    pub fn clear_animations(&mut self, entity_id: EntityId) {
+        self.animations[&entity_id].clear();
+    }
+
+    pub fn pop_animation(&mut self, entity_id: EntityId) {
+        self.animations[&entity_id].pop_front();
     }
 }
+
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Impression {
@@ -877,35 +825,34 @@ pub struct SpriteSheet {
     pub name: String,
     pub num_sprites: usize,
     pub rows: usize,
+    pub cols: usize,
     pub width: usize,
     pub height: usize,
 }
 
 impl SpriteSheet {
-    pub fn new(name: String, texture: Texture, rows: usize) -> SpriteSheet {
+    pub fn new(name: String, texture: Texture) -> SpriteSheet {
         let tex_info = texture.query();
         let width = tex_info.width as usize;
         let height = tex_info.height as usize;
 
-        let num_sprites_per_row = width / FONT_WIDTH as usize;
-        let num_sprites = num_sprites_per_row * rows;
+        let rows = height / FONT_HEIGHT as usize;
+        let cols = width / FONT_WIDTH as usize;
+        let num_sprites = cols * rows;
 
         return SpriteSheet {
             texture,
             name,
             num_sprites,
             rows,
+            cols,
             width,
             height,
         };
     }
 
-    pub fn sprites_per_row(&self) -> usize {
-         return self.num_sprites / self.rows;
-    }
-
     pub fn num_cells(&self) -> (usize, usize) {
-        return (self.sprites_per_row(), self.rows);
+        return (self.cols, self.rows);
     }
 
     pub fn num_pixels(&self) -> (usize, usize) {
@@ -940,7 +887,6 @@ impl SpriteSheet {
         }
     }
 
-    // consider removing and just converting chars to usize
     pub fn draw_char(&mut self,
                      panel: &mut Panel<&mut WindowCanvas>,
                      chr: char,
@@ -959,7 +905,7 @@ impl SpriteSheet {
 
         let pos = Pos::new(cell.x * cell_width as i32, cell.y * cell_height as i32);
 
-        self.draw_sprite_full(panel, index, pos, color, rotation);
+        self.draw_sprite_full(panel, index, pos, color, rotation, false, false);
     }
 
     pub fn draw_sprite_full(&mut self,
@@ -967,7 +913,9 @@ impl SpriteSheet {
                             index: usize,
                             pos: Pos,
                             color: Color,
-                            rotation: f64) {
+                            rotation: f64,
+                            flip_horizontal: bool,
+                            flip_vertical: bool) {
         let cell_dims = panel.cell_dims();
 
         let src = self.sprite_src(index);
@@ -984,12 +932,12 @@ impl SpriteSheet {
         self.texture.set_alpha_mod(color.a);
 
         panel.target.copy_ex(&self.texture,
-                       Some(src),
-                       Some(dst),
-                       rotation,
-                       None,
-                       false,
-                       false).unwrap();
+                             Some(src),
+                             Some(dst),
+                             rotation,
+                             None,
+                             flip_horizontal,
+                             flip_vertical).unwrap();
     }
 
     pub fn draw_sprite_direction(&mut self,

@@ -123,7 +123,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
     /* Load Textures */
     load_sprites(&texture_creator, &mut display);
-    load_sprite(&texture_creator, &mut display, "resources/rustrogueliketiles.png", "tiles", 16);
+    load_sprite(&texture_creator, &mut display, "resources/rustrogueliketiles.png", "tiles");
 
     let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
     let font_texture = load_font(&ttf_context,
@@ -131,7 +131,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
                                  &mut display.targets.canvas_panel.target,
                                  "Monoid.ttf".to_string(),
                                  16);
-    display.add_spritesheet("font".to_string(), font_texture, 16);
+    display.add_spritesheet("font".to_string(), font_texture);
 
     /* Create Game Structure */
     let config = Config::from_file(CONFIG_NAME);

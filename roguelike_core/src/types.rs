@@ -17,7 +17,6 @@ use euclid::Point2D;
 use crate::ai::{Ai, Behavior};
 use crate::map::*;
 use crate::movement::*;
-use crate::animation::AnimKey;
 use crate::utils::*;
 use crate::config::Config;
 use crate::line::*;
@@ -949,9 +948,6 @@ pub struct Entities {
     pub stance: CompStore<Stance>,
     pub took_turn: CompStore<bool>,
 
-    // TODO should end up in animation system instead
-    pub animation: CompStore<VecDeque<AnimKey>>,
-
     // NOTE not sure about keeping these ones, or packaging into larger ones
     pub sound: CompStore<Pos>, // source position
     pub typ: CompStore<EntityType>,
@@ -1014,7 +1010,6 @@ impl Entities {
         self.name.insert(id, name);
         self.blocks.insert(id, blocks);
         self.direction.insert(id, Direction::Up);
-        self.animation.insert(id,  VecDeque::new());
         self.messages.insert(id,  Vec::new());
         self.needs_removal.insert(id,  false);
         self.status.insert(id,  StatusEffect::default());
@@ -1155,12 +1150,6 @@ impl Entities {
             matches!(self.fighter.get(&entity_id), Some(Fighter { hp: 0, .. } ));
     }
 
-    /// Set the entity's animation, removing any old animations in play
-    pub fn set_animation(&mut self, entity_id: EntityId, key: AnimKey) {
-        self.animation[&entity_id].clear();
-        self.animation[&entity_id].push_back(key);
-    }
-
     pub fn active_ais(&self) -> Vec<EntityId> {
         let mut ai_ids = Vec::new();
         // get entity ids for any active AI entity
@@ -1256,7 +1245,6 @@ impl Entities {
         move_component!(selected_item);
         move_component!(class);
         move_component!(skills);
-        move_component!(animation);
         move_component!(sound);
         move_component!(typ);
         move_component!(status);
@@ -1305,7 +1293,6 @@ impl Entities {
         self.selected_item.remove(&id);
         self.class.remove(&id);
         self.skills.remove(&id);
-        self.animation.remove(&id);
         self.sound.remove(&id);
         self.typ.remove(&id);
         self.status.remove(&id);

@@ -10,66 +10,69 @@ use roguelike_core::constants::*;
 use crate::display::*;
 
 
+/// load all png images in the resources/animations directory as sprites.
+/// This assumes that all sprites have the same width and height. Otherwise we
+/// will need a configuration file of some kind to specify the dimensions of the sprites.
 pub fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display: &mut Display) {
-    load_sprite(texture_creator, display, "resources/animations/player/Player_Idle.png", "player_idle", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/Player_Crouch.png", "player_crouching", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/Player_Idle_Dagger_Crouch.png", "player_crouch_dagger", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/player_attack.png", "player_attack", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/player_attack_Hammer.png", "player_attack_hammer", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/player_attack_Dagger.png", "player_attack_dagger", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/Player_Idle_Dagger.png", "player_idle_dagger", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/Player_Idle_Hammer.png", "player_idle_hammer", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/Player_Idle_Shield.png", "player_idle_shield", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/player_vault.png", "player_vault", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/player_wallkick.png", "player_wall_kick", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/Player_CrouchIdleDownRight.png", "player_crouch_down_right", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/Player_CrouchIdleRight.png", "player_crouch_right", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/Player_CrouchIdleUp.png", "player_crouch_up", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/Player_CrouchIdleUpRight.png", "player_crouch_up_right", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/PlayerIdle_RightDown.png", "player_stand_down_right", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/PlayerIdle_Right.png", "player_stand_right", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/PlayerIdle_Down.png", "player_stand_down", 1);
-    load_sprite(texture_creator, display, "resources/animations/player/PlayerIdle_RightUp.png", "player_stand_up_right", 1);
-    load_sprite(texture_creator, display, "resources/animations/monster1/Gol_Idle.png", "gol_idle", 1);
-    load_sprite(texture_creator, display, "resources/animations/monster1/Gol_Die.png", "gol_die", 1);
-    load_sprite(texture_creator, display, "resources/animations/monster3/Pawn_Idle.png", "elf_idle", 1);
-    load_sprite(texture_creator, display, "resources/animations/monster4/Armil_Idle.png", "armil_idle", 1);
-    load_sprite(texture_creator, display, "resources/animations/traps/DamageTrap.png", "spikes", 1);
-    load_sprite(texture_creator, display, "resources/rexpaint16x16.png", "font", 16);
-    load_sprite(texture_creator, display, "resources/animations/traps/McMuffin.png", "key", 1);
-    load_sprite(texture_creator, display, "resources/animations/FireLamp/Lantern_Idle.png", "lantern", 1);
-    load_sprite(texture_creator, display, "resources/shadowtiles.png", "shadows", 2);
+    // TODO remove
+    //load_sprite(texture_creator, display, "resources/animations/player/Player_Idle.png", "player_idle", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/Player_Crouch.png", "player_crouching", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/Player_Idle_Dagger_Crouch.png", "player_crouch_dagger", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/player_attack.png", "player_attack", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/player_attack_Hammer.png", "player_attack_hammer", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/player_attack_Dagger.png", "player_attack_dagger", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/Player_Idle_Dagger.png", "player_idle_dagger", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/Player_Idle_Hammer.png", "player_idle_hammer", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/Player_Idle_Shield.png", "player_idle_shield", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/player_vault.png", "player_vault", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/player_wallkick.png", "player_wall_kick", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/Player_CrouchIdleDownRight.png", "player_crouch_down_right", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/Player_CrouchIdleRight.png", "player_crouch_right", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/Player_CrouchIdleUp.png", "player_crouch_up", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/Player_CrouchIdleUpRight.png", "player_crouch_up_right", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/PlayerIdle_RightDown.png", "player_stand_down_right", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/PlayerIdle_Right.png", "player_stand_right", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/PlayerIdle_Down.png", "player_stand_down", 1);
+    //load_sprite(texture_creator, display, "resources/animations/player/PlayerIdle_RightUp.png", "player_stand_up_right", 1);
+    //load_sprite(texture_creator, display, "resources/animations/monster1/Gol_Idle.png", "gol_idle", 1);
+    //load_sprite(texture_creator, display, "resources/animations/monster1/Gol_Die.png", "gol_die", 1);
+    //load_sprite(texture_creator, display, "resources/animations/monster3/Pawn_Idle.png", "elf_idle", 1);
+    //load_sprite(texture_creator, display, "resources/animations/monster4/Armil_Idle.png", "armil_idle", 1);
+    //load_sprite(texture_creator, display, "resources/animations/traps/DamageTrap.png", "spikes", 1);
+    //load_sprite(texture_creator, display, "resources/rexpaint16x16.png", "font", 16);
+    //load_sprite(texture_creator, display, "resources/animations/traps/McMuffin.png", "key", 1);
+    //load_sprite(texture_creator, display, "resources/animations/FireLamp/Lantern_Idle.png", "lantern", 1);
+    //load_sprite(texture_creator, display, "resources/shadowtiles.png", "shadows", 2);
 
-    for entry in fs::read_dir("resources/animations/autoload/").unwrap() {
+    for entry in fs::read_dir("resources/animations/").unwrap() {
         let path = entry.unwrap().path();
 
         let file_name = path.as_path().to_str().unwrap();
         let sprite_name = path.as_path().file_stem().unwrap().to_str().unwrap();
         if let Ok(metadata) = path.metadata() {
             if metadata.is_file() && file_name.ends_with("png") {
-                load_sprite(texture_creator, display, file_name, &sprite_name, 1);
+                load_sprite(texture_creator, display, file_name, &sprite_name);
             }
         }
     }
 }
 
 pub fn load_sprite(texture_creator: &TextureCreator<WindowContext>,
-               display: &mut Display,
-               path: &str,
-               sprite_name: &str,
-               rows: usize) {
+                   display: &mut Display,
+                   path: &str,
+                   sprite_name: &str) {
     let texture = texture_creator.load_texture(path).expect("Could not load texture!");
-    display.add_spritesheet(sprite_name.to_string(), texture, rows);
+    display.add_spritesheet(sprite_name.to_string(), texture);
 }
 
 /// load a ttf font file and render all ascii characters onto a 16x16 grid.
 /// the resulting texture is then used for rendering by copying character squares
 /// for individual ascii characters.
 pub fn load_font(ttf_context: &Sdl2TtfContext,
-             texture_creator: &TextureCreator<WindowContext>,
-             canvas: &mut WindowCanvas,
-             file_name: String,
-             font_size: u16) -> Texture {
+                 texture_creator: &TextureCreator<WindowContext>,
+                 canvas: &mut WindowCanvas,
+                 file_name: String,
+                 font_size: u16) -> Texture {
     let font = ttf_context.load_font(format!("resources/{}", file_name), font_size).expect("Could not load font file!");
 
     let pixel_format = texture_creator.default_pixel_format();

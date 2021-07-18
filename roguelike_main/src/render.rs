@@ -9,8 +9,8 @@ use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::animation::{Sprite, Effect, Animation, AnimKey};
-use roguelike_core::utils::{item_primary_at, distance, move_towards, lerp_color, sub_pos, reach_by_mode, map_fill_metric};
+use roguelike_core::animation::{Sprite, Effect, Animation, AnimationResult};
+use roguelike_core::utils::{item_primary_at, lerp_color, sub_pos, reach_by_mode, map_fill_metric};
 use roguelike_core::perlin::Perlin;
 use roguelike_core::line::line;
 use roguelike_core::ai::*;
@@ -638,25 +638,25 @@ fn render_wall_shadow(pos: Pos, panel: &mut Panel<&mut WindowCanvas>, display_st
         if left_valid && !left_wall {
             // left
             let shadow_pos = Pos::new(x - 1, y);
-            let shadow_left_upper = Sprite::sprite(SHADOW_FULLTILE_LEFT as u32, shadow_sprite_key);
+            let shadow_left_upper = Sprite::new(SHADOW_FULLTILE_LEFT as u32, shadow_sprite_key);
             display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
         }
 
         if down_left_valid && !down_left_wall {
             let shadow_pos = Pos::new(x - 1, y + 1);
-            let shadow_left_lower = Sprite::sprite(SHADOW_FULLTILE_LEFT_DOWN as u32, shadow_sprite_key);
+            let shadow_left_lower = Sprite::new(SHADOW_FULLTILE_LEFT_DOWN as u32, shadow_sprite_key);
             display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
         }
 
         if down_valid && !down_wall {
             // lower
-            let shadow_lower_right = Sprite::sprite(SHADOW_FULLTILE_DOWN as u32, shadow_sprite_key);
+            let shadow_lower_right = Sprite::new(SHADOW_FULLTILE_DOWN as u32, shadow_sprite_key);
             let shadow_pos = Pos::new(x, y + 1);
             display_state.draw_sprite(panel, shadow_lower_right, shadow_pos, game.config.color_shadow);
         }
 
         if down_left_valid && !down_left_wall {
-            let shadow_lower_left = Sprite::sprite(SHADOW_FULLTILE_DOWN_LEFT as u32, shadow_sprite_key);
+            let shadow_lower_left = Sprite::new(SHADOW_FULLTILE_DOWN_LEFT as u32, shadow_sprite_key);
             let shadow_pos = Pos::new(x - 1, y + 1);
             display_state.draw_sprite(panel, shadow_lower_left, shadow_pos, game.config.color_shadow);
         }
@@ -664,28 +664,28 @@ fn render_wall_shadow(pos: Pos, panel: &mut Panel<&mut WindowCanvas>, display_st
         // left
         if left_valid {
             let shadow_pos = Pos::new(x - 1, y);
-            let shadow_left_upper = Sprite::sprite(SHADOW_INTERTILE_LEFT as u32, shadow_sprite_key);
+            let shadow_left_upper = Sprite::new(SHADOW_INTERTILE_LEFT as u32, shadow_sprite_key);
             display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
         }
 
         // left down
         if down_left_valid {
             let shadow_pos = Pos::new(x - 1, y + 1);
-            let shadow_left_lower = Sprite::sprite(SHADOW_INTERTILE_LEFT_DOWN as u32, shadow_sprite_key);
+            let shadow_left_lower = Sprite::new(SHADOW_INTERTILE_LEFT_DOWN as u32, shadow_sprite_key);
             display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
         }
     } else if tile.bottom_wall == Wall::ShortWall {
         if down_valid {
             // lower
             if down_valid {
-                let shadow_lower_right = Sprite::sprite(SHADOW_INTERTILE_DOWN as u32, shadow_sprite_key);
+                let shadow_lower_right = Sprite::new(SHADOW_INTERTILE_DOWN as u32, shadow_sprite_key);
                 let shadow_pos = Pos::new(x, y + 1);
                 display_state.draw_sprite(panel, shadow_lower_right, shadow_pos, game.config.color_shadow);
             }
 
             // left down
             if down_left_valid {
-                let shadow_lower_left = Sprite::sprite(SHADOW_INTERTILE_DOWN_LEFT as u32, shadow_sprite_key);
+                let shadow_lower_left = Sprite::new(SHADOW_INTERTILE_DOWN_LEFT as u32, shadow_sprite_key);
                 let shadow_pos = Pos::new(x - 1, y + 1);
                 display_state.draw_sprite(panel, shadow_lower_left, shadow_pos, game.config.color_shadow);
             }
@@ -917,51 +917,71 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
     let mut animation_result = AnimationResult::new();
 
     let pos = game.data.entities.pos[&entity_id];
+    animation_result.pos = pos;
+
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     // only draw if within the map (outside is (-1, -1) like if in inventory)
-    // and not in limbo.
-    if game.data.map.is_within_bounds(pos) &&
-       !game.data.entities.needs_removal[&entity_id] {
-        let is_in_fov = 
-           game.data.is_in_fov(player_id, entity_id, &game.config) ||
-           game.settings.god_mode;
+    // and not about to be removed.
+    if !game.data.map.is_within_bounds(pos) ||
+       game.data.entities.needs_removal[&entity_id] {
+           return None;
+    }
 
-        if is_in_fov {
-            if let Some(anim_key) = game.data.entities.animation[&entity_id].get(0) {
-                animation_result = 
-                    render_animation(*anim_key,
-                                     entity_id,
-                                     is_in_fov,
-                                     panel,
-                                     display_state,
-                                     &mut game.data,
-                                     &game.settings,
-                                     &game.config);
+    let is_in_fov = 
+       game.data.is_in_fov(player_id, entity_id, &game.config) ||
+       game.settings.god_mode;
 
-                if animation_result.done {
-                    game.data.entities.animation[&entity_id].pop_front();
-                }
-            } else {
-                let color = game.data.entities.color[&entity_id];
+    if is_in_fov {
+        if let Some(mut anims) = display_state.animations.swap_remove(&entity_id) {
+            if let Some(mut anim) = anims.pop_front() {
+                animation_result = anim.step(game.settings.dt, &game.config);
 
-                let chr = game.data.entities.chr[&entity_id];
-                let sprite = Sprite::char(chr);
-                display_state.draw_sprite(panel, sprite, pos, color);
-                animation_result.sprite = Some(sprite);
-            }
-        } else {
-            if game.data.entities.typ[&entity_id] == EntityType::Enemy {
-                game.data.entities.status[&player_id].extra_fov += 1;
-                let is_in_fov_ext = 
-                   game.data.is_in_fov(player_id, entity_id, &game.config);
-                game.data.entities.status[&player_id].extra_fov -= 1;
+                if let Animation::PlayEffect(effect) = anim {
+                    display_state.play_effect(effect);
+                } else {
+                    if let Some(sprite) = animation_result.sprite {
+                        let mut color = game.data.entities.color[&entity_id];
 
-                if is_in_fov_ext {
-                    if display_state.impressions.iter().all(|impresssion| impresssion.pos != pos) {
-                        let impression_sprite = Sprite::char(ENTITY_UNKNOWN as char);
-                        display_state.impressions.push(Impression::new(impression_sprite, pos));
+                        // unarmed traps are grayed out
+                        if game.data.entities.armed.get(&entity_id) == Some(&false) {
+                            color = game.config.color_warm_grey;
+                        }
+
+                        display_state.draw_sprite(panel, sprite, animation_result.pos, color);
                     }
+
+                    // for animations other then effects, keep playing by pushing to front of
+                    // animation sequence.
+                    if !animation_result.done {
+                        anims.push_front(anim);
+                    }
+                }
+            }
+
+            display_state.animations[&entity_id] = anims;
+        } else {
+            let color = game.data.entities.color[&entity_id];
+
+            let tiles = display_state.lookup_spritekey("tiles");
+            let chr = game.data.entities.chr[&entity_id];
+            let sprite = Sprite::new(chr as u32, tiles);
+            display_state.draw_sprite(panel, sprite, pos, color);
+            animation_result.sprite = Some(sprite);
+        }
+    } else {
+        // if not in FoV, see if we need to add an impression for a golem
+        if game.data.entities.typ[&entity_id] == EntityType::Enemy {
+            game.data.entities.status[&player_id].extra_fov += 1;
+            let is_in_fov_ext = 
+               game.data.is_in_fov(player_id, entity_id, &game.config);
+            game.data.entities.status[&player_id].extra_fov -= 1;
+
+            if is_in_fov_ext {
+                if display_state.impressions.iter().all(|impresssion| impresssion.pos != pos) {
+                    let tiles = display_state.lookup_spritekey("tiles");
+                    let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
+                    display_state.impressions.push(Impression::new(impression_sprite, pos));
                 }
             }
         }
@@ -1030,90 +1050,6 @@ fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Dis
     }
 }
 */
-
-fn render_animation(anim_key: AnimKey,
-                    entity_id: EntityId,
-                    is_in_fov: bool,
-                    panel: &mut Panel<&mut WindowCanvas>,
-                    display_state: &mut DisplayState,
-                    data: &mut GameData,
-                    settings: &GameSettings,
-                    config: &Config) -> AnimationResult {
-
-    let pos = data.entities.pos[&entity_id];
-    let mut color = data.entities.color[&entity_id];
-
-    // TODO should also freeze animation or leave at first element to indicate disarmed trap
-    if data.entities.armed.get(&entity_id) == Some(&false) {
-        color = config.color_warm_grey;
-    }
-
-    let mut animation_result: AnimationResult = AnimationResult::new();
-    match display_state.animations[&anim_key].clone() {
-        Animation::Between(ref mut sprite_anim, start, end, ref mut dist, blocks_per_sec) => {
-           if settings.god_mode || is_in_fov {
-               *dist = *dist + (blocks_per_sec / config.frame_rate as f32); 
-               let num_blocks = *dist as usize;
-
-               let draw_pos = move_towards(start, end, num_blocks);
-
-               let sprite = sprite_anim.sprite();
-               display_state.draw_sprite(panel,
-                                         sprite,
-                                         draw_pos,
-                                         color);
-               animation_result.sprite = Some(sprite);
-
-               display_state.animations[&anim_key] =
-                   Animation::Between(*sprite_anim, start, end, *dist, blocks_per_sec);
-
-               animation_result.done = *dist >= distance(start, end) as f32;
-           }
-        }
-
-        Animation::Loop(ref mut sprite_anim) => {
-           if settings.god_mode || is_in_fov {
-                let sprite = sprite_anim.sprite();
-                display_state.draw_sprite(panel,
-                                          sprite,
-                                          pos,
-                                          color);
-                animation_result.sprite = Some(sprite);
-
-                display_state.animations[&anim_key] =
-                   Animation::Loop(*sprite_anim);
-
-                // a looping animation never finishes
-                animation_result.done = false;
-            }
-        }
-
-        Animation::PlayEffect(effect) => {
-            display_state.play_effect(effect);
-            animation_result.done = true;
-
-            // NOTE the sprite is not updated here- this may cause entity impressions to not work
-            // in edge cases where an effect is playing.
-        }
-
-        Animation::Once(ref mut sprite_anim) => {
-           if settings.god_mode || is_in_fov {
-                if !sprite_anim.looped {
-                    let sprite = sprite_anim.sprite();
-                    display_state.draw_sprite(panel, sprite, pos, color);
-                    animation_result.sprite = Some(sprite);
-
-                    display_state.animations[&anim_key] =
-                       Animation::Once(*sprite_anim);
-                }
-
-                animation_result.done = sprite_anim.looped;
-            }
-        }
-    }
-
-    return animation_result;
-}
 
 fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                    display_state: &mut DisplayState,

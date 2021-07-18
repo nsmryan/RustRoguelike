@@ -1,10 +1,10 @@
 use crate::types::{Name, Pos};
+use crate::utils::{distance, move_towards};
 use crate::map::Aoe;
+use crate::config::Config;
 
 
 pub type SpriteKey = i64;
-
-pub type AnimKey = i64;
 
 pub type SpriteIndex = f32;
 
@@ -16,18 +16,14 @@ pub enum Effect {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Sprite {
-    Char(char),
-    Sprite(u32, SpriteKey), // index, sprite key
+pub struct Sprite {
+    pub index: u32, 
+    pub key: SpriteKey,
 }
 
 impl Sprite {
-    pub fn sprite(index: u32, sheet: SpriteKey) -> Sprite {
-        return Sprite::Sprite(index, sheet);
-    }
-
-    pub fn char(chr: char) -> Sprite {
-        return Sprite::Char(chr);
+    pub fn new(index: u32, key: SpriteKey) -> Sprite {
+        return Sprite { index, key };
     }
 }
 
@@ -58,21 +54,6 @@ impl SpriteAnim {
         };
     }
 
-    pub fn make_anim(name: String,
-                     sprite_key: SpriteKey,
-                     max_index: SpriteIndex,
-                     speed: f32) -> SpriteAnim {
-        return SpriteAnim {
-            name: name.into(),
-            sprite_key,
-            max_index,
-            index: 0.0,
-            start_index: 0.0,
-            speed,
-            looped: false,
-        };
-    }
-
     /// step a sprite forward once, returning whether it reached the end of its
     /// animation or not.
     pub fn step(&mut self, dt: f32) {
@@ -88,9 +69,26 @@ impl SpriteAnim {
     }
 
     pub fn sprite(&self) -> Sprite {
-        return Sprite::sprite(self.index as u32, self.sprite_key);
+        return Sprite::new(self.index as u32, self.sprite_key);
     }
 }
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct AnimationResult {
+    pub done: bool,
+    pub sprite: Option<Sprite>,
+    pub pos: Pos,
+}
+
+impl AnimationResult {
+    pub fn new() -> AnimationResult {
+        let sprite: Option<Sprite> = None;
+        let done = false;
+        let pos = Pos::new(-1, -1);
+        return AnimationResult { done, sprite, pos };
+    }
+}
+
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Animation {
@@ -108,6 +106,50 @@ impl Animation {
             Animation::Once(sprite_anim) => return Some(sprite_anim),
             Animation::PlayEffect(_) => return None,
         }
+    }
+
+    pub fn step(&mut self, dt: f32, config: &Config) -> AnimationResult {
+        let mut animation_result = AnimationResult::new();
+        match self {
+            Animation::Between(ref mut sprite_anim, start, end, ref mut dist, blocks_per_sec) => {
+               *dist = *dist + (*blocks_per_sec / config.frame_rate as f32); 
+               let num_blocks = *dist as usize;
+
+               let draw_pos = move_towards(*start, *end, num_blocks);
+
+               let sprite = sprite_anim.sprite();
+               animation_result.sprite = Some(sprite);
+
+               animation_result.pos = draw_pos;
+
+               animation_result.done = *dist >= distance(*start, *end) as f32;
+            }
+
+            Animation::Loop(ref mut sprite_anim) => {
+                let sprite = sprite_anim.sprite();
+                animation_result.sprite = Some(sprite);
+
+                sprite_anim.step(dt);
+
+                // a looping animation never finishes
+                animation_result.done = false;
+            }
+
+            Animation::PlayEffect(_effect) => {
+                animation_result.done = true;
+            }
+
+            Animation::Once(ref mut sprite_anim) => {
+                if !sprite_anim.looped {
+                    let sprite = sprite_anim.sprite();
+                    animation_result.sprite = Some(sprite);
+                }
+
+                animation_result.done = sprite_anim.looped;
+            }
+        }
+
+        return animation_result;
     }
 }
 
