@@ -935,7 +935,7 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
     if is_in_fov {
         if let Some(mut anims) = display_state.animations.swap_remove(&entity_id) {
             if let Some(mut anim) = anims.pop_front() {
-                animation_result = anim.step(game.settings.dt, &game.config);
+                animation_result = anim.step(pos, game.settings.dt, &game.config);
 
                 if let Animation::PlayEffect(effect) = anim {
                     display_state.play_effect(effect);
@@ -957,9 +957,9 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
                         anims.push_front(anim);
                     }
                 }
-            }
 
-            display_state.animations[&entity_id] = anims;
+                display_state.animations.insert(entity_id, anims);
+            }
         } else {
             let color = game.data.entities.color[&entity_id];
 
@@ -1015,41 +1015,6 @@ fn render_entity_type(typ: EntityType, panel: &mut Panel<&mut WindowCanvas>, dis
         }
     }
 }
-
-// TODO this has been replaced by render_entity_type
-/*
-fn render_order(typ: EntityType) -> usize {
-    let order = &[ EntityType::Other, EntityType::Trigger,
-                   EntityType::Column, EntityType::Item, EntityType::Energy,
-                   EntityType::Enemy, EntityType::Player];
-    return order.iter().position(|t| *t == typ).expect(&format!("Entity type {:?} not expected!", typ));
-}
-
-/// Render each object in the game, filtering for objects not currently visible
-fn render_entities(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    display_state.drawn_sprites.clear();
-
-    let mut ids = game.data.entities.ids.clone();
-
-    let compare_render_order = |id0: &EntityId, id1: &EntityId| -> Ordering {
-        let order0 = render_order(game.data.entities.typ[id0]);
-        let order1 = render_order(game.data.entities.typ[id1]);
-        return order0.cmp(&order1);
-    };
-
-    ids.sort_unstable_by(compare_render_order);
-
-    for entity_id in ids.iter() {
-        if !game.data.entities.needs_removal[entity_id] {
-            let maybe_sprite = render_entity(panel, *entity_id, display_state, game);
-
-            if let Some(sprite) = maybe_sprite {
-                display_state.drawn_sprites.insert(*entity_id, sprite);
-            }
-        }
-    }
-}
-*/
 
 fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                    display_state: &mut DisplayState,

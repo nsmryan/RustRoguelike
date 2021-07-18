@@ -108,8 +108,10 @@ impl Animation {
         }
     }
 
-    pub fn step(&mut self, dt: f32, config: &Config) -> AnimationResult {
+    pub fn step(&mut self, pos: Pos, dt: f32, config: &Config) -> AnimationResult {
         let mut animation_result = AnimationResult::new();
+        animation_result.pos = pos;
+
         match self {
             Animation::Between(ref mut sprite_anim, start, end, ref mut dist, blocks_per_sec) => {
                *dist = *dist + (*blocks_per_sec / config.frame_rate as f32); 

@@ -124,6 +124,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     /* Load Textures */
     load_sprites(&texture_creator, &mut display);
     load_sprite(&texture_creator, &mut display, "resources/rustrogueliketiles.png", "tiles");
+    load_sprite(&texture_creator, &mut display, "resources/shadowtiles.png", "shadows");
 
     let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
     let font_texture = load_font(&ttf_context,

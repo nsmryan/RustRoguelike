@@ -59,8 +59,8 @@ impl Display {
     }
 
     pub fn add_spritesheet(&mut self, name: String, texture: Texture) {
-        let sprite_sheet = SpriteSheet::new(name, texture);
         let sprite_key = self.state.next_sprite_key;
+        let sprite_sheet = SpriteSheet::new(name, texture);
         self.state.next_sprite_key += 1;
         self.state.sprites.insert(sprite_key, sprite_sheet);
     }
@@ -122,27 +122,51 @@ impl Display {
             } else if data.using(entity_id, Item::Shield).is_some() {
                 return Some(self.loop_sprite("player_idle_shield", config.idle_speed));
             } else if stance == Stance::Crouching {
+                let mut sprite;
+                // TODO get names correct, and add horiz/vert flip
                 match data.entities.direction[&player_id] {
                     Direction::Up => {
-                        return Some(self.loop_sprite("player_crouch_up", config.idle_speed));
+                        sprite = self.loop_sprite("player_crouch_up", config.idle_speed);
                     }
 
                     Direction::Down => {
-                        return Some(self.loop_sprite("player_crouch_up", config.idle_speed));
+                        sprite = self.loop_sprite("player_crouch_down", config.idle_speed);
                     }
 
-                    _ => {
-                        // TODO finish directional animation system
+                    Direction::Left => {
+                        sprite = self.loop_sprite("player_crouch_down", config.idle_speed);
+                    }
+
+                    Direction::Right => {
+                        sprite = self.loop_sprite("player_crouch_down", config.idle_speed);
+                    }
+
+                    Direction::UpRight => {
+                        sprite = self.loop_sprite("player_crouch_down", config.idle_speed);
+                    }
+
+                    Direction::UpLeft => {
+                        sprite = self.loop_sprite("player_crouch_down", config.idle_speed);
+                    }
+
+                    Direction::DownRight => {
+                        sprite = self.loop_sprite("player_crouch_down", config.idle_speed);
+                    }
+
+                    Direction::DownLeft => {
+                        sprite = self.loop_sprite("player_crouch_down", config.idle_speed);
                     }
                 }
+
+                return Some(sprite);
             } else {
-                return Some(self.loop_sprite("player_idle", config.idle_speed));
+                return Some(self.loop_sprite("player_crouch", config.idle_speed));
             }
         } else {
             if data.entities.name[&entity_id] == EntityName::Key {
                 return Some(self.loop_sprite("key", config.idle_speed));
             } else if data.entities.name[&entity_id] == EntityName::SpikeTrap {
-                return Some(self.loop_sprite("spikes", config.idle_speed));
+                return Some(self.loop_sprite("trap_damage", config.idle_speed));
             } else if data.entities.name[&entity_id] == EntityName::Pawn {
                 return Some(self.loop_sprite("pawn_idle", config.idle_speed));
             } else if data.entities.name[&entity_id] == EntityName::Gol {
@@ -298,11 +322,9 @@ impl Display {
             }
 
             Msg::SpawnedObject(entity_id, _typ, _pos, _name, _facing) => {
-                if !data.entities.ids.contains(&entity_id) {
-                    panic!("Drawing entity that was created and removed within the same frame?");
+                if data.entities.ids.contains(&entity_id) {
+                    self.play_idle_animation(entity_id, data, config);
                 }
-
-                self.play_idle_animation(entity_id, data, config);
             }
 
             Msg::PlayerTurn => {
@@ -786,7 +808,7 @@ impl DisplayState {
         // ensure that the entity has an animation vec. This is called on entity
         // spawn, so it is not necessary in the other animation functions.
         if self.animations.get(&entity_id).is_none() {
-            self.animations[&entity_id] = VecDeque::new();
+            self.animations.insert(entity_id, VecDeque::new());
         }
 
         self.clear_animations(entity_id);
@@ -1012,18 +1034,20 @@ impl SpriteSheet {
         self.texture.set_alpha_mod(color.a);
 
         panel.target.copy_ex(&self.texture,
-                       Some(src),
-                       Some(dst),
-                       rotation,
-                       None,
-                       false,
-                       false).unwrap();
+                             Some(src),
+                             Some(dst),
+                             rotation,
+                             None,
+                             false,
+                             false).unwrap();
     }
 
     fn sprite_src(&mut self, index: usize) -> Rect {
-        let (num_cells_x, _num_cells_y) = self.num_cells();
+        let (num_cells_x, num_cells_y) = self.num_cells();
         let sprite_x = index % num_cells_x;
         let sprite_y = index / num_cells_x;
+
+        assert!(sprite_y < num_cells_y);
 
         let (sprite_width, sprite_height) = self.sprite_dims();
         let src = Rect::new((sprite_x * sprite_width) as i32,
