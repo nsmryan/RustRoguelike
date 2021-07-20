@@ -77,6 +77,7 @@ pub enum Msg {
     SetFacing(EntityId, Direction),
     Facing(EntityId, Direction),
     AiAttack(EntityId),
+    RemovedEntity(EntityId),
 }
 
 impl fmt::Display for Msg {
@@ -159,6 +160,7 @@ impl fmt::Display for Msg {
             Msg::SetFacing(entity_id, direction) => write!(f, "set_facing {} {}", entity_id, direction),
             Msg::Facing(entity_id, direction) => write!(f, "facing {} {}", entity_id, direction),
             Msg::AiAttack(entity_id) => write!(f, "ai_attack {}", entity_id),
+            Msg::RemovedEntity(entity_id) => write!(f, "removed {}", entity_id),
         }
     }
 }

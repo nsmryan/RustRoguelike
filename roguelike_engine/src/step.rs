@@ -4,7 +4,7 @@ use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::ai::*;
 use roguelike_core::map::*;
-use roguelike_core::messaging::Msg;
+use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::movement::{Direction, MoveMode};
 #[cfg(test)]
 use roguelike_core::utils::*;
@@ -20,7 +20,7 @@ use crate::make_map::*;
 
 pub fn step_logic(game: &mut Game) -> bool {
     // clean up removable entities
-    game.data.entities.clean_entities();
+    clean_entities(&mut game.data.entities, &mut game.msg_log);
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
@@ -418,3 +418,18 @@ fn test_ai_investigate_moves() {
     let direction = Direction::from_positions(start_pos, sound_pos).unwrap();
     assert_eq!(Msg::TryMove(gol, direction, 1, MoveMode::Walk), game.msg_log.messages[0]);
 }
+
+fn clean_entities(entities: &mut Entities, msg_log: &mut MsgLog) {
+    let mut remove_ids: Vec<EntityId> = Vec::new();
+    for id in entities.ids.iter() {
+        if entities.needs_removal[id] {
+            remove_ids.push(*id);
+        }
+    }
+
+    for id in remove_ids {
+        msg_log.log(Msg::RemovedEntity(id));
+        entities.remove_entity(id);
+    }
+}
+

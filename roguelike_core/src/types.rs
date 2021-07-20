@@ -1180,19 +1180,6 @@ impl Entities {
         }
     }
 
-    pub fn clean_entities(&mut self) {
-        let mut remove_ids: Vec<EntityId> = Vec::new();
-        for id in self.ids.iter() {
-            if self.needs_removal[id] {
-                remove_ids.push(*id);
-            }
-        }
-
-        for id in remove_ids {
-            self.remove_entity(id);
-        }
-    }
-
     // NOTE cloning entities may not remap all entity ids that an entity tracks!
     // this could cause subtle problems, so this is really only for level generation.
     pub fn clone_entity(&mut self, other: &Entities, entity_id: EntityId) {

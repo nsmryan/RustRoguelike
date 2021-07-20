@@ -303,6 +303,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
 
         GameCmd::Remove(id) => {
             game.data.entities.remove_entity(*id);
+            game.msg_log.log(Msg::RemovedEntity(*id));
             return "".to_string();
         }
 
