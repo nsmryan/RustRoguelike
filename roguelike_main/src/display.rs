@@ -84,8 +84,8 @@ impl Display {
         return SpriteAnim::new(name, sprite_key, 0.0, max_index as f32, speed);
     }
 
-    pub fn font_sprite(&self, chr: char) -> SpriteAnim {
-        let sprite_key = self.state.lookup_spritekey(&"font".to_string());
+    pub fn static_sprite(&self, sprite_sheet: &str, chr: char) -> SpriteAnim {
+        let sprite_key = self.state.lookup_spritekey(sprite_sheet);
         return SpriteAnim::new(format!("{}", chr),
                                sprite_key,
                                chr as i32 as SpriteIndex,
@@ -186,14 +186,14 @@ impl Display {
             }
 
             Msg::ItemThrow(_thrower, item_id, start, _end) => {
-                // NOTE we use the entity's position instead of 'end' because we
+                // this uses the entity's position instead of 'end' because we
                 // want where it hit, not where it was thrown to.
                 let end = data.entities.pos[&item_id];
 
                 let sound_aoe = aoe_fill(&data.map, AoeEffect::Sound, end, config.sound_radius_stone, config);
 
                 let chr = data.entities.chr[&item_id];
-                let item_sprite = self.font_sprite(chr);
+                let item_sprite = self.static_sprite("tiles", chr);
 
                 let move_anim = Animation::Between(item_sprite, start, end, 0.0, config.item_throw_speed);
                 let item_anim = Animation::PlayEffect(Effect::Sound(sound_aoe, 0.0));
@@ -1012,7 +1012,10 @@ impl SpriteSheet {
         let sprite_x = index % num_cells_x;
         let sprite_y = index / num_cells_x;
 
-        assert!(sprite_y < num_cells_y);
+        //if sprite_y >= num_cells_y {
+            //dbg!(sprite_y, num_cells_x, num_cells_y);
+        //}
+        //assert!(sprite_y < num_cells_y);
 
         let (sprite_width, sprite_height) = self.sprite_dims();
         let src = Rect::new((sprite_x * sprite_width) as i32,

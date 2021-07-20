@@ -5,7 +5,6 @@ use std::str::FromStr;
 
 use serde::{Serialize, Deserialize};
 
-use roguelike_core::constants::*;
 use roguelike_core::types::*;
 use roguelike_core::movement::Direction;
 use roguelike_core::config::Config;
@@ -15,7 +14,9 @@ use crate::game::*;
 use crate::actions::*;
 
 
-const TARGET_CODES: &[char] = &['z', 'x', 'c', 'a', 's', 'd'];
+const SKILL_KEYS: &[char] = &['a', 's', 'd'];
+const ITEM_KEYS: &[char] = &['z', 'x', 'c'];
+
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum KeyDir {
@@ -50,12 +51,12 @@ pub enum Target {
 }
 
 impl Target {
-    pub fn from_index(index: usize) -> Target {
-        if index < PLAYER_MAX_ITEMS {
-            return Target::Item(index);
-        } else {
-            return Target::Skill(index - PLAYER_MAX_ITEMS);
-        }
+    pub fn item(index: usize) -> Target {
+        return Target::Item(index);
+    }
+
+    pub fn skill(index: usize) -> Target {
+        return Target::Skill(index);
     }
 }
 
@@ -223,42 +224,47 @@ impl Input {
     }
 
     fn handle_char_up(&mut self, chr: char, settings: &GameSettings) -> InputAction {
-        let action;
-
         // if key was held, do nothing when it is up to avoid a final press
         if self.is_held(chr) {
             return InputAction::None;
         }
         self.char_held.remove(&chr);
 
-        // NOTE this could be moved to the normal mapping
-        for (index, target_chr) in TARGET_CODES.iter().enumerate() {
-            if chr == *target_chr {
-                let target = Target::from_index(index as usize);
-
-                if self.cursor {
-                    self.target = None;
-
-                    if let Target::Item(index) = target {
-                        // alternate is used so you throw items
-                        return InputAction::CursorApplyItem(ActionMode::Alternate, index);
-                    } else if let Target::Skill(index) = target {
-                        // TODO should this be primary or alternate?
-                        return InputAction::CursorApplySkill(ActionMode::Alternate, index);
-                    }
-                } else {
-                    // target keys don't do anything outside of cursor mode,
-                    // so just return here.
-                    // NOTE should we still allow skills, but only ones that make
-                    // sense with no location?
-                    return InputAction::None;
-                }
-            }
+        match chr {
+            'z' => return self.use_item(0),
+            'x' => return self.use_item(1),
+            'c' => return self.use_item(2),
+            'a' => return self.use_skill(0),
+            's' => return self.use_skill(1),
+            'd' => return self.use_skill(2),
+            _ => return self.key_to_action(chr, settings),
         }
+    }
 
-        action = self.key_to_action(chr, settings);
+    fn use_item(&mut self, item_index: usize) -> InputAction {
+        if self.cursor {
+            self.target = None;
 
-        return action;
+            // alternate is used so you throw items
+            return InputAction::CursorApplyItem(ActionMode::Alternate, item_index);
+        } else {
+            // item use only works outside of cursor mode when an arrow key is released,
+            // not when the item key is released.
+            return InputAction::None;
+        }
+    }
+
+    fn use_skill(&mut self, skill_index: usize) -> InputAction {
+        if self.cursor {
+            // NOTE should this be primary or alternate?
+            return InputAction::CursorApplySkill(ActionMode::Alternate, skill_index);
+        } else {
+            // target keys don't do anything outside of cursor mode,
+            // so just return here.
+            // NOTE should we still allow skills, but only ones that make
+            // sense with no location?
+            return InputAction::None;
+        }
     }
 
     fn handle_char_down(&mut self, chr: char) -> InputAction {
@@ -273,10 +279,12 @@ impl Input {
             action = InputAction::CursorToggle;
         }
 
-        for (index, target_chr) in TARGET_CODES.iter().enumerate() {
-            if chr == *target_chr {
-                self.target = Some(Target::from_index(index as usize));
-            }
+        if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+            self.target = Some(Target::skill(index as usize));
+        }
+
+        if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+            self.target = Some(Target::item(index as usize));
         }
 
         return action;
