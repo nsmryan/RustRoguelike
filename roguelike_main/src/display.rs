@@ -14,9 +14,10 @@ use roguelike_core::constants::*;
 use roguelike_core::config::*;
 use roguelike_core::messaging::*;
 use roguelike_core::map::*;
-use roguelike_core::animation::{Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use roguelike_core::utils::aoe_fill;
 use roguelike_core::movement::{Direction, MoveType};
+
+use crate::animation::{Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 
 
 pub struct Display {

@@ -1,7 +1,7 @@
-use crate::types::{Name, Pos};
-use crate::utils::{distance, move_towards};
-use crate::map::Aoe;
-use crate::config::Config;
+use roguelike_core::types::{Name, Pos};
+use roguelike_core::utils::{distance, move_towards};
+use roguelike_core::map::Aoe;
+use roguelike_core::config::Config;
 
 
 pub type SpriteKey = i64;

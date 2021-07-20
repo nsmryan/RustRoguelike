@@ -5,6 +5,7 @@ mod display;
 mod keyboard;
 mod load;
 mod replay;
+mod animation;
 
 use std::fs;
 use std::io::{BufRead, Write};

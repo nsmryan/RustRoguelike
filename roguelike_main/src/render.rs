@@ -9,7 +9,6 @@ use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::animation::{Sprite, Effect, Animation, AnimationResult};
 use roguelike_core::utils::{item_primary_at, lerp_color, sub_pos, reach_by_mode, map_fill_metric};
 use roguelike_core::perlin::Perlin;
 use roguelike_core::line::line;
@@ -18,6 +17,7 @@ use roguelike_core::ai::*;
 use roguelike_engine::game::*;
 
 use crate::display::*;
+use crate::animation::{Sprite, Effect, Animation, AnimationResult};
 
 
 // 10ms to display on last check
