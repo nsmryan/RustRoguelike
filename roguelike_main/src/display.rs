@@ -123,6 +123,7 @@ impl Display {
             if !self.sprite_exists(&sheet_name) {
                 sheet_name = format!("{}_{}_{}", name, Stance::Standing, sheet_direction);
             }
+
             let mut anim = self.loop_sprite(&sheet_name, config.idle_speed);
             anim.sprite_anim_mut().unwrap().flip_horiz = needs_flip_horiz(direction);
 
