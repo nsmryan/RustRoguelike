@@ -154,7 +154,7 @@ pub fn resolve_messages(data: &mut GameData,
                 let source_pos = data.entities.pos[&trap];
 
                 if let Some(blink_pos) = find_blink_pos(source_pos, rng, data) {
-                    data.entities.move_to(entity_id, blink_pos);
+                    data.entities.set_pos(entity_id, blink_pos);
                     data.entities.status[&entity_id].blinked = true;
                 }
             }
@@ -360,8 +360,8 @@ pub fn resolve_messages(data: &mut GameData,
 
                     let start_pos = data.entities.pos[&entity_id];
                     let end_pos = data.entities.pos[&target_id];
-                    data.entities.move_to(entity_id, end_pos);
-                    data.entities.move_to(target_id, start_pos);
+                    data.entities.set_pos(entity_id, end_pos);
+                    data.entities.set_pos(target_id, start_pos);
 
                     msg_log.log(Msg::SetFacing(entity_id, target_dir));
                     msg_log.log(Msg::SetFacing(target_id, entity_dir));
@@ -372,7 +372,7 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::PassWall(entity_id, pos) => {
                 if use_energy(entity_id, data) {
-                    data.entities.move_to(entity_id, pos);
+                    data.entities.set_pos(entity_id, pos);
                     msg_log.log(Msg::MoveMode(entity_id, MoveMode::Walk));
                     msg_log.log(Msg::Moved(entity_id, MoveType::Move, pos));
 
@@ -633,7 +633,7 @@ fn resolve_try_movement(entity_id: EntityId,
 
     match movement.typ {
         MoveType::Collide => {
-            data.entities.move_to(entity_id, movement.pos);
+            data.entities.set_pos(entity_id, movement.pos);
             msg_log.log(Msg::FaceTowards(entity_id, movement.pos));
 
             msg_log.log(Msg::Collided(entity_id, movement.pos));
@@ -644,7 +644,7 @@ fn resolve_try_movement(entity_id: EntityId,
         }
 
         MoveType::WallKick => {
-            data.entities.move_to(entity_id, movement.pos);
+            data.entities.set_pos(entity_id, movement.pos);
 
             // NOTE may need to set facing
             // NOTE could check for enemy and attack
@@ -715,7 +715,7 @@ fn resolve_blink(entity_id: EntityId, data: &mut GameData, rng: &mut Rand32, msg
     let entity_pos = data.entities.pos[&entity_id];
 
     if let Some(blink_pos) = find_blink_pos(entity_pos, rng, data) {
-        data.entities.move_to(entity_id, blink_pos);
+        data.entities.set_pos(entity_id, blink_pos);
     } else {
         msg_log.log(Msg::FailedBlink(entity_id));
     }
@@ -1183,7 +1183,7 @@ fn process_moved_message(entity_id: EntityId,
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let original_pos = data.entities.pos[&entity_id];
 
-    data.entities.move_to(entity_id, pos);
+    data.entities.set_pos(entity_id, pos);
     data.entities.took_turn[&entity_id] = true;
 
     if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {

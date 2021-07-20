@@ -150,7 +150,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     //game.msg_log.log(Msg::Moved(player_id, MoveType::Move, player_position));
-    game.data.entities.move_to(player_id, player_position);
+    game.data.entities.set_pos(player_id, player_position);
 
     if game.config.write_map_distribution {
         let max = (2 * TILE_FILL_METRIC_DIST + 1).pow(2);

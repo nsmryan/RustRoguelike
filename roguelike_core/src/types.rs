@@ -144,7 +144,7 @@ impl GameData {
         return self.fov_check(entity_id, other_pos, crouching, config);
     }
 
-    fn fov_check(&self, entity_id: EntityId, other_pos: Pos, crouching: bool, config: &Config) -> bool {
+    fn fov_check(&self, entity_id: EntityId, other_pos: Pos, crouching: bool, _config: &Config) -> bool {
         if other_pos.x < 0 || other_pos.y < 0 {
             return false;
         }
@@ -1030,20 +1030,6 @@ impl Entities {
         self.pos[&entity_id] = pos;
     }
 
-    pub fn move_to(&mut self, entity_id: EntityId, pos: Pos) {
-        let self_pos = self.pos[&entity_id];
-        let diff_x = pos.x - self_pos.x;
-        let diff_y = pos.y - self_pos.y;
-
-        if self_pos != pos {
-            if let Some(dir) = Direction::from_dxy(diff_x, diff_y) {
-                self.direction[&entity_id] = dir;
-            }
-        }
-
-        self.set_pos(entity_id, pos);
-    }
-
     pub fn move_next_to(&mut self, entity_id: EntityId, pos: Pos) {
         let self_pos = self.pos[&entity_id];
         let mut diff_x = pos.x - self_pos.x;
@@ -1055,10 +1041,6 @@ impl Entities {
 
         if diff_y != 0 {
             diff_y -= diff_y.signum();
-        }
-
-        if let Some(dir) = Direction::from_dxy(diff_x, diff_y) {
-            self.direction[&entity_id] = dir;
         }
 
         self.set_pos(entity_id, Pos::new(self_pos.x + diff_x, self_pos.y + diff_y));
