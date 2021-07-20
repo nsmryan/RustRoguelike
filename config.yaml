@@ -189,3 +189,4 @@ print_key_log: false
 idle_animations: false
 recording: true
 beam_duration: 5
+draw_directional_arrow: false

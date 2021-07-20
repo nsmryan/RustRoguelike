@@ -1108,7 +1108,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
     highlight_color.a = game.config.highlight_player_move;
 
     // draw direction overlays
-    {
+    if game.config.draw_directional_arrow {
         let direction_color = Color::white();
         let tile_sprite = &mut display_state.sprites[&sprite_key];
         let mut index = 0;

@@ -95,6 +95,7 @@ pub struct Config {
     pub recording: bool,
     pub fire_speed: f32,
     pub beam_duration: usize,
+    pub draw_directional_arrow: bool,
 }
 
 impl Config {
