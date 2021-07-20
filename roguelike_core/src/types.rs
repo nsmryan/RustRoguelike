@@ -1120,7 +1120,6 @@ impl Entities {
         }
     }
 
-    // NOTE(duplication) could merge with face_to
     pub fn face(&mut self, entity_id: EntityId, face_pos: Pos) {
         let diff = sub_pos(face_pos, self.pos[&entity_id]);
         if let Some(dir) = Direction::from_dxy(diff.x, diff.y) {

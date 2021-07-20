@@ -355,10 +355,16 @@ pub fn resolve_messages(data: &mut GameData,
             Msg::Swap(entity_id, target_id) => {
                 if use_energy(entity_id, data) {
 
+                    let entity_dir = data.entities.direction[&entity_id];
+                    let target_dir = data.entities.direction[&target_id];
+
                     let start_pos = data.entities.pos[&entity_id];
                     let end_pos = data.entities.pos[&target_id];
                     data.entities.move_to(entity_id, end_pos);
                     data.entities.move_to(target_id, start_pos);
+
+                    msg_log.log(Msg::SetFacing(entity_id, target_dir));
+                    msg_log.log(Msg::SetFacing(target_id, entity_dir));
 
                     data.entities.took_turn[&entity_id] = true;
                 }
@@ -367,6 +373,8 @@ pub fn resolve_messages(data: &mut GameData,
             Msg::PassWall(entity_id, pos) => {
                 if use_energy(entity_id, data) {
                     data.entities.move_to(entity_id, pos);
+                    msg_log.log(Msg::MoveMode(entity_id, MoveMode::Walk));
+                    msg_log.log(Msg::Moved(entity_id, MoveType::Move, pos));
 
                     data.entities.took_turn[&entity_id] = true;
                 }
@@ -396,6 +404,11 @@ pub fn resolve_messages(data: &mut GameData,
             Msg::FaceTowards(entity_id, pos) => {
                 data.entities.face(entity_id, pos);
                 msg_log.log(Msg::Facing(entity_id, data.entities.direction[&entity_id]));
+            }
+
+            Msg::SetFacing(entity_id, direction) => {
+                data.entities.direction[&entity_id] = direction;
+                msg_log.log(Msg::Facing(entity_id, direction));
             }
 
             Msg::AiAttack(entity_id) => {
@@ -621,6 +634,7 @@ fn resolve_try_movement(entity_id: EntityId,
     match movement.typ {
         MoveType::Collide => {
             data.entities.move_to(entity_id, movement.pos);
+            msg_log.log(Msg::FaceTowards(entity_id, movement.pos));
 
             msg_log.log(Msg::Collided(entity_id, movement.pos));
         }
@@ -632,7 +646,8 @@ fn resolve_try_movement(entity_id: EntityId,
         MoveType::WallKick => {
             data.entities.move_to(entity_id, movement.pos);
 
-            // TODO could check for enemy and attack
+            // NOTE may need to set facing
+            // NOTE could check for enemy and attack
             msg_log.log(Msg::WallKick(entity_id, movement.pos));
         }
 
@@ -1213,6 +1228,11 @@ fn process_moved_message(entity_id: EntityId,
     if let Some(target_pos) = data.entities.target(entity_id) {
         if data.could_see(entity_id, target_pos, config) {
             msg_log.log_front(Msg::FaceTowards(entity_id, target_pos));
+        }
+    } else {
+        let diff = sub_pos(pos, original_pos);
+        if let Some(dir) = Direction::from_dxy(diff.x, diff.y) {
+            msg_log.log_front(Msg::SetFacing(entity_id, dir));
         }
     }
 }

@@ -118,8 +118,11 @@ impl Display {
             let direction = data.entities.direction[&entity_id];
 
             let sheet_direction = sheet_direction(direction);
-            let sheet_name = format!("{}_{}_{}", name, stance, sheet_direction);
+            let mut sheet_name = format!("{}_{}_{}", name, stance, sheet_direction);
 
+            if !self.sprite_exists(&sheet_name) {
+                sheet_name = format!("{}_{}_{}", name, Stance::Standing, sheet_direction);
+            }
             let mut anim = self.loop_sprite(&sheet_name, config.idle_speed);
             anim.sprite_anim_mut().unwrap().flip_horiz = needs_flip_horiz(direction);
 
@@ -1082,9 +1085,9 @@ fn sheet_direction(direction: Direction) -> Direction {
         Direction::Left => return Direction::Right,
         Direction::Right => return Direction::Right,
         Direction::UpRight => return Direction::UpRight,
-        Direction::UpLeft => return Direction::DownRight,
+        Direction::UpLeft => return Direction::UpRight,
         Direction::DownRight => return Direction::DownRight,
-        Direction::DownLeft => return Direction::UpRight,
+        Direction::DownLeft => return Direction::DownRight,
     }
 }
 

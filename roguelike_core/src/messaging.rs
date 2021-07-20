@@ -74,6 +74,7 @@ pub enum Msg {
     PlaceTrap(EntityId, Pos, EntityId), // placing entity, position, trap id
     SpawnedObject(EntityId, EntityType, Pos, EntityName, Direction),
     FaceTowards(EntityId, Pos),
+    SetFacing(EntityId, Direction),
     Facing(EntityId, Direction),
     AiAttack(EntityId),
 }
@@ -155,6 +156,7 @@ impl fmt::Display for Msg {
             Msg::PlaceTrap(entity_id, pos, trap_id) => write!(f, "place_trap {} {} {} {}", entity_id, pos.x, pos.y, trap_id),
             Msg::SpawnedObject(entity_id, entity_type, pos, entity_name, facing) => write!(f, "spawned {} {} {} {} {} {}", entity_id, entity_type, pos.x, pos.y, entity_name, facing),
             Msg::FaceTowards(entity_id, pos) => write!(f, "face_towards {} {} {}", entity_id, pos.x, pos.y),
+            Msg::SetFacing(entity_id, direction) => write!(f, "set_facing {} {}", entity_id, direction),
             Msg::Facing(entity_id, direction) => write!(f, "facing {} {}", entity_id, direction),
             Msg::AiAttack(entity_id) => write!(f, "ai_attack {}", entity_id),
         }
@@ -204,10 +206,6 @@ impl Msg {
 
             Msg::PlayerDeath => {
                 return "Player died!".to_string();
-            }
-
-            Msg::PickUp(_entity_id) => {
-                return "".to_string();
             }
 
             Msg::PickedUp(entity_id, item_id) => {
@@ -339,10 +337,6 @@ impl Msg {
                 return format!("{:?} tried to drop an item, but its too crowded!", data.entities.name[entity_id]);
             }
 
-            Msg::PlayerTurn => {
-                return "".to_string();
-            }
-
             Msg::Froze(entity_id, _num_turns) => {
                 return format!("{:?} was frozen!", data.entities.name[entity_id]);
             }
@@ -428,18 +422,6 @@ impl Msg {
             }
 
             Msg::SpawnedObject(_entity_id, _entity_type, _pos, _entity_name, _facing) => {
-                return "".to_string();
-            }
-
-            Msg::FaceTowards(_entity_id, _pos) => {
-                return "".to_string();
-            }
-
-            Msg::Facing(_entity_id, _direction) => {
-                return "".to_string();
-            }
-
-            Msg::AiAttack(_entity_id) => {
                 return "".to_string();
             }
 
