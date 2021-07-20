@@ -109,8 +109,6 @@ impl Display {
     }
 
     pub fn get_idle_animation(&mut self, entity_id: EntityId, data: &mut GameData, config: &Config) -> Option<Animation> {
-        let player_id = data.find_by_name(EntityName::Player).unwrap();
-
         let name = data.entities.name[&entity_id];
 
         if name == EntityName::Player || name == EntityName::Gol || name == EntityName::Pawn || name == EntityName::Rook {
@@ -331,6 +329,10 @@ impl Display {
                 for index in impressions_visible.iter() {
                     self.state.impressions.swap_remove(*index);
                 }
+            }
+
+            Msg::RemovedEntity(entity_id) => {
+                self.state.animations.remove(&entity_id);
             }
 
             _ => {
