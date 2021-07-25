@@ -8,7 +8,7 @@ use roguelike_core::types::*;
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
-use roguelike_core::utils::{scale_pos, distance, sub_pos, add_pos, next_from_to};
+use roguelike_core::utils::{scale_pos, distance, sub_pos, add_pos, next_from_to, move_towards};
 
 use crate::game::*;
 use crate::input::*;
@@ -432,7 +432,7 @@ pub fn handle_input_playing(input_action: InputAction,
                             data: &GameData,
                             settings: &mut GameSettings,
                             msg_log: &mut MsgLog,
-                            config: &Config) !T
+                            config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
 
@@ -444,27 +444,27 @@ pub fn handle_input_playing(input_action: InputAction,
             msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
         }
 
-        (InputAction::ItemDir(dir, item_index), true) => {
-            handle_item(item_index, ActionLoc::Dir(dir), mode, target, data, msg_log);
+        (InputAction::ItemDir(dir, mode, item_index), true) => {
+            handle_item(item_index, ActionLoc::Dir(dir), mode, data, msg_log);
         }
 
         (InputAction::SkillDir(dir, mode, skill_index), true) => {
             handle_skill(skill_index, ActionLoc::Dir(dir), mode, data, msg_log);
         }
 
-        (InputAction::ItemPos(pos, item_index), true) => {
-            handle_item(item_index, ActionLoc::Place(pos), mode, target, data, msg_log);
+        (InputAction::ItemPos(pos, mode, item_index), true) => {
+            handle_item(item_index, ActionLoc::Place(pos), mode, data, msg_log);
         }
 
         (InputAction::SkillPos(pos, mode, skill_index), true) => {
             handle_skill(skill_index, ActionLoc::Place(pos), mode, data, msg_log);
         }
 
-        (InputAction::ItemFacing(pos, item_index), true) => {
-            handle_item(item_index, ActionLoc::Facing, mode, target, data, msg_log);
+        (InputAction::ItemFacing(mode, item_index), true) => {
+            handle_item(item_index, ActionLoc::Facing, mode, data, msg_log);
         }
 
-        (InputAction::SkillFacing(pos, mode, skill_index), true) => {
+        (InputAction::SkillFacing(mode, skill_index), true) => {
             handle_skill(skill_index, ActionLoc::Facing, mode, data, msg_log);
         }
 
@@ -563,16 +563,16 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Interact(dir), _) => {
-        let pos = data.entities.pos[&player_id];
+            let pos = data.entities.pos[&player_id];
 
-        let interact_pos = 
-            if let Some(dir) = dir {
-                dir.offset_pos(pos, 1)
-            } else {
-                pos
-            };
+            let interact_pos = 
+                if let Some(dir) = dir {
+                    dir.offset_pos(pos, 1)
+                } else {
+                    pos
+                };
 
-            msg_log.log(Msg::Interact(player_id, interact_pos));
+                msg_log.log(Msg::Interact(player_id, interact_pos));
         }
 
         (_, _) => {
@@ -606,11 +606,21 @@ pub fn handle_skill(skill_index: usize,
     // NOTE we may want a message indicating that the skill was invalid
     let skill_pos;
     match action_loc {
+        ActionLoc::Dir(dir) => {
+            let player_pos = data.entities.pos[&player_id];
+            if let Some(pos) = reach.furthest_in_direction(player_pos, dir) {
+                skill_pos = pos;
+            } else {
+                return;
+            }
+        }
+
         ActionLoc::Place(pos) => {
             skill_pos = pos;
         }
 
-        ActionLoc::Dir(dir) => {
+        ActionLoc::Facing => {
+            let dir = data.entities.direction[&player_id];
             let player_pos = data.entities.pos[&player_id];
             if let Some(pos) = reach.furthest_in_direction(player_pos, dir) {
                 skill_pos = pos;
@@ -743,16 +753,6 @@ fn handle_move(loc: ActionLoc,
     }
 
     match loc {
-        ActionLoc::None => {
-            let direction = data.entities.direction[&player_id];
-            msg_log.log(Msg::TryMove(player_id, direction, 0, move_mode));
-        }
-
-        ActionLoc::Dir(direction) => {
-            let move_amount = move_mode.move_amount();
-            msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
-        }
-
         ActionLoc::Place(pos) => {
             if pos == player_pos {
                 msg_log.log(Msg::Moved(player_id, MoveType::Pass, pos));
@@ -763,6 +763,22 @@ fn handle_move(loc: ActionLoc,
                 let move_amount = move_mode.move_amount();
                 msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
             }
+        }
+
+        ActionLoc::Dir(direction) => {
+            let move_amount = move_mode.move_amount();
+            msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
+        }
+
+        ActionLoc::Facing => {
+            let direction = data.entities.direction[&player_id];
+            let move_amount = move_mode.move_amount();
+            msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
+        }
+
+        ActionLoc::None => {
+            let direction = data.entities.direction[&player_id];
+            msg_log.log(Msg::TryMove(player_id, direction, 0, move_mode));
         }
     }
 }
@@ -792,6 +808,19 @@ fn handle_item(target: usize,
                     msg_log.log(Msg::UseItem(player_id, use_pos, item_id));
                 }
 
+                ActionLoc::Place(pos) => {
+                    let start_pos = data.entities.pos[&player_id];
+                    let use_pos = move_towards(start_pos, pos, 1);
+                    msg_log.log(Msg::UseItem(player_id, use_pos, item_id));
+                }
+
+                ActionLoc::Facing => {
+                    let pos = data.entities.pos[&player_id];
+                    let dir = data.entities.direction[&player_id];
+                    let use_pos = dir.offset_pos(pos, 1);
+                    msg_log.log(Msg::UseItem(player_id, use_pos, item_id));
+                }
+
                 _ => panic!("Is this even possible anymore?"),
             }
         }
@@ -807,6 +836,16 @@ fn handle_item(target: usize,
 
                 ActionLoc::Place(pos) => {
                     msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, pos));
+                }
+
+                ActionLoc::Facing => {
+                    let start = data.entities.pos[&player_id];
+                    let direction = data.entities.direction[&player_id];
+                    let max_end = direction.offset_pos(start, PLAYER_THROW_DIST as i32);
+                    let end = data.map.path_blocked_move(start, max_end)
+                                           .map_or(max_end, |b| b.end_pos);
+
+                    msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, end));
                 }
 
                 ActionLoc::Dir(direction) => {

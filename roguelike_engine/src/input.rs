@@ -122,7 +122,7 @@ pub struct Input {
     pub shift: bool,
     pub target: Option<Target>,
     pub direction: Option<InputDirection>,
-    pub char_down_order: Vector<char>,
+    pub char_down_order: Vec<char>,
     pub cursor: bool,
     pub char_held: HashMap<char, HeldState>,
 }
@@ -134,7 +134,7 @@ impl Input {
                        shift: false,
                        target: None,
                        direction: None,
-                       char_down_order: Vector::new(),
+                       char_down_order: Vec::new(),
                        cursor: false,
                        char_held: HashMap::new()
         };
@@ -376,12 +376,12 @@ impl Input {
         if self.cursor {
             if let Some(cursor_pos) = settings.cursor {
                 // alternate is always used so you throw items
-                return InputAction::ItemPos(cursor_pos, ActionMode::Alternate, skill_index);
+                return InputAction::ItemPos(cursor_pos, ActionMode::Alternate, item_index);
             } else {
                 panic!("No cursor position while in cursor mode!");
             }
         } else {
-            return InputAction::ItemFacing(self.action_mode(), skill_index);
+            return InputAction::ItemFacing(self.action_mode(), item_index);
         }
     }
 
@@ -431,7 +431,7 @@ impl Input {
 
         if let Some(held_state) = self.char_held.get(&chr) {
             // only process the last character as held
-            if chr == self.char_down_order.iter().last().unwrap() {
+            if chr == *self.char_down_order.iter().last().unwrap() {
                 let held_state = *held_state;
                 let time_since = time.duration_since(held_state.down_time).as_secs_f32();
 
