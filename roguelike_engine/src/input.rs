@@ -262,6 +262,12 @@ impl Input {
         let is_held = self.is_held(chr);
         self.char_held.remove(&chr);
 
+        if settings.state.is_menu() {
+            if chr.is_ascii_digit() {
+                return InputAction::SelectItem(chr.to_digit(10).unwrap() as usize);
+            }
+        }
+
         // if key was held, do nothing when it is up to avoid a final press
         if is_held {
             self.clear_char_state(chr);
