@@ -20,12 +20,19 @@ use crate::make_map;
 pub enum ActionLoc {
     Dir(Direction),
     Place(Pos),
+    Facing,
     None
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum InputAction {
     Move(Direction, MoveMode),
+    SkillDir(Direction, ActionMode, usize),
+    ItemDir(Direction, ActionMode, usize),
+    SkillPos(Pos, ActionMode, usize),
+    ItemPos(Pos, ActionMode, usize),
+    SkillFacing(ActionMode, usize),
+    ItemFacing(ActionMode, usize),
     Pass(MoveMode),
     Pickup,
     DropItem,
@@ -36,9 +43,6 @@ pub enum InputAction {
     CursorMove(Direction, bool, bool), // move direction, is relative, is long
     CursorReturn,
     CursorToggle,
-    CursorApplyItem(ActionMode, usize),
-    CursorApplySkill(ActionMode, usize),
-    CursorApplyMove(ActionMode),
     MapClick(Pos, Pos), // map loc, map cell
     MouseButton(MouseClick, KeyDir),
     Inventory,
@@ -73,6 +77,12 @@ impl fmt::Display for InputAction {
                     Direction::UpRight => write!(f, "upright {}", move_mode),
                 }
             },
+            InputAction::SkillDir(dir, action_mode, index) => write!(f, "skilldir {} {} {}", dir, action_mode, index),
+            InputAction::ItemDir(dir, action_mode, index) => write!(f, "itemdir {} {} {}", dir, action_mode, index),
+            InputAction::SkillPos(pos, action_mode, index) => write!(f, "skillpos {} {} {} {}", pos.x, pos.y, action_mode, index),
+            InputAction::ItemPos(pos, action_mode, index) => write!(f, "itempos {} {} {} {}", pos.x, pos.y, action_mode, index),
+            InputAction::SkillFacing(action_mode, index) => write!(f, "skill {} {}", action_mode, index),
+            InputAction::ItemFacing(action_mode, index) => write!(f, "itemdir {} {}", action_mode, index),
             InputAction::Pass(move_mode) => write!(f, "pass {}", move_mode),
             InputAction::MapClick(loc, cell) => write!(f, "click {} {} {} {}", loc.x, loc.y, cell.x, cell.y),
             InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
@@ -96,9 +106,6 @@ impl fmt::Display for InputAction {
             InputAction::SelectItem(item) => write!(f, "selectitem {}", item),
             InputAction::UseItem(dir, target) => write!(f, "use, {:?} {}", dir, target),
             InputAction::Interact(dir) => write!(f, "interact {:?}", dir),
-            InputAction::CursorApplyItem(action_mode, index) => write!(f, "cursorapplyitem {:?} {}", action_mode, index),
-            InputAction::CursorApplySkill(action_mode, index) => write!(f, "cursorapplyskill {:?} {}", action_mode, index),
-            InputAction::CursorApplyMove(action_mode) => write!(f, "cursorapplymove {:?}", action_mode),
             InputAction::CursorMove(dir, relative, long) => write!(f, "cursormove {:?} {} {}", dir, relative, long),
             InputAction::CursorReturn => write!(f, "cursorreturn"),
             InputAction::CursorToggle => write!(f, "cursortoggle"),
@@ -142,6 +149,36 @@ impl FromStr for InputAction {
         } else if args[0] == "pass" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Pass(move_mode));
+        } else if args[0] == "skilldir" {
+            let dir = args[1].parse::<Direction>().unwrap();
+            let action_mode = args[2].parse::<ActionMode>().unwrap();
+            let index = args[3].parse::<usize>().unwrap();
+            return Ok(InputAction::SkillDir(dir, action_mode, index));
+        } else if args[0] == "itemdir" {
+            let dir = args[1].parse::<Direction>().unwrap();
+            let action_mode = args[2].parse::<ActionMode>().unwrap();
+            let index = args[3].parse::<usize>().unwrap();
+            return Ok(InputAction::ItemDir(dir, action_mode, index));
+        } else if args[0] == "skillpos" {
+            let x = args[1].parse::<i32>().unwrap();
+            let y = args[2].parse::<i32>().unwrap();
+            let action_mode = args[3].parse::<ActionMode>().unwrap();
+            let index = args[4].parse::<usize>().unwrap();
+            return Ok(InputAction::SkillPos(Pos::new(x, y), action_mode, index));
+        } else if args[0] == "itempos" {
+            let x = args[1].parse::<i32>().unwrap();
+            let y = args[2].parse::<i32>().unwrap();
+            let action_mode = args[3].parse::<ActionMode>().unwrap();
+            let index = args[4].parse::<usize>().unwrap();
+            return Ok(InputAction::ItemPos(Pos::new(x, y), action_mode, index));
+        } else if args[0] == "skillfacing" {
+            let action_mode = args[1].parse::<ActionMode>().unwrap();
+            let index = args[2].parse::<usize>().unwrap();
+            return Ok(InputAction::SkillFacing(action_mode, index));
+        } else if args[0] == "itemfacing" {
+            let action_mode = args[1].parse::<ActionMode>().unwrap();
+            let index = args[2].parse::<usize>().unwrap();
+            return Ok(InputAction::ItemFacing(action_mode, index));
         } else if args[0] == "pickup" {
             return Ok(InputAction::Pickup);
         } else if args[0] == "drop" {
@@ -190,17 +227,6 @@ impl FromStr for InputAction {
             return Ok(InputAction::CursorMove(dir, relative, long));
         } else if args[0] == "cursorreturn" {
             return Ok(InputAction::CursorReturn);
-        } else if args[0] == "cursorapplyitem" {
-            let mode = ActionMode::from_str(args[1]).unwrap();
-            let target = args[2].parse::<usize>().unwrap();
-            return Ok(InputAction::CursorApplyItem(mode, target));
-        } else if args[0] == "cursorapplyskill" {
-            let mode = ActionMode::from_str(args[1]).unwrap();
-            let target = args[2].parse::<usize>().unwrap();
-            return Ok(InputAction::CursorApplySkill(mode, target));
-        } else if args[0] == "cursorapplymove" {
-            let mode = ActionMode::from_str(args[1]).unwrap();
-            return Ok(InputAction::CursorApplyMove(mode));
         } else if args[0] == "cursortoggle" {
             return Ok(InputAction::CursorToggle);
         } else {
@@ -301,7 +327,7 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::SelectItem(skill_index) => {
-            handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, data, settings, msg_log, config);
+            handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, data, msg_log);
             change_state(settings, GameState::Playing);
         }
 
@@ -406,13 +432,42 @@ pub fn handle_input_playing(input_action: InputAction,
                             data: &GameData,
                             settings: &mut GameSettings,
                             msg_log: &mut MsgLog,
-                            config: &Config) {
+                            config: &Config) !T
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
 
     let player_alive = data.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
+        (InputAction::Move(direction, move_mode), true) => {
+            let move_amount = move_mode.move_amount();
+            msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
+        }
+
+        (InputAction::ItemDir(dir, item_index), true) => {
+            handle_item(item_index, ActionLoc::Dir(dir), mode, target, data, msg_log);
+        }
+
+        (InputAction::SkillDir(dir, mode, skill_index), true) => {
+            handle_skill(skill_index, ActionLoc::Dir(dir), mode, data, msg_log);
+        }
+
+        (InputAction::ItemPos(pos, item_index), true) => {
+            handle_item(item_index, ActionLoc::Place(pos), mode, target, data, msg_log);
+        }
+
+        (InputAction::SkillPos(pos, mode, skill_index), true) => {
+            handle_skill(skill_index, ActionLoc::Place(pos), mode, data, msg_log);
+        }
+
+        (InputAction::ItemFacing(pos, item_index), true) => {
+            handle_item(item_index, ActionLoc::Facing, mode, target, data, msg_log);
+        }
+
+        (InputAction::SkillFacing(pos, mode, skill_index), true) => {
+            handle_skill(skill_index, ActionLoc::Facing, mode, data, msg_log);
+        }
+
         (InputAction::CursorReturn, _) => {
             if settings.cursor.is_some() {
                 settings.cursor = Some(player_pos);
@@ -441,33 +496,10 @@ pub fn handle_input_playing(input_action: InputAction,
             }
         }
 
-        (InputAction::CursorApplyMove(mode), true) => {
-            if let Some(cursor_pos) = settings.cursor {
-                chord_move(ActionLoc::Place(cursor_pos), mode, data, msg_log);
-            }
-        }
-
-        (InputAction::CursorApplyItem(mode, target), true) => {
-            if let Some(cursor_pos) = settings.cursor {
-                chord_item(ActionLoc::Place(cursor_pos), mode, target, data, msg_log);
-            }
-        }
-
-        (InputAction::CursorApplySkill(mode, skill_index), true) => {
-            if let Some(cursor_pos) = settings.cursor {
-                if skill_index < data.entities.skills[&player_id].len() {
-                    let loc = ActionLoc::Place(cursor_pos);
-                    handle_skill(skill_index, loc, mode, data, settings, msg_log, config);
-                }
-            }
-        }
-
         (InputAction::CursorToggle, true) => {
             if settings.cursor.is_none() {
                 settings.cursor = Some(player_pos);
-                dbg!();
             } else {
-                dbg!();
                 settings.cursor = None;
             }
         }
@@ -484,11 +516,6 @@ pub fn handle_input_playing(input_action: InputAction,
             msg_log.log(Msg::TryMove(player_id, direction, 0, move_mode));
         }
 
-        (InputAction::Move(direction, move_mode), true) => {
-            let move_amount = move_mode.move_amount();
-            msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
-        }
-
         (InputAction::DropItem, true) => {
             settings.inventory_action = InventoryAction::Drop;
             change_state(settings, GameState::Inventory);
@@ -498,7 +525,7 @@ pub fn handle_input_playing(input_action: InputAction,
             msg_log.log(Msg::PickUp(player_id));
         }
 
-        // TODO this should be removeable
+        // NOTE this should be removeable
         (InputAction::MapClick(_map_loc, _map_cell), _) => {
         }
 
@@ -548,14 +575,6 @@ pub fn handle_input_playing(input_action: InputAction,
             msg_log.log(Msg::Interact(player_id, interact_pos));
         }
 
-        (InputAction::UseItem(dir, target), _) => {
-            let pos = data.entities.pos[&player_id];
-            let use_pos = dir.offset_pos(pos, 1);
-            if let Some(item_id) = data.entities.inventory[&player_id].get(target as usize) {
-                msg_log.log(Msg::UseItem(player_id, use_pos, *item_id));
-            }
-        }
-
         (_, _) => {
         }
     }
@@ -565,9 +584,7 @@ pub fn handle_skill(skill_index: usize,
                     action_loc: ActionLoc,
                     action_mode: ActionMode,
                     data: &GameData, 
-                    _settings: &mut GameSettings, 
-                    msg_log: &mut MsgLog,
-                    _config: &Config) {
+                    msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     /* Check for Valid Skill Use */
@@ -707,10 +724,10 @@ pub fn handle_skill(skill_index: usize,
     }
 }
 
-fn chord_move(loc: ActionLoc,
-              mode: ActionMode,
-              data: &GameData,
-              msg_log: &mut MsgLog) {
+fn handle_move(loc: ActionLoc,
+               mode: ActionMode,
+               data: &GameData,
+               msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
 
@@ -718,12 +735,10 @@ fn chord_move(loc: ActionLoc,
     match mode {
         ActionMode::Primary => {
             move_mode = MoveMode::Sneak;
-            //msg_log.log(Msg::ChangeMoveMode(player_id, false));
         }
 
         ActionMode::Alternate => {
             move_mode = MoveMode::Run;
-            //msg_log.log(Msg::ChangeMoveMode(player_id, true));
         }
     }
 
@@ -752,11 +767,11 @@ fn chord_move(loc: ActionLoc,
     }
 }
 
-fn chord_item(loc: ActionLoc,
-              mode: ActionMode,
-              target: usize,
-              data: &GameData,
-              msg_log: &mut MsgLog) {
+fn handle_item(target: usize,
+               loc: ActionLoc,
+               mode: ActionMode,
+               data: &GameData,
+               msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     let num_items_in_inventory = data.entities.inventory[&player_id].len();

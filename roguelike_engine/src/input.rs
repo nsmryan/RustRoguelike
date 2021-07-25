@@ -44,6 +44,25 @@ impl FromStr for KeyDir {
     }
 }
 
+
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+pub enum InputDirection {
+    Dir(Direction),
+    Current,
+}
+
+impl InputDirection {
+    pub fn from_chr(chr: char) -> Option<InputDirection> {
+        if let Some(dir) = direction_from_digit(chr) {
+            return Some(InputDirection::Dir(dir));
+        } else if chr == '5' {
+            return Some(InputDirection::Current);
+        } else {
+            return None;
+        }
+    }
+}
+
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum Target {
     Item(usize),
@@ -102,6 +121,8 @@ pub struct Input {
     pub alt: bool,
     pub shift: bool,
     pub target: Option<Target>,
+    pub direction: Option<InputDirection>,
+    pub char_down_order: Vector<char>,
     pub cursor: bool,
     pub char_held: HashMap<char, HeldState>,
 }
@@ -112,6 +133,8 @@ impl Input {
                        alt: false,
                        shift: false,
                        target: None,
+                       direction: None,
+                       char_down_order: Vector::new(),
                        cursor: false,
                        char_held: HashMap::new()
         };
@@ -124,6 +147,14 @@ impl Input {
             return MoveMode::Sneak;
         } else {
             return MoveMode::Walk;
+        }
+    }
+
+    pub fn action_mode(&self) -> ActionMode {
+        if self.alt {
+            return ActionMode::Alternate;
+        } else {
+            return ActionMode::Primary;
         }
     }
 
@@ -224,51 +255,152 @@ impl Input {
     }
 
     fn handle_char_up(&mut self, chr: char, settings: &GameSettings) -> InputAction {
-        // if key was held, do nothing when it is up to avoid a final press
-        if self.is_held(chr) {
-            return InputAction::None;
+        if let Some(index) = self.char_down_order.iter().position(|c| *c == chr) {
+            self.char_down_order.remove(index);
         }
+
+        let is_held = self.is_held(chr);
         self.char_held.remove(&chr);
 
-        match chr {
-            'z' => return self.use_item(0),
-            'x' => return self.use_item(1),
-            'c' => return self.use_item(2),
-            'a' => return self.use_skill(0),
-            's' => return self.use_skill(1),
-            'd' => return self.use_skill(2),
-            _ => return self.key_to_action(chr, settings),
+        // if key was held, do nothing when it is up to avoid a final press
+        if is_held {
+            self.clear_char_state(chr);
+            return InputAction::None;
+        } else {
+            let action: InputAction = self.apply_char(chr, settings);
+
+            self.clear_char_state(chr);
+
+            return action;
         }
     }
 
-    fn use_item(&mut self, item_index: usize) -> InputAction {
-        if self.cursor {
+    /// Clear direction or target state for the given character, if applicable.
+    fn clear_char_state(&mut self, chr: char) {
+        if let Some(input_dir) = InputDirection::from_chr(chr) {
+            self.direction = None;
+        }
+
+        if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
             self.target = None;
+        }
 
-            // alternate is used so you throw items
-            return InputAction::CursorApplyItem(ActionMode::Alternate, item_index);
-        } else {
-            // item use only works outside of cursor mode when an arrow key is released,
-            // not when the item key is released.
-            return InputAction::None;
+        if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+            self.target = None;
         }
     }
 
-    fn use_skill(&mut self, skill_index: usize) -> InputAction {
-        if self.cursor {
-            // NOTE should this be primary or alternate?
-            return InputAction::CursorApplySkill(ActionMode::Alternate, skill_index);
+    fn apply_char(&mut self, chr: char, settings: &GameSettings) -> InputAction {
+        let mut action: InputAction = InputAction::None;
+
+        // check if the key being released is the one that set the input direction.
+        if let Some(input_dir) = InputDirection::from_chr(chr) {
+            if self.direction == Some(input_dir) {
+                if let Some(target) = self.target {
+                    // Target
+                    match input_dir {
+                        InputDirection::Dir(dir) => {
+                            match target {
+                                Target::Item(index) => {
+                                    action = InputAction::ItemDir(dir, self.action_mode(), index);
+                                }
+
+                                Target::Skill(index) => {
+                                    action = InputAction::SkillDir(dir, self.action_mode(), index);
+                                }
+                            }
+                        }
+
+                        InputDirection::Current => {
+                            match target {
+                                Target::Item(index) => {
+                                    action = InputAction::DropItemByIndex(index);
+                                }
+
+                                Target::Skill(index) => {
+                                    action = InputAction::SkillFacing(self.action_mode(), index);
+                                }
+
+                            }
+                        }
+                    }
+                } else {
+                    // No Target
+                    match input_dir {
+                        InputDirection::Dir(dir) => {
+                            if self.cursor {
+                               action = InputAction::CursorMove(dir, self.ctrl, self.shift);
+                            } else if self.alt {
+                                action = InputAction::Interact(Some(dir));
+                            } else {
+                                action = InputAction::Move(dir, self.move_mode());
+                            }
+                        }
+
+                        InputDirection::Current => {
+                            // Pressing 5 in cursor mode does nothing, so only process
+                            // if in direct mode.
+                            if !self.cursor {
+                                if self.alt {
+                                    action = InputAction::Interact(None);
+                                } else {
+                                    action = InputAction::Pass(self.move_mode());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // if releasing a key that is directional, but not the last directional key
+            // pressed, then do nothing, waiting for the last key to be released instead.
         } else {
-            // target keys don't do anything outside of cursor mode,
-            // so just return here.
-            // NOTE should we still allow skills, but only ones that make
-            // sense with no location?
-            return InputAction::None;
+            // if releasing target, apply the skill or item
+            if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+                action = self.use_skill(index, settings);
+            }
+
+            if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+                action = self.use_item(index, settings);
+            }
+
+            // If we are not releasing a direction, skill, or item then try other keys.
+            if action == InputAction::None {
+                action = alpha_up_to_action(chr);
+            }
+        }
+
+        return action;
+    }
+
+    fn use_item(&mut self, item_index: usize, settings: &GameSettings) -> InputAction {
+        if self.cursor {
+            if let Some(cursor_pos) = settings.cursor {
+                // alternate is always used so you throw items
+                return InputAction::ItemPos(cursor_pos, ActionMode::Alternate, skill_index);
+            } else {
+                panic!("No cursor position while in cursor mode!");
+            }
+        } else {
+            return InputAction::ItemFacing(self.action_mode(), skill_index);
+        }
+    }
+
+    fn use_skill(&mut self, skill_index: usize, settings: &GameSettings) -> InputAction {
+        if self.cursor {
+            if let Some(cursor_pos) = settings.cursor {
+                return InputAction::SkillPos(cursor_pos, self.action_mode(), skill_index);
+            } else {
+                panic!("No cursor position while in cursor mode!");
+            }
+        } else {
+            return InputAction::SkillFacing(self.action_mode(), skill_index);
         }
     }
 
     fn handle_char_down(&mut self, chr: char) -> InputAction {
         let mut action = InputAction::None;
+
+        self.char_down_order.push(chr);
 
         if chr == 'o' {
             action = InputAction::OverlayOn;
@@ -287,6 +419,10 @@ impl Input {
             self.target = Some(Target::item(index as usize));
         }
 
+        if let Some(input_dir) = InputDirection::from_chr(chr) {
+            self.direction = Some(input_dir);
+        }
+
         return action;
     }
 
@@ -294,22 +430,25 @@ impl Input {
         let mut action = InputAction::None;
 
         if let Some(held_state) = self.char_held.get(&chr) {
-            let held_state = *held_state;
-            let time_since = time.duration_since(held_state.down_time).as_secs_f32();
+            // only process the last character as held
+            if chr == self.char_down_order.iter().last().unwrap() {
+                let held_state = *held_state;
+                let time_since = time.duration_since(held_state.down_time).as_secs_f32();
 
-            let new_repeats = (time_since / config.repeat_delay) as usize;
-            if new_repeats > held_state.repetitions {
-                action = self.key_to_action(chr, settings);
+                let new_repeats = (time_since / config.repeat_delay) as usize;
+                if new_repeats > held_state.repetitions {
+                    action = self.apply_char(chr, settings);
 
-                if action == InputAction::OverlayOff   ||
-                   action == InputAction::Inventory    ||
-                   action == InputAction::SkillMenu    ||
-                   action == InputAction::Exit         ||
-                   action == InputAction::CursorToggle ||
-                   action == InputAction::ClassMenu {
-                    action = InputAction::None;
-                } else {
-                    self.char_held.insert(chr, held_state.repeated());
+                    if action == InputAction::OverlayOff   ||
+                       action == InputAction::Inventory    ||
+                       action == InputAction::SkillMenu    ||
+                       action == InputAction::Exit         ||
+                       action == InputAction::CursorToggle ||
+                       action == InputAction::ClassMenu {
+                        action = InputAction::None;
+                    } else {
+                        self.char_held.insert(chr, held_state.repeated());
+                    }
                 }
             }
         }
@@ -333,6 +472,7 @@ impl Input {
         }
     }
 
+    /*
     fn key_to_action(&mut self, chr: char, settings: &GameSettings) -> InputAction {
         let action;
 
@@ -350,13 +490,13 @@ impl Input {
                         action = InputAction::Pass(self.move_mode());
                     }
                 }
-            } else if let Some(dir) = from_digit(chr) {
+            } else if let Some(dir) = direction_from_digit(chr) {
                 if self.cursor {
                    action = InputAction::CursorMove(dir, self.ctrl, self.shift);
                 } else if self.alt {
                     action = InputAction::Interact(Some(dir));
                 } else if let Some(Target::Item(index)) = self.target {
-                    action = InputAction::UseItem(dir, index);
+                    action = InputAction::ItemDir(dir, self.action_mode(), index);
                     self.target = None;
                 } else {
                     action = InputAction::Move(dir, self.move_mode());
@@ -372,6 +512,7 @@ impl Input {
 
         return action;
     }
+    */
 }
 
 pub fn alpha_up_to_action(chr: char) -> InputAction {
@@ -438,7 +579,7 @@ pub fn alpha_up_to_action(chr: char) -> InputAction {
     return input_action;
 }
 
-fn from_digit(chr: char) -> Option<Direction> {
+fn direction_from_digit(chr: char) -> Option<Direction> {
     match chr {
         '4' => Some(Direction::Left),
         '6' => Some(Direction::Right),
