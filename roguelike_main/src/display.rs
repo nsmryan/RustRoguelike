@@ -226,27 +226,29 @@ impl Display {
 
             Msg::HammerSwing(entity_id, _item_id, _pos) => {
                 if data.entities.typ[&entity_id] == EntityType::Player {
-                    let attack_sprite =
-                        self.new_sprite("player_attack_hammer".to_string(), config.player_attack_hammer_speed);
-                    let attack_anim = Animation::Once(attack_sprite);
-                    self.state.play_animation(entity_id, attack_anim);
+                    // TODO need hammer animation
+                    //let attack_sprite =
+                    //    self.new_sprite("player_attack_hammer".to_string(), config.player_attack_hammer_speed);
+                    //let attack_anim = Animation::Once(attack_sprite);
+                    //self.state.play_animation(entity_id, attack_anim);
 
-                    if let Some(idle_anim) = self.get_idle_animation(entity_id, data, config) {
-                        self.state.append_animation(entity_id, idle_anim);
-                    }
+                    //if let Some(idle_anim) = self.get_idle_animation(entity_id, data, config) {
+                    //    self.state.append_animation(entity_id, idle_anim);
+                    //}
                 }
             }
 
             Msg::Stabbed(entity_id, _hit_entity) => {
                 if data.entities.typ[&entity_id] == EntityType::Player {
-                    let attack_sprite =
-                        self.new_sprite("player_attack_dagger".to_string(), config.player_attack_speed);
-                    let attack_anim = Animation::Once(attack_sprite);
-                    self.state.play_animation(entity_id, attack_anim);
+                    // TODO need dagger animation
+                    //let attack_sprite =
+                    //    self.new_sprite("player_attack_dagger".to_string(), config.player_attack_speed);
+                    //let attack_anim = Animation::Once(attack_sprite);
+                    //self.state.play_animation(entity_id, attack_anim);
 
-                    if let Some(idle_anim) = self.get_idle_animation(entity_id, data, config) {
-                        self.state.append_animation(entity_id, idle_anim);
-                    }
+                    //if let Some(idle_anim) = self.get_idle_animation(entity_id, data, config) {
+                    //    self.state.append_animation(entity_id, idle_anim);
+                    //}
                 }
             }
 
@@ -260,14 +262,15 @@ impl Display {
 
             Msg::Attack(attacker, attacked, _damage) => {
                 if data.entities.typ[&attacker] == EntityType::Player {
-                    let attack_sprite =
-                        self.new_sprite("player_attack".to_string(), config.player_attack_speed);
-                    let attack_anim = Animation::Once(attack_sprite);
-                    self.state.play_animation(attacker, attack_anim);
+                    // TODO need attack animation
+                    //let attack_sprite =
+                    //    self.new_sprite("player_attack".to_string(), config.player_attack_speed);
+                    //let attack_anim = Animation::Once(attack_sprite);
+                    //self.state.play_animation(attacker, attack_anim);
 
-                    if let Some(idle_anim) = self.get_idle_animation(attacker, data, config) {
-                        self.state.play_animation(attacker, idle_anim);
-                    }
+                    //if let Some(idle_anim) = self.get_idle_animation(attacker, data, config) {
+                    //    self.state.play_animation(attacker, idle_anim);
+                    //}
                 } else {
                     let attacker_pos = data.entities.pos[&attacker];
                     let attacked_pos = data.entities.pos[&attacked];

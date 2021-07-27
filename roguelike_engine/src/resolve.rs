@@ -767,6 +767,7 @@ fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut GameData, msg_
         }
 
         data.map[hit_pos].block_move = false;
+        data.map[hit_pos].block_sight = false;
         data.map[hit_pos].chr = ' ' as u8;
 
         let next_pos = next_from_to(entity_pos, hit_pos);
