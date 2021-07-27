@@ -1066,19 +1066,22 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 let alpha = game.data.entities.color[&player_id].a;
                 game.data.entities.color[&player_id].a = 100;
 
-                let dxy = sub_pos(cursor_pos, player_pos);
-                let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+                let maybe_next_pos = astar_next_pos(&game.data.map, player_pos, cursor_pos, None, None);
+                if let Some(next_pos) = maybe_next_pos {
+                    let dxy = sub_pos(next_pos, player_pos);
+                    let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
 
-                let mut reach = reach_by_mode(MoveMode::Sneak);
-                if !game.input.cursor && game.input.shift {
-                    reach = reach_by_mode(MoveMode::Run);
-                }
+                    let mut reach = reach_by_mode(MoveMode::Sneak);
+                    if !game.input.cursor && game.input.shift {
+                        reach = reach_by_mode(MoveMode::Run);
+                    }
 
-                if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {
-                    game.data.entities.pos[&player_id] = player_ghost_pos;
-                    render_entity(panel, player_id, display_state, game);
-                    game.data.entities.color[&player_id].a = alpha;
-                    game.data.entities.pos[&player_id] = player_pos;
+                    if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {
+                        game.data.entities.pos[&player_id] = player_ghost_pos;
+                        render_entity(panel, player_id, display_state, game);
+                        game.data.entities.color[&player_id].a = alpha;
+                        game.data.entities.pos[&player_id] = player_pos;
+                    }
                 }
             }
         }

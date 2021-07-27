@@ -16,8 +16,6 @@ use smallvec::SmallVec;
 
 use itertools::Itertools;
 
-use log::trace;
-
 use euclid::*;
 
 use serde_derive::*;
@@ -27,6 +25,11 @@ use crate::constants::*;
 use crate::utils::*;
 use crate::movement::Direction;
 use crate::line::*;
+
+
+// multiplier used to scale costs up in astar, allowing small
+// adjustments of costs even though they are integers.
+pub const ASTAR_COST_MULTIPLIER: i32 = 100;
 
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -775,9 +778,6 @@ impl Map {
 
             Direction::DownRight => {
                 if self.blocked_right(start_pos, blocked_type) && self.blocked_down(start_pos, blocked_type) {
-                    if start_pos.x > 10000 && start_pos.y > 10000 {
-                        dbg!(start_pos);
-                    }
                     blocked.wall_type = self[start_pos].bottom_wall;
                     found_blocker = true;
                 }
@@ -897,9 +897,6 @@ impl Map {
         let line = line(start_pos, end_pos);
         let positions = iter::once(start_pos).chain(line.into_iter());
         for (pos, target_pos) in positions.tuple_windows() {
-            if pos.x > 10000 && pos.y > 10000 {
-                dbg!(pos);
-            }
             let blocked = self.move_blocked(pos, target_pos, blocked_type);
             if blocked.is_some() {
                 return blocked;
@@ -1170,6 +1167,17 @@ pub fn pos_in_radius(pos: Pos, radius: i32, rng: &mut Rand32) -> Pos {
     return pos + offset;
 }
 
+pub fn path_find_distance(start: Pos, end: Pos) -> i32 {
+    let mut dist = distance(start, end) * ASTAR_COST_MULTIPLIER;
+    let diff = sub_pos(end, start);
+
+    // penalize diagonal movement just a little bit to avoid zigzagging.
+    if diff.x != 0 && diff.y != 0 {
+        dist += 1;
+    }
+    return dist;
+}
+
 pub fn astar_path(map: &Map,
                   start: Pos,
                   end: Pos,
@@ -1177,16 +1185,14 @@ pub fn astar_path(map: &Map,
                   cost_fn: Option<fn(Pos, Pos, &Map) -> i32>) -> Vec<Pos> {
     let result;
 
-    trace!("astar_path {} {}", start, end);
-
     let maybe_results = 
         astar(&start,
               |&pos| astar_neighbors(map, start, pos, max_dist),
               |&pos| {
                   if let Some(fun) = &cost_fn { 
-                      fun(start, pos, map)
+                      fun(start, pos, map) * ASTAR_COST_MULTIPLIER
                   } else {
-                      distance(pos, end) as i32
+                      path_find_distance(pos, end) as i32
                   }
               },
               |&pos| pos == end);
@@ -1198,6 +1204,20 @@ pub fn astar_path(map: &Map,
     }
 
     return result;
+}
+
+pub fn astar_next_pos(map: &Map,
+                      start: Pos,
+                      end: Pos,
+                      max_dist: Option<i32>,
+                      cost_fn: Option<fn(Pos, Pos, &Map) -> i32>) -> Option<Pos> {
+    let next_positions = astar_path(map, start, end, max_dist, cost_fn);
+
+    if let Some(next_pos) = next_positions.get(1) {
+        return Some(*next_pos);
+    } else {
+        return None;
+    }
 }
 
 pub fn astar_neighbors(map: &Map, start: Pos, pos: Pos, max_dist: Option<i32>) -> SmallVec<[(Pos, i32); 8]> {

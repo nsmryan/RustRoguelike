@@ -9,6 +9,7 @@ use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
 use roguelike_core::utils::{scale_pos, distance, sub_pos, add_pos, next_from_to, move_towards};
+use roguelike_core::map::{astar_next_pos};
 
 use crate::game::*;
 use crate::input::*;
@@ -451,9 +452,12 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::MoveTowardsCursor(move_mode), true) => {
             if let Some(cursor_pos) = settings.cursor {
-                if let Some(direction) = Direction::from_positions(player_pos, cursor_pos) {
-                    let move_amount = move_mode.move_amount();
-                    msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
+                let maybe_next_pos = astar_next_pos(&data.map, player_pos, cursor_pos, None, None);
+                if let Some(next_pos) = maybe_next_pos {
+                    if let Some(direction) = Direction::from_positions(player_pos, next_pos) {
+                        let move_amount = move_mode.move_amount();
+                        msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
+                    }
                 }
             }
         }
