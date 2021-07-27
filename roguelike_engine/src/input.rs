@@ -108,6 +108,7 @@ pub enum InputEvent {
     Ctrl(KeyDir),
     Shift(KeyDir),
     Alt(KeyDir),
+    Enter(KeyDir),
     MousePos(i32, i32),
     MouseButton(MouseClick, Pos, Option<Pos>, KeyDir), // button clicked, mouse position, screen square, keydir
     Esc,
@@ -196,6 +197,12 @@ impl Input {
 
             InputEvent::Tab => {
                 action = InputAction::CursorReturn;
+            }
+
+            InputEvent::Enter(dir) => {
+                if dir == KeyDir::Up {
+                    action = InputAction::MoveTowardsCursor(self.move_mode());
+                }
             }
 
             InputEvent::Ctrl(dir) => {
@@ -477,48 +484,6 @@ impl Input {
             }
         }
     }
-
-    /*
-    fn key_to_action(&mut self, chr: char, settings: &GameSettings) -> InputAction {
-        let action;
-
-        // handle numeric characters first
-        if chr.is_ascii_digit() {
-            if settings.state.is_menu() {
-                action = InputAction::SelectItem(chr.to_digit(10).unwrap() as usize);
-            } else if chr == '5' {
-                if self.alt {
-                    action = InputAction::Interact(None);
-                } else {
-                    if let Some(Target::Item(index)) = self.target {
-                        action = InputAction::DropItemByIndex(index);
-                    } else {
-                        action = InputAction::Pass(self.move_mode());
-                    }
-                }
-            } else if let Some(dir) = direction_from_digit(chr) {
-                if self.cursor {
-                   action = InputAction::CursorMove(dir, self.ctrl, self.shift);
-                } else if self.alt {
-                    action = InputAction::Interact(Some(dir));
-                } else if let Some(Target::Item(index)) = self.target {
-                    action = InputAction::ItemDir(dir, self.action_mode(), index);
-                    self.target = None;
-                } else {
-                    action = InputAction::Move(dir, self.move_mode());
-                }
-            } else {
-                action = InputAction::None;
-            }
-        } else if chr == ' ' {
-            action = InputAction::None;
-        } else {
-            action = alpha_up_to_action(chr);
-        }
-
-        return action;
-    }
-    */
 }
 
 pub fn alpha_up_to_action(chr: char) -> InputAction {

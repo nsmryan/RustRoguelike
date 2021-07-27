@@ -27,6 +27,7 @@ pub enum ActionLoc {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum InputAction {
     Move(Direction, MoveMode),
+    MoveTowardsCursor(MoveMode),
     SkillDir(Direction, ActionMode, usize),
     ItemDir(Direction, ActionMode, usize),
     SkillPos(Pos, ActionMode, usize),
@@ -77,6 +78,7 @@ impl fmt::Display for InputAction {
                     Direction::UpRight => write!(f, "upright {}", move_mode),
                 }
             },
+            InputAction::MoveTowardsCursor(move_mode) => write!(f, "movetowardscursor {}", move_mode),
             InputAction::SkillDir(dir, action_mode, index) => write!(f, "skilldir {} {} {}", dir, action_mode, index),
             InputAction::ItemDir(dir, action_mode, index) => write!(f, "itemdir {} {} {}", dir, action_mode, index),
             InputAction::SkillPos(pos, action_mode, index) => write!(f, "skillpos {} {} {} {}", pos.x, pos.y, action_mode, index),
@@ -149,6 +151,9 @@ impl FromStr for InputAction {
         } else if args[0] == "pass" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Pass(move_mode));
+        } else if args[0] == "movetowardscursor" {
+            let move_mode = args[1].parse::<MoveMode>().unwrap();
+            return Ok(InputAction::MoveTowardsCursor(move_mode));
         } else if args[0] == "skilldir" {
             let dir = args[1].parse::<Direction>().unwrap();
             let action_mode = args[2].parse::<ActionMode>().unwrap();
@@ -444,28 +449,37 @@ pub fn handle_input_playing(input_action: InputAction,
             msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
         }
 
-        (InputAction::ItemDir(dir, mode, item_index), true) => {
-            handle_item(item_index, ActionLoc::Dir(dir), mode, data, msg_log);
+        (InputAction::MoveTowardsCursor(move_mode), true) => {
+            if let Some(cursor_pos) = settings.cursor {
+                if let Some(direction) = Direction::from_positions(player_pos, cursor_pos) {
+                    let move_amount = move_mode.move_amount();
+                    msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
+                }
+            }
         }
 
-        (InputAction::SkillDir(dir, mode, skill_index), true) => {
-            handle_skill(skill_index, ActionLoc::Dir(dir), mode, data, msg_log);
+        (InputAction::ItemDir(dir, action_mode, item_index), true) => {
+            handle_item(item_index, ActionLoc::Dir(dir), action_mode, data, msg_log);
         }
 
-        (InputAction::ItemPos(pos, mode, item_index), true) => {
-            handle_item(item_index, ActionLoc::Place(pos), mode, data, msg_log);
+        (InputAction::SkillDir(dir, action_mode, skill_index), true) => {
+            handle_skill(skill_index, ActionLoc::Dir(dir), action_mode, data, msg_log);
         }
 
-        (InputAction::SkillPos(pos, mode, skill_index), true) => {
-            handle_skill(skill_index, ActionLoc::Place(pos), mode, data, msg_log);
+        (InputAction::ItemPos(pos, action_mode, item_index), true) => {
+            handle_item(item_index, ActionLoc::Place(pos), action_mode, data, msg_log);
         }
 
-        (InputAction::ItemFacing(mode, item_index), true) => {
-            handle_item(item_index, ActionLoc::Facing, mode, data, msg_log);
+        (InputAction::SkillPos(pos, action_mode, skill_index), true) => {
+            handle_skill(skill_index, ActionLoc::Place(pos), action_mode, data, msg_log);
         }
 
-        (InputAction::SkillFacing(mode, skill_index), true) => {
-            handle_skill(skill_index, ActionLoc::Facing, mode, data, msg_log);
+        (InputAction::ItemFacing(action_mode, item_index), true) => {
+            handle_item(item_index, ActionLoc::Facing, action_mode, data, msg_log);
+        }
+
+        (InputAction::SkillFacing(action_mode, skill_index), true) => {
+            handle_skill(skill_index, ActionLoc::Facing, action_mode, data, msg_log);
         }
 
         (InputAction::CursorReturn, _) => {
