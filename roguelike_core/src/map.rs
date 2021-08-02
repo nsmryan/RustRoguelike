@@ -1167,14 +1167,15 @@ pub fn pos_in_radius(pos: Pos, radius: i32, rng: &mut Rand32) -> Pos {
     return pos + offset;
 }
 
-pub fn path_find_distance(start: Pos, end: Pos) -> i32 {
-    let mut dist = distance(start, end) * ASTAR_COST_MULTIPLIER;
-    let diff = sub_pos(end, start);
+pub fn path_find_distance(start: Pos, next_pos: Pos, end: Pos) -> i32 {
+    let mut dist = distance(next_pos, end) * ASTAR_COST_MULTIPLIER;
+    let diff = sub_pos(next_pos, start);
 
     // penalize diagonal movement just a little bit to avoid zigzagging.
     if diff.x != 0 && diff.y != 0 {
         dist += 1;
     }
+
     return dist;
 }
 
@@ -1192,7 +1193,7 @@ pub fn astar_path(map: &Map,
                   if let Some(fun) = &cost_fn { 
                       fun(start, pos, map) * ASTAR_COST_MULTIPLIER
                   } else {
-                      path_find_distance(pos, end) as i32
+                      path_find_distance(start, pos, end) as i32
                   }
               },
               |&pos| pos == end);
@@ -1227,10 +1228,12 @@ pub fn astar_neighbors(map: &Map, start: Pos, pos: Pos, max_dist: Option<i32>) -
           }
       }
 
-      map.reachable_neighbors(pos)
-         .iter()
-         .map(|pos| (*pos, 1))
-         .collect::<SmallVec<[(Pos, i32); 8]>>()
+      let next_pos = map.reachable_neighbors(pos)
+                        .iter()
+                        .map(|pos| (*pos, 1))
+                        .collect::<SmallVec<[(Pos, i32); 8]>>();
+
+    return next_pos;
 }
 
 #[test]
