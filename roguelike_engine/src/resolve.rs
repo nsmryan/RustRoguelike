@@ -93,7 +93,7 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::SwordSwing(entity_id, item_id, pos) => {
-                sword_swing(entity_id, item_id, pos, data, msg_log);
+                sword_swing(entity_id, item_id, pos, data, msg_log, config);
             }
 
             Msg::HammerSwing(entity_id, item_id, pos) => {
@@ -471,15 +471,21 @@ fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameD
     }
 }
 
-fn sword_swing(entity_id: EntityId, item_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
+fn sword_swing(entity_id: EntityId, item_id: EntityId, hit_pos: Pos, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     let mut any_hit_entity = false;
 
-    let adj_locs = Reach::single(1).reachables(pos);
+    let entity_pos = data.entities.pos[&entity_id];
+    let adj_locs = Reach::single(1).reachables(entity_pos);
     for loc in adj_locs {
         if let Some(target_id) = data.has_blocking_entity(loc) {
+            if target_id == entity_id {
+                continue;
+            }
+
             if data.entities.status[&target_id].alive {
-                attack(entity_id, target_id, data, msg_log);
+                data.entities.status[&target_id].frozen += config.sword_stun_turns;
                 any_hit_entity = true;
+                break;
             }
         }
     }

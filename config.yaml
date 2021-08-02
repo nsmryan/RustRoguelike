@@ -162,6 +162,7 @@ sound_radius_player: 3
 sound_radius_hammer: 3
 freeze_trap_radius: 3
 push_stun_turns: 3
+sword_stun_turns: 5
 overlay_directions: false
 overlay_player_fov: false
 overlay_fov_alg: false

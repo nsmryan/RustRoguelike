@@ -72,6 +72,7 @@ pub struct Config {
     pub sound_radius_hammer: usize,
     pub freeze_trap_radius: usize,
     pub push_stun_turns: usize,
+    pub sword_stun_turns: usize,
     pub overlay_directions: bool,
     pub overlay_player_fov: bool,
     pub overlay_fov_alg: bool,

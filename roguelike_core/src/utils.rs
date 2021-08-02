@@ -160,20 +160,18 @@ pub fn push_attack(entity_id: EntityId,
             msg_log.log_front(Msg::Moved(entity_id, MoveType::Move, move_into_pos));
         }
 
+        data.entities.status[&target].frozen += config.push_stun_turns;
+
         msg_log.log_front(Msg::Moved(target, MoveType::Move, past_pos));
     } else {
-        if data.entities.status[&target].frozen == 0 {
-            data.entities.status[&target].frozen = config.push_stun_turns;
-        } else {
-            // otherwise crush them against the wall/entity
-            damage = data.entities.fighter[&target].hp;
+        // otherwise crush them against the wall/entity
+        damage = data.entities.fighter[&target].hp;
 
-            killed = true;
-            msg_log.log_front(Msg::Crushed(target, other_pos));
+        killed = true;
+        msg_log.log_front(Msg::Crushed(target, other_pos));
 
-            // once we crush an entity, we lose the rest of the move
-            continue_push = false;
-        }
+        // once we crush an entity, we lose the rest of the move
+        continue_push = false;
     }
 
     if killed {
