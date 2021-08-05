@@ -27,4 +27,6 @@ image = { version = "*", default-features = false, features = ["png"] }
 rand = {version = "0.8", default-features = false, features = ["small_rng", "std"] }
 oorandom = "11.1"
 
+smallvec = "1.4"
+
 roguelike_core = { path = "../roguelike_core" }

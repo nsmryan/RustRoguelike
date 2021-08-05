@@ -1011,14 +1011,9 @@ impl SpriteSheet {
     }
 
     fn sprite_src(&mut self, index: usize) -> Rect {
-        let (num_cells_x, num_cells_y) = self.num_cells();
+        let (num_cells_x, _num_cells_y) = self.num_cells();
         let sprite_x = index % num_cells_x;
         let sprite_y = index / num_cells_x;
-
-        //if sprite_y >= num_cells_y {
-            //dbg!(sprite_y, num_cells_x, num_cells_y);
-        //}
-        //assert!(sprite_y < num_cells_y);
 
         let (sprite_width, sprite_height) = self.sprite_dims();
         let src = Rect::new((sprite_x * sprite_width) as i32,

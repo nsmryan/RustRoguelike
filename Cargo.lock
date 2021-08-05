@@ -622,6 +622,7 @@ dependencies = [
  "serde_derive",
  "serde_yaml",
  "simple-logging",
+ "smallvec",
  "symbol",
  "wfc_image",
 ]

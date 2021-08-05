@@ -446,6 +446,7 @@ pub enum GameState {
     SkillMenu,
     ClassMenu,
     ConfirmQuit,
+    Use,
     Exit,
 }
 
@@ -459,6 +460,7 @@ impl fmt::Display for GameState {
             GameState::SkillMenu => write!(f, "skillmenu"),
             GameState::ClassMenu => write!(f, "classmenu"),
             GameState::ConfirmQuit => write!(f, "confirmquit"),
+            GameState::Use => write!(f, "use"),
             GameState::Exit => write!(f, "exit"),
         }
     }

@@ -78,6 +78,7 @@ pub enum Msg {
     Facing(EntityId, Direction),
     AiAttack(EntityId),
     RemovedEntity(EntityId),
+    StartUseItem(EntityId),
 }
 
 impl fmt::Display for Msg {
@@ -161,6 +162,7 @@ impl fmt::Display for Msg {
             Msg::Facing(entity_id, direction) => write!(f, "facing {} {}", entity_id, direction),
             Msg::AiAttack(entity_id) => write!(f, "ai_attack {}", entity_id),
             Msg::RemovedEntity(entity_id) => write!(f, "removed {}", entity_id),
+            Msg::StartUseItem(entity_id) => write!(f, "startuseitem {}", entity_id),
         }
     }
 }
@@ -421,10 +423,6 @@ impl Msg {
 
             Msg::PlaceTrap(entity_id, pos, trap_id) => {
                 return format!("{:?} place {:?} at {}", data.entities.name[entity_id], data.entities.name[trap_id], pos);
-            }
-
-            Msg::SpawnedObject(_entity_id, _entity_type, _pos, _entity_name, _facing) => {
-                return "".to_string();
             }
 
             _ => {

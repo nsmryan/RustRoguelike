@@ -419,6 +419,29 @@ pub fn resolve_messages(data: &mut GameData,
                 }
             }
 
+            Msg::StartUseItem(item_id) => {
+                match data.entities.item[&item_id] {
+                    Item::Dagger => {
+                    }
+
+                    Item::Shield => {
+                    }
+
+                    Item::Hammer => {
+                    }
+
+                    Item::Sword => {
+                        //let mut offsets = SmallVec::new();
+                        //let dir = data.entities.direction[&player_id] as usize;
+                        //offsets[dir] = Some(ItemUse(Item::Sword, 1));
+                        //data.entities.
+                    }
+
+                    _ => {
+                    }
+                }
+            }
+
             _ => {
             }
         }
@@ -471,10 +494,12 @@ fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameD
     }
 }
 
-fn sword_swing(entity_id: EntityId, item_id: EntityId, hit_pos: Pos, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+fn sword_swing(entity_id: EntityId, item_id: EntityId, _hit_pos: Pos, data: &mut GameData, _msg_log: &mut MsgLog, config: &Config) {
     let mut any_hit_entity = false;
 
     let entity_pos = data.entities.pos[&entity_id];
+
+    // search around the position for entities.
     let adj_locs = Reach::single(1).reachables(entity_pos);
     for loc in adj_locs {
         if let Some(target_id) = data.has_blocking_entity(loc) {

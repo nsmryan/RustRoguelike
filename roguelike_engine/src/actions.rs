@@ -35,6 +35,10 @@ pub enum InputAction {
     ItemPos(Pos, ActionMode, usize),
     SkillFacing(ActionMode, usize),
     ItemFacing(ActionMode, usize),
+    StartUseItem(usize),
+    StartUseDir(Direction),
+    FinalizeUse,
+    AbortUse,
     Pass(MoveMode),
     Pickup,
     DropItem,
@@ -60,7 +64,7 @@ pub enum InputAction {
     DecreaseMoveMode,
     OverlayOn,
     OverlayOff,
-    SelectItem(usize),
+    SelectEntry(usize),
     None,
 }
 
@@ -86,6 +90,10 @@ impl fmt::Display for InputAction {
             InputAction::ItemPos(pos, action_mode, index) => write!(f, "itempos {} {} {} {}", pos.x, pos.y, action_mode, index),
             InputAction::SkillFacing(action_mode, index) => write!(f, "skill {} {}", action_mode, index),
             InputAction::ItemFacing(action_mode, index) => write!(f, "itemdir {} {}", action_mode, index),
+            InputAction::StartUseItem(index) => write!(f, "startuseitem {}", index),
+            InputAction::StartUseDir(dir) => write!(f, "startusedir {}", dir),
+            InputAction::FinalizeUse => write!(f, "finalizeuse"),
+            InputAction::AbortUse => write!(f, "abortuse"),
             InputAction::Pass(move_mode) => write!(f, "pass {}", move_mode),
             InputAction::MapClick(loc, cell) => write!(f, "click {} {} {} {}", loc.x, loc.y, cell.x, cell.y),
             InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
@@ -106,7 +114,7 @@ impl fmt::Display for InputAction {
             InputAction::DecreaseMoveMode => write!(f, "slower"),
             InputAction::OverlayOn => write!(f, "overlayon"),
             InputAction::OverlayOff => write!(f, "overlayoff"),
-            InputAction::SelectItem(item) => write!(f, "selectitem {}", item),
+            InputAction::SelectEntry(item) => write!(f, "selectentry {}", item),
             InputAction::UseItem(dir, target) => write!(f, "use, {:?} {}", dir, target),
             InputAction::Interact(dir) => write!(f, "interact {:?}", dir),
             InputAction::CursorMove(dir, relative, long) => write!(f, "cursormove {:?} {} {}", dir, relative, long),
@@ -185,6 +193,16 @@ impl FromStr for InputAction {
             let action_mode = args[1].parse::<ActionMode>().unwrap();
             let index = args[2].parse::<usize>().unwrap();
             return Ok(InputAction::ItemFacing(action_mode, index));
+        } else if args[0] == "startuseitem" {
+            let index = args[1].parse::<usize>().unwrap();
+            return Ok(InputAction::StartUseItem(index));
+        } else if args[0] == "startusedir" {
+            let dir = args[1].parse::<Direction>().unwrap();
+            return Ok(InputAction::StartUseDir(dir));
+        } else if args[0] == "finalizeuse" {
+            return Ok(InputAction::FinalizeUse);
+        } else if args[0] == "abortuse" {
+            return Ok(InputAction::AbortUse);
         } else if args[0] == "pickup" {
             return Ok(InputAction::Pickup);
         } else if args[0] == "drop" {
@@ -200,9 +218,9 @@ impl FromStr for InputAction {
             let direction = args[1].parse::<Direction>().unwrap();
             let target = args[1].parse::<usize>().unwrap();
             return Ok(InputAction::UseItem(direction, target));
-        } else if s.starts_with("selectitem") {
+        } else if s.starts_with("selectentry") {
             let selection = args[1].parse::<usize>().unwrap();
-            return Ok(InputAction::SelectItem(selection));
+            return Ok(InputAction::SelectEntry(selection));
         } else if args[0] == "interact" {
             let dir = args[1].parse::<Direction>().ok();
             return Ok(InputAction::Interact(dir));
@@ -318,7 +336,7 @@ pub fn handle_input_skill_menu(input: InputAction,
                                data: &GameData,
                                settings: &mut GameSettings,
                                msg_log: &mut MsgLog,
-                               config: &Config) {
+                               _config: &Config) {
     match input {
         InputAction::Inventory => {
             change_state(settings, GameState::Inventory);
@@ -332,7 +350,7 @@ pub fn handle_input_skill_menu(input: InputAction,
             change_state(settings, GameState::ClassMenu);
         }
 
-        InputAction::SelectItem(skill_index) => {
+        InputAction::SelectEntry(skill_index) => {
             handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, data, msg_log);
             change_state(settings, GameState::Playing);
         }
@@ -363,7 +381,7 @@ pub fn handle_input_class_menu(input: InputAction,
             change_state(settings, GameState::SkillMenu);
         }
 
-        InputAction::SelectItem(class_index) => {
+        InputAction::SelectEntry(class_index) => {
             let classes = EntityClass::classes();
             if class_index < classes.len() {
                 // give player skills from a particular class
@@ -407,6 +425,10 @@ pub fn handle_input(input_action: InputAction,
             handle_input_playing(input_action, data, settings, msg_log, config);
         }
 
+        GameState::Use => {
+            handle_input_use(input_action, data, settings, msg_log, config);
+        }
+
         GameState::Win => {
         }
 
@@ -430,6 +452,44 @@ pub fn handle_input(input_action: InputAction,
         }
 
         GameState::Exit => {
+        }
+    }
+}
+
+pub fn handle_input_use(input_action: InputAction,
+                        data: &GameData,
+                        settings: &mut GameSettings,
+                        msg_log: &mut MsgLog,
+                        config: &Config) {
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = data.entities.pos[&player_id];
+
+    let player_alive = data.entities.status[&player_id].alive;
+
+    match (input_action, player_alive) {
+        (InputAction::StartUseItem(item_index), true) => {
+            dbg!(item_index);
+            start_use_item(item_index, data, settings, msg_log);
+        }
+
+        (InputAction::StartUseDir(dir), true) => {
+            dbg!(dir);
+            start_use_dir(dir, data, settings, msg_log);
+        }
+
+        (InputAction::FinalizeUse, true) => {
+            dbg!("finalize use");
+            // TODO apply item
+            change_state(settings, GameState::Playing);
+        }
+
+        (InputAction::AbortUse, true) => {
+            dbg!("abort use");
+            // TODO do we need to clear any state here?
+            change_state(settings, GameState::Playing);
+        }
+
+        (_, _) => {
         }
     }
 }
@@ -484,6 +544,11 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::SkillFacing(action_mode, skill_index), true) => {
             handle_skill(skill_index, ActionLoc::Facing, action_mode, data, msg_log);
+        }
+
+        (InputAction::StartUseItem(item_index), true) => {
+            dbg!();
+            start_use_item(item_index, data, settings, msg_log);
         }
 
         (InputAction::CursorReturn, _) => {
@@ -596,6 +661,26 @@ pub fn handle_input_playing(input_action: InputAction,
         (_, _) => {
         }
     }
+}
+
+fn start_use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_log: &mut MsgLog) {
+    dbg!(dir);
+}
+
+fn start_use_item(item_index: usize, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
+
+    let num_items_in_inventory = data.entities.inventory[&player_id].len();
+
+    if item_index >= num_items_in_inventory {
+        return;
+    }
+
+    let item_id = data.entities.inventory[&player_id][item_index as usize];
+
+    change_state(settings, GameState::Use);
+
+    msg_log.log(Msg::StartUseItem(item_id));
 }
 
 pub fn handle_skill(skill_index: usize,
@@ -913,6 +998,10 @@ fn change_state(settings: &mut GameSettings, new_state: GameState) {
 
             GameState::Exit => {
                 println!("CONSOLE: Exiting");
+            }
+
+            GameState::Use => {
+                println!("CONSOLE: Use");
             }
         }
     }
