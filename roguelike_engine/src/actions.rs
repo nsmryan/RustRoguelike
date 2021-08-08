@@ -274,6 +274,7 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
 
         InputAction::RegenerateMap => {
             let _position = make_map::make_map(&game.config.map_load.clone(), game);
+            game.msg_log.log(Msg::NewLevel);
             return true;
         }
 

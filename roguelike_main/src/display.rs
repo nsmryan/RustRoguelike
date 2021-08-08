@@ -338,6 +338,10 @@ impl Display {
                 self.state.animations.remove(&entity_id);
             }
 
+            Msg::NewLevel => {
+                self.clear_level_state();
+            }
+
             _ => {
             }
         }

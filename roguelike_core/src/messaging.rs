@@ -83,6 +83,7 @@ pub enum Msg {
     AiAttack(EntityId),
     RemovedEntity(EntityId),
     StartUseItem(EntityId),
+    NewLevel,
 }
 
 impl fmt::Display for Msg {
@@ -171,6 +172,7 @@ impl fmt::Display for Msg {
             Msg::AiAttack(entity_id) => write!(f, "ai_attack {}", entity_id),
             Msg::RemovedEntity(entity_id) => write!(f, "removed {}", entity_id),
             Msg::StartUseItem(entity_id) => write!(f, "startuseitem {}", entity_id),
+            Msg::NewLevel => write!(f, "newlevel"),
         }
     }
 }
