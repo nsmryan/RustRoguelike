@@ -64,6 +64,15 @@ pub fn step_logic(game: &mut Game) -> bool {
 
     if game.data.entities.took_turn[&player_id] {
         game.settings.turn_count += 1;
+
+        // check on whether the player has their hammer raised
+        if let Some((item_id, dir, turns)) = game.data.entities.status[&player_id].hammer_raised {
+            if turns == 0 {
+                game.data.entities.status[&player_id].hammer_raised = None;
+            } else {
+                game.data.entities.status[&player_id].hammer_raised = Some((item_id, dir, turns - 1));
+            }
+        }
     }
 
     // perform count down of entities waiting to be removed

@@ -106,7 +106,8 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::HammerRaise(entity_id, item_index, dir) => {
                 let item_id = data.entities.inventory[&entity_id][item_index];
-                data.entities.status[&entity_id].hammer_raised = Some((item_id, dir, 0));
+                data.entities.status[&entity_id].hammer_raised = Some((item_id, dir, 1));
+                data.entities.took_turn[&entity_id] = true;
             }
 
             Msg::DaggerStab(entity_id, item_index, dir) => {
@@ -1334,8 +1335,6 @@ fn process_moved_message(entity_id: EntityId,
                 let hit_pos = dir.offset_pos(original_pos, 1);
                 msg_log.log(Msg::HammerSwing(entity_id, item_id, hit_pos));
                 data.entities.status[&entity_id].hammer_raised = None;
-            } else {
-                data.entities.status[&entity_id].hammer_raised = Some((item_id, dir, turns - 1));
             }
         }
     }
