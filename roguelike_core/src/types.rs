@@ -390,16 +390,18 @@ impl GameData {
             }
 
             Item::Shield => {
-                let target_pos = dir.offset_pos(pos, 1);
+                if dir == self.entities.direction[&entity_id] {
+                    let target_pos = dir.offset_pos(pos, 1);
 
-                let hit_pos = dir.offset_pos(target_pos, 1);
+                    let hit_pos = dir.offset_pos(target_pos, 1);
 
-                if let Some(hit_entity) = self.has_blocking_entity(hit_pos) {
-                    let is_clear_path = self.clear_path(pos, target_pos, false);
+                    if let Some(hit_entity) = self.has_blocking_entity(hit_pos) {
+                        let is_clear_path = self.clear_path(pos, target_pos, false);
 
-                    let hits_enemy = self.entities.typ[&hit_entity] == EntityType::Enemy;
-                    if is_clear_path && hits_enemy {
-                        return Some(target_pos);
+                        let hits_enemy = self.entities.typ[&hit_entity] == EntityType::Enemy;
+                        if is_clear_path && hits_enemy {
+                            return Some(target_pos);
+                        }
                     }
                 }
             }
