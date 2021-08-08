@@ -92,6 +92,10 @@ pub fn resolve_messages(data: &mut GameData,
                 msg_log.log_front(Msg::Sound(attacker, pos, config.sound_radius_attack, true)); 
             }
 
+            Msg::ShieldSmash(entity_id, item_index, dir) => {
+                shield_smash(entity_id, item_index, dir, data, msg_log, config);
+            }
+
             Msg::SwordStep(entity_id, item_index, dir) => {
                 sword_step(entity_id, item_index, dir, data, msg_log, config);
             }
@@ -504,6 +508,19 @@ fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameD
         let damage = fighter.hp;
 
         msg_log.log(Msg::Killed(entity_id, hit_entity, damage));
+    }
+}
+
+fn shield_smash(entity_id: EntityId, item_index: usize, dir: Direction, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+    let entity_pos = data.entities.pos[&entity_id];
+    let move_pos = dir.offset_pos(entity_pos, 1);
+
+    let hit_pos = dir.offset_pos(move_pos, 1);
+    if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
+        msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Run));
+        msg_log.log(Msg::Froze(hit_entity, config.shield_smash_num_turns));
+    } else {
+        panic!("Shield smash did not find an entity to hit?");
     }
 }
 

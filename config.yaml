@@ -193,3 +193,4 @@ beam_duration: 5
 draw_directional_arrow: false
 sword_step_num_turns: 4
 dagger_stab_num_turns: 4
+shield_smash_num_turns: 6

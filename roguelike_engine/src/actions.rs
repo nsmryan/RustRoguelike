@@ -674,7 +674,11 @@ pub fn handle_input_playing(input_action: InputAction,
 }
 
 fn start_use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_log: &mut MsgLog) {
-    settings.use_dir = Some(dir);
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
+
+    if data.calculate_use_move(player_id, settings.use_index as usize, dir).is_some() {
+        settings.use_dir = Some(dir);
+    }
 }
 
 fn finalize_use_item(item_index: i32, dir: Direction, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
@@ -691,6 +695,7 @@ fn finalize_use_item(item_index: i32, dir: Direction, data: &GameData, settings:
         }
 
         Item::Shield => {
+            msg_log.log(Msg::ShieldSmash(player_id, item_index, dir));
         }
 
         Item::Hammer => {
