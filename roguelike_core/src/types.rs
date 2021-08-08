@@ -134,7 +134,8 @@ impl GameData {
 
         let other_pos = self.entities.pos[&other_id];
 
-        return self.fov_check(entity_id, other_pos, crouching, config);
+        let is_removing = self.entities.needs_removal[&other_id];
+        return !is_removing && self.fov_check(entity_id, other_pos, crouching, config);
     }
 
     pub fn pos_in_fov(&self, entity_id: EntityId, other_pos: Pos, config: &Config) -> bool {

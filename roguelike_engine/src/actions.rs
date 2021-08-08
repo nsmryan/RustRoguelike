@@ -724,6 +724,8 @@ fn start_use_item(item_index: usize, data: &GameData, settings: &mut GameSetting
 
     settings.use_index = item_index as i32;
 
+    settings.cursor = None;
+
     change_state(settings, GameState::Use);
 
     let item_id = data.entities.inventory[&player_id][item_index as usize];
@@ -1015,6 +1017,7 @@ fn handle_item(target: usize,
 fn change_state(settings: &mut GameSettings, new_state: GameState) {
     if new_state != settings.state {
         settings.state = new_state;
+
         match new_state {
             GameState::Inventory => {
                 println!("CONSOLE: Opened Inventory");

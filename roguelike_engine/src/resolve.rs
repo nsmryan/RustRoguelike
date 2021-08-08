@@ -865,6 +865,12 @@ fn resolve_rubble(entity_id: EntityId, blocked: Blocked, data: &mut GameData, _m
 fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     let entity_pos = data.entities.pos[&entity];
     let hit_pos = blocked.end_pos;
+
+    // if hit water, do nothing
+    if data.map[hit_pos].tile_type == TileType::Water {
+        return;
+    }
+
     if data.map[hit_pos].block_move {
         if data.map[hit_pos].surface == Surface::Floor {
             data.map[hit_pos].surface = Surface::Rubble;
@@ -872,6 +878,7 @@ fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut GameData, msg_
 
         data.map[hit_pos].block_move = false;
         data.map[hit_pos].block_sight = false;
+        data.map[hit_pos].tile_type = TileType::Empty;
         data.map[hit_pos].chr = ' ' as u8;
 
         let next_pos = next_from_to(entity_pos, hit_pos);
@@ -973,6 +980,10 @@ fn pushed_entity(pusher: EntityId,
 }
 
 fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+
+    if data.map[pos].tile_type.is_wall() {
+        data.map[pos] = Tile::empty();
+    }
     data.map[pos].surface = Surface::Rubble;
 
     for crushed_id in data.has_entities(pos) {

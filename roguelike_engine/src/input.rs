@@ -416,11 +416,9 @@ impl Input {
             if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
                 self.target = Some(Target::item(index as usize));
 
-                if !self.cursor {
-                    action = InputAction::StartUseItem(index as usize);
-                    // directions are not used in use-mode
-                    self.direction = None;
-                }
+                action = InputAction::StartUseItem(index as usize);
+                // directions are cleared when entering use-mode
+                self.direction = None;
             }
 
             if let Some(input_dir) = InputDirection::from_chr(chr) {
