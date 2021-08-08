@@ -278,6 +278,7 @@ impl Input {
         } else if settings.state == GameState::Use {
             if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
                 self.clear_char_state(chr);
+
                 return InputAction::FinalizeUse;
             }
 

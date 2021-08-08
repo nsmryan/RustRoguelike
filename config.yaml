@@ -191,3 +191,4 @@ idle_animations: false
 recording: true
 beam_duration: 5
 draw_directional_arrow: false
+sword_step_num_turns: 4

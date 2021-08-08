@@ -1027,6 +1027,21 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
     let sprite_key = display_state.lookup_spritekey("tiles");
 
+    // Draw use-mode overlay
+    if game.settings.state == GameState::Use {
+        let mut highlight_color = game.config.color_light_grey;
+        highlight_color.a = game.config.grid_alpha_overlay;
+
+        for dir in Direction::move_actions().iter() {
+            let maybe_use = game.data.calculate_use_move(player_id,
+                                                         game.settings.use_index as usize,
+                                                         *dir);
+            if let Some(pos) = maybe_use {
+                draw_tile_highlight(panel, pos, highlight_color);
+            }
+        }
+    }
+
     // render a grid of numbers if enabled
     if game.config.overlay_directions {
         let tile_sprite = &mut display_state.sprites[&sprite_key];
@@ -1106,7 +1121,6 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         }
     }
 
-    // Draw player action overlay. Could draw arrows to indicate how to reach each location
     let mut highlight_color: Color = game.config.color_warm_grey;
     highlight_color.a = game.config.highlight_player_move;
 
@@ -1238,11 +1252,11 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
     // Draw player movement overlay
     if game.settings.overlay {
-        for move_action in Direction::move_actions().iter() {
+        for dir in Direction::move_actions().iter() {
             // for all movements except staying still
             // calculate the move that would occur
             if let Some(movement) =
-                calculate_move(*move_action,
+                calculate_move(*dir,
                                game.data.entities.movement[&player_id],
                                player_id,
                                &mut game.data) {

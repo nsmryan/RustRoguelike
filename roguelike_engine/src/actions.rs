@@ -481,11 +481,21 @@ pub fn handle_input_use(input_action: InputAction,
             dbg!("finalize use");
             // TODO apply item
             change_state(settings, GameState::Playing);
+
+            if let Some(dir) = settings.use_dir {
+                if settings.use_index >= 0 {
+                    finalize_use_item(settings.use_index, dir, data, settings, msg_log);
+                }
+            }
         }
 
         (InputAction::AbortUse, true) => {
             dbg!("abort use");
             // TODO do we need to clear any state here?
+            change_state(settings, GameState::Playing);
+        }
+
+        (InputAction::Esc, true) => {
             change_state(settings, GameState::Playing);
         }
 
@@ -664,7 +674,35 @@ pub fn handle_input_playing(input_action: InputAction,
 }
 
 fn start_use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_log: &mut MsgLog) {
-    dbg!(dir);
+    settings.use_dir = Some(dir);
+}
+
+fn finalize_use_item(item_index: i32, dir: Direction, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
+
+    let item_index = settings.use_index as usize;
+
+    let item_id = data.entities.inventory[&player_id][item_index];
+
+    let item = data.entities.item[&item_id];
+    match item {
+        Item::Dagger => {
+        }
+
+        Item::Shield => {
+        }
+
+        Item::Hammer => {
+        }
+
+        Item::Sword => {
+            msg_log.log(Msg::SwordStep(player_id, item_index, dir));
+        }
+
+        _ => {
+            panic!(format!("Tried to use {} in use-mode!", item));
+        }
+    }
 }
 
 fn start_use_item(item_index: usize, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
@@ -676,10 +714,11 @@ fn start_use_item(item_index: usize, data: &GameData, settings: &mut GameSetting
         return;
     }
 
-    let item_id = data.entities.inventory[&player_id][item_index as usize];
+    settings.use_index = item_index as i32;
 
     change_state(settings, GameState::Use);
 
+    let item_id = data.entities.inventory[&player_id][item_index as usize];
     msg_log.log(Msg::StartUseItem(item_id));
 }
 

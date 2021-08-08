@@ -366,6 +366,47 @@ impl GameData {
         return !(player_pushing || enemies_pushing_each_other);
     }
 
+    pub fn calculate_use_move(&self, entity_id: EntityId, item_index: usize, dir: Direction) -> Option<Pos> {
+        let pos = self.entities.pos[&entity_id];
+        let item_id = self.entities.inventory[&entity_id][item_index];
+
+        let item = self.entities.item[&item_id];
+        match item {
+            Item::Dagger => {
+                return None;
+            }
+
+            Item::Shield => {
+                return None;
+            }
+
+            Item::Hammer => {
+                return None;
+            }
+
+            Item::Sword => {
+                let target_pos = dir.offset_pos(pos, 1);
+                if self.clear_path(pos, target_pos, false) {
+                    let dir_right = dir.counterclockwise();
+                    let pos_right = dir_right.offset_pos(pos, 1);
+
+                    let dir_left = dir.clockwise();
+                    let pos_left = dir_left.offset_pos(pos, 1);
+
+                    if self.has_blocking_entity(pos_right).is_some() || self.has_blocking_entity(pos_left).is_some() {
+                        return Some(target_pos);
+                    }
+                }
+
+                return None;
+            }
+
+            _ => {
+                panic!(format!("Tried to use {} in use-mode!", item));
+            }
+        }
+    }
+
     // clear all entities, except those in the given vector.
     pub fn clear_except(&mut self, exceptions: Vec<EntityId>) {
         let mut dont_clear: Vec<EntityId> = Vec::new();

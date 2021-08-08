@@ -8,6 +8,7 @@ use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::MsgLog;
+use roguelike_core::movement::Direction;
 
 use crate::actions;
 use crate::actions::InputAction;
@@ -133,6 +134,8 @@ pub struct GameSettings {
     pub level_num: usize,
     pub running: bool,
     pub cursor: Option<Pos>,
+    pub use_index: i32,
+    pub use_dir: Option<Direction>,
 }
 
 impl GameSettings {
@@ -150,6 +153,8 @@ impl GameSettings {
             level_num: 0,
             running: true,
             cursor: None,
+            use_index: -1,
+            use_dir: None,
         };
     }
 }

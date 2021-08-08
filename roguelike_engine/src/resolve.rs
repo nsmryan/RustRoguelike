@@ -92,6 +92,10 @@ pub fn resolve_messages(data: &mut GameData,
                 msg_log.log_front(Msg::Sound(attacker, pos, config.sound_radius_attack, true)); 
             }
 
+            Msg::SwordStep(entity_id, item_index, dir) => {
+                sword_step(entity_id, item_index, dir, data, msg_log, config);
+            }
+
             Msg::SwordSwing(entity_id, item_id, pos) => {
                 sword_swing(entity_id, item_id, pos, data, msg_log, config);
             }
@@ -162,6 +166,7 @@ pub fn resolve_messages(data: &mut GameData,
             Msg::Froze(entity_id, num_turns) => {
                 if entity_id == player_id || data.entities.ai.get(&entity_id).is_some() {
                     data.entities.status[&entity_id].frozen = num_turns;
+                    data.entities.behavior[&entity_id] = Behavior::Idle;
                 }
             }
 
@@ -491,6 +496,31 @@ fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameD
         let damage = fighter.hp;
 
         msg_log.log(Msg::Killed(entity_id, hit_entity, damage));
+    }
+}
+
+fn sword_step(entity_id: EntityId, item_index: usize, dir: Direction, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+    let pos = data.entities.pos[&entity_id];
+    let target_pos = dir.offset_pos(pos, 1);
+
+    if data.clear_path(pos, target_pos, false) {
+        let dir_right = dir.counterclockwise();
+        let pos_right = dir_right.offset_pos(pos, 1);
+
+        let dir_left = dir.clockwise();
+        let pos_left = dir_left.offset_pos(pos, 1);
+
+        if let Some(target_id) = data.has_blocking_entity(pos_right) {
+            msg_log.log(Msg::Froze(target_id, config.sword_step_num_turns));
+        }
+
+        if let Some(target_id) = data.has_blocking_entity(pos_left) {
+            msg_log.log(Msg::Froze(target_id, config.sword_step_num_turns));
+        }
+
+        msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Walk));
+    } else {
+        panic!("Sword swing should not have been blocked!");
     }
 }
 
