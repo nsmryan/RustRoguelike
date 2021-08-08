@@ -96,6 +96,14 @@ pub fn resolve_messages(data: &mut GameData,
                 sword_step(entity_id, item_index, dir, data, msg_log, config);
             }
 
+            Msg::Stabbed(attacker_id, attacked_id) => {
+                msg_log.log(Msg::Froze(attacked_id, config.dagger_stab_num_turns));
+            }
+
+            Msg::DaggerStab(entity_id, item_index, dir) => {
+                dagger_stab(entity_id, item_index, dir, data, msg_log, config);
+            }
+
             Msg::SwordSwing(entity_id, item_id, pos) => {
                 sword_swing(entity_id, item_id, pos, data, msg_log, config);
             }
@@ -499,6 +507,19 @@ fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameD
     }
 }
 
+fn dagger_stab(entity_id: EntityId, item_index: usize, dir: Direction, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+    let entity_pos = data.entities.pos[&entity_id];
+    let move_pos = dir.offset_pos(entity_pos, 1);
+
+    let hit_pos = dir.offset_pos(move_pos, 1);
+    if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
+        msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Sneak));
+        msg_log.log(Msg::Stabbed(entity_id, hit_entity));
+    } else {
+        panic!("Dagger stab did not find an entity to hit?");
+    }
+}
+
 fn sword_step(entity_id: EntityId, item_index: usize, dir: Direction, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     let pos = data.entities.pos[&entity_id];
     let target_pos = dir.offset_pos(pos, 1);
@@ -612,7 +633,6 @@ fn resolve_attack(entity_id: EntityId,
     // any time an entity attacks, they change to standing stance
     data.entities.stance[&entity_id] = Stance::Standing;
 
-    // we already checked that this unwrap is safe before calling this function
     match attack_info {
         Attack::Attack(target_id) => {
             attack(entity_id, target_id, data, msg_log);

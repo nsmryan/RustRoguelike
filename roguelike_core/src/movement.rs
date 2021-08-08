@@ -774,12 +774,15 @@ pub fn entity_move_not_blocked(entity_id: EntityId, move_pos: Pos, delta_pos: Po
 
     let next_pos = next_pos(pos, delta_pos);
     if let Some(other_id) = data.has_blocking_entity(next_pos) {
-        if can_stab(data, entity_id, other_id) {
-           let attack = Attack::Stab(other_id, true);
-           movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
-       } else {
-          movement = Some(Movement::move_to(move_pos, MoveType::Move));
-       }
+        movement = Some(Movement::move_to(move_pos, MoveType::Move));
+
+        // NOTE removing dagger use by movement- only occurs in use mode
+        //if can_stab(data, entity_id, other_id) {
+        //   let attack = Attack::Stab(other_id, true);
+        //   movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
+        //} else {
+        //   movement = Some(Movement::move_to(move_pos, MoveType::Move));
+        //}
     } else {
         movement = Some(Movement::move_to(move_pos, MoveType::Move));
     }

@@ -687,6 +687,7 @@ fn finalize_use_item(item_index: i32, dir: Direction, data: &GameData, settings:
     let item = data.entities.item[&item_id];
     match item {
         Item::Dagger => {
+            msg_log.log(Msg::DaggerStab(player_id, item_index, dir));
         }
 
         Item::Shield => {

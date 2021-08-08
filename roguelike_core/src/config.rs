@@ -98,6 +98,7 @@ pub struct Config {
     pub beam_duration: usize,
     pub draw_directional_arrow: bool,
     pub sword_step_num_turns: usize,
+    pub dagger_stab_num_turns: usize,
 }
 
 impl Config {
