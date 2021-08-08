@@ -1228,7 +1228,7 @@ fn make_move_sound(entity_id: EntityId,
         sound_radius -= config.sound_grass_radius;
     }
 
-    if data.entities.status[&entity_id].soft_steps > 0 {
+    if sound_radius > 0 && data.entities.status[&entity_id].soft_steps > 0 {
         sound_radius -= 1;
     }
 

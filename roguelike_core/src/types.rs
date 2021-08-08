@@ -373,15 +373,26 @@ impl GameData {
         let item = self.entities.item[&item_id];
         match item {
             Item::Dagger => {
-                return None;
+                let target_pos = dir.offset_pos(pos, 1);
+
+                let hit_pos = dir.offset_pos(target_pos, 1);
+
+                if let Some(hit_entity) = self.has_blocking_entity(hit_pos) {
+                    let is_crouching = self.entities.stance[&entity_id] == Stance::Crouching;
+                    let is_clear_path = self.clear_path(pos, target_pos, false);
+
+                    let hits_enemy = self.entities.typ[&hit_entity] == EntityType::Enemy;
+                    let is_alert = matches!(self.entities.behavior[&hit_entity], Behavior::Attacking(_));
+                    if is_crouching && is_clear_path && hits_enemy && !is_alert {
+                        return Some(target_pos);
+                    }
+                }
             }
 
             Item::Shield => {
-                return None;
             }
 
             Item::Hammer => {
-                return None;
             }
 
             Item::Sword => {
@@ -397,14 +408,15 @@ impl GameData {
                         return Some(target_pos);
                     }
                 }
-
-                return None;
             }
 
             _ => {
                 panic!(format!("Tried to use {} in use-mode!", item));
             }
         }
+
+        // default to rejecting the move
+        return None;
     }
 
     // clear all entities, except those in the given vector.
