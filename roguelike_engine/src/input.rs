@@ -331,15 +331,11 @@ impl Input {
                     }
 
                     InputDirection::Current => {
-                        // Pressing 5 in cursor mode does nothing, so only process
-                        // if in direct mode.
-                        if !self.cursor {
-                            if self.alt {
-                                action = InputAction::Interact(None);
-                            } else {
-                                action = InputAction::Pass(self.move_mode());
-                            }
-                        }
+                        if !self.cursor && self.alt {
+                            action = InputAction::Interact(None);
+                        } else {
+                            action = InputAction::Pass(self.move_mode());
+                        } 
                     }
                 }
             }
