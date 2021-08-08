@@ -699,6 +699,7 @@ fn finalize_use_item(item_index: i32, dir: Direction, data: &GameData, settings:
         }
 
         Item::Hammer => {
+            msg_log.log(Msg::HammerRaise(player_id, item_index, dir));
         }
 
         Item::Sword => {

@@ -45,6 +45,7 @@ pub enum Msg {
     TriedRunWithHeavyEquipment,
     ShieldSmash(EntityId, usize, Direction), // entity, item index, direction moved
     SwordStep(EntityId, usize, Direction), // entity, item index, direction moved
+    HammerRaise(EntityId, usize, Direction), // entity, item index, direction moved
     DaggerStab(EntityId, usize, Direction), // entity, item index, direction moved
     SwordSwing(EntityId, EntityId, Pos), // entity, item, position swung at
     HammerSwing(EntityId, EntityId, Pos), // entity, item, position swung at
@@ -132,6 +133,7 @@ impl fmt::Display for Msg {
             Msg::TriedRunWithHeavyEquipment => write!(f, "tried_run_with_heavy_equipment"),
             Msg::ShieldSmash(entity_id, item_index, dir) => write!(f, "shield_smash {} {} {}", entity_id, item_index, dir),
             Msg::SwordStep(entity_id, item_index, dir) => write!(f, "sword_step {} {} {}", entity_id, item_index, dir),
+            Msg::HammerRaise(entity_id, item_index, dir) => write!(f, "hammer_raise {} {} {}", entity_id, item_index, dir),
             Msg::DaggerStab(entity_id, item_index, dir) => write!(f, "dagger_stab {} {} {}", entity_id, item_index, dir),
             Msg::SwordSwing(entity_id, item_id, pos) => write!(f, "sword_swing {} {} {} {}", entity_id, item_id, pos.x, pos.y),
             Msg::HammerSwing(entity_id, item_id, pos) => write!(f, "hammer_swing {} {} {} {}", entity_id, item_id, pos.x, pos.y),
@@ -317,6 +319,10 @@ impl Msg {
 
             Msg::SwordStep(entity_id, _item_index, _dir) => {
                 return format!("{:?} swings their sword", data.entities.name[entity_id]);
+            }
+
+            Msg::HammerRaise(entity_id, _item_index, _dir) => {
+                return format!("{:?} raises their hammer", data.entities.name[entity_id]);
             }
 
             Msg::DaggerStab(entity_id, _item_index, _dir) => {

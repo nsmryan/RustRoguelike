@@ -407,6 +407,9 @@ impl GameData {
             }
 
             Item::Hammer => {
+                let target_pos = dir.offset_pos(pos, 1);
+                // hammers can always be used in any direction
+                return Some(target_pos);
             }
 
             Item::Sword => {
@@ -981,6 +984,7 @@ pub struct StatusEffect {
     pub blinked: bool,
     pub active: bool,
     pub alive: bool,
+    pub hammer_raised: Option<(EntityId, Direction, usize)>, // item id, direction to hit, turns to wait
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

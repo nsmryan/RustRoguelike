@@ -104,6 +104,11 @@ pub fn resolve_messages(data: &mut GameData,
                 msg_log.log(Msg::Froze(attacked_id, config.dagger_stab_num_turns));
             }
 
+            Msg::HammerRaise(entity_id, item_index, dir) => {
+                let item_id = data.entities.inventory[&entity_id][item_index];
+                data.entities.status[&entity_id].hammer_raised = Some((item_id, dir, 0));
+            }
+
             Msg::DaggerStab(entity_id, item_index, dir) => {
                 dagger_stab(entity_id, item_index, dir, data, msg_log, config);
             }
@@ -1320,6 +1325,19 @@ fn process_moved_message(entity_id: EntityId,
 
     if original_pos != pos {
         resolve_triggered_traps(entity_id, original_pos, data, msg_log);
+    }
+
+    // check for passing turn while the hammer is raised
+    if move_type == MoveType::Pass {
+        if let Some((item_id, dir, turns)) = data.entities.status[&entity_id].hammer_raised {
+            if turns == 0 {
+                let hit_pos = dir.offset_pos(original_pos, 1);
+                msg_log.log(Msg::HammerSwing(entity_id, item_id, hit_pos));
+                data.entities.status[&entity_id].hammer_raised = None;
+            } else {
+                data.entities.status[&entity_id].hammer_raised = Some((item_id, dir, turns - 1));
+            }
+        }
     }
 
     // if entity is a monster, which is also alert, and there is a path to the player,
