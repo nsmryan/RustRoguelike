@@ -276,7 +276,7 @@ impl Input {
 
             return self.apply_char(chr, settings);
         } else if settings.state == GameState::Use {
-            if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+            if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {
                 self.clear_char_state(chr);
 
                 return InputAction::FinalizeUse;
@@ -416,6 +416,7 @@ impl Input {
             if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
                 self.target = Some(Target::item(index as usize));
 
+                self.cursor = false;
                 action = InputAction::StartUseItem(index as usize);
                 // directions are cleared when entering use-mode
                 self.direction = None;

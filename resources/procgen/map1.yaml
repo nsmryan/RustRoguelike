@@ -49,6 +49,14 @@
     - Lantern
     - 5
     - 10
+- Items: 
+    - Spear
+    - 2
+    - 5
+- Items: 
+    - GreatSword
+    - 2
+    - 5
 # MaxItems limits the number of items that can appear of any type
 - MaxItems: 5
 

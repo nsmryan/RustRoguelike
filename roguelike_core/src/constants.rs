@@ -158,6 +158,8 @@ pub const ENTITY_DAGGER: u8 = 247;
 pub const ENTITY_SWORD: u8 = 248;
 pub const ENTITY_SHIELD: u8 = 255;
 pub const ENTITY_HAMMER: u8 = 251;
+pub const ENTITY_SPEAR: u8 = 250;
+pub const ENTITY_GREATSWORD: u8 = 254;
 pub const ENTITY_LANTERN: u8 = 134;
 
 /* Entities */

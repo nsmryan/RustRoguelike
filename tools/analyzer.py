@@ -1,6 +1,6 @@
 import time
 from math import cos, sin
-from dearpygui.core import *
+import dearpygui.dearpygui as dpg
 
 
 class Frame:
@@ -77,27 +77,40 @@ def load_perf(file_name):
     with open(file_name, 'r') as fh:
         lines = fh.readlines()
 
+    print(lines)
     (names, series) = parse_series(lines)
 
     return (names, series)
 
-def plot_perf():
+def plot_perf(plot_axis):
     (names, series) = load_perf("game.log")
 
     index = 1 + 3 * len(names)
     for (name, data) in series.items():
-        add_line_series("Plot", name, [(pair[0], pair[1] + (index / 2)) for pair in data]) #, weight=2, fill=[255, 0, 0, 100])
+        print(name)
+        print(data)
+        xs = [pair[0] for pair in data]
+        ys = [pair[1] + (index / 2) for pair in data]
+        dpg.add_line_series(xs, ys, label=name, parent=plot_axis) #, weight=2, fill=[255, 0, 0, 100])
         index -= 3
 
 def plot_callback(sender, data):
-    clear_plot("Plot")
-    plot_perf()
+    plot_perf(plot_axis)
 
-add_text("Performance Plot")
-add_button("Reload file", callback=plot_callback)
-add_plot("Plot", "x-axis", "y-axis", height=-1)
+dpg.setup_viewport()
+width = dpg.get_viewport_width()
+height = dpg.get_viewport_height()
 
-clear_plot("Plot")
-plot_perf()
+with dpg.window(label="RRL Performance", width=width, height=height, no_move=True, no_collapse=True, no_title_bar=True) as window:
 
-start_dearpygui()
+    dpg.add_text("Performance Plot")
+    dpg.add_button(label="Reload file", callback=plot_callback)
+
+    with dpg.plot(label="Perf", width=width - 40, height=height - 120):
+        dpg.add_plot_legend()
+        dpg.add_plot_axis(dpg.mvXAxis, label='x')
+        plot_axis = dpg.add_plot_axis(dpg.mvYAxis, label='y')
+
+    plot_perf(plot_axis)
+
+dpg.start_dearpygui()

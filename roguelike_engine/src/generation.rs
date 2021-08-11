@@ -64,6 +64,7 @@ pub fn make_column(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
 
     return entity_id;
 }
+
 pub fn make_energy(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Energy, ENTITY_ENERGY as char, Color::white(), EntityName::Energy, false);
 
@@ -92,12 +93,32 @@ pub fn make_hammer(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
     return entity_id;
 }
 
+pub fn make_spear(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SPEAR as char, Color::white(), EntityName::Spear, false);
+
+    entities.item.insert(entity_id,  Item::Spear);
+
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Spear, entities.direction[&entity_id]));
+
+    return entity_id;
+}
+
 pub fn make_sword(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SWORD as char, Color::white(), EntityName::Sword, false);
 
     entities.item.insert(entity_id,  Item::Sword);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Sword, entities.direction[&entity_id]));
+
+    return entity_id;
+}
+
+pub fn make_greatsword(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_GREATSWORD as char, Color::white(), EntityName::GreatSword, false);
+
+    entities.item.insert(entity_id,  Item::GreatSword);
+
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::GreatSword, entities.direction[&entity_id]));
 
     return entity_id;
 }
@@ -347,6 +368,8 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
         EntityName::Energy => make_energy(entities, config, pos, msg_log),
         EntityName::Dagger => make_dagger(entities, config, pos, msg_log),
         EntityName::Hammer => make_hammer(entities, config, pos, msg_log),
+        EntityName::GreatSword => make_greatsword(entities, config, pos, msg_log),
+        EntityName::Spear => make_spear(entities, config, pos, msg_log),
         EntityName::Sword => make_sword(entities, config, pos, msg_log),
         EntityName::Shield => make_shield(entities, config, pos, msg_log),
         EntityName::Key => make_key(entities, config, pos, msg_log),

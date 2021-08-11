@@ -773,7 +773,7 @@ pub fn entity_move_not_blocked(entity_id: EntityId, move_pos: Pos, delta_pos: Po
     let pos = data.entities.pos[&entity_id];
 
     let next_pos = next_pos(pos, delta_pos);
-    if let Some(other_id) = data.has_blocking_entity(next_pos) {
+    if let Some(_other_id) = data.has_blocking_entity(next_pos) {
         movement = Some(Movement::move_to(move_pos, MoveType::Move));
 
         // NOTE removing dagger use by movement- only occurs in use mode

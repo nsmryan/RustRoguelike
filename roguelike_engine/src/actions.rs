@@ -461,9 +461,8 @@ pub fn handle_input_use(input_action: InputAction,
                         data: &GameData,
                         settings: &mut GameSettings,
                         msg_log: &mut MsgLog,
-                        config: &Config) {
+                        _config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = data.entities.pos[&player_id];
 
     let player_alive = data.entities.status[&player_id].alive;
 
@@ -682,7 +681,7 @@ fn start_use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _
     }
 }
 
-fn finalize_use_item(item_index: i32, dir: Direction, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+fn finalize_use_item(_item_index: i32, dir: Direction, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     let item_index = settings.use_index as usize;

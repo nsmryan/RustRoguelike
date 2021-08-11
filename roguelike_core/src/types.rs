@@ -413,6 +413,14 @@ impl GameData {
                 return Some(target_pos);
             }
 
+            Item::Spear => {
+                // TODO add in spear positions
+            }
+
+            Item::GreatSword => {
+                // TODO add in great sword positions
+            }
+
             Item::Sword => {
                 let target_pos = dir.offset_pos(pos, 1);
                 if self.clear_path(pos, target_pos, false) {
@@ -591,6 +599,8 @@ pub enum Item {
     Dagger,
     Shield,
     Hammer,
+    Spear,
+    GreatSword,
     Sword,
     Lantern,
     SpikeTrap,
@@ -607,6 +617,8 @@ impl fmt::Display for Item {
             Item::Dagger => write!(f, "dagger"),
             Item::Shield => write!(f, "shield"),
             Item::Hammer => write!(f, "hammer"),
+            Item::Spear => write!(f, "spear"),
+            Item::GreatSword => write!(f, "greatsword"),
             Item::Sword => write!(f, "sword"),
             Item::Lantern => write!(f, "lantern"),
             Item::SpikeTrap => write!(f, "spiketrap"),
@@ -633,6 +645,10 @@ impl FromStr for Item {
             return Ok(Item::Shield);
         } else if s == "hammer" {
             return Ok(Item::Hammer);
+        } else if s == "spear" {
+            return Ok(Item::Spear);
+        } else if s == "greatsword" {
+            return Ok(Item::GreatSword);
         } else if s == "sword" {
             return Ok(Item::Sword);
         } else if s == "spiketrap" {
@@ -657,6 +673,8 @@ impl Item {
             Item::Dagger => ItemClass::Primary,
             Item::Shield => ItemClass::Primary,
             Item::Hammer => ItemClass::Primary,
+            Item::Spear => ItemClass::Primary,
+            Item::GreatSword => ItemClass::Primary,
             Item::Sword => ItemClass::Primary,
             Item::Lantern => ItemClass::Secondary,
             Item::SpikeTrap => ItemClass::Secondary,
@@ -673,6 +691,8 @@ impl Item {
             Item::Dagger => EntityName::Dagger,
             Item::Shield => EntityName::Shield,
             Item::Hammer => EntityName::Hammer,
+            Item::Spear => EntityName::Spear,
+            Item::GreatSword => EntityName::GreatSword,
             Item::Sword => EntityName::Sword,
             Item::Lantern => EntityName::Lantern,
             Item::SpikeTrap => EntityName::SpikeTrap,
@@ -768,6 +788,8 @@ pub enum EntityName {
     Exit,
     Dagger,
     Hammer,
+    Spear,
+    GreatSword,
     Sword,
     Shield,
     Lantern,
@@ -803,6 +825,8 @@ impl fmt::Display for EntityName {
             EntityName::Exit => write!(f, "exit"),
             EntityName::Dagger => write!(f, "dagger"),
             EntityName::Hammer => write!(f, "hammer"),
+            EntityName::Spear => write!(f, "spear"),
+            EntityName::GreatSword => write!(f, "greatsword"),
             EntityName::Sword => write!(f, "sword"),
             EntityName::Lantern => write!(f, "lantern"),
             EntityName::Shield => write!(f, "shield"),
@@ -847,6 +871,10 @@ impl FromStr for EntityName {
             return Ok(EntityName::Dagger);
         } else if s == "hammer" {
             return Ok(EntityName::Hammer);
+        } else if s == "spear" {
+            return Ok(EntityName::Spear);
+        } else if s == "greatsword" {
+            return Ok(EntityName::GreatSword);
         } else if s == "sword" {
             return Ok(EntityName::Sword);
         } else if s == "lantern" {
