@@ -419,6 +419,9 @@ impl GameData {
 
             Item::GreatSword => {
                 // TODO add in great sword positions
+                //self.calculate_use_move(entity_id, item_index, dir).map_or or otherwise combine
+                //with:
+                //self.calculate_use_move(entity_id, item_index, dir).
             }
 
             Item::Sword => {
