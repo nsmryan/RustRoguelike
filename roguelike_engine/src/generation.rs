@@ -385,6 +385,7 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
         EntityName::GateTrigger => make_gate_trigger(entities, config, pos, msg_log),
         EntityName::Exit => make_exit(entities, config, pos, msg_log),
         EntityName::Stone => make_stone(entities, config, pos, msg_log),
+        EntityName::Lantern => make_lantern(entities, config, pos, msg_log),
         _ => {
             panic!(format!("Cannot create {:?} this way", entity_name));
         }

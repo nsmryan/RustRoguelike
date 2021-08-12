@@ -347,10 +347,10 @@ impl Input {
                 action = self.use_skill(index, settings);
             }
 
-            // Item release does nothing outside of use-mode
-            //if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
-            //    action = self.use_item(index, settings);
-            //}
+            // Item release can only throw outside of use-mode
+            if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+                action = self.use_item(index, settings);
+            }
 
             // If we are not releasing a direction, skill, or item then try other keys.
             if action == InputAction::None {
@@ -413,13 +413,15 @@ impl Input {
                 self.target = Some(Target::skill(index as usize));
             }
 
-            if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
-                self.target = Some(Target::item(index as usize));
+            if !(self.cursor && self.alt) {
+                if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+                    self.target = Some(Target::item(index as usize));
 
-                self.cursor = false;
-                action = InputAction::StartUseItem(index as usize);
-                // directions are cleared when entering use-mode
-                self.direction = None;
+                    self.cursor = false;
+                    action = InputAction::StartUseItem(index as usize);
+                    // directions are cleared when entering use-mode
+                    self.direction = None;
+                }
             }
 
             if let Some(input_dir) = InputDirection::from_chr(chr) {

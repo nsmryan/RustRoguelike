@@ -163,8 +163,11 @@ impl GameData {
                 }
 
                 // check for illumination that might make this tile visible.
-                if !self.entities.needs_removal[id] && self.entities.status[id].illuminate != 0 {
+                if !self.entities.needs_removal[id] && 
+                   self.entities.status[id].illuminate != 0 &&
+                   self.entities.pos[id].x >= 0 && self.entities.pos[id].y >= 0 {
                     let illuminate_pos = self.entities.pos[id];
+
                     let illuminate_radius = self.entities.status[id].illuminate as i32;
                     let illuminated = self.map.is_in_fov(illuminate_pos, other_pos, illuminate_radius, crouching);
 
@@ -650,6 +653,8 @@ impl FromStr for Item {
             return Ok(Item::Hammer);
         } else if s == "spear" {
             return Ok(Item::Spear);
+        } else if s == "lantern" {
+            return Ok(Item::Lantern);
         } else if s == "greatsword" {
             return Ok(Item::GreatSword);
         } else if s == "sword" {
