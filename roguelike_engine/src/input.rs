@@ -276,10 +276,15 @@ impl Input {
 
             return self.apply_char(chr, settings);
         } else if settings.state == GameState::Use {
-            if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {
-                self.clear_char_state(chr);
+            if let Some(input_dir) = InputDirection::from_chr(chr) {
+                if let InputDirection::Dir(dir) = input_dir {
+                    return InputAction::FinalizeUse;
+                }
+            } else if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {
 
-                return InputAction::FinalizeUse;
+                // releasing the item no longer takes you out of use-mode
+                //self.clear_char_state(chr);
+                //return InputAction::FinalizeUse;
             }
 
             return InputAction::None;
@@ -394,10 +399,17 @@ impl Input {
         if settings.state == GameState::Use {
             if let Some(input_dir) = InputDirection::from_chr(chr) {
                 if let InputDirection::Dir(dir) = input_dir {
+                    // directions are now applied immediately
                     action = InputAction::StartUseDir(dir);
                 }
             } else if chr == ' ' {
                 action = InputAction::AbortUse;
+            } else if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+                // check if you press down the same item again, aborting use-mode
+                if self.target == Some(Target::item(index as usize)) {
+                    action = InputAction::AbortUse;
+                    self.target = None;
+                }
             }
         } else if !settings.state.is_menu() {
             if chr == 'o' {
