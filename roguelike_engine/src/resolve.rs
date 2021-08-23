@@ -1220,7 +1220,7 @@ fn use_item(entity_id: EntityId,
         }
 
         Item::Dagger => {
-            panic!("Dagger is used by moving right now. UseItem might be better");
+            //panic!("Dagger is used by moving right now. UseItem might be better");
             //msg_log.log(Msg::TryAttack(entity_id, Attack::Stab(target_id), pos))
         }
 
@@ -1228,7 +1228,7 @@ fn use_item(entity_id: EntityId,
         }
 
         Item::Hammer => {
-            msg_log.log(Msg::HammerSwing(entity_id, item_id, pos));
+            //msg_log.log(Msg::HammerSwing(entity_id, item_id, pos));
         }
 
         Item::Spear => {
@@ -1240,7 +1240,8 @@ fn use_item(entity_id: EntityId,
         }
 
         Item::Sword => {
-            msg_log.log(Msg::SwordSwing(entity_id, item_id, pos));
+            //msg_log.log(Msg::SwordSwing(entity_id, item_id, pos));
+            //panic!("Swords are used through use-mode how. How did you get here?");
         }
 
         Item::Lantern => {
