@@ -40,25 +40,25 @@
 - Items: 
     - Sword
     - 0
-    - 3
+    - 20
 - Items: 
     - Shield
     - 0
     - 1
 - Items: 
     - Lantern
-    - 5
-    - 10
+    - 2
+    - 2
 - Items: 
     - Spear
     - 2
-    - 5
+    - 2
 - Items: 
     - GreatSword
     - 2
-    - 5
+    - 2
 # MaxItems limits the number of items that can appear of any type
-- MaxItems: 5
+- MaxItems: 15
 
 - Traps: 
     - Spikes

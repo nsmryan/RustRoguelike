@@ -97,7 +97,7 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::SwordStep(entity_id, item_index, dir) => {
-                sword_step(entity_id, item_index, dir, data, msg_log, config);
+                sword_step(entity_id, item_index, dir, rng, data, msg_log, config);
             }
 
             Msg::Stabbed(_attacker_id, attacked_id) => {
@@ -543,9 +543,10 @@ fn dagger_stab(entity_id: EntityId, _item_index: usize, dir: Direction, data: &m
     }
 }
 
-fn sword_step(entity_id: EntityId, _item_index: usize, dir: Direction, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+fn sword_step(entity_id: EntityId, item_index: usize, dir: Direction, rng: &mut Rand32, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     let pos = data.entities.pos[&entity_id];
     let target_pos = dir.offset_pos(pos, 1);
+    let item_id = data.entities.inventory[&entity_id][item_index];
 
     if data.clear_path(pos, target_pos, false) {
         let dir_right = dir.counterclockwise();
@@ -554,15 +555,24 @@ fn sword_step(entity_id: EntityId, _item_index: usize, dir: Direction, data: &mu
         let dir_left = dir.clockwise();
         let pos_left = dir_left.offset_pos(pos, 1);
 
+        let mut sword_hit = false;
         if let Some(target_id) = data.has_blocking_entity(pos_right) {
             msg_log.log(Msg::Froze(target_id, config.sword_step_num_turns));
+            sword_hit = true;
         }
 
         if let Some(target_id) = data.has_blocking_entity(pos_left) {
             msg_log.log(Msg::Froze(target_id, config.sword_step_num_turns));
+            sword_hit = true;
         }
 
         msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Walk));
+
+        if sword_hit {
+            if rng_range(rng, 0.0, 1.0) < 0.15 {
+                data.entities.remove_item(entity_id, item_id);
+            }
+        }
     } else {
         panic!("Sword swing should not have been blocked!");
     }

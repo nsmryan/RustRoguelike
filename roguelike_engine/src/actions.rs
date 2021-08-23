@@ -478,7 +478,6 @@ pub fn handle_input_use(input_action: InputAction,
         }
 
         (InputAction::FinalizeUse, true) => {
-            dbg!("finalize use");
             // TODO apply item
             change_state(settings, GameState::Playing);
 
