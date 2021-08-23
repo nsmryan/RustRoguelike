@@ -409,6 +409,9 @@ impl Input {
                 if self.target == Some(Target::item(index as usize)) {
                     action = InputAction::AbortUse;
                     self.target = None;
+                } else {
+                    self.target = Some(Target::item(index as usize));
+                    action = InputAction::StartUseItem(index as usize);
                 }
             }
         } else if !settings.state.is_menu() {
