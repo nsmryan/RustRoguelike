@@ -725,20 +725,23 @@ fn start_use_item(item_index: usize, data: &GameData, settings: &mut GameSetting
 
     let item_id = data.entities.inventory[&player_id][item_index as usize];
 
-    let item_primary = data.entities.item[&item_id].class() == ItemClass::Primary;
-    let at_least_one_move =
-        Direction::move_actions().iter().any(|check_dir|
-            data.calculate_use_move(player_id, item_index, *check_dir).is_some());
+    // only primary items are available for use-mode
+    if data.entities.item[&item_id].class() == ItemClass::Primary {
+        // only enter use-mode if there is at least one place to move
+        let at_least_one_move =
+            Direction::move_actions().iter().any(|check_dir|
+                data.calculate_use_move(player_id, item_index, *check_dir).is_some());
 
-    if item_primary && at_least_one_move {
-        settings.use_index = item_index as i32;
+        if at_least_one_move {
+            settings.use_index = item_index as i32;
 
-        settings.use_dir = None;
-        settings.cursor = None;
+            settings.use_dir = None;
+            settings.cursor = None;
 
-        change_state(settings, GameState::Use);
+            change_state(settings, GameState::Use);
 
-        msg_log.log(Msg::StartUseItem(item_id));
+            msg_log.log(Msg::StartUseItem(item_id));
+        }
     }
 }
 
