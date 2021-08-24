@@ -1,3 +1,4 @@
+# Color Palette
 ---
 color_dark_brown:
   r: 30
@@ -109,14 +110,23 @@ color_shadow:
   g: 255
   b: 255
   a: 200
+  # reload map file 
 load_map_file_every_frame: false
+
 tile_noise_scaler: 4.0
+# alpha for player move highlight
 highlight_player_move: 226
+# alpha for player attack highlight
 highlight_alpha_attack: 25
+# alpha for sound highlight
 sound_alpha: 86
+# alpha for tile grid lines
 grid_alpha: 8
+# alpha for tiles that are visible
 grid_alpha_visible: 80
+# alpha for several overlays 
 grid_alpha_overlay: 150
+
 ## Valid values for map_load
 # FromFile(filename): load from map.xp file
 # FromVaultFile(filename): load a given vault as the level
@@ -132,25 +142,40 @@ map_load: #TestVaults
     ProcGen: "map1.yaml"
 #VaultFile: "vaults/Vaults - Vault25.csv"
 #FromFile: "maps.txt"
+
 map_file: map.xp
-idle_speed: 5
-fire_speed: 7
 draw_mouse_line: false
 draw_star_path: false
+
+# throttle to frame rate
 frame_rate: 25
-item_throw_speed: 30.0
-key_speed: 5.0
+
+# animation speeds
 player_attack_speed: 2.0
 player_attack_hammer_speed: 1.0
 player_vault_sprite_speed: 2.0
 player_vault_move_speed: 2.0
+idle_speed: 5
+fire_speed: 7
+item_throw_speed: 30.0
+key_speed: 5.0
+
 sound_timeout: 0.5
+# radius of a yell's sound
 yell_radius: 4
+# distance of entities you can swap with
 swap_radius: 4
+# show fog of war
 fog_of_war: true
+
+# initial player health
 player_health: 3
+# alpha of explored but not visible tiles
 explored_alpha: 160
+# alpha of tiles just beyond field of view
 fov_edge_alpha: 80
+
+# sound radius for different actions
 sound_rubble_radius: 1
 sound_grass_radius: 1
 sound_radius_crushed: 3
@@ -160,37 +185,49 @@ sound_radius_monster: 3
 sound_radius_stone: 3
 sound_radius_player: 3
 sound_radius_hammer: 3
-freeze_trap_radius: 3
-push_stun_turns: 3
-sword_stun_turns: 5
-overlay_directions: false
-overlay_player_fov: false
-overlay_fov_alg: false
-overlay_floodfill: false
-fov_radius_monster: 4
-fov_radius_player: 4
 sound_radius_sneak: 1
 sound_radius_walk: 2
 sound_radius_run: 4
 sound_golem_idle_radius: 0
+
+freeze_trap_radius: 3
+push_stun_turns: 3
+sword_stun_turns: 5
+
+overlay_directions: false
+overlay_player_fov: false
+overlay_fov_alg: false
+overlay_floodfill: false
+
+fov_radius_monster: 4
+fov_radius_player: 4
 dampen_blocked_tile: 3
 dampen_short_wall: 1
 dampen_tall_wall: 2
-take_screenshot: false
-show_info: true
+
 use_cursor: true
-cursor_long: 3
+
+# how far to move cursor when shift is held
+cursor_fast_move_dist: 3
 
 # delay before a key is repeated (seconds)
 repeat_delay: 0.35
 
 # whether to write out a map distribution file
 write_map_distribution: false
+
+# print each key that is pressed
 print_key_log: false
-idle_animations: false
+
 recording: true
+
+# golem beam visual duration in frames
 beam_duration: 5
+
+# draw arrows on tiles to indicate entity facing direction
 draw_directional_arrow: false
+
+# Stun durations for weapons
 sword_step_num_turns: 4
 dagger_stab_num_turns: 4
 shield_smash_num_turns: 6

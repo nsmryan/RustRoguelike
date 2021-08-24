@@ -573,7 +573,7 @@ pub fn handle_input_playing(input_action: InputAction,
             if let Some(cursor_pos) = settings.cursor {
                 let dist =
                     if long {
-                        config.cursor_long
+                        config.cursor_fast_move_dist
                     } else {
                         1
                     };

@@ -430,15 +430,33 @@ impl GameData {
             Item::Sword => {
                 let target_pos = dir.offset_pos(pos, 1);
                 if self.clear_path(pos, target_pos, false) {
-                    let dir_right = dir.counterclockwise();
-                    let pos_right = dir_right.offset_pos(pos, 1);
 
-                    let dir_left = dir.clockwise();
-                    let pos_left = dir_left.offset_pos(pos, 1);
+                    let mut adjacent_entity = false;
+                    for dir in &Direction::directions() {
+                        let dir_pos = dir.offset_pos(pos, 1);
 
-                    if self.has_blocking_entity(pos_right).is_some() || self.has_blocking_entity(pos_left).is_some() {
+                        if let Some(blocking) = self.has_blocking_entity(dir_pos) {
+                            let enemy = self.entities.typ[&blocking] == EntityType::Enemy;
+                            let still_adjacent = distance(target_pos, dir_pos) == 1;
+
+                            adjacent_entity |= enemy && still_adjacent;
+                        }
+                    }
+
+                    if adjacent_entity {
                         return Some(target_pos);
                     }
+
+                    // This was the original sword swing code that only looks two directions
+                    //let dir_right = dir.counterclockwise();
+                    //let pos_right = dir_right.offset_pos(pos, 1);
+
+                    //let dir_left = dir.clockwise();
+                    //let pos_left = dir_left.offset_pos(pos, 1);
+
+                    //if self.has_blocking_entity(pos_right).is_some() || self.has_blocking_entity(pos_left).is_some() {
+                    //    return Some(target_pos);
+                    //}
                 }
             }
 
