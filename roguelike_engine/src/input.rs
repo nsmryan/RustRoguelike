@@ -375,7 +375,9 @@ impl Input {
                 panic!("No cursor position while in cursor mode!");
             }
         } else {
-            return InputAction::ItemFacing(self.action_mode(), item_index);
+            // this is commented out as items can no longer be used directly
+            //return InputAction::ItemFacing(self.action_mode(), item_index);
+            return InputAction::None;
         }
     }
 
@@ -570,5 +572,126 @@ fn direction_from_digit(chr: char) -> Option<Direction> {
         '9' => Some(Direction::UpRight),
         _ => None,
     }
+}
+
+#[test]
+fn test_input_movement() {
+    let mut input = Input::new();
+    let mut settings = GameSettings::new(0, false);
+    let time = Instant::now();
+    let config = Config::from_file("../config.yaml");
+
+    let event = InputEvent::Char('4', KeyDir::Down);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::None, input_action);
+
+    let event = InputEvent::Char('4', KeyDir::Up);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::Move(Direction::Left, MoveMode::Walk), input_action);
+}
+
+#[test]
+fn test_input_use_mode_enter() {
+    let mut input = Input::new();
+    let mut settings = GameSettings::new(0, false);
+    let time = Instant::now();
+    let config = Config::from_file("../config.yaml");
+
+    let event = InputEvent::Char('z', KeyDir::Down);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::StartUseItem(0), input_action);
+
+    // letting item up outside of use-mode does not cause any action.
+    let event = InputEvent::Char('z', KeyDir::Up);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::None, input_action);
+
+    // down and up 
+    let event = InputEvent::Char('z', KeyDir::Down);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::StartUseItem(0), input_action);
+
+    settings.state = GameState::Use;
+
+    let event = InputEvent::Char('z', KeyDir::Up);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::None, input_action);
+}
+
+#[test]
+fn test_input_use_mode_exit() {
+    let mut input = Input::new();
+    let mut settings = GameSettings::new(0, false);
+    let time = Instant::now();
+    let config = Config::from_file("../config.yaml");
+
+    let event = InputEvent::Char('z', KeyDir::Down);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::StartUseItem(0), input_action);
+
+    settings.state = GameState::Use;
+
+    let event = InputEvent::Char('z', KeyDir::Up);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::None, input_action);
+
+    let event = InputEvent::Char('4', KeyDir::Down);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::StartUseDir(Direction::Left), input_action);
+
+    let event = InputEvent::Char('4', KeyDir::Up);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::FinalizeUse, input_action);
+}
+
+#[test]
+fn test_input_use_mode_abort() {
+    let mut input = Input::new();
+    let mut settings = GameSettings::new(0, false);
+    let time = Instant::now();
+    let config = Config::from_file("../config.yaml");
+
+    let event = InputEvent::Char('z', KeyDir::Down);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::StartUseItem(0), input_action);
+
+    settings.state = GameState::Use;
+
+    let event = InputEvent::Char(' ', KeyDir::Down);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::AbortUse, input_action);
+
+    settings.state = GameState::Playing;
+
+    let event = InputEvent::Char('4', KeyDir::Up);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::None, input_action);
+}
+
+#[test]
+fn test_input_cursor_problem() {
+    let mut input = Input::new();
+    let mut settings = GameSettings::new(0, false);
+    let time = Instant::now();
+    let config = Config::from_file("../config.yaml");
+
+    let event = InputEvent::Char(' ', KeyDir::Down);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::CursorToggle, input_action);
+
+    input.cursor = true;
+    settings.cursor = Some(Pos::new(0, 0));
+
+    let event = InputEvent::Char('4', KeyDir::Down);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::None, input_action);
+
+    let event = InputEvent::Char('4', KeyDir::Up);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::CursorMove(Direction::Left, false, false), input_action);
+
+    let event = InputEvent::Char(' ', KeyDir::Up);
+    let input_action = input.handle_event(&mut settings, event, time, &config);
+    assert_eq!(InputAction::None, input_action);
 }
 

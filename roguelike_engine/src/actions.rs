@@ -468,17 +468,14 @@ pub fn handle_input_use(input_action: InputAction,
 
     match (input_action, player_alive) {
         (InputAction::StartUseItem(item_index), true) => {
-            dbg!(item_index);
             start_use_item(item_index, data, settings, msg_log);
         }
 
         (InputAction::StartUseDir(dir), true) => {
-            dbg!(dir);
             start_use_dir(dir, data, settings, msg_log);
         }
 
         (InputAction::FinalizeUse, true) => {
-            // TODO apply item
             change_state(settings, GameState::Playing);
 
             if let Some(dir) = settings.use_dir {
@@ -489,7 +486,6 @@ pub fn handle_input_use(input_action: InputAction,
         }
 
         (InputAction::AbortUse, true) => {
-            dbg!("abort use");
             // TODO do we need to clear any state here?
             change_state(settings, GameState::Playing);
         }
@@ -556,7 +552,6 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::StartUseItem(item_index), true) => {
-            dbg!();
             start_use_item(item_index, data, settings, msg_log);
         }
 
@@ -722,6 +717,7 @@ fn start_use_item(item_index: usize, data: &GameData, settings: &mut GameSetting
 
     settings.use_index = item_index as i32;
 
+    settings.use_dir = None;
     settings.cursor = None;
 
     change_state(settings, GameState::Use);

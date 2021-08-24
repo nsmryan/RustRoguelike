@@ -179,61 +179,6 @@ pub fn test_running() {
     assert_eq!(Pos::new(6, 5), game.data.entities.pos[&pawn]);
 }
 
-#[test]
-pub fn test_hammer_small_wall() {
-    let config = Config::from_file("../config.yaml");
-    let mut game = Game::new(0, config.clone());
-    let mut input_action;
-
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    game.data.map = Map::from_dims(10, 10);
-    let player_pos = Pos::new(4, 4);
-    game.data.entities.pos[&player_id] = player_pos;
-
-
-    game.data.map[player_pos].bottom_wall = Wall::ShortWall;
-
-    let gol_pos = Pos::new(4, 5);
-    let gol = make_gol(&mut game.data.entities, &game.config, gol_pos, &mut game.msg_log);
-
-    let hammer = make_hammer(&mut game.data.entities, &game.config, Pos::new(4, 7), &mut game.msg_log);
-
-    game.data.entities.inventory[&player_id].push_front(hammer);
-
-    input_action = InputAction::UseItem(Direction::Down, 0);
-    game.step_game(input_action, 0.1);
-
-    // gol is no longer in entities list after being crushed
-    assert!(game.data.entities.is_dead(gol));
-
-    assert!(game.msg_log.turn_messages.iter().any(|msg| {
-        matches!(msg, Msg::HammerHitWall(_, _))
-    }));
-
-    assert_eq!(Surface::Rubble, game.data.map[gol_pos].surface);
-
-    let pawn_pos = Pos::new(3, 4);
-    let pawn = make_pawn(&mut game.data.entities, &game.config, pawn_pos, &mut game.msg_log);
-    assert_eq!(true, game.data.entities.status[&pawn].alive);
-
-    // add the hammer back and hit the pawn with it to test hitting entities
-    let hammer = make_hammer(&mut game.data.entities, &game.config, Pos::new(4, 7), &mut game.msg_log);
-    game.data.entities.inventory[&player_id].push_front(hammer);
-
-    input_action = InputAction::UseItem(Direction::Left, 0);
-    game.step_game(input_action, 0.1);
-
-    input_action = InputAction::MapClick(pawn_pos, pawn_pos);
-    game.step_game(input_action, 0.1);
-
-    assert!(game.data.entities.is_dead(pawn));
-
-    assert!(game.msg_log.turn_messages.iter().any(|msg| {
-        *msg == Msg::HammerHitEntity(player_id, pawn)
-    }));
-
-    assert_ne!(Surface::Rubble, game.data.map[pawn_pos].surface);
-}
 
 fn step_ai(game: &mut Game) {
     let ai_ids: Vec<EntityId> = game.data.entities.active_ais();
