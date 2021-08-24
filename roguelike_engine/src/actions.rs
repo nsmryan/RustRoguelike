@@ -715,15 +715,18 @@ fn start_use_item(item_index: usize, data: &GameData, settings: &mut GameSetting
         return;
     }
 
-    settings.use_index = item_index as i32;
-
-    settings.use_dir = None;
-    settings.cursor = None;
-
-    change_state(settings, GameState::Use);
-
     let item_id = data.entities.inventory[&player_id][item_index as usize];
-    msg_log.log(Msg::StartUseItem(item_id));
+
+    if data.entities.item[&item_id].class() == ItemClass::Primary {
+        settings.use_index = item_index as i32;
+
+        settings.use_dir = None;
+        settings.cursor = None;
+
+        change_state(settings, GameState::Use);
+
+        msg_log.log(Msg::StartUseItem(item_id));
+    }
 }
 
 pub fn handle_skill(skill_index: usize,
