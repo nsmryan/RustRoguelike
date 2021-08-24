@@ -73,7 +73,7 @@ impl GameData {
                       // NOTE(perf) this allocation could be avoided with an Iterable
                       let mut next_positions = Vec::with_capacity(10);
 
-                      for direction in Direction::move_actions() {
+                      for direction in &Direction::move_actions() {
                           for offset in reach.move_with_reach(&direction) {
                               let next_pos = add_pos(pos, offset);
 

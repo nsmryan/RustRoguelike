@@ -277,7 +277,7 @@ impl Input {
             return self.apply_char(chr, settings);
         } else if settings.state == GameState::Use {
             if let Some(input_dir) = InputDirection::from_chr(chr) {
-                if let InputDirection::Dir(dir) = input_dir {
+                if let InputDirection::Dir(_dir) = input_dir {
                     return InputAction::FinalizeUse;
                 }
             } else if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {

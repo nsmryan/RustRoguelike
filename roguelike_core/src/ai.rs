@@ -215,7 +215,7 @@ pub fn ai_pos_that_hit_target(monster_id: EntityId,
     // check all movement options in case one lets us hit the target
     let attack = data.entities.attack[&monster_id];
     let direction = data.entities.direction[&monster_id];
-    for move_action in Direction::move_actions() {
+    for move_action in &Direction::move_actions() {
         for attack_offset in attack.attacks_with_reach(&move_action) {
             let attackable_pos = add_pos(target_pos, attack_offset);
 

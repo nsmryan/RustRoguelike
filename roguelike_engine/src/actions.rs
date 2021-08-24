@@ -486,12 +486,20 @@ pub fn handle_input_use(input_action: InputAction,
         }
 
         (InputAction::AbortUse, true) => {
-            // TODO do we need to clear any state here?
+            settings.use_dir = None;
             change_state(settings, GameState::Playing);
         }
 
         (InputAction::Esc, true) => {
             change_state(settings, GameState::Playing);
+        }
+
+        (InputAction::OverlayOn, _) => {
+            settings.overlay = true;
+        }
+
+        (InputAction::OverlayOff, _) => {
+            settings.overlay = false;
         }
 
         (_, _) => {
@@ -717,7 +725,12 @@ fn start_use_item(item_index: usize, data: &GameData, settings: &mut GameSetting
 
     let item_id = data.entities.inventory[&player_id][item_index as usize];
 
-    if data.entities.item[&item_id].class() == ItemClass::Primary {
+    let item_primary = data.entities.item[&item_id].class() == ItemClass::Primary;
+    let at_least_one_move =
+        Direction::move_actions().iter().any(|check_dir|
+            data.calculate_use_move(player_id, item_index, *check_dir).is_some());
+
+    if item_primary && at_least_one_move {
         settings.use_index = item_index as i32;
 
         settings.use_dir = None;

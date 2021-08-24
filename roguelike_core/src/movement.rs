@@ -361,15 +361,15 @@ impl Direction {
         }
     }
 
-    pub fn move_actions() -> Vec<Direction> {
-        return vec!(Direction::Left,
-                    Direction::Right,
-                    Direction::Up,
-                    Direction::Down,
-                    Direction::DownLeft,
-                    Direction::DownRight,
-                    Direction::UpLeft,
-                    Direction::UpRight);
+    pub fn move_actions() -> [Direction; 8] {
+        return [Direction::Left,
+                Direction::Right,
+                Direction::Up,
+                Direction::Down,
+                Direction::DownLeft,
+                Direction::DownRight,
+                Direction::UpLeft,
+                Direction::UpRight];
     }
 
     pub fn from_f32(flt: f32) -> Direction {
@@ -399,9 +399,9 @@ impl Direction {
         }
     }
 
-    pub fn directions() -> Vec<Direction> {
+    pub fn directions() -> [Direction; 8] {
         use Direction::*;
-        let dirs = vec![DownLeft, Left, UpLeft, Up, UpRight, Right, DownRight, Down];
+        let dirs = [DownLeft, Left, UpLeft, Up, UpRight, Right, DownRight, Down];
         return dirs;
     }
 
