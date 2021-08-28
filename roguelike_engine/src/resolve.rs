@@ -549,21 +549,19 @@ fn sword_step(entity_id: EntityId, item_index: usize, dir: Direction, rng: &mut 
     let item_id = data.entities.inventory[&entity_id][item_index];
 
     if data.clear_path(pos, target_pos, false) {
-        let dir_right = dir.counterclockwise();
-        let pos_right = dir_right.offset_pos(pos, 1);
-
-        let dir_left = dir.clockwise();
-        let pos_left = dir_left.offset_pos(pos, 1);
-
         let mut sword_hit = false;
-        if let Some(target_id) = data.has_blocking_entity(pos_right) {
-            msg_log.log(Msg::Froze(target_id, config.sword_step_num_turns));
-            sword_hit = true;
-        }
 
-        if let Some(target_id) = data.has_blocking_entity(pos_left) {
-            msg_log.log(Msg::Froze(target_id, config.sword_step_num_turns));
-            sword_hit = true;
+        for dir in &Direction::directions() {
+            let dir_pos = dir.offset_pos(pos, 1);
+
+            if let Some(hit_entity) = data.has_blocking_entity(dir_pos) {
+                if data.entities.typ[&hit_entity] == EntityType::Enemy {
+                    if distance(dir_pos, target_pos) == 1 {
+                        msg_log.log(Msg::Froze(hit_entity, config.sword_step_num_turns));
+                        sword_hit = true;
+                    }
+                }
+            }
         }
 
         msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Walk));
