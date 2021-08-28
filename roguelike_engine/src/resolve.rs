@@ -998,12 +998,20 @@ fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut Msg
         if crushed_id == entity_id {
             continue;
         }
+
+        if data.entities.name[&crushed_id] == EntityName::Column {
+            let pos_diff = sub_pos(pos, data.entities.pos[&entity_id]);
+            let next_pos = next_pos(data.entities.pos[&entity_id], pos_diff);
+
+            msg_log.log_front(Msg::Crushed(crushed_id, next_pos));
+        }
+
         if let Some(fighter) = data.entities.fighter.get(&crushed_id) {
             msg_log.log(Msg::Killed(entity_id, crushed_id, fighter.hp));
         } else if data.entities.item.get(&crushed_id).is_none() &&
                   data.entities.name[&crushed_id] != EntityName::Mouse &&
                   data.entities.name[&crushed_id] != EntityName::Cursor {
-            // the entity will be removed
+            // the entity will be removed, such as an item.
             data.entities.mark_for_removal(crushed_id);
         }
     }
