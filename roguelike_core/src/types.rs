@@ -727,6 +727,14 @@ impl Item {
             Item::FreezeTrap => EntityName::FreezeTrap,
         }
     }
+
+    pub fn throw_stun_turns(&self) -> usize {
+        match self {
+            Item::Stone => STONE_STUN_TURNS,
+            Item::Spear => SPEAR_STUN_TURNS,
+            _ => DEFAULT_ITEM_STUN_TURNS,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]

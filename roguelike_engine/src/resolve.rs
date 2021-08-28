@@ -1100,18 +1100,37 @@ fn throw_item(player_id: EntityId,
     let throw_line = line(start_pos, end_pos);
 
     // get target position in direction of player click
-    let mut end_pos =
+    let end_pos =
         Pos::from(throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap());
 
-    if let Some(blocked) = data.map.path_blocked_move(start_pos, end_pos) {
-        // the start pos of the blocked struct is the last reached position
-        end_pos = blocked.start_pos;
+    let mut hit_pos = end_pos;
+    for pos in line(start_pos, end_pos) {
+        assert!(start_pos != pos);
+
+        if let Some(hit_entity) = data.has_blocking_entity(pos) {
+            if data.entities.typ[&hit_entity] != EntityType::Column {
+                // hitting an entity puts the stone on their tile, except
+                // for columns
+                hit_pos = pos;
+            } 
+
+            if data.entities.typ[&hit_entity] == EntityType::Enemy {
+                let stun_turns = data.entities.item[&item_id].throw_stun_turns();
+                msg_log.log(Msg::Froze(hit_entity, stun_turns));
+            }
+
+            break;
+        } else if data.map[pos].does_tile_block(BlockedType::Move) {
+            break;
+        }
+
+        hit_pos = pos;
     }
 
     data.entities.set_pos(item_id, start_pos);
 
-    let movement = Movement::step_to(end_pos);
-    msg_log.log(Msg::Moved(item_id, movement.typ, end_pos));
+    let movement = Movement::step_to(hit_pos);
+    msg_log.log(Msg::Moved(item_id, movement.typ, hit_pos));
 
     data.entities.remove_item(player_id, item_id);
     data.entities.took_turn[&player_id] = true;

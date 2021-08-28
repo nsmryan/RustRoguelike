@@ -16,6 +16,9 @@ pub const BLINK_RADIUS: usize = 4;
 pub const TILE_FILL_METRIC_DIST: usize = 3;
 pub const ILLUMINATE_FOV_RADIUS: i32 = 1000;
 pub const STAB_STUN_TURNS: usize = 3;
+pub const SPEAR_STUN_TURNS: usize = 3;
+pub const STONE_STUN_TURNS: usize = 2;
+pub const DEFAULT_ITEM_STUN_TURNS: usize = 2;
 
 pub const GOLEM_ATTACK_DIAG: u8 = 180;
 pub const GOLEM_ATTACK_HORIZ: u8 = 181;
