@@ -148,7 +148,6 @@ impl GameData {
     }
 
     fn fov_check(&self, entity_id: EntityId, check_pos: Pos, crouching: bool, _config: &Config) -> bool {
-        let _fov = timer!("FOV");
         if check_pos.x < 0 || check_pos.y < 0 {
             return false;
         }
