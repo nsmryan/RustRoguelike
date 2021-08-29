@@ -292,7 +292,7 @@ pub fn resolve_messages(data: &mut GameData,
             Msg::Illuminate(entity_id, pos, amount) => {
                 if use_energy(entity_id, data) {
                     let light = make_light(&mut data.entities, config, pos, msg_log);
-                    data.entities.status[&light].illuminate = amount;
+                    data.entities.illuminate[&light] = amount;
 
                     data.entities.took_turn[&entity_id] = true;
                 }

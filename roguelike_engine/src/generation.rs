@@ -154,7 +154,8 @@ pub fn make_mouse(entities: &mut Entities, _config: &Config, msg_log: &mut MsgLo
 pub fn make_light(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Other, ' ', Color::white(), EntityName::Other, false);
 
-    entities.status[&entity_id].illuminate = SKILL_ILLUMINATE_RADIUS;
+    entities.illuminate.insert(entity_id, SKILL_ILLUMINATE_RADIUS);
+
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Other, entities.direction[&entity_id]));
 
     return entity_id;
@@ -348,8 +349,9 @@ pub fn make_stone(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
 pub fn make_lantern(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let lantern = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_LANTERN as char, Color::white(), EntityName::Lantern, true);
 
+    entities.illuminate.insert(lantern, LANTERN_ILLUMINATE_RADIUS);
+
     entities.item.insert(lantern,  Item::Lantern);
-    entities.status[&lantern].illuminate = LANTERN_ILLUMINATE_RADIUS;
     entities.status[&lantern].alive = false;
     entities.blocks.insert(lantern,  false);
 

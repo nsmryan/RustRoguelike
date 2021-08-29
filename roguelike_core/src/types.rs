@@ -147,36 +147,34 @@ impl GameData {
         return self.fov_check(entity_id, other_pos, crouching, config);
     }
 
-    fn fov_check(&self, entity_id: EntityId, other_pos: Pos, crouching: bool, _config: &Config) -> bool {
-        if other_pos.x < 0 || other_pos.y < 0 {
+    fn fov_check(&self, entity_id: EntityId, check_pos: Pos, crouching: bool, _config: &Config) -> bool {
+        let _fov = timer!("FOV");
+        if check_pos.x < 0 || check_pos.y < 0 {
             return false;
         }
 
-        let pos = self.entities.pos[&entity_id];
+        let entity_pos = self.entities.pos[&entity_id];
 
         let radius: i32 = self.fov_radius(entity_id);
 
         if self.entities.typ[&entity_id] == EntityType::Player {
-            let mut can_see;
-            {
-                let _fov = timer!("FOV");
-                can_see = self.map.is_in_fov(pos, other_pos, radius, crouching);
-            }
+            let mut can_see = self.map.is_in_fov(entity_pos, check_pos, radius, crouching);
 
             // if we can't see the tile, check for a latern that illuminates it, allowing
             // us to see it anyway. Ignore tiles that are blocked for sight anyway.
-            if !can_see && !self.map[other_pos].block_sight {
-                let _ill = timer!("ILLUMINATE");
-                for id in self.entities.ids.iter() {
-                    // check for illumination that might make this tile visible.
-                    if self.entities.status[id].illuminate != 0 &&
+            if !can_see && !self.map[check_pos].block_sight {
+                // check for illumination that might make this tile visible.
+                for (id, illuminate_radius) in self.entities.illuminate.iter() {
+                    let illuminate_radius = *illuminate_radius as i32;
+
+                    if illuminate_radius != 0 &&
                        self.entities.pos[id].x >= 0 && self.entities.pos[id].y >= 0 &&
                        !self.entities.needs_removal[id] {
                         let illuminate_pos = self.entities.pos[id];
 
-                        let illuminate_radius = self.entities.status[id].illuminate as i32;
-                        if self.map.is_in_fov(illuminate_pos, other_pos, illuminate_radius, crouching) {
-                            if self.map.is_in_fov(pos, other_pos, ILLUMINATE_FOV_RADIUS, crouching) {
+                        if distance(illuminate_pos, check_pos) <= illuminate_radius &&
+                           self.map.is_in_fov(illuminate_pos, check_pos, illuminate_radius, crouching) {
+                            if self.map.is_in_fov(entity_pos, check_pos, ILLUMINATE_FOV_RADIUS, crouching) {
                                 can_see = true;
                             }
                         }
@@ -187,7 +185,7 @@ impl GameData {
             return can_see;
         } else {
             if let Some(dir) = self.entities.direction.get(&entity_id) {
-                return self.map.is_in_fov_direction(pos, other_pos, radius, *dir, crouching);
+                return self.map.is_in_fov_direction(entity_pos, check_pos, radius, *dir, crouching);
             } else {
                 panic!(format!("tried to perform is_in_fov on entity without facing"));
             }
@@ -1048,7 +1046,6 @@ impl EntityClass {
 pub struct StatusEffect {
     pub frozen: usize, // turns
     pub soft_steps: usize, // turns
-    pub illuminate: usize, // radius
     pub extra_fov: usize, // amount
     pub blinked: bool,
     pub active: bool,
@@ -1090,6 +1087,7 @@ pub struct Entities {
     pub class: CompStore<EntityClass>,
     pub skills: CompStore<Vec<Skill>>,
     pub status: CompStore<StatusEffect>,
+    pub illuminate: CompStore<usize>,
     pub gate_pos: CompStore<Option<Pos>>,
     pub stance: CompStore<Stance>,
     pub took_turn: CompStore<bool>,
@@ -1362,6 +1360,7 @@ impl Entities {
         move_component!(sound);
         move_component!(typ);
         move_component!(status);
+        move_component!(illuminate);
         move_component!(gate_pos);
         move_component!(took_turn);
         move_component!(color);
@@ -1410,6 +1409,7 @@ impl Entities {
         self.sound.remove(&id);
         self.typ.remove(&id);
         self.status.remove(&id);
+        self.illuminate.remove(&id);
         self.gate_pos.remove(&id);
         self.took_turn.remove(&id);
         self.color.remove(&id);
