@@ -437,8 +437,8 @@ pub fn test_direction_turn_amount() {
     assert_eq!(-1, Direction::Up.turn_amount(Direction::UpLeft));
     assert_eq!(1, Direction::Up.turn_amount(Direction::UpRight));
 
-    for move_action in Direction::move_actions() {
-        assert_eq!(0, move_action.turn_amount(move_action));
+    for move_action in &Direction::move_actions() {
+        assert_eq!(0, move_action.turn_amount(*move_action));
     }
 
     assert_eq!(1, Direction::Down.turn_amount(Direction::DownLeft));
