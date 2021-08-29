@@ -5,6 +5,8 @@ use std::cell::RefCell;
 use std::str::FromStr;
 use std::fmt;
 
+use logging_timer::timer;
+
 use oorandom::Rand32;
 
 use pathfinding::directed::astar::astar;
@@ -930,25 +932,34 @@ impl Map {
     }
 
     pub fn is_in_fov(&self, start_pos: Pos, end_pos: Pos, radius: i32, low: bool) -> bool {
-        let alg_fov = self.is_in_fov_shadowcast(start_pos, end_pos);
-        
-        let path_fov =
-            if low {
-                self.path_blocked_fov_low(start_pos, end_pos)
-            } else {
-                self.path_blocked_fov(start_pos, end_pos)
-            };
+        let mut in_fov = false;
 
-        let within_radius = distance_maximum(start_pos, end_pos) <= radius;
+        if self.is_in_fov_shadowcast(start_pos, end_pos) {
+            // check that the position is within the max view distance.
+            if distance_maximum(start_pos, end_pos) <= radius {
 
-        // make sure there is a clear path, but allow the player to
-        // see walls (blocking position is the end_pos tile)
-        let mut clear_fov_path = true;
-        if let Some(blocked) = path_fov {
-            clear_fov_path = end_pos == blocked.end_pos && blocked.blocked_tile;
-        } 
+                // so far, the position is in fov
+                in_fov = true;
 
-        return alg_fov && within_radius && clear_fov_path;
+                // make sure there is a clear path, but allow the player to
+                // see walls (blocking position is the end_pos tile)
+                let path_fov =
+                    if low {
+                        self.path_blocked_fov_low(start_pos, end_pos)
+                    } else {
+                        self.path_blocked_fov(start_pos, end_pos)
+                    };
+
+                if let Some(blocked) = path_fov {
+                    // If we get here, the position is in FOV but blocked.
+                    // The only blocked positions that are visible are at the end of the
+                    // path and also block tiles (like a wall).
+                    in_fov = end_pos == blocked.end_pos && blocked.blocked_tile;
+                } 
+            }
+        }
+
+        return in_fov;
     }
 
     pub fn is_in_fov_shadowcast(&self, start_pos: Pos, end_pos: Pos) -> bool {

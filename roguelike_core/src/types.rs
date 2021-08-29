@@ -4,6 +4,8 @@ use std::default::Default;
 use std::fmt;
 use std::str::FromStr;
 
+use logging_timer::timer;
+
 use serde::{Serialize, Deserialize};
 
 use pathfinding::directed::astar::astar;
@@ -155,26 +157,30 @@ impl GameData {
         let radius: i32 = self.fov_radius(entity_id);
 
         if self.entities.typ[&entity_id] == EntityType::Player {
-            let mut can_see = self.map.is_in_fov(pos, other_pos, radius, crouching);
+            let mut can_see;
+            {
+                let _fov = timer!("FOV");
+                can_see = self.map.is_in_fov(pos, other_pos, radius, crouching);
+            }
 
-            for id in self.entities.ids.iter() {
-                if can_see {
-                    break;
-                }
+            // if we can't see the tile, check for a latern that illuminates it, allowing
+            // us to see it anyway. Ignore tiles that are blocked for sight anyway.
+            if !can_see && !self.map[other_pos].block_sight {
+                let _ill = timer!("ILLUMINATE");
+                for id in self.entities.ids.iter() {
+                    // check for illumination that might make this tile visible.
+                    if self.entities.status[id].illuminate != 0 &&
+                       self.entities.pos[id].x >= 0 && self.entities.pos[id].y >= 0 &&
+                       !self.entities.needs_removal[id] {
+                        let illuminate_pos = self.entities.pos[id];
 
-                // check for illumination that might make this tile visible.
-                if !self.entities.needs_removal[id] && 
-                   self.entities.status[id].illuminate != 0 &&
-                   self.entities.pos[id].x >= 0 && self.entities.pos[id].y >= 0 {
-                    let illuminate_pos = self.entities.pos[id];
-
-                    let illuminate_radius = self.entities.status[id].illuminate as i32;
-                    let illuminated = self.map.is_in_fov(illuminate_pos, other_pos, illuminate_radius, crouching);
-
-                    let illuminated_see = self.map.is_in_fov(pos, other_pos, ILLUMINATE_FOV_RADIUS, crouching);
-                    let blocked = self.map[other_pos].block_sight;
-
-                    can_see |= illuminated && illuminated_see && !blocked;
+                        let illuminate_radius = self.entities.status[id].illuminate as i32;
+                        if self.map.is_in_fov(illuminate_pos, other_pos, illuminate_radius, crouching) {
+                            if self.map.is_in_fov(pos, other_pos, ILLUMINATE_FOV_RADIUS, crouching) {
+                                can_see = true;
+                            }
+                        }
+                    }
                 }
             }
 

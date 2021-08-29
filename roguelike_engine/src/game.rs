@@ -3,6 +3,7 @@ use std::default::Default;
 use oorandom::Rand32;
 
 use serde::{Serialize, Deserialize};
+use logging_timer::timer;
 
 use roguelike_core::types::*;
 use roguelike_core::config::*;
@@ -78,6 +79,7 @@ impl Game {
         let input_handled = actions::handle_input_universal(input_action, self);
 
         if !input_handled {
+            let _input = timer!("INPUT");
             actions::handle_input(input_action,
                                   &self.data,
                                   &mut self.settings,
@@ -86,6 +88,7 @@ impl Game {
         }
 
         if self.msg_log.messages.len() > 0 {
+            let _step = timer!("STEP");
             let finished_level = step_logic(self);
 
             if finished_level {
@@ -100,19 +103,21 @@ impl Game {
 
                 make_map(&self.config.map_load.clone(), self);
             }
-        }
 
-        /* Check for explored tiles */
-        let player_id = self.data.find_by_name(EntityName::Player).unwrap();
-        // TODO make this to a map function like 'explore_from_position'.
-        for pos in self.data.map.get_all_pos() {
-            let visible =
-                self.data.pos_in_fov(player_id, pos, &self.config) ||
-                self.settings.god_mode;
+            /* Check for explored tiles */
+            let player_id = self.data.find_by_name(EntityName::Player).unwrap();
 
-            // careful not to set map if not needed- this will clear the fov cache
-            if visible && !self.data.map[pos].explored {
-                self.data.map[pos].explored = visible;
+            let _explore = timer!("EXPLORE");
+            for pos in self.data.map.get_all_pos() {
+                // careful not to set map if not needed- this will clear the fov cache
+                if !self.data.map[pos].explored {
+                    let visible =
+                        self.data.pos_in_fov(player_id, pos, &self.config) ||
+                        self.settings.god_mode;
+                    if visible {
+                        self.data.map[pos].explored = true;
+                    }
+                }
             }
         }
 

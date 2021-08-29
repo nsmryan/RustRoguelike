@@ -27,6 +27,7 @@ def parse_series(lines):
     epsilon = 0.0000000001
     last_time = 0.0
     totals = {}
+    counts = {}
 
     for line in lines:
         if not "Elapsed" in line:
@@ -37,6 +38,7 @@ def parse_series(lines):
         if not name in series.keys():
             series[name] = [(0.0, 0)]
             totals[name] = 0
+            counts[name] = 0
 
         elapsed_str = parts[4][skip_n:-3]
         timestamp = parse_timestamp(parts[0][1:-1])
@@ -57,6 +59,7 @@ def parse_series(lines):
         series[name].append((timestamp + epsilon, 0))
 
         totals[name] += elapsed
+        counts[name] += 1
 
         last_time = max(last_time, timestamp)
 
@@ -66,9 +69,12 @@ def parse_series(lines):
     names.sort()
     names.reverse()
 
+    total_time = sum(totals.values())
     for name in names:
         series[name].append((last_time, 0))
-        print(name + " (" + str(len(series[name])) + "): " + str(totals[name]))
+        avg_us = totals[name] / float(counts[name])
+        percent = totals[name] / total_time
+        print("{0:10}: {1:6}, {2:.6f}, {3:.6f} {4:.2f}".format(name, counts[name], totals[name], avg_us, percent))
     print()
     
     return (names, series)
@@ -77,7 +83,6 @@ def load_perf(file_name):
     with open(file_name, 'r') as fh:
         lines = fh.readlines()
 
-    print(lines)
     (names, series) = parse_series(lines)
 
     return (names, series)
@@ -87,8 +92,6 @@ def plot_perf(plot_axis):
 
     index = 1 + 3 * len(names)
     for (name, data) in series.items():
-        print(name)
-        print(data)
         xs = [pair[0] for pair in data]
         ys = [pair[1] + (index / 2) for pair in data]
         dpg.add_line_series(xs, ys, label=name, parent=plot_axis) #, weight=2, fill=[255, 0, 0, 100])

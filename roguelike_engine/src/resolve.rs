@@ -1,5 +1,6 @@
 #[allow(unused_imports)]
 use log::{trace, error};
+use logging_timer::timer;
 
 use oorandom::Rand32;
 
