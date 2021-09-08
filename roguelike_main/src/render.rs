@@ -1035,7 +1035,8 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         for dir in Direction::move_actions().iter() {
             let maybe_use = game.data.calculate_use_move(player_id,
                                                          game.settings.use_index as usize,
-                                                         *dir);
+                                                         *dir,
+                                                         game.settings.use_move_mode);
             if let Some(pos) = maybe_use {
                 draw_tile_highlight(panel, pos, highlight_color);
             }

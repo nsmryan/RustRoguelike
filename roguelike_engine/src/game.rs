@@ -9,7 +9,7 @@ use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::MsgLog;
-use roguelike_core::movement::Direction;
+use roguelike_core::movement::{Direction, MoveMode};
 
 use crate::actions;
 use crate::actions::InputAction;
@@ -141,6 +141,7 @@ pub struct GameSettings {
     pub cursor: Option<Pos>,
     pub use_index: i32,
     pub use_dir: Option<Direction>,
+    pub use_move_mode: MoveMode,
 }
 
 impl GameSettings {
@@ -160,6 +161,7 @@ impl GameSettings {
             cursor: None,
             use_index: -1,
             use_dir: None,
+            use_move_mode: MoveMode::Walk,
         };
     }
 }

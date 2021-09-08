@@ -373,7 +373,7 @@ impl GameData {
         return !(player_pushing || enemies_pushing_each_other);
     }
 
-    pub fn calculate_use_move(&self, entity_id: EntityId, item_index: usize, dir: Direction) -> Option<Pos> {
+    pub fn calculate_use_move(&self, entity_id: EntityId, item_index: usize, dir: Direction, move_mode: MoveMode) -> Option<Pos> {
         let pos = self.entities.pos[&entity_id];
         let item_id = self.entities.inventory[&entity_id][item_index];
 
@@ -420,7 +420,34 @@ impl GameData {
             }
 
             Item::Spear => {
-                // TODO add in spear positions
+                let target_pos = dir.offset_pos(pos, 2);
+                if self.clear_path(pos, dir.offset_pos(pos, 1), false) {
+                    if let Some(blocking) = self.has_blocking_entity(target_pos) {
+                        if self.entities.typ[&blocking] == EntityType::Enemy {
+                            return Some(pos);
+                        }
+                    }
+                }
+
+                let target_pos = dir.offset_pos(pos, 3);
+                if self.clear_path(pos, dir.offset_pos(pos, 2), false) {
+                    if let Some(blocking) = self.has_blocking_entity(target_pos) {
+                        if self.entities.typ[&blocking] == EntityType::Enemy {
+                            return Some(pos);
+                        }
+                    }
+                }
+
+                if move_mode == MoveMode::Run {
+                    let target_pos = dir.offset_pos(pos, 4);
+                    if self.clear_path(pos, dir.offset_pos(pos, 3), false) {
+                        if let Some(blocking) = self.has_blocking_entity(target_pos) {
+                            if self.entities.typ[&blocking] == EntityType::Enemy {
+                                return Some(dir.offset_pos(pos, 2));
+                            }
+                        }
+                    }
+                }
             }
 
             Item::GreatSword => {

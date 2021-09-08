@@ -27,6 +27,9 @@ pub enum ActionLoc {
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum InputAction {
+    Run(bool),
+    Sneak(bool),
+    Alt(bool),
     Move(Direction, MoveMode),
     MoveTowardsCursor(MoveMode),
     SkillDir(Direction, ActionMode, usize),
@@ -35,7 +38,7 @@ pub enum InputAction {
     ItemPos(Pos, ActionMode, usize),
     SkillFacing(ActionMode, usize),
     ItemFacing(ActionMode, usize),
-    StartUseItem(usize),
+    StartUseItem(usize, MoveMode),
     StartUseDir(Direction),
     FinalizeUse,
     AbortUse,
@@ -71,6 +74,9 @@ pub enum InputAction {
 impl fmt::Display for InputAction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            InputAction::Run(down) => write!(f, "run {}", down),
+            InputAction::Sneak(down) => write!(f, "sneak {}", down),
+            InputAction::Alt(down) => write!(f, "alt {}", down),
             InputAction::Move(direction, move_mode) => {
                 match direction {
                     Direction::Left => write!(f, "left {}", move_mode),
@@ -90,7 +96,7 @@ impl fmt::Display for InputAction {
             InputAction::ItemPos(pos, action_mode, index) => write!(f, "itempos {} {} {} {}", pos.x, pos.y, action_mode, index),
             InputAction::SkillFacing(action_mode, index) => write!(f, "skill {} {}", action_mode, index),
             InputAction::ItemFacing(action_mode, index) => write!(f, "itemdir {} {}", action_mode, index),
-            InputAction::StartUseItem(index) => write!(f, "startuseitem {}", index),
+            InputAction::StartUseItem(index, move_mode) => write!(f, "startuseitem {} {}", index, move_mode),
             InputAction::StartUseDir(dir) => write!(f, "startusedir {}", dir),
             InputAction::FinalizeUse => write!(f, "finalizeuse"),
             InputAction::AbortUse => write!(f, "abortuse"),
@@ -157,6 +163,15 @@ impl FromStr for InputAction {
         } else if args[0] == "downright" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Move(Direction::DownRight, move_mode));
+        } else if args[0] == "run" {
+            let down = args[1].parse::<bool>().unwrap();
+            return Ok(InputAction::Run(down));
+        } else if args[0] == "sneak" {
+            let down = args[1].parse::<bool>().unwrap();
+            return Ok(InputAction::Sneak(down));
+        } else if args[0] == "alt" {
+            let down = args[1].parse::<bool>().unwrap();
+            return Ok(InputAction::Alt(down));
         } else if args[0] == "pass" {
             let move_mode = args[1].parse::<MoveMode>().unwrap();
             return Ok(InputAction::Pass(move_mode));
@@ -195,7 +210,8 @@ impl FromStr for InputAction {
             return Ok(InputAction::ItemFacing(action_mode, index));
         } else if args[0] == "startuseitem" {
             let index = args[1].parse::<usize>().unwrap();
-            return Ok(InputAction::StartUseItem(index));
+            let move_mode = args[2].parse::<MoveMode>().unwrap();
+            return Ok(InputAction::StartUseItem(index, move_mode));
         } else if args[0] == "startusedir" {
             let dir = args[1].parse::<Direction>().unwrap();
             return Ok(InputAction::StartUseDir(dir));
@@ -467,8 +483,24 @@ pub fn handle_input_use(input_action: InputAction,
     let player_alive = data.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
-        (InputAction::StartUseItem(item_index), true) => {
-            start_use_item(item_index, data, settings, msg_log);
+        (InputAction::Run(down), true) => {
+            if down {
+                settings.use_move_mode = MoveMode::Run;
+            } else  if settings.use_move_mode == MoveMode::Run {
+                settings.use_move_mode = MoveMode::Walk;
+            } // else we released shift but were already sneaking.
+        }
+
+        (InputAction::Sneak(down), true) => {
+            if down {
+                settings.use_move_mode = MoveMode::Sneak;
+            } else if settings.use_move_mode == MoveMode::Sneak {
+                settings.use_move_mode = MoveMode::Walk;
+            } // else we released ctrl but were already running.
+        }
+
+        (InputAction::StartUseItem(item_index, move_mode), true) => {
+            start_use_item(item_index, move_mode, data, settings, msg_log);
         }
 
         (InputAction::StartUseDir(dir), true) => {
@@ -518,6 +550,22 @@ pub fn handle_input_playing(input_action: InputAction,
     let player_alive = data.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
+        (InputAction::Run(down), true) => {
+            if down {
+                settings.use_move_mode = MoveMode::Run;
+            } else  if settings.use_move_mode == MoveMode::Run {
+                settings.use_move_mode = MoveMode::Walk;
+            } // else we released shift but were already sneaking.
+        }
+
+        (InputAction::Sneak(down), true) => {
+            if down {
+                settings.use_move_mode = MoveMode::Sneak;
+            } else if settings.use_move_mode == MoveMode::Sneak {
+                settings.use_move_mode = MoveMode::Walk;
+            } // else we released ctrl but were already running.
+        }
+
         (InputAction::Move(direction, move_mode), true) => {
             let move_amount = move_mode.move_amount();
             msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
@@ -559,8 +607,8 @@ pub fn handle_input_playing(input_action: InputAction,
             handle_skill(skill_index, ActionLoc::Facing, action_mode, data, msg_log);
         }
 
-        (InputAction::StartUseItem(item_index), true) => {
-            start_use_item(item_index, data, settings, msg_log);
+        (InputAction::StartUseItem(item_index, move_mode), true) => {
+            start_use_item(item_index, move_mode, data, settings, msg_log);
         }
 
         (InputAction::CursorReturn, _) => {
@@ -678,7 +726,7 @@ pub fn handle_input_playing(input_action: InputAction,
 fn start_use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    if data.calculate_use_move(player_id, settings.use_index as usize, dir).is_some() {
+    if data.calculate_use_move(player_id, settings.use_index as usize, dir, settings.use_move_mode).is_some() {
         settings.use_dir = Some(dir);
     }
 }
@@ -708,13 +756,17 @@ fn finalize_use_item(_item_index: i32, dir: Direction, data: &GameData, settings
             msg_log.log(Msg::SwordStep(player_id, item_index, dir));
         }
 
+        Item::Spear => {
+            msg_log.log(Msg::SpearStab(player_id, item_index, dir, settings.use_move_mode));
+        }
+
         _ => {
             panic!(format!("Tried to use {} in use-mode!", item));
         }
     }
 }
 
-fn start_use_item(item_index: usize, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+fn start_use_item(item_index: usize, move_mode: MoveMode, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     let num_items_in_inventory = data.entities.inventory[&player_id].len();
@@ -728,20 +780,22 @@ fn start_use_item(item_index: usize, data: &GameData, settings: &mut GameSetting
     // only primary items are available for use-mode
     if data.entities.item[&item_id].class() == ItemClass::Primary {
         // only enter use-mode if there is at least one place to move
-        let at_least_one_move =
-            Direction::move_actions().iter().any(|check_dir|
-                data.calculate_use_move(player_id, item_index, *check_dir).is_some());
+        //let at_least_one_move =
+        //    Direction::move_actions().iter().any(|check_dir|
+        //        data.calculate_use_move(player_id, item_index, *check_dir, settings.use_move_mode).is_some());
 
-        if at_least_one_move {
-            settings.use_index = item_index as i32;
+        // Allow entering use-mode even if there are no places to move
+        // in case the player wants to check pressing shift or ctrl
+        // for additional spaces.
+        settings.use_index = item_index as i32;
 
-            settings.use_dir = None;
-            settings.cursor = None;
+        settings.use_dir = None;
+        settings.use_move_mode = MoveMode::Walk;
+        settings.cursor = None;
 
-            change_state(settings, GameState::Use);
+        change_state(settings, GameState::Use);
 
-            msg_log.log(Msg::StartUseItem(item_id));
-        }
+        msg_log.log(Msg::StartUseItem(item_id));
     }
 }
 
