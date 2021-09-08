@@ -420,24 +420,18 @@ impl GameData {
             }
 
             Item::Spear => {
-                let target_pos = dir.offset_pos(pos, 2);
-                if self.clear_path(pos, dir.offset_pos(pos, 1), false) {
-                    if let Some(blocking) = self.has_blocking_entity(target_pos) {
-                        if self.entities.typ[&blocking] == EntityType::Enemy {
-                            return Some(pos);
+                for dist in &[2, 3] {
+                    let target_pos = dir.offset_pos(pos, *dist);
+                    if self.clear_path(pos, dir.offset_pos(pos, *dist - 1), false) {
+                        if let Some(blocking) = self.has_blocking_entity(target_pos) {
+                            if self.entities.typ[&blocking] == EntityType::Enemy {
+                                return Some(pos);
+                            }
                         }
                     }
                 }
 
-                let target_pos = dir.offset_pos(pos, 3);
-                if self.clear_path(pos, dir.offset_pos(pos, 2), false) {
-                    if let Some(blocking) = self.has_blocking_entity(target_pos) {
-                        if self.entities.typ[&blocking] == EntityType::Enemy {
-                            return Some(pos);
-                        }
-                    }
-                }
-
+                // If running, we can also attack an extra tile and move towards the golem.
                 if move_mode == MoveMode::Run {
                     let target_pos = dir.offset_pos(pos, 4);
                     if self.clear_path(pos, dir.offset_pos(pos, 3), false) {

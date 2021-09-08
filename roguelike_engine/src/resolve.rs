@@ -545,14 +545,9 @@ fn spear_stab(entity_id: EntityId, _item_index: usize, dir: Direction, move_mode
             msg_log.log(Msg::Stabbed(entity_id, hit_entity));
         }
     } else {
-        let hit_pos = dir.offset_pos(entity_pos, 1);
-        if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
-            msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Sneak));
-            msg_log.log(Msg::Stabbed(entity_id, hit_entity));
-        } else {
-            let hit_pos = dir.offset_pos(entity_pos, 1);
+        for dist in &[2, 3] {
+            let hit_pos = dir.offset_pos(entity_pos, *dist);
             if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
-                msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Sneak));
                 msg_log.log(Msg::Stabbed(entity_id, hit_entity));
             }
         }
