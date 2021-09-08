@@ -1349,15 +1349,7 @@ fn process_moved_message(entity_id: EntityId,
 
     if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {
         if let Some(stance) = data.entities.stance.get(&entity_id) {
-            if move_type == MoveType::Pass {
-                data.entities.stance[&entity_id] = stance.waited(*move_mode);
-            } else if *move_mode == MoveMode::Run {
-                data.entities.stance[&entity_id] = Stance::Running;
-            } else if *move_mode == MoveMode::Sneak {
-                data.entities.stance[&entity_id] = Stance::Crouching;
-            } else if *move_mode == MoveMode::Walk && *stance == Stance::Crouching {
-                data.entities.stance[&entity_id] = Stance::Standing;
-            }
+            data.entities.stance[&entity_id] = update_stance(move_type, *move_mode, *stance);
         }
 
         // make a noise based on how fast the entity is moving and the terrain

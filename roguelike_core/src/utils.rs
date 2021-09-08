@@ -131,6 +131,34 @@ pub fn sort_by_distance_to(pos: Pos, positions: &mut Vec<Pos>) {
              .partial_cmp(&distance(pos, *b)).unwrap());
 }
 
+pub fn update_stance(move_type: MoveType, move_mode: MoveMode, stance: Stance) -> Stance {
+    let mut new_stance = stance;
+
+    if move_type == MoveType::Pass && move_mode != MoveMode::Sneak {
+        new_stance = Stance::Standing;
+    } else if move_type == MoveType::Pass {
+        new_stance = stance.waited(move_mode);
+    } else if move_mode == MoveMode::Run {
+        new_stance = Stance::Running;
+    } else if move_mode == MoveMode::Sneak {
+        new_stance = Stance::Crouching;
+    } else if move_mode == MoveMode::Walk && stance == Stance::Crouching {
+        new_stance = Stance::Standing;
+    }
+
+    return new_stance;
+}
+
+#[test]
+fn test_update_stance() {
+    assert_eq!(Stance::Crouching, update_stance(MoveType::Pass, MoveMode::Sneak, Stance::Standing));
+    assert_eq!(Stance::Crouching, update_stance(MoveType::Move, MoveMode::Sneak, Stance::Standing));
+    assert_eq!(Stance::Standing, update_stance(MoveType::Pass, MoveMode::Walk, Stance::Crouching));
+    assert_eq!(Stance::Standing, update_stance(MoveType::Pass, MoveMode::Walk, Stance::Standing));
+    assert_eq!(Stance::Running, update_stance(MoveType::Move, MoveMode::Run, Stance::Standing));
+    assert_eq!(Stance::Running, update_stance(MoveType::Move, MoveMode::Run, Stance::Crouching));
+}
+
 pub fn push_attack(entity_id: EntityId,
                    target: EntityId,
                    direction: Direction,
