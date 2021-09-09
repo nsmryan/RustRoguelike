@@ -115,6 +115,10 @@ pub fn resolve_messages(data: &mut GameData,
                 dagger_stab(entity_id, item_index, dir, data, msg_log, config);
             }
 
+            Msg::SpearStab(entity_id, item_index, dir, move_mode) => {
+                spear_stab(entity_id, item_index, dir, move_mode, data, msg_log, config);
+            }
+
             Msg::SwordSwing(entity_id, item_id, pos) => {
                 sword_swing(entity_id, item_id, pos, data, msg_log, config);
             }
@@ -528,6 +532,30 @@ fn shield_smash(entity_id: EntityId, _item_index: usize, dir: Direction, data: &
         msg_log.log(Msg::Froze(hit_entity, config.shield_smash_num_turns));
     } else {
         panic!("Shield smash did not find an entity to hit?");
+    }
+}
+
+fn spear_stab(entity_id: EntityId, _item_index: usize, dir: Direction, move_mode: MoveMode, data: &mut GameData, msg_log: &mut MsgLog, _config: &Config) {
+    let entity_pos = data.entities.pos[&entity_id];
+
+    if move_mode == MoveMode::Run {
+        let hit_pos = dir.offset_pos(entity_pos, 4);
+        if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
+            msg_log.log(Msg::TryMove(entity_id, dir, 2, MoveMode::Run));
+            msg_log.log(Msg::Stabbed(entity_id, hit_entity));
+        }
+    } else {
+        let hit_pos = dir.offset_pos(entity_pos, 1);
+        if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
+            msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Sneak));
+            msg_log.log(Msg::Stabbed(entity_id, hit_entity));
+        } else {
+            let hit_pos = dir.offset_pos(entity_pos, 1);
+            if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
+                msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Sneak));
+                msg_log.log(Msg::Stabbed(entity_id, hit_entity));
+            }
+        }
     }
 }
 
@@ -1349,15 +1377,7 @@ fn process_moved_message(entity_id: EntityId,
 
     if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {
         if let Some(stance) = data.entities.stance.get(&entity_id) {
-            if move_type == MoveType::Pass {
-                data.entities.stance[&entity_id] = stance.waited(*move_mode);
-            } else if *move_mode == MoveMode::Run {
-                data.entities.stance[&entity_id] = Stance::Running;
-            } else if *move_mode == MoveMode::Sneak {
-                data.entities.stance[&entity_id] = Stance::Crouching;
-            } else if *move_mode == MoveMode::Walk && *stance == Stance::Crouching {
-                data.entities.stance[&entity_id] = Stance::Standing;
-            }
+            data.entities.stance[&entity_id] = update_stance(move_type, *move_mode, *stance);
         }
 
         // make a noise based on how fast the entity is moving and the terrain

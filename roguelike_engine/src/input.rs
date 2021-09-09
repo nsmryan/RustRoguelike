@@ -209,18 +209,21 @@ impl Input {
                 if dir != KeyDir::Held {
                     self.ctrl = dir == KeyDir::Down;
                 }
+                action = InputAction::Sneak(self.ctrl);
             }
 
             InputEvent::Shift(dir) => {
                 if dir != KeyDir::Held {
                     self.shift = dir == KeyDir::Down;
                 }
+                action = InputAction::Run(self.shift);
             }
 
             InputEvent::Alt(dir) => {
                 if dir != KeyDir::Held {
                     self.alt = dir == KeyDir::Down;
                 }
+                action = InputAction::Alt(self.alt);
             }
 
             InputEvent::Char(chr, dir) => {
@@ -413,7 +416,7 @@ impl Input {
                     self.target = None;
                 } else {
                     self.target = Some(Target::item(index as usize));
-                    action = InputAction::StartUseItem(index as usize);
+                    action = InputAction::StartUseItem(index as usize, self.move_mode());
                 }
             }
         } else if !settings.state.is_menu() {
@@ -435,7 +438,7 @@ impl Input {
                     self.target = Some(Target::item(index as usize));
 
                     self.cursor = false;
-                    action = InputAction::StartUseItem(index as usize);
+                    action = InputAction::StartUseItem(index as usize, self.move_mode());
                     // directions are cleared when entering use-mode
                     self.direction = None;
                 }
