@@ -43,12 +43,8 @@ pub enum Msg {
     ChangeMoveMode(EntityId, bool), // true = increase, false = decrease
     MoveMode(EntityId, MoveMode),
     TriedRunWithHeavyEquipment,
-    ShieldSmash(EntityId, usize, Direction), // entity, item index, direction moved
-    SwordStep(EntityId, usize, Direction), // entity, item index, direction moved
+    Hit(EntityId, Pos, WeaponType, AttackType),
     HammerRaise(EntityId, usize, Direction), // entity, item index, direction moved
-    DaggerStab(EntityId, usize, Direction), // entity, item index, direction moved
-    SpearStab(EntityId, usize, Direction, MoveMode), // entity, item index, direction moved
-    SwordSwing(EntityId, EntityId, Pos), // entity, item, position swung at
     HammerSwing(EntityId, EntityId, Pos), // entity, item, position swung at
     HammerHitEntity(EntityId, EntityId), // entity, hit entity
     HammerHitWall(EntityId, Blocked),
@@ -133,12 +129,8 @@ impl fmt::Display for Msg {
             Msg::ChangeMoveMode(entity_id, upwards) => write!(f, "chage_move_mode {} {}", entity_id, upwards),
             Msg::MoveMode(entity_id, move_mode) => write!(f, "move_mode {} {}", entity_id, move_mode),
             Msg::TriedRunWithHeavyEquipment => write!(f, "tried_run_with_heavy_equipment"),
-            Msg::ShieldSmash(entity_id, item_index, dir) => write!(f, "shield_smash {} {} {}", entity_id, item_index, dir),
-            Msg::SwordStep(entity_id, item_index, dir) => write!(f, "sword_step {} {} {}", entity_id, item_index, dir),
+            Msg::Hit(entity_id, pos, weapon_type, attack_type) => write!(f, "hit {} {} {} {} {}", entity_id, pos.x, pos.y, weapon_type, attack_type),
             Msg::HammerRaise(entity_id, item_index, dir) => write!(f, "hammer_raise {} {} {}", entity_id, item_index, dir),
-            Msg::DaggerStab(entity_id, item_index, dir) => write!(f, "dagger_stab {} {} {}", entity_id, item_index, dir),
-            Msg::SpearStab(entity_id, item_index, dir, move_mode) => write!(f, "spear_stab {} {} {} {}", entity_id, item_index, dir, move_mode),
-            Msg::SwordSwing(entity_id, item_id, pos) => write!(f, "sword_swing {} {} {} {}", entity_id, item_id, pos.x, pos.y),
             Msg::HammerSwing(entity_id, item_id, pos) => write!(f, "hammer_swing {} {} {} {}", entity_id, item_id, pos.x, pos.y),
             Msg::HammerHitEntity(entity_id, target_id) => write!(f, "hammer_hit_entity {} {}", entity_id, target_id),
             Msg::HammerHitWall(entity_id, blocked) => write!(f, "hammer_hit_wall {} {} {} {} {} {}", entity_id, blocked.start_pos, blocked.end_pos, blocked.direction, blocked.blocked_tile, blocked.wall_type),
@@ -317,28 +309,8 @@ impl Msg {
                 return "Your equipment is too heavy to run!".to_string();
             }
 
-            Msg::ShieldSmash(entity_id, _item_index, _dir) => {
-                return format!("{:?} used their shield to smash", data.entities.name[entity_id]);
-            }
-
-            Msg::SwordStep(entity_id, _item_index, _dir) => {
-                return format!("{:?} swings their sword", data.entities.name[entity_id]);
-            }
-
             Msg::HammerRaise(entity_id, _item_index, _dir) => {
                 return format!("{:?} raises their hammer", data.entities.name[entity_id]);
-            }
-
-            Msg::DaggerStab(entity_id, _item_index, _dir) => {
-                return format!("{:?} stabs with their dagger", data.entities.name[entity_id]);
-            }
-
-            Msg::SpearStab(entity_id, _item_index, _dir, _move_mode) => {
-                return format!("{:?} stabs with their spear", data.entities.name[entity_id]);
-            }
-
-            Msg::SwordSwing(entity_id, _item_id, _pos) => {
-                return format!("{:?} swung their sword", data.entities.name[entity_id]);
             }
 
             Msg::HammerSwing(entity_id, _item_id, _pos) => {
