@@ -1111,6 +1111,7 @@ pub struct Entities {
     pub gate_pos: CompStore<Option<Pos>>,
     pub stance: CompStore<Stance>,
     pub took_turn: CompStore<bool>,
+    pub durability: CompStore<usize>,
 
     // NOTE not sure about keeping these ones, or packaging into larger ones
     pub sound: CompStore<Pos>, // source position
@@ -1383,6 +1384,7 @@ impl Entities {
         move_component!(illuminate);
         move_component!(gate_pos);
         move_component!(took_turn);
+        move_component!(durability);
         move_component!(color);
         move_component!(blocks);
         move_component!(needs_removal);
@@ -1432,6 +1434,7 @@ impl Entities {
         self.illuminate.remove(&id);
         self.gate_pos.remove(&id);
         self.took_turn.remove(&id);
+        self.durability.remove(&id);
         self.color.remove(&id);
         self.blocks.remove(&id);
         self.needs_removal.remove(&id);

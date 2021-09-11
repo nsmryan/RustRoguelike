@@ -519,6 +519,7 @@ fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameD
         let damage = fighter.hp;
 
         msg_log.log(Msg::Killed(entity_id, hit_entity, damage));
+        msg_log.log(Msg::Sound(entity_id, second, config.sound_radius_blunt, true));
     }
 }
 
@@ -530,12 +531,13 @@ fn shield_smash(entity_id: EntityId, _item_index: usize, dir: Direction, data: &
     if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
         msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Run));
         msg_log.log(Msg::Froze(hit_entity, config.shield_smash_num_turns));
+        msg_log.log(Msg::Sound(entity_id, hit_pos, config.sound_radius_blunt, true));
     } else {
         panic!("Shield smash did not find an entity to hit?");
     }
 }
 
-fn spear_stab(entity_id: EntityId, _item_index: usize, dir: Direction, move_mode: MoveMode, data: &mut GameData, msg_log: &mut MsgLog, _config: &Config) {
+fn spear_stab(entity_id: EntityId, _item_index: usize, dir: Direction, move_mode: MoveMode, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
 
     if move_mode == MoveMode::Run {
@@ -549,12 +551,13 @@ fn spear_stab(entity_id: EntityId, _item_index: usize, dir: Direction, move_mode
             let hit_pos = dir.offset_pos(entity_pos, *dist);
             if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
                 msg_log.log(Msg::Stabbed(entity_id, hit_entity));
+                msg_log.log(Msg::Sound(entity_id, hit_pos, config.sound_radius_pierce, true));
             }
         }
     }
 }
 
-fn dagger_stab(entity_id: EntityId, _item_index: usize, dir: Direction, data: &mut GameData, msg_log: &mut MsgLog, _config: &Config) {
+fn dagger_stab(entity_id: EntityId, _item_index: usize, dir: Direction, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     let entity_pos = data.entities.pos[&entity_id];
     let move_pos = dir.offset_pos(entity_pos, 1);
 
@@ -562,6 +565,7 @@ fn dagger_stab(entity_id: EntityId, _item_index: usize, dir: Direction, data: &m
     if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
         msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Sneak));
         msg_log.log(Msg::Stabbed(entity_id, hit_entity));
+        msg_log.log(Msg::Sound(entity_id, hit_pos, config.sound_radius_slash, true));
     } else {
         panic!("Dagger stab did not find an entity to hit?");
     }
@@ -582,6 +586,7 @@ fn sword_step(entity_id: EntityId, item_index: usize, dir: Direction, rng: &mut 
                 if data.entities.typ[&hit_entity] == EntityType::Enemy {
                     if distance(dir_pos, target_pos) == 1 {
                         msg_log.log(Msg::Froze(hit_entity, config.sword_step_num_turns));
+                        msg_log.log(Msg::Sound(entity_id, target_pos, config.sound_radius_slash, true));
                         sword_hit = true;
                     }
                 }
@@ -591,9 +596,7 @@ fn sword_step(entity_id: EntityId, item_index: usize, dir: Direction, rng: &mut 
         msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Walk));
 
         if sword_hit {
-            if rng_range(rng, 0.0, 1.0) < 0.15 {
-                data.entities.remove_item(entity_id, item_id);
-            }
+            reduce_item_durability(data, entity_id, item_id);
         }
     } else {
         panic!("Sword swing should not have been blocked!");

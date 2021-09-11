@@ -131,6 +131,16 @@ pub fn sort_by_distance_to(pos: Pos, positions: &mut Vec<Pos>) {
              .partial_cmp(&distance(pos, *b)).unwrap());
 }
 
+pub fn reduce_item_durability(data: &mut GameData, entity_id: EntityId, item_id: EntityId) {
+    if let Some(mut durability) = data.entities.durability.get_mut(&item_id) {
+        if *durability > 1 {
+            *durability -= 1;
+        } else {
+            data.entities.remove_item(entity_id, item_id);
+        }
+    }
+}
+
 pub fn update_stance(move_type: MoveType, move_mode: MoveMode, stance: Stance) -> Stance {
     let mut new_stance = stance;
 
