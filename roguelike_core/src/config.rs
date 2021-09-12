@@ -100,6 +100,7 @@ pub struct Config {
     pub fire_speed: f32,
     pub beam_duration: usize,
     pub draw_directional_arrow: bool,
+    pub ghost_alpha: u8,
 }
 
 impl Config {

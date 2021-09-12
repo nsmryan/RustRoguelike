@@ -1065,7 +1065,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                                                           use_dir,
                                                           game.settings.use_move_mode);
             if let Some(pos) = use_result.pos {
-                draw_tile_highlight(panel, pos, highlight_color);
+                //draw_tile_highlight(panel, pos, highlight_color);
                 render_arrow(panel, tile_sprite, use_dir, pos, direction_color);
 
                 for hit_pos in use_result.hit_positions {
@@ -1553,7 +1553,7 @@ pub fn render_entity_ghost(entity_id: EntityId, render_pos: Pos, game: &mut Game
     let entity_pos = game.data.entities.pos[&entity_id];
 
     let alpha = game.data.entities.color[&entity_id].a;
-    game.data.entities.color[&entity_id].a = 200;
+    game.data.entities.color[&entity_id].a = game.config.ghost_alpha;
 
     game.data.entities.pos[&entity_id] = render_pos;
 

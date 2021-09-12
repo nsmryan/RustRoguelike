@@ -240,3 +240,5 @@ stun_turns_pierce: 4
 stun_turns_slash: 4
 stun_turns_extra: 2
 
+# alpha value used when rendering an entity ghost
+ghost_alpha: 125
