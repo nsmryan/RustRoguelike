@@ -281,7 +281,9 @@ impl Input {
         } else if settings.state == GameState::Use {
             if let Some(input_dir) = InputDirection::from_chr(chr) {
                 if let InputDirection::Dir(_dir) = input_dir {
-                    return InputAction::FinalizeUse;
+                    if Some(input_dir) == self.direction {
+                        return InputAction::FinalizeUse;
+                    }
                 }
             } else if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {
 
@@ -406,6 +408,7 @@ impl Input {
                 if let InputDirection::Dir(dir) = input_dir {
                     // directions are now applied immediately
                     action = InputAction::UseDir(dir);
+                    self.direction = Some(input_dir);
                 }
             } else if chr == ' ' {
                 action = InputAction::AbortUse;

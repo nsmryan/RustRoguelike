@@ -1005,16 +1005,34 @@ fn render_impressions(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 }
 
 fn render_entity_type(typ: EntityType, panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    let mut index = 0;
-    while index < game.data.entities.ids.len() {
-        let entity_id = game.data.entities.ids[index];
-        index += 1;
+    if typ == EntityType::Player && game.settings.state == GameState::Use && game.settings.use_dir.is_some() {
+        // For the player in use-mode, while holding down a direction, we
+        // need special rendering. Otherwise the player is rendered as normal.
+        let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+        let use_dir = game.settings.use_dir.unwrap(); // already checked for is_some
+        let use_result = game.data.calculate_use_move(player_id,
+                                                      game.settings.use_index as usize,
+                                                      use_dir,
+                                                      game.settings.use_move_mode);
+        if let Some(pos) = use_result.pos {
+            let player_pos = game.data.entities.pos[&player_id];
+            render_entity_ghost(player_id, player_pos, game, panel, display_state);
+            game.data.entities.pos[&player_id] = pos;
+            render_entity(panel, player_id, display_state, game);
+            game.data.entities.pos[&player_id] = player_pos;
+        }
+    } else {
+        let mut index = 0;
+        while index < game.data.entities.ids.len() {
+            let entity_id = game.data.entities.ids[index];
+            index += 1;
 
-        if !game.data.entities.needs_removal[&entity_id] && game.data.entities.typ[&entity_id] == typ {
-            let maybe_sprite = render_entity(panel, entity_id, display_state, game);
+            if !game.data.entities.needs_removal[&entity_id] && game.data.entities.typ[&entity_id] == typ {
+                let maybe_sprite = render_entity(panel, entity_id, display_state, game);
 
-            if let Some(sprite) = maybe_sprite {
-                display_state.drawn_sprites.insert(entity_id, sprite);
+                if let Some(sprite) = maybe_sprite {
+                    display_state.drawn_sprites.insert(entity_id, sprite);
+                }
             }
         }
     }
@@ -1038,27 +1056,43 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
         let direction_color = Color::white();
 
-        let mut hit_positions: HashSet<Pos> = HashSet::new();
-        let mut move_positions: HashSet<Pos> = HashSet::new();
-        for dir in Direction::move_actions().iter() {
-            let use_result = game.data.calculate_use_move(player_id,
-                                                         game.settings.use_index as usize,
-                                                         *dir,
-                                                         game.settings.use_move_mode);
-            if let Some(pos) = use_result.pos {
-                if !move_positions.contains(&pos) {
-                    draw_tile_highlight(panel, pos, highlight_color);
-                }
-                move_positions.insert(pos);
-                render_arrow(panel, tile_sprite, *dir, pos, direction_color);
-                hit_positions.extend(use_result.hit_positions.iter());
-            }
-        }
-
         let mut attack_highlight_color = game.config.color_red;
         attack_highlight_color.a = game.config.grid_alpha_overlay;
-        for hit_pos in hit_positions {
-            draw_tile_highlight(panel, hit_pos, attack_highlight_color);
+
+        if let Some(use_dir) = game.settings.use_dir {
+            let use_result = game.data.calculate_use_move(player_id,
+                                                          game.settings.use_index as usize,
+                                                          use_dir,
+                                                          game.settings.use_move_mode);
+            if let Some(pos) = use_result.pos {
+                draw_tile_highlight(panel, pos, highlight_color);
+                render_arrow(panel, tile_sprite, use_dir, pos, direction_color);
+
+                for hit_pos in use_result.hit_positions {
+                    draw_tile_highlight(panel, hit_pos, attack_highlight_color);
+                }
+            }
+        } else {
+            let mut hit_positions: HashSet<Pos> = HashSet::new();
+            let mut move_positions: HashSet<Pos> = HashSet::new();
+            for dir in Direction::move_actions().iter() {
+                let use_result = game.data.calculate_use_move(player_id,
+                                                             game.settings.use_index as usize,
+                                                             *dir,
+                                                             game.settings.use_move_mode);
+                if let Some(pos) = use_result.pos {
+                    if !move_positions.contains(&pos) {
+                        draw_tile_highlight(panel, pos, highlight_color);
+                    }
+                    move_positions.insert(pos);
+                    render_arrow(panel, tile_sprite, *dir, pos, direction_color);
+                    hit_positions.extend(use_result.hit_positions.iter());
+                }
+            }
+
+            for hit_pos in hit_positions {
+                draw_tile_highlight(panel, hit_pos, attack_highlight_color);
+            }
         }
     }
 
@@ -1248,7 +1282,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                     let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
                     let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
 
-                    render_entity_at(player_id, shadow_cursor_pos, game, panel, display_state);
+                    render_entity_ghost(player_id, shadow_cursor_pos, game, panel, display_state);
                 }
             }
         }
@@ -1515,7 +1549,7 @@ pub fn sdl2_color(color: Color) -> Sdl2Color {
 }
 
 
-pub fn render_entity_at(entity_id: EntityId, render_pos: Pos, game: &mut Game, panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState) {
+pub fn render_entity_ghost(entity_id: EntityId, render_pos: Pos, game: &mut Game, panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState) {
     let entity_pos = game.data.entities.pos[&entity_id];
 
     let alpha = game.data.entities.color[&entity_id].a;
