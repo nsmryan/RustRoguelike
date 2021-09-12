@@ -4,8 +4,6 @@ use std::default::Default;
 use std::fmt;
 use std::str::FromStr;
 
-use logging_timer::timer;
-
 use serde::{Serialize, Deserialize};
 
 use pathfinding::directed::astar::astar;
@@ -373,120 +371,109 @@ impl GameData {
         return !(player_pushing || enemies_pushing_each_other);
     }
 
-    pub fn calculate_use_move(&self, entity_id: EntityId, item_index: usize, dir: Direction, move_mode: MoveMode) -> Option<Pos> {
+    pub fn calculate_use_move(&self, entity_id: EntityId, item_index: usize, dir: Direction, move_mode: MoveMode) -> ItemUseResult {
         let pos = self.entities.pos[&entity_id];
         let item_id = self.entities.inventory[&entity_id][item_index];
 
         let item = self.entities.item[&item_id];
+
+        let mut result = ItemUseResult::new();
         match item {
             Item::Dagger => {
                 let target_pos = dir.offset_pos(pos, 1);
-
                 let hit_pos = dir.offset_pos(target_pos, 1);
 
-                if let Some(hit_entity) = self.has_blocking_entity(hit_pos) {
-                    let is_crouching = self.entities.stance[&entity_id] == Stance::Crouching;
-                    let is_clear_path = self.clear_path(pos, target_pos, false);
+                let is_crouching = self.entities.stance[&entity_id] == Stance::Crouching;
+                let is_clear_path = self.clear_path(pos, target_pos, false);
 
-                    let hits_enemy = self.entities.typ[&hit_entity] == EntityType::Enemy;
-                    let is_alert = matches!(self.entities.behavior[&hit_entity], Behavior::Attacking(_));
-                    if is_crouching && is_clear_path && hits_enemy && !is_alert {
-                        return Some(target_pos);
-                    }
+                // if crouching and not blocked, then the dagger can be used.
+                if is_crouching && is_clear_path {
+                    result.pos = Some(target_pos);
+                    result.hit_positions.push(hit_pos);
+
+                    // TODO this logic needs to go somewhere, likely actions or resolve
+                    //if let Some(hit_entity) = self.has_blocking_entity(hit_pos) {
+                    //    let hits_enemy = self.entities.typ[&hit_entity] == EntityType::Enemy;
+                    //    let is_alert = matches!(self.entities.behavior[&hit_entity], Behavior::Attacking(_));
+
+                    //    // If there is an enemy, and they are not alert, we will attack them.
+                    //    if hits_enemy && !is_alert {
+                    //        result.hit_entities.push(hit_entity);
+                    //    }
+                    //}
                 }
             }
 
             Item::Shield => {
-                if dir == self.entities.direction[&entity_id] {
-                    let target_pos = dir.offset_pos(pos, 1);
+                let target_pos = dir.offset_pos(pos, 1);
+                let hit_pos = dir.offset_pos(target_pos, 1);
 
-                    let hit_pos = dir.offset_pos(target_pos, 1);
+                let in_facing_dir = dir == self.entities.direction[&entity_id];
+                let is_clear_path = self.clear_path(pos, target_pos, false);
 
-                    if let Some(hit_entity) = self.has_blocking_entity(hit_pos) {
-                        let is_clear_path = self.clear_path(pos, target_pos, false);
-
-                        let hits_enemy = self.entities.typ[&hit_entity] == EntityType::Enemy;
-                        if is_clear_path && hits_enemy {
-                            return Some(target_pos);
-                        }
-                    }
+                // Shield attacks only occur in the entities' facing direction,
+                // and if there is a path to the hit position.
+                if in_facing_dir && is_clear_path {
+                    result.pos = Some(target_pos);
+                    result.hit_positions.push(hit_pos);
                 }
             }
 
             Item::Hammer => {
-                let target_pos = dir.offset_pos(pos, 1);
+                let hit_pos = dir.offset_pos(pos, 1);
                 // hammers can always be used in any direction
-                return Some(target_pos);
+                result.pos = Some(pos);
+                result.hit_positions.push(hit_pos);
             }
 
             Item::Spear => {
-                let target_pos = dir.offset_pos(pos, 2);
-                if self.clear_path(pos, dir.offset_pos(pos, 1), false) {
-                    if let Some(blocking) = self.has_blocking_entity(target_pos) {
-                        if self.entities.typ[&blocking] == EntityType::Enemy {
-                            return Some(pos);
-                        }
-                    }
-                }
-
-                let target_pos = dir.offset_pos(pos, 3);
-                if self.clear_path(pos, dir.offset_pos(pos, 2), false) {
-                    if let Some(blocking) = self.has_blocking_entity(target_pos) {
-                        if self.entities.typ[&blocking] == EntityType::Enemy {
-                            return Some(pos);
-                        }
-                    }
-                }
-
+                // If running, we can also attack an extra tile and move towards the golem.
                 if move_mode == MoveMode::Run {
-                    let target_pos = dir.offset_pos(pos, 4);
-                    if self.clear_path(pos, dir.offset_pos(pos, 3), false) {
-                        if let Some(blocking) = self.has_blocking_entity(target_pos) {
-                            if self.entities.typ[&blocking] == EntityType::Enemy {
-                                return Some(dir.offset_pos(pos, 2));
-                            }
-                        }
+                    // move pos is where the entity will run to.
+                    let move_pos = dir.offset_pos(pos, 2);
+
+                    // We can only spear if there is a clear path to the player's
+                    // position.
+                    if self.clear_path(pos, dir.offset_pos(pos, 2), false) {
+                        result.pos = Some(move_pos);
+
+                        // the spear will hit both intervening positions.
+                        let far_target_pos = dir.offset_pos(pos, 4);
+                        result.hit_positions.push(far_target_pos);
+
+                        let close_target_pos = dir.offset_pos(pos, 3);
+                        result.hit_positions.push(close_target_pos);
+                    }
+                } else {
+                    if self.clear_path(pos, dir.offset_pos(pos, 1), false) {
+                        result.pos = Some(pos);
+
+                        let target_pos = dir.offset_pos(pos, 2);
+                        result.hit_positions.push(target_pos);
+
+                        let target_pos = dir.offset_pos(pos, 3);
+                        result.hit_positions.push(target_pos);
                     }
                 }
             }
 
             Item::GreatSword => {
                 // TODO add in great sword positions
-                //self.calculate_use_move(entity_id, item_index, dir).map_or or otherwise combine
-                //with:
-                //self.calculate_use_move(entity_id, item_index, dir).
             }
 
             Item::Sword => {
                 let target_pos = dir.offset_pos(pos, 1);
                 if self.clear_path(pos, target_pos, false) {
+                    result.pos = Some(target_pos);
 
-                    let mut adjacent_entity = false;
                     for dir in &Direction::directions() {
                         let dir_pos = dir.offset_pos(pos, 1);
 
-                        if let Some(blocking) = self.has_blocking_entity(dir_pos) {
-                            let enemy = self.entities.typ[&blocking] == EntityType::Enemy;
-                            let still_adjacent = distance(target_pos, dir_pos) == 1;
-
-                            adjacent_entity |= enemy && still_adjacent;
+                        let still_adjacent = distance(target_pos, dir_pos) == 1;
+                        if still_adjacent {
+                            result.hit_positions.push(dir_pos);
                         }
                     }
-
-                    if adjacent_entity {
-                        return Some(target_pos);
-                    }
-
-                    // This was the original sword swing code that only looks two directions
-                    //let dir_right = dir.counterclockwise();
-                    //let pos_right = dir_right.offset_pos(pos, 1);
-
-                    //let dir_left = dir.clockwise();
-                    //let pos_left = dir_left.offset_pos(pos, 1);
-
-                    //if self.has_blocking_entity(pos_right).is_some() || self.has_blocking_entity(pos_left).is_some() {
-                    //    return Some(target_pos);
-                    //}
                 }
             }
 
@@ -495,8 +482,7 @@ impl GameData {
             }
         }
 
-        // default to rejecting the move
-        return None;
+        return result;
     }
 
     // clear all entities, except those in the given vector.
@@ -516,6 +502,91 @@ impl GameData {
                 self.entities.remove_entity(*id);
             }
         }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ItemUseResult {
+    pub pos: Option<Pos>,
+    pub hit_positions: Vec<Pos>,
+}
+
+impl ItemUseResult {
+    pub fn new() -> ItemUseResult {
+        return ItemUseResult {
+            pos: None,
+            hit_positions: Vec::new(),
+        };
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum AttackStyle {
+    Stealth,
+    Normal,
+    Strong,
+}
+
+impl fmt::Display for AttackStyle {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AttackStyle::Stealth => write!(f, "stealth"),
+            AttackStyle::Normal => write!(f, "normal"),
+            AttackStyle::Strong => write!(f, "strong"),
+        }
+    }
+}
+
+impl FromStr for AttackStyle {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "stealth" {
+            return Ok(AttackStyle::Stealth);
+        } else if s == "normal" {
+            return Ok(AttackStyle::Normal);
+        } else if s == "strong" {
+            return Ok(AttackStyle::Strong);
+        }
+
+        return Err(format!("Could not parse '{}' as AttackStyle", s));
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum WeaponType {
+    Blunt,
+    Pierce,
+    Slash,
+}
+
+impl fmt::Display for WeaponType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            WeaponType::Blunt => write!(f, "blunt"),
+            WeaponType::Pierce => write!(f, "pierce"),
+            WeaponType::Slash => write!(f, "slash"),
+        }
+    }
+}
+
+impl FromStr for WeaponType {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "blunt" {
+            return Ok(WeaponType::Blunt);
+        } else if s == "pierce" {
+            return Ok(WeaponType::Pierce);
+        } else if s == "slash" {
+            return Ok(WeaponType::Slash);
+        }
+
+        return Err(format!("Could not parse '{}' as WeaponType", s));
     }
 }
 
@@ -755,6 +826,25 @@ impl Item {
             Item::SoundTrap => EntityName::SoundTrap,
             Item::BlinkTrap => EntityName::BlinkTrap,
             Item::FreezeTrap => EntityName::FreezeTrap,
+        }
+    }
+
+    pub fn weapon_type(&self) -> Option<WeaponType> {
+        match self {
+            Item::Dagger => Some(WeaponType::Slash),
+            Item::Shield => Some(WeaponType::Blunt),
+            Item::Hammer => Some(WeaponType::Blunt),
+            Item::Spear => Some(WeaponType::Pierce),
+            Item::GreatSword => Some(WeaponType::Slash),
+            Item::Sword => Some(WeaponType::Slash),
+
+            Item::Stone => None,
+            Item::Key => None,
+            Item::Lantern => None,
+            Item::SpikeTrap => None,
+            Item::SoundTrap => None,
+            Item::BlinkTrap => None,
+            Item::FreezeTrap => None,
         }
     }
 
@@ -1117,6 +1207,7 @@ pub struct Entities {
     pub gate_pos: CompStore<Option<Pos>>,
     pub stance: CompStore<Stance>,
     pub took_turn: CompStore<bool>,
+    pub durability: CompStore<usize>,
 
     // NOTE not sure about keeping these ones, or packaging into larger ones
     pub sound: CompStore<Pos>, // source position
@@ -1389,6 +1480,7 @@ impl Entities {
         move_component!(illuminate);
         move_component!(gate_pos);
         move_component!(took_turn);
+        move_component!(durability);
         move_component!(color);
         move_component!(blocks);
         move_component!(needs_removal);
@@ -1438,6 +1530,7 @@ impl Entities {
         self.illuminate.remove(&id);
         self.gate_pos.remove(&id);
         self.took_turn.remove(&id);
+        self.durability.remove(&id);
         self.color.remove(&id);
         self.blocks.remove(&id);
         self.needs_removal.remove(&id);

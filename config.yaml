@@ -189,14 +189,21 @@ sound_radius_sneak: 1
 sound_radius_walk: 2
 sound_radius_run: 4
 sound_golem_idle_radius: 0
+# sound radius from hits with different weapon types
+sound_radius_blunt: 4
+sound_radius_pierce: 3
+sound_radius_slash: 2
+# The extra tiles of sound for a strong hit
+# like a running spear.
+sound_radius_extra: 1
 
 freeze_trap_radius: 3
 push_stun_turns: 3
-sword_stun_turns: 5
 
+# draw numeric overlay of diagonal offsets
 overlay_directions: false
+# draw player FOV in green tiles
 overlay_player_fov: false
-overlay_fov_alg: false
 overlay_floodfill: false
 
 fov_radius_monster: 4
@@ -228,6 +235,10 @@ beam_duration: 5
 draw_directional_arrow: false
 
 # Stun durations for weapons
-sword_step_num_turns: 4
-dagger_stab_num_turns: 4
-shield_smash_num_turns: 6
+stun_turns_blunt: 6
+stun_turns_pierce: 4
+stun_turns_slash: 4
+stun_turns_extra: 2
+
+# alpha value used when rendering an entity ghost
+ghost_alpha: 125

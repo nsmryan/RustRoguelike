@@ -77,6 +77,7 @@ pub fn make_dagger(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_DAGGER as char, Color::white(), EntityName::Dagger, false);
 
     entities.item.insert(entity_id,  Item::Dagger);
+    entities.durability.insert(entity_id, ITEM_DURABILITY);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Dagger, entities.direction[&entity_id]));
 
@@ -87,6 +88,7 @@ pub fn make_hammer(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_HAMMER as char, Color::white(), EntityName::Hammer, false);
 
     entities.item.insert(entity_id,  Item::Hammer);
+    entities.durability.insert(entity_id, ITEM_DURABILITY);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Hammer, entities.direction[&entity_id]));
 
@@ -97,6 +99,7 @@ pub fn make_spear(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SPEAR as char, Color::white(), EntityName::Spear, false);
 
     entities.item.insert(entity_id,  Item::Spear);
+    entities.durability.insert(entity_id, ITEM_DURABILITY);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Spear, entities.direction[&entity_id]));
 
@@ -109,6 +112,7 @@ pub fn make_sword(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
     entities.item.insert(entity_id,  Item::Sword);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Sword, entities.direction[&entity_id]));
+    entities.durability.insert(entity_id, ITEM_DURABILITY);
 
     return entity_id;
 }
@@ -119,6 +123,7 @@ pub fn make_greatsword(entities: &mut Entities, _config: &Config, pos: Pos, msg_
     entities.item.insert(entity_id,  Item::GreatSword);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::GreatSword, entities.direction[&entity_id]));
+    entities.durability.insert(entity_id, ITEM_DURABILITY);
 
     return entity_id;
 }
@@ -129,6 +134,7 @@ pub fn make_shield(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
     entities.item.insert(entity_id,  Item::Shield);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Shield, entities.direction[&entity_id]));
+    entities.durability.insert(entity_id, ITEM_DURABILITY);
 
     return entity_id;
 }

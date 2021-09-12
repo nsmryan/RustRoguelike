@@ -364,6 +364,29 @@ start, etc. Additional timers can be added to get more detail.
 A pyimgui tool called analyzer.py can visualize these traces and plot them for
 analysis.
 
+#### System Level Testing
+
+In addition to the usual unit tests, which can be run with 'cargo test', the
+game has system level tests. These tests are created by starting the game
+with certain flags that cause it to record the player input and its result.
+
+Once a test has been recorded, it can be replayed to check that it matches the
+original play through. This allows testing of the full game, end to end, and
+to check that certain changes do not effect game play (such as performance improvements
+that are not intended to be visible to the player).
+
+The play throughs can be tested individually or can be run all togther. The latter
+creates a system level checkout. When checking a playthrough, the game will report
+whether there are new messages, missing messages, or a mismatch of messages.
+This is helpful in cases where the playthrough is identical, but there are simply
+new things being reported that do not effect the results.
+
+As the game is modified, these play throughs will become out of date due to 
+valid changes. To mitigate this situation, which in general requires the user
+to redo all the broken play throughs each time they change, there is an option
+to replay all or one of the recorded games and accept the new results as the
+'golden record', replacing the original playthrough.
+
 
 #### Map Density Heatmap
 

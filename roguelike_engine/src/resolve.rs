@@ -1,6 +1,5 @@
 #[allow(unused_imports)]
 use log::{trace, error};
-use logging_timer::timer;
 
 use oorandom::Rand32;
 
@@ -9,7 +8,7 @@ use roguelike_core::ai::{Behavior, ai_move_to_attack_pos, ai_can_hit_target, ai_
 use roguelike_core::map::{Surface, AoeEffect};
 use roguelike_core::messaging::{MsgLog, Msg};
 use roguelike_core::constants::*;
-use roguelike_core::movement::{MoveMode, MoveType, Attack, Movement, Direction, Reach};
+use roguelike_core::movement::{MoveMode, MoveType, Attack, Movement, Direction};
 use roguelike_core::movement;
 use roguelike_core::config::*;
 use roguelike_core::utils::*;
@@ -93,34 +92,16 @@ pub fn resolve_messages(data: &mut GameData,
                 msg_log.log_front(Msg::Sound(attacker, pos, config.sound_radius_attack, true)); 
             }
 
-            Msg::ShieldSmash(entity_id, item_index, dir) => {
-                shield_smash(entity_id, item_index, dir, data, msg_log, config);
-            }
-
-            Msg::SwordStep(entity_id, item_index, dir) => {
-                sword_step(entity_id, item_index, dir, rng, data, msg_log, config);
-            }
-
             Msg::Stabbed(_attacker_id, attacked_id) => {
-                msg_log.log(Msg::Froze(attacked_id, config.dagger_stab_num_turns));
+                // TODO this may be superceded by Hit, although perhaps Hit
+                // should break out into finer grain attacks.
+                //msg_log.log(Msg::Froze(attacked_id, config.dagger_stab_num_turns));
             }
 
             Msg::HammerRaise(entity_id, item_index, dir) => {
                 let item_id = data.entities.inventory[&entity_id][item_index];
                 data.entities.status[&entity_id].hammer_raised = Some((item_id, dir, 1));
                 data.entities.took_turn[&entity_id] = true;
-            }
-
-            Msg::DaggerStab(entity_id, item_index, dir) => {
-                dagger_stab(entity_id, item_index, dir, data, msg_log, config);
-            }
-
-            Msg::SpearStab(entity_id, item_index, dir, move_mode) => {
-                spear_stab(entity_id, item_index, dir, move_mode, data, msg_log, config);
-            }
-
-            Msg::SwordSwing(entity_id, item_id, pos) => {
-                sword_swing(entity_id, item_id, pos, data, msg_log, config);
             }
 
             Msg::HammerSwing(entity_id, item_id, pos) => {
@@ -262,6 +243,10 @@ pub fn resolve_messages(data: &mut GameData,
 
                 // update entities movement reach with their new move mode
                 data.entities.movement[&entity_id] = reach_by_mode(data.entities.move_mode[&entity_id]);
+            }
+
+            Msg::Hit(entity_id, pos, weapon_type, attack_style) => {
+                process_hit(entity_id, pos, weapon_type, attack_style, data, msg_log, config);
             }
 
             Msg::ChangeMoveMode(entity_id, increase) => {
@@ -519,118 +504,58 @@ fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameD
         let damage = fighter.hp;
 
         msg_log.log(Msg::Killed(entity_id, hit_entity, damage));
+        msg_log.log(Msg::Sound(entity_id, second, config.sound_radius_blunt, true));
     }
 }
 
-fn shield_smash(entity_id: EntityId, _item_index: usize, dir: Direction, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
-    let entity_pos = data.entities.pos[&entity_id];
-    let move_pos = dir.offset_pos(entity_pos, 1);
-
-    let hit_pos = dir.offset_pos(move_pos, 1);
+fn process_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
-        msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Run));
-        msg_log.log(Msg::Froze(hit_entity, config.shield_smash_num_turns));
-    } else {
-        panic!("Shield smash did not find an entity to hit?");
-    }
-}
-
-fn spear_stab(entity_id: EntityId, _item_index: usize, dir: Direction, move_mode: MoveMode, data: &mut GameData, msg_log: &mut MsgLog, _config: &Config) {
-    let entity_pos = data.entities.pos[&entity_id];
-
-    if move_mode == MoveMode::Run {
-        let hit_pos = dir.offset_pos(entity_pos, 4);
-        if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
-            msg_log.log(Msg::TryMove(entity_id, dir, 2, MoveMode::Run));
-            msg_log.log(Msg::Stabbed(entity_id, hit_entity));
-        }
-    } else {
-        let hit_pos = dir.offset_pos(entity_pos, 1);
-        if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
-            msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Sneak));
-            msg_log.log(Msg::Stabbed(entity_id, hit_entity));
+        if data.entities.typ[&hit_entity] == EntityType::Column {
+            // if we hit a column, and this is a strong, blunt hit, then
+            // push the column over.
+            if weapon_type == WeaponType::Blunt && attack_style == AttackStyle::Strong {
+                let entity_pos = data.entities.pos[&entity_id];
+                let dir = Direction::from_positions(entity_pos, hit_pos).unwrap();
+                msg_log.log(Msg::Pushed(entity_id, hit_entity, dir, 1, false));
+            }
         } else {
-            let hit_pos = dir.offset_pos(entity_pos, 1);
-            if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
-                msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Sneak));
-                msg_log.log(Msg::Stabbed(entity_id, hit_entity));
-            }
-        }
-    }
-}
+            // if we hit an enemy, stun them and make a sound.
+            if data.entities.typ[&hit_entity] == EntityType::Enemy {
+                let mut hit_sound_radius;
+                let mut stun_turns;
+                match weapon_type {
+                    WeaponType::Blunt => {
+                        hit_sound_radius = config.sound_radius_blunt;
+                        stun_turns = config.stun_turns_blunt;
+                    },
 
-fn dagger_stab(entity_id: EntityId, _item_index: usize, dir: Direction, data: &mut GameData, msg_log: &mut MsgLog, _config: &Config) {
-    let entity_pos = data.entities.pos[&entity_id];
-    let move_pos = dir.offset_pos(entity_pos, 1);
+                    WeaponType::Pierce => {
+                        hit_sound_radius = config.sound_radius_pierce;
+                        stun_turns = config.stun_turns_pierce;
+                    },
 
-    let hit_pos = dir.offset_pos(move_pos, 1);
-    if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
-        msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Sneak));
-        msg_log.log(Msg::Stabbed(entity_id, hit_entity));
-    } else {
-        panic!("Dagger stab did not find an entity to hit?");
-    }
-}
-
-fn sword_step(entity_id: EntityId, item_index: usize, dir: Direction, rng: &mut Rand32, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
-    let pos = data.entities.pos[&entity_id];
-    let target_pos = dir.offset_pos(pos, 1);
-    let item_id = data.entities.inventory[&entity_id][item_index];
-
-    if data.clear_path(pos, target_pos, false) {
-        let mut sword_hit = false;
-
-        for dir in &Direction::directions() {
-            let dir_pos = dir.offset_pos(pos, 1);
-
-            if let Some(hit_entity) = data.has_blocking_entity(dir_pos) {
-                if data.entities.typ[&hit_entity] == EntityType::Enemy {
-                    if distance(dir_pos, target_pos) == 1 {
-                        msg_log.log(Msg::Froze(hit_entity, config.sword_step_num_turns));
-                        sword_hit = true;
-                    }
+                    WeaponType::Slash => {
+                        hit_sound_radius = config.sound_radius_slash;
+                        stun_turns = config.stun_turns_slash;
+                    },
                 }
-            }
-        }
 
-        msg_log.log(Msg::TryMove(entity_id, dir, 1, MoveMode::Walk));
+                if attack_style == AttackStyle::Strong {
+                    hit_sound_radius += config.sound_radius_extra;
+                    stun_turns += config.stun_turns_extra;
+                }
 
-        if sword_hit {
-            if rng_range(rng, 0.0, 1.0) < 0.15 {
-                data.entities.remove_item(entity_id, item_id);
+                msg_log.log(Msg::Froze(hit_entity, stun_turns));
+                msg_log.log(Msg::Sound(entity_id, hit_pos, hit_sound_radius, true));
             }
         }
     } else {
-        panic!("Sword swing should not have been blocked!");
-    }
-}
-
-fn sword_swing(entity_id: EntityId, item_id: EntityId, _hit_pos: Pos, data: &mut GameData, _msg_log: &mut MsgLog, config: &Config) {
-    let mut any_hit_entity = false;
-
-    let entity_pos = data.entities.pos[&entity_id];
-
-    // search around the position for entities.
-    let adj_locs = Reach::single(1).reachables(entity_pos);
-    for loc in adj_locs {
-        if let Some(target_id) = data.has_blocking_entity(loc) {
-            if target_id == entity_id {
-                continue;
-            }
-
-            if data.entities.status[&target_id].alive {
-                data.entities.status[&target_id].frozen += config.sword_stun_turns;
-                any_hit_entity = true;
-                break;
-            }
-        }
+        // no entity- check for a wall. if blunt and strong, crush the wall.
+        // TODO message for hitting a wall, use for hammer as well
     }
 
-    if any_hit_entity {
-        data.used_up_item(entity_id, item_id);
-    }
-
-    data.entities.took_turn[&entity_id] = true;
+    // TODO maybe a UsedItem message for this, although only one per use.
+    //reduce_item_durability(data, entity_id, item_id);
 }
 
 fn freeze_trap_triggered(trap: EntityId, cause_id: EntityId, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {

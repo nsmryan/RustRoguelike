@@ -281,13 +281,17 @@ impl Input {
         } else if settings.state == GameState::Use {
             if let Some(input_dir) = InputDirection::from_chr(chr) {
                 if let InputDirection::Dir(_dir) = input_dir {
-                    return InputAction::FinalizeUse;
+                    if Some(input_dir) == self.direction {
+                        return InputAction::FinalizeUse;
+                    }
                 }
             } else if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {
 
                 // releasing the item no longer takes you out of use-mode
                 //self.clear_char_state(chr);
                 //return InputAction::FinalizeUse;
+            } else {
+                return self.apply_char(chr, settings);
             }
 
             return InputAction::None;
@@ -405,7 +409,8 @@ impl Input {
             if let Some(input_dir) = InputDirection::from_chr(chr) {
                 if let InputDirection::Dir(dir) = input_dir {
                     // directions are now applied immediately
-                    action = InputAction::StartUseDir(dir);
+                    action = InputAction::UseDir(dir);
+                    self.direction = Some(input_dir);
                 }
             } else if chr == ' ' {
                 action = InputAction::AbortUse;
@@ -602,7 +607,7 @@ fn test_input_use_mode_enter() {
 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0), input_action);
+    assert_eq!(InputAction::StartUseItem(0, input.move_mode()), input_action);
 
     // letting item up outside of use-mode does not cause any action.
     let event = InputEvent::Char('z', KeyDir::Up);
@@ -612,7 +617,7 @@ fn test_input_use_mode_enter() {
     // down and up 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0), input_action);
+    assert_eq!(InputAction::StartUseItem(0, input.move_mode()), input_action);
 
     settings.state = GameState::Use;
 
@@ -630,7 +635,7 @@ fn test_input_use_mode_exit() {
 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0), input_action);
+    assert_eq!(InputAction::StartUseItem(0, input.move_mode()), input_action);
 
     settings.state = GameState::Use;
 
@@ -640,7 +645,7 @@ fn test_input_use_mode_exit() {
 
     let event = InputEvent::Char('4', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseDir(Direction::Left), input_action);
+    assert_eq!(InputAction::UseDir(Direction::Left), input_action);
 
     let event = InputEvent::Char('4', KeyDir::Up);
     let input_action = input.handle_event(&mut settings, event, time, &config);
@@ -656,7 +661,7 @@ fn test_input_use_mode_abort() {
 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0), input_action);
+    assert_eq!(InputAction::StartUseItem(0, input.move_mode()), input_action);
 
     settings.state = GameState::Use;
 
