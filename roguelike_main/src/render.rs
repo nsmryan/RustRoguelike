@@ -75,6 +75,9 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
             render_entity_type(EntityType::Column, &mut panel, display_state, game);
             render_entity_type(EntityType::Player, &mut panel, display_state, game);
             render_entity_type(EntityType::Other, &mut panel, display_state, game);
+
+            render_map_above(&mut panel, display_state, game);
+
             render_impressions(&mut panel, display_state, game);
             render_effects(&mut panel, display_state, game);
             render_overlays(&mut panel, display_state, game, mouse_map_pos);
@@ -695,6 +698,46 @@ fn render_wall_shadow(pos: Pos, panel: &mut Panel<&mut WindowCanvas>, display_st
     }
 }
 
+fn render_map_above(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+
+    let (map_width, map_height) = game.data.map.size();
+
+    let sprite_key = display_state.lookup_spritekey("tiles");
+    for y in 0..map_height {
+        for x in 0..map_width {
+            let pos = Pos::new(x, y);
+            /* draw the between-tile walls appropriate to this tile */
+            {
+                let sprite = &mut display_state.sprites[&sprite_key];
+                render_intertile_walls_above(panel, &mut game.data.map, sprite, pos);
+            }
+
+            let visible =
+                game.data.pos_in_fov(player_id, pos, &game.config) ||
+                game.settings.god_mode;
+
+            // apply a FoW darkening to cells
+            if game.config.fog_of_war && !visible {
+                game.data.entities.status[&player_id].extra_fov += 1;
+                let is_in_fov_ext = 
+                   game.data.pos_in_fov(player_id, pos, &game.config);
+                game.data.entities.status[&player_id].extra_fov -= 1;
+
+                let mut blackout_color = Color::black();
+                if is_in_fov_ext {
+                    blackout_color.a = game.config.fov_edge_alpha
+                } else if game.data.map[pos].explored {
+                    blackout_color.a = game.config.explored_alpha
+                }
+                
+                let sprite = &mut display_state.sprites[&sprite_key];
+                sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, blackout_color);
+            }
+        }
+    }
+}
+
 /// Render the map, with environment and walls
 fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -714,10 +757,6 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
             }
 
             // Render game stuff
-            let visible =
-                game.data.pos_in_fov(player_id, pos, &game.config) ||
-                game.settings.god_mode;
-
             let tile = game.data.map[pos];
 
             let chr = tile.chr;
@@ -741,35 +780,16 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
             /* draw the between-tile walls appropriate to this tile */
             {
                 let sprite = &mut display_state.sprites[&sprite_key];
-                render_itertile_walls(panel, &mut game.data.map, sprite, pos, &game.config);
-            }
-
-            // apply a FoW darkening to cells
-            if game.config.fog_of_war && !visible {
-                game.data.entities.status[&player_id].extra_fov += 1;
-                let is_in_fov_ext = 
-                   game.data.pos_in_fov(player_id, pos, &game.config);
-                game.data.entities.status[&player_id].extra_fov -= 1;
-
-                let mut blackout_color = Color::black();
-                if is_in_fov_ext {
-                    blackout_color.a = game.config.fov_edge_alpha
-                } else if game.data.map[pos].explored {
-                    blackout_color.a = game.config.explored_alpha
-                }
-                
-                let sprite = &mut display_state.sprites[&sprite_key];
-                sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, blackout_color);
+                render_intertile_walls_below(panel, &mut game.data.map, sprite, pos);
             }
         }
     }
 }
 
-fn render_itertile_walls(panel: &mut Panel<&mut WindowCanvas>,
-                         map: &Map,
-                         sprite: &mut SpriteSheet,
-                         pos: Pos,
-                         _config: &Config) {
+fn render_intertile_walls_above(panel: &mut Panel<&mut WindowCanvas>,
+                               map: &Map,
+                               sprite: &mut SpriteSheet,
+                               pos: Pos) {
     let (x, y) = pos.to_tuple();
     let tile = map[pos];
     let wall_color = Color::white();
@@ -780,6 +800,15 @@ fn render_itertile_walls(panel: &mut Panel<&mut WindowCanvas>,
     } else if tile.bottom_wall == Wall::TallWall {
         sprite.draw_char(panel, MAP_THICK_WALL_BOTTOM as char, pos, wall_color);
     }
+}
+
+fn render_intertile_walls_below(panel: &mut Panel<&mut WindowCanvas>,
+                               map: &Map,
+                               sprite: &mut SpriteSheet,
+                               pos: Pos) {
+    let (x, y) = pos.to_tuple();
+    let tile = map[pos];
+    let wall_color = Color::white();
 
     // Left walls
     if tile.left_wall == Wall::ShortWall {
