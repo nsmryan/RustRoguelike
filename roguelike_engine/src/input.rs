@@ -602,7 +602,7 @@ fn test_input_use_mode_enter() {
 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0), input_action);
+    assert_eq!(InputAction::StartUseItem(0, input.move_mode()), input_action);
 
     // letting item up outside of use-mode does not cause any action.
     let event = InputEvent::Char('z', KeyDir::Up);
@@ -612,7 +612,7 @@ fn test_input_use_mode_enter() {
     // down and up 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0), input_action);
+    assert_eq!(InputAction::StartUseItem(0, input.move_mode()), input_action);
 
     settings.state = GameState::Use;
 
@@ -630,7 +630,7 @@ fn test_input_use_mode_exit() {
 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0), input_action);
+    assert_eq!(InputAction::StartUseItem(0, input.move_mode()), input_action);
 
     settings.state = GameState::Use;
 
@@ -656,7 +656,7 @@ fn test_input_use_mode_abort() {
 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0), input_action);
+    assert_eq!(InputAction::StartUseItem(0, input.move_mode()), input_action);
 
     settings.state = GameState::Use;
 
