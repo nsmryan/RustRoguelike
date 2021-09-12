@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use oorandom::Rand32;
 
 use sdl2::render::{BlendMode, WindowCanvas};
@@ -1029,17 +1031,34 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
     // Draw use-mode overlay
     if game.settings.state == GameState::Use {
+        let tile_sprite = &mut display_state.sprites[&sprite_key];
+
         let mut highlight_color = game.config.color_light_grey;
         highlight_color.a = game.config.grid_alpha_overlay;
 
+        let direction_color = Color::white();
+
+        let mut hit_positions: HashSet<Pos> = HashSet::new();
+        let mut move_positions: HashSet<Pos> = HashSet::new();
         for dir in Direction::move_actions().iter() {
             let use_result = game.data.calculate_use_move(player_id,
                                                          game.settings.use_index as usize,
                                                          *dir,
                                                          game.settings.use_move_mode);
             if let Some(pos) = use_result.pos {
-                draw_tile_highlight(panel, pos, highlight_color);
+                if !move_positions.contains(&pos) {
+                    draw_tile_highlight(panel, pos, highlight_color);
+                }
+                move_positions.insert(pos);
+                render_arrow(panel, tile_sprite, *dir, pos, direction_color);
+                hit_positions.extend(use_result.hit_positions.iter());
             }
+        }
+
+        let mut attack_highlight_color = game.config.color_red;
+        attack_highlight_color.a = game.config.grid_alpha_overlay;
+        for hit_pos in hit_positions {
+            draw_tile_highlight(panel, hit_pos, attack_highlight_color);
         }
     }
 
@@ -1143,46 +1162,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             if game.data.is_in_fov(player_id, entity_id, &game.config) &&
                game.data.entities.status[&entity_id].alive {
                 if let Some(dir) = game.data.entities.direction.get(&entity_id) {
-                    // display.draw_tile_edge(pos, area, direction_color, dir);
-
-                    let sprite_index;
-                    let rotation: f64;
-                    match dir {
-                        Direction::Up => {
-                            rotation = -90.0;
-                            sprite_index = ARROW_HORIZ;
-                        }
-                        Direction::Down => {
-                            rotation = 90.0;
-                            sprite_index = ARROW_HORIZ;
-                        }
-                        Direction::Right => {
-                            rotation = 0.0;
-                            sprite_index = ARROW_HORIZ;
-                        }
-                        Direction::Left => {
-                            rotation = 180.0;
-                            sprite_index = ARROW_HORIZ;
-                        }
-                        Direction::DownLeft => {
-                            rotation = -180.0;
-                            sprite_index = ARROW_DIAG;
-                        }
-                        Direction::DownRight => {
-                            rotation = 90.0;
-                            sprite_index = ARROW_DIAG;
-                        }
-                        Direction::UpLeft => {
-                            rotation = -90.0;
-                            sprite_index = ARROW_DIAG;
-                        }
-                        Direction::UpRight => {
-                            rotation = 0.0;
-                            sprite_index = ARROW_DIAG;
-                        }
-                    };
-
-                    tile_sprite.draw_sprite_at_cell(panel, sprite_index as usize, pos, direction_color, rotation, false, false);
+                    render_arrow(panel, tile_sprite, *dir, pos, direction_color);
                 }
             }
         }
@@ -1549,3 +1529,43 @@ pub fn render_entity_at(entity_id: EntityId, render_pos: Pos, game: &mut Game, p
     game.data.entities.pos[&entity_id] = entity_pos;
 }
 
+fn render_arrow(panel: &mut Panel<&mut WindowCanvas>, tile_sprite: &mut SpriteSheet, dir: Direction, pos: Pos, direction_color: Color) {
+    let sprite_index;
+    let rotation: f64;
+    match dir {
+        Direction::Up => {
+            rotation = -90.0;
+            sprite_index = ARROW_HORIZ;
+        }
+        Direction::Down => {
+            rotation = 90.0;
+            sprite_index = ARROW_HORIZ;
+        }
+        Direction::Right => {
+            rotation = 0.0;
+            sprite_index = ARROW_HORIZ;
+        }
+        Direction::Left => {
+            rotation = 180.0;
+            sprite_index = ARROW_HORIZ;
+        }
+        Direction::DownLeft => {
+            rotation = -180.0;
+            sprite_index = ARROW_DIAG;
+        }
+        Direction::DownRight => {
+            rotation = 90.0;
+            sprite_index = ARROW_DIAG;
+        }
+        Direction::UpLeft => {
+            rotation = -90.0;
+            sprite_index = ARROW_DIAG;
+        }
+        Direction::UpRight => {
+            rotation = 0.0;
+            sprite_index = ARROW_DIAG;
+        }
+    };
+
+    tile_sprite.draw_sprite_at_cell(panel, sprite_index as usize, pos, direction_color, rotation, false, false);
+}
