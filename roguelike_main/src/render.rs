@@ -67,9 +67,9 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
 
             let mut panel = panel.with_target(canvas);
 
-            render_entity_type(EntityType::Item, &mut panel, display_state, game);
-            render_entity_type(EntityType::Trigger, &mut panel, display_state, game);
             render_map(&mut panel, display_state, game);
+            render_entity_type(EntityType::Trigger, &mut panel, display_state, game);
+            render_entity_type(EntityType::Item, &mut panel, display_state, game);
             render_entity_type(EntityType::Energy, &mut panel, display_state, game);
             render_entity_type(EntityType::Enemy, &mut panel, display_state, game);
             render_entity_type(EntityType::Column, &mut panel, display_state, game);
