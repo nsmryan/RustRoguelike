@@ -39,7 +39,7 @@ pub enum InputAction {
     SkillFacing(ActionMode, usize),
     ItemFacing(ActionMode, usize),
     StartUseItem(usize, MoveMode),
-    StartUseDir(Direction),
+    UseDir(Direction),
     FinalizeUse,
     AbortUse,
     Pass(MoveMode),
@@ -97,7 +97,7 @@ impl fmt::Display for InputAction {
             InputAction::SkillFacing(action_mode, index) => write!(f, "skill {} {}", action_mode, index),
             InputAction::ItemFacing(action_mode, index) => write!(f, "itemdir {} {}", action_mode, index),
             InputAction::StartUseItem(index, move_mode) => write!(f, "startuseitem {} {}", index, move_mode),
-            InputAction::StartUseDir(dir) => write!(f, "startusedir {}", dir),
+            InputAction::UseDir(dir) => write!(f, "usedir {}", dir),
             InputAction::FinalizeUse => write!(f, "finalizeuse"),
             InputAction::AbortUse => write!(f, "abortuse"),
             InputAction::Pass(move_mode) => write!(f, "pass {}", move_mode),
@@ -212,9 +212,9 @@ impl FromStr for InputAction {
             let index = args[1].parse::<usize>().unwrap();
             let move_mode = args[2].parse::<MoveMode>().unwrap();
             return Ok(InputAction::StartUseItem(index, move_mode));
-        } else if args[0] == "startusedir" {
+        } else if args[0] == "usedir" {
             let dir = args[1].parse::<Direction>().unwrap();
-            return Ok(InputAction::StartUseDir(dir));
+            return Ok(InputAction::UseDir(dir));
         } else if args[0] == "finalizeuse" {
             return Ok(InputAction::FinalizeUse);
         } else if args[0] == "abortuse" {
@@ -503,8 +503,8 @@ pub fn handle_input_use(input_action: InputAction,
             start_use_item(item_index, move_mode, data, settings, msg_log);
         }
 
-        (InputAction::StartUseDir(dir), true) => {
-            start_use_dir(dir, data, settings, msg_log);
+        (InputAction::UseDir(dir), true) => {
+            use_dir(dir, data, settings, msg_log);
         }
 
         (InputAction::FinalizeUse, true) => {
@@ -723,10 +723,11 @@ pub fn handle_input_playing(input_action: InputAction,
     }
 }
 
-fn start_use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_log: &mut MsgLog) {
+fn use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    if data.calculate_use_move(player_id, settings.use_index as usize, dir, settings.use_move_mode).is_some() {
+    let use_result = data.calculate_use_move(player_id, settings.use_index as usize, dir, settings.use_move_mode);
+    if use_result.pos.is_some() {
         settings.use_dir = Some(dir);
     }
 }
@@ -739,34 +740,54 @@ fn finalize_use_item(_item_index: i32, dir: Direction, data: &GameData, settings
     let item_id = data.entities.inventory[&player_id][item_index];
 
     let item = data.entities.item[&item_id];
-    match item {
-        Item::Dagger => {
-            msg_log.log(Msg::DaggerStab(player_id, item_index, dir));
+
+    let use_result = data.calculate_use_move(player_id, settings.use_index as usize, dir, settings.use_move_mode);
+
+    // TODO 
+    // add weapon type and function to determine type
+    // add attack type
+    //
+    // hammer is a special case that emits its own message, which can emit a 
+    // blunt heavy attack if successful.
+    //
+    // the hit message determines if an entity was present and applies an effect
+    // as well as a sound.
+    // if a wall is hit by a heavy blunt attack it is destroyed
+
+    // TODO This logic has to go somewhere
+    //if let Some(hit_entity) = self.has_blocking_entity(hit_pos) {
+    //    let hits_enemy = self.entities.typ[&hit_entity] == EntityType::Enemy;
+    //    if hits_enemy {
+    //        result.hit_entities.push(hit_entity);
+    //    }
+    //}
+    if item == Item::Hammer {
+        // hammers are handled specially.
+        msg_log.log(Msg::HammerRaise(player_id, item_index, dir));
+    } else {
+        // we should not be able to finalize use mode without a valid move position.
+        let move_pos = use_result.pos.expect("Using an item with no move position?!");
+        let player_pos = data.entities.pos[&player_id];
+        if move_pos != player_pos {
+            let dist = distance(move_pos, player_pos) as usize;
+            msg_log.log(Msg::TryMove(player_id, dir, dist, settings.use_move_mode));
         }
 
-        Item::Shield => {
-            msg_log.log(Msg::ShieldSmash(player_id, item_index, dir));
+        let weapon_type = item.weapon_type().unwrap();
+        let mut attack_type = AttackStyle::Normal;
+        if item == Item::Spear && settings.use_move_mode == MoveMode::Run {
+            attack_type = AttackStyle::Strong;
+        } else if item == Item::Dagger {
+            attack_type = AttackStyle::Stealth;
         }
 
-        Item::Hammer => {
-            msg_log.log(Msg::HammerRaise(player_id, item_index, dir));
-        }
-
-        Item::Sword => {
-            msg_log.log(Msg::SwordStep(player_id, item_index, dir));
-        }
-
-        Item::Spear => {
-            msg_log.log(Msg::SpearStab(player_id, item_index, dir, settings.use_move_mode));
-        }
-
-        _ => {
-            panic!(format!("Tried to use {} in use-mode!", item));
+        for hit_pos in use_result.hit_positions {
+            msg_log.log(Msg::Hit(player_id, hit_pos, weapon_type, attack_type));
         }
     }
 }
 
-fn start_use_item(item_index: usize, move_mode: MoveMode, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+fn start_use_item(item_index: usize, _move_mode: MoveMode, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     let num_items_in_inventory = data.entities.inventory[&player_id].len();
@@ -779,11 +800,6 @@ fn start_use_item(item_index: usize, move_mode: MoveMode, data: &GameData, setti
 
     // only primary items are available for use-mode
     if data.entities.item[&item_id].class() == ItemClass::Primary {
-        // only enter use-mode if there is at least one place to move
-        //let at_least_one_move =
-        //    Direction::move_actions().iter().any(|check_dir|
-        //        data.calculate_use_move(player_id, item_index, *check_dir, settings.use_move_mode).is_some());
-
         // Allow entering use-mode even if there are no places to move
         // in case the player wants to check pressing shift or ctrl
         // for additional spaces.

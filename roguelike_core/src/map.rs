@@ -5,8 +5,6 @@ use std::cell::RefCell;
 use std::str::FromStr;
 use std::fmt;
 
-use logging_timer::timer;
-
 use oorandom::Rand32;
 
 use pathfinding::directed::astar::astar;

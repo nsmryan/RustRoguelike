@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use oorandom::Rand32;
 
 use sdl2::render::{BlendMode, WindowCanvas};
@@ -65,14 +67,17 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
 
             let mut panel = panel.with_target(canvas);
 
-            render_entity_type(EntityType::Item, &mut panel, display_state, game);
-            render_entity_type(EntityType::Trigger, &mut panel, display_state, game);
             render_map(&mut panel, display_state, game);
+            render_entity_type(EntityType::Trigger, &mut panel, display_state, game);
+            render_entity_type(EntityType::Item, &mut panel, display_state, game);
             render_entity_type(EntityType::Energy, &mut panel, display_state, game);
             render_entity_type(EntityType::Enemy, &mut panel, display_state, game);
             render_entity_type(EntityType::Column, &mut panel, display_state, game);
             render_entity_type(EntityType::Player, &mut panel, display_state, game);
             render_entity_type(EntityType::Other, &mut panel, display_state, game);
+
+            render_map_above(&mut panel, display_state, game);
+
             render_impressions(&mut panel, display_state, game);
             render_effects(&mut panel, display_state, game);
             render_overlays(&mut panel, display_state, game, mouse_map_pos);
@@ -693,6 +698,46 @@ fn render_wall_shadow(pos: Pos, panel: &mut Panel<&mut WindowCanvas>, display_st
     }
 }
 
+fn render_map_above(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+
+    let (map_width, map_height) = game.data.map.size();
+
+    let sprite_key = display_state.lookup_spritekey("tiles");
+    for y in 0..map_height {
+        for x in 0..map_width {
+            let pos = Pos::new(x, y);
+            /* draw the between-tile walls appropriate to this tile */
+            {
+                let sprite = &mut display_state.sprites[&sprite_key];
+                render_intertile_walls_above(panel, &mut game.data.map, sprite, pos);
+            }
+
+            let visible =
+                game.data.pos_in_fov(player_id, pos, &game.config) ||
+                game.settings.god_mode;
+
+            // apply a FoW darkening to cells
+            if game.config.fog_of_war && !visible {
+                game.data.entities.status[&player_id].extra_fov += 1;
+                let is_in_fov_ext = 
+                   game.data.pos_in_fov(player_id, pos, &game.config);
+                game.data.entities.status[&player_id].extra_fov -= 1;
+
+                let mut blackout_color = Color::black();
+                if is_in_fov_ext {
+                    blackout_color.a = game.config.fov_edge_alpha
+                } else if game.data.map[pos].explored {
+                    blackout_color.a = game.config.explored_alpha
+                }
+                
+                let sprite = &mut display_state.sprites[&sprite_key];
+                sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, blackout_color);
+            }
+        }
+    }
+}
+
 /// Render the map, with environment and walls
 fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -712,10 +757,6 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
             }
 
             // Render game stuff
-            let visible =
-                game.data.pos_in_fov(player_id, pos, &game.config) ||
-                game.settings.god_mode;
-
             let tile = game.data.map[pos];
 
             let chr = tile.chr;
@@ -739,35 +780,16 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
             /* draw the between-tile walls appropriate to this tile */
             {
                 let sprite = &mut display_state.sprites[&sprite_key];
-                render_itertile_walls(panel, &mut game.data.map, sprite, pos, &game.config);
-            }
-
-            // apply a FoW darkening to cells
-            if game.config.fog_of_war && !visible {
-                game.data.entities.status[&player_id].extra_fov += 1;
-                let is_in_fov_ext = 
-                   game.data.pos_in_fov(player_id, pos, &game.config);
-                game.data.entities.status[&player_id].extra_fov -= 1;
-
-                let mut blackout_color = Color::black();
-                if is_in_fov_ext {
-                    blackout_color.a = game.config.fov_edge_alpha
-                } else if game.data.map[pos].explored {
-                    blackout_color.a = game.config.explored_alpha
-                }
-                
-                let sprite = &mut display_state.sprites[&sprite_key];
-                sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, blackout_color);
+                render_intertile_walls_below(panel, &mut game.data.map, sprite, pos);
             }
         }
     }
 }
 
-fn render_itertile_walls(panel: &mut Panel<&mut WindowCanvas>,
-                         map: &Map,
-                         sprite: &mut SpriteSheet,
-                         pos: Pos,
-                         _config: &Config) {
+fn render_intertile_walls_above(panel: &mut Panel<&mut WindowCanvas>,
+                               map: &Map,
+                               sprite: &mut SpriteSheet,
+                               pos: Pos) {
     let (x, y) = pos.to_tuple();
     let tile = map[pos];
     let wall_color = Color::white();
@@ -778,6 +800,15 @@ fn render_itertile_walls(panel: &mut Panel<&mut WindowCanvas>,
     } else if tile.bottom_wall == Wall::TallWall {
         sprite.draw_char(panel, MAP_THICK_WALL_BOTTOM as char, pos, wall_color);
     }
+}
+
+fn render_intertile_walls_below(panel: &mut Panel<&mut WindowCanvas>,
+                               map: &Map,
+                               sprite: &mut SpriteSheet,
+                               pos: Pos) {
+    let (x, y) = pos.to_tuple();
+    let tile = map[pos];
+    let wall_color = Color::white();
 
     // Left walls
     if tile.left_wall == Wall::ShortWall {
@@ -1003,16 +1034,34 @@ fn render_impressions(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 }
 
 fn render_entity_type(typ: EntityType, panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    let mut index = 0;
-    while index < game.data.entities.ids.len() {
-        let entity_id = game.data.entities.ids[index];
-        index += 1;
+    if typ == EntityType::Player && game.settings.state == GameState::Use && game.settings.use_dir.is_some() {
+        // For the player in use-mode, while holding down a direction, we
+        // need special rendering. Otherwise the player is rendered as normal.
+        let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+        let use_dir = game.settings.use_dir.unwrap(); // already checked for is_some
+        let use_result = game.data.calculate_use_move(player_id,
+                                                      game.settings.use_index as usize,
+                                                      use_dir,
+                                                      game.settings.use_move_mode);
+        if let Some(pos) = use_result.pos {
+            let player_pos = game.data.entities.pos[&player_id];
+            render_entity_ghost(player_id, player_pos, game, panel, display_state);
+            game.data.entities.pos[&player_id] = pos;
+            render_entity(panel, player_id, display_state, game);
+            game.data.entities.pos[&player_id] = player_pos;
+        }
+    } else {
+        let mut index = 0;
+        while index < game.data.entities.ids.len() {
+            let entity_id = game.data.entities.ids[index];
+            index += 1;
 
-        if !game.data.entities.needs_removal[&entity_id] && game.data.entities.typ[&entity_id] == typ {
-            let maybe_sprite = render_entity(panel, entity_id, display_state, game);
+            if !game.data.entities.needs_removal[&entity_id] && game.data.entities.typ[&entity_id] == typ {
+                let maybe_sprite = render_entity(panel, entity_id, display_state, game);
 
-            if let Some(sprite) = maybe_sprite {
-                display_state.drawn_sprites.insert(entity_id, sprite);
+                if let Some(sprite) = maybe_sprite {
+                    display_state.drawn_sprites.insert(entity_id, sprite);
+                }
             }
         }
     }
@@ -1029,16 +1078,49 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
     // Draw use-mode overlay
     if game.settings.state == GameState::Use {
+        let tile_sprite = &mut display_state.sprites[&sprite_key];
+
         let mut highlight_color = game.config.color_light_grey;
         highlight_color.a = game.config.grid_alpha_overlay;
 
-        for dir in Direction::move_actions().iter() {
-            let maybe_use = game.data.calculate_use_move(player_id,
-                                                         game.settings.use_index as usize,
-                                                         *dir,
-                                                         game.settings.use_move_mode);
-            if let Some(pos) = maybe_use {
-                draw_tile_highlight(panel, pos, highlight_color);
+        let direction_color = Color::white();
+
+        let mut attack_highlight_color = game.config.color_red;
+        attack_highlight_color.a = game.config.grid_alpha_overlay;
+
+        if let Some(use_dir) = game.settings.use_dir {
+            let use_result = game.data.calculate_use_move(player_id,
+                                                          game.settings.use_index as usize,
+                                                          use_dir,
+                                                          game.settings.use_move_mode);
+            if let Some(pos) = use_result.pos {
+                //draw_tile_highlight(panel, pos, highlight_color);
+                render_arrow(panel, tile_sprite, use_dir, pos, direction_color);
+
+                for hit_pos in use_result.hit_positions {
+                    draw_tile_highlight(panel, hit_pos, attack_highlight_color);
+                }
+            }
+        } else {
+            let mut hit_positions: HashSet<Pos> = HashSet::new();
+            let mut move_positions: HashSet<Pos> = HashSet::new();
+            for dir in Direction::move_actions().iter() {
+                let use_result = game.data.calculate_use_move(player_id,
+                                                             game.settings.use_index as usize,
+                                                             *dir,
+                                                             game.settings.use_move_mode);
+                if let Some(pos) = use_result.pos {
+                    if !move_positions.contains(&pos) {
+                        draw_tile_highlight(panel, pos, highlight_color);
+                    }
+                    move_positions.insert(pos);
+                    render_arrow(panel, tile_sprite, *dir, pos, direction_color);
+                    hit_positions.extend(use_result.hit_positions.iter());
+                }
+            }
+
+            for hit_pos in hit_positions {
+                draw_tile_highlight(panel, hit_pos, attack_highlight_color);
             }
         }
     }
@@ -1143,46 +1225,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             if game.data.is_in_fov(player_id, entity_id, &game.config) &&
                game.data.entities.status[&entity_id].alive {
                 if let Some(dir) = game.data.entities.direction.get(&entity_id) {
-                    // display.draw_tile_edge(pos, area, direction_color, dir);
-
-                    let sprite_index;
-                    let rotation: f64;
-                    match dir {
-                        Direction::Up => {
-                            rotation = -90.0;
-                            sprite_index = ARROW_HORIZ;
-                        }
-                        Direction::Down => {
-                            rotation = 90.0;
-                            sprite_index = ARROW_HORIZ;
-                        }
-                        Direction::Right => {
-                            rotation = 0.0;
-                            sprite_index = ARROW_HORIZ;
-                        }
-                        Direction::Left => {
-                            rotation = 180.0;
-                            sprite_index = ARROW_HORIZ;
-                        }
-                        Direction::DownLeft => {
-                            rotation = -180.0;
-                            sprite_index = ARROW_DIAG;
-                        }
-                        Direction::DownRight => {
-                            rotation = 90.0;
-                            sprite_index = ARROW_DIAG;
-                        }
-                        Direction::UpLeft => {
-                            rotation = -90.0;
-                            sprite_index = ARROW_DIAG;
-                        }
-                        Direction::UpRight => {
-                            rotation = 0.0;
-                            sprite_index = ARROW_DIAG;
-                        }
-                    };
-
-                    tile_sprite.draw_sprite_at_cell(panel, sprite_index as usize, pos, direction_color, rotation, false, false);
+                    render_arrow(panel, tile_sprite, *dir, pos, direction_color);
                 }
             }
         }
@@ -1268,7 +1311,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                     let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
                     let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
 
-                    render_entity_at(player_id, shadow_cursor_pos, game, panel, display_state);
+                    render_entity_ghost(player_id, shadow_cursor_pos, game, panel, display_state);
                 }
             }
         }
@@ -1535,11 +1578,11 @@ pub fn sdl2_color(color: Color) -> Sdl2Color {
 }
 
 
-pub fn render_entity_at(entity_id: EntityId, render_pos: Pos, game: &mut Game, panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState) {
+pub fn render_entity_ghost(entity_id: EntityId, render_pos: Pos, game: &mut Game, panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState) {
     let entity_pos = game.data.entities.pos[&entity_id];
 
     let alpha = game.data.entities.color[&entity_id].a;
-    game.data.entities.color[&entity_id].a = 200;
+    game.data.entities.color[&entity_id].a = game.config.ghost_alpha;
 
     game.data.entities.pos[&entity_id] = render_pos;
 
@@ -1549,3 +1592,43 @@ pub fn render_entity_at(entity_id: EntityId, render_pos: Pos, game: &mut Game, p
     game.data.entities.pos[&entity_id] = entity_pos;
 }
 
+fn render_arrow(panel: &mut Panel<&mut WindowCanvas>, tile_sprite: &mut SpriteSheet, dir: Direction, pos: Pos, direction_color: Color) {
+    let sprite_index;
+    let rotation: f64;
+    match dir {
+        Direction::Up => {
+            rotation = -90.0;
+            sprite_index = ARROW_HORIZ;
+        }
+        Direction::Down => {
+            rotation = 90.0;
+            sprite_index = ARROW_HORIZ;
+        }
+        Direction::Right => {
+            rotation = 0.0;
+            sprite_index = ARROW_HORIZ;
+        }
+        Direction::Left => {
+            rotation = 180.0;
+            sprite_index = ARROW_HORIZ;
+        }
+        Direction::DownLeft => {
+            rotation = -180.0;
+            sprite_index = ARROW_DIAG;
+        }
+        Direction::DownRight => {
+            rotation = 90.0;
+            sprite_index = ARROW_DIAG;
+        }
+        Direction::UpLeft => {
+            rotation = -90.0;
+            sprite_index = ARROW_DIAG;
+        }
+        Direction::UpRight => {
+            rotation = 0.0;
+            sprite_index = ARROW_DIAG;
+        }
+    };
+
+    tile_sprite.draw_sprite_at_cell(panel, sprite_index as usize, pos, direction_color, rotation, false, false);
+}

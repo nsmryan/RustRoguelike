@@ -252,14 +252,6 @@ impl Display {
                 }
             }
 
-            Msg::SwordSwing(entity_id, _item_id, _pos) => {
-                if data.entities.typ[&entity_id] == EntityType::Player {
-                    if let Some(idle_anim) = self.get_idle_animation(entity_id, data, config) {
-                        self.state.play_animation(entity_id, idle_anim);
-                    }
-                }
-            }
-
             Msg::Attack(attacker, attacked, _damage) => {
                 if data.entities.typ[&attacker] == EntityType::Player {
                     // TODO need attack animation
