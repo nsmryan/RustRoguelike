@@ -290,6 +290,8 @@ impl Input {
                 // releasing the item no longer takes you out of use-mode
                 //self.clear_char_state(chr);
                 //return InputAction::FinalizeUse;
+            } else {
+                return self.apply_char(chr, settings);
             }
 
             return InputAction::None;
