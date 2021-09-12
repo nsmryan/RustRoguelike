@@ -76,7 +76,10 @@ pub struct Config {
     pub sound_radius_extra: usize,
     pub freeze_trap_radius: usize,
     pub push_stun_turns: usize,
-    pub sword_stun_turns: usize,
+    pub stun_turns_blunt: usize,
+    pub stun_turns_pierce: usize,
+    pub stun_turns_slash: usize,
+    pub stun_turns_extra: usize,
     pub overlay_directions: bool,
     pub overlay_player_fov: bool,
     pub overlay_floodfill: bool,
@@ -97,9 +100,6 @@ pub struct Config {
     pub fire_speed: f32,
     pub beam_duration: usize,
     pub draw_directional_arrow: bool,
-    pub sword_step_num_turns: usize,
-    pub dagger_stab_num_turns: usize,
-    pub shield_smash_num_turns: usize,
 }
 
 impl Config {

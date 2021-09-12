@@ -1033,11 +1033,11 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         highlight_color.a = game.config.grid_alpha_overlay;
 
         for dir in Direction::move_actions().iter() {
-            let maybe_use = game.data.calculate_use_move(player_id,
+            let use_result = game.data.calculate_use_move(player_id,
                                                          game.settings.use_index as usize,
                                                          *dir,
                                                          game.settings.use_move_mode);
-            if let Some(pos) = maybe_use {
+            if let Some(pos) = use_result.pos {
                 draw_tile_highlight(panel, pos, highlight_color);
             }
         }

@@ -405,7 +405,7 @@ impl Input {
             if let Some(input_dir) = InputDirection::from_chr(chr) {
                 if let InputDirection::Dir(dir) = input_dir {
                     // directions are now applied immediately
-                    action = InputAction::StartUseDir(dir);
+                    action = InputAction::UseDir(dir);
                 }
             } else if chr == ' ' {
                 action = InputAction::AbortUse;
@@ -640,7 +640,7 @@ fn test_input_use_mode_exit() {
 
     let event = InputEvent::Char('4', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseDir(Direction::Left), input_action);
+    assert_eq!(InputAction::UseDir(Direction::Left), input_action);
 
     let event = InputEvent::Char('4', KeyDir::Up);
     let input_action = input.handle_event(&mut settings, event, time, &config);

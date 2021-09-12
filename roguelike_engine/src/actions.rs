@@ -769,25 +769,25 @@ fn finalize_use_item(_item_index: i32, dir: Direction, data: &GameData, settings
         let move_pos = use_result.pos.expect("Using an item with no move position?!");
         let player_pos = data.entities.pos[&player_id];
         if move_pos != player_pos {
-            let dist = distance(move_pos, player_pos);
-            msg_log.log(Msg::TryMove(entity_id, dir, dist, settings.use_move_mode));
+            let dist = distance(move_pos, player_pos) as usize;
+            msg_log.log(Msg::TryMove(player_id, dir, dist, settings.use_move_mode));
         }
 
         let weapon_type = item.weapon_type().unwrap();
-        let mut attack_type = AttackType::Normal;
+        let mut attack_type = AttackStyle::Normal;
         if item == Item::Spear && settings.use_move_mode == MoveMode::Run {
-            attack_type = AttackType::Heavy;
+            attack_type = AttackStyle::Strong;
         } else if item == Item::Dagger {
-            attack_type = AttackType::Stealth;
+            attack_type = AttackStyle::Stealth;
         }
 
         for hit_pos in use_result.hit_positions {
-            msg_log.log(Msg::Hit(entity_id, hit_pos, weapon_type, attack_type));
+            msg_log.log(Msg::Hit(player_id, hit_pos, weapon_type, attack_type));
         }
     }
 }
 
-fn start_use_item(item_index: usize, move_mode: MoveMode, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+fn start_use_item(item_index: usize, _move_mode: MoveMode, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     let num_items_in_inventory = data.entities.inventory[&player_id].len();

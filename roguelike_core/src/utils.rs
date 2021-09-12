@@ -132,7 +132,7 @@ pub fn sort_by_distance_to(pos: Pos, positions: &mut Vec<Pos>) {
 }
 
 pub fn reduce_item_durability(data: &mut GameData, entity_id: EntityId, item_id: EntityId) {
-    if let Some(mut durability) = data.entities.durability.get_mut(&item_id) {
+    if let Some(durability) = data.entities.durability.get_mut(&item_id) {
         if *durability > 1 {
             *durability -= 1;
         } else {

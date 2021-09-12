@@ -1,6 +1,5 @@
 #[allow(unused_imports)]
 use log::{trace, error};
-use logging_timer::timer;
 
 use oorandom::Rand32;
 
@@ -9,7 +8,7 @@ use roguelike_core::ai::{Behavior, ai_move_to_attack_pos, ai_can_hit_target, ai_
 use roguelike_core::map::{Surface, AoeEffect};
 use roguelike_core::messaging::{MsgLog, Msg};
 use roguelike_core::constants::*;
-use roguelike_core::movement::{MoveMode, MoveType, Attack, Movement, Direction, Reach};
+use roguelike_core::movement::{MoveMode, MoveType, Attack, Movement, Direction};
 use roguelike_core::movement;
 use roguelike_core::config::*;
 use roguelike_core::utils::*;
@@ -94,7 +93,9 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::Stabbed(_attacker_id, attacked_id) => {
-                msg_log.log(Msg::Froze(attacked_id, config.dagger_stab_num_turns));
+                // TODO this may be superceded by Hit, although perhaps Hit
+                // should break out into finer grain attacks.
+                //msg_log.log(Msg::Froze(attacked_id, config.dagger_stab_num_turns));
             }
 
             Msg::HammerRaise(entity_id, item_index, dir) => {
@@ -242,6 +243,10 @@ pub fn resolve_messages(data: &mut GameData,
 
                 // update entities movement reach with their new move mode
                 data.entities.movement[&entity_id] = reach_by_mode(data.entities.move_mode[&entity_id]);
+            }
+
+            Msg::Hit(entity_id, pos, weapon_type, attack_style) => {
+                process_hit(entity_id, pos, weapon_type, attack_style, data, msg_log, config);
             }
 
             Msg::ChangeMoveMode(entity_id, increase) => {
@@ -503,41 +508,50 @@ fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameD
     }
 }
 
-fn process_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attack_type: AttackType, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+fn process_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
     if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
         if data.entities.typ[&hit_entity] == EntityType::Column {
-            // TODO if strong and blunt, generate crush message for column
+            // if we hit a column, and this is a strong, blunt hit, then
+            // push the column over.
+            if weapon_type == WeaponType::Blunt && attack_style == AttackStyle::Strong {
+                let entity_pos = data.entities.pos[&entity_id];
+                let dir = Direction::from_positions(entity_pos, hit_pos).unwrap();
+                msg_log.log(Msg::Pushed(entity_id, hit_entity, dir, 1, false));
+            }
         } else {
-            let mut hit_sound_radious;
-            let mut stun_turns;
-            match weapon_type {
-                WeaponType::Blunt => {
-                    hit_sound_radius = config.sound_radius_blunt;
-                    stun_turns = config.stun_turns_blunt;
-                },
+            // if we hit an enemy, stun them and make a sound.
+            if data.entities.typ[&hit_entity] == EntityType::Enemy {
+                let mut hit_sound_radius;
+                let mut stun_turns;
+                match weapon_type {
+                    WeaponType::Blunt => {
+                        hit_sound_radius = config.sound_radius_blunt;
+                        stun_turns = config.stun_turns_blunt;
+                    },
 
-                WeaponType::Pierce => {
-                    hit_sound_radius = config.sound_radius_pierce;
-                    stun_turns = config.stun_turns_pierce;
-                },
+                    WeaponType::Pierce => {
+                        hit_sound_radius = config.sound_radius_pierce;
+                        stun_turns = config.stun_turns_pierce;
+                    },
 
-                WeaponType::Slash => {
-                    hit_sound_radius = config.sound_radius_slash;
-                    stun_turns = config.stun_turns_slash;
-                },
+                    WeaponType::Slash => {
+                        hit_sound_radius = config.sound_radius_slash;
+                        stun_turns = config.stun_turns_slash;
+                    },
+                }
+
+                if attack_style == AttackStyle::Strong {
+                    hit_sound_radius += config.sound_radius_extra;
+                    stun_turns += config.stun_turns_extra;
+                }
+
+                msg_log.log(Msg::Froze(hit_entity, stun_turns));
+                msg_log.log(Msg::Sound(entity_id, hit_pos, hit_sound_radius, true));
             }
-
-            if attack_type == AttackType::Strong {
-                hit_sound_radius += config.sound_radius_hit_strong;
-                stun_turns += config.stun_turns_hit_strong;
-            }
-
-            msg_log.log(Msg::Froze(hit_entity, hit_pos, stun_turns));
-            msg_log.log(Msg::Sound(entity_id, hit_pos, hit_sound_radius, true));
         }
     } else {
         // no entity- check for a wall. if blunt and strong, crush the wall.
-        // TODO implement
+        // TODO message for hitting a wall, use for hammer as well
     }
 
     // TODO maybe a UsedItem message for this, although only one per use.

@@ -195,11 +195,10 @@ sound_radius_pierce: 3
 sound_radius_slash: 2
 # The extra tiles of sound for a strong hit
 # like a running spear.
-sound_radius_hit_strong: 1
+sound_radius_extra: 1
 
 freeze_trap_radius: 3
 push_stun_turns: 3
-sword_stun_turns: 5
 
 # draw numeric overlay of diagonal offsets
 overlay_directions: false
@@ -239,5 +238,5 @@ draw_directional_arrow: false
 stun_turns_blunt: 6
 stun_turns_pierce: 4
 stun_turns_slash: 4
-stun_turns_hit_strong: 2
+stun_turns_extra: 2
 

@@ -4,8 +4,6 @@ use std::default::Default;
 use std::fmt;
 use std::str::FromStr;
 
-use logging_timer::timer;
-
 use serde::{Serialize, Deserialize};
 
 use pathfinding::directed::astar::astar;
@@ -468,7 +466,6 @@ impl GameData {
                 if self.clear_path(pos, target_pos, false) {
                     result.pos = Some(target_pos);
 
-                    let mut adjacent_entity = false;
                     for dir in &Direction::directions() {
                         let dir_pos = dir.offset_pos(pos, 1);
 
@@ -508,10 +505,10 @@ impl GameData {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ItemUseResult {
-    pos: Option<Pos>,
-    hit_positions: Vec<Pos>,
+    pub pos: Option<Pos>,
+    pub hit_positions: Vec<Pos>,
 }
 
 impl ItemUseResult {
@@ -520,6 +517,76 @@ impl ItemUseResult {
             pos: None,
             hit_positions: Vec::new(),
         };
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum AttackStyle {
+    Stealth,
+    Normal,
+    Strong,
+}
+
+impl fmt::Display for AttackStyle {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AttackStyle::Stealth => write!(f, "stealth"),
+            AttackStyle::Normal => write!(f, "normal"),
+            AttackStyle::Strong => write!(f, "strong"),
+        }
+    }
+}
+
+impl FromStr for AttackStyle {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "stealth" {
+            return Ok(AttackStyle::Stealth);
+        } else if s == "normal" {
+            return Ok(AttackStyle::Normal);
+        } else if s == "strong" {
+            return Ok(AttackStyle::Strong);
+        }
+
+        return Err(format!("Could not parse '{}' as AttackStyle", s));
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum WeaponType {
+    Blunt,
+    Pierce,
+    Slash,
+}
+
+impl fmt::Display for WeaponType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            WeaponType::Blunt => write!(f, "blunt"),
+            WeaponType::Pierce => write!(f, "pierce"),
+            WeaponType::Slash => write!(f, "slash"),
+        }
+    }
+}
+
+impl FromStr for WeaponType {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "blunt" {
+            return Ok(WeaponType::Blunt);
+        } else if s == "pierce" {
+            return Ok(WeaponType::Pierce);
+        } else if s == "slash" {
+            return Ok(WeaponType::Slash);
+        }
+
+        return Err(format!("Could not parse '{}' as WeaponType", s));
     }
 }
 
@@ -759,6 +826,25 @@ impl Item {
             Item::SoundTrap => EntityName::SoundTrap,
             Item::BlinkTrap => EntityName::BlinkTrap,
             Item::FreezeTrap => EntityName::FreezeTrap,
+        }
+    }
+
+    pub fn weapon_type(&self) -> Option<WeaponType> {
+        match self {
+            Item::Dagger => Some(WeaponType::Slash),
+            Item::Shield => Some(WeaponType::Blunt),
+            Item::Hammer => Some(WeaponType::Blunt),
+            Item::Spear => Some(WeaponType::Pierce),
+            Item::GreatSword => Some(WeaponType::Slash),
+            Item::Sword => Some(WeaponType::Slash),
+
+            Item::Stone => None,
+            Item::Key => None,
+            Item::Lantern => None,
+            Item::SpikeTrap => None,
+            Item::SoundTrap => None,
+            Item::BlinkTrap => None,
+            Item::FreezeTrap => None,
         }
     }
 

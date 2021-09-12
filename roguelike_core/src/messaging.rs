@@ -43,7 +43,7 @@ pub enum Msg {
     ChangeMoveMode(EntityId, bool), // true = increase, false = decrease
     MoveMode(EntityId, MoveMode),
     TriedRunWithHeavyEquipment,
-    Hit(EntityId, Pos, WeaponType, AttackType),
+    Hit(EntityId, Pos, WeaponType, AttackStyle),
     HammerRaise(EntityId, usize, Direction), // entity, item index, direction moved
     HammerSwing(EntityId, EntityId, Pos), // entity, item, position swung at
     HammerHitEntity(EntityId, EntityId), // entity, hit entity
@@ -129,7 +129,7 @@ impl fmt::Display for Msg {
             Msg::ChangeMoveMode(entity_id, upwards) => write!(f, "chage_move_mode {} {}", entity_id, upwards),
             Msg::MoveMode(entity_id, move_mode) => write!(f, "move_mode {} {}", entity_id, move_mode),
             Msg::TriedRunWithHeavyEquipment => write!(f, "tried_run_with_heavy_equipment"),
-            Msg::Hit(entity_id, pos, weapon_type, attack_type) => write!(f, "hit {} {} {} {} {}", entity_id, pos.x, pos.y, weapon_type, attack_type),
+            Msg::Hit(entity_id, pos, weapon_type, attack_style) => write!(f, "hit {} {} {} {} {}", entity_id, pos.x, pos.y, weapon_type, attack_style),
             Msg::HammerRaise(entity_id, item_index, dir) => write!(f, "hammer_raise {} {} {}", entity_id, item_index, dir),
             Msg::HammerSwing(entity_id, item_id, pos) => write!(f, "hammer_swing {} {} {} {}", entity_id, item_id, pos.x, pos.y),
             Msg::HammerHitEntity(entity_id, target_id) => write!(f, "hammer_hit_entity {} {}", entity_id, target_id),
