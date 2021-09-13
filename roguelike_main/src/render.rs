@@ -303,25 +303,35 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
     let energy = game.data.entities.energy[&player_id];
     render_pips(panel, display_state, energy, 3, game.config.color_light_green);
 
-    list.push(format!(" ({}, {})", 
-                      game.data.entities.pos[&player_id].x,
-                      game.data.entities.pos[&player_id].y));
+    //list.push(format!(" ({}, {})", 
+                      //game.data.entities.pos[&player_id].x,
+                      //game.data.entities.pos[&player_id].y));
 
     list.push(format!(""));
 
-    let move_mode = game.data.entities.move_mode[&player_id];
-    list.push(format!("{}", move_mode.to_string()));
+    //let move_mode = game.data.entities.move_mode[&player_id];
+    //list.push(format!("{}", move_mode.to_string()));
 
     let stance = game.data.entities.stance[&player_id];
     list.push(format!("{}", stance));
 
-    list.push(format!(""));
-    if let Some(class) = game.data.entities.class.get(&player_id) {
-        list.push(format!("{}", class));
-    } else {
-        list.push(format!(""));
-    }
+    //list.push(format!(""));
+    //if let Some(class) = game.data.entities.class.get(&player_id) {
+        //list.push(format!("{}", class));
+    //} else {
+        //list.push(format!(""));
+    //}
 
+    list.push(format!(""));
+    list.push(format!(""));
+    list.push(format!(""));
+    list.push(format!(""));
+    list.push(format!(""));
+    list.push(format!(""));
+    list.push(format!(""));
+    list.push(format!(""));
+    list.push(format!(""));
+    list.push(format!(""));
     list.push(format!(""));
     list.push(format!("turn {}", game.settings.turn_count));
 
@@ -1161,8 +1171,6 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
             // render player ghost
             if cursor_pos != player_pos && game.input.target == None {
-                let alpha = game.data.entities.color[&player_id].a;
-                game.data.entities.color[&player_id].a = 100;
 
                 let maybe_next_pos = astar_next_pos(&game.data.map, player_pos, cursor_pos, None, None);
                 if let Some(next_pos) = maybe_next_pos {
@@ -1175,10 +1183,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                     }
 
                     if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {
-                        game.data.entities.pos[&player_id] = player_ghost_pos;
-                        render_entity(panel, player_id, display_state, game);
-                        game.data.entities.color[&player_id].a = alpha;
-                        game.data.entities.pos[&player_id] = player_pos;
+                        render_entity_ghost(player_id, player_ghost_pos, game, panel, display_state);
                     }
                 }
             }
