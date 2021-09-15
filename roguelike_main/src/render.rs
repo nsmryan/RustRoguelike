@@ -68,8 +68,12 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
             let mut panel = panel.with_target(canvas);
 
             render_map(&mut panel, display_state, game);
+
             render_entity_type(EntityType::Trigger, &mut panel, display_state, game);
             render_entity_type(EntityType::Item, &mut panel, display_state, game);
+
+            render_map_middle(&mut panel, display_state, game);
+
             render_entity_type(EntityType::Energy, &mut panel, display_state, game);
             render_entity_type(EntityType::Enemy, &mut panel, display_state, game);
             render_entity_type(EntityType::Column, &mut panel, display_state, game);
@@ -762,6 +766,21 @@ fn render_map_above(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
     }
 }
 
+fn render_map_middle(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+
+    let (map_width, map_height) = game.data.map.size();
+
+    let sprite_key = display_state.lookup_spritekey("tiles");
+    for y in 0..map_height {
+        for x in 0..map_width {
+            let pos = Pos::new(x, y);
+
+            render_wall_shadow(pos, panel, display_state, game);
+        }
+    }
+}
+
 /// Render the map, with environment and walls
 fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -798,8 +817,6 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
                 let sprite = &mut display_state.sprites[&sprite_key];
                 render_surface(panel, sprite, tile.surface, pos);
             }
-
-            render_wall_shadow(pos, panel, display_state, game);
 
             /* draw the between-tile walls appropriate to this tile */
             {
