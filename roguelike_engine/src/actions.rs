@@ -718,6 +718,10 @@ pub fn handle_input_playing(input_action: InputAction,
                 msg_log.log(Msg::Interact(player_id, interact_pos));
         }
 
+        (InputAction::Esc, true) => {
+            settings.cursor = None;
+        }
+
         (_, _) => {
         }
     }
