@@ -859,14 +859,77 @@ impl SpriteSheet {
         }
     }
 
+    pub fn draw_texture(&mut self,
+                     panel: &mut Panel<&mut WindowCanvas>,
+                     cell: Pos) {
+        let query = self.texture.query();
+
+        let cell_dims = panel.cell_dims();
+        let (cell_width, cell_height) = cell_dims;
+
+        panel.target.set_blend_mode(BlendMode::None);
+
+        let pos = cell;
+
+        let src = Rect::new(0,
+                            0,
+                            query.width,
+                            query.height);
+
+        let dst_pos = Pos::new(pos.x * cell_width as i32,
+                               pos.y * cell_height as i32);
+        let dst = Rect::new(dst_pos.x as i32,
+                            dst_pos.y as i32,
+                            query.width,
+                            query.height);
+
+        panel.target.copy_ex(&self.texture,
+                             Some(src),
+                             Some(dst),
+                             0.0,
+                             None,
+                             false,
+                             false).unwrap();
+    }
+
     pub fn draw_text(&mut self,
                      panel: &mut Panel<&mut WindowCanvas>,
                      text: &str,
                      cell: Pos,
                      color: Color) {
+        let query = self.texture.query();
+
+        let cell_dims = panel.cell_dims();
+        let (cell_width, cell_height) = cell_dims;
+
+        panel.target.set_blend_mode(BlendMode::Blend);
+        self.texture.set_color_mod(color.r, color.g, color.b);
+        self.texture.set_alpha_mod(color.a);
+
         let mut pos = cell;
         for chr in text.chars() {
-            self.draw_sprite_at_cell(panel, chr as usize, pos, color, 0.0, false, false);
+            let chr_num = chr.to_lowercase().next().unwrap();
+            let chr_index = chr_num as i32 - 'a' as i32;
+
+            let src = Rect::new((query.width as i32 / 26) * chr_index,
+                                0,
+                                query.width / 26,
+                                query.height);
+
+            let dst_pos = Pos::new(pos.x * cell_width as i32,
+                                   pos.y * cell_height as i32);
+            let dst = Rect::new(dst_pos.x as i32,
+                                dst_pos.y as i32,
+                                cell_width as u32,
+                                cell_height as u32);
+
+            panel.target.copy_ex(&self.texture,
+                                 Some(src),
+                                 Some(dst),
+                                 0.0,
+                                 None,
+                                 false,
+                                 false).unwrap();
             pos.x += 1;
         }
     }
