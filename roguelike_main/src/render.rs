@@ -373,6 +373,8 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
         y_pos += 1;
 
+        let mut drawn_info = false;
+
         // only display first object
         if let Some(obj_id) = object_ids.first() {
             let entity_in_fov = game.settings.god_mode ||
@@ -380,6 +382,8 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
             // only display things in the player's FOV
             if entity_in_fov {
+                drawn_info = true;
+
                 if let Some(fighter) = game.data.entities.fighter.get(obj_id) {
                     y_pos += 1;
 
@@ -412,6 +416,16 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
                     text_list.push(format!("  {}", "dead"));
                 } else if let Some(behave) = game.data.entities.behavior.get(obj_id) {
                     text_list.push(format!("{}", behave.description()));
+                }
+            }
+        }
+
+        // if there was nothing else to draw, check for an impression
+        if !drawn_info {
+            for impr in display_state.impressions.iter() {
+                if impr.pos == info_pos {
+                    text_list.push("Golem".to_string());
+                    break;
                 }
             }
         }
