@@ -152,7 +152,7 @@ pub fn update_stance(move_type: MoveType, move_mode: MoveMode, stance: Stance) -
         new_stance = Stance::Running;
     } else if move_mode == MoveMode::Sneak {
         new_stance = Stance::Crouching;
-    } else if move_mode == MoveMode::Walk && stance == Stance::Crouching {
+    } else if move_mode == MoveMode::Walk {
         new_stance = Stance::Standing;
     }
 
