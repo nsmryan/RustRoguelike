@@ -141,7 +141,7 @@ pub struct GameSettings {
     pub cursor: Option<Pos>,
     pub use_index: i32,
     pub use_dir: Option<Direction>,
-    pub use_move_mode: MoveMode,
+    pub move_mode: MoveMode,
 }
 
 impl GameSettings {
@@ -161,7 +161,7 @@ impl GameSettings {
             cursor: None,
             use_index: -1,
             use_dir: None,
-            use_move_mode: MoveMode::Walk,
+            move_mode: MoveMode::Walk,
         };
     }
 }

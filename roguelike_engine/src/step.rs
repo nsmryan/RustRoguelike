@@ -116,22 +116,22 @@ pub fn test_game_step() {
     make_map(&MapLoadConfig::Empty, &mut game);
     game.data.entities.pos[&player_id] = Pos::new(0, 0);
 
-    input_action = InputAction::Move(Direction::Right, MoveMode::Walk);
+    input_action = InputAction::Move(Direction::Right);
     game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(1, 0), player_pos);
 
-    input_action = InputAction::Move(Direction::Down, MoveMode::Walk);
+    input_action = InputAction::Move(Direction::Down);
     game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(1, 1), player_pos);
 
-    input_action = InputAction::Move(Direction::Left, MoveMode::Walk);
+    input_action = InputAction::Move(Direction::Left);
     game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(0, 1), player_pos);
 
-    input_action = InputAction::Move(Direction::Up, MoveMode::Walk);
+    input_action = InputAction::Move(Direction::Up);
     game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(0, 0), player_pos);
@@ -158,7 +158,7 @@ pub fn test_running() {
     game.step_game(input_action, 0.1);
 
     assert!(game.data.entities.ids.contains(&gol));
-    input_action = InputAction::Move(Direction::Down, MoveMode::Walk);
+    input_action = InputAction::Move(Direction::Down);
     game.step_game(input_action, 0.1);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(gol_pos, player_pos);
@@ -173,7 +173,7 @@ pub fn test_running() {
 
     game.data.map[(7, 5)].tile_type = TileType::Water;
 
-    input_action = InputAction::Move(Direction::Right, MoveMode::Walk);
+    input_action = InputAction::Move(Direction::Right);
     game.step_game(input_action, 0.1);
     assert_eq!(Pos::new(5, 5), game.data.entities.pos[&player_id]);
     assert_eq!(Pos::new(6, 5), game.data.entities.pos[&pawn]);
@@ -373,7 +373,7 @@ fn test_ai_investigate_moves() {
     ai_investigate(sound_pos, gol, &mut game.data, &mut game.msg_log, &game.config);
     assert_eq!(1, game.msg_log.messages.len());
     let direction = Direction::from_positions(start_pos, sound_pos).unwrap();
-    assert_eq!(Msg::TryMove(gol, direction, 1, MoveMode::Walk), game.msg_log.messages[0]);
+    assert_eq!(Msg::TryMove(gol, direction, 1), game.msg_log.messages[0]);
 }
 
 fn clean_entities(entities: &mut Entities, msg_log: &mut MsgLog) {

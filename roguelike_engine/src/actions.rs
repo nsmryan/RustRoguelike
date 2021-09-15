@@ -27,22 +27,22 @@ pub enum ActionLoc {
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum InputAction {
-    Run(bool),
-    Sneak(bool),
-    Alt(bool),
-    Move(Direction, MoveMode),
-    MoveTowardsCursor(MoveMode),
+    Run,
+    Sneak,
+    Alt,
+    Move(Direction),
+    MoveTowardsCursor(),
     SkillDir(Direction, ActionMode, usize),
     ItemDir(Direction, ActionMode, usize),
     SkillPos(Pos, ActionMode, usize),
     ItemPos(Pos, ActionMode, usize),
     SkillFacing(ActionMode, usize),
     ItemFacing(ActionMode, usize),
-    StartUseItem(usize, MoveMode),
+    StartUseItem(usize),
     UseDir(Direction),
     FinalizeUse,
     AbortUse,
-    Pass(MoveMode),
+    Pass(),
     Pickup,
     DropItem,
     DropItemByIndex(usize),
@@ -74,33 +74,33 @@ pub enum InputAction {
 impl fmt::Display for InputAction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            InputAction::Run(down) => write!(f, "run {}", down),
-            InputAction::Sneak(down) => write!(f, "sneak {}", down),
-            InputAction::Alt(down) => write!(f, "alt {}", down),
-            InputAction::Move(direction, move_mode) => {
+            InputAction::Run => write!(f, "run"),
+            InputAction::Sneak => write!(f, "sneak"),
+            InputAction::Alt => write!(f, "alt"),
+            InputAction::Move(direction) => {
                 match direction {
-                    Direction::Left => write!(f, "left {}", move_mode),
-                    Direction::Right => write!(f, "right {}", move_mode),
-                    Direction::Up => write!(f, "up {}", move_mode),
-                    Direction::Down => write!(f, "down {}", move_mode),
-                    Direction::DownLeft => write!(f, "downleft {}", move_mode),
-                    Direction::DownRight => write!(f, "downright {}", move_mode),
-                    Direction::UpLeft => write!(f, "upleft {}", move_mode),
-                    Direction::UpRight => write!(f, "upright {}", move_mode),
+                    Direction::Left => write!(f, "left"),
+                    Direction::Right => write!(f, "right"),
+                    Direction::Up => write!(f, "up"),
+                    Direction::Down => write!(f, "down"),
+                    Direction::DownLeft => write!(f, "downleft"),
+                    Direction::DownRight => write!(f, "downright"),
+                    Direction::UpLeft => write!(f, "upleft"),
+                    Direction::UpRight => write!(f, "upright"),
                 }
             },
-            InputAction::MoveTowardsCursor(move_mode) => write!(f, "movetowardscursor {}", move_mode),
+            InputAction::MoveTowardsCursor() => write!(f, "movetowardscursor"),
             InputAction::SkillDir(dir, action_mode, index) => write!(f, "skilldir {} {} {}", dir, action_mode, index),
             InputAction::ItemDir(dir, action_mode, index) => write!(f, "itemdir {} {} {}", dir, action_mode, index),
             InputAction::SkillPos(pos, action_mode, index) => write!(f, "skillpos {} {} {} {}", pos.x, pos.y, action_mode, index),
             InputAction::ItemPos(pos, action_mode, index) => write!(f, "itempos {} {} {} {}", pos.x, pos.y, action_mode, index),
             InputAction::SkillFacing(action_mode, index) => write!(f, "skill {} {}", action_mode, index),
             InputAction::ItemFacing(action_mode, index) => write!(f, "itemdir {} {}", action_mode, index),
-            InputAction::StartUseItem(index, move_mode) => write!(f, "startuseitem {} {}", index, move_mode),
+            InputAction::StartUseItem(index) => write!(f, "startuseitem {}", index),
             InputAction::UseDir(dir) => write!(f, "usedir {}", dir),
             InputAction::FinalizeUse => write!(f, "finalizeuse"),
             InputAction::AbortUse => write!(f, "abortuse"),
-            InputAction::Pass(move_mode) => write!(f, "pass {}", move_mode),
+            InputAction::Pass() => write!(f, "pass"),
             InputAction::MapClick(loc, cell) => write!(f, "click {} {} {} {}", loc.x, loc.y, cell.x, cell.y),
             InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
             InputAction::Pickup => write!(f, "pickup"),
@@ -140,44 +140,31 @@ impl FromStr for InputAction {
         let args = s.split(" ").collect::<Vec<&str>>();
 
         if args[0] == "left" {
-            let move_mode = args[1].parse::<MoveMode>().unwrap();
-            return Ok(InputAction::Move(Direction::Left, move_mode));
+            return Ok(InputAction::Move(Direction::Left));
         } else if args[0] == "right" {
-            let move_mode = args[1].parse::<MoveMode>().unwrap();
-            return Ok(InputAction::Move(Direction::Right, move_mode));
+            return Ok(InputAction::Move(Direction::Right));
         } else if args[0] == "up" {
-            let move_mode = args[1].parse::<MoveMode>().unwrap();
-            return Ok(InputAction::Move(Direction::Up, move_mode));
+            return Ok(InputAction::Move(Direction::Up));
         } else if args[0] == "down" {
-            let move_mode = args[1].parse::<MoveMode>().unwrap();
-            return Ok(InputAction::Move(Direction::Down, move_mode));
+            return Ok(InputAction::Move(Direction::Down));
         } else if args[0] == "upleft" {
-            let move_mode = args[1].parse::<MoveMode>().unwrap();
-            return Ok(InputAction::Move(Direction::UpLeft, move_mode));
+            return Ok(InputAction::Move(Direction::UpLeft));
         } else if args[0] == "upright" {
-            let move_mode = args[1].parse::<MoveMode>().unwrap();
-            return Ok(InputAction::Move(Direction::UpRight, move_mode));
+            return Ok(InputAction::Move(Direction::UpRight));
         } else if args[0] == "downleft" {
-            let move_mode = args[1].parse::<MoveMode>().unwrap();
-            return Ok(InputAction::Move(Direction::DownLeft, move_mode));
+            return Ok(InputAction::Move(Direction::DownLeft));
         } else if args[0] == "downright" {
-            let move_mode = args[1].parse::<MoveMode>().unwrap();
-            return Ok(InputAction::Move(Direction::DownRight, move_mode));
+            return Ok(InputAction::Move(Direction::DownRight));
         } else if args[0] == "run" {
-            let down = args[1].parse::<bool>().unwrap();
-            return Ok(InputAction::Run(down));
+            return Ok(InputAction::Run);
         } else if args[0] == "sneak" {
-            let down = args[1].parse::<bool>().unwrap();
-            return Ok(InputAction::Sneak(down));
+            return Ok(InputAction::Sneak);
         } else if args[0] == "alt" {
-            let down = args[1].parse::<bool>().unwrap();
-            return Ok(InputAction::Alt(down));
+            return Ok(InputAction::Alt);
         } else if args[0] == "pass" {
-            let move_mode = args[1].parse::<MoveMode>().unwrap();
-            return Ok(InputAction::Pass(move_mode));
+            return Ok(InputAction::Pass());
         } else if args[0] == "movetowardscursor" {
-            let move_mode = args[1].parse::<MoveMode>().unwrap();
-            return Ok(InputAction::MoveTowardsCursor(move_mode));
+            return Ok(InputAction::MoveTowardsCursor());
         } else if args[0] == "skilldir" {
             let dir = args[1].parse::<Direction>().unwrap();
             let action_mode = args[2].parse::<ActionMode>().unwrap();
@@ -210,8 +197,7 @@ impl FromStr for InputAction {
             return Ok(InputAction::ItemFacing(action_mode, index));
         } else if args[0] == "startuseitem" {
             let index = args[1].parse::<usize>().unwrap();
-            let move_mode = args[2].parse::<MoveMode>().unwrap();
-            return Ok(InputAction::StartUseItem(index, move_mode));
+            return Ok(InputAction::StartUseItem(index));
         } else if args[0] == "usedir" {
             let dir = args[1].parse::<Direction>().unwrap();
             return Ok(InputAction::UseDir(dir));
@@ -483,24 +469,24 @@ pub fn handle_input_use(input_action: InputAction,
     let player_alive = data.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
-        (InputAction::Run(down), true) => {
-            if down {
-                settings.use_move_mode = MoveMode::Run;
-            } else  if settings.use_move_mode == MoveMode::Run {
-                settings.use_move_mode = MoveMode::Walk;
-            } // else we released shift but were already sneaking.
+        (InputAction::Run, true) => {
+            if settings.move_mode == MoveMode::Run {
+                settings.move_mode = MoveMode::Walk;
+            } else {
+                settings.move_mode = MoveMode::Run;
+            }
         }
 
-        (InputAction::Sneak(down), true) => {
-            if down {
-                settings.use_move_mode = MoveMode::Sneak;
-            } else if settings.use_move_mode == MoveMode::Sneak {
-                settings.use_move_mode = MoveMode::Walk;
-            } // else we released ctrl but were already running.
+        (InputAction::Sneak, true) => {
+            if settings.move_mode == MoveMode::Sneak {
+                settings.move_mode = MoveMode::Walk;
+            } else {
+                settings.move_mode = MoveMode::Sneak;
+            }
         }
 
-        (InputAction::StartUseItem(item_index, move_mode), true) => {
-            start_use_item(item_index, move_mode, data, settings, msg_log);
+        (InputAction::StartUseItem(item_index), true) => {
+            start_use_item(item_index, data, settings, msg_log);
         }
 
         (InputAction::UseDir(dir), true) => {
@@ -550,34 +536,34 @@ pub fn handle_input_playing(input_action: InputAction,
     let player_alive = data.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
-        (InputAction::Run(down), true) => {
-            if down {
-                settings.use_move_mode = MoveMode::Run;
-            } else  if settings.use_move_mode == MoveMode::Run {
-                settings.use_move_mode = MoveMode::Walk;
-            } // else we released shift but were already sneaking.
+        (InputAction::Run, true) => {
+            if settings.move_mode == MoveMode::Run {
+                settings.move_mode = MoveMode::Walk;
+            } else {
+                settings.move_mode = MoveMode::Run;
+            }
         }
 
-        (InputAction::Sneak(down), true) => {
-            if down {
-                settings.use_move_mode = MoveMode::Sneak;
-            } else if settings.use_move_mode == MoveMode::Sneak {
-                settings.use_move_mode = MoveMode::Walk;
-            } // else we released ctrl but were already running.
+        (InputAction::Sneak, true) => {
+            if settings.move_mode == MoveMode::Sneak {
+                settings.move_mode = MoveMode::Walk;
+            } else {
+                settings.move_mode = MoveMode::Sneak;
+            }
         }
 
-        (InputAction::Move(direction, move_mode), true) => {
-            let move_amount = move_mode.move_amount();
-            msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
+        (InputAction::Move(direction), true) => {
+            let move_amount = settings.move_mode.move_amount();
+            msg_log.log(Msg::TryMove(player_id, direction, move_amount, settings.move_mode));
         }
 
-        (InputAction::MoveTowardsCursor(move_mode), true) => {
+        (InputAction::MoveTowardsCursor(), true) => {
             if let Some(cursor_pos) = settings.cursor {
                 let maybe_next_pos = astar_next_pos(&data.map, player_pos, cursor_pos, None, None);
                 if let Some(next_pos) = maybe_next_pos {
                     if let Some(direction) = Direction::from_positions(player_pos, next_pos) {
-                        let move_amount = move_mode.move_amount();
-                        msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
+                        let move_amount = settings.move_mode.move_amount();
+                        msg_log.log(Msg::TryMove(player_id, direction, move_amount, settings.move_mode));
                     }
                 }
             }
@@ -607,8 +593,8 @@ pub fn handle_input_playing(input_action: InputAction,
             handle_skill(skill_index, ActionLoc::Facing, action_mode, data, msg_log);
         }
 
-        (InputAction::StartUseItem(item_index, move_mode), true) => {
-            start_use_item(item_index, move_mode, data, settings, msg_log);
+        (InputAction::StartUseItem(item_index), true) => {
+            start_use_item(item_index, data, settings, msg_log);
         }
 
         (InputAction::CursorReturn, _) => {
@@ -654,9 +640,9 @@ pub fn handle_input_playing(input_action: InputAction,
             }
         }
 
-        (InputAction::Pass(move_mode), true) => {
+        (InputAction::Pass(), true) => {
             let direction = data.entities.direction[&player_id];
-            msg_log.log(Msg::TryMove(player_id, direction, 0, move_mode));
+            msg_log.log(Msg::TryMove(player_id, direction, 0, settings.move_mode));
         }
 
         (InputAction::DropItem, true) => {
@@ -730,7 +716,7 @@ pub fn handle_input_playing(input_action: InputAction,
 fn use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    let use_result = data.calculate_use_move(player_id, settings.use_index as usize, dir, settings.use_move_mode);
+    let use_result = data.calculate_use_move(player_id, settings.use_index as usize, dir, settings.move_mode);
     if use_result.pos.is_some() {
         settings.use_dir = Some(dir);
     }
@@ -745,7 +731,7 @@ fn finalize_use_item(_item_index: i32, dir: Direction, data: &GameData, settings
 
     let item = data.entities.item[&item_id];
 
-    let use_result = data.calculate_use_move(player_id, settings.use_index as usize, dir, settings.use_move_mode);
+    let use_result = data.calculate_use_move(player_id, settings.use_index as usize, dir, settings.move_mode);
 
     // TODO 
     // add weapon type and function to determine type
@@ -774,12 +760,12 @@ fn finalize_use_item(_item_index: i32, dir: Direction, data: &GameData, settings
         let player_pos = data.entities.pos[&player_id];
         if move_pos != player_pos {
             let dist = distance(move_pos, player_pos) as usize;
-            msg_log.log(Msg::TryMove(player_id, dir, dist, settings.use_move_mode));
+            msg_log.log(Msg::TryMove(player_id, dir, dist, settings.move_mode));
         }
 
         let weapon_type = item.weapon_type().unwrap();
         let mut attack_type = AttackStyle::Normal;
-        if item == Item::Spear && settings.use_move_mode == MoveMode::Run {
+        if item == Item::Spear && settings.move_mode == MoveMode::Run {
             attack_type = AttackStyle::Strong;
         } else if item == Item::Dagger {
             attack_type = AttackStyle::Stealth;
@@ -791,7 +777,7 @@ fn finalize_use_item(_item_index: i32, dir: Direction, data: &GameData, settings
     }
 }
 
-fn start_use_item(item_index: usize, _move_mode: MoveMode, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+fn start_use_item(item_index: usize, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     let num_items_in_inventory = data.entities.inventory[&player_id].len();
@@ -810,7 +796,6 @@ fn start_use_item(item_index: usize, _move_mode: MoveMode, data: &GameData, sett
         settings.use_index = item_index as i32;
 
         settings.use_dir = None;
-        settings.use_move_mode = MoveMode::Walk;
         settings.cursor = None;
 
         change_state(settings, GameState::Use);

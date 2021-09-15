@@ -1083,7 +1083,7 @@ fn render_entity_type(typ: EntityType, panel: &mut Panel<&mut WindowCanvas>, dis
         let use_result = game.data.calculate_use_move(player_id,
                                                       game.settings.use_index as usize,
                                                       use_dir,
-                                                      game.settings.use_move_mode);
+                                                      game.settings.move_mode);
         if let Some(pos) = use_result.pos {
             let player_pos = game.data.entities.pos[&player_id];
             render_entity_ghost(player_id, player_pos, game, panel, display_state);
@@ -1133,7 +1133,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
             let use_result = game.data.calculate_use_move(player_id,
                                                           game.settings.use_index as usize,
                                                           use_dir,
-                                                          game.settings.use_move_mode);
+                                                          game.settings.move_mode);
             if let Some(pos) = use_result.pos {
                 //draw_tile_highlight(panel, pos, highlight_color);
                 render_arrow(panel, tile_sprite, use_dir, pos, direction_color);
@@ -1149,7 +1149,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 let use_result = game.data.calculate_use_move(player_id,
                                                              game.settings.use_index as usize,
                                                              *dir,
-                                                             game.settings.use_move_mode);
+                                                             game.settings.move_mode);
                 if let Some(pos) = use_result.pos {
                     if !move_positions.contains(&pos) {
                         draw_tile_highlight(panel, pos, highlight_color);

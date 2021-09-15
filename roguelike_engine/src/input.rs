@@ -141,16 +141,6 @@ impl Input {
         };
     }
 
-    pub fn move_mode(&self) -> MoveMode {
-        if self.shift {
-            return MoveMode::Run;
-        } else if self.ctrl {
-            return MoveMode::Sneak;
-        } else {
-            return MoveMode::Walk;
-        }
-    }
-
     pub fn action_mode(&self) -> ActionMode {
         if self.alt {
             return ActionMode::Alternate;
@@ -201,7 +191,7 @@ impl Input {
 
             InputEvent::Enter(dir) => {
                 if dir == KeyDir::Up {
-                    action = InputAction::MoveTowardsCursor(self.move_mode());
+                    action = InputAction::MoveTowardsCursor();
                 }
             }
 
@@ -209,21 +199,30 @@ impl Input {
                 if dir != KeyDir::Held {
                     self.ctrl = dir == KeyDir::Down;
                 }
-                action = InputAction::Sneak(self.ctrl);
+
+                if dir == KeyDir::Down {
+                    action = InputAction::Sneak;
+                }
             }
 
             InputEvent::Shift(dir) => {
                 if dir != KeyDir::Held {
                     self.shift = dir == KeyDir::Down;
                 }
-                action = InputAction::Run(self.shift);
+
+                if dir == KeyDir::Down {
+                    action = InputAction::Run;
+                }
             }
 
             InputEvent::Alt(dir) => {
                 if dir != KeyDir::Held {
                     self.alt = dir == KeyDir::Down;
                 }
-                action = InputAction::Alt(self.alt);
+
+                if dir == KeyDir::Down {
+                    action = InputAction::Alt;
+                }
             }
 
             InputEvent::Char(chr, dir) => {
@@ -338,7 +337,7 @@ impl Input {
                         } else if self.alt {
                             action = InputAction::Interact(Some(dir));
                         } else {
-                            action = InputAction::Move(dir, self.move_mode());
+                            action = InputAction::Move(dir);
                         }
                     }
 
@@ -346,7 +345,7 @@ impl Input {
                         if !self.cursor && self.alt {
                             action = InputAction::Interact(None);
                         } else {
-                            action = InputAction::Pass(self.move_mode());
+                            action = InputAction::Pass();
                         } 
                     }
                 }
@@ -421,7 +420,7 @@ impl Input {
                     self.target = None;
                 } else {
                     self.target = Some(Target::item(index as usize));
-                    action = InputAction::StartUseItem(index as usize, self.move_mode());
+                    action = InputAction::StartUseItem(index as usize);
                 }
             }
         } else if !settings.state.is_menu() {
@@ -443,7 +442,7 @@ impl Input {
                     self.target = Some(Target::item(index as usize));
 
                     self.cursor = false;
-                    action = InputAction::StartUseItem(index as usize, self.move_mode());
+                    action = InputAction::StartUseItem(index as usize);
                     // directions are cleared when entering use-mode
                     self.direction = None;
                 }
@@ -607,7 +606,7 @@ fn test_input_use_mode_enter() {
 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0, input.move_mode()), input_action);
+    assert_eq!(InputAction::StartUseItem(0), input_action);
 
     // letting item up outside of use-mode does not cause any action.
     let event = InputEvent::Char('z', KeyDir::Up);
@@ -617,7 +616,7 @@ fn test_input_use_mode_enter() {
     // down and up 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0, input.move_mode()), input_action);
+    assert_eq!(InputAction::StartUseItem(0), input_action);
 
     settings.state = GameState::Use;
 
@@ -635,7 +634,7 @@ fn test_input_use_mode_exit() {
 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0, input.move_mode()), input_action);
+    assert_eq!(InputAction::StartUseItem(0), input_action);
 
     settings.state = GameState::Use;
 
@@ -661,7 +660,7 @@ fn test_input_use_mode_abort() {
 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0, input.move_mode()), input_action);
+    assert_eq!(InputAction::StartUseItem(0), input_action);
 
     settings.state = GameState::Use;
 
