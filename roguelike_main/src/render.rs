@@ -777,6 +777,12 @@ fn render_map_middle(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
             let pos = Pos::new(x, y);
 
             render_wall_shadow(pos, panel, display_state, game);
+
+            /* draw the between-tile walls appropriate to this tile */
+            {
+                let sprite = &mut display_state.sprites[&sprite_key];
+                render_intertile_walls_below(panel, &mut game.data.map, sprite, pos);
+            }
         }
     }
 }
@@ -816,12 +822,6 @@ fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayS
             {
                 let sprite = &mut display_state.sprites[&sprite_key];
                 render_surface(panel, sprite, tile.surface, pos);
-            }
-
-            /* draw the between-tile walls appropriate to this tile */
-            {
-                let sprite = &mut display_state.sprites[&sprite_key];
-                render_intertile_walls_below(panel, &mut game.data.map, sprite, pos);
             }
         }
     }
