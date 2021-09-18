@@ -55,10 +55,15 @@ pub fn resolve_messages(data: &mut GameData,
             }
 
             Msg::ItemThrow(entity_id, item_id, start, end) => {
-                throw_item(entity_id, item_id, start, end, data, msg_log);
+                if start == end {
+                    // TODO make this drop an item
+                    //inventory_drop_item(entity_id, item_index as usize, data, msg_log);
+                } else {
+                    throw_item(entity_id, item_id, start, end, data, msg_log);
 
-                // NOTE the radius here is the stone radius, regardless of item type
-                msg_log.log_front(Msg::Sound(entity_id, end, config.sound_radius_stone, false));
+                    // NOTE the radius here is the stone radius, regardless of item type
+                    msg_log.log_front(Msg::Sound(entity_id, end, config.sound_radius_stone, false));
+                }
             }
 
             Msg::JumpWall(entity_id, _start, end) => {

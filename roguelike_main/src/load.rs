@@ -50,23 +50,36 @@ pub fn load_font(ttf_context: &Sdl2TtfContext,
                  canvas: &mut WindowCanvas,
                  file_name: String,
                  font_size: u16) -> Texture {
-    let font = ttf_context.load_font(format!("resources/{}", file_name), font_size).expect("Could not load font file!");
-
     let pixel_format = texture_creator.default_pixel_format();
 
+    let mut font = ttf_context.load_font(format!("resources/{}", file_name), font_size).expect("Could not load font file!");
+    font.set_style(sdl2::ttf::FontStyle::BOLD);
+
+    let text_surface = font.render_latin1(&"abcdefghijklmnopqrstuvwxyz".as_bytes())
+                           .blended(sdl2::pixels::Color::RGB(255, 255, 255))
+                           .unwrap();
+
+    let font_texture = texture_creator
+        .create_texture_from_surface(&text_surface)
+        .expect(&format!("Could not load font {}", file_name));
+    let query = font_texture.query();
+
+    /*
     // assumes monospace font- otherwise none of this works
     let (char_width, char_height) = font.size_of_char('a').unwrap();
 
     let mut font_texture =
         texture_creator.create_texture_target(pixel_format,
-                                              char_width as u32 * FONT_WIDTH as u32,
-                                              char_height as u32 * FONT_HEIGHT as u32).unwrap();
+                                              char_width as u32 * 16,
+                                              char_height as u32 * 16).unwrap();
 
     canvas.with_texture_canvas(&mut font_texture, |canvas| {
-        canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
+        canvas.set_draw_color(sdl2::pixels::Color::RGB(255, 0, 255));
         canvas.clear();
         for chr_ix in 1..=255u8 {
-            let chr_surface = font.render_latin1(&[chr_ix]).solid(sdl2::pixels::Color::WHITE).unwrap();
+            let chr_surface = font.render_latin1(&[chr_ix])
+                                  .blended(sdl2::pixels::Color::RGB(0, 0, 0))
+                                  .unwrap();
             let char_texture = chr_surface.as_texture(&texture_creator).unwrap();
 
             let char_rect = sdl2::rect::Rect::new(chr_ix as i32 % 16, chr_ix as i32 / 16, char_width, char_height);
@@ -74,6 +87,7 @@ pub fn load_font(ttf_context: &Sdl2TtfContext,
             canvas.copy(&char_texture, None, char_rect).unwrap();
         }
     }).unwrap();
+    */
 
     return font_texture;
 }

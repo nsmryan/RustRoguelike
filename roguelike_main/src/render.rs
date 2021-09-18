@@ -181,8 +181,9 @@ fn render_placard(panel: &mut Panel<&mut WindowCanvas>,
                   display_state: &mut DisplayState,
                   text: &str,
                   config: &Config) {
-    let color = config.color_mint_green;
-    
+    // TODO this color comes from the UI mockups as a light brown
+    let color = Color::new(0xcd, 0xb4, 0x96, 255);
+
     // Draw a black background
     panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
     panel.target.clear();
@@ -210,11 +211,11 @@ fn render_placard(panel: &mut Panel<&mut WindowCanvas>,
     let text_start = (mid_char_offset - half_text as u32) as i32;
 
     let text_pos = Pos::new(text_start, 0);
+    let text_color = Color::new(0, 0, 0, 255);
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let sprite_key = display_state.lookup_spritekey("font");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
-
-    tile_sprite.draw_text(panel, &text, text_pos, config.color_dark_blue);
+    tile_sprite.draw_text(panel, text, text_pos, text_color)
 }
 
 fn render_pips(panel: &mut Panel<&mut WindowCanvas>,
@@ -250,11 +251,11 @@ fn render_pips(panel: &mut Panel<&mut WindowCanvas>,
 }
 
 fn render_bar(panel: &mut Panel<&mut WindowCanvas>,
-              _display_state: &mut DisplayState,
               percent: f32,
               y_pos: i32,
               fg_color: Color,
-              bg_color: Color) {
+              bg_color: Color,
+              draw_outline: bool) {
     let blend_mode = panel.target.blend_mode();
 
     panel.target.set_blend_mode(BlendMode::None);
@@ -273,13 +274,15 @@ fn render_bar(panel: &mut Panel<&mut WindowCanvas>,
                                 cell_dims.1);
     panel.target.fill_rect(health_rect).unwrap();
 
-    let full_rect = Rect::new(x,
-                              cell_dims.1 as i32 * y_pos,
-                              width,
-                              cell_dims.1);
-    let color = sdl2_color(bg_color);
-    panel.target.set_draw_color(color);
-    panel.target.draw_rect(full_rect).unwrap();
+    if draw_outline {
+        let full_rect = Rect::new(x,
+                                  cell_dims.1 as i32 * y_pos,
+                                  width,
+                                  cell_dims.1);
+        let color = sdl2_color(bg_color);
+        panel.target.set_draw_color(color);
+        panel.target.draw_rect(full_rect).unwrap();
+    }
 
     panel.target.set_blend_mode(blend_mode);
 }
@@ -291,7 +294,8 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 
     let mut list: Vec<String> = Vec::new();
 
-    let color = game.config.color_soft_green;
+    // TODO this color comes from the UI mockups as a light brown
+    let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
     if let Some(fighter) = game.data.entities.fighter.get(&player_id) {
         let hp = if fighter.hp > 0 {
@@ -301,11 +305,15 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
         };
         let health_percent = hp as f32 / fighter.max_hp as f32;
 
-        render_bar(panel, display_state, health_percent, 2, game.config.color_red, Color::white());
+        // TODO this color red comes from the UI mockups
+        let health_color = Color::new(0x96, 0x54, 0x56, 255);
+        render_bar(panel, health_percent, 2, health_color, Color::white(), false);
     }
 
     let energy = game.data.entities.energy[&player_id];
-    render_pips(panel, display_state, energy, 3, game.config.color_light_green);
+    // TODO this color orange comes from the UI mockups
+    let energy_color = Color::new(0xaf, 0x83, 0x56, 255);
+    render_pips(panel, display_state, energy, 3, energy_color);
 
     //list.push(format!(" ({}, {})", 
                       //game.data.entities.pos[&player_id].x,
@@ -341,7 +349,7 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 
     let text_pos = Pos::new(1, 5);
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let sprite_key = display_state.lookup_spritekey("font");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
     tile_sprite.draw_text_list(panel, &list, text_pos, color);
 }
@@ -394,11 +402,11 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
                     let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
 
                     render_bar(panel,
-                               display_state,
                                health_percent,
                                y_pos,
                                game.config.color_red,
-                               Color::white());
+                               Color::white(),
+                               false);
 
                     y_pos += 2;
                 }
@@ -537,7 +545,10 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    // TODO this color comes from the UI mockups as a light brown
+    let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
+
+    let sprite_key = display_state.lookup_spritekey("font");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     // Render each object's name in inventory
@@ -588,7 +599,7 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
 
     if game.data.entities.inventory[&player_id].len() == 0 {
         let text_pos = Pos::new(1, y_pos);
-        tile_sprite.draw_text(panel, &format!("empty"), text_pos, game.config.color_ice_blue);
+        tile_sprite.draw_text(panel, "empty", text_pos, ui_color);
     }
 }
 
@@ -616,10 +627,6 @@ fn render_background(display: &mut Display, game: &mut Game) {
             for x in 0..map_width {
                 let map_pos = Pos::new(x, y);
 
-                //let visible =
-                //    game.data.pos_in_fov(player_id, map_pos, &game.config) ||
-                //    game.settings.god_mode;
-
                 let tile = &game.data.map[(x, y)];
                 if tile.tile_type != TileType::Water {
                     sprite.draw_char(&mut panel,
@@ -641,7 +648,7 @@ fn render_surface(panel: &mut Panel<&mut WindowCanvas>, sprite: &mut SpriteSheet
         }
 
         Surface::Grass => {
-            sprite.draw_char(panel, MAP_GRASS as char, pos, Color::white()); //game.config.color_light_green);
+            sprite.draw_char(panel, MAP_GRASS as char, pos, Color::white());
         }
 
         Surface::Floor => {
