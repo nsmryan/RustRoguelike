@@ -375,7 +375,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
         let text_pos = Pos::new(1, y_pos);
 
-        let sprite_key = display_state.lookup_spritekey("tiles");
+        let sprite_key = display_state.lookup_spritekey("font");
 
         {
             let tile_sprite = &mut display_state.sprites[&sprite_key];
@@ -492,7 +492,7 @@ fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
     let text_pos = Pos::new(2, y_pos);
     let color = game.config.color_light_grey;
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let sprite_key = display_state.lookup_spritekey("font");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     tile_sprite.draw_text_list(panel, &list, text_pos, color);
@@ -512,7 +512,7 @@ fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
     let text_pos = Pos::new(2, y_pos);
     let color = game.config.color_light_grey;
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let sprite_key = display_state.lookup_spritekey("font");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     tile_sprite.draw_text_list(panel, &list, text_pos, color);
@@ -532,7 +532,7 @@ fn render_confirm_quit(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut
     let text_pos = Pos::new(2, y_pos);
     let color = game.config.color_light_grey;
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let sprite_key = display_state.lookup_spritekey("font");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     tile_sprite.draw_text_list(panel, &list, text_pos, color);

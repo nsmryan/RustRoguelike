@@ -59,10 +59,7 @@ pub fn resolve_messages(data: &mut GameData,
                     // TODO make this drop an item
                     //inventory_drop_item(entity_id, item_index as usize, data, msg_log);
                 } else {
-                    throw_item(entity_id, item_id, start, end, data, msg_log);
-
-                    // NOTE the radius here is the stone radius, regardless of item type
-                    msg_log.log_front(Msg::Sound(entity_id, end, config.sound_radius_stone, false));
+                    throw_item(entity_id, item_id, start, end, data, msg_log, config);
                 }
             }
 
@@ -1055,7 +1052,8 @@ fn throw_item(player_id: EntityId,
               start_pos: Pos,
               end_pos: Pos,
               data: &mut GameData,
-              msg_log: &mut MsgLog) {
+              msg_log: &mut MsgLog,
+              config: &Config) {
     let throw_line = line(start_pos, end_pos);
 
     // get target position in direction of player click
@@ -1093,6 +1091,9 @@ fn throw_item(player_id: EntityId,
 
     data.entities.remove_item(player_id, item_id);
     data.entities.took_turn[&player_id] = true;
+
+    // NOTE the radius here is the stone radius, regardless of item type
+    msg_log.log_front(Msg::Sound(player_id, hit_pos, config.sound_radius_stone, true));
 }
 
 fn find_blink_pos(pos: Pos, rng: &mut Rand32, data: &mut GameData) -> Option<Pos> {
@@ -1314,10 +1315,10 @@ fn process_moved_message(entity_id: EntityId,
         if pos != original_pos {
             make_move_sound(entity_id, original_pos, pos, *move_mode, data, msg_log, config);
         }
-    } else if pos != original_pos {
+    } else if pos != original_pos && data.entities.typ[&entity_id] == EntityType::Enemy {
         msg_log.log_front(Msg::Sound(entity_id, original_pos, config.sound_radius_monster, true));
         msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_monster, true));
-    }
+    } // NOTE other entities do not make sounds on movement, such as items
 
     // check if player walks on energy
     if entity_id == player_id {
