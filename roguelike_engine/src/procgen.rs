@@ -393,6 +393,9 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
 
         make_gate_trigger(&mut game.data.entities, &game.config, gate_pos, &mut game.msg_log);
         //game.data.entities.gate_pos.insert(gate, Some(gate_pos));
+
+        // clear the surface of the tile.
+        game.data.map[gate_pos] = Tile::empty();
     }
 }
 
@@ -431,6 +434,9 @@ fn place_traps(game: &mut Game, cmds: &Vec<ProcCmd>) {
                     Trap::Blink => { make_blink_trap(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                     Trap::Freeze => { make_freeze_trap(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
                 }
+
+                // clear tile surface
+                game.data.map[pos] = Tile::empty();
             }
         }
     }
