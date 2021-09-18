@@ -55,7 +55,13 @@ pub fn load_font(ttf_context: &Sdl2TtfContext,
     let mut font = ttf_context.load_font(format!("resources/{}", file_name), font_size).expect("Could not load font file!");
     font.set_style(sdl2::ttf::FontStyle::BOLD);
 
-    let text_surface = font.render_latin1(&"abcdefghijklmnopqrstuvwxyz".as_bytes())
+    let num_chrs = ASCII_END - ASCII_START;
+    let mut chrs: [u8; 256] = [0; 256];
+    for chr_ix in 0..256 {
+        chrs[chr_ix] = chr_ix as u8;
+    }
+
+    let text_surface = font.render_latin1(&chrs[ASCII_START as usize .. ASCII_END as usize])
                            .blended(sdl2::pixels::Color::RGB(255, 255, 255))
                            .unwrap();
 

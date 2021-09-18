@@ -909,11 +909,12 @@ impl SpriteSheet {
         let mut pos = cell;
         for chr in text.chars() {
             let chr_num = chr.to_lowercase().next().unwrap();
-            let chr_index = chr_num as i32 - 'a' as i32;
+            let chr_index = chr_num as i32 - ASCII_START as i32;
 
-            let src = Rect::new((query.width as i32 / 26) * chr_index,
+            let ascii_width = ASCII_END - ASCII_START;
+            let src = Rect::new((query.width as i32 / ascii_width as i32) * chr_index,
                                 0,
-                                query.width / 26,
+                                query.width / ascii_width,
                                 query.height);
 
             let dst_pos = Pos::new(pos.x * cell_width as i32,

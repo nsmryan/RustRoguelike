@@ -158,7 +158,8 @@ fn render_menus(display: &mut Display, game: &mut Game) {
         let mut panel = panel.with_target(canvas);
 
         if game.settings.state == GameState::Inventory {
-            panel.target.copy(&inventory_panel.target, None, None).unwrap();
+            //panel.target.copy(&inventory_panel.target, None, None).unwrap();
+            render_inventory(&mut panel, display_state, game);
         } else if game.settings.state == GameState::SkillMenu {
             render_skill_menu(&mut panel, display_state, game);
         } else if game.settings.state == GameState::ClassMenu {
@@ -490,7 +491,9 @@ fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
 
     let y_pos = 2;
     let text_pos = Pos::new(2, y_pos);
-    let color = game.config.color_light_grey;
+
+    // TODO this color comes from the ui mockups as a light brown
+    let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
     let sprite_key = display_state.lookup_spritekey("font");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
@@ -510,7 +513,9 @@ fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
 
     let y_pos = 2;
     let text_pos = Pos::new(2, y_pos);
-    let color = game.config.color_light_grey;
+
+    // TODO this color comes from the ui mockups as a light brown
+    let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
     let sprite_key = display_state.lookup_spritekey("font");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
@@ -530,7 +535,9 @@ fn render_confirm_quit(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut
 
     let y_pos = 2;
     let text_pos = Pos::new(2, y_pos);
-    let color = game.config.color_light_grey;
+
+    // TODO this color comes from the UI mockups as a light brown
+    let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
     let sprite_key = display_state.lookup_spritekey("font");
     let tile_sprite = &mut display_state.sprites[&sprite_key];

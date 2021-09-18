@@ -10,6 +10,9 @@ pub const SCREEN_HEIGHT: u32 = 800;
 pub const INVENTORY_WIDTH: usize = 300;
 pub const INVENTORY_HEIGHT: usize = 500;
 
+pub const ASCII_START: u32 = 32;
+pub const ASCII_END: u32 = 127;
+
 /* General Settings */
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
 pub const BLINK_RADIUS: usize = 4;

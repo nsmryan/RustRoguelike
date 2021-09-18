@@ -132,7 +132,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
                                  &texture_creator,
                                  &mut display.targets.canvas_panel.target,
                                  "Monoid.ttf".to_string(),
-                                 16);
+                                 24);
     display.add_spritesheet("font".to_string(), font_texture);
 
     /* Create Game Structure */
