@@ -516,10 +516,6 @@ pub fn alpha_up_to_action(chr: char) -> InputAction {
             input_action = InputAction::Pickup;
         }
 
-        'd' => {
-            input_action = InputAction::DropItem;
-        }
-
         'i' => {
             input_action = InputAction::Inventory;
         }
