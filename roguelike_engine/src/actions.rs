@@ -930,55 +930,6 @@ pub fn handle_skill(skill_index: usize,
     }
 }
 
-fn handle_move(loc: ActionLoc,
-               mode: ActionMode,
-               data: &GameData,
-               msg_log: &mut MsgLog) {
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = data.entities.pos[&player_id];
-
-    let move_mode;
-    match mode {
-        ActionMode::Primary => {
-            move_mode = MoveMode::Sneak;
-        }
-
-        ActionMode::Alternate => {
-            move_mode = MoveMode::Run;
-        }
-    }
-
-    match loc {
-        ActionLoc::Place(pos) => {
-            if pos == player_pos {
-                msg_log.log(Msg::Moved(player_id, MoveType::Pass, pos));
-            } else {
-                let dxy = sub_pos(pos, player_pos);
-                let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-
-                let move_amount = move_mode.move_amount();
-                msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
-            }
-        }
-
-        ActionLoc::Dir(direction) => {
-            let move_amount = move_mode.move_amount();
-            msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
-        }
-
-        ActionLoc::Facing => {
-            let direction = data.entities.direction[&player_id];
-            let move_amount = move_mode.move_amount();
-            msg_log.log(Msg::TryMove(player_id, direction, move_amount, move_mode));
-        }
-
-        ActionLoc::None => {
-            let direction = data.entities.direction[&player_id];
-            msg_log.log(Msg::TryMove(player_id, direction, 0, move_mode));
-        }
-    }
-}
-
 fn handle_item(target: usize,
                loc: ActionLoc,
                mode: ActionMode,

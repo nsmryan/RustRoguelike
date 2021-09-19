@@ -1181,7 +1181,6 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                                                               use_dir,
                                                               game.settings.move_mode);
                 if let Some(pos) = use_result.pos {
-                    //draw_tile_highlight(panel, pos, highlight_color);
                     render_arrow(panel, tile_sprite, use_dir, pos, direction_color);
 
                     for hit_pos in use_result.hit_positions {
