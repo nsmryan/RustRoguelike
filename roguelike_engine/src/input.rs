@@ -375,21 +375,6 @@ impl Input {
         return action;
     }
 
-    fn use_item(&mut self, item_index: usize, settings: &GameSettings) -> InputAction {
-        if self.cursor {
-            if let Some(cursor_pos) = settings.cursor {
-                // alternate is always used so you throw items
-                return InputAction::ItemPos(cursor_pos, ActionMode::Alternate, item_index);
-            } else {
-                panic!("No cursor position while in cursor mode!");
-            }
-        } else {
-            // this is commented out as items can no longer be used directly
-            //return InputAction::ItemFacing(self.action_mode(), item_index);
-            return InputAction::None;
-        }
-    }
-
     fn use_skill(&mut self, skill_index: usize, settings: &GameSettings) -> InputAction {
         if self.cursor {
             if let Some(cursor_pos) = settings.cursor {

@@ -32,12 +32,8 @@ pub enum InputAction {
     Alt,
     Move(Direction),
     MoveTowardsCursor(),
-    SkillDir(Direction, ActionMode, usize),
-    ItemDir(Direction, ActionMode, usize),
     SkillPos(Pos, ActionMode, usize),
-    ItemPos(Pos, ActionMode, usize),
     SkillFacing(ActionMode, usize),
-    ItemFacing(ActionMode, usize),
     StartUseItem(ItemClass),
     UseDir(Direction),
     FinalizeUse,
@@ -47,7 +43,6 @@ pub enum InputAction {
     Pickup,
     DropItem,
     Yell,
-    UseItem(Direction, usize),
     Interact(Option<Direction>),
     CursorMove(Direction, bool, bool), // move direction, is relative, is long
     CursorReturn,
@@ -90,12 +85,8 @@ impl fmt::Display for InputAction {
                 }
             },
             InputAction::MoveTowardsCursor() => write!(f, "movetowardscursor"),
-            InputAction::SkillDir(dir, action_mode, index) => write!(f, "skilldir {} {} {}", dir, action_mode, index),
-            InputAction::ItemDir(dir, action_mode, index) => write!(f, "itemdir {} {} {}", dir, action_mode, index),
             InputAction::SkillPos(pos, action_mode, index) => write!(f, "skillpos {} {} {} {}", pos.x, pos.y, action_mode, index),
-            InputAction::ItemPos(pos, action_mode, index) => write!(f, "itempos {} {} {} {}", pos.x, pos.y, action_mode, index),
             InputAction::SkillFacing(action_mode, index) => write!(f, "skill {} {}", action_mode, index),
-            InputAction::ItemFacing(action_mode, index) => write!(f, "itemdir {} {}", action_mode, index),
             InputAction::StartUseItem(item_class) => write!(f, "startuseitem {}", item_class),
             InputAction::UseDir(dir) => write!(f, "usedir {}", dir),
             InputAction::FinalizeUse => write!(f, "finalizeuse"),
@@ -121,7 +112,6 @@ impl fmt::Display for InputAction {
             InputAction::OverlayOn => write!(f, "overlayon"),
             InputAction::OverlayOff => write!(f, "overlayoff"),
             InputAction::SelectEntry(item) => write!(f, "selectentry {}", item),
-            InputAction::UseItem(dir, target) => write!(f, "use, {:?} {}", dir, target),
             InputAction::Interact(dir) => write!(f, "interact {:?}", dir),
             InputAction::CursorMove(dir, relative, long) => write!(f, "cursormove {:?} {} {}", dir, relative, long),
             InputAction::CursorReturn => write!(f, "cursorreturn"),
@@ -170,36 +160,16 @@ impl FromStr for InputAction {
             return Ok(InputAction::ThrowItem(Pos::new(x, y), item_class));
         } else if args[0] == "movetowardscursor" {
             return Ok(InputAction::MoveTowardsCursor());
-        } else if args[0] == "skilldir" {
-            let dir = args[1].parse::<Direction>().unwrap();
-            let action_mode = args[2].parse::<ActionMode>().unwrap();
-            let index = args[3].parse::<usize>().unwrap();
-            return Ok(InputAction::SkillDir(dir, action_mode, index));
-        } else if args[0] == "itemdir" {
-            let dir = args[1].parse::<Direction>().unwrap();
-            let action_mode = args[2].parse::<ActionMode>().unwrap();
-            let index = args[3].parse::<usize>().unwrap();
-            return Ok(InputAction::ItemDir(dir, action_mode, index));
         } else if args[0] == "skillpos" {
             let x = args[1].parse::<i32>().unwrap();
             let y = args[2].parse::<i32>().unwrap();
             let action_mode = args[3].parse::<ActionMode>().unwrap();
             let index = args[4].parse::<usize>().unwrap();
             return Ok(InputAction::SkillPos(Pos::new(x, y), action_mode, index));
-        } else if args[0] == "itempos" {
-            let x = args[1].parse::<i32>().unwrap();
-            let y = args[2].parse::<i32>().unwrap();
-            let action_mode = args[3].parse::<ActionMode>().unwrap();
-            let index = args[4].parse::<usize>().unwrap();
-            return Ok(InputAction::ItemPos(Pos::new(x, y), action_mode, index));
         } else if args[0] == "skillfacing" {
             let action_mode = args[1].parse::<ActionMode>().unwrap();
             let index = args[2].parse::<usize>().unwrap();
             return Ok(InputAction::SkillFacing(action_mode, index));
-        } else if args[0] == "itemfacing" {
-            let action_mode = args[1].parse::<ActionMode>().unwrap();
-            let index = args[2].parse::<usize>().unwrap();
-            return Ok(InputAction::ItemFacing(action_mode, index));
         } else if args[0] == "startuseitem" {
             let class = args[1].parse::<ItemClass>().unwrap();
             return Ok(InputAction::StartUseItem(class));
@@ -218,10 +188,6 @@ impl FromStr for InputAction {
             return Ok(InputAction::Yell);
         } else if args[0] == "inventory" {
             return Ok(InputAction::Inventory);
-        } else if args[0] == "use" {
-            let direction = args[1].parse::<Direction>().unwrap();
-            let target = args[1].parse::<usize>().unwrap();
-            return Ok(InputAction::UseItem(direction, target));
         } else if s.starts_with("selectentry") {
             let selection = args[1].parse::<usize>().unwrap();
             return Ok(InputAction::SelectEntry(selection));
@@ -578,24 +544,8 @@ pub fn handle_input_playing(input_action: InputAction,
             }
         }
 
-        (InputAction::ItemDir(dir, action_mode, item_index), true) => {
-            handle_item(item_index, ActionLoc::Dir(dir), action_mode, data, msg_log);
-        }
-
-        (InputAction::SkillDir(dir, action_mode, skill_index), true) => {
-            handle_skill(skill_index, ActionLoc::Dir(dir), action_mode, data, msg_log);
-        }
-
-        (InputAction::ItemPos(pos, action_mode, item_index), true) => {
-            handle_item(item_index, ActionLoc::Place(pos), action_mode, data, msg_log);
-        }
-
         (InputAction::SkillPos(pos, action_mode, skill_index), true) => {
             handle_skill(skill_index, ActionLoc::Place(pos), action_mode, data, msg_log);
-        }
-
-        (InputAction::ItemFacing(action_mode, item_index), true) => {
-            handle_item(item_index, ActionLoc::Facing, action_mode, data, msg_log);
         }
 
         (InputAction::SkillFacing(action_mode, skill_index), true) => {
