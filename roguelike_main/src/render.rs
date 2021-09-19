@@ -1122,7 +1122,7 @@ fn render_entity_type(typ: EntityType, panel: &mut Panel<&mut WindowCanvas>, dis
         // need special rendering. Otherwise the player is rendered as normal.
 
         let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-        if let Some(item_index) = game.data.entities.item_type_available(player_id, game.settings.use_item_class) {
+        if let Some(item_index) = game.data.entities.item_by_class(player_id, game.settings.use_item_class) {
             let use_dir = game.settings.use_dir.unwrap(); // already checked for is_some
             let use_result = game.data.calculate_use_move(player_id,
                                                           item_index,
@@ -1174,7 +1174,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         let mut attack_highlight_color = game.config.color_red;
         attack_highlight_color.a = game.config.grid_alpha_overlay;
 
-        if let Some(item_index) = game.data.entities.item_type_available(player_id, game.settings.use_item_class) {
+        if let Some(item_index) = game.data.entities.item_by_class(player_id, game.settings.use_item_class) {
             if let Some(use_dir) = game.settings.use_dir {
                 let use_result = game.data.calculate_use_move(player_id,
                                                               item_index,

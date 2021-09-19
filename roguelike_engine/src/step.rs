@@ -146,49 +146,6 @@ pub fn test_game_step() {
     assert_eq!(Pos::new(0, 0), player_pos);
 }
 
-#[test]
-pub fn test_running() {
-    let config = Config::from_file("../config.yaml");
-    let mut game = Game::new(0, config.clone());
-    let mut input_action;
-
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    game.data.map = Map::from_dims(10, 10);
-    let player_pos = Pos::new(4, 4);
-    game.data.entities.pos[&player_id] = player_pos;
-
-    let gol_pos = Pos::new(4, 5);
-    let gol = make_gol(&mut game.data.entities, &game.config, gol_pos, &mut game.msg_log);
-
-    game.data.map[(4, 6)].block_move = true;
-
-    // check that running into a monster crushes it against a wall when no empty tiles
-    // between
-    input_action = InputAction::IncreaseMoveMode;
-    game.step_game(input_action, 0.1);
-
-    assert!(game.data.entities.ids.contains(&gol));
-    input_action = InputAction::Move(Direction::Down);
-    game.step_game(input_action, 0.1);
-    let player_pos = game.data.entities.pos[&player_id];
-    assert_eq!(gol_pos, player_pos);
-
-    // gol is no longer in entities list after being crushed
-    assert!(!game.data.entities.ids.contains(&gol));
-
-    // check that running into a monster, with water 2 tiles away, pushes monster
-    // up to the water
-    let pawn_pos = Pos::new(5, 5);
-    let pawn = make_pawn(&mut game.data.entities, &game.config, pawn_pos, &mut game.msg_log);
-
-    game.data.map[(7, 5)].tile_type = TileType::Water;
-
-    input_action = InputAction::Move(Direction::Right);
-    game.step_game(input_action, 0.1);
-    assert_eq!(Pos::new(5, 5), game.data.entities.pos[&player_id]);
-    assert_eq!(Pos::new(6, 5), game.data.entities.pos[&pawn]);
-}
-
 
 fn step_ai(game: &mut Game) {
     let ai_ids: Vec<EntityId> = game.data.entities.active_ais();
@@ -473,6 +430,11 @@ fn test_use_mode_stone() {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let start_pos = game.data.entities.pos[&player_id];
 
+    // make sure there is a key in the inventory, just to show that it is not
+    // used when throwing a stone despite being a 'Misc' item class.
+    let _key = make_key(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    game.step_game(InputAction::Pickup, 0.1);
+
     let stone = make_stone(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
     game.step_game(InputAction::Pickup, 0.1);
 
@@ -487,6 +449,40 @@ fn test_use_mode_stone() {
 
     // The gol remains in its starting position because it was stunned by the stone.
     assert_eq!(gol_pos, game.data.entities.pos[&gol]);
+}
+
+#[test]
+fn test_use_mode_drop() {
+    let mut game = Game::new(0, Config::from_file("../config.yaml"));
+    make_map(&MapLoadConfig::Empty, &mut game);
+
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let start_pos = game.data.entities.pos[&player_id];
+
+    let stone = make_stone(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    game.step_game(InputAction::Pickup, 0.1);
+
+    let lantern = make_lantern(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    game.step_game(InputAction::Pickup, 0.1);
+
+    let sword = make_sword(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    game.step_game(InputAction::Pickup, 0.1);
+
+    assert_eq!(3, game.data.entities.inventory[&player_id].len());
+
+    game.step_game(InputAction::StartUseItem(ItemClass::Misc), 0.1);
+    game.step_game(InputAction::DropItem, 0.1);
+    assert_eq!(2, game.data.entities.inventory[&player_id].len());
+
+    game.step_game(InputAction::StartUseItem(ItemClass::Consumable), 0.1);
+    game.step_game(InputAction::DropItem, 0.1);
+    assert_eq!(1, game.data.entities.inventory[&player_id].len());
+
+    game.step_game(InputAction::StartUseItem(ItemClass::Primary), 0.1);
+    game.step_game(InputAction::DropItem, 0.1);
+    assert_eq!(0, game.data.entities.inventory[&player_id].len());
+
+    assert_eq!(GameState::Playing, game.settings.state);
 }
 
 fn clean_entities(entities: &mut Entities, msg_log: &mut MsgLog) {

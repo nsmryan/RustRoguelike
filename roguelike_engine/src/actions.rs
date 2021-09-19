@@ -480,6 +480,15 @@ pub fn handle_input_use(input_action: InputAction,
             }
         }
 
+        (InputAction::DropItem, true) => {
+            if let Some(item_index) = use_mode_item_index(data, settings) {
+                msg_log.log(Msg::DropItem(player_id, item_index as u64));
+
+                settings.use_dir = None;
+                change_state(settings, GameState::Playing);
+            }
+        }
+
         (InputAction::StartUseItem(item_class), true) => {
             start_use_item(item_class, data, settings, msg_log);
         }
@@ -631,14 +640,6 @@ pub fn handle_input_playing(input_action: InputAction,
             msg_log.log(Msg::TryMove(player_id, direction, 0, settings.move_mode));
         }
 
-        (InputAction::DropItem, true) => {
-            if let Some(item_index) = data.entities.item_type_available(player_id, settings.use_item_class) {
-                // TODO try to remove inventory_action
-                settings.inventory_action = InventoryAction::Drop;
-                msg_log.log(Msg::DropItem(player_id, item_index as u64));
-            }
-        }
-
         (InputAction::Pickup, true) => {
             msg_log.log(Msg::PickUp(player_id));
         }
@@ -668,7 +669,6 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Inventory, true) => {
-            settings.inventory_action = InventoryAction::Use;
             change_state(settings, GameState::Inventory);
         }
 
@@ -702,10 +702,23 @@ pub fn handle_input_playing(input_action: InputAction,
     }
 }
 
+// The item index is usually determined by the ItemClass, but for Misc it can
+// only be a stone.
+fn use_mode_item_index(data: &GameData, settings: &GameSettings) -> Option<usize> {
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
+    let maybe_index;
+    if settings.use_item_class == ItemClass::Misc {
+        maybe_index = data.entities.item_by_type(player_id, Item::Stone);
+    } else {
+        maybe_index = data.entities.item_by_class(player_id, settings.use_item_class);
+    }
+    return maybe_index;
+}
+
 fn use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    if let Some(item_index) = data.entities.item_type_available(player_id, settings.use_item_class) {
+    if let Some(item_index) = use_mode_item_index(data, settings) {
         let use_result = data.calculate_use_move(player_id, item_index as usize, dir, settings.move_mode);
         if use_result.pos.is_some() {
             settings.use_dir = Some(dir);
@@ -718,7 +731,7 @@ fn use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_lo
 fn finalize_use_item(dir: Direction, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    if let Some(item_index) = data.entities.item_type_available(player_id, settings.use_item_class) {
+    if let Some(item_index) = use_mode_item_index(data, settings) {
         let item_id = data.entities.inventory[&player_id][item_index];
         let item = data.entities.item[&item_id];
 
@@ -759,7 +772,7 @@ fn finalize_use_item(dir: Direction, data: &GameData, settings: &mut GameSetting
 fn start_use_item(item_class: ItemClass, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    if let Some(item_index) = data.entities.item_type_available(player_id, item_class) {
+    if let Some(item_index) = data.entities.item_by_class(player_id, item_class) {
         let item_id = data.entities.inventory[&player_id][item_index as usize];
 
         // Allow entering use-mode even if there are no places to move

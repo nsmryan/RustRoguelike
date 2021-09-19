@@ -1290,7 +1290,7 @@ impl Entities {
 
         match item_class {
             ItemClass::Primary => {
-                if let Some(item_index) = self.item_type_available(entity_id, ItemClass::Primary) {
+                if let Some(item_index) = self.item_by_class(entity_id, ItemClass::Primary) {
                     // return the last primary item, so it can be dropped
                     dropped_item = Some(item_index);
 
@@ -1301,7 +1301,7 @@ impl Entities {
             }
 
             ItemClass::Consumable => {
-                if let Some(item_index) = self.item_type_available(entity_id, ItemClass::Consumable) {
+                if let Some(item_index) = self.item_by_class(entity_id, ItemClass::Consumable) {
                     // return the last secondary item, so it can be dropped
                     dropped_item = Some(item_index);
 
@@ -1321,7 +1321,18 @@ impl Entities {
         return dropped_item;
     }
 
-    pub fn item_type_available(&self, entity_id: EntityId, item_class: ItemClass) -> Option<usize> {
+    pub fn item_by_type(&self, entity_id: EntityId, item: Item) -> Option<usize> {
+        for ix in 0..self.inventory[&entity_id].len() {
+            let item_id = self.inventory[&entity_id][ix];
+            if self.item[&item_id] == item {
+                return Some(ix);
+            }
+        }
+
+        return None;
+    }
+
+    pub fn item_by_class(&self, entity_id: EntityId, item_class: ItemClass) -> Option<usize> {
         for ix in 0..self.inventory[&entity_id].len() {
             let item_id = self.inventory[&entity_id][ix];
             if self.item[&item_id].class() == item_class {
