@@ -1052,28 +1052,13 @@ fn throw_item(player_id: EntityId,
     let end_pos =
         Pos::from(throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap());
 
-    let mut hit_pos = end_pos;
-    for pos in line(start_pos, end_pos) {
-        assert!(start_pos != pos);
+    let hit_pos = data.throw_towards(start_pos, end_pos);
 
-        if let Some(hit_entity) = data.has_blocking_entity(pos) {
-            if data.entities.typ[&hit_entity] != EntityType::Column {
-                // hitting an entity puts the stone on their tile, except
-                // for columns
-                hit_pos = pos;
-            } 
-
-            if data.entities.typ[&hit_entity] == EntityType::Enemy {
-                let stun_turns = data.entities.item[&item_id].throw_stun_turns();
-                msg_log.log(Msg::Froze(hit_entity, stun_turns));
-            }
-
-            break;
-        } else if data.map[pos].does_tile_block(BlockedType::Move) {
-            break;
+    if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
+        if data.entities.typ[&hit_entity] == EntityType::Enemy {
+            let stun_turns = data.entities.item[&item_id].throw_stun_turns();
+            msg_log.log(Msg::Froze(hit_entity, stun_turns));
         }
-
-        hit_pos = pos;
     }
 
     data.entities.set_pos(item_id, start_pos);

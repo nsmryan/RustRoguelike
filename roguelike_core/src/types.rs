@@ -371,6 +371,28 @@ impl GameData {
         return !(player_pushing || enemies_pushing_each_other);
     }
 
+    pub fn throw_towards(&self, start_pos: Pos, end_pos: Pos) -> Pos {
+        let mut hit_pos = end_pos;
+
+        for pos in line(start_pos, end_pos) {
+            if let Some(hit_entity) = self.has_blocking_entity(pos) {
+                if self.entities.typ[&hit_entity] != EntityType::Column {
+                    // hitting an entity puts the stone on their tile, except
+                    // for columns
+                    hit_pos = pos;
+                } 
+
+                break;
+            } else if self.map[pos].does_tile_block(BlockedType::Move) {
+                break;
+            }
+
+            hit_pos = pos;
+        }
+
+        return hit_pos;
+    }
+
     pub fn calculate_use_move(&self, entity_id: EntityId, item_index: usize, dir: Direction, move_mode: MoveMode) -> ItemUseResult {
         let pos = self.entities.pos[&entity_id];
         let item_id = self.entities.inventory[&entity_id][item_index];
@@ -379,6 +401,15 @@ impl GameData {
 
         let mut result = ItemUseResult::new();
         match item {
+            Item::Stone => {
+                result.pos = Some(pos);
+                let end_pos = dir.offset_pos(pos, PLAYER_THROW_DIST as i32);
+                let hit_pos = self.throw_towards(pos, end_pos);
+                for travel_pos in line(pos, hit_pos) {
+                    result.hit_positions.push(travel_pos);
+                }
+            }
+
             Item::Dagger => {
                 let target_pos = dir.offset_pos(pos, 1);
                 let hit_pos = dir.offset_pos(target_pos, 1);
@@ -390,17 +421,6 @@ impl GameData {
                 if is_crouching && is_clear_path {
                     result.pos = Some(target_pos);
                     result.hit_positions.push(hit_pos);
-
-                    // TODO this logic needs to go somewhere, likely actions or resolve
-                    //if let Some(hit_entity) = self.has_blocking_entity(hit_pos) {
-                    //    let hits_enemy = self.entities.typ[&hit_entity] == EntityType::Enemy;
-                    //    let is_alert = matches!(self.entities.behavior[&hit_entity], Behavior::Attacking(_));
-
-                    //    // If there is an enemy, and they are not alert, we will attack them.
-                    //    if hits_enemy && !is_alert {
-                    //        result.hit_entities.push(hit_entity);
-                    //    }
-                    //}
                 }
             }
 
@@ -1302,9 +1322,7 @@ impl Entities {
     }
 
     pub fn item_type_available(&self, entity_id: EntityId, item_class: ItemClass) -> Option<usize> {
-        let inv_len = self.inventory[&entity_id].len();
-
-        for ix in 0..inv_len {
+        for ix in 0..self.inventory[&entity_id].len() {
             let item_id = self.inventory[&entity_id][ix];
             if self.item[&item_id].class() == item_class {
                 return Some(ix);

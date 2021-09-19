@@ -3,7 +3,7 @@ use std::fmt;
 
 use serde::{Serialize, Deserialize};
 
-use roguelike_core::movement::{Direction, Reach, MoveMode, MoveType};
+use roguelike_core::movement::{Direction, Reach, MoveMode};
 use roguelike_core::types::*;
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
@@ -725,8 +725,11 @@ fn finalize_use_item(dir: Direction, data: &GameData, settings: &mut GameSetting
         let use_result = data.calculate_use_move(player_id, item_index, dir, settings.move_mode);
 
         if item == Item::Hammer {
-            // hammers are handled specially.
             msg_log.log(Msg::HammerRaise(player_id, item_index, dir));
+        } else if item == Item::Stone {
+            let player_pos = data.entities.pos[&player_id];
+            let throw_pos = dir.offset_pos(player_pos, PLAYER_THROW_DIST as i32);
+            msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos));
         } else {
             // we should not be able to finalize use mode without a valid move position.
             let move_pos = use_result.pos.expect("Using an item with no move position?!");
@@ -759,20 +762,17 @@ fn start_use_item(item_class: ItemClass, data: &GameData, settings: &mut GameSet
     if let Some(item_index) = data.entities.item_type_available(player_id, item_class) {
         let item_id = data.entities.inventory[&player_id][item_index as usize];
 
-        // only primary items are available for use-mode
-        if data.entities.item[&item_id].class() == ItemClass::Primary {
-            // Allow entering use-mode even if there are no places to move
-            // in case the player wants to check pressing shift or ctrl
-            // for additional spaces.
-            settings.use_item_class = item_class;
+        // Allow entering use-mode even if there are no places to move
+        // in case the player wants to check pressing shift or ctrl
+        // for additional spaces.
+        settings.use_item_class = item_class;
 
-            settings.use_dir = None;
-            settings.cursor = None;
+        settings.use_dir = None;
+        settings.cursor = None;
 
-            change_state(settings, GameState::Use);
+        change_state(settings, GameState::Use);
 
-            msg_log.log(Msg::StartUseItem(item_id));
-        }
+        msg_log.log(Msg::StartUseItem(item_id));
     }
 }
 

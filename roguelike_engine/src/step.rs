@@ -1,23 +1,30 @@
 use logging_timer::timer;
 
 use roguelike_core::types::*;
-use roguelike_core::config::*;
 use roguelike_core::ai::*;
-use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
-use roguelike_core::movement::Direction;
 #[cfg(test)]
 use roguelike_core::movement::MoveMode;
 #[cfg(test)]
 use roguelike_core::utils::*;
+#[cfg(test)]
+use roguelike_core::config::*;
+#[cfg(test)]
+use roguelike_core::movement::*;
+#[cfg(test)]
+use roguelike_core::map::*;
+#[cfg(test)]
+use roguelike_core::constants::*;
 
-
-use crate::game::*;
+#[cfg(test)]
 use crate::actions::InputAction;
+#[cfg(test)]
 use crate::generation::*;
-use crate::resolve::resolve_messages;
 #[cfg(test)]
 use crate::make_map::*;
+
+use crate::resolve::resolve_messages;
+use crate::game::*;
 
 
 pub fn step_logic(game: &mut Game) -> bool {
@@ -139,6 +146,7 @@ pub fn test_game_step() {
     assert_eq!(Pos::new(0, 0), player_pos);
 }
 
+#[test]
 pub fn test_running() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config.clone());
@@ -376,6 +384,109 @@ fn test_ai_investigate_moves() {
     assert_eq!(1, game.msg_log.messages.len());
     let direction = Direction::from_positions(start_pos, sound_pos).unwrap();
     assert_eq!(Msg::TryMove(gol, direction, 1, MoveMode::Walk), game.msg_log.messages[0]);
+}
+
+#[test]
+fn test_pick_up_primary() {
+    let mut game = Game::new(0, Config::from_file("../config.yaml"));
+    make_map(&MapLoadConfig::Empty, &mut game);
+
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let start_pos = game.data.entities.pos[&player_id];
+
+    let sword = make_sword(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    let next_pos = move_x(start_pos, 1);
+    let hammer = make_hammer(&mut game.data.entities, &game.config, next_pos, &mut game.msg_log);
+
+    assert_eq!(0, game.data.entities.inventory[&player_id].len());
+    game.step_game(InputAction::Pickup, 0.1);
+    assert_eq!(1, game.data.entities.inventory[&player_id].len());
+    let item_id = game.data.entities.inventory[&player_id][0];
+    assert_eq!(sword, item_id);
+
+    game.step_game(InputAction::Move(Direction::Right), 0.1);
+    assert_eq!(game.data.entities.pos[&hammer], game.data.entities.pos[&player_id]);
+
+    game.step_game(InputAction::Pickup, 0.1);
+    assert_eq!(1, game.data.entities.inventory[&player_id].len());
+    let item_id = game.data.entities.inventory[&player_id][0];
+    assert_eq!(hammer, item_id);
+}
+
+#[test]
+fn test_pick_up_consumables() {
+    let mut game = Game::new(0, Config::from_file("../config.yaml"));
+    make_map(&MapLoadConfig::Empty, &mut game);
+
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let start_pos = game.data.entities.pos[&player_id];
+
+    let lantern0 = make_lantern(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    let next_pos = move_x(start_pos, 1);
+    let lantern1 = make_lantern(&mut game.data.entities, &game.config, next_pos, &mut game.msg_log);
+
+    assert_eq!(0, game.data.entities.inventory[&player_id].len());
+    game.step_game(InputAction::Pickup, 0.1);
+    assert_eq!(1, game.data.entities.inventory[&player_id].len());
+    let item_id = game.data.entities.inventory[&player_id][0];
+    assert_eq!(lantern0, item_id);
+
+    game.step_game(InputAction::Move(Direction::Right), 0.1);
+    assert_eq!(game.data.entities.pos[&lantern1], game.data.entities.pos[&player_id]);
+
+    game.step_game(InputAction::Pickup, 0.1);
+    assert_eq!(1, game.data.entities.inventory[&player_id].len());
+    let item_id = game.data.entities.inventory[&player_id][0];
+    assert_eq!(lantern1, item_id);
+}
+
+#[test]
+fn test_pick_up_misc() {
+    let mut game = Game::new(0, Config::from_file("../config.yaml"));
+    make_map(&MapLoadConfig::Empty, &mut game);
+
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let start_pos = game.data.entities.pos[&player_id];
+
+    let stone0 = make_stone(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    let stone1 = make_stone(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    let key = make_key(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+
+    assert_eq!(0, game.data.entities.inventory[&player_id].len());
+
+    game.step_game(InputAction::Pickup, 0.1);
+    game.step_game(InputAction::Pickup, 0.1);
+    game.step_game(InputAction::Pickup, 0.1);
+
+    let inventory = game.data.entities.inventory[&player_id].clone();
+    assert_eq!(3, inventory.len());
+    assert!(inventory.iter().position(|id| *id == stone0).is_some());
+    assert!(inventory.iter().position(|id| *id == stone1).is_some());
+    assert!(inventory.iter().position(|id| *id == key).is_some());
+}
+
+#[test]
+fn test_use_mode_stone() {
+    let mut game = Game::new(0, Config::from_file("../config.yaml"));
+    make_map(&MapLoadConfig::Empty, &mut game);
+
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let start_pos = game.data.entities.pos[&player_id];
+
+    let stone = make_stone(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    game.step_game(InputAction::Pickup, 0.1);
+
+    let gol_pos = move_x(start_pos, PLAYER_THROW_DIST as i32);
+    let gol = make_gol(&mut game.data.entities, &game.config, gol_pos, &mut game.msg_log);
+
+    game.step_game(InputAction::StartUseItem(ItemClass::Misc), 0.1);
+    game.step_game(InputAction::UseDir(Direction::Right), 0.1);
+    game.step_game(InputAction::FinalizeUse, 0.1);
+
+    assert_eq!(gol_pos, game.data.entities.pos[&stone]);
+
+    // The gol remains in its starting position because it was stunned by the stone.
+    assert_eq!(gol_pos, game.data.entities.pos[&gol]);
 }
 
 fn clean_entities(entities: &mut Entities, msg_log: &mut MsgLog) {
