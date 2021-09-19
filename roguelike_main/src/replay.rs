@@ -101,7 +101,7 @@ pub fn test_recording() {
     let mut recording = Recording::new(&game);
 
     // walk right (1, 0)
-    input_action = InputAction::Move(Direction::Right, MoveMode::Walk);
+    input_action = InputAction::Move(Direction::Right);
     game.step_game(input_action, 0.1);
     recording.action(&game, input_action);
     let step1_pos = game.data.entities.pos[&player_id];
@@ -109,7 +109,7 @@ pub fn test_recording() {
     assert_eq!(starting_pos.y, step1_pos.y);
 
     // walk down (1, 1)
-    input_action = InputAction::Move(Direction::Down, MoveMode::Walk);
+    input_action = InputAction::Move(Direction::Down);
     game.step_game(input_action, 0.1);
     recording.action(&game, input_action);
     let step2_pos = game.data.entities.pos[&player_id];
@@ -129,7 +129,7 @@ pub fn test_recording() {
     assert_eq!(starting_pos.y, step0_pos.y);
 
     // go down first, and then replay the previous actions (0, 1)
-    input_action = InputAction::Move(Direction::Down, MoveMode::Walk);
+    input_action = InputAction::Move(Direction::Down);
     game.step_game(input_action, 0.1);
     recording.action(&game, input_action);
     let step1_2_pos = game.data.entities.pos[&player_id];

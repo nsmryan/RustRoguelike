@@ -8,7 +8,6 @@ use serde::{Serialize, Deserialize};
 use roguelike_core::types::*;
 use roguelike_core::movement::Direction;
 use roguelike_core::config::Config;
-use roguelike_core::movement::MoveMode;
 
 use crate::game::*;
 use crate::actions::*;
@@ -590,7 +589,7 @@ fn test_input_movement() {
 
     let event = InputEvent::Char('4', KeyDir::Up);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::Move(Direction::Left, MoveMode::Walk), input_action);
+    assert_eq!(InputAction::Move(Direction::Left), input_action);
 }
 
 #[test]

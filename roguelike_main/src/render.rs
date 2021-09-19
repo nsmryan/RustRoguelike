@@ -11,7 +11,7 @@ use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::utils::{item_type_available, lerp_color, sub_pos, reach_by_mode, map_fill_metric};
+use roguelike_core::utils::{lerp_color, sub_pos, reach_by_mode, map_fill_metric};
 use roguelike_core::perlin::Perlin;
 use roguelike_core::line::line;
 use roguelike_core::ai::*;
@@ -150,7 +150,6 @@ fn render_menus(display: &mut Display, game: &mut Game) {
     let display_state = &mut display.state;
 
     let menu_panel = &mut display.targets.menu_panel;
-    let inventory_panel = &mut display.targets.inventory_panel;
     let panel = menu_panel.unit();
 
     let mut draw_menu: bool = true;
@@ -180,8 +179,7 @@ fn render_menus(display: &mut Display, game: &mut Game) {
 /// Draw an outline and title around an area of the screen
 fn render_placard(panel: &mut Panel<&mut WindowCanvas>,
                   display_state: &mut DisplayState,
-                  text: &str,
-                  config: &Config) {
+                  text: &str) {
     // TODO this color comes from the UI mockups as a light brown
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
@@ -289,7 +287,7 @@ fn render_bar(panel: &mut Panel<&mut WindowCanvas>,
 }
 
 fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    render_placard(panel, display_state, "Player", &game.config);
+    render_placard(panel, display_state, "Player");
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
@@ -359,7 +357,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
                display_state: &mut DisplayState,
                game: &mut Game,
                _mouse_xy: Option<Pos>) {
-    render_placard(panel, display_state, "Info", &game.config);
+    render_placard(panel, display_state, "Info");
 
     if let Some(info_pos) = game.settings.cursor {
         let text_color = game.config.color_soft_green;
@@ -481,7 +479,7 @@ fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     // Render header
-    render_placard(panel, display_state, "Skills", &game.config);
+    render_placard(panel, display_state, "Skills");
 
     let mut list = Vec::new();
 
@@ -501,9 +499,9 @@ fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
     tile_sprite.draw_text_list(panel, &list, text_pos, color);
 }
 
-fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, _game: &mut Game) {
     // Render header
-    render_placard(panel, display_state, "Choose Class", &game.config);
+    render_placard(panel, display_state, "Choose Class");
 
     let mut list = Vec::new();
 
@@ -523,9 +521,9 @@ fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
     tile_sprite.draw_text_list(panel, &list, text_pos, color);
 }
 
-fn render_confirm_quit(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_confirm_quit(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, _game: &mut Game) {
     // Render header
-    render_placard(panel, display_state, "Quit?", &game.config);
+    render_placard(panel, display_state, "Quit?");
 
     let mut list = Vec::new();
 
@@ -548,7 +546,7 @@ fn render_confirm_quit(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut
 /// Render an inventory section within the given area
 fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
     // Render header
-    render_placard(panel, display_state, "Inventory", &game.config);
+    render_placard(panel, display_state, "Inventory");
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
@@ -560,54 +558,88 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
 
     // Render each object's name in inventory
     let mut y_pos = 2;
-    let mut item_index = 0;
 
+    // Draw Primary Items
+    tile_sprite.draw_text(panel,
+                          &"z",
+                          Pos::new(1, y_pos),
+                          ui_color);
     let mut index = 0;
     while index < game.data.entities.inventory[&player_id].len() {
-        let obj_id = game.data.entities.inventory[&player_id][index];
-        index += 1;
+        let item_id = game.data.entities.inventory[&player_id][index];
 
-        let color;
-        match &game.data.entities.item.get(&obj_id) {
-            Some(Item::Stone) => {
-                color = game.config.color_light_grey;
-            }
-
-            Some(Item::Key) => {
-                color = game.config.color_red;
-            }
-            
-            _ => {
-                color = game.config.color_mint_green;
-            }
+        if game.data.entities.item[&item_id].class() == ItemClass::Primary {
+            let item_text = format!("{:?}", game.data.entities.name[&item_id]);
+            let text_pos = Pos::new(3, y_pos);
+            tile_sprite.draw_text(panel, &item_text, text_pos, ui_color);
+            break;
         }
 
-        // place prompt character
-        tile_sprite.draw_char(panel,
-                              ('0' as u8 + item_index) as char,
-                              Pos::new(1, y_pos),
-                              game.config.color_ice_blue);
+        index += 1;
+    }
+    y_pos += 1;
 
-        // place object name
-        let text_pos = Pos::new(2, y_pos);
-        let item_marker =
-            if index == 0 &&
-               item_type_available(player_id, &mut game.data.entities, ItemClass::Primary).is_some() {
-                "<"
-            } else {
-                ""
-            };
-        let item_text = format!(" {:?} {}", game.data.entities.name[&obj_id], item_marker);
-        tile_sprite.draw_text(panel, &item_text, text_pos, color);
-        
-        y_pos += 1;
+    // Draw Consumable Items
+    tile_sprite.draw_text(panel,
+                          &"x",
+                          Pos::new(1, y_pos),
+                          ui_color);
+    let mut index = 0;
+    while index < game.data.entities.inventory[&player_id].len() {
+        let item_id = game.data.entities.inventory[&player_id][index];
 
-        item_index += 1;
+        if game.data.entities.item[&item_id].class() == ItemClass::Consumable {
+            let item_text = format!("{:?}", game.data.entities.name[&item_id]);
+            let text_pos = Pos::new(3, y_pos);
+            tile_sprite.draw_text(panel, &item_text, text_pos, ui_color);
+            break;
+        }
+
+        index += 1;
+    }
+    y_pos += 1;
+
+    // Draw Stones Items
+    tile_sprite.draw_text(panel,
+                          &"c",
+                          Pos::new(1, y_pos),
+                          ui_color);
+    let mut index = 0;
+    while index < game.data.entities.inventory[&player_id].len() {
+        let item_id= game.data.entities.inventory[&player_id][index];
+
+        if game.data.entities.item[&item_id] == Item::Stone {
+            tile_sprite.draw_text(panel,
+                                  &"c",
+                                  Pos::new(1, y_pos),
+                                  ui_color);
+
+            let item_text = format!("{:?}", game.data.entities.name[&item_id]);
+            let text_pos = Pos::new(3, y_pos);
+            tile_sprite.draw_text(panel, &item_text, text_pos, ui_color);
+            y_pos += 1;
+        }
+
+        index += 1;
     }
 
-    if game.data.entities.inventory[&player_id].len() == 0 {
-        let text_pos = Pos::new(1, y_pos);
-        tile_sprite.draw_text(panel, "empty", text_pos, ui_color);
+    y_pos += 1;
+    y_pos += 1;
+
+    // Draw Remaining Items
+    let mut index = 0;
+    while index < game.data.entities.inventory[&player_id].len() {
+        let item_id= game.data.entities.inventory[&player_id][index];
+
+        if game.data.entities.item[&item_id].class() == ItemClass::Misc &&
+           game.data.entities.item[&item_id] != Item::Stone {
+            let item_text = format!("{:?}", game.data.entities.name[&item_id]);
+            let text_pos = Pos::new(3, y_pos);
+            tile_sprite.draw_text(panel, &item_text, text_pos, ui_color);
+            y_pos += 1;
+        }
+
+        index += 1;
     }
 }
 
@@ -782,8 +814,6 @@ fn render_map_above(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
 }
 
 fn render_map_middle(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = display_state.lookup_spritekey("tiles");
@@ -804,8 +834,6 @@ fn render_map_middle(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
 
 /// Render the map, with environment and walls
 fn render_map(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = display_state.lookup_spritekey("tiles");
@@ -846,7 +874,6 @@ fn render_intertile_walls_above(panel: &mut Panel<&mut WindowCanvas>,
                                map: &Map,
                                sprite: &mut SpriteSheet,
                                pos: Pos) {
-    let (x, y) = pos.to_tuple();
     let tile = map[pos];
     let wall_color = Color::white();
 

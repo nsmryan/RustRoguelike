@@ -450,7 +450,7 @@ pub fn test_direction_turn_amount() {
 
 #[test]
 pub fn test_direction_clockwise() {
-    let mut dir = Direction::Right;
+    let dir = Direction::Right;
 
     for _ in 0..8 {
         let new_dir = dir.clockwise();
@@ -462,7 +462,7 @@ pub fn test_direction_clockwise() {
 
 #[test]
 pub fn test_direction_counterclockwise() {
-    let mut dir = Direction::Right;
+    let dir = Direction::Right;
 
     for _ in 0..8 {
         let new_dir = dir.counterclockwise();

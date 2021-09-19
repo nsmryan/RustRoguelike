@@ -795,8 +795,8 @@ impl FromStr for Item {
 impl Item {
     pub fn class(&self) -> ItemClass {
         match self {
-            Item::Stone => ItemClass::Consumable,
-            Item::Key => ItemClass::Consumable,
+            Item::Stone => ItemClass::Misc,
+            Item::Key => ItemClass::Misc,
             Item::Dagger => ItemClass::Primary,
             Item::Shield => ItemClass::Primary,
             Item::Hammer => ItemClass::Primary,
@@ -1248,7 +1248,6 @@ impl Entities {
                     dropped_item = Some(item_index);
 
                     self.inventory[&entity_id].push_back(item_id);
-                    let obj_pos = self.pos[&entity_id];
                 } else {
                     self.inventory[&entity_id].push_front(item_id);
                 }
@@ -1260,7 +1259,6 @@ impl Entities {
                     dropped_item = Some(item_index);
 
                     self.inventory[&entity_id].push_back(item_id);
-                    let obj_pos = self.pos[&entity_id];
                 } else {
                     self.inventory[&entity_id].push_front(item_id);
                 }

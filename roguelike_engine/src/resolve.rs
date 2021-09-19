@@ -94,7 +94,7 @@ pub fn resolve_messages(data: &mut GameData,
                 msg_log.log_front(Msg::Sound(attacker, pos, config.sound_radius_attack, true)); 
             }
 
-            Msg::Stabbed(_attacker_id, attacked_id) => {
+            Msg::Stabbed(_attacker_id, _attacked_id) => {
                 // TODO this may be superceded by Hit, although perhaps Hit
                 // should break out into finer grain attacks.
                 //msg_log.log(Msg::Froze(attacked_id, config.dagger_stab_num_turns));

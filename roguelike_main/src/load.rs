@@ -1,7 +1,7 @@
 use std::fs;
 
 use sdl2::image::LoadTexture;
-use sdl2::render::{WindowCanvas, Texture, TextureCreator};
+use sdl2::render::{Texture, TextureCreator};
 use sdl2::video::WindowContext;
 use sdl2::ttf::Sdl2TtfContext;
 
@@ -47,15 +47,11 @@ pub fn load_sprite(texture_creator: &TextureCreator<WindowContext>,
 /// for individual ascii characters.
 pub fn load_font(ttf_context: &Sdl2TtfContext,
                  texture_creator: &TextureCreator<WindowContext>,
-                 canvas: &mut WindowCanvas,
                  file_name: String,
                  font_size: u16) -> Texture {
-    let pixel_format = texture_creator.default_pixel_format();
-
     let mut font = ttf_context.load_font(format!("resources/{}", file_name), font_size).expect("Could not load font file!");
     font.set_style(sdl2::ttf::FontStyle::BOLD);
 
-    let num_chrs = ASCII_END - ASCII_START;
     let mut chrs: [u8; 256] = [0; 256];
     for chr_ix in 0..256 {
         chrs[chr_ix] = chr_ix as u8;
@@ -68,7 +64,6 @@ pub fn load_font(ttf_context: &Sdl2TtfContext,
     let font_texture = texture_creator
         .create_texture_from_surface(&text_surface)
         .expect(&format!("Could not load font {}", file_name));
-    let query = font_texture.query();
 
     /*
     // assumes monospace font- otherwise none of this works

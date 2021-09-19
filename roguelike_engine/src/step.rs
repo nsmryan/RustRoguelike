@@ -5,7 +5,9 @@ use roguelike_core::config::*;
 use roguelike_core::ai::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::{Msg, MsgLog};
-use roguelike_core::movement::{Direction, MoveMode};
+use roguelike_core::movement::Direction;
+#[cfg(test)]
+use roguelike_core::movement::MoveMode;
 #[cfg(test)]
 use roguelike_core::utils::*;
 
@@ -373,7 +375,7 @@ fn test_ai_investigate_moves() {
     ai_investigate(sound_pos, gol, &mut game.data, &mut game.msg_log, &game.config);
     assert_eq!(1, game.msg_log.messages.len());
     let direction = Direction::from_positions(start_pos, sound_pos).unwrap();
-    assert_eq!(Msg::TryMove(gol, direction, 1), game.msg_log.messages[0]);
+    assert_eq!(Msg::TryMove(gol, direction, 1, MoveMode::Walk), game.msg_log.messages[0]);
 }
 
 fn clean_entities(entities: &mut Entities, msg_log: &mut MsgLog) {

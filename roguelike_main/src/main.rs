@@ -130,7 +130,6 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
     let font_texture = load_font(&ttf_context,
                                  &texture_creator,
-                                 &mut display.targets.canvas_panel.target,
                                  "Monoid.ttf".to_string(),
                                  24);
     display.add_spritesheet("font".to_string(), font_texture);
