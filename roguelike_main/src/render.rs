@@ -11,7 +11,7 @@ use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::utils::{item_primary_at, lerp_color, sub_pos, reach_by_mode, map_fill_metric};
+use roguelike_core::utils::{item_type_available, lerp_color, sub_pos, reach_by_mode, map_fill_metric};
 use roguelike_core::perlin::Perlin;
 use roguelike_core::line::line;
 use roguelike_core::ai::*;
@@ -591,7 +591,8 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
         // place object name
         let text_pos = Pos::new(2, y_pos);
         let item_marker =
-            if index == 0 && item_primary_at(player_id, &mut game.data.entities, 0) {
+            if index == 0 &&
+               item_type_available(player_id, &mut game.data.entities, ItemClass::Primary).is_some() {
                 "<"
             } else {
                 ""

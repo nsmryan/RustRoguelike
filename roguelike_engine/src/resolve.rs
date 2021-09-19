@@ -227,19 +227,6 @@ pub fn resolve_messages(data: &mut GameData,
                 }
             }
 
-            Msg::SwapPrimaryItem => {
-                // TODO make a message for this, and allow resolve to do this.
-                if item_primary_at(player_id, &mut data.entities, 0) &&
-                   item_primary_at(player_id, &mut data.entities, 1) {
-                       let temp_id = data.entities.inventory[&player_id][0];
-
-                       data.entities.inventory[&player_id][0] = 
-                           data.entities.inventory[&player_id][1];
-
-                       data.entities.inventory[&player_id][1] = temp_id;
-               }
-            }
-
             Msg::MoveMode(entity_id, new_move_mode) => {
                 data.entities.move_mode[&entity_id] = new_move_mode;
 
@@ -1037,8 +1024,13 @@ fn pick_item_up(entity_id: EntityId, data: &mut GameData, msg_log: &mut MsgLog) 
     let entity_pos = data.entities.pos[&entity_id];
 
     if let Some(item_id) = data.item_at_pos(entity_pos) {
-        data.entities.pick_up_item(entity_id, item_id);
         msg_log.log(Msg::PickedUp(entity_id, item_id));
+
+        let to_drop_index = data.entities.pick_up_item(entity_id, item_id);
+
+        if let Some(to_drop_index) = to_drop_index {
+            msg_log.log(Msg::DropItem(entity_id, to_drop_index as u64));
+        }
     }
 }
 

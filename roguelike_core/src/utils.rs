@@ -311,18 +311,17 @@ pub fn stab(entity_id: EntityId, target: EntityId, entities: &mut Entities, msg_
     }
 }
 
-pub fn item_primary_at(entity_id: EntityId, entities: &mut Entities, index: usize) -> bool {
+pub fn item_type_available(entity_id: EntityId, entities: &mut Entities, item_class: ItemClass) -> Option<usize> {
     let inv_len = entities.inventory[&entity_id].len();
 
-    if inv_len <= index {
-        return false;
+    for ix in 0..inv_len {
+        let item_id = entities.inventory[&entity_id][ix];
+        if entities.item[&item_id].class() == item_class {
+            return Some(ix);
+        }
     }
 
-    let item_id = entities.inventory[&entity_id][index];
-    let is_primary =
-        entities.item[&item_id].class() == ItemClass::Primary;
-
-    return is_primary;
+    return None;
 }
 
 pub fn add_pos(pos1: Pos, pos2: Pos) -> Pos {

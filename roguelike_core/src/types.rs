@@ -795,19 +795,19 @@ impl FromStr for Item {
 impl Item {
     pub fn class(&self) -> ItemClass {
         match self {
-            Item::Stone => ItemClass::Secondary,
-            Item::Key => ItemClass::Secondary,
+            Item::Stone => ItemClass::Consumable,
+            Item::Key => ItemClass::Consumable,
             Item::Dagger => ItemClass::Primary,
             Item::Shield => ItemClass::Primary,
             Item::Hammer => ItemClass::Primary,
             Item::Spear => ItemClass::Primary,
             Item::GreatSword => ItemClass::Primary,
             Item::Sword => ItemClass::Primary,
-            Item::Lantern => ItemClass::Secondary,
-            Item::SpikeTrap => ItemClass::Secondary,
-            Item::SoundTrap => ItemClass::Secondary,
-            Item::BlinkTrap => ItemClass::Secondary,
-            Item::FreezeTrap => ItemClass::Secondary,
+            Item::Lantern => ItemClass::Consumable,
+            Item::SpikeTrap => ItemClass::Consumable,
+            Item::SoundTrap => ItemClass::Consumable,
+            Item::BlinkTrap => ItemClass::Consumable,
+            Item::FreezeTrap => ItemClass::Consumable,
         }
     }
 
@@ -860,7 +860,8 @@ impl Item {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum ItemClass {
     Primary,
-    Secondary,
+    Consumable,
+    Misc,
 }
 
 pub type Hp = i32;
@@ -1234,29 +1235,45 @@ impl Entities {
         self.inventory[&entity_id].remove(index);
     }
 
-    pub fn pick_up_item(&mut self, entity_id: EntityId, item_id: EntityId) {
+    pub fn pick_up_item(&mut self, entity_id: EntityId, item_id: EntityId) -> Option<usize> {
+        let mut dropped_item = None;
+
         let item = self.item[&item_id];
         let item_class = item.class();
 
         match item_class {
             ItemClass::Primary => {
-                if item_primary_at(entity_id, self, 0) &&
-                   item_primary_at(entity_id, self, 1) {
-                    self.inventory[&entity_id][0] = item_id;
+                if let Some(item_index) = item_type_available(entity_id, self, ItemClass::Primary) {
+                    // return the last primary item, so it can be dropped
+                    dropped_item = Some(item_index);
 
+                    self.inventory[&entity_id].push_back(item_id);
                     let obj_pos = self.pos[&entity_id];
-                    self.set_pos(entity_id, obj_pos);
                 } else {
                     self.inventory[&entity_id].push_front(item_id);
                 }
             }
 
-            ItemClass::Secondary => {
+            ItemClass::Consumable => {
+                if let Some(item_index) = item_type_available(entity_id, self, ItemClass::Consumable) {
+                    // return the last secondary item, so it can be dropped
+                    dropped_item = Some(item_index);
+
+                    self.inventory[&entity_id].push_back(item_id);
+                    let obj_pos = self.pos[&entity_id];
+                } else {
+                    self.inventory[&entity_id].push_front(item_id);
+                }
+            }
+
+            ItemClass::Misc => {
                 self.inventory[&entity_id].push_back(item_id);
             }
         }
 
         self.set_xy(item_id, -1, -1);
+
+        return dropped_item;
     }
 
     pub fn create_entity(&mut self, x: i32, y: i32, typ: EntityType, chr: char, color: Color, name: EntityName, blocks: bool) -> EntityId {

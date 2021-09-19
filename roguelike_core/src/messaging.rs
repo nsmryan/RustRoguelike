@@ -57,7 +57,6 @@ pub enum Msg {
     Triggered(EntityId, EntityId), // trap, entity
     Untriggered(EntityId, EntityId), // trap, entity
     AddClass(EntityClass),
-    SwapPrimaryItem,
     DropItem(EntityId, EntityId), // entity, item
     GrassThrow(EntityId, Direction),
     GrassShoes(EntityId, ActionMode),
@@ -143,7 +142,6 @@ impl fmt::Display for Msg {
             Msg::Triggered(trap_id, entity_id) => write!(f, "triggered {} {}", trap_id, entity_id),
             Msg::Untriggered(trap_id, entity_id) => write!(f, "untriggered {} {}", trap_id, entity_id),
             Msg::AddClass(entity_class) => write!(f, "add_class {}", entity_class),
-            Msg::SwapPrimaryItem => write!(f, "swap_primary_item"),
             Msg::DropItem(entity_id, item_id) => write!(f, "drop_item {} {}", entity_id, item_id),
             Msg::GrassThrow(entity_id, direction) => write!(f, "grass_throw {} {}", entity_id, direction),
             Msg::GrassShoes(entity_id, action_mode) => write!(f, "grass_shoes {} {}", entity_id, action_mode),
@@ -361,10 +359,6 @@ impl Msg {
                 return format!("Player chose class {:?}!", class);
             }
             
-            Msg::SwapPrimaryItem => {
-                return format!("Player swapped primary and secondary item");
-            }
-
             Msg::DropItem(entity_id, item_index) => {
                 if let Some(item_id) = data.entities.inventory[entity_id].get(*item_index as usize) {
                     return format!("{:?} dropped a {:?}!", data.entities.name[entity_id], item_id);
