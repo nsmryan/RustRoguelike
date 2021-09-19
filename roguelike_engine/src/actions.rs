@@ -42,7 +42,8 @@ pub enum InputAction {
     UseDir(Direction),
     FinalizeUse,
     AbortUse,
-    Pass(),
+    Pass,
+    ThrowItem(Pos, ItemClass),
     Pickup,
     DropItem,
     Yell,
@@ -99,7 +100,8 @@ impl fmt::Display for InputAction {
             InputAction::UseDir(dir) => write!(f, "usedir {}", dir),
             InputAction::FinalizeUse => write!(f, "finalizeuse"),
             InputAction::AbortUse => write!(f, "abortuse"),
-            InputAction::Pass() => write!(f, "pass"),
+            InputAction::Pass => write!(f, "pass"),
+            InputAction::ThrowItem(pos, item_class) => write!(f, "throwitem {} {} {}", pos.x, pos.y, item_class),
             InputAction::MapClick(loc, cell) => write!(f, "click {} {} {} {}", loc.x, loc.y, cell.x, cell.y),
             InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
             InputAction::Pickup => write!(f, "pickup"),
@@ -160,7 +162,12 @@ impl FromStr for InputAction {
         } else if args[0] == "alt" {
             return Ok(InputAction::Alt);
         } else if args[0] == "pass" {
-            return Ok(InputAction::Pass());
+            return Ok(InputAction::Pass);
+        } else if args[0] == "throwitem" {
+            let x = args[1].parse::<i32>().unwrap();
+            let y = args[1].parse::<i32>().unwrap();
+            let item_class = args[1].parse::<ItemClass>().unwrap();
+            return Ok(InputAction::ThrowItem(Pos::new(x, y), item_class));
         } else if args[0] == "movetowardscursor" {
             return Ok(InputAction::MoveTowardsCursor());
         } else if args[0] == "skilldir" {
@@ -481,7 +488,7 @@ pub fn handle_input_use(input_action: InputAction,
         }
 
         (InputAction::DropItem, true) => {
-            if let Some(item_index) = use_mode_item_index(data, settings) {
+            if let Some(item_index) = find_item(settings.use_item_class, data) {
                 msg_log.log(Msg::DropItem(player_id, item_index as u64));
 
                 settings.use_dir = None;
@@ -635,9 +642,17 @@ pub fn handle_input_playing(input_action: InputAction,
             }
         }
 
-        (InputAction::Pass(), true) => {
+        (InputAction::Pass, true) => {
             let direction = data.entities.direction[&player_id];
             msg_log.log(Msg::TryMove(player_id, direction, 0, settings.move_mode));
+        }
+
+        (InputAction::ThrowItem(throw_pos, item_class), true) => {
+            if let Some(item_index) = find_item(item_class, data) { 
+                let player_pos = data.entities.pos[&player_id];
+                let item_id = data.entities.inventory[&player_id][item_index];
+                msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos));
+            }
         }
 
         (InputAction::Pickup, true) => {
@@ -704,13 +719,13 @@ pub fn handle_input_playing(input_action: InputAction,
 
 // The item index is usually determined by the ItemClass, but for Misc it can
 // only be a stone.
-fn use_mode_item_index(data: &GameData, settings: &GameSettings) -> Option<usize> {
+fn find_item(item_class: ItemClass, data: &GameData) -> Option<usize> {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let maybe_index;
-    if settings.use_item_class == ItemClass::Misc {
+    if item_class == ItemClass::Misc {
         maybe_index = data.entities.item_by_type(player_id, Item::Stone);
     } else {
-        maybe_index = data.entities.item_by_class(player_id, settings.use_item_class);
+        maybe_index = data.entities.item_by_class(player_id, item_class);
     }
     return maybe_index;
 }
@@ -718,7 +733,7 @@ fn use_mode_item_index(data: &GameData, settings: &GameSettings) -> Option<usize
 fn use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    if let Some(item_index) = use_mode_item_index(data, settings) {
+    if let Some(item_index) = find_item(settings.use_item_class, data) {
         let use_result = data.calculate_use_move(player_id, item_index as usize, dir, settings.move_mode);
         if use_result.pos.is_some() {
             settings.use_dir = Some(dir);
@@ -731,7 +746,7 @@ fn use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_lo
 fn finalize_use_item(dir: Direction, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    if let Some(item_index) = use_mode_item_index(data, settings) {
+    if let Some(item_index) = find_item(settings.use_item_class, data) {
         let item_id = data.entities.inventory[&player_id][item_index];
         let item = data.entities.item[&item_id];
 

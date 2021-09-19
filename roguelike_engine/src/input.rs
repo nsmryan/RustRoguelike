@@ -285,10 +285,7 @@ impl Input {
                     }
                 }
             } else if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {
-
                 // releasing the item no longer takes you out of use-mode
-                //self.clear_char_state(chr);
-                //return InputAction::FinalizeUse;
             } else if chr == 'd' {
                 return InputAction::DropItem;
             } else {
@@ -347,7 +344,7 @@ impl Input {
                         if !self.cursor && self.alt {
                             action = InputAction::Interact(None);
                         } else {
-                            action = InputAction::Pass();
+                            action = InputAction::Pass;
                         } 
                     }
                 }
@@ -360,9 +357,13 @@ impl Input {
                 action = self.use_skill(index, settings);
             }
 
-            // Item release can only throw outside of use-mode
-            if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
-                action = self.use_item(index, settings);
+            // Item release can only throw outside in cursor mode
+            if self.cursor {
+                if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+                    let item_class = CLASSES[index];
+                    let cursor_pos = settings.cursor.unwrap();
+                    action = InputAction::ThrowItem(cursor_pos, item_class);
+                }
             }
 
             // If we are not releasing a direction, skill, or item then try other keys.
