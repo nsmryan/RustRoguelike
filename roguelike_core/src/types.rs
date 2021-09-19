@@ -401,7 +401,7 @@ impl GameData {
 
         let mut result = ItemUseResult::new();
         match item {
-            Item::Stone => {
+            Item::Stone | Item::Lantern | Item::SpikeTrap | Item::SoundTrap | Item::BlinkTrap | Item::FreezeTrap => {
                 result.pos = Some(pos);
                 let end_pos = dir.offset_pos(pos, PLAYER_THROW_DIST as i32);
                 let hit_pos = self.throw_towards(pos, end_pos);

@@ -604,23 +604,32 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
                           &"c",
                           Pos::new(1, y_pos),
                           ui_color);
+    let mut num_stones = 0;
     let mut index = 0;
     while index < game.data.entities.inventory[&player_id].len() {
         let item_id= game.data.entities.inventory[&player_id][index];
 
         if game.data.entities.item[&item_id] == Item::Stone {
-            tile_sprite.draw_text(panel,
-                                  &"c",
-                                  Pos::new(1, y_pos),
-                                  ui_color);
-
-            let item_text = format!("{:?}", game.data.entities.name[&item_id]);
-            let text_pos = Pos::new(3, y_pos);
-            tile_sprite.draw_text(panel, &item_text, text_pos, ui_color);
-            y_pos += 1;
+            num_stones += 1;
         }
 
         index += 1;
+    }
+
+    if num_stones > 0 {
+        tile_sprite.draw_text(panel,
+                              &"c",
+                              Pos::new(1, y_pos),
+                              ui_color);
+
+        let text_pos = Pos::new(3, y_pos);
+        tile_sprite.draw_text(panel, &"stone", text_pos, ui_color);
+
+        let num_text = format!("({})", num_stones);
+        tile_sprite.draw_text(panel,
+                              &num_text,
+                              Pos::new(9, y_pos),
+                              ui_color);
     }
 
     y_pos += 1;
