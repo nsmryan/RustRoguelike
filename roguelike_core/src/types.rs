@@ -864,6 +864,34 @@ pub enum ItemClass {
     Misc,
 }
 
+impl fmt::Display for ItemClass {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ItemClass::Primary => write!(f, "primary"),
+            ItemClass::Consumable => write!(f, "consumable"),
+            ItemClass::Misc => write!(f, "misc"),
+        }
+    }
+}
+
+impl FromStr for ItemClass {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "primary" {
+            return Ok(ItemClass::Primary);
+        } else if s == "consumable" {
+            return Ok(ItemClass::Consumable);
+        } else if s == "misc" {
+            return Ok(ItemClass::Misc);
+        }
+
+        return Err(format!("Could not parse '{}' as ItemClass", s));
+    }
+}
+
 pub type Hp = i32;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -1217,7 +1245,6 @@ pub struct Entities {
     pub blocks: CompStore<bool>,
     pub needs_removal: CompStore<bool>,
 
-    // NOTE should be able to remove this
     pub messages: CompStore<Vec<Message>>,
 }
 
@@ -1243,7 +1270,7 @@ impl Entities {
 
         match item_class {
             ItemClass::Primary => {
-                if let Some(item_index) = item_type_available(entity_id, self, ItemClass::Primary) {
+                if let Some(item_index) = self.item_type_available(entity_id, ItemClass::Primary) {
                     // return the last primary item, so it can be dropped
                     dropped_item = Some(item_index);
 
@@ -1254,7 +1281,7 @@ impl Entities {
             }
 
             ItemClass::Consumable => {
-                if let Some(item_index) = item_type_available(entity_id, self, ItemClass::Consumable) {
+                if let Some(item_index) = self.item_type_available(entity_id, ItemClass::Consumable) {
                     // return the last secondary item, so it can be dropped
                     dropped_item = Some(item_index);
 
@@ -1272,6 +1299,19 @@ impl Entities {
         self.set_xy(item_id, -1, -1);
 
         return dropped_item;
+    }
+
+    pub fn item_type_available(&self, entity_id: EntityId, item_class: ItemClass) -> Option<usize> {
+        let inv_len = self.inventory[&entity_id].len();
+
+        for ix in 0..inv_len {
+            let item_id = self.inventory[&entity_id][ix];
+            if self.item[&item_id].class() == item_class {
+                return Some(ix);
+            }
+        }
+
+        return None;
     }
 
     pub fn create_entity(&mut self, x: i32, y: i32, typ: EntityType, chr: char, color: Color, name: EntityName, blocks: bool) -> EntityId {

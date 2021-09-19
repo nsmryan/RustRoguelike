@@ -38,14 +38,13 @@ pub enum InputAction {
     ItemPos(Pos, ActionMode, usize),
     SkillFacing(ActionMode, usize),
     ItemFacing(ActionMode, usize),
-    StartUseItem(usize),
+    StartUseItem(ItemClass),
     UseDir(Direction),
     FinalizeUse,
     AbortUse,
     Pass(),
     Pickup,
     DropItem,
-    DropItemByIndex(usize),
     Yell,
     UseItem(Direction, usize),
     Interact(Option<Direction>),
@@ -96,7 +95,7 @@ impl fmt::Display for InputAction {
             InputAction::ItemPos(pos, action_mode, index) => write!(f, "itempos {} {} {} {}", pos.x, pos.y, action_mode, index),
             InputAction::SkillFacing(action_mode, index) => write!(f, "skill {} {}", action_mode, index),
             InputAction::ItemFacing(action_mode, index) => write!(f, "itemdir {} {}", action_mode, index),
-            InputAction::StartUseItem(index) => write!(f, "startuseitem {}", index),
+            InputAction::StartUseItem(item_class) => write!(f, "startuseitem {}", item_class),
             InputAction::UseDir(dir) => write!(f, "usedir {}", dir),
             InputAction::FinalizeUse => write!(f, "finalizeuse"),
             InputAction::AbortUse => write!(f, "abortuse"),
@@ -105,7 +104,6 @@ impl fmt::Display for InputAction {
             InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
             InputAction::Pickup => write!(f, "pickup"),
             InputAction::DropItem => write!(f, "drop"),
-            InputAction::DropItemByIndex(target) => write!(f, "droptarget {}", target),
             InputAction::Inventory => write!(f, "inventory"),
             InputAction::SkillMenu => write!(f, "skill"),
             InputAction::ClassMenu => write!(f, "class"),
@@ -196,8 +194,8 @@ impl FromStr for InputAction {
             let index = args[2].parse::<usize>().unwrap();
             return Ok(InputAction::ItemFacing(action_mode, index));
         } else if args[0] == "startuseitem" {
-            let index = args[1].parse::<usize>().unwrap();
-            return Ok(InputAction::StartUseItem(index));
+            let class = args[1].parse::<ItemClass>().unwrap();
+            return Ok(InputAction::StartUseItem(class));
         } else if args[0] == "usedir" {
             let dir = args[1].parse::<Direction>().unwrap();
             return Ok(InputAction::UseDir(dir));
@@ -209,9 +207,6 @@ impl FromStr for InputAction {
             return Ok(InputAction::Pickup);
         } else if args[0] == "drop" {
             return Ok(InputAction::DropItem);
-        } else if args[0] == "droptarget" {
-            let target = args[1].parse::<usize>().unwrap();
-            return Ok(InputAction::DropItemByIndex(target));
         } else if args[0] == "yell" {
             return Ok(InputAction::Yell);
         } else if args[0] == "inventory" {
@@ -485,8 +480,8 @@ pub fn handle_input_use(input_action: InputAction,
             }
         }
 
-        (InputAction::StartUseItem(item_index), true) => {
-            start_use_item(item_index, data, settings, msg_log);
+        (InputAction::StartUseItem(item_class), true) => {
+            start_use_item(item_class, data, settings, msg_log);
         }
 
         (InputAction::UseDir(dir), true) => {
@@ -497,9 +492,7 @@ pub fn handle_input_use(input_action: InputAction,
             change_state(settings, GameState::Playing);
 
             if let Some(dir) = settings.use_dir {
-                if settings.use_index >= 0 {
-                    finalize_use_item(settings.use_index, dir, data, settings, msg_log);
-                }
+                finalize_use_item(dir, data, settings, msg_log);
             }
         }
 
@@ -593,8 +586,8 @@ pub fn handle_input_playing(input_action: InputAction,
             handle_skill(skill_index, ActionLoc::Facing, action_mode, data, msg_log);
         }
 
-        (InputAction::StartUseItem(item_index), true) => {
-            start_use_item(item_index, data, settings, msg_log);
+        (InputAction::StartUseItem(item_class), true) => {
+            start_use_item(item_class, data, settings, msg_log);
         }
 
         (InputAction::CursorReturn, _) => {
@@ -633,21 +626,17 @@ pub fn handle_input_playing(input_action: InputAction,
             }
         }
 
-        (InputAction::DropItemByIndex(target), true) => {
-            if target < data.entities.inventory[&player_id].len() {
-                let item_id = data.entities.inventory[&player_id][target];
-                msg_log.log(Msg::DropItem(player_id, item_id));
-            }
-        }
-
         (InputAction::Pass(), true) => {
             let direction = data.entities.direction[&player_id];
             msg_log.log(Msg::TryMove(player_id, direction, 0, settings.move_mode));
         }
 
         (InputAction::DropItem, true) => {
-            settings.inventory_action = InventoryAction::Drop;
-            change_state(settings, GameState::Inventory);
+            if let Some(item_index) = data.entities.item_type_available(player_id, settings.use_item_class) {
+                // TODO try to remove inventory_action
+                settings.inventory_action = InventoryAction::Drop;
+                msg_log.log(Msg::DropItem(player_id, item_index as u64));
+            }
         }
 
         (InputAction::Pickup, true) => {
@@ -716,91 +705,74 @@ pub fn handle_input_playing(input_action: InputAction,
 fn use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    let use_result = data.calculate_use_move(player_id, settings.use_index as usize, dir, settings.move_mode);
-    if use_result.pos.is_some() {
-        settings.use_dir = Some(dir);
-    }
-}
-
-fn finalize_use_item(_item_index: i32, dir: Direction, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
-
-    let item_index = settings.use_index as usize;
-
-    let item_id = data.entities.inventory[&player_id][item_index];
-
-    let item = data.entities.item[&item_id];
-
-    let use_result = data.calculate_use_move(player_id, settings.use_index as usize, dir, settings.move_mode);
-
-    // TODO 
-    // add weapon type and function to determine type
-    // add attack type
-    //
-    // hammer is a special case that emits its own message, which can emit a 
-    // blunt heavy attack if successful.
-    //
-    // the hit message determines if an entity was present and applies an effect
-    // as well as a sound.
-    // if a wall is hit by a heavy blunt attack it is destroyed
-
-    // TODO This logic has to go somewhere
-    //if let Some(hit_entity) = self.has_blocking_entity(hit_pos) {
-    //    let hits_enemy = self.entities.typ[&hit_entity] == EntityType::Enemy;
-    //    if hits_enemy {
-    //        result.hit_entities.push(hit_entity);
-    //    }
-    //}
-    if item == Item::Hammer {
-        // hammers are handled specially.
-        msg_log.log(Msg::HammerRaise(player_id, item_index, dir));
+    if let Some(item_index) = data.entities.item_type_available(player_id, settings.use_item_class) {
+        let use_result = data.calculate_use_move(player_id, item_index as usize, dir, settings.move_mode);
+        if use_result.pos.is_some() {
+            settings.use_dir = Some(dir);
+        }
     } else {
-        // we should not be able to finalize use mode without a valid move position.
-        let move_pos = use_result.pos.expect("Using an item with no move position?!");
-        let player_pos = data.entities.pos[&player_id];
-        if move_pos != player_pos {
-            let dist = distance(move_pos, player_pos) as usize;
-            msg_log.log(Msg::TryMove(player_id, dir, dist, settings.move_mode));
-        }
-
-        let weapon_type = item.weapon_type().unwrap();
-        let mut attack_type = AttackStyle::Normal;
-        if item == Item::Spear && settings.move_mode == MoveMode::Run {
-            attack_type = AttackStyle::Strong;
-        } else if item == Item::Dagger {
-            attack_type = AttackStyle::Stealth;
-        }
-
-        for hit_pos in use_result.hit_positions {
-            msg_log.log(Msg::Hit(player_id, hit_pos, weapon_type, attack_type));
-        }
+        panic!("Using an item, but no such item in inventory!");
     }
 }
 
-fn start_use_item(item_index: usize, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+fn finalize_use_item(dir: Direction, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    let num_items_in_inventory = data.entities.inventory[&player_id].len();
+    if let Some(item_index) = data.entities.item_type_available(player_id, settings.use_item_class) {
+        let item_id = data.entities.inventory[&player_id][item_index];
+        let item = data.entities.item[&item_id];
 
-    if item_index >= num_items_in_inventory {
-        return;
+        let use_result = data.calculate_use_move(player_id, item_index, dir, settings.move_mode);
+
+        if item == Item::Hammer {
+            // hammers are handled specially.
+            msg_log.log(Msg::HammerRaise(player_id, item_index, dir));
+        } else {
+            // we should not be able to finalize use mode without a valid move position.
+            let move_pos = use_result.pos.expect("Using an item with no move position?!");
+            let player_pos = data.entities.pos[&player_id];
+            if move_pos != player_pos {
+                let dist = distance(move_pos, player_pos) as usize;
+                msg_log.log(Msg::TryMove(player_id, dir, dist, settings.move_mode));
+            }
+
+            let weapon_type = item.weapon_type().unwrap();
+            let mut attack_type = AttackStyle::Normal;
+            if item == Item::Spear && settings.move_mode == MoveMode::Run {
+                attack_type = AttackStyle::Strong;
+            } else if item == Item::Dagger {
+                attack_type = AttackStyle::Stealth;
+            }
+
+            for hit_pos in use_result.hit_positions {
+                msg_log.log(Msg::Hit(player_id, hit_pos, weapon_type, attack_type));
+            }
+        }
+    } else {
+        panic!("Using an item, but no such item in inventory!");
     }
+}
 
-    let item_id = data.entities.inventory[&player_id][item_index as usize];
+fn start_use_item(item_class: ItemClass, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+    let player_id = data.find_by_name(EntityName::Player).unwrap();
 
-    // only primary items are available for use-mode
-    if data.entities.item[&item_id].class() == ItemClass::Primary {
-        // Allow entering use-mode even if there are no places to move
-        // in case the player wants to check pressing shift or ctrl
-        // for additional spaces.
-        settings.use_index = item_index as i32;
+    if let Some(item_index) = data.entities.item_type_available(player_id, item_class) {
+        let item_id = data.entities.inventory[&player_id][item_index as usize];
 
-        settings.use_dir = None;
-        settings.cursor = None;
+        // only primary items are available for use-mode
+        if data.entities.item[&item_id].class() == ItemClass::Primary {
+            // Allow entering use-mode even if there are no places to move
+            // in case the player wants to check pressing shift or ctrl
+            // for additional spaces.
+            settings.use_item_class = item_class;
 
-        change_state(settings, GameState::Use);
+            settings.use_dir = None;
+            settings.cursor = None;
 
-        msg_log.log(Msg::StartUseItem(item_id));
+            change_state(settings, GameState::Use);
+
+            msg_log.log(Msg::StartUseItem(item_id));
+        }
     }
 }
 

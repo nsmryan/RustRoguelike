@@ -1120,18 +1120,21 @@ fn render_entity_type(typ: EntityType, panel: &mut Panel<&mut WindowCanvas>, dis
     if typ == EntityType::Player && game.settings.state == GameState::Use && game.settings.use_dir.is_some() {
         // For the player in use-mode, while holding down a direction, we
         // need special rendering. Otherwise the player is rendered as normal.
+
         let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-        let use_dir = game.settings.use_dir.unwrap(); // already checked for is_some
-        let use_result = game.data.calculate_use_move(player_id,
-                                                      game.settings.use_index as usize,
-                                                      use_dir,
-                                                      game.settings.move_mode);
-        if let Some(pos) = use_result.pos {
-            let player_pos = game.data.entities.pos[&player_id];
-            render_entity_ghost(player_id, player_pos, game, panel, display_state);
-            game.data.entities.pos[&player_id] = pos;
-            render_entity(panel, player_id, display_state, game);
-            game.data.entities.pos[&player_id] = player_pos;
+        if let Some(item_index) = game.data.entities.item_type_available(player_id, game.settings.use_item_class) {
+            let use_dir = game.settings.use_dir.unwrap(); // already checked for is_some
+            let use_result = game.data.calculate_use_move(player_id,
+                                                          item_index,
+                                                          use_dir,
+                                                          game.settings.move_mode);
+            if let Some(pos) = use_result.pos {
+                let player_pos = game.data.entities.pos[&player_id];
+                render_entity_ghost(player_id, player_pos, game, panel, display_state);
+                game.data.entities.pos[&player_id] = pos;
+                render_entity(panel, player_id, display_state, game);
+                game.data.entities.pos[&player_id] = player_pos;
+            }
         }
     } else {
         let mut index = 0;
@@ -1171,39 +1174,41 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         let mut attack_highlight_color = game.config.color_red;
         attack_highlight_color.a = game.config.grid_alpha_overlay;
 
-        if let Some(use_dir) = game.settings.use_dir {
-            let use_result = game.data.calculate_use_move(player_id,
-                                                          game.settings.use_index as usize,
-                                                          use_dir,
-                                                          game.settings.move_mode);
-            if let Some(pos) = use_result.pos {
-                //draw_tile_highlight(panel, pos, highlight_color);
-                render_arrow(panel, tile_sprite, use_dir, pos, direction_color);
+        if let Some(item_index) = game.data.entities.item_type_available(player_id, game.settings.use_item_class) {
+            if let Some(use_dir) = game.settings.use_dir {
+                let use_result = game.data.calculate_use_move(player_id,
+                                                              item_index,
+                                                              use_dir,
+                                                              game.settings.move_mode);
+                if let Some(pos) = use_result.pos {
+                    //draw_tile_highlight(panel, pos, highlight_color);
+                    render_arrow(panel, tile_sprite, use_dir, pos, direction_color);
 
-                for hit_pos in use_result.hit_positions {
+                    for hit_pos in use_result.hit_positions {
+                        draw_tile_highlight(panel, hit_pos, attack_highlight_color);
+                    }
+                }
+            } else {
+                let mut hit_positions: HashSet<Pos> = HashSet::new();
+                let mut move_positions: HashSet<Pos> = HashSet::new();
+                for dir in Direction::move_actions().iter() {
+                    let use_result = game.data.calculate_use_move(player_id,
+                                                                 item_index,
+                                                                 *dir,
+                                                                 game.settings.move_mode);
+                    if let Some(pos) = use_result.pos {
+                        if !move_positions.contains(&pos) {
+                            draw_tile_highlight(panel, pos, highlight_color);
+                        }
+                        move_positions.insert(pos);
+                        render_arrow(panel, tile_sprite, *dir, pos, direction_color);
+                        hit_positions.extend(use_result.hit_positions.iter());
+                    }
+                }
+
+                for hit_pos in hit_positions {
                     draw_tile_highlight(panel, hit_pos, attack_highlight_color);
                 }
-            }
-        } else {
-            let mut hit_positions: HashSet<Pos> = HashSet::new();
-            let mut move_positions: HashSet<Pos> = HashSet::new();
-            for dir in Direction::move_actions().iter() {
-                let use_result = game.data.calculate_use_move(player_id,
-                                                             game.settings.use_index as usize,
-                                                             *dir,
-                                                             game.settings.move_mode);
-                if let Some(pos) = use_result.pos {
-                    if !move_positions.contains(&pos) {
-                        draw_tile_highlight(panel, pos, highlight_color);
-                    }
-                    move_positions.insert(pos);
-                    render_arrow(panel, tile_sprite, *dir, pos, direction_color);
-                    hit_positions.extend(use_result.hit_positions.iter());
-                }
-            }
-
-            for hit_pos in hit_positions {
-                draw_tile_highlight(panel, hit_pos, attack_highlight_color);
             }
         }
     }

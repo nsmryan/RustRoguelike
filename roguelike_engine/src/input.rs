@@ -15,6 +15,7 @@ use crate::actions::*;
 
 const SKILL_KEYS: &[char] = &['a', 's', 'd'];
 const ITEM_KEYS: &[char] = &['z', 'x', 'c'];
+const CLASSES: &[ItemClass] = &[ItemClass::Primary, ItemClass::Consumable, ItemClass::Misc];
 
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
@@ -64,13 +65,13 @@ impl InputDirection {
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum Target {
-    Item(usize),
+    Item(ItemClass),
     Skill(usize),
 }
 
 impl Target {
-    pub fn item(index: usize) -> Target {
-        return Target::Item(index);
+    pub fn item(item_class: ItemClass) -> Target {
+        return Target::Item(item_class);
     }
 
     pub fn skill(index: usize) -> Target {
@@ -288,6 +289,8 @@ impl Input {
                 // releasing the item no longer takes you out of use-mode
                 //self.clear_char_state(chr);
                 //return InputAction::FinalizeUse;
+            } else if chr == 'd' {
+                return InputAction::DropItem;
             } else {
                 return self.apply_char(chr, settings);
             }
@@ -413,13 +416,15 @@ impl Input {
             } else if chr == ' ' {
                 action = InputAction::AbortUse;
             } else if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+                let item_class = CLASSES[index];
+
                 // check if you press down the same item again, aborting use-mode
-                if self.target == Some(Target::item(index as usize)) {
+                if self.target == Some(Target::item(item_class)) {
                     action = InputAction::AbortUse;
                     self.target = None;
                 } else {
-                    self.target = Some(Target::item(index as usize));
-                    action = InputAction::StartUseItem(index as usize);
+                    self.target = Some(Target::item(item_class));
+                    action = InputAction::StartUseItem(item_class);
                 }
             }
         } else if !settings.state.is_menu() {
@@ -438,10 +443,11 @@ impl Input {
 
             if !(self.cursor && self.alt) {
                 if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
-                    self.target = Some(Target::item(index as usize));
+                    let item_class = CLASSES[index];
+                    self.target = Some(Target::item(item_class));
 
                     self.cursor = false;
-                    action = InputAction::StartUseItem(index as usize);
+                    action = InputAction::StartUseItem(item_class);
                     // directions are cleared when entering use-mode
                     self.direction = None;
                 }
@@ -601,7 +607,7 @@ fn test_input_use_mode_enter() {
 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0), input_action);
+    assert_eq!(InputAction::StartUseItem(ItemClass::Primary), input_action);
 
     // letting item up outside of use-mode does not cause any action.
     let event = InputEvent::Char('z', KeyDir::Up);
@@ -611,7 +617,7 @@ fn test_input_use_mode_enter() {
     // down and up 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0), input_action);
+    assert_eq!(InputAction::StartUseItem(ItemClass::Primary), input_action);
 
     settings.state = GameState::Use;
 
@@ -629,7 +635,7 @@ fn test_input_use_mode_exit() {
 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0), input_action);
+    assert_eq!(InputAction::StartUseItem(ItemClass::Primary), input_action);
 
     settings.state = GameState::Use;
 
@@ -655,7 +661,7 @@ fn test_input_use_mode_abort() {
 
     let event = InputEvent::Char('z', KeyDir::Down);
     let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::StartUseItem(0), input_action);
+    assert_eq!(InputAction::StartUseItem(ItemClass::Primary), input_action);
 
     settings.state = GameState::Use;
 

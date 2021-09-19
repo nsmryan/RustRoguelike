@@ -455,7 +455,6 @@ pub fn test_direction_clockwise() {
     for _ in 0..8 {
         let new_dir = dir.clockwise();
         assert_eq!(1, dir.turn_amount(new_dir));
-        let dir = new_dir;
     }
     assert_eq!(Direction::Right, dir);
 }
@@ -467,7 +466,6 @@ pub fn test_direction_counterclockwise() {
     for _ in 0..8 {
         let new_dir = dir.counterclockwise();
         assert_eq!(-1, dir.turn_amount(new_dir));
-        let dir = new_dir;
     }
     assert_eq!(Direction::Right, dir);
 }
