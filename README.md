@@ -315,6 +315,13 @@ There are a number of interesting features that are not necessarily visible
 when playing the game.
 
 
+#### Action Logs and Replay
+
+The game records a list of actions taken by the player, which can be replayed for
+debugging. This allows bugs to be captured in a log and sent to be debugged, and to
+view replays of games.
+
+
 #### Winding and Rewinding Time
 
 The game has a simple "undo/redo" system, implemented by copying the game state

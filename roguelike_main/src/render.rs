@@ -314,24 +314,11 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
     let energy_color = Color::new(0xaf, 0x83, 0x56, 255);
     render_pips(panel, display_state, energy, 3, energy_color);
 
-    //list.push(format!(" ({}, {})", 
-                      //game.data.entities.pos[&player_id].x,
-                      //game.data.entities.pos[&player_id].y));
-
     list.push(format!(""));
 
-    //let move_mode = game.data.entities.move_mode[&player_id];
-    //list.push(format!("{}", move_mode.to_string()));
 
     let stance = game.data.entities.stance[&player_id];
     list.push(format!("{}", stance));
-
-    //list.push(format!(""));
-    //if let Some(class) = game.data.entities.class.get(&player_id) {
-        //list.push(format!("{}", class));
-    //} else {
-        //list.push(format!(""));
-    //}
 
     list.push(format!(""));
     list.push(format!(""));
