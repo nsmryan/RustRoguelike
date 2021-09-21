@@ -477,9 +477,7 @@ pub fn handle_input_use(input_action: InputAction,
         (InputAction::FinalizeUse, true) => {
             change_state(settings, GameState::Playing);
 
-            if let Some(dir) = settings.use_dir {
-                finalize_use_item(dir, data, settings, msg_log);
-            }
+            finalize_use_item(data, settings, msg_log);
         }
 
         (InputAction::AbortUse, true) => {
@@ -709,10 +707,14 @@ fn use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_lo
     }
 }
 
-fn finalize_use_item(dir: Direction, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+fn finalize_use_item(data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = data.entities.pos[&player_id];
 
     if let UseAction::Item(item_class) = settings.use_action {
+        // NOTE there should be no way to get here without a direction
+        let dir = settings.use_dir.expect("Finalizing use mode for an item with no direction to take!");
+
         if let Some(item_index) = find_item(item_class, data) {
             let item_id = data.entities.inventory[&player_id][item_index];
             let item = data.entities.item[&item_id];
@@ -723,7 +725,6 @@ fn finalize_use_item(dir: Direction, data: &GameData, settings: &mut GameSetting
             if item == Item::Hammer {
                 msg_log.log(Msg::HammerRaise(player_id, item_index, dir));
             } else if item == Item::Stone || item == Item::Lantern || item == Item::SpikeTrap || item == Item::SoundTrap || item == Item::BlinkTrap || item == Item::FreezeTrap {
-                let player_pos = data.entities.pos[&player_id];
                 let throw_pos = dir.offset_pos(player_pos, PLAYER_THROW_DIST as i32);
                 msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos));
             } else {
@@ -749,7 +750,12 @@ fn finalize_use_item(dir: Direction, data: &GameData, settings: &mut GameSetting
             }
         }
     } else if settings.use_action == UseAction::Interact {
-        // TODO finalization for use-mode interactions
+        if let Some(dir) = settings.use_dir {
+            let target_pos = dir.offset_pos(player_pos, 1);
+            msg_log.log(Msg::Interact(player_id, target_pos));
+        } else {
+            msg_log.log(Msg::PickUp(player_id));
+        }
     } else {
         panic!("Using an item, but no such item in inventory!");
     }

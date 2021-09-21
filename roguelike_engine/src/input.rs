@@ -284,7 +284,14 @@ impl Input {
                         return InputAction::FinalizeUse;
                     }
                 } else {
-                    return InputAction::DropItem;
+                    // NOTE this may not work correctly with holding keys, as it does not
+                    // check for releasing the last downed key!
+                    if settings.use_action == UseAction::Interact {
+                        // in interaction mode, '5' ends use mode and interacts with current tile.
+                        return InputAction::FinalizeUse;
+                    } else {
+                        return InputAction::DropItem;
+                    }
                 }
             } else if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {
                 // releasing the item no longer takes you out of use-mode

@@ -283,14 +283,14 @@ the current turn or whether the overlay is on, ProcCmd for controlling level gen
 ### Design
 
 There are some design considerations that have a sigificant effect on the game's code. One is that no
-part of the codebase keeps links to other parts- it is all a sinlge big data structure (Game), which is
+part of the codebase keeps links to other parts- it is all a single big data structure (Game), which is
 taken apart and passed to functions to mutate it and have side effects. This keeps changes to state
 in constrained locations, which helps with finding the location and sequence of state changes.
 
 
 In addition, many components do not make changes themselves, but emit structures that are then processed.
 This allows things like recording actions, and testing components. A good example is the input system
-processing inputs to game actions, and then to messages.
+processing inputs to game actions, then to messages, and then finally to changes to the game's state.
 
 
 The game is also split into layered crates within a workspace, such that the roguelike\_core knows
@@ -306,7 +306,8 @@ using the display data and game's state (Game).
 
 
 This split allows roguelike\_lib to compile a binary that is separate from SDL2
-and can be integrated into other systems.
+and can be integrated into other systems like Unity, or wrapped in TCL to
+run in scripts.
 
 
 ### Interesting Internal Features
