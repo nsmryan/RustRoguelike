@@ -1177,7 +1177,8 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                                                               use_dir,
                                                               game.settings.move_mode);
                 if let Some(pos) = use_result.pos {
-                    render_arrow(panel, tile_sprite, use_dir, pos, direction_color);
+                    let arrow_pos = use_dir.offset_pos(player_pos, 1);
+                    render_arrow(panel, tile_sprite, use_dir, arrow_pos, direction_color);
 
                     for hit_pos in use_result.hit_positions {
                         draw_tile_highlight(panel, hit_pos, attack_highlight_color);
@@ -1196,7 +1197,8 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                             draw_tile_highlight(panel, pos, highlight_color);
                         }
                         move_positions.insert(pos);
-                        render_arrow(panel, tile_sprite, *dir, pos, direction_color);
+                        let arrow_pos = dir.offset_pos(player_pos, 1);
+                        render_arrow(panel, tile_sprite, *dir, arrow_pos, direction_color);
                         hit_positions.extend(use_result.hit_positions.iter());
                     }
                 }

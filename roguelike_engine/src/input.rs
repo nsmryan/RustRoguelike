@@ -283,10 +283,13 @@ impl Input {
                     if Some(input_dir) == self.direction {
                         return InputAction::FinalizeUse;
                     }
+                } else {
+                    return InputAction::DropItem;
                 }
             } else if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {
                 // releasing the item no longer takes you out of use-mode
             } else if chr == 'd' {
+                // NOTE this is likely not needed- drop using 5 in use-mode
                 return InputAction::DropItem;
             } else {
                 return self.apply_char(chr, settings);
