@@ -1193,6 +1193,9 @@ fn render_overlay_use_item(item_class: ItemClass,
                 }
             }
         } else {
+            // try each direction, keeping track of all hit positions to draw a highlight
+            // on those tiles, and keeping track of all move positions to avoid drawing
+            // multiple highlights on movements tiles that are re-used between directions.
             let mut hit_positions: HashSet<Pos> = HashSet::new();
             let mut move_positions: HashSet<Pos> = HashSet::new();
             for dir in Direction::move_actions().iter() {
@@ -1240,7 +1243,14 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         attack_highlight_color.a = game.config.grid_alpha_overlay;
 
         if UseAction::Interact == game.settings.use_action {
-            // TODO overlay for interactions
+            for dir in Direction::move_actions().iter() {
+                let target_pos = dir.offset_pos(player_pos, 1);
+                if game.data.clear_path(player_pos, target_pos, false) {
+                    draw_tile_highlight(panel, target_pos, highlight_color);
+
+                    render_arrow(panel, tile_sprite, *dir, target_pos, direction_color);
+                }
+            }
         } else if let UseAction::Item(item_class) = game.settings.use_action {
             render_overlay_use_item(item_class, panel, display_state, game);
         }
