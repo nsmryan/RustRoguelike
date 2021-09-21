@@ -1118,19 +1118,32 @@ fn render_entity_type(typ: EntityType, panel: &mut Panel<&mut WindowCanvas>, dis
         // need special rendering. Otherwise the player is rendered as normal.
 
         let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-        if let Some(item_index) = game.data.entities.item_by_class(player_id, game.settings.use_item_class) {
-            let use_dir = game.settings.use_dir.unwrap(); // already checked for is_some
-            let use_result = game.data.calculate_use_move(player_id,
-                                                          item_index,
-                                                          use_dir,
-                                                          game.settings.move_mode);
-            if let Some(pos) = use_result.pos {
-                let player_pos = game.data.entities.pos[&player_id];
-                render_entity_ghost(player_id, player_pos, game, panel, display_state);
-                game.data.entities.pos[&player_id] = pos;
-                render_entity(panel, player_id, display_state, game);
-                game.data.entities.pos[&player_id] = player_pos;
+        let player_pos = game.data.entities.pos[&player_id];
+        let use_dir = game.settings.use_dir.unwrap(); // already checked for is_some
+
+        let mut use_pos = None;
+        if let UseAction::Item(item_class) = game.settings.use_action {
+
+            if let Some(item_index) = game.data.entities.item_by_class(player_id, item_class) {
+                let use_result = game.data.calculate_use_move(player_id,
+                                                              item_index,
+                                                              use_dir,
+                                                              game.settings.move_mode);
+                use_pos = use_result.pos;
             }
+        } else {
+            // if interacting, draw player ghost only if the tile is clear
+            let target_pos = use_dir.offset_pos(player_pos, 1);
+            if game.data.clear_path(player_pos, target_pos, false) {
+                use_pos = Some(target_pos);
+            }
+        }
+
+        if let Some(pos) = use_pos {
+            render_entity_ghost(player_id, player_pos, game, panel, display_state);
+            game.data.entities.pos[&player_id] = pos;
+            render_entity(panel, player_id, display_state, game);
+            game.data.entities.pos[&player_id] = player_pos;
         }
     } else {
         let mut index = 0;
@@ -1144,6 +1157,62 @@ fn render_entity_type(typ: EntityType, panel: &mut Panel<&mut WindowCanvas>, dis
                 if let Some(sprite) = maybe_sprite {
                     display_state.drawn_sprites.insert(entity_id, sprite);
                 }
+            }
+        }
+    }
+}
+
+fn render_overlay_use_item(item_class: ItemClass,
+                           panel: &mut Panel<&mut WindowCanvas>,
+                           display_state: &mut DisplayState,
+                           game: &mut Game) {
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = game.data.entities.pos[&player_id];
+
+    let direction_color = Color::white();
+    let mut attack_highlight_color = game.config.color_red;
+    attack_highlight_color.a = game.config.grid_alpha_overlay;
+    let mut highlight_color = game.config.color_light_grey;
+    highlight_color.a = game.config.grid_alpha_overlay;
+
+    let sprite_key = display_state.lookup_spritekey("tiles");
+    let tile_sprite = &mut display_state.sprites[&sprite_key];
+
+    if let Some(item_index) = game.data.entities.item_by_class(player_id, item_class) {
+        if let Some(use_dir) = game.settings.use_dir {
+            let use_result = game.data.calculate_use_move(player_id,
+                                                          item_index,
+                                                          use_dir,
+                                                          game.settings.move_mode);
+            if let Some(pos) = use_result.pos {
+                let arrow_pos = use_dir.offset_pos(player_pos, 1);
+                render_arrow(panel, tile_sprite, use_dir, arrow_pos, direction_color);
+
+                for hit_pos in use_result.hit_positions {
+                    draw_tile_highlight(panel, hit_pos, attack_highlight_color);
+                }
+            }
+        } else {
+            let mut hit_positions: HashSet<Pos> = HashSet::new();
+            let mut move_positions: HashSet<Pos> = HashSet::new();
+            for dir in Direction::move_actions().iter() {
+                let use_result = game.data.calculate_use_move(player_id,
+                                                             item_index,
+                                                             *dir,
+                                                             game.settings.move_mode);
+                if let Some(pos) = use_result.pos {
+                    if !move_positions.contains(&pos) {
+                        draw_tile_highlight(panel, pos, highlight_color);
+                    }
+                    move_positions.insert(pos);
+                    let arrow_pos = dir.offset_pos(player_pos, 1);
+                    render_arrow(panel, tile_sprite, *dir, arrow_pos, direction_color);
+                    hit_positions.extend(use_result.hit_positions.iter());
+                }
+            }
+
+            for hit_pos in hit_positions {
+                draw_tile_highlight(panel, hit_pos, attack_highlight_color);
             }
         }
     }
@@ -1170,43 +1239,10 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         let mut attack_highlight_color = game.config.color_red;
         attack_highlight_color.a = game.config.grid_alpha_overlay;
 
-        if let Some(item_index) = game.data.entities.item_by_class(player_id, game.settings.use_item_class) {
-            if let Some(use_dir) = game.settings.use_dir {
-                let use_result = game.data.calculate_use_move(player_id,
-                                                              item_index,
-                                                              use_dir,
-                                                              game.settings.move_mode);
-                if let Some(pos) = use_result.pos {
-                    let arrow_pos = use_dir.offset_pos(player_pos, 1);
-                    render_arrow(panel, tile_sprite, use_dir, arrow_pos, direction_color);
-
-                    for hit_pos in use_result.hit_positions {
-                        draw_tile_highlight(panel, hit_pos, attack_highlight_color);
-                    }
-                }
-            } else {
-                let mut hit_positions: HashSet<Pos> = HashSet::new();
-                let mut move_positions: HashSet<Pos> = HashSet::new();
-                for dir in Direction::move_actions().iter() {
-                    let use_result = game.data.calculate_use_move(player_id,
-                                                                 item_index,
-                                                                 *dir,
-                                                                 game.settings.move_mode);
-                    if let Some(pos) = use_result.pos {
-                        if !move_positions.contains(&pos) {
-                            draw_tile_highlight(panel, pos, highlight_color);
-                        }
-                        move_positions.insert(pos);
-                        let arrow_pos = dir.offset_pos(player_pos, 1);
-                        render_arrow(panel, tile_sprite, *dir, arrow_pos, direction_color);
-                        hit_positions.extend(use_result.hit_positions.iter());
-                    }
-                }
-
-                for hit_pos in hit_positions {
-                    draw_tile_highlight(panel, hit_pos, attack_highlight_color);
-                }
-            }
+        if UseAction::Interact == game.settings.use_action {
+            // TODO overlay for interactions
+        } else if let UseAction::Item(item_class) = game.settings.use_action {
+            render_overlay_use_item(item_class, panel, display_state, game);
         }
     }
 

@@ -419,18 +419,16 @@ impl Input {
         } else if !settings.state.is_menu() {
             if chr == 'o' {
                 action = InputAction::OverlayOn;
-            }
-
-            if chr == ' ' {
+            } else if chr == ' ' {
                 self.cursor = !self.cursor;
                 action = InputAction::CursorToggle;
-            }
-
-            if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+            } else if chr == 'e' {
+                action = InputAction::StartUseInteract;
+            } else if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
                 self.target = Some(Target::skill(index as usize));
-            }
-
-            if !(self.cursor && self.alt) {
+            } else if let Some(input_dir) = InputDirection::from_chr(chr) {
+                self.direction = Some(input_dir);
+            } else if !(self.cursor && self.alt) {
                 if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
                     let item_class = CLASSES[index];
                     self.target = Some(Target::item(item_class));
@@ -440,10 +438,6 @@ impl Input {
                     // directions are cleared when entering use-mode
                     self.direction = None;
                 }
-            }
-
-            if let Some(input_dir) = InputDirection::from_chr(chr) {
-                self.direction = Some(input_dir);
             }
         }
 

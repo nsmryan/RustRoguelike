@@ -1,5 +1,3 @@
-use std::default::Default;
-
 use oorandom::Rand32;
 
 use serde::{Serialize, Deserialize};
@@ -124,6 +122,11 @@ impl Game {
         return self.settings.state != GameState::Exit;
     }
 }
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+pub enum UseAction {
+    Item(ItemClass),
+    Interact,
+}
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct GameSettings {
@@ -138,7 +141,7 @@ pub struct GameSettings {
     pub level_num: usize,
     pub running: bool,
     pub cursor: Option<Pos>,
-    pub use_item_class: ItemClass,
+    pub use_action: UseAction,
     pub use_dir: Option<Direction>,
     pub move_mode: MoveMode,
 }
@@ -157,7 +160,7 @@ impl GameSettings {
             level_num: 0,
             running: true,
             cursor: None,
-            use_item_class: ItemClass::Misc,
+            use_action: UseAction::Interact,
             use_dir: None,
             move_mode: MoveMode::Walk,
         };
