@@ -752,8 +752,21 @@ fn finalize_use_item(data: &GameData, settings: &mut GameSettings, msg_log: &mut
     } else if settings.use_action == UseAction::Interact {
         if let Some(dir) = settings.use_dir {
             let target_pos = dir.offset_pos(player_pos, 1);
-            msg_log.log(Msg::Interact(player_id, target_pos));
+            if let Some(item_id) = data.item_at_pos(target_pos) {
+                if data.entities.trap.get(&item_id).is_some() {
+                    // if there is a trap, interact with it
+                    msg_log.log(Msg::Interact(player_id, target_pos));
+                } else {
+                    // move to the item and pick it up
+                    msg_log.log(Msg::TryMove(player_id, dir, 1, MoveMode::Walk));
+                    msg_log.log(Msg::PickUp(player_id));
+                }
+            } else {
+                // if there is no item, just try to interact
+                msg_log.log(Msg::Interact(player_id, target_pos));
+            }
         } else {
+            // if there is no direction, apply to current tile
             msg_log.log(Msg::PickUp(player_id));
         }
     } else {
