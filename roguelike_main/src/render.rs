@@ -319,6 +319,9 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 
     let stance = game.data.entities.stance[&player_id];
     list.push(format!("{}", stance));
+    list.push("next turn:".to_string());
+    let stance = game.settings.move_mode;
+    list.push(format!("{}", stance));
 
     list.push(format!(""));
     list.push(format!(""));
