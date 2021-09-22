@@ -126,6 +126,12 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     load_sprites(&texture_creator, &mut display);
     load_sprite(&texture_creator, &mut display, "resources/rustrogueliketiles.png", "tiles");
     load_sprite(&texture_creator, &mut display, "resources/shadowtiles.png", "shadows");
+    load_sprite(&texture_creator, &mut display, "resources/animations/PlayerAttack/PlayerBluntAttack_Cardinal.png", "blunt_attack_cardinal");
+    load_sprite(&texture_creator, &mut display, "resources/animations/PlayerAttack/PlayerBluntAttack_Diagonal.png", "blunt_attack_diagonal");
+    load_sprite(&texture_creator, &mut display, "resources/animations/PlayerAttack/PlayerPiercingAttack_Cardinal.png", "piercing_attack_cardinal");
+    load_sprite(&texture_creator, &mut display, "resources/animations/PlayerAttack/PlayerPiercingAttack_Diagonal.png", "piercing_attack_diagonal");
+    load_sprite(&texture_creator, &mut display, "resources/animations/PlayerAttack/PlayerSlashAttack_Cardinal.png", "slash_attack_cardinal");
+    load_sprite(&texture_creator, &mut display, "resources/animations/PlayerAttack/PlayerSlashAttack_Diagonal.png", "slash_attack_diagonal");
 
     let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
     let font_texture = load_font(&ttf_context,
