@@ -11,7 +11,7 @@ use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::utils::{lerp_color, sub_pos, reach_by_mode, map_fill_metric};
+use roguelike_core::utils::{lerp_color, sub_pos, reach_by_mode, map_fill_metric, rng_trial};
 use roguelike_core::perlin::Perlin;
 use roguelike_core::line::line;
 use roguelike_core::ai::*;
@@ -19,7 +19,7 @@ use roguelike_core::ai::*;
 use roguelike_engine::game::*;
 
 use crate::display::*;
-use crate::animation::{Sprite, Effect, Animation, AnimationResult};
+use crate::animation::{Sprite, Effect, Animation, AnimationResult, Particle};
 
 
 // 10ms to display on last check
@@ -319,11 +319,10 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 
     let stance = game.data.entities.stance[&player_id];
     list.push(format!("{}", stance));
-    list.push("next turn:".to_string());
+    list.push("next move".to_string());
     let stance = game.settings.move_mode;
     list.push(format!("{}", stance));
 
-    list.push(format!(""));
     list.push(format!(""));
     list.push(format!(""));
     list.push(format!(""));
@@ -937,6 +936,33 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
 
         let mut effect = display_state.effects[index].clone();
         match &mut effect {
+            Effect::Particles(rate, particles) => {
+                if rng_trial(&mut game.rng, *rate) {
+                    particles.push(Particle::new(game.config.particle_duration));
+                }
+
+                let sprite_key = display_state.lookup_spritekey("particle_speck");
+                let speck_sprite = &mut display_state.sprites[&sprite_key];
+
+                let mut index = 0;
+                while index < particles.len() {
+                    particles[index].duration -= game.settings.dt;
+                    if particles[index].duration < 0.0 {
+                        particles.swap_remove(index);
+                    } else {
+                        let pos = Pos::new(1, 1);
+                        speck_sprite.draw_sprite_at_cell(panel,
+                                                         0,
+                                                         pos,
+                                                         Color::white(),
+                                                         0.0,
+                                                         false,
+                                                         false);
+                        index += 1;
+                    }
+                }
+            }
+
             Effect::Sound(sound_aoe, sound_dt) => {
                 let mut highlight_color = game.config.color_warm_grey;
 
@@ -954,6 +980,7 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                         if !game.data.map[*pos].block_move &&
                            game.data.pos_in_fov(player_id, *pos, &game.config) {
                            draw_tile_highlight(panel, *pos, highlight_color);
+                           draw_outline_tile(panel, *pos, highlight_color);
                         }
                     }
                 }
@@ -1187,7 +1214,7 @@ fn render_overlay_use_item(item_class: ItemClass,
                                                           item_index,
                                                           use_dir,
                                                           game.settings.move_mode);
-            if let Some(pos) = use_result.pos {
+            if let Some(_pos) = use_result.pos {
                 let arrow_pos = use_dir.offset_pos(player_pos, 1);
                 render_arrow(panel, tile_sprite, use_dir, arrow_pos, direction_color);
 

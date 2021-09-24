@@ -242,3 +242,6 @@ stun_turns_extra: 2
 
 # alpha value used when rendering an entity ghost
 ghost_alpha: 125
+
+# particle effect settings
+particle_duration: 4.0

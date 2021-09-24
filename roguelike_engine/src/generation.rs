@@ -195,26 +195,6 @@ pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
     return entity_id;
 } 
 
-pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{15}', Color::white(), EntityName::Spire, true);
-
-    entities.fighter.insert(entity_id,  Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, });
-    entities.ai.insert(entity_id,  Ai::Basic);
-    entities.behavior.insert(entity_id,  Behavior::Idle);
-    entities.movement.insert(entity_id,  Reach::Single(SPIRE_MOVE_DISTANCE));
-    entities.attack.insert(entity_id,  Reach::Single(SPIRE_ATTACK_DISTANCE));
-    entities.status[&entity_id].alive = true;
-    entities.direction.insert(entity_id,  Direction::Up);
-    entities.stance.insert(entity_id,  Stance::Standing);
-    entities.move_mode.insert(entity_id,  MoveMode::Walk);
-    entities.attack_type.insert(entity_id,  AttackType::Melee);
-    entities.fov_radius.insert(entity_id,  config.fov_radius_monster);
-
-    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Spire, entities.direction[&entity_id]));
-
-    return entity_id;
-}
-
 pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{A5}', Color::white(), EntityName::Pawn, true);
 
@@ -231,6 +211,26 @@ pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
     entities.fov_radius.insert(entity_id,  config.fov_radius_monster);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Pawn, entities.direction[&entity_id]));
+
+    return entity_id;
+}
+
+pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{15}', Color::white(), EntityName::Spire, true);
+
+    entities.fighter.insert(entity_id,  Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, });
+    entities.ai.insert(entity_id,  Ai::Basic);
+    entities.behavior.insert(entity_id,  Behavior::Idle);
+    entities.movement.insert(entity_id,  Reach::Single(SPIRE_MOVE_DISTANCE));
+    entities.attack.insert(entity_id,  Reach::Single(SPIRE_ATTACK_DISTANCE));
+    entities.status[&entity_id].alive = true;
+    entities.direction.insert(entity_id,  Direction::Up);
+    entities.stance.insert(entity_id,  Stance::Standing);
+    entities.move_mode.insert(entity_id,  MoveMode::Walk);
+    entities.attack_type.insert(entity_id,  AttackType::Melee);
+    entities.fov_radius.insert(entity_id,  config.fov_radius_monster);
+
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Spire, entities.direction[&entity_id]));
 
     return entity_id;
 }

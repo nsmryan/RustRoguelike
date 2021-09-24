@@ -147,6 +147,7 @@ impl Display {
         self.state.prev_turn_fov.clear();
         self.state.current_turn_fov.clear();
         self.state.sound_tiles.clear();
+        self.state.effects.clear();
     }
 
     pub fn process_message(&mut self, msg: Msg, data: &mut GameData, config: &Config) {
@@ -173,7 +174,7 @@ impl Display {
                     let player_can_see_source = data.is_in_fov(player_id, cause_id, config);
                     let visible_monster_sound = sound_from_monster && player_can_see_source;
                     if !visible_monster_sound && sound_hits_player {
-                        let sound_effect = Effect::Sound(sound_aoe, 0.0);
+                        let sound_effect = Effect::sound(sound_aoe);
                         self.state.play_effect(sound_effect);
 
                         let pos = data.entities.pos[&cause_id];
@@ -266,7 +267,7 @@ impl Display {
                 } else {
                     let attacker_pos = data.entities.pos[&attacker];
                     let attacked_pos = data.entities.pos[&attacked];
-                    let beam_effect = Effect::Beam(config.beam_duration, attacker_pos, attacked_pos);
+                    let beam_effect = Effect::beam(config.beam_duration, attacker_pos, attacked_pos);
                     self.state.play_effect(beam_effect);
                 }
             }
@@ -332,6 +333,7 @@ impl Display {
 
             Msg::NewLevel => {
                 self.clear_level_state();
+                self.state.play_effect(Effect::particles(1.0));
             }
 
             _ => {

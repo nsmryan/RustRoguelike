@@ -10,9 +10,35 @@ pub type SpriteIndex = f32;
 
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct Particle {
+    pub duration: f32,
+}
+
+impl Particle {
+    pub fn new(duration: f32) -> Particle {
+        return Particle { duration };
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Effect {
     Sound(Aoe, f32), // area of effect, time since start
     Beam(usize, Pos, Pos), // start, end
+    Particles(f32, Vec<Particle>), // spawn rate, current particles
+}
+
+impl Effect {
+    pub fn particles(rate: f32) -> Effect {
+        return Effect::Particles(rate, Vec::new());
+    }
+
+    pub fn beam(duration: usize, start: Pos, end: Pos) -> Effect {
+        return Effect::Beam(duration, start, end);
+    }
+
+    pub fn sound(aoe: Aoe) -> Effect {
+        return Effect::Sound(aoe, 0.0);
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

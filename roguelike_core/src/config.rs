@@ -101,6 +101,7 @@ pub struct Config {
     pub beam_duration: usize,
     pub draw_directional_arrow: bool,
     pub ghost_alpha: u8,
+    pub particle_duration: f32,
 }
 
 impl Config {

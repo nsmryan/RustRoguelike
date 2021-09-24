@@ -132,6 +132,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     load_sprite(&texture_creator, &mut display, "resources/animations/PlayerAttack/PlayerPiercingAttack_Diagonal.png", "piercing_attack_diagonal");
     load_sprite(&texture_creator, &mut display, "resources/animations/PlayerAttack/PlayerSlashAttack_Cardinal.png", "slash_attack_cardinal");
     load_sprite(&texture_creator, &mut display, "resources/animations/PlayerAttack/PlayerSlashAttack_Diagonal.png", "slash_attack_diagonal");
+    load_sprite(&texture_creator, &mut display, "resources/Particle_Speck.png", "particle_speck");
 
     let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
     let font_texture = load_font(&ttf_context,
