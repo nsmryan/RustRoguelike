@@ -1,8 +1,9 @@
 use std::collections::VecDeque;
+use std::collections::HashMap;
 
 use bmp::Image;
 
-use sdl2::render::{Texture, WindowCanvas, TextureCreator, BlendMode};
+use sdl2::render::{Texture, WindowCanvas, TextureCreator, BlendMode, RenderTarget, Canvas};
 use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{PixelFormatEnum, Color as Sdl2Color};
@@ -526,10 +527,6 @@ impl Panel<Texture> {
         let height = query.height;
         return Panel { cells, target: texture, num_pixels: (width, height), dirty: true };
     }
-
-    pub fn unit(&self) -> Panel<()> {
-        return Panel { target: (), cells: self.cells, num_pixels: self.num_pixels, dirty: self.dirty };
-    }
 }
 
 impl Panel<WindowCanvas> {
@@ -540,6 +537,10 @@ impl Panel<WindowCanvas> {
 }
 
 impl<T> Panel<T> {
+    pub fn unit(&self) -> Panel<()> {
+        return Panel { target: (), cells: self.cells, num_pixels: self.num_pixels, dirty: self.dirty };
+    }
+
     pub fn cell_dims(&self) -> (u32, u32) {
         return (self.num_pixels.0 / self.cells.0, self.num_pixels.1 / self.cells.1);
     }
@@ -716,6 +717,8 @@ pub struct DisplayState {
 
     // tiles that heard a sound
     pub sound_tiles: Vec<Pos>,
+
+    pub debug_entries: HashMap<String, String>,
 }
 
 impl DisplayState {
@@ -732,6 +735,7 @@ impl DisplayState {
             prev_turn_fov: Vec::new(),
             current_turn_fov: Vec::new(),
             sound_tiles: Vec::new(),
+            debug_entries: HashMap::<String, String>::new(),
         };
     }
 
@@ -789,6 +793,10 @@ impl DisplayState {
 
     pub fn pop_animation(&mut self, entity_id: EntityId) {
         self.animations[&entity_id].pop_front();
+    }
+
+    pub fn show_debug(&mut self, name: String, value: String) {
+        self.debug_entries.insert(name, value);
     }
 }
 
@@ -850,20 +858,20 @@ impl SpriteSheet {
         return (self.width / num_width, self.height / num_height);
     }
 
-    pub fn draw_text_list(&mut self,
-                         panel: &mut Panel<&mut WindowCanvas>,
-                         text_list: &Vec<String>,
-                         cell: Pos,
-                         color: Color) {
+    pub fn draw_text_list<T>(&mut self,
+                             panel: &mut Panel<&mut Canvas<T>>,
+                             text_list: &Vec<String>,
+                             cell: Pos,
+                             color: Color) where T: RenderTarget {
         for (index, text) in text_list.iter().enumerate() {
             let text_cell = Pos::new(cell.x, cell.y + index as i32);
             self.draw_text(panel, text, text_cell, color);
         }
     }
 
-    pub fn draw_texture(&mut self,
-                     panel: &mut Panel<&mut WindowCanvas>,
-                     cell: Pos) {
+    pub fn draw_texture<T>(&mut self,
+                           panel: &mut Panel<&mut Canvas<T>>,
+                           cell: Pos) where T: RenderTarget {
         let query = self.texture.query();
 
         let cell_dims = panel.cell_dims();
@@ -894,11 +902,11 @@ impl SpriteSheet {
                              false).unwrap();
     }
 
-    pub fn draw_text(&mut self,
-                     panel: &mut Panel<&mut WindowCanvas>,
-                     text: &str,
-                     cell: Pos,
-                     color: Color) {
+    pub fn draw_text<T>(&mut self,
+                        panel: &mut Panel<&mut Canvas<T>>,
+                        text: &str,
+                        cell: Pos,
+                        color: Color) where T: RenderTarget {
         let query = self.texture.query();
 
         let cell_dims = panel.cell_dims();
@@ -937,22 +945,22 @@ impl SpriteSheet {
         }
     }
 
-    pub fn draw_char(&mut self,
-                     panel: &mut Panel<&mut WindowCanvas>,
+    pub fn draw_char<T>(&mut self,
+                     panel: &mut Panel<&mut Canvas<T>>,
                      chr: char,
                      cell: Pos,
-                     color: Color) {
+                     color: Color) where T: RenderTarget {
         self.draw_sprite_at_cell(panel, chr as usize, cell, color, 0.0, false, false);
     }
 
-    pub fn draw_sprite_at_cell(&mut self,
-                               panel: &mut Panel<&mut WindowCanvas>,
+    pub fn draw_sprite_at_cell<T>(&mut self,
+                               panel: &mut Panel<&mut Canvas<T>>,
                                index: usize,
                                cell: Pos,
                                color: Color,
                                rotation: f64,
                                flip_horiz: bool,
-                               flip_vert: bool) {
+                               flip_vert: bool) where T: RenderTarget {
         let (cell_width, cell_height) = panel.cell_dims();
 
         let pos = Pos::new(cell.x * cell_width as i32, cell.y * cell_height as i32);
@@ -960,14 +968,14 @@ impl SpriteSheet {
         self.draw_sprite_full(panel, index, pos, color, rotation, flip_horiz, flip_vert);
     }
 
-    pub fn draw_sprite_full(&mut self,
-                            panel: &mut Panel<&mut WindowCanvas>,
+    pub fn draw_sprite_full<T>(&mut self,
+                            panel: &mut Panel<&mut Canvas<T>>,
                             index: usize,
                             pos: Pos,
                             color: Color,
                             rotation: f64,
                             flip_horizontal: bool,
-                            flip_vertical: bool) {
+                            flip_vertical: bool) where T: RenderTarget {
         let cell_dims = panel.cell_dims();
 
         let src = self.sprite_src(index);
@@ -992,14 +1000,14 @@ impl SpriteSheet {
                              flip_vertical).unwrap();
     }
 
-    pub fn draw_sprite_direction(&mut self,
-                                 panel: &mut Panel<&mut WindowCanvas>,
+    pub fn draw_sprite_direction<T>(&mut self,
+                                 panel: &mut Panel<&mut Canvas<T>>,
                                  index: usize,
                                  direction: Option<Direction>,
                                  pos: Pos,
                                  scale: f32,
                                  color: Color,
-                                 rotation: f64) {
+                                 rotation: f64) where T: RenderTarget {
         let cell_dims = panel.cell_dims();
 
         let src = self.sprite_src(index);
@@ -1091,9 +1099,9 @@ pub fn engine_color(color: &Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
 }
 
-pub fn draw_outline_tile(panel: &mut Panel<&mut WindowCanvas>,
-                         cell: Pos,
-                         color: Color) {
+pub fn draw_outline_tile<T>(panel: &mut Panel<&mut Canvas<T>>,
+                            cell: Pos,
+                            color: Color) where T: RenderTarget {
     let cell_dims = panel.cell_dims();
 
     panel.target.set_blend_mode(BlendMode::Add);
@@ -1107,9 +1115,9 @@ pub fn draw_outline_tile(panel: &mut Panel<&mut WindowCanvas>,
     panel.target.draw_rect(rect).unwrap();
 }
 
-pub fn draw_tile_highlight(panel: &mut Panel<&mut WindowCanvas>,
-                           cell: Pos,
-                           color: Color) {
+pub fn draw_tile_highlight<T>(panel: &mut Panel<&mut Canvas<T>>,
+                              cell: Pos,
+                              color: Color) where T: RenderTarget {
     let cell_dims = panel.cell_dims();
 
     panel.target.set_blend_mode(BlendMode::Blend);

@@ -64,6 +64,7 @@ pub enum InputAction {
     OverlayOn,
     OverlayOff,
     SelectEntry(usize),
+    DebugToggle,
     None,
 }
 
@@ -118,6 +119,7 @@ impl fmt::Display for InputAction {
             InputAction::CursorMove(dir, relative, long) => write!(f, "cursormove {:?} {} {}", dir, relative, long),
             InputAction::CursorReturn => write!(f, "cursorreturn"),
             InputAction::CursorToggle => write!(f, "cursortoggle"),
+            InputAction::DebugToggle => write!(f, "debugtoggle"),
             InputAction::None => write!(f, "none"),
         }
     }
@@ -225,12 +227,17 @@ impl FromStr for InputAction {
             return Ok(InputAction::CursorReturn);
         } else if args[0] == "cursortoggle" {
             return Ok(InputAction::CursorToggle);
+        } else if args[0] == "debugtoggle" {
+            return Ok(InputAction::DebugToggle);
         } else {
             return Err(format!("Could not parse '{}' as InputAction", s));
         }
     }
 }
 
+/// Handle inputs that are the same regardless of game mode.
+/// This function returns whether or not the input was handled here (true),
+/// or if it needs to be passes to mode-specific handling code (false).
 pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> bool {
     match input_action {
         InputAction::ExploreAll => {
@@ -274,6 +281,11 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
             } else {
                 return false;
             }
+        }
+
+        InputAction::DebugToggle => {
+            game.settings.debug_enabled = !game.settings.debug_enabled;
+            return true;
         }
 
         _ => {

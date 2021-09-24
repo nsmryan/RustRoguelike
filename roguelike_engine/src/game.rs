@@ -48,7 +48,7 @@ impl Game {
         let state = Game {
             config,
             data,
-            settings: GameSettings::new(0, false),
+            settings: GameSettings::new(),
             msg_log,
             rng: rng,
             vaults,
@@ -144,13 +144,14 @@ pub struct GameSettings {
     pub use_action: UseAction,
     pub use_dir: Option<Direction>,
     pub move_mode: MoveMode,
+    pub debug_enabled: bool,
 }
 
 impl GameSettings {
-    pub fn new(turn_count: usize, god_mode: bool) -> GameSettings {
+    pub fn new() -> GameSettings {
         return GameSettings {
-            turn_count,
-            god_mode,
+            turn_count: 0,
+            god_mode: false,
             map_type: MapGenType::Island,
             state: GameState::Playing,
             overlay: false,
@@ -163,6 +164,7 @@ impl GameSettings {
             use_action: UseAction::Interact,
             use_dir: None,
             move_mode: MoveMode::Walk,
+            debug_enabled: false,
         };
     }
 }

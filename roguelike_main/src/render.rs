@@ -45,6 +45,11 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
     /* Draw Menus */
     render_menus(display, game);
 
+    /* Draw Debug Overlay */
+    if game.settings.debug_enabled {
+        render_debug(display, game);
+    }
+
     Ok(())
 }
 
@@ -174,6 +179,20 @@ fn render_menus(display: &mut Display, game: &mut Game) {
         let dst = canvas_panel.get_rect_within(&display.targets.menu_area, menu_panel.num_pixels);
         canvas_panel.target.copy(&menu_panel.target, None, dst).unwrap();
     }
+}
+
+fn render_debug(display: &mut Display, game: &mut Game) {
+    let display_state = &mut display.state;
+
+    let text = "hello, canvas";
+    let text_pos = Pos::new(1, 10);
+    let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
+
+    let sprite_key = display_state.lookup_spritekey("font");
+    let tile_sprite = &mut display_state.sprites[&sprite_key];
+    let panel = display.targets.canvas_panel.unit();
+    let mut panel = panel.with_target(&mut display.targets.canvas_panel.target);
+    tile_sprite.draw_text(&mut panel, text, text_pos, text_color)
 }
 
 /// Draw an outline and title around an area of the screen

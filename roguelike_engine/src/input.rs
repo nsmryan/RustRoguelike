@@ -16,7 +16,7 @@ use crate::actions::*;
 const SKILL_KEYS: &[char] = &['a', 's', 'd'];
 const ITEM_KEYS: &[char] = &['z', 'x', 'c'];
 const CLASSES: &[ItemClass] = &[ItemClass::Primary, ItemClass::Consumable, ItemClass::Misc];
-
+const DEBUG_TOGGLE_KEY: char = '\\';
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum KeyDir {
@@ -237,30 +237,20 @@ impl Input {
         return action;
     }
 
-    fn handle_mouse_button(&mut self, clicked: MouseClick, mouse_pos: Pos, target_pos: Option<Pos>, dir: KeyDir) -> InputAction {
-        let mut action = InputAction::MouseButton(clicked, dir);
-
-        let down = dir == KeyDir::Down;
-        match clicked {
-            MouseClick::Left => {
-
-                if down {
-                    if let Some(target_pos) = target_pos {
-                        action = InputAction::MapClick(mouse_pos, target_pos);
-                    }
-                }
+    fn handle_char(&mut self, chr: char, dir: KeyDir, time: Instant, settings: &GameSettings, config: &Config) -> InputAction {
+        match dir {
+            KeyDir::Up => {
+                return self.handle_char_up(chr, settings);
             }
 
-            MouseClick::Middle => {
-                action = InputAction::MouseButton(clicked, dir);
+            KeyDir::Down => {
+                return self.handle_char_down(chr, settings);
             }
 
-            MouseClick::Right => {
-                action = InputAction::MouseButton(clicked, dir);
+            KeyDir::Held => {
+                return self.handle_char_held(chr, time, settings, config);
             }
         }
-
-        return action;
     }
 
     fn handle_char_up(&mut self, chr: char, settings: &GameSettings) -> InputAction {
@@ -316,86 +306,12 @@ impl Input {
         }
     }
 
-    /// Clear direction or target state for the given character, if applicable.
-    fn clear_char_state(&mut self, chr: char) {
-        if let Some(_input_dir) = InputDirection::from_chr(chr) {
-            self.direction = None;
-        }
-
-        if let Some(_index) = SKILL_KEYS.iter().position(|key| *key == chr) {
-            self.target = None;
-        }
-
-        if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {
-            self.target = None;
-        }
-    }
-
-    fn apply_char(&mut self, chr: char, settings: &GameSettings) -> InputAction {
-        let mut action: InputAction = InputAction::None;
-
-        // check if the key being released is the one that set the input direction.
-        if let Some(input_dir) = InputDirection::from_chr(chr) {
-            if self.direction == Some(input_dir) {
-                match input_dir {
-                    InputDirection::Dir(dir) => {
-                        if self.cursor {
-                           action = InputAction::CursorMove(dir, self.ctrl, self.shift);
-                        } else if self.alt {
-                            action = InputAction::Interact(Some(dir));
-                        } else {
-                            action = InputAction::Move(dir);
-                        }
-                    }
-
-                    InputDirection::Current => {
-                        if !self.cursor && self.alt {
-                            action = InputAction::Interact(None);
-                        } else {
-                            action = InputAction::Pass;
-                        } 
-                    }
-                }
-            }
-            // if releasing a key that is directional, but not the last directional key
-            // pressed, then do nothing, waiting for the last key to be released instead.
-        } else {
-            // if releasing target, apply the skill or item
-            if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
-                action = self.use_skill(index, settings);
-            }
-
-            // Item release can only throw outside in cursor mode
-            if self.cursor {
-                if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
-                    let item_class = CLASSES[index];
-                    let cursor_pos = settings.cursor.unwrap();
-                    action = InputAction::ThrowItem(cursor_pos, item_class);
-                }
-            }
-
-            // If we are not releasing a direction, skill, or item then try other keys.
-            if action == InputAction::None {
-                action = alpha_up_to_action(chr);
-            }
-        }
-
-        return action;
-    }
-
-    fn use_skill(&mut self, skill_index: usize, settings: &GameSettings) -> InputAction {
-        if self.cursor {
-            if let Some(cursor_pos) = settings.cursor {
-                return InputAction::SkillPos(cursor_pos, self.action_mode(), skill_index);
-            } else {
-                panic!("No cursor position while in cursor mode!");
-            }
-        } else {
-            return InputAction::SkillFacing(self.action_mode(), skill_index);
-        }
-    }
-
     fn handle_char_down(&mut self, chr: char, settings: &GameSettings) -> InputAction {
+        // intercept debug toggle so it is not part of the regular control flow.
+        if chr == DEBUG_TOGGLE_KEY {
+            return InputAction::DebugToggle;
+        }
+
         let mut action = InputAction::None;
 
         self.char_down_order.push(chr);
@@ -479,22 +395,112 @@ impl Input {
         return action;
     }
 
-    fn handle_char(&mut self, chr: char, dir: KeyDir, time: Instant, settings: &GameSettings, config: &Config) -> InputAction {
-        match dir {
-            KeyDir::Up => {
-                return self.handle_char_up(chr, settings);
+    fn handle_mouse_button(&mut self, clicked: MouseClick, mouse_pos: Pos, target_pos: Option<Pos>, dir: KeyDir) -> InputAction {
+        let mut action = InputAction::MouseButton(clicked, dir);
+
+        let down = dir == KeyDir::Down;
+        match clicked {
+            MouseClick::Left => {
+
+                if down {
+                    if let Some(target_pos) = target_pos {
+                        action = InputAction::MapClick(mouse_pos, target_pos);
+                    }
+                }
             }
 
-            KeyDir::Down => {
-                return self.handle_char_down(chr, settings);
+            MouseClick::Middle => {
+                action = InputAction::MouseButton(clicked, dir);
             }
 
-            KeyDir::Held => {
-                return self.handle_char_held(chr, time, settings, config);
+            MouseClick::Right => {
+                action = InputAction::MouseButton(clicked, dir);
             }
+        }
+
+        return action;
+    }
+
+    /// Clear direction or target state for the given character, if applicable.
+    fn clear_char_state(&mut self, chr: char) {
+        if let Some(_input_dir) = InputDirection::from_chr(chr) {
+            self.direction = None;
+        }
+
+        if let Some(_index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+            self.target = None;
+        }
+
+        if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+            self.target = None;
+        }
+    }
+
+    fn apply_char(&mut self, chr: char, settings: &GameSettings) -> InputAction {
+        let mut action: InputAction = InputAction::None;
+
+        // check if the key being released is the one that set the input direction.
+        if let Some(input_dir) = InputDirection::from_chr(chr) {
+            if self.direction == Some(input_dir) {
+                match input_dir {
+                    InputDirection::Dir(dir) => {
+                        if self.cursor {
+                           action = InputAction::CursorMove(dir, self.ctrl, self.shift);
+                        } else if self.alt {
+                            action = InputAction::Interact(Some(dir));
+                        } else {
+                            action = InputAction::Move(dir);
+                        }
+                    }
+
+                    InputDirection::Current => {
+                        if !self.cursor && self.alt {
+                            action = InputAction::Interact(None);
+                        } else {
+                            action = InputAction::Pass;
+                        } 
+                    }
+                }
+            }
+            // if releasing a key that is directional, but not the last directional key
+            // pressed, then do nothing, waiting for the last key to be released instead.
+        } else {
+            // if releasing target, apply the skill or item
+            if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+                action = self.use_skill(index, settings);
+            }
+
+            // Item release can only throw outside in cursor mode
+            if self.cursor {
+                if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+                    let item_class = CLASSES[index];
+                    let cursor_pos = settings.cursor.unwrap();
+                    action = InputAction::ThrowItem(cursor_pos, item_class);
+                }
+            }
+
+            // If we are not releasing a direction, skill, or item then try other keys.
+            if action == InputAction::None {
+                action = alpha_up_to_action(chr);
+            }
+        }
+
+        return action;
+    }
+
+    fn use_skill(&mut self, skill_index: usize, settings: &GameSettings) -> InputAction {
+        if self.cursor {
+            if let Some(cursor_pos) = settings.cursor {
+                return InputAction::SkillPos(cursor_pos, self.action_mode(), skill_index);
+            } else {
+                panic!("No cursor position while in cursor mode!");
+            }
+        } else {
+            return InputAction::SkillFacing(self.action_mode(), skill_index);
         }
     }
 }
+
 
 pub fn alpha_up_to_action(chr: char) -> InputAction {
     let input_action: InputAction;
@@ -573,7 +579,7 @@ fn direction_from_digit(chr: char) -> Option<Direction> {
 #[test]
 fn test_input_movement() {
     let mut input = Input::new();
-    let mut settings = GameSettings::new(0, false);
+    let mut settings = GameSettings::new();
     let time = Instant::now();
     let config = Config::from_file("../config.yaml");
 
@@ -589,7 +595,7 @@ fn test_input_movement() {
 #[test]
 fn test_input_use_mode_enter() {
     let mut input = Input::new();
-    let mut settings = GameSettings::new(0, false);
+    let mut settings = GameSettings::new();
     let time = Instant::now();
     let config = Config::from_file("../config.yaml");
 
@@ -617,7 +623,7 @@ fn test_input_use_mode_enter() {
 #[test]
 fn test_input_use_mode_exit() {
     let mut input = Input::new();
-    let mut settings = GameSettings::new(0, false);
+    let mut settings = GameSettings::new();
     let time = Instant::now();
     let config = Config::from_file("../config.yaml");
 
@@ -643,7 +649,7 @@ fn test_input_use_mode_exit() {
 #[test]
 fn test_input_use_mode_abort() {
     let mut input = Input::new();
-    let mut settings = GameSettings::new(0, false);
+    let mut settings = GameSettings::new();
     let time = Instant::now();
     let config = Config::from_file("../config.yaml");
 
@@ -667,7 +673,7 @@ fn test_input_use_mode_abort() {
 #[test]
 fn test_input_cursor_problem() {
     let mut input = Input::new();
-    let mut settings = GameSettings::new(0, false);
+    let mut settings = GameSettings::new();
     let time = Instant::now();
     let config = Config::from_file("../config.yaml");
 
