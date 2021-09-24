@@ -43,9 +43,6 @@ pub fn step_logic(game: &mut Game) -> bool {
     resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
 
     let won_level = level_exit_condition_met(&game.data);
-    if won_level {
-        game.msg_log.log(Msg::NewLevel);
-    }
 
     // resolve enemy action
     let monster = timer!("MONSTER");

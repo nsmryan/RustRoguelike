@@ -102,6 +102,7 @@ pub struct Config {
     pub draw_directional_arrow: bool,
     pub ghost_alpha: u8,
     pub particle_duration: f32,
+    pub max_particles: usize,
 }
 
 impl Config {

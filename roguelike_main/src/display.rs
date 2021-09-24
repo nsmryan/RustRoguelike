@@ -795,8 +795,8 @@ impl DisplayState {
         self.animations[&entity_id].pop_front();
     }
 
-    pub fn show_debug(&mut self, name: String, value: String) {
-        self.debug_entries.insert(name, value);
+    pub fn show_debug(&mut self, name: &str, value: String) {
+        self.debug_entries.insert(name.to_string(), value);
     }
 }
 

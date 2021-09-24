@@ -166,6 +166,8 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
             write!(file, "{} {}\n", index, count).unwrap();
         }
     }
+
+    game.msg_log.log(Msg::NewLevel);
 }
 
 pub fn read_map_xp(config: &Config,

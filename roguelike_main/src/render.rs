@@ -184,7 +184,11 @@ fn render_menus(display: &mut Display, game: &mut Game) {
 fn render_debug(display: &mut Display, game: &mut Game) {
     let display_state = &mut display.state;
 
-    let text = "hello, canvas";
+    let mut text_list = Vec::new();
+    for (key, value) in display_state.debug_entries.iter() {
+        text_list.push(format!("{}: {}", key, value));
+    }
+
     let text_pos = Pos::new(1, 10);
     let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
@@ -192,7 +196,7 @@ fn render_debug(display: &mut Display, game: &mut Game) {
     let tile_sprite = &mut display_state.sprites[&sprite_key];
     let panel = display.targets.canvas_panel.unit();
     let mut panel = panel.with_target(&mut display.targets.canvas_panel.target);
-    tile_sprite.draw_text(&mut panel, text, text_pos, text_color)
+    tile_sprite.draw_text_list(&mut panel, &text_list, text_pos, text_color)
 }
 
 /// Draw an outline and title around an area of the screen
@@ -956,9 +960,11 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
         let mut effect = display_state.effects[index].clone();
         match &mut effect {
             Effect::Particles(rate, particles) => {
-                if rng_trial(&mut game.rng, *rate) {
+                if particles.len() < game.config.max_particles && rng_trial(&mut game.rng, *rate) {
                     particles.push(Particle::new(game.config.particle_duration));
                 }
+
+                display_state.show_debug("particles", format!("{}", particles.len()));
 
                 let sprite_key = display_state.lookup_spritekey("particle_speck");
                 let speck_sprite = &mut display_state.sprites[&sprite_key];
