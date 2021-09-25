@@ -11,7 +11,7 @@ use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::utils::{lerp_color, sub_pos, reach_by_mode, map_fill_metric, rng_trial};
+use roguelike_core::utils::{lerp_color, sub_pos, reach_by_mode, map_fill_metric, rng_trial, rng_pos};
 use roguelike_core::perlin::Perlin;
 use roguelike_core::line::line;
 use roguelike_core::ai::*;
@@ -181,7 +181,7 @@ fn render_menus(display: &mut Display, game: &mut Game) {
     }
 }
 
-fn render_debug(display: &mut Display, game: &mut Game) {
+fn render_debug(display: &mut Display, _game: &mut Game) {
     let display_state = &mut display.state;
 
     let mut text_list = Vec::new();
@@ -961,10 +961,13 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
         match &mut effect {
             Effect::Particles(rate, particles) => {
                 if particles.len() < game.config.max_particles && rng_trial(&mut game.rng, *rate) {
-                    particles.push(Particle::new(game.config.particle_duration));
+                    let size = (panel.num_pixels.0 as i32, panel.num_pixels.1 as i32);
+                    let pos = rng_pos(&mut game.rng, size);
+                    particles.push(Particle::new(game.config.particle_duration, pos));
                 }
 
                 display_state.show_debug("particles", format!("{}", particles.len()));
+                display_state.show_debug("dt", format!("{}", game.settings.dt));
 
                 let sprite_key = display_state.lookup_spritekey("particle_speck");
                 let speck_sprite = &mut display_state.sprites[&sprite_key];
@@ -975,14 +978,9 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                     if particles[index].duration < 0.0 {
                         particles.swap_remove(index);
                     } else {
-                        let pos = Pos::new(1, 1);
-                        speck_sprite.draw_sprite_at_cell(panel,
-                                                         0,
-                                                         pos,
-                                                         Color::white(),
-                                                         0.0,
-                                                         false,
-                                                         false);
+                        speck_sprite.draw_sprite_full(panel, 0, particles[index].pos, Color::white(), 0.0, false, false);
+                        let time_through = (game.config.particle_duration - particles[index].duration) / game.config.particle_duration;
+                        particles[index].pos.x += (FONT_WIDTH as f32 * time_through) as i32;
                         index += 1;
                     }
                 }

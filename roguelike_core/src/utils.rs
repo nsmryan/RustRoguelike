@@ -30,6 +30,12 @@ pub fn rng_range(rng: &mut Rand32, low: f32, high: f32) -> f32 {
     return low + r * (high - low);
 }
 
+pub fn rng_pos(rng: &mut Rand32, bounds: (i32, i32)) -> Pos {
+    let x = rng_range_i32(rng, 0, bounds.0);
+    let y = rng_range_i32(rng, 0, bounds.1);
+    return Pos::new(x, y);
+}
+
 pub fn rng_range_i32(rng: &mut Rand32, low: i32, high: i32) -> i32 {
     if low == high {
         return low;

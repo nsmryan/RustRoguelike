@@ -12,11 +12,12 @@ pub type SpriteIndex = f32;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Particle {
     pub duration: f32,
+    pub pos: Pos,
 }
 
 impl Particle {
-    pub fn new(duration: f32) -> Particle {
-        return Particle { duration };
+    pub fn new(duration: f32, pos: Pos) -> Particle {
+        return Particle { duration, pos };
     }
 }
 
