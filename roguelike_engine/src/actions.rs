@@ -736,7 +736,10 @@ fn finalize_use_item(data: &GameData, settings: &mut GameSettings, msg_log: &mut
             // determine action to take based on weapon type
             if item == Item::Hammer {
                 msg_log.log(Msg::HammerRaise(player_id, item_index, dir));
-            } else if item == Item::Stone || item == Item::Lantern || item == Item::SpikeTrap || item == Item::SoundTrap || item == Item::BlinkTrap || item == Item::FreezeTrap {
+            } else if item == Item::SpikeTrap || item == Item::SoundTrap || item == Item::BlinkTrap || item == Item::FreezeTrap {
+                let place_pos = dir.offset_pos(player_pos, 1);
+                msg_log.log(Msg::PlaceTrap(player_id, place_pos, item_id));
+            } else if item == Item::Stone || item == Item::Lantern {
                 let throw_pos = dir.offset_pos(player_pos, PLAYER_THROW_DIST as i32);
                 msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos));
             } else {

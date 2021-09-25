@@ -393,6 +393,7 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::PlaceTrap(entity_id, place_pos, trap_id) => {
                 place_trap(trap_id, place_pos, data);
+                data.entities.remove_from_inventory(entity_id, trap_id);
                 data.entities.took_turn[&entity_id] = true;
             }
 

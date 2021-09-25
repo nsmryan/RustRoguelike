@@ -1522,6 +1522,22 @@ impl Entities {
         }
     }
 
+    pub fn remove_from_inventory(&mut self, entity_id: EntityId, item_id: EntityId) {
+        let mut index = 0;
+        let mut found = false;
+        while index < self.inventory[&entity_id].len() {
+            if self.inventory[&entity_id][index] == item_id {
+                found = true;
+                break;
+            }
+            index += 1;
+        }
+
+        if found {
+            self.inventory[&entity_id].remove(index);
+        }
+    }
+
     // NOTE cloning entities may not remap all entity ids that an entity tracks!
     // this could cause subtle problems, so this is really only for level generation.
     pub fn clone_entity(&mut self, other: &Entities, entity_id: EntityId) {
