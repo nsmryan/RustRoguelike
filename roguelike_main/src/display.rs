@@ -558,6 +558,11 @@ impl<T> Panel<T> {
         return Area::new(self.cells.0 as usize, self.cells.1 as usize);
     }
 
+    pub fn cell_from_pixel(&self, pixel: Pos) -> Pos {
+        let dims = self.cell_dims();
+        return Pos::new(pixel.x / dims.0 as i32, pixel.y / dims.1 as i32);
+    }
+
     pub fn get_rect_up_left(&self, width: usize, height: usize) -> Rect {
         assert!(width as u32 <= self.cells.0);
         assert!(height as u32 <= self.cells.1);

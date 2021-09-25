@@ -149,6 +149,7 @@ impl GameData {
         if check_pos.x < 0 || check_pos.y < 0 {
             return false;
         }
+        assert!(self.map.is_within_bounds(check_pos));
 
         let entity_pos = self.entities.pos[&entity_id];
 

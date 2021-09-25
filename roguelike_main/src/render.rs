@@ -11,7 +11,7 @@ use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::utils::{lerp_color, sub_pos, reach_by_mode, map_fill_metric, rng_trial, rng_pos};
+use roguelike_core::utils::{lerp_color, sub_pos, reach_by_mode, map_fill_metric, rng_trial, rng_pos, move_x};
 use roguelike_core::perlin::Perlin;
 use roguelike_core::line::line;
 use roguelike_core::ai::*;
@@ -966,22 +966,29 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                     particles.push(Particle::new(game.config.particle_duration, pos));
                 }
 
-                display_state.show_debug("particles", format!("{}", particles.len()));
-                display_state.show_debug("dt", format!("{}", game.settings.dt));
-
                 let sprite_key = display_state.lookup_spritekey("particle_speck");
                 let speck_sprite = &mut display_state.sprites[&sprite_key];
 
+                let dims = panel.cell_dims();
                 let mut index = 0;
                 while index < particles.len() {
+                    let cell = panel.cell_from_pixel(particles[index].pos);
                     particles[index].duration -= game.settings.dt;
-                    if particles[index].duration < 0.0 {
+
+                    // if the particle is finished, or has left the map, remove it.
+                    if particles[index].duration < 0.0 || !game.data.map.is_within_bounds(cell) {
                         particles.swap_remove(index);
                     } else {
-                        speck_sprite.draw_sprite_full(panel, 0, particles[index].pos, Color::white(), 0.0, false, false);
-                        let time_through = (game.config.particle_duration - particles[index].duration) / game.config.particle_duration;
-                        particles[index].pos.x += (FONT_WIDTH as f32 * time_through) as i32;
-                        index += 1;
+                        if game.data.pos_in_fov(player_id, cell, &game.config) {
+                            // offset the particle according to how long it has been running.
+                            let x_offset = (dims.0 as f32 * (game.config.particle_duration - particles[index].duration)) as i32;
+                            let draw_pos = move_x(particles[index].pos, x_offset);
+                            let mut color = Color::white();
+                            // fade the particle out according to how long it has been running.
+                            color.a = (255.0 * (particles[index].duration / game.config.particle_duration)) as u8;
+                            speck_sprite.draw_sprite_full(panel, 0, draw_pos, color, 0.0, false, false);
+                            index += 1;
+                        }
                     }
                 }
             }

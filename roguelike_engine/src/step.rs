@@ -456,13 +456,13 @@ fn test_use_mode_drop() {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let start_pos = game.data.entities.pos[&player_id];
 
-    let stone = make_stone(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    let _stone = make_stone(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
     game.step_game(InputAction::Pickup, 0.1);
 
-    let lantern = make_lantern(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    let _lantern = make_lantern(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
     game.step_game(InputAction::Pickup, 0.1);
 
-    let sword = make_sword(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    let _sword = make_sword(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
     game.step_game(InputAction::Pickup, 0.1);
 
     assert_eq!(3, game.data.entities.inventory[&player_id].len());
