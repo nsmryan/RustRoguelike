@@ -216,14 +216,13 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
         let _loop_timer = timer!("GAME_LOOP");
 
         /* Input */
-        let mut input_action: InputAction = InputAction::None;
+        let mut input_actions: Vec<InputAction> = Vec::new();
         {
             let _input_timer = timer!("INPUT");
 
             // check for commands to execute
             process_commands(&io_recv, &mut game, &mut log);
 
-            //input_action = process_input_events(frame_time, &mut event_pump, &mut game, &mut display);
             for sdl2_event in event_pump.poll_iter() {
                 if let Some(event) = keyboard::translate_event(sdl2_event, &mut game, &mut display) {
                     if game.config.recording && matches!(event, InputEvent::Char('[', KeyDir::Up)) {
@@ -233,8 +232,8 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
                             game = new_game;
                         }
                     } else {
-                        // NOTE may lose inputs if multiple events create actions!
-                        input_action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
+                        let input_action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
+                        input_actions.push(input_action);
                     }
                 }
             }
@@ -246,11 +245,13 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
 
             // if there are starting actions to read, pop one off to play
             if let Some(action) = starting_actions.pop() {
-                input_action = action;
+                input_actions.push(action);
             }
 
            /* Record Inputs to Log File */
-           log.log_action(input_action);
+            for input_action in input_actions.iter() {
+                log.log_action(*input_action);
+            }
         }
 
         /* Logic */
@@ -258,26 +259,28 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
             let _logic_timer = timer!("LOGIC");
             let dt = Instant::now().duration_since(frame_time).as_secs_f32();
             frame_time = Instant::now();
-            game.step_game(input_action, dt);
-            
-            if game.config.recording && input_action != InputAction::None {
-                recording.action(&game, input_action);
-            }
-
-            for msg_index in 0..game.msg_log.turn_messages.len() {
-                let msg = game.msg_log.turn_messages[msg_index];
-                let msg_line = &msg.msg_line(&game.data);
-                if msg_line.len() > 0 {
-                    log.log_console(msg_line);
+            for input_action in input_actions {
+                game.step_game(input_action, dt);
+                
+                if game.config.recording && input_action != InputAction::None {
+                    recording.action(&game, input_action);
                 }
-                log.log_msg(&format!("{}", msg));
-            }
 
-            if game.settings.state == GameState::Win {
-                display.clear_level_state();
-                recording.clear();
-            } else if game.settings.state == GameState::Exit {
-                game.settings.running = false;
+                for msg_index in 0..game.msg_log.turn_messages.len() {
+                    let msg = game.msg_log.turn_messages[msg_index];
+                    let msg_line = &msg.msg_line(&game.data);
+                    if msg_line.len() > 0 {
+                        log.log_console(msg_line);
+                    }
+                    log.log_msg(&format!("{}", msg));
+                }
+
+                if game.settings.state == GameState::Win {
+                    display.clear_level_state();
+                    recording.clear();
+                } else if game.settings.state == GameState::Exit {
+                    game.settings.running = false;
+                }
             }
         }
 
