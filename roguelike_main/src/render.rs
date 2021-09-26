@@ -11,7 +11,7 @@ use roguelike_core::map::*;
 use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::config::*;
-use roguelike_core::utils::{lerp_color, sub_pos, reach_by_mode, map_fill_metric, rng_trial, rng_pos, move_x};
+use roguelike_core::utils::*;
 use roguelike_core::perlin::Perlin;
 use roguelike_core::line::line;
 use roguelike_core::ai::*;
@@ -1086,10 +1086,13 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                 let sprite = sprite_anim.sprite();
                 let attack_sprite = &mut display_state.sprites[&sprite.key];
 
-                let pos = panel.pixel_from_cell(*to);
+                let pixel_from = panel.pixel_from_cell(move_next_to(*from, *to));
+                let pixel_to = panel.pixel_from_cell(*to);
+                let pixel_pos = Pos::new((pixel_from.x + pixel_to.x) / 2,
+                                         (pixel_from.y + pixel_to.y) / 2);
                 attack_sprite.draw_sprite_full(panel,
                                                sprite.index as usize,
-                                               pos,
+                                               pixel_pos,
                                                Color::white(),
                                                sprite.rotation,
                                                sprite.flip_horiz,
