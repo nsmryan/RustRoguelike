@@ -218,50 +218,34 @@ impl Display {
                 }
             }
 
-            Msg::Blunt(from, to) => {
+            Msg::Blunt(from, to) | Msg::Pierce(from, to) | Msg::Slash(from, to) => {
                 let sprite_name;
                 if from == to || Direction::from_positions(from, to).unwrap().horiz() {
-                    sprite_name = "player_blunt_cardinal";
+                    if matches!(msg, Msg::Blunt(_, _)) {
+                        sprite_name = "player_blunt_cardinal";
+                    } else if matches!(msg, Msg::Pierce(_, _)) {
+                        sprite_name = "player_pierce_cardinal";
+                    } else {
+                        sprite_name = "player_slash_cardinal";
+                    }
                 } else {
-                    sprite_name = "player_blunt_diagonal";
+                    if matches!(msg, Msg::Blunt(_, _)) {
+                        sprite_name = "player_blunt_diagonal";
+                    } else if matches!(msg, Msg::Pierce(_, _)) {
+                        sprite_name = "player_pierce_diagonal";
+                    } else {
+                        sprite_name = "player_slash_diagonal";
+                    }
                 }
                 let mut sprite_anim = self.state.new_sprite(sprite_name, config.attack_animation_speed);
                 if let Some(dir) = Direction::from_positions(from, to) {
-                    // rotations are clockwise in SDL2
-                    match dir {
-                        Direction::Left => {
-                            sprite_anim.rotation = 270.0;
-                        }
-
-                        Direction::Right => {
-                            sprite_anim.rotation = 90.0;
-                        }
-
-                        Direction::Up => {
-                            // this is the sprites natural direction
-                        }
-
-                        Direction::Down => {
-                            sprite_anim.flip_vert = true;
-                        }
-
-                        Direction::DownLeft => {
-                            sprite_anim.flip_vert = true;
-                            sprite_anim.flip_horiz = true;
-                        }
-
-                        Direction::DownRight => {
-                            sprite_anim.flip_vert = true;
-                        }
-
-                        Direction::UpLeft => {
-                            sprite_anim.flip_horiz = true;
-                        }
-
-                        Direction::UpRight => {
-                            // this is the sprites natural direction
-                        }
+                    let turns;
+                    if dir.horiz() {
+                        turns = Direction::Up.turn_amount(dir);
+                    } else {
+                        turns = Direction::UpRight.turn_amount(dir);
                     }
+                    sprite_anim.rotation = turns as f64 * 45.0;
                 }
 
                 let blunt_attack = Effect::attack(from, to, sprite_anim);

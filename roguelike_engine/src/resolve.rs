@@ -382,6 +382,8 @@ pub fn resolve_messages(data: &mut GameData,
                 }
             }
 
+            // TODO this message isn't used anymore. remove the message and remove the
+            // use_item function
             Msg::UseItem(entity_id, pos, item_id) => {
                 use_item(entity_id, pos, item_id, data, msg_log);
             }
@@ -501,12 +503,13 @@ fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameD
 }
 
 fn process_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle, data: &mut GameData, msg_log: &mut MsgLog, config: &Config) {
+    let entity_pos = data.entities.pos[&entity_id];
+
     if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
         if data.entities.typ[&hit_entity] == EntityType::Column {
             // if we hit a column, and this is a strong, blunt hit, then
             // push the column over.
             if weapon_type == WeaponType::Blunt && attack_style == AttackStyle::Strong {
-                let entity_pos = data.entities.pos[&entity_id];
                 let dir = Direction::from_positions(entity_pos, hit_pos).unwrap();
                 msg_log.log(Msg::Pushed(entity_id, hit_entity, dir, 1, false));
             }
@@ -544,6 +547,20 @@ fn process_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attac
     } else {
         // no entity- check for a wall. if blunt and strong, crush the wall.
         // TODO message for hitting a wall, use for hammer as well
+    }
+
+    match weapon_type {
+        WeaponType::Blunt => {
+            msg_log.log(Msg::Blunt(entity_pos, hit_pos));
+        },
+
+        WeaponType::Pierce => {
+            msg_log.log(Msg::Pierce(entity_pos, hit_pos));
+        },
+
+        WeaponType::Slash => {
+            msg_log.log(Msg::Slash(entity_pos, hit_pos));
+        },
     }
 
     // TODO maybe a UsedItem message for this, although only one per use.
@@ -915,7 +932,7 @@ fn pushed_entity(pusher: EntityId,
 
             msg_log.log_front(Msg::Crushed(pusher, next_pos));
 
-            if pos_on_map(data.entities.pos[&pusher]) {
+            if move_into && pos_on_map(data.entities.pos[&pusher]) {
                 let movement = Movement::step_to(pushed_pos);
                 msg_log.log(Msg::Moved(pusher, movement.typ, pushed_pos));
             }
