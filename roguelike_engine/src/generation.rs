@@ -325,7 +325,7 @@ pub fn make_freeze_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg
 pub fn make_gate_trigger(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let gate = entities.create_entity(pos.x, pos.y, EntityType::Trigger, ENTITY_GATE_TRIGGER as char, Color::white(), EntityName::GateTrigger, false);
 
-    entities.gate_pos.insert(gate, None);
+    entities.gate_pos.insert(gate, Pos::new(-1, -1));
 
     msg_log.log(Msg::SpawnedObject(gate, entities.typ[&gate], pos, EntityName::GateTrigger, entities.direction[&gate]));
 

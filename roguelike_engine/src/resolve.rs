@@ -586,32 +586,20 @@ fn freeze_trap_triggered(trap: EntityId, cause_id: EntityId, data: &mut GameData
 
 fn triggered(trigger: EntityId, data: &mut GameData) {
     if data.entities.name[&trigger] == EntityName::GateTrigger {
+        let wall_pos = data.entities.gate_pos[&trigger];
+
         if data.entities.status[&trigger].active {
             // raise the gate
             data.entities.status[&trigger].active = false;
 
             // only raise if no entities are on the square.
             // otherwise wait for a move that leaves the trigger unblocked.
-            if let Some(wall_pos) = data.entities.gate_pos[&trigger] {
-                if data.has_entity(wall_pos).is_none() {
-                    data.map[wall_pos] = Tile::wall();
-                    data.entities.gate_pos[&trigger] = None;
-                }
+            if data.has_entity(wall_pos).is_none() {
+                data.map[wall_pos] = Tile::wall();
             }
         } else {
-            let trigger_pos = data.entities.pos[&trigger];
-
-            // any wall nearby is a potential target
-            for neighbor in data.map.cardinal_neighbors(trigger_pos) {
-                if data.map[neighbor].tile_type == TileType::Wall {
-                    data.entities.status[&trigger].active = true;
-
-                    data.map[neighbor] = Tile::empty();
-
-                    data.entities.gate_pos[&trigger] = Some(neighbor);
-                    break;
-                }
-            }
+            data.entities.status[&trigger].active = true;
+            data.map[wall_pos] = Tile::empty();
         }
     }
 }
@@ -1406,15 +1394,6 @@ fn resolve_triggered_traps(entity_id: EntityId,
               data.entities.status[key].active {
                msg_log.log_front(Msg::Untriggered(*key, entity_id));
            }
-
-           if !data.entities.status[key].active {
-               if let Some(wall_pos) = data.entities.gate_pos[key] {
-                   if data.has_entity(wall_pos).is_none() {
-                       data.map[wall_pos] = Tile::wall();
-                       data.entities.gate_pos[key] = None;
-                   }
-               }
-            }
         }
     }
 }

@@ -1401,6 +1401,17 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                     }
                 }
             }
+
+            // render trigger plate wall highlight if selected
+            let entities = game.data.get_entities_at_pos(cursor_pos);
+            for entity in entities {
+                if game.data.entities.name[&entity] == EntityName::GateTrigger {
+                    let gate_pos = game.data.entities.gate_pos[&entity];
+                    let mut highlight_color: Color = game.config.color_red;
+                    highlight_color.a = 100;
+                    draw_tile_highlight(panel, gate_pos, highlight_color);
+                }
+            }
         }
     }
 

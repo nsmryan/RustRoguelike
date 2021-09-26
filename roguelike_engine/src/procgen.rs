@@ -391,8 +391,16 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
         let gate_pos = gate_positions[gate_pos_index];
         gate_positions.swap_remove(gate_pos_index);
 
-        make_gate_trigger(&mut game.data.entities, &game.config, gate_pos, &mut game.msg_log);
-        //game.data.entities.gate_pos.insert(gate, Some(gate_pos));
+        let trigger = make_gate_trigger(&mut game.data.entities, &game.config, gate_pos, &mut game.msg_log);
+
+        // Find a nearby position to use as the trigger's gate. this should always succeed because
+        // the position was chosen to be near a wall.
+        for neighbor in game.data.map.cardinal_neighbors(gate_pos) {
+            if game.data.map[neighbor].tile_type == TileType::Wall {
+                game.data.entities.gate_pos[&trigger] = neighbor;
+                break;
+            }
+        }
 
         // clear the surface of the tile.
         game.data.map[gate_pos] = Tile::empty();
