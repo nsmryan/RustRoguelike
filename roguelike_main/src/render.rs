@@ -197,16 +197,6 @@ fn render_debug(display: &mut Display, _game: &mut Game) {
     let panel = display.targets.canvas_panel.unit();
     let mut panel = panel.with_target(&mut display.targets.canvas_panel.target);
     font_sprite.draw_text_list(&mut panel, &text_list, text_pos, text_color);
-
-    let sprite_key = display_state.lookup_spritekey("player_slash_diagonal");
-    let attack_sprite = &mut display_state.sprites[&sprite_key];
-    attack_sprite.draw_sprite_at_cell(&mut panel,
-                                      0,
-                                      Pos::new(1, 11),
-                                      Color::white(),
-                                      0.0,
-                                      false,
-                                      false);
 }
 
 /// Draw an outline and title around an area of the screen
@@ -997,8 +987,8 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                             // fade the particle out according to how long it has been running.
                             color.a = (255.0 * (particles[index].duration / game.config.particle_duration)) as u8;
                             speck_sprite.draw_sprite_full(panel, 0, draw_pos, color, 0.0, false, false);
-                            index += 1;
                         }
+                        index += 1;
                     }
                 }
             }

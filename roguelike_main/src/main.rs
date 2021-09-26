@@ -185,6 +185,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
             return rerecord_single(&mut game, &mut display, &mut event_pump, &record_name, delay);
         }
     } else {
+        // run game loop
         make_map(&map_config, &mut game);
         let event_pump = sdl_context.event_pump().unwrap();
         return game_loop(game, display, opts, event_pump);
@@ -259,6 +260,12 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
             let _logic_timer = timer!("LOGIC");
             let dt = Instant::now().duration_since(frame_time).as_secs_f32();
             frame_time = Instant::now();
+
+            // if no actions, make sure to step the game anyway
+            if input_actions.len() == 0 {
+                game.step_game(InputAction::None, dt);
+            }
+
             for input_action in input_actions {
                 game.step_game(input_action, dt);
                 
