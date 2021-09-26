@@ -468,6 +468,8 @@ pub fn resolve_messages(data: &mut GameData,
 fn hammer_swing(entity_id: EntityId, item_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut MsgLog) {
     let entity_pos = data.entities.pos[&entity_id];
 
+    msg_log.log_front(Msg::Blunt(entity_pos, pos));
+
     if let Some(blocked) = data.map.path_blocked_move(entity_pos, pos) {
         msg_log.log_front(Msg::HammerHitWall(entity_id, blocked));
         data.used_up_item(entity_id, item_id);
@@ -823,6 +825,7 @@ fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut GameData, msg_
     }
 
     if data.map[hit_pos].block_move {
+        // hammer hit a full tile wall
         if data.map[hit_pos].surface == Surface::Floor {
             data.map[hit_pos].surface = Surface::Rubble;
         }
@@ -836,6 +839,7 @@ fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut GameData, msg_
         msg_log.log_front(Msg::Crushed(entity, next_pos)); 
         msg_log.log_front(Msg::Sound(entity, blocked.end_pos, config.sound_radius_attack, true)); 
     } else {
+        // hammer hit an inter-tile wall
         let wall_loc: Pos;
         let left_wall: bool;
         if blocked.direction == Direction::Left {

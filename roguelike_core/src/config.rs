@@ -103,6 +103,7 @@ pub struct Config {
     pub ghost_alpha: u8,
     pub particle_duration: f32,
     pub max_particles: usize,
+    pub attack_animation_speed: f32,
 }
 
 impl Config {

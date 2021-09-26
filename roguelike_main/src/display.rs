@@ -77,14 +77,6 @@ impl Display {
         return false;
     }
 
-    /// Create a sprite by looking up a texture and constructing the
-    /// SpriteAnim structure.
-    pub fn new_sprite(&self, name: String, speed: f32) -> SpriteAnim {
-        let sprite_key = self.state.lookup_spritekey(&name);
-        let max_index = self.state.sprites[&sprite_key].num_sprites;
-        return SpriteAnim::new(name, sprite_key, 0.0, max_index as f32, speed);
-    }
-
     pub fn static_sprite(&self, sprite_sheet: &str, chr: char) -> SpriteAnim {
         let sprite_key = self.state.lookup_spritekey(sprite_sheet);
         return SpriteAnim::new(format!("{}", chr),
@@ -96,7 +88,7 @@ impl Display {
 
     /// Create and play a looping sprite
     pub fn loop_sprite(&mut self, sprite_name: &str, speed: f32) -> Animation {
-        let sprite_anim = self.new_sprite(sprite_name.to_string(), speed);
+        let sprite_anim = self.state.new_sprite(sprite_name, speed);
         
         let anim = Animation::Loop(sprite_anim);
 
@@ -220,10 +212,60 @@ impl Display {
 
                     let sprite_name = format!("{:?}_death", data.entities.name[&attacked]);
                     if self.sprite_exists(&sprite_name) {
-                        let sprite = self.new_sprite(sprite_name, 1.0);
+                        let sprite = self.state.new_sprite(&sprite_name, 1.0);
                         self.state.play_animation(attacked, Animation::Once(sprite));
                     }
                 }
+            }
+
+            Msg::Blunt(from, to) => {
+                let sprite_name;
+                if from == to || Direction::from_positions(from, to).unwrap().horiz() {
+                    sprite_name = "player_blunt_cardinal";
+                } else {
+                    sprite_name = "player_blunt_diagonal";
+                }
+                let mut sprite_anim = self.state.new_sprite(sprite_name, config.attack_animation_speed);
+                if let Some(dir) = Direction::from_positions(from, to) {
+                    // rotations are clockwise in SDL2
+                    match dir {
+                        Direction::Left => {
+                            sprite_anim.rotation = 270.0;
+                        }
+
+                        Direction::Right => {
+                            sprite_anim.rotation = 90.0;
+                        }
+
+                        Direction::Up => {
+                            // this is the sprites natural direction
+                        }
+
+                        Direction::Down => {
+                            sprite_anim.flip_vert = true;
+                        }
+
+                        Direction::DownLeft => {
+                            sprite_anim.flip_vert = true;
+                            sprite_anim.flip_horiz = true;
+                        }
+
+                        Direction::DownRight => {
+                            sprite_anim.flip_vert = true;
+                        }
+
+                        Direction::UpLeft => {
+                            sprite_anim.flip_horiz = true;
+                        }
+
+                        Direction::UpRight => {
+                            // this is the sprites natural direction
+                        }
+                    }
+                }
+
+                let blunt_attack = Effect::attack(from, to, sprite_anim);
+                self.state.play_effect(blunt_attack);
             }
 
             Msg::HammerSwing(entity_id, _item_id, _pos) => {
@@ -563,6 +605,11 @@ impl<T> Panel<T> {
         return Pos::new(pixel.x / dims.0 as i32, pixel.y / dims.1 as i32);
     }
 
+    pub fn pixel_from_cell(&self, cell: Pos) -> Pos {
+        let dims = self.cell_dims();
+        return Pos::new(cell.x * dims.0 as i32, cell.y * dims.1 as i32);
+    }
+
     pub fn get_rect_up_left(&self, width: usize, height: usize) -> Rect {
         assert!(width as u32 <= self.cells.0);
         assert!(height as u32 <= self.cells.1);
@@ -764,13 +811,21 @@ impl DisplayState {
         }
     }
 
+    /// Create a sprite by looking up a texture and constructing the
+    /// SpriteAnim structure.
+    pub fn new_sprite(&self, name: &str, speed: f32) -> SpriteAnim {
+        let sprite_key = self.lookup_spritekey(name);
+        let max_index = self.sprites[&sprite_key].num_sprites;
+        return SpriteAnim::new(name.to_string(), sprite_key, 0.0, max_index as f32, speed);
+    }
+
     pub fn draw_sprite(&mut self,
                        panel: &mut Panel<&mut WindowCanvas>,
                        sprite: Sprite,
                        pos: Pos,
                        color: Color) {
         let sprite_sheet = &mut self.sprites[&sprite.key];
-        sprite_sheet.draw_sprite_at_cell(panel, sprite.index as usize, pos, color, 0.0, sprite.flip_horiz, sprite.flip_vert);
+        sprite_sheet.draw_sprite_at_cell(panel, sprite.index as usize, pos, color, sprite.rotation, sprite.flip_horiz, sprite.flip_vert);
     }
 
     pub fn play_effect(&mut self, effect: Effect) {
@@ -806,7 +861,7 @@ impl DisplayState {
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Impression {
     pub sprite: Sprite,
     pub pos: Pos,
@@ -951,10 +1006,10 @@ impl SpriteSheet {
     }
 
     pub fn draw_char<T>(&mut self,
-                     panel: &mut Panel<&mut Canvas<T>>,
-                     chr: char,
-                     cell: Pos,
-                     color: Color) where T: RenderTarget {
+                        panel: &mut Panel<&mut Canvas<T>>,
+                        chr: char,
+                        cell: Pos,
+                        color: Color) where T: RenderTarget {
         self.draw_sprite_at_cell(panel, chr as usize, cell, color, 0.0, false, false);
     }
 

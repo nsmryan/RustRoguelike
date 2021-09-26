@@ -29,6 +29,9 @@ pub enum Msg {
     ItemThrow(EntityId, EntityId, Pos, Pos), // thrower, stone id, start, end
     TryAttack(EntityId, Attack, Pos), // attacker, attack description, attack pos
     Attack(EntityId, EntityId, Hp), // attacker, attacked, hp lost
+    Blunt(Pos, Pos), // attacker position, attacked position
+    Pierce(Pos, Pos), // attacker position, attacked position
+    Slash(Pos, Pos), // attacker position, attacked position
     Killed(EntityId, EntityId, Hp), // attacker, attacked, hp lost
     Push(EntityId, Direction, usize), // attacker, direction, amount
     Pushed(EntityId, EntityId, Direction, usize, bool), // attacker, attacked, direction, amount, move into pushed square
@@ -109,6 +112,9 @@ impl fmt::Display for Msg {
                 }
             }
             Msg::Attack(entity_id, target_id, hp) => write!(f, "attack {} {} {}", entity_id, target_id, hp),
+            Msg::Blunt(attacker, attacked) => write!(f, "blunt {} {} {} {}", attacker.x, attacker.y, attacked.x, attacked.y),
+            Msg::Pierce(attacker, attacked) => write!(f, "pierce {} {} {} {}", attacker.x, attacker.y, attacked.x, attacked.y),
+            Msg::Slash(attacker, attacked) => write!(f, "slash {} {} {} {}", attacker.x, attacker.y, attacked.x, attacked.y),
             Msg::Killed(entity_id, target_id, hp) => write!(f, "killed {} {} {}", entity_id, target_id, hp),
             Msg::Push(entity_id, direction, amount) => write!(f, "pushed {} {} {}", entity_id, direction, amount),
             Msg::Pushed(entity_id, target_id, direction, amount, follow) => write!(f, "pushed {} {} {} {} {}", entity_id, target_id, direction, amount, follow),

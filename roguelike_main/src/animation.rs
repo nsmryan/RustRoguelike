@@ -26,6 +26,7 @@ pub enum Effect {
     Sound(Aoe, f32), // area of effect, time since start
     Beam(usize, Pos, Pos), // start, end
     Particles(f32, Vec<Particle>), // spawn rate, current particles
+    Attack(Pos, Pos, SpriteAnim),
 }
 
 impl Effect {
@@ -40,25 +41,31 @@ impl Effect {
     pub fn sound(aoe: Aoe) -> Effect {
         return Effect::Sound(aoe, 0.0);
     }
+
+    pub fn attack(from: Pos, to: Pos, sprite_anim: SpriteAnim) -> Effect {
+        return Effect::Attack(from, to, sprite_anim);
+    }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Sprite {
     pub index: u32, 
     pub key: SpriteKey,
     pub flip_horiz: bool,
     pub flip_vert: bool,
+    pub rotation: f64,
 }
 
 impl Sprite {
     pub fn new(index: u32, key: SpriteKey) -> Sprite {
         let flip_vert = false;
         let flip_horiz = false;
-        return Sprite { index, key, flip_horiz, flip_vert };
+        let rotation = 0.0;
+        return Sprite { index, key, flip_horiz, flip_vert, rotation };
     }
 
     pub fn with_flip(index: u32, key: SpriteKey, flip_horiz: bool, flip_vert: bool) -> Sprite {
-        return Sprite { index, key, flip_horiz, flip_vert };
+        return Sprite { index, key, flip_horiz, flip_vert, rotation: 0.0 };
     }
 }
 
@@ -73,6 +80,7 @@ pub struct SpriteAnim {
     pub looped: bool,
     pub flip_horiz: bool,
     pub flip_vert: bool,
+    pub rotation: f64,
 }
 
 impl SpriteAnim {
@@ -83,6 +91,7 @@ impl SpriteAnim {
                speed: f32) -> SpriteAnim {
         let flip_vert = false;
         let flip_horiz = false;
+        let rotation = 0.0;
         return SpriteAnim { name: name.into(),
                         sprite_key,
                         index,
@@ -92,6 +101,7 @@ impl SpriteAnim {
                         looped: false,
                         flip_horiz,
                         flip_vert,
+                        rotation,
         };
     }
 
@@ -110,7 +120,9 @@ impl SpriteAnim {
     }
 
     pub fn sprite(&self) -> Sprite {
-        return Sprite::with_flip(self.index as u32, self.sprite_key, self.flip_horiz, self.flip_vert);
+        let mut sprite = Sprite::with_flip(self.index as u32, self.sprite_key, self.flip_horiz, self.flip_vert);
+        sprite.rotation = self.rotation;
+        return sprite;
     }
 }
 

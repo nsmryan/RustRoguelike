@@ -246,3 +246,5 @@ ghost_alpha: 125
 # particle effect settings
 particle_duration: 4.0
 max_particles: 40
+
+attack_animation_speed: 40.0

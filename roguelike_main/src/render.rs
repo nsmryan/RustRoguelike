@@ -193,10 +193,20 @@ fn render_debug(display: &mut Display, _game: &mut Game) {
     let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
     let sprite_key = display_state.lookup_spritekey("font");
-    let tile_sprite = &mut display_state.sprites[&sprite_key];
+    let font_sprite = &mut display_state.sprites[&sprite_key];
     let panel = display.targets.canvas_panel.unit();
     let mut panel = panel.with_target(&mut display.targets.canvas_panel.target);
-    tile_sprite.draw_text_list(&mut panel, &text_list, text_pos, text_color)
+    font_sprite.draw_text_list(&mut panel, &text_list, text_pos, text_color);
+
+    let sprite_key = display_state.lookup_spritekey("player_slash_diagonal");
+    let attack_sprite = &mut display_state.sprites[&sprite_key];
+    attack_sprite.draw_sprite_at_cell(&mut panel,
+                                      0,
+                                      Pos::new(1, 11),
+                                      Color::white(),
+                                      0.0,
+                                      false,
+                                      false);
 }
 
 /// Draw an outline and title around an area of the screen
@@ -1069,6 +1079,26 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                     effect_complete = true;
                 } else {
                     *remaining -= 1;
+                }
+            }
+
+            Effect::Attack(from, to, sprite_anim) => {
+                let sprite = sprite_anim.sprite();
+                let attack_sprite = &mut display_state.sprites[&sprite.key];
+
+                let pos = panel.pixel_from_cell(*to);
+                attack_sprite.draw_sprite_full(panel,
+                                               sprite.index as usize,
+                                               pos,
+                                               Color::white(),
+                                               sprite.rotation,
+                                               sprite.flip_horiz,
+                                               sprite.flip_vert);
+
+                sprite_anim.step(game.settings.dt);
+                // if the sprite animation looped back to the beginning, end the effect
+                if sprite_anim.looped {
+                    effect_complete = true;
                 }
             }
         }
