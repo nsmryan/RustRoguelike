@@ -979,10 +979,12 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                     if particles[index].duration < 0.0 || !game.data.map.is_within_bounds(cell) {
                         particles.swap_remove(index);
                     } else {
-                        if game.data.pos_in_fov(player_id, cell, &game.config) {
-                            // offset the particle according to how long it has been running.
-                            let x_offset = (dims.0 as f32 * (game.config.particle_duration - particles[index].duration)) as i32;
-                            let draw_pos = move_x(particles[index].pos, x_offset);
+                        // offset the particle according to how long it has been running.
+                        let x_offset = (dims.0 as f32 * (game.config.particle_duration - particles[index].duration)) as i32;
+                        let draw_pos = move_x(particles[index].pos, x_offset);
+                        let draw_cell = panel.cell_from_pixel(draw_pos);
+
+                        if game.data.map.is_within_bounds(draw_cell) && game.data.pos_in_fov(player_id, draw_cell, &game.config) {
                             let mut color = Color::white();
                             // fade the particle out according to how long it has been running.
                             color.a = (255.0 * (particles[index].duration / game.config.particle_duration)) as u8;
