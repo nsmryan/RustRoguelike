@@ -26,12 +26,6 @@ use roguelike_engine::generation::*;
 // fov
 // convenience, like visible entity ids
 
-// MousePos(i32, i32),
-// MouseButton(MouseClick, Pos, Option<Pos>, KeyDir),
-// Esc,
-// Tab,
-// Quit,
-
 pub enum GameCmd {
     PlayerId,
     Pos(u64),
@@ -292,7 +286,9 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
             game.data.map[(*x, *y)].tile_type = *typ;
             game.data.map[(*x, *y)].block_move = typ.is_wall();
             game.data.map[(*x, *y)].block_sight = typ.is_wall();
-            game.data.map[(*x, *y)].chr = MAP_WALL;
+            if typ.is_wall() {
+                game.data.map[(*x, *y)].chr = MAP_WALL;
+            }
             game.data.map[(*x, *y)].left_wall = *left_wall;
             game.data.map[(*x, *y)].bottom_wall = *bottom_wall;
             return format!("{}", name);

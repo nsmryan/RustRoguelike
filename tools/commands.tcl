@@ -1,15 +1,18 @@
 
 
-if { [info exists rl] } {
-    if { $rl != "" } {
-        catch quit
-    }
-}
-set rl ""
-
-proc start_game {} {
+proc start_game { args } {
     global rl
-    set rl [open "|target/debug/rl" w+]
+
+    if { [info exists rl] } {
+        if { $rl != "" } {
+            catch quit
+        }
+    }
+    set rl ""
+
+    set command [join [list "|target/debug/rl" {*}$args] " "]
+    puts $command
+    set rl [open  $command w+]
     fconfigure $rl -buffering line
 }
 
@@ -86,5 +89,5 @@ proc quit { } {
     unset rl
 }
 
-start_game
+#start_game
 
