@@ -29,6 +29,8 @@ pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String>
 
     display.state.update_animations(game.settings.dt);
 
+    display.state.show_debug("dt", format!("{}", game.settings.dt));
+
     /* Split Screen Into Sections */
     let map_rect = display.targets.canvas_panel.get_rect_from_area(&display.targets.map_area);
 
@@ -1541,9 +1543,11 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
 
     // Draw sound tiles overlay
     if game.settings.overlay {
-        // NOTE this currently does not take into account FOV!
         for pos in display_state.sound_tiles.iter() {
+            // NOTE this currently does not take into account FOV!
+            // if game.data.pos_in_fov(player_id, pos, &game.config) {
             draw_tile_highlight(panel, *pos, highlight_color);
+            //}
         }
     }
 
