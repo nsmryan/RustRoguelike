@@ -244,7 +244,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
 
         GameCmd::SetPos(id, x, y) => {
             // TODO this could return an error if id not found instead of failing silently
-            if let Some(pos) = game.data.entities.pos.get(id) {
+            if game.data.entities.pos.contains_key(id) {
                 game.data.entities.pos[id] = Pos::new(*x, *y);
             }
             return format!("{}", name);
@@ -259,8 +259,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         }
 
         GameCmd::SetHp(id, hp) => {
-            // ugly...
-            if let Some(fighter) = game.data.entities.fighter.get(id) {
+            if game.data.entities.fighter.contains_key(id) {
                 game.data.entities.fighter[id].hp = *hp;
             }
             return format!("{}", name);
@@ -274,8 +273,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         }
 
         GameCmd::SetFacing(id, dir) => {
-            // also ugly- just check for id first
-            if let Some(_dir) = game.data.entities.direction.get(id) {
+            if game.data.entities.direction.contains_key(id) {
                 game.data.entities.direction[id] = *dir;
             }
             return format!("{}", name);
