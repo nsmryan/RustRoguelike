@@ -5,6 +5,7 @@ use roguelike_core::types::*;
 use roguelike_core::movement::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::*;
+use roguelike_core::constants::*;
 
 use roguelike_engine::input::*;
 use roguelike_engine::game::*;
@@ -46,7 +47,7 @@ pub enum GameCmd {
     SetSurface(i32, i32, Surface),
     EntityName(u64),
     EntityType(u64),
-    Make(EntityName, i32, i32),
+    Spawn(EntityName, i32, i32),
     Remove(u64),
     Kill(u64),
     Give(Item),
@@ -67,96 +68,96 @@ impl FromStr for GameCmd {
         s.make_ascii_lowercase();
 
         // TODO probably next() for cmd and have only arguments in args
-        let args = s.split(" ").collect::<Vec<&str>>();
-        let cmd = args[0];
+        let mut args = s.split(" "); // .collect::<Vec<&str>>();
+        let cmd = args.next().unwrap();
 
         if cmd == "player_id" {
             return Ok(GameCmd::PlayerId);
         } else if cmd == "pos" {
-            let id = args[1].parse::<u64>().unwrap();
+            let id = args.next().ok_or("no arg")?.parse::<u64>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::Pos(id));
         } else if cmd == "set_pos" {
-            let id = args[1].parse::<u64>().unwrap();
-            let x  = args[2].parse::<i32>().unwrap();
-            let y  = args[3].parse::<i32>().unwrap();
+            let id = args.next().ok_or("no arg")?.parse::<u64>().map_err(|err| format!("{}", err))?;
+            let x  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
+            let y  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::SetPos(id, x, y));
         } else if cmd == "hp" {
-            let id = args[1].parse::<u64>().unwrap();
-            if args.len() == 2 {
-                return Ok(GameCmd::Hp(id));
-            } else {
-                let hp  = args[2].parse::<i32>().unwrap();
+            let id = args.next().ok_or("no arg")?.parse::<u64>().map_err(|err| format!("{}", err))?;
+            if let Some(hp) = args.next() {
+                let hp  = hp.parse::<i32>().map_err(|err| format!("{}", err))?;
                 return Ok(GameCmd::SetHp(id, hp));
+            } else {
+                return Ok(GameCmd::Hp(id));
             }
         } else if cmd == "facing" {
-            let id = args[1].parse::<u64>().unwrap();
-            if args.len() == 2 {
-                return Ok(GameCmd::Facing(id));
-            } else {
-                let dir  = args[2].parse::<Direction>().unwrap();
+            let id = args.next().ok_or("no arg")?.parse::<u64>().map_err(|err| format!("{}", err))?;
+            if let Some(dir) = args.next() {
+                let dir  = dir.parse::<Direction>().map_err(|err| format!("{}", err))?;
                 return Ok(GameCmd::SetFacing(id, dir));
+            } else {
+                return Ok(GameCmd::Facing(id));
             }
         } else if cmd == "map_size" {
             return Ok(GameCmd::MapSize);
         } else if cmd == "tile_walls" {
-            let x  = args[1].parse::<i32>().unwrap();
-            let y  = args[2].parse::<i32>().unwrap();
+            let x  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
+            let y  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::TileWalls(x, y));
         } else if cmd == "set_tile_walls" {
-            let x       = args[1].parse::<i32>().unwrap();
-            let y       = args[2].parse::<i32>().unwrap();
-            let typ     = args[3].parse::<TileType>().unwrap();
-            let left    = args[4].parse::<Wall>().unwrap();
-            let bottom  = args[5].parse::<Wall>().unwrap();
+            let x       = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
+            let y       = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
+            let typ     = args.next().ok_or("no arg")?.parse::<TileType>().map_err(|err| format!("{}", err))?;
+            let left    = args.next().ok_or("no arg")?.parse::<Wall>().map_err(|err| format!("{}", err))?;
+            let bottom  = args.next().ok_or("no arg")?.parse::<Wall>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::SetTileWalls(x, y, typ, left, bottom));
         } else if cmd == "surface" {
-            let x  = args[1].parse::<i32>().unwrap();
-            let y  = args[2].parse::<i32>().unwrap();
+            let x  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
+            let y  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::Surface(x, y));
         } else if cmd == "set_surface" {
-            let x  = args[1].parse::<i32>().unwrap();
-            let y  = args[2].parse::<i32>().unwrap();
-            let surface  = args[3].parse::<Surface>().unwrap();
+            let x  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
+            let y  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
+            let surface  = args.next().ok_or("no arg")?.parse::<Surface>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::SetSurface(x, y, surface));
         } else if cmd == "entity_name" {
-            let id = args[1].parse::<u64>().unwrap();
+            let id = args.next().ok_or("no arg")?.parse::<u64>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::EntityName(id));
         } else if cmd == "entity_type" {
-            let id = args[1].parse::<u64>().unwrap();
+            let id = args.next().ok_or("no arg")?.parse::<u64>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::EntityType(id));
-        } else if cmd == "make" {
-            let entity_name = args[1].parse::<EntityName>().unwrap();
-            let x  = args[2].parse::<i32>().unwrap();
-            let y  = args[3].parse::<i32>().unwrap();
+        } else if cmd == "spawn" {
+            let entity_name = args.next().ok_or("no arg")?.parse::<EntityName>().map_err(|err| format!("{}", err))?;
+            let x  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
+            let y  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
 
-            return Ok(GameCmd::Make(entity_name, x, y));
+            return Ok(GameCmd::Spawn(entity_name, x, y));
         } else if cmd == "remove" {
-            let id = args[1].parse::<u64>().unwrap();
+            let id = args.next().ok_or("no arg")?.parse::<u64>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::Remove(id));
         } else if cmd == "kill" {
-            let id = args[1].parse::<u64>().unwrap();
+            let id = args.next().ok_or("no arg")?.parse::<u64>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::Kill(id));
         } else if cmd == "give" {
-            let item = args[1].parse::<Item>().unwrap();
+            let item = args.next().ok_or("no arg")?.parse::<Item>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::Give(item));
         } else if cmd == "ids" {
             return Ok(GameCmd::ListEntities);
         } else if cmd == "ids_pos" {
-            let x  = args[1].parse::<i32>().unwrap();
-            let y  = args[2].parse::<i32>().unwrap();
+            let x  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
+            let y  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::ListEntitiesPos(x, y));
         } else if cmd == "key" {
-            let chr = args[1].parse::<char>().unwrap();
-            let dir = args[2].parse::<KeyDir>().unwrap();
+            let chr = args.next().ok_or("no arg")?.parse::<char>().map_err(|err| format!("{}", err))?;
+            let dir = args.next().ok_or("no arg")?.parse::<KeyDir>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::Key(chr, dir));
         } else if cmd == "ctrl" {
-            let dir = args[1].parse::<KeyDir>().unwrap();
+            let dir = args.next().ok_or("no arg")?.parse::<KeyDir>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::Ctrl(dir));
         } else if cmd == "alt" {
-            let dir = args[1].parse::<KeyDir>().unwrap();
+            let dir = args.next().ok_or("no arg")?.parse::<KeyDir>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::Alt(dir));
         } else if cmd == "shift" {
-            let dir = args[1].parse::<KeyDir>().unwrap();
+            let dir = args.next().ok_or("no arg")?.parse::<KeyDir>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::Shift(dir));
         } else if cmd == "exit" {
             return Ok(GameCmd::Exit);
@@ -180,6 +181,8 @@ impl GameCmd {
             return "set_hp";
         } else if matches!(self, GameCmd::Facing(_)) {
             return "facing";
+        } else if matches!(self, GameCmd::SetFacing(_, _)) {
+            return "facing";
         } else if matches!(self, GameCmd::MapSize) {
             return "map_size";
         } else if matches!(self, GameCmd::TileWalls(_, _)) {
@@ -194,8 +197,8 @@ impl GameCmd {
             return "entity_name";
         } else if matches!(self, GameCmd::EntityType(_)) {
             return "entity_type";
-        } else if matches!(self, GameCmd::Make(_, _, _)) {
-            return "make";
+        } else if matches!(self, GameCmd::Spawn(_, _, _)) {
+            return "spawn";
         } else if matches!(self, GameCmd::Remove(_)) {
             return "remove";
         } else if matches!(self, GameCmd::Kill(_)) {
@@ -232,33 +235,50 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         }
 
         GameCmd::Pos(id) => {
-            let pos = game.data.entities.pos[id];
-            return format!("{} {} {}", name, pos.x, pos.y);
+            if let Some(pos) = game.data.entities.pos.get(id) {
+                return format!("{} {} {}", name, pos.x, pos.y);
+            } else {
+                return format!("{}", name);
+            }
         }
 
         GameCmd::SetPos(id, x, y) => {
-            game.data.entities.pos[id] = Pos::new(*x, *y);
-            return "".to_string();
+            // TODO this could return an error if id not found instead of failing silently
+            if let Some(pos) = game.data.entities.pos.get(id) {
+                game.data.entities.pos[id] = Pos::new(*x, *y);
+            }
+            return format!("{}", name);
         }
 
         GameCmd::Hp(id) => {
-            let hp = game.data.entities.fighter[id].hp;
-            return format!("{} {}", name, hp);
+            if let Some(fighter) = game.data.entities.fighter.get(id) {
+                let hp = fighter.hp;
+                return format!("{} {}", name, hp);
+            }
+            return format!("{}", name);
         }
 
         GameCmd::SetHp(id, hp) => {
-            game.data.entities.fighter[id].hp = *hp;
-            return "".to_string();
+            // ugly...
+            if let Some(fighter) = game.data.entities.fighter.get(id) {
+                game.data.entities.fighter[id].hp = *hp;
+            }
+            return format!("{}", name);
         }
 
         GameCmd::Facing(id) => {
-            let dir = game.data.entities.direction[id];
-            return format!("{} {}", name, dir);
+            if let Some(dir) = game.data.entities.direction.get(id) {
+                return format!("{} {}", name, dir);
+            }
+            return format!("{}", name);
         }
 
         GameCmd::SetFacing(id, dir) => {
-            game.data.entities.direction[id] = *dir;
-            return "".to_string();
+            // also ugly- just check for id first
+            if let Some(_dir) = game.data.entities.direction.get(id) {
+                game.data.entities.direction[id] = *dir;
+            }
+            return format!("{}", name);
         }
 
         GameCmd::MapSize => {
@@ -272,9 +292,12 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
 
         GameCmd::SetTileWalls(x, y, typ, left_wall, bottom_wall) => {
             game.data.map[(*x, *y)].tile_type = *typ;
+            game.data.map[(*x, *y)].block_move = typ.is_wall();
+            game.data.map[(*x, *y)].block_sight = typ.is_wall();
+            game.data.map[(*x, *y)].chr = MAP_WALL;
             game.data.map[(*x, *y)].left_wall = *left_wall;
             game.data.map[(*x, *y)].bottom_wall = *bottom_wall;
-            return "".to_string();
+            return format!("{}", name);
         }
 
         GameCmd::Surface(x, y) => {
@@ -283,15 +306,15 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
 
         GameCmd::SetSurface(x, y, surface) => {
             game.data.map[(*x, *y)].surface = *surface;
-            return "".to_string();
+            return format!("{}", name);
         }
 
         GameCmd::Exit => {
             game.settings.running = false;
-            return "".to_string();
+            return format!("{}", name);
         }
 
-        GameCmd::Make(entity_name, x, y) => {
+        GameCmd::Spawn(entity_name, x, y) => {
             let pos = Pos::new(*x, *y);
             let id = make_entity(&mut game.data.entities,
                                  &game.config,
@@ -304,13 +327,13 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         GameCmd::Remove(id) => {
             game.data.entities.remove_entity(*id);
             game.msg_log.log(Msg::RemovedEntity(*id));
-            return "".to_string();
+            return format!("{}", name);
         }
 
         GameCmd::Kill(id) => {
             let player_id = game.data.find_by_name(EntityName::Player).unwrap();
             game.msg_log.log(Msg::Killed(player_id, *id, 1000));
-            return "".to_string();
+            return format!("{}", name);
         }
 
         GameCmd::Give(item) => {
@@ -318,7 +341,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
             let pos = game.data.entities.pos[&player_id];
             let item_id = make_item(&mut game.data.entities, &game.config, *item, pos, &mut game.msg_log);
             game.data.entities.pick_up_item(player_id, item_id);
-            return "".to_string();
+            return format!("{}", name);
         }
 
         GameCmd::EntityName(id) => {
@@ -355,7 +378,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
             let input_event = InputEvent::Char(*chr, *dir);
             let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
             game.step_game(input_action, dt);
-            return "".to_string();
+            return format!("{}", name);
         }
 
         GameCmd::Ctrl(dir) => {
@@ -365,7 +388,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
             let input_event = InputEvent::Ctrl(*dir);
             let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
             game.step_game(input_action, dt);
-            return "".to_string();
+            return format!("{}", name);
         }
 
         GameCmd::Alt(dir) => {
@@ -375,7 +398,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
             let input_event = InputEvent::Alt(*dir);
             let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
             game.step_game(input_action, dt);
-            return "".to_string();
+            return format!("{}", name);
         }
 
         GameCmd::Shift(dir) => {
@@ -385,7 +408,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
             let input_event = InputEvent::Shift(*dir);
             let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
             game.step_game(input_action, dt);
-            return "".to_string();
+            return format!("{}", name);
         }
 
         // let action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);

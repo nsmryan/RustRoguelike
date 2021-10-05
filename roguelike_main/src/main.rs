@@ -400,9 +400,7 @@ fn process_commands(io_recv: &Receiver<String>, game: &mut Game, log: &mut Log) 
     if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(0)) {
         if let Ok(cmd) = msg.parse::<GameCmd>() {
             let result = execute_game_command(&cmd, game);
-            if !result.is_empty() {
-                log.log_output(&result);
-            }
+            log.log_output(&result);
         } else {
             log.log_output(&format!("error '{}' unexpected", msg));
         }
