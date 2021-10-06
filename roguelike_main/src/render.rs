@@ -78,16 +78,16 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
 
             render_map(display_state, game);
 
-            render_entity_type(EntityType::Trigger, &mut panel, display_state, game);
-            render_entity_type(EntityType::Item, &mut panel, display_state, game);
+            render_entity_type(EntityType::Trigger, PanelName::Map, display_state, game);
+            render_entity_type(EntityType::Item, PanelName::Map, display_state, game);
 
             render_map_middle(display_state, game);
 
-            render_entity_type(EntityType::Energy, &mut panel, display_state, game);
-            render_entity_type(EntityType::Enemy, &mut panel, display_state, game);
-            render_entity_type(EntityType::Column, &mut panel, display_state, game);
-            render_entity_type(EntityType::Player, &mut panel, display_state, game);
-            render_entity_type(EntityType::Other, &mut panel, display_state, game);
+            render_entity_type(EntityType::Energy, PanelName::Map, display_state, game);
+            render_entity_type(EntityType::Enemy, PanelName::Map, display_state, game);
+            render_entity_type(EntityType::Column, PanelName::Map, display_state, game);
+            render_entity_type(EntityType::Player, PanelName::Map, display_state, game);
+            render_entity_type(EntityType::Other, PanelName::Map, display_state, game);
 
             render_map_above(display_state, game);
 
@@ -921,12 +921,6 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game) {
     }
 }
 
-fn render_intertile_walls_above(panel: &mut Panel<&mut WindowCanvas>,
-                               map: &Map,
-                               sprite: &mut SpriteSheet,
-                               pos: Pos) {
-}
-
 fn render_intertile_walls_below(display_state: &mut DisplayState,
                                 map: &Map,
                                 sprite_key: SpriteKey,
@@ -1142,7 +1136,7 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
 
 // NOTE this function steps the animation forward. It would be better
 // to do this all at once after rendering a frame.
-fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
+fn render_entity(panel_name: PanelName,
                  entity_id: EntityId,
                  display_state: &mut DisplayState,
                  game: &mut Game) -> Option<Sprite> {
@@ -1180,7 +1174,9 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
                             color = game.config.color_warm_grey;
                         }
 
-                        display_state.draw_sprite(panel, sprite, animation_result.pos, color);
+                        //display_state.draw_sprite(panel, sprite, animation_result.pos, color);
+                        //let sprite = Sprite::new(MAP_THIN_WALL_BOTTOM as u32, sprite_key);
+                        display_state.sprite_cmd(panel_name, sprite, color, animation_result.pos);
                     }
 
                     // for animations other then effects, keep playing by pushing to front of
@@ -1198,7 +1194,8 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
             let tiles = display_state.lookup_spritekey("tiles");
             let chr = game.data.entities.chr[&entity_id];
             let sprite = Sprite::new(chr as u32, tiles);
-            display_state.draw_sprite(panel, sprite, pos, color);
+            //display_state.draw_sprite(panel, sprite, pos, color);
+            display_state.sprite_cmd(panel_name, sprite, color, pos);
             animation_result.sprite = Some(sprite);
         }
     } else {
@@ -1232,7 +1229,7 @@ fn render_impressions(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
     }
 }
 
-fn render_entity_type(typ: EntityType, panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_entity_type(typ: EntityType, panel_name: PanelName, display_state: &mut DisplayState, game: &mut Game) {
     if typ == EntityType::Player && game.settings.state == GameState::Use && game.settings.use_dir.is_some() {
         // For the player in use-mode, while holding down a direction, we
         // need special rendering. Otherwise the player is rendered as normal.
@@ -1260,9 +1257,9 @@ fn render_entity_type(typ: EntityType, panel: &mut Panel<&mut WindowCanvas>, dis
         }
 
         if let Some(pos) = use_pos {
-            render_entity_ghost(player_id, player_pos, game, panel, display_state);
+            render_entity_ghost(player_id, player_pos, game, panel_name, display_state);
             game.data.entities.pos[&player_id] = pos;
-            render_entity(panel, player_id, display_state, game);
+            render_entity(panel_name, player_id, display_state, game);
             game.data.entities.pos[&player_id] = player_pos;
         }
     } else {
@@ -1272,7 +1269,7 @@ fn render_entity_type(typ: EntityType, panel: &mut Panel<&mut WindowCanvas>, dis
             index += 1;
 
             if !game.data.entities.needs_removal[&entity_id] && game.data.entities.typ[&entity_id] == typ {
-                let maybe_sprite = render_entity(panel, entity_id, display_state, game);
+                let maybe_sprite = render_entity(panel_name, entity_id, display_state, game);
 
                 if let Some(sprite) = maybe_sprite {
                     display_state.drawn_sprites.insert(entity_id, sprite);
@@ -1456,7 +1453,8 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                     }
 
                     if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {
-                        render_entity_ghost(player_id, player_ghost_pos, game, panel, display_state);
+                        // TODO add back in
+                        //render_entity_ghost(player_id, player_ghost_pos, game, panel, display_state);
                     }
                 }
             }
@@ -1607,7 +1605,8 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                     let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
                     let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
 
-                    render_entity_ghost(player_id, shadow_cursor_pos, game, panel, display_state);
+                    // TODO add back in
+                    //render_entity_ghost(player_id, shadow_cursor_pos, game, panel, display_state);
                 }
             }
         }
@@ -1855,7 +1854,11 @@ pub fn sdl2_color(color: Color) -> Sdl2Color {
 }
 
 
-pub fn render_entity_ghost(entity_id: EntityId, render_pos: Pos, game: &mut Game, panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState) {
+pub fn render_entity_ghost(entity_id: EntityId,
+                           render_pos: Pos,
+                           game: &mut Game,
+                           panel_name: PanelName,
+                           display_state: &mut DisplayState) {
     let entity_pos = game.data.entities.pos[&entity_id];
 
     let alpha = game.data.entities.color[&entity_id].a;
@@ -1867,7 +1870,7 @@ pub fn render_entity_ghost(entity_id: EntityId, render_pos: Pos, game: &mut Game
     // step the animation forward when rendering a ghost.
     let dt = display_state.dt;
     display_state.dt = 0.0;
-    render_entity(panel, entity_id, display_state, game);
+    render_entity(panel_name, entity_id, display_state, game);
     display_state.dt = dt;
 
     game.data.entities.color[&entity_id].a = alpha;
