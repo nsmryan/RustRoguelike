@@ -91,7 +91,7 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
 
             render_map_above(display_state, game);
 
-            render_impressions(&mut panel, display_state, game);
+            render_impressions(PanelName::Map, display_state, game);
             render_effects(&mut panel, display_state, game);
             render_overlays(&mut panel, display_state, game, mouse_map_pos);
         }).unwrap();
@@ -1219,13 +1219,16 @@ fn render_entity(panel_name: PanelName,
     return animation_result.sprite;
 }
 
-fn render_impressions(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_impressions(panel_name: PanelName, display_state: &mut DisplayState, game: &mut Game) {
     // check for entities that have left FOV and make an impression for them
     let mut index = 0;
     while index < display_state.impressions.len() {
         let impression = display_state.impressions[index];
         index += 1;
-        display_state.draw_sprite(panel, impression.sprite, impression.pos, game.config.color_light_grey);
+        display_state.sprite_cmd(panel_name,
+                                 impression.sprite,
+                                 game.config.color_light_grey,
+                                 impression.pos);
     }
 }
 
