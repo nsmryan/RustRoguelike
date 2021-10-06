@@ -148,7 +148,7 @@ draw_mouse_line: false
 draw_star_path: false
 
 # throttle to frame rate
-frame_rate: 25
+frame_rate: 30
 
 # animation speeds
 player_attack_speed: 2.0

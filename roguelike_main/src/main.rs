@@ -215,6 +215,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
     let mut frame_time = Instant::now();
     while game.settings.running {
         let _loop_timer = timer!("GAME_LOOP");
+        let frame_start_time = Instant::now();
 
         /* Input */
         let mut input_actions: Vec<InputAction> = Vec::new();
@@ -291,10 +292,16 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
 
         /* Display */
         {
+            let logic_time = Instant::now().duration_since(frame_start_time).as_secs_f32();
+            display.state.show_debug("lt", format!("{}", logic_time));
+
             let _display_timer = timer!("DISPLAY");
             let dt = Instant::now().duration_since(frame_time).as_secs_f32();
             frame_time = Instant::now();
             update_display(&mut game, &mut display, dt)?;
+
+            let disp_time = Instant::now().duration_since(frame_time).as_secs_f32();
+            display.state.show_debug("dr", format!("{}", disp_time));
         }
 
         game.msg_log.clear();
@@ -307,6 +314,9 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
 
         /* Wait until the next tick to loop */
         {
+            let frame_time = Instant::now().duration_since(frame_start_time).as_secs_f32();
+            display.state.show_debug("ft", format!("{}", frame_time));
+
             let _wait_timer = timer!("WAIT");
             fps_throttler.wait();
         }

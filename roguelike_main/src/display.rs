@@ -40,6 +40,7 @@ pub enum PanelName {
     Map,
     Player,
     Inventory,
+    Background,
 }
 
 fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, cmd: DrawCmd) {
@@ -163,7 +164,6 @@ impl Display {
             canvas.clear();
 
             canvas.copy(&background.target, None, None).unwrap();
-
         }).unwrap();
 
         // TODO this clone should be removable, but perhaps not until
@@ -176,6 +176,7 @@ impl Display {
                 PanelName::Map => panel_main = &mut self.targets.map_panel,
                 PanelName::Player => panel_main = &mut self.targets.player_panel,
                 PanelName::Inventory => panel_main = &mut self.targets.inventory_panel,
+                PanelName::Background => panel_main = &mut self.targets.background_panel,
             }
             let display_state = &mut self.state;
 

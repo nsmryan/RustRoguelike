@@ -30,6 +30,8 @@ pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<()
     display.state.dt = dt;
     display.state.update_animations();
 
+    display.state.show_debug("dt", format!("{}", dt));
+
     /* Split Screen Into Sections */
     let map_rect = display.targets.canvas_panel.get_rect_from_area(&display.targets.map_area);
 
@@ -126,6 +128,7 @@ fn render_screen(targets: &mut DisplayTargets, map_size: (i32, i32), map_rect: R
     // TODO just make the map panel the right size in the first place
     // and re-create it when the map changes.
     let src = targets.map_panel.get_rect_up_left(map_size.0 as usize, map_size.1 as usize);
+    targets.canvas_panel.target.copy(&targets.background_panel.target, src, map_rect).unwrap();
     targets.canvas_panel.target.copy(&targets.map_panel.target, src, map_rect).unwrap();
 
     /* Draw Inventory Panel */
@@ -660,6 +663,10 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
 
 /// render the background files, including water tiles
 fn render_background(display: &mut Display, game: &mut Game) {
+    // NOTE(perf) this optimization can likely be removed.
+    // Once the new display system is done, and some optimizations have
+    // been performed, remove the dirty flag concept and see if there
+    // is any real difference.
     if !display.targets.background_panel.dirty {
         return;
     }
@@ -673,27 +680,21 @@ fn render_background(display: &mut Display, game: &mut Game) {
     let canvas = &mut display.targets.canvas_panel.target;
 
     let panel = display.targets.background_panel.unit();
-    canvas.with_texture_canvas(&mut display.targets.background_panel.target, |canvas| {
-        canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
-        canvas.clear();
+    for y in 0..map_height {
+        for x in 0..map_width {
+            let map_pos = Pos::new(x, y);
 
-        let mut panel = panel.with_target(canvas);
-        for y in 0..map_height {
-            for x in 0..map_width {
-                let map_pos = Pos::new(x, y);
-
-                let tile = &game.data.map[(x, y)];
-                if tile.tile_type != TileType::Water {
-                    sprite.draw_char(&mut panel,
-                                     MAP_EMPTY_CHAR as char,
-                                     map_pos,
-                                     Color::white());
-                } else {
-                    sprite.draw_char(&mut panel, MAP_EMPTY_CHAR as char, map_pos, Color::white());
-                }
+            let tile = &game.data.map[(x, y)];
+            // TODO why are these branches identical?
+            if tile.tile_type != TileType::Water {
+                let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
+                display.state.sprite_cmd(PanelName::Background, sprite, Color::white(), map_pos);
+            } else {
+                let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
+                display.state.sprite_cmd(PanelName::Background, sprite, Color::white(), map_pos);
             }
         }
-    }).unwrap();
+    }
 }
 
 fn surface_chr(surface: Surface) -> Option<u8> {
