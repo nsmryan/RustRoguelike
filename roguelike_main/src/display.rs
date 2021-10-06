@@ -28,6 +28,8 @@ use crate::animation::{Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteI
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DrawCmd {
     Sprite(Sprite, Color, Pos),
+    SpriteAtPixel(Sprite, Color, Pos),
+    HighlightTile(Color, Pos),
     OutlineTile(Color, Pos),
 }
 
@@ -79,8 +81,19 @@ impl Display {
                             display_state.draw_sprite(&mut panel, *sprite, *pos, *color);
                         }
 
+                        DrawCmd::SpriteAtPixel(sprite, color, pos) => {
+                            let (cell_width, cell_height) = panel.cell_dims();
+                            let pos = Pos::new(pos.x * cell_width as i32, pos.y * cell_height as i32);
+                            let sprite_sheet = &mut display_state.sprites[&sprite.key];
+                            sprite_sheet.draw_sprite_full(&mut panel, sprite.index as usize, pos, *color, sprite.rotation, sprite.flip_horiz, sprite.flip_vert);
+                        }
+
                         DrawCmd::OutlineTile(color, pos) => {
                             draw_outline_tile(&mut panel, *pos, *color);
+                        }
+
+                        DrawCmd::HighlightTile(color, pos) => {
+                            draw_tile_highlight(&mut panel, *pos, *color);
                         }
                     }
                 }
@@ -839,6 +852,11 @@ impl DisplayState {
         };
     }
 
+    pub fn sprite_at_pixel_cmd(&mut self, name: PanelName, sprite: Sprite, color: Color, pos: Pos) {
+        let cmd = DrawCmd::SpriteAtPixel(sprite, color, pos);
+        self.draw_cmd(name, cmd);
+    }
+
     pub fn sprite_cmd(&mut self, name: PanelName, sprite: Sprite, color: Color, pos: Pos) {
         let cmd = DrawCmd::Sprite(sprite, color, pos);
         self.draw_cmd(name, cmd);
@@ -846,6 +864,11 @@ impl DisplayState {
 
     pub fn outline_cmd(&mut self, name: PanelName, color: Color, pos: Pos) {
         let cmd = DrawCmd::OutlineTile(color, pos);
+        self.draw_cmd(name, cmd);
+    }
+
+    pub fn highlight_cmd(&mut self, name: PanelName, color: Color, pos: Pos) {
+        let cmd = DrawCmd::HighlightTile(color, pos);
         self.draw_cmd(name, cmd);
     }
 

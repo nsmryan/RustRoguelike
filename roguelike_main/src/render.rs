@@ -92,7 +92,7 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
             render_map_above(display_state, game);
 
             render_impressions(PanelName::Map, display_state, game);
-            render_effects(&mut panel, display_state, game);
+            render_effects(PanelName::Map, panel.unit(), display_state, game);
             render_overlays(&mut panel, display_state, game, mouse_map_pos);
         }).unwrap();
     }
@@ -975,7 +975,8 @@ fn render_intertile_walls_below(display_state: &mut DisplayState,
 /// The strategy here is to copy the effects vector, update all items,
 /// and then remove finished effects from back to front. The
 /// resulting vector of effects is then saved as the new effects vector.
-fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
+fn render_effects(panel_name: PanelName,
+                  panel: Panel<()>,
                   display_state: &mut DisplayState,
                   game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -984,6 +985,7 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
     while index < display_state.effects.len() {
         let mut effect_complete = false;
 
+        // NOTE(perf) cloning the effect vector each iteration!
         let mut effect = display_state.effects[index].clone();
         match &mut effect {
             Effect::Particles(rate, particles) => {
@@ -994,7 +996,6 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                 }
 
                 let sprite_key = display_state.lookup_spritekey("particle_speck");
-                let speck_sprite = &mut display_state.sprites[&sprite_key];
 
                 let dims = panel.cell_dims();
                 let mut index = 0;
@@ -1015,7 +1016,9 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                             let mut color = Color::white();
                             // fade the particle out according to how long it has been running.
                             color.a = (255.0 * (particles[index].duration / game.config.particle_duration)) as u8;
-                            speck_sprite.draw_sprite_full(panel, 0, draw_pos, color, 0.0, false, false);
+                            //speck_sprite.draw_sprite_full(panel, 0, draw_pos, color, 0.0, false, false);
+                            let sprite = Sprite::new(0, sprite_key);
+                            display_state.sprite_at_pixel_cmd(panel_name, sprite, color, draw_pos);
                         }
                         index += 1;
                     }
@@ -1038,8 +1041,10 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                     for pos in dist_positions.iter() {
                         if !game.data.map[*pos].block_move &&
                            game.data.pos_in_fov(player_id, *pos, &game.config) {
-                           draw_tile_highlight(panel, *pos, highlight_color);
-                           draw_outline_tile(panel, *pos, highlight_color);
+                           //draw_tile_highlight(panel, *pos, highlight_color);
+                           //draw_outline_tile(panel, *pos, highlight_color);
+                           display_state.highlight_cmd(panel_name, highlight_color, *pos);
+                           display_state.outline_cmd(panel_name, highlight_color, *pos);
                         }
                     }
                 }
@@ -1056,7 +1061,6 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
 
             Effect::Beam(remaining, start, end) => {
                 let sprite_key = display_state.lookup_spritekey("tiles");
-                let tile_sprite = &mut display_state.sprites[&sprite_key];
 
                 let dxy = sub_pos(*end, *start);
                 let dir = Direction::from_dxy(dxy.x, dxy.y).unwrap();
@@ -1085,13 +1089,17 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                 };
 
                 for pos in line(*start, *end) {
-                    tile_sprite.draw_sprite_at_cell(panel,
-                                                    sprite_index as usize,
-                                                    pos,
-                                                    Color::white(),
-                                                    rotation,
-                                                    false,
-                                                    false);
+                    let mut sprite = Sprite::new(sprite_index as u32, sprite_key);
+                    sprite.rotation = rotation;
+                    display_state.sprite_cmd(panel_name, sprite, Color::white(), pos);
+                    // TODO delete, as well as other sprite draw calls.
+                    //tile_sprite.draw_sprite_at_cell(panel,
+                    //                                sprite_index as usize,
+                    //                                pos,
+                    //                                Color::white(),
+                    //                                rotation,
+                    //                                false,
+                    //                                false);
                 }
 
                 if *remaining == 0 {
@@ -1103,19 +1111,19 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
 
             Effect::Attack(from, to, sprite_anim) => {
                 let sprite = sprite_anim.sprite();
-                let attack_sprite = &mut display_state.sprites[&sprite.key];
 
                 let pixel_from = panel.pixel_from_cell(move_next_to(*from, *to));
                 let pixel_to = panel.pixel_from_cell(*to);
                 let pixel_pos = Pos::new((pixel_from.x + pixel_to.x) / 2,
                                          (pixel_from.y + pixel_to.y) / 2);
-                attack_sprite.draw_sprite_full(panel,
-                                               sprite.index as usize,
-                                               pixel_pos,
-                                               Color::white(),
-                                               sprite.rotation,
-                                               sprite.flip_horiz,
-                                               sprite.flip_vert);
+                display_state.sprite_at_pixel_cmd(panel_name, sprite, Color::white(), pixel_pos);
+                //attack_sprite.draw_sprite_full(panel,
+                //                               sprite.index as usize,
+                //                               pixel_pos,
+                //                               Color::white(),
+                //                               sprite.rotation,
+                //                               sprite.flip_horiz,
+                //                               sprite.flip_vert);
 
                 sprite_anim.step(display_state.dt);
                 // if the sprite animation looped back to the beginning, end the effect
