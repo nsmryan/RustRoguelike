@@ -21,6 +21,24 @@ use roguelike_core::movement::{Direction};
 use crate::animation::{Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 
 
+// consider
+// highlight cell with color
+// outline cell with color
+// pixels vs cells
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum DrawCmd {
+    Sprite(Sprite, Color, Pos),
+    OutlineTile(Color, Pos),
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum PanelName {
+    Info,
+    Map,
+    Player,
+    Inventory,
+}
+
 pub struct Display {
     pub state: DisplayState,
     pub targets: DisplayTargets,
@@ -33,6 +51,46 @@ impl Display {
                          targets: DisplayTargets::new(canvas),
                          mouse_state: Default::default(),
         };
+    }
+
+    pub fn process_draw_commands(&mut self) {
+        let canvas = &mut self.targets.canvas_panel.target;
+
+        // TODO this clone should be removable, but perhaps not until
+        // the draw_sprite command is redone.
+        let mut draw_table = self.state.draw_cmds.clone();
+        for (name, cmds) in draw_table.iter_mut() {
+            let panel_main;
+            match name {
+                PanelName::Info => panel_main = &mut self.targets.info_panel,
+                PanelName::Map => panel_main = &mut self.targets.map_panel,
+                PanelName::Player => panel_main = &mut self.targets.player_panel,
+                PanelName::Inventory => panel_main = &mut self.targets.inventory_panel,
+            }
+            let display_state = &mut self.state;
+
+            let panel = panel_main.unit();
+            canvas.with_texture_canvas(&mut panel_main.target, |canvas| {
+                let mut panel = panel.with_target(canvas);
+
+                for cmd in cmds.iter() {
+                    match cmd {
+                        DrawCmd::Sprite(sprite, color, pos) => {
+                            display_state.draw_sprite(&mut panel, *sprite, *pos, *color);
+                        }
+
+                        DrawCmd::OutlineTile(color, pos) => {
+                            draw_outline_tile(&mut panel, *pos, *color);
+                        }
+                    }
+                }
+            }).unwrap();
+        }
+
+        // remove already drawn commands, leaving allocated space where it is
+        for cmds in self.state.draw_cmds.values_mut() {
+            cmds.clear();
+        }
     }
 
     pub fn update_display(&mut self) {
@@ -757,6 +815,8 @@ pub struct DisplayState {
     pub dt: f32,
 
     pub debug_entries: HashMap<String, String>,
+
+    pub draw_cmds: HashMap<PanelName, Vec<DrawCmd>>,
 }
 
 impl DisplayState {
@@ -775,7 +835,25 @@ impl DisplayState {
             sound_tiles: Vec::new(),
             dt: 0.0,
             debug_entries: HashMap::<String, String>::new(),
+            draw_cmds: HashMap::<PanelName, Vec<DrawCmd>>::new(),
         };
+    }
+
+    pub fn sprite_cmd(&mut self, name: PanelName, sprite: Sprite, color: Color, pos: Pos) {
+        let cmd = DrawCmd::Sprite(sprite, color, pos);
+        self.draw_cmd(name, cmd);
+    }
+
+    pub fn outline_cmd(&mut self, name: PanelName, color: Color, pos: Pos) {
+        let cmd = DrawCmd::OutlineTile(color, pos);
+        self.draw_cmd(name, cmd);
+    }
+
+    pub fn draw_cmd(&mut self, name: PanelName, cmd: DrawCmd) {
+        if !self.draw_cmds.contains_key(&name) {
+            self.draw_cmds.insert(name, Vec::new());
+        } 
+        self.draw_cmds.get_mut(&name).map(|cmds| cmds.push(cmd));
     }
 
     pub fn lookup_spritekey(&self, name: &str) -> SpriteKey {

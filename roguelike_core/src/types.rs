@@ -1254,7 +1254,7 @@ pub struct Entities {
     pub skills: CompStore<Vec<Skill>>,
     pub status: CompStore<StatusEffect>,
     pub illuminate: CompStore<usize>,
-    pub gate_pos: CompStore<Pos>>,
+    pub gate_pos: CompStore<Pos>,
     pub stance: CompStore<Stance>,
     pub took_turn: CompStore<bool>,
     pub durability: CompStore<usize>,
