@@ -367,46 +367,42 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         GameCmd::Key(chr, dir) => {
             // TODO this isn't really correct...
             let time = Instant::now();
-            let dt = Instant::now().duration_since(time).as_secs_f32();
 
             let input_event = InputEvent::Char(*chr, *dir);
             let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
-            game.step_game(input_action, dt);
+            game.step_game(input_action);
             return format!("{}", name);
         }
 
         GameCmd::Ctrl(dir) => {
             let time = Instant::now();
-            let dt = Instant::now().duration_since(time).as_secs_f32();
 
             let input_event = InputEvent::Ctrl(*dir);
             let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
-            game.step_game(input_action, dt);
+            game.step_game(input_action);
             return format!("{}", name);
         }
 
         GameCmd::Alt(dir) => {
             let time = Instant::now();
-            let dt = Instant::now().duration_since(time).as_secs_f32();
 
             let input_event = InputEvent::Alt(*dir);
             let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
-            game.step_game(input_action, dt);
+            game.step_game(input_action);
             return format!("{}", name);
         }
 
         GameCmd::Shift(dir) => {
             let time = Instant::now();
-            let dt = Instant::now().duration_since(time).as_secs_f32();
 
             let input_event = InputEvent::Shift(*dir);
             let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
-            game.step_game(input_action, dt);
+            game.step_game(input_action);
             return format!("{}", name);
         }
 
         // let action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
-        // game.step_game(input_action, dt);
+        // game.step_game(input_action);
     }
 }
 

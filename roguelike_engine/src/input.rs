@@ -339,7 +339,7 @@ impl Input {
             }
         } else if !settings.state.is_menu() {
             if chr == 'o' {
-                action = InputAction::OverlayOn;
+                action = InputAction::OverlayToggle;
             } else if chr == ' ' {
                 self.cursor = !self.cursor;
                 action = InputAction::CursorToggle;
@@ -370,7 +370,7 @@ impl Input {
 
         if let Some(held_state) = self.char_held.get(&chr) {
             // only process the last character as held
-            if chr == *self.char_down_order.iter().last().unwrap() {
+            if self.char_down_order.iter().last() == Some(&chr) {
                 let held_state = *held_state;
                 let time_since = time.duration_since(held_state.down_time).as_secs_f32();
 
@@ -378,11 +378,11 @@ impl Input {
                 if new_repeats > held_state.repetitions {
                     action = self.apply_char(chr, settings);
 
-                    if action == InputAction::OverlayOff   ||
-                       action == InputAction::Inventory    ||
-                       action == InputAction::SkillMenu    ||
-                       action == InputAction::Exit         ||
-                       action == InputAction::CursorToggle ||
+                    if action == InputAction::OverlayToggle ||
+                       action == InputAction::Inventory     ||
+                       action == InputAction::SkillMenu     ||
+                       action == InputAction::Exit          ||
+                       action == InputAction::CursorToggle  ||
                        action == InputAction::ClassMenu {
                         action = InputAction::None;
                     } else {
@@ -540,10 +540,6 @@ pub fn alpha_up_to_action(chr: char) -> InputAction {
 
         'w' => {
             input_action = InputAction::DecreaseMoveMode;
-        }
-
-        'o' => {
-            input_action = InputAction::OverlayOff;
         }
 
         'j' => {

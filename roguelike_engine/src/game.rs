@@ -70,10 +70,7 @@ impl Game {
         }
     }
 
-    pub fn step_game(&mut self, input_action: InputAction, dt: f32) -> bool {
-        self.settings.dt = dt;
-        self.settings.time += dt;
-
+    pub fn step_game(&mut self, input_action: InputAction) -> bool {
         let input_handled = actions::handle_input_universal(input_action, self);
 
         if !input_handled {
@@ -135,8 +132,6 @@ pub struct GameSettings {
     pub map_type: MapGenType,
     pub state: GameState,
     pub overlay: bool,
-    pub time: f32,
-    pub dt: f32,
     pub render_map: bool,
     pub level_num: usize,
     pub running: bool,
@@ -155,8 +150,6 @@ impl GameSettings {
             map_type: MapGenType::Island,
             state: GameState::Playing,
             overlay: false,
-            time: 0.0,
-            dt: 0.0,
             render_map: true,
             level_num: 0,
             running: true,

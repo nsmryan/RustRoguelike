@@ -754,6 +754,8 @@ pub struct DisplayState {
     // tiles that heard a sound
     pub sound_tiles: Vec<Pos>,
 
+    pub dt: f32,
+
     pub debug_entries: HashMap<String, String>,
 }
 
@@ -771,6 +773,7 @@ impl DisplayState {
             prev_turn_fov: Vec::new(),
             current_turn_fov: Vec::new(),
             sound_tiles: Vec::new(),
+            dt: 0.0,
             debug_entries: HashMap::<String, String>::new(),
         };
     }
@@ -785,11 +788,11 @@ impl DisplayState {
         panic!(format!("Could not find sprite '{}'", name));
     }
 
-    pub fn update_animations(&mut self, dt: f32) {
+    pub fn update_animations(&mut self) {
         for anims in self.animations.values_mut() {
             if let Some(anim) = anims.get_mut(0) {
                 if let Some(sprite_anim) = anim.sprite_anim_mut() {
-                    sprite_anim.step(dt);
+                    sprite_anim.step(self.dt);
                 }
             }
         }

@@ -258,16 +258,14 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
         /* Logic */
         {
             let _logic_timer = timer!("LOGIC");
-            let dt = Instant::now().duration_since(frame_time).as_secs_f32();
-            frame_time = Instant::now();
 
             // if no actions, make sure to step the game anyway
             if input_actions.len() == 0 {
-                game.step_game(InputAction::None, dt);
+                game.step_game(InputAction::None);
             }
 
             for input_action in input_actions {
-                game.step_game(input_action, dt);
+                game.step_game(input_action);
                 
                 if game.config.recording && input_action != InputAction::None {
                     recording.action(&game, input_action);
@@ -294,7 +292,9 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
         /* Display */
         {
             let _display_timer = timer!("DISPLAY");
-            update_display(&mut game, &mut display)?;
+            let dt = Instant::now().duration_since(frame_time).as_secs_f32();
+            frame_time = Instant::now();
+            update_display(&mut game, &mut display, dt)?;
         }
 
         game.msg_log.clear();
@@ -361,21 +361,21 @@ fn reload_config(config_modified_time: &mut SystemTime, game: &mut Game) {
 pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), String> {
     game.settings.god_mode = true;
 
-    game.step_game(InputAction::None, 0.0);
-    render_all(display, game)?;
+    game.step_game(InputAction::None);
+    render_all(display, game, 0.1)?;
 
     display.save_screenshot("screenshot");
 
     return Ok(());
 }
 
-fn update_display(game: &mut Game, display: &mut Display) -> Result<(), String> {
+fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(), String> {
     for msg in game.msg_log.turn_messages.iter() {
         display.process_message(*msg, &mut game.data, &game.config);
     }
 
     /* Draw the Game to the Screen */
-    render_all(display, game)?;
+    render_all(display, game, dt)?;
 
     display.update_display();
 

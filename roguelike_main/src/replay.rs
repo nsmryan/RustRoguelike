@@ -50,7 +50,7 @@ impl Recording {
     pub fn forward(self: &mut Recording) -> Option<Game> {
         if let Some(action) = self.inputs.get(self.cursor) {
             let mut game = self.states[self.states.len() - 1].clone();
-            game.step_game(*action, 0.1);
+            game.step_game(*action);
             let return_game = game.clone();
             self.states.push(game);
             self.cursor = std::cmp::min(self.cursor + 1, self.inputs.len());
@@ -102,7 +102,7 @@ pub fn test_recording() {
 
     // walk right (1, 0)
     input_action = InputAction::Move(Direction::Right);
-    game.step_game(input_action, 0.1);
+    game.step_game(input_action);
     recording.action(&game, input_action);
     let step1_pos = game.data.entities.pos[&player_id];
     assert_eq!(starting_pos.x + 1, step1_pos.x);
@@ -110,7 +110,7 @@ pub fn test_recording() {
 
     // walk down (1, 1)
     input_action = InputAction::Move(Direction::Down);
-    game.step_game(input_action, 0.1);
+    game.step_game(input_action);
     recording.action(&game, input_action);
     let step2_pos = game.data.entities.pos[&player_id];
     assert_eq!(starting_pos.x + 1, step2_pos.x);
@@ -130,7 +130,7 @@ pub fn test_recording() {
 
     // go down first, and then replay the previous actions (0, 1)
     input_action = InputAction::Move(Direction::Down);
-    game.step_game(input_action, 0.1);
+    game.step_game(input_action);
     recording.action(&game, input_action);
     let step1_2_pos = game.data.entities.pos[&player_id];
     assert_eq!(starting_pos.x, step1_2_pos.x);
@@ -223,12 +223,12 @@ fn check_record(game: &mut Game, display: &mut Display, event_pump: &mut sdl2::E
             break;
         }
 
-        game.step_game(action, delay_ms as f32);
+        game.step_game(action);
 
         for _sdl2_event in event_pump.poll_iter() {
         }
 
-        update_display(game, display).unwrap();
+        update_display(game, display, 0.01).unwrap();
 
         for msg in &game.msg_log.turn_messages {
             new_messages.push(msg.to_string());
@@ -376,11 +376,11 @@ fn rerecord(game: &mut Game, display: &mut Display, event_pump: &mut sdl2::Event
 
     let delay = Duration::from_millis(delay_ms);
     for action in actions {
-        game.step_game(action, delay_ms as f32);
+        game.step_game(action);
 
         for _sdl2_event in event_pump.poll_iter() { }
 
-        update_display(game, display)?;
+        update_display(game, display, 0.01)?;
 
         for msg in &game.msg_log.turn_messages {
             log.log_msg(&format!("{}", msg));
@@ -388,7 +388,7 @@ fn rerecord(game: &mut Game, display: &mut Display, event_pump: &mut sdl2::Event
         game.msg_log.clear();
         std::thread::sleep(delay);
     }
-    game.step_game(InputAction::Exit, delay_ms as f32);
+    game.step_game(InputAction::Exit);
     for msg in &game.msg_log.turn_messages {
         log.log_msg(&format!("{}", msg));
     }
@@ -429,13 +429,13 @@ pub fn read_message_log(message_file: &str) -> Vec<String> {
 }
 
 // NOTE duplicate code in main.rs
-fn update_display(game: &mut Game, display: &mut Display) -> Result<(), String> {
+fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(), String> {
     for msg in game.msg_log.turn_messages.iter() {
         display.process_message(*msg, &mut game.data, &game.config);
     }
 
     /* Draw the Game to the Screen */
-    render_all(display, game)?;
+    render_all(display, game, dt)?;
 
     display.update_display();
 

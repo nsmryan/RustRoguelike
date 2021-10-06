@@ -23,13 +23,14 @@ use crate::animation::{Sprite, Effect, Animation, AnimationResult, Particle};
 
 
 // 10ms to display on last check
-pub fn render_all(display: &mut Display, game: &mut Game)  -> Result<(), String> {
+pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<(), String> {
     display.targets.canvas_panel.target.set_draw_color(Sdl2Color::RGB(0, 0, 0));
     display.targets.canvas_panel.target.clear();
 
-    display.state.update_animations(game.settings.dt);
+    display.state.dt = dt;
+    display.state.update_animations();
 
-    display.state.show_debug("dt", format!("{}", game.settings.dt));
+    display.state.show_debug("dt", format!("{}", dt));
 
     /* Split Screen Into Sections */
     let map_rect = display.targets.canvas_panel.get_rect_from_area(&display.targets.map_area);
@@ -975,7 +976,7 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                 let mut index = 0;
                 while index < particles.len() {
                     let cell = panel.cell_from_pixel(particles[index].pos);
-                    particles[index].duration -= game.settings.dt;
+                    particles[index].duration -= display_state.dt;
 
                     // if the particle is finished, or has left the map, remove it.
                     if particles[index].duration < 0.0 || !game.data.map.is_within_bounds(cell) {
@@ -1092,7 +1093,7 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
                                                sprite.flip_horiz,
                                                sprite.flip_vert);
 
-                sprite_anim.step(game.settings.dt);
+                sprite_anim.step(display_state.dt);
                 // if the sprite animation looped back to the beginning, end the effect
                 if sprite_anim.looped {
                     effect_complete = true;
@@ -1109,6 +1110,8 @@ fn render_effects(panel: &mut Panel<&mut WindowCanvas>,
     }
 }
 
+// NOTE this function steps the animation forward. It would be better
+// to do this all at once after rendering a frame.
 fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
                  entity_id: EntityId,
                  display_state: &mut DisplayState,
@@ -1134,7 +1137,7 @@ fn render_entity(panel: &mut Panel<&mut WindowCanvas>,
     if is_in_fov {
         if let Some(mut anims) = display_state.animations.swap_remove(&entity_id) {
             if let Some(mut anim) = anims.pop_front() {
-                animation_result = anim.step(pos, game.settings.dt, &game.config);
+                animation_result = anim.step(pos, display_state.dt, &game.config);
 
                 if let Animation::PlayEffect(effect) = anim {
                     display_state.play_effect(effect);
@@ -1308,6 +1311,38 @@ fn render_overlay_use_item(item_class: ItemClass,
     }
 }
 
+fn render_sound_overlay(panel: &mut Panel<&mut WindowCanvas>,
+                        display_state: &mut DisplayState,
+                        game: &mut Game) {
+    let mut highlight_sound: Color = game.config.color_warm_grey;
+    highlight_sound.a = game.config.sound_alpha;
+    for pos in display_state.sound_tiles.iter() {
+        // NOTE this currently does not take into account FOV!
+        // if game.data.pos_in_fov(player_id, pos, &game.config) {
+        draw_tile_highlight(panel, *pos, highlight_sound);
+        //}
+    }
+}
+
+//fn render_fov_overlay(panel: &mut Panel<&mut WindowCanvas>,
+//                      display_state: &mut DisplayState,
+//                      game: &mut Game) {
+//    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+//
+//    let mut highlight_color_fov = game.config.color_light_orange;
+//    highlight_color_fov.a = game.config.grid_alpha_visible;
+//
+//    for y in 0..game.data.map.height() {
+//        for x in 0..game.data.map.width() {
+//            let pos = Pos::new(x, y);
+//            let in_fov = game.data.pos_in_fov(player_id, pos, &game.config);
+//            if in_fov {
+//                draw_outline_tile(panel, pos, highlight_color_fov);
+//            }
+//        }
+//    }
+//}
+
 fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                    display_state: &mut DisplayState,
                    game: &mut Game,
@@ -1406,6 +1441,12 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                     draw_tile_highlight(panel, gate_pos, highlight_color);
                 }
             }
+
+            // render some extra player information if cursor is over player's tile
+            if cursor_pos == player_pos {
+                // Draw sound tiles overlay
+                render_sound_overlay(panel, display_state, game);
+            }
         }
     }
 
@@ -1466,7 +1507,7 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                *entity_id != player_id &&
                game.data.entities.status[entity_id].alive {
                render_attack_overlay(panel, display_state, game, *entity_id);
-               render_fov_overlay(panel, display_state, game, *entity_id);
+               render_fov_overlay(panel, game, *entity_id);
                render_movement_overlay(panel, display_state, game, *entity_id);
             }
         }
@@ -1518,8 +1559,9 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
         }
     }
 
-    // Draw player movement overlay
+    // Draw overlays if enabled
     if game.settings.overlay {
+        // Draw player movement overlay
         for dir in Direction::move_actions().iter() {
             // for all movements except staying still
             // calculate the move that would occur
@@ -1539,32 +1581,12 @@ fn render_overlays(panel: &mut Panel<&mut WindowCanvas>,
                 }
             }
         }
-    }
 
-    // Draw sound tiles overlay
-    if game.settings.overlay {
-        for pos in display_state.sound_tiles.iter() {
-            // NOTE this currently does not take into account FOV!
-            // if game.data.pos_in_fov(player_id, pos, &game.config) {
-            draw_tile_highlight(panel, *pos, highlight_color);
-            //}
-        }
-    }
+        // Draw sound tiles overlay
+        render_sound_overlay(panel, display_state, game);
 
-    // Outline tiles within FOV for clarity
-    if game.settings.overlay {
-        let mut highlight_color_fov = game.config.color_light_orange;
-        highlight_color_fov.a = game.config.grid_alpha_visible;
-
-        for y in 0..game.data.map.height() {
-            for x in 0..game.data.map.width() {
-                let pos = Pos::new(x, y);
-                let in_fov = game.data.pos_in_fov(player_id, pos, &game.config);
-                if in_fov {
-                    draw_outline_tile(panel, pos, highlight_color_fov);
-                }
-            }
-        }
+        // Outline tiles within FOV for clarity
+        render_fov_overlay(panel, game, player_id);
     }
 
     // NOTE floodfill ranges:
@@ -1750,7 +1772,6 @@ fn render_attack_overlay(panel: &mut Panel<&mut WindowCanvas>,
 }
 
 fn render_fov_overlay(panel: &mut Panel<&mut WindowCanvas>,
-                      _display_state: &mut DisplayState,
                       game: &mut Game,
                       entity_id: EntityId) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -1812,7 +1833,12 @@ pub fn render_entity_ghost(entity_id: EntityId, render_pos: Pos, game: &mut Game
 
     game.data.entities.pos[&entity_id] = render_pos;
 
+    // a little ugly, but set the delta time to 0 so the render_entity function does not
+    // step the animation forward when rendering a ghost.
+    let dt = display_state.dt;
+    display_state.dt = 0.0;
     render_entity(panel, entity_id, display_state, game);
+    display_state.dt = dt;
 
     game.data.entities.color[&entity_id].a = alpha;
     game.data.entities.pos[&entity_id] = entity_pos;

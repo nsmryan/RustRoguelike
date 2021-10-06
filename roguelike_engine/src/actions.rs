@@ -61,8 +61,7 @@ pub enum InputAction {
     GodMode,
     IncreaseMoveMode,
     DecreaseMoveMode,
-    OverlayOn,
-    OverlayOff,
+    OverlayToggle,
     SelectEntry(usize),
     DebugToggle,
     None,
@@ -112,8 +111,7 @@ impl fmt::Display for InputAction {
             InputAction::Yell => write!(f, "yell"),
             InputAction::IncreaseMoveMode => write!(f, "faster"),
             InputAction::DecreaseMoveMode => write!(f, "slower"),
-            InputAction::OverlayOn => write!(f, "overlayon"),
-            InputAction::OverlayOff => write!(f, "overlayoff"),
+            InputAction::OverlayToggle => write!(f, "overlaytoggle"),
             InputAction::SelectEntry(item) => write!(f, "selectentry {}", item),
             InputAction::Interact(dir) => write!(f, "interact {:?}", dir),
             InputAction::CursorMove(dir, relative, long) => write!(f, "cursormove {:?} {} {}", dir, relative, long),
@@ -501,12 +499,8 @@ pub fn handle_input_use(input_action: InputAction,
             change_state(settings, GameState::Playing);
         }
 
-        (InputAction::OverlayOn, _) => {
-            settings.overlay = true;
-        }
-
-        (InputAction::OverlayOff, _) => {
-            settings.overlay = false;
+        (InputAction::OverlayToggle, _) => {
+            settings.overlay = !settings.overlay;
         }
 
         (_, _) => {
@@ -647,12 +641,8 @@ pub fn handle_input_playing(input_action: InputAction,
             msg_log.log(Msg::ChangeMoveMode(player_id, false));
         }
 
-        (InputAction::OverlayOn, _) => {
-            settings.overlay = true;
-        }
-
-        (InputAction::OverlayOff, _) => {
-            settings.overlay = false;
+        (InputAction::OverlayToggle, _) => {
+            settings.overlay = !settings.overlay;
         }
 
         (InputAction::Inventory, true) => {
