@@ -28,6 +28,7 @@ use crate::animation::{Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteI
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DrawCmd {
     Sprite(Sprite, Color, Pos),
+    SpriteScaled(Sprite, f32, Option<Direction>, Color, Pos),
     SpriteAtPixel(Sprite, Color, Pos),
     HighlightTile(Color, Pos),
     OutlineTile(Color, Pos),
@@ -39,6 +40,103 @@ pub enum PanelName {
     Map,
     Player,
     Inventory,
+}
+
+fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, cmd: DrawCmd) {
+    match cmd {
+        DrawCmd::Sprite(sprite, color, pos) => {
+            display_state.draw_sprite(panel, sprite, pos, color);
+        }
+
+        DrawCmd::SpriteScaled(sprite, scale, direction, color, pos) => {
+            let cell_dims = panel.cell_dims();
+            let sprite_sheet = &mut display_state.sprites[&sprite.key];
+
+            let src = sprite_sheet.sprite_src(sprite.index as usize);
+
+            let (cell_width, cell_height) = cell_dims;
+            let dst_width = (cell_width as f32 * scale) as u32;
+            let dst_height = (cell_height as f32 * scale) as u32;
+
+            let x_margin = ((cell_width - dst_width) / 2) as i32;
+            let y_margin = ((cell_height - dst_height) / 2) as i32;
+
+            let mut dst_x = pos.x * cell_width as i32;
+            let mut dst_y = pos.y * cell_height as i32;
+            match direction {
+                None => {
+                    dst_x += x_margin;
+                    dst_y += y_margin;
+                }
+                
+                Some(Direction::Left) => {
+                    dst_y += y_margin;
+                }
+
+                Some(Direction::Right) => {
+                    dst_x += cell_width as i32 - dst_width as i32;
+                    dst_y += y_margin;
+                }
+
+                Some(Direction::Up) => {
+                    dst_x += x_margin;
+                }
+
+                Some(Direction::Down) => {
+                    dst_x += x_margin;
+                    dst_y += cell_height as i32 - dst_height as i32;
+                }
+
+                Some(Direction::DownLeft) => {
+                    dst_y += cell_height as i32 - dst_height as i32;
+                }
+
+                Some(Direction::DownRight) => {
+                    dst_x += cell_width as i32 - dst_width as i32;
+                    dst_y += cell_height as i32 - dst_height as i32;
+                }
+
+                Some(Direction::UpLeft) => {
+                }
+
+                Some(Direction::UpRight) => {
+                    dst_x += cell_width as i32  - dst_width as i32;
+                }
+            }
+
+            let dst = Rect::new(dst_x,
+                                dst_y,
+                                dst_width,
+                                dst_height);
+
+            panel.target.set_blend_mode(BlendMode::Blend);
+            sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
+            sprite_sheet.texture.set_alpha_mod(color.a);
+
+            panel.target.copy_ex(&sprite_sheet.texture,
+                                 Some(src),
+                                 Some(dst),
+                                 sprite.rotation,
+                                 None,
+                                 false,
+                                 false).unwrap();
+        }
+
+        DrawCmd::SpriteAtPixel(sprite, color, pos) => {
+            let (cell_width, cell_height) = panel.cell_dims();
+            let pos = Pos::new(pos.x * cell_width as i32, pos.y * cell_height as i32);
+            let sprite_sheet = &mut display_state.sprites[&sprite.key];
+            sprite_sheet.draw_sprite_full(panel, sprite.index as usize, pos, color, sprite.rotation, sprite.flip_horiz, sprite.flip_vert);
+        }
+
+        DrawCmd::OutlineTile(color, pos) => {
+            draw_outline_tile(panel, pos, color);
+        }
+
+        DrawCmd::HighlightTile(color, pos) => {
+            draw_tile_highlight(panel, pos, color);
+        }
+    }
 }
 
 pub struct Display {
@@ -58,6 +156,16 @@ impl Display {
     pub fn process_draw_commands(&mut self) {
         let canvas = &mut self.targets.canvas_panel.target;
 
+        // copy background into the map before other draws.
+        let background = &mut self.targets.background_panel;
+        canvas.with_texture_canvas(&mut self.targets.map_panel.target, |canvas| {
+            canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
+            canvas.clear();
+
+            canvas.copy(&background.target, None, None).unwrap();
+
+        }).unwrap();
+
         // TODO this clone should be removable, but perhaps not until
         // the draw_sprite command is redone.
         let mut draw_table = self.state.draw_cmds.clone();
@@ -76,26 +184,7 @@ impl Display {
                 let mut panel = panel.with_target(canvas);
 
                 for cmd in cmds.iter() {
-                    match cmd {
-                        DrawCmd::Sprite(sprite, color, pos) => {
-                            display_state.draw_sprite(&mut panel, *sprite, *pos, *color);
-                        }
-
-                        DrawCmd::SpriteAtPixel(sprite, color, pos) => {
-                            let (cell_width, cell_height) = panel.cell_dims();
-                            let pos = Pos::new(pos.x * cell_width as i32, pos.y * cell_height as i32);
-                            let sprite_sheet = &mut display_state.sprites[&sprite.key];
-                            sprite_sheet.draw_sprite_full(&mut panel, sprite.index as usize, pos, *color, sprite.rotation, sprite.flip_horiz, sprite.flip_vert);
-                        }
-
-                        DrawCmd::OutlineTile(color, pos) => {
-                            draw_outline_tile(&mut panel, *pos, *color);
-                        }
-
-                        DrawCmd::HighlightTile(color, pos) => {
-                            draw_tile_highlight(&mut panel, *pos, *color);
-                        }
-                    }
+                    process_draw_cmd(&mut panel, display_state, *cmd);
                 }
             }).unwrap();
         }
@@ -862,6 +951,11 @@ impl DisplayState {
         self.draw_cmd(name, cmd);
     }
 
+    pub fn sprite_scaled_cmd(&mut self, name: PanelName, sprite: Sprite, scale: f32, direction: Option<Direction>, color: Color, pos: Pos) {
+        let cmd = DrawCmd::SpriteScaled(sprite, scale, direction, color, pos);
+        self.draw_cmd(name, cmd);
+    }
+
     pub fn outline_cmd(&mut self, name: PanelName, color: Color, pos: Pos) {
         let cmd = DrawCmd::OutlineTile(color, pos);
         self.draw_cmd(name, cmd);
@@ -1146,86 +1240,6 @@ impl SpriteSheet {
                              None,
                              flip_horizontal,
                              flip_vertical).unwrap();
-    }
-
-    pub fn draw_sprite_direction<T>(&mut self,
-                                 panel: &mut Panel<&mut Canvas<T>>,
-                                 index: usize,
-                                 direction: Option<Direction>,
-                                 pos: Pos,
-                                 scale: f32,
-                                 color: Color,
-                                 rotation: f64) where T: RenderTarget {
-        let cell_dims = panel.cell_dims();
-
-        let src = self.sprite_src(index);
-
-        let (cell_width, cell_height) = cell_dims;
-        let dst_width = (cell_width as f32 * scale) as u32;
-        let dst_height = (cell_height as f32 * scale) as u32;
-
-        let x_margin = ((cell_width - dst_width) / 2) as i32;
-        let y_margin = ((cell_height - dst_height) / 2) as i32;
-
-        let mut dst_x = pos.x * cell_width as i32;
-        let mut dst_y = pos.y * cell_height as i32;
-        match direction {
-            None => {
-                dst_x += x_margin;
-                dst_y += y_margin;
-            }
-            
-            Some(Direction::Left) => {
-                dst_y += y_margin;
-            }
-
-            Some(Direction::Right) => {
-                dst_x += cell_width as i32 - dst_width as i32;
-                dst_y += y_margin;
-            }
-
-            Some(Direction::Up) => {
-                dst_x += x_margin;
-            }
-
-            Some(Direction::Down) => {
-                dst_x += x_margin;
-                dst_y += cell_height as i32 - dst_height as i32;
-            }
-
-            Some(Direction::DownLeft) => {
-                dst_y += cell_height as i32 - dst_height as i32;
-            }
-
-            Some(Direction::DownRight) => {
-                dst_x += cell_width as i32 - dst_width as i32;
-                dst_y += cell_height as i32 - dst_height as i32;
-            }
-
-            Some(Direction::UpLeft) => {
-            }
-
-            Some(Direction::UpRight) => {
-                dst_x += cell_width as i32  - dst_width as i32;
-            }
-        }
-
-        let dst = Rect::new(dst_x,
-                            dst_y,
-                            dst_width,
-                            dst_height);
-
-        panel.target.set_blend_mode(BlendMode::Blend);
-        self.texture.set_color_mod(color.r, color.g, color.b);
-        self.texture.set_alpha_mod(color.a);
-
-        panel.target.copy_ex(&self.texture,
-                             Some(src),
-                             Some(dst),
-                             rotation,
-                             None,
-                             false,
-                             false).unwrap();
     }
 
     fn sprite_src(&mut self, index: usize) -> Rect {
