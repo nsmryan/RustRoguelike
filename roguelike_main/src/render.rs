@@ -74,27 +74,27 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
 
             canvas.copy(&background.target, None, None).unwrap();
 
-            let mut panel = panel.with_target(canvas);
-
-            render_map(display_state, game);
-
-            render_entity_type(EntityType::Trigger, PanelName::Map, display_state, game);
-            render_entity_type(EntityType::Item, PanelName::Map, display_state, game);
-
-            render_map_middle(display_state, game);
-
-            render_entity_type(EntityType::Energy, PanelName::Map, display_state, game);
-            render_entity_type(EntityType::Enemy, PanelName::Map, display_state, game);
-            render_entity_type(EntityType::Column, PanelName::Map, display_state, game);
-            render_entity_type(EntityType::Player, PanelName::Map, display_state, game);
-            render_entity_type(EntityType::Other, PanelName::Map, display_state, game);
-
-            render_map_above(display_state, game);
-
-            render_impressions(PanelName::Map, display_state, game);
-            render_effects(PanelName::Map, panel.unit(), display_state, game);
-            render_overlays(&mut panel, display_state, game, mouse_map_pos);
         }).unwrap();
+
+        render_map(display_state, game);
+
+        render_entity_type(EntityType::Trigger, PanelName::Map, display_state, game);
+        render_entity_type(EntityType::Item, PanelName::Map, display_state, game);
+
+        render_map_middle(display_state, game);
+
+        render_entity_type(EntityType::Energy, PanelName::Map, display_state, game);
+        render_entity_type(EntityType::Enemy, PanelName::Map, display_state, game);
+        render_entity_type(EntityType::Column, PanelName::Map, display_state, game);
+        render_entity_type(EntityType::Player, PanelName::Map, display_state, game);
+        render_entity_type(EntityType::Other, PanelName::Map, display_state, game);
+
+        render_map_above(display_state, game);
+
+        render_impressions(PanelName::Map, display_state, game);
+        render_effects(PanelName::Map, panel.unit(), display_state, game);
+        // TODO add back in
+        //render_overlays(&mut display.targets.map_panel.unit(), display_state, game, mouse_map_pos);
     }
 
     /* Draw Player Info */
