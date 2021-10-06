@@ -22,7 +22,7 @@ use crate::display::*;
 use crate::animation::{Sprite, Effect, Animation, AnimationResult, Particle};
 
 
-// 10ms to display on last check
+// dt is !40 ms at last check
 pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<(), String> {
     display.targets.canvas_panel.target.set_draw_color(Sdl2Color::RGB(0, 0, 0));
     display.targets.canvas_panel.target.clear();

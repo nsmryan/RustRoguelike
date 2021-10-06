@@ -22,6 +22,7 @@ to play through levels by finding the goal object, picking it up, and carrying i
 but there is no larger goal or game beyond this.
 
 ![Image](resources/background.png)
+![Screenshot](resources/screenshot.png)
 
 ## Building
 
