@@ -25,13 +25,17 @@ use crate::animation::{Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteI
 // highlight cell with color
 // outline cell with color
 // pixels vs cells
-#[derive(Clone, Copy, Debug, PartialEq)]
+// black out cell
+// NOTE use of String prevents Copy trait
+#[derive(Clone, Debug, PartialEq)]
 pub enum DrawCmd {
     Sprite(Sprite, Color, Pos),
     SpriteScaled(Sprite, f32, Option<Direction>, Color, Pos),
     SpriteAtPixel(Sprite, Color, Pos),
     HighlightTile(Color, Pos),
     OutlineTile(Color, Pos),
+    Text(String, Color, Pos),
+    Rect(Pos, (u32, u32), f32, bool, Color), // start cell, num cells width/height, offset percent into cell, color
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -41,12 +45,13 @@ pub enum PanelName {
     Player,
     Inventory,
     Background,
+    Menu,
 }
 
-fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, cmd: DrawCmd) {
+fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, cmd: &DrawCmd) {
     match cmd {
         DrawCmd::Sprite(sprite, color, pos) => {
-            display_state.draw_sprite(panel, sprite, pos, color);
+            display_state.draw_sprite(panel, *sprite, *pos, *color);
         }
 
         DrawCmd::SpriteScaled(sprite, scale, direction, color, pos) => {
@@ -127,15 +132,81 @@ fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
             let (cell_width, cell_height) = panel.cell_dims();
             let pos = Pos::new(pos.x * cell_width as i32, pos.y * cell_height as i32);
             let sprite_sheet = &mut display_state.sprites[&sprite.key];
-            sprite_sheet.draw_sprite_full(panel, sprite.index as usize, pos, color, sprite.rotation, sprite.flip_horiz, sprite.flip_vert);
+            sprite_sheet.draw_sprite_full(panel, sprite.index as usize, pos, *color, sprite.rotation, sprite.flip_horiz, sprite.flip_vert);
         }
 
         DrawCmd::OutlineTile(color, pos) => {
-            draw_outline_tile(panel, pos, color);
+            draw_outline_tile(panel, *pos, *color);
         }
 
         DrawCmd::HighlightTile(color, pos) => {
-            draw_tile_highlight(panel, pos, color);
+            draw_tile_highlight(panel, *pos, *color);
+        }
+
+        DrawCmd::Text(string, color, start_pos) => {
+            let sprite_key = display_state.lookup_spritekey("font");
+            let sprite_sheet = &mut display_state.sprites[&sprite_key];
+            let query = sprite_sheet.texture.query();
+
+            let cell_dims = panel.cell_dims();
+            let (cell_width, cell_height) = cell_dims;
+
+            panel.target.set_blend_mode(BlendMode::Blend);
+            sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
+            sprite_sheet.texture.set_alpha_mod(color.a);
+
+            let mut pos = *start_pos;
+            for chr in string.chars() {
+                let chr_num = chr.to_lowercase().next().unwrap();
+                let chr_index = chr_num as i32 - ASCII_START as i32;
+
+                let ascii_width = ASCII_END - ASCII_START;
+                let src = Rect::new((query.width as i32 / ascii_width as i32) * chr_index,
+                                    0,
+                                    query.width / ascii_width,
+                                    query.height);
+
+                let dst_pos = Pos::new(pos.x * cell_width as i32,
+                                       pos.y * cell_height as i32);
+                let dst = Rect::new(dst_pos.x as i32,
+                                    dst_pos.y as i32,
+                                    cell_width as u32,
+                                    cell_height as u32);
+
+                panel.target.copy_ex(&sprite_sheet.texture,
+                                     Some(src),
+                                     Some(dst),
+                                     0.0,
+                                     None,
+                                     false,
+                                     false).unwrap();
+                pos.x += 1;
+            }
+        }
+
+        DrawCmd::Rect(pos, dims, offset, filled, color) => {
+            assert!(*offset < 1.0, "offset >= 1 misaligns the starting cell!");
+
+            // Draw a black background
+            let (width, height) = panel.target.output_size().unwrap();
+            let (cell_width, cell_height) = panel.cell_dims();
+
+            panel.target.set_draw_color(sdl2_color(*color));
+
+            let offset_x = (cell_width as f32 * offset) as i32;
+            let x: i32 = cell_width as i32 * pos.x + offset_x as i32;
+
+            let offset_y = (cell_height as f32 * offset) as i32;
+            let y: i32 = cell_height as i32 * pos.y + offset_y as i32;
+
+            let width = cell_width * dims.0 - offset_x as u32;
+            let height = cell_height * dims.1 - offset_y as u32;
+
+            if *filled {
+                panel.target.fill_rect(Rect::new(x, y, width, height));
+            } else {
+                panel.target.draw_rect(Rect::new(x, y, width, height));
+            }
         }
     }
 }
@@ -177,6 +248,7 @@ impl Display {
                 PanelName::Player => panel_main = &mut self.targets.player_panel,
                 PanelName::Inventory => panel_main = &mut self.targets.inventory_panel,
                 PanelName::Background => panel_main = &mut self.targets.background_panel,
+                PanelName::Menu => panel_main = &mut self.targets.menu_panel,
             }
             let display_state = &mut self.state;
 
@@ -185,7 +257,7 @@ impl Display {
                 let mut panel = panel.with_target(canvas);
 
                 for cmd in cmds.iter() {
-                    process_draw_cmd(&mut panel, display_state, *cmd);
+                    process_draw_cmd(&mut panel, display_state, cmd);
                 }
             }).unwrap();
         }
@@ -967,6 +1039,17 @@ impl DisplayState {
         self.draw_cmd(name, cmd);
     }
 
+    pub fn text_cmd(&mut self, name: PanelName, text: &str, color: Color, pos: Pos) {
+        let string = text.to_string();
+        let cmd = DrawCmd::Text(string, color, pos);
+        self.draw_cmd(name, cmd);
+    }
+
+    pub fn rect_cmd(&mut self, name: PanelName, pos: Pos, dims: (u32, u32), offset: f32, filled: bool, color: Color) {
+        let cmd = DrawCmd::Rect(pos, dims, offset, filled, color);
+        self.draw_cmd(name, cmd);
+    }
+
     pub fn draw_cmd(&mut self, name: PanelName, cmd: DrawCmd) {
         if !self.draw_cmds.contains_key(&name) {
             self.draw_cmds.insert(name, Vec::new());
@@ -1341,3 +1424,8 @@ fn needs_flip_horiz(direction: Direction) -> bool {
         Direction::DownLeft => return true,
     }
 }
+
+fn sdl2_color(color: Color) -> Sdl2Color {
+    return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
+}
+

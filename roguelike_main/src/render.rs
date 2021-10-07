@@ -107,7 +107,7 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
 
         canvas.with_texture_canvas(&mut display.targets.inventory_panel.target, |canvas| {
             let mut panel = panel.with_target(canvas);
-            render_inventory(&mut panel, display_state, game);
+            render_inventory(&mut panel, PanelName::Inventory, display_state, game);
         }).unwrap();
     }
 
@@ -159,8 +159,7 @@ fn render_menus(display: &mut Display, game: &mut Game) {
         let mut panel = panel.with_target(canvas);
 
         if game.settings.state == GameState::Inventory {
-            //panel.target.copy(&inventory_panel.target, None, None).unwrap();
-            render_inventory(&mut panel, display_state, game);
+            render_inventory(&mut panel, PanelName::Menu, display_state, game);
         } else if game.settings.state == GameState::SkillMenu {
             render_skill_menu(&mut panel, display_state, game);
         } else if game.settings.state == GameState::ClassMenu {
@@ -198,43 +197,53 @@ fn render_debug(display: &mut Display, _game: &mut Game) {
 
 /// Draw an outline and title around an area of the screen
 fn render_placard(panel: &mut Panel<&mut WindowCanvas>,
+                  panel_name: PanelName,
                   display_state: &mut DisplayState,
                   text: &str) {
+    // TODO delete commented out code when draw commands are complete
     // TODO this color comes from the UI mockups as a light brown
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
     // Draw a black background
-    panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
-    panel.target.clear();
-    let (width, height) = panel.target.output_size().unwrap();
+    //panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+    //panel.target.clear();
+    //let (width, height) = panel.target.output_size().unwrap();
     let (cell_width, cell_height) = panel.cell_dims();
 
-    panel.target.set_draw_color(sdl2_color(color));
+    //panel.target.set_draw_color(sdl2_color(color));
 
-    // Draw a thin line around the edges of the placard
-    panel.target.draw_rect(Rect::new(cell_width as i32 / 2,
-                                     cell_height as i32 / 2,
-                                     width as u32 - (cell_width / 2),
-                                     height as u32 - (cell_height / 2))).unwrap();
+    //// Draw a thin line around the edges of the placard
+    //panel.target.draw_rect(Rect::new(cell_width as i32 / 2,
+    //                                 cell_height as i32 / 2,
+    //                                 width as u32 - (cell_width / 2),
+    //                                 height as u32 - (cell_height / 2))).unwrap();
+    let filled = false;
+    display_state.rect_cmd(panel_name, Pos::new(0, 0), panel.cells, 0.5, filled, color);
 
     // draw a rectangle around where the placard header text will be placed.
     let half_text = text.len() / 2;
-    let text_offset = (width / 2) - (cell_width * half_text as u32);
-    panel.target.fill_rect(Rect::new(text_offset as i32 - 3,
-                                     0,
-                                     (text.len() * cell_width as usize) as u32 + 2,
-                                     cell_height as u32)).unwrap();
+    //let text_offset = (width / 2) - (cell_width * half_text as u32);
+    assert!(panel.cells.0 / 2 >= half_text as u32, "text too long to center!");
+    let text_offset = (panel.cells.0 / 2) - half_text as u32;
+    //panel.target.fill_rect(Rect::new(text_offset as i32 - 3,
+    //                                 0,
+    //                                 (text.len() * cell_width as usize) as u32 + 2,
+    //                                 cell_height as u32)).unwrap();
+    let filled = true;
+    let text_dims = (text.len() as u32, 1);
+    display_state.rect_cmd(panel_name, Pos::new(text_offset as i32, 0), text_dims, 0.0, filled, color);
 
     // Draw header text
-    let mid_char_offset = (width / cell_width) / 2;
-    let text_start = (mid_char_offset - half_text as u32) as i32;
+    //let mid_char_offset = (width / cell_width) / 2;
+    //let text_start = (mid_char_offset - half_text as u32) as i32;
 
-    let text_pos = Pos::new(text_start, 0);
+    let text_pos = Pos::new(text_offset as i32, 0);
     let text_color = Color::new(0, 0, 0, 255);
 
-    let sprite_key = display_state.lookup_spritekey("font");
-    let tile_sprite = &mut display_state.sprites[&sprite_key];
-    tile_sprite.draw_text(panel, text, text_pos, text_color)
+    //let sprite_key = display_state.lookup_spritekey("font");
+    //let tile_sprite = &mut display_state.sprites[&sprite_key];
+    //tile_sprite.draw_text(panel, text, text_pos, text_color);
+    display_state.text_cmd(panel_name, text, text_color, text_pos);
 }
 
 fn render_pips(panel: &mut Panel<&mut WindowCanvas>,
@@ -307,7 +316,7 @@ fn render_bar(panel: &mut Panel<&mut WindowCanvas>,
 }
 
 fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
-    render_placard(panel, display_state, "Player");
+    render_placard(panel, PanelName::Player, display_state, "Player");
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
@@ -366,7 +375,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
                display_state: &mut DisplayState,
                game: &mut Game,
                _mouse_xy: Option<Pos>) {
-    render_placard(panel, display_state, "Info");
+    render_placard(panel, PanelName::Info, display_state, "Info");
 
     if let Some(info_pos) = game.settings.cursor {
         let text_color = game.config.color_soft_green;
@@ -488,7 +497,7 @@ fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     // Render header
-    render_placard(panel, display_state, "Skills");
+    render_placard(panel, PanelName::Menu, display_state, "Skills");
 
     let mut list = Vec::new();
 
@@ -510,7 +519,7 @@ fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
 
 fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, _game: &mut Game) {
     // Render header
-    render_placard(panel, display_state, "Choose Class");
+    render_placard(panel, PanelName::Menu, display_state, "Choose Class");
 
     let mut list = Vec::new();
 
@@ -532,7 +541,7 @@ fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
 
 fn render_confirm_quit(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, _game: &mut Game) {
     // Render header
-    render_placard(panel, display_state, "Quit?");
+    render_placard(panel, PanelName::Menu, display_state, "Quit?");
 
     let mut list = Vec::new();
 
@@ -553,9 +562,9 @@ fn render_confirm_quit(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut
 }
 
 /// Render an inventory section within the given area
-fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, panel_name: PanelName, display_state: &mut DisplayState, game: &mut Game) {
     // Render header
-    render_placard(panel, display_state, "Inventory");
+    render_placard(panel, panel_name, display_state, "Inventory");
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
@@ -563,16 +572,14 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
     let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
     let sprite_key = display_state.lookup_spritekey("font");
-    let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     // Render each object's name in inventory
     let mut y_pos = 2;
 
     // Draw Primary Items
-    tile_sprite.draw_text(panel,
-                          &"z",
-                          Pos::new(1, y_pos),
-                          ui_color);
+    display_state.text_cmd(panel_name, "z", ui_color, Pos::new(1, y_pos));
+    //tile_sprite.draw_text(panel, &"z", Pos::new(1, y_pos), ui_color);
+
     let mut index = 0;
     while index < game.data.entities.inventory[&player_id].len() {
         let item_id = game.data.entities.inventory[&player_id][index];
@@ -580,7 +587,8 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
         if game.data.entities.item[&item_id].class() == ItemClass::Primary {
             let item_text = format!("{:?}", game.data.entities.name[&item_id]);
             let text_pos = Pos::new(3, y_pos);
-            tile_sprite.draw_text(panel, &item_text, text_pos, ui_color);
+            //tile_sprite.draw_text(panel, &item_text, text_pos, ui_color);
+            display_state.text_cmd(panel_name, &item_text, ui_color, text_pos);
             break;
         }
 
@@ -589,10 +597,10 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
     y_pos += 1;
 
     // Draw Consumable Items
-    tile_sprite.draw_text(panel,
-                          &"x",
-                          Pos::new(1, y_pos),
-                          ui_color);
+    let tile_sprite = &mut display_state.sprites[&sprite_key];
+    //tile_sprite.draw_text(panel, &"x", ui_color);
+    display_state.text_cmd(panel_name, &"x", ui_color, Pos::new(1, y_pos));
+
     let mut index = 0;
     while index < game.data.entities.inventory[&player_id].len() {
         let item_id = game.data.entities.inventory[&player_id][index];
@@ -600,7 +608,8 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
         if game.data.entities.item[&item_id].class() == ItemClass::Consumable {
             let item_text = format!("{:?}", game.data.entities.name[&item_id]);
             let text_pos = Pos::new(3, y_pos);
-            tile_sprite.draw_text(panel, &item_text, text_pos, ui_color);
+            //tile_sprite.draw_text(panel, &item_text, text_pos, ui_color);
+            display_state.text_cmd(panel_name, &item_text, ui_color, text_pos);
             break;
         }
 
@@ -609,10 +618,9 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
     y_pos += 1;
 
     // Draw Stones Items
-    tile_sprite.draw_text(panel,
-                          &"c",
-                          Pos::new(1, y_pos),
-                          ui_color);
+    //tile_sprite.draw_text(panel, &"c", Pos::new(1, y_pos), ui_color);
+    display_state.text_cmd(panel_name, &"c", ui_color, Pos::new(1, y_pos));
+
     let mut num_stones = 0;
     let mut index = 0;
     while index < game.data.entities.inventory[&player_id].len() {
@@ -626,19 +634,19 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
     }
 
     if num_stones > 0 {
-        tile_sprite.draw_text(panel,
-                              &"c",
-                              Pos::new(1, y_pos),
-                              ui_color);
+        display_state.text_cmd(panel_name, &"c", ui_color, Pos::new(1, y_pos));
+        //tile_sprite.draw_text(panel,
+        //                      &"c",
+        //                      Pos::new(1, y_pos),
+        //                      ui_color);
 
         let text_pos = Pos::new(3, y_pos);
-        tile_sprite.draw_text(panel, &"stone", text_pos, ui_color);
+        //tile_sprite.draw_text(panel, &"stone", text_pos, ui_color);
+        display_state.text_cmd(panel_name, &"stone", ui_color, text_pos);
 
         let num_text = format!("({})", num_stones);
-        tile_sprite.draw_text(panel,
-                              &num_text,
-                              Pos::new(9, y_pos),
-                              ui_color);
+        //tile_sprite.draw_text(panel, &num_text, Pos::new(9, y_pos), ui_color);
+        display_state.text_cmd(panel_name, &num_text, ui_color, Pos::new(9, y_pos));
     }
 
     y_pos += 1;
@@ -653,7 +661,8 @@ fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
            game.data.entities.item[&item_id] != Item::Stone {
             let item_text = format!("{:?}", game.data.entities.name[&item_id]);
             let text_pos = Pos::new(3, y_pos);
-            tile_sprite.draw_text(panel, &item_text, text_pos, ui_color);
+            //tile_sprite.draw_text(panel, &item_text, text_pos, ui_color);
+            display_state.text_cmd(panel_name, &item_text, ui_color, text_pos);
             y_pos += 1;
         }
 
@@ -1884,10 +1893,10 @@ fn render_movement_overlay(panel_name: PanelName,
     }
 }
 
-pub fn sdl2_color(color: Color) -> Sdl2Color {
+// TODO this should be removable from render, now in display, once drawcmds are finished.
+fn sdl2_color(color: Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
 }
-
 
 pub fn render_entity_ghost(entity_id: EntityId,
                            render_pos: Pos,
