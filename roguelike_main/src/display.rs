@@ -227,50 +227,46 @@ impl Display {
 
     pub fn process_draw_commands(&mut self) {
         let canvas = &mut self.targets.canvas_panel.target;
+        let display_state = &mut self.state;
 
-        // copy background into the map before other draws.
-        let background = &mut self.targets.background_panel;
-        canvas.with_texture_canvas(&mut self.targets.map_panel.target, |canvas| {
-            canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
-            canvas.clear();
+        self.targets.info_panel.process_cmds(canvas, display_state);
+        self.targets.background_panel.process_cmds(canvas, display_state);
+        self.targets.map_panel.process_cmds(canvas, display_state);
+        self.targets.player_panel.process_cmds(canvas, display_state);
+        self.targets.inventory_panel.process_cmds(canvas, display_state);
+        self.targets.menu_panel.process_cmds(canvas, display_state);
 
-            canvas.copy(&background.target, None, None).unwrap();
-        }).unwrap();
+        //let mut draw_table = self.state.draw_cmds.clone();
+        //for (name, cmds) in draw_table.iter_mut() {
+        //    let panel_main;
+        //    match name {
+        //        PanelName::Info => panel_main = &mut self.targets.info_panel,
+        //        PanelName::Map => panel_main = &mut self.targets.map_panel,
+        //        PanelName::Player => panel_main = &mut self.targets.player_panel,
+        //        PanelName::Inventory => panel_main = &mut self.targets.inventory_panel,
+        //        PanelName::Background => panel_main = &mut self.targets.background_panel,
+        //        PanelName::Menu => panel_main = &mut self.targets.menu_panel,
+        //    }
 
-        // TODO this clone should be removable, but perhaps not until
-        // the draw_sprite command is redone.
-        let mut draw_table = self.state.draw_cmds.clone();
-        for (name, cmds) in draw_table.iter_mut() {
-            let panel_main;
-            match name {
-                PanelName::Info => panel_main = &mut self.targets.info_panel,
-                PanelName::Map => panel_main = &mut self.targets.map_panel,
-                PanelName::Player => panel_main = &mut self.targets.player_panel,
-                PanelName::Inventory => panel_main = &mut self.targets.inventory_panel,
-                PanelName::Background => panel_main = &mut self.targets.background_panel,
-                PanelName::Menu => panel_main = &mut self.targets.menu_panel,
-            }
-            let display_state = &mut self.state;
+        //    let panel = panel_main.unit();
+        //    canvas.with_texture_canvas(&mut panel_main.target, |canvas| {
+        //        let mut panel = panel.with_target(canvas);
 
-            let panel = panel_main.unit();
-            canvas.with_texture_canvas(&mut panel_main.target, |canvas| {
-                let mut panel = panel.with_target(canvas);
+        //        if *name != PanelName::Map {
+        //            panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+        //            panel.target.clear();
+        //        }
 
-                if *name != PanelName::Map {
-                    panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
-                    panel.target.clear();
-                }
+        //        for cmd in cmds.iter() {
+        //            process_draw_cmd(&mut panel, display_state, cmd);
+        //        }
+        //    }).unwrap();
+        //}
 
-                for cmd in cmds.iter() {
-                    process_draw_cmd(&mut panel, display_state, cmd);
-                }
-            }).unwrap();
-        }
-
-        // remove already drawn commands, leaving allocated space where it is
-        for cmds in self.state.draw_cmds.values_mut() {
-            cmds.clear();
-        }
+        //// remove already drawn commands, leaving allocated space where it is
+        //for cmds in self.state.draw_cmds.values_mut() {
+        //    cmds.clear();
+        //}
     }
 
     pub fn update_display(&mut self) {
@@ -764,11 +760,12 @@ pub fn test_area_splits_bottom() {
     assert_eq!(20, bottom.height);
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Panel<T> {
     pub target: T,
     pub cells: (u32, u32),
     pub num_pixels: (u32, u32),
+    pub draw_cmds: Vec<DrawCmd>,
 }
 
 impl Panel<Texture> {
@@ -788,20 +785,45 @@ impl Panel<Texture> {
         let query = texture.query();
         let width = query.width;
         let height = query.height;
-        return Panel { cells, target: texture, num_pixels: (width, height), };
+        let draw_cmds = Vec::new();
+        return Panel { cells, target: texture, num_pixels: (width, height), draw_cmds, };
+    }
+
+    pub fn process_cmds(&mut self, canvas: &mut WindowCanvas, display_state: &mut DisplayState) {
+        // TODO this clone is likely removable
+        let draw_cmds = self.draw_cmds.clone();
+        let panel = self.unit();
+        canvas.with_texture_canvas(&mut self.target, |canvas| {
+            let mut panel = panel.with_target(canvas);
+
+            // we don't clear the map as the background was already drawn over it.
+            // TODO consider removing background panel and just using map- it was an
+            // optimization that we may be able to remove if other optimizations are good enough
+            panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+            panel.target.clear();
+
+            for cmd in draw_cmds.iter() {
+                process_draw_cmd(&mut panel, display_state, cmd);
+            }
+        }).unwrap();
+
+        // TODO for now we clear the draw commands. consider keeping them for next
+        // frame in case they don't change.
+        self.draw_cmds.clear();
     }
 }
 
 impl Panel<WindowCanvas> {
     pub fn with_canvas(cells: (u32, u32), canvas: WindowCanvas) -> Panel<WindowCanvas> {
         let (width, height) = canvas.output_size().unwrap();
-        return Panel { cells, target: canvas, num_pixels: (width, height), };
+        let draw_cmds = Vec::new();
+        return Panel { cells, target: canvas, num_pixels: (width, height), draw_cmds, };
     }
 }
 
 impl<T> Panel<T> {
     pub fn unit(&self) -> Panel<()> {
-        return Panel { target: (), cells: self.cells, num_pixels: self.num_pixels, };
+        return Panel { target: (), cells: self.cells, num_pixels: self.num_pixels, draw_cmds: Vec::new(), };
     }
 
     pub fn cell_dims(&self) -> (u32, u32) {
@@ -813,6 +835,7 @@ impl<T> Panel<T> {
             target,
             cells: self.cells,
             num_pixels: self.num_pixels,
+            draw_cmds: Vec::new(),
         };
     }
 
@@ -888,6 +911,53 @@ impl<T> Panel<T> {
                          y_offset as i32,
                          final_target_width as u32,
                          final_target_height as u32);
+    }
+
+    pub fn sprite_at_pixel_cmd(&mut self, sprite: Sprite, color: Color, pos: Pos) {
+        let cmd = DrawCmd::SpriteAtPixel(sprite, color, pos);
+        self.draw_cmd(cmd);
+    }
+
+    pub fn sprite_cmd(&mut self, sprite: Sprite, color: Color, pos: Pos) {
+        let cmd = DrawCmd::Sprite(sprite, color, pos);
+        self.draw_cmd(cmd);
+    }
+
+    pub fn sprite_scaled_cmd(&mut self, sprite: Sprite, scale: f32, direction: Option<Direction>, color: Color, pos: Pos) {
+        let cmd = DrawCmd::SpriteScaled(sprite, scale, direction, color, pos);
+        self.draw_cmd(cmd);
+    }
+
+    pub fn outline_cmd(&mut self, color: Color, pos: Pos) {
+        let cmd = DrawCmd::OutlineTile(color, pos);
+        self.draw_cmd(cmd);
+    }
+
+    pub fn highlight_cmd(&mut self, color: Color, pos: Pos) {
+        let cmd = DrawCmd::HighlightTile(color, pos);
+        self.draw_cmd(cmd);
+    }
+
+    pub fn text_cmd(&mut self, text: &str, color: Color, pos: Pos) {
+        let string = text.to_string();
+        let cmd = DrawCmd::Text(string, color, pos);
+        self.draw_cmd(cmd);
+    }
+
+    pub fn text_list_cmd(&mut self, text_list: &Vec<String>, color: Color, cell: Pos) {
+        for (index, text) in text_list.iter().enumerate() {
+            let text_cell = Pos::new(cell.x, cell.y + index as i32);
+            self.text_cmd(text, color, text_cell);
+        }
+    }
+
+    pub fn rect_cmd(&mut self, pos: Pos, dims: (u32, u32), offset: f32, filled: bool, color: Color) {
+        let cmd = DrawCmd::Rect(pos, dims, offset, filled, color);
+        self.draw_cmd(cmd);
+    }
+
+    pub fn draw_cmd(&mut self, cmd: DrawCmd) {
+        self.draw_cmds.push(cmd);
     }
 }
 
@@ -993,8 +1063,6 @@ pub struct DisplayState {
     pub dt: f32,
 
     pub debug_entries: HashMap<String, String>,
-
-    pub draw_cmds: HashMap<PanelName, Vec<DrawCmd>>,
 }
 
 impl DisplayState {
@@ -1013,60 +1081,8 @@ impl DisplayState {
             sound_tiles: Vec::new(),
             dt: 0.0,
             debug_entries: HashMap::<String, String>::new(),
-            draw_cmds: HashMap::<PanelName, Vec<DrawCmd>>::new(),
         };
     }
-
-    pub fn sprite_at_pixel_cmd(&mut self, name: PanelName, sprite: Sprite, color: Color, pos: Pos) {
-        let cmd = DrawCmd::SpriteAtPixel(sprite, color, pos);
-        self.draw_cmd(name, cmd);
-    }
-
-    pub fn sprite_cmd(&mut self, name: PanelName, sprite: Sprite, color: Color, pos: Pos) {
-        let cmd = DrawCmd::Sprite(sprite, color, pos);
-        self.draw_cmd(name, cmd);
-    }
-
-    pub fn sprite_scaled_cmd(&mut self, name: PanelName, sprite: Sprite, scale: f32, direction: Option<Direction>, color: Color, pos: Pos) {
-        let cmd = DrawCmd::SpriteScaled(sprite, scale, direction, color, pos);
-        self.draw_cmd(name, cmd);
-    }
-
-    pub fn outline_cmd(&mut self, name: PanelName, color: Color, pos: Pos) {
-        let cmd = DrawCmd::OutlineTile(color, pos);
-        self.draw_cmd(name, cmd);
-    }
-
-    pub fn highlight_cmd(&mut self, name: PanelName, color: Color, pos: Pos) {
-        let cmd = DrawCmd::HighlightTile(color, pos);
-        self.draw_cmd(name, cmd);
-    }
-
-    pub fn text_cmd(&mut self, name: PanelName, text: &str, color: Color, pos: Pos) {
-        let string = text.to_string();
-        let cmd = DrawCmd::Text(string, color, pos);
-        self.draw_cmd(name, cmd);
-    }
-
-    pub fn text_list_cmd(&mut self, name: PanelName, text_list: &Vec<String>, color: Color, cell: Pos) {
-        for (index, text) in text_list.iter().enumerate() {
-            let text_cell = Pos::new(cell.x, cell.y + index as i32);
-            self.text_cmd(name, text, color, text_cell);
-        }
-    }
-
-    pub fn rect_cmd(&mut self, name: PanelName, pos: Pos, dims: (u32, u32), offset: f32, filled: bool, color: Color) {
-        let cmd = DrawCmd::Rect(pos, dims, offset, filled, color);
-        self.draw_cmd(name, cmd);
-    }
-
-    pub fn draw_cmd(&mut self, name: PanelName, cmd: DrawCmd) {
-        if !self.draw_cmds.contains_key(&name) {
-            self.draw_cmds.insert(name, Vec::new());
-        } 
-        self.draw_cmds.get_mut(&name).map(|cmds| cmds.push(cmd));
-    }
-
     pub fn lookup_spritekey(&self, name: &str) -> SpriteKey {
         for (key, sprite_sheet) in self.sprites.iter() {
             if sprite_sheet.name == *name {

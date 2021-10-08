@@ -37,7 +37,7 @@ pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<()
     let map_rect = display.targets.canvas_panel.get_rect_from_area(&display.targets.map_area);
 
     /* Draw Background */
-    render_background(display, game);
+    render_background(&mut display.targets.background_panel, &mut display.state, game);
 
     /* Draw Map */
     render_panels(display, game, map_rect);
@@ -67,47 +67,44 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
     let display_state = &mut display.state;
 
     if game.settings.render_map {
-        let panel = display.targets.background_panel.unit();
+        let panel = &mut display.targets.background_panel;
 
-        render_map(display_state, game);
+        render_map(panel, display_state, game);
 
-        render_entity_type(EntityType::Trigger, PanelName::Map, display_state, game);
-        render_entity_type(EntityType::Item, PanelName::Map, display_state, game);
+        render_entity_type(panel, EntityType::Trigger, display_state, game);
+        render_entity_type(panel, EntityType::Item, display_state, game);
 
-        render_map_middle(display_state, game);
+        render_map_middle(panel, display_state, game);
 
-        render_entity_type(EntityType::Energy, PanelName::Map, display_state, game);
-        render_entity_type(EntityType::Enemy, PanelName::Map, display_state, game);
-        render_entity_type(EntityType::Column, PanelName::Map, display_state, game);
-        render_entity_type(EntityType::Player, PanelName::Map, display_state, game);
-        render_entity_type(EntityType::Other, PanelName::Map, display_state, game);
+        render_entity_type(panel, EntityType::Energy, display_state, game);
+        render_entity_type(panel, EntityType::Enemy, display_state, game);
+        render_entity_type(panel, EntityType::Column, display_state, game);
+        render_entity_type(panel, EntityType::Player, display_state, game);
+        render_entity_type(panel, EntityType::Other, display_state, game);
 
-        render_map_above(display_state, game);
+        render_map_above(panel, display_state, game);
 
-        render_impressions(PanelName::Map, display_state, game);
-        render_effects(PanelName::Map, panel.unit(), display_state, game);
-        render_overlays(display.targets.map_panel.unit(), display_state, game, mouse_map_pos);
+        render_impressions(panel, display_state, game);
+        render_effects(panel, display_state, game);
+        render_overlays(panel, display_state, game, mouse_map_pos);
     }
 
     /* Draw Player Info */
     {
         let player_panel = &mut display.targets.player_panel;
-        let mut panel = player_panel.unit();
-        render_player_info(&mut panel, display_state, game);
+        render_player_info(player_panel, display_state, game);
     }
 
     /* Draw Inventory */
     {
         let inventory_panel = &mut display.targets.inventory_panel;
-        let mut panel = inventory_panel.unit();
-        render_inventory(&mut panel, PanelName::Inventory, display_state, game);
+        render_inventory(inventory_panel, display_state, game);
     }
 
     /* Draw Game Info */
     {
         let info_panel = &mut display.targets.info_panel;
-        let mut panel = info_panel.unit();
-        render_info(&mut panel, display_state, game, mouse_map_pos);
+        render_info(info_panel, display_state, game, mouse_map_pos);
     }
 }
 
@@ -139,17 +136,16 @@ fn render_menus(display: &mut Display, game: &mut Game) {
     let display_state = &mut display.state;
 
     let menu_panel = &mut display.targets.menu_panel;
-    let panel = menu_panel.unit();
 
     let mut draw_menu: bool = true;
     if game.settings.state == GameState::Inventory {
-        render_inventory(&mut panel.unit(), PanelName::Menu, display_state, game);
+        render_inventory(menu_panel, display_state, game);
     } else if game.settings.state == GameState::SkillMenu {
-        render_skill_menu(&mut panel.unit(), display_state, game);
+        render_skill_menu(menu_panel, display_state, game);
     } else if game.settings.state == GameState::ClassMenu {
-        render_class_menu(&mut panel.unit(), display_state, game);
+        render_class_menu(menu_panel, display_state, game);
     } else if game.settings.state == GameState::ConfirmQuit {
-        render_confirm_quit(&mut panel.unit(), display_state, game);
+        render_confirm_quit(menu_panel, display_state, game);
     } else {
         draw_menu = false;
     }
@@ -186,10 +182,9 @@ fn render_debug(display: &mut Display, _game: &mut Game) {
 }
 
 /// Draw an outline and title around an area of the screen
-fn render_placard(panel: &mut Panel<()>,
-                  panel_name: PanelName,
-                  display_state: &mut DisplayState,
-                  text: &str) {
+fn render_placard<T>(panel: &mut Panel<T>,
+                     display_state: &mut DisplayState,
+                     text: &str) {
     // TODO delete commented out code when draw commands are complete
     // TODO this color comes from the UI mockups as a light brown
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
@@ -208,7 +203,7 @@ fn render_placard(panel: &mut Panel<()>,
     //                                 width as u32 - (cell_width / 2),
     //                                 height as u32 - (cell_height / 2))).unwrap();
     let filled = false;
-    display_state.rect_cmd(panel_name, Pos::new(0, 0), panel.cells, 0.5, filled, color);
+    panel.rect_cmd(Pos::new(0, 0), panel.cells, 0.5, filled, color);
 
     // draw a rectangle around where the placard header text will be placed.
     let half_text = text.len() / 2;
@@ -221,7 +216,7 @@ fn render_placard(panel: &mut Panel<()>,
     //                                 cell_height as u32)).unwrap();
     let filled = true;
     let text_dims = (text.len() as u32, 1);
-    display_state.rect_cmd(panel_name, Pos::new(text_offset as i32, 0), text_dims, 0.0, filled, color);
+    panel.rect_cmd(Pos::new(text_offset as i32, 0), text_dims, 0.0, filled, color);
 
     // Draw header text
     //let mid_char_offset = (width / cell_width) / 2;
@@ -233,14 +228,14 @@ fn render_placard(panel: &mut Panel<()>,
     //let sprite_key = display_state.lookup_spritekey("font");
     //let tile_sprite = &mut display_state.sprites[&sprite_key];
     //tile_sprite.draw_text(panel, text, text_pos, text_color);
-    display_state.text_cmd(panel_name, text, text_color, text_pos);
+    panel.text_cmd(text, text_color, text_pos);
 }
 
-fn render_pips(panel_name: PanelName,
-               display_state: &mut DisplayState,
-               num_pips: u32,
-               pos: Pos,
-               color: Color) {
+fn render_pips<T>(panel: &mut Panel<T>,
+                  display_state: &mut DisplayState,
+                  num_pips: u32,
+                  pos: Pos,
+                  color: Color) {
     if num_pips > 0 {
         //let blend_mode = panel.target.blend_mode();
         //panel.target.set_blend_mode(blend_mode);
@@ -264,7 +259,7 @@ fn render_pips(panel_name: PanelName,
 
             let filled = true;
             let pip_pos = move_x(pos, pip_index);
-            display_state.rect_cmd(panel_name, pip_pos, (1, 1), 0.12, filled, color);
+            panel.rect_cmd(pip_pos, (1, 1), 0.12, filled, color);
         }
         //panel.target.fill_rects(&pips).unwrap();
         //panel.target.set_blend_mode(BlendMode::None);
@@ -272,14 +267,14 @@ fn render_pips(panel_name: PanelName,
 }
 
 // TODO remove commented out code when draw cmds are done
-fn render_bar(panel_name: PanelName,
-              display_state: &mut DisplayState,
-              full: i32,
-              current: i32,
-              pos: Pos,
-              fg_color: Color,
-              bg_color: Color,
-              draw_outline: bool) {
+fn render_bar<T>(panel: &mut Panel<T>,
+                 display_state: &mut DisplayState,
+                 full: i32,
+                 current: i32,
+                 pos: Pos,
+                 fg_color: Color,
+                 bg_color: Color,
+                 draw_outline: bool) {
     //let blend_mode = panel.target.blend_mode();
 
     //panel.target.set_blend_mode(BlendMode::None);
@@ -298,7 +293,7 @@ fn render_bar(panel_name: PanelName,
     //                            cell_dims.1);
     //panel.target.fill_rect(health_rect).unwrap();
     let filled = true;
-    display_state.rect_cmd(panel_name, pos, (current as u32, 1), 0.0, filled, fg_color);
+    panel.rect_cmd(pos, (current as u32, 1), 0.0, filled, fg_color);
 
     if draw_outline {
         //let full_rect = Rect::new(x,
@@ -309,14 +304,14 @@ fn render_bar(panel_name: PanelName,
         //panel.target.set_draw_color(color);
         //panel.target.draw_rect(full_rect).unwrap();
         let filled = false;
-        display_state.rect_cmd(panel_name, pos, (full as u32, 1), 0.0, filled, bg_color);
+        panel.rect_cmd(pos, (full as u32, 1), 0.0, filled, bg_color);
     }
 
     //panel.target.set_blend_mode(blend_mode);
 }
 
-fn render_player_info(panel: &mut Panel<()>, display_state: &mut DisplayState, game: &mut Game) {
-    render_placard(panel, PanelName::Player, display_state, "Player");
+fn render_player_info<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
+    render_placard(panel, display_state, "Player");
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
@@ -336,13 +331,13 @@ fn render_player_info(panel: &mut Panel<()>, display_state: &mut DisplayState, g
         // TODO this color red comes from the UI mockups
         let health_color = Color::new(0x96, 0x54, 0x56, 255);
         let bar_pos = Pos::new(2, 2);
-        render_bar(PanelName::Player, display_state, fighter.max_hp, hp, bar_pos, health_color, Color::white(), false);
+        render_bar(panel, display_state, fighter.max_hp, hp, bar_pos, health_color, Color::white(), false);
     }
 
     let energy = game.data.entities.energy[&player_id];
     // TODO this color orange comes from the UI mockups
     let energy_color = Color::new(0xaf, 0x83, 0x56, 255);
-    render_pips(PanelName::Player, display_state, energy, Pos::new(2, 3), energy_color);
+    render_pips(panel, display_state, energy, Pos::new(2, 3), energy_color);
 
     list.push(format!(""));
 
@@ -366,17 +361,17 @@ fn render_player_info(panel: &mut Panel<()>, display_state: &mut DisplayState, g
 
     let text_pos = Pos::new(1, 5);
 
-    let sprite_key = display_state.lookup_spritekey("font");
-    let tile_sprite = &mut display_state.sprites[&sprite_key];
+    //let sprite_key = display_state.lookup_spritekey("font");
+    //let tile_sprite = &mut display_state.sprites[&sprite_key];
     //tile_sprite.draw_text_list(panel, &list, text_pos, color);
-    display_state.text_list_cmd(PanelName::Player, &list, color, text_pos);
+    panel.text_list_cmd(&list, color, text_pos);
 }
 
-fn render_info(panel: &mut Panel<()>,
-               display_state: &mut DisplayState,
-               game: &mut Game,
-               _mouse_xy: Option<Pos>) {
-    render_placard(panel, PanelName::Info, display_state, "Info");
+fn render_info<T>(panel: &mut Panel<T>,
+                  display_state: &mut DisplayState,
+                  game: &mut Game,
+                  _mouse_xy: Option<Pos>) {
+    render_placard(panel, display_state, "Info");
 
     if let Some(info_pos) = game.settings.cursor {
         let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
@@ -398,7 +393,7 @@ fn render_info(panel: &mut Panel<()>,
 
         {
             let tile_sprite = &mut display_state.sprites[&sprite_key];
-            display_state.text_list_cmd(PanelName::Info, &text_list, text_color, text_pos);
+            panel.text_list_cmd(&text_list, text_color, text_pos);
         }
         text_list.clear();
 
@@ -421,7 +416,7 @@ fn render_info(panel: &mut Panel<()>,
                     let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
 
                     let health_color = Color::new(0x96, 0x54, 0x56, 255);
-                    render_bar(PanelName::Info,
+                    render_bar(panel,
                                display_state,
                                fighter.max_hp,
                                fighter.hp,
@@ -466,7 +461,7 @@ fn render_info(panel: &mut Panel<()>,
 
         let tile_sprite = &mut display_state.sprites[&sprite_key];
         let text_pos = Pos::new(1, y_pos);
-        display_state.text_list_cmd(PanelName::Info, &text_list, text_color, text_pos);
+        panel.text_list_cmd(&text_list, text_color, text_pos);
         text_list.push(format!(""));
         text_list.clear();
 
@@ -493,16 +488,16 @@ fn render_info(panel: &mut Panel<()>,
                 text_list.push(format!("blocked"));
             }
 
-            display_state.text_list_cmd(PanelName::Info, &text_list, text_color, text_pos);
+            panel.text_list_cmd(&text_list, text_color, text_pos);
         }
     }
 }
 
-fn render_skill_menu(panel: &mut Panel<()>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_skill_menu<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     // Render header
-    render_placard(panel, PanelName::Menu, display_state, "Skills");
+    render_placard(panel, display_state, "Skills");
 
     let mut list = Vec::new();
 
@@ -516,15 +511,15 @@ fn render_skill_menu(panel: &mut Panel<()>, display_state: &mut DisplayState, ga
     // TODO this color comes from the ui mockups as a light brown
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
-    let sprite_key = display_state.lookup_spritekey("font");
-    let tile_sprite = &mut display_state.sprites[&sprite_key];
+    //let sprite_key = display_state.lookup_spritekey("font");
+    //let tile_sprite = &mut display_state.sprites[&sprite_key];
 
-    display_state.text_list_cmd(PanelName::Menu, &list, color, text_pos);
+    panel.text_list_cmd(&list, color, text_pos);
 }
 
-fn render_class_menu(panel: &mut Panel<()>, display_state: &mut DisplayState, _game: &mut Game) {
+fn render_class_menu<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, _game: &mut Game) {
     // Render header
-    render_placard(panel, PanelName::Menu, display_state, "Choose Class");
+    render_placard(panel, display_state, "Choose Class");
 
     let mut list = Vec::new();
 
@@ -541,12 +536,12 @@ fn render_class_menu(panel: &mut Panel<()>, display_state: &mut DisplayState, _g
     let sprite_key = display_state.lookup_spritekey("font");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
-    display_state.text_list_cmd(PanelName::Menu, &list, color, text_pos);
+    panel.text_list_cmd(&list, color, text_pos);
 }
 
-fn render_confirm_quit(panel: &mut Panel<()>, display_state: &mut DisplayState, _game: &mut Game) {
+fn render_confirm_quit<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, _game: &mut Game) {
     // Render header
-    render_placard(panel, PanelName::Menu, display_state, "Quit?");
+    render_placard(panel, display_state, "Quit?");
 
     let mut list = Vec::new();
 
@@ -560,16 +555,16 @@ fn render_confirm_quit(panel: &mut Panel<()>, display_state: &mut DisplayState, 
     // TODO this color comes from the UI mockups as a light brown
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
-    let sprite_key = display_state.lookup_spritekey("font");
-    let tile_sprite = &mut display_state.sprites[&sprite_key];
+    //let sprite_key = display_state.lookup_spritekey("font");
+    //let tile_sprite = &mut display_state.sprites[&sprite_key];
 
-    display_state.text_list_cmd(PanelName::Menu, &list, color, text_pos);
+    panel.text_list_cmd(&list, color, text_pos);
 }
 
 /// Render an inventory section within the given area
-fn render_inventory(panel: &mut Panel<()>, panel_name: PanelName, display_state: &mut DisplayState, game: &mut Game) {
+fn render_inventory<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
     // Render header
-    render_placard(panel, panel_name, display_state, "Inventory");
+    render_placard(panel, display_state, "Inventory");
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
@@ -582,7 +577,7 @@ fn render_inventory(panel: &mut Panel<()>, panel_name: PanelName, display_state:
     let mut y_pos = 2;
 
     // Draw Primary Items
-    display_state.text_cmd(panel_name, "z", ui_color, Pos::new(1, y_pos));
+    panel.text_cmd("z", ui_color, Pos::new(1, y_pos));
     //tile_sprite.draw_text(panel, &"z", Pos::new(1, y_pos), ui_color);
 
     let mut index = 0;
@@ -593,7 +588,7 @@ fn render_inventory(panel: &mut Panel<()>, panel_name: PanelName, display_state:
             let item_text = format!("{:?}", game.data.entities.name[&item_id]);
             let text_pos = Pos::new(3, y_pos);
             //tile_sprite.draw_text(panel, &item_text, text_pos, ui_color);
-            display_state.text_cmd(panel_name, &item_text, ui_color, text_pos);
+            panel.text_cmd(&item_text, ui_color, text_pos);
             break;
         }
 
@@ -604,7 +599,7 @@ fn render_inventory(panel: &mut Panel<()>, panel_name: PanelName, display_state:
     // Draw Consumable Items
     let tile_sprite = &mut display_state.sprites[&sprite_key];
     //tile_sprite.draw_text(panel, &"x", ui_color);
-    display_state.text_cmd(panel_name, &"x", ui_color, Pos::new(1, y_pos));
+    panel.text_cmd(&"x", ui_color, Pos::new(1, y_pos));
 
     let mut index = 0;
     while index < game.data.entities.inventory[&player_id].len() {
@@ -614,7 +609,7 @@ fn render_inventory(panel: &mut Panel<()>, panel_name: PanelName, display_state:
             let item_text = format!("{:?}", game.data.entities.name[&item_id]);
             let text_pos = Pos::new(3, y_pos);
             //tile_sprite.draw_text(panel, &item_text, text_pos, ui_color);
-            display_state.text_cmd(panel_name, &item_text, ui_color, text_pos);
+            panel.text_cmd(&item_text, ui_color, text_pos);
             break;
         }
 
@@ -624,7 +619,7 @@ fn render_inventory(panel: &mut Panel<()>, panel_name: PanelName, display_state:
 
     // Draw Stones Items
     //tile_sprite.draw_text(panel, &"c", Pos::new(1, y_pos), ui_color);
-    display_state.text_cmd(panel_name, &"c", ui_color, Pos::new(1, y_pos));
+    panel.text_cmd(&"c", ui_color, Pos::new(1, y_pos));
 
     let mut num_stones = 0;
     let mut index = 0;
@@ -639,7 +634,7 @@ fn render_inventory(panel: &mut Panel<()>, panel_name: PanelName, display_state:
     }
 
     if num_stones > 0 {
-        display_state.text_cmd(panel_name, &"c", ui_color, Pos::new(1, y_pos));
+        panel.text_cmd(&"c", ui_color, Pos::new(1, y_pos));
         //tile_sprite.draw_text(panel,
         //                      &"c",
         //                      Pos::new(1, y_pos),
@@ -647,11 +642,11 @@ fn render_inventory(panel: &mut Panel<()>, panel_name: PanelName, display_state:
 
         let text_pos = Pos::new(3, y_pos);
         //tile_sprite.draw_text(panel, &"stone", text_pos, ui_color);
-        display_state.text_cmd(panel_name, &"stone", ui_color, text_pos);
+        panel.text_cmd(&"stone", ui_color, text_pos);
 
         let num_text = format!("({})", num_stones);
         //tile_sprite.draw_text(panel, &num_text, Pos::new(9, y_pos), ui_color);
-        display_state.text_cmd(panel_name, &num_text, ui_color, Pos::new(9, y_pos));
+        panel.text_cmd(&num_text, ui_color, Pos::new(9, y_pos));
     }
 
     y_pos += 1;
@@ -667,7 +662,7 @@ fn render_inventory(panel: &mut Panel<()>, panel_name: PanelName, display_state:
             let item_text = format!("{:?}", game.data.entities.name[&item_id]);
             let text_pos = Pos::new(3, y_pos);
             //tile_sprite.draw_text(panel, &item_text, text_pos, ui_color);
-            display_state.text_cmd(panel_name, &item_text, ui_color, text_pos);
+            panel.text_cmd(&item_text, ui_color, text_pos);
             y_pos += 1;
         }
 
@@ -676,22 +671,12 @@ fn render_inventory(panel: &mut Panel<()>, panel_name: PanelName, display_state:
 }
 
 /// render the background files, including water tiles
-fn render_background(display: &mut Display, game: &mut Game) {
-    // NOTE(perf) this optimization can likely be removed.
-    // Once the new display system is done, and some optimizations have
-    // been performed, remove the dirty flag concept and see if there
-    // is any real difference.
-    //if !display.targets.background_panel.dirty {
-    //    return;
-    //}
-    //display.targets.background_panel.dirty = false;
-
+fn render_background<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
     let (map_width, map_height) = game.data.map.size();
 
-    let sprite_key = display.state.lookup_spritekey("tiles");
-    let sprite = &mut display.state.sprites[&sprite_key];
+    let sprite_key = display_state.lookup_spritekey("tiles");
+    let sprite = &mut display_state.sprites[&sprite_key];
 
-    let panel = display.targets.background_panel.unit();
     for y in 0..map_height {
         for x in 0..map_width {
             let map_pos = Pos::new(x, y);
@@ -700,10 +685,10 @@ fn render_background(display: &mut Display, game: &mut Game) {
             // TODO why are these branches identical?
             if tile.tile_type != TileType::Water {
                 let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
-                display.state.sprite_cmd(PanelName::Background, sprite, Color::white(), map_pos);
+                panel.sprite_cmd(sprite, Color::white(), map_pos);
             } else {
                 let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
-                display.state.sprite_cmd(PanelName::Background, sprite, Color::white(), map_pos);
+                panel.sprite_cmd(sprite, Color::white(), map_pos);
             }
         }
     }
@@ -727,8 +712,7 @@ fn surface_chr(surface: Surface) -> Option<u8> {
 }
 
 /// Render Wall Shadows (full tile and intertile walls, left and down)
-fn render_wall_shadow(pos: Pos, display_state: &mut DisplayState, game: &mut Game) {
-    let panel_name = PanelName::Map;
+fn render_wall_shadow<T>(panel: &mut Panel<T>, pos: Pos, display_state: &mut DisplayState, game: &mut Game) {
     let shadow_sprite_key = display_state.lookup_spritekey("shadows");
 
     let tile = game.data.map[pos];
@@ -752,14 +736,14 @@ fn render_wall_shadow(pos: Pos, display_state: &mut DisplayState, game: &mut Gam
             let shadow_pos = Pos::new(x - 1, y);
             let shadow_left_upper = Sprite::new(SHADOW_FULLTILE_LEFT as u32, shadow_sprite_key);
             //display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
-            display_state.sprite_cmd(panel_name, shadow_left_upper, shadow_color, shadow_pos);
+            panel.sprite_cmd(shadow_left_upper, shadow_color, shadow_pos);
         }
 
         if down_left_valid && !down_left_wall {
             let shadow_pos = Pos::new(x - 1, y + 1);
             let shadow_left_lower = Sprite::new(SHADOW_FULLTILE_LEFT_DOWN as u32, shadow_sprite_key);
             //display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
-            display_state.sprite_cmd(panel_name, shadow_left_lower, shadow_color, shadow_pos);
+            panel.sprite_cmd(shadow_left_lower, shadow_color, shadow_pos);
         }
 
         if down_valid && !down_wall {
@@ -767,14 +751,14 @@ fn render_wall_shadow(pos: Pos, display_state: &mut DisplayState, game: &mut Gam
             let shadow_lower_right = Sprite::new(SHADOW_FULLTILE_DOWN as u32, shadow_sprite_key);
             let shadow_pos = Pos::new(x, y + 1);
             //display_state.draw_sprite(panel, shadow_lower_right, shadow_pos, game.config.color_shadow);
-            display_state.sprite_cmd(panel_name, shadow_lower_right, shadow_color, shadow_pos);
+            panel.sprite_cmd(shadow_lower_right, shadow_color, shadow_pos);
         }
 
         if down_left_valid && !down_left_wall {
             let shadow_lower_left = Sprite::new(SHADOW_FULLTILE_DOWN_LEFT as u32, shadow_sprite_key);
             let shadow_pos = Pos::new(x - 1, y + 1);
             //display_state.draw_sprite(panel, shadow_lower_left, shadow_pos, game.config.color_shadow);
-            display_state.sprite_cmd(panel_name, shadow_lower_left, shadow_color, shadow_pos);
+            panel.sprite_cmd(shadow_lower_left, shadow_color, shadow_pos);
         }
     } else if tile.left_wall == Wall::ShortWall {
         // left
@@ -782,7 +766,7 @@ fn render_wall_shadow(pos: Pos, display_state: &mut DisplayState, game: &mut Gam
             let shadow_pos = Pos::new(x - 1, y);
             let shadow_left_upper = Sprite::new(SHADOW_INTERTILE_LEFT as u32, shadow_sprite_key);
             //display_state.draw_sprite(panel, shadow_left_upper, shadow_pos, game.config.color_shadow);
-            display_state.sprite_cmd(panel_name, shadow_left_upper, shadow_color, shadow_pos);
+            panel.sprite_cmd(shadow_left_upper, shadow_color, shadow_pos);
         }
 
         // left down
@@ -790,7 +774,7 @@ fn render_wall_shadow(pos: Pos, display_state: &mut DisplayState, game: &mut Gam
             let shadow_pos = Pos::new(x - 1, y + 1);
             let shadow_left_lower = Sprite::new(SHADOW_INTERTILE_LEFT_DOWN as u32, shadow_sprite_key);
             //display_state.draw_sprite(panel, shadow_left_lower, shadow_pos, game.config.color_shadow);
-            display_state.sprite_cmd(panel_name, shadow_left_lower, shadow_color, shadow_pos);
+            panel.sprite_cmd(shadow_left_lower, shadow_color, shadow_pos);
         }
     } else if tile.bottom_wall == Wall::ShortWall {
         if down_valid {
@@ -799,7 +783,7 @@ fn render_wall_shadow(pos: Pos, display_state: &mut DisplayState, game: &mut Gam
                 let shadow_lower_right = Sprite::new(SHADOW_INTERTILE_DOWN as u32, shadow_sprite_key);
                 let shadow_pos = Pos::new(x, y + 1);
                 //display_state.draw_sprite(panel, shadow_lower_right, shadow_pos, game.config.color_shadow);
-                display_state.sprite_cmd(panel_name, shadow_lower_right, shadow_color, shadow_pos);
+                panel.sprite_cmd(shadow_lower_right, shadow_color, shadow_pos);
             }
 
             // left down
@@ -807,14 +791,13 @@ fn render_wall_shadow(pos: Pos, display_state: &mut DisplayState, game: &mut Gam
                 let shadow_lower_left = Sprite::new(SHADOW_INTERTILE_DOWN_LEFT as u32, shadow_sprite_key);
                 let shadow_pos = Pos::new(x - 1, y + 1);
                 //display_state.draw_sprite(panel, shadow_lower_left, shadow_pos, game.config.color_shadow);
-                display_state.sprite_cmd(panel_name, shadow_lower_left, shadow_color, shadow_pos);
+                panel.sprite_cmd(shadow_lower_left, shadow_color, shadow_pos);
             }
         }
     }
 }
 
-fn render_map_above(display_state: &mut DisplayState, game: &mut Game) {
-    let panel_name = PanelName::Map;
+fn render_map_above<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let (map_width, map_height) = game.data.map.size();
@@ -832,11 +815,11 @@ fn render_map_above(display_state: &mut DisplayState, game: &mut Game) {
                 if tile.bottom_wall == Wall::ShortWall {
                     //sprite.draw_char(panel, MAP_THIN_WALL_BOTTOM as char, pos, wall_color);
                     let sprite = Sprite::new(MAP_THIN_WALL_BOTTOM as u32, sprite_key);
-                    display_state.sprite_cmd(panel_name, sprite, wall_color, pos);
+                    panel.sprite_cmd(sprite, wall_color, pos);
                 } else if tile.bottom_wall == Wall::TallWall {
                     //sprite.draw_char(panel, MAP_THICK_WALL_BOTTOM as char, pos, wall_color);
                     let sprite = Sprite::new(MAP_THICK_WALL_BOTTOM as u32, sprite_key);
-                    display_state.sprite_cmd(panel_name, sprite, wall_color, pos);
+                    panel.sprite_cmd(sprite, wall_color, pos);
                 }
             }
 
@@ -861,13 +844,13 @@ fn render_map_above(display_state: &mut DisplayState, game: &mut Game) {
                 //let sprite = &mut display_state.sprites[&sprite_key];
                 //sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, blackout_color);
                 let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
-                display_state.sprite_cmd(panel_name, sprite, blackout_color, pos);
+                panel.sprite_cmd(sprite, blackout_color, pos);
             }
         }
     }
 }
 
-fn render_map_middle(display_state: &mut DisplayState, game: &mut Game) {
+fn render_map_middle<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = display_state.lookup_spritekey("tiles");
@@ -875,18 +858,17 @@ fn render_map_middle(display_state: &mut DisplayState, game: &mut Game) {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
 
-            render_wall_shadow(pos, display_state, game);
+            render_wall_shadow(panel, pos, display_state, game);
 
             /* draw the between-tile walls appropriate to this tile */
             //let sprite = &mut display_state.sprites[&sprite_key];
-            render_intertile_walls_below(display_state, &mut game.data.map, sprite_key, pos);
+            render_intertile_walls_below(panel, display_state, &mut game.data.map, sprite_key, pos);
         }
     }
 }
 
 /// Render the map, with environment and walls
-fn render_map(display_state: &mut DisplayState, game: &mut Game) {
-    let panel_name = PanelName::Map; 
+fn render_map<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = display_state.lookup_spritekey("tiles");
@@ -898,7 +880,7 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game) {
             {
                 let mut outline_color = Color::white();
                 outline_color.a /= 8;
-                display_state.outline_cmd(panel_name, outline_color, pos);
+                panel.outline_cmd(outline_color, pos);
                 //draw_outline_tile(panel, pos, outline_color);
             }
 
@@ -910,25 +892,25 @@ fn render_map(display_state: &mut DisplayState, game: &mut Game) {
             // if the tile is not empty or water, draw it
             if tile.tile_type == TileType::Water {
                 let sprite = Sprite::new(MAP_WATER as u32, sprite_key);
-                display_state.sprite_cmd(panel_name, sprite, Color::white(), pos);
+                panel.sprite_cmd(sprite, Color::white(), pos);
             } else if chr != MAP_EMPTY_CHAR {
                 let sprite = Sprite::new(chr as u32, sprite_key);
-                display_state.sprite_cmd(panel_name, sprite, Color::white(), pos);
+                panel.sprite_cmd(sprite, Color::white(), pos);
             }
 
             if let Some(chr) = surface_chr(tile.surface) {
                 let sprite = Sprite::new(chr as u32, sprite_key);
-                display_state.sprite_cmd(panel_name, sprite, Color::white(), pos);
+                panel.sprite_cmd(sprite, Color::white(), pos);
             }
         }
     }
 }
 
-fn render_intertile_walls_below(display_state: &mut DisplayState,
-                                map: &Map,
-                                sprite_key: SpriteKey,
-                                pos: Pos) {
-    let panel_name = PanelName::Map;
+fn render_intertile_walls_below<T>(panel: &mut Panel<T>,
+                                   display_state: &mut DisplayState,
+                                   map: &Map,
+                                   sprite_key: SpriteKey,
+                                   pos: Pos) {
     let (x, y) = pos.to_tuple();
     let tile = map[pos];
     let wall_color = Color::white();
@@ -937,10 +919,10 @@ fn render_intertile_walls_below(display_state: &mut DisplayState,
     if tile.left_wall == Wall::ShortWall {
         //sprite.draw_char(panel, MAP_THIN_WALL_LEFT as char, pos, wall_color);
         let sprite = Sprite::new(MAP_THIN_WALL_LEFT as u32, sprite_key);
-        display_state.sprite_cmd(panel_name, sprite, wall_color, pos);
+        panel.sprite_cmd(sprite, wall_color, pos);
     } else if tile.left_wall == Wall::TallWall {
         let sprite = Sprite::new(MAP_THIN_WALL_LEFT as u32, sprite_key);
-        display_state.sprite_cmd(panel_name, sprite, wall_color, pos);
+        panel.sprite_cmd(sprite, wall_color, pos);
     }
 
     // Right walls
@@ -950,11 +932,11 @@ fn render_intertile_walls_below(display_state: &mut DisplayState,
         if right_tile.left_wall == Wall::ShortWall {
             //sprite.draw_char(panel, MAP_THIN_WALL_RIGHT as char, pos, wall_color);
             let sprite = Sprite::new(MAP_THIN_WALL_RIGHT as u32, sprite_key);
-            display_state.sprite_cmd(panel_name, sprite, wall_color, pos);
+            panel.sprite_cmd(sprite, wall_color, pos);
         } else if right_tile.left_wall == Wall::TallWall {
             //sprite.draw_char(panel, MAP_THICK_WALL_RIGHT as char, pos, wall_color);
             let sprite = Sprite::new(MAP_THICK_WALL_RIGHT as u32, sprite_key);
-            display_state.sprite_cmd(panel_name, sprite, wall_color, pos);
+            panel.sprite_cmd(sprite, wall_color, pos);
         }
     }
 
@@ -965,11 +947,11 @@ fn render_intertile_walls_below(display_state: &mut DisplayState,
         if up_tile.bottom_wall == Wall::ShortWall {
             //sprite.draw_char(panel, MAP_THIN_WALL_TOP as char, pos, wall_color);
             let sprite = Sprite::new(MAP_THIN_WALL_TOP as u32, sprite_key);
-            display_state.sprite_cmd(panel_name, sprite, wall_color, pos);
+            panel.sprite_cmd(sprite, wall_color, pos);
         } else if up_tile.bottom_wall == Wall::TallWall {
             //sprite.draw_char(panel, MAP_THICK_WALL_TOP as char, pos, wall_color);
             let sprite = Sprite::new(MAP_THICK_WALL_TOP as u32, sprite_key);
-            display_state.sprite_cmd(panel_name, sprite, wall_color, pos);
+            panel.sprite_cmd(sprite, wall_color, pos);
         }
     }
 }
@@ -978,10 +960,9 @@ fn render_intertile_walls_below(display_state: &mut DisplayState,
 /// The strategy here is to copy the effects vector, update all items,
 /// and then remove finished effects from back to front. The
 /// resulting vector of effects is then saved as the new effects vector.
-fn render_effects(panel_name: PanelName,
-                  panel: Panel<()>,
-                  display_state: &mut DisplayState,
-                  game: &mut Game) {
+fn render_effects<T>(panel: &mut Panel<T>,
+                     display_state: &mut DisplayState,
+                     game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let mut index = 0;
@@ -1021,7 +1002,7 @@ fn render_effects(panel_name: PanelName,
                             color.a = (255.0 * (particles[index].duration / game.config.particle_duration)) as u8;
                             //speck_sprite.draw_sprite_full(panel, 0, draw_pos, color, 0.0, false, false);
                             let sprite = Sprite::new(0, sprite_key);
-                            display_state.sprite_at_pixel_cmd(panel_name, sprite, color, draw_pos);
+                            panel.sprite_at_pixel_cmd(sprite, color, draw_pos);
                         }
                         index += 1;
                     }
@@ -1046,8 +1027,8 @@ fn render_effects(panel_name: PanelName,
                            game.data.pos_in_fov(player_id, *pos, &game.config) {
                            //draw_tile_highlight(panel, *pos, highlight_color);
                            //draw_outline_tile(panel, *pos, highlight_color);
-                           display_state.highlight_cmd(panel_name, highlight_color, *pos);
-                           display_state.outline_cmd(panel_name, highlight_color, *pos);
+                           panel.highlight_cmd(highlight_color, *pos);
+                           panel.outline_cmd(highlight_color, *pos);
                         }
                     }
                 }
@@ -1094,7 +1075,7 @@ fn render_effects(panel_name: PanelName,
                 for pos in line(*start, *end) {
                     let mut sprite = Sprite::new(sprite_index as u32, sprite_key);
                     sprite.rotation = rotation;
-                    display_state.sprite_cmd(panel_name, sprite, Color::white(), pos);
+                    panel.sprite_cmd(sprite, Color::white(), pos);
                     // TODO delete, as well as other sprite draw calls.
                     //tile_sprite.draw_sprite_at_cell(panel,
                     //                                sprite_index as usize,
@@ -1119,7 +1100,7 @@ fn render_effects(panel_name: PanelName,
                 let pixel_to = panel.pixel_from_cell(*to);
                 let pixel_pos = Pos::new((pixel_from.x + pixel_to.x) / 2,
                                          (pixel_from.y + pixel_to.y) / 2);
-                display_state.sprite_at_pixel_cmd(panel_name, sprite, Color::white(), pixel_pos);
+                panel.sprite_at_pixel_cmd(sprite, Color::white(), pixel_pos);
                 //attack_sprite.draw_sprite_full(panel,
                 //                               sprite.index as usize,
                 //                               pixel_pos,
@@ -1147,10 +1128,10 @@ fn render_effects(panel_name: PanelName,
 
 // NOTE this function steps the animation forward. It would be better
 // to do this all at once after rendering a frame.
-fn render_entity(panel_name: PanelName,
-                 entity_id: EntityId,
-                 display_state: &mut DisplayState,
-                 game: &mut Game) -> Option<Sprite> {
+fn render_entity<T>(panel: &mut Panel<T>,
+                    entity_id: EntityId,
+                    display_state: &mut DisplayState,
+                    game: &mut Game) -> Option<Sprite> {
     let mut animation_result = AnimationResult::new();
 
     let pos = game.data.entities.pos[&entity_id];
@@ -1187,7 +1168,7 @@ fn render_entity(panel_name: PanelName,
 
                         //display_state.draw_sprite(panel, sprite, animation_result.pos, color);
                         //let sprite = Sprite::new(MAP_THIN_WALL_BOTTOM as u32, sprite_key);
-                        display_state.sprite_cmd(panel_name, sprite, color, animation_result.pos);
+                        panel.sprite_cmd(sprite, color, animation_result.pos);
                     }
 
                     // for animations other then effects, keep playing by pushing to front of
@@ -1206,7 +1187,7 @@ fn render_entity(panel_name: PanelName,
             let chr = game.data.entities.chr[&entity_id];
             let sprite = Sprite::new(chr as u32, tiles);
             //display_state.draw_sprite(panel, sprite, pos, color);
-            display_state.sprite_cmd(panel_name, sprite, color, pos);
+            panel.sprite_cmd(sprite, color, pos);
             animation_result.sprite = Some(sprite);
         }
     } else {
@@ -1230,20 +1211,19 @@ fn render_entity(panel_name: PanelName,
     return animation_result.sprite;
 }
 
-fn render_impressions(panel_name: PanelName, display_state: &mut DisplayState, game: &mut Game) {
+fn render_impressions<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
     // check for entities that have left FOV and make an impression for them
     let mut index = 0;
     while index < display_state.impressions.len() {
         let impression = display_state.impressions[index];
         index += 1;
-        display_state.sprite_cmd(panel_name,
-                                 impression.sprite,
+        panel.sprite_cmd(impression.sprite,
                                  game.config.color_light_grey,
                                  impression.pos);
     }
 }
 
-fn render_entity_type(typ: EntityType, panel_name: PanelName, display_state: &mut DisplayState, game: &mut Game) {
+fn render_entity_type<T>(panel: &mut Panel<T>, typ: EntityType, display_state: &mut DisplayState, game: &mut Game) {
     if typ == EntityType::Player && game.settings.state == GameState::Use && game.settings.use_dir.is_some() {
         // For the player in use-mode, while holding down a direction, we
         // need special rendering. Otherwise the player is rendered as normal.
@@ -1271,9 +1251,9 @@ fn render_entity_type(typ: EntityType, panel_name: PanelName, display_state: &mu
         }
 
         if let Some(pos) = use_pos {
-            render_entity_ghost(player_id, player_pos, game, panel_name, display_state);
+            render_entity_ghost(panel, player_id, player_pos, game, display_state);
             game.data.entities.pos[&player_id] = pos;
-            render_entity(panel_name, player_id, display_state, game);
+            render_entity(panel, player_id, display_state, game);
             game.data.entities.pos[&player_id] = player_pos;
         }
     } else {
@@ -1283,7 +1263,7 @@ fn render_entity_type(typ: EntityType, panel_name: PanelName, display_state: &mu
             index += 1;
 
             if !game.data.entities.needs_removal[&entity_id] && game.data.entities.typ[&entity_id] == typ {
-                let maybe_sprite = render_entity(panel_name, entity_id, display_state, game);
+                let maybe_sprite = render_entity(panel, entity_id, display_state, game);
 
                 if let Some(sprite) = maybe_sprite {
                     display_state.drawn_sprites.insert(entity_id, sprite);
@@ -1293,11 +1273,10 @@ fn render_entity_type(typ: EntityType, panel_name: PanelName, display_state: &mu
     }
 }
 
-fn render_overlay_use_item(item_class: ItemClass,
-                           display_state: &mut DisplayState,
-                           game: &mut Game) {
-    let panel_name = PanelName::Map;
-
+fn render_overlay_use_item<T>(panel: &mut Panel<T>,
+                              item_class: ItemClass,
+                              display_state: &mut DisplayState,
+                              game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
@@ -1317,10 +1296,10 @@ fn render_overlay_use_item(item_class: ItemClass,
                                                           game.settings.move_mode);
             if let Some(_pos) = use_result.pos {
                 let arrow_pos = use_dir.offset_pos(player_pos, 1);
-                render_arrow(panel_name, display_state, sprite_key, use_dir, arrow_pos, direction_color);
+                render_arrow(panel, display_state, sprite_key, use_dir, arrow_pos, direction_color);
 
                 for hit_pos in use_result.hit_positions {
-                   display_state.highlight_cmd(panel_name, attack_highlight_color, hit_pos);
+                   panel.highlight_cmd(attack_highlight_color, hit_pos);
                 }
             }
         } else {
@@ -1336,25 +1315,25 @@ fn render_overlay_use_item(item_class: ItemClass,
                                                              game.settings.move_mode);
                 if let Some(pos) = use_result.pos {
                     if !move_positions.contains(&pos) {
-                       display_state.highlight_cmd(panel_name, highlight_color, pos);
+                       panel.highlight_cmd(highlight_color, pos);
                     }
                     move_positions.insert(pos);
                     let arrow_pos = dir.offset_pos(player_pos, 1);
-                    render_arrow(panel_name, display_state, sprite_key, *dir, arrow_pos, direction_color);
+                    render_arrow(panel, display_state, sprite_key, *dir, arrow_pos, direction_color);
                     hit_positions.extend(use_result.hit_positions.iter());
                 }
             }
 
             for hit_pos in hit_positions {
-               display_state.highlight_cmd(panel_name, attack_highlight_color, hit_pos);
+               panel.highlight_cmd(attack_highlight_color, hit_pos);
             }
         }
     }
 }
 
-fn render_sound_overlay(panel_name: PanelName,
-                        display_state: &mut DisplayState,
-                        game: &mut Game) {
+fn render_sound_overlay<T>(panel: &mut Panel<T>,
+                           display_state: &mut DisplayState,
+                           game: &mut Game) {
     let mut highlight_sound: Color = game.config.color_warm_grey;
     highlight_sound.a = game.config.sound_alpha;
     // NOTE(perf) this clone is only necessary because draw commands
@@ -1363,7 +1342,7 @@ fn render_sound_overlay(panel_name: PanelName,
     for pos in display_state.sound_tiles.clone().iter() {
         // NOTE this currently does not take into account FOV!
         // if game.data.pos_in_fov(player_id, pos, &game.config) {
-        display_state.highlight_cmd(panel_name, highlight_sound, *pos);
+        panel.highlight_cmd(highlight_sound, *pos);
         //}
     }
 }
@@ -1387,11 +1366,10 @@ fn render_sound_overlay(panel_name: PanelName,
 //    }
 //}
 
-fn render_overlays(panel: Panel<()>,
-                   display_state: &mut DisplayState,
-                   game: &mut Game,
-                   map_mouse_pos: Option<Pos>) {
-    let panel_name = PanelName::Map;
+fn render_overlays<T>(panel: &mut Panel<T>,
+                      display_state: &mut DisplayState,
+                      game: &mut Game,
+                      map_mouse_pos: Option<Pos>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
@@ -1413,13 +1391,13 @@ fn render_overlays(panel: Panel<()>,
                 let target_pos = dir.offset_pos(player_pos, 1);
                 if game.data.clear_path(player_pos, target_pos, false) {
                     //draw_tile_highlight(panel, target_pos, highlight_color);
-                    display_state.highlight_cmd(panel_name, highlight_color, target_pos);
+                    panel.highlight_cmd(highlight_color, target_pos);
 
-                    render_arrow(panel_name, display_state, sprite_key, *dir, target_pos, direction_color);
+                    render_arrow(panel, display_state, sprite_key, *dir, target_pos, direction_color);
                 }
             }
         } else if let UseAction::Item(item_class) = game.settings.use_action {
-            render_overlay_use_item(item_class, display_state, game);
+            render_overlay_use_item(panel, item_class, display_state, game);
         }
     }
 
@@ -1438,15 +1416,15 @@ fn render_overlays(panel: Panel<()>,
                     let res: i8 = x_diff as i8 - y_diff as i8;
                     if res <= 0 {
                         let sprite = Sprite::new(MAP_GROUND as u32, sprite_key);
-                        display_state.sprite_cmd(panel_name, sprite, game.config.color_light_green, pos);
+                        panel.sprite_cmd(sprite, game.config.color_light_green, pos);
                     } else {
                         //tile_sprite.draw_char(panel, MAP_GROUND as char, pos, game.config.color_light_grey);
                         let sprite = Sprite::new(MAP_GROUND as u32, sprite_key);
-                        display_state.sprite_cmd(panel_name, sprite, game.config.color_light_grey, pos);
+                        panel.sprite_cmd(sprite, game.config.color_light_grey, pos);
                     }
                     //tile_sprite.draw_char(panel, ('0' as u8 + res.abs() as u8) as char, pos, );
                     let sprite = Sprite::new(('0' as u8 + res.abs() as u8) as u32, sprite_key);
-                    display_state.sprite_cmd(panel_name, sprite, game.config.color_red, pos);
+                    panel.sprite_cmd(sprite, game.config.color_red, pos);
                 }
             }
         }
@@ -1460,7 +1438,7 @@ fn render_overlays(panel: Panel<()>,
             color.a = 230;
             //tile_sprite.draw_char(panel, ENTITY_CURSOR as char, cursor_pos, color);
             let sprite = Sprite::new(ENTITY_CURSOR as u32, sprite_key);
-            display_state.sprite_cmd(panel_name, sprite, color, cursor_pos);
+            panel.sprite_cmd(sprite, color, cursor_pos);
 
             // render player ghost
             if cursor_pos != player_pos && game.input.target == None {
@@ -1490,14 +1468,14 @@ fn render_overlays(panel: Panel<()>,
                     let mut highlight_color: Color = game.config.color_red;
                     highlight_color.a = 100;
                     //draw_tile_highlight(panel, gate_pos, highlight_color);
-                    display_state.highlight_cmd(panel_name, highlight_color, gate_pos);
+                    panel.highlight_cmd(highlight_color, gate_pos);
                 }
             }
 
             // render some extra player information if cursor is over player's tile
             if cursor_pos == player_pos {
                 // Draw sound tiles overlay
-                render_sound_overlay(panel_name, display_state, game);
+                render_sound_overlay(panel, display_state, game);
             }
         }
     }
@@ -1515,7 +1493,7 @@ fn render_overlays(panel: Panel<()>,
                 if is_in_fov {
                     //tile_sprite.draw_char(panel, MAP_GROUND as char, pos, game.config.color_light_green);
                     let sprite = Sprite::new(MAP_GROUND as u32, sprite_key);
-                    display_state.sprite_cmd(panel_name, sprite, game.config.color_light_green, pos);
+                    panel.sprite_cmd(sprite, game.config.color_light_green, pos);
                 }
             }
         }
@@ -1541,7 +1519,7 @@ fn render_overlays(panel: Panel<()>,
             if game.data.is_in_fov(player_id, entity_id, &game.config) &&
                game.data.entities.status[&entity_id].alive {
                 if let Some(dir) = game.data.entities.direction.get(&entity_id) {
-                    render_arrow(panel_name, display_state, sprite_key, *dir, pos, direction_color);
+                    render_arrow(panel, display_state, sprite_key, *dir, pos, direction_color);
                 }
             }
         }
@@ -1557,9 +1535,9 @@ fn render_overlays(panel: Panel<()>,
             if game.data.pos_in_fov(player_id, pos, &game.config) &&
                *entity_id != player_id &&
                game.data.entities.status[entity_id].alive {
-               render_attack_overlay(panel_name, display_state, game, *entity_id);
-               render_fov_overlay(panel_name, display_state, game, *entity_id);
-               render_movement_overlay(panel_name, display_state, game, *entity_id);
+               render_attack_overlay(panel, display_state, game, *entity_id);
+               render_fov_overlay(panel, display_state, game, *entity_id);
+               render_movement_overlay(panel, display_state, game, *entity_id);
             }
         }
     }
@@ -1574,7 +1552,7 @@ fn render_overlays(panel: Panel<()>,
                game.data.map.is_within_bounds(pos) &&
                game.data.pos_in_fov(player_id, pos, &game.config) &&
                game.data.entities.status[&entity_id].alive {
-               render_attack_overlay(panel_name,
+               render_attack_overlay(panel,
                                      display_state,
                                      game,
                                      entity_id);
@@ -1593,7 +1571,7 @@ fn render_overlays(panel: Panel<()>,
             for pos in path {
                 //tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, highlight_color);
                 let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
-                display_state.sprite_cmd(panel_name, sprite, highlight_color, pos);
+                panel.sprite_cmd(sprite, highlight_color, pos);
             }
         }
 
@@ -1606,7 +1584,7 @@ fn render_overlays(panel: Panel<()>,
                     let pos = Pos::from(pos);
                     //tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, highlight_color);
                     let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
-                    display_state.sprite_cmd(panel_name, sprite, highlight_color, pos);
+                    panel.sprite_cmd(sprite, highlight_color, pos);
                 }
             }
         }
@@ -1630,16 +1608,16 @@ fn render_overlays(panel: Panel<()>,
                     let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
                     let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
 
-                    render_entity_ghost(player_id, shadow_cursor_pos, game, panel_name, display_state);
+                    render_entity_ghost(panel, player_id, shadow_cursor_pos, game, display_state);
                 }
             }
         }
 
         // Draw sound tiles overlay
-        render_sound_overlay(panel_name, display_state, game);
+        render_sound_overlay(panel, display_state, game);
 
         // Outline tiles within FOV for clarity
-        render_fov_overlay(panel_name, display_state, game, player_id);
+        render_fov_overlay(panel, display_state, game, player_id);
     }
 
     // NOTE floodfill ranges:
@@ -1662,7 +1640,7 @@ fn render_overlays(panel: Panel<()>,
 
             //tile_sprite.draw_char(panel, , pos, adj_color);
             let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
-            display_state.sprite_cmd(panel_name, sprite, adj_color, pos);
+            panel.sprite_cmd(sprite, adj_color, pos);
 
             // TODO add text drawing command
             //let font_sprite = &mut display_state.sprites[&font_key];
@@ -1690,11 +1668,10 @@ fn render_overlays(panel: Panel<()>,
                     if status.frozen > 0 {
                         status_drawn = true;
                         let sprite = Sprite::new(ASTERISK as u32, sprite_key);
-                        display_state.sprite_scaled_cmd(panel_name,
-                                                        sprite, scale,
-                                                        Some(Direction::UpRight),
-                                                        alertness_color,
-                                                        pos);
+                        panel.sprite_scaled_cmd(sprite, scale,
+                                                Some(Direction::UpRight),
+                                                alertness_color,
+                                                pos);
                         //tile_sprite.draw_sprite_direction(panel,
                         //                                  ASTERISK as usize,
                         //                                  Some(Direction::UpRight),
@@ -1713,11 +1690,10 @@ fn render_overlays(panel: Panel<()>,
 
                             Behavior::Investigating(_) => {
                                 let sprite = Sprite::new(QUESTION_MARK as u32, sprite_key);
-                                display_state.sprite_scaled_cmd(panel_name,
-                                                                sprite, scale,
-                                                                Some(Direction::UpRight),
-                                                                alertness_color,
-                                                                pos);
+                                panel.sprite_scaled_cmd(sprite, scale,
+                                                        Some(Direction::UpRight),
+                                                        alertness_color,
+                                                        pos);
                                 //tile_sprite.draw_sprite_direction(panel,
                                 //                                  QUESTION_MARK as usize,
                                 //                                  Some(Direction::UpRight),
@@ -1729,11 +1705,10 @@ fn render_overlays(panel: Panel<()>,
 
                             Behavior::Attacking(_) => {
                                 let sprite = Sprite::new(EXCLAMATION_POINT as u32, sprite_key);
-                                display_state.sprite_scaled_cmd(panel_name,
-                                                                sprite, scale,
-                                                                Some(Direction::UpRight),
-                                                                alertness_color,
-                                                                pos);
+                                panel.sprite_scaled_cmd(sprite, scale,
+                                                        Some(Direction::UpRight),
+                                                        alertness_color,
+                                                        pos);
                                 //tile_sprite.draw_sprite_direction(panel,
                                 //                                  
                                 //                                  Some(Direction::UpRight),
@@ -1803,10 +1778,10 @@ fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> 
     return color;
 }
 
-fn render_attack_overlay(panel_name: PanelName,
-                         display_state: &mut DisplayState,
-                         game: &mut Game,
-                         entity_id: EntityId) {
+fn render_attack_overlay<T>(panel: &mut Panel<T>,
+                            display_state: &mut DisplayState,
+                            game: &mut Game,
+                            entity_id: EntityId) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
@@ -1839,15 +1814,15 @@ fn render_attack_overlay(panel_name: PanelName,
         for position in attack_positions {
             //tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, position, attack_highlight_color);
             let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
-            display_state.sprite_cmd(panel_name, sprite, attack_highlight_color, position);
+            panel.sprite_cmd(sprite, attack_highlight_color, position);
         }
     }
 }
 
-fn render_fov_overlay(panel_name: PanelName,
-                      display_state: &mut DisplayState,
-                      game: &mut Game,
-                      entity_id: EntityId) {
+fn render_fov_overlay<T>(panel: &mut Panel<T>,
+                         display_state: &mut DisplayState,
+                         game: &mut Game,
+                         entity_id: EntityId) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let mut highlight_color = game.config.color_light_grey;
@@ -1863,16 +1838,16 @@ fn render_fov_overlay(panel_name: PanelName,
 
             if visible {
                 //draw_outline_tile(panel, map_pos, highlight_color);
-                display_state.outline_cmd(panel_name, highlight_color, map_pos);
+                panel.outline_cmd(highlight_color, map_pos);
             }
         }
     }
 }
 
-fn render_movement_overlay(panel_name: PanelName,
-                           display_state: &mut DisplayState,
-                           game: &mut Game,
-                           entity_id: EntityId) {
+fn render_movement_overlay<T>(panel: &mut Panel<T>,
+                              display_state: &mut DisplayState,
+                              game: &mut Game,
+                              entity_id: EntityId) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let entity_pos = game.data.entities.pos[&entity_id];
@@ -1890,7 +1865,7 @@ fn render_movement_overlay(panel_name: PanelName,
 
                 //tile_sprite.draw_char(panel, chr as char, move_pos, highlight_color);
                 let sprite = Sprite::new(chr as u32, sprite_key);
-                display_state.sprite_cmd(panel_name, sprite, highlight_color, move_pos);
+                panel.sprite_cmd(sprite, highlight_color, move_pos);
             }
         }
     }
@@ -1901,11 +1876,11 @@ fn sdl2_color(color: Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
 }
 
-pub fn render_entity_ghost(entity_id: EntityId,
-                           render_pos: Pos,
-                           game: &mut Game,
-                           panel_name: PanelName,
-                           display_state: &mut DisplayState) {
+pub fn render_entity_ghost<T>(panel: &mut Panel<T>,
+                              entity_id: EntityId,
+                              render_pos: Pos,
+                              game: &mut Game,
+                              display_state: &mut DisplayState) {
     let entity_pos = game.data.entities.pos[&entity_id];
 
     let alpha = game.data.entities.color[&entity_id].a;
@@ -1917,19 +1892,19 @@ pub fn render_entity_ghost(entity_id: EntityId,
     // step the animation forward when rendering a ghost.
     let dt = display_state.dt;
     display_state.dt = 0.0;
-    render_entity(panel_name, entity_id, display_state, game);
+    render_entity(panel, entity_id, display_state, game);
     display_state.dt = dt;
 
     game.data.entities.color[&entity_id].a = alpha;
     game.data.entities.pos[&entity_id] = entity_pos;
 }
 
-fn render_arrow(panel_name: PanelName,
-                display_state: &mut DisplayState,
-                sprite_key: SpriteKey,
-                dir: Direction,
-                pos: Pos,
-                direction_color: Color) {
+fn render_arrow<T>(panel: &mut Panel<T>,
+                   display_state: &mut DisplayState,
+                   sprite_key: SpriteKey,
+                   dir: Direction,
+                   pos: Pos,
+                   direction_color: Color) {
     let sprite_index;
     let rotation: f64;
     match dir {
@@ -1969,6 +1944,6 @@ fn render_arrow(panel_name: PanelName,
 
     let mut sprite = Sprite::new(sprite_index as u32, sprite_key);
     sprite.rotation = rotation;
-    display_state.sprite_cmd(panel_name, sprite, direction_color, pos);
+    panel.sprite_cmd(sprite, direction_color, pos);
 }
 
