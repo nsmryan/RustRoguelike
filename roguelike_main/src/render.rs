@@ -96,7 +96,7 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
 
         canvas.with_texture_canvas(&mut display.targets.player_panel.target, |canvas| {
             let mut panel = panel.with_target(canvas);
-            render_player_info(&mut panel, display_state, game);
+            render_player_info(&mut panel.unit(), display_state, game);
         }).unwrap();
     }
 
@@ -107,7 +107,7 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
 
         canvas.with_texture_canvas(&mut display.targets.inventory_panel.target, |canvas| {
             let mut panel = panel.with_target(canvas);
-            render_inventory(&mut panel, PanelName::Inventory, display_state, game);
+            render_inventory(&mut panel.unit(), PanelName::Inventory, display_state, game);
         }).unwrap();
     }
 
@@ -155,22 +155,24 @@ fn render_menus(display: &mut Display, game: &mut Game) {
     let panel = menu_panel.unit();
 
     let mut draw_menu: bool = true;
-    canvas_panel.target.with_texture_canvas(&mut menu_panel.target, |canvas| {
-        let mut panel = panel.with_target(canvas);
+    if game.settings.state == GameState::Inventory {
+        render_inventory(&mut panel.unit(), PanelName::Menu, display_state, game);
+    } else if game.settings.state == GameState::SkillMenu {
+        render_skill_menu(&mut panel.unit(), display_state, game);
+    } else if game.settings.state == GameState::ClassMenu {
+        render_class_menu(&mut panel.unit(), display_state, game);
+    } else if game.settings.state == GameState::ConfirmQuit {
+        render_confirm_quit(&mut panel.unit(), display_state, game);
+    } else {
+        draw_menu = false;
+    }
 
-        if game.settings.state == GameState::Inventory {
-            render_inventory(&mut panel, PanelName::Menu, display_state, game);
-        } else if game.settings.state == GameState::SkillMenu {
-            render_skill_menu(&mut panel, display_state, game);
-        } else if game.settings.state == GameState::ClassMenu {
-            render_class_menu(&mut panel, display_state, game);
-        } else if game.settings.state == GameState::ConfirmQuit {
-            render_confirm_quit(&mut panel, display_state, game);
-        } else {
-            draw_menu = false;
-        }
-    }).unwrap();
+    //canvas_panel.target.with_texture_canvas(&mut menu_panel.target, |canvas| {
+    //    let mut panel = panel.with_target(canvas);
 
+    //}).unwrap();
+
+    // TODO perhaps this can be moved into draw command processing
     if draw_menu {
         let dst = canvas_panel.get_rect_within(&display.targets.menu_area, menu_panel.num_pixels);
         canvas_panel.target.copy(&menu_panel.target, None, dst).unwrap();
@@ -196,7 +198,7 @@ fn render_debug(display: &mut Display, _game: &mut Game) {
 }
 
 /// Draw an outline and title around an area of the screen
-fn render_placard(panel: &mut Panel<&mut WindowCanvas>,
+fn render_placard(panel: &mut Panel<()>,
                   panel_name: PanelName,
                   display_state: &mut DisplayState,
                   text: &str) {
@@ -246,76 +248,86 @@ fn render_placard(panel: &mut Panel<&mut WindowCanvas>,
     display_state.text_cmd(panel_name, text, text_color, text_pos);
 }
 
-fn render_pips(panel: &mut Panel<&mut WindowCanvas>,
-               _display_state: &mut DisplayState,
+fn render_pips(panel_name: PanelName,
+               display_state: &mut DisplayState,
                num_pips: u32,
-               y_pos: i32,
+               pos: Pos,
                color: Color) {
     if num_pips > 0 {
-        let blend_mode = panel.target.blend_mode();
-        panel.target.set_blend_mode(blend_mode);
+        //let blend_mode = panel.target.blend_mode();
+        //panel.target.set_blend_mode(blend_mode);
 
-        let color = sdl2_color(color);
-        panel.target.set_draw_color(color);
+        //let color = sdl2_color(color);
+        //panel.target.set_draw_color(color);
 
-        let cell_dims = panel.cell_dims();
-        let x = cell_dims.0 * 2;
-        let y = cell_dims.1 * y_pos as u32;
+        //let cell_dims = panel.cell_dims();
+        //let x = cell_dims.0 * 2;
+        //let y = cell_dims.1 * y_pos as u32;
 
-        let spacing = 4;
-        let mut pips = Vec::new();
-        for pip_index in 0..num_pips as u32 {
-            let x_offset =  x + cell_dims.1 * pip_index + spacing as u32 * pip_index;
-            let pip = Rect::new(x_offset as i32,
-                                y as i32 + spacing as i32,
-                                cell_dims.0,
-                                cell_dims.1);
-            pips.push(pip)
+        //let spacing = 4;
+        //let mut pips = Vec::new();
+        for pip_index in 0..num_pips as i32 {
+            //let x_offset =  x + cell_dims.1 * pip_index + spacing as u32 * pip_index;
+            //let pip = Rect::new(x_offset as i32,
+            //                    y as i32 + spacing as i32,
+            //                    cell_dims.0,
+            //                    cell_dims.1);
+            //pips.push(pip)
+
+            let filled = true;
+            let pip_pos = move_x(pos, pip_index);
+            display_state.rect_cmd(panel_name, pip_pos, (1, 1), 0.12, filled, color);
         }
-        panel.target.fill_rects(&pips).unwrap();
-
-        panel.target.set_blend_mode(BlendMode::None);
+        //panel.target.fill_rects(&pips).unwrap();
+        //panel.target.set_blend_mode(BlendMode::None);
     }
 }
 
-fn render_bar(panel: &mut Panel<&mut WindowCanvas>,
-              percent: f32,
-              y_pos: i32,
+// TODO remove commented out code when draw cmds are done
+fn render_bar(panel_name: PanelName,
+              display_state: &mut DisplayState,
+              full: i32,
+              current: i32,
+              pos: Pos,
               fg_color: Color,
               bg_color: Color,
               draw_outline: bool) {
-    let blend_mode = panel.target.blend_mode();
+    //let blend_mode = panel.target.blend_mode();
 
-    panel.target.set_blend_mode(BlendMode::None);
-    let color = sdl2_color(fg_color);
-    panel.target.set_draw_color(color);
+    //panel.target.set_blend_mode(BlendMode::None);
+    //let color = sdl2_color(fg_color);
+    //panel.target.set_draw_color(color);
 
-    let cell_dims = panel.cell_dims();
+    //let cell_dims = panel.cell_dims();
 
-    let width = panel.num_pixels.0 as u32  - 3 * cell_dims.0;
+    //let width = panel.num_pixels.0 as u32  - 3 * cell_dims.0;
 
-    let x = cell_dims.0 as i32 * 2;
+    //let x = cell_dims.0 as i32 * 2;
 
-    let health_rect = Rect::new(x,
-                                cell_dims.1 as i32 * y_pos,
-                                (width as f32 * percent) as u32,
-                                cell_dims.1);
-    panel.target.fill_rect(health_rect).unwrap();
+    //let health_rect = Rect::new(x,
+    //                            cell_dims.1 as i32 * y_pos,
+    //                            (width as f32 * percent) as u32,
+    //                            cell_dims.1);
+    //panel.target.fill_rect(health_rect).unwrap();
+    let filled = true;
+    display_state.rect_cmd(panel_name, pos, (current as u32, 1), 0.0, filled, fg_color);
 
     if draw_outline {
-        let full_rect = Rect::new(x,
-                                  cell_dims.1 as i32 * y_pos,
-                                  width,
-                                  cell_dims.1);
-        let color = sdl2_color(bg_color);
-        panel.target.set_draw_color(color);
-        panel.target.draw_rect(full_rect).unwrap();
+        //let full_rect = Rect::new(x,
+        //                          cell_dims.1 as i32 * y_pos,
+        //                          width,
+        //                          cell_dims.1);
+        //let color = sdl2_color(bg_color);
+        //panel.target.set_draw_color(color);
+        //panel.target.draw_rect(full_rect).unwrap();
+        let filled = false;
+        display_state.rect_cmd(panel_name, pos, (full as u32, 1), 0.0, filled, bg_color);
     }
 
-    panel.target.set_blend_mode(blend_mode);
+    //panel.target.set_blend_mode(blend_mode);
 }
 
-fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_player_info(panel: &mut Panel<()>, display_state: &mut DisplayState, game: &mut Game) {
     render_placard(panel, PanelName::Player, display_state, "Player");
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -335,13 +347,14 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
 
         // TODO this color red comes from the UI mockups
         let health_color = Color::new(0x96, 0x54, 0x56, 255);
-        render_bar(panel, health_percent, 2, health_color, Color::white(), false);
+        let bar_pos = Pos::new(2, 2);
+        render_bar(PanelName::Player, display_state, fighter.max_hp, hp, bar_pos, health_color, Color::white(), false);
     }
 
     let energy = game.data.entities.energy[&player_id];
     // TODO this color orange comes from the UI mockups
     let energy_color = Color::new(0xaf, 0x83, 0x56, 255);
-    render_pips(panel, display_state, energy, 3, energy_color);
+    render_pips(PanelName::Player, display_state, energy, Pos::new(2, 3), energy_color);
 
     list.push(format!(""));
 
@@ -361,24 +374,25 @@ fn render_player_info(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut 
     list.push(format!(""));
     list.push(format!(""));
     list.push(format!(""));
-    list.push(format!(""));
     list.push(format!("turn {}", game.settings.turn_count));
 
     let text_pos = Pos::new(1, 5);
 
     let sprite_key = display_state.lookup_spritekey("font");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
-    tile_sprite.draw_text_list(panel, &list, text_pos, color);
+    //tile_sprite.draw_text_list(panel, &list, text_pos, color);
+    display_state.text_list_cmd(PanelName::Player, &list, color, text_pos);
 }
 
 fn render_info(panel: &mut Panel<&mut WindowCanvas>,
                display_state: &mut DisplayState,
                game: &mut Game,
                _mouse_xy: Option<Pos>) {
-    render_placard(panel, PanelName::Info, display_state, "Info");
+    render_placard(&mut panel.unit(), PanelName::Info, display_state, "Info");
 
     if let Some(info_pos) = game.settings.cursor {
-        let text_color = game.config.color_soft_green;
+        let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
+        //let cursor_color = game.config.color_soft_green;
 
         let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
@@ -396,7 +410,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
         {
             let tile_sprite = &mut display_state.sprites[&sprite_key];
-            tile_sprite.draw_text_list(panel, &text_list, text_pos, text_color);
+            display_state.text_list_cmd(PanelName::Info, &text_list, text_color, text_pos);
         }
         text_list.clear();
 
@@ -418,10 +432,13 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
                     let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
 
-                    render_bar(panel,
-                               health_percent,
-                               y_pos,
-                               game.config.color_red,
+                    let health_color = Color::new(0x96, 0x54, 0x56, 255);
+                    render_bar(PanelName::Info,
+                               display_state,
+                               fighter.max_hp,
+                               fighter.hp,
+                               Pos::new(2, y_pos),
+                               health_color,
                                Color::white(),
                                false);
 
@@ -461,7 +478,7 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
 
         let tile_sprite = &mut display_state.sprites[&sprite_key];
         let text_pos = Pos::new(1, y_pos);
-        tile_sprite.draw_text_list(panel, &text_list, text_pos, text_color);
+        display_state.text_list_cmd(PanelName::Info, &text_list, text_color, text_pos);
         text_list.push(format!(""));
         text_list.clear();
 
@@ -488,12 +505,12 @@ fn render_info(panel: &mut Panel<&mut WindowCanvas>,
                 text_list.push(format!("blocked"));
             }
 
-            tile_sprite.draw_text_list(panel, &text_list, text_pos, text_color);
+            display_state.text_list_cmd(PanelName::Info, &text_list, text_color, text_pos);
         }
     }
 }
 
-fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_skill_menu(panel: &mut Panel<()>, display_state: &mut DisplayState, game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     // Render header
@@ -514,10 +531,10 @@ fn render_skill_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
     let sprite_key = display_state.lookup_spritekey("font");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
-    tile_sprite.draw_text_list(panel, &list, text_pos, color);
+    display_state.text_list_cmd(PanelName::Menu, &list, color, text_pos);
 }
 
-fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, _game: &mut Game) {
+fn render_class_menu(panel: &mut Panel<()>, display_state: &mut DisplayState, _game: &mut Game) {
     // Render header
     render_placard(panel, PanelName::Menu, display_state, "Choose Class");
 
@@ -536,10 +553,10 @@ fn render_class_menu(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut D
     let sprite_key = display_state.lookup_spritekey("font");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
-    tile_sprite.draw_text_list(panel, &list, text_pos, color);
+    display_state.text_list_cmd(PanelName::Menu, &list, color, text_pos);
 }
 
-fn render_confirm_quit(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, _game: &mut Game) {
+fn render_confirm_quit(panel: &mut Panel<()>, display_state: &mut DisplayState, _game: &mut Game) {
     // Render header
     render_placard(panel, PanelName::Menu, display_state, "Quit?");
 
@@ -558,11 +575,11 @@ fn render_confirm_quit(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut
     let sprite_key = display_state.lookup_spritekey("font");
     let tile_sprite = &mut display_state.sprites[&sprite_key];
 
-    tile_sprite.draw_text_list(panel, &list, text_pos, color);
+    display_state.text_list_cmd(PanelName::Menu, &list, color, text_pos);
 }
 
 /// Render an inventory section within the given area
-fn render_inventory(panel: &mut Panel<&mut WindowCanvas>, panel_name: PanelName, display_state: &mut DisplayState, game: &mut Game) {
+fn render_inventory(panel: &mut Panel<()>, panel_name: PanelName, display_state: &mut DisplayState, game: &mut Game) {
     // Render header
     render_placard(panel, panel_name, display_state, "Inventory");
 
@@ -1457,7 +1474,7 @@ fn render_overlays(panel: Panel<()>,
             color.a = 230;
             //tile_sprite.draw_char(panel, ENTITY_CURSOR as char, cursor_pos, color);
             let sprite = Sprite::new(ENTITY_CURSOR as u32, sprite_key);
-            display_state.sprite_cmd(panel_name, sprite, game.config.color_red, cursor_pos);
+            display_state.sprite_cmd(panel_name, sprite, color, cursor_pos);
 
             // render player ghost
             if cursor_pos != player_pos && game.input.target == None {

@@ -199,8 +199,8 @@ fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
             let offset_y = (cell_height as f32 * offset) as i32;
             let y: i32 = cell_height as i32 * pos.y + offset_y as i32;
 
-            let width = cell_width * dims.0 - offset_x as u32;
-            let height = cell_height * dims.1 - offset_y as u32;
+            let width = cell_width * dims.0 - (2 * offset_x as u32);
+            let height = cell_height * dims.1 - (2 * offset_y as u32);
 
             if *filled {
                 panel.target.fill_rect(Rect::new(x, y, width, height));
@@ -255,6 +255,10 @@ impl Display {
             let panel = panel_main.unit();
             canvas.with_texture_canvas(&mut panel_main.target, |canvas| {
                 let mut panel = panel.with_target(canvas);
+
+                // TODO need to clear so panels don't keep old pixels...
+                //panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+                //panel.target.clear();
 
                 for cmd in cmds.iter() {
                     process_draw_cmd(&mut panel, display_state, cmd);
@@ -1043,6 +1047,13 @@ impl DisplayState {
         let string = text.to_string();
         let cmd = DrawCmd::Text(string, color, pos);
         self.draw_cmd(name, cmd);
+    }
+
+    pub fn text_list_cmd(&mut self, name: PanelName, text_list: &Vec<String>, color: Color, cell: Pos) {
+        for (index, text) in text_list.iter().enumerate() {
+            let text_cell = Pos::new(cell.x, cell.y + index as i32);
+            self.text_cmd(name, text, color, text_cell);
+        }
     }
 
     pub fn rect_cmd(&mut self, name: PanelName, pos: Pos, dims: (u32, u32), offset: f32, filled: bool, color: Color) {
