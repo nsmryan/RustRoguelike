@@ -92,34 +92,22 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
     /* Draw Player Info */
     {
         let player_panel = &mut display.targets.player_panel;
-        let panel = player_panel.unit();
-
-        canvas.with_texture_canvas(&mut display.targets.player_panel.target, |canvas| {
-            let mut panel = panel.with_target(canvas);
-            render_player_info(&mut panel.unit(), display_state, game);
-        }).unwrap();
+        let mut panel = player_panel.unit();
+        render_player_info(&mut panel, display_state, game);
     }
 
     /* Draw Inventory */
     {
         let inventory_panel = &mut display.targets.inventory_panel;
-        let panel = inventory_panel.unit();
-
-        canvas.with_texture_canvas(&mut display.targets.inventory_panel.target, |canvas| {
-            let mut panel = panel.with_target(canvas);
-            render_inventory(&mut panel.unit(), PanelName::Inventory, display_state, game);
-        }).unwrap();
+        let mut panel = inventory_panel.unit();
+        render_inventory(&mut panel, PanelName::Inventory, display_state, game);
     }
 
     /* Draw Game Info */
     {
         let info_panel = &mut display.targets.info_panel;
-        let panel = info_panel.unit();
-
-        canvas.with_texture_canvas(&mut display.targets.info_panel.target, |canvas| {
-            let mut panel = panel.with_target(canvas);
-            render_info(&mut panel, display_state, game, mouse_map_pos);
-        }).unwrap();
+        let mut panel = info_panel.unit();
+        render_info(&mut panel, display_state, game, mouse_map_pos);
     }
 }
 
@@ -384,11 +372,11 @@ fn render_player_info(panel: &mut Panel<()>, display_state: &mut DisplayState, g
     display_state.text_list_cmd(PanelName::Player, &list, color, text_pos);
 }
 
-fn render_info(panel: &mut Panel<&mut WindowCanvas>,
+fn render_info(panel: &mut Panel<()>,
                display_state: &mut DisplayState,
                game: &mut Game,
                _mouse_xy: Option<Pos>) {
-    render_placard(&mut panel.unit(), PanelName::Info, display_state, "Info");
+    render_placard(panel, PanelName::Info, display_state, "Info");
 
     if let Some(info_pos) = game.settings.cursor {
         let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
