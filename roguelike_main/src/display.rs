@@ -256,9 +256,10 @@ impl Display {
             canvas.with_texture_canvas(&mut panel_main.target, |canvas| {
                 let mut panel = panel.with_target(canvas);
 
-                // TODO need to clear so panels don't keep old pixels...
-                //panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
-                //panel.target.clear();
+                if *name != PanelName::Map {
+                    panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+                    panel.target.clear();
+                }
 
                 for cmd in cmds.iter() {
                     process_draw_cmd(&mut panel, display_state, cmd);

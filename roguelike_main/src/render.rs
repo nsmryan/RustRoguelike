@@ -24,6 +24,7 @@ use crate::animation::{Sprite, SpriteKey, Effect, Animation, AnimationResult, Pa
 
 // dt is !40 ms at last check
 pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<(), String> {
+    // TODO move to draw cmds when all drawing is outside of this file
     display.targets.canvas_panel.target.set_draw_color(Sdl2Color::RGB(0, 0, 0));
     display.targets.canvas_panel.target.clear();
 
@@ -63,7 +64,6 @@ pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<()
 fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
     let mouse_map_pos = game.settings.cursor;
 
-    let canvas = &mut display.targets.canvas_panel.target;
     let display_state = &mut display.state;
 
     if game.settings.render_map {
@@ -136,7 +136,6 @@ fn render_screen(targets: &mut DisplayTargets, map_size: (i32, i32), map_rect: R
 }
 
 fn render_menus(display: &mut Display, game: &mut Game) {
-    let canvas_panel = &mut display.targets.canvas_panel;
     let display_state = &mut display.state;
 
     let menu_panel = &mut display.targets.menu_panel;
@@ -162,6 +161,7 @@ fn render_menus(display: &mut Display, game: &mut Game) {
 
     // TODO perhaps this can be moved into draw command processing
     if draw_menu {
+        let canvas_panel = &mut display.targets.canvas_panel;
         let dst = canvas_panel.get_rect_within(&display.targets.menu_area, menu_panel.num_pixels);
         canvas_panel.target.copy(&menu_panel.target, None, dst).unwrap();
     }
@@ -681,17 +681,15 @@ fn render_background(display: &mut Display, game: &mut Game) {
     // Once the new display system is done, and some optimizations have
     // been performed, remove the dirty flag concept and see if there
     // is any real difference.
-    if !display.targets.background_panel.dirty {
-        return;
-    }
-    display.targets.background_panel.dirty = false;
+    //if !display.targets.background_panel.dirty {
+    //    return;
+    //}
+    //display.targets.background_panel.dirty = false;
 
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = display.state.lookup_spritekey("tiles");
     let sprite = &mut display.state.sprites[&sprite_key];
-
-    let canvas = &mut display.targets.canvas_panel.target;
 
     let panel = display.targets.background_panel.unit();
     for y in 0..map_height {
