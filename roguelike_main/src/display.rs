@@ -229,12 +229,21 @@ impl Display {
         let canvas = &mut self.targets.canvas_panel.target;
         let display_state = &mut self.state;
 
-        self.targets.info_panel.process_cmds(canvas, display_state);
-        self.targets.background_panel.process_cmds(canvas, display_state);
-        self.targets.map_panel.process_cmds(canvas, display_state);
-        self.targets.player_panel.process_cmds(canvas, display_state);
-        self.targets.inventory_panel.process_cmds(canvas, display_state);
-        self.targets.menu_panel.process_cmds(canvas, display_state);
+        // copy background into the map before other draws.
+        let background = &mut self.targets.background_panel;
+        canvas.with_texture_canvas(&mut self.targets.map_panel.target, |canvas| {
+            canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
+            canvas.clear();
+
+            canvas.copy(&background.target, None, None).unwrap();
+        }).unwrap();
+
+        self.targets.info_panel.process_cmds(true, canvas, display_state);
+        self.targets.background_panel.process_cmds(true, canvas, display_state);
+        self.targets.map_panel.process_cmds(false, canvas, display_state);
+        self.targets.player_panel.process_cmds(true, canvas, display_state);
+        self.targets.inventory_panel.process_cmds(true, canvas, display_state);
+        self.targets.menu_panel.process_cmds(true, canvas, display_state);
 
         //let mut draw_table = self.state.draw_cmds.clone();
         //for (name, cmds) in draw_table.iter_mut() {
@@ -789,7 +798,7 @@ impl Panel<Texture> {
         return Panel { cells, target: texture, num_pixels: (width, height), draw_cmds, };
     }
 
-    pub fn process_cmds(&mut self, canvas: &mut WindowCanvas, display_state: &mut DisplayState) {
+    pub fn process_cmds(&mut self, clear: bool, canvas: &mut WindowCanvas, display_state: &mut DisplayState) {
         // TODO this clone is likely removable
         let draw_cmds = self.draw_cmds.clone();
         let panel = self.unit();
@@ -799,8 +808,10 @@ impl Panel<Texture> {
             // we don't clear the map as the background was already drawn over it.
             // TODO consider removing background panel and just using map- it was an
             // optimization that we may be able to remove if other optimizations are good enough
-            panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
-            panel.target.clear();
+            if clear {
+              panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+              panel.target.clear();
+            }
 
             for cmd in draw_cmds.iter() {
                 process_draw_cmd(&mut panel, display_state, cmd);
