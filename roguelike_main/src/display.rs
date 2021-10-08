@@ -769,7 +769,6 @@ pub struct Panel<T> {
     pub target: T,
     pub cells: (u32, u32),
     pub num_pixels: (u32, u32),
-    pub dirty: bool,
 }
 
 impl Panel<Texture> {
@@ -789,20 +788,20 @@ impl Panel<Texture> {
         let query = texture.query();
         let width = query.width;
         let height = query.height;
-        return Panel { cells, target: texture, num_pixels: (width, height), dirty: true };
+        return Panel { cells, target: texture, num_pixels: (width, height), };
     }
 }
 
 impl Panel<WindowCanvas> {
     pub fn with_canvas(cells: (u32, u32), canvas: WindowCanvas) -> Panel<WindowCanvas> {
         let (width, height) = canvas.output_size().unwrap();
-        return Panel { cells, target: canvas, num_pixels: (width, height), dirty: true };
+        return Panel { cells, target: canvas, num_pixels: (width, height), };
     }
 }
 
 impl<T> Panel<T> {
     pub fn unit(&self) -> Panel<()> {
-        return Panel { target: (), cells: self.cells, num_pixels: self.num_pixels, dirty: self.dirty };
+        return Panel { target: (), cells: self.cells, num_pixels: self.num_pixels, };
     }
 
     pub fn cell_dims(&self) -> (u32, u32) {
@@ -814,7 +813,6 @@ impl<T> Panel<T> {
             target,
             cells: self.cells,
             num_pixels: self.num_pixels,
-            dirty: true,
         };
     }
 
