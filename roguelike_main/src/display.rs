@@ -244,38 +244,6 @@ impl Display {
         self.targets.player_panel.process_cmds(true, canvas, display_state);
         self.targets.inventory_panel.process_cmds(true, canvas, display_state);
         self.targets.menu_panel.process_cmds(true, canvas, display_state);
-
-        //let mut draw_table = self.state.draw_cmds.clone();
-        //for (name, cmds) in draw_table.iter_mut() {
-        //    let panel_main;
-        //    match name {
-        //        PanelName::Info => panel_main = &mut self.targets.info_panel,
-        //        PanelName::Map => panel_main = &mut self.targets.map_panel,
-        //        PanelName::Player => panel_main = &mut self.targets.player_panel,
-        //        PanelName::Inventory => panel_main = &mut self.targets.inventory_panel,
-        //        PanelName::Background => panel_main = &mut self.targets.background_panel,
-        //        PanelName::Menu => panel_main = &mut self.targets.menu_panel,
-        //    }
-
-        //    let panel = panel_main.unit();
-        //    canvas.with_texture_canvas(&mut panel_main.target, |canvas| {
-        //        let mut panel = panel.with_target(canvas);
-
-        //        if *name != PanelName::Map {
-        //            panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
-        //            panel.target.clear();
-        //        }
-
-        //        for cmd in cmds.iter() {
-        //            process_draw_cmd(&mut panel, display_state, cmd);
-        //        }
-        //    }).unwrap();
-        //}
-
-        //// remove already drawn commands, leaving allocated space where it is
-        //for cmds in self.state.draw_cmds.values_mut() {
-        //    cmds.clear();
-        //}
     }
 
     pub fn update_display(&mut self) {
@@ -775,6 +743,7 @@ pub struct Panel<T> {
     pub cells: (u32, u32),
     pub num_pixels: (u32, u32),
     pub draw_cmds: Vec<DrawCmd>,
+    pub old_draw_cmds: Vec<DrawCmd>,
 }
 
 impl Panel<Texture> {
@@ -795,31 +764,37 @@ impl Panel<Texture> {
         let width = query.width;
         let height = query.height;
         let draw_cmds = Vec::new();
-        return Panel { cells, target: texture, num_pixels: (width, height), draw_cmds, };
+        let old_draw_cmds = Vec::new();
+        return Panel { cells, target: texture, num_pixels: (width, height), draw_cmds, old_draw_cmds, };
     }
 
     pub fn process_cmds(&mut self, clear: bool, canvas: &mut WindowCanvas, display_state: &mut DisplayState) {
-        // TODO this clone is likely removable
-        let draw_cmds = self.draw_cmds.clone();
-        let panel = self.unit();
-        canvas.with_texture_canvas(&mut self.target, |canvas| {
-            let mut panel = panel.with_target(canvas);
+        // As a simple optimization, only redraw if the commands haven't changed. This is common
+        // for informational panels.
+        if self.draw_cmds != self.old_draw_cmds {
+            // TODO this clone is likely removable once panels no longer contain textures
+            // it may then become an extend into the old_draw_cmds vector
+            let draw_cmds = self.draw_cmds.clone();
+            let panel = self.unit();
+            canvas.with_texture_canvas(&mut self.target, |canvas| {
+                let mut panel = panel.with_target(canvas);
 
-            // we don't clear the map as the background was already drawn over it.
-            // TODO consider removing background panel and just using map- it was an
-            // optimization that we may be able to remove if other optimizations are good enough
-            if clear {
-              panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
-              panel.target.clear();
-            }
+                // we don't clear the map as the background was already drawn over it.
+                // TODO consider removing background panel and just using map- it was an
+                // optimization that we may be able to remove if other optimizations are good enough
+                if clear {
+                  panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+                  panel.target.clear();
+                }
 
-            for cmd in draw_cmds.iter() {
-                process_draw_cmd(&mut panel, display_state, cmd);
-            }
-        }).unwrap();
+                for cmd in draw_cmds.iter() {
+                    process_draw_cmd(&mut panel, display_state, cmd);
+                }
+            }).unwrap();
 
-        // TODO for now we clear the draw commands. consider keeping them for next
-        // frame in case they don't change.
+            self.old_draw_cmds = draw_cmds;
+        }
+
         self.draw_cmds.clear();
     }
 }
@@ -828,13 +803,14 @@ impl Panel<WindowCanvas> {
     pub fn with_canvas(cells: (u32, u32), canvas: WindowCanvas) -> Panel<WindowCanvas> {
         let (width, height) = canvas.output_size().unwrap();
         let draw_cmds = Vec::new();
-        return Panel { cells, target: canvas, num_pixels: (width, height), draw_cmds, };
+        let old_draw_cmds = Vec::new();
+        return Panel { cells, target: canvas, num_pixels: (width, height), draw_cmds, old_draw_cmds, };
     }
 }
 
 impl<T> Panel<T> {
     pub fn unit(&self) -> Panel<()> {
-        return Panel { target: (), cells: self.cells, num_pixels: self.num_pixels, draw_cmds: Vec::new(), };
+        return Panel { target: (), cells: self.cells, num_pixels: self.num_pixels, draw_cmds: Vec::new(), old_draw_cmds: Vec::new(), };
     }
 
     pub fn cell_dims(&self) -> (u32, u32) {
@@ -847,6 +823,7 @@ impl<T> Panel<T> {
             cells: self.cells,
             num_pixels: self.num_pixels,
             draw_cmds: Vec::new(),
+            old_draw_cmds: Vec::new(),
         };
     }
 
