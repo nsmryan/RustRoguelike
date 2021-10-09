@@ -2,10 +2,6 @@ use std::collections::HashSet;
 
 use oorandom::Rand32;
 
-use sdl2::render::{BlendMode, WindowCanvas};
-use sdl2::rect::Rect;
-use sdl2::pixels::{Color as Sdl2Color};
-
 use roguelike_core::types::*;
 use roguelike_core::map::*;
 use roguelike_core::constants::*;
@@ -22,23 +18,14 @@ use crate::display::*;
 use crate::animation::{Sprite, SpriteKey, Effect, Animation, AnimationResult, Particle};
 
 
-// dt is !40 ms at last check
 pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<(), String> {
     display.state.dt = dt;
-
-    display.state.show_debug("dt", format!("{}", dt));
 
     /* Draw Background */
     render_background(&mut display.targets.background_panel, &mut display.state, game);
 
     /* Draw Map */
     render_panels(display, game);
-
-    /* Process Draw Commands */
-    display.process_draw_commands();
-
-    /* Paste Panels on Screen */
-    //render_screen(&mut display.targets, &mut display.state, game);
 
     /* Draw Debug Overlay */
     if game.settings.debug_enabled {
@@ -56,8 +43,6 @@ pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<()
     } else if game.settings.state == GameState::ConfirmQuit {
         render_confirm_quit(menu_panel, &mut display.state, game);
     }
-
-    display.state.update_animations();
 
     Ok(())
 }
@@ -1813,11 +1798,6 @@ fn render_movement_overlay<T>(panel: &mut Panel<T>,
             }
         }
     }
-}
-
-// TODO this should be removable from render, now in display, once drawcmds are finished.
-fn sdl2_color(color: Color) -> Sdl2Color {
-    return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
 }
 
 pub fn render_entity_ghost<T>(panel: &mut Panel<T>,

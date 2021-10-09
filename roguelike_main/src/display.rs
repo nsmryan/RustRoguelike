@@ -580,6 +580,12 @@ impl Display {
     }
 
     pub fn draw_all(&mut self, game: &mut Game) {
+        self.process_draw_commands();
+        self.copy_panels(game);
+        self.state.update_animations();
+    }
+
+    pub fn copy_panels(&mut self, game: &mut Game) {
         let map_size = game.data.map.size();
 
         /* Split Screen Into Sections */

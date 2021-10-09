@@ -298,6 +298,9 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
             let _display_timer = timer!("DISPLAY");
             let dt = Instant::now().duration_since(frame_time).as_secs_f32();
             frame_time = Instant::now();
+
+            display.state.show_debug("dt", format!("{}", dt));
+
             update_display(&mut game, &mut display, dt)?;
 
             let disp_time = Instant::now().duration_since(frame_time).as_secs_f32();
@@ -393,20 +396,6 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
 
     return Ok(());
 }
-
-//fn process_input_events(frame_time: Instant, event_pump: &mut EventPump, game: &mut Game, display: &mut Display) -> InputAction {
-//    let mut input_action: InputAction = InputAction::None;
-//
-//    for sdl2_event in event_pump.poll_iter() {
-//        if let Some(event) = keyboard::translate_event(sdl2_event, game, display) {
-//            let action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
-//            // NOTE may lose inputs if multiple events create actions!
-//            input_action = action;
-//        }
-//    }
-//
-//    return input_action;
-//}
 
 fn process_commands(io_recv: &Receiver<String>, game: &mut Game, log: &mut Log) {
     if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(0)) {
