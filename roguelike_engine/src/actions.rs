@@ -48,7 +48,7 @@ pub enum InputAction {
     CursorMove(Direction, bool, bool), // move direction, is relative, is long
     CursorReturn,
     CursorToggle,
-    MapClick(Pos, Pos), // map loc, map cell
+    MousePos(Pos),
     MouseButton(MouseClick, KeyDir),
     Inventory,
     SkillMenu,
@@ -95,7 +95,7 @@ impl fmt::Display for InputAction {
             InputAction::AbortUse => write!(f, "abortuse"),
             InputAction::Pass => write!(f, "pass"),
             InputAction::ThrowItem(pos, item_class) => write!(f, "throwitem {} {} {}", pos.x, pos.y, item_class),
-            InputAction::MapClick(loc, cell) => write!(f, "click {} {} {} {}", loc.x, loc.y, cell.x, cell.y),
+            InputAction::MousePos(pos) => write!(f, "mousepos {:?} {:?}", pos.x, pos.y),
             InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
             InputAction::Pickup => write!(f, "pickup"),
             InputAction::DropItem => write!(f, "drop"),
@@ -198,12 +198,6 @@ impl FromStr for InputAction {
             return Ok(InputAction::Interact(dir));
         } else if args[0] == "godmode" {
             return Ok(InputAction::GodMode);
-        } else if s.starts_with("click") {
-            let loc_x = args[1].parse::<i32>().unwrap();
-            let loc_y = args[2].parse::<i32>().unwrap();
-            let cell_x = args[3].parse::<i32>().unwrap();
-            let cell_y = args[4].parse::<i32>().unwrap();
-            return Ok(InputAction::MapClick(Pos::new(loc_x, loc_y), Pos::new(cell_x, cell_y)));
         } else if args[0] == "skill" {
             return Ok(InputAction::SkillMenu);
         } else if args[0] == "class" {
@@ -623,10 +617,6 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::Pickup, true) => {
             msg_log.log(Msg::PickUp(player_id));
-        }
-
-        // NOTE this should be removeable
-        (InputAction::MapClick(_map_loc, _map_cell), _) => {
         }
 
         (InputAction::Yell, true) => {

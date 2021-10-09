@@ -102,6 +102,16 @@ impl HeldState {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
+pub struct MouseState {
+    pub x: i32,
+    pub y: i32,
+    pub left_pressed: bool,
+    pub middle_pressed: bool,
+    pub right_pressed: bool,
+    pub wheel: f32,
+}
+
 #[derive(Clone, Debug, Copy, Eq, PartialEq)]
 pub enum InputEvent {
     Char(char, KeyDir),
@@ -110,7 +120,7 @@ pub enum InputEvent {
     Alt(KeyDir),
     Enter(KeyDir),
     MousePos(i32, i32),
-    MouseButton(MouseClick, Pos, Option<Pos>, KeyDir), // button clicked, mouse position, screen square, keydir
+    MouseButton(MouseClick, Pos, KeyDir), // button clicked, mouse position, keydir
     Esc,
     Tab,
     Quit,
@@ -126,6 +136,7 @@ pub struct Input {
     pub char_down_order: Vec<char>,
     pub cursor: bool,
     pub char_held: HashMap<char, HeldState>,
+    pub mouse: MouseState,
 }
 
 impl Input {
@@ -137,7 +148,8 @@ impl Input {
                        direction: None,
                        char_down_order: Vec::new(),
                        cursor: false,
-                       char_held: HashMap::new()
+                       char_held: HashMap::new(),
+                       mouse: Default::default(),
         };
     }
 
@@ -229,8 +241,8 @@ impl Input {
                 action = self.handle_char(chr, dir, time, settings, config);
             }
 
-            InputEvent::MouseButton(clicked, mouse_pos, target_pos, dir) => {
-                action = self.handle_mouse_button(clicked, mouse_pos, target_pos, dir);
+            InputEvent::MouseButton(clicked, mouse_pos, dir) => {
+                action = self.handle_mouse_button(clicked, mouse_pos, dir);
             }
         }
 
@@ -395,28 +407,11 @@ impl Input {
         return action;
     }
 
-    fn handle_mouse_button(&mut self, clicked: MouseClick, mouse_pos: Pos, target_pos: Option<Pos>, dir: KeyDir) -> InputAction {
+    fn handle_mouse_button(&mut self, clicked: MouseClick, mouse_pos: Pos, dir: KeyDir) -> InputAction {
         let mut action = InputAction::MouseButton(clicked, dir);
 
         let down = dir == KeyDir::Down;
-        match clicked {
-            MouseClick::Left => {
-
-                if down {
-                    if let Some(target_pos) = target_pos {
-                        action = InputAction::MapClick(mouse_pos, target_pos);
-                    }
-                }
-            }
-
-            MouseClick::Middle => {
-                action = InputAction::MouseButton(clicked, dir);
-            }
-
-            MouseClick::Right => {
-                action = InputAction::MouseButton(clicked, dir);
-            }
-        }
+        action = InputAction::MouseButton(clicked, dir);
 
         return action;
     }

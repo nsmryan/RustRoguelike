@@ -226,7 +226,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
             process_commands(&io_recv, &mut game, &mut log);
 
             for sdl2_event in event_pump.poll_iter() {
-                if let Some(event) = keyboard::translate_event(sdl2_event, &mut game, &mut display) {
+                if let Some(event) = keyboard::translate_event(sdl2_event, &mut game) {
                     if game.config.recording && matches!(event, InputEvent::Char('[', KeyDir::Up)) {
                         game = recording.backward();
                     } else if game.config.recording && matches!(event, InputEvent::Char(']', KeyDir::Up)) {

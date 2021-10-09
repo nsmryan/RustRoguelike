@@ -7,10 +7,8 @@ use roguelike_core::types::*;
 use roguelike_engine::game::*;
 use roguelike_engine::input::*;
 
-use crate::display::*;
 
-
-pub fn translate_event(event: Event, game: &mut Game, display: &mut Display) -> Option<InputEvent> {
+pub fn translate_event(event: Event, game: &mut Game) -> Option<InputEvent> {
     match event {
         Event::Quit {..} => {
             return Some(InputEvent::Quit);
@@ -72,63 +70,51 @@ pub fn translate_event(event: Event, game: &mut Game, display: &mut Display) -> 
         }
 
         Event::MouseMotion {x, y, ..} => {
-            display.mouse_state.x = x;
-            display.mouse_state.y = y;
             return Some(InputEvent::MousePos(x, y));
         }
 
-        Event::MouseButtonDown {mouse_btn, ..} => {
+        Event::MouseButtonDown {mouse_btn, x, y, ..} => {
             let click;
             match mouse_btn {
                 MouseButton::Left => {
                     click = MouseClick::Left;
-                    display.mouse_state.left_pressed = true;
                 }
 
                 MouseButton::Right => {
                     click = MouseClick::Right;
-                    display.mouse_state.right_pressed = true;
                 }
 
                 MouseButton::Middle => {
                     click = MouseClick::Middle;
-                    display.mouse_state.middle_pressed = true;
                 }
 
                 _ => return None,
             };
 
-            let mouse_pos = Pos::new(display.mouse_state.x, display.mouse_state.y);
-            let (map_width, map_height) = game.data.map.size();
-            let option_mouse_cell =
-                display.targets.mouse_pos(display.mouse_state.x, display.mouse_state.y, map_width, map_height);
-            let target_pos = option_mouse_cell.map(|pair| Pos::from(pair));
-            return Some(InputEvent::MouseButton(click, mouse_pos, target_pos, KeyDir::Down));
+            let mouse_pos = Pos::new(x, y);
+            return Some(InputEvent::MouseButton(click, mouse_pos, KeyDir::Down));
         }
 
-        Event::MouseButtonUp {mouse_btn, ..} => {
+        Event::MouseButtonUp {mouse_btn, x, y, ..} => {
             let click;
             match mouse_btn {
                 MouseButton::Left => {
                     click = MouseClick::Left;
-                    display.mouse_state.left_pressed = true;
                 }
 
                 MouseButton::Right => {
                     click = MouseClick::Right;
-                    display.mouse_state.right_pressed = true;
                 }
 
                 MouseButton::Middle => {
                     click = MouseClick::Middle;
-                    display.mouse_state.middle_pressed = true;
                 }
 
                 _ => return None,
             };
 
-            let mouse_pos = Pos::new(display.mouse_state.x, display.mouse_state.y);
-            return Some(InputEvent::MouseButton(click, mouse_pos, None, KeyDir::Up));
+            let mouse_pos = Pos::new(x, y);
+            return Some(InputEvent::MouseButton(click, mouse_pos, KeyDir::Up));
         }
 
         _ => {

@@ -214,14 +214,12 @@ fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
 pub struct Display {
     pub state: DisplayState,
     pub targets: DisplayTargets,
-    pub mouse_state: MouseState,
 }
 
 impl Display {
     pub fn new(canvas: WindowCanvas) -> Display {
         return Display { state: DisplayState::new(),
                          targets: DisplayTargets::new(canvas),
-                         mouse_state: Default::default(),
         };
     }
 
@@ -581,16 +579,6 @@ impl Display {
 }
 
 type TextureKey = u64;
-
-#[derive(Copy, Clone, PartialEq, Debug, Default)]
-pub struct MouseState {
-    pub x: i32,
-    pub y: i32,
-    pub left_pressed: bool,
-    pub middle_pressed: bool,
-    pub right_pressed: bool,
-    pub wheel: f32,
-}
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
 pub struct Area {
