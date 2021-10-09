@@ -24,30 +24,22 @@ use crate::animation::{Sprite, SpriteKey, Effect, Animation, AnimationResult, Pa
 
 // dt is !40 ms at last check
 pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<(), String> {
-    // TODO move to draw cmds when all drawing is outside of this file
-    display.targets.canvas_panel.target.set_draw_color(Sdl2Color::RGB(0, 0, 0));
-    display.targets.canvas_panel.target.clear();
-
     display.state.dt = dt;
-    display.state.update_animations();
 
     display.state.show_debug("dt", format!("{}", dt));
-
-    /* Split Screen Into Sections */
-    let map_rect = display.targets.canvas_panel.get_rect_from_area(&display.targets.map_area);
 
     /* Draw Background */
     render_background(&mut display.targets.background_panel, &mut display.state, game);
 
     /* Draw Map */
-    render_panels(display, game, map_rect);
+    render_panels(display, game);
 
     /* Process Draw Commands */
     display.process_draw_commands();
 
     /* Paste Panels on Screen */
     let map_size = game.data.map.size();
-    render_screen(&mut display.targets, map_size, map_rect);
+    render_screen(&mut display.targets, map_size);
 
     /* Draw Menus */
     render_menus(display, game);
@@ -57,11 +49,13 @@ pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<()
         render_debug(display, game);
     }
 
+    display.state.update_animations();
+
     Ok(())
 }
 
 
-fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
+fn render_panels(display: &mut Display, game: &mut Game) {
     let mouse_map_pos = game.settings.cursor;
 
     let display_state = &mut display.state;
@@ -109,7 +103,10 @@ fn render_panels(display: &mut Display, game: &mut Game, _map_rect: Rect) {
 }
 
 
-fn render_screen(targets: &mut DisplayTargets, map_size: (i32, i32), map_rect: Rect) {
+fn render_screen(targets: &mut DisplayTargets, map_size: (i32, i32)) {
+    /* Split Screen Into Sections */
+    let map_rect = targets.canvas_panel.get_rect_from_area(&targets.map_area);
+
     // TODO just make the map panel the right size in the first place
     // and re-create it when the map changes.
     let src = targets.map_panel.get_rect_up_left(map_size.0 as usize, map_size.1 as usize);
@@ -1109,7 +1106,6 @@ fn render_effects<T>(panel: &mut Panel<T>,
                 //                               sprite.flip_horiz,
                 //                               sprite.flip_vert);
 
-                sprite_anim.step(display_state.dt);
                 // if the sprite animation looped back to the beginning, end the effect
                 if sprite_anim.looped {
                     effect_complete = true;

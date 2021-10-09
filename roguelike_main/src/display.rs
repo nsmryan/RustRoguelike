@@ -1004,11 +1004,6 @@ impl DisplayTargets {
             menu_area,
         };
     }
-
-    pub fn mouse_pos(&self, x: i32, y: i32, map_width: i32, map_height: i32) -> Option<(i32, i32)> {
-        let map_rect = self.canvas_panel.get_rect_from_area(&self.map_area);
-        return cell_within_rect(map_rect, (map_width, map_height), (x, y));
-    }
 }
 
 pub struct DisplayState {
