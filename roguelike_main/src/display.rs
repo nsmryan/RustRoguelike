@@ -38,6 +38,7 @@ pub enum DrawCmd {
     OutlineTile(Color, Pos),
     Text(String, Color, Pos),
     Rect(Pos, (u32, u32), f32, bool, Color), // start cell, num cells width/height, offset percent into cell, color
+    Fill(Pos, Color),
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -209,6 +210,12 @@ fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
             } else {
                 panel.target.draw_rect(Rect::new(x, y, width, height));
             }
+        }
+
+        DrawCmd::Fill(pos, color) => {
+            let (cell_width, cell_height) = panel.cell_dims();
+            panel.target.set_draw_color(sdl2_color(*color));
+            panel.target.fill_rect(Rect::new(pos.x, pos.y, cell_width, cell_height));
         }
     }
 }

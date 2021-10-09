@@ -104,14 +104,9 @@ fn render_debug(display: &mut Display) {
         text_list.push(format!("{}: {}", key, value));
     }
 
-    let text_pos = Pos::new(1, 10);
+    let text_pos = Pos::new(1, 1);
     let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
-
-    let sprite_key = display_state.lookup_spritekey("font");
-    let font_sprite = &mut display_state.sprites[&sprite_key];
-    let panel = display.targets.canvas_panel.unit();
-    let mut panel = panel.with_target(&mut display.targets.canvas_panel.target);
-    font_sprite.draw_text_list(&mut panel, &text_list, text_pos, text_color);
+    display.targets.map_panel.text_list_cmd(&text_list, text_color, text_pos);
 }
 
 /// Draw an outline and title around an area of the screen
