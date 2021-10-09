@@ -1055,8 +1055,6 @@ fn render_effects<T>(panel: &mut Panel<T>,
     }
 }
 
-// NOTE this function steps the animation forward. It would be better
-// to do this all at once after rendering a frame.
 fn render_entity<T>(panel: &mut Panel<T>,
                     entity_id: EntityId,
                     display_state: &mut DisplayState,
@@ -1082,7 +1080,7 @@ fn render_entity<T>(panel: &mut Panel<T>,
     if is_in_fov {
         if let Some(mut anims) = display_state.animations.swap_remove(&entity_id) {
             if let Some(mut anim) = anims.pop_front() {
-                animation_result = anim.step(pos, display_state.dt, &game.config);
+                animation_result = anim.status(pos, display_state.dt, &game.config);
 
                 if let Animation::PlayEffect(effect) = anim {
                     display_state.play_effect(effect);
@@ -1095,8 +1093,6 @@ fn render_entity<T>(panel: &mut Panel<T>,
                             color = game.config.color_warm_grey;
                         }
 
-                        //display_state.draw_sprite(panel, sprite, animation_result.pos, color);
-                        //let sprite = Sprite::new(MAP_THIN_WALL_BOTTOM as u32, sprite_key);
                         panel.sprite_cmd(sprite, color, animation_result.pos);
                     }
 
@@ -1115,7 +1111,7 @@ fn render_entity<T>(panel: &mut Panel<T>,
             let tiles = display_state.lookup_spritekey("tiles");
             let chr = game.data.entities.chr[&entity_id];
             let sprite = Sprite::new(chr as u32, tiles);
-            //display_state.draw_sprite(panel, sprite, pos, color);
+
             panel.sprite_cmd(sprite, color, pos);
             animation_result.sprite = Some(sprite);
         }

@@ -582,7 +582,7 @@ impl Display {
     pub fn draw_all(&mut self, game: &mut Game) {
         self.process_draw_commands();
         self.copy_panels(game);
-        self.state.update_animations();
+        self.state.update_animations(&game.config);
     }
 
     pub fn copy_panels(&mut self, game: &mut Game) {
@@ -1092,12 +1092,13 @@ impl DisplayState {
         panic!(format!("Could not find sprite '{}'", name));
     }
 
-    pub fn update_animations(&mut self) {
+    pub fn update_animations(&mut self, config: &Config) {
         for anims in self.animations.values_mut() {
             if let Some(anim) = anims.get_mut(0) {
-                if let Some(sprite_anim) = anim.sprite_anim_mut() {
-                    sprite_anim.step(self.dt);
-                }
+                anim.step(self.dt, config);
+                //if let Some(sprite_anim) = anim.sprite_anim_mut() {
+                //    sprite_anim.step(self.dt);
+                //}
             }
         }
     }

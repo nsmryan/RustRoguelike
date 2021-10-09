@@ -161,30 +161,43 @@ impl Animation {
         }
     }
 
-    pub fn step(&mut self, pos: Pos, dt: f32, config: &Config) -> AnimationResult {
+    pub fn step(&mut self, dt: f32, config: &Config) {
+        match self {
+            Animation::Between(_sprite_anim, _start, _end, ref mut dist, blocks_per_sec) => {
+               *dist = *dist + (*blocks_per_sec / config.frame_rate as f32); 
+            }
+
+            Animation::Loop(ref mut sprite_anim) => {
+                sprite_anim.step(dt);
+            }
+
+            Animation::PlayEffect(_effect) => {
+            }
+
+            Animation::Once(_sprite_anim) => {
+            }
+        }
+    }
+
+    pub fn status(&self, pos: Pos, dt: f32, config: &Config) -> AnimationResult {
         let mut animation_result = AnimationResult::new();
         animation_result.pos = pos;
 
         match self {
-            Animation::Between(ref mut sprite_anim, start, end, ref mut dist, blocks_per_sec) => {
-               *dist = *dist + (*blocks_per_sec / config.frame_rate as f32); 
+            Animation::Between(ref sprite_anim, start, end, dist, blocks_per_sec) => {
                let num_blocks = *dist as usize;
 
-               let draw_pos = move_towards(*start, *end, num_blocks);
+               animation_result.pos = move_towards(*start, *end, num_blocks);
 
                let sprite = sprite_anim.sprite();
                animation_result.sprite = Some(sprite);
 
-               animation_result.pos = draw_pos;
-
                animation_result.done = *dist >= distance(*start, *end) as f32;
             }
 
-            Animation::Loop(ref mut sprite_anim) => {
+            Animation::Loop(ref sprite_anim) => {
                 let sprite = sprite_anim.sprite();
                 animation_result.sprite = Some(sprite);
-
-                sprite_anim.step(dt);
 
                 // a looping animation never finishes
                 animation_result.done = false;
@@ -194,7 +207,7 @@ impl Animation {
                 animation_result.done = true;
             }
 
-            Animation::Once(ref mut sprite_anim) => {
+            Animation::Once(ref sprite_anim) => {
                 if !sprite_anim.looped {
                     let sprite = sprite_anim.sprite();
                     animation_result.sprite = Some(sprite);
