@@ -38,12 +38,23 @@ pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<()
     display.process_draw_commands();
 
     /* Paste Panels on Screen */
-    let map_size = game.data.map.size();
-    render_screen(&mut display.targets, &mut display.state, map_size, game);
+    //render_screen(&mut display.targets, &mut display.state, game);
 
     /* Draw Debug Overlay */
     if game.settings.debug_enabled {
-        render_debug(display, game);
+        render_debug(display);
+    }
+
+    let menu_panel = &mut display.targets.menu_panel;
+
+    if game.settings.state == GameState::Inventory {
+        render_inventory(menu_panel, &mut display.state, game);
+    } else if game.settings.state == GameState::SkillMenu {
+        render_skill_menu(menu_panel, &mut display.state, game);
+    } else if game.settings.state == GameState::ClassMenu {
+        render_class_menu(menu_panel, &mut display.state, game);
+    } else if game.settings.state == GameState::ConfirmQuit {
+        render_confirm_quit(menu_panel, &mut display.state, game);
     }
 
     display.state.update_animations();
@@ -100,73 +111,7 @@ fn render_panels(display: &mut Display, game: &mut Game) {
 }
 
 
-fn render_screen(targets: &mut DisplayTargets, display_state: &mut DisplayState, map_size: (i32, i32), game: &mut Game) {
-    /* Split Screen Into Sections */
-    let screen_area = targets.canvas_panel.area();
-    let (map_area, rest_area) = screen_area.split_right(targets.info_panel.cells.0 as usize);
-    let (player_area, remaining_area) = rest_area.split_top(20);
-    let (inventory_area, info_area) = remaining_area.split_top(15);
-
-    let menu_area = targets.menu_panel.area();
-    let menu_area = map_area.centered(menu_area.width, menu_area.height);
-
-    let map_rect = targets.canvas_panel.get_rect_from_area(&map_area);
-
-    // TODO just make the map panel the right size in the first place
-    // and re-create it when the map changes.
-    let src = targets.map_panel.get_rect_up_left(map_size.0 as usize, map_size.1 as usize);
-    targets.canvas_panel.target.copy(&targets.background_panel.target, src, map_rect).unwrap();
-    targets.canvas_panel.target.copy(&targets.map_panel.target, src, map_rect).unwrap();
-
-    /* Draw Inventory Panel */
-    let dst = targets.canvas_panel.get_rect_within(&inventory_area,
-                                                   targets.inventory_panel.num_pixels);
-    targets.canvas_panel.target.copy(&targets.inventory_panel.target, None, dst).unwrap();
-
-    /* Draw Game Info Panel */
-    let dst = targets.canvas_panel.get_rect_within(&info_area,
-                                                   targets.info_panel.num_pixels);
-    targets.canvas_panel.target.copy(&targets.info_panel.target, None, dst).unwrap();
-
-    /* Draw Player Info Panel */
-    let dst = targets.canvas_panel.get_rect_within(&player_area,
-                                                   targets.player_panel.num_pixels);
-    targets.canvas_panel.target.copy(&targets.player_panel.target, None, dst).unwrap();
-
-    /* Draw Menus */
-    render_menus(targets, display_state, menu_area, game);
-}
-
-fn render_menus(targets: &mut DisplayTargets, display_state: &mut DisplayState, menu_area: Area, game: &mut Game) {
-    let menu_panel = &mut targets.menu_panel;
-
-    let mut draw_menu: bool = true;
-    if game.settings.state == GameState::Inventory {
-        render_inventory(menu_panel, display_state, game);
-    } else if game.settings.state == GameState::SkillMenu {
-        render_skill_menu(menu_panel, display_state, game);
-    } else if game.settings.state == GameState::ClassMenu {
-        render_class_menu(menu_panel, display_state, game);
-    } else if game.settings.state == GameState::ConfirmQuit {
-        render_confirm_quit(menu_panel, display_state, game);
-    } else {
-        draw_menu = false;
-    }
-
-    //canvas_panel.target.with_texture_canvas(&mut menu_panel.target, |canvas| {
-    //    let mut panel = panel.with_target(canvas);
-
-    //}).unwrap();
-
-    // TODO perhaps this can be moved into draw command processing
-    if draw_menu {
-        let canvas_panel = &mut targets.canvas_panel;
-        let dst = canvas_panel.get_rect_within(&menu_area, menu_panel.num_pixels);
-        canvas_panel.target.copy(&menu_panel.target, None, dst).unwrap();
-    }
-}
-
-fn render_debug(display: &mut Display, _game: &mut Game) {
+fn render_debug(display: &mut Display) {
     let display_state = &mut display.state;
 
     let mut text_list = Vec::new();
@@ -557,9 +502,6 @@ fn render_confirm_quit<T>(panel: &mut Panel<T>, display_state: &mut DisplayState
 
     // TODO this color comes from the UI mockups as a light brown
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
-
-    //let sprite_key = display_state.lookup_spritekey("font");
-    //let tile_sprite = &mut display_state.sprites[&sprite_key];
 
     panel.text_list_cmd(&list, color, text_pos);
 }

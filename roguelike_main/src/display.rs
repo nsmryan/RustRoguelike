@@ -18,6 +18,8 @@ use roguelike_core::map::*;
 use roguelike_core::utils::aoe_fill;
 use roguelike_core::movement::{Direction};
 
+use roguelike_engine::game::Game;
+
 use crate::animation::{Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 
 
@@ -574,6 +576,50 @@ impl Display {
 
             _ => {
             }
+        }
+    }
+
+    pub fn draw_all(&mut self, game: &mut Game) {
+        let map_size = game.data.map.size();
+
+        /* Split Screen Into Sections */
+        let screen_area = self.targets.canvas_panel.area();
+        let (map_area, rest_area) = screen_area.split_right(self.targets.info_panel.cells.0 as usize);
+        let (player_area, remaining_area) = rest_area.split_top(20);
+        let (inventory_area, info_area) = remaining_area.split_top(15);
+
+        let menu_area = self.targets.menu_panel.area();
+        let menu_area = map_area.centered(menu_area.width, menu_area.height);
+
+        let map_rect = self.targets.canvas_panel.get_rect_from_area(&map_area);
+
+        // TODO just make the map panel the right size in the first place
+        // and re-create it when the map changes.
+        let src = self.targets.map_panel.get_rect_up_left(map_size.0 as usize, map_size.1 as usize);
+        self.targets.canvas_panel.target.copy(&self.targets.background_panel.target, src, map_rect).unwrap();
+        self.targets.canvas_panel.target.copy(&self.targets.map_panel.target, src, map_rect).unwrap();
+
+        /* Draw Inventory Panel */
+        let dst = self.targets.canvas_panel.get_rect_within(&inventory_area,
+                                                       self.targets.inventory_panel.num_pixels);
+        self.targets.canvas_panel.target.copy(&self.targets.inventory_panel.target, None, dst).unwrap();
+
+        /* Draw Game Info Panel */
+        let dst = self.targets.canvas_panel.get_rect_within(&info_area,
+                                                       self.targets.info_panel.num_pixels);
+        self.targets.canvas_panel.target.copy(&self.targets.info_panel.target, None, dst).unwrap();
+
+        /* Draw Player Info Panel */
+        let dst = self.targets.canvas_panel.get_rect_within(&player_area,
+                                                       self.targets.player_panel.num_pixels);
+        self.targets.canvas_panel.target.copy(&self.targets.player_panel.target, None, dst).unwrap();
+
+        // TODO perhaps this can be moved into draw command processing
+        if game.settings.state.is_menu() {
+            let menu_panel = &mut self.targets.menu_panel;
+            let canvas_panel = &mut self.targets.canvas_panel;
+            let dst = canvas_panel.get_rect_within(&menu_area, menu_panel.num_pixels);
+            canvas_panel.target.copy(&menu_panel.target, None, dst).unwrap();
         }
     }
 }

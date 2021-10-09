@@ -387,6 +387,8 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
     /* Draw the Game to the Screen */
     render_all(display, game, dt)?;
 
+    display.draw_all(game);
+
     display.update_display();
 
     return Ok(());
