@@ -949,14 +949,6 @@ pub struct DisplayTargets {
     pub menu_panel: Panel<Texture>,
 
     pub texture_creator: TextureCreator<WindowContext>,
-
-    pub screen_area: Area,
-    pub map_area: Area,
-    pub player_area: Area,
-    pub remaining_area: Area,
-    pub inventory_area: Area,
-    pub info_area: Area,
-    pub menu_area: Area,
 }
 
 impl DisplayTargets {
@@ -977,14 +969,6 @@ impl DisplayTargets {
         let menu_panel = Panel::from_dims(&texture_creator, info_width + 5, 20, 1);
         let canvas_panel = Panel::with_canvas((SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32), canvas);
 
-        let screen_area = canvas_panel.area();
-        let (map_area, rest_area) = screen_area.split_right(info_panel.cells.0 as usize);
-        let (player_area, remaining_area) = rest_area.split_top(20);
-        let (inventory_area, info_area) = remaining_area.split_top(15);
-
-        let menu_area = menu_panel.area();
-        let menu_area = map_area.centered(menu_area.width, menu_area.height);
-
         return DisplayTargets {
             canvas_panel,
             texture_creator,
@@ -994,14 +978,6 @@ impl DisplayTargets {
             info_panel,
             menu_panel,
             inventory_panel,
-
-            screen_area,
-            map_area,
-            player_area,
-            remaining_area,
-            inventory_area,
-            info_area,
-            menu_area,
         };
     }
 }
