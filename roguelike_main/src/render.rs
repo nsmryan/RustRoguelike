@@ -2,6 +2,8 @@ use std::collections::HashSet;
 
 use oorandom::Rand32;
 
+use logging_timer::timer;
+
 use roguelike_core::types::*;
 use roguelike_core::map::*;
 use roguelike_core::constants::*;
@@ -56,24 +58,39 @@ fn render_panels(display: &mut Display, game: &mut Game) {
     if game.settings.render_map {
         let panel = &mut display.targets.background_panel;
 
-        render_map(panel, display_state, game);
+        {
+            let _map = timer!("MAP");
+            render_map(panel, display_state, game);
+        }
 
-        render_entity_type(panel, EntityType::Trigger, display_state, game);
-        render_entity_type(panel, EntityType::Item, display_state, game);
+        {
+            let _mid = timer!("MID");
+            render_entity_type(panel, EntityType::Trigger, display_state, game);
+            render_entity_type(panel, EntityType::Item, display_state, game);
 
-        render_map_middle(panel, display_state, game);
+            render_map_middle(panel, display_state, game);
+        }
 
-        render_entity_type(panel, EntityType::Energy, display_state, game);
-        render_entity_type(panel, EntityType::Enemy, display_state, game);
-        render_entity_type(panel, EntityType::Column, display_state, game);
-        render_entity_type(panel, EntityType::Player, display_state, game);
-        render_entity_type(panel, EntityType::Other, display_state, game);
+        {
+            let _above = timer!("ABOVE");
+            render_entity_type(panel, EntityType::Energy, display_state, game);
+            render_entity_type(panel, EntityType::Enemy, display_state, game);
+            render_entity_type(panel, EntityType::Column, display_state, game);
+            render_entity_type(panel, EntityType::Player, display_state, game);
+            render_entity_type(panel, EntityType::Other, display_state, game);
+        }
 
-        render_map_above(panel, display_state, game);
+        {
+            let _mapabove = timer!("MAPABOVE");
+            render_map_above(panel, display_state, game);
+        }
 
-        render_impressions(panel, display_state, game);
-        render_effects(panel, display_state, game);
-        render_overlays(panel, display_state, game, mouse_map_pos);
+        {
+            let _extra = timer!("EXTRA");
+            render_impressions(panel, display_state, game);
+            render_effects(panel, display_state, game);
+            render_overlays(panel, display_state, game, mouse_map_pos);
+        }
     }
 
     /* Draw Player Info */
@@ -653,26 +670,30 @@ fn render_map_above<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, g
                 }
             }
 
-            let visible =
-                game.data.pos_in_fov(player_id, pos, &game.config) ||
-                game.settings.god_mode;
+            let mut fov_result;
+            {
+                let _vis = timer!("VIS");
+                fov_result = game.data.pos_in_fov_edge(player_id, pos, &game.config);
+            }
+            if game.settings.god_mode {
+                fov_result = FovResult::Inside;
+            }
 
             // apply a FoW darkening to cells
-            if game.config.fog_of_war && !visible {
-                game.data.entities.status[&player_id].extra_fov += 1;
-                let is_in_fov_ext = 
-                   game.data.pos_in_fov(player_id, pos, &game.config);
-                game.data.entities.status[&player_id].extra_fov -= 1;
+            if game.config.fog_of_war && fov_result != FovResult::Inside {
+                let is_in_fov_ext = fov_result == FovResult::Edge;
 
                 let mut blackout_color = Color::black();
-                if is_in_fov_ext {
-                    blackout_color.a = game.config.fov_edge_alpha
-                } else if game.data.map[pos].explored {
-                    blackout_color.a = game.config.explored_alpha
-                }
-                
                 let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
-                panel.sprite_cmd(sprite, blackout_color, pos);
+                if is_in_fov_ext {
+                    blackout_color.a = game.config.fov_edge_alpha;
+                    panel.sprite_cmd(sprite, blackout_color, pos);
+                } else if game.data.map[pos].explored {
+                    blackout_color.a = game.config.explored_alpha;
+                    panel.sprite_cmd(sprite, blackout_color, pos);
+                } else {
+                    panel.fill_cmd(pos, blackout_color);
+                }
             }
         }
     }
@@ -1432,40 +1453,38 @@ fn render_overlays<T>(panel: &mut Panel<T>,
                 continue;
             }
 
-            if game.data.is_in_fov(player_id, *entity_id, &game.config) {
-                let mut status_drawn: bool = false;
-                if let Some(status) = game.data.entities.status.get(entity_id) {
-                    if status.frozen > 0 {
-                        status_drawn = true;
-                        let sprite = Sprite::new(ASTERISK as u32, sprite_key);
-                        panel.sprite_scaled_cmd(sprite, scale,
-                                                Some(Direction::UpRight),
-                                                alertness_color,
-                                                pos);
-                    }
+            let mut status_drawn: bool = false;
+            if let Some(status) = game.data.entities.status.get(entity_id) {
+                if status.frozen > 0 {
+                    status_drawn = true;
+                    let sprite = Sprite::new(ASTERISK as u32, sprite_key);
+                    panel.sprite_scaled_cmd(sprite, scale,
+                                            Some(Direction::UpRight),
+                                            alertness_color,
+                                            pos);
                 }
+            }
 
-                if status_drawn {
-                    if let Some(behavior) = game.data.entities.behavior.get(entity_id) {
-                        match behavior {
-                            Behavior::Idle => {
-                            }
+            if status_drawn {
+                if let Some(behavior) = game.data.entities.behavior.get(entity_id) {
+                    match behavior {
+                        Behavior::Idle => {
+                        }
 
-                            Behavior::Investigating(_) => {
-                                let sprite = Sprite::new(QUESTION_MARK as u32, sprite_key);
-                                panel.sprite_scaled_cmd(sprite, scale,
-                                                        Some(Direction::UpRight),
-                                                        alertness_color,
-                                                        pos);
-                            }
+                        Behavior::Investigating(_) => {
+                            let sprite = Sprite::new(QUESTION_MARK as u32, sprite_key);
+                            panel.sprite_scaled_cmd(sprite, scale,
+                                                    Some(Direction::UpRight),
+                                                    alertness_color,
+                                                    pos);
+                        }
 
-                            Behavior::Attacking(_) => {
-                                let sprite = Sprite::new(EXCLAMATION_POINT as u32, sprite_key);
-                                panel.sprite_scaled_cmd(sprite, scale,
-                                                        Some(Direction::UpRight),
-                                                        alertness_color,
-                                                        pos);
-                            }
+                        Behavior::Attacking(_) => {
+                            let sprite = Sprite::new(EXCLAMATION_POINT as u32, sprite_key);
+                            panel.sprite_scaled_cmd(sprite, scale,
+                                                    Some(Direction::UpRight),
+                                                    alertness_color,
+                                                    pos);
                         }
                     }
                 }

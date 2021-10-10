@@ -7,6 +7,8 @@ use std::fmt;
 
 use oorandom::Rand32;
 
+use logging_timer::timer;
+
 use pathfinding::directed::astar::astar;
 
 use symmetric_shadowcasting::Pos as SymPos;
@@ -399,6 +401,12 @@ impl Tile {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum FovResult {
+    Outside,
+    Edge,
+    Inside,
+}
 
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug)]
 pub enum Rotation {
@@ -929,13 +937,26 @@ impl Map {
         return self.tiles[0].len() as i32;
     }
 
+    pub fn is_in_fov_edge(&self, start_pos: Pos, end_pos: Pos, radius: i32, low: bool) -> FovResult {
+        if self.is_in_fov(start_pos, end_pos, radius + 1, low) {
+            if distance_maximum(start_pos, end_pos) == radius {
+                return FovResult::Edge;
+            } else {
+                return FovResult::Inside;
+            }
+        } else {
+            return FovResult::Outside;
+        }
+    }
+
     pub fn is_in_fov(&self, start_pos: Pos, end_pos: Pos, radius: i32, low: bool) -> bool {
         let mut in_fov = false;
 
-        if self.is_in_fov_shadowcast(start_pos, end_pos) {
-            // check that the position is within the max view distance.
-            if distance_maximum(start_pos, end_pos) <= radius {
-
+        let _fov = timer!("FOV");
+        // check that the position is within the max view distance.
+        if distance_maximum(start_pos, end_pos) <= radius {
+            if self.is_in_fov_shadowcast(start_pos, end_pos) {
+                let _fovrest = timer!("FOVREST");
                 // so far, the position is in fov
                 in_fov = true;
 
@@ -961,6 +982,7 @@ impl Map {
     }
 
     pub fn is_in_fov_shadowcast(&self, start_pos: Pos, end_pos: Pos) -> bool {
+        let _fovshad = timer!("FOVSHAD");
         if let Some(visible) = self.fov_cache.borrow_mut().get(&start_pos) {
             return visible.contains(&end_pos);
         }

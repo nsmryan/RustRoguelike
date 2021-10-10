@@ -41,6 +41,25 @@ pub enum DrawCmd {
     Fill(Pos, Color),
 }
 
+impl DrawCmd {
+    pub fn aligned(&self) -> bool {
+        return !matches!(self, DrawCmd::SpriteAtPixel(_, _, _));
+    }
+
+    pub fn pos(&self) -> Pos {
+        match self {
+            DrawCmd::Sprite(_, _, pos) => *pos,
+            DrawCmd::SpriteScaled(_, _, _, _, pos) => *pos,
+            DrawCmd::SpriteAtPixel(_, _, pos) => *pos,
+            DrawCmd::HighlightTile(_, pos) => *pos,
+            DrawCmd::OutlineTile(_, pos) => *pos,
+            DrawCmd::Text(_, _, pos) => *pos,
+            DrawCmd::Rect(pos, _, _, _, _) => *pos,
+            DrawCmd::Fill(pos, _) => *pos,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum PanelName {
     Info,
@@ -215,7 +234,7 @@ fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
         DrawCmd::Fill(pos, color) => {
             let (cell_width, cell_height) = panel.cell_dims();
             panel.target.set_draw_color(sdl2_color(*color));
-            panel.target.fill_rect(Rect::new(pos.x, pos.y, cell_width, cell_height));
+            panel.target.fill_rect(Rect::new(pos.x * cell_width as i32, pos.y * cell_height as i32, cell_width, cell_height));
         }
     }
 }
@@ -819,6 +838,18 @@ impl Panel<Texture> {
         // As a simple optimization, only redraw if the commands haven't changed. This is common
         // for informational panels.
         if self.draw_cmds != self.old_draw_cmds {
+            // Collect a map of positions which are going to be filled, to avoid drawing
+            // aligned sprites below those tiles.
+            let mut fill_map = HashMap::<Pos, u32>::new();
+            for cmd in self.draw_cmds.iter() {
+                if let DrawCmd::Fill(pos, color) = cmd {
+                    if !fill_map.contains_key(pos) {
+                        fill_map.insert(*pos, 0);
+                    }
+                    fill_map.get_mut(pos).map(|count| *count += 1);
+                }
+            }
+
             // TODO this clone is likely removable once panels no longer contain textures
             // it may then become an extend into the old_draw_cmds vector
             let draw_cmds = self.draw_cmds.clone();
@@ -829,12 +860,32 @@ impl Panel<Texture> {
                 // we don't clear the map as the background was already drawn over it.
                 // TODO consider removing background panel and just using map- it was an
                 // optimization that we may be able to remove if other optimizations are good enough
+                // TODO if the fill cmd optimization has enough of an effect, the background
+                // panel optimization may be unnecessary
                 if clear {
                   panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
                   panel.target.clear();
                 }
 
                 for cmd in draw_cmds.iter() {
+                    // Check if there is going to be a fill in this position,
+                    // in which case there is no need to draw an aligned command.
+                    if cmd.aligned() {
+                        let pos = cmd.pos();
+                        if fill_map.contains_key(&pos) {
+                            let is_fill =  matches!(cmd, DrawCmd::Fill(_, _));
+
+                            if let Some(count) = fill_map.get_mut(&pos) {
+                                if *count > 0 && is_fill {
+                                    *count -= 1;
+                                }
+
+                                if *count > 0 {
+                                    continue;
+                                }
+                            }
+                        }
+                    }
                     process_draw_cmd(&mut panel, display_state, cmd);
                 }
             }).unwrap();
@@ -988,6 +1039,11 @@ impl<T> Panel<T> {
 
     pub fn rect_cmd(&mut self, pos: Pos, dims: (u32, u32), offset: f32, filled: bool, color: Color) {
         let cmd = DrawCmd::Rect(pos, dims, offset, filled, color);
+        self.draw_cmd(cmd);
+    }
+
+    pub fn fill_cmd(&mut self, pos: Pos, color: Color) {
+        let cmd = DrawCmd::Fill(pos, color);
         self.draw_cmd(cmd);
     }
 

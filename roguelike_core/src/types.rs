@@ -135,19 +135,24 @@ impl GameData {
         let other_pos = self.entities.pos[&other_id];
 
         let is_removing = self.entities.needs_removal[&other_id];
-        return !is_removing && self.fov_check(entity_id, other_pos, crouching, config);
+        return !is_removing && self.fov_check(entity_id, other_pos, crouching, config) == FovResult::Inside;
     }
 
-    pub fn pos_in_fov(&self, entity_id: EntityId, other_pos: Pos, config: &Config) -> bool {
+    pub fn pos_in_fov_edge(&self, entity_id: EntityId, other_pos: Pos, config: &Config) -> FovResult {
         let stance = self.entities.stance[&entity_id];
         let crouching = stance == Stance::Crouching;
 
         return self.fov_check(entity_id, other_pos, crouching, config);
     }
 
-    fn fov_check(&self, entity_id: EntityId, check_pos: Pos, crouching: bool, _config: &Config) -> bool {
+    pub fn pos_in_fov(&self, entity_id: EntityId, other_pos: Pos, config: &Config) -> bool {
+        let fov_result = self.pos_in_fov_edge(entity_id, other_pos, config);
+        return fov_result == FovResult::Inside;
+    }
+
+    fn fov_check(&self, entity_id: EntityId, check_pos: Pos, crouching: bool, _config: &Config) -> FovResult {
         if check_pos.x < 0 || check_pos.y < 0 {
-            return false;
+            return FovResult::Outside;
         }
         assert!(self.map.is_within_bounds(check_pos));
 
@@ -156,11 +161,11 @@ impl GameData {
         let radius: i32 = self.fov_radius(entity_id);
 
         if self.entities.typ[&entity_id] == EntityType::Player {
-            let mut can_see = self.map.is_in_fov(entity_pos, check_pos, radius, crouching);
+            let mut can_see = self.map.is_in_fov_edge(entity_pos, check_pos, radius, crouching);
 
             // if we can't see the tile, check for a latern that illuminates it, allowing
             // us to see it anyway. Ignore tiles that are blocked for sight anyway.
-            if !can_see && !self.map[check_pos].block_sight {
+            if can_see != FovResult::Inside && !self.map[check_pos].block_sight {
                 // check for illumination that might make this tile visible.
                 for (id, illuminate_radius) in self.entities.illuminate.iter() {
                     let illuminate_radius = *illuminate_radius as i32;
@@ -173,7 +178,10 @@ impl GameData {
                         if distance(illuminate_pos, check_pos) <= illuminate_radius &&
                            self.map.is_in_fov(illuminate_pos, check_pos, illuminate_radius, crouching) {
                             if self.map.is_in_fov(entity_pos, check_pos, ILLUMINATE_FOV_RADIUS, crouching) {
-                                can_see = true;
+                                // NOTE this could fall off according to distance from lantern to
+                                // create gradient as per issue #354.
+                                can_see = FovResult::Inside;
+                                break;
                             }
                         }
                     }
@@ -183,7 +191,11 @@ impl GameData {
             return can_see;
         } else {
             if let Some(dir) = self.entities.direction.get(&entity_id) {
-                return self.map.is_in_fov_direction(entity_pos, check_pos, radius, *dir, crouching);
+                if self.map.is_in_fov_direction(entity_pos, check_pos, radius, *dir, crouching) {
+                    return FovResult::Inside;
+                } else {
+                    return FovResult::Outside;
+                }
             } else {
                 panic!(format!("tried to perform is_in_fov on entity without facing"));
             }

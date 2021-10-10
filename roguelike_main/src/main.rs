@@ -388,17 +388,26 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
     }
 
     /* Draw the Game to the Screen */
-    let command_time = Instant::now();
-    render_all(display, game, dt)?;
-    let ct = Instant::now().duration_since(command_time).as_secs_f32();
-    display.state.show_debug("ct", format!("{}", ct));
+    {
+        let command_time = Instant::now();
+        let _render_timer = timer!("RENDER");
+        render_all(display, game, dt)?;
+        let ct = Instant::now().duration_since(command_time).as_secs_f32();
+        display.state.show_debug("ct", format!("{}", ct));
+    }
 
-    let update_time = Instant::now();
-    display.draw_all(game);
+    {
+        let _draw_timer = timer!("DRAW");
+        let update_time = Instant::now();
+        display.draw_all(game);
 
-    display.update_display();
-    let ut = Instant::now().duration_since(update_time).as_secs_f32();
-    display.state.show_debug("ut", format!("{}", ut));
+        {
+            let _present_timer = timer!("PRESENT");
+            display.update_display();
+            let ut = Instant::now().duration_since(update_time).as_secs_f32();
+            display.state.show_debug("ut", format!("{}", ut));
+        }
+    }
 
     return Ok(());
 }
