@@ -241,46 +241,77 @@ fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
 
 pub struct Display {
     pub state: DisplayState,
-    pub targets: DisplayTargets,
+
+    pub canvas_panel: Panel<WindowCanvas>,
+
+    pub background_panel: Panel<Texture>,
+    pub map_panel: Panel<Texture>,
+    pub player_panel: Panel<Texture>,
+    pub info_panel: Panel<Texture>,
+    pub inventory_panel: Panel<Texture>,
+    pub menu_panel: Panel<Texture>,
+
+    pub texture_creator: TextureCreator<WindowContext>,
 }
 
 impl Display {
     pub fn new(canvas: WindowCanvas) -> Display {
+        let texture_creator = canvas.texture_creator();
+
+        let over_sample = 5;
+        let background_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, over_sample);
+
+        let map_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, over_sample);
+
+        let info_width = 14;
+
+        let info_panel = Panel::from_dims(&texture_creator, info_width, 15, 1);
+        let inventory_panel = Panel::from_dims(&texture_creator, info_width, 15, 1);
+        let player_panel = Panel::from_dims(&texture_creator, info_width, 20, 1);
+        let menu_panel = Panel::from_dims(&texture_creator, info_width + 5, 20, 1);
+        let canvas_panel = Panel::with_canvas((SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32), canvas);
+
         return Display { state: DisplayState::new(),
-                         targets: DisplayTargets::new(canvas),
-        };
+                         canvas_panel,
+                         texture_creator,
+                         background_panel,
+                         map_panel,
+                         player_panel,
+                         info_panel,
+                         menu_panel,
+                         inventory_panel, };
     }
 
     pub fn process_draw_commands(&mut self) {
-        let canvas = &mut self.targets.canvas_panel.target;
+        let canvas = &mut self.canvas_panel.target;
         let display_state = &mut self.state;
 
         // copy background into the map before other draws.
-        let background = &mut self.targets.background_panel;
-        canvas.with_texture_canvas(&mut self.targets.map_panel.target, |canvas| {
+        let background = &mut self.background_panel;
+        canvas.with_texture_canvas(&mut self.map_panel.target, |canvas| {
             canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
             canvas.clear();
 
             canvas.copy(&background.target, None, None).unwrap();
         }).unwrap();
 
-        self.targets.info_panel.process_cmds(true, canvas, display_state);
-        self.targets.background_panel.process_cmds(true, canvas, display_state);
-        self.targets.map_panel.process_cmds(false, canvas, display_state);
-        self.targets.player_panel.process_cmds(true, canvas, display_state);
-        self.targets.inventory_panel.process_cmds(true, canvas, display_state);
-        self.targets.menu_panel.process_cmds(true, canvas, display_state);
+        self.info_panel.process_cmds(true, canvas, display_state);
+        self.background_panel.process_cmds(true, canvas, display_state);
+        self.map_panel.process_cmds(false, canvas, display_state);
+        self.player_panel.process_cmds(true, canvas, display_state);
+        self.inventory_panel.process_cmds(true, canvas, display_state);
+        self.menu_panel.process_cmds(true, canvas, display_state);
     }
 
     pub fn update_display(&mut self) {
-        self.targets.canvas_panel.target.present();
+        self.canvas_panel.target.present();
     }
 
     pub fn save_screenshot(&mut self, name: &str) {
         let format = PixelFormatEnum::RGB24;
-        let (width, height) = self.targets.canvas_panel.target.output_size().unwrap();
+        let (width, height) = self.canvas_panel.target.output_size().unwrap();
 
-        let pixels = self.targets.canvas_panel.target.read_pixels(None, format).unwrap();
+        let pixels = self.canvas_panel.target.read_pixels(None, format).unwrap();
 
         let mut shot = Image::new(width, height);
 
@@ -615,41 +646,41 @@ impl Display {
         let map_size = game.data.map.size();
 
         /* Split Screen Into Sections */
-        let screen_area = self.targets.canvas_panel.area();
-        let (map_area, rest_area) = screen_area.split_right(self.targets.info_panel.cells.0 as usize);
+        let screen_area = self.canvas_panel.area();
+        let (map_area, rest_area) = screen_area.split_right(self.info_panel.cells.0 as usize);
         let (player_area, remaining_area) = rest_area.split_top(20);
         let (inventory_area, info_area) = remaining_area.split_top(15);
 
-        let menu_area = self.targets.menu_panel.area();
+        let menu_area = self.menu_panel.area();
         let menu_area = map_area.centered(menu_area.width, menu_area.height);
 
-        let map_rect = self.targets.canvas_panel.get_rect_from_area(&map_area);
+        let map_rect = self.canvas_panel.get_rect_from_area(&map_area);
 
         // TODO just make the map panel the right size in the first place
         // and re-create it when the map changes.
-        let src = self.targets.map_panel.get_rect_up_left(map_size.0 as usize, map_size.1 as usize);
-        self.targets.canvas_panel.target.copy(&self.targets.background_panel.target, src, map_rect).unwrap();
-        self.targets.canvas_panel.target.copy(&self.targets.map_panel.target, src, map_rect).unwrap();
+        let src = self.map_panel.get_rect_up_left(map_size.0 as usize, map_size.1 as usize);
+        self.canvas_panel.target.copy(&self.background_panel.target, src, map_rect).unwrap();
+        self.canvas_panel.target.copy(&self.map_panel.target, src, map_rect).unwrap();
 
         /* Draw Inventory Panel */
-        let dst = self.targets.canvas_panel.get_rect_within(&inventory_area,
-                                                       self.targets.inventory_panel.num_pixels);
-        self.targets.canvas_panel.target.copy(&self.targets.inventory_panel.target, None, dst).unwrap();
+        let dst = self.canvas_panel.get_rect_within(&inventory_area,
+                                                       self.inventory_panel.num_pixels);
+        self.canvas_panel.target.copy(&self.inventory_panel.target, None, dst).unwrap();
 
         /* Draw Game Info Panel */
-        let dst = self.targets.canvas_panel.get_rect_within(&info_area,
-                                                       self.targets.info_panel.num_pixels);
-        self.targets.canvas_panel.target.copy(&self.targets.info_panel.target, None, dst).unwrap();
+        let dst = self.canvas_panel.get_rect_within(&info_area,
+                                                       self.info_panel.num_pixels);
+        self.canvas_panel.target.copy(&self.info_panel.target, None, dst).unwrap();
 
         /* Draw Player Info Panel */
-        let dst = self.targets.canvas_panel.get_rect_within(&player_area,
-                                                       self.targets.player_panel.num_pixels);
-        self.targets.canvas_panel.target.copy(&self.targets.player_panel.target, None, dst).unwrap();
+        let dst = self.canvas_panel.get_rect_within(&player_area,
+                                                       self.player_panel.num_pixels);
+        self.canvas_panel.target.copy(&self.player_panel.target, None, dst).unwrap();
 
         // TODO perhaps this can be moved into draw command processing
         if game.settings.state.is_menu() {
-            let menu_panel = &mut self.targets.menu_panel;
-            let canvas_panel = &mut self.targets.canvas_panel;
+            let menu_panel = &mut self.menu_panel;
+            let canvas_panel = &mut self.canvas_panel;
             let dst = canvas_panel.get_rect_within(&menu_area, menu_panel.num_pixels);
             canvas_panel.target.copy(&menu_panel.target, None, dst).unwrap();
         }
@@ -1052,50 +1083,6 @@ impl<T> Panel<T> {
     }
 }
 
-
-pub struct DisplayTargets {
-    pub canvas_panel: Panel<WindowCanvas>,
-
-    pub background_panel: Panel<Texture>,
-    pub map_panel: Panel<Texture>,
-    pub player_panel: Panel<Texture>,
-    pub info_panel: Panel<Texture>,
-    pub inventory_panel: Panel<Texture>,
-    pub menu_panel: Panel<Texture>,
-
-    pub texture_creator: TextureCreator<WindowContext>,
-}
-
-impl DisplayTargets {
-    pub fn new(canvas: WindowCanvas) -> DisplayTargets {
-
-        let texture_creator = canvas.texture_creator();
-
-        let over_sample = 5;
-        let background_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, over_sample);
-
-        let map_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, over_sample);
-
-        let info_width = 14;
-
-        let info_panel = Panel::from_dims(&texture_creator, info_width, 15, 1);
-        let inventory_panel = Panel::from_dims(&texture_creator, info_width, 15, 1);
-        let player_panel = Panel::from_dims(&texture_creator, info_width, 20, 1);
-        let menu_panel = Panel::from_dims(&texture_creator, info_width + 5, 20, 1);
-        let canvas_panel = Panel::with_canvas((SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32), canvas);
-
-        return DisplayTargets {
-            canvas_panel,
-            texture_creator,
-            background_panel,
-            map_panel,
-            player_panel,
-            info_panel,
-            menu_panel,
-            inventory_panel,
-        };
-    }
-}
 
 pub struct DisplayState {
     // sprite state

@@ -964,11 +964,9 @@ impl Map {
     pub fn is_in_fov(&self, start_pos: Pos, end_pos: Pos, radius: i32, low: bool) -> bool {
         let mut in_fov = false;
 
-        let _fov = timer!("FOV");
         // check that the position is within the max view distance.
         if distance_maximum(start_pos, end_pos) <= radius {
             if self.is_in_fov_shadowcast(start_pos, end_pos) {
-                let _fovrest = timer!("FOVREST");
                 // so far, the position is in fov
                 in_fov = true;
 

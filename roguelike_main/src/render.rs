@@ -24,7 +24,7 @@ pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<()
     display.state.dt = dt;
 
     /* Draw Background */
-    render_background(&mut display.targets.background_panel, &mut display.state, game);
+    render_background(&mut display.background_panel, &mut display.state, game);
 
     /* Draw Map */
     render_panels(display, game);
@@ -34,7 +34,7 @@ pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<()
         render_debug(display);
     }
 
-    let menu_panel = &mut display.targets.menu_panel;
+    let menu_panel = &mut display.menu_panel;
 
     if game.settings.state == GameState::Inventory {
         render_inventory(menu_panel, &mut display.state, game);
@@ -56,7 +56,7 @@ fn render_panels(display: &mut Display, game: &mut Game) {
     let display_state = &mut display.state;
 
     if game.settings.render_map {
-        let panel = &mut display.targets.background_panel;
+        let panel = &mut display.background_panel;
 
         {
             let _map = timer!("MAP");
@@ -95,19 +95,19 @@ fn render_panels(display: &mut Display, game: &mut Game) {
 
     /* Draw Player Info */
     {
-        let player_panel = &mut display.targets.player_panel;
+        let player_panel = &mut display.player_panel;
         render_player_info(player_panel, display_state, game);
     }
 
     /* Draw Inventory */
     {
-        let inventory_panel = &mut display.targets.inventory_panel;
+        let inventory_panel = &mut display.inventory_panel;
         render_inventory(inventory_panel, display_state, game);
     }
 
     /* Draw Game Info */
     {
-        let info_panel = &mut display.targets.info_panel;
+        let info_panel = &mut display.info_panel;
         render_info(info_panel, display_state, game, mouse_map_pos);
     }
 }
@@ -123,7 +123,7 @@ fn render_debug(display: &mut Display) {
 
     let text_pos = Pos::new(1, 1);
     let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
-    display.targets.map_panel.text_list_cmd(&text_list, text_color, text_pos);
+    display.map_panel.text_list_cmd(&text_list, text_color, text_pos);
 }
 
 /// Draw an outline and title around an area of the screen
