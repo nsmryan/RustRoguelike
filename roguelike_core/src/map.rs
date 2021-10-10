@@ -408,6 +408,18 @@ pub enum FovResult {
     Inside,
 }
 
+impl FovResult {
+    pub fn combine(&self, other: FovResult) -> FovResult {
+        if *self == FovResult::Inside || other == FovResult::Inside {
+            return FovResult::Inside;
+        } else if *self == FovResult::Edge || other == FovResult::Edge {
+            return FovResult::Edge;
+        } else {
+            return FovResult::Outside;
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Debug)]
 pub enum Rotation {
     Degrees0,
@@ -939,7 +951,7 @@ impl Map {
 
     pub fn is_in_fov_edge(&self, start_pos: Pos, end_pos: Pos, radius: i32, low: bool) -> FovResult {
         if self.is_in_fov(start_pos, end_pos, radius + 1, low) {
-            if distance_maximum(start_pos, end_pos) == radius {
+            if distance_maximum(start_pos, end_pos) == radius + 1 {
                 return FovResult::Edge;
             } else {
                 return FovResult::Inside;

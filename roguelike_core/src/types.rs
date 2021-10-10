@@ -175,13 +175,13 @@ impl GameData {
                        !self.entities.needs_removal[id] {
                         let illuminate_pos = self.entities.pos[id];
 
-                        if distance(illuminate_pos, check_pos) <= illuminate_radius &&
-                           self.map.is_in_fov(illuminate_pos, check_pos, illuminate_radius, crouching) {
+                        if self.map.is_in_fov(illuminate_pos, check_pos, illuminate_radius, crouching) {
                             if self.map.is_in_fov(entity_pos, check_pos, ILLUMINATE_FOV_RADIUS, crouching) {
-                                // NOTE this could fall off according to distance from lantern to
-                                // create gradient as per issue #354.
-                                can_see = FovResult::Inside;
-                                break;
+                                if distance_maximum(illuminate_pos, check_pos) <= 1 {
+                                    can_see = can_see.combine(FovResult::Inside);
+                                } else if distance_maximum(illuminate_pos, check_pos) == 2 {
+                                    can_see = can_see.combine(FovResult::Edge);
+                                }
                             }
                         }
                     }
