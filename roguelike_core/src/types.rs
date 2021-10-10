@@ -177,9 +177,9 @@ impl GameData {
 
                         if self.map.is_in_fov(illuminate_pos, check_pos, illuminate_radius, crouching) {
                             if self.map.is_in_fov(entity_pos, check_pos, ILLUMINATE_FOV_RADIUS, crouching) {
-                                if distance_maximum(illuminate_pos, check_pos) <= 1 {
+                                if distance_maximum(illuminate_pos, check_pos) < illuminate_radius {
                                     can_see = can_see.combine(FovResult::Inside);
-                                } else if distance_maximum(illuminate_pos, check_pos) == 2 {
+                                } else if distance_maximum(illuminate_pos, check_pos) == illuminate_radius {
                                     can_see = can_see.combine(FovResult::Edge);
                                 }
                             }
