@@ -264,12 +264,8 @@ fn render_info(panel: &mut Panel,
 
         let text_pos = Pos::new(1, y_pos);
 
-        let sprite_key = display_state.lookup_spritekey("font");
+        panel.text_list_cmd(&text_list, text_color, text_pos);
 
-        {
-            let tile_sprite = &mut display_state.sprites[&sprite_key];
-            panel.text_list_cmd(&text_list, text_color, text_pos);
-        }
         text_list.clear();
 
         y_pos += 1;
@@ -334,7 +330,6 @@ fn render_info(panel: &mut Panel,
             }
         }
 
-        let tile_sprite = &mut display_state.sprites[&sprite_key];
         let text_pos = Pos::new(1, y_pos);
         panel.text_list_cmd(&text_list, text_color, text_pos);
         text_list.push(format!(""));
@@ -1174,7 +1169,7 @@ fn render_overlays(panel: &mut Panel,
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let tiles_key = display_state.lookup_spritekey("tiles");
 
     // Draw use-mode overlay
     if game.settings.state == GameState::Use {
@@ -1193,7 +1188,7 @@ fn render_overlays(panel: &mut Panel,
                 if game.data.clear_path(player_pos, target_pos, false) {
                     panel.highlight_cmd(highlight_color, target_pos);
 
-                    render_arrow(panel, display_state, sprite_key, *dir, target_pos, direction_color);
+                    render_arrow(panel, display_state, tiles_key, *dir, target_pos, direction_color);
                 }
             }
         } else if let UseAction::Item(item_class) = game.settings.use_action {
@@ -1215,13 +1210,13 @@ fn render_overlays(panel: &mut Panel,
                 if x_diff.abs() < 5 && y_diff.abs() < 5 {
                     let res: i8 = x_diff as i8 - y_diff as i8;
                     if res <= 0 {
-                        let sprite = Sprite::new(MAP_GROUND as u32, sprite_key);
+                        let sprite = Sprite::new(MAP_GROUND as u32, tiles_key);
                         panel.sprite_cmd(sprite, game.config.color_light_green, pos);
                     } else {
-                        let sprite = Sprite::new(MAP_GROUND as u32, sprite_key);
+                        let sprite = Sprite::new(MAP_GROUND as u32, tiles_key);
                         panel.sprite_cmd(sprite, game.config.color_light_grey, pos);
                     }
-                    let sprite = Sprite::new(('0' as u8 + res.abs() as u8) as u32, sprite_key);
+                    let sprite = Sprite::new(('0' as u8 + res.abs() as u8) as u32, tiles_key);
                     panel.sprite_cmd(sprite, game.config.color_red, pos);
                 }
             }
@@ -1234,7 +1229,7 @@ fn render_overlays(panel: &mut Panel,
         if let Some(cursor_pos) = game.settings.cursor {
             let mut color = game.config.color_mint_green;
             color.a = 230;
-            let sprite = Sprite::new(ENTITY_CURSOR as u32, sprite_key);
+            let sprite = Sprite::new(ENTITY_CURSOR as u32, tiles_key);
             panel.sprite_cmd(sprite, color, cursor_pos);
 
             // render player ghost
@@ -1288,7 +1283,7 @@ fn render_overlays(panel: &mut Panel,
                     game.data.pos_in_fov(player_id, pos, &game.config);
                 if is_in_fov {
                     //tile_sprite.draw_char(panel, MAP_GROUND as char, pos, game.config.color_light_green);
-                    let sprite = Sprite::new(MAP_GROUND as u32, sprite_key);
+                    let sprite = Sprite::new(MAP_GROUND as u32, tiles_key);
                     panel.sprite_cmd(sprite, game.config.color_light_green, pos);
                 }
             }
@@ -1315,7 +1310,7 @@ fn render_overlays(panel: &mut Panel,
             if game.data.is_in_fov(player_id, entity_id, &game.config) &&
                game.data.entities.status[&entity_id].alive {
                 if let Some(dir) = game.data.entities.direction.get(&entity_id) {
-                    render_arrow(panel, display_state, sprite_key, *dir, pos, direction_color);
+                    render_arrow(panel, display_state, tiles_key, *dir, pos, direction_color);
                 }
             }
         }
@@ -1366,7 +1361,7 @@ fn render_overlays(panel: &mut Panel,
             let path = astar_path(&game.data.map, player_pos, mouse_pos, None, None);
             for pos in path {
                 //tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, highlight_color);
-                let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
+                let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
                 panel.sprite_cmd(sprite, highlight_color, pos);
             }
         }
@@ -1379,7 +1374,7 @@ fn render_overlays(panel: &mut Panel,
                 for pos in line {
                     let pos = Pos::from(pos);
                     //tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, highlight_color);
-                    let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
+                    let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
                     panel.sprite_cmd(sprite, highlight_color, pos);
                 }
             }
@@ -1435,7 +1430,7 @@ fn render_overlays(panel: &mut Panel,
             let adj_color = lerp_color(game.config.color_ice_blue, game.config.color_red, amount);
 
             //tile_sprite.draw_char(panel, , pos, adj_color);
-            let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
+            let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
             panel.sprite_cmd(sprite, adj_color, pos);
 
             panel.text_cmd(&format!("{}", near_count), highlight_color, pos);
@@ -1457,7 +1452,7 @@ fn render_overlays(panel: &mut Panel,
             if let Some(status) = game.data.entities.status.get(entity_id) {
                 if status.frozen > 0 {
                     status_drawn = true;
-                    let sprite = Sprite::new(ASTERISK as u32, sprite_key);
+                    let sprite = Sprite::new(ASTERISK as u32, tiles_key);
                     panel.sprite_scaled_cmd(sprite, scale,
                                             Some(Direction::UpRight),
                                             alertness_color,
@@ -1472,7 +1467,7 @@ fn render_overlays(panel: &mut Panel,
                         }
 
                         Behavior::Investigating(_) => {
-                            let sprite = Sprite::new(QUESTION_MARK as u32, sprite_key);
+                            let sprite = Sprite::new(QUESTION_MARK as u32, tiles_key);
                             panel.sprite_scaled_cmd(sprite, scale,
                                                     Some(Direction::UpRight),
                                                     alertness_color,
@@ -1480,7 +1475,7 @@ fn render_overlays(panel: &mut Panel,
                         }
 
                         Behavior::Attacking(_) => {
-                            let sprite = Sprite::new(EXCLAMATION_POINT as u32, sprite_key);
+                            let sprite = Sprite::new(EXCLAMATION_POINT as u32, tiles_key);
                             panel.sprite_scaled_cmd(sprite, scale,
                                                     Some(Direction::UpRight),
                                                     alertness_color,
@@ -1558,7 +1553,7 @@ fn render_attack_overlay(panel: &mut Panel,
     let mut attack_highlight_color = game.config.color_red;
     attack_highlight_color.a = game.config.highlight_alpha_attack;
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let tiles_key = display_state.lookup_spritekey("tiles");
 
     if let Some(reach) = game.data.entities.attack.get(&entity_id) {
         let attack_positions = 
@@ -1580,7 +1575,7 @@ fn render_attack_overlay(panel: &mut Panel,
                  .collect::<Vec<Pos>>();
 
         for position in attack_positions {
-            let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
+            let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
             panel.sprite_cmd(sprite, attack_highlight_color, position);
         }
     }
@@ -1621,7 +1616,7 @@ fn render_movement_overlay(panel: &mut Panel,
     let mut highlight_color = game.config.color_light_grey;
     highlight_color.a = game.config.grid_alpha_overlay;
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let tiles_key = display_state.lookup_spritekey("tiles");
 
     if let Some(reach) = game.data.entities.movement.get(&entity_id) {
         for move_pos in reach.reachables(entity_pos) {
@@ -1629,7 +1624,7 @@ fn render_movement_overlay(panel: &mut Panel,
             if visible {
                 let chr = game.data.entities.chr[&entity_id];
 
-                let sprite = Sprite::new(chr as u32, sprite_key);
+                let sprite = Sprite::new(chr as u32, tiles_key);
                 panel.sprite_cmd(sprite, highlight_color, move_pos);
             }
         }
@@ -1660,11 +1655,11 @@ pub fn render_entity_ghost(panel: &mut Panel,
 }
 
 fn render_arrow(panel: &mut Panel,
-                   display_state: &mut DisplayState,
-                   sprite_key: SpriteKey,
-                   dir: Direction,
-                   pos: Pos,
-                   direction_color: Color) {
+                display_state: &mut DisplayState,
+                sprite_key: SpriteKey,
+                dir: Direction,
+                pos: Pos,
+                direction_color: Color) {
     let sprite_index;
     let rotation: f64;
     match dir {

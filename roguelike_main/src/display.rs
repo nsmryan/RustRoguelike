@@ -142,19 +142,19 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mu
             sprite_sheet.texture.set_alpha_mod(color.a);
 
             canvas.copy_ex(&sprite_sheet.texture,
-                                 Some(src),
-                                 Some(dst),
-                                 sprite.rotation,
-                                 None,
-                                 false,
-                                 false).unwrap();
+                           Some(src),
+                           Some(dst),
+                           sprite.rotation,
+                           None,
+                           false,
+                           false).unwrap();
         }
 
         DrawCmd::SpriteAtPixel(sprite, color, pos) => {
-            let (cell_width, cell_height) = panel.cell_dims();
-            let pos = Pos::new(pos.x * cell_width as i32, pos.y * cell_height as i32);
+            //let (cell_width, cell_height) = panel.cell_dims();
+            //let pos = Pos::new(pos.x * cell_width as i32, pos.y * cell_height as i32);
             let sprite_sheet = &mut display_state.sprites[&sprite.key];
-            sprite_sheet.draw_sprite_full(panel, canvas, sprite.index as usize, pos, *color, sprite.rotation, sprite.flip_horiz, sprite.flip_vert);
+            sprite_sheet.draw_sprite_full(panel, canvas, sprite.index as usize, *pos, *color, sprite.rotation, sprite.flip_horiz, sprite.flip_vert);
         }
 
         DrawCmd::OutlineTile(color, pos) => {
