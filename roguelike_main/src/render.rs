@@ -127,7 +127,7 @@ fn render_debug(display: &mut Display) {
 }
 
 /// Draw an outline and title around an area of the screen
-fn render_placard<T>(panel: &mut Panel<T>,
+fn render_placard(panel: &mut Panel,
                      display_state: &mut DisplayState,
                      text: &str) {
     // TODO delete commented out code when draw commands are complete
@@ -156,7 +156,7 @@ fn render_placard<T>(panel: &mut Panel<T>,
     panel.text_cmd(text, text_color, text_pos);
 }
 
-fn render_pips<T>(panel: &mut Panel<T>,
+fn render_pips(panel: &mut Panel,
                   display_state: &mut DisplayState,
                   num_pips: u32,
                   pos: Pos,
@@ -171,7 +171,7 @@ fn render_pips<T>(panel: &mut Panel<T>,
 }
 
 // TODO remove commented out code when draw cmds are done
-fn render_bar<T>(panel: &mut Panel<T>,
+fn render_bar(panel: &mut Panel,
                  display_state: &mut DisplayState,
                  full: i32,
                  current: i32,
@@ -188,7 +188,7 @@ fn render_bar<T>(panel: &mut Panel<T>,
     }
 }
 
-fn render_player_info<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_player_info(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
     render_placard(panel, display_state, "Player");
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -242,7 +242,7 @@ fn render_player_info<T>(panel: &mut Panel<T>, display_state: &mut DisplayState,
     panel.text_list_cmd(&list, color, text_pos);
 }
 
-fn render_info<T>(panel: &mut Panel<T>,
+fn render_info(panel: &mut Panel,
                   display_state: &mut DisplayState,
                   game: &mut Game,
                   _mouse_xy: Option<Pos>) {
@@ -368,7 +368,7 @@ fn render_info<T>(panel: &mut Panel<T>,
     }
 }
 
-fn render_skill_menu<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_skill_menu(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     // Render header
@@ -389,7 +389,7 @@ fn render_skill_menu<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, 
     panel.text_list_cmd(&list, color, text_pos);
 }
 
-fn render_class_menu<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, _game: &mut Game) {
+fn render_class_menu(panel: &mut Panel, display_state: &mut DisplayState, _game: &mut Game) {
     // Render header
     render_placard(panel, display_state, "Choose Class");
 
@@ -411,7 +411,7 @@ fn render_class_menu<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, 
     panel.text_list_cmd(&list, color, text_pos);
 }
 
-fn render_confirm_quit<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, _game: &mut Game) {
+fn render_confirm_quit(panel: &mut Panel, display_state: &mut DisplayState, _game: &mut Game) {
     // Render header
     render_placard(panel, display_state, "Quit?");
 
@@ -431,7 +431,7 @@ fn render_confirm_quit<T>(panel: &mut Panel<T>, display_state: &mut DisplayState
 }
 
 /// Render an inventory section within the given area
-fn render_inventory<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_inventory(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
     // Render header
     render_placard(panel, display_state, "Inventory");
 
@@ -528,7 +528,7 @@ fn render_inventory<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, g
 }
 
 /// render the background files, including water tiles
-fn render_background<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_background(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = display_state.lookup_spritekey("tiles");
@@ -569,7 +569,7 @@ fn surface_chr(surface: Surface) -> Option<u8> {
 }
 
 /// Render Wall Shadows (full tile and intertile walls, left and down)
-fn render_wall_shadow<T>(panel: &mut Panel<T>, pos: Pos, display_state: &mut DisplayState, game: &mut Game) {
+fn render_wall_shadow(panel: &mut Panel, pos: Pos, display_state: &mut DisplayState, game: &mut Game) {
     let shadow_sprite_key = display_state.lookup_spritekey("shadows");
 
     let tile = game.data.map[pos];
@@ -646,7 +646,7 @@ fn render_wall_shadow<T>(panel: &mut Panel<T>, pos: Pos, display_state: &mut Dis
     }
 }
 
-fn render_map_above<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_map_above(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let (map_width, map_height) = game.data.map.size();
@@ -699,7 +699,7 @@ fn render_map_above<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, g
     }
 }
 
-fn render_map_middle<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_map_middle(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = display_state.lookup_spritekey("tiles");
@@ -716,7 +716,7 @@ fn render_map_middle<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, 
 }
 
 /// Render the map, with environment and walls
-fn render_map<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_map(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = display_state.lookup_spritekey("tiles");
@@ -753,7 +753,7 @@ fn render_map<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &
     }
 }
 
-fn render_intertile_walls_below<T>(panel: &mut Panel<T>,
+fn render_intertile_walls_below(panel: &mut Panel,
                                    display_state: &mut DisplayState,
                                    map: &Map,
                                    sprite_key: SpriteKey,
@@ -802,7 +802,7 @@ fn render_intertile_walls_below<T>(panel: &mut Panel<T>,
 /// The strategy here is to copy the effects vector, update all items,
 /// and then remove finished effects from back to front. The
 /// resulting vector of effects is then saved as the new effects vector.
-fn render_effects<T>(panel: &mut Panel<T>,
+fn render_effects(panel: &mut Panel,
                      display_state: &mut DisplayState,
                      game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -950,7 +950,7 @@ fn render_effects<T>(panel: &mut Panel<T>,
     }
 }
 
-fn render_entity<T>(panel: &mut Panel<T>,
+fn render_entity(panel: &mut Panel,
                     entity_id: EntityId,
                     display_state: &mut DisplayState,
                     game: &mut Game) -> Option<Sprite> {
@@ -1031,7 +1031,7 @@ fn render_entity<T>(panel: &mut Panel<T>,
     return animation_result.sprite;
 }
 
-fn render_impressions<T>(panel: &mut Panel<T>, display_state: &mut DisplayState, game: &mut Game) {
+fn render_impressions(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
     // check for entities that have left FOV and make an impression for them
     let mut index = 0;
     while index < display_state.impressions.len() {
@@ -1043,7 +1043,7 @@ fn render_impressions<T>(panel: &mut Panel<T>, display_state: &mut DisplayState,
     }
 }
 
-fn render_entity_type<T>(panel: &mut Panel<T>, typ: EntityType, display_state: &mut DisplayState, game: &mut Game) {
+fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut DisplayState, game: &mut Game) {
     if typ == EntityType::Player && game.settings.state == GameState::Use && game.settings.use_dir.is_some() {
         // For the player in use-mode, while holding down a direction, we
         // need special rendering. Otherwise the player is rendered as normal.
@@ -1093,7 +1093,7 @@ fn render_entity_type<T>(panel: &mut Panel<T>, typ: EntityType, display_state: &
     }
 }
 
-fn render_overlay_use_item<T>(panel: &mut Panel<T>,
+fn render_overlay_use_item(panel: &mut Panel,
                               item_class: ItemClass,
                               display_state: &mut DisplayState,
                               game: &mut Game) {
@@ -1151,7 +1151,7 @@ fn render_overlay_use_item<T>(panel: &mut Panel<T>,
     }
 }
 
-fn render_sound_overlay<T>(panel: &mut Panel<T>,
+fn render_sound_overlay(panel: &mut Panel,
                            display_state: &mut DisplayState,
                            game: &mut Game) {
     let mut highlight_sound: Color = game.config.color_warm_grey;
@@ -1167,7 +1167,7 @@ fn render_sound_overlay<T>(panel: &mut Panel<T>,
     }
 }
 
-fn render_overlays<T>(panel: &mut Panel<T>,
+fn render_overlays(panel: &mut Panel,
                       display_state: &mut DisplayState,
                       game: &mut Game,
                       map_mouse_pos: Option<Pos>) {
@@ -1546,7 +1546,7 @@ fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> 
     return color;
 }
 
-fn render_attack_overlay<T>(panel: &mut Panel<T>,
+fn render_attack_overlay(panel: &mut Panel,
                             display_state: &mut DisplayState,
                             game: &mut Game,
                             entity_id: EntityId) {
@@ -1586,7 +1586,7 @@ fn render_attack_overlay<T>(panel: &mut Panel<T>,
     }
 }
 
-fn render_fov_overlay<T>(panel: &mut Panel<T>,
+fn render_fov_overlay(panel: &mut Panel,
                          display_state: &mut DisplayState,
                          game: &mut Game,
                          entity_id: EntityId) {
@@ -1610,7 +1610,7 @@ fn render_fov_overlay<T>(panel: &mut Panel<T>,
     }
 }
 
-fn render_movement_overlay<T>(panel: &mut Panel<T>,
+fn render_movement_overlay(panel: &mut Panel,
                               display_state: &mut DisplayState,
                               game: &mut Game,
                               entity_id: EntityId) {
@@ -1636,7 +1636,7 @@ fn render_movement_overlay<T>(panel: &mut Panel<T>,
     }
 }
 
-pub fn render_entity_ghost<T>(panel: &mut Panel<T>,
+pub fn render_entity_ghost(panel: &mut Panel,
                               entity_id: EntityId,
                               render_pos: Pos,
                               game: &mut Game,
@@ -1659,7 +1659,7 @@ pub fn render_entity_ghost<T>(panel: &mut Panel<T>,
     game.data.entities.pos[&entity_id] = entity_pos;
 }
 
-fn render_arrow<T>(panel: &mut Panel<T>,
+fn render_arrow(panel: &mut Panel,
                    display_state: &mut DisplayState,
                    sprite_key: SpriteKey,
                    dir: Direction,

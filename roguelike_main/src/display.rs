@@ -70,10 +70,10 @@ pub enum PanelName {
     Menu,
 }
 
-fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut DisplayState, cmd: &DrawCmd) {
+fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mut DisplayState, cmd: &DrawCmd) {
     match cmd {
         DrawCmd::Sprite(sprite, color, pos) => {
-            display_state.draw_sprite(panel, *sprite, *pos, *color);
+            display_state.draw_sprite(panel, canvas, *sprite, *pos, *color);
         }
 
         DrawCmd::SpriteScaled(sprite, scale, direction, color, pos) => {
@@ -137,11 +137,11 @@ fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
                                 dst_width,
                                 dst_height);
 
-            panel.target.set_blend_mode(BlendMode::Blend);
+            canvas.set_blend_mode(BlendMode::Blend);
             sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
             sprite_sheet.texture.set_alpha_mod(color.a);
 
-            panel.target.copy_ex(&sprite_sheet.texture,
+            canvas.copy_ex(&sprite_sheet.texture,
                                  Some(src),
                                  Some(dst),
                                  sprite.rotation,
@@ -154,15 +154,15 @@ fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
             let (cell_width, cell_height) = panel.cell_dims();
             let pos = Pos::new(pos.x * cell_width as i32, pos.y * cell_height as i32);
             let sprite_sheet = &mut display_state.sprites[&sprite.key];
-            sprite_sheet.draw_sprite_full(panel, sprite.index as usize, pos, *color, sprite.rotation, sprite.flip_horiz, sprite.flip_vert);
+            sprite_sheet.draw_sprite_full(panel, canvas, sprite.index as usize, pos, *color, sprite.rotation, sprite.flip_horiz, sprite.flip_vert);
         }
 
         DrawCmd::OutlineTile(color, pos) => {
-            draw_outline_tile(panel, *pos, *color);
+            draw_outline_tile(panel, canvas, *pos, *color);
         }
 
         DrawCmd::HighlightTile(color, pos) => {
-            draw_tile_highlight(panel, *pos, *color);
+            draw_tile_highlight(panel, canvas, *pos, *color);
         }
 
         DrawCmd::Text(string, color, start_pos) => {
@@ -173,7 +173,7 @@ fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
             let cell_dims = panel.cell_dims();
             let (cell_width, cell_height) = cell_dims;
 
-            panel.target.set_blend_mode(BlendMode::Blend);
+            canvas.set_blend_mode(BlendMode::Blend);
             sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
             sprite_sheet.texture.set_alpha_mod(color.a);
 
@@ -195,7 +195,7 @@ fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
                                     cell_width as u32,
                                     cell_height as u32);
 
-                panel.target.copy_ex(&sprite_sheet.texture,
+                canvas.copy_ex(&sprite_sheet.texture,
                                      Some(src),
                                      Some(dst),
                                      0.0,
@@ -210,10 +210,10 @@ fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
             assert!(*offset < 1.0, "offset >= 1 misaligns the starting cell!");
 
             // Draw a black background
-            let (width, height) = panel.target.output_size().unwrap();
+            let (width, height) = canvas.output_size().unwrap();
             let (cell_width, cell_height) = panel.cell_dims();
 
-            panel.target.set_draw_color(sdl2_color(*color));
+            canvas.set_draw_color(sdl2_color(*color));
 
             let offset_x = (cell_width as f32 * offset) as i32;
             let x: i32 = cell_width as i32 * pos.x + offset_x as i32;
@@ -225,16 +225,16 @@ fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
             let height = cell_height * dims.1 - (2 * offset_y as u32);
 
             if *filled {
-                panel.target.fill_rect(Rect::new(x, y, width, height));
+                canvas.fill_rect(Rect::new(x, y, width, height));
             } else {
-                panel.target.draw_rect(Rect::new(x, y, width, height));
+                canvas.draw_rect(Rect::new(x, y, width, height));
             }
         }
 
         DrawCmd::Fill(pos, color) => {
             let (cell_width, cell_height) = panel.cell_dims();
-            panel.target.set_draw_color(sdl2_color(*color));
-            panel.target.fill_rect(Rect::new(pos.x * cell_width as i32, pos.y * cell_height as i32, cell_width, cell_height));
+            canvas.set_draw_color(sdl2_color(*color));
+            canvas.fill_rect(Rect::new(pos.x * cell_width as i32, pos.y * cell_height as i32, cell_width, cell_height));
         }
     }
 }
@@ -242,17 +242,26 @@ fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
 pub struct Display {
     pub state: DisplayState,
 
-    pub canvas_panel: Panel<()>,
+    pub canvas_panel: Panel,
     pub canvas: WindowCanvas,
 
-    pub background_panel: Panel<()>,
+    pub background_panel: Panel,
     pub background: Texture,
 
-    pub map_panel: Panel<Texture>,
-    pub player_panel: Panel<Texture>,
-    pub info_panel: Panel<Texture>,
-    pub inventory_panel: Panel<Texture>,
-    pub menu_panel: Panel<Texture>,
+    pub map_panel: Panel,
+    pub map: Texture,
+
+    pub player_panel: Panel,
+    pub player: Texture,
+
+    pub info_panel: Panel,
+    pub info: Texture,
+
+    pub inventory_panel: Panel,
+    pub inventory: Texture,
+
+    pub menu_panel: Panel,
+    pub menu: Texture,
 
     pub texture_creator: TextureCreator<WindowContext>,
 }
@@ -263,23 +272,38 @@ impl Display {
         let pixel_format = texture_creator.default_pixel_format();
 
         let over_sample = 5;
-        let background_pixels = (over_sample * MAP_WIDTH as u32 * FONT_WIDTH as u32, over_sample * MAP_HEIGHT as u32 * FONT_HEIGHT as u32);
-        let background_dims = (MAP_WIDTH as u32, MAP_HEIGHT as u32);
-        let background_panel = Panel::empty(background_pixels, background_dims);
-        let background =
-            texture_creator.create_texture_target(pixel_format,
-                                                  background_pixels.0,
-                                                  background_pixels.1).unwrap();
 
-        let map_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, over_sample);
+        let map_pixels = (over_sample * MAP_WIDTH as u32 * FONT_WIDTH as u32, over_sample * MAP_HEIGHT as u32 * FONT_HEIGHT as u32);
+        let map_dims = (MAP_WIDTH as u32, MAP_HEIGHT as u32);
+        let background_panel = Panel::new(map_pixels, map_dims);
+        let background = texture_creator.create_texture_target(pixel_format, map_pixels.0, map_pixels.1).unwrap();
+
+        let map_panel = Panel::new(map_pixels, map_dims);
+        let map = texture_creator.create_texture_target(pixel_format, map_pixels.0, map_pixels.1).unwrap();
 
         let info_width = 14;
 
-        let info_panel = Panel::from_dims(&texture_creator, info_width, 15, 1);
-        let inventory_panel = Panel::from_dims(&texture_creator, info_width, 15, 1);
-        let player_panel = Panel::from_dims(&texture_creator, info_width, 20, 1);
-        let menu_panel = Panel::from_dims(&texture_creator, info_width + 5, 20, 1);
-        let canvas_panel = Panel::empty((SCREEN_WIDTH, SCREEN_HEIGHT), (SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32));
+        let info_dims = (info_width, 15);
+        let info_pixels = (info_dims.0 * FONT_WIDTH as u32, info_dims.1 * FONT_HEIGHT as u32);
+        let info_panel = Panel::new(info_pixels, info_dims);
+        let info = texture_creator.create_texture_target(pixel_format, info_pixels.0, info_pixels.1).unwrap();
+
+        let inventory_dims = (info_width, 15);
+        let inventory_pixels = (inventory_dims.0 * FONT_WIDTH as u32, inventory_dims.1 * FONT_HEIGHT as u32);
+        let inventory_panel = Panel::new(inventory_pixels, inventory_dims);
+        let inventory = texture_creator.create_texture_target(pixel_format, inventory_pixels.0, inventory_pixels.1).unwrap();
+
+        let player_dims = (info_width, 20);
+        let player_pixels = (player_dims.0 * FONT_WIDTH as u32, player_dims.1 * FONT_HEIGHT as u32);
+        let player_panel = Panel::new(player_pixels, player_dims);
+        let player = texture_creator.create_texture_target(pixel_format, player_pixels.0, player_pixels.1).unwrap();
+
+        let menu_dims = (info_width, 15);
+        let menu_pixels = (menu_dims.0 * FONT_WIDTH as u32, menu_dims.1 * FONT_HEIGHT as u32);
+        let menu_panel = Panel::new(menu_pixels, menu_dims);
+        let menu = texture_creator.create_texture_target(pixel_format, menu_pixels.0, menu_pixels.1).unwrap();
+
+        let canvas_panel = Panel::new((SCREEN_WIDTH, SCREEN_HEIGHT), (SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32));
 
         return Display { state: DisplayState::new(),
                          canvas_panel,
@@ -288,10 +312,15 @@ impl Display {
                          background_panel,
                          background,
                          map_panel,
+                         map,
                          player_panel,
+                         player,
                          info_panel,
+                         info,
                          menu_panel,
-                         inventory_panel, };
+                         menu,
+                         inventory_panel,
+                         inventory, };
     }
 
     pub fn process_draw_commands(&mut self) {
@@ -300,19 +329,19 @@ impl Display {
 
         // copy background into the map before other draws.
         let background = &mut self.background;
-        canvas.with_texture_canvas(&mut self.map_panel.target, |canvas| {
+        canvas.with_texture_canvas(&mut self.map, |canvas| {
             canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
             canvas.clear();
 
             canvas.copy(&background, None, None).unwrap();
         }).unwrap();
 
-        self.info_panel.process_cmds(true, canvas, display_state);
-        self.background_panel.process_cmds_texture(true, &mut self.background, canvas, display_state);
-        self.map_panel.process_cmds(false, canvas, display_state);
-        self.player_panel.process_cmds(true, canvas, display_state);
-        self.inventory_panel.process_cmds(true, canvas, display_state);
-        self.menu_panel.process_cmds(true, canvas, display_state);
+        self.info_panel.process_cmds(true, &mut self.info, canvas, display_state);
+        self.background_panel.process_cmds(true, &mut self.background, canvas, display_state);
+        self.map_panel.process_cmds(false, &mut self.map, canvas, display_state);
+        self.player_panel.process_cmds(true, &mut self.player, canvas, display_state);
+        self.inventory_panel.process_cmds(true, &mut self.inventory, canvas, display_state);
+        self.menu_panel.process_cmds(true, &mut self.menu, canvas, display_state);
     }
 
     pub fn update_display(&mut self) {
@@ -672,29 +701,28 @@ impl Display {
         // and re-create it when the map changes.
         let src = self.map_panel.get_rect_up_left(map_size.0 as usize, map_size.1 as usize);
         self.canvas.copy(&self.background, src, map_rect).unwrap();
-        self.canvas.copy(&self.map_panel.target, src, map_rect).unwrap();
+        self.canvas.copy(&self.map, src, map_rect).unwrap();
 
         /* Draw Inventory Panel */
         let dst = self.canvas_panel.get_rect_within(&inventory_area,
                                                        self.inventory_panel.num_pixels);
-        self.canvas.copy(&self.inventory_panel.target, None, dst).unwrap();
+        self.canvas.copy(&self.inventory, None, dst).unwrap();
 
         /* Draw Game Info Panel */
         let dst = self.canvas_panel.get_rect_within(&info_area,
                                                        self.info_panel.num_pixels);
-        self.canvas.copy(&self.info_panel.target, None, dst).unwrap();
+        self.canvas.copy(&self.info, None, dst).unwrap();
 
         /* Draw Player Info Panel */
         let dst = self.canvas_panel.get_rect_within(&player_area,
                                                        self.player_panel.num_pixels);
-        self.canvas.copy(&self.player_panel.target, None, dst).unwrap();
+        self.canvas.copy(&self.player, None, dst).unwrap();
 
         // TODO perhaps this can be moved into draw command processing
         if game.settings.state.is_menu() {
-            let menu_panel = &mut self.menu_panel;
             let canvas_panel = &mut self.canvas_panel;
-            let dst = canvas_panel.get_rect_within(&menu_area, menu_panel.num_pixels);
-            self.canvas.copy(&menu_panel.target, None, dst).unwrap();
+            let dst = canvas_panel.get_rect_within(&menu_area, self.menu_panel.num_pixels);
+            self.canvas.copy(&mut self.menu, None, dst).unwrap();
         }
     }
 }
@@ -847,131 +875,20 @@ pub fn test_area_splits_bottom() {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Panel<T> {
-    pub target: T,
+pub struct Panel {
     pub cells: (u32, u32),
     pub num_pixels: (u32, u32),
     pub draw_cmds: Vec<DrawCmd>,
     pub old_draw_cmds: Vec<DrawCmd>,
 }
 
-impl Panel<Texture> {
-    pub fn from_dims(texture_creator: &TextureCreator<WindowContext>, width: u32, height: u32, over_sample: u32) -> Panel<Texture> {
-        let pixel_format = texture_creator.default_pixel_format();
-
-        let tex =
-            texture_creator.create_texture_target(pixel_format,
-                                                  width as u32 * FONT_WIDTH as u32 * over_sample,
-                                                  height as u32 * FONT_HEIGHT as u32 * over_sample).unwrap();
-        let panel = Panel::with_texture((width as u32, height as u32), tex);
-
-        return panel;
-    }
-
-    pub fn with_texture(cells: (u32, u32), texture: Texture) -> Panel<Texture> {
-        let query = texture.query();
-        let width = query.width;
-        let height = query.height;
-        let draw_cmds = Vec::new();
-        let old_draw_cmds = Vec::new();
-        return Panel { cells, target: texture, num_pixels: (width, height), draw_cmds, old_draw_cmds, };
-    }
-
-    pub fn process_cmds(&mut self, clear: bool, canvas: &mut WindowCanvas, display_state: &mut DisplayState) {
-        // As a simple optimization, only redraw if the commands haven't changed. This is common
-        // for informational panels.
-        if self.draw_cmds != self.old_draw_cmds {
-            // Collect a map of positions which are going to be filled, to avoid drawing
-            // aligned sprites below those tiles.
-            let mut fill_map = HashMap::<Pos, u32>::new();
-            for cmd in self.draw_cmds.iter() {
-                if let DrawCmd::Fill(pos, color) = cmd {
-                    if !fill_map.contains_key(pos) {
-                        fill_map.insert(*pos, 0);
-                    }
-                    fill_map.get_mut(pos).map(|count| *count += 1);
-                }
-            }
-
-            // TODO this clone is likely removable once panels no longer contain textures
-            // it may then become an extend into the old_draw_cmds vector
-            let draw_cmds = self.draw_cmds.clone();
-            let panel = self.unit();
-            canvas.with_texture_canvas(&mut self.target, |canvas| {
-                let mut panel = panel.with_target(canvas);
-
-                // we don't clear the map as the background was already drawn over it.
-                // TODO consider removing background panel and just using map- it was an
-                // optimization that we may be able to remove if other optimizations are good enough
-                // TODO if the fill cmd optimization has enough of an effect, the background
-                // panel optimization may be unnecessary
-                if clear {
-                  panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
-                  panel.target.clear();
-                }
-
-                for cmd in draw_cmds.iter() {
-                    // Check if there is going to be a fill in this position,
-                    // in which case there is no need to draw an aligned command.
-                    if cmd.aligned() {
-                        let pos = cmd.pos();
-                        if fill_map.contains_key(&pos) {
-                            let is_fill =  matches!(cmd, DrawCmd::Fill(_, _));
-
-                            if let Some(count) = fill_map.get_mut(&pos) {
-                                if *count > 0 && is_fill {
-                                    *count -= 1;
-                                }
-
-                                if *count > 0 {
-                                    continue;
-                                }
-                            }
-                        }
-                    }
-                    process_draw_cmd(&mut panel, display_state, cmd);
-                }
-            }).unwrap();
-
-            self.old_draw_cmds = draw_cmds;
-        }
-
-        self.draw_cmds.clear();
-    }
-}
-
-impl Panel<WindowCanvas> {
-    pub fn with_canvas(cells: (u32, u32), canvas: WindowCanvas) -> Panel<WindowCanvas> {
-        let (width, height) = canvas.output_size().unwrap();
-        let draw_cmds = Vec::new();
-        let old_draw_cmds = Vec::new();
-        return Panel { cells, target: canvas, num_pixels: (width, height), draw_cmds, old_draw_cmds, };
-    }
-}
-
-impl Panel<()> {
-    pub fn empty(num_pixels: (u32, u32), cells: (u32, u32)) -> Panel<()> {
-        return Panel { target: (), cells, num_pixels, draw_cmds: Vec::new(), old_draw_cmds: Vec::new(), };
-    }
-}
-
-impl<T> Panel<T> {
-    pub fn unit(&self) -> Panel<()> {
-        return Panel { target: (), cells: self.cells, num_pixels: self.num_pixels, draw_cmds: Vec::new(), old_draw_cmds: Vec::new(), };
+impl Panel {
+    pub fn new(num_pixels: (u32, u32), cells: (u32, u32)) -> Panel {
+        return Panel { cells, num_pixels, draw_cmds: Vec::new(), old_draw_cmds: Vec::new(), };
     }
 
     pub fn cell_dims(&self) -> (u32, u32) {
         return (self.num_pixels.0 / self.cells.0, self.num_pixels.1 / self.cells.1);
-    }
-
-    pub fn with_target<S>(&self, target: S) -> Panel<S> {
-        return Panel {
-            target,
-            cells: self.cells,
-            num_pixels: self.num_pixels,
-            draw_cmds: Vec::new(),
-            old_draw_cmds: Vec::new(),
-        };
     }
 
     pub fn area(&self) -> Area {
@@ -1100,7 +1017,7 @@ impl<T> Panel<T> {
         self.draw_cmds.push(cmd);
     }
 
-    pub fn process_cmds_texture(&mut self, clear: bool, texture: &mut Texture, canvas: &mut WindowCanvas, display_state: &mut DisplayState) {
+    pub fn process_cmds(&mut self, clear: bool, texture: &mut Texture, canvas: &mut WindowCanvas, display_state: &mut DisplayState) {
         // As a simple optimization, only redraw if the commands haven't changed. This is common
         // for informational panels.
         if self.draw_cmds != self.old_draw_cmds {
@@ -1116,24 +1033,18 @@ impl<T> Panel<T> {
                 }
             }
 
-            // TODO this clone is likely removable once panels no longer contain textures
-            // it may then become an extend into the old_draw_cmds vector
-            let draw_cmds = self.draw_cmds.clone();
-            let panel = self.unit();
             canvas.with_texture_canvas(texture, |canvas| {
-                let mut panel = panel.with_target(canvas);
-
                 // we don't clear the map as the background was already drawn over it.
                 // TODO consider removing background panel and just using map- it was an
                 // optimization that we may be able to remove if other optimizations are good enough
                 // TODO if the fill cmd optimization has enough of an effect, the background
                 // panel optimization may be unnecessary
                 if clear {
-                  panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
-                  panel.target.clear();
+                  canvas.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+                  canvas.clear();
                 }
 
-                for cmd in draw_cmds.iter() {
+                for cmd in self.draw_cmds.iter() {
                     // Check if there is going to be a fill in this position,
                     // in which case there is no need to draw an aligned command.
                     if cmd.aligned() {
@@ -1152,11 +1063,12 @@ impl<T> Panel<T> {
                             }
                         }
                     }
-                    process_draw_cmd(&mut panel, display_state, cmd);
+                    process_draw_cmd(self, canvas, display_state, cmd);
                 }
             }).unwrap();
 
-            self.old_draw_cmds = draw_cmds;
+            self.old_draw_cmds.clear();
+            std::mem::swap(&mut self.draw_cmds, &mut self.old_draw_cmds);
         }
 
         self.draw_cmds.clear();
@@ -1242,12 +1154,13 @@ impl DisplayState {
     }
 
     pub fn draw_sprite(&mut self,
-                       panel: &mut Panel<&mut WindowCanvas>,
+                       panel: &Panel,
+                       canvas: &mut WindowCanvas,
                        sprite: Sprite,
                        pos: Pos,
                        color: Color) {
         let sprite_sheet = &mut self.sprites[&sprite.key];
-        sprite_sheet.draw_sprite_at_cell(panel, sprite.index as usize, pos, color, sprite.rotation, sprite.flip_horiz, sprite.flip_vert);
+        sprite_sheet.draw_sprite_at_cell(panel, canvas, sprite.index as usize, pos, color, sprite.rotation, sprite.flip_horiz, sprite.flip_vert);
     }
 
     pub fn play_effect(&mut self, effect: Effect) {
@@ -1341,25 +1254,27 @@ impl SpriteSheet {
     }
 
     pub fn draw_text_list<T>(&mut self,
-                             panel: &mut Panel<&mut Canvas<T>>,
+                             panel: &Panel,
+                             canvas: &mut Canvas<T>,
                              text_list: &Vec<String>,
                              cell: Pos,
                              color: Color) where T: RenderTarget {
         for (index, text) in text_list.iter().enumerate() {
             let text_cell = Pos::new(cell.x, cell.y + index as i32);
-            self.draw_text(panel, text, text_cell, color);
+            self.draw_text(panel, canvas, text, text_cell, color);
         }
     }
 
     pub fn draw_texture<T>(&mut self,
-                           panel: &mut Panel<&mut Canvas<T>>,
+                           panel: &Panel,
+                           canvas: &mut Canvas<T>,
                            cell: Pos) where T: RenderTarget {
         let query = self.texture.query();
 
         let cell_dims = panel.cell_dims();
         let (cell_width, cell_height) = cell_dims;
 
-        panel.target.set_blend_mode(BlendMode::None);
+        canvas.set_blend_mode(BlendMode::None);
 
         let pos = cell;
 
@@ -1375,7 +1290,7 @@ impl SpriteSheet {
                             query.width,
                             query.height);
 
-        panel.target.copy_ex(&self.texture,
+        canvas.copy_ex(&self.texture,
                              Some(src),
                              Some(dst),
                              0.0,
@@ -1385,7 +1300,8 @@ impl SpriteSheet {
     }
 
     pub fn draw_text<T>(&mut self,
-                        panel: &mut Panel<&mut Canvas<T>>,
+                        panel: &Panel,
+                        canvas: &mut Canvas<T>,
                         text: &str,
                         cell: Pos,
                         color: Color) where T: RenderTarget {
@@ -1394,7 +1310,7 @@ impl SpriteSheet {
         let cell_dims = panel.cell_dims();
         let (cell_width, cell_height) = cell_dims;
 
-        panel.target.set_blend_mode(BlendMode::Blend);
+        canvas.set_blend_mode(BlendMode::Blend);
         self.texture.set_color_mod(color.r, color.g, color.b);
         self.texture.set_alpha_mod(color.a);
 
@@ -1416,7 +1332,7 @@ impl SpriteSheet {
                                 cell_width as u32,
                                 cell_height as u32);
 
-            panel.target.copy_ex(&self.texture,
+            canvas.copy_ex(&self.texture,
                                  Some(src),
                                  Some(dst),
                                  0.0,
@@ -1428,30 +1344,33 @@ impl SpriteSheet {
     }
 
     pub fn draw_char<T>(&mut self,
-                        panel: &mut Panel<&mut Canvas<T>>,
+                        panel: &Panel,
+                        canvas: &mut Canvas<T>,
                         chr: char,
                         cell: Pos,
                         color: Color) where T: RenderTarget {
-        self.draw_sprite_at_cell(panel, chr as usize, cell, color, 0.0, false, false);
+        self.draw_sprite_at_cell(panel, canvas, chr as usize, cell, color, 0.0, false, false);
     }
 
     pub fn draw_sprite_at_cell<T>(&mut self,
-                               panel: &mut Panel<&mut Canvas<T>>,
-                               index: usize,
-                               cell: Pos,
-                               color: Color,
-                               rotation: f64,
-                               flip_horiz: bool,
-                               flip_vert: bool) where T: RenderTarget {
+                                  panel: &Panel,
+                                  canvas: &mut Canvas<T>,
+                                  index: usize,
+                                  cell: Pos,
+                                  color: Color,
+                                  rotation: f64,
+                                  flip_horiz: bool,
+                                  flip_vert: bool) where T: RenderTarget {
         let (cell_width, cell_height) = panel.cell_dims();
 
         let pos = Pos::new(cell.x * cell_width as i32, cell.y * cell_height as i32);
 
-        self.draw_sprite_full(panel, index, pos, color, rotation, flip_horiz, flip_vert);
+        self.draw_sprite_full(panel, canvas, index, pos, color, rotation, flip_horiz, flip_vert);
     }
 
     pub fn draw_sprite_full<T>(&mut self,
-                            panel: &mut Panel<&mut Canvas<T>>,
+                            panel: &Panel,
+                            canvas: &mut Canvas<T>,
                             index: usize,
                             pos: Pos,
                             color: Color,
@@ -1469,11 +1388,11 @@ impl SpriteSheet {
                             cell_width as u32,
                             cell_height as u32);
 
-        panel.target.set_blend_mode(BlendMode::Blend);
+        canvas.set_blend_mode(BlendMode::Blend);
         self.texture.set_color_mod(color.r, color.g, color.b);
         self.texture.set_alpha_mod(color.a);
 
-        panel.target.copy_ex(&self.texture,
+        canvas.copy_ex(&self.texture,
                              Some(src),
                              Some(dst),
                              rotation,
@@ -1501,36 +1420,38 @@ pub fn engine_color(color: &Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
 }
 
-pub fn draw_outline_tile<T>(panel: &mut Panel<&mut Canvas<T>>,
+pub fn draw_outline_tile<T>(panel: &Panel,
+                            canvas: &mut Canvas<T>,
                             cell: Pos,
                             color: Color) where T: RenderTarget {
     let cell_dims = panel.cell_dims();
 
-    panel.target.set_blend_mode(BlendMode::Add);
-    panel.target.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+    canvas.set_blend_mode(BlendMode::Add);
+    canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
     let rect = Rect::new(cell.x * cell_dims.0 as i32 + 1,
                          cell.y * cell_dims.1 as i32 + 1,
                          cell_dims.0,
                          cell_dims.1);
 
-    panel.target.draw_rect(rect).unwrap();
+    canvas.draw_rect(rect).unwrap();
 }
 
-pub fn draw_tile_highlight<T>(panel: &mut Panel<&mut Canvas<T>>,
+pub fn draw_tile_highlight<T>(panel: &Panel,
+                              canvas: &mut Canvas<T>,
                               cell: Pos,
                               color: Color) where T: RenderTarget {
     let cell_dims = panel.cell_dims();
 
-    panel.target.set_blend_mode(BlendMode::Blend);
-    panel.target.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
+    canvas.set_blend_mode(BlendMode::Blend);
+    canvas.set_draw_color(Sdl2Color::RGBA(color.r, color.g, color.b, color.a));
 
     let rect = Rect::new(cell.x * cell_dims.0 as i32,
                          cell.y * cell_dims.1 as i32,
                          cell_dims.0,
                          cell_dims.1);
 
-    panel.target.fill_rect(rect).unwrap();
+    canvas.fill_rect(rect).unwrap();
 }
 
 pub fn cell_within_rect(rect: Rect, area_cell_dims: (i32, i32), pixel_pos: (i32, i32)) -> Option<(i32, i32)> {
