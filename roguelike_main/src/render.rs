@@ -1163,9 +1163,9 @@ fn render_sound_overlay(panel: &mut Panel,
 }
 
 fn render_overlays(panel: &mut Panel,
-                      display_state: &mut DisplayState,
-                      game: &mut Game,
-                      map_mouse_pos: Option<Pos>) {
+                   display_state: &mut DisplayState,
+                   game: &mut Game,
+                   map_mouse_pos: Option<Pos>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
@@ -1437,50 +1437,51 @@ fn render_overlays(panel: &mut Panel,
         }
     }
 
-    // draw alertness overlays
-    {
-        let alertness_color = game.config.color_pink;
-        let scale = 0.5;
-        for entity_id in game.data.entities.ids.iter() {
-            let pos = game.data.entities.pos[entity_id];
+    render_overlay_altertness(panel, tiles_key, game);
+}
 
-            if pos.x == -1 && pos.y == -1 {
-                continue;
+fn render_overlay_altertness(panel: &mut Panel, sprite_key: SpriteKey, game: &mut Game) {;
+    let alertness_color = game.config.color_pink;
+    let scale = 0.5;
+    for entity_id in game.data.entities.ids.iter() {
+        let pos = game.data.entities.pos[entity_id];
+
+        if pos.x == -1 && pos.y == -1 {
+            continue;
+        }
+
+        let mut status_drawn: bool = false;
+        if let Some(status) = game.data.entities.status.get(entity_id) {
+            if status.frozen > 0 {
+                status_drawn = true;
+                let sprite = Sprite::new(ASTERISK as u32, sprite_key);
+                panel.sprite_scaled_cmd(sprite, scale,
+                                        Some(Direction::UpRight),
+                                        alertness_color,
+                                        pos);
             }
+        }
 
-            let mut status_drawn: bool = false;
-            if let Some(status) = game.data.entities.status.get(entity_id) {
-                if status.frozen > 0 {
-                    status_drawn = true;
-                    let sprite = Sprite::new(ASTERISK as u32, tiles_key);
-                    panel.sprite_scaled_cmd(sprite, scale,
-                                            Some(Direction::UpRight),
-                                            alertness_color,
-                                            pos);
-                }
-            }
+        if !status_drawn {
+            if let Some(behavior) = game.data.entities.behavior.get(entity_id) {
+                match behavior {
+                    Behavior::Idle => {
+                    }
 
-            if status_drawn {
-                if let Some(behavior) = game.data.entities.behavior.get(entity_id) {
-                    match behavior {
-                        Behavior::Idle => {
-                        }
+                    Behavior::Investigating(_) => {
+                        let sprite = Sprite::new(QUESTION_MARK as u32, sprite_key);
+                        panel.sprite_scaled_cmd(sprite, scale,
+                                                Some(Direction::UpRight),
+                                                alertness_color,
+                                                pos);
+                    }
 
-                        Behavior::Investigating(_) => {
-                            let sprite = Sprite::new(QUESTION_MARK as u32, tiles_key);
-                            panel.sprite_scaled_cmd(sprite, scale,
-                                                    Some(Direction::UpRight),
-                                                    alertness_color,
-                                                    pos);
-                        }
-
-                        Behavior::Attacking(_) => {
-                            let sprite = Sprite::new(EXCLAMATION_POINT as u32, tiles_key);
-                            panel.sprite_scaled_cmd(sprite, scale,
-                                                    Some(Direction::UpRight),
-                                                    alertness_color,
-                                                    pos);
-                        }
+                    Behavior::Attacking(_) => {
+                        let sprite = Sprite::new(EXCLAMATION_POINT as u32, sprite_key);
+                        panel.sprite_scaled_cmd(sprite, scale,
+                                                Some(Direction::UpRight),
+                                                alertness_color,
+                                                pos);
                     }
                 }
             }
