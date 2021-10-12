@@ -242,9 +242,12 @@ fn process_draw_cmd(panel: &mut Panel<&mut WindowCanvas>, display_state: &mut Di
 pub struct Display {
     pub state: DisplayState,
 
-    pub canvas_panel: Panel<WindowCanvas>,
+    pub canvas_panel: Panel<()>,
+    pub canvas: WindowCanvas,
 
-    pub background_panel: Panel<Texture>,
+    pub background_panel: Panel<()>,
+    pub background: Texture,
+
     pub map_panel: Panel<Texture>,
     pub player_panel: Panel<Texture>,
     pub info_panel: Panel<Texture>,
@@ -257,9 +260,16 @@ pub struct Display {
 impl Display {
     pub fn new(canvas: WindowCanvas) -> Display {
         let texture_creator = canvas.texture_creator();
+        let pixel_format = texture_creator.default_pixel_format();
 
         let over_sample = 5;
-        let background_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, over_sample);
+        let background_pixels = (over_sample * MAP_WIDTH as u32 * FONT_WIDTH as u32, over_sample * MAP_HEIGHT as u32 * FONT_HEIGHT as u32);
+        let background_dims = (MAP_WIDTH as u32, MAP_HEIGHT as u32);
+        let background_panel = Panel::empty(background_pixels, background_dims);
+        let background =
+            texture_creator.create_texture_target(pixel_format,
+                                                  background_pixels.0,
+                                                  background_pixels.1).unwrap();
 
         let map_panel = Panel::from_dims(&texture_creator, MAP_WIDTH as u32, MAP_HEIGHT as u32, over_sample);
 
@@ -269,12 +279,14 @@ impl Display {
         let inventory_panel = Panel::from_dims(&texture_creator, info_width, 15, 1);
         let player_panel = Panel::from_dims(&texture_creator, info_width, 20, 1);
         let menu_panel = Panel::from_dims(&texture_creator, info_width + 5, 20, 1);
-        let canvas_panel = Panel::with_canvas((SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32), canvas);
+        let canvas_panel = Panel::empty((SCREEN_WIDTH, SCREEN_HEIGHT), (SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32));
 
         return Display { state: DisplayState::new(),
                          canvas_panel,
+                         canvas,
                          texture_creator,
                          background_panel,
+                         background,
                          map_panel,
                          player_panel,
                          info_panel,
@@ -283,20 +295,20 @@ impl Display {
     }
 
     pub fn process_draw_commands(&mut self) {
-        let canvas = &mut self.canvas_panel.target;
+        let canvas = &mut self.canvas;
         let display_state = &mut self.state;
 
         // copy background into the map before other draws.
-        let background = &mut self.background_panel;
+        let background = &mut self.background;
         canvas.with_texture_canvas(&mut self.map_panel.target, |canvas| {
             canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
             canvas.clear();
 
-            canvas.copy(&background.target, None, None).unwrap();
+            canvas.copy(&background, None, None).unwrap();
         }).unwrap();
 
         self.info_panel.process_cmds(true, canvas, display_state);
-        self.background_panel.process_cmds(true, canvas, display_state);
+        self.background_panel.process_cmds_texture(true, &mut self.background, canvas, display_state);
         self.map_panel.process_cmds(false, canvas, display_state);
         self.player_panel.process_cmds(true, canvas, display_state);
         self.inventory_panel.process_cmds(true, canvas, display_state);
@@ -304,14 +316,14 @@ impl Display {
     }
 
     pub fn update_display(&mut self) {
-        self.canvas_panel.target.present();
+        self.canvas.present();
     }
 
     pub fn save_screenshot(&mut self, name: &str) {
         let format = PixelFormatEnum::RGB24;
-        let (width, height) = self.canvas_panel.target.output_size().unwrap();
+        let (width, height) = self.canvas.output_size().unwrap();
 
-        let pixels = self.canvas_panel.target.read_pixels(None, format).unwrap();
+        let pixels = self.canvas.read_pixels(None, format).unwrap();
 
         let mut shot = Image::new(width, height);
 
@@ -659,30 +671,30 @@ impl Display {
         // TODO just make the map panel the right size in the first place
         // and re-create it when the map changes.
         let src = self.map_panel.get_rect_up_left(map_size.0 as usize, map_size.1 as usize);
-        self.canvas_panel.target.copy(&self.background_panel.target, src, map_rect).unwrap();
-        self.canvas_panel.target.copy(&self.map_panel.target, src, map_rect).unwrap();
+        self.canvas.copy(&self.background, src, map_rect).unwrap();
+        self.canvas.copy(&self.map_panel.target, src, map_rect).unwrap();
 
         /* Draw Inventory Panel */
         let dst = self.canvas_panel.get_rect_within(&inventory_area,
                                                        self.inventory_panel.num_pixels);
-        self.canvas_panel.target.copy(&self.inventory_panel.target, None, dst).unwrap();
+        self.canvas.copy(&self.inventory_panel.target, None, dst).unwrap();
 
         /* Draw Game Info Panel */
         let dst = self.canvas_panel.get_rect_within(&info_area,
                                                        self.info_panel.num_pixels);
-        self.canvas_panel.target.copy(&self.info_panel.target, None, dst).unwrap();
+        self.canvas.copy(&self.info_panel.target, None, dst).unwrap();
 
         /* Draw Player Info Panel */
         let dst = self.canvas_panel.get_rect_within(&player_area,
                                                        self.player_panel.num_pixels);
-        self.canvas_panel.target.copy(&self.player_panel.target, None, dst).unwrap();
+        self.canvas.copy(&self.player_panel.target, None, dst).unwrap();
 
         // TODO perhaps this can be moved into draw command processing
         if game.settings.state.is_menu() {
             let menu_panel = &mut self.menu_panel;
             let canvas_panel = &mut self.canvas_panel;
             let dst = canvas_panel.get_rect_within(&menu_area, menu_panel.num_pixels);
-            canvas_panel.target.copy(&menu_panel.target, None, dst).unwrap();
+            self.canvas.copy(&menu_panel.target, None, dst).unwrap();
         }
     }
 }
@@ -937,6 +949,12 @@ impl Panel<WindowCanvas> {
     }
 }
 
+impl Panel<()> {
+    pub fn empty(num_pixels: (u32, u32), cells: (u32, u32)) -> Panel<()> {
+        return Panel { target: (), cells, num_pixels, draw_cmds: Vec::new(), old_draw_cmds: Vec::new(), };
+    }
+}
+
 impl<T> Panel<T> {
     pub fn unit(&self) -> Panel<()> {
         return Panel { target: (), cells: self.cells, num_pixels: self.num_pixels, draw_cmds: Vec::new(), old_draw_cmds: Vec::new(), };
@@ -1080,6 +1098,68 @@ impl<T> Panel<T> {
 
     pub fn draw_cmd(&mut self, cmd: DrawCmd) {
         self.draw_cmds.push(cmd);
+    }
+
+    pub fn process_cmds_texture(&mut self, clear: bool, texture: &mut Texture, canvas: &mut WindowCanvas, display_state: &mut DisplayState) {
+        // As a simple optimization, only redraw if the commands haven't changed. This is common
+        // for informational panels.
+        if self.draw_cmds != self.old_draw_cmds {
+            // Collect a map of positions which are going to be filled, to avoid drawing
+            // aligned sprites below those tiles.
+            let mut fill_map = HashMap::<Pos, u32>::new();
+            for cmd in self.draw_cmds.iter() {
+                if let DrawCmd::Fill(pos, color) = cmd {
+                    if !fill_map.contains_key(pos) {
+                        fill_map.insert(*pos, 0);
+                    }
+                    fill_map.get_mut(pos).map(|count| *count += 1);
+                }
+            }
+
+            // TODO this clone is likely removable once panels no longer contain textures
+            // it may then become an extend into the old_draw_cmds vector
+            let draw_cmds = self.draw_cmds.clone();
+            let panel = self.unit();
+            canvas.with_texture_canvas(texture, |canvas| {
+                let mut panel = panel.with_target(canvas);
+
+                // we don't clear the map as the background was already drawn over it.
+                // TODO consider removing background panel and just using map- it was an
+                // optimization that we may be able to remove if other optimizations are good enough
+                // TODO if the fill cmd optimization has enough of an effect, the background
+                // panel optimization may be unnecessary
+                if clear {
+                  panel.target.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+                  panel.target.clear();
+                }
+
+                for cmd in draw_cmds.iter() {
+                    // Check if there is going to be a fill in this position,
+                    // in which case there is no need to draw an aligned command.
+                    if cmd.aligned() {
+                        let pos = cmd.pos();
+                        if fill_map.contains_key(&pos) {
+                            let is_fill =  matches!(cmd, DrawCmd::Fill(_, _));
+
+                            if let Some(count) = fill_map.get_mut(&pos) {
+                                if *count > 0 && is_fill {
+                                    *count -= 1;
+                                }
+
+                                if *count > 0 {
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                    process_draw_cmd(&mut panel, display_state, cmd);
+                }
+            }).unwrap();
+
+            self.old_draw_cmds = draw_cmds;
+        }
+
+        self.draw_cmds.clear();
     }
 }
 
