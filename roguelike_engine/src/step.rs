@@ -123,22 +123,22 @@ pub fn test_game_step() {
     game.data.entities.pos[&player_id] = Pos::new(0, 0);
 
     input_action = InputAction::Move(Direction::Right);
-    game.step_game(input_action, 0.1);
+    game.step_game(input_action);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(1, 0), player_pos);
 
     input_action = InputAction::Move(Direction::Down);
-    game.step_game(input_action, 0.1);
+    game.step_game(input_action);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(1, 1), player_pos);
 
     input_action = InputAction::Move(Direction::Left);
-    game.step_game(input_action, 0.1);
+    game.step_game(input_action);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(0, 1), player_pos);
 
     input_action = InputAction::Move(Direction::Up);
-    game.step_game(input_action, 0.1);
+    game.step_game(input_action);
     let player_pos = game.data.entities.pos[&player_id];
     assert_eq!(Pos::new(0, 0), player_pos);
 }
@@ -353,15 +353,15 @@ fn test_pick_up_primary() {
     let hammer = make_hammer(&mut game.data.entities, &game.config, next_pos, &mut game.msg_log);
 
     assert_eq!(0, game.data.entities.inventory[&player_id].len());
-    game.step_game(InputAction::Pickup, 0.1);
+    game.step_game(InputAction::Pickup);
     assert_eq!(1, game.data.entities.inventory[&player_id].len());
     let item_id = game.data.entities.inventory[&player_id][0];
     assert_eq!(sword, item_id);
 
-    game.step_game(InputAction::Move(Direction::Right), 0.1);
+    game.step_game(InputAction::Move(Direction::Right));
     assert_eq!(game.data.entities.pos[&hammer], game.data.entities.pos[&player_id]);
 
-    game.step_game(InputAction::Pickup, 0.1);
+    game.step_game(InputAction::Pickup);
     assert_eq!(1, game.data.entities.inventory[&player_id].len());
     let item_id = game.data.entities.inventory[&player_id][0];
     assert_eq!(hammer, item_id);
@@ -380,15 +380,15 @@ fn test_pick_up_consumables() {
     let lantern1 = make_lantern(&mut game.data.entities, &game.config, next_pos, &mut game.msg_log);
 
     assert_eq!(0, game.data.entities.inventory[&player_id].len());
-    game.step_game(InputAction::Pickup, 0.1);
+    game.step_game(InputAction::Pickup);
     assert_eq!(1, game.data.entities.inventory[&player_id].len());
     let item_id = game.data.entities.inventory[&player_id][0];
     assert_eq!(lantern0, item_id);
 
-    game.step_game(InputAction::Move(Direction::Right), 0.1);
+    game.step_game(InputAction::Move(Direction::Right));
     assert_eq!(game.data.entities.pos[&lantern1], game.data.entities.pos[&player_id]);
 
-    game.step_game(InputAction::Pickup, 0.1);
+    game.step_game(InputAction::Pickup);
     assert_eq!(1, game.data.entities.inventory[&player_id].len());
     let item_id = game.data.entities.inventory[&player_id][0];
     assert_eq!(lantern1, item_id);
@@ -408,9 +408,9 @@ fn test_pick_up_misc() {
 
     assert_eq!(0, game.data.entities.inventory[&player_id].len());
 
-    game.step_game(InputAction::Pickup, 0.1);
-    game.step_game(InputAction::Pickup, 0.1);
-    game.step_game(InputAction::Pickup, 0.1);
+    game.step_game(InputAction::Pickup);
+    game.step_game(InputAction::Pickup);
+    game.step_game(InputAction::Pickup);
 
     let inventory = game.data.entities.inventory[&player_id].clone();
     assert_eq!(3, inventory.len());
@@ -430,17 +430,17 @@ fn test_use_mode_stone() {
     // make sure there is a key in the inventory, just to show that it is not
     // used when throwing a stone despite being a 'Misc' item class.
     let _key = make_key(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
-    game.step_game(InputAction::Pickup, 0.1);
+    game.step_game(InputAction::Pickup);
 
     let stone = make_stone(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
-    game.step_game(InputAction::Pickup, 0.1);
+    game.step_game(InputAction::Pickup);
 
     let gol_pos = move_x(start_pos, PLAYER_THROW_DIST as i32);
     let gol = make_gol(&mut game.data.entities, &game.config, gol_pos, &mut game.msg_log);
 
-    game.step_game(InputAction::StartUseItem(ItemClass::Misc), 0.1);
-    game.step_game(InputAction::UseDir(Direction::Right), 0.1);
-    game.step_game(InputAction::FinalizeUse, 0.1);
+    game.step_game(InputAction::StartUseItem(ItemClass::Misc));
+    game.step_game(InputAction::UseDir(Direction::Right));
+    game.step_game(InputAction::FinalizeUse);
 
     assert_eq!(gol_pos, game.data.entities.pos[&stone]);
 
@@ -457,26 +457,26 @@ fn test_use_mode_drop() {
     let start_pos = game.data.entities.pos[&player_id];
 
     let _stone = make_stone(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
-    game.step_game(InputAction::Pickup, 0.1);
+    game.step_game(InputAction::Pickup);
 
     let _lantern = make_lantern(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
-    game.step_game(InputAction::Pickup, 0.1);
+    game.step_game(InputAction::Pickup);
 
     let _sword = make_sword(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
-    game.step_game(InputAction::Pickup, 0.1);
+    game.step_game(InputAction::Pickup);
 
     assert_eq!(3, game.data.entities.inventory[&player_id].len());
 
-    game.step_game(InputAction::StartUseItem(ItemClass::Misc), 0.1);
-    game.step_game(InputAction::DropItem, 0.1);
+    game.step_game(InputAction::StartUseItem(ItemClass::Misc));
+    game.step_game(InputAction::DropItem);
     assert_eq!(2, game.data.entities.inventory[&player_id].len());
 
-    game.step_game(InputAction::StartUseItem(ItemClass::Consumable), 0.1);
-    game.step_game(InputAction::DropItem, 0.1);
+    game.step_game(InputAction::StartUseItem(ItemClass::Consumable));
+    game.step_game(InputAction::DropItem);
     assert_eq!(1, game.data.entities.inventory[&player_id].len());
 
-    game.step_game(InputAction::StartUseItem(ItemClass::Primary), 0.1);
-    game.step_game(InputAction::DropItem, 0.1);
+    game.step_game(InputAction::StartUseItem(ItemClass::Primary));
+    game.step_game(InputAction::DropItem);
     assert_eq!(0, game.data.entities.inventory[&player_id].len());
 
     assert_eq!(GameState::Playing, game.settings.state);

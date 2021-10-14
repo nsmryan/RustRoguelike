@@ -688,12 +688,13 @@ impl Display {
 
         /* Split Screen Into Sections */
         let screen_area = self.canvas_panel.area();
-        let (map_area, rest_area) = screen_area.split_right(self.info_panel.cells.0 as usize);
-        let (player_area, remaining_area) = rest_area.split_top(20);
-        let (inventory_area, info_area) = remaining_area.split_top(15);
+        let (map_area, rest_area) = screen_area.split_top(self.map_panel.cells.1 as usize);
+        let (remaining_area, player_area) = rest_area.split_right(20);
+        let (info_area, inventory_area) = remaining_area.split_right(15);
 
         let menu_area = self.menu_panel.area();
         let menu_area = map_area.centered(menu_area.width, menu_area.height);
+        dbg!(screen_area, map_area, player_area, info_area, inventory_area);
 
         let map_rect = self.canvas_panel.get_rect_from_area(&map_area);
 
@@ -705,20 +706,19 @@ impl Display {
 
         /* Draw Inventory Panel */
         let dst = self.canvas_panel.get_rect_within(&inventory_area,
-                                                       self.inventory_panel.num_pixels);
+                                                    self.inventory_panel.num_pixels);
         self.canvas.copy(&self.inventory, None, dst).unwrap();
 
         /* Draw Game Info Panel */
         let dst = self.canvas_panel.get_rect_within(&info_area,
-                                                       self.info_panel.num_pixels);
+                                                    self.info_panel.num_pixels);
         self.canvas.copy(&self.info, None, dst).unwrap();
 
         /* Draw Player Info Panel */
         let dst = self.canvas_panel.get_rect_within(&player_area,
-                                                       self.player_panel.num_pixels);
+                                                    self.player_panel.num_pixels);
         self.canvas.copy(&self.player, None, dst).unwrap();
 
-        // TODO perhaps this can be moved into draw command processing
         if game.settings.state.is_menu() {
             let canvas_panel = &mut self.canvas_panel;
             let dst = canvas_panel.get_rect_within(&menu_area, self.menu_panel.num_pixels);
