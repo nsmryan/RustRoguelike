@@ -1324,10 +1324,6 @@ impl SpriteSheet {
     }
 }
 
-pub fn engine_color(color: &Color) -> Sdl2Color {
-    return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
-}
-
 pub fn draw_outline_tile<T>(panel: &Panel,
                             canvas: &mut Canvas<T>,
                             cell: Pos,
@@ -1362,27 +1358,28 @@ pub fn draw_tile_highlight<T>(panel: &Panel,
     canvas.fill_rect(rect).unwrap();
 }
 
-pub fn cell_within_rect(rect: Rect, area_cell_dims: (i32, i32), pixel_pos: (i32, i32)) -> Option<(i32, i32)> {
-    if pixel_pos.0 >= rect.x && pixel_pos.0 < rect.x + rect.w &&
-       pixel_pos.1 >= rect.y && pixel_pos.1 < rect.y + rect.h {
-
-       let cell_dims = (rect.w / area_cell_dims.0, rect.h / area_cell_dims.1);
-       let x_cell = (pixel_pos.0 - rect.x) / cell_dims.0;
-       let y_cell = (pixel_pos.1 - rect.y) / cell_dims.1;
-
-       //assert!(x_cell * area_cell_dims.0 < rect.x + rect.w);
-       //assert!(y_cell * area_cell_dims.1 < rect.y + rect.h);
-
-       // NOTE hacky way to prevent this situation
-       if x_cell >= area_cell_dims.0 || y_cell >= area_cell_dims.1 {
-           return None;
-       }
-
-       return Some((x_cell, y_cell));
-    }
-
-    return None;
-}
+// TODO remove
+//pub fn cell_within_rect(rect: Rect, area_cell_dims: (i32, i32), pixel_pos: (i32, i32)) -> Option<(i32, i32)> {
+//    if pixel_pos.0 >= rect.x && pixel_pos.0 < rect.x + rect.w &&
+//       pixel_pos.1 >= rect.y && pixel_pos.1 < rect.y + rect.h {
+//
+//       let cell_dims = (rect.w / area_cell_dims.0, rect.h / area_cell_dims.1);
+//       let x_cell = (pixel_pos.0 - rect.x) / cell_dims.0;
+//       let y_cell = (pixel_pos.1 - rect.y) / cell_dims.1;
+//
+//       //assert!(x_cell * area_cell_dims.0 < rect.x + rect.w);
+//       //assert!(y_cell * area_cell_dims.1 < rect.y + rect.h);
+//
+//       // NOTE hacky way to prevent this situation
+//       if x_cell >= area_cell_dims.0 || y_cell >= area_cell_dims.1 {
+//           return None;
+//       }
+//
+//       return Some((x_cell, y_cell));
+//    }
+//
+//    return None;
+//}
 
 fn sheet_direction(direction: Direction) -> Direction {
     match direction {
