@@ -69,14 +69,32 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mu
     match cmd {
         DrawCmd::Sprite(sprite, color, pos) => {
             let sprite_sheet = &mut display_state.sprites[&sprite.key];
-            sprite_sheet.draw_sprite_at_cell(panel,
-                                             canvas,
-                                             sprite.index as usize,
-                                             *pos,
-                                             *color,
-                                             sprite.rotation,
-                                             sprite.flip_horiz,
-                                             sprite.flip_vert);
+            let (cell_width, cell_height) = panel.cell_dims();
+
+            let pos = Pos::new(pos.x * cell_width as i32, pos.y * cell_height as i32);
+
+            let cell_dims = panel.cell_dims();
+
+            let src = sprite_sheet.sprite_src(sprite.index as usize);
+
+            let (cell_width, cell_height) = cell_dims;
+
+            let dst = Rect::new(pos.x as i32,
+                                pos.y as i32,
+                                cell_width as u32,
+                                cell_height as u32);
+
+            canvas.set_blend_mode(BlendMode::Blend);
+            sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
+            sprite_sheet.texture.set_alpha_mod(color.a);
+
+            canvas.copy_ex(&sprite_sheet.texture,
+                           Some(src),
+                           Some(dst),
+                           sprite.rotation,
+                           None,
+                           sprite.flip_horiz,
+                           sprite.flip_vert).unwrap();
         }
 
         DrawCmd::SpriteScaled(sprite, scale, direction, color, pos) => {
@@ -154,10 +172,34 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mu
         }
 
         DrawCmd::SpriteAtPixel(sprite, color, pos) => {
-            //let (cell_width, cell_height) = panel.cell_dims();
-            //let pos = Pos::new(pos.x * cell_width as i32, pos.y * cell_height as i32);
             let sprite_sheet = &mut display_state.sprites[&sprite.key];
-            sprite_sheet.draw_sprite_full(panel, canvas, sprite.index as usize, *pos, *color, sprite.rotation, sprite.flip_horiz, sprite.flip_vert);
+
+            let (cell_width, cell_height) = panel.cell_dims();
+
+            let pos = Pos::new(pos.x * cell_width as i32, pos.y * cell_height as i32);
+
+            let cell_dims = panel.cell_dims();
+
+            let src = sprite_sheet.sprite_src(sprite.index as usize);
+
+            let (cell_width, cell_height) = cell_dims;
+
+            let dst = Rect::new(pos.x as i32,
+                                pos.y as i32,
+                                cell_width as u32,
+                                cell_height as u32);
+
+            canvas.set_blend_mode(BlendMode::Blend);
+            sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
+            sprite_sheet.texture.set_alpha_mod(color.a);
+
+            canvas.copy_ex(&sprite_sheet.texture,
+                           Some(src),
+                           Some(dst),
+                           sprite.rotation,
+                           None,
+                           sprite.flip_horiz,
+                           sprite.flip_vert).unwrap();
         }
 
         DrawCmd::OutlineTile(color, pos) => {
@@ -1179,16 +1221,6 @@ impl DisplayState {
         return SpriteAnim::new(name.to_string(), sprite_key, 0.0, max_index as f32, speed);
     }
 
-    pub fn draw_sprite(&mut self,
-                       panel: &Panel,
-                       canvas: &mut WindowCanvas,
-                       sprite: Sprite,
-                       pos: Pos,
-                       color: Color) {
-        let sprite_sheet = &mut self.sprites[&sprite.key];
-        sprite_sheet.draw_sprite_at_cell(panel, canvas, sprite.index as usize, pos, color, sprite.rotation, sprite.flip_horiz, sprite.flip_vert);
-    }
-
     pub fn play_effect(&mut self, effect: Effect) {
         self.effects.push(effect);
     }
@@ -1277,55 +1309,6 @@ impl SpriteSheet {
     pub fn sprite_dims(&self) -> (usize, usize) {
         let (num_width, num_height) = self.num_cells();
         return (self.width / num_width, self.height / num_height);
-    }
-
-    pub fn draw_sprite_at_cell<T>(&mut self,
-                                  panel: &Panel,
-                                  canvas: &mut Canvas<T>,
-                                  index: usize,
-                                  cell: Pos,
-                                  color: Color,
-                                  rotation: f64,
-                                  flip_horiz: bool,
-                                  flip_vert: bool) where T: RenderTarget {
-        let (cell_width, cell_height) = panel.cell_dims();
-
-        let pos = Pos::new(cell.x * cell_width as i32, cell.y * cell_height as i32);
-
-        self.draw_sprite_full(panel, canvas, index, pos, color, rotation, flip_horiz, flip_vert);
-    }
-
-    pub fn draw_sprite_full<T>(&mut self,
-                            panel: &Panel,
-                            canvas: &mut Canvas<T>,
-                            index: usize,
-                            pos: Pos,
-                            color: Color,
-                            rotation: f64,
-                            flip_horizontal: bool,
-                            flip_vertical: bool) where T: RenderTarget {
-        let cell_dims = panel.cell_dims();
-
-        let src = self.sprite_src(index);
-
-        let (cell_width, cell_height) = cell_dims;
-
-        let dst = Rect::new(pos.x as i32,
-                            pos.y as i32,
-                            cell_width as u32,
-                            cell_height as u32);
-
-        canvas.set_blend_mode(BlendMode::Blend);
-        self.texture.set_color_mod(color.r, color.g, color.b);
-        self.texture.set_alpha_mod(color.a);
-
-        canvas.copy_ex(&self.texture,
-                             Some(src),
-                             Some(dst),
-                             rotation,
-                             None,
-                             flip_horizontal,
-                             flip_vertical).unwrap();
     }
 
     fn sprite_src(&mut self, index: usize) -> Rect {
