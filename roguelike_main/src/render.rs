@@ -22,6 +22,7 @@ use crate::animation::{Sprite, SpriteKey, Effect, Animation, AnimationResult, Pa
 
 pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<(), String> {
     display.state.dt = dt;
+    display.state.time += dt;
 
     /* Draw Background */
     render_background(&mut display.background_panel, &mut display.state, game);
@@ -250,7 +251,6 @@ fn render_info(panel: &mut Panel,
 
     if let Some(info_pos) = game.settings.cursor {
         let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
-        //let cursor_color = game.config.color_soft_green;
 
         let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
@@ -934,6 +934,17 @@ fn render_effects(panel: &mut Panel,
                     effect_complete = true;
                 }
             }
+
+            Effect::Fade(sprite, color, start, end, pos, seconds, time_taken) => {
+                let mut color = color;
+                let percent = *time_taken / *seconds;
+                let new_alpha = (*end as f32 - *start as f32) * percent;
+                color.a = (*start as f32 + new_alpha) as u8;
+                panel.sprite_cmd(*sprite, *color, *pos);
+
+                *time_taken += display_state.dt;
+                effect_complete = time_taken >= seconds;
+            }
         }
         display_state.effects[index] = effect;
 
@@ -1227,8 +1238,13 @@ fn render_overlays(panel: &mut Panel,
     if game.config.use_cursor {
         // render cursor itself
         if let Some(cursor_pos) = game.settings.cursor {
+            let time_since_toggle = (display_state.time - display_state.time_of_cursor_toggle);
+            let time_since_toggle = clampf(time_since_toggle, 0.0, game.config.cursor_fade_seconds);
+
             let mut color = game.config.color_mint_green;
-            color.a = 230;
+            let percent = time_since_toggle / game.config.cursor_fade_seconds;
+            color.a = (game.config.cursor_alpha as f32 * percent) as u8;
+
             let sprite = Sprite::new(ENTITY_CURSOR as u32, tiles_key);
             panel.sprite_cmd(sprite, color, cursor_pos);
 
@@ -1440,7 +1456,7 @@ fn render_overlays(panel: &mut Panel,
     render_overlay_altertness(panel, tiles_key, game);
 }
 
-fn render_overlay_altertness(panel: &mut Panel, sprite_key: SpriteKey, game: &mut Game) {;
+fn render_overlay_altertness(panel: &mut Panel, sprite_key: SpriteKey, game: &mut Game) {
     let alertness_color = game.config.color_pink;
     let scale = 0.5;
     for entity_id in game.data.entities.ids.iter() {

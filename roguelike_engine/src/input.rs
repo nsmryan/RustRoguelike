@@ -407,11 +407,8 @@ impl Input {
         return action;
     }
 
-    fn handle_mouse_button(&mut self, clicked: MouseClick, mouse_pos: Pos, dir: KeyDir) -> InputAction {
-        let mut action = InputAction::MouseButton(clicked, dir);
-
-        let down = dir == KeyDir::Down;
-        action = InputAction::MouseButton(clicked, dir);
+    fn handle_mouse_button(&mut self, clicked: MouseClick, _mouse_pos: Pos, dir: KeyDir) -> InputAction {
+        let action = InputAction::MouseButton(clicked, dir);
 
         return action;
     }

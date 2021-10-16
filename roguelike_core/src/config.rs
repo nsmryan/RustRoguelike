@@ -104,6 +104,8 @@ pub struct Config {
     pub particle_duration: f32,
     pub max_particles: usize,
     pub attack_animation_speed: f32,
+    pub cursor_fade_seconds: f32,
+    pub cursor_alpha: u8,
 }
 
 impl Config {

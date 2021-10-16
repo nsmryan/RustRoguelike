@@ -281,19 +281,19 @@ impl Display {
         let map_panel = Panel::new(map_pixels, map_dims);
         let map = texture_creator.create_texture_target(pixel_format, map_pixels.0, map_pixels.1).unwrap();
 
-        let info_width = 14;
+        let info_width = 50 / 3;
 
-        let info_dims = (info_width, 15);
+        let info_dims = (info_width, 10);
         let info_pixels = (info_dims.0 * FONT_WIDTH as u32, info_dims.1 * FONT_HEIGHT as u32);
         let info_panel = Panel::new(info_pixels, info_dims);
         let info = texture_creator.create_texture_target(pixel_format, info_pixels.0, info_pixels.1).unwrap();
 
-        let inventory_dims = (info_width, 15);
+        let inventory_dims = (info_width, 10);
         let inventory_pixels = (inventory_dims.0 * FONT_WIDTH as u32, inventory_dims.1 * FONT_HEIGHT as u32);
         let inventory_panel = Panel::new(inventory_pixels, inventory_dims);
         let inventory = texture_creator.create_texture_target(pixel_format, inventory_pixels.0, inventory_pixels.1).unwrap();
 
-        let player_dims = (info_width, 20);
+        let player_dims = (info_width, 10);
         let player_pixels = (player_dims.0 * FONT_WIDTH as u32, player_dims.1 * FONT_HEIGHT as u32);
         let player_panel = Panel::new(player_pixels, player_dims);
         let player = texture_creator.create_texture_target(pixel_format, player_pixels.0, player_pixels.1).unwrap();
@@ -456,6 +456,17 @@ impl Display {
         match msg {
             Msg::StartTurn => {
                 self.state.sound_tiles.clear();
+            }
+
+            Msg::CursorToggle(state, pos) => {
+                if !state {
+                    let tiles = self.state.lookup_spritekey("tiles");
+                    let cursor_sprite = Sprite::new(ENTITY_CURSOR as u32, tiles);
+                    let color = config.color_mint_green;
+                    let fade_effect = Effect::fade(cursor_sprite, color, config.cursor_alpha, 0, pos, config.cursor_fade_seconds);
+                    self.state.play_effect(fade_effect);
+                }
+                self.state.time_of_cursor_toggle = self.state.time;
             }
 
             Msg::Sound(cause_id, source_pos, radius, should_animate) => {
@@ -694,30 +705,32 @@ impl Display {
 
         let menu_area = self.menu_panel.area();
         let menu_area = map_area.centered(menu_area.width, menu_area.height);
-        dbg!(screen_area, map_area, player_area, info_area, inventory_area);
 
-        let map_rect = self.canvas_panel.get_rect_from_area(&map_area);
+        let map_rect = self.canvas_panel.get_rect_within(&map_area, self.map_panel.num_pixels);
 
-        // TODO just make the map panel the right size in the first place
-        // and re-create it when the map changes.
-        let src = self.map_panel.get_rect_up_left(map_size.0 as usize, map_size.1 as usize);
-        self.canvas.copy(&self.background, src, map_rect).unwrap();
-        self.canvas.copy(&self.map, src, map_rect).unwrap();
+        // TODO if the map changed size, the texture should be reallocated to match.
+        let src = self.map_panel.get_rect_full();
+        let map_rect = Rect::new(0, 0, SCREEN_WIDTH, SCREEN_WIDTH);
+        self.canvas.copy(&self.background, None, map_rect).unwrap();
+        self.canvas.copy(&self.map, None, map_rect).unwrap();
 
         /* Draw Inventory Panel */
+        let inventory_rect = Rect::new(0, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);
         let dst = self.canvas_panel.get_rect_within(&inventory_area,
                                                     self.inventory_panel.num_pixels);
-        self.canvas.copy(&self.inventory, None, dst).unwrap();
+        self.canvas.copy(&self.inventory, None, inventory_rect).unwrap();
 
         /* Draw Game Info Panel */
         let dst = self.canvas_panel.get_rect_within(&info_area,
                                                     self.info_panel.num_pixels);
-        self.canvas.copy(&self.info, None, dst).unwrap();
+        let info_rect = Rect::new(SCREEN_WIDTH as i32 / 3, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);
+        self.canvas.copy(&self.info, None, info_rect).unwrap();
 
         /* Draw Player Info Panel */
         let dst = self.canvas_panel.get_rect_within(&player_area,
                                                     self.player_panel.num_pixels);
-        self.canvas.copy(&self.player, None, dst).unwrap();
+        let player_rect = Rect::new(2 * SCREEN_WIDTH as i32 / 3, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);
+        self.canvas.copy(&self.player, None, player_rect).unwrap();
 
         if game.settings.state.is_menu() {
             let canvas_panel = &mut self.canvas_panel;
@@ -903,6 +916,10 @@ impl Panel {
     pub fn pixel_from_cell(&self, cell: Pos) -> Pos {
         let dims = self.cell_dims();
         return Pos::new(cell.x * dims.0 as i32, cell.y * dims.1 as i32);
+    }
+
+    pub fn get_rect_full(&self) -> Rect {
+        return Rect::new(0, 0, self.num_pixels.0, self.num_pixels.1);
     }
 
     pub fn get_rect_up_left(&self, width: usize, height: usize) -> Rect {
@@ -1102,6 +1119,9 @@ pub struct DisplayState {
     pub sound_tiles: Vec<Pos>,
 
     pub dt: f32,
+    pub time: f32,
+    pub time_of_cursor_toggle: f32,
+    pub last_cursor_pos: Pos,
 
     pub debug_entries: HashMap<String, String>,
 }
@@ -1121,9 +1141,13 @@ impl DisplayState {
             current_turn_fov: Vec::new(),
             sound_tiles: Vec::new(),
             dt: 0.0,
+            time: 0.0,
+            time_of_cursor_toggle: 0.0,
+            last_cursor_pos: Pos::new(0, 0),
             debug_entries: HashMap::<String, String>::new(),
         };
     }
+
     pub fn lookup_spritekey(&self, name: &str) -> SpriteKey {
         for (key, sprite_sheet) in self.sprites.iter() {
             if sprite_sheet.name == *name {
