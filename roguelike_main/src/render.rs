@@ -1145,7 +1145,7 @@ fn render_overlay_use_item(panel: &mut Panel,
                     }
                     move_positions.insert(pos);
                     let arrow_pos = dir.offset_pos(player_pos, 1);
-                    render_arrow(panel, display_state, sprite_key, *dir, arrow_pos, direction_color);
+                    render_arrow(panel, sprite_key, *dir, arrow_pos, direction_color);
                     hit_positions.extend(use_result.hit_positions.iter());
                 }
             }
@@ -1199,7 +1199,7 @@ fn render_overlays(panel: &mut Panel,
                 if game.data.clear_path(player_pos, target_pos, false) {
                     panel.highlight_cmd(highlight_color, target_pos);
 
-                    render_arrow(panel, display_state, tiles_key, *dir, target_pos, direction_color);
+                    render_arrow(panel, tiles_key, *dir, target_pos, direction_color);
                 }
             }
         } else if let UseAction::Item(item_class) = game.settings.use_action {
@@ -1326,7 +1326,7 @@ fn render_overlays(panel: &mut Panel,
             if game.data.is_in_fov(player_id, entity_id, &game.config) &&
                game.data.entities.status[&entity_id].alive {
                 if let Some(dir) = game.data.entities.direction.get(&entity_id) {
-                    render_arrow(panel, display_state, tiles_key, *dir, pos, direction_color);
+                    render_arrow(panel, tiles_key, *dir, pos, direction_color);
                 }
             }
         }

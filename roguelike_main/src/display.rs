@@ -23,11 +23,6 @@ use roguelike_engine::game::Game;
 use crate::animation::{Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 
 
-// consider
-// highlight cell with color
-// outline cell with color
-// pixels vs cells
-// black out cell
 // NOTE use of String prevents Copy trait
 #[derive(Clone, Debug, PartialEq)]
 pub enum DrawCmd {
@@ -73,7 +68,15 @@ pub enum PanelName {
 fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mut DisplayState, cmd: &DrawCmd) {
     match cmd {
         DrawCmd::Sprite(sprite, color, pos) => {
-            display_state.draw_sprite(panel, canvas, *sprite, *pos, *color);
+            let sprite_sheet = &mut display_state.sprites[&sprite.key];
+            sprite_sheet.draw_sprite_at_cell(panel,
+                                             canvas,
+                                             sprite.index as usize,
+                                             *pos,
+                                             *color,
+                                             sprite.rotation,
+                                             sprite.flip_horiz,
+                                             sprite.flip_vert);
         }
 
         DrawCmd::SpriteScaled(sprite, scale, direction, color, pos) => {
@@ -1274,105 +1277,6 @@ impl SpriteSheet {
     pub fn sprite_dims(&self) -> (usize, usize) {
         let (num_width, num_height) = self.num_cells();
         return (self.width / num_width, self.height / num_height);
-    }
-
-    pub fn draw_text_list<T>(&mut self,
-                             panel: &Panel,
-                             canvas: &mut Canvas<T>,
-                             text_list: &Vec<String>,
-                             cell: Pos,
-                             color: Color) where T: RenderTarget {
-        for (index, text) in text_list.iter().enumerate() {
-            let text_cell = Pos::new(cell.x, cell.y + index as i32);
-            self.draw_text(panel, canvas, text, text_cell, color);
-        }
-    }
-
-    pub fn draw_texture<T>(&mut self,
-                           panel: &Panel,
-                           canvas: &mut Canvas<T>,
-                           cell: Pos) where T: RenderTarget {
-        let query = self.texture.query();
-
-        let cell_dims = panel.cell_dims();
-        let (cell_width, cell_height) = cell_dims;
-
-        canvas.set_blend_mode(BlendMode::None);
-
-        let pos = cell;
-
-        let src = Rect::new(0,
-                            0,
-                            query.width,
-                            query.height);
-
-        let dst_pos = Pos::new(pos.x * cell_width as i32,
-                               pos.y * cell_height as i32);
-        let dst = Rect::new(dst_pos.x as i32,
-                            dst_pos.y as i32,
-                            query.width,
-                            query.height);
-
-        canvas.copy_ex(&self.texture,
-                             Some(src),
-                             Some(dst),
-                             0.0,
-                             None,
-                             false,
-                             false).unwrap();
-    }
-
-    pub fn draw_text<T>(&mut self,
-                        panel: &Panel,
-                        canvas: &mut Canvas<T>,
-                        text: &str,
-                        cell: Pos,
-                        color: Color) where T: RenderTarget {
-        let query = self.texture.query();
-
-        let cell_dims = panel.cell_dims();
-        let (cell_width, cell_height) = cell_dims;
-
-        canvas.set_blend_mode(BlendMode::Blend);
-        self.texture.set_color_mod(color.r, color.g, color.b);
-        self.texture.set_alpha_mod(color.a);
-
-        let mut pos = cell;
-        for chr in text.chars() {
-            let chr_num = chr.to_lowercase().next().unwrap();
-            let chr_index = chr_num as i32 - ASCII_START as i32;
-
-            let ascii_width = ASCII_END - ASCII_START;
-            let src = Rect::new((query.width as i32 / ascii_width as i32) * chr_index,
-                                0,
-                                query.width / ascii_width,
-                                query.height);
-
-            let dst_pos = Pos::new(pos.x * cell_width as i32,
-                                   pos.y * cell_height as i32);
-            let dst = Rect::new(dst_pos.x as i32,
-                                dst_pos.y as i32,
-                                cell_width as u32,
-                                cell_height as u32);
-
-            canvas.copy_ex(&self.texture,
-                                 Some(src),
-                                 Some(dst),
-                                 0.0,
-                                 None,
-                                 false,
-                                 false).unwrap();
-            pos.x += 1;
-        }
-    }
-
-    pub fn draw_char<T>(&mut self,
-                        panel: &Panel,
-                        canvas: &mut Canvas<T>,
-                        chr: char,
-                        cell: Pos,
-                        color: Color) where T: RenderTarget {
-        self.draw_sprite_at_cell(panel, canvas, chr as usize, cell, color, 0.0, false, false);
     }
 
     pub fn draw_sprite_at_cell<T>(&mut self,
