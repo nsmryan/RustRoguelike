@@ -65,6 +65,8 @@ impl DrawCmd {
     }
 }
 
+// NOTE this function only uses sprites and lookup from in display_state.
+// It could receive the sprite map, and the fonts sprite key, and remove display_state.
 fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mut DisplayState, cmd: &DrawCmd) {
     match cmd {
         DrawCmd::Sprite(sprite, color, pos) => {
