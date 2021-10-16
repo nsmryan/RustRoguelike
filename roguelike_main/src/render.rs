@@ -52,8 +52,6 @@ pub fn render_all(display: &mut Display, game: &mut Game, dt: f32)  -> Result<()
 
 
 fn render_panels(display: &mut Display, game: &mut Game) {
-    let mouse_map_pos = game.settings.cursor;
-
     let display_state = &mut display.state;
 
     if game.settings.render_map {
@@ -82,6 +80,11 @@ fn render_panels(display: &mut Display, game: &mut Game) {
         }
 
         {
+            let _overlays_game = timer!("OVERLAYSGAME");
+            render_game_overlays(panel, display_state, game, game.settings.cursor);
+        }
+
+        {
             let _mapabove = timer!("MAPABOVE");
             render_map_above(panel, display_state, game);
         }
@@ -90,7 +93,7 @@ fn render_panels(display: &mut Display, game: &mut Game) {
             let _extra = timer!("EXTRA");
             render_impressions(panel, display_state, game);
             render_effects(panel, display_state, game);
-            render_overlays(panel, display_state, game, mouse_map_pos);
+            render_overlays(panel, display_state, game, game.settings.cursor);
         }
     }
 
@@ -109,7 +112,7 @@ fn render_panels(display: &mut Display, game: &mut Game) {
     /* Draw Game Info */
     {
         let info_panel = &mut display.info_panel;
-        render_info(info_panel, display_state, game, mouse_map_pos);
+        render_info(info_panel, display_state, game, game.settings.cursor);
     }
 }
 
@@ -1173,14 +1176,44 @@ fn render_sound_overlay(panel: &mut Panel,
     }
 }
 
-fn render_overlays(panel: &mut Panel,
+fn render_game_overlays(panel: &mut Panel,
                    display_state: &mut DisplayState,
                    game: &mut Game,
-                   map_mouse_pos: Option<Pos>) {
+                   cursor_pos: Option<Pos>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
     let tiles_key = display_state.lookup_spritekey("tiles");
+
+    if game.config.use_cursor {
+        if let Some(cursor_pos) = game.settings.cursor {
+            // render trigger plate wall highlight if selected
+            let entities = game.data.get_entities_at_pos(cursor_pos);
+            for entity in entities {
+                if game.data.entities.name[&entity] == EntityName::GateTrigger {
+                    let gate_pos = game.data.entities.gate_pos[&entity];
+                    let mut highlight_color: Color = game.config.color_red;
+                    highlight_color.a = 100;
+                    panel.highlight_cmd(highlight_color, gate_pos);
+                } else if game.data.entities.name[&entity] == EntityName::FreezeTrap {
+                    let trap_pos = game.data.entities.pos[&entity];
+                    let freeze_aoe =
+                        aoe_fill(&game.data.map, AoeEffect::Freeze, trap_pos, game.config.freeze_trap_radius, &game.config);
+                    for pos in freeze_aoe.positions() {
+                        let mut highlight_color: Color = game.config.color_blueish_grey;
+                        highlight_color.a = 100;
+                        panel.highlight_cmd(highlight_color, pos);
+                    }
+                }
+            }
+
+            // render some extra player information if cursor is over player's tile
+            if cursor_pos == player_pos {
+                // Draw sound tiles overlay
+                render_sound_overlay(panel, display_state, game);
+            }
+        }
+    }
 
     // Draw use-mode overlay
     if game.settings.state == GameState::Use {
@@ -1206,6 +1239,57 @@ fn render_overlays(panel: &mut Panel,
             render_overlay_use_item(panel, item_class, display_state, game);
         }
     }
+
+    // draw direction overlays
+    if game.config.draw_directional_arrow {
+        let direction_color = Color::white();
+        let mut index = 0;
+        while index < game.data.entities.ids.len() {
+            let entity_id = game.data.entities.ids[index];
+            index += 1;
+
+            let pos = game.data.entities.pos[&entity_id];
+
+            if pos.x == -1 && pos.y == -1 {
+                continue;
+            }
+
+            if game.data.entities.status[&entity_id].alive {
+                if let Some(dir) = game.data.entities.direction.get(&entity_id) {
+                    render_arrow(panel, tiles_key, *dir, pos, direction_color);
+                }
+            }
+        }
+    }
+
+    // render attack overlay highlighting squares that an entity can attack
+    if game.settings.overlay {
+        let keys = game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>();
+        for entity_id in keys {
+            let pos = game.data.entities.pos[&entity_id];
+
+            if entity_id != player_id &&
+               game.data.map.is_within_bounds(pos) &&
+               game.data.entities.status[&entity_id].alive {
+               render_attack_overlay(panel,
+                                     display_state,
+                                     game,
+                                     entity_id);
+            }
+        }
+    }
+
+    render_overlay_alertness(panel, tiles_key, game);
+}
+
+fn render_overlays(panel: &mut Panel,
+                   display_state: &mut DisplayState,
+                   game: &mut Game,
+                   cursor_pos: Option<Pos>) {
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = game.data.entities.pos[&player_id];
+
+    let tiles_key = display_state.lookup_spritekey("tiles");
 
     // render a grid of numbers if enabled
     if game.config.overlay_directions {
@@ -1266,24 +1350,6 @@ fn render_overlays(panel: &mut Panel,
                     }
                 }
             }
-
-            // render trigger plate wall highlight if selected
-            let entities = game.data.get_entities_at_pos(cursor_pos);
-            for entity in entities {
-                if game.data.entities.name[&entity] == EntityName::GateTrigger {
-                    let gate_pos = game.data.entities.gate_pos[&entity];
-                    let mut highlight_color: Color = game.config.color_red;
-                    highlight_color.a = 100;
-                    //draw_tile_highlight(panel, gate_pos, highlight_color);
-                    panel.highlight_cmd(highlight_color, gate_pos);
-                }
-            }
-
-            // render some extra player information if cursor is over player's tile
-            if cursor_pos == player_pos {
-                // Draw sound tiles overlay
-                render_sound_overlay(panel, display_state, game);
-            }
         }
     }
 
@@ -1306,34 +1372,8 @@ fn render_overlays(panel: &mut Panel,
         }
     }
 
-    let mut highlight_color: Color = game.config.color_warm_grey;
-    highlight_color.a = game.config.highlight_player_move;
-
-    // draw direction overlays
-    if game.config.draw_directional_arrow {
-        let direction_color = Color::white();
-        let mut index = 0;
-        while index < game.data.entities.ids.len() {
-            let entity_id = game.data.entities.ids[index];
-            index += 1;
-
-            let pos = game.data.entities.pos[&entity_id];
-
-            if pos.x == -1 && pos.y == -1 {
-                continue;
-            }
-
-            if game.data.is_in_fov(player_id, entity_id, &game.config) &&
-               game.data.entities.status[&entity_id].alive {
-                if let Some(dir) = game.data.entities.direction.get(&entity_id) {
-                    render_arrow(panel, tiles_key, *dir, pos, direction_color);
-                }
-            }
-        }
-    }
-
     // draw attack and fov position highlights
-    if let Some(mouse_xy) = map_mouse_pos {
+    if let Some(mouse_xy) = cursor_pos {
         // Draw monster attack overlay
         let object_ids = game.data.get_entities_at_pos(mouse_xy);
         for entity_id in object_ids.iter() {
@@ -1349,23 +1389,8 @@ fn render_overlays(panel: &mut Panel,
         }
     }
 
-    // render attack overlay highlighting squares that an entity can attack
-    if game.settings.overlay {
-        let keys = game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>();
-        for entity_id in keys {
-            let pos = game.data.entities.pos[&entity_id];
-
-            if entity_id != player_id &&
-               game.data.map.is_within_bounds(pos) &&
-               game.data.pos_in_fov(player_id, pos, &game.config) &&
-               game.data.entities.status[&entity_id].alive {
-               render_attack_overlay(panel,
-                                     display_state,
-                                     game,
-                                     entity_id);
-            }
-        }
-    }
+    let mut highlight_color: Color = game.config.color_warm_grey;
+    highlight_color.a = game.config.highlight_player_move;
 
     // draw mouse path overlays
     if let Some(mouse_id) = game.data.find_by_name(EntityName::Mouse) {
@@ -1452,11 +1477,9 @@ fn render_overlays(panel: &mut Panel,
             panel.text_cmd(&format!("{}", near_count), highlight_color, pos);
         }
     }
-
-    render_overlay_altertness(panel, tiles_key, game);
 }
 
-fn render_overlay_altertness(panel: &mut Panel, sprite_key: SpriteKey, game: &mut Game) {
+fn render_overlay_alertness(panel: &mut Panel, sprite_key: SpriteKey, game: &mut Game) {
     let alertness_color = game.config.color_pink;
     let scale = 0.5;
     for entity_id in game.data.entities.ids.iter() {
