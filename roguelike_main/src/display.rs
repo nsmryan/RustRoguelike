@@ -23,6 +23,16 @@ use roguelike_engine::game::Game;
 use crate::animation::{Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum PanelName {
+    Info,
+    Map,
+    Player,
+    Inventory,
+    Background,
+    Menu,
+}
+
 // NOTE use of String prevents Copy trait
 #[derive(Clone, Debug, PartialEq)]
 pub enum DrawCmd {
@@ -53,16 +63,6 @@ impl DrawCmd {
             DrawCmd::Fill(pos, _) => *pos,
         }
     }
-}
-
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub enum PanelName {
-    Info,
-    Map,
-    Player,
-    Inventory,
-    Background,
-    Menu,
 }
 
 fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mut DisplayState, cmd: &DrawCmd) {
@@ -783,8 +783,6 @@ impl Display {
         }
     }
 }
-
-type TextureKey = u64;
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
 pub struct Area {
