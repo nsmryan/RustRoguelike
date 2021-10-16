@@ -404,7 +404,7 @@ fn render_class_menu(panel: &mut Panel, display_state: &mut DisplayState, _game:
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
     let sprite_key = display_state.lookup_spritekey("font");
-    let tile_sprite = &mut display_state.sprites[&sprite_key];
+    let tile_sprite = &mut display_state.sprites[sprite_key];
 
     panel.text_list_cmd(&list, color, text_pos);
 }
@@ -462,7 +462,7 @@ fn render_inventory(panel: &mut Panel, display_state: &mut DisplayState, game: &
     y_pos += 1;
 
     // Draw Consumable Items
-    let tile_sprite = &mut display_state.sprites[&sprite_key];
+    let tile_sprite = &mut display_state.sprites[sprite_key];
     panel.text_cmd(&"x", ui_color, Pos::new(1, y_pos));
 
     let mut index = 0;
@@ -530,7 +530,7 @@ fn render_background(panel: &mut Panel, display_state: &mut DisplayState, game: 
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = display_state.lookup_spritekey("tiles");
-    let sprite = &mut display_state.sprites[&sprite_key];
+    let sprite = &mut display_state.sprites[sprite_key];
 
     for y in 0..map_height {
         for x in 0..map_width {

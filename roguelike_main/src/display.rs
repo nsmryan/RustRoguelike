@@ -70,7 +70,7 @@ impl DrawCmd {
 fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mut DisplayState, cmd: &DrawCmd) {
     match cmd {
         DrawCmd::Sprite(sprite, color, pos) => {
-            let sprite_sheet = &mut display_state.sprites[&sprite.key];
+            let sprite_sheet = &mut display_state.sprites[sprite.key];
             let (cell_width, cell_height) = panel.cell_dims();
 
             let pos = Pos::new(pos.x * cell_width as i32, pos.y * cell_height as i32);
@@ -101,7 +101,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mu
 
         DrawCmd::SpriteScaled(sprite, scale, direction, color, pos) => {
             let cell_dims = panel.cell_dims();
-            let sprite_sheet = &mut display_state.sprites[&sprite.key];
+            let sprite_sheet = &mut display_state.sprites[sprite.key];
 
             let src = sprite_sheet.sprite_src(sprite.index as usize);
 
@@ -174,7 +174,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mu
         }
 
         DrawCmd::SpriteAtPixel(sprite, color, pos) => {
-            let sprite_sheet = &mut display_state.sprites[&sprite.key];
+            let sprite_sheet = &mut display_state.sprites[sprite.key];
 
             let (cell_width, cell_height) = panel.cell_dims();
 
@@ -214,7 +214,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mu
 
         DrawCmd::Text(string, color, start_pos) => {
             let sprite_key = display_state.lookup_spritekey("font");
-            let sprite_sheet = &mut display_state.sprites[&sprite_key];
+            let sprite_sheet = &mut display_state.sprites[sprite_key];
             let query = sprite_sheet.texture.query();
 
             let cell_dims = panel.cell_dims();
@@ -423,7 +423,7 @@ impl Display {
     }
 
     pub fn sprite_exists(&self, name: &str) -> bool {
-        for (_key, sprite_sheet) in self.state.sprites.iter() {
+        for sprite_sheet in self.state.sprites.iter() {
             if sprite_sheet.name == *name {
                 return true;
             }
@@ -1139,8 +1139,8 @@ impl Panel {
 
 pub struct DisplayState {
     // sprite state
-    pub sprites: IndexMap<SpriteKey, SpriteSheet>,
-    pub next_sprite_key: i64,
+    pub sprites: Vec<SpriteSheet>,
+    pub next_sprite_key: SpriteKey,
 
     // currently active effects
     pub effects: Vec<Effect>,
@@ -1174,7 +1174,7 @@ impl DisplayState {
     pub fn new() -> DisplayState {
 
         return DisplayState {
-            sprites: IndexMap::new(),
+            sprites: Vec::new(),
             next_sprite_key: 0,
             effects: Vec::new(),
             animations: IndexMap::<EntityId, VecDeque<Animation>>::new(),
@@ -1193,9 +1193,9 @@ impl DisplayState {
     }
 
     pub fn lookup_spritekey(&self, name: &str) -> SpriteKey {
-        for (key, sprite_sheet) in self.sprites.iter() {
+        for (key, sprite_sheet) in self.sprites.iter().enumerate() {
             if sprite_sheet.name == *name {
-                return *key;
+                return key;
             }
         }
 
@@ -1217,7 +1217,7 @@ impl DisplayState {
     /// SpriteAnim structure.
     pub fn new_sprite(&self, name: &str, speed: f32) -> SpriteAnim {
         let sprite_key = self.lookup_spritekey(name);
-        let max_index = self.sprites[&sprite_key].num_sprites;
+        let max_index = self.sprites[sprite_key].num_sprites;
         return SpriteAnim::new(name.to_string(), sprite_key, 0.0, max_index as f32, speed);
     }
 

@@ -4,7 +4,7 @@ use roguelike_core::map::Aoe;
 use roguelike_core::config::Config;
 
 
-pub type SpriteKey = i64;
+pub type SpriteKey = usize;
 
 pub type SpriteIndex = f32;
 
