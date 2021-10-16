@@ -184,12 +184,12 @@ impl Animation {
         }
     }
 
-    pub fn status(&self, pos: Pos, dt: f32, config: &Config) -> AnimationResult {
+    pub fn status(&self, pos: Pos) -> AnimationResult {
         let mut animation_result = AnimationResult::new();
         animation_result.pos = pos;
 
         match self {
-            Animation::Between(ref sprite_anim, start, end, dist, blocks_per_sec) => {
+            Animation::Between(ref sprite_anim, start, end, dist, _blocks_per_sec) => {
                let num_blocks = *dist as usize;
 
                animation_result.pos = move_towards(*start, *end, num_blocks);

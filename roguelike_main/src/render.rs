@@ -980,8 +980,8 @@ fn render_entity(panel: &mut Panel,
 
     if is_in_fov {
         if let Some(mut anims) = display_state.animations.swap_remove(&entity_id) {
-            if let Some(mut anim) = anims.pop_front() {
-                animation_result = anim.status(pos, display_state.dt, &game.config);
+            if let Some(anim) = anims.pop_front() {
+                animation_result = anim.status(pos);
 
                 if let Animation::PlayEffect(effect) = anim {
                     display_state.play_effect(effect);
@@ -1122,7 +1122,7 @@ fn render_overlay_use_item(panel: &mut Panel,
                                                           game.settings.move_mode);
             if let Some(_pos) = use_result.pos {
                 let arrow_pos = use_dir.offset_pos(player_pos, 1);
-                render_arrow(panel, display_state, sprite_key, use_dir, arrow_pos, direction_color);
+                render_arrow(panel, sprite_key, use_dir, arrow_pos, direction_color);
 
                 for hit_pos in use_result.hit_positions {
                    panel.highlight_cmd(attack_highlight_color, hit_pos);
@@ -1672,7 +1672,6 @@ pub fn render_entity_ghost(panel: &mut Panel,
 }
 
 fn render_arrow(panel: &mut Panel,
-                display_state: &mut DisplayState,
                 sprite_key: SpriteKey,
                 dir: Direction,
                 pos: Pos,

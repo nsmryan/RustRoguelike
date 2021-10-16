@@ -210,7 +210,6 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mu
             assert!(*offset < 1.0, "offset >= 1 misaligns the starting cell!");
 
             // Draw a black background
-            let (width, height) = canvas.output_size().unwrap();
             let (cell_width, cell_height) = panel.cell_dims();
 
             canvas.set_draw_color(sdl2_color(*color));
@@ -225,16 +224,16 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mu
             let height = cell_height * dims.1 - (2 * offset_y as u32);
 
             if *filled {
-                canvas.fill_rect(Rect::new(x, y, width, height));
+                canvas.fill_rect(Rect::new(x, y, width, height)).unwrap();
             } else {
-                canvas.draw_rect(Rect::new(x, y, width, height));
+                canvas.draw_rect(Rect::new(x, y, width, height)).unwrap();
             }
         }
 
         DrawCmd::Fill(pos, color) => {
             let (cell_width, cell_height) = panel.cell_dims();
             canvas.set_draw_color(sdl2_color(*color));
-            canvas.fill_rect(Rect::new(pos.x * cell_width as i32, pos.y * cell_height as i32, cell_width, cell_height));
+            canvas.fill_rect(Rect::new(pos.x * cell_width as i32, pos.y * cell_height as i32, cell_width, cell_height)).unwrap();
         }
     }
 }
@@ -706,29 +705,29 @@ impl Display {
         let menu_area = self.menu_panel.area();
         let menu_area = map_area.centered(menu_area.width, menu_area.height);
 
-        let map_rect = self.canvas_panel.get_rect_within(&map_area, self.map_panel.num_pixels);
+        //let map_rect = self.canvas_panel.get_rect_within(&map_area, self.map_panel.num_pixels);
 
         // TODO if the map changed size, the texture should be reallocated to match.
-        let src = self.map_panel.get_rect_full();
+        //let src = self.map_panel.get_rect_full();
         let map_rect = Rect::new(0, 0, SCREEN_WIDTH, SCREEN_WIDTH);
         self.canvas.copy(&self.background, None, map_rect).unwrap();
         self.canvas.copy(&self.map, None, map_rect).unwrap();
 
         /* Draw Inventory Panel */
         let inventory_rect = Rect::new(0, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);
-        let dst = self.canvas_panel.get_rect_within(&inventory_area,
-                                                    self.inventory_panel.num_pixels);
+        //let dst = self.canvas_panel.get_rect_within(&inventory_area,
+        //                                            self.inventory_panel.num_pixels);
         self.canvas.copy(&self.inventory, None, inventory_rect).unwrap();
 
         /* Draw Game Info Panel */
-        let dst = self.canvas_panel.get_rect_within(&info_area,
-                                                    self.info_panel.num_pixels);
+        //let dst = self.canvas_panel.get_rect_within(&info_area,
+        //                                            self.info_panel.num_pixels);
         let info_rect = Rect::new(SCREEN_WIDTH as i32 / 3, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);
         self.canvas.copy(&self.info, None, info_rect).unwrap();
 
         /* Draw Player Info Panel */
-        let dst = self.canvas_panel.get_rect_within(&player_area,
-                                                    self.player_panel.num_pixels);
+        //let dst = self.canvas_panel.get_rect_within(&player_area,
+        //                                            self.player_panel.num_pixels);
         let player_rect = Rect::new(2 * SCREEN_WIDTH as i32 / 3, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);
         self.canvas.copy(&self.player, None, player_rect).unwrap();
 
@@ -1042,7 +1041,7 @@ impl Panel {
             // aligned sprites below those tiles.
             let mut fill_map = HashMap::<Pos, u32>::new();
             for cmd in self.draw_cmds.iter() {
-                if let DrawCmd::Fill(pos, color) = cmd {
+                if let DrawCmd::Fill(pos, _color) = cmd {
                     if !fill_map.contains_key(pos) {
                         fill_map.insert(*pos, 0);
                     }
