@@ -1206,9 +1206,6 @@ impl DisplayState {
         for anims in self.animations.values_mut() {
             if let Some(anim) = anims.get_mut(0) {
                 anim.step(self.dt, config);
-                //if let Some(sprite_anim) = anim.sprite_anim_mut() {
-                //    sprite_anim.step(self.dt);
-                //}
             }
         }
     }
