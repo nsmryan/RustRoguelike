@@ -29,13 +29,12 @@ pub enum PanelName {
     Map,
     Player,
     Inventory,
-    Background,
     Menu,
 }
 
 impl PanelName {
-    pub fn names() -> [PanelName; 6] {
-        return [PanelName::Info, PanelName::Map, PanelName::Player, PanelName::Inventory, PanelName::Background, PanelName::Menu];
+    pub fn names() -> [PanelName; 5] {
+        return [PanelName::Info, PanelName::Map, PanelName::Player, PanelName::Inventory, PanelName::Menu];
     }
 }
 
@@ -219,12 +218,20 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
         }
 
         DrawCmd::Text(string, color, start_pos) => {
+            let ascii_width = ASCII_END - ASCII_START;
+
             let sprite_key = lookup_spritekey(sprites, "font");
             let sprite_sheet = &mut sprites[sprite_key];
             let query = sprite_sheet.texture.query();
 
             let cell_dims = panel.cell_dims();
             let (cell_width, cell_height) = cell_dims;
+
+            let font_width = query.width / ascii_width;
+            let font_height = query.height;
+
+            let char_height = cell_height;
+            let char_width = (cell_height * font_width) / font_height;
 
             canvas.set_blend_mode(BlendMode::Blend);
             sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
@@ -235,18 +242,17 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                 let chr_num = chr.to_lowercase().next().unwrap();
                 let chr_index = chr_num as i32 - ASCII_START as i32;
 
-                let ascii_width = ASCII_END - ASCII_START;
                 let src = Rect::new((query.width as i32 / ascii_width as i32) * chr_index,
                                     0,
                                     query.width / ascii_width,
                                     query.height);
 
-                let dst_pos = Pos::new(pos.x * cell_width as i32,
-                                       pos.y * cell_height as i32);
+                let dst_pos = Pos::new(pos.x * font_width as i32,
+                                       pos.y * font_height as i32);
                 let dst = Rect::new(dst_pos.x as i32,
                                     dst_pos.y as i32,
-                                    cell_width as u32,
-                                    cell_height as u32);
+                                    char_width as u32,
+                                    char_height as u32);
 
                 canvas.copy_ex(&sprite_sheet.texture,
                                      Some(src),
@@ -332,19 +338,6 @@ impl Display {
 
     pub fn process_draw_commands(&mut self) {
         let canvas = &mut self.canvas;
-
-        // TODO either add this back in, or just draw background every time.
-        // this was commented out due to double mutable borrow of textures
-        // copy background into the map before other draws.
-        //{
-        //    let background = self.textures.get_mut(&PanelName::Background).unwrap();
-        //    canvas.with_texture_canvas(self.textures.get_mut(&PanelName::Map).unwrap(), |canvas| {
-        //        canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
-        //        canvas.clear();
-
-        //        canvas.copy(&background, None, None).unwrap();
-        //    }).unwrap();
-        //}
 
         for panel_name in PanelName::names().iter() {
             let clear = *panel_name != PanelName::Map;
@@ -723,7 +716,6 @@ impl Display {
         // TODO if the map changed size, the texture should be reallocated to match.
         //let src = self.map_panel.get_rect_full();
         let map_rect = Rect::new(0, 0, SCREEN_WIDTH, SCREEN_WIDTH);
-        self.canvas.copy(&self.textures[&PanelName::Background], None, map_rect).unwrap();
         self.canvas.copy(&self.textures[&PanelName::Map], None, map_rect).unwrap();
 
         /* Draw Inventory Panel */
@@ -1400,8 +1392,6 @@ fn create_panels() -> HashMap<PanelName, Panel> {
 
     let map_pixels = (over_sample * MAP_WIDTH as u32 * FONT_WIDTH as u32, over_sample * MAP_HEIGHT as u32 * FONT_HEIGHT as u32);
     let map_dims = (MAP_WIDTH as u32, MAP_HEIGHT as u32);
-    panels.insert(PanelName::Background, Panel::new(map_pixels, map_dims));
-
     let map_panel = Panel::new(map_pixels, map_dims);
     panels.insert(PanelName::Map, map_panel);
 
