@@ -25,7 +25,7 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, game: &
     display_state.time += dt;
 
     /* Draw Background */
-    render_background(panels.get_mut(&PanelName::Background).unwrap(), display_state, game);
+    render_background(panels.get_mut(&PanelName::Map).unwrap(), display_state, game);
 
     /* Draw Map */
     render_panels(panels, display_state, game);
@@ -53,7 +53,7 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, game: &
 
 fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &mut Game) {
     if game.settings.render_map {
-        let panel = &mut panels.get_mut(&PanelName::Background).unwrap();
+        let panel = &mut panels.get_mut(&PanelName::Map).unwrap();
 
         {
             let _map = timer!("MAP");

@@ -73,10 +73,10 @@ impl DrawCmd {
 
 // NOTE this function only uses sprites and lookup from in display_state.
 // It could receive the sprite map, and the fonts sprite key, and remove display_state.
-fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mut DisplayState, cmd: &DrawCmd) {
+fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<SpriteSheet>,  cmd: &DrawCmd) {
     match cmd {
         DrawCmd::Sprite(sprite, color, pos) => {
-            let sprite_sheet = &mut display_state.sprites[sprite.key];
+            let sprite_sheet = &mut sprites[sprite.key];
             let (cell_width, cell_height) = panel.cell_dims();
 
             let pos = Pos::new(pos.x * cell_width as i32, pos.y * cell_height as i32);
@@ -107,7 +107,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mu
 
         DrawCmd::SpriteScaled(sprite, scale, direction, color, pos) => {
             let cell_dims = panel.cell_dims();
-            let sprite_sheet = &mut display_state.sprites[sprite.key];
+            let sprite_sheet = &mut sprites[sprite.key];
 
             let src = sprite_sheet.sprite_src(sprite.index as usize);
 
@@ -180,7 +180,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mu
         }
 
         DrawCmd::SpriteAtPixel(sprite, color, pos) => {
-            let sprite_sheet = &mut display_state.sprites[sprite.key];
+            let sprite_sheet = &mut sprites[sprite.key];
 
             let (cell_width, cell_height) = panel.cell_dims();
 
@@ -219,8 +219,8 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, display_state: &mu
         }
 
         DrawCmd::Text(string, color, start_pos) => {
-            let sprite_key = display_state.lookup_spritekey("font");
-            let sprite_sheet = &mut display_state.sprites[sprite_key];
+            let sprite_key = lookup_spritekey(sprites, "font");
+            let sprite_sheet = &mut sprites[sprite_key];
             let query = sprite_sheet.texture.query();
 
             let cell_dims = panel.cell_dims();
@@ -308,7 +308,7 @@ pub struct Display {
 
 impl Display {
     pub fn new(canvas: WindowCanvas) -> Display {
-        let texture_creator = canvas.texture_creator();
+        let mut texture_creator = canvas.texture_creator();
         let pixel_format = texture_creator.default_pixel_format();
 
         let display_state = DisplayState::new();
@@ -332,23 +332,27 @@ impl Display {
 
     pub fn process_draw_commands(&mut self) {
         let canvas = &mut self.canvas;
-        let display_state = &mut self.state;
 
+        // TODO either add this back in, or just draw background every time.
+        // this was commented out due to double mutable borrow of textures
         // copy background into the map before other draws.
-        let background = &mut self.textures[&PanelName::Background];
-        canvas.with_texture_canvas(&mut self.textures[&PanelName::Map], |canvas| {
-            canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
-            canvas.clear();
+        //{
+        //    let background = self.textures.get_mut(&PanelName::Background).unwrap();
+        //    canvas.with_texture_canvas(self.textures.get_mut(&PanelName::Map).unwrap(), |canvas| {
+        //        canvas.set_draw_color(Sdl2Color::RGB(0, 0, 0));
+        //        canvas.clear();
 
-            canvas.copy(&background, None, None).unwrap();
-        }).unwrap();
+        //        canvas.copy(&background, None, None).unwrap();
+        //    }).unwrap();
+        //}
 
         for panel_name in PanelName::names().iter() {
             let clear = *panel_name != PanelName::Map;
-            self.panels[panel_name].process_cmds(clear,
-                                                 self.textures.get_mut(panel_name).unwrap(),
-                                                 canvas,
-                                                 display_state);
+            let panel = self.panels.get_mut(panel_name).unwrap();
+            panel.process_cmds(clear,
+                               self.textures.get_mut(panel_name).unwrap(),
+                               canvas,
+                               &mut self.state.sprites);
         }
     }
 
@@ -1044,7 +1048,7 @@ impl Panel {
     }
 
     // TODO this does not really need display state, only sprites and a way to look them up
-    pub fn process_cmds(&mut self, clear: bool, texture: &mut Texture, canvas: &mut WindowCanvas, display_state: &mut DisplayState) {
+    pub fn process_cmds(&mut self, clear: bool, texture: &mut Texture, canvas: &mut WindowCanvas, sprites: &mut Vec<SpriteSheet>) {
         // As a simple optimization, only redraw if the commands haven't changed. This is common
         // for informational panels.
         if self.draw_cmds != self.old_draw_cmds {
@@ -1090,7 +1094,7 @@ impl Panel {
                             }
                         }
                     }
-                    process_draw_cmd(self, canvas, display_state, cmd);
+                    process_draw_cmd(self, canvas, sprites, cmd);
                 }
             }).unwrap();
 
@@ -1399,6 +1403,7 @@ fn create_panels() -> HashMap<PanelName, Panel> {
     panels.insert(PanelName::Background, Panel::new(map_pixels, map_dims));
 
     let map_panel = Panel::new(map_pixels, map_dims);
+    panels.insert(PanelName::Map, map_panel);
 
     let info_width = 50 / 3;
 
