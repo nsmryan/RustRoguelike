@@ -6,7 +6,7 @@ use bmp::Image;
 use sdl2::render::{Texture, WindowCanvas, TextureCreator, BlendMode, RenderTarget, Canvas};
 use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
-use sdl2::pixels::{PixelFormatEnum, Color as Sdl2Color, PixelFormat};
+use sdl2::pixels::{PixelFormatEnum, Color as Sdl2Color};
 
 use indexmap::map::IndexMap;
 
@@ -38,6 +38,13 @@ impl PanelName {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Justify {
+    Right,
+    Center,
+    Left,
+}
+
 // NOTE use of String prevents Copy trait
 #[derive(Clone, Debug, PartialEq)]
 pub enum DrawCmd {
@@ -47,6 +54,7 @@ pub enum DrawCmd {
     HighlightTile(Color, Pos),
     OutlineTile(Color, Pos),
     Text(String, Color, Pos),
+    TextJustify(String, Justify, Color, Pos, u32), // text, justify, color, pos, width in cells
     Rect(Pos, (u32, u32), f32, bool, Color), // start cell, num cells width/height, offset percent into cell, color
     Fill(Pos, Color),
 }
@@ -64,6 +72,7 @@ impl DrawCmd {
             DrawCmd::HighlightTile(_, pos) => *pos,
             DrawCmd::OutlineTile(_, pos) => *pos,
             DrawCmd::Text(_, _, pos) => *pos,
+            DrawCmd::TextJustify(_, _, _, pos, _) => *pos,
             DrawCmd::Rect(pos, _, _, _, _) => *pos,
             DrawCmd::Fill(pos, _) => *pos,
         }
@@ -217,6 +226,71 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             draw_tile_highlight(panel, canvas, *pos, *color);
         }
 
+        DrawCmd::TextJustify(string, justify, color, start_pos, width) => {
+            let ascii_width = ASCII_END - ASCII_START;
+
+            let sprite_key = lookup_spritekey(sprites, "font");
+            let sprite_sheet = &mut sprites[sprite_key];
+            let query = sprite_sheet.texture.query();
+
+            let cell_dims = panel.cell_dims();
+            let (cell_width, cell_height) = cell_dims;
+
+            let font_width = query.width / ascii_width;
+            let font_height = query.height;
+
+            let char_height = cell_height;
+            let char_width = (cell_height * font_width) / font_height;
+
+            canvas.set_blend_mode(BlendMode::Blend);
+            sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
+            sprite_sheet.texture.set_alpha_mod(color.a);
+
+            let pixel_width = (*width * cell_width) as i32;
+            let mut x_offset;
+            match justify {
+                Justify::Right => {
+                    x_offset = (start_pos.x * cell_width as i32) + pixel_width - char_width as i32 * string.len() as i32;
+                }
+
+                Justify::Center => {
+                    x_offset = (((start_pos.x * cell_width as i32) + pixel_width) / 2) - ((char_width as i32 * string.len() as i32) / 2);
+                }
+
+                Justify::Left => {
+                    x_offset = start_pos.x * cell_width as i32;
+                }
+            }
+
+            let mut pos = *start_pos;
+            for chr in string.chars() {
+                let chr_num = chr.to_lowercase().next().unwrap();
+                let chr_index = chr_num as i32 - ASCII_START as i32;
+
+                let src = Rect::new((query.width as i32 / ascii_width as i32) * chr_index,
+                                    0,
+                                    query.width / ascii_width,
+                                    query.height);
+
+                let dst_pos = Pos::new(x_offset,
+                                       pos.y * cell_height as i32);
+                x_offset += char_width as i32;
+                let dst = Rect::new(dst_pos.x as i32,
+                                    dst_pos.y as i32,
+                                    char_width as u32,
+                                    char_height as u32);
+
+                canvas.copy_ex(&sprite_sheet.texture,
+                                     Some(src),
+                                     Some(dst),
+                                     0.0,
+                                     None,
+                                     false,
+                                     false).unwrap();
+                pos.x += 1;
+            }
+        }
+
         DrawCmd::Text(string, color, start_pos) => {
             let ascii_width = ASCII_END - ASCII_START;
 
@@ -247,8 +321,8 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                                     query.width / ascii_width,
                                     query.height);
 
-                let dst_pos = Pos::new(pos.x * font_width as i32,
-                                       pos.y * font_height as i32);
+                let dst_pos = Pos::new(pos.x * char_width as i32,
+                                       pos.y * char_height as i32);
                 let dst = Rect::new(dst_pos.x as i32,
                                     dst_pos.y as i32,
                                     char_width as u32,
@@ -1009,6 +1083,12 @@ impl Panel {
 
     pub fn highlight_cmd(&mut self, color: Color, pos: Pos) {
         let cmd = DrawCmd::HighlightTile(color, pos);
+        self.draw_cmd(cmd);
+    }
+
+    pub fn justify_cmd(&mut self, text: &str, justify: Justify, text_color: Color, text_pos: Pos, width: u32) {
+        let string = text.to_string();
+        let cmd = DrawCmd::TextJustify(string, justify, text_color, text_pos, width);
         self.draw_cmd(cmd);
     }
 

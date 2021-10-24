@@ -128,8 +128,8 @@ fn render_debug(panel: &mut Panel, display_state: &mut DisplayState) {
 
 /// Draw an outline and title around an area of the screen
 fn render_placard(panel: &mut Panel,
-                     display_state: &mut DisplayState,
-                     text: &str) {
+                  display_state: &mut DisplayState,
+                  text: &str) {
     // TODO delete commented out code when draw commands are complete
     // TODO this color comes from the UI mockups as a light brown
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
@@ -153,7 +153,11 @@ fn render_placard(panel: &mut Panel,
     let text_pos = Pos::new(text_offset as i32, 0);
     let text_color = Color::new(0, 0, 0, 255);
 
-    panel.text_cmd(text, text_color, text_pos);
+    panel.justify_cmd(text,
+                      Justify::Center,
+                      text_color,
+                      Pos::new(0, 0),
+                      panel.cells.0);
 }
 
 fn render_pips(panel: &mut Panel,
@@ -1656,11 +1660,11 @@ fn render_movement_overlay(panel: &mut Panel,
     }
 }
 
-pub fn render_entity_ghost(panel: &mut Panel,
-                           entity_id: EntityId,
-                           render_pos: Pos,
-                           game: &mut Game,
-                           display_state: &mut DisplayState) {
+fn render_entity_ghost(panel: &mut Panel,
+                       entity_id: EntityId,
+                       render_pos: Pos,
+                       game: &mut Game,
+                       display_state: &mut DisplayState) {
     let entity_pos = game.data.entities.pos[&entity_id];
 
     let alpha = game.data.entities.color[&entity_id].a;
