@@ -54,7 +54,7 @@ pub enum DrawCmd {
     HighlightTile(Color, Pos),
     OutlineTile(Color, Pos),
     Text(String, Color, Pos),
-    TextJustify(String, Justify, Color, Pos, u32), // text, justify, color, pos, width in cells
+    TextJustify(String, Justify, Color, Color, Pos, u32), // text, justify, fg color, bg color, pos, width in cells
     Rect(Pos, (u32, u32), f32, bool, Color), // start cell, num cells width/height, offset percent into cell, color
     Fill(Pos, Color),
 }
@@ -72,15 +72,13 @@ impl DrawCmd {
             DrawCmd::HighlightTile(_, pos) => *pos,
             DrawCmd::OutlineTile(_, pos) => *pos,
             DrawCmd::Text(_, _, pos) => *pos,
-            DrawCmd::TextJustify(_, _, _, pos, _) => *pos,
+            DrawCmd::TextJustify(_, _, _, _, pos, _) => *pos,
             DrawCmd::Rect(pos, _, _, _, _) => *pos,
             DrawCmd::Fill(pos, _) => *pos,
         }
     }
 }
 
-// NOTE this function only uses sprites and lookup from in display_state.
-// It could receive the sprite map, and the fonts sprite key, and remove display_state.
 fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<SpriteSheet>,  cmd: &DrawCmd) {
     match cmd {
         DrawCmd::Sprite(sprite, color, pos) => {
@@ -226,7 +224,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             draw_tile_highlight(panel, canvas, *pos, *color);
         }
 
-        DrawCmd::TextJustify(string, justify, color, start_pos, width) => {
+        DrawCmd::TextJustify(string, justify, fg_color, bg_color, start_pos, width) => {
             let ascii_width = ASCII_END - ASCII_START;
 
             let sprite_key = lookup_spritekey(sprites, "font");
@@ -240,11 +238,8 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             let font_height = query.height;
 
             let char_height = cell_height;
-            let char_width = (cell_height * font_width) / font_height;
+            let char_width = ((cell_width * font_width) / font_height) - 16;
 
-            canvas.set_blend_mode(BlendMode::Blend);
-            sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
-            sprite_sheet.texture.set_alpha_mod(color.a);
 
             let pixel_width = (*width * cell_width) as i32;
             let mut x_offset;
@@ -262,18 +257,26 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                 }
             }
 
-            let mut pos = *start_pos;
+            let y_offset = start_pos.y * cell_height as i32;
+
+            canvas.set_blend_mode(BlendMode::Blend);
+
+            canvas.set_draw_color(sdl2_color(*bg_color));
+            canvas.fill_rect(Rect::new(x_offset, y_offset, string.len() as u32 * char_width, char_height)).unwrap();
+
+            sprite_sheet.texture.set_color_mod(fg_color.r, fg_color.g, fg_color.b);
+            sprite_sheet.texture.set_alpha_mod(fg_color.a);
+
             for chr in string.chars() {
                 let chr_num = chr.to_lowercase().next().unwrap();
                 let chr_index = chr_num as i32 - ASCII_START as i32;
 
                 let src = Rect::new((query.width as i32 / ascii_width as i32) * chr_index,
                                     0,
-                                    query.width / ascii_width,
-                                    query.height);
+                                    font_width,
+                                    font_height);
 
-                let dst_pos = Pos::new(x_offset,
-                                       pos.y * cell_height as i32);
+                let dst_pos = Pos::new(x_offset, y_offset);
                 x_offset += char_width as i32;
                 let dst = Rect::new(dst_pos.x as i32,
                                     dst_pos.y as i32,
@@ -287,7 +290,6 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                                      None,
                                      false,
                                      false).unwrap();
-                pos.x += 1;
             }
         }
 
@@ -299,13 +301,13 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             let query = sprite_sheet.texture.query();
 
             let cell_dims = panel.cell_dims();
-            let (cell_width, cell_height) = cell_dims;
+            let (_cell_width, cell_height) = cell_dims;
 
             let font_width = query.width / ascii_width;
             let font_height = query.height;
 
             let char_height = cell_height;
-            let char_width = (cell_height * font_width) / font_height;
+            let char_width = ((cell_height * font_width) / font_height) - 16;
 
             canvas.set_blend_mode(BlendMode::Blend);
             sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
@@ -316,13 +318,13 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                 let chr_num = chr.to_lowercase().next().unwrap();
                 let chr_index = chr_num as i32 - ASCII_START as i32;
 
-                let src = Rect::new((query.width as i32 / ascii_width as i32) * chr_index,
+                let src = Rect::new(font_width as i32 * chr_index,
                                     0,
-                                    query.width / ascii_width,
-                                    query.height);
+                                    font_width,
+                                    font_height);
 
                 let dst_pos = Pos::new(pos.x * char_width as i32,
-                                       pos.y * char_height as i32);
+                                       pos.y * cell_height as i32);
                 let dst = Rect::new(dst_pos.x as i32,
                                     dst_pos.y as i32,
                                     char_width as u32,
@@ -391,9 +393,9 @@ impl Display {
         let mut texture_creator = canvas.texture_creator();
         let pixel_format = texture_creator.default_pixel_format();
 
-        let display_state = DisplayState::new();
-        let panels = create_panels();
-        let canvas_panel = Panel::new((SCREEN_WIDTH, SCREEN_HEIGHT), (SCREEN_WIDTH / FONT_WIDTH as u32, SCREEN_HEIGHT / FONT_HEIGHT as u32));
+        let canvas_cell_dims = (SCREEN_WIDTH / (FONT_WIDTH as u32 * 2), SCREEN_HEIGHT / (FONT_HEIGHT as u32 * 2));
+        let canvas_panel = Panel::new((SCREEN_WIDTH, SCREEN_HEIGHT), canvas_cell_dims);
+        let panels = create_panels(canvas_cell_dims.0, canvas_cell_dims.1);
 
         let mut textures = HashMap::new();
 
@@ -774,18 +776,12 @@ impl Display {
     }
 
     pub fn copy_panels(&mut self, game: &mut Game) {
-        let map_size = game.data.map.size();
-
         /* Split Screen Into Sections */
         let screen_area = self.canvas_panel.area();
-        let (map_area, rest_area) = screen_area.split_top(self.panels[&PanelName::Map].cells.1 as usize);
-        let (remaining_area, player_area) = rest_area.split_right(20);
-        let (info_area, inventory_area) = remaining_area.split_right(15);
+        let (map_area, _rest_area) = screen_area.split_top(self.panels[&PanelName::Map].cells.1 as usize);
 
         let menu_area = self.panels[&PanelName::Menu].area();
         let menu_area = map_area.centered(menu_area.width, menu_area.height);
-
-        //let map_rect = self.canvas_panel.get_rect_within(&map_area, self.map_panel.num_pixels);
 
         // TODO if the map changed size, the texture should be reallocated to match.
         //let src = self.map_panel.get_rect_full();
@@ -794,19 +790,13 @@ impl Display {
 
         /* Draw Inventory Panel */
         let inventory_rect = Rect::new(0, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);
-        //let dst = self.canvas_panel.get_rect_within(&inventory_area,
-        //                                            self.inventory_panel.num_pixels);
         self.canvas.copy(&self.textures[&PanelName::Inventory], None, inventory_rect).unwrap();
 
         /* Draw Game Info Panel */
-        //let dst = self.canvas_panel.get_rect_within(&info_area,
-        //                                            self.info_panel.num_pixels);
         let info_rect = Rect::new(SCREEN_WIDTH as i32 / 3, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);
         self.canvas.copy(&self.textures[&PanelName::Info], None, info_rect).unwrap();
 
         /* Draw Player Info Panel */
-        //let dst = self.canvas_panel.get_rect_within(&player_area,
-        //                                            self.player_panel.num_pixels);
         let player_rect = Rect::new(2 * SCREEN_WIDTH as i32 / 3, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);
         self.canvas.copy(&self.textures[&PanelName::Player], None, player_rect).unwrap();
 
@@ -1086,9 +1076,9 @@ impl Panel {
         self.draw_cmd(cmd);
     }
 
-    pub fn justify_cmd(&mut self, text: &str, justify: Justify, text_color: Color, text_pos: Pos, width: u32) {
+    pub fn justify_cmd(&mut self, text: &str, justify: Justify, fg_color: Color, bg_color: Color, text_pos: Pos, width: u32) {
         let string = text.to_string();
-        let cmd = DrawCmd::TextJustify(string, justify, text_color, text_pos, width);
+        let cmd = DrawCmd::TextJustify(string, justify, fg_color, bg_color, text_pos, width);
         self.draw_cmd(cmd);
     }
 
@@ -1119,7 +1109,6 @@ impl Panel {
         self.draw_cmds.push(cmd);
     }
 
-    // TODO this does not really need display state, only sprites and a way to look them up
     pub fn process_cmds(&mut self, clear: bool, texture: &mut Texture, canvas: &mut WindowCanvas, sprites: &mut Vec<SpriteSheet>) {
         // As a simple optimization, only redraw if the commands haven't changed. This is common
         // for informational panels.
@@ -1465,7 +1454,7 @@ fn lookup_spritekey(sprites: &Vec<SpriteSheet>, name: &str) -> SpriteKey {
     panic!(format!("Could not find sprite '{}'", name));
 }
 
-fn create_panels() -> HashMap<PanelName, Panel> {
+fn create_panels(width: u32, height: u32) -> HashMap<PanelName, Panel> {
     let mut panels = HashMap::new();
 
     let over_sample = 5;
@@ -1475,22 +1464,22 @@ fn create_panels() -> HashMap<PanelName, Panel> {
     let map_panel = Panel::new(map_pixels, map_dims);
     panels.insert(PanelName::Map, map_panel);
 
-    let info_width = 50 / 3;
+    let info_width = width / 3;
 
-    let info_dims = (info_width, 10);
-    let info_pixels = (info_dims.0 * FONT_WIDTH as u32, info_dims.1 * FONT_HEIGHT as u32);
+    let info_dims = (info_width, height - MAP_HEIGHT as u32);
+    let info_pixels = (over_sample * info_dims.0 * FONT_WIDTH as u32, over_sample * info_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Info, Panel::new(info_pixels, info_dims));
 
-    let inventory_dims = (info_width, 10);
-    let inventory_pixels = (inventory_dims.0 * FONT_WIDTH as u32, inventory_dims.1 * FONT_HEIGHT as u32);
+    let inventory_dims = (info_width, height - MAP_HEIGHT as u32);
+    let inventory_pixels = (over_sample * inventory_dims.0 * FONT_WIDTH as u32, over_sample * inventory_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Inventory, Panel::new(inventory_pixels, inventory_dims));
 
-    let player_dims = (info_width, 10);
-    let player_pixels = (player_dims.0 * FONT_WIDTH as u32, player_dims.1 * FONT_HEIGHT as u32);
+    let player_dims = (info_width, height - MAP_HEIGHT as u32);
+    let player_pixels = (over_sample * player_dims.0 * FONT_WIDTH as u32, over_sample * player_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Player, Panel::new(player_pixels, player_dims));
 
-    let menu_dims = (info_width, 15);
-    let menu_pixels = (menu_dims.0 * FONT_WIDTH as u32, menu_dims.1 * FONT_HEIGHT as u32);
+    let menu_dims = (info_width, height - MAP_HEIGHT as u32);
+    let menu_pixels = (over_sample * menu_dims.0 * FONT_WIDTH as u32, over_sample * menu_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Menu, Panel::new(menu_pixels, menu_dims));
 
     return panels;

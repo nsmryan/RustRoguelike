@@ -38,13 +38,13 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, game: &
     let menu_panel = panels.get_mut(&PanelName::Menu).unwrap();
 
     if game.settings.state == GameState::Inventory {
-        render_inventory(menu_panel, display_state, game);
+        render_inventory(menu_panel, game);
     } else if game.settings.state == GameState::SkillMenu {
-        render_skill_menu(menu_panel, display_state, game);
+        render_skill_menu(menu_panel, game);
     } else if game.settings.state == GameState::ClassMenu {
-        render_class_menu(menu_panel, display_state);
+        render_class_menu(menu_panel);
     } else if game.settings.state == GameState::ConfirmQuit {
-        render_confirm_quit(menu_panel, display_state);
+        render_confirm_quit(menu_panel);
     }
 
     Ok(())
@@ -98,13 +98,13 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &m
     /* Draw Player Info */
     {
         let player_panel = &mut panels.get_mut(&PanelName::Player).unwrap();
-        render_player_info(player_panel, display_state, game);
+        render_player_info(player_panel, game);
     }
 
     /* Draw Inventory */
     {
         let inventory_panel = &mut panels.get_mut(&PanelName::Inventory).unwrap();
-        render_inventory(inventory_panel, display_state, game);
+        render_inventory(inventory_panel, game);
     }
 
     /* Draw Game Info */
@@ -127,41 +127,20 @@ fn render_debug(panel: &mut Panel, display_state: &mut DisplayState) {
 }
 
 /// Draw an outline and title around an area of the screen
-fn render_placard(panel: &mut Panel,
-                  display_state: &mut DisplayState,
-                  text: &str) {
-    // TODO delete commented out code when draw commands are complete
-    // TODO this color comes from the UI mockups as a light brown
-    let color = Color::new(0xcd, 0xb4, 0x96, 255);
-
-    // Draw a black background
-    let (cell_width, cell_height) = panel.cell_dims();
-
-    let filled = false;
-    panel.rect_cmd(Pos::new(0, 0), panel.cells, 0.5, filled, color);
-
-    // draw a rectangle around where the placard header text will be placed.
-    let half_text = text.len() / 2;
-    assert!(panel.cells.0 / 2 >= half_text as u32, "text too long to center!");
-    let text_offset = (panel.cells.0 / 2) - half_text as u32;
-
-    let filled = true;
-    let text_dims = (text.len() as u32, 1);
-    panel.rect_cmd(Pos::new(text_offset as i32, 0), text_dims, 0.0, filled, color);
-
+fn render_placard(panel: &mut Panel, text: &str) {
     // Draw header text
-    let text_pos = Pos::new(text_offset as i32, 0);
     let text_color = Color::new(0, 0, 0, 255);
+    let highlight_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
     panel.justify_cmd(text,
                       Justify::Center,
                       text_color,
+                      highlight_color,
                       Pos::new(0, 0),
                       panel.cells.0);
 }
 
 fn render_pips(panel: &mut Panel,
-               display_state: &mut DisplayState,
                num_pips: u32,
                pos: Pos,
                color: Color) {
@@ -176,7 +155,6 @@ fn render_pips(panel: &mut Panel,
 
 // TODO remove commented out code when draw cmds are done
 fn render_bar(panel: &mut Panel,
-              display_state: &mut DisplayState,
               full: i32,
               current: i32,
               pos: Pos,
@@ -192,8 +170,8 @@ fn render_bar(panel: &mut Panel,
     }
 }
 
-fn render_player_info(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
-    render_placard(panel, display_state, "Player");
+fn render_player_info(panel: &mut Panel, game: &mut Game) {
+    render_placard(panel, "Player");
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
@@ -208,18 +186,16 @@ fn render_player_info(panel: &mut Panel, display_state: &mut DisplayState, game:
         } else {
             0
         };
-        let health_percent = hp as f32 / fighter.max_hp as f32;
-
         // TODO this color red comes from the UI mockups
         let health_color = Color::new(0x96, 0x54, 0x56, 255);
         let bar_pos = Pos::new(2, 2);
-        render_bar(panel, display_state, fighter.max_hp, hp, bar_pos, health_color, Color::white(), false);
+        render_bar(panel, fighter.max_hp, hp, bar_pos, health_color, Color::white(), false);
     }
 
     let energy = game.data.entities.energy[&player_id];
     // TODO this color orange comes from the UI mockups
     let energy_color = Color::new(0xaf, 0x83, 0x56, 255);
-    render_pips(panel, display_state, energy, Pos::new(2, 3), energy_color);
+    render_pips(panel, energy, Pos::new(2, 3), energy_color);
 
     list.push(format!(""));
 
@@ -249,7 +225,7 @@ fn render_player_info(panel: &mut Panel, display_state: &mut DisplayState, game:
 fn render_info(panel: &mut Panel,
                display_state: &mut DisplayState,
                game: &mut Game) {
-    render_placard(panel, display_state, "Info");
+    render_placard(panel, "Info");
 
     if let Some(info_pos) = game.settings.cursor {
         let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
@@ -286,11 +262,8 @@ fn render_info(panel: &mut Panel,
                 if let Some(fighter) = game.data.entities.fighter.get(obj_id) {
                     y_pos += 1;
 
-                    let health_percent = fighter.hp as f32 / fighter.max_hp as f32;
-
                     let health_color = Color::new(0x96, 0x54, 0x56, 255);
                     render_bar(panel,
-                               display_state,
                                fighter.max_hp,
                                fighter.hp,
                                Pos::new(2, y_pos),
@@ -365,11 +338,11 @@ fn render_info(panel: &mut Panel,
     }
 }
 
-fn render_skill_menu(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
+fn render_skill_menu(panel: &mut Panel, game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     // Render header
-    render_placard(panel, display_state, "Skills");
+    render_placard(panel, "Skills");
 
     let mut list = Vec::new();
 
@@ -386,9 +359,9 @@ fn render_skill_menu(panel: &mut Panel, display_state: &mut DisplayState, game: 
     panel.text_list_cmd(&list, color, text_pos);
 }
 
-fn render_class_menu(panel: &mut Panel, display_state: &mut DisplayState) {
+fn render_class_menu(panel: &mut Panel) {
     // Render header
-    render_placard(panel, display_state, "Choose Class");
+    render_placard(panel, "Choose Class");
 
     let mut list = Vec::new();
 
@@ -402,15 +375,12 @@ fn render_class_menu(panel: &mut Panel, display_state: &mut DisplayState) {
     // TODO this color comes from the ui mockups as a light brown
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
-    let sprite_key = display_state.lookup_spritekey("font");
-    let tile_sprite = &mut display_state.sprites[sprite_key];
-
     panel.text_list_cmd(&list, color, text_pos);
 }
 
-fn render_confirm_quit(panel: &mut Panel, display_state: &mut DisplayState) {
+fn render_confirm_quit(panel: &mut Panel) {
     // Render header
-    render_placard(panel, display_state, "Quit?");
+    render_placard(panel, "Quit?");
 
     let mut list = Vec::new();
 
@@ -428,16 +398,14 @@ fn render_confirm_quit(panel: &mut Panel, display_state: &mut DisplayState) {
 }
 
 /// Render an inventory section within the given area
-fn render_inventory(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
+fn render_inventory(panel: &mut Panel, game: &mut Game) {
     // Render header
-    render_placard(panel, display_state, "Inventory");
+    render_placard(panel, "Inventory");
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     // TODO this color comes from the UI mockups as a light brown
     let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
-
-    let sprite_key = display_state.lookup_spritekey("font");
 
     // Render each object's name in inventory
     let mut y_pos = 2;
@@ -461,7 +429,6 @@ fn render_inventory(panel: &mut Panel, display_state: &mut DisplayState, game: &
     y_pos += 1;
 
     // Draw Consumable Items
-    let tile_sprite = &mut display_state.sprites[sprite_key];
     panel.text_cmd(&"x", ui_color, Pos::new(1, y_pos));
 
     let mut index = 0;
@@ -529,7 +496,6 @@ fn render_background(panel: &mut Panel, display_state: &mut DisplayState, game: 
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = display_state.lookup_spritekey("tiles");
-    let sprite = &mut display_state.sprites[sprite_key];
 
     for y in 0..map_height {
         for x in 0..map_width {
@@ -707,7 +673,7 @@ fn render_map_middle(panel: &mut Panel, display_state: &mut DisplayState, game: 
             render_wall_shadow(panel, pos, display_state, game);
 
             /* draw the between-tile walls appropriate to this tile */
-            render_intertile_walls_below(panel, display_state, &mut game.data.map, sprite_key, pos);
+            render_intertile_walls_below(panel, &mut game.data.map, sprite_key, pos);
         }
     }
 }
@@ -751,10 +717,9 @@ fn render_map(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Ga
 }
 
 fn render_intertile_walls_below(panel: &mut Panel,
-                                   display_state: &mut DisplayState,
-                                   map: &Map,
-                                   sprite_key: SpriteKey,
-                                   pos: Pos) {
+                                map: &Map,
+                                sprite_key: SpriteKey,
+                                pos: Pos) {
     let (x, y) = pos.to_tuple();
     let tile = map[pos];
     let wall_color = Color::white();
@@ -1178,7 +1143,7 @@ fn render_sound_overlay(panel: &mut Panel,
 fn render_game_overlays(panel: &mut Panel,
                    display_state: &mut DisplayState,
                    game: &mut Game,
-                   cursor_pos: Option<Pos>) {
+                   _cursor_pos: Option<Pos>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
@@ -1382,7 +1347,7 @@ fn render_overlays(panel: &mut Panel,
                *entity_id != player_id &&
                game.data.entities.status[entity_id].alive {
                render_attack_overlay(panel, display_state, game, *entity_id);
-               render_fov_overlay(panel, display_state, game, *entity_id);
+               render_fov_overlay(panel, game, *entity_id);
                render_movement_overlay(panel, display_state, game, *entity_id);
             }
         }
@@ -1448,7 +1413,7 @@ fn render_overlays(panel: &mut Panel,
         render_sound_overlay(panel, display_state, game);
 
         // Outline tiles within FOV for clarity
-        render_fov_overlay(panel, display_state, game, player_id);
+        render_fov_overlay(panel, game, player_id);
     }
 
     // NOTE floodfill ranges:
@@ -1459,8 +1424,6 @@ fn render_overlays(panel: &mut Panel,
     // 40 are nearly fully open
     // 49 may be fully open
     if game.config.overlay_floodfill {
-        let font_key = display_state.lookup_spritekey("font");
-
         let mut highlight_color = game.config.color_light_orange;
         highlight_color.a = 50;
         let fill_metric = map_fill_metric(&game.data.map);
@@ -1611,9 +1574,8 @@ fn render_attack_overlay(panel: &mut Panel,
 }
 
 fn render_fov_overlay(panel: &mut Panel,
-                         display_state: &mut DisplayState,
-                         game: &mut Game,
-                         entity_id: EntityId) {
+                      game: &mut Game,
+                      entity_id: EntityId) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let mut highlight_color = game.config.color_light_grey;
