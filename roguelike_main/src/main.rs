@@ -111,6 +111,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     /* Create SDL Context */
     let sdl_context = sdl2::init()?;
     let video = sdl_context.video()?;
+    let mut timer = sdl_context.timer()?;
     let window = video.window("Rust Roguelike", SCREEN_WIDTH, SCREEN_HEIGHT)
                       .position_centered().build().map_err(|e| e.to_string())?;
 
@@ -189,11 +190,11 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         // run game loop
         make_map(&map_config, &mut game);
         let event_pump = sdl_context.event_pump().unwrap();
-        return game_loop(game, display, opts, event_pump);
+        return game_loop(game, display, opts, &mut timer, event_pump);
     }
 }
 
-pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut event_pump: sdl2::EventPump) -> Result<(), String> {
+pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer: &mut sdl2::TimerSubsystem, mut event_pump: sdl2::EventPump) -> Result<(), String> {
     // read in the recorded action log, if one is provided
     let mut starting_actions = Vec::new();
     if let Some(replay_file) = &opts.replay {
@@ -235,7 +236,10 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
                             game = new_game;
                         }
                     } else {
-                        let input_action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
+                        // This is not the best timer, but input should not occur faster than 1 ms apart. Using
+                        // ticks is better then Instant for serialization.
+                        let ticks = timer.ticks();
+                        let input_action = game.input.handle_event(&mut game.settings, event, ticks, &game.config);
                         input_actions.push(input_action);
                     }
                 }
