@@ -761,10 +761,10 @@ impl SpriteSheet {
     }
 }
 
-pub fn draw_outline_tile<T>(panel: &Panel,
-                            canvas: &mut Canvas<T>,
-                            cell: Pos,
-                            color: Color) where T: RenderTarget {
+fn draw_outline_tile<T>(panel: &Panel,
+                        canvas: &mut Canvas<T>,
+                        cell: Pos,
+                        color: Color) where T: RenderTarget {
     let cell_dims = panel.cell_dims();
 
     canvas.set_blend_mode(BlendMode::Add);
@@ -778,10 +778,10 @@ pub fn draw_outline_tile<T>(panel: &Panel,
     canvas.draw_rect(rect).unwrap();
 }
 
-pub fn draw_tile_highlight<T>(panel: &Panel,
-                              canvas: &mut Canvas<T>,
-                              cell: Pos,
-                              color: Color) where T: RenderTarget {
+fn draw_tile_highlight<T>(panel: &Panel,
+                          canvas: &mut Canvas<T>,
+                          cell: Pos,
+                          color: Color) where T: RenderTarget {
     let cell_dims = panel.cell_dims();
 
     canvas.set_blend_mode(BlendMode::Blend);
