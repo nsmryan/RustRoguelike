@@ -149,6 +149,12 @@ impl Display {
         return anim;
     }
 
+    pub fn between_sprite(&mut self, sprite_name: &str, start: Pos, end: Pos, speed: f32) -> Animation {
+        let sprite_anim = self.state.new_sprite(sprite_name, speed);
+        let anim = Animation::Between(sprite_anim, start, end, 0.0, speed);
+        return anim;
+    }
+
     /// Create and play a looping sprite
     pub fn loop_sprite(&mut self, sprite_name: &str, speed: f32) -> Animation {
         let sprite_anim = self.state.new_sprite(sprite_name, speed);
@@ -191,7 +197,7 @@ impl Display {
             } else if data.entities.name[&entity_id] == EntityName::Lantern {
                 return Some(self.loop_sprite("lantern_idle", config.fire_speed));
             } else if data.entities.name[&entity_id] == EntityName::Grass {
-                return Some(self.random_sprite("GrassAnim", config.grass_idle_speed));
+                return Some(self.random_sprite("grassanim", config.grass_idle_speed));
             }
         }
 
@@ -373,8 +379,9 @@ impl Display {
                 }
             }
 
-            Msg::JumpWall(_jumper, _start, _end) => {
-                // This animation does not work
+            Msg::JumpWall(jumper, start, end) => {
+                let jump_anim = self.between_sprite("playerjump_right", start, end, config.idle_speed);
+                self.state.play_animation(jumper, jump_anim);
             }
 
             Msg::SpawnedObject(entity_id, _typ, _pos, _name, _facing) => {
@@ -458,8 +465,10 @@ impl Display {
 
         // TODO if the map changed size, the texture should be reallocated to match.
         //let src = self.map_panel.get_rect_full();
+        let map_cell_dims = self.panels[&PanelName::Map].cell_dims();
+        let map_src = Rect::new(0, 0, map_cell_dims.0 * game.data.map.width() as u32, map_cell_dims.1 * game.data.map.height() as u32);
         let map_rect = Rect::new(0, 0, SCREEN_WIDTH, SCREEN_WIDTH);
-        self.canvas.copy(&self.textures[&PanelName::Map], None, map_rect).unwrap();
+        self.canvas.copy(&self.textures[&PanelName::Map], map_src, map_rect).unwrap();
 
         /* Draw Inventory Panel */
         let inventory_rect = Rect::new(0, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);

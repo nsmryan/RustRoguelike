@@ -39,7 +39,7 @@ pub fn load_sprite(texture_creator: &TextureCreator<WindowContext>,
                    path: &str,
                    sprite_name: &str) {
     let texture = texture_creator.load_texture(path).expect("Could not load texture!");
-    display.add_spritesheet(sprite_name.to_string(), texture);
+    display.add_spritesheet(sprite_name.to_string().to_lowercase(), texture);
 }
 
 /// load a ttf font file and render all ascii characters onto a 16x16 grid.
