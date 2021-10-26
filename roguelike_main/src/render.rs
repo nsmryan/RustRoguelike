@@ -804,7 +804,6 @@ fn render_effects(panel: &mut Panel,
                             let mut color = Color::white();
                             // fade the particle out according to how long it has been running.
                             color.a = (255.0 * (particles[index].duration / game.config.particle_duration)) as u8;
-                            //speck_sprite.draw_sprite_full(panel, 0, draw_pos, color, 0.0, false, false);
                             let sprite = Sprite::new(0, sprite_key);
                             panel.sprite_at_pixel_cmd(sprite, color, draw_pos);
                         }
