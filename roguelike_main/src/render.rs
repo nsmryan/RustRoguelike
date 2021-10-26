@@ -1,7 +1,5 @@
 use std::collections::HashSet;
 
-use oorandom::Rand32;
-
 use logging_timer::timer;
 
 use roguelike_core::types::*;
@@ -13,6 +11,7 @@ use roguelike_core::utils::*;
 use roguelike_core::perlin::Perlin;
 use roguelike_core::line::line;
 use roguelike_core::ai::*;
+use roguelike_core::rng::Rand32;
 
 use roguelike_engine::game::*;
 

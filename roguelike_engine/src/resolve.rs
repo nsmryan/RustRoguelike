@@ -1,8 +1,6 @@
 #[allow(unused_imports)]
 use log::{trace, error};
 
-use oorandom::Rand32;
-
 use roguelike_core::types::*;
 use roguelike_core::ai::{Behavior, ai_move_to_attack_pos, ai_can_hit_target, ai_take_turn, ai_is_in_fov};
 use roguelike_core::map::{Surface, AoeEffect};
@@ -14,6 +12,7 @@ use roguelike_core::config::*;
 use roguelike_core::utils::*;
 use roguelike_core::map::*;
 use roguelike_core::line::line;
+use roguelike_core::rng::Rand32;
 
 use crate::generation::{make_energy, make_light};
 

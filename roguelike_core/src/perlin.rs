@@ -9,7 +9,7 @@
 //! Which is based on example code by Ken Perlin at Siggraph 2002.
 //! With optimisations by Stefan Gustavson (stegu@itn.liu.se).
 
-use oorandom::Rand32;
+use crate::rng::Rand32;
 
 
 #[inline]
