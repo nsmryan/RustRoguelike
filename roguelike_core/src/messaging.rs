@@ -33,6 +33,7 @@ pub enum Msg {
     Pierce(Pos, Pos), // attacker position, attacked position
     Slash(Pos, Pos), // attacker position, attacked position
     Killed(EntityId, EntityId, Hp), // attacker, attacked, hp lost
+    Remove(EntityId), // entity_id
     Push(EntityId, Direction, usize), // attacker, direction, amount
     Pushed(EntityId, EntityId, Direction, usize, bool), // attacker, attacked, direction, amount, move into pushed square
     TryMove(EntityId, Direction, usize, MoveMode),
@@ -117,6 +118,7 @@ impl fmt::Display for Msg {
             Msg::Pierce(attacker, attacked) => write!(f, "pierce {} {} {} {}", attacker.x, attacker.y, attacked.x, attacked.y),
             Msg::Slash(attacker, attacked) => write!(f, "slash {} {} {} {}", attacker.x, attacker.y, attacked.x, attacked.y),
             Msg::Killed(entity_id, target_id, hp) => write!(f, "killed {} {} {}", entity_id, target_id, hp),
+            Msg::Remove(entity_id) => write!(f, "remove {}", entity_id),
             Msg::Push(entity_id, direction, amount) => write!(f, "pushed {} {} {}", entity_id, direction, amount),
             Msg::Pushed(entity_id, target_id, direction, amount, follow) => write!(f, "pushed {} {} {} {} {}", entity_id, target_id, direction, amount, follow),
             Msg::TryMove(entity_id, direction, amount, move_mode) => write!(f, "try_move {} {} {} {}", entity_id, direction, amount, move_mode),

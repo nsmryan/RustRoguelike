@@ -174,6 +174,19 @@ pub fn make_cursor(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
     return entity_id;
 }
 
+pub fn ensure_grass(entities: &mut Entities, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id;
+    if let Some(grass_entity) = entities.get_names_at_pos(pos, EntityName::Grass).get(0) {
+        entity_id = *grass_entity;
+    } else {
+        entity_id = entities.create_entity(pos.x, pos.y, EntityType::Environment, ' ', Color::white(), EntityName::Grass, false);
+
+        msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Grass, entities.direction[&entity_id]));
+    }
+
+    return entity_id;
+}
+
 pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{98}', Color::white(), EntityName::Gol, true);
 

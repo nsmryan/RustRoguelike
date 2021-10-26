@@ -218,6 +218,7 @@ pub fn read_map_xp(config: &Config,
 
                             MAP_GRASS => {
                                 data.map[pos].surface = Surface::Grass;
+                                ensure_grass(&mut data.entities, pos, msg_log);
                             }
 
                             _ => {

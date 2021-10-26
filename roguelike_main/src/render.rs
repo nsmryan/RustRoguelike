@@ -62,6 +62,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &m
 
         {
             let _mid = timer!("MID");
+            render_entity_type(panel, EntityType::Environment, display_state, game);
             render_entity_type(panel, EntityType::Trigger, display_state, game);
             render_entity_type(panel, EntityType::Item, display_state, game);
 
@@ -521,7 +522,9 @@ fn surface_chr(surface: Surface) -> Option<u8> {
         }
 
         Surface::Grass => {
-            return Some(MAP_GRASS);
+            // Grass is animated now
+            //return Some(MAP_GRASS);
+            return None;
         }
 
         Surface::Floor => {

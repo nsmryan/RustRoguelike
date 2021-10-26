@@ -617,6 +617,7 @@ fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
     for pos_index in 0..num_grass_to_place {
         let pos = potential_grass_pos[pos_index];
         game.data.map[pos].surface = Surface::Grass;
+        ensure_grass(&mut game.data.entities, pos, &mut game.msg_log);
 
         for _ in 0..4 {
             let offset_pos = Pos::new(pos.x + rng_range_i32(&mut game.rng, 0, disperse),
@@ -624,9 +625,9 @@ fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
             if game.data.map.is_within_bounds(offset_pos) &&
                !game.data.map[offset_pos].block_move {
                 game.data.map[offset_pos].surface = Surface::Grass;
+                ensure_grass(&mut game.data.entities, offset_pos, &mut game.msg_log);
             }
         }
-
     }
 }
 

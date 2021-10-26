@@ -1020,6 +1020,7 @@ pub enum EntityName {
     Mouse,
     Cursor,
     Energy,
+    Grass,
     Other,
 }
 
@@ -1057,6 +1058,7 @@ impl fmt::Display for EntityName {
             EntityName::Mouse => write!(f, "mouse"),
             EntityName::Cursor => write!(f, "cursor"),
             EntityName::Energy => write!(f, "energy"),
+            EntityName::Grass => write!(f, "grass"),
             EntityName::Other => write!(f, "other"),
         }
     }
@@ -1119,6 +1121,8 @@ impl FromStr for EntityName {
             return Ok(EntityName::Cursor);
         } else if s == "energy" {
             return Ok(EntityName::Energy);
+        } else if s == "grass" {
+            return Ok(EntityName::Grass);
         } else if s == "other" {
             return Ok(EntityName::Other);
         }
@@ -1136,6 +1140,7 @@ pub enum EntityType {
     Column,
     Energy,
     Trigger,
+    Environment,
     Other,
 }
 
@@ -1148,6 +1153,7 @@ impl fmt::Display for EntityType {
             EntityType::Column => write!(f, "column"),
             EntityType::Energy => write!(f, "energy"),
             EntityType::Trigger => write!(f, "trigger"),
+            EntityType::Environment => write!(f, "environment"),
             EntityType::Other => write!(f, "other"),
         }
     }
@@ -1172,6 +1178,8 @@ impl FromStr for EntityType {
             return Ok(EntityType::Energy);
         } else if s == "trigger" {
             return Ok(EntityType::Trigger);
+        } else if s == "environment" {
+            return Ok(EntityType::Environment);
         } else if s == "other" {
             return Ok(EntityType::Other);
         }
@@ -1501,6 +1509,19 @@ impl Entities {
            }
         }
         return ai_ids;
+    }
+
+    pub fn get_names_at_pos(&mut self, check_pos: Pos, name: EntityName) -> Vec<EntityId> {
+        let mut object_ids: Vec<EntityId> = Vec::new();
+
+        for key in self.ids.iter() {
+            let pos = self.pos[key];
+            if pos == check_pos && name == self.name[key] {
+                object_ids.push(*key);
+            }
+        }
+
+        return object_ids;
     }
 
     pub fn add_skill(&mut self, entity_id: EntityId, skill: Skill) {

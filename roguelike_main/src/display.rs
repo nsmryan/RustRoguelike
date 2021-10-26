@@ -185,6 +185,8 @@ impl Display {
                 return Some(self.loop_sprite("armil_idle", config.idle_speed));
             } else if data.entities.name[&entity_id] == EntityName::Lantern {
                 return Some(self.loop_sprite("lantern_idle", config.fire_speed));
+            } else if data.entities.name[&entity_id] == EntityName::Grass {
+                return Some(self.loop_sprite("GrassAnim", config.grass_idle_speed));
             }
         }
 

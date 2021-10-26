@@ -159,6 +159,7 @@ player_vault_sprite_speed: 2.0
 player_vault_move_speed: 2.0
 idle_speed: 5
 fire_speed: 7
+grass_idle_speed: 2
 item_throw_speed: 30.0
 key_speed: 5.0
 
