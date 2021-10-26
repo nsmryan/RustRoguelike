@@ -49,7 +49,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
                 }
             }
 
-            game.data.map = generate_bare_map(20, 20, &template_file, &mut game.rng);
+            game.data.map = generate_bare_map(MAP_WIDTH as u32, MAP_HEIGHT as u32, &template_file, &mut game.rng);
             player_position = saturate_map(game, &cmds);
         }
 

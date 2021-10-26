@@ -8,3 +8,4 @@ pub mod utils;
 pub mod messaging;
 pub mod line;
 pub mod perlin;
+pub mod rng;

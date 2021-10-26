@@ -595,11 +595,15 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::CursorToggle, true) => {
-            if settings.cursor.is_none() {
-                settings.cursor = Some(player_pos);
-            } else {
+            let cursor_pos;
+            if let Some(current_pos) = settings.cursor {
+                cursor_pos = current_pos;
                 settings.cursor = None;
+            } else {
+                settings.cursor = Some(player_pos);
+                cursor_pos = player_pos;
             }
+            msg_log.log(Msg::CursorToggle(settings.cursor.is_some(), cursor_pos));
         }
 
         (InputAction::Pass, true) => {
