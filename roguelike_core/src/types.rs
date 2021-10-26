@@ -711,8 +711,9 @@ impl Default for GameState {
 
 impl GameState {
     pub fn is_menu(self) -> bool {
-        return self == GameState::Inventory ||
-               self == GameState::SkillMenu ||
+        return self == GameState::Inventory   ||
+               self == GameState::SkillMenu   ||
+               self == GameState::ConfirmQuit ||
                self == GameState::ClassMenu;
     }
 }

@@ -234,7 +234,10 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             let y_offset = start_pos.y * cell_height as i32;
 
             canvas.set_blend_mode(BlendMode::Blend);
+            canvas.set_draw_color(sdl2::pixels::Color::BLACK);
+            canvas.fill_rect(Rect::new(x_offset, y_offset, string.len() as u32 * char_width, char_height)).unwrap();
 
+            canvas.set_blend_mode(BlendMode::Blend);
             canvas.set_draw_color(sdl2_color(*bg_color));
             canvas.fill_rect(Rect::new(x_offset, y_offset, string.len() as u32 * char_width, char_height)).unwrap();
 
@@ -318,7 +321,6 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
         DrawCmd::Rect(pos, dims, offset, filled, color) => {
             assert!(*offset < 1.0, "offset >= 1 misaligns the starting cell!");
 
-            // Draw a black background
             let (cell_width, cell_height) = panel.cell_dims();
 
             canvas.set_draw_color(sdl2_color(*color));
@@ -335,7 +337,11 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             if *filled {
                 canvas.fill_rect(Rect::new(x, y, width, height)).unwrap();
             } else {
-                canvas.draw_rect(Rect::new(x, y, width, height)).unwrap();
+                canvas.fill_rect(Rect::new(x, y, 3, height)).unwrap();
+                canvas.fill_rect(Rect::new(x, y, width, 3)).unwrap();
+                canvas.fill_rect(Rect::new(x + width as i32, y, 3, height)).unwrap();
+                canvas.fill_rect(Rect::new(x, y + height as i32, width, 3)).unwrap();
+                //canvas.draw_rect(Rect::new(x, y, width, height)).unwrap();
             }
         }
 

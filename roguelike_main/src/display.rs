@@ -463,10 +463,9 @@ impl Display {
         let menu_area = self.panels[&PanelName::Menu].area();
         let menu_area = map_area.centered(menu_area.width, menu_area.height);
 
-        // TODO if the map changed size, the texture should be reallocated to match.
-        //let src = self.map_panel.get_rect_full();
         let map_cell_dims = self.panels[&PanelName::Map].cell_dims();
-        let map_src = Rect::new(0, 0, map_cell_dims.0 * game.data.map.width() as u32, map_cell_dims.1 * game.data.map.height() as u32);
+        let (map_width, map_height) = (map_cell_dims.0 * game.data.map.width() as u32, map_cell_dims.1 * game.data.map.height() as u32);
+        let map_src = Rect::new(0, 0, map_width, map_height);
         let map_rect = Rect::new(0, 0, SCREEN_WIDTH, SCREEN_WIDTH);
         self.canvas.copy(&self.textures[&PanelName::Map], map_src, map_rect).unwrap();
 
@@ -485,7 +484,8 @@ impl Display {
         if game.settings.state.is_menu() {
             let canvas_panel = &mut self.canvas_panel;
             let menu_panel = &self.panels[&PanelName::Menu];
-            let dst = canvas_panel.get_rect_within(&menu_area, menu_panel.num_pixels);
+            let menu_area = screen_area.centered(menu_panel.cells.0 as usize, menu_panel.cells.1 as usize);
+            let dst = canvas_panel.get_rect_within(&menu_area, menu_panel.cells);
             self.canvas.copy(&self.textures[&PanelName::Menu], None, dst).unwrap();
         }
     }

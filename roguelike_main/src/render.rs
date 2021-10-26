@@ -133,6 +133,7 @@ fn render_placard(panel: &mut Panel, text: &str) {
     let text_color = Color::new(0, 0, 0, 255);
     let highlight_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
+    panel.rect_cmd(Pos::new(0, 0), panel.cells, 0.5, false, highlight_color);
     panel.justify_cmd(text,
                       Justify::Center,
                       text_color,
@@ -154,7 +155,6 @@ fn render_pips(panel: &mut Panel,
     }
 }
 
-// TODO remove commented out code when draw cmds are done
 fn render_bar(panel: &mut Panel,
               full: i32,
               current: i32,
@@ -181,6 +181,8 @@ fn render_player_info(panel: &mut Panel, game: &mut Game) {
     // TODO this color comes from the UI mockups as a light brown
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
+    let x_offset = 3;
+
     if let Some(fighter) = game.data.entities.fighter.get(&player_id) {
         let hp = if fighter.hp > 0 {
             fighter.hp
@@ -189,14 +191,14 @@ fn render_player_info(panel: &mut Panel, game: &mut Game) {
         };
         // TODO this color red comes from the UI mockups
         let health_color = Color::new(0x96, 0x54, 0x56, 255);
-        let bar_pos = Pos::new(2, 2);
+        let bar_pos = Pos::new(1, 2);
         render_bar(panel, fighter.max_hp, hp, bar_pos, health_color, Color::white(), false);
     }
 
     let energy = game.data.entities.energy[&player_id];
     // TODO this color orange comes from the UI mockups
     let energy_color = Color::new(0xaf, 0x83, 0x56, 255);
-    render_pips(panel, energy, Pos::new(2, 3), energy_color);
+    render_pips(panel, energy, Pos::new(1, 3), energy_color);
 
     list.push(format!(""));
 
@@ -218,7 +220,7 @@ fn render_player_info(panel: &mut Panel, game: &mut Game) {
     list.push(format!(""));
     list.push(format!("turn {}", game.settings.turn_count));
 
-    let text_pos = Pos::new(1, 5);
+    let text_pos = Pos::new(x_offset, 5);
 
     panel.text_list_cmd(&list, color, text_pos);
 }
@@ -229,6 +231,8 @@ fn render_info(panel: &mut Panel,
     render_placard(panel, "Info");
 
     if let Some(info_pos) = game.settings.cursor {
+        let x_offset = 5;
+
         let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
         let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -241,7 +245,7 @@ fn render_info(panel: &mut Panel,
 
         text_list.push(format!("({:>2},{:>2})", info_pos.x, info_pos.y));
 
-        let text_pos = Pos::new(1, y_pos);
+        let text_pos = Pos::new(x_offset, y_pos);
 
         panel.text_list_cmd(&text_list, text_color, text_pos);
 
@@ -267,31 +271,27 @@ fn render_info(panel: &mut Panel,
                     render_bar(panel,
                                fighter.max_hp,
                                fighter.hp,
-                               Pos::new(2, y_pos),
+                               Pos::new(1, y_pos),
                                health_color,
                                Color::white(),
                                false);
 
-                    y_pos += 2;
+                    y_pos += 1;
                 }
 
                 text_list.push(format!("{:?}", game.data.entities.name[obj_id]));
-
-                text_list.push(format!(""));
 
                 // show facing direction for player and monsters
                 if game.data.entities.typ[obj_id] == EntityType::Player ||
                    game.data.entities.typ[obj_id] == EntityType::Enemy {
                     if let Some(direction) = game.data.entities.direction.get(obj_id) {
-                        text_list.push(format!("Facing"));
-                        text_list.push(format!("  {}", direction));
+                        text_list.push(format!("Facing {}", direction));
                     }
                 }
 
                 if game.data.entities.fighter.get_mut(obj_id).map_or(false, |fighter| fighter.hp <= 0) {
                     text_list.push(format!("  {}", "dead"));
                 } else if let Some(behave) = game.data.entities.behavior.get(obj_id) {
-                    text_list.push(format!("{}", behave.description()));
                 }
             }
         }
@@ -306,22 +306,17 @@ fn render_info(panel: &mut Panel,
             }
         }
 
-        let text_pos = Pos::new(1, y_pos);
+        let text_pos = Pos::new(x_offset, y_pos);
         panel.text_list_cmd(&text_list, text_color, text_pos);
-        text_list.push(format!(""));
-        text_list.clear();
-
-        y_pos = 11;
 
         let tile_in_fov = game.data.pos_in_fov(player_id, info_pos, &game.config);
         if tile_in_fov {
-            let text_pos = Pos::new(1, y_pos);
-            text_list.push(format!("Tile is"));
             if game.data.map[info_pos].tile_type == TileType::Water {
-                text_list.push("water".to_string());
+                text_list.push("Tile is water".to_string());
             } else {
-                text_list.push(format!("{:?}",  game.data.map[info_pos].surface));
+                text_list.push(format!("Tile is {:?}",  game.data.map[info_pos].surface));
             }
+
             if game.data.map[info_pos].bottom_wall != Wall::Empty {
                 text_list.push("Lower wall".to_string());
             }
@@ -333,9 +328,9 @@ fn render_info(panel: &mut Panel,
             if game.data.map[info_pos].block_move {
                 text_list.push(format!("blocked"));
             }
-
-            panel.text_list_cmd(&text_list, text_color, text_pos);
         }
+
+        panel.text_list_cmd(&text_list, text_color, text_pos);
     }
 }
 
@@ -390,7 +385,7 @@ fn render_confirm_quit(panel: &mut Panel) {
     list.push("esc: continue".to_string());
 
     let y_pos = 2;
-    let text_pos = Pos::new(2, y_pos);
+    let text_pos = Pos::new(5, y_pos);
 
     // TODO this color comes from the UI mockups as a light brown
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
@@ -410,9 +405,10 @@ fn render_inventory(panel: &mut Panel, game: &mut Game) {
 
     // Render each object's name in inventory
     let mut y_pos = 2;
+    let x_offset = 5;
 
     // Draw Primary Items
-    panel.text_cmd("z", ui_color, Pos::new(1, y_pos));
+    panel.text_cmd("z", ui_color, Pos::new(x_offset, y_pos));
 
     let mut index = 0;
     while index < game.data.entities.inventory[&player_id].len() {
@@ -420,7 +416,7 @@ fn render_inventory(panel: &mut Panel, game: &mut Game) {
 
         if game.data.entities.item[&item_id].class() == ItemClass::Primary {
             let item_text = format!("{:?}", game.data.entities.name[&item_id]);
-            let text_pos = Pos::new(3, y_pos);
+            let text_pos = Pos::new(x_offset + 2, y_pos);
             panel.text_cmd(&item_text, ui_color, text_pos);
             break;
         }
@@ -430,7 +426,7 @@ fn render_inventory(panel: &mut Panel, game: &mut Game) {
     y_pos += 1;
 
     // Draw Consumable Items
-    panel.text_cmd(&"x", ui_color, Pos::new(1, y_pos));
+    panel.text_cmd(&"x", ui_color, Pos::new(x_offset, y_pos));
 
     let mut index = 0;
     while index < game.data.entities.inventory[&player_id].len() {
@@ -438,7 +434,7 @@ fn render_inventory(panel: &mut Panel, game: &mut Game) {
 
         if game.data.entities.item[&item_id].class() == ItemClass::Consumable {
             let item_text = format!("{:?}", game.data.entities.name[&item_id]);
-            let text_pos = Pos::new(3, y_pos);
+            let text_pos = Pos::new(x_offset + 2, y_pos);
             panel.text_cmd(&item_text, ui_color, text_pos);
             break;
         }
@@ -448,12 +444,12 @@ fn render_inventory(panel: &mut Panel, game: &mut Game) {
     y_pos += 1;
 
     // Draw Stones Items
-    panel.text_cmd(&"c", ui_color, Pos::new(1, y_pos));
+    panel.text_cmd(&"c", ui_color, Pos::new(x_offset, y_pos));
 
     let mut num_stones = 0;
     let mut index = 0;
     while index < game.data.entities.inventory[&player_id].len() {
-        let item_id= game.data.entities.inventory[&player_id][index];
+        let item_id = game.data.entities.inventory[&player_id][index];
 
         if game.data.entities.item[&item_id] == Item::Stone {
             num_stones += 1;
@@ -463,13 +459,13 @@ fn render_inventory(panel: &mut Panel, game: &mut Game) {
     }
 
     if num_stones > 0 {
-        panel.text_cmd(&"c", ui_color, Pos::new(1, y_pos));
+        panel.text_cmd(&"c", ui_color, Pos::new(x_offset, y_pos));
 
-        let text_pos = Pos::new(3, y_pos);
+        let text_pos = Pos::new(x_offset + 2, y_pos);
         panel.text_cmd(&"stone", ui_color, text_pos);
 
         let num_text = format!("({})", num_stones);
-        panel.text_cmd(&num_text, ui_color, Pos::new(9, y_pos));
+        panel.text_cmd(&num_text, ui_color, Pos::new(x_offset + 8, y_pos));
     }
 
     y_pos += 1;
@@ -483,7 +479,7 @@ fn render_inventory(panel: &mut Panel, game: &mut Game) {
         if game.data.entities.item[&item_id].class() == ItemClass::Misc &&
            game.data.entities.item[&item_id] != Item::Stone {
             let item_text = format!("{:?}", game.data.entities.name[&item_id]);
-            let text_pos = Pos::new(3, y_pos);
+            let text_pos = Pos::new(x_offset + 2, y_pos);
             panel.text_cmd(&item_text, ui_color, text_pos);
             y_pos += 1;
         }
