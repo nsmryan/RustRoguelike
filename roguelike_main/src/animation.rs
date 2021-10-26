@@ -2,6 +2,8 @@ use roguelike_core::types::{Name, Pos, Color};
 use roguelike_core::utils::{distance, move_towards};
 use roguelike_core::map::Aoe;
 use roguelike_core::config::Config;
+use roguelike_core::utils::rng_range;
+use roguelike_core::rng::Rand32;
 
 
 pub type SpriteKey = usize;
@@ -151,6 +153,7 @@ impl AnimationResult {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Animation {
     Loop(SpriteAnim),                         // play sprite sheet in loop
+    RandomLoop(SpriteAnim),                   // play a random sprite sheet in loop
     Between(SpriteAnim, Pos, Pos, f32, f32),  // start, end, dist, blocks_per_sec
     Once(SpriteAnim),                         // play sprite once and end
     PlayEffect(Effect),
@@ -160,13 +163,14 @@ impl Animation {
     pub fn sprite_anim_mut(&mut self) -> Option<&mut SpriteAnim> {
         match self {
             Animation::Loop(sprite_anim) => return Some(sprite_anim),
+            Animation::RandomLoop(sprite_anim) => return Some(sprite_anim),
             Animation::Between(sprite_anim, _, _, _, _) => return Some(sprite_anim),
             Animation::Once(sprite_anim) => return Some(sprite_anim),
             Animation::PlayEffect(_) => return None,
         }
     }
 
-    pub fn step(&mut self, dt: f32, config: &Config) {
+    pub fn step(&mut self, dt: f32, rng: &mut Rand32, config: &Config) {
         match self {
             Animation::Between(_sprite_anim, _start, _end, ref mut dist, blocks_per_sec) => {
                *dist = *dist + (*blocks_per_sec / config.frame_rate as f32); 
@@ -174,6 +178,14 @@ impl Animation {
 
             Animation::Loop(ref mut sprite_anim) => {
                 sprite_anim.step(dt);
+            }
+
+            Animation::RandomLoop(ref mut sprite_anim) => {
+                let last_index = sprite_anim.index;
+                sprite_anim.index += dt * sprite_anim.speed;
+                if last_index as u32 != sprite_anim.index as u32 {
+                    sprite_anim.index = rng_range(rng, sprite_anim.start_index, sprite_anim.max_index);
+                }
             }
 
             Animation::PlayEffect(_effect) => {
@@ -205,6 +217,14 @@ impl Animation {
                 animation_result.sprite = Some(sprite);
 
                 // a looping animation never finishes
+                animation_result.done = false;
+            }
+
+            Animation::RandomLoop(ref sprite_anim) => {
+                let sprite = sprite_anim.sprite();
+                animation_result.sprite = Some(sprite);
+
+                // a random looping animation never finishes
                 animation_result.done = false;
             }
 

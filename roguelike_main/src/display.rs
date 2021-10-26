@@ -17,6 +17,7 @@ use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::utils::aoe_fill;
 use roguelike_core::movement::{Direction};
+use roguelike_core::rng::Rand32;
 
 use roguelike_engine::game::Game;
 
@@ -142,12 +143,16 @@ impl Display {
                                0.0);
     }
 
+    pub fn random_sprite(&mut self, sprite_name: &str, speed: f32) -> Animation {
+        let sprite_anim = self.state.new_sprite(sprite_name, speed);
+        let anim = Animation::RandomLoop(sprite_anim);
+        return anim;
+    }
+
     /// Create and play a looping sprite
     pub fn loop_sprite(&mut self, sprite_name: &str, speed: f32) -> Animation {
         let sprite_anim = self.state.new_sprite(sprite_name, speed);
-        
         let anim = Animation::Loop(sprite_anim);
-
         return anim;
     }
 
@@ -186,7 +191,7 @@ impl Display {
             } else if data.entities.name[&entity_id] == EntityName::Lantern {
                 return Some(self.loop_sprite("lantern_idle", config.fire_speed));
             } else if data.entities.name[&entity_id] == EntityName::Grass {
-                return Some(self.loop_sprite("GrassAnim", config.grass_idle_speed));
+                return Some(self.random_sprite("GrassAnim", config.grass_idle_speed));
             }
         }
 
@@ -440,7 +445,7 @@ impl Display {
     pub fn draw_all(&mut self, game: &mut Game) {
         self.process_draw_commands();
         self.copy_panels(game);
-        self.state.update_animations(&game.config);
+        self.state.update_animations(&mut game.rng, &game.config);
     }
 
     pub fn copy_panels(&mut self, game: &mut Game) {
@@ -543,10 +548,10 @@ impl DisplayState {
         panic!(format!("Could not find sprite '{}'", name));
     }
 
-    pub fn update_animations(&mut self, config: &Config) {
+    pub fn update_animations(&mut self, rng: &mut Rand32, config: &Config) {
         for anims in self.animations.values_mut() {
             if let Some(anim) = anims.get_mut(0) {
-                anim.step(self.dt, config);
+                anim.step(self.dt, rng, config);
             }
         }
     }
