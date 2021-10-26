@@ -247,16 +247,16 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         }
 
         GameCmd::Hp(id) => {
-            if let Some(fighter) = game.data.entities.fighter.get(id) {
-                let hp = fighter.hp;
+            if let Some(hp) = game.data.entities.hp.get(id) {
+                let hp = hp.hp;
                 return format!("{} {}", name, hp);
             }
             return format!("{}", name);
         }
 
         GameCmd::SetHp(id, hp) => {
-            if game.data.entities.fighter.contains_key(id) {
-                game.data.entities.fighter[id].hp = *hp;
+            if game.data.entities.hp.contains_key(id) {
+                game.data.entities.hp[id].hp = *hp;
             }
             return format!("{}", name);
         }

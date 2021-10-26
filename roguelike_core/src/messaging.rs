@@ -28,11 +28,11 @@ pub enum Msg {
     PickUp(EntityId), // entity trying to pick up an item
     ItemThrow(EntityId, EntityId, Pos, Pos), // thrower, stone id, start, end
     TryAttack(EntityId, Attack, Pos), // attacker, attack description, attack pos
-    Attack(EntityId, EntityId, Hp), // attacker, attacked, hp lost
+    Attack(EntityId, EntityId, i32), // attacker, attacked, hp lost
     Blunt(Pos, Pos), // attacker position, attacked position
     Pierce(Pos, Pos), // attacker position, attacked position
     Slash(Pos, Pos), // attacker position, attacked position
-    Killed(EntityId, EntityId, Hp), // attacker, attacked, hp lost
+    Killed(EntityId, EntityId, i32), // attacker, attacked, hp lost
     Remove(EntityId), // entity_id
     Push(EntityId, Direction, usize), // attacker, direction, amount
     Pushed(EntityId, EntityId, Direction, usize, bool), // attacker, attacked, direction, amount, move into pushed square

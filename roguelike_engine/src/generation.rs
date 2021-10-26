@@ -31,11 +31,7 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
     let entity_id = entities.create_entity(0, 0, EntityType::Player, ENTITY_PLAYER as char, Color::white(), EntityName::Player, true);
 
     entities.status[&entity_id].alive = true;
-    entities.fighter.insert(entity_id,
-        Fighter { max_hp: config.player_health,
-                  hp: config.player_health,
-                  defense: 0,
-                  power: 5 });
+    entities.hp.insert(entity_id, Hp { max_hp: config.player_health, hp: config.player_health, });
     entities.movement.insert(entity_id,  Reach::Single(1));
     entities.attack.insert(entity_id,  Reach::Single(1));
     entities.move_mode.insert(entity_id,  MoveMode::Sneak);
@@ -190,7 +186,7 @@ pub fn ensure_grass(entities: &mut Entities, pos: Pos, msg_log: &mut MsgLog) -> 
 pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{98}', Color::white(), EntityName::Gol, true);
 
-    entities.fighter.insert(entity_id,  Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, });
+    entities.hp.insert(entity_id,  Hp { max_hp: 10, hp: 10, });
     entities.ai.insert(entity_id,  Ai::Basic);
     entities.behavior.insert(entity_id,  Behavior::Idle);
     entities.movement.insert(entity_id,  Reach::Single(GOL_MOVE_DISTANCE));
@@ -210,7 +206,7 @@ pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
 pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{A5}', Color::white(), EntityName::Pawn, true);
 
-    entities.fighter.insert(entity_id,  Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, });
+    entities.hp.insert(entity_id,  Hp { max_hp: 16, hp: 16, });
     entities.ai.insert(entity_id,  Ai::Basic);
     entities.behavior.insert(entity_id,  Behavior::Idle);
     entities.movement.insert(entity_id,  Reach::Single(PAWN_MOVE_DISTANCE));
@@ -230,7 +226,7 @@ pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
 pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{15}', Color::white(), EntityName::Spire, true);
 
-    entities.fighter.insert(entity_id,  Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, });
+    entities.hp.insert(entity_id,  Hp { max_hp: 16, hp: 16, });
     entities.ai.insert(entity_id,  Ai::Basic);
     entities.behavior.insert(entity_id,  Behavior::Idle);
     entities.movement.insert(entity_id,  Reach::Single(SPIRE_MOVE_DISTANCE));
@@ -250,7 +246,7 @@ pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
 pub fn make_rook(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{A5}', Color::white(), EntityName::Rook, true);
 
-    entities.fighter.insert(entity_id,  Fighter { max_hp: 16, hp: 16, defense: 0, power: 1, });
+    entities.hp.insert(entity_id,  Hp { max_hp: 16, hp: 16, });
     entities.ai.insert(entity_id,  Ai::Basic);
     entities.behavior.insert(entity_id,  Behavior::Idle);
     entities.movement.insert(entity_id,  Reach::Horiz(ROOK_MOVE_DISTANCE));
@@ -270,7 +266,7 @@ pub fn make_rook(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
 pub fn make_armil(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{98}', Color::white(), EntityName::Armil, true);
 
-    entities.fighter.insert(entity_id,  Fighter { max_hp: 10, hp: 10, defense: 0, power: 1, });
+    entities.hp.insert(entity_id,  Hp { max_hp: 10, hp: 10, });
     entities.ai.insert(entity_id,  Ai::Basic);
     entities.behavior.insert(entity_id,  Behavior::Idle);
     entities.movement.insert(entity_id,  Reach::Single(ARMIL_MOVE_DISTANCE));

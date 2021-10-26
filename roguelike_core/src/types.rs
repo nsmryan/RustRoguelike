@@ -926,14 +926,10 @@ impl FromStr for ItemClass {
     }
 }
 
-pub type Hp = i32;
-
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Fighter {
-    pub max_hp: Hp,
-    pub hp: Hp,
-    pub defense: i32,
-    pub power: i32,
+pub struct Hp {
+    pub max_hp: i32,
+    pub hp: i32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
@@ -1255,7 +1251,7 @@ pub struct Entities {
     pub pos: CompStore<Pos>,
     pub chr: CompStore<char>,
     pub name: CompStore<EntityName>,
-    pub fighter: CompStore<Fighter>,
+    pub hp: CompStore<Hp>,
     pub ai: CompStore<Ai>,
     pub behavior: CompStore<Behavior>,
     pub fov_radius: CompStore<i32>,
@@ -1422,14 +1418,14 @@ impl Entities {
     }
 
     pub fn take_damage(&mut self, entity: EntityId, damage: i32) {
-        if let Some(fighter) = self.fighter.get_mut(&entity) {
+        if let Some(hp) = self.hp.get_mut(&entity) {
             if damage > 0 {
-                fighter.hp -= damage;
+                hp.hp -= damage;
             }
         }
 
-        if let Some(fighter) = self.fighter.get(&entity) {
-            if fighter.hp <= 0 {
+        if let Some(hp) = self.hp.get(&entity) {
+            if hp.hp <= 0 {
                 self.status[&entity].alive = false;
             }
         }
@@ -1495,7 +1491,7 @@ impl Entities {
 
     pub fn is_dead(&self, entity_id: EntityId) -> bool {
         return !self.ids.contains(&entity_id) || self.needs_removal[&entity_id] ||
-            matches!(self.fighter.get(&entity_id), Some(Fighter { hp: 0, .. } ));
+            matches!(self.hp.get(&entity_id), Some(Hp { hp: 0, .. } ));
     }
 
     pub fn active_ais(&self) -> Vec<EntityId> {
@@ -1505,7 +1501,7 @@ impl Entities {
             if self.ai.get(key).is_some()    &&
                self.status[key].alive        &&
                !self.needs_removal[key] &&
-               self.fighter.get(key).is_some() {
+               self.hp.get(key).is_some() {
                ai_ids.push(*key);
            }
         }
@@ -1592,7 +1588,7 @@ impl Entities {
         move_component!(pos);
         move_component!(chr);
         move_component!(name);
-        move_component!(fighter);
+        move_component!(hp);
         move_component!(stance);
         move_component!(ai);
         move_component!(behavior);
@@ -1640,7 +1636,7 @@ impl Entities {
         self.pos.remove(&id);
         self.chr.remove(&id);
         self.name.remove(&id);
-        self.fighter.remove(&id);
+        self.hp.remove(&id);
         self.stance.remove(&id);
         self.ai.remove(&id);
         self.behavior.remove(&id);

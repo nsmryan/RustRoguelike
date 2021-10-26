@@ -208,7 +208,7 @@ pub fn push_attack(entity_id: EntityId,
         msg_log.log_front(Msg::Moved(target, MoveType::Move, past_pos));
     } else {
         // otherwise crush them against the wall/entity
-        damage = data.entities.fighter[&target].hp;
+        damage = data.entities.hp[&target].hp;
 
         killed = true;
         msg_log.log_front(Msg::Crushed(target, other_pos));
@@ -227,7 +227,7 @@ pub fn push_attack(entity_id: EntityId,
 }
 
 pub fn crush(handle: EntityId, target: EntityId, entities: &mut Entities, msg_log: &mut MsgLog) {
-    let damage = entities.fighter.get(&target).map_or(0, |f| f.hp);
+    let damage = entities.hp.get(&target).map_or(0, |f| f.hp);
     if damage > 0 {
         entities.take_damage(target, damage);
 
@@ -276,14 +276,15 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: 
         msg_log.log(Msg::Killed(entity, target, SWORD_DAMAGE));
     } else {
         // NOTE could add another section for the sword- currently the same as normal attacks
-        let damage = data.entities.fighter.get(&entity).map_or(0, |f| f.power) -
-                     data.entities.fighter.get(&target).map_or(0, |f| f.defense);
+        // NOTE all attacks do 1 damage for now
+        let damage = 1; // data.entities.hp.get(&entity).map_or(0, |f| f.power) -
+                        // data.entities.hp.get(&target).map_or(0, |f| f.defense);
         if damage > 0 && data.entities.status[&target].alive {
             data.entities.take_damage(target, damage);
 
             msg_log.log(Msg::Attack(entity, target, damage));
             // TODO consider moving this to the Attack msg
-            if data.entities.fighter[&target].hp <= 0 {
+            if data.entities.hp[&target].hp <= 0 {
                 data.entities.status[&target].alive = false;
                 data.entities.blocks[&target] = false;
 
@@ -296,7 +297,7 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: 
 }
 
 pub fn stab(entity_id: EntityId, target: EntityId, entities: &mut Entities, msg_log: &mut MsgLog) {
-    let damage = entities.fighter.get(&target).map_or(0, |f| f.hp);
+    let damage = entities.hp.get(&target).map_or(0, |f| f.hp);
 
     if damage != 0 {
         if entities.behavior[&target] == Behavior::Idle {

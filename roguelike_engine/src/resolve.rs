@@ -148,7 +148,7 @@ pub fn resolve_messages(data: &mut GameData,
             Msg::SpikeTrapTriggered(trap, entity_id) => {
                 data.entities.take_damage(entity_id, SPIKE_DAMAGE);
 
-                if data.entities.fighter[&entity_id].hp <= 0 {
+                if data.entities.hp[&entity_id].hp <= 0 {
                     data.entities.status[&entity_id].alive = false;
                     data.entities.blocks[&entity_id] = false;
 
@@ -282,9 +282,9 @@ pub fn resolve_messages(data: &mut GameData,
 
             Msg::Heal(entity_id, amount) => {
                 if use_energy(entity_id, data, msg_log) {
-                    data.entities.fighter[&entity_id].hp = 
-                        std::cmp::min(data.entities.fighter[&entity_id].max_hp,
-                                      data.entities.fighter[&entity_id].hp + amount as i32);
+                    data.entities.hp[&entity_id].hp = 
+                        std::cmp::min(data.entities.hp[&entity_id].max_hp,
+                                      data.entities.hp[&entity_id].hp + amount as i32);
 
                     data.entities.took_turn[&entity_id] = true;
                 }
@@ -498,8 +498,8 @@ fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut GameD
     msg_log.log(Msg::Pushed(entity_id, hit_entity, direction, amount, false));
     msg_log.log_front(Msg::Sound(entity_id, second, config.sound_radius_hammer, true));
 
-    if let Some(fighter) = data.entities.fighter.get(&hit_entity) {
-        let damage = fighter.hp;
+    if let Some(hp) = data.entities.hp.get(&hit_entity) {
+        let damage = hp.hp;
 
         msg_log.log(Msg::Killed(entity_id, hit_entity, damage));
         msg_log.log(Msg::Sound(entity_id, second, config.sound_radius_blunt, true));
@@ -893,8 +893,8 @@ fn killed_entity(attacked: EntityId, data: &mut GameData, msg_log: &mut MsgLog, 
         }
     }
 
-    if let Some(fighter) = data.entities.fighter.get_mut(&attacked) {
-        fighter.hp = 0;
+    if let Some(hp) = data.entities.hp.get_mut(&attacked) {
+        hp.hp = 0;
     }
 
     remove_entity(attacked, data);
@@ -967,8 +967,8 @@ fn crushed(entity_id: EntityId, pos: Pos, data: &mut GameData, msg_log: &mut Msg
             msg_log.log_front(Msg::Crushed(crushed_id, next_pos));
         }
 
-        if let Some(fighter) = data.entities.fighter.get(&crushed_id) {
-            msg_log.log(Msg::Killed(entity_id, crushed_id, fighter.hp));
+        if let Some(hp) = data.entities.hp.get(&crushed_id) {
+            msg_log.log(Msg::Killed(entity_id, crushed_id, hp.hp));
         } else if data.entities.item.get(&crushed_id).is_none() &&
                   data.entities.name[&crushed_id] != EntityName::Mouse &&
                   data.entities.name[&crushed_id] != EntityName::Cursor {

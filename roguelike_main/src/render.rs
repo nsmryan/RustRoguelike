@@ -183,16 +183,16 @@ fn render_player_info(panel: &mut Panel, game: &mut Game) {
 
     let x_offset = 3;
 
-    if let Some(fighter) = game.data.entities.fighter.get(&player_id) {
-        let hp = if fighter.hp > 0 {
-            fighter.hp
+    if let Some(hp) = game.data.entities.hp.get(&player_id) {
+        let current_hp = if hp.hp > 0 {
+            hp.hp
         } else {
             0
         };
         // TODO this color red comes from the UI mockups
         let health_color = Color::new(0x96, 0x54, 0x56, 255);
         let bar_pos = Pos::new(1, 2);
-        render_bar(panel, fighter.max_hp, hp, bar_pos, health_color, Color::white(), false);
+        render_bar(panel, hp.max_hp, current_hp, bar_pos, health_color, Color::white(), false);
     }
 
     let energy = game.data.entities.energy[&player_id];
@@ -264,13 +264,13 @@ fn render_info(panel: &mut Panel,
             if entity_in_fov {
                 drawn_info = true;
 
-                if let Some(fighter) = game.data.entities.fighter.get(obj_id) {
+                if let Some(hp) = game.data.entities.hp.get(obj_id) {
                     y_pos += 1;
 
                     let health_color = Color::new(0x96, 0x54, 0x56, 255);
                     render_bar(panel,
-                               fighter.max_hp,
-                               fighter.hp,
+                               hp.max_hp,
+                               hp.hp,
                                Pos::new(1, y_pos),
                                health_color,
                                Color::white(),
@@ -289,7 +289,7 @@ fn render_info(panel: &mut Panel,
                     }
                 }
 
-                if game.data.entities.fighter.get_mut(obj_id).map_or(false, |fighter| fighter.hp <= 0) {
+                if game.data.entities.hp.get_mut(obj_id).map_or(false, |hp| hp.hp <= 0) {
                     text_list.push(format!("  {}", "dead"));
                 } else if let Some(behave) = game.data.entities.behavior.get(obj_id) {
                 }

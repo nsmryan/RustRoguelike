@@ -45,7 +45,6 @@
 #![forbid(missing_docs)]
 #![forbid(missing_debug_implementations)]
 #![forbid(unused_results)]
-#![no_std]
 use core::ops::Range;
 
 use serde::{Serialize, Deserialize};

@@ -252,8 +252,8 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
         InputAction::GodMode => {
             let god_mode_hp = 10000;
             let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-            game.data.entities.fighter[&player_id].hp = god_mode_hp;
-            game.data.entities.fighter[&player_id].max_hp = god_mode_hp;
+            game.data.entities.hp[&player_id].hp = god_mode_hp;
+            game.data.entities.hp[&player_id].max_hp = god_mode_hp;
             game.data.entities.energy[&player_id] = 1000;
 
             // toggle god mode flag

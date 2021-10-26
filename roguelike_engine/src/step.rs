@@ -2,7 +2,6 @@ use logging_timer::timer;
 
 use roguelike_core::types::*;
 use roguelike_core::ai::*;
-use roguelike_core::rng::*;
 use roguelike_core::messaging::{Msg, MsgLog};
 #[cfg(test)]
 use roguelike_core::movement::MoveMode;
