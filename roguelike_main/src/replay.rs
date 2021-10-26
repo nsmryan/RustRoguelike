@@ -435,7 +435,7 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
     }
 
     /* Draw the Game to the Screen */
-    render_all(display, game, dt)?;
+    render_all(&mut display.panels, &mut display.state, game, dt)?;
 
     display.update_display();
 

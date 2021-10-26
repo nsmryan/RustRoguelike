@@ -5,8 +5,6 @@ use std::cell::RefCell;
 use std::str::FromStr;
 use std::fmt;
 
-use oorandom::Rand32;
-
 use logging_timer::timer;
 
 use pathfinding::directed::astar::astar;
@@ -27,6 +25,7 @@ use crate::constants::*;
 use crate::utils::*;
 use crate::movement::Direction;
 use crate::line::*;
+use crate::rng::Rand32;
 
 
 // multiplier used to scale costs up in astar, allowing small

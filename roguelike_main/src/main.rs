@@ -6,6 +6,7 @@ mod keyboard;
 mod load;
 mod replay;
 mod animation;
+mod drawcmd;
 
 use std::fs;
 use std::io::{BufRead, Write};
@@ -110,6 +111,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     /* Create SDL Context */
     let sdl_context = sdl2::init()?;
     let video = sdl_context.video()?;
+    let mut timer = sdl_context.timer()?;
     let window = video.window("Rust Roguelike", SCREEN_WIDTH, SCREEN_HEIGHT)
                       .position_centered().build().map_err(|e| e.to_string())?;
 
@@ -131,7 +133,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
     let font_texture = load_font(&ttf_context,
                                  &texture_creator,
-                                 "Monoid.ttf".to_string(),
+                                 "Inconsolata-Bold.ttf".to_string(),
                                  24);
     display.add_spritesheet("font".to_string(), font_texture);
 
@@ -188,11 +190,11 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         // run game loop
         make_map(&map_config, &mut game);
         let event_pump = sdl_context.event_pump().unwrap();
-        return game_loop(game, display, opts, event_pump);
+        return game_loop(game, display, opts, &mut timer, event_pump);
     }
 }
 
-pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut event_pump: sdl2::EventPump) -> Result<(), String> {
+pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer: &mut sdl2::TimerSubsystem, mut event_pump: sdl2::EventPump) -> Result<(), String> {
     // read in the recorded action log, if one is provided
     let mut starting_actions = Vec::new();
     if let Some(replay_file) = &opts.replay {
@@ -226,7 +228,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
             process_commands(&io_recv, &mut game, &mut log);
 
             for sdl2_event in event_pump.poll_iter() {
-                if let Some(event) = keyboard::translate_event(sdl2_event, &mut game) {
+                if let Some(event) = keyboard::translate_event(sdl2_event) {
                     if game.config.recording && matches!(event, InputEvent::Char('[', KeyDir::Up)) {
                         game = recording.backward();
                     } else if game.config.recording && matches!(event, InputEvent::Char(']', KeyDir::Up)) {
@@ -234,7 +236,10 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, mut ev
                             game = new_game;
                         }
                     } else {
-                        let input_action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
+                        // This is not the best timer, but input should not occur faster than 1 ms apart. Using
+                        // ticks is better then Instant for serialization.
+                        let ticks = timer.ticks();
+                        let input_action = game.input.handle_event(&mut game.settings, event, ticks, &game.config);
                         input_actions.push(input_action);
                     }
                 }
@@ -375,7 +380,7 @@ pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), Str
     game.settings.god_mode = true;
 
     game.step_game(InputAction::None);
-    render_all(display, game, 0.1)?;
+    render_all(&mut display.panels, &mut display.state, game, 0.1)?;
 
     display.save_screenshot("screenshot");
 
@@ -391,7 +396,7 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
     {
         let command_time = Instant::now();
         let _render_timer = timer!("RENDER");
-        render_all(display, game, dt)?;
+        render_all(&mut display.panels, &mut display.state, game, dt)?;
         let ct = Instant::now().duration_since(command_time).as_secs_f32();
         display.state.show_debug("ct", format!("{}", ct));
     }

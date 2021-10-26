@@ -4,8 +4,8 @@ pub const CONFIG_FILE_NAME: &str = &"config.json";
 pub const FONT_WIDTH: i32 = 16;
 pub const FONT_HEIGHT: i32 = 16;
 
-pub const SCREEN_WIDTH: u32 = 1120;
-pub const SCREEN_HEIGHT: u32 = 800;
+pub const SCREEN_WIDTH: u32 = 800;
+pub const SCREEN_HEIGHT: u32 = 960;
 
 pub const INVENTORY_WIDTH: usize = 300;
 pub const INVENTORY_HEIGHT: usize = 500;
@@ -88,8 +88,8 @@ pub const MSG_WIDTH: u32 = SCREEN_WIDTH - BAR_WIDTH - 2;
 pub const MSG_HEIGHT: u32 = PANEL_HEIGHT - 1;
 
 /* Map and View */
-pub const MAP_WIDTH: i32 = 30;
-pub const MAP_HEIGHT: i32 = 30;
+pub const MAP_WIDTH: i32 = 20;
+pub const MAP_HEIGHT: i32 = 20;
 
 pub const ISLAND_DISTANCE: i32 = 7;
 

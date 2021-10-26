@@ -1,4 +1,3 @@
-use std::time::Instant;
 use std::collections::HashMap;
 use std::cmp::Ord;
 use std::str::FromStr;
@@ -86,14 +85,14 @@ pub enum MouseClick {
     Middle,
 }
 
-#[derive(Clone, Debug, Copy, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Copy, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct HeldState {
-    down_time: Instant,
+    down_time: u32,
     repetitions: usize,
 }
 
 impl HeldState {
-    pub fn new(down_time: Instant, repetitions: usize) -> HeldState {
+    pub fn new(down_time: u32, repetitions: usize) -> HeldState {
         return HeldState { down_time, repetitions };
     }
 
@@ -102,7 +101,7 @@ impl HeldState {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug, Default)]
+#[derive(Copy, Clone, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct MouseState {
     pub x: i32,
     pub y: i32,
@@ -126,7 +125,7 @@ pub enum InputEvent {
     Quit,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Input {
     pub ctrl: bool,
     pub alt: bool,
@@ -172,14 +171,14 @@ impl Input {
     pub fn handle_event(&mut self,
                         settings: &mut GameSettings,
                         event: InputEvent,
-                        time: Instant,
+                        ticks: u32,
                         config: &Config) -> InputAction {
         let mut action = InputAction::None;
 
         // remember characters that are pressed down
         if let InputEvent::Char(chr, dir) = event {
             if dir == KeyDir::Down {
-                let held_state = HeldState { down_time: time, repetitions: 0 };
+                let held_state = HeldState { down_time: ticks, repetitions: 0 };
                 self.char_held.insert(chr, held_state);
             }
         }
@@ -238,7 +237,7 @@ impl Input {
             }
 
             InputEvent::Char(chr, dir) => {
-                action = self.handle_char(chr, dir, time, settings, config);
+                action = self.handle_char(chr, dir, ticks, settings, config);
             }
 
             InputEvent::MouseButton(clicked, mouse_pos, dir) => {
@@ -249,7 +248,7 @@ impl Input {
         return action;
     }
 
-    fn handle_char(&mut self, chr: char, dir: KeyDir, time: Instant, settings: &GameSettings, config: &Config) -> InputAction {
+    fn handle_char(&mut self, chr: char, dir: KeyDir, ticks: u32, settings: &GameSettings, config: &Config) -> InputAction {
         match dir {
             KeyDir::Up => {
                 return self.handle_char_up(chr, settings);
@@ -260,7 +259,7 @@ impl Input {
             }
 
             KeyDir::Held => {
-                return self.handle_char_held(chr, time, settings, config);
+                return self.handle_char_held(chr, ticks, settings, config);
             }
         }
     }
@@ -377,16 +376,16 @@ impl Input {
         return action;
     }
 
-    fn handle_char_held(&mut self, chr: char, time: Instant, settings: &GameSettings, config: &Config) -> InputAction {
+    fn handle_char_held(&mut self, chr: char, ticks: u32, settings: &GameSettings, config: &Config) -> InputAction {
         let mut action = InputAction::None;
 
         if let Some(held_state) = self.char_held.get(&chr) {
             // only process the last character as held
             if self.char_down_order.iter().last() == Some(&chr) {
                 let held_state = *held_state;
-                let time_since = time.duration_since(held_state.down_time).as_secs_f32();
+                let time_since = held_state.down_time - ticks;
 
-                let new_repeats = (time_since / config.repeat_delay) as usize;
+                let new_repeats = (time_since as f32 / config.repeat_delay) as usize;
                 if new_repeats > held_state.repetitions {
                     action = self.apply_char(chr, settings);
 
@@ -407,11 +406,8 @@ impl Input {
         return action;
     }
 
-    fn handle_mouse_button(&mut self, clicked: MouseClick, mouse_pos: Pos, dir: KeyDir) -> InputAction {
-        let mut action = InputAction::MouseButton(clicked, dir);
-
-        let down = dir == KeyDir::Down;
-        action = InputAction::MouseButton(clicked, dir);
+    fn handle_mouse_button(&mut self, clicked: MouseClick, _mouse_pos: Pos, dir: KeyDir) -> InputAction {
+        let action = InputAction::MouseButton(clicked, dir);
 
         return action;
     }
@@ -571,7 +567,7 @@ fn direction_from_digit(chr: char) -> Option<Direction> {
 fn test_input_movement() {
     let mut input = Input::new();
     let mut settings = GameSettings::new();
-    let time = Instant::now();
+    let time = 0;
     let config = Config::from_file("../config.yaml");
 
     let event = InputEvent::Char('4', KeyDir::Down);
@@ -587,7 +583,7 @@ fn test_input_movement() {
 fn test_input_use_mode_enter() {
     let mut input = Input::new();
     let mut settings = GameSettings::new();
-    let time = Instant::now();
+    let time = 0;
     let config = Config::from_file("../config.yaml");
 
     let event = InputEvent::Char('z', KeyDir::Down);
@@ -615,7 +611,7 @@ fn test_input_use_mode_enter() {
 fn test_input_use_mode_exit() {
     let mut input = Input::new();
     let mut settings = GameSettings::new();
-    let time = Instant::now();
+    let time = 0;
     let config = Config::from_file("../config.yaml");
 
     let event = InputEvent::Char('z', KeyDir::Down);
@@ -641,7 +637,7 @@ fn test_input_use_mode_exit() {
 fn test_input_use_mode_abort() {
     let mut input = Input::new();
     let mut settings = GameSettings::new();
-    let time = Instant::now();
+    let time = 0;
     let config = Config::from_file("../config.yaml");
 
     let event = InputEvent::Char('z', KeyDir::Down);
@@ -665,7 +661,7 @@ fn test_input_use_mode_abort() {
 fn test_input_cursor_problem() {
     let mut input = Input::new();
     let mut settings = GameSettings::new();
-    let time = Instant::now();
+    let time = 0;
     let config = Config::from_file("../config.yaml");
 
     let event = InputEvent::Char(' ', KeyDir::Down);

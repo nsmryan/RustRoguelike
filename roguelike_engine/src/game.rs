@@ -1,5 +1,3 @@
-use oorandom::Rand32;
-
 use serde::{Serialize, Deserialize};
 use logging_timer::timer;
 
@@ -8,6 +6,7 @@ use roguelike_core::config::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::MsgLog;
 use roguelike_core::movement::{Direction, MoveMode};
+use roguelike_core::rng::Rand32;
 
 use crate::actions;
 use crate::actions::InputAction;
@@ -18,7 +17,7 @@ use crate::input::*;
 use crate::vault::*;
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Game {
     pub config: Config,
     pub data: GameData,

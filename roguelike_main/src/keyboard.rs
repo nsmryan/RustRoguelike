@@ -4,11 +4,10 @@ use sdl2::keyboard::Keycode;
 
 use roguelike_core::types::*;
 
-use roguelike_engine::game::*;
 use roguelike_engine::input::*;
 
 
-pub fn translate_event(event: Event, game: &mut Game) -> Option<InputEvent> {
+pub fn translate_event(event: Event) -> Option<InputEvent> {
     match event {
         Event::Quit {..} => {
             return Some(InputEvent::Quit);

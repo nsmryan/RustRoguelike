@@ -1,10 +1,10 @@
-use roguelike_core::types::{Name, Pos};
+use roguelike_core::types::{Name, Pos, Color};
 use roguelike_core::utils::{distance, move_towards};
 use roguelike_core::map::Aoe;
 use roguelike_core::config::Config;
 
 
-pub type SpriteKey = i64;
+pub type SpriteKey = usize;
 
 pub type SpriteIndex = f32;
 
@@ -27,6 +27,7 @@ pub enum Effect {
     Beam(usize, Pos, Pos), // start, end
     Particles(f32, Vec<Particle>), // spawn rate, current particles
     Attack(Pos, Pos, SpriteAnim),
+    Fade(Sprite, Color, u8, u8, Pos, f32, f32), // sprite, color, start alpha, end alpha, position, seconds, time taken
 }
 
 impl Effect {
@@ -44,6 +45,10 @@ impl Effect {
 
     pub fn attack(from: Pos, to: Pos, sprite_anim: SpriteAnim) -> Effect {
         return Effect::Attack(from, to, sprite_anim);
+    }
+
+    pub fn fade(sprite: Sprite, color: Color, start: u8, end: u8, pos: Pos, seconds: f32) -> Effect {
+        return Effect::Fade(sprite, color, start, end, pos, seconds, 0.0);
     }
 }
 
@@ -179,12 +184,12 @@ impl Animation {
         }
     }
 
-    pub fn status(&self, pos: Pos, dt: f32, config: &Config) -> AnimationResult {
+    pub fn status(&self, pos: Pos) -> AnimationResult {
         let mut animation_result = AnimationResult::new();
         animation_result.pos = pos;
 
         match self {
-            Animation::Between(ref sprite_anim, start, end, dist, blocks_per_sec) => {
+            Animation::Between(ref sprite_anim, start, end, dist, _blocks_per_sec) => {
                let num_blocks = *dist as usize;
 
                animation_result.pos = move_towards(*start, *end, num_blocks);

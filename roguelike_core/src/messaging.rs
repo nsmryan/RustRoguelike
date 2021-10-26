@@ -84,6 +84,7 @@ pub enum Msg {
     StartUseItem(EntityId),
     StartUseInteract,
     NewLevel,
+    CursorToggle(bool, Pos),
 }
 
 impl fmt::Display for Msg {
@@ -173,6 +174,7 @@ impl fmt::Display for Msg {
             Msg::StartUseItem(entity_id) => write!(f, "startuseitem {}", entity_id),
             Msg::StartUseInteract => write!(f, "startuseinteract"),
             Msg::NewLevel => write!(f, "newlevel"),
+            Msg::CursorToggle(state, pos) => write!(f, "cursortoggle {} {} {}", state, pos.x, pos.y),
         }
     }
 }
@@ -438,7 +440,7 @@ impl Msg {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MsgLog {
     pub messages: VecDeque<Msg>,
     pub turn_messages: VecDeque<Msg>,

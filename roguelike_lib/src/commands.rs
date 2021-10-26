@@ -1,5 +1,4 @@
 use std::str::FromStr;
-use std::time::Instant;
 
 use roguelike_core::types::*;
 use roguelike_core::movement::*;
@@ -222,6 +221,9 @@ impl GameCmd {
 pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
     let name = command.name();
 
+    // TODO this isn't really correct- perhaps we could pass get_ticks() to execute_game_command
+    let ticks = 0;
+
     match command {
         GameCmd::PlayerId => {
             let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -365,38 +367,29 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         }
 
         GameCmd::Key(chr, dir) => {
-            // TODO this isn't really correct...
-            let time = Instant::now();
-
             let input_event = InputEvent::Char(*chr, *dir);
-            let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
+            let input_action = game.input.handle_event(&mut game.settings, input_event, ticks, &game.config);
             game.step_game(input_action);
             return format!("{}", name);
         }
 
         GameCmd::Ctrl(dir) => {
-            let time = Instant::now();
-
             let input_event = InputEvent::Ctrl(*dir);
-            let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
+            let input_action = game.input.handle_event(&mut game.settings, input_event, ticks, &game.config);
             game.step_game(input_action);
             return format!("{}", name);
         }
 
         GameCmd::Alt(dir) => {
-            let time = Instant::now();
-
             let input_event = InputEvent::Alt(*dir);
-            let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
+            let input_action = game.input.handle_event(&mut game.settings, input_event, ticks, &game.config);
             game.step_game(input_action);
             return format!("{}", name);
         }
 
         GameCmd::Shift(dir) => {
-            let time = Instant::now();
-
             let input_event = InputEvent::Shift(*dir);
-            let input_action = game.input.handle_event(&mut game.settings, input_event, time, &game.config);
+            let input_action = game.input.handle_event(&mut game.settings, input_event, ticks, &game.config);
             game.step_game(input_action);
             return format!("{}", name);
         }

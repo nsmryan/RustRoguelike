@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use serde::{Serialize, Deserialize};
+
 use roguelike_core::constants::*;
 use roguelike_core::messaging::*;
 use roguelike_core::map::*;
@@ -9,7 +11,7 @@ use roguelike_core::config::*;
 use crate::generation::*;
 
 
-#[derive(Copy, Clone, PartialOrd, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Debug, Serialize, Deserialize)]
 pub enum VaultTag {
     Medium,
     Rare,
@@ -46,7 +48,7 @@ impl FromStr for VaultTag {
 }
 
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Vault {
     pub data: GameData,
     pub tags: Vec<VaultTag>,
