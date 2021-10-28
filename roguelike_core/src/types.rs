@@ -385,9 +385,13 @@ impl GameData {
     }
 
     pub fn throw_towards(&self, start_pos: Pos, end_pos: Pos) -> Pos {
-        let mut hit_pos = end_pos;
+        let mut hit_pos = start_pos;
 
         for pos in line(start_pos, end_pos) {
+            if !self.map.is_within_bounds(pos) {
+                break;
+            }
+
             if let Some(hit_entity) = self.has_blocking_entity(pos) {
                 if self.entities.typ[&hit_entity] != EntityType::Column {
                     // hitting an entity puts the stone on their tile, except
@@ -396,7 +400,7 @@ impl GameData {
                 } 
 
                 break;
-            } else if self.map[pos].does_tile_block(BlockedType::Move) {
+            } else if self.map.move_blocked(hit_pos, pos, BlockedType::Move).is_some() {
                 break;
             }
 

@@ -812,7 +812,10 @@ impl Map {
 
                 if self.blocked_right(start_pos, blocked_type) &&
                    self.blocked_right(y_moved, blocked_type) {
-                    blocked.wall_type = self[move_x(start_pos, 1)].left_wall;
+                    let blocked_pos = move_x(start_pos, 1);
+                    if self.is_within_bounds(blocked_pos) {
+                        blocked.wall_type = self[blocked_pos].left_wall;
+                    }
                     found_blocker = true;
                 }
 
@@ -825,7 +828,10 @@ impl Map {
 
             Direction::UpRight => {
                 if self.blocked_up(start_pos, blocked_type) && self.blocked_right(start_pos, blocked_type) {
-                    blocked.wall_type = self[move_y(start_pos, -1)].bottom_wall;
+                    let blocked_pos = move_y(start_pos, -1);
+                    if self.is_within_bounds(blocked_pos) {
+                        blocked.wall_type = self[blocked_pos].bottom_wall;
+                    }
                     found_blocker = true;
                 }
 
@@ -839,12 +845,18 @@ impl Map {
                 }
 
                 if self.blocked_right(start_pos, blocked_type) && self.blocked_right(y_moved, blocked_type) {
-                    blocked.wall_type = self[move_x(start_pos, 1)].left_wall;
+                    let blocked_pos = move_x(start_pos, 1);
+                    if self.is_within_bounds(blocked_pos) {
+                        blocked.wall_type = self[blocked_pos].left_wall;
+                    }
                     found_blocker = true;
                 }
 
                 if self.blocked_up(start_pos, blocked_type) && self.blocked_up(x_moved, blocked_type) {
-                    blocked.wall_type = self[move_y(start_pos, -1)].bottom_wall;
+                    let blocked_pos = move_y(start_pos, -1);
+                    if self.is_within_bounds(blocked_pos) {
+                        blocked.wall_type = self[blocked_pos].bottom_wall;
+                    }
                     found_blocker = true;
                 }
             }

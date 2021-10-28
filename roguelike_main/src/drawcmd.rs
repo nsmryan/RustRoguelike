@@ -341,7 +341,6 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                 canvas.fill_rect(Rect::new(x, y, width, 3)).unwrap();
                 canvas.fill_rect(Rect::new(x + width as i32, y, 3, height)).unwrap();
                 canvas.fill_rect(Rect::new(x, y + height as i32, width, 3)).unwrap();
-                //canvas.draw_rect(Rect::new(x, y, width, height)).unwrap();
             }
         }
 
