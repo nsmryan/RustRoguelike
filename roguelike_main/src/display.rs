@@ -460,9 +460,6 @@ impl Display {
         let screen_area = self.canvas_panel.area();
         let (map_area, _rest_area) = screen_area.split_top(self.panels[&PanelName::Map].cells.1 as usize);
 
-        let menu_area = self.panels[&PanelName::Menu].area();
-        let menu_area = map_area.centered(menu_area.width, menu_area.height);
-
         let map_cell_dims = self.panels[&PanelName::Map].cell_dims();
         let (map_width, map_height) = (map_cell_dims.0 * game.data.map.width() as u32, map_cell_dims.1 * game.data.map.height() as u32);
         let map_src = Rect::new(0, 0, map_width, map_height);
@@ -484,6 +481,10 @@ impl Display {
         if game.settings.state.is_menu() {
             let canvas_panel = &mut self.canvas_panel;
             let menu_panel = &self.panels[&PanelName::Menu];
+
+            //let menu_area = self.panels[&PanelName::Menu].area();
+            //let menu_area = map_area.centered(menu_area.width, menu_area.height);
+
             let menu_area = screen_area.centered(menu_panel.cells.0 as usize, menu_panel.cells.1 as usize);
             let dst = canvas_panel.get_rect_within(&menu_area, menu_panel.cells);
             self.canvas.copy(&self.textures[&PanelName::Menu], None, dst).unwrap();
@@ -659,7 +660,9 @@ fn create_panels(width: u32, height: u32) -> HashMap<PanelName, Panel> {
     let map_panel = Panel::new(map_pixels, map_dims);
     panels.insert(PanelName::Map, map_panel);
 
-    let info_width = width / 3;
+    let info_width = width / 2;
+
+    let over_sample = 10;
 
     let info_dims = (info_width, height - MAP_HEIGHT as u32);
     let info_pixels = (over_sample * info_dims.0 * FONT_WIDTH as u32, over_sample * info_dims.1 * FONT_HEIGHT as u32);
@@ -673,7 +676,7 @@ fn create_panels(width: u32, height: u32) -> HashMap<PanelName, Panel> {
     let player_pixels = (over_sample * player_dims.0 * FONT_WIDTH as u32, over_sample * player_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Player, Panel::new(player_pixels, player_dims));
 
-    let menu_dims = (info_width, height - MAP_HEIGHT as u32);
+    let menu_dims = (info_width, info_width); //height - MAP_HEIGHT as u32);
     let menu_pixels = (over_sample * menu_dims.0 * FONT_WIDTH as u32, over_sample * menu_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Menu, Panel::new(menu_pixels, menu_dims));
 
