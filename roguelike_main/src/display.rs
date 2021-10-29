@@ -458,7 +458,7 @@ impl Display {
     pub fn copy_panels(&mut self, game: &mut Game) {
         /* Split Screen Into Sections */
         let screen_area = self.canvas_panel.area();
-        let (map_area, _rest_area) = screen_area.split_top(self.panels[&PanelName::Map].cells.1 as usize);
+        let (_map_area, _rest_area) = screen_area.split_top(self.panels[&PanelName::Map].cells.1 as usize);
 
         let map_cell_dims = self.panels[&PanelName::Map].cell_dims();
         let (map_width, map_height) = (map_cell_dims.0 * game.data.map.width() as u32, map_cell_dims.1 * game.data.map.height() as u32);
@@ -676,7 +676,7 @@ fn create_panels(width: u32, height: u32) -> HashMap<PanelName, Panel> {
     let player_pixels = (over_sample * player_dims.0 * FONT_WIDTH as u32, over_sample * player_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Player, Panel::new(player_pixels, player_dims));
 
-    let menu_dims = (info_width, info_width); //height - MAP_HEIGHT as u32);
+    let menu_dims = (info_width, info_width);
     let menu_pixels = (over_sample * menu_dims.0 * FONT_WIDTH as u32, over_sample * menu_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Menu, Panel::new(menu_pixels, menu_dims));
 

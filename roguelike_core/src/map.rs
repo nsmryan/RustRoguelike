@@ -360,6 +360,13 @@ impl Tile {
         }
     }
 
+    pub fn clear_walls(&mut self) {
+        self.block_move = false;
+        self.block_sight = false;
+        self.bottom_wall = Wall::Empty;
+        self.left_wall = Wall::Empty;
+    }
+
     pub fn exit() -> Self {
         Tile {
             block_move: false,

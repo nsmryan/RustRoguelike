@@ -178,13 +178,12 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     // find a place to put the player
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = find_available_tile(game).unwrap();
+    // TODO ideally we would loop instead of unwrap, generating new levels
+    // until a player position was found.
+    let player_pos = find_available_on_side(game, true).unwrap();
     game.data.entities.pos[&player_id] = player_pos;
 
     clear_island(game, island_radius);
-
-    // find a place to put the key and goal, ensuring that they are reachable
-    place_key_and_goal(game, player_pos);
 
     place_items(game, cmds);
 
@@ -193,6 +192,9 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     place_traps(game, cmds);
 
     place_triggers(game, cmds);
+
+    // find a place to put the key and goal, ensuring that they are reachable
+    place_key_and_goal(game, player_pos);
 
     // clear the island once more just in case
     clear_island(game, island_radius);
@@ -631,6 +633,41 @@ fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
     }
 }
 
+fn find_available_on_side(game: &mut Game, left: bool) -> Option<Pos> {
+    let mut avail_pos: Option<Pos> = None;
+    let mut x_most = if left { i32::MAX } else { 0 };
+
+    let potential_pos = game.data.get_clear_pos();
+    let mut index = 1.0;
+    for pos in potential_pos {
+        if !game.data.map[pos].block_move && game.data.has_blocking_entity(pos).is_none() {
+            let x_more;
+            let x_more_strict;
+            if left {
+                x_more = pos.x <= x_most;
+                x_more_strict = pos.x < x_most;
+                x_most = std::cmp::min(x_most, pos.x);
+            } else {
+                x_more = pos.x >= x_most;
+                x_more_strict = pos.x > x_most;
+                x_most = std::cmp::max(x_most, pos.x);
+            }
+
+            let rng_choice = rng_range(&mut game.rng, 0.0, 1.0) < (1.0 / index);
+
+            if x_more {
+                if rng_choice || x_more_strict {
+                    avail_pos = Some(pos);
+                }
+            }
+
+            index += 1.0;
+        }
+    }
+
+    return avail_pos;
+}
+
 fn find_available_tile(game: &mut Game) -> Option<Pos> {
     let mut avail_pos = None;
 
@@ -680,9 +717,7 @@ fn clear_path_to(game: &mut Game, start_pos: Pos, target_pos: Pos) {
 
     if let Some((results, _cost)) = path {
         for pos in results {
-            if game.data.map[pos].block_move {
-                game.data.map[pos] = Tile::empty();
-            }
+            game.data.map[pos].clear_walls();
         }
     }
 }
@@ -691,16 +726,22 @@ fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
     // place goal and key
     let key_pos = find_available_tile(game).unwrap();
     game.data.map[key_pos] = Tile::empty();
+    for entity_id in game.data.get_entities_at_pos(key_pos) {
+        game.data.entities.remove_entity(entity_id);
+    }
     make_key(&mut game.data.entities, &game.config, key_pos, &mut game.msg_log);
     clear_path_to(game, player_pos, key_pos);
 
     // Find the goal position, ensuring it is not too close to the key
-    let mut goal_pos = find_available_tile(game).unwrap();
+    let mut goal_pos = find_available_on_side(game, false).unwrap();
     while distance(key_pos, goal_pos) < 4 {
         goal_pos = find_available_tile(game).unwrap();
     }
 
     game.data.map[goal_pos] = Tile::empty();
+    for entity_id in game.data.get_entities_at_pos(goal_pos) {
+        game.data.entities.remove_entity(entity_id);
+    }
     make_exit(&mut game.data.entities, &game.config, goal_pos, &mut game.msg_log);
     clear_path_to(game, player_pos, goal_pos);
 }

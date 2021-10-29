@@ -161,10 +161,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
         DrawCmd::SpriteAtPixel(sprite, color, pos) => {
             let sprite_sheet = &mut sprites[sprite.key];
 
-            let (cell_width, cell_height) = panel.cell_dims();
-
             let pos = Pos::new(pos.x, pos.y);
-            //let pos = Pos::new(pos.x * cell_width as i32, pos.y * cell_height as i32);
 
             let cell_dims = panel.cell_dims();
 
