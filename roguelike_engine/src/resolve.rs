@@ -226,6 +226,7 @@ pub fn resolve_messages(data: &mut GameData,
                         data.entities.add_skill(player_id, Skill::Illuminate);
                         data.entities.add_skill(player_id, Skill::Heal);
                         data.entities.add_skill(player_id, Skill::FarSight);
+                        data.entities.add_skill(player_id, Skill::Ping);
                     }
                 }
             }
@@ -294,6 +295,12 @@ pub fn resolve_messages(data: &mut GameData,
                 if use_energy(entity_id, data, msg_log) {
                     data.entities.status[&entity_id].extra_fov += amount;
                     data.entities.took_turn[&entity_id] = true;
+                }
+            }
+
+            Msg::Ping(entity_id, pos) => {
+                if use_energy(entity_id, data, msg_log) {
+                    msg_log.log_front(Msg::Sound(entity_id, pos, config.ping_sound_radius, true));
                 }
             }
 

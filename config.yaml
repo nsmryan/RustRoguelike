@@ -168,6 +168,8 @@ sound_timeout: 0.5
 yell_radius: 4
 # distance of entities you can swap with
 swap_radius: 4
+# radius of ping skill sound
+ping_sound_radius: 3
 # show fog of war
 fog_of_war: true
 

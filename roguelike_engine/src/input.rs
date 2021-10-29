@@ -12,7 +12,7 @@ use crate::game::*;
 use crate::actions::*;
 
 
-const SKILL_KEYS: &[char] = &['a', 's', 'd'];
+const SKILL_KEYS: &[char] = &['a', 's', 'd', 'f'];
 const ITEM_KEYS: &[char] = &['z', 'x', 'c'];
 const CLASSES: &[ItemClass] = &[ItemClass::Primary, ItemClass::Consumable, ItemClass::Misc];
 const DEBUG_TOGGLE_KEY: char = '\\';

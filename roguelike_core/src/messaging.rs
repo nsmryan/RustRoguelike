@@ -68,6 +68,7 @@ pub enum Msg {
     Illuminate(EntityId, Pos, usize), // entity, position, amount
     Heal(EntityId, usize), // entity, amount
     FarSight(EntityId, usize), // entity, amount
+    Ping(EntityId, Pos),
     Sprint(EntityId, Direction, usize), // entity, direction, amount
     Rubble(EntityId, Pos),
     Reform(EntityId, Pos),
@@ -159,6 +160,7 @@ impl fmt::Display for Msg {
             Msg::Illuminate(entity_id, pos, amount) => write!(f, "illuminate {} {} {} {}", entity_id, pos.x, pos.y, amount),
             Msg::Heal(entity_id, amount) => write!(f, "heal {} {}", entity_id, amount),
             Msg::FarSight(entity_id, amount) => write!(f, "farsight {} {}", entity_id, amount),
+            Msg::Ping(entity_id, pos) => write!(f, "ping {} {} {}", entity_id, pos.x, pos.y),
             Msg::Sprint(entity_id, direction, amount) => write!(f, "sprint {} {} {}", entity_id, direction, amount),
             Msg::Rubble(entity_id, pos) => write!(f, "rubble {} {} {}", entity_id, pos.x, pos.y),
             Msg::Reform(entity_id, pos) => write!(f, "reform {} {} {}", entity_id, pos.x, pos.y),
@@ -401,6 +403,10 @@ impl Msg {
 
             Msg::FarSight(entity_id, amount) => {
                 return format!("{:?} has farsight ({})", data.entities.name[entity_id], amount);
+            }
+
+            Msg::Ping(entity_id, pos) => {
+                return format!("{:?} has pinged ({})", data.entities.name[entity_id], pos);
             }
 
             Msg::Sprint(entity_id, _direction, _amount) => {
