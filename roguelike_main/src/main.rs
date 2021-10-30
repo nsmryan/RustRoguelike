@@ -9,7 +9,7 @@ mod animation;
 mod drawcmd;
 
 use std::fs;
-use std::io::{BufRead, Write};
+use std::io::{BufRead, Write, Cursor};
 use std::time::{Duration, Instant, SystemTime};
 use std::path::Path;
 use std::str::FromStr;
@@ -21,6 +21,9 @@ use simple_logging;
 use logging_timer::timer;
 
 use gumdrop::Options;
+
+use rmp_serde::{Deserializer, Serializer};
+use serde::{Deserialize, Serialize};
 
 use roguelike_core::types::*;
 use roguelike_core::config::Config;
@@ -44,7 +47,7 @@ use crate::replay::*;
 
 
 pub const CONFIG_NAME: &str = "config.yaml";
-pub const GAME_SAVE_FILE: &str = "game.yaml";
+pub const GAME_SAVE_FILE: &str = "game.save";
 
 #[derive(Debug, Clone, Options)]
 pub struct GameOptions {
@@ -136,15 +139,16 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     /* Create Game Structure */
     let config = Config::from_file(CONFIG_NAME);
 
-    // TODO this creates a game and then throws it away.
     let mut game = Game::new(seed, config.clone());
     game.load_vaults("resources/vaults/");
 
     let mut game_from_file = false;
     if config.save_load {
-        if let Ok(game_str) = std::fs::read_to_string(GAME_SAVE_FILE) {
+        if let Ok(bytes) = std::fs::read(GAME_SAVE_FILE) {
             game_from_file = true;
-            game = Game::load_from_string(&game_str);
+            let cur = Cursor::new(&bytes[..]);
+            let mut de = Deserializer::new(cur);
+            game = Deserialize::deserialize(&mut de).unwrap();
         }
     }
 
@@ -221,15 +225,19 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
     let io_recv = spawn_input_reader();
 
     /* Game Save Thread */
-    let (game_sender, game_receiver) = channel();
-    let save_thread = thread::spawn(move || {
+    // Serialization and storage take at least 6 ms, so this is done
+    // in a separate thread to prevent taking time from the main loop.
+    let (game_sender, game_receiver) = channel::<Game>();
+    let _save_thread = thread::spawn(move || {
         loop {
-            // This is pretty slow. Consider a more compact encoding,
-            // or a specialized encoding for the game.
-            let game: Game = game_receiver.recv().unwrap();
-            let game_str = game.save_as_string();
-            let mut save_game_file = std::fs::File::create(GAME_SAVE_FILE).unwrap();
-            save_game_file.write_all(game_str.as_bytes()).unwrap();
+            if let Ok(game) = game_receiver.recv() {
+                let mut buf = Vec::new();
+                game.serialize(&mut Serializer::new(&mut buf)).unwrap();
+                let mut save_game_file = std::fs::File::create(GAME_SAVE_FILE).unwrap();
+                save_game_file.write_all(&buf).unwrap();
+            } else {
+                break;
+            }
         }
     });
 
@@ -350,6 +358,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
 
         /* Save Game */
         if game.settings.running && any_updates && game.config.save_load {
+            // NOTE(perf) this takes up to 3ms just to clone and send!
             let old_state = game.settings.state;
             game.settings.state = GameState::Playing;
             game_sender.send(game.clone()).unwrap();

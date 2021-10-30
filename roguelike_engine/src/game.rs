@@ -58,9 +58,7 @@ impl Game {
     }
 
     pub fn load_vaults(&mut self, path: &str) {
-        let mut count = 0;
         for entry in std::fs::read_dir(path).unwrap() {
-            count += 1;
             let entry = entry.unwrap();
             let path = entry.path();
             let vault_file_name = path.to_str().unwrap();
