@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::default::Default;
 use std::fmt;
 use std::str::FromStr;
@@ -28,8 +27,10 @@ pub type Name = Symbol;
 pub type EntityId = u64;
 
 pub type CompStore<T> = IndexMap<EntityId, T>;
+//pub type CompStore<T> = Vec<T>;
 
 pub type Pos = Point2D<i32, ()>;
+
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GameData {
@@ -1247,12 +1248,10 @@ pub enum Message {
     Attack(EntityId),
 }
 
-// ensure that each entity has a unique ID, up to 2^64 entities
-static OBJECT_ID_COUNT: AtomicU64 = AtomicU64::new(0);
-
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct Entities {
     pub ids: Vec<EntityId>,
+    pub next_id: EntityId,
     pub pos: CompStore<Pos>,
     pub chr: CompStore<char>,
     pub name: CompStore<EntityName>,
@@ -1367,7 +1366,8 @@ impl Entities {
     }
 
     pub fn create_entity(&mut self, x: i32, y: i32, typ: EntityType, chr: char, color: Color, name: EntityName, blocks: bool) -> EntityId {
-        let id = OBJECT_ID_COUNT.fetch_add(1, Ordering::SeqCst);
+        let id = self.next_id;
+        self.next_id += 1;
         self.ids.push(id);
 
         // add fields that all entities share
@@ -1576,7 +1576,8 @@ impl Entities {
     // NOTE cloning entities may not remap all entity ids that an entity tracks!
     // this could cause subtle problems, so this is really only for level generation.
     pub fn clone_entity(&mut self, other: &Entities, entity_id: EntityId) {
-        let new_id = OBJECT_ID_COUNT.fetch_add(1, Ordering::SeqCst);
+        let new_id = self.next_id;
+        self.next_id += 1;
 
         self.ids.push(new_id);
 

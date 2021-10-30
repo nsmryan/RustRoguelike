@@ -48,3 +48,4 @@ message_log.txt
 messages.txt
 *.code-workspace
 .vscode/*
+game.save
