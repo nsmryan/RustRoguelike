@@ -58,7 +58,9 @@ impl Game {
     }
 
     pub fn load_vaults(&mut self, path: &str) {
+        let mut count = 0;
         for entry in std::fs::read_dir(path).unwrap() {
+            count += 1;
             let entry = entry.unwrap();
             let path = entry.path();
             let vault_file_name = path.to_str().unwrap();
@@ -116,6 +118,14 @@ impl Game {
         }
 
         return self.settings.state != GameState::Exit;
+    }
+
+    pub fn save_as_string(&self) -> String {
+        return serde_yaml::to_string(self).unwrap().to_string();
+    }
+
+    pub fn load_from_string(game_str: &str) -> Game {
+        return serde_yaml::from_str(game_str).unwrap();
     }
 }
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]

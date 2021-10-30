@@ -108,6 +108,7 @@ pub struct Config {
     pub attack_animation_speed: f32,
     pub cursor_fade_seconds: f32,
     pub cursor_alpha: u8,
+    pub save_load: bool,
 }
 
 impl Config {

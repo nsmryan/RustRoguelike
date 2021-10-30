@@ -14,7 +14,7 @@ use std::time::{Duration, Instant, SystemTime};
 use std::path::Path;
 use std::str::FromStr;
 use std::thread;
-use std::sync::mpsc::{self, Receiver};
+use std::sync::mpsc::{self, channel, Receiver};
 
 use log::LevelFilter;
 use simple_logging;
@@ -44,7 +44,7 @@ use crate::replay::*;
 
 
 pub const CONFIG_NAME: &str = "config.yaml";
-
+pub const GAME_SAVE_FILE: &str = "game.yaml";
 
 #[derive(Debug, Clone, Options)]
 pub struct GameOptions {
@@ -91,10 +91,6 @@ fn main() {
             given_seed
         } else {
             1
-            // could add string input as a seed generator
-            // let mut hasher = DefaultHasher::new();
-            // args[1].hash(&mut hasher);
-            // hasher.finish()
         };
 
     eprintln!("Seed: {} (0x{:X})", seed, seed);
@@ -139,9 +135,18 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
     /* Create Game Structure */
     let config = Config::from_file(CONFIG_NAME);
-    let mut game = Game::new(seed, config.clone());
 
+    // TODO this creates a game and then throws it away.
+    let mut game = Game::new(seed, config.clone());
     game.load_vaults("resources/vaults/");
+
+    let mut game_from_file = false;
+    if config.save_load {
+        if let Ok(game_str) = std::fs::read_to_string(GAME_SAVE_FILE) {
+            game_from_file = true;
+            game = Game::load_from_string(&game_str);
+        }
+    }
 
     make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
 
@@ -188,7 +193,9 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         }
     } else {
         // run game loop
-        make_map(&map_config, &mut game);
+        if !game_from_file {
+            make_map(&map_config, &mut game);
+        }
         let event_pump = sdl_context.event_pump().unwrap();
         return game_loop(game, display, opts, &mut timer, event_pump);
     }
@@ -213,9 +220,24 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
     /* Set up Input Handling */
     let io_recv = spawn_input_reader();
 
+    /* Game Save Thread */
+    let (game_sender, game_receiver) = channel();
+    let save_thread = thread::spawn(move || {
+        loop {
+            // This is pretty slow. Consider a more compact encoding,
+            // or a specialized encoding for the game.
+            let game: Game = game_receiver.recv().unwrap();
+            let game_str = game.save_as_string();
+            let mut save_game_file = std::fs::File::create(GAME_SAVE_FILE).unwrap();
+            save_game_file.write_all(game_str.as_bytes()).unwrap();
+        }
+    });
+
     /* Main Game Loop */
     let mut frame_time = Instant::now();
     while game.settings.running {
+        let mut any_updates = false;
+
         let _loop_timer = timer!("GAME_LOOP");
         let frame_start_time = Instant::now();
 
@@ -225,22 +247,28 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
             let _input_timer = timer!("INPUT");
 
             // check for commands to execute
-            process_commands(&io_recv, &mut game, &mut log);
+            any_updates |= process_commands(&io_recv, &mut game, &mut log);
 
             for sdl2_event in event_pump.poll_iter() {
                 if let Some(event) = keyboard::translate_event(sdl2_event) {
                     if game.config.recording && matches!(event, InputEvent::Char('[', KeyDir::Up)) {
                         game = recording.backward();
+                        any_updates = true;
                     } else if game.config.recording && matches!(event, InputEvent::Char(']', KeyDir::Up)) {
                         if let Some(new_game) = recording.forward() {
                             game = new_game;
                         }
+                        any_updates = true;
                     } else {
                         // This is not the best timer, but input should not occur faster than 1 ms apart. Using
                         // ticks is better then Instant for serialization.
                         let ticks = timer.ticks();
                         let input_action = game.input.handle_event(&mut game.settings, event, ticks, &game.config);
                         input_actions.push(input_action);
+
+                        if input_action != InputAction::None {
+                            any_updates = true;
+                        }
                     }
                 }
             }
@@ -318,6 +346,14 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
         {
             let _config_timer = timer!("CONFIG");
             reload_config(&mut config_modified_time, &mut game);
+        }
+
+        /* Save Game */
+        if game.settings.running && any_updates && game.config.save_load {
+            let old_state = game.settings.state;
+            game.settings.state = GameState::Playing;
+            game_sender.send(game.clone()).unwrap();
+            game.settings.state = old_state;
         }
 
         /* Wait until the next tick to loop */
@@ -417,15 +453,19 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
     return Ok(());
 }
 
-fn process_commands(io_recv: &Receiver<String>, game: &mut Game, log: &mut Log) {
+fn process_commands(io_recv: &Receiver<String>, game: &mut Game, log: &mut Log) -> bool {
+    let mut any_updates = false;
     if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(0)) {
         if let Ok(cmd) = msg.parse::<GameCmd>() {
             let result = execute_game_command(&cmd, game);
             log.log_output(&result);
+            any_updates = true;
         } else {
             log.log_output(&format!("error '{}' unexpected", msg));
         }
     }
+
+    return any_updates;
 }
 
 fn spawn_input_reader() -> Receiver<String> {
