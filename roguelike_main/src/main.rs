@@ -357,12 +357,19 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
         }
 
         /* Save Game */
-        if game.settings.running && any_updates && game.config.save_load {
-            // NOTE(perf) this takes up to 3ms just to clone and send!
-            let old_state = game.settings.state;
-            game.settings.state = GameState::Playing;
-            game_sender.send(game.clone()).unwrap();
-            game.settings.state = old_state;
+        let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+        if game.data.entities.hp[&player_id].hp > 0 {
+            if game.settings.running && any_updates && game.config.save_load {
+                let old_state = game.settings.state;
+                game.settings.state = GameState::Playing;
+                game_sender.send(game.clone()).unwrap();
+                game.settings.state = old_state;
+            }
+        } else {
+            let path = Path::new(GAME_SAVE_FILE);
+            if path.exists() {
+                std::fs::remove_file(path);
+            }
         }
 
         /* Wait until the next tick to loop */
