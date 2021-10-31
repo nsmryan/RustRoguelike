@@ -945,7 +945,7 @@ fn render_entity(panel: &mut Panel,
        game.settings.god_mode;
 
     if is_in_fov {
-        if let Some(mut anims) = display_state.animations.swap_remove(&entity_id) {
+        if let Some(anims) = display_state.animations.get_mut(&entity_id) {
             if let Some(anim) = anims.pop_front() {
                 animation_result = anim.status(pos);
 
@@ -970,7 +970,7 @@ fn render_entity(panel: &mut Panel,
                     }
                 }
 
-                display_state.animations.insert(entity_id, anims);
+                //display_state.animations.insert(entity_id, anims);
             }
         } else {
             let color = game.data.entities.color[&entity_id];

@@ -8,8 +8,6 @@ use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{PixelFormatEnum};
 
-use indexmap::map::IndexMap;
-
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::config::*;
@@ -503,11 +501,11 @@ pub struct DisplayState {
     pub effects: Vec<Effect>,
 
     // animation information
-    pub animations: IndexMap<EntityId, VecDeque<Animation>>,
+    pub animations: Comp<VecDeque<Animation>>,
     pub next_anim_key: i64,
 
     // sprites drawn this frame
-    pub drawn_sprites: IndexMap<EntityId, Sprite>,
+    pub drawn_sprites: Comp<Sprite>,
 
     // impressions left on map
     pub impressions: Vec<Impression>,
@@ -533,9 +531,9 @@ impl DisplayState {
             sprites: Vec::new(),
             next_sprite_key: 0,
             effects: Vec::new(),
-            animations: IndexMap::<EntityId, VecDeque<Animation>>::new(),
+            animations: Comp::<VecDeque<Animation>>::new(),
             next_anim_key: 0,
-            drawn_sprites: IndexMap::new(),
+            drawn_sprites: Comp::new(),
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),
             current_turn_fov: Vec::new(),
@@ -559,7 +557,7 @@ impl DisplayState {
     }
 
     pub fn update_animations(&mut self, rng: &mut Rand32, config: &Config) {
-        for anims in self.animations.values_mut() {
+        for anims in self.animations.store.iter_mut() {
             if let Some(anim) = anims.get_mut(0) {
                 anim.step(self.dt, rng, config);
             }

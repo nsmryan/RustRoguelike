@@ -1,3 +1,4 @@
+use std::ops::{Index, IndexMut};
 use std::collections::VecDeque;
 use std::default::Default;
 use std::fmt;
@@ -6,8 +7,6 @@ use std::str::FromStr;
 use serde::{Serialize, Deserialize};
 
 use pathfinding::directed::astar::astar;
-
-use indexmap::map::IndexMap;
 
 use symbol::Symbol;
 
@@ -26,8 +25,128 @@ pub type Name = Symbol;
 
 pub type EntityId = u64;
 
-pub type CompStore<T> = IndexMap<EntityId, T>;
-//pub type CompStore<T> = Vec<T>;
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Comp<T> {
+    pub ids: Vec<EntityId>,
+    pub store: Vec<T>,
+}
+
+impl<T> Comp<T> {
+    pub fn new() -> Comp<T> {
+        return Comp { ids: Vec::new(), store: Vec::new() };
+    }
+
+    pub fn insert(&mut self, entity_id: EntityId, data: T) {
+        let result = self.ids.binary_search(&entity_id);
+        let index;
+        match result {
+            Ok(ok_index) => index = ok_index, 
+            Err(err_index) => index = err_index,
+        }
+
+        self.ids.insert(index, entity_id);
+        self.store.insert(index, data);
+    }
+
+    pub fn remove(&mut self, entity_id: &EntityId) {
+        let result = self.ids.binary_search(&entity_id);
+        match result {
+            Ok(index) => {
+                self.ids.remove(index);
+                self.store.remove(index);
+            }
+
+            Err(_) => {},
+        }
+    }
+
+    pub fn lookup(&self, entity_id: EntityId) -> usize {
+        let index = self.ids.binary_search(&entity_id).expect("Component not found for entity!");
+        return index;
+    }
+
+    pub fn get(&self, entity_id: &EntityId) -> Option<&T> {
+        let result = self.ids.binary_search(entity_id);
+        match result {
+            Ok(index) => {
+                return Some(&self.store[index]);
+            }
+
+            Err(_) => {
+                return None;
+            },
+        }
+    }
+
+    pub fn get_mut(&mut self, entity_id: &EntityId) -> Option<&mut T> {
+        let result = self.ids.binary_search(entity_id);
+        match result {
+            Ok(index) => {
+                return Some(&mut self.store[index]);
+            }
+
+            Err(_) => {
+                return None;
+            },
+        }
+    }
+
+    pub fn contains_key(&self, entity_id: &EntityId) -> bool {
+        return self.ids.binary_search(entity_id).is_ok();
+    }
+
+    pub fn iter(&self) -> CompIter<'_, T> {
+        return CompIter::new(self);
+    }
+}
+
+impl<T> Default for Comp<T> {
+    fn default() -> Comp<T> {
+        return Comp::new();
+    }
+}
+
+impl<T> Index<&EntityId> for Comp<T> {
+    type Output = T;
+
+    fn index(&self, index: &EntityId) -> &T {
+        let store_index = self.lookup(*index);
+        return &self.store[store_index];
+    }
+}
+
+impl<T> IndexMut<&EntityId> for Comp<T> {
+    fn index_mut(&mut self, index: &EntityId) -> &mut T {
+        let store_index = self.lookup(*index);
+        return &mut self.store[store_index];
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CompIter<'a, T> {
+    comp: &'a Comp<T>,
+    index: usize,
+}
+
+impl<'a, T> CompIter<'a, T> {
+    pub fn new(comp: &'a Comp<T>) -> CompIter<'a, T> {
+        return CompIter { comp, index: 0 };
+    }
+}
+
+impl<'a, T> Iterator for CompIter<'a, T> {
+    type Item = (u64, &'a T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.comp.ids.len() {
+            return None;
+        } else {
+            let index = self.index;
+            self.index += 1;
+            return Some((self.comp.ids[index], &self.comp.store[index]));
+        }
+    }
+}
 
 pub type Pos = Point2D<i32, ()>;
 
@@ -172,9 +291,9 @@ impl GameData {
                     let illuminate_radius = *illuminate_radius as i32;
 
                     if illuminate_radius != 0 &&
-                       self.entities.pos[id].x >= 0 && self.entities.pos[id].y >= 0 &&
-                       !self.entities.needs_removal[id] {
-                        let illuminate_pos = self.entities.pos[id];
+                       self.entities.pos[&id].x >= 0 && self.entities.pos[&id].y >= 0 &&
+                       !self.entities.needs_removal[&id] {
+                        let illuminate_pos = self.entities.pos[&id];
 
                         if self.map.is_in_fov(illuminate_pos, check_pos, illuminate_radius, crouching) {
                             if self.map.is_in_fov(entity_pos, check_pos, ILLUMINATE_FOV_RADIUS, crouching) {
@@ -206,7 +325,7 @@ impl GameData {
     pub fn find_by_name(&self, name: EntityName) -> Option<EntityId> {
         for (key, nam) in self.entities.name.iter() {
             if *nam == name {
-                return Some(*key);
+                return Some(key);
             }
         }
 
@@ -275,7 +394,7 @@ impl GameData {
         let mut entities = Vec::new();
         for (key, other_pos) in self.entities.pos.iter() {
             if *other_pos == pos {
-                entities.push(*key);
+                entities.push(key);
             }
         }
 
@@ -285,7 +404,7 @@ impl GameData {
     pub fn has_entity(&self, pos: Pos) -> Option<EntityId> {
         for (key, other_pos) in self.entities.pos.iter() {
             if *other_pos == pos {
-                return Some(*key);
+                return Some(key);
             }
         }
 
@@ -295,8 +414,8 @@ impl GameData {
     pub fn has_blocking_entity(&self, pos: Pos) -> Option<EntityId> {
         for (key, other_pos) in self.entities.pos.iter() {
             if *other_pos == pos {
-                if self.entities.blocks[key] {
-                    return Some(*key);
+                if self.entities.blocks[&key] {
+                    return Some(key);
                 }
             }
         }
@@ -307,8 +426,8 @@ impl GameData {
     pub fn has_trap(&self, pos: Pos) -> Option<EntityId> {
         for (key, other_pos) in self.entities.pos.iter() {
             if *other_pos == pos {
-                if self.entities.trap.get(key).is_some() && self.entities.armed.get(key).is_some() {
-                    return Some(*key);
+                if self.entities.trap.get(&key).is_some() && self.entities.armed.get(&key).is_some() {
+                    return Some(key);
                 }
             }
         }
@@ -1252,42 +1371,42 @@ pub enum Message {
 pub struct Entities {
     pub ids: Vec<EntityId>,
     pub next_id: EntityId,
-    pub pos: CompStore<Pos>,
-    pub chr: CompStore<char>,
-    pub name: CompStore<EntityName>,
-    pub hp: CompStore<Hp>,
-    pub ai: CompStore<Ai>,
-    pub behavior: CompStore<Behavior>,
-    pub fov_radius: CompStore<i32>,
-    pub attack_type: CompStore<AttackType>,
-    pub item: CompStore<Item>,
-    pub movement: CompStore<Reach>,
-    pub attack: CompStore<Reach>,
-    pub inventory: CompStore<VecDeque<EntityId>>,
-    pub trap: CompStore<Trap>,
-    pub armed: CompStore<bool>,
-    pub energy: CompStore<u32>,
-    pub count_down: CompStore<usize>,
-    pub move_mode: CompStore<MoveMode>,
-    pub direction: CompStore<Direction>,
-    pub selected_item: CompStore<EntityId>,
-    pub class: CompStore<EntityClass>,
-    pub skills: CompStore<Vec<Skill>>,
-    pub status: CompStore<StatusEffect>,
-    pub illuminate: CompStore<usize>,
-    pub gate_pos: CompStore<Pos>,
-    pub stance: CompStore<Stance>,
-    pub took_turn: CompStore<bool>,
-    pub durability: CompStore<usize>,
+    pub pos: Comp<Pos>,
+    pub chr: Comp<char>,
+    pub name: Comp<EntityName>,
+    pub hp: Comp<Hp>,
+    pub ai: Comp<Ai>,
+    pub behavior: Comp<Behavior>,
+    pub fov_radius: Comp<i32>,
+    pub attack_type: Comp<AttackType>,
+    pub item: Comp<Item>,
+    pub movement: Comp<Reach>,
+    pub attack: Comp<Reach>,
+    pub inventory: Comp<VecDeque<EntityId>>,
+    pub trap: Comp<Trap>,
+    pub armed: Comp<bool>,
+    pub energy: Comp<u32>,
+    pub count_down: Comp<usize>,
+    pub move_mode: Comp<MoveMode>,
+    pub direction: Comp<Direction>,
+    pub selected_item: Comp<EntityId>,
+    pub class: Comp<EntityClass>,
+    pub skills: Comp<Vec<Skill>>,
+    pub status: Comp<StatusEffect>,
+    pub illuminate: Comp<usize>,
+    pub gate_pos: Comp<Pos>,
+    pub stance: Comp<Stance>,
+    pub took_turn: Comp<bool>,
+    pub durability: Comp<usize>,
 
     // NOTE not sure about keeping these ones, or packaging into larger ones
-    pub sound: CompStore<Pos>, // source position
-    pub typ: CompStore<EntityType>,
-    pub color: CompStore<Color>,
-    pub blocks: CompStore<bool>,
-    pub needs_removal: CompStore<bool>,
+    pub sound: Comp<Pos>, // source position
+    pub typ: Comp<EntityType>,
+    pub color: Comp<Color>,
+    pub blocks: Comp<bool>,
+    pub needs_removal: Comp<bool>,
 
-    pub messages: CompStore<Vec<Message>>,
+    pub messages: Comp<Vec<Message>>,
 }
 
 impl Entities {

@@ -5,8 +5,6 @@ use std::cell::RefCell;
 use std::str::FromStr;
 use std::fmt;
 
-use logging_timer::timer;
-
 use pathfinding::directed::astar::astar;
 
 use symmetric_shadowcasting::Pos as SymPos;
@@ -1010,9 +1008,15 @@ impl Map {
     }
 
     pub fn is_in_fov_shadowcast(&self, start_pos: Pos, end_pos: Pos) -> bool {
-        let _fovshad = timer!("FOVSHAD");
         if let Some(visible) = self.fov_cache.borrow_mut().get(&start_pos) {
             return visible.contains(&end_pos);
+        }
+
+        // NOTE(perf) this should be correct- shadowcasting is symmetrical, so 
+        // we either need a precomputed start-to-end or end-to-start
+        // calculation, but not both.
+        if let Some(visible) = self.fov_cache.borrow_mut().get(&end_pos) {
+            return visible.contains(&start_pos);
         }
 
         // NOTE(perf) this pre-allocation speeds up FOV significantly

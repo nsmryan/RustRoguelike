@@ -283,7 +283,6 @@ checksum = "824845a0bf897a9042383849b02c1bc219c2383772efcd5c6f9766fa4b81aef3"
 dependencies = [
  "autocfg",
  "hashbrown",
- "serde",
 ]
 
 [[package]]
@@ -605,7 +604,6 @@ name = "roguelike_core"
 version = "0.1.0"
 dependencies = [
  "euclid",
- "indexmap",
  "itertools",
  "log",
  "logging_timer",
@@ -658,7 +656,6 @@ version = "0.1.0"
 dependencies = [
  "bmp",
  "gumdrop",
- "indexmap",
  "log",
  "logging_timer",
  "rmp",
