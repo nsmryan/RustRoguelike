@@ -38,14 +38,16 @@ impl<T> Comp<T> {
 
     pub fn insert(&mut self, entity_id: EntityId, data: T) {
         let result = self.ids.binary_search(&entity_id);
-        let index;
         match result {
-            Ok(ok_index) => index = ok_index, 
-            Err(err_index) => index = err_index,
-        }
+            Ok(ok_index) => {
+               self.store[ok_index] = data;
+            }
 
-        self.ids.insert(index, entity_id);
-        self.store.insert(index, data);
+            Err(err_index) => {
+                self.ids.insert(err_index, entity_id);
+                self.store.insert(err_index, data);
+            }
+        }
     }
 
     pub fn remove(&mut self, entity_id: &EntityId) {
