@@ -20,15 +20,15 @@ use crate::drawcmd::*;
 use crate::animation::{Sprite, SpriteKey, Effect, Animation, AnimationResult, Particle};
 
 
-pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, game: &mut Game, dt: f32) -> Result<(), String> {
+pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites: &Vec<SpriteSheet>, game: &mut Game, dt: f32) -> Result<(), String> {
     display_state.dt = dt;
     display_state.time += dt;
 
     /* Draw Background */
-    render_background(panels.get_mut(&PanelName::Map).unwrap(), display_state, game);
+    render_background(panels.get_mut(&PanelName::Map).unwrap(), game, sprites);
 
     /* Draw Map */
-    render_panels(panels, display_state, game);
+    render_panels(panels, display_state, game, sprites);
 
     /* Draw Debug Overlay */
     if game.settings.debug_enabled {
@@ -51,48 +51,48 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, game: &
 }
 
 
-fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &mut Game) {
+fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &mut Game, sprites: &Vec<SpriteSheet>) {
     if game.settings.render_map {
         let panel = &mut panels.get_mut(&PanelName::Map).unwrap();
 
         {
             let _map = timer!("MAP");
-            render_map(panel, display_state, game);
+            render_map(panel, game, sprites);
         }
 
         {
             let _mid = timer!("MID");
-            render_entity_type(panel, EntityType::Environment, display_state, game);
-            render_entity_type(panel, EntityType::Trigger, display_state, game);
-            render_entity_type(panel, EntityType::Item, display_state, game);
+            render_entity_type(panel, EntityType::Environment, display_state, game, sprites);
+            render_entity_type(panel, EntityType::Trigger, display_state, game, sprites);
+            render_entity_type(panel, EntityType::Item, display_state, game, sprites);
 
-            render_map_middle(panel, display_state, game);
+            render_map_middle(panel, game, sprites);
         }
 
         {
             let _above = timer!("ABOVE");
-            render_entity_type(panel, EntityType::Energy, display_state, game);
-            render_entity_type(panel, EntityType::Enemy, display_state, game);
-            render_entity_type(panel, EntityType::Column, display_state, game);
-            render_entity_type(panel, EntityType::Player, display_state, game);
-            render_entity_type(panel, EntityType::Other, display_state, game);
+            render_entity_type(panel, EntityType::Energy, display_state, game, sprites);
+            render_entity_type(panel, EntityType::Enemy, display_state, game, sprites);
+            render_entity_type(panel, EntityType::Column, display_state, game, sprites);
+            render_entity_type(panel, EntityType::Player, display_state, game, sprites);
+            render_entity_type(panel, EntityType::Other, display_state, game, sprites);
         }
 
         {
             let _overlays_game = timer!("OVERLAYSGAME");
-            render_game_overlays(panel, display_state, game, game.settings.cursor);
+            render_game_overlays(panel, display_state, game, sprites);
         }
 
         {
             let _mapabove = timer!("MAPABOVE");
-            render_map_above(panel, display_state, game);
+            render_map_above(panel, game, sprites);
         }
 
         {
             let _extra = timer!("EXTRA");
             render_impressions(panel, display_state, game);
-            render_effects(panel, display_state, game);
-            render_overlays(panel, display_state, game, game.settings.cursor);
+            render_effects(panel, display_state, game, sprites);
+            render_overlays(panel, display_state, game, game.settings.cursor, sprites);
         }
     }
 
@@ -490,10 +490,10 @@ fn render_inventory(panel: &mut Panel, game: &mut Game) {
 }
 
 /// render the background files, including water tiles
-fn render_background(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
+fn render_background(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteSheet>) {
     let (map_width, map_height) = game.data.map.size();
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let sprite_key = lookup_spritekey(sprites, "tiles");
 
     for y in 0..map_height {
         for x in 0..map_width {
@@ -532,8 +532,8 @@ fn surface_chr(surface: Surface) -> Option<u8> {
 }
 
 /// Render Wall Shadows (full tile and intertile walls, left and down)
-fn render_wall_shadow(panel: &mut Panel, pos: Pos, display_state: &mut DisplayState, game: &mut Game) {
-    let shadow_sprite_key = display_state.lookup_spritekey("shadows");
+fn render_wall_shadow(panel: &mut Panel, pos: Pos, game: &mut Game, sprites: &Vec<SpriteSheet>) {
+    let shadow_sprite_key = lookup_spritekey(sprites, "shadows");
 
     let tile = game.data.map[pos];
 
@@ -609,12 +609,12 @@ fn render_wall_shadow(panel: &mut Panel, pos: Pos, display_state: &mut DisplaySt
     }
 }
 
-fn render_map_above(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
+fn render_map_above(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let (map_width, map_height) = game.data.map.size();
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let sprite_key = lookup_spritekey(sprites, "tiles");
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
@@ -662,15 +662,15 @@ fn render_map_above(panel: &mut Panel, display_state: &mut DisplayState, game: &
     }
 }
 
-fn render_map_middle(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
+fn render_map_middle(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteSheet>) {
     let (map_width, map_height) = game.data.map.size();
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let sprite_key = lookup_spritekey(sprites, "tiles");
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
 
-            render_wall_shadow(panel, pos, display_state, game);
+            render_wall_shadow(panel, pos, game, sprites);
 
             /* draw the between-tile walls appropriate to this tile */
             render_intertile_walls_below(panel, &mut game.data.map, sprite_key, pos);
@@ -679,10 +679,10 @@ fn render_map_middle(panel: &mut Panel, display_state: &mut DisplayState, game: 
 }
 
 /// Render the map, with environment and walls
-fn render_map(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
+fn render_map(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteSheet>) {
     let (map_width, map_height) = game.data.map.size();
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let sprite_key = lookup_spritekey(sprites, "tiles");
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
@@ -766,7 +766,8 @@ fn render_intertile_walls_below(panel: &mut Panel,
 /// resulting vector of effects is then saved as the new effects vector.
 fn render_effects(panel: &mut Panel,
                   display_state: &mut DisplayState,
-                  game: &mut Game) {
+                  game: &mut Game,
+                  sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let mut index = 0;
@@ -783,7 +784,7 @@ fn render_effects(panel: &mut Panel,
                     particles.push(Particle::new(game.config.particle_duration, pos));
                 }
 
-                let sprite_key = display_state.lookup_spritekey("particle_speck");
+                let sprite_key = lookup_spritekey(sprites, "particle_speck");
 
                 let dims = panel.cell_dims();
                 let mut index = 0;
@@ -845,7 +846,7 @@ fn render_effects(panel: &mut Panel,
             }
 
             Effect::Beam(remaining, start, end) => {
-                let sprite_key = display_state.lookup_spritekey("tiles");
+                let sprite_key = lookup_spritekey(sprites, "tiles");
 
                 let dxy = sub_pos(*end, *start);
                 let dir = Direction::from_dxy(dxy.x, dxy.y).unwrap();
@@ -925,7 +926,8 @@ fn render_effects(panel: &mut Panel,
 fn render_entity(panel: &mut Panel,
                  entity_id: EntityId,
                  display_state: &mut DisplayState,
-                 game: &mut Game) -> Option<Sprite> {
+                 game: &mut Game,
+                 sprites: &Vec<SpriteSheet>) -> Option<Sprite> {
     let mut animation_result = AnimationResult::new();
 
     let pos = game.data.entities.pos[&entity_id];
@@ -975,7 +977,7 @@ fn render_entity(panel: &mut Panel,
         } else {
             let color = game.data.entities.color[&entity_id];
 
-            let tiles = display_state.lookup_spritekey("tiles");
+            let tiles = lookup_spritekey(sprites, "tiles");
             let chr = game.data.entities.chr[&entity_id];
             let sprite = Sprite::new(chr as u32, tiles);
 
@@ -992,7 +994,7 @@ fn render_entity(panel: &mut Panel,
 
             if is_in_fov_ext {
                 if display_state.impressions.iter().all(|impresssion| impresssion.pos != pos) {
-                    let tiles = display_state.lookup_spritekey("tiles");
+                    let tiles = lookup_spritekey(sprites, "tiles");
                     let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
                     display_state.impressions.push(Impression::new(impression_sprite, pos));
                 }
@@ -1015,7 +1017,7 @@ fn render_impressions(panel: &mut Panel, display_state: &mut DisplayState, game:
     }
 }
 
-fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut DisplayState, game: &mut Game) {
+fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut DisplayState, game: &mut Game, sprites: &Vec<SpriteSheet>) {
     if typ == EntityType::Player && game.settings.state == GameState::Use && game.settings.use_dir.is_some() {
         // For the player in use-mode, while holding down a direction, we
         // need special rendering. Otherwise the player is rendered as normal.
@@ -1043,9 +1045,9 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
         }
 
         if let Some(pos) = use_pos {
-            render_entity_ghost(panel, player_id, player_pos, game, display_state);
+            render_entity_ghost(panel, player_id, player_pos, game, display_state, sprites);
             game.data.entities.pos[&player_id] = pos;
-            render_entity(panel, player_id, display_state, game);
+            render_entity(panel, player_id, display_state, game, sprites);
             game.data.entities.pos[&player_id] = player_pos;
         }
     } else {
@@ -1055,7 +1057,7 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
             index += 1;
 
             if !game.data.entities.needs_removal[&entity_id] && game.data.entities.typ[&entity_id] == typ {
-                let maybe_sprite = render_entity(panel, entity_id, display_state, game);
+                let maybe_sprite = render_entity(panel, entity_id, display_state, game, sprites);
 
                 if let Some(sprite) = maybe_sprite {
                     display_state.drawn_sprites.insert(entity_id, sprite);
@@ -1066,9 +1068,9 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
 }
 
 fn render_overlay_use_item(panel: &mut Panel,
-                              item_class: ItemClass,
-                              display_state: &mut DisplayState,
-                              game: &mut Game) {
+                           item_class: ItemClass,
+                           game: &mut Game,
+                           sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
@@ -1078,7 +1080,7 @@ fn render_overlay_use_item(panel: &mut Panel,
     let mut highlight_color = game.config.color_light_grey;
     highlight_color.a = game.config.grid_alpha_overlay;
 
-    let sprite_key = display_state.lookup_spritekey("tiles");
+    let sprite_key = lookup_spritekey(sprites, "tiles");
 
     if let Some(item_index) = game.data.entities.item_by_class(player_id, item_class) {
         if let Some(use_dir) = game.settings.use_dir {
@@ -1140,13 +1142,13 @@ fn render_sound_overlay(panel: &mut Panel,
 }
 
 fn render_game_overlays(panel: &mut Panel,
-                   display_state: &mut DisplayState,
-                   game: &mut Game,
-                   _cursor_pos: Option<Pos>) {
+                        display_state: &mut DisplayState,
+                        game: &mut Game,
+                        sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
-    let tiles_key = display_state.lookup_spritekey("tiles");
+    let tiles_key = lookup_spritekey(sprites, "tiles");
 
     if game.config.use_cursor {
         if let Some(cursor_pos) = game.settings.cursor {
@@ -1199,7 +1201,7 @@ fn render_game_overlays(panel: &mut Panel,
                 }
             }
         } else if let UseAction::Item(item_class) = game.settings.use_action {
-            render_overlay_use_item(panel, item_class, display_state, game);
+            render_overlay_use_item(panel, item_class, game, sprites);
         }
     }
 
@@ -1235,9 +1237,9 @@ fn render_game_overlays(panel: &mut Panel,
                game.data.map.is_within_bounds(pos) &&
                game.data.entities.status[&entity_id].alive {
                render_attack_overlay(panel,
-                                     display_state,
                                      game,
-                                     entity_id);
+                                     entity_id,
+                                     sprites);
             }
         }
     }
@@ -1248,11 +1250,12 @@ fn render_game_overlays(panel: &mut Panel,
 fn render_overlays(panel: &mut Panel,
                    display_state: &mut DisplayState,
                    game: &mut Game,
-                   cursor_pos: Option<Pos>) {
+                   cursor_pos: Option<Pos>,
+                   sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
-    let tiles_key = display_state.lookup_spritekey("tiles");
+    let tiles_key = lookup_spritekey(sprites, "tiles");
 
     // render a grid of numbers if enabled
     if game.config.overlay_directions {
@@ -1309,7 +1312,7 @@ fn render_overlays(panel: &mut Panel,
                     }
 
                     if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {
-                        render_entity_ghost(panel, player_id, player_ghost_pos, game, display_state);
+                        render_entity_ghost(panel, player_id, player_ghost_pos, game, display_state, sprites);
                     }
                 }
             }
@@ -1345,9 +1348,9 @@ fn render_overlays(panel: &mut Panel,
             if game.data.pos_in_fov(player_id, pos, &game.config) &&
                *entity_id != player_id &&
                game.data.entities.status[entity_id].alive {
-               render_attack_overlay(panel, display_state, game, *entity_id);
+               render_attack_overlay(panel, game, *entity_id, sprites);
                render_fov_overlay(panel, game, *entity_id);
-               render_movement_overlay(panel, display_state, game, *entity_id);
+               render_movement_overlay(panel, game, *entity_id, sprites);
             }
         }
     }
@@ -1403,7 +1406,7 @@ fn render_overlays(panel: &mut Panel,
                     let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
                     let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
 
-                    render_entity_ghost(panel, player_id, shadow_cursor_pos, game, display_state);
+                    render_entity_ghost(panel, player_id, shadow_cursor_pos, game, display_state, sprites);
                 }
             }
         }
@@ -1533,9 +1536,9 @@ fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> 
 }
 
 fn render_attack_overlay(panel: &mut Panel,
-                         display_state: &mut DisplayState,
                          game: &mut Game,
-                         entity_id: EntityId) {
+                         entity_id: EntityId,
+                         sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let player_pos = game.data.entities.pos[&player_id];
 
@@ -1544,7 +1547,7 @@ fn render_attack_overlay(panel: &mut Panel,
     let mut attack_highlight_color = game.config.color_red;
     attack_highlight_color.a = game.config.highlight_alpha_attack;
 
-    let tiles_key = display_state.lookup_spritekey("tiles");
+    let tiles_key = lookup_spritekey(sprites, "tiles");
 
     if let Some(reach) = game.data.entities.attack.get(&entity_id) {
         let attack_positions = 
@@ -1596,9 +1599,9 @@ fn render_fov_overlay(panel: &mut Panel,
 }
 
 fn render_movement_overlay(panel: &mut Panel,
-                           display_state: &mut DisplayState,
                            game: &mut Game,
-                           entity_id: EntityId) {
+                           entity_id: EntityId,
+                           sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let entity_pos = game.data.entities.pos[&entity_id];
@@ -1606,7 +1609,7 @@ fn render_movement_overlay(panel: &mut Panel,
     let mut highlight_color = game.config.color_light_grey;
     highlight_color.a = game.config.grid_alpha_overlay;
 
-    let tiles_key = display_state.lookup_spritekey("tiles");
+    let tiles_key = lookup_spritekey(sprites, "tiles");
 
     if let Some(reach) = game.data.entities.movement.get(&entity_id) {
         for move_pos in reach.reachables(entity_pos) {
@@ -1625,7 +1628,8 @@ fn render_entity_ghost(panel: &mut Panel,
                        entity_id: EntityId,
                        render_pos: Pos,
                        game: &mut Game,
-                       display_state: &mut DisplayState) {
+                       display_state: &mut DisplayState,
+                       sprites: &Vec<SpriteSheet>) {
     let entity_pos = game.data.entities.pos[&entity_id];
 
     let alpha = game.data.entities.color[&entity_id].a;
@@ -1637,7 +1641,7 @@ fn render_entity_ghost(panel: &mut Panel,
     // step the animation forward when rendering a ghost.
     let dt = display_state.dt;
     display_state.dt = 0.0;
-    render_entity(panel, entity_id, display_state, game);
+    render_entity(panel, entity_id, display_state, game, sprites);
     display_state.dt = dt;
 
     game.data.entities.color[&entity_id].a = alpha;

@@ -798,7 +798,7 @@ fn draw_tile_highlight<T>(panel: &Panel,
     canvas.fill_rect(rect).unwrap();
 }
 
-fn lookup_spritekey(sprites: &Vec<SpriteSheet>, name: &str) -> SpriteKey {
+pub fn lookup_spritekey(sprites: &Vec<SpriteSheet>, name: &str) -> SpriteKey {
     for (key, sprite_sheet) in sprites.iter().enumerate() {
         if sprite_sheet.name == *name {
             return key;

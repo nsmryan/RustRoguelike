@@ -48,6 +48,10 @@ pub struct Display {
     pub textures: HashMap<PanelName, Texture>,
     pub panels: HashMap<PanelName, Panel>,
 
+    // sprite state
+    pub sprites: Vec<SpriteSheet>,
+    pub next_sprite_key: SpriteKey,
+
     // TODO this may not be necessary- the canvas is not like other panels
     // try to just store the area, or the pixel dimensions, instead of a panel.
     pub canvas_panel: Panel,
@@ -73,6 +77,8 @@ impl Display {
                          canvas,
                          texture_creator,
                          textures, 
+                        sprites: Vec::new(),
+                        next_sprite_key: 0,
                          panels,
                          canvas_panel};
     }
@@ -86,7 +92,7 @@ impl Display {
             panel.process_cmds(clear,
                                self.textures.get_mut(panel_name).unwrap(),
                                canvas,
-                               &mut self.state.sprites);
+                               &mut self.sprites);
         }
     }
 
@@ -116,14 +122,14 @@ impl Display {
     }
 
     pub fn add_spritesheet(&mut self, name: String, texture: Texture) {
-        let sprite_key = self.state.next_sprite_key;
+        let sprite_key = self.next_sprite_key;
         let sprite_sheet = SpriteSheet::new(name, texture);
-        self.state.next_sprite_key += 1;
-        self.state.sprites.insert(sprite_key, sprite_sheet);
+        self.next_sprite_key += 1;
+        self.sprites.insert(sprite_key, sprite_sheet);
     }
 
     pub fn sprite_exists(&self, name: &str) -> bool {
-        for sprite_sheet in self.state.sprites.iter() {
+        for sprite_sheet in self.sprites.iter() {
             if sprite_sheet.name == *name {
                 return true;
             }
@@ -132,8 +138,16 @@ impl Display {
         return false;
     }
 
+    /// Create a sprite by looking up a texture and constructing the
+    /// SpriteAnim structure.
+    pub fn new_sprite(&self, name: &str, speed: f32) -> SpriteAnim {
+        let sprite_key = lookup_spritekey(&self.sprites, name);
+        let max_index = self.sprites[sprite_key].num_sprites;
+        return SpriteAnim::new(name.to_string(), sprite_key, 0.0, max_index as f32, speed);
+    }
+
     pub fn static_sprite(&self, sprite_sheet: &str, chr: char) -> SpriteAnim {
-        let sprite_key = self.state.lookup_spritekey(sprite_sheet);
+        let sprite_key = lookup_spritekey(&self.sprites, sprite_sheet);
         return SpriteAnim::new(format!("{}", chr),
                                sprite_key,
                                chr as i32 as SpriteIndex,
@@ -142,20 +156,20 @@ impl Display {
     }
 
     pub fn random_sprite(&mut self, sprite_name: &str, speed: f32) -> Animation {
-        let sprite_anim = self.state.new_sprite(sprite_name, speed);
+        let sprite_anim = self.new_sprite(sprite_name, speed);
         let anim = Animation::RandomLoop(sprite_anim);
         return anim;
     }
 
     pub fn between_sprite(&mut self, sprite_name: &str, start: Pos, end: Pos, speed: f32) -> Animation {
-        let sprite_anim = self.state.new_sprite(sprite_name, speed);
+        let sprite_anim = self.new_sprite(sprite_name, speed);
         let anim = Animation::Between(sprite_anim, start, end, 0.0, speed);
         return anim;
     }
 
     /// Create and play a looping sprite
     pub fn loop_sprite(&mut self, sprite_name: &str, speed: f32) -> Animation {
-        let sprite_anim = self.state.new_sprite(sprite_name, speed);
+        let sprite_anim = self.new_sprite(sprite_name, speed);
         let anim = Animation::Loop(sprite_anim);
         return anim;
     }
@@ -218,7 +232,7 @@ impl Display {
 
             Msg::CursorToggle(state, pos) => {
                 if !state {
-                    let tiles = self.state.lookup_spritekey("tiles");
+                    let tiles = lookup_spritekey(&self.sprites, "tiles");
                     let cursor_sprite = Sprite::new(ENTITY_CURSOR as u32, tiles);
                     let color = config.color_mint_green;
                     let fade_effect = Effect::fade(cursor_sprite, color, config.cursor_alpha, 0, pos, config.cursor_fade_seconds);
@@ -250,7 +264,7 @@ impl Display {
 
                         let pos = data.entities.pos[&cause_id];
                         // NOTE it is slightly odd to look up this sprite sheet here...
-                        let tiles = self.state.lookup_spritekey("tiles");
+                        let tiles = lookup_spritekey(&self.sprites, "tiles");
                         let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
                         self.state.impressions.push(Impression::new(impression_sprite, pos));
                     }
@@ -290,7 +304,7 @@ impl Display {
 
                     let sprite_name = format!("{:?}_death", data.entities.name[&attacked]);
                     if self.sprite_exists(&sprite_name) {
-                        let sprite = self.state.new_sprite(&sprite_name, 1.0);
+                        let sprite = self.new_sprite(&sprite_name, 1.0);
                         self.state.play_animation(attacked, Animation::Once(sprite));
                     }
                 }
@@ -315,7 +329,7 @@ impl Display {
                         sprite_name = "player_slash_diagonal";
                     }
                 }
-                let mut sprite_anim = self.state.new_sprite(sprite_name, config.attack_animation_speed);
+                let mut sprite_anim = self.new_sprite(sprite_name, config.attack_animation_speed);
                 if let Some(dir) = Direction::from_positions(from, to) {
                     let turns;
                     if dir.horiz() {
@@ -493,10 +507,6 @@ impl Display {
 pub type Panels = HashMap<PanelName, Panel>;
 
 pub struct DisplayState {
-    // sprite state
-    pub sprites: Vec<SpriteSheet>,
-    pub next_sprite_key: SpriteKey,
-
     // currently active effects
     pub effects: Vec<Effect>,
 
@@ -528,8 +538,6 @@ pub struct DisplayState {
 impl DisplayState {
     pub fn new() -> DisplayState {
         return DisplayState {
-            sprites: Vec::new(),
-            next_sprite_key: 0,
             effects: Vec::new(),
             animations: Comp::<VecDeque<Animation>>::new(),
             next_anim_key: 0,
@@ -546,30 +554,12 @@ impl DisplayState {
         };
     }
 
-    pub fn lookup_spritekey(&self, name: &str) -> SpriteKey {
-        for (key, sprite_sheet) in self.sprites.iter().enumerate() {
-            if sprite_sheet.name == *name {
-                return key;
-            }
-        }
-
-        panic!(format!("Could not find sprite '{}'", name));
-    }
-
     pub fn update_animations(&mut self, rng: &mut Rand32, config: &Config) {
         for anims in self.animations.store.iter_mut() {
             if let Some(anim) = anims.get_mut(0) {
                 anim.step(self.dt, rng, config);
             }
         }
-    }
-
-    /// Create a sprite by looking up a texture and constructing the
-    /// SpriteAnim structure.
-    pub fn new_sprite(&self, name: &str, speed: f32) -> SpriteAnim {
-        let sprite_key = self.lookup_spritekey(name);
-        let max_index = self.sprites[sprite_key].num_sprites;
-        return SpriteAnim::new(name.to_string(), sprite_key, 0.0, max_index as f32, speed);
     }
 
     pub fn play_effect(&mut self, effect: Effect) {
