@@ -136,7 +136,7 @@ pub fn sort_by_distance_to(pos: Pos, positions: &mut Vec<Pos>) {
              .partial_cmp(&distance(pos, *b)).unwrap());
 }
 
-pub fn reduce_item_durability(data: &mut GameData, entity_id: EntityId, item_id: EntityId) {
+pub fn reduce_item_durability(data: &mut Level, entity_id: EntityId, item_id: EntityId) {
     if let Some(durability) = data.entities.durability.get_mut(&item_id) {
         if *durability > 1 {
             *durability -= 1;
@@ -178,7 +178,7 @@ pub fn push_attack(entity_id: EntityId,
                    target: EntityId,
                    direction: Direction,
                    move_into: bool,
-                   data: &mut GameData,
+                   data: &mut Level,
                    config: &Config,
                    msg_log: &mut MsgLog) -> bool {
     let mut continue_push = true;
@@ -238,7 +238,7 @@ pub fn crush(handle: EntityId, target: EntityId, entities: &mut Entities, msg_lo
     }
 }
 
-pub fn attack(entity: EntityId, target: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
+pub fn attack(entity: EntityId, target: EntityId, data: &mut Level, msg_log: &mut MsgLog) {
     if data.using(entity, Item::Hammer).is_some() {
         data.entities.status[&target].alive = false;
         data.entities.blocks[&target] = false;
@@ -477,7 +477,7 @@ pub fn next_pos(pos: Pos, delta_pos: Pos) -> Pos {
     return next_pos;
 }
 
-pub fn can_stab(data: &GameData, entity: EntityId, target: EntityId) -> bool {
+pub fn can_stab(data: &Level, entity: EntityId, target: EntityId) -> bool {
     let entity_pos = data.entities.pos[&entity];
     let target_pos = data.entities.pos[&target];
 

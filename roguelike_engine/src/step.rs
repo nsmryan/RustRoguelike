@@ -91,7 +91,7 @@ pub fn step_logic(game: &mut Game) -> bool {
 }
 
 /// Check whether the exit condition for the game is met.
-fn level_exit_condition_met(data: &GameData) -> bool {
+fn level_exit_condition_met(data: &Level) -> bool {
     // loop over objects in inventory, and check whether any
     // are the key object.
     let player_id = data.find_by_name(EntityName::Player).unwrap();

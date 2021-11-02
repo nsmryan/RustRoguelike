@@ -1,4 +1,8 @@
-use roguelike_core::types::{Name, Pos, Color};
+use symbol::Symbol;
+
+use serde::{Serialize, Deserialize};
+
+use roguelike_core::types::{Pos, Color};
 use roguelike_core::utils::{distance, move_towards};
 use roguelike_core::map::Aoe;
 use roguelike_core::config::Config;
@@ -10,8 +14,10 @@ pub type SpriteKey = usize;
 
 pub type SpriteIndex = f32;
 
+pub type Name = Symbol;
 
-#[derive(Clone, Debug, PartialEq)]
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Particle {
     pub duration: f32,
     pub pos: Pos,
@@ -54,7 +60,7 @@ impl Effect {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Sprite {
     pub index: u32, 
     pub key: SpriteKey,
@@ -133,7 +139,7 @@ impl SpriteAnim {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AnimationResult {
     pub done: bool,
     pub sprite: Option<Sprite>,

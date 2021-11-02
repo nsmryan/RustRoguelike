@@ -3,6 +3,8 @@ use std::collections::HashMap;
 
 use bmp::Image;
 
+use serde::{Serialize, Deserialize};
+
 use sdl2::render::{Texture, WindowCanvas, TextureCreator};
 use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
@@ -174,13 +176,13 @@ impl Display {
         return anim;
     }
 
-    pub fn play_idle_animation(&mut self, entity_id: EntityId, data: &mut GameData, config: &Config) {
+    pub fn play_idle_animation(&mut self, entity_id: EntityId, data: &mut Level, config: &Config) {
         if let Some(anim) = self.get_idle_animation(entity_id, data, config) {
             self.state.play_animation(entity_id, anim);
         }
     }
 
-    pub fn get_idle_animation(&mut self, entity_id: EntityId, data: &mut GameData, config: &Config) -> Option<Animation> {
+    pub fn get_idle_animation(&mut self, entity_id: EntityId, data: &mut Level, config: &Config) -> Option<Animation> {
         let name = data.entities.name[&entity_id];
 
         if name == EntityName::Player || name == EntityName::Gol || name == EntityName::Pawn || name == EntityName::Rook {
@@ -224,7 +226,7 @@ impl Display {
         self.state.effects.clear();
     }
 
-    pub fn process_message(&mut self, msg: Msg, data: &mut GameData, config: &Config) {
+    pub fn process_message(&mut self, msg: Msg, data: &mut Level, config: &Config) {
         match msg {
             Msg::StartTurn => {
                 self.state.sound_tiles.clear();
@@ -506,6 +508,8 @@ impl Display {
 
 pub type Panels = HashMap<PanelName, Panel>;
 
+// #[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct DisplayState {
     // currently active effects
     pub effects: Vec<Effect>,
@@ -595,7 +599,7 @@ impl DisplayState {
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Impression {
     pub sprite: Sprite,
     pub pos: Pos,

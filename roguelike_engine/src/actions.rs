@@ -310,7 +310,7 @@ pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings) {
 }
 
 pub fn handle_input_skill_menu(input: InputAction,
-                               data: &GameData,
+                               data: &Level,
                                settings: &mut GameSettings,
                                msg_log: &mut MsgLog,
                                _config: &Config) {
@@ -342,7 +342,7 @@ pub fn handle_input_skill_menu(input: InputAction,
 }
 
 pub fn handle_input_class_menu(input: InputAction,
-                               _data: &GameData,
+                               _data: &Level,
                                settings: &mut GameSettings,
                                msg_log: &mut MsgLog) {
     match input {
@@ -393,7 +393,7 @@ pub fn handle_input_confirm_quit(input: InputAction, settings: &mut GameSettings
 }
 
 pub fn handle_input(input_action: InputAction,
-                    data: &GameData,
+                    data: &Level,
                     settings: &mut GameSettings,
                     msg_log: &mut MsgLog,
                     config: &Config) {
@@ -434,7 +434,7 @@ pub fn handle_input(input_action: InputAction,
 }
 
 pub fn handle_input_use(input_action: InputAction,
-                        data: &GameData,
+                        data: &Level,
                         settings: &mut GameSettings,
                         msg_log: &mut MsgLog,
                         _config: &Config) {
@@ -503,7 +503,7 @@ pub fn handle_input_use(input_action: InputAction,
 }
 
 pub fn handle_input_playing(input_action: InputAction,
-                            data: &GameData,
+                            data: &Level,
                             settings: &mut GameSettings,
                             msg_log: &mut MsgLog,
                             config: &Config) {
@@ -675,7 +675,7 @@ pub fn handle_input_playing(input_action: InputAction,
 
 // The item index is usually determined by the ItemClass, but for Misc it can
 // only be a stone.
-fn find_item(item_class: ItemClass, data: &GameData) -> Option<usize> {
+fn find_item(item_class: ItemClass, data: &Level) -> Option<usize> {
         let player_id = data.find_by_name(EntityName::Player).unwrap();
         let maybe_index;
         if item_class == ItemClass::Misc {
@@ -686,7 +686,7 @@ fn find_item(item_class: ItemClass, data: &GameData) -> Option<usize> {
         return maybe_index;
 }
 
-fn use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_log: &mut MsgLog) {
+fn use_dir(dir: Direction, data: &Level, settings: &mut GameSettings, _msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     if let UseAction::Item(item_class) = settings.use_action {
@@ -703,7 +703,7 @@ fn use_dir(dir: Direction, data: &GameData, settings: &mut GameSettings, _msg_lo
     }
 }
 
-fn finalize_use_item(data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+fn finalize_use_item(data: &Level, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
 
@@ -773,7 +773,7 @@ fn finalize_use_item(data: &GameData, settings: &mut GameSettings, msg_log: &mut
     }
 }
 
-fn start_use_item(item_class: ItemClass, data: &GameData, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+fn start_use_item(item_class: ItemClass, data: &Level, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     if let Some(item_index) = data.entities.item_by_class(player_id, item_class) {
@@ -796,7 +796,7 @@ fn start_use_item(item_class: ItemClass, data: &GameData, settings: &mut GameSet
 pub fn handle_skill(skill_index: usize,
                     action_loc: ActionLoc,
                     action_mode: ActionMode,
-                    data: &GameData, 
+                    data: &Level, 
                     msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 

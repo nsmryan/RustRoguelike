@@ -16,6 +16,8 @@ gumdrop = "0.8"
 
 bmp = "0.5"
 
+symbol = "0.1"
+
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 serde_yaml = "0.8"

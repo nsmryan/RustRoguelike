@@ -613,7 +613,6 @@ dependencies = [
  "serde_yaml",
  "simple-logging",
  "smallvec",
- "symbol",
  "symmetric-shadowcasting",
 ]
 
@@ -668,6 +667,7 @@ dependencies = [
  "serde_derive",
  "serde_yaml",
  "simple-logging",
+ "symbol",
 ]
 
 [[package]]

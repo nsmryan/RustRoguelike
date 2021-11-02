@@ -171,7 +171,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
 }
 
 pub fn read_map_xp(config: &Config,
-                   data: &mut GameData,
+                   data: &mut Level,
                    msg_log: &mut MsgLog,
                    file_name: &str) -> (i32, i32) {
     trace!("opening map {}", file_name);

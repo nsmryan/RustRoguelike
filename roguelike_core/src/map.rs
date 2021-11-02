@@ -86,13 +86,13 @@ impl TileType {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum AoeEffect {
     Sound,
     Freeze,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Aoe {
     pub effect: AoeEffect,
     pub positions: Vec<Vec<Pos>>,

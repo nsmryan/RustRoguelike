@@ -726,7 +726,7 @@ impl MoveResult {
 pub fn check_collision(pos: Pos,
                        dx: i32,
                        dy: i32,
-                       data: &GameData) -> MoveResult {
+                       data: &Level) -> MoveResult {
     let mut last_pos = pos;
     let mut result: MoveResult =
         MoveResult::with_pos(pos + Vector2D::new(dx, dy));
@@ -765,7 +765,7 @@ pub fn check_collision(pos: Pos,
     return result;
 }
 
-pub fn entity_move_not_blocked(entity_id: EntityId, move_pos: Pos, delta_pos: Pos, data: &GameData) -> Option<Movement> {
+pub fn entity_move_not_blocked(entity_id: EntityId, move_pos: Pos, delta_pos: Pos, data: &Level) -> Option<Movement> {
     let movement: Option<Movement>;
 
     let pos = data.entities.pos[&entity_id];
@@ -788,7 +788,7 @@ pub fn entity_move_not_blocked(entity_id: EntityId, move_pos: Pos, delta_pos: Po
     return movement;
 }
 
-pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked: &Blocked, data: &GameData) -> Option<Movement> {
+pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked: &Blocked, data: &Level) -> Option<Movement> {
     let mut movement: Option<Movement>;
 
     let pos = data.entities.pos[&entity_id];
@@ -825,7 +825,7 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId,
                                      other_id: EntityId,
                                      move_pos: Pos,
                                      delta_pos: Pos,
-                                     data: &GameData) -> Option<Movement> {
+                                     data: &Level) -> Option<Movement> {
     let movement: Option<Movement>;
 
     let pos = data.entities.pos[&entity_id];
@@ -859,7 +859,7 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId,
     return movement;
 }
 
-pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: EntityId, blocked: &Blocked, delta_pos: Pos, data: &GameData) -> Option<Movement> {
+pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: EntityId, blocked: &Blocked, delta_pos: Pos, data: &Level) -> Option<Movement> {
     let movement: Option<Movement>;
 
     let entity_pos = data.entities.pos[&other_id];
@@ -932,7 +932,7 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
 pub fn calculate_move(dir: Direction,
                       reach: Reach,
                       entity_id: EntityId,
-                      data: &GameData) -> Option<Movement> {
+                      data: &Level) -> Option<Movement> {
     let mut movement: Option<Movement>;
 
     let pos = data.entities.pos[&entity_id];

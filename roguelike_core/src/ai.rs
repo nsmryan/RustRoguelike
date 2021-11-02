@@ -54,7 +54,7 @@ impl Behavior {
 }
 
 pub fn ai_take_turn(monster_id: EntityId,
-                    data: &mut GameData,
+                    data: &mut Level,
                     config: &Config,
                     msg_log: &mut MsgLog) {
     if data.entities.status[&monster_id].alive {
@@ -71,7 +71,7 @@ pub fn ai_take_turn(monster_id: EntityId,
 }
 
 pub fn basic_ai_take_turn(monster_id: EntityId,
-                          data: &mut GameData,
+                          data: &mut Level,
                           msg_log: &mut MsgLog,
                           config: &Config) {
     let monster_pos = data.entities.pos[&monster_id];
@@ -97,7 +97,7 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
 
 pub fn ai_attack(monster_id: EntityId,
                  target_id: EntityId,
-                 data: &mut GameData,
+                 data: &mut Level,
                  msg_log: &mut MsgLog,
                  _config: &Config) {
     let target_pos = data.entities.pos[&target_id];
@@ -109,7 +109,7 @@ pub fn ai_attack(monster_id: EntityId,
 }
 
 pub fn ai_idle(monster_id: EntityId,
-               data: &mut GameData,
+               data: &mut Level,
                msg_log: &mut MsgLog,
                config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
@@ -152,7 +152,7 @@ pub fn ai_idle(monster_id: EntityId,
 
 pub fn ai_investigate(target_pos: Pos, 
                       monster_id: EntityId,
-                      data: &mut GameData,
+                      data: &mut Level,
                       msg_log: &mut MsgLog,
                       config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
@@ -190,7 +190,7 @@ pub fn ai_investigate(target_pos: Pos,
     }
 }
 
-fn ai_move_towards_target(target_pos: Pos, monster_id: EntityId, data: &mut GameData, msg_log: &mut MsgLog) {
+fn ai_move_towards_target(target_pos: Pos, monster_id: EntityId, data: &mut Level, msg_log: &mut MsgLog) {
     let monster_pos = data.entities.pos[&monster_id];
 
     // if the monster has not reached its target, move towards the target.
@@ -205,7 +205,7 @@ fn ai_move_towards_target(target_pos: Pos, monster_id: EntityId, data: &mut Game
 
 pub fn ai_pos_that_hit_target(monster_id: EntityId,
                               target_id: EntityId,
-                              data: &mut GameData,
+                              data: &mut Level,
                               config: &Config) -> Vec<Pos> {
     let mut potential_move_targets = Vec::new();
 
@@ -242,7 +242,7 @@ pub fn ai_pos_that_hit_target(monster_id: EntityId,
 pub fn ai_fov_cost(monster_id: EntityId,
                    check_pos: Pos,
                    target_pos: Pos,
-                   data: &mut GameData,
+                   data: &mut Level,
                    config: &Config) -> usize {
     let monster_pos = data.entities.pos[&monster_id];
 
@@ -266,7 +266,7 @@ pub fn ai_target_pos_cost(monster_id: EntityId,
                           target_id: EntityId,
                           check_pos: Pos,
                           lowest_cost: usize,
-                          data: &mut GameData,
+                          data: &mut Level,
                           config: &Config) -> Option<(usize, Pos)> {
     let monster_pos = data.entities.pos[&monster_id];
     let target_pos = data.entities.pos[&target_id];
@@ -304,7 +304,7 @@ pub fn ai_target_pos_cost(monster_id: EntityId,
     return Some((cost, next_pos));
 }
 
-pub fn ai_attempt_step(monster_id: EntityId, new_pos: Pos, data: &GameData) -> Option<Pos> {
+pub fn ai_attempt_step(monster_id: EntityId, new_pos: Pos, data: &Level) -> Option<Pos> {
     let monster_pos = data.entities.pos[&monster_id];
 
     let pos_offset = ai_take_astar_step(monster_id, new_pos, true, &data);
@@ -320,7 +320,7 @@ pub fn ai_attempt_step(monster_id: EntityId, new_pos: Pos, data: &GameData) -> O
 }
 
 
-pub fn ai_can_hit_target(data: &mut GameData,
+pub fn ai_can_hit_target(data: &mut Level,
                          monster_id: EntityId,
                          target_pos: Pos,
                          reach: &Reach,
@@ -365,7 +365,7 @@ pub fn ai_can_hit_target(data: &mut GameData,
 
 pub fn ai_move_to_attack_pos(monster_id: EntityId,
                              target_id: EntityId,
-                             data: &mut GameData,
+                             data: &mut Level,
                              config: &Config) -> Option<Pos> {
     let monster_pos = data.entities.pos[&monster_id];
 
@@ -410,7 +410,7 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
 }
 
 // NOTE perhaps this should be merged into is_in_fov?
-pub fn ai_is_in_fov(monster_id: EntityId, target_id: EntityId, data: &mut GameData, config: &Config) -> bool {
+pub fn ai_is_in_fov(monster_id: EntityId, target_id: EntityId, data: &mut Level, config: &Config) -> bool {
     let monster_pos = data.entities.pos[&monster_id];
     let target_pos = data.entities.pos[&target_id];
 
@@ -428,7 +428,7 @@ pub fn ai_is_in_fov(monster_id: EntityId, target_id: EntityId, data: &mut GameDa
     }
 }
 
-fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, data: &GameData) -> Option<i32> {
+fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, data: &Level) -> Option<i32> {
     let mut cost = Some(1);
 
     // check for an armed trap in the list of entities on this tile
@@ -446,7 +446,7 @@ fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, data: &GameData) -> Option<
 fn ai_astar_step(monster_id: EntityId,
                  target_pos: Pos,
                  must_reach: bool,
-                 data: &GameData) -> Vec<Pos> {
+                 data: &Level) -> Vec<Pos> {
     let reach = data.entities.movement[&monster_id];
     let monster_pos = data.entities.pos[&monster_id];
 
@@ -460,7 +460,7 @@ fn ai_astar_step(monster_id: EntityId,
 fn ai_take_astar_step(monster_id: EntityId,
                       target_pos: Pos,
                       must_reach: bool,
-                      data: &GameData) -> Pos {
+                      data: &Level) -> Pos {
     let path = ai_astar_step(monster_id, target_pos, must_reach, data);
 
     if path.len() > 1 {

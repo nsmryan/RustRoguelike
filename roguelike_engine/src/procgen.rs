@@ -519,7 +519,7 @@ fn place_vaults(game: &mut Game, cmds: &Vec<ProcCmd>) {
 }
 
 // TODO rotate and mirror according to tags
-pub fn place_vault(data: &mut GameData, vault: &Vault, offset: Pos, rng: &mut Rand32) {
+pub fn place_vault(data: &mut Level, vault: &Vault, offset: Pos, rng: &mut Rand32) {
                         
     let mirror = !vault.tags.contains(&VaultTag::NoMirror) && rng_range(rng, 0.0, 1.0) < 0.5;
 
@@ -534,7 +534,7 @@ pub fn place_vault(data: &mut GameData, vault: &Vault, offset: Pos, rng: &mut Ra
     place_vault_with(data, vault, offset, rotation, mirror);
 }
 
-pub fn place_vault_with(data: &mut GameData, vault: &Vault, offset: Pos, rotation: Rotation, mirror: bool) {
+pub fn place_vault_with(data: &mut Level, vault: &Vault, offset: Pos, rotation: Rotation, mirror: bool) {
     let mut actual_vault = vault.clone();
     actual_vault.data.map = reorient_map(&actual_vault.data.map, rotation, mirror);
 

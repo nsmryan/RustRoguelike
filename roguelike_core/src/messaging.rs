@@ -185,7 +185,7 @@ impl fmt::Display for Msg {
 
 
 impl Msg {
-    pub fn msg_line(&self, data: &GameData) -> String {
+    pub fn msg_line(&self, data: &Level) -> String {
         match self {
             Msg::StartTurn => {
                 return "Starting turn".to_string();

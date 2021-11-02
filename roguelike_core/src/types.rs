@@ -8,8 +8,6 @@ use serde::{Serialize, Deserialize};
 
 use pathfinding::directed::astar::astar;
 
-use symbol::Symbol;
-
 use euclid::Point2D;
 
 use crate::ai::{Ai, Behavior};
@@ -20,8 +18,6 @@ use crate::config::Config;
 use crate::line::*;
 use crate::constants::*;
 
-
-pub type Name = Symbol;
 
 pub type EntityId = u64;
 
@@ -154,21 +150,21 @@ pub type Pos = Point2D<i32, ()>;
 
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct GameData {
+pub struct Level {
     pub map: Map,
     pub entities: Entities,
 }
 
-impl GameData {
-    pub fn new(map: Map, entities: Entities) -> GameData {
-        GameData {
+impl Level {
+    pub fn new(map: Map, entities: Entities) -> Level {
+        Level {
             map,
             entities,
         }
     }
 
-    pub fn empty(width: u32, height: u32) -> GameData {
-        return GameData::new(Map::from_dims(width, height), Entities::new());
+    pub fn empty(width: u32, height: u32) -> Level {
+        return Level::new(Map::from_dims(width, height), Entities::new());
     }
 
     pub fn get_clear_pos(&self) -> Vec<Pos> {
@@ -186,7 +182,7 @@ impl GameData {
                         reach: Reach,
                         must_reach: bool,
                         traps_block: bool,
-                        cost_fun: Option<fn(Pos, Pos, Pos, &GameData) -> Option<i32>>) -> Vec<Pos> {
+                        cost_fun: Option<fn(Pos, Pos, Pos, &Level) -> Option<i32>>) -> Vec<Pos> {
         let result;
 
         let maybe_results =

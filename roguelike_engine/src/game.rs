@@ -20,7 +20,7 @@ use crate::vault::*;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Game {
     pub config: Config,
-    pub data: GameData,
+    pub data: Level,
     pub settings: GameSettings,
     pub msg_log: MsgLog,
     pub rng: Rand32,
@@ -37,7 +37,7 @@ impl Game {
 
         let map = Map::empty();
 
-        let mut data = GameData::new(map, entities);
+        let mut data = Level::new(map, entities);
 
         let player_id = make_player(&mut data.entities, &config, &mut msg_log);
         data.entities.pos[&player_id] = Pos::new(-1, -1);

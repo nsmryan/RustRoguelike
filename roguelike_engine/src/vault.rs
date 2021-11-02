@@ -50,18 +50,18 @@ impl FromStr for VaultTag {
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Vault {
-    pub data: GameData,
+    pub data: Level,
     pub tags: Vec<VaultTag>,
 }
 
 impl Vault {
     pub fn new(tiles: Vec<Vec<Tile>>, tags: Vec<VaultTag>) -> Vault {
         let map = Map::with_vec(tiles);
-        return Vault { data: GameData::new(map, Entities::new()), tags };
+        return Vault { data: Level::new(map, Entities::new()), tags };
     }
 
     pub fn empty() -> Vault {
-        return Vault { data: GameData::empty(0, 0), tags: Vec::new() };
+        return Vault { data: Level::empty(0, 0), tags: Vec::new() };
     }
 }
 

@@ -408,7 +408,7 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
     }
 }
 
-pub fn make_island(data: &mut GameData,
+pub fn make_island(data: &mut Level,
                    config: &Config,
                    msg_log: &mut MsgLog,
                    rng: &mut Rand32) -> Pos {
