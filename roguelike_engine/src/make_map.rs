@@ -101,7 +101,8 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
             let maps: Vec<String> = parse_map_file(&format!("resources/{}", file_name));
 
             if game.settings.level_num >= maps.len() {
-                panic!(format!("Map index {} too large ({} available", game.settings.level_num, maps.len()));
+                dbg!(game.settings.level_num, maps.len());
+                panic!("Map index too large");
             }
 
             let map_name = format!("resources/{}", maps[game.settings.level_num]);
@@ -436,13 +437,15 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             _ => {
-                                panic!(format!("Unexpected character {} in entities layer!", chr as u8));
+                                dbg!(chr);
+                                panic!("Unexpected character in entities layer!");
                             }
                         }
                     }
 
                     _ => {
-                        panic!(format!("Layer {} not expected in map file!", layer_index));
+                        dbg!(layer_index);
+                        panic!("Layer not expected in map file!");
                     }
                 }
             }

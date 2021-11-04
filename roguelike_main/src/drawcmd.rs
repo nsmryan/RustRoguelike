@@ -805,7 +805,8 @@ pub fn lookup_spritekey(sprites: &Vec<SpriteSheet>, name: &str) -> SpriteKey {
         }
     }
 
-    panic!(format!("Could not find sprite '{}'", name));
+    dbg!(name);
+    panic!("Could not find sprite");
 }
 
 fn sdl2_color(color: Color) -> Sdl2Color {

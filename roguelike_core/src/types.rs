@@ -315,7 +315,7 @@ impl Level {
                     return FovResult::Outside;
                 }
             } else {
-                panic!(format!("tried to perform is_in_fov on entity without facing"));
+                panic!("tried to perform is_in_fov on entity without facing");
             }
         }
     }
@@ -633,7 +633,8 @@ impl Level {
             }
 
             _ => {
-                panic!(format!("Tried to use {} in use-mode!", item));
+                dbg!(item);
+                panic!("Tried to use item in use-mode!");
             }
         }
 
@@ -769,6 +770,7 @@ pub enum Skill {
     FarSight,
     Sprint,
     Ping,
+    StoneSkin,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Default)]
@@ -1247,7 +1249,8 @@ impl FromStr for EntityName {
             return Ok(EntityName::Other);
         }
 
-        panic!(format!("EntityName {} not expected!", s));
+        dbg!(s);
+        panic!("EntityName not expected!");
     }
 }
 
@@ -1304,7 +1307,8 @@ impl FromStr for EntityType {
             return Ok(EntityType::Other);
         }
 
-        panic!(format!("EntityType {} not expected!", s));
+        dbg!(s);
+        panic!("EntityType not expected!");
     }
 }
 
@@ -1356,6 +1360,7 @@ pub struct StatusEffect {
     pub blinked: bool,
     pub active: bool,
     pub alive: bool,
+    pub stone: usize,
     pub hammer_raised: Option<(EntityId, Direction, usize)>, // item id, direction to hit, turns to wait
 }
 
@@ -1595,7 +1600,8 @@ impl Entities {
         if let Some(dir) = Direction::from_dxy(diff.x, diff.y) {
             return dir;
         }
-        panic!(format!("Facing with diff ({}, {}) not valid!", diff.x, diff.y));
+        dbg!(diff);
+        panic!("Facing with diff not valid!");
     }
 
     pub fn target(&self, entity_id: EntityId) -> Option<Pos> {

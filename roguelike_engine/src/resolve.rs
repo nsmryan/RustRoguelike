@@ -207,6 +207,7 @@ pub fn resolve_messages(data: &mut Level,
                         data.entities.add_skill(player_id, Skill::PassWall);
                         data.entities.add_skill(player_id, Skill::Rubble);
                         data.entities.add_skill(player_id, Skill::Reform);
+                        data.entities.add_skill(player_id, Skill::StoneSkin);
                     }
 
                     EntityClass::Grass => {
@@ -363,6 +364,10 @@ pub fn resolve_messages(data: &mut Level,
                         data.entities.took_turn[&entity_id] = true;
                     }
                 }
+            }
+
+            Msg::StoneSkin(entity_id) => {
+                data.entities.status[&entity_id].stone = SKILL_STONE_SKIN_TURNS;
             }
 
             Msg::Swap(entity_id, target_id) => {
@@ -871,7 +876,8 @@ fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut Level, msg_log
              wall_loc = blocked.end_pos;
              left_wall = false;
          } else {
-            panic!(format!("Hammer direction was not up/down/left/right ({:?})!", blocked));
+            dbg!(blocked);
+            panic!("Hammer direction was not up/down/left/right");
          }
 
         if left_wall {

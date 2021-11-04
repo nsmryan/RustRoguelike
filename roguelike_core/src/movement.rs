@@ -310,7 +310,8 @@ impl Direction {
         } else if dx < 0 && dy < 0 {
             Some(Direction::UpLeft)
         } else {
-            panic!(format!("Direction should not exist {:?}", (dx, dy)));
+            dbg!(dx, dy);
+            panic!("Direction should not exist");
         }
     }
 

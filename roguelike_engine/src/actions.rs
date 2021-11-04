@@ -913,6 +913,11 @@ pub fn handle_skill(skill_index: usize,
             }
         }
 
+        Skill::StoneSkin => {
+            let player_id = data.find_by_name(EntityName::Player).unwrap();
+            msg_log.log(Msg::StoneSkin(player_id));
+        }
+
         Skill::Swap => {
             let player_id = data.find_by_name(EntityName::Player).unwrap();
             if let Some(entity_id) = data.has_blocking_entity(skill_pos) {

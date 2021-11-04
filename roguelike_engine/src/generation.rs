@@ -403,7 +403,8 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
         EntityName::Stone => make_stone(entities, config, pos, msg_log),
         EntityName::Lantern => make_lantern(entities, config, pos, msg_log),
         _ => {
-            panic!(format!("Cannot create {:?} this way", entity_name));
+            dbg!(entity_name);
+            panic!("Cannot create this entity this way");
         }
     }
 }

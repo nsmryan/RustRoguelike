@@ -39,7 +39,8 @@ impl FromStr for KeyDir {
             return Ok(KeyDir::Up);
         }
 
-        panic!(format!("KeyDir {} unexpected", s));
+        dbg!(s);
+        panic!("KeyDir unexpected");
     }
 }
 

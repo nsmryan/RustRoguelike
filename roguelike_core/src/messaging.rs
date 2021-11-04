@@ -72,6 +72,7 @@ pub enum Msg {
     Sprint(EntityId, Direction, usize), // entity, direction, amount
     Rubble(EntityId, Pos),
     Reform(EntityId, Pos),
+    StoneSkin(EntityId),
     Swap(EntityId, EntityId), // casting entity, entity to swap with
     PassWall(EntityId, Pos),
     UseItem(EntityId, Pos, EntityId), // holding entity, position, item id
@@ -164,6 +165,7 @@ impl fmt::Display for Msg {
             Msg::Sprint(entity_id, direction, amount) => write!(f, "sprint {} {} {}", entity_id, direction, amount),
             Msg::Rubble(entity_id, pos) => write!(f, "rubble {} {} {}", entity_id, pos.x, pos.y),
             Msg::Reform(entity_id, pos) => write!(f, "reform {} {} {}", entity_id, pos.x, pos.y),
+            Msg::StoneSkin(entity_id) => write!(f, "reform {}", entity_id),
             Msg::Swap(entity_id, target_id) => write!(f, "swap {} {}", entity_id, target_id),
             Msg::PassWall(entity_id, pos) => write!(f, "pass_wall {} {} {}", entity_id, pos.x, pos.y),
             Msg::UseItem(entity_id, pos, item_id) => write!(f, "use_item {} {} {} {}", entity_id, pos.x, pos.y, item_id),
@@ -419,6 +421,10 @@ impl Msg {
 
             Msg::Reform(entity_id, _pos) => {
                 return format!("{:?} turns rubble into wall", data.entities.name[entity_id]);
+            }
+
+            Msg::StoneSkin(entity_id) => {
+                return format!("{:?} turns into stone!", data.entities.name[entity_id]);
             }
 
             Msg::Swap(entity_id, other_id) => {
