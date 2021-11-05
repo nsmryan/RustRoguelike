@@ -88,6 +88,7 @@ pub enum Msg {
     StartUseInteract,
     NewLevel,
     CursorToggle(bool, Pos),
+    Restart,
 }
 
 impl fmt::Display for Msg {
@@ -181,6 +182,7 @@ impl fmt::Display for Msg {
             Msg::StartUseInteract => write!(f, "startuseinteract"),
             Msg::NewLevel => write!(f, "newlevel"),
             Msg::CursorToggle(state, pos) => write!(f, "cursortoggle {} {} {}", state, pos.x, pos.y),
+            Msg::Restart => write!(f, "restart"),
         }
     }
 }

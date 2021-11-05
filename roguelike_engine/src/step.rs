@@ -40,7 +40,7 @@ pub fn step_logic(game: &mut Game) -> bool {
 
     game.msg_log.log_front(Msg::StartTurn);
 
-    resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
+    resolve_messages(game);
 
     let won_level = level_exit_condition_met(&game.data);
 
@@ -56,7 +56,7 @@ pub fn step_logic(game: &mut Game) -> bool {
     // send PlayerTurn action in case there is cleanup to perform, or another system
     // needs to know that the turn is finished.
     game.msg_log.log(Msg::PlayerTurn);
-    resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
+    resolve_messages(game);
 
     // check status effects
     for entity_id in game.data.entities.ids.iter() {
@@ -154,7 +154,7 @@ fn step_ai(game: &mut Game) {
     for key in ai_ids.iter() {
        ai_take_turn(*key, &mut game.data, &game.config, &mut game.msg_log);
 
-       resolve_messages(&mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
+       resolve_messages(game);
 
        // if there are remaining messages for an entity, clear them
        game.data.entities.messages[key].clear();

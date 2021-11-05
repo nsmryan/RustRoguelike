@@ -147,6 +147,7 @@ pub struct GameSettings {
     pub use_dir: Option<Direction>,
     pub move_mode: MoveMode,
     pub debug_enabled: bool,
+    pub map_load_config: MapLoadConfig,
 }
 
 impl GameSettings {
@@ -165,6 +166,7 @@ impl GameSettings {
             use_dir: None,
             move_mode: MoveMode::Walk,
             debug_enabled: false,
+            map_load_config: MapLoadConfig::Empty,
         };
     }
 }

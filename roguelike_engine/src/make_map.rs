@@ -25,6 +25,8 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     game.data.clear_except(vec!(player_id));
 
+    game.settings.map_load_config = map_load_config.clone();
+
     match map_load_config {
         MapLoadConfig::TestMap => {
             game.data.map = Map::from_dims(11, 12);

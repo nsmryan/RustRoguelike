@@ -384,6 +384,8 @@ fn render_confirm_quit(panel: &mut Panel) {
     list.push("q: quit game".to_string());
     list.push("".to_string());
     list.push("esc: continue".to_string());
+    list.push("".to_string());
+    list.push("r: restart".to_string());
 
     let y_pos = 2;
     let text_pos = Pos::new(5, y_pos);

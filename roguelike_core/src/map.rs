@@ -145,7 +145,7 @@ impl Blocked {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum MapLoadConfig {
     Random,
     TestMap,

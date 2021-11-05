@@ -64,6 +64,7 @@ pub enum InputAction {
     OverlayToggle,
     SelectEntry(usize),
     DebugToggle,
+    Restart,
     None,
 }
 
@@ -118,6 +119,7 @@ impl fmt::Display for InputAction {
             InputAction::CursorReturn => write!(f, "cursorreturn"),
             InputAction::CursorToggle => write!(f, "cursortoggle"),
             InputAction::DebugToggle => write!(f, "debugtoggle"),
+            InputAction::Restart => write!(f, "restart"),
             InputAction::None => write!(f, "none"),
         }
     }
@@ -221,6 +223,8 @@ impl FromStr for InputAction {
             return Ok(InputAction::CursorToggle);
         } else if args[0] == "debugtoggle" {
             return Ok(InputAction::DebugToggle);
+        } else if args[0] == "restart" {
+            return Ok(InputAction::Restart);
         } else {
             return Err(format!("Could not parse '{}' as InputAction", s));
         }
@@ -312,8 +316,8 @@ pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings) {
 pub fn handle_input_skill_menu(input: InputAction,
                                data: &Level,
                                settings: &mut GameSettings,
-                               msg_log: &mut MsgLog,
-                               _config: &Config) {
+                               msg_log: &mut MsgLog) {
+                               
     match input {
         InputAction::Inventory => {
             change_state(settings, GameState::Inventory);
@@ -342,7 +346,6 @@ pub fn handle_input_skill_menu(input: InputAction,
 }
 
 pub fn handle_input_class_menu(input: InputAction,
-                               _data: &Level,
                                settings: &mut GameSettings,
                                msg_log: &mut MsgLog) {
     match input {
@@ -377,7 +380,7 @@ pub fn handle_input_class_menu(input: InputAction,
     }
 }
 
-pub fn handle_input_confirm_quit(input: InputAction, settings: &mut GameSettings) {
+pub fn handle_input_confirm_quit(input: InputAction, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     match input {
         InputAction::Esc => {
             change_state(settings, GameState::Playing);
@@ -385,6 +388,11 @@ pub fn handle_input_confirm_quit(input: InputAction, settings: &mut GameSettings
 
         InputAction::Exit => {
             change_state(settings, GameState::Exit);
+        }
+
+        InputAction::Restart => {
+            msg_log.log(Msg::Restart);
+            change_state(settings, GameState::Playing);
         }
 
         _ => {
@@ -417,15 +425,15 @@ pub fn handle_input(input_action: InputAction,
         }
 
         GameState::SkillMenu => {
-            handle_input_skill_menu(input_action, data, settings, msg_log, config);
+            handle_input_skill_menu(input_action, data, settings, msg_log);
         }
 
         GameState::ClassMenu => {
-            handle_input_class_menu(input_action, data, settings, msg_log);
+            handle_input_class_menu(input_action, settings, msg_log);
         }
 
         GameState::ConfirmQuit => {
-            handle_input_confirm_quit(input_action, settings);
+            handle_input_confirm_quit(input_action, settings, msg_log);
         }
 
         GameState::Exit => {

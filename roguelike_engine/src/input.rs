@@ -498,6 +498,10 @@ pub fn alpha_up_to_action(chr: char) -> InputAction {
     let input_action: InputAction;
 
     match chr {
+        'r' => {
+            input_action = InputAction::Restart;
+        }
+
         'q' => {
             input_action = InputAction::Exit;
         }
