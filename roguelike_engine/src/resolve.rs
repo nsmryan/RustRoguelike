@@ -228,6 +228,12 @@ pub fn resolve_messages(game: &mut Game) {
                         game.data.entities.add_skill(player_id, Skill::FarSight);
                         game.data.entities.add_skill(player_id, Skill::Ping);
                     }
+
+                    EntityClass::Wind => {
+                        game.data.entities.add_skill(player_id, Skill::PassThrough);
+                        game.data.entities.add_skill(player_id, Skill::WhirlWind);
+                        game.data.entities.add_skill(player_id, Skill::Swift);
+                    }
                 }
             }
 
@@ -312,13 +318,23 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::Rubble(entity_id, rubble_pos) => {
-                let pos = game.data.entities.pos[&entity_id];
-                let blocked = game.data.map.path_blocked_move(pos, rubble_pos);
+                if use_energy(entity_id, &mut game.data, &mut game.msg_log) {
+                    let pos = game.data.entities.pos[&entity_id];
+                    let blocked = game.data.map.path_blocked_move(pos, rubble_pos);
 
-                if let Some(blocked) = blocked {
-                    if game.data.has_blocking_entity(rubble_pos).is_none() {
-                        if use_energy(entity_id, &mut game.data, &mut game.msg_log) {
-                            resolve_rubble(entity_id, blocked, &mut game.data, &mut game.msg_log);
+                    if let Some(blocked) = blocked {
+                        // if we hit a column, turn it into rubble
+                        dbg!(blocked);
+                        if let Some(blocked_id) = game.data.has_blocking_entity(blocked.end_pos) {
+                            dbg!(blocked_id, game.data.entities.name[&blocked_id]);
+                            if game.data.entities.name[&blocked_id] == EntityName::Column {
+                                dbg!(blocked_id);
+                                remove_entity(blocked_id, &mut game.data);
+                                game.data.map[blocked.end_pos].surface = Surface::Rubble;
+                            }
+                        } else {
+                            resolve_rubble(blocked, &mut game.data.map);
+                            game.data.entities.took_turn[&entity_id] = true;
                         }
                     }
                 }
@@ -804,39 +820,76 @@ fn resolve_blink(entity_id: EntityId, data: &mut Level, rng: &mut Rand32, msg_lo
     data.entities.took_turn[&entity_id] = true;
 }
 
-fn resolve_rubble(entity_id: EntityId, blocked: Blocked, data: &mut Level, _msg_log: &mut MsgLog) {
-    let entity_pos = data.entities.pos[&entity_id];
+fn place_rubble(pos: Pos, map: &mut Map) {
+    map[pos].surface = Surface::Rubble;
+    map[pos].block_move = false;
+    map[pos].chr = ' ' as u8;
+    map[pos].tile_type = TileType::Empty;
+}
 
-    data.map[blocked.end_pos].surface = Surface::Rubble;
-    data.map[blocked.end_pos].block_move = false;
-    data.map[blocked.end_pos].chr = ' ' as u8;
+fn resolve_rubble(blocked: Blocked, map: &mut Map) {
+    if map[blocked.end_pos].tile_type == TileType::Wall || 
+       map[blocked.end_pos].tile_type == TileType::ShortWall {
+           place_rubble(blocked.end_pos, map);
+    } 
 
     if blocked.wall_type != Wall::Empty {
-        let dxy = sub_pos(blocked.end_pos, entity_pos);
-        match Direction::from_dxy(dxy.x, dxy.y).unwrap() {
+        let rev_dir = blocked.direction.reverse();
+        let prev_pos = rev_dir.offset_pos(blocked.end_pos, 1);
+        match blocked.direction {
             Direction::Up => {
-                data.map[blocked.end_pos].bottom_wall = Wall::Empty;
+                map[blocked.end_pos].bottom_wall = Wall::Empty;
+                place_rubble(blocked.end_pos, map);
             }
 
             Direction::Down => {
-                data.map[entity_pos].bottom_wall = Wall::Empty;
+                map[prev_pos].bottom_wall = Wall::Empty;
+                place_rubble(blocked.end_pos, map);
             }
 
             Direction::Left => {
-                data.map[entity_pos].left_wall = Wall::Empty;
+                map[prev_pos].left_wall = Wall::Empty;
+                place_rubble(blocked.end_pos, map);
             }
             
             Direction::Right => {
-                data.map[blocked.end_pos].left_wall = Wall::Empty;
+                map[blocked.end_pos].left_wall = Wall::Empty;
+                place_rubble(blocked.end_pos, map);
             }
 
             _ => {
-                panic!("Rubble skill doesn't work on diagonals!");
             }
+
+            /* TODO needs review
+            Direction::UpRight => {
+                if map[blocked.end_pos].bottom_wall != Wall::Empty {
+                    map[blocked.end_pos].bottom_wall = Wall::Empty;
+                    place_rubble(blocked.end_pos, map);
+                }
+
+                if map[blocked.end_pos].left_wall != Wall::Empty {
+                    map[blocked.end_pos].left_wall = Wall::Empty;
+                    place_rubble(blocked.end_pos, map);
+                }
+            }
+
+            Direction::UpLeft => {
+                map[blocked.end_pos].bottom_wall = Wall::Empty;
+                map[move_y(prev_pos, -1)].left_wall = Wall::Empty;
+            }
+
+            Direction::DownRight => {
+                map[move_x(prev_pos, 1)].bottom_wall = Wall::Empty;
+                map[blocked.end_pos].left_wall = Wall::Empty;
+            }
+
+            Direction::DownLeft => {
+                map[move_x(prev_pos, -1)].bottom_wall = Wall::Empty;
+                map[move_y(prev_pos, 1)].left_wall = Wall::Empty;
+            }
+            */
         }
     }
-
-    data.entities.took_turn[&entity_id] = true;
 }
 
 fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut Level, msg_log: &mut MsgLog, config: &Config) {
@@ -1052,6 +1105,11 @@ fn use_energy(entity_id: EntityId, data: &mut Level, msg_log: &mut MsgLog) -> bo
                 enough_energy = true;
                 data.entities.energy[&entity_id] -= 1;
             }
+        }
+
+        EntityClass::Wind => {
+            // The wind class does not use energy.
+            enough_energy = true;
         }
     }
 

@@ -771,6 +771,9 @@ pub enum Skill {
     Sprint,
     Ping,
     StoneSkin,
+    PassThrough,
+    WhirlWind,
+    Swift,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Default)]
@@ -1325,6 +1328,7 @@ pub enum EntityClass {
     Monolith,
     Clockwork,
     Hierophant,
+    Wind,
 }
 
 impl fmt::Display for EntityClass {
@@ -1335,6 +1339,7 @@ impl fmt::Display for EntityClass {
             EntityClass::Monolith => write!(f, "monolith"),
             EntityClass::Clockwork => write!(f, "clockword"),
             EntityClass::Hierophant => write!(f, "hierophant"),
+            EntityClass::Wind => write!(f, "wind"),
         }
     }
 }
@@ -1348,7 +1353,7 @@ impl Default for EntityClass {
 impl EntityClass {
     pub fn classes() -> Vec<EntityClass> {
         use EntityClass::*;
-        return vec!(General, Grass, Monolith, Clockwork, Hierophant);
+        return vec!(General, Grass, Monolith, Clockwork, Hierophant, Wind);
     }
 }
 

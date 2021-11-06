@@ -75,6 +75,9 @@ pub enum Msg {
     StoneSkin(EntityId),
     Swap(EntityId, EntityId), // casting entity, entity to swap with
     PassWall(EntityId, Pos),
+    PassThrough(EntityId, Pos),
+    WhirlWind(EntityId, Pos),
+    Swift(EntityId, Direction),
     UseItem(EntityId, Pos, EntityId), // holding entity, position, item id
     ArmDisarmTrap(EntityId, EntityId), // acting entity, trap id
     PlaceTrap(EntityId, Pos, EntityId), // placing entity, position, trap id
@@ -169,6 +172,9 @@ impl fmt::Display for Msg {
             Msg::StoneSkin(entity_id) => write!(f, "reform {}", entity_id),
             Msg::Swap(entity_id, target_id) => write!(f, "swap {} {}", entity_id, target_id),
             Msg::PassWall(entity_id, pos) => write!(f, "pass_wall {} {} {}", entity_id, pos.x, pos.y),
+            Msg::PassThrough(entity_id, pos) => write!(f, "passthrough {} {} {}", entity_id, pos.x, pos.y),
+            Msg::WhirlWind(entity_id, pos) => write!(f, "whirlwind {} {} {}", entity_id, pos.x, pos.y),
+            Msg::Swift(entity_id, direction) => write!(f, "swift {} {}", entity_id, direction),
             Msg::UseItem(entity_id, pos, item_id) => write!(f, "use_item {} {} {} {}", entity_id, pos.x, pos.y, item_id),
             Msg::ArmDisarmTrap(entity_id, trap_id) => write!(f, "arm_disarm_trap {} {}", entity_id, trap_id),
             Msg::PlaceTrap(entity_id, pos, trap_id) => write!(f, "place_trap {} {} {} {}", entity_id, pos.x, pos.y, trap_id),
@@ -433,8 +439,20 @@ impl Msg {
                 return format!("{:?} swaps with {:?}", data.entities.name[entity_id], data.entities.name[other_id]);
             }
             
-           Msg::PassWall(entity_id, pos) => { 
+            Msg::PassWall(entity_id, pos) => { 
+                 return format!("{:?} passes through {}", data.entities.name[entity_id], pos);
+            }
+
+            Msg::PassThrough(entity_id, pos) => { 
                 return format!("{:?} passes through {}", data.entities.name[entity_id], pos);
+            }
+
+            Msg::WhirlWind(entity_id, _pos) => { 
+                return format!("{:?} is a whirlwind", data.entities.name[entity_id]);
+            }
+
+            Msg::Swift(entity_id, pos) => { 
+                return format!("{:?} moves swiftly to {}", data.entities.name[entity_id], pos);
             }
 
             Msg::UseItem(entity_id, pos, item_id) => {
