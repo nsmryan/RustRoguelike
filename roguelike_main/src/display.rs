@@ -21,7 +21,7 @@ use roguelike_core::rng::Rand32;
 
 use roguelike_engine::game::Game;
 
-use crate::animation::{Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
+use crate::animation::{Str, Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use crate::drawcmd::*;
 
 
@@ -54,6 +54,9 @@ pub struct Display {
     pub sprites: Vec<SpriteSheet>,
     pub next_sprite_key: SpriteKey,
 
+    pub intern: HashMap<String, Str>,
+    pub next_str: usize,
+
     // TODO this may not be necessary- the canvas is not like other panels
     // try to just store the area, or the pixel dimensions, instead of a panel.
     pub canvas_panel: Panel,
@@ -79,10 +82,23 @@ impl Display {
                          canvas,
                          texture_creator,
                          textures, 
-                        sprites: Vec::new(),
-                        next_sprite_key: 0,
+                         sprites: Vec::new(),
+                         next_sprite_key: 0,
                          panels,
+                         intern: HashMap::new(),
+                         next_str: 0,
                          canvas_panel};
+    }
+
+    pub fn add_string(&mut self, string: &str) -> usize {
+        if let Some(key) = self.intern.get(string) {
+            return *key;
+        } else {
+            let index = self.next_str;
+            self.intern.insert(string.to_string(), index);
+            self.next_str += 1;
+            return index;
+        }
     }
 
     pub fn process_draw_commands(&mut self) {
@@ -142,15 +158,17 @@ impl Display {
 
     /// Create a sprite by looking up a texture and constructing the
     /// SpriteAnim structure.
-    pub fn new_sprite(&self, name: &str, speed: f32) -> SpriteAnim {
+    pub fn new_sprite(&mut self, name: &str, speed: f32) -> SpriteAnim {
         let sprite_key = lookup_spritekey(&self.sprites, name);
         let max_index = self.sprites[sprite_key].num_sprites;
-        return SpriteAnim::new(name.to_string(), sprite_key, 0.0, max_index as f32, speed);
+        let name_str = self.add_string(name);
+        return SpriteAnim::new(name_str, sprite_key, 0.0, max_index as f32, speed);
     }
 
-    pub fn static_sprite(&self, sprite_sheet: &str, chr: char) -> SpriteAnim {
+    pub fn static_sprite(&mut self, sprite_sheet: &str, chr: char) -> SpriteAnim {
         let sprite_key = lookup_spritekey(&self.sprites, sprite_sheet);
-        return SpriteAnim::new(format!("{}", chr),
+        let name_str = self.add_string(&format!("{}", chr));
+        return SpriteAnim::new(name_str,
                                sprite_key,
                                chr as i32 as SpriteIndex,
                                chr as i32 as SpriteIndex,
@@ -508,8 +526,7 @@ impl Display {
 
 pub type Panels = HashMap<PanelName, Panel>;
 
-// #[derive(Clone, Debug, Serialize, Deserialize)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DisplayState {
     // currently active effects
     pub effects: Vec<Effect>,

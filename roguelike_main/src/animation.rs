@@ -1,5 +1,3 @@
-use symbol::Symbol;
-
 use serde::{Serialize, Deserialize};
 
 use roguelike_core::types::{Pos, Color};
@@ -14,7 +12,7 @@ pub type SpriteKey = usize;
 
 pub type SpriteIndex = f32;
 
-pub type Name = Symbol;
+pub type Str = usize;
 
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -29,7 +27,7 @@ impl Particle {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Effect {
     Sound(Aoe, f32), // area of effect, time since start
     Beam(usize, Pos, Pos), // start, end
@@ -82,9 +80,9 @@ impl Sprite {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SpriteAnim {
-    pub name: Name,
+    pub name: Str,
     pub sprite_key: SpriteKey,
     pub index: SpriteIndex,
     pub start_index: SpriteIndex,
@@ -97,7 +95,7 @@ pub struct SpriteAnim {
 }
 
 impl SpriteAnim {
-    pub fn new(name: String,
+    pub fn new(name_str: Str,
                sprite_key: SpriteKey,
                index: SpriteIndex,
                max_index: SpriteIndex,
@@ -105,7 +103,7 @@ impl SpriteAnim {
         let flip_vert = false;
         let flip_horiz = false;
         let rotation = 0.0;
-        return SpriteAnim { name: name.into(),
+        return SpriteAnim { name: name_str,
                         sprite_key,
                         index,
                         start_index: index,
@@ -156,7 +154,7 @@ impl AnimationResult {
 }
 
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Animation {
     Loop(SpriteAnim),                         // play sprite sheet in loop
     RandomLoop(SpriteAnim),                   // play a random sprite sheet in loop

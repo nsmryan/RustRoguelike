@@ -13,8 +13,6 @@ rexpaint = "*"
 
 euclid = { version = "0.20", features = ["serde"] }
 
-symbol = "0.1"
-
 pathfinding = "2.0"
 
 log = "0.4"

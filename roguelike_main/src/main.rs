@@ -148,7 +148,9 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
             game_from_file = true;
             let cur = Cursor::new(&bytes[..]);
             let mut de = Deserializer::new(cur);
-            game = Deserialize::deserialize(&mut de).unwrap();
+            let (game_loaded, display_loaded) = Deserialize::deserialize(&mut de).unwrap();
+            game = game_loaded;
+            display.state = display_loaded;
         }
     }
 
@@ -227,7 +229,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
     /* Game Save Thread */
     // Serialization and storage take at least 6 ms, so this is done
     // in a separate thread to prevent taking time from the main loop.
-    let (game_sender, game_receiver) = channel::<Game>();
+    let (game_sender, game_receiver) = channel::<(Game, DisplayState)>();
     let _save_thread = thread::spawn(move || {
         loop {
             if let Ok(game) = game_receiver.recv() {
@@ -362,7 +364,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
             if game.settings.running && any_updates && game.config.save_load {
                 let old_state = game.settings.state;
                 game.settings.state = GameState::Playing;
-                game_sender.send(game.clone()).unwrap();
+                game_sender.send((game.clone(), display.state.clone())).unwrap();
                 game.settings.state = old_state;
             }
         } else {
