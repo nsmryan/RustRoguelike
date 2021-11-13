@@ -963,7 +963,9 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::PassThrough => {
-            msg_log.log(Msg::PassThrough(player_id, skill_pos));
+            if let Some(direction) = direction {
+                msg_log.log(Msg::PassThrough(player_id, direction));
+            }
         }
 
         Skill::WhirlWind => {

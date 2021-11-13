@@ -1,5 +1,4 @@
 #[allow(unused_imports)]
-use log::{trace, error};
 
 use roguelike_core::types::*;
 use roguelike_core::ai::{Behavior, ai_move_to_attack_pos, ai_can_hit_target, ai_take_turn, ai_is_in_fov};
@@ -11,7 +10,7 @@ use roguelike_core::movement;
 use roguelike_core::config::*;
 use roguelike_core::utils::*;
 use roguelike_core::map::*;
-use roguelike_core::line::line;
+use roguelike_core::line::*;
 use roguelike_core::rng::Rand32;
 
 use crate::generation::{make_energy, make_light, ensure_grass};
@@ -482,6 +481,47 @@ pub fn resolve_messages(game: &mut Game) {
                 make_map(&game.settings.map_load_config.clone(), game);
             }
 
+            Msg::PassThrough(entity_id, direction) => {
+                let entity_pos = game.data.entities.pos[&entity_id];
+                let dest = direction.offset_pos(entity_pos, 3);
+                let clear_path = game.data.map.path_blocked(entity_pos, dest, BlockedType::Move).is_none();
+                let blocked_pos = game.data.pos_blocked(dest);
+                if  clear_path && !blocked_pos {
+                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, dest));
+
+                    for pos in line_inclusive(entity_pos, dest) {
+                        for other_id in game.data.get_entities_at_pos(pos) {
+                            if game.data.entities.typ[&other_id] == EntityType::Enemy {
+                                game.msg_log.log(Msg::Forget(other_id));
+                            }
+                        }
+                    }
+                }
+            }
+
+            Msg::WhirlWind(entity_id, pos) => {
+                let entity_pos = game.data.entities.pos[&entity_id];
+                let traps_block = false;
+                let mut near_walls = false;
+                for dir in Direction::directions() {
+                    if game.data.map.move_blocked(pos, dir.offset_pos(pos, 1), BlockedType::Move).is_some() {
+                        near_walls = true;
+                        break;
+                    }
+                }
+
+                if !near_walls && game.data.clear_path(entity_pos, pos, traps_block) {
+                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, pos));
+                } // NOTE could create a failed whirlwind message, or generic failed skill message
+            }
+
+            Msg::Swift(_entity_id, _direction) => {
+            }
+
+            Msg::Forget(entity_id) => {
+                game.msg_log.log(Msg::StateChange(entity_id, Behavior::Idle));
+            }
+
             _ => {
             }
         }
@@ -777,6 +817,12 @@ fn resolve_try_movement(entity_id: EntityId,
                 panic!("Why would we not have a clear path, but have received this movement?");
                 // TODO move towards position, perhaps emitting a Collide
                 // message. This is likely causing the jump wall issue!
+            }
+        }
+
+        MoveType::Blink => {
+            if !data.pos_blocked(movement.pos) {
+                msg_log.log_front(Msg::Moved(entity_id, movement.typ, movement.pos));
             }
         }
     }
@@ -1379,19 +1425,21 @@ fn process_moved_message(entity_id: EntityId,
     data.entities.set_pos(entity_id, pos);
     data.entities.took_turn[&entity_id] = true;
 
-    if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {
-        if let Some(stance) = data.entities.stance.get(&entity_id) {
-            data.entities.stance[&entity_id] = update_stance(move_type, *move_mode, *stance);
-        }
+    if move_type != MoveType::Blink {
+        if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {
+            if let Some(stance) = data.entities.stance.get(&entity_id) {
+                data.entities.stance[&entity_id] = update_stance(move_type, *move_mode, *stance);
+            }
 
-        // make a noise based on how fast the entity is moving and the terrain
-        if pos != original_pos {
-            make_move_sound(entity_id, original_pos, pos, *move_mode, data, msg_log, config);
-        }
-    } else if pos != original_pos && data.entities.typ[&entity_id] == EntityType::Enemy {
-        msg_log.log_front(Msg::Sound(entity_id, original_pos, config.sound_radius_monster, true));
-        msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_monster, true));
-    } // NOTE other entities do not make sounds on movement, such as items
+            // make a noise based on how fast the entity is moving and the terrain
+            if pos != original_pos {
+                make_move_sound(entity_id, original_pos, pos, *move_mode, data, msg_log, config);
+            }
+        } else if pos != original_pos && data.entities.typ[&entity_id] == EntityType::Enemy {
+            msg_log.log_front(Msg::Sound(entity_id, original_pos, config.sound_radius_monster, true));
+            msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_monster, true));
+        } // NOTE other entities do not make sounds on movement, such as items
+    }
 
     // check if player walks on energy
     if entity_id == player_id {

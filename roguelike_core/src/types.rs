@@ -167,6 +167,10 @@ impl Level {
         return Level::new(Map::from_dims(width, height), Entities::new());
     }
 
+    pub fn pos_blocked(&self, pos: Pos) -> bool {
+        return self.has_blocking_entity(pos).is_some() || self.map[pos].block_move;
+    }
+
     pub fn get_clear_pos(&self) -> Vec<Pos> {
         return self.map.get_empty_pos()
                        .iter()

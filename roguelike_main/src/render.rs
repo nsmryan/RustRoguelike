@@ -291,8 +291,8 @@ fn render_info(panel: &mut Panel,
 
                 if game.data.entities.hp.get_mut(obj_id).map_or(false, |hp| hp.hp <= 0) {
                     text_list.push(format!("  {}", "dead"));
-                } else if let Some(_behave) = game.data.entities.behavior.get(obj_id) {
-                    // TODO anything to do here?
+                } else if let Some(behave) = game.data.entities.behavior.get(obj_id) {
+                    text_list.push(format!("currently {}", behave));
                 }
             }
         }

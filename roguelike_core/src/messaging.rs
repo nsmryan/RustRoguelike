@@ -75,7 +75,7 @@ pub enum Msg {
     StoneSkin(EntityId),
     Swap(EntityId, EntityId), // casting entity, entity to swap with
     PassWall(EntityId, Pos),
-    PassThrough(EntityId, Pos),
+    PassThrough(EntityId, Direction),
     WhirlWind(EntityId, Pos),
     Swift(EntityId, Direction),
     UseItem(EntityId, Pos, EntityId), // holding entity, position, item id
@@ -92,6 +92,7 @@ pub enum Msg {
     NewLevel,
     CursorToggle(bool, Pos),
     Restart,
+    Forget(EntityId),
 }
 
 impl fmt::Display for Msg {
@@ -172,7 +173,7 @@ impl fmt::Display for Msg {
             Msg::StoneSkin(entity_id) => write!(f, "reform {}", entity_id),
             Msg::Swap(entity_id, target_id) => write!(f, "swap {} {}", entity_id, target_id),
             Msg::PassWall(entity_id, pos) => write!(f, "pass_wall {} {} {}", entity_id, pos.x, pos.y),
-            Msg::PassThrough(entity_id, pos) => write!(f, "passthrough {} {} {}", entity_id, pos.x, pos.y),
+            Msg::PassThrough(entity_id, dir) => write!(f, "passthrough {} {}", entity_id, dir),
             Msg::WhirlWind(entity_id, pos) => write!(f, "whirlwind {} {} {}", entity_id, pos.x, pos.y),
             Msg::Swift(entity_id, direction) => write!(f, "swift {} {}", entity_id, direction),
             Msg::UseItem(entity_id, pos, item_id) => write!(f, "use_item {} {} {} {}", entity_id, pos.x, pos.y, item_id),
@@ -189,6 +190,7 @@ impl fmt::Display for Msg {
             Msg::NewLevel => write!(f, "newlevel"),
             Msg::CursorToggle(state, pos) => write!(f, "cursortoggle {} {} {}", state, pos.x, pos.y),
             Msg::Restart => write!(f, "restart"),
+            Msg::Forget(entity_id) => write!(f, "forget {}", entity_id),
         }
     }
 }
@@ -443,8 +445,8 @@ impl Msg {
                  return format!("{:?} passes through {}", data.entities.name[entity_id], pos);
             }
 
-            Msg::PassThrough(entity_id, pos) => { 
-                return format!("{:?} passes through {}", data.entities.name[entity_id], pos);
+            Msg::PassThrough(entity_id, dir) => { 
+                return format!("{:?} passes through {}", data.entities.name[entity_id], dir);
             }
 
             Msg::WhirlWind(entity_id, _pos) => { 
@@ -465,6 +467,10 @@ impl Msg {
 
             Msg::PlaceTrap(entity_id, pos, trap_id) => {
                 return format!("{:?} place {:?} at {}", data.entities.name[entity_id], data.entities.name[trap_id], pos);
+            }
+
+            Msg::Forget(entity_id) => {
+                return format!("{:?} becomes forgetful", data.entities.name[entity_id]);
             }
 
             _ => {
