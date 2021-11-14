@@ -887,8 +887,10 @@ pub fn handle_skill(skill_index: usize,
             let player_id = data.find_by_name(EntityName::Player).unwrap();
             let player_pos = data.entities.pos[&player_id];
 
-            if distance(player_pos, skill_pos) == 1 {
-                let blocked = data.map.path_blocked_move(player_pos, skill_pos);
+            if let Some(dir) = Direction::from_positions(player_pos, skill_pos) {
+                let target_pos = dir.offset_pos(player_pos, 1);
+
+                let blocked = data.map.path_blocked_move(player_pos, target_pos);
                 
                 if let Some(blocked) = blocked {
                     if data.map[blocked.end_pos].block_move {
