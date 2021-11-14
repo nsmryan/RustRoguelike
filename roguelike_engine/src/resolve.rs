@@ -501,7 +501,6 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::WhirlWind(entity_id, pos) => {
                 let entity_pos = game.data.entities.pos[&entity_id];
-                let traps_block = false;
                 let mut near_walls = false;
                 for dir in Direction::directions() {
                     if game.data.map.move_blocked(pos, dir.offset_pos(pos, 1), BlockedType::Move).is_some() {
@@ -510,12 +509,31 @@ pub fn resolve_messages(game: &mut Game) {
                     }
                 }
 
+                let traps_block = false;
                 if !near_walls && game.data.clear_path(entity_pos, pos, traps_block) {
                     game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, pos));
                 } // NOTE could create a failed whirlwind message, or generic failed skill message
             }
 
-            Msg::Swift(_entity_id, _direction) => {
+            Msg::Swift(entity_id, direction) => {
+                let entity_pos = game.data.entities.pos[&entity_id];
+                let dest = direction.offset_pos(entity_pos, SKILL_SWIFT_DISTANCE as i32);
+
+                if game.data.map.is_within_bounds(dest) {
+
+                    let mut near_walls = false;
+                    for dir in Direction::directions() {
+                        if game.data.map.move_blocked(dest, dir.offset_pos(dest, 1), BlockedType::Move).is_some() {
+                            near_walls = true;
+                            break;
+                        }
+                    }
+
+                    let traps_block = false;
+                    if !near_walls && game.data.clear_path(entity_pos, dest, traps_block) {
+                        game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, dest));
+                    }
+                }
             }
 
             Msg::Forget(entity_id) => {

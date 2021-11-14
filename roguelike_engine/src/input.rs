@@ -384,7 +384,8 @@ impl Input {
             // only process the last character as held
             if self.char_down_order.iter().last() == Some(&chr) {
                 let held_state = *held_state;
-                let time_since = held_state.down_time - ticks;
+                //let time_since = held_state.down_time - ticks;
+                let time_since = ticks - held_state.down_time;
 
                 let new_repeats = (time_since as f32 / config.repeat_delay) as usize;
                 if new_repeats > held_state.repetitions {
