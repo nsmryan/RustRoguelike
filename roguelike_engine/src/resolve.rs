@@ -25,7 +25,7 @@ pub fn resolve_messages(game: &mut Game) {
     while let Some(msg) = game.msg_log.pop() {
         match msg {
             Msg::Moved(entity_id, move_type, pos) => {
-               process_moved_message(entity_id, move_type, pos, &mut game.data, &mut game.msg_log, &game.config);
+               process_moved_message(entity_id, move_type, pos, &mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
             }
 
             Msg::Interact(entity_id, pos) => {
@@ -688,6 +688,11 @@ fn process_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attac
                     },
                 }
 
+                // whet stone passive adds to sharp weapon stun turns
+                if data.entities.passive[&entity_id].whet_stone && weapon_type.sharp() {
+                       stun_turns += 1;
+                }
+
                 if attack_style == AttackStyle::Strong {
                     hit_sound_radius += config.sound_radius_extra;
                     stun_turns += config.stun_turns_extra;
@@ -1276,7 +1281,12 @@ fn throw_item(player_id: EntityId,
 
     if let Some(hit_entity) = data.has_blocking_entity(hit_pos) {
         if data.entities.typ[&hit_entity] == EntityType::Enemy {
-            let stun_turns = data.entities.item[&item_id].throw_stun_turns();
+            let mut stun_turns = data.entities.item[&item_id].throw_stun_turns();
+
+            if data.entities.passive[&player_id].stone_thrower {
+                stun_turns += 1;
+            }
+
             msg_log.log(Msg::Froze(hit_entity, stun_turns));
         }
     }
@@ -1478,12 +1488,19 @@ fn make_move_sound(entity_id: EntityId,
     }
 
     if data.map[pos].surface == Surface::Rubble {
-        sound_radius += config.sound_rubble_radius;
+        // If the entity has no passives, or they do but are not sure footed.
+        if data.entities.passive.get(&entity_id).is_none() || !data.entities.passive[&entity_id].sure_footed {
+            sound_radius += config.sound_rubble_radius;
+        }
     } else if data.map[pos].surface == Surface::Grass {
         sound_radius -= config.sound_grass_radius;
     }
 
     if sound_radius > 0 && data.entities.status[&entity_id].soft_steps > 0 {
+        sound_radius -= 1;
+    }
+
+    if sound_radius > 0 && data.entities.passive[&entity_id].soft_shoes {
         sound_radius -= 1;
     }
 
@@ -1496,6 +1513,7 @@ fn process_moved_message(entity_id: EntityId,
                          pos: Pos,
                          data: &mut Level,
                          msg_log: &mut MsgLog,
+                         rng: &mut Rand32,
                          config: &Config) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let original_pos = data.entities.pos[&entity_id];
@@ -1531,7 +1549,7 @@ fn process_moved_message(entity_id: EntityId,
     }
 
     if original_pos != pos {
-        resolve_triggered_traps(entity_id, original_pos, data, msg_log);
+        resolve_triggered_traps(entity_id, original_pos, data, rng, msg_log);
     }
 
     // check for passing turn while the hammer is raised
@@ -1562,7 +1580,12 @@ fn process_moved_message(entity_id: EntityId,
 fn resolve_triggered_traps(entity_id: EntityId,
                            original_pos: Pos,
                            data: &mut Level,
+                           rng: &mut Rand32,
                            msg_log: &mut MsgLog) {
+    if data.entities.passive[&entity_id].light_touch && rng_trial(rng, 0.5) {
+        return;
+    }
+
     // get a list of triggered traps
     let traps: Vec<EntityId> = data.entities.triggered_traps(data.entities.pos[&entity_id]);
 

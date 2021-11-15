@@ -750,6 +750,12 @@ impl FromStr for WeaponType {
     }
 }
 
+impl WeaponType {
+    pub fn sharp(&self) -> bool {
+        return *self == WeaponType::Slash || *self == WeaponType::Pierce;
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Trap {
     Spikes,
@@ -883,6 +889,18 @@ impl FromStr for ActionMode {
     }
 }
 
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct ItemModifier {
+    fragile: bool,
+    modifier: i32,
+}
+
+impl ItemModifier {
+    pub fn new() -> ItemModifier {
+        return ItemModifier { fragile: false, modifier: 0 };
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Item {
@@ -1363,6 +1381,21 @@ impl EntityClass {
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+pub struct Passive {
+    pub stone_thrower: bool,
+    pub whet_stone: bool,
+    pub soft_shoes: bool,
+    pub light_touch: bool,
+    pub sure_footed: bool,
+}
+
+impl Passive {
+    pub fn new() -> Passive {
+        return Passive::default();
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct StatusEffect {
     pub frozen: usize, // turns
     pub soft_steps: usize, // turns
@@ -1406,11 +1439,13 @@ pub struct Entities {
     pub class: Comp<EntityClass>,
     pub skills: Comp<Vec<Skill>>,
     pub status: Comp<StatusEffect>,
+    pub passive: Comp<Passive>,
     pub illuminate: Comp<usize>,
     pub gate_pos: Comp<Pos>,
     pub stance: Comp<Stance>,
     pub took_turn: Comp<bool>,
     pub durability: Comp<usize>,
+    pub modifier: Comp<ItemModifier>,
 
     // NOTE not sure about keeping these ones, or packaging into larger ones
     pub sound: Comp<Pos>, // source position

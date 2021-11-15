@@ -39,6 +39,7 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
     entities.inventory.insert(entity_id,  VecDeque::new());
     entities.stance.insert(entity_id,  Stance::Standing);
     entities.fov_radius.insert(entity_id,  config.fov_radius_player);
+    entities.passive.insert(entity_id,  Passive::new());
 
     let skill_set = Vec::new();
     entities.skills.insert(entity_id,  skill_set);
@@ -71,6 +72,7 @@ pub fn make_energy(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
 pub fn make_dagger(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_DAGGER as char, Color::white(), EntityName::Dagger, false);
 
+    entities.modifier.insert(entity_id, ItemModifier::new());
     entities.item.insert(entity_id,  Item::Dagger);
     entities.durability.insert(entity_id, ITEM_DURABILITY);
 
@@ -82,6 +84,7 @@ pub fn make_dagger(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
 pub fn make_hammer(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_HAMMER as char, Color::white(), EntityName::Hammer, false);
 
+    entities.modifier.insert(entity_id, ItemModifier::new());
     entities.item.insert(entity_id,  Item::Hammer);
     entities.durability.insert(entity_id, ITEM_DURABILITY);
 
@@ -93,6 +96,7 @@ pub fn make_hammer(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
 pub fn make_spear(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SPEAR as char, Color::white(), EntityName::Spear, false);
 
+    entities.modifier.insert(entity_id, ItemModifier::new());
     entities.item.insert(entity_id,  Item::Spear);
     entities.durability.insert(entity_id, ITEM_DURABILITY);
 
@@ -109,6 +113,8 @@ pub fn make_sword(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Sword, entities.direction[&entity_id]));
     entities.durability.insert(entity_id, ITEM_DURABILITY);
 
+    entities.modifier.insert(entity_id, ItemModifier::new());
+
     return entity_id;
 }
 
@@ -119,6 +125,8 @@ pub fn make_greatsword(entities: &mut Entities, _config: &Config, pos: Pos, msg_
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::GreatSword, entities.direction[&entity_id]));
     entities.durability.insert(entity_id, ITEM_DURABILITY);
+
+    entities.modifier.insert(entity_id, ItemModifier::new());
 
     return entity_id;
 }
@@ -131,6 +139,8 @@ pub fn make_shield(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Shield, entities.direction[&entity_id]));
     entities.durability.insert(entity_id, ITEM_DURABILITY);
 
+    entities.modifier.insert(entity_id, ItemModifier::new());
+
     return entity_id;
 }
 
@@ -140,6 +150,8 @@ pub fn make_key(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &m
     entities.item.insert(entity_id,  Item::Key);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Key, entities.direction[&entity_id]));
+
+    entities.modifier.insert(entity_id, ItemModifier::new());
 
     return entity_id;
 }
@@ -197,6 +209,7 @@ pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
     entities.move_mode.insert(entity_id,  MoveMode::Walk);
     entities.attack_type.insert(entity_id,  AttackType::Ranged);
     entities.fov_radius.insert(entity_id,  config.fov_radius_monster);
+    entities.passive.insert(entity_id,  Passive::new());
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Gol, entities.direction[&entity_id]));
     
@@ -217,6 +230,7 @@ pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
     entities.move_mode.insert(entity_id,  MoveMode::Walk);
     entities.attack_type.insert(entity_id,  AttackType::Melee);
     entities.fov_radius.insert(entity_id,  config.fov_radius_monster);
+    entities.passive.insert(entity_id,  Passive::new());
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Pawn, entities.direction[&entity_id]));
 
@@ -237,6 +251,7 @@ pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
     entities.move_mode.insert(entity_id,  MoveMode::Walk);
     entities.attack_type.insert(entity_id,  AttackType::Melee);
     entities.fov_radius.insert(entity_id,  config.fov_radius_monster);
+    entities.passive.insert(entity_id,  Passive::new());
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Spire, entities.direction[&entity_id]));
 
@@ -257,6 +272,7 @@ pub fn make_rook(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
     entities.move_mode.insert(entity_id,  MoveMode::Walk);
     entities.attack_type.insert(entity_id,  AttackType::Melee);
     entities.fov_radius.insert(entity_id,  config.fov_radius_monster);
+    entities.passive.insert(entity_id,  Passive::new());
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Rook, entities.direction[&entity_id]));
 
@@ -276,6 +292,7 @@ pub fn make_armil(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
     entities.move_mode.insert(entity_id,  MoveMode::Walk);
     entities.attack_type.insert(entity_id,  AttackType::Push);
     entities.fov_radius.insert(entity_id,  0);
+    entities.passive.insert(entity_id,  Passive::new());
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Armil, entities.direction[&entity_id]));
     

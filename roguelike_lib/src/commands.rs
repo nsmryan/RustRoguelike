@@ -50,6 +50,11 @@ pub enum GameCmd {
     Ctrl(KeyDir),
     Alt(KeyDir),
     Shift(KeyDir),
+    StoneThrower(bool),
+    WhetStone(bool),
+    SoftShoes(bool),
+    LightTouch(bool),
+    SureFooted(bool),
     Exit,
 }
 
@@ -152,6 +157,21 @@ impl FromStr for GameCmd {
         } else if cmd == "shift" {
             let dir = args.next().ok_or("no arg")?.parse::<KeyDir>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::Shift(dir));
+        } else if cmd == "stone_thrower" {
+            let onoff = args.next().ok_or("no arg")?.parse::<bool>().map_err(|err| format!("{}", err))?;
+            return Ok(GameCmd::StoneThrower(onoff));
+        } else if cmd == "whet_stone" {
+            let onoff = args.next().ok_or("no arg")?.parse::<bool>().map_err(|err| format!("{}", err))?;
+            return Ok(GameCmd::WhetStone(onoff));
+        } else if cmd == "soft_shoes" {
+            let onoff = args.next().ok_or("no arg")?.parse::<bool>().map_err(|err| format!("{}", err))?;
+            return Ok(GameCmd::SoftShoes(onoff));
+        } else if cmd == "light_touch" {
+            let onoff = args.next().ok_or("no arg")?.parse::<bool>().map_err(|err| format!("{}", err))?;
+            return Ok(GameCmd::LightTouch(onoff));
+        } else if cmd == "sure_footed" {
+            let onoff = args.next().ok_or("no arg")?.parse::<bool>().map_err(|err| format!("{}", err))?;
+            return Ok(GameCmd::SureFooted(onoff));
         } else if cmd == "exit" {
             return Ok(GameCmd::Exit);
         }
@@ -210,6 +230,16 @@ impl GameCmd {
             return "alt";
         } else if matches!(self, GameCmd::Shift(_)) {
             return "shift";
+        } else if matches!(self, GameCmd::StoneThrower(_)) {
+            return "stone_thrower";
+        } else if matches!(self, GameCmd::WhetStone(_)) {
+            return "whet_stone";
+        } else if matches!(self, GameCmd::SoftShoes(_)) {
+            return "soft_shoes";
+        } else if matches!(self, GameCmd::LightTouch(_)) {
+            return "light_touch";
+        } else if matches!(self, GameCmd::SureFooted(_)) {
+            return "sure_footed";
         } else if matches!(self, GameCmd::Exit) {
             return "exit";
         } else {
@@ -391,6 +421,36 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
             let input_event = InputEvent::Shift(*dir);
             let input_action = game.input.handle_event(&mut game.settings, input_event, ticks, &game.config);
             game.step_game(input_action);
+            return format!("{}", name);
+        }
+
+        GameCmd::StoneThrower(onoff) => {
+            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+            game.data.entities.passive[&player_id].stone_thrower = *onoff;
+            return format!("{}", name);
+        }
+
+        GameCmd::WhetStone(onoff) => {
+            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+            game.data.entities.passive[&player_id].whet_stone = *onoff;
+            return format!("{}", name);
+        }
+
+        GameCmd::SoftShoes(onoff) => {
+            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+            game.data.entities.passive[&player_id].soft_shoes = *onoff;
+            return format!("{}", name);
+        }
+
+        GameCmd::LightTouch(onoff) => {
+            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+            game.data.entities.passive[&player_id].light_touch = *onoff;
+            return format!("{}", name);
+        }
+
+        GameCmd::SureFooted(onoff) => {
+            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+            game.data.entities.passive[&player_id].sure_footed = *onoff;
             return format!("{}", name);
         }
 
