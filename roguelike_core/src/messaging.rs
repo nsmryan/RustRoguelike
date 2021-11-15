@@ -75,6 +75,7 @@ pub enum Msg {
     StoneSkin(EntityId),
     Swap(EntityId, EntityId), // casting entity, entity to swap with
     PassWall(EntityId, Pos),
+    StoneThrow(EntityId, Pos),
     PassThrough(EntityId, Direction),
     WhirlWind(EntityId, Pos),
     Swift(EntityId, Direction),
@@ -173,6 +174,7 @@ impl fmt::Display for Msg {
             Msg::StoneSkin(entity_id) => write!(f, "reform {}", entity_id),
             Msg::Swap(entity_id, target_id) => write!(f, "swap {} {}", entity_id, target_id),
             Msg::PassWall(entity_id, pos) => write!(f, "pass_wall {} {} {}", entity_id, pos.x, pos.y),
+            Msg::StoneThrow(entity_id, pos) => write!(f, "stone_throw {} {} {}", entity_id, pos.x, pos.y),
             Msg::PassThrough(entity_id, dir) => write!(f, "passthrough {} {}", entity_id, dir),
             Msg::WhirlWind(entity_id, pos) => write!(f, "whirlwind {} {} {}", entity_id, pos.x, pos.y),
             Msg::Swift(entity_id, direction) => write!(f, "swift {} {}", entity_id, direction),
@@ -443,6 +445,10 @@ impl Msg {
             
             Msg::PassWall(entity_id, pos) => { 
                  return format!("{:?} passes through {}", data.entities.name[entity_id], pos);
+            }
+
+            Msg::StoneThrow(entity_id, _pos) => { 
+                 return format!("{:?} throws stone", data.entities.name[entity_id]);
             }
 
             Msg::PassThrough(entity_id, dir) => { 

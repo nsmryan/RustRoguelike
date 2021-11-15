@@ -145,12 +145,13 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     let mut game_from_file = false;
     if config.save_load {
         if let Ok(bytes) = std::fs::read(GAME_SAVE_FILE) {
-            game_from_file = true;
             let cur = Cursor::new(&bytes[..]);
             let mut de = Deserializer::new(cur);
-            let (game_loaded, display_loaded) = Deserialize::deserialize(&mut de).unwrap();
-            game = game_loaded;
-            display.state = display_loaded;
+            if let Ok((game_loaded, display_loaded)) = Deserialize::deserialize(&mut de) {
+                game = game_loaded;
+                display.state = display_loaded;
+                game_from_file = true;
+            } 
         }
     }
 

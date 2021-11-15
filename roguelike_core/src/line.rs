@@ -119,6 +119,7 @@ pub fn line(start: Pos, end: Pos) -> Vec<Pos> {
 
 // includes end position, even if line is 0 distance
 pub fn line_inclusive(start: Pos, end: Pos) -> Vec<Pos> {
+
     let mut points = line(start, end);
 
     if start != end {

@@ -204,6 +204,7 @@ pub fn resolve_messages(game: &mut Game) {
                         game.data.entities.class[&player_id] = class;
                         game.data.entities.add_skill(player_id, Skill::PassWall);
                         game.data.entities.add_skill(player_id, Skill::Rubble);
+                        game.data.entities.add_skill(player_id, Skill::StoneThrow);
                         game.data.entities.add_skill(player_id, Skill::Reform);
                         game.data.entities.add_skill(player_id, Skill::StoneSkin);
                     }
@@ -257,15 +258,20 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::GrassThrow(entity_id, direction) => {
                 if use_energy(entity_id, &mut game.data, &mut game.msg_log) {
-
                     let pos = game.data.entities.pos[&entity_id];
 
-                    for grass_pos in Cone::new(pos, direction, SKILL_GRASS_THROW_RADIUS as i32) {
+                    for grass_pos in line_inclusive(pos, direction.offset_pos(pos, SKILL_GRASS_THROW_RADIUS as i32)) {
                         if game.data.map.is_within_bounds(grass_pos) && game.data.map[grass_pos].tile_type == TileType::Empty {
                             game.data.map[grass_pos].surface = Surface::Grass;
                             ensure_grass(&mut game.data.entities, grass_pos, &mut game.msg_log);
                         }
                     }
+                    //for grass_pos in Cone::new(pos, direction, SKILL_GRASS_THROW_RADIUS as i32) {
+                    //    if game.data.map.is_within_bounds(grass_pos) && game.data.map[grass_pos].tile_type == TileType::Empty {
+                    //        game.data.map[grass_pos].surface = Surface::Grass;
+                    //        ensure_grass(&mut game.data.entities, grass_pos, &mut game.msg_log);
+                    //    }
+                    //}
                     game.data.entities.took_turn[&entity_id] = true;
                 }
             }
@@ -323,11 +329,8 @@ pub fn resolve_messages(game: &mut Game) {
 
                     if let Some(blocked) = blocked {
                         // if we hit a column, turn it into rubble
-                        dbg!(blocked);
                         if let Some(blocked_id) = game.data.has_blocking_entity(blocked.end_pos) {
-                            dbg!(blocked_id, game.data.entities.name[&blocked_id]);
                             if game.data.entities.name[&blocked_id] == EntityName::Column {
-                                dbg!(blocked_id);
                                 remove_entity(blocked_id, &mut game.data);
                                 game.data.map[blocked.end_pos].surface = Surface::Rubble;
                             }
@@ -336,6 +339,37 @@ pub fn resolve_messages(game: &mut Game) {
                             game.data.entities.took_turn[&entity_id] = true;
                         }
                     }
+                }
+            }
+
+            Msg::StoneThrow(entity_id, target_pos) => {
+                let entity_pos = game.data.entities.pos[&entity_id];
+
+                let mut rubble_pos = None;
+                if game.data.map[entity_pos].surface == Surface::Rubble {
+                    rubble_pos = Some(entity_pos);
+                }
+
+                for pos in game.data.map.neighbors(entity_pos) {
+                    if game.data.map[pos].surface == Surface::Rubble {
+                        rubble_pos = Some(pos);
+                    }
+                }
+
+                if let Some(rubble_pos) = rubble_pos {
+                    for target_id in game.data.get_entities_at_pos(target_pos) {
+                        let target_pos = game.data.entities.pos[&target_id];
+                        let direction = Direction::from_positions(entity_pos, target_pos).expect("The player is on the same tile as a column?");
+
+                        if game.data.entities.typ[&target_id] == EntityType::Enemy {
+                            let move_into = false;
+                            push_attack(entity_id, target_id, direction, move_into, &mut game.data, &game.config, &mut game.msg_log);
+                        } else if game.data.entities.typ[&target_id] == EntityType::Column {
+                            game.msg_log.log(Msg::Pushed(entity_id, target_id, direction, 1, false));
+                        }
+                    }
+
+                    game.data.map[rubble_pos].surface = Surface::Floor;
                 }
             }
 

@@ -766,6 +766,7 @@ pub enum Skill {
     Blink,
     PassWall,
     Rubble,
+    StoneThrow,
     Reform,
     Swap,
     Push,

@@ -9,7 +9,7 @@ use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
 use roguelike_core::utils::{scale_pos, distance, sub_pos, add_pos, next_from_to};
-use roguelike_core::map::{astar_next_pos};
+use roguelike_core::map::{astar_next_pos, Surface};
 
 use crate::game::*;
 use crate::input::*;
@@ -920,6 +920,25 @@ pub fn handle_skill(skill_index: usize,
 
             if distance(player_pos, skill_pos) == 1 {
                 msg_log.log(Msg::Reform(player_id, skill_pos));
+            }
+        }
+
+        Skill::StoneThrow => {
+            let player_pos = data.entities.pos[&player_id];
+            let mut near_rubble = data.map[player_pos].surface == Surface::Rubble;
+            for pos in data.map.neighbors(player_pos) {
+                if data.map[pos].surface == Surface::Rubble {
+                    near_rubble = true;
+                }
+                if near_rubble {
+                    break;
+                }
+            }
+
+            if let Some(dir) = Direction::from_positions(player_pos, skill_pos) {
+                let target_pos = dir.offset_pos(player_pos, 1);
+
+                msg_log.log(Msg::StoneThrow(player_id, target_pos));
             }
         }
 
