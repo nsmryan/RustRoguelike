@@ -261,11 +261,31 @@ pub fn resolve_messages(game: &mut Game) {
                     let pos = game.data.entities.pos[&entity_id];
 
                     for grass_pos in line_inclusive(pos, direction.offset_pos(pos, SKILL_GRASS_THROW_RADIUS as i32)) {
-                        if game.data.map.is_within_bounds(grass_pos) && game.data.map[grass_pos].tile_type == TileType::Empty {
-                            game.data.map[grass_pos].surface = Surface::Grass;
-                            ensure_grass(&mut game.data.entities, grass_pos, &mut game.msg_log);
+
+                        // NOTE percent chance of not marking a tile
+                        // NOTE percent chance of marking a nearby tile
+                        if rng_trial(&mut game.rng, 0.75) {
+                            if game.data.map.is_within_bounds(grass_pos) && game.data.map[grass_pos].tile_type == TileType::Empty {
+                                game.data.map[grass_pos].surface = Surface::Grass;
+                                ensure_grass(&mut game.data.entities, grass_pos, &mut game.msg_log);
+                            }
+                        }
+
+                        if rng_trial(&mut game.rng, 0.35) {
+                            let other_pos;
+                            if rng_trial(&mut game.rng, 0.5) {
+                                other_pos = direction.clockwise().clockwise().offset_pos(grass_pos, 1);
+                            } else {
+                                other_pos = direction.counterclockwise().counterclockwise().offset_pos(grass_pos, 1);
+                            }
+
+                            if game.data.map.is_within_bounds(other_pos) && game.data.map[other_pos].tile_type == TileType::Empty {
+                                game.data.map[other_pos].surface = Surface::Grass;
+                                ensure_grass(&mut game.data.entities, other_pos, &mut game.msg_log);
+                            }
                         }
                     }
+                    // NOTE old cone style
                     //for grass_pos in Cone::new(pos, direction, SKILL_GRASS_THROW_RADIUS as i32) {
                     //    if game.data.map.is_within_bounds(grass_pos) && game.data.map[grass_pos].tile_type == TileType::Empty {
                     //        game.data.map[grass_pos].surface = Surface::Grass;
