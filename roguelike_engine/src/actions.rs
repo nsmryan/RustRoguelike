@@ -990,7 +990,9 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::WhirlWind => {
-            msg_log.log(Msg::WhirlWind(player_id, skill_pos));
+            if data.map.is_within_bounds(skill_pos) {
+                msg_log.log(Msg::WhirlWind(player_id, skill_pos));
+            }
         }
 
         Skill::Swift => {

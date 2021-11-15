@@ -537,7 +537,13 @@ pub fn resolve_messages(game: &mut Game) {
                 let entity_pos = game.data.entities.pos[&entity_id];
                 let mut near_walls = false;
                 for dir in Direction::directions() {
-                    if game.data.map.move_blocked(pos, dir.offset_pos(pos, 1), BlockedType::Move).is_some() {
+                    let dir_pos = dir.offset_pos(pos, 1);
+
+                    if !game.data.map.is_within_bounds(dir_pos) {
+                        continue;
+                    }
+
+                    if game.data.map.move_blocked(pos, dir_pos, BlockedType::Move).is_some() {
                         near_walls = true;
                         break;
                     }
