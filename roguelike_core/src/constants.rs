@@ -67,6 +67,7 @@ pub const SKILL_PUSH_STUN_TURNS: usize = 3;
 pub const SKILL_SPRINT_AMOUNT: usize = 3;
 pub const SKILL_STONE_SKIN_TURNS: usize = 4;
 pub const SKILL_SWIFT_DISTANCE: usize = 4;
+pub const SKILL_QUICK_REFLEXES_PERCENT: f32 = 0.5;
 
 /* Item Settings */
 pub const LANTERN_ILLUMINATE_RADIUS: usize = 2;

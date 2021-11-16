@@ -55,6 +55,7 @@ pub enum GameCmd {
     SoftShoes(bool),
     LightTouch(bool),
     SureFooted(bool),
+    QuickReflexes(bool),
     Exit,
 }
 
@@ -172,6 +173,9 @@ impl FromStr for GameCmd {
         } else if cmd == "sure_footed" {
             let onoff = args.next().ok_or("no arg")?.parse::<bool>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::SureFooted(onoff));
+        } else if cmd == "quick_reflexes" {
+            let onoff = args.next().ok_or("no arg")?.parse::<bool>().map_err(|err| format!("{}", err))?;
+            return Ok(GameCmd::QuickReflexes(onoff));
         } else if cmd == "exit" {
             return Ok(GameCmd::Exit);
         }
@@ -240,6 +244,8 @@ impl GameCmd {
             return "light_touch";
         } else if matches!(self, GameCmd::SureFooted(_)) {
             return "sure_footed";
+        } else if matches!(self, GameCmd::QuickReflexes(_)) {
+            return "quick_reflexes";
         } else if matches!(self, GameCmd::Exit) {
             return "exit";
         } else {
@@ -254,9 +260,10 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
     // TODO this isn't really correct- perhaps we could pass get_ticks() to execute_game_command
     let ticks = 0;
 
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+
     match command {
         GameCmd::PlayerId => {
-            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
             return format!("{} {}", name, player_id);
         }
 
@@ -357,13 +364,11 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         }
 
         GameCmd::Kill(id) => {
-            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
             game.msg_log.log(Msg::Killed(player_id, *id, 1000));
             return format!("{}", name);
         }
 
         GameCmd::Give(item) => {
-            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
             let pos = game.data.entities.pos[&player_id];
             let item_id = make_item(&mut game.data.entities, &game.config, *item, pos, &mut game.msg_log);
             game.data.entities.pick_up_item(player_id, item_id);
@@ -425,32 +430,32 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         }
 
         GameCmd::StoneThrower(onoff) => {
-            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
             game.data.entities.passive[&player_id].stone_thrower = *onoff;
             return format!("{}", name);
         }
 
         GameCmd::WhetStone(onoff) => {
-            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
             game.data.entities.passive[&player_id].whet_stone = *onoff;
             return format!("{}", name);
         }
 
         GameCmd::SoftShoes(onoff) => {
-            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
             game.data.entities.passive[&player_id].soft_shoes = *onoff;
             return format!("{}", name);
         }
 
         GameCmd::LightTouch(onoff) => {
-            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
             game.data.entities.passive[&player_id].light_touch = *onoff;
             return format!("{}", name);
         }
 
         GameCmd::SureFooted(onoff) => {
-            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
             game.data.entities.passive[&player_id].sure_footed = *onoff;
+            return format!("{}", name);
+        }
+
+        GameCmd::QuickReflexes(onoff) => {
+            game.data.entities.passive[&player_id].quick_reflexes = *onoff;
             return format!("{}", name);
         }
 

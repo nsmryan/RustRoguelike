@@ -502,7 +502,7 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::AiAttack(entity_id) => {
                 if let Behavior::Attacking(target_id) = game.data.entities.behavior[&entity_id] {
-                    resolve_ai_attack(entity_id, target_id, &mut game.data, &mut game.msg_log, &game.config);
+                    resolve_ai_attack(entity_id, target_id, &mut game.data, &mut game.msg_log, &mut game.rng, &game.config);
                 } else {
                     panic!("ai attacking but not in attack state!");
                 }
@@ -1639,6 +1639,7 @@ fn resolve_ai_attack(entity_id: EntityId,
                      target_id: EntityId,
                      data: &mut Level,
                      msg_log: &mut MsgLog,
+                     rng: &mut Rand32,
                      config: &Config) {
     let target_pos = data.entities.pos[&target_id];
 
@@ -1650,8 +1651,19 @@ fn resolve_ai_attack(entity_id: EntityId,
         data.entities.took_turn[&entity_id] = true;
         msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
     } else if let Some(_hit_pos) = can_hit_target {
-        let attack_info = Attack::Attack(target_id);
-        msg_log.log(Msg::TryAttack(entity_id, attack_info, target_pos));
+        let mut can_attack = true;
+        // quick reflexes
+        if data.entities.passive.get(&target_id).is_some() && data.entities.passive[&target_id].quick_reflexes {
+            if rng_trial(rng, SKILL_QUICK_REFLEXES_PERCENT) {
+                can_attack = false;
+                msg_log.log(Msg::Dodged(target_id));
+            }
+        }
+
+        if can_attack {
+            let attack_info = Attack::Attack(target_id);
+            msg_log.log(Msg::TryAttack(entity_id, attack_info, target_pos));
+        }
     } else if !ai_is_in_fov(entity_id, target_id, data, config) {
         // if we lose the target, end the turn
         data.entities.took_turn[&entity_id] = true;

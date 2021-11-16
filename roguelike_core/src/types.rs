@@ -1387,6 +1387,7 @@ pub struct Passive {
     pub soft_shoes: bool,
     pub light_touch: bool,
     pub sure_footed: bool,
+    pub quick_reflexes: bool,
 }
 
 impl Passive {

@@ -94,6 +94,7 @@ pub enum Msg {
     CursorToggle(bool, Pos),
     Restart,
     Forget(EntityId),
+    Dodged(EntityId),
 }
 
 impl fmt::Display for Msg {
@@ -193,6 +194,7 @@ impl fmt::Display for Msg {
             Msg::CursorToggle(state, pos) => write!(f, "cursortoggle {} {} {}", state, pos.x, pos.y),
             Msg::Restart => write!(f, "restart"),
             Msg::Forget(entity_id) => write!(f, "forget {}", entity_id),
+            Msg::Dodged(entity_id) => write!(f, "dodged {}", entity_id),
         }
     }
 }
@@ -477,6 +479,10 @@ impl Msg {
 
             Msg::Forget(entity_id) => {
                 return format!("{:?} becomes forgetful", data.entities.name[entity_id]);
+            }
+
+            Msg::Dodged(entity_id) => {
+                return format!("{:?} dodged an attack", data.entities.name[entity_id]);
             }
 
             _ => {
