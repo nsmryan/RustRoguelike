@@ -565,7 +565,7 @@ pub fn handle_input_playing(input_action: InputAction,
         (InputAction::StartUseInteract, true) => {
             settings.use_action = UseAction::Interact;
             settings.use_dir = None;
-            settings.cursor = None;
+            ensure_leave_cursor(settings, msg_log);
             change_state(settings, GameState::Use);
             msg_log.log(Msg::StartUseInteract);
         }
@@ -611,7 +611,7 @@ pub fn handle_input_playing(input_action: InputAction,
                 settings.cursor = Some(player_pos);
                 cursor_pos = player_pos;
             }
-            msg_log.log(Msg::CursorToggle(settings.cursor.is_some(), cursor_pos));
+            msg_log.log(Msg::CursorState(settings.cursor.is_some(), cursor_pos));
         }
 
         (InputAction::Pass, true) => {
@@ -673,11 +673,18 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Esc, true) => {
-            settings.cursor = None;
+            ensure_leave_cursor(settings, msg_log);
         }
 
         (_, _) => {
         }
+    }
+}
+
+fn ensure_leave_cursor(settings: &mut GameSettings, msg_log: &mut MsgLog) {
+    if let Some(pos) = settings.cursor {
+        msg_log.log(Msg::CursorState(false, pos));
+        settings.cursor = None;
     }
 }
 
@@ -784,6 +791,8 @@ fn finalize_use_item(data: &Level, settings: &mut GameSettings, msg_log: &mut Ms
 fn start_use_item(item_class: ItemClass, data: &Level, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
+    ensure_leave_cursor(settings, msg_log);
+
     if let Some(item_index) = data.entities.item_by_class(player_id, item_class) {
         let item_id = data.entities.inventory[&player_id][item_index as usize];
 
@@ -793,7 +802,6 @@ fn start_use_item(item_class: ItemClass, data: &Level, settings: &mut GameSettin
         settings.use_action = UseAction::Item(item_class);
 
         settings.use_dir = None;
-        settings.cursor = None;
 
         change_state(settings, GameState::Use);
 

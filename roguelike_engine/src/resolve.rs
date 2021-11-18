@@ -1582,6 +1582,7 @@ fn resolve_triggered_traps(entity_id: EntityId,
                            data: &mut Level,
                            rng: &mut Rand32,
                            msg_log: &mut MsgLog) {
+    // check for light touch first, in case it prevents a trap from triggering.
     if data.entities.passive.get(&entity_id).is_some() &&
        data.entities.passive[&entity_id].light_touch   &&
        rng_trial(rng, 0.5) {

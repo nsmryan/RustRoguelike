@@ -458,17 +458,17 @@ impl Input {
             // if releasing a key that is directional, but not the last directional key
             // pressed, then do nothing, waiting for the last key to be released instead.
         } else {
-            // if releasing target, apply the skill or item
-            if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
-                action = self.use_skill(index, settings);
-            }
-
             // Item release can only throw outside in cursor mode
             if self.cursor {
                 if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
                     let item_class = CLASSES[index];
                     let cursor_pos = settings.cursor.unwrap();
                     action = InputAction::ThrowItem(cursor_pos, item_class);
+                }
+            } else {
+                // if releasing target, apply the skill or item
+                if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+                    action = self.use_skill(index, settings);
                 }
             }
 

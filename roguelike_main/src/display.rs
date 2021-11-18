@@ -250,7 +250,7 @@ impl Display {
                 self.state.sound_tiles.clear();
             }
 
-            Msg::CursorToggle(state, pos) => {
+            Msg::CursorState(state, pos) => {
                 if !state {
                     let tiles = lookup_spritekey(&self.sprites, "tiles");
                     let cursor_sprite = Sprite::new(ENTITY_CURSOR as u32, tiles);

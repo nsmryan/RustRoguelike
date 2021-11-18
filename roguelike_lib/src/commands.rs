@@ -56,6 +56,7 @@ pub enum GameCmd {
     LightTouch(bool),
     SureFooted(bool),
     QuickReflexes(bool),
+    Visible(EntityId, i32, i32),
     Exit,
 }
 
@@ -176,6 +177,11 @@ impl FromStr for GameCmd {
         } else if cmd == "quick_reflexes" {
             let onoff = args.next().ok_or("no arg")?.parse::<bool>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::QuickReflexes(onoff));
+        } else if cmd == "visible" {
+            let id = args.next().ok_or("no arg")?.parse::<u64>().map_err(|err| format!("{}", err))?;
+            let x  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
+            let y  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
+            return Ok(GameCmd::Visible(id, x, y));
         } else if cmd == "exit" {
             return Ok(GameCmd::Exit);
         }
@@ -246,6 +252,8 @@ impl GameCmd {
             return "sure_footed";
         } else if matches!(self, GameCmd::QuickReflexes(_)) {
             return "quick_reflexes";
+        } else if matches!(self, GameCmd::Visible(_, _, _)) {
+            return "visible";
         } else if matches!(self, GameCmd::Exit) {
             return "exit";
         } else {
@@ -457,6 +465,12 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         GameCmd::QuickReflexes(onoff) => {
             game.data.entities.passive[&player_id].quick_reflexes = *onoff;
             return format!("{}", name);
+        }
+
+        GameCmd::Visible(entity_id, x, y) => {
+            let pos = Pos::new(*x, *y);
+            let visible = game.data.pos_in_fov(*entity_id, pos, &game.config);
+            return format!("{} {}", name, visible);
         }
 
         // let action = game.input.handle_event(&mut game.settings, event, frame_time, &game.config);
