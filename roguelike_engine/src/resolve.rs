@@ -556,7 +556,7 @@ pub fn resolve_messages(game: &mut Game) {
             Msg::WhirlWind(entity_id, pos) => {
                 let entity_pos = game.data.entities.pos[&entity_id];
                 let mut near_walls = false;
-                for dir in Direction::directions() {
+                for dir in &Direction::directions() {
                     let dir_pos = dir.offset_pos(pos, 1);
 
                     if !game.data.map.is_within_bounds(dir_pos) {
@@ -582,7 +582,7 @@ pub fn resolve_messages(game: &mut Game) {
                 if game.data.map.is_within_bounds(dest) {
 
                     let mut near_walls = false;
-                    for dir in Direction::directions() {
+                    for dir in &Direction::directions() {
                         if game.data.map.move_blocked(dest, dir.offset_pos(dest, 1), BlockedType::Move).is_some() {
                             near_walls = true;
                             break;
@@ -1582,7 +1582,9 @@ fn resolve_triggered_traps(entity_id: EntityId,
                            data: &mut Level,
                            rng: &mut Rand32,
                            msg_log: &mut MsgLog) {
-    if data.entities.passive[&entity_id].light_touch && rng_trial(rng, 0.5) {
+    if data.entities.passive.get(&entity_id).is_some() &&
+       data.entities.passive[&entity_id].light_touch   &&
+       rng_trial(rng, 0.5) {
         return;
     }
 
