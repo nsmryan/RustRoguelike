@@ -319,6 +319,14 @@ impl Tile {
         return tile;
     }
 
+    pub fn tall_grass() -> Self {
+        let mut tile = Tile::empty();
+        tile.block_sight = true;
+        tile.surface = Surface::Grass;
+        tile.chr = ENTITY_TALL_GRASS;
+        return tile;
+    }
+
     pub fn rubble() -> Self {
         let mut tile = Tile::empty();
         tile.surface = Surface::Rubble;
@@ -999,6 +1007,8 @@ impl Map {
                     // If we get here, the position is in FOV but blocked.
                     // The only blocked positions that are visible are at the end of the
                     // path and also block tiles (like a wall).
+                    // TODO to hide in tall grass
+                    //in_fov = end_pos == blocked.end_pos && blocked.blocked_tile && self[end_pos].surface != Surface::Grass;
                     in_fov = end_pos == blocked.end_pos && blocked.blocked_tile;
                 } 
             }
@@ -1525,6 +1535,20 @@ fn test_fov_blocked_by_wall_down() {
     }
   
     assert_eq!(false, map.is_in_fov(Pos::new(5, 1), Pos::new(5, 6), radius, false));
+}
+
+#[test]
+fn test_fov_blocked_by_tall_grass() {
+    let radius = 10;
+    let mut map = Map::from_dims(10, 10);
+
+    let pos = Pos::new(5, 5);
+    map[pos] = Tile::tall_grass();
+    let low = false;
+    assert!(map.path_blocked_fov(Pos::new(4, 5), Pos::new(5, 5)).is_some());
+
+    // TODO its not clear whether tall grass should block LoS this way.
+    //assert_eq!(false, map.is_in_fov(Pos::new(4, 5), Pos::new(5, 5), radius, false));
 }
 
 #[test]

@@ -769,6 +769,7 @@ pub enum Skill {
     GrassThrow,
     GrassBlade,
     GrassShoes,
+    GrassCover,
     Blink,
     PassWall,
     Rubble,

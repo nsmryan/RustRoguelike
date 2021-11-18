@@ -891,6 +891,10 @@ pub fn handle_skill(skill_index: usize,
             msg_log.log(Msg::GrassShoes(player_id, action_mode));
         }
 
+        Skill::GrassCover => {
+            msg_log.log(Msg::GrassCover(player_id, action_mode));
+        }
+
         Skill::PassWall => {
             let player_id = data.find_by_name(EntityName::Player).unwrap();
             let player_pos = data.entities.pos[&player_id];

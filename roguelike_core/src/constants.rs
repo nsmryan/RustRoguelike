@@ -182,6 +182,7 @@ pub const ENTITY_ENERGY: u8 = 6;
 
 /* Map Objects */
 pub const ENTITY_EXIT: u8 = 135;
+pub const ENTITY_TALL_GRASS: u8 = 137; // TODO temporary sprite
 pub const ENTITY_TRIGGER_1: u8 = 224;
 pub const ENTITY_TRIGGER_2: u8 = 225;
 pub const ENTITY_TRIGGER_3: u8 = 226;

@@ -64,6 +64,7 @@ pub enum Msg {
     DropItem(EntityId, EntityId), // entity, item
     GrassThrow(EntityId, Direction),
     GrassShoes(EntityId, ActionMode),
+    GrassCover(EntityId, ActionMode),
     GrassBlade(EntityId, ActionMode, Direction),
     Illuminate(EntityId, Pos, usize), // entity, position, amount
     Heal(EntityId, usize), // entity, amount
@@ -164,6 +165,7 @@ impl fmt::Display for Msg {
             Msg::DropItem(entity_id, item_id) => write!(f, "drop_item {} {}", entity_id, item_id),
             Msg::GrassThrow(entity_id, direction) => write!(f, "grass_throw {} {}", entity_id, direction),
             Msg::GrassShoes(entity_id, action_mode) => write!(f, "grass_shoes {} {}", entity_id, action_mode),
+            Msg::GrassCover(entity_id, action_mode) => write!(f, "grass_cover {} {}", entity_id, action_mode),
             Msg::GrassBlade(entity_id, action_mode, direction) => write!(f, "grass_blade {} {} {}", entity_id, action_mode, direction),
             Msg::Illuminate(entity_id, pos, amount) => write!(f, "illuminate {} {} {} {}", entity_id, pos.x, pos.y, amount),
             Msg::Heal(entity_id, amount) => write!(f, "heal {} {}", entity_id, amount),
@@ -403,6 +405,10 @@ impl Msg {
 
             Msg::GrassShoes(entity_id, _action_mode) => {
                 return format!("{:?} used grass shoes", data.entities.name[entity_id]);
+            }
+
+            Msg::GrassCover(entity_id, _action_mode) => {
+                return format!("{:?} created a grass wall!", data.entities.name[entity_id]);
             }
 
             Msg::GrassBlade(entity_id, _action_mode, _direction) => {

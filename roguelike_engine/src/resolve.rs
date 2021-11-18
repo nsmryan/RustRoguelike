@@ -214,6 +214,7 @@ pub fn resolve_messages(game: &mut Game) {
                         game.data.entities.add_skill(player_id, Skill::GrassThrow);
                         game.data.entities.add_skill(player_id, Skill::GrassBlade);
                         game.data.entities.add_skill(player_id, Skill::GrassShoes);
+                        game.data.entities.add_skill(player_id, Skill::GrassCover);
                     }
 
                     EntityClass::Clockwork => {
@@ -300,6 +301,16 @@ pub fn resolve_messages(game: &mut Game) {
                 if use_energy(entity_id, &mut game.data, &mut game.msg_log) {
                     game.data.entities.status[&entity_id].soft_steps = SKILL_GRASS_SHOES_TURNS;
                     game.data.entities.took_turn[&entity_id] = true;
+                }
+            }
+
+            Msg::GrassCover(entity_id, _action_mode) => {
+                if use_energy(entity_id, &mut game.data, &mut game.msg_log) {
+                    let entity_pos = game.data.entities.pos[&entity_id];
+                    let facing = game.data.entities.direction[&entity_id];
+                    let next_pos = facing.offset_pos(entity_pos, 1);
+                    game.data.map[next_pos] = Tile::tall_grass();
+                    ensure_grass(&mut game.data.entities, next_pos, &mut game.msg_log);
                 }
             }
 
