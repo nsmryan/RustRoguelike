@@ -266,11 +266,33 @@ pub enum BlockedType {
 }
 
 impl BlockedType {
-    pub fn blocking(&self, wall: Wall) -> bool {
-        let empty = wall == Wall::Empty;
-        let see_over = wall == Wall::ShortWall && *self == BlockedType::Fov;
-        return !empty && !see_over;
+    pub fn blocking(&self, wall: Wall, material: Surface) -> bool {
+        let walk_into = *self == BlockedType::Move && (wall == Wall::Empty || material == Surface::Grass);
+        let see_over = (*self == BlockedType::Fov && wall != Wall::TallWall) || (*self == BlockedType::FovLow && wall == Wall::Empty);
+        return !walk_into && !see_over;
     }
+}
+
+#[test]
+fn test_blocked_type() {
+    assert_eq!(false, BlockedType::Fov.blocking(Wall::ShortWall, Surface::Floor));
+    assert_eq!(false, BlockedType::Fov.blocking(Wall::ShortWall, Surface::Grass));
+    assert_eq!(true, BlockedType::Fov.blocking(Wall::TallWall, Surface::Floor));
+    assert_eq!(false, BlockedType::Fov.blocking(Wall::Empty, Surface::Floor));
+    assert_eq!(false, BlockedType::Fov.blocking(Wall::Empty, Surface::Grass));
+
+    assert_eq!(true, BlockedType::FovLow.blocking(Wall::ShortWall, Surface::Floor));
+    assert_eq!(true, BlockedType::FovLow.blocking(Wall::TallWall, Surface::Floor));
+    assert_eq!(true, BlockedType::FovLow.blocking(Wall::ShortWall, Surface::Grass));
+    assert_eq!(true, BlockedType::FovLow.blocking(Wall::TallWall, Surface::Grass));
+    assert_eq!(false, BlockedType::FovLow.blocking(Wall::Empty, Surface::Floor));
+    assert_eq!(false, BlockedType::FovLow.blocking(Wall::Empty, Surface::Grass));
+
+    assert_eq!(false, BlockedType::Move.blocking(Wall::Empty, Surface::Floor));
+    assert_eq!(true, BlockedType::Move.blocking(Wall::ShortWall, Surface::Floor));
+    assert_eq!(false, BlockedType::Move.blocking(Wall::TallWall, Surface::Grass));
+    assert_eq!(false, BlockedType::Move.blocking(Wall::ShortWall, Surface::Grass));
+    assert_eq!(true, BlockedType::Move.blocking(Wall::TallWall, Surface::Floor));
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -281,7 +303,9 @@ pub struct Tile {
     pub explored: bool,
     pub tile_type: TileType,
     pub bottom_wall: Wall,
+    pub bottom_material: Surface,
     pub left_wall: Wall,
+    pub left_material: Surface,
     pub chr: u8,
     pub surface: Surface,
 }
@@ -295,6 +319,8 @@ impl Tile {
             tile_type: TileType::Empty,
             bottom_wall: Wall::Empty,
             left_wall: Wall::Empty,
+            bottom_material: Surface::Floor,
+            left_material: Surface::Floor,
             chr: ' ' as u8,
             surface: Surface::Floor,
         }
@@ -308,6 +334,8 @@ impl Tile {
             tile_type: TileType::Water,
             bottom_wall: Wall::Empty,
             left_wall: Wall::Empty,
+            bottom_material: Surface::Floor,
+            left_material: Surface::Floor,
             chr: ' ' as u8,
             surface: Surface::Floor,
         }
@@ -344,6 +372,8 @@ impl Tile {
                tile_type: TileType::Wall,
                bottom_wall: Wall::Empty,
                left_wall: Wall::Empty,
+               bottom_material: Surface::Floor,
+               left_material: Surface::Floor,
                chr: chr as u8,
                surface: Surface::Floor,
         }
@@ -361,6 +391,8 @@ impl Tile {
             tile_type: TileType::ShortWall,
             bottom_wall: Wall::Empty,
             left_wall: Wall::Empty,
+            bottom_material: Surface::Floor,
+            left_material: Surface::Floor,
             chr: chr as u8,
             surface: Surface::Floor,
         }
@@ -381,6 +413,8 @@ impl Tile {
             tile_type: TileType::Exit,
             bottom_wall: Wall::Empty,
             left_wall: Wall::Empty,
+            bottom_material: Surface::Floor,
+            left_material: Surface::Floor,
             chr: ' ' as u8,
             surface: Surface::Floor,
         }
@@ -400,6 +434,14 @@ impl Tile {
                 return self.block_move;
             }
         }
+    }
+
+    pub fn does_left_block(&self) -> bool {
+        return self.left_wall != Wall::Empty && self.left_material != Surface::Grass;
+    }
+
+    pub fn does_down_block(&self) -> bool {
+        return self.bottom_wall != Wall::Empty && self.bottom_material != Surface::Grass;
     }
 
     pub fn shorten(&mut self) {
@@ -503,11 +545,11 @@ pub fn reorient_map(map: &Map, rotation: Rotation, mirror: bool) -> Map {
             new_map[pos] = map[orig_pos];
 
             if map[orig_pos].left_wall != Wall::Empty {
-                left_walls.push((pos, map[orig_pos].left_wall));
+                left_walls.push((pos, map[orig_pos].left_wall, map[orig_pos].left_material));
             }
 
             if map[orig_pos].bottom_wall != Wall::Empty {
-                bottom_walls.push((pos, map[orig_pos].bottom_wall));
+                bottom_walls.push((pos, map[orig_pos].bottom_wall, map[orig_pos].bottom_material));
             }
         }
     }
@@ -520,16 +562,18 @@ pub fn reorient_map(map: &Map, rotation: Rotation, mirror: bool) -> Map {
         }
     }
 
-    for (wall_pos, wall_type) in left_walls {
+    for (wall_pos, wall_type, material) in left_walls {
         match rotation {
             Rotation::Degrees0 => {
                 new_map[wall_pos].left_wall = wall_type;
+                new_map[wall_pos].left_material = material;
             }
 
             Rotation::Degrees90 => {
                 let new_wall_pos = move_y(wall_pos, -1);
                 if new_map.is_within_bounds(new_wall_pos) {
                     new_map[new_wall_pos].bottom_wall = wall_type;
+                    new_map[wall_pos].bottom_material = material;
                 }
             }
 
@@ -537,29 +581,34 @@ pub fn reorient_map(map: &Map, rotation: Rotation, mirror: bool) -> Map {
                 let new_wall_pos = move_x(wall_pos, 1);
                 if new_map.is_within_bounds(new_wall_pos) {
                     new_map[new_wall_pos].left_wall = wall_type;
+                    new_map[wall_pos].left_material = material;
                 }
             }
 
             Rotation::Degrees270 => {
                 new_map[wall_pos].bottom_wall = wall_type;
+                new_map[wall_pos].bottom_material = material;
             }
         }
     }
 
-    for (wall_pos, wall_type) in bottom_walls {
+    for (wall_pos, wall_type, material) in bottom_walls {
         match rotation {
             Rotation::Degrees0 => {
                 new_map[wall_pos].bottom_wall = wall_type;
+                new_map[wall_pos].bottom_material = material;
             }
 
             Rotation::Degrees90 => {
                 new_map[wall_pos].left_wall = wall_type;
+                new_map[wall_pos].left_material = material;
             }
 
             Rotation::Degrees180 => {
                 let new_wall_pos = move_y(wall_pos, -1);
                 if new_map.is_within_bounds(new_wall_pos) {
                     new_map[new_wall_pos].bottom_wall = wall_type;
+                    new_map[wall_pos].bottom_material = material;
                 }
             }
 
@@ -567,6 +616,7 @@ pub fn reorient_map(map: &Map, rotation: Rotation, mirror: bool) -> Map {
                 let new_wall_pos = move_x(wall_pos, 1);
                 if new_map.is_within_bounds(new_wall_pos) {
                     new_map[new_wall_pos].left_wall = wall_type;
+                    new_map[wall_pos].left_material = material;
                 }
             }
         }
@@ -679,44 +729,44 @@ impl Map {
 
     pub fn blocked_left(&self, pos: Pos, blocked_type: BlockedType) -> bool {
         let offset = Pos::new(pos.x - 1, pos.y);
-        if !self.is_within_bounds(offset) || !self.is_within_bounds(pos) {
+        if !self.is_within_bounds(pos) || !self.is_within_bounds(offset) {
             return true;
         }
 
-        let blocking_wall = blocked_type.blocking(self[pos].left_wall);
+        let blocking_wall = blocked_type.blocking(self[pos].left_wall, self[pos].left_material);
         let blocking_tile = self[offset].does_tile_block(blocked_type);
         return blocking_wall || blocking_tile;
     }
 
     pub fn blocked_right(&self, pos: Pos, blocked_type: BlockedType) -> bool {
         let offset = Pos::new(pos.x + 1, pos.y);
-        if !self.is_within_bounds(pos) || !self.is_within_bounds(pos) { 
+        if !self.is_within_bounds(pos) || !self.is_within_bounds(offset) { 
             return true;
         }
 
-        let blocking_wall = blocked_type.blocking(self[offset].left_wall);
+        let blocking_wall = blocked_type.blocking(self[offset].left_wall, self[offset].left_material);
         let blocking_tile = self[offset].does_tile_block(blocked_type);
         return blocking_wall || blocking_tile;
     }
 
     pub fn blocked_down(&self, pos: Pos, blocked_type: BlockedType) -> bool {
         let offset = Pos::new(pos.x, pos.y + 1);
-        if !self.is_within_bounds(pos) || !self.is_within_bounds(pos) {
+        if !self.is_within_bounds(pos) || !self.is_within_bounds(offset) {
             return true;
         }
 
-        let blocking_wall = blocked_type.blocking(self[pos].bottom_wall);
+        let blocking_wall = blocked_type.blocking(self[pos].bottom_wall, self[pos].bottom_material);
         let blocking_tile = self[offset].does_tile_block(blocked_type);
         return blocking_wall || blocking_tile;
     }
 
     pub fn blocked_up(&self, pos: Pos, blocked_type: BlockedType) -> bool {
         let offset = Pos::new(pos.x, pos.y - 1);
-        if !self.is_within_bounds(pos) || !self.is_within_bounds(pos) {
+        if !self.is_within_bounds(pos) || !self.is_within_bounds(offset) {
             return true;
         }
 
-        let blocking_wall = blocked_type.blocking(self[offset].bottom_wall);
+        let blocking_wall = blocked_type.blocking(self[offset].bottom_wall, self[offset].bottom_material);
         let blocking_tile = self[offset].does_tile_block(blocked_type);
         return blocking_wall || blocking_tile;
     }
@@ -783,13 +833,12 @@ impl Map {
         match direction {
             Direction::Right | Direction::Left => {
                 let mut left_wall_pos = start_pos;
-                // moving right
                 if move_dir.x >= 1 {
                     left_wall_pos = Pos::new(x + move_dir.x, y);
                 }
 
                 if self.is_within_bounds(left_wall_pos) &&
-                   blocked_type.blocking(self[left_wall_pos].left_wall) {
+                   blocked_type.blocking(self[left_wall_pos].left_wall, self[left_wall_pos].left_material) {
                         blocked.wall_type = self[left_wall_pos].left_wall;
                         found_blocker = true;
                 }
@@ -802,7 +851,7 @@ impl Map {
                 }
 
                 if self.is_within_bounds(bottom_wall_pos) &&
-                   blocked_type.blocking(self[bottom_wall_pos].bottom_wall) {
+                   blocked_type.blocking(self[bottom_wall_pos].bottom_wall, self[bottom_wall_pos].bottom_material) {
                         blocked.wall_type = self[bottom_wall_pos].bottom_wall;
                         found_blocker = true;
                 }
@@ -1175,6 +1224,42 @@ impl Map {
         let new_x = std::cmp::min(width - 1, std::cmp::max(0, pos.x));
         let new_y = std::cmp::min(height - 1, std::cmp::max(0, pos.y));
         return Pos::new(new_x, new_y);
+    }
+
+    pub fn place_intertile_wall(&mut self, pos: Pos, material: Surface, direction: Direction) {
+        match direction {
+            Direction::Left => {
+                if self[pos].left_wall == Wall::Empty {
+                    self[pos].left_wall = Wall::ShortWall;
+                    self[pos].left_material = material;
+                }
+            }
+
+            Direction::Right => {
+                let pos = move_x(pos, 1);
+                if self.is_within_bounds(pos) && self[pos].left_wall == Wall::Empty {
+                    self[pos].left_wall = Wall::ShortWall;
+                    self[pos].left_material = material;
+                }
+            }
+
+            Direction::Up => {
+                let pos = move_y(pos, -1);
+                if self.is_within_bounds(pos) && self[pos].bottom_wall == Wall::Empty {
+                    self[pos].bottom_wall = Wall::ShortWall;
+                    self[pos].bottom_material = material;
+                }
+            }
+
+            Direction::Down => {
+                self[pos].bottom_wall = Wall::ShortWall;
+                self[pos].bottom_material = material;
+            }
+
+            Direction::DownLeft | Direction::DownRight | Direction::UpLeft | Direction::UpRight => {
+                panic!("Placing an intertile wall on a diagonal makes no sense!");
+            }
+        }
     }
 }
 

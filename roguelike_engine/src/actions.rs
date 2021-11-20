@@ -891,6 +891,12 @@ pub fn handle_skill(skill_index: usize,
             msg_log.log(Msg::GrassShoes(player_id, action_mode));
         }
 
+        Skill::GrassWall => {
+            if let Some(direction) = Direction::from_dxy(dxy.x, dxy.y) {
+                msg_log.log(Msg::GrassWall(player_id, direction));
+            }
+        }
+
         Skill::GrassCover => {
             msg_log.log(Msg::GrassCover(player_id, action_mode));
         }

@@ -766,6 +766,7 @@ pub enum Trap {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Skill {
+    GrassWall,
     GrassThrow,
     GrassBlade,
     GrassShoes,

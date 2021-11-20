@@ -211,6 +211,7 @@ pub fn resolve_messages(game: &mut Game) {
 
                     EntityClass::Grass => {
                         game.data.entities.class[&player_id] = class;
+                        game.data.entities.add_skill(player_id, Skill::GrassWall);
                         game.data.entities.add_skill(player_id, Skill::GrassThrow);
                         game.data.entities.add_skill(player_id, Skill::GrassBlade);
                         game.data.entities.add_skill(player_id, Skill::GrassShoes);
@@ -257,14 +258,36 @@ pub fn resolve_messages(game: &mut Game) {
                 inventory_drop_item(entity_id, item_index as usize, &mut game.data, &mut game.msg_log);
             }
 
+            Msg::GrassWall(entity_id, direction) => {
+                if use_energy(entity_id, &mut game.data, &mut game.msg_log) {
+                    let entity_pos = game.data.entities.pos[&entity_id];
+
+                    match direction {
+                        Direction::Left | Direction::Right | Direction::Up | Direction::Down => {
+                            game.data.map.place_intertile_wall(entity_pos, Surface::Grass, direction);
+                            let next_to = direction.clockwise().clockwise().offset_pos(entity_pos, 1);
+                            game.data.map.place_intertile_wall(next_to, Surface::Grass, direction);
+                            let next_to = direction.counterclockwise().counterclockwise().offset_pos(entity_pos, 1);
+                            game.data.map.place_intertile_wall(next_to, Surface::Grass, direction);
+                        }
+
+                        Direction::DownLeft | Direction::DownRight | Direction::UpLeft | Direction::UpRight => {
+                            let next_to = direction.clockwise().offset_pos(entity_pos, 1);
+                            game.data.map.place_intertile_wall(next_to, Surface::Grass, direction.counterclockwise());
+                            let next_to = direction.counterclockwise().offset_pos(entity_pos, 1);
+                            game.data.map.place_intertile_wall(next_to, Surface::Grass, direction.clockwise());
+                        }
+                    }
+                }
+            }
+
             Msg::GrassThrow(entity_id, direction) => {
                 if use_energy(entity_id, &mut game.data, &mut game.msg_log) {
                     let pos = game.data.entities.pos[&entity_id];
 
                     for grass_pos in line_inclusive(pos, direction.offset_pos(pos, SKILL_GRASS_THROW_RADIUS as i32)) {
 
-                        // NOTE percent chance of not marking a tile
-                        // NOTE percent chance of marking a nearby tile
+                        // percent chance of not marking a tile
                         if rng_trial(&mut game.rng, 0.75) {
                             if game.data.map.is_within_bounds(grass_pos) && game.data.map[grass_pos].tile_type == TileType::Empty {
                                 game.data.map[grass_pos].surface = Surface::Grass;
@@ -272,6 +295,7 @@ pub fn resolve_messages(game: &mut Game) {
                             }
                         }
 
+                        // percent chance of marking a nearby tile
                         if rng_trial(&mut game.rng, 0.35) {
                             let other_pos;
                             if rng_trial(&mut game.rng, 0.5) {
@@ -1574,6 +1598,11 @@ fn process_moved_message(entity_id: EntityId,
         }
     }
 
+    // Check if we trampled any grass.
+    if original_pos != pos && move_type != MoveType::Blink {
+        trample_grass_walls(data, original_pos, pos);
+    }
+
     // if entity is a monster, which is also alert, and there is a path to the player,
     // then face the player
     if let Some(target_pos) = data.entities.target(entity_id) {
@@ -1584,6 +1613,71 @@ fn process_moved_message(entity_id: EntityId,
         let diff = sub_pos(pos, original_pos);
         if let Some(dir) = Direction::from_dxy(diff.x, diff.y) {
             msg_log.log_front(Msg::SetFacing(entity_id, dir));
+        }
+    }
+}
+
+fn trample_grass_walls(data: &mut Level, start_pos: Pos, end_pos: Pos) {
+    match Direction::from_positions(start_pos, end_pos).unwrap() {
+        Direction::Left | Direction::Right | Direction::Up | Direction::Down => {
+            trample_grass_move(data, start_pos, end_pos);
+        }
+
+        Direction::DownLeft | Direction::DownRight => {
+            trample_grass_move(data, start_pos, move_y(start_pos, 1));
+            trample_grass_move(data, move_y(start_pos, 1), end_pos);
+        }
+
+        Direction::UpLeft | Direction::UpRight => {
+            trample_grass_move(data, start_pos, move_y(start_pos, -1));
+            trample_grass_move(data, move_y(start_pos, -1), end_pos);
+        }
+    }
+}
+
+fn trample_grass_move(data: &mut Level, start_pos: Pos, end_pos: Pos) {
+    let wall_pos;
+    let is_left_wall;
+    match Direction::from_positions(start_pos, end_pos).unwrap() {
+        Direction::Left => {
+            wall_pos = start_pos;
+            is_left_wall = true;
+        }
+
+        Direction::Right => {
+            wall_pos = end_pos;
+            is_left_wall = true;
+        }
+
+        Direction::Up => {
+            wall_pos = end_pos;
+            is_left_wall = false;
+        }
+
+        Direction::Down => {
+            wall_pos = start_pos;
+            is_left_wall = false;
+        }
+
+        Direction::DownLeft | Direction::DownRight | Direction::UpRight | Direction::UpLeft => {
+            panic!("Trampling a grass wall on a diagonal isn't possible!");
+        }
+    }
+
+    let material;
+    if is_left_wall {
+        material = data.map[wall_pos].left_material;
+    } else {
+        material = data.map[wall_pos].bottom_material;
+    }
+
+    if material == Surface::Grass {
+        if is_left_wall {
+            data.map[wall_pos].left_material = Surface::Floor;
+            data.map[wall_pos].left_wall = Wall::Empty;
+        } else {
+            data.map[wall_pos].bottom_material = Surface::Floor;
+            data.map[wall_pos].bottom_wall = Wall::Empty;
         }
     }
 }

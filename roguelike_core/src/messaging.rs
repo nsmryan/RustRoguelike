@@ -62,6 +62,7 @@ pub enum Msg {
     Untriggered(EntityId, EntityId), // trap, entity
     AddClass(EntityClass),
     DropItem(EntityId, EntityId), // entity, item
+    GrassWall(EntityId, Direction),
     GrassThrow(EntityId, Direction),
     GrassShoes(EntityId, ActionMode),
     GrassCover(EntityId, ActionMode),
@@ -164,6 +165,7 @@ impl fmt::Display for Msg {
             Msg::AddClass(entity_class) => write!(f, "add_class {}", entity_class),
             Msg::DropItem(entity_id, item_id) => write!(f, "drop_item {} {}", entity_id, item_id),
             Msg::GrassThrow(entity_id, direction) => write!(f, "grass_throw {} {}", entity_id, direction),
+            Msg::GrassWall(entity_id, direction) => write!(f, "grass_wall {} {}", entity_id, direction),
             Msg::GrassShoes(entity_id, action_mode) => write!(f, "grass_shoes {} {}", entity_id, action_mode),
             Msg::GrassCover(entity_id, action_mode) => write!(f, "grass_cover {} {}", entity_id, action_mode),
             Msg::GrassBlade(entity_id, action_mode, direction) => write!(f, "grass_blade {} {} {}", entity_id, action_mode, direction),
@@ -401,6 +403,10 @@ impl Msg {
 
             Msg::GrassThrow(entity_id, direction) => {
                 return format!("{:?} threw grass {}", data.entities.name[entity_id], direction);
+            }
+
+            Msg::GrassWall(entity_id, _direction) => {
+                return format!("{:?} created a grass wall", data.entities.name[entity_id]);
             }
 
             Msg::GrassShoes(entity_id, _action_mode) => {

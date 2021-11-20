@@ -178,6 +178,7 @@ fn test_ai_idle_player_in_fov() {
 
     let player_pos = game.data.entities.pos[&player_id];
 
+    assert_eq!(2, game.msg_log.messages.len());
     assert_eq!(game.msg_log.messages[0], Msg::FaceTowards(gol, player_pos));
     assert_eq!(game.msg_log.messages[1], Msg::StateChange(gol, Behavior::Attacking(player_id)));
 }
@@ -212,6 +213,7 @@ fn test_ai_idle_was_attacked() {
     ai_idle(gol, &mut game.data, &mut game.msg_log, &game.config);
 
     let player_pos = game.data.entities.pos[&player_id];
+    assert_eq!(2, game.msg_log.messages.len());
     assert_eq!(game.msg_log.messages[0], Msg::FaceTowards(gol, player_pos));
     assert_eq!(game.msg_log.messages[1], Msg::StateChange(gol, Behavior::Attacking(player_id)));
 }
