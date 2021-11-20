@@ -56,7 +56,7 @@ pub fn resolve_messages(game: &mut Game) {
                     // TODO make this drop an item
                     //inventory_drop_item(entity_id, item_index as usize, data, &mut game.msg_log);
                 } else {
-                    throw_item(entity_id, item_id, start, end, &mut game.data, &mut game.msg_log, &game.config);
+                    throw_item(entity_id, item_id, start, end, &mut game.data, &mut game.rng, &mut game.msg_log, &game.config);
                 }
             }
 
@@ -1304,6 +1304,7 @@ fn throw_item(player_id: EntityId,
               start_pos: Pos,
               end_pos: Pos,
               data: &mut Level,
+              rng: &mut Rand32,
               msg_log: &mut MsgLog,
               config: &Config) {
     let throw_line = line(start_pos, end_pos);
@@ -1336,6 +1337,17 @@ fn throw_item(player_id: EntityId,
 
     // NOTE the radius here is the stone radius, regardless of item type
     msg_log.log_front(Msg::Sound(player_id, hit_pos, config.sound_radius_stone, true));
+
+    if data.entities.item[&item_id] == Item::Teleporter {
+        let end_x = rng_range_i32(rng, hit_pos.x - 1, hit_pos.x + 1);
+        let end_y = rng_range_i32(rng, hit_pos.y - 1, hit_pos.y + 1);
+        let mut end_pos = Pos::new(end_x, end_y);
+        if !data.map.is_within_bounds(end_pos) {
+            end_pos = hit_pos;
+        }
+        msg_log.log_front(Msg::Moved(player_id, MoveType::Blink, end_pos));
+        data.entities.mark_for_removal(item_id);
+    }
 }
 
 fn find_blink_pos(pos: Pos, rng: &mut Rand32, data: &mut Level) -> Option<Pos> {
@@ -1485,6 +1497,10 @@ fn use_item(entity_id: EntityId,
             data.entities.pos[&item_id] = pos;
         }
 
+        Item::Teleporter => {
+            //data.entities.pos[&item_id] = pos;
+        }
+
         Item::SpikeTrap => {
             place_trap(item_id, pos, data);
             data.entities.took_turn[&entity_id] = true;
@@ -1599,7 +1615,8 @@ fn process_moved_message(entity_id: EntityId,
     }
 
     // Check if we trampled any grass.
-    if original_pos != pos && move_type != MoveType::Blink {
+    // This only happens for non-item moves that change position, and are not teleports.
+    if data.entities.item.get(&entity_id).is_none() && original_pos != pos && move_type != MoveType::Blink {
         trample_grass_walls(data, original_pos, pos);
     }
 

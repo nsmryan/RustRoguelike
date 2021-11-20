@@ -540,7 +540,7 @@ impl Level {
 
         let mut result = ItemUseResult::new();
         match item {
-            Item::Stone | Item::Lantern | Item::SpikeTrap | Item::SoundTrap | Item::BlinkTrap | Item::FreezeTrap => {
+            Item::Stone | Item::Lantern | Item::Teleporter | Item::SpikeTrap | Item::SoundTrap | Item::BlinkTrap | Item::FreezeTrap => {
                 result.pos = Some(pos);
                 let end_pos = dir.offset_pos(pos, PLAYER_THROW_DIST as i32);
                 let hit_pos = self.throw_towards(pos, end_pos);
@@ -915,6 +915,7 @@ pub enum Item {
     GreatSword,
     Sword,
     Lantern,
+    Teleporter,
     SpikeTrap,
     SoundTrap,
     BlinkTrap,
@@ -933,6 +934,7 @@ impl fmt::Display for Item {
             Item::GreatSword => write!(f, "greatsword"),
             Item::Sword => write!(f, "sword"),
             Item::Lantern => write!(f, "lantern"),
+            Item::Teleporter => write!(f, "teleporter"),
             Item::SpikeTrap => write!(f, "spiketrap"),
             Item::SoundTrap => write!(f, "soundtrap"),
             Item::BlinkTrap => write!(f, "blinktrap"),
@@ -965,6 +967,8 @@ impl FromStr for Item {
             return Ok(Item::GreatSword);
         } else if s == "sword" {
             return Ok(Item::Sword);
+        } else if s == "teleporter" {
+            return Ok(Item::Teleporter);
         } else if s == "spiketrap" {
             return Ok(Item::SpikeTrap);
         } else if s == "soundtrap" {
@@ -990,6 +994,7 @@ impl Item {
             Item::Spear => ItemClass::Primary,
             Item::GreatSword => ItemClass::Primary,
             Item::Sword => ItemClass::Primary,
+            Item::Teleporter => ItemClass::Consumable,
             Item::Lantern => ItemClass::Consumable,
             Item::SpikeTrap => ItemClass::Consumable,
             Item::SoundTrap => ItemClass::Consumable,
@@ -1008,6 +1013,7 @@ impl Item {
             Item::Spear => EntityName::Spear,
             Item::GreatSword => EntityName::GreatSword,
             Item::Sword => EntityName::Sword,
+            Item::Teleporter => EntityName::Teleporter,
             Item::Lantern => EntityName::Lantern,
             Item::SpikeTrap => EntityName::SpikeTrap,
             Item::SoundTrap => EntityName::SoundTrap,
@@ -1025,6 +1031,7 @@ impl Item {
             Item::GreatSword => Some(WeaponType::Slash),
             Item::Sword => Some(WeaponType::Slash),
 
+            Item::Teleporter => None,
             Item::Stone => None,
             Item::Key => None,
             Item::Lantern => None,
@@ -1159,6 +1166,7 @@ pub enum EntityName {
     Sword,
     Shield,
     Lantern,
+    Teleporter,
     Spire,
     Armil,
     SpikeTrap,
@@ -1195,6 +1203,7 @@ impl fmt::Display for EntityName {
             EntityName::Spear => write!(f, "spear"),
             EntityName::GreatSword => write!(f, "greatsword"),
             EntityName::Sword => write!(f, "sword"),
+            EntityName::Teleporter => write!(f, "teleporter"),
             EntityName::Lantern => write!(f, "lantern"),
             EntityName::Shield => write!(f, "shield"),
             EntityName::Spire => write!(f, "spire"),
@@ -1239,6 +1248,8 @@ impl FromStr for EntityName {
             return Ok(EntityName::Dagger);
         } else if s == "hammer" {
             return Ok(EntityName::Hammer);
+        } else if s == "teleporter" {
+            return Ok(EntityName::Teleporter);
         } else if s == "spear" {
             return Ok(EntityName::Spear);
         } else if s == "greatsword" {

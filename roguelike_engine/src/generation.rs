@@ -377,6 +377,18 @@ pub fn make_stone(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
     return stone;
 }
 
+pub fn make_teleporter(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let teleporter = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_TELEPORTER as char, Color::white(), EntityName::Teleporter, true);
+
+    entities.item.insert(teleporter,  Item::Teleporter);
+    entities.status[&teleporter].alive = false;
+    entities.blocks.insert(teleporter,  false);
+
+    msg_log.log(Msg::SpawnedObject(teleporter, entities.typ[&teleporter], pos, EntityName::Teleporter, entities.direction[&teleporter]));
+
+    return teleporter;
+}
+
 pub fn make_lantern(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let lantern = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_LANTERN as char, Color::white(), EntityName::Lantern, true);
 
@@ -419,6 +431,7 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
         EntityName::Exit => make_exit(entities, config, pos, msg_log),
         EntityName::Stone => make_stone(entities, config, pos, msg_log),
         EntityName::Lantern => make_lantern(entities, config, pos, msg_log),
+        EntityName::Teleporter => make_teleporter(entities, config, pos, msg_log),
         _ => {
             dbg!(entity_name);
             panic!("Cannot create this entity this way");

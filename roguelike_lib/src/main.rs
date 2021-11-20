@@ -38,7 +38,7 @@ pub fn main() {
 
         // TODO is this actually necessary? it seems like it should be
         // using turn_messages instead, or done jnternally
-        while let Some(msg) = game.msg_log.pop() {
+        for msg in game.msg_log.turn_messages.iter() {
             log.log_msg(&format!("{}", msg));
         }
     }

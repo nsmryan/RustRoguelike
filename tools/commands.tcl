@@ -1,6 +1,5 @@
 
-
-proc start_game { args } {
+proc start { args } {
     global rl
 
     if { [info exists rl] } {
@@ -10,10 +9,12 @@ proc start_game { args } {
     }
     set rl ""
 
-    set command [join [list "|target/debug/rl" {*}$args] " "]
+    #set exe rl
+    set exe rl_engine
+    set command [join [list "|target/debug/$exe.exe" {*}$args] " "]
     puts $command
     set rl [open  $command w+]
-    fconfigure $rl -buffering line
+    fconfigure $rl -buffering line -blocking 0
 }
 
 proc is_prefix { prefix str } {
@@ -26,8 +27,12 @@ proc cmd { name args } {
     set command $name
     lappend command {*}$args
     puts $rl $command
+
     set line [gets $rl]
-    while { ![is_prefix "OUTPUT:" $line] } {
+    while { ![is_prefix "OUTPUT: $name" $line] } {
+        if { [string length $line] > 0 } {
+            puts $line
+        }
         set line [gets $rl]
     }
 
@@ -38,28 +43,30 @@ proc make_cmd { name } {
     uplevel 1 "proc $name { args } { cmd $name {*}\$args }"
 }
 
-proc key { chr } {
-    global rl
-    puts $rl "key $chr down"
-    puts $rl "key $chr up"
-    flush $rl
+proc press_key { chr } {
+    cmd key $chr down
+    cmd key $chr up
+    #global rl
+    #puts $rl "key $chr down"
+    #puts $rl "key $chr up"
+    #flush $rl
 }
 
-proc up { } { key 8 }
-proc down { } { key 2 }
-proc left { } { key 4 }
-proc right { } { key 6 }
-proc upleft { } { key 7 }
-proc upright { } { key 9 }
-proc downleft { } { key 1 }
-proc downright { } { key 3 }
-proc pass {} { key 5 }
-proc z {} { key z }
-proc x {} { key x }
-proc c {} { key c }
-proc a {} { key a }
-proc s {} { key s }
-proc d {} { key d }
+proc up { } { press_key 8 }
+proc down { } { press_key 2 }
+proc left { } { press_key 4 }
+proc right { } { press_key 6 }
+proc upleft { } { press_key 7 }
+proc upright { } { press_key 9 }
+proc downleft { } { press_key 1 }
+proc downright { } { press_key 3 }
+proc pass {} { press_key 5 }
+proc z {} { press_key z }
+proc x {} { press_key x }
+proc c {} { press_key c }
+proc a {} { press_key a }
+proc s {} { press_key s }
+proc d {} { press_key d }
 make_cmd give
 make_cmd player_id
 make_cmd hp

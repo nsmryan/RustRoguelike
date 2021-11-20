@@ -277,7 +277,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
 
         GameCmd::Pos(id) => {
             if let Some(pos) = game.data.entities.pos.get(id) {
-                return format!("{} {} {}", name, pos.x, pos.y);
+                return format!("{} {} {} {}", name, id, pos.x, pos.y);
             } else {
                 return format!("{}", name);
             }
