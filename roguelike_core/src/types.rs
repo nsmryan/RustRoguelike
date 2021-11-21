@@ -916,6 +916,7 @@ pub enum Item {
     Sword,
     Lantern,
     Teleporter,
+    Herb,
     SpikeTrap,
     SoundTrap,
     BlinkTrap,
@@ -935,6 +936,7 @@ impl fmt::Display for Item {
             Item::Sword => write!(f, "sword"),
             Item::Lantern => write!(f, "lantern"),
             Item::Teleporter => write!(f, "teleporter"),
+            Item::Herb => write!(f, "herb"),
             Item::SpikeTrap => write!(f, "spiketrap"),
             Item::SoundTrap => write!(f, "soundtrap"),
             Item::BlinkTrap => write!(f, "blinktrap"),
@@ -969,6 +971,8 @@ impl FromStr for Item {
             return Ok(Item::Sword);
         } else if s == "teleporter" {
             return Ok(Item::Teleporter);
+        } else if s == "herb" {
+            return Ok(Item::Herb);
         } else if s == "spiketrap" {
             return Ok(Item::SpikeTrap);
         } else if s == "soundtrap" {
@@ -995,6 +999,7 @@ impl Item {
             Item::GreatSword => ItemClass::Primary,
             Item::Sword => ItemClass::Primary,
             Item::Teleporter => ItemClass::Consumable,
+            Item::Herb => ItemClass::Consumable,
             Item::Lantern => ItemClass::Consumable,
             Item::SpikeTrap => ItemClass::Consumable,
             Item::SoundTrap => ItemClass::Consumable,
@@ -1014,6 +1019,7 @@ impl Item {
             Item::GreatSword => EntityName::GreatSword,
             Item::Sword => EntityName::Sword,
             Item::Teleporter => EntityName::Teleporter,
+            Item::Herb => EntityName::Herb,
             Item::Lantern => EntityName::Lantern,
             Item::SpikeTrap => EntityName::SpikeTrap,
             Item::SoundTrap => EntityName::SoundTrap,
@@ -1032,6 +1038,7 @@ impl Item {
             Item::Sword => Some(WeaponType::Slash),
 
             Item::Teleporter => None,
+            Item::Herb => None,
             Item::Stone => None,
             Item::Key => None,
             Item::Lantern => None,
@@ -1178,6 +1185,7 @@ pub enum EntityName {
     Mouse,
     Cursor,
     Energy,
+    Herb,
     Grass,
     Other,
 }
@@ -1217,6 +1225,7 @@ impl fmt::Display for EntityName {
             EntityName::Mouse => write!(f, "mouse"),
             EntityName::Cursor => write!(f, "cursor"),
             EntityName::Energy => write!(f, "energy"),
+            EntityName::Herb => write!(f, "herb"),
             EntityName::Grass => write!(f, "grass"),
             EntityName::Other => write!(f, "other"),
         }
@@ -1282,6 +1291,8 @@ impl FromStr for EntityName {
             return Ok(EntityName::Cursor);
         } else if s == "energy" {
             return Ok(EntityName::Energy);
+        } else if s == "herb" {
+            return Ok(EntityName::Herb);
         } else if s == "grass" {
             return Ok(EntityName::Grass);
         } else if s == "other" {

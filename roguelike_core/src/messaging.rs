@@ -68,7 +68,8 @@ pub enum Msg {
     GrassCover(EntityId, ActionMode),
     GrassBlade(EntityId, ActionMode, Direction),
     Illuminate(EntityId, Pos, usize), // entity, position, amount
-    Heal(EntityId, usize), // entity, amount
+    HealSkill(EntityId, usize), // entity, amount
+    EatHerb(EntityId, EntityId), // entity, item
     FarSight(EntityId, usize), // entity, amount
     Ping(EntityId, Pos),
     Sprint(EntityId, Direction, usize), // entity, direction, amount
@@ -81,7 +82,6 @@ pub enum Msg {
     PassThrough(EntityId, Direction),
     WhirlWind(EntityId, Pos),
     Swift(EntityId, Direction),
-    UseItem(EntityId, Pos, EntityId), // holding entity, position, item id
     ArmDisarmTrap(EntityId, EntityId), // acting entity, trap id
     PlaceTrap(EntityId, Pos, EntityId), // placing entity, position, trap id
     SpawnedObject(EntityId, EntityType, Pos, EntityName, Direction),
@@ -170,7 +170,8 @@ impl fmt::Display for Msg {
             Msg::GrassCover(entity_id, action_mode) => write!(f, "grass_cover {} {}", entity_id, action_mode),
             Msg::GrassBlade(entity_id, action_mode, direction) => write!(f, "grass_blade {} {} {}", entity_id, action_mode, direction),
             Msg::Illuminate(entity_id, pos, amount) => write!(f, "illuminate {} {} {} {}", entity_id, pos.x, pos.y, amount),
-            Msg::Heal(entity_id, amount) => write!(f, "heal {} {}", entity_id, amount),
+            Msg::HealSkill(entity_id, amount) => write!(f, "heal_skill {} {}", entity_id, amount),
+            Msg::EatHerb(entity_id, item_id) => write!(f, "eat_herb {} {}", entity_id, item_id),
             Msg::FarSight(entity_id, amount) => write!(f, "farsight {} {}", entity_id, amount),
             Msg::Ping(entity_id, pos) => write!(f, "ping {} {} {}", entity_id, pos.x, pos.y),
             Msg::Sprint(entity_id, direction, amount) => write!(f, "sprint {} {} {}", entity_id, direction, amount),
@@ -183,7 +184,6 @@ impl fmt::Display for Msg {
             Msg::PassThrough(entity_id, dir) => write!(f, "passthrough {} {}", entity_id, dir),
             Msg::WhirlWind(entity_id, pos) => write!(f, "whirlwind {} {} {}", entity_id, pos.x, pos.y),
             Msg::Swift(entity_id, direction) => write!(f, "swift {} {}", entity_id, direction),
-            Msg::UseItem(entity_id, pos, item_id) => write!(f, "use_item {} {} {} {}", entity_id, pos.x, pos.y, item_id),
             Msg::ArmDisarmTrap(entity_id, trap_id) => write!(f, "arm_disarm_trap {} {}", entity_id, trap_id),
             Msg::PlaceTrap(entity_id, pos, trap_id) => write!(f, "place_trap {} {} {} {}", entity_id, pos.x, pos.y, trap_id),
             Msg::SpawnedObject(entity_id, entity_type, pos, entity_name, facing) => write!(f, "spawned {} {} {} {} {} {}", entity_id, entity_type, pos.x, pos.y, entity_name, facing),
@@ -425,8 +425,12 @@ impl Msg {
                 return format!("{:?} illuminated their surroundings", data.entities.name[entity_id]);
             }
 
-            Msg::Heal(entity_id, amount) => {
+            Msg::HealSkill(entity_id, amount) => {
                 return format!("{:?} healed by {}", data.entities.name[entity_id], amount);
+            }
+
+            Msg::EatHerb(entity_id, _item_id) => {
+                return format!("{:?} ate an herb", data.entities.name[entity_id]);
             }
 
             Msg::FarSight(entity_id, amount) => {
@@ -475,10 +479,6 @@ impl Msg {
 
             Msg::Swift(entity_id, pos) => { 
                 return format!("{:?} moves swiftly to {}", data.entities.name[entity_id], pos);
-            }
-
-            Msg::UseItem(entity_id, pos, item_id) => {
-                return format!("{:?} used {:?} on {}", data.entities.name[entity_id], data.entities.name[item_id], pos);
             }
 
             Msg::ArmDisarmTrap(entity_id, trap_id) => {

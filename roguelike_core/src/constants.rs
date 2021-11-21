@@ -180,6 +180,7 @@ pub const ENTITY_ELF: u8 = 165;
 pub const ENTITY_UNKNOWN: u8 = 239;
 pub const ENTITY_ENERGY: u8 = 6;
 pub const ENTITY_TELEPORTER: u8 = 8;
+pub const ENTITY_HERB: u8 = 24;
 
 /* Map Objects */
 pub const ENTITY_EXIT: u8 = 135;

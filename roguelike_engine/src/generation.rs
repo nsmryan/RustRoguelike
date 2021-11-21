@@ -300,107 +300,119 @@ pub fn make_armil(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
 } 
 
 pub fn make_sound_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let sound = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_TRAP_SOUND as char, Color::white(), EntityName::SoundTrap, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_TRAP_SOUND as char, Color::white(), EntityName::SoundTrap, false);
 
-    entities.trap.insert(sound,  Trap::Sound);
-    entities.armed.insert(sound,  true);
-    entities.item.insert(sound,  Item::SoundTrap);
+    entities.trap.insert(entity_id,  Trap::Sound);
+    entities.armed.insert(entity_id,  true);
+    entities.item.insert(entity_id,  Item::SoundTrap);
 
-    msg_log.log(Msg::SpawnedObject(sound, entities.typ[&sound], pos, EntityName::SoundTrap, entities.direction[&sound]));
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::SoundTrap, entities.direction[&entity_id]));
 
-    return sound;
+    return entity_id;
 }
 
 pub fn make_spike_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let spikes = entities.create_entity(pos.x, pos.y, EntityType::Item, MAP_TALL_SPIKES as char, Color::white(), EntityName::SpikeTrap, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, MAP_TALL_SPIKES as char, Color::white(), EntityName::SpikeTrap, false);
 
-    entities.trap.insert(spikes,  Trap::Spikes);
-    entities.armed.insert(spikes,  true);
-    entities.item.insert(spikes,  Item::SpikeTrap);
+    entities.trap.insert(entity_id,  Trap::Spikes);
+    entities.armed.insert(entity_id,  true);
+    entities.item.insert(entity_id,  Item::SpikeTrap);
 
-    msg_log.log(Msg::SpawnedObject(spikes, entities.typ[&spikes], pos, EntityName::SpikeTrap, entities.direction[&spikes]));
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::SpikeTrap, entities.direction[&entity_id]));
 
-    return spikes;
+    return entity_id;
 }
 
 pub fn make_blink_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let blink = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_BLINK_TRAP as char, Color::white(), EntityName::BlinkTrap, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_BLINK_TRAP as char, Color::white(), EntityName::BlinkTrap, false);
 
-    entities.trap.insert(blink,  Trap::Blink);
-    entities.armed.insert(blink,  true);
-    entities.item.insert(blink,  Item::BlinkTrap);
+    entities.trap.insert(entity_id,  Trap::Blink);
+    entities.armed.insert(entity_id,  true);
+    entities.item.insert(entity_id,  Item::BlinkTrap);
 
-    msg_log.log(Msg::SpawnedObject(blink, entities.typ[&blink], pos, EntityName::BlinkTrap, entities.direction[&blink]));
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::BlinkTrap, entities.direction[&entity_id]));
 
-    return blink;
+    return entity_id;
 }
 
 pub fn make_freeze_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let freeze = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_FREEZE_TRAP as char, Color::white(), EntityName::FreezeTrap, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_FREEZE_TRAP as char, Color::white(), EntityName::FreezeTrap, false);
 
-    entities.trap.insert(freeze,  Trap::Freeze);
-    entities.armed.insert(freeze,  true);
-    entities.item.insert(freeze,  Item::FreezeTrap);
+    entities.trap.insert(entity_id,  Trap::Freeze);
+    entities.armed.insert(entity_id,  true);
+    entities.item.insert(entity_id,  Item::FreezeTrap);
 
-    msg_log.log(Msg::SpawnedObject(freeze, entities.typ[&freeze], pos, EntityName::FreezeTrap, entities.direction[&freeze]));
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::FreezeTrap, entities.direction[&entity_id]));
 
-    return freeze;
+    return entity_id;
 }
 
 pub fn make_gate_trigger(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let gate = entities.create_entity(pos.x, pos.y, EntityType::Trigger, ENTITY_GATE_TRIGGER as char, Color::white(), EntityName::GateTrigger, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Trigger, ENTITY_GATE_TRIGGER as char, Color::white(), EntityName::GateTrigger, false);
 
-    entities.gate_pos.insert(gate, Pos::new(-1, -1));
+    entities.gate_pos.insert(entity_id, Pos::new(-1, -1));
 
-    msg_log.log(Msg::SpawnedObject(gate, entities.typ[&gate], pos, EntityName::GateTrigger, entities.direction[&gate]));
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::GateTrigger, entities.direction[&entity_id]));
 
-    return gate;
+    return entity_id;
 }
 
 pub fn make_exit(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let exit = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_EXIT as char, Color::white(), EntityName::Exit, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_EXIT as char, Color::white(), EntityName::Exit, false);
 
-    msg_log.log(Msg::SpawnedObject(exit, entities.typ[&exit], pos, EntityName::Exit, entities.direction[&exit]));
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Exit, entities.direction[&entity_id]));
 
-    return exit;
+    return entity_id;
 }
 
 pub fn make_stone(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let stone = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_STONE as char, Color::white(), EntityName::Stone, true);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_STONE as char, Color::white(), EntityName::Stone, true);
 
-    entities.item.insert(stone,  Item::Stone);
-    entities.status[&stone].alive = false;
-    entities.blocks.insert(stone,  false);
+    entities.item.insert(entity_id,  Item::Stone);
+    entities.status[&entity_id].alive = false;
+    entities.blocks.insert(entity_id,  false);
 
-    msg_log.log(Msg::SpawnedObject(stone, entities.typ[&stone], pos, EntityName::Stone, entities.direction[&stone]));
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Stone, entities.direction[&entity_id]));
 
-    return stone;
+    return entity_id;
+}
+
+pub fn make_herb(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_HERB as char, Color::white(), EntityName::Herb, true);
+
+    entities.item.insert(entity_id,  Item::Herb);
+    entities.status[&entity_id].alive = false;
+    entities.blocks.insert(entity_id,  false);
+
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Herb, entities.direction[&entity_id]));
+
+    return entity_id;
 }
 
 pub fn make_teleporter(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let teleporter = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_TELEPORTER as char, Color::white(), EntityName::Teleporter, true);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_TELEPORTER as char, Color::white(), EntityName::Teleporter, true);
 
-    entities.item.insert(teleporter,  Item::Teleporter);
-    entities.status[&teleporter].alive = false;
-    entities.blocks.insert(teleporter,  false);
+    entities.item.insert(entity_id,  Item::Teleporter);
+    entities.status[&entity_id].alive = false;
+    entities.blocks.insert(entity_id,  false);
 
-    msg_log.log(Msg::SpawnedObject(teleporter, entities.typ[&teleporter], pos, EntityName::Teleporter, entities.direction[&teleporter]));
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Teleporter, entities.direction[&entity_id]));
 
-    return teleporter;
+    return entity_id;
 }
 
 pub fn make_lantern(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let lantern = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_LANTERN as char, Color::white(), EntityName::Lantern, true);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_LANTERN as char, Color::white(), EntityName::Lantern, true);
 
-    entities.illuminate.insert(lantern, LANTERN_ILLUMINATE_RADIUS);
+    entities.illuminate.insert(entity_id, LANTERN_ILLUMINATE_RADIUS);
 
-    entities.item.insert(lantern,  Item::Lantern);
-    entities.status[&lantern].alive = false;
-    entities.blocks.insert(lantern,  false);
+    entities.item.insert(entity_id,  Item::Lantern);
+    entities.status[&entity_id].alive = false;
+    entities.blocks.insert(entity_id,  false);
 
-    msg_log.log(Msg::SpawnedObject(lantern, entities.typ[&lantern], pos, EntityName::Lantern, entities.direction[&lantern]));
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Lantern, entities.direction[&entity_id]));
 
-    return lantern;
+    return entity_id;
 }
 
 pub fn make_item(entities: &mut Entities, config: &Config, item: Item, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
@@ -432,6 +444,7 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
         EntityName::Stone => make_stone(entities, config, pos, msg_log),
         EntityName::Lantern => make_lantern(entities, config, pos, msg_log),
         EntityName::Teleporter => make_teleporter(entities, config, pos, msg_log),
+        EntityName::Herb => make_herb(entities, config, pos, msg_log),
         _ => {
             dbg!(entity_name);
             panic!("Cannot create this entity this way");

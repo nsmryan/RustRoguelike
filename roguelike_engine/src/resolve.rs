@@ -347,7 +347,7 @@ pub fn resolve_messages(game: &mut Game) {
                 }
             }
 
-            Msg::Heal(entity_id, amount) => {
+            Msg::HealSkill(entity_id, amount) => {
                 if use_energy(entity_id, &mut game.data, &mut game.msg_log) {
                     game.data.entities.hp[&entity_id].hp = 
                         std::cmp::min(game.data.entities.hp[&entity_id].max_hp,
@@ -355,6 +355,12 @@ pub fn resolve_messages(game: &mut Game) {
 
                     game.data.entities.took_turn[&entity_id] = true;
                 }
+            }
+
+            Msg::EatHerb(entity_id, item_id) => {
+                game.data.entities.hp[&entity_id].hp = game.data.entities.hp[&entity_id].max_hp;
+                game.data.entities.remove_item(entity_id, item_id);
+                game.msg_log.log(Msg::Remove(item_id));
             }
 
             Msg::FarSight(entity_id, amount) => {
@@ -499,12 +505,6 @@ pub fn resolve_messages(game: &mut Game) {
 
                     game.data.entities.took_turn[&entity_id] = true;
                 }
-            }
-
-            // TODO this message isn't used anymore. remove the message and remove the
-            // use_item function
-            Msg::UseItem(entity_id, pos, item_id) => {
-                use_item(entity_id, pos, item_id, &mut game.data, &mut game.msg_log);
             }
 
             Msg::ArmDisarmTrap(entity_id, trap_id) => {
@@ -1444,81 +1444,6 @@ fn process_interaction(entity_id: EntityId,
                 msg_log.log(Msg::ArmDisarmTrap(entity_id, other_id));
                 break;
             }
-        }
-    }
-}
-
-fn use_item(entity_id: EntityId,
-            pos: Pos,
-            item_id: EntityId,
-            data: &mut Level,
-            msg_log: &mut MsgLog) {
-    let item = data.entities.item[&item_id];
-
-    match item {
-        Item::Stone => {
-            let start = data.entities.pos[&entity_id];
-            let direction = Direction::from_positions(start, pos).unwrap();
-            let max_end = direction.offset_pos(start, PLAYER_THROW_DIST as i32);
-            let end = data.map.path_blocked_move(start, max_end)
-                               .map_or(max_end, |b| b.end_pos);
-            msg_log.log(Msg::ItemThrow(entity_id, item_id, start, end));
-        }
-
-        Item::Key => {
-        }
-
-        Item::Dagger => {
-            //panic!("Dagger is used by moving right now. UseItem might be better");
-            //msg_log.log(Msg::TryAttack(entity_id, Attack::Stab(target_id), pos))
-        }
-
-        Item::Shield => {
-        }
-
-        Item::Hammer => {
-            //msg_log.log(Msg::HammerSwing(entity_id, item_id, pos));
-        }
-
-        Item::Spear => {
-            // this does nothing, as spear use will go through the new use-mode system
-        }
-
-        Item::GreatSword => {
-            // this does nothing, as the great sword use will go through the new use-mode system
-        }
-
-        Item::Sword => {
-            //msg_log.log(Msg::SwordSwing(entity_id, item_id, pos));
-            //panic!("Swords are used through use-mode how. How did you get here?");
-        }
-
-        Item::Lantern => {
-            data.entities.pos[&item_id] = pos;
-        }
-
-        Item::Teleporter => {
-            //data.entities.pos[&item_id] = pos;
-        }
-
-        Item::SpikeTrap => {
-            place_trap(item_id, pos, data);
-            data.entities.took_turn[&entity_id] = true;
-        }
-
-        Item::SoundTrap => {
-            place_trap(item_id, pos, data);
-            data.entities.took_turn[&entity_id] = true;
-        }
-
-        Item::BlinkTrap => {
-            place_trap(item_id, pos, data);
-            data.entities.took_turn[&entity_id] = true;
-        }
-
-        Item::FreezeTrap => {
-            place_trap(item_id, pos, data);
-            data.entities.took_turn[&entity_id] = true;
         }
     }
 }

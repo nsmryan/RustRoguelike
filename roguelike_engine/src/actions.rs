@@ -796,16 +796,20 @@ fn start_use_item(item_class: ItemClass, data: &Level, settings: &mut GameSettin
     if let Some(item_index) = data.entities.item_by_class(player_id, item_class) {
         let item_id = data.entities.inventory[&player_id][item_index as usize];
 
-        // Allow entering use-mode even if there are no places to move
-        // in case the player wants to check pressing shift or ctrl
-        // for additional spaces.
-        settings.use_action = UseAction::Item(item_class);
+        if data.entities.item[&item_id] == Item::Herb {
+            msg_log.log(Msg::EatHerb(player_id, item_id));
+        } else {
+            // Allow entering use-mode even if there are no places to move
+            // in case the player wants to check pressing shift or ctrl
+            // for additional spaces.
+            settings.use_action = UseAction::Item(item_class);
 
-        settings.use_dir = None;
+            settings.use_dir = None;
 
-        change_state(settings, GameState::Use);
+            change_state(settings, GameState::Use);
 
-        msg_log.log(Msg::StartUseItem(item_id));
+            msg_log.log(Msg::StartUseItem(item_id));
+        }
     }
 }
 
@@ -988,7 +992,7 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::Heal => {
-            msg_log.log(Msg::Heal(player_id, SKILL_HEAL_AMOUNT));
+            msg_log.log(Msg::HealSkill(player_id, SKILL_HEAL_AMOUNT));
         }
 
         Skill::FarSight => {
