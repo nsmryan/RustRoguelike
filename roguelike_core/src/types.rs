@@ -540,7 +540,9 @@ impl Level {
 
         let mut result = ItemUseResult::new();
         match item {
-            Item::Stone | Item::SeedOfStone | Item::Lantern | Item::Teleporter | Item::SpikeTrap | Item::SoundTrap | Item::BlinkTrap | Item::FreezeTrap => {
+            Item::Stone | Item::SeedOfStone | Item::GlassEye |
+            Item::Lantern | Item::Teleporter | Item::SpikeTrap | 
+            Item::SoundTrap | Item::BlinkTrap | Item::FreezeTrap => {
                 result.pos = Some(pos);
                 let end_pos = dir.offset_pos(pos, PLAYER_THROW_DIST as i32);
                 let hit_pos = self.throw_towards(pos, end_pos);
@@ -918,6 +920,7 @@ pub enum Item {
     Teleporter,
     Herb,
     SeedOfStone,
+    GlassEye,
     SpikeTrap,
     SoundTrap,
     BlinkTrap,
@@ -939,6 +942,7 @@ impl fmt::Display for Item {
             Item::Teleporter => write!(f, "teleporter"),
             Item::Herb => write!(f, "herb"),
             Item::SeedOfStone => write!(f, "seedofstone"),
+            Item::GlassEye => write!(f, "glasseye"),
             Item::SpikeTrap => write!(f, "spiketrap"),
             Item::SoundTrap => write!(f, "soundtrap"),
             Item::BlinkTrap => write!(f, "blinktrap"),
@@ -977,6 +981,8 @@ impl FromStr for Item {
             return Ok(Item::Herb);
         } else if s == "seedofstone" {
             return Ok(Item::SeedOfStone);
+        } else if s == "glasseye" {
+            return Ok(Item::GlassEye);
         } else if s == "spiketrap" {
             return Ok(Item::SpikeTrap);
         } else if s == "soundtrap" {
@@ -1005,6 +1011,7 @@ impl Item {
             Item::Teleporter => ItemClass::Consumable,
             Item::Herb => ItemClass::Consumable,
             Item::SeedOfStone => ItemClass::Consumable,
+            Item::GlassEye => ItemClass::Consumable,
             Item::Lantern => ItemClass::Consumable,
             Item::SpikeTrap => ItemClass::Consumable,
             Item::SoundTrap => ItemClass::Consumable,
@@ -1026,6 +1033,7 @@ impl Item {
             Item::Teleporter => EntityName::Teleporter,
             Item::Herb => EntityName::Herb,
             Item::SeedOfStone => EntityName::SeedOfStone,
+            Item::GlassEye => EntityName::GlassEye,
             Item::Lantern => EntityName::Lantern,
             Item::SpikeTrap => EntityName::SpikeTrap,
             Item::SoundTrap => EntityName::SoundTrap,
@@ -1045,6 +1053,7 @@ impl Item {
 
             Item::Teleporter => None,
             Item::SeedOfStone => None,
+            Item::GlassEye => None,
             Item::Herb => None,
             Item::Stone => None,
             Item::Key => None,
@@ -1181,6 +1190,7 @@ pub enum EntityName {
     Shield,
     Lantern,
     SeedOfStone,
+    GlassEye,
     Teleporter,
     Spire,
     Armil,
@@ -1222,6 +1232,7 @@ impl fmt::Display for EntityName {
             EntityName::Teleporter => write!(f, "teleporter"),
             EntityName::Lantern => write!(f, "lantern"),
             EntityName::SeedOfStone => write!(f, "seedofstone"),
+            EntityName::GlassEye => write!(f, "glasseye"),
             EntityName::Shield => write!(f, "shield"),
             EntityName::Spire => write!(f, "spire"),
             EntityName::Armil => write!(f, "armil"),
@@ -1278,6 +1289,8 @@ impl FromStr for EntityName {
             return Ok(EntityName::Lantern);
         } else if s == "seedofstone" {
             return Ok(EntityName::SeedOfStone);
+        } else if s == "glasseye" {
+            return Ok(EntityName::GlassEye);
         } else if s == "shield" {
             return Ok(EntityName::Shield);
         } else if s == "spire" {

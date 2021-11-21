@@ -366,63 +366,46 @@ pub fn make_exit(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &
 }
 
 pub fn make_stone(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_STONE as char, Color::white(), EntityName::Stone, true);
-
-    entities.item.insert(entity_id,  Item::Stone);
-    entities.status[&entity_id].alive = false;
-    entities.blocks.insert(entity_id,  false);
-
-    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Stone, entities.direction[&entity_id]));
-
+    let entity_id = make_item_generic(entities, ENTITY_STONE, Item::Stone, EntityName::Stone, pos, msg_log);
     return entity_id;
 }
 
 pub fn make_seed_of_stone(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SEED_OF_STONE as char, Color::white(), EntityName::SeedOfStone, true);
+    let entity_id = make_item_generic(entities, ENTITY_SEED_OF_STONE, Item::SeedOfStone, EntityName::SeedOfStone, pos, msg_log);
+    return entity_id;
+}
 
-    entities.item.insert(entity_id,  Item::SeedOfStone);
-    entities.status[&entity_id].alive = false;
-    entities.blocks.insert(entity_id,  false);
-
-    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::SeedOfStone, entities.direction[&entity_id]));
-
+pub fn make_glass_eye(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id = make_item_generic(entities, ENTITY_GLASS_EYE, Item::GlassEye, EntityName::GlassEye, pos, msg_log);
     return entity_id;
 }
 
 pub fn make_herb(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_HERB as char, Color::white(), EntityName::Herb, true);
-
-    entities.item.insert(entity_id,  Item::Herb);
-    entities.status[&entity_id].alive = false;
-    entities.blocks.insert(entity_id,  false);
-
-    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Herb, entities.direction[&entity_id]));
-
+    let entity_id = make_item_generic(entities, ENTITY_HERB, Item::Herb, EntityName::Herb, pos, msg_log);
     return entity_id;
 }
 
 pub fn make_teleporter(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_TELEPORTER as char, Color::white(), EntityName::Teleporter, true);
-
-    entities.item.insert(entity_id,  Item::Teleporter);
-    entities.status[&entity_id].alive = false;
-    entities.blocks.insert(entity_id,  false);
-
-    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Teleporter, entities.direction[&entity_id]));
-
+    let entity_id = make_item_generic(entities, ENTITY_TELEPORTER, Item::Teleporter, EntityName::Teleporter, pos, msg_log);
     return entity_id;
 }
 
 pub fn make_lantern(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_LANTERN as char, Color::white(), EntityName::Lantern, true);
+    let entity_id = make_item_generic(entities, ENTITY_LANTERN, Item::Lantern, EntityName::Lantern, pos, msg_log);
 
     entities.illuminate.insert(entity_id, LANTERN_ILLUMINATE_RADIUS);
 
-    entities.item.insert(entity_id,  Item::Lantern);
+    return entity_id;
+}
+
+pub fn make_item_generic(entities: &mut Entities, chr: u8, item: Item, name: EntityName, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, chr as char, Color::white(), name, true);
+
+    entities.item.insert(entity_id,  item);
     entities.status[&entity_id].alive = false;
     entities.blocks.insert(entity_id,  false);
 
-    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Lantern, entities.direction[&entity_id]));
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, name, entities.direction[&entity_id]));
 
     return entity_id;
 }
@@ -449,6 +432,7 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
         EntityName::Pawn => make_pawn(entities, config, pos, msg_log),
         EntityName::SoundTrap => make_sound_trap(entities, config, pos, msg_log),
         EntityName::SeedOfStone => make_seed_of_stone(entities, config, pos, msg_log),
+        EntityName::GlassEye => make_glass_eye(entities, config, pos, msg_log),
         EntityName::SpikeTrap => make_spike_trap(entities, config, pos, msg_log),
         EntityName::FreezeTrap => make_freeze_trap(entities, config, pos, msg_log),
         EntityName::BlinkTrap => make_blink_trap(entities, config, pos, msg_log),

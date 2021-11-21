@@ -182,6 +182,7 @@ pub const ENTITY_ENERGY: u8 = 6;
 pub const ENTITY_TELEPORTER: u8 = 8;
 pub const ENTITY_HERB: u8 = 24;
 pub const ENTITY_SEED_OF_STONE: u8 = 244;
+pub const ENTITY_GLASS_EYE: u8 = 6;
 
 /* Map Objects */
 pub const ENTITY_EXIT: u8 = 135;
