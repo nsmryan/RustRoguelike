@@ -181,6 +181,7 @@ pub const ENTITY_UNKNOWN: u8 = 239;
 pub const ENTITY_ENERGY: u8 = 6;
 pub const ENTITY_TELEPORTER: u8 = 8;
 pub const ENTITY_HERB: u8 = 24;
+pub const ENTITY_SEED_OF_STONE: u8 = 244;
 
 /* Map Objects */
 pub const ENTITY_EXIT: u8 = 135;

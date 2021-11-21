@@ -1338,6 +1338,17 @@ fn throw_item(player_id: EntityId,
     // NOTE the radius here is the stone radius, regardless of item type
     msg_log.log_front(Msg::Sound(player_id, hit_pos, config.sound_radius_stone, true));
 
+    if data.entities.item[&item_id] == Item::SeedOfStone {
+        data.map[hit_pos] = Tile::wall();
+        // this is playing a little fast and lose- we assume that if
+        // the seed of stone hits a tile, that any entity at that tile
+        // is something we can destory like a sword or grass entity.
+        for entity_id in data.get_entities_at_pos(hit_pos) {
+            remove_entity(entity_id, data);
+        }
+        remove_entity(item_id, data);
+    }
+
     if data.entities.item[&item_id] == Item::Teleporter {
         let end_x = rng_range_i32(rng, hit_pos.x - 1, hit_pos.x + 1);
         let end_y = rng_range_i32(rng, hit_pos.y - 1, hit_pos.y + 1);
@@ -1346,7 +1357,7 @@ fn throw_item(player_id: EntityId,
             end_pos = hit_pos;
         }
         msg_log.log_front(Msg::Moved(player_id, MoveType::Blink, end_pos));
-        data.entities.mark_for_removal(item_id);
+        remove_entity(item_id, data);
     }
 }
 

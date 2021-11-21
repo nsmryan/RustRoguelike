@@ -377,6 +377,18 @@ pub fn make_stone(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
     return entity_id;
 }
 
+pub fn make_seed_of_stone(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SEED_OF_STONE as char, Color::white(), EntityName::SeedOfStone, true);
+
+    entities.item.insert(entity_id,  Item::SeedOfStone);
+    entities.status[&entity_id].alive = false;
+    entities.blocks.insert(entity_id,  false);
+
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::SeedOfStone, entities.direction[&entity_id]));
+
+    return entity_id;
+}
+
 pub fn make_herb(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_HERB as char, Color::white(), EntityName::Herb, true);
 
@@ -436,6 +448,7 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
         EntityName::Spire => make_spire(entities, config, pos, msg_log),
         EntityName::Pawn => make_pawn(entities, config, pos, msg_log),
         EntityName::SoundTrap => make_sound_trap(entities, config, pos, msg_log),
+        EntityName::SeedOfStone => make_seed_of_stone(entities, config, pos, msg_log),
         EntityName::SpikeTrap => make_spike_trap(entities, config, pos, msg_log),
         EntityName::FreezeTrap => make_freeze_trap(entities, config, pos, msg_log),
         EntityName::BlinkTrap => make_blink_trap(entities, config, pos, msg_log),

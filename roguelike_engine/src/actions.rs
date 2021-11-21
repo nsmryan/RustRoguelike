@@ -738,7 +738,7 @@ fn finalize_use_item(data: &Level, settings: &mut GameSettings, msg_log: &mut Ms
             } else if item == Item::SpikeTrap || item == Item::SoundTrap || item == Item::BlinkTrap || item == Item::FreezeTrap {
                 let place_pos = dir.offset_pos(player_pos, 1);
                 msg_log.log(Msg::PlaceTrap(player_id, place_pos, item_id));
-            } else if item == Item::Stone || item == Item::Lantern {
+            } else if item == Item::Stone || item == Item::Lantern || item == Item::SeedOfStone || item == Item::Herb {
                 let throw_pos = dir.offset_pos(player_pos, PLAYER_THROW_DIST as i32);
                 msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos));
             } else {
