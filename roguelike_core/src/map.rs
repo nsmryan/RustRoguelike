@@ -462,6 +462,34 @@ pub enum FovResult {
     Inside,
 }
 
+impl fmt::Display for FovResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FovResult::Outside => write!(f, "outside"),
+            FovResult::Edge => write!(f, "edge"),
+            FovResult::Inside => write!(f, "inside"),
+        }
+    }
+}
+
+impl FromStr for FovResult {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "empty" {
+            return Ok(FovResult::Outside);
+        } else if s == "outside" {
+            return Ok(FovResult::Edge);
+        } else if s == "Edge" {
+            return Ok(FovResult::Inside);
+        }
+
+        return Err(format!("Could not parse '{}' as Wall", s));
+    }
+}
+
 impl FovResult {
     pub fn combine(&self, other: FovResult) -> FovResult {
         if *self == FovResult::Inside || other == FovResult::Inside {
@@ -672,7 +700,6 @@ impl FromStr for Wall {
             return Ok(Wall::ShortWall);
         } else if s == "wall" {
             return Ok(Wall::TallWall);
-        } else if s == "water" {
         }
 
         return Err(format!("Could not parse '{}' as Wall", s));

@@ -85,7 +85,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &m
 
         {
             let _mapabove = timer!("MAPABOVE");
-            render_map_above(panel, game, sprites);
+            render_map_above(panel, display_state, game, sprites);
         }
 
         {
@@ -611,7 +611,7 @@ fn render_wall_shadow(panel: &mut Panel, pos: Pos, game: &mut Game, sprites: &Ve
     }
 }
 
-fn render_map_above(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteSheet>) {
+fn render_map_above(panel: &mut Panel, display_state: &DisplayState, game: &mut Game, sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
     let (map_width, map_height) = game.data.map.size();
@@ -635,14 +635,7 @@ fn render_map_above(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteShee
                 }
             }
 
-            let mut fov_result;
-            {
-                let _vis = timer!("VIS");
-                fov_result = game.data.pos_in_fov_edge(player_id, pos, &game.config);
-            }
-            if game.settings.god_mode {
-                fov_result = FovResult::Inside;
-            }
+            let fov_result = display_state.fov[&pos];
 
             // apply a FoW darkening to cells
             if game.config.fog_of_war && fov_result != FovResult::Inside {
@@ -1137,9 +1130,7 @@ fn render_sound_overlay(panel: &mut Panel,
     // even just the vec of commands.
     for pos in display_state.sound_tiles.clone().iter() {
         // NOTE this currently does not take into account FOV!
-        // if game.data.pos_in_fov(player_id, pos, &game.config) {
         panel.highlight_cmd(highlight_sound, *pos);
-        //}
     }
 }
 

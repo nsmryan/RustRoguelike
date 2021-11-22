@@ -97,6 +97,7 @@ pub enum Msg {
     Restart,
     Forget(EntityId),
     Dodged(EntityId),
+    TileFov(Pos, FovResult),
 }
 
 impl fmt::Display for Msg {
@@ -199,6 +200,7 @@ impl fmt::Display for Msg {
             Msg::Restart => write!(f, "restart"),
             Msg::Forget(entity_id) => write!(f, "forget {}", entity_id),
             Msg::Dodged(entity_id) => write!(f, "dodged {}", entity_id),
+            Msg::TileFov(pos, fov_result) => write!(f, "fov_result {} {} {}", pos.x, pos.y, fov_result),
         }
     }
 }

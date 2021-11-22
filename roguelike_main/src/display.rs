@@ -476,6 +476,10 @@ impl Display {
                 self.state.play_effect(Effect::particles(1.0));
             }
 
+            Msg::TileFov(pos, fov_result) => {
+                self.state.fov.insert(pos, fov_result);
+            }
+
             _ => {
             }
         }
@@ -548,6 +552,9 @@ pub struct DisplayState {
     // tiles that heard a sound
     pub sound_tiles: Vec<Pos>,
 
+    // fov information for this turn
+    pub fov: HashMap<Pos, FovResult>,
+
     pub dt: f32,
     pub time: f32,
     pub time_of_cursor_toggle: f32,
@@ -567,6 +574,7 @@ impl DisplayState {
             prev_turn_fov: Vec::new(),
             current_turn_fov: Vec::new(),
             sound_tiles: Vec::new(),
+            fov: HashMap::new(),
             dt: 0.0,
             time: 0.0,
             time_of_cursor_toggle: 0.0,

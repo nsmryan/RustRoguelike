@@ -3,6 +3,8 @@ use logging_timer::timer;
 use roguelike_core::types::*;
 use roguelike_core::ai::*;
 use roguelike_core::messaging::{Msg, MsgLog};
+use roguelike_core::map::{FovResult};
+
 #[cfg(test)]
 use roguelike_core::movement::MoveMode;
 #[cfg(test)]
@@ -91,7 +93,27 @@ pub fn step_logic(game: &mut Game) -> bool {
     // perform count down of entities waiting to be removed
     game.data.entities.count_down();
 
+    post_step(game);
+
     return level_exit_condition_met(&game.data);
+}
+
+pub fn post_step(game: &mut Game) {
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let (map_width, map_height) = game.data.map.size();
+
+    for y in 0..map_height {
+        for x in 0..map_width {
+            let pos = Pos::new(x, y);
+            let fov_result;
+            if game.settings.god_mode {
+                fov_result = FovResult::Inside;
+            } else {
+                fov_result = game.data.pos_in_fov_edge(player_id, pos, &game.config);
+            }
+            game.msg_log.log(Msg::TileFov(pos, fov_result));
+        }
+    }
 }
 
 /// Check whether the exit condition for the game is met.
