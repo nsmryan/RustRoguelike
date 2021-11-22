@@ -138,6 +138,14 @@ pub fn post_step(game: &mut Game) {
             }
         }
     }
+
+    // report entities at the cursor position
+    if let Some(cursor_pos) = game.settings.cursor {
+        let entities = game.data.get_entities_at_pos(cursor_pos);
+        for entity in entities {
+            game.msg_log.log(Msg::EntityAtCursor(entity));
+        }
+    }
 }
 
 /// Check whether the exit condition for the game is met.

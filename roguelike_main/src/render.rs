@@ -320,6 +320,16 @@ fn render_info(panel: &mut Panel,
                 text_list.push("Lower wall".to_string());
             }
 
+            if game.data.map.is_within_bounds(move_x(info_pos, 1)) &&
+               game.data.map[move_x(info_pos, 1)].left_wall != Wall::Empty {
+                text_list.push("Right wall".to_string());
+            }
+
+            if game.data.map.is_within_bounds(move_y(info_pos, -1)) &&
+               game.data.map[move_y(info_pos, -1)].bottom_wall != Wall::Empty {
+                text_list.push("Top wall".to_string());
+            }
+
             if game.data.map[info_pos].left_wall != Wall::Empty {
                 text_list.push("Left wall".to_string());
             }
@@ -1121,8 +1131,7 @@ fn render_game_overlays(panel: &mut Panel,
     if game.config.use_cursor {
         if let Some(cursor_pos) = game.settings.cursor {
             // render trigger plate wall highlight if selected
-            let entities = game.data.get_entities_at_pos(cursor_pos);
-            for entity in entities {
+            for entity in display_state.entities_at_cursor.iter() {
                 if game.data.entities.name[&entity] == EntityName::GateTrigger {
                     let gate_pos = game.data.entities.gate_pos[&entity];
                     let mut highlight_color: Color = game.config.color_red;
@@ -1140,6 +1149,7 @@ fn render_game_overlays(panel: &mut Panel,
                 }
             }
 
+            // TODO track cursor pos and state with message and use here instead
             // render some extra player information if cursor is over player's tile
             if cursor_pos == player_pos {
                 // Draw sound tiles overlay
@@ -1307,10 +1317,10 @@ fn render_overlays(panel: &mut Panel,
     }
 
     // draw attack and fov position highlights
-    if let Some(mouse_xy) = cursor_pos {
+    if let Some(_mouse_xy) = cursor_pos {
         // Draw monster attack overlay
-        let object_ids = game.data.get_entities_at_pos(mouse_xy);
-        for entity_id in object_ids.iter() {
+        //let object_ids = game.data.get_entities_at_pos(mouse_xy);
+        for entity_id in display_state.entities_at_cursor.iter() {
             let pos = game.data.entities.pos[entity_id];
 
             if game.data.pos_in_fov(player_id, pos, &game.config) &&

@@ -252,6 +252,7 @@ impl Display {
                 self.state.use_dirs.clear();
                 self.state.use_dir = None;
                 self.state.hit_positions.clear();
+                self.state.entities_at_cursor.clear();
                 self.state.sound_tiles.clear();
             }
 
@@ -505,6 +506,10 @@ impl Display {
                 self.state.hit_positions.insert(pos);
             }
 
+            Msg::EntityAtCursor(entity_id) => {
+                self.state.entities_at_cursor.push(entity_id);
+            }
+
             _ => {
             }
         }
@@ -583,6 +588,7 @@ pub struct DisplayState {
     pub use_dirs: HashSet<(Pos, Direction)>,
     pub use_dir: Option<Direction>,
     pub hit_positions: HashSet<Pos>,
+    pub entities_at_cursor: Vec<EntityId>,
 
     pub dt: f32,
     pub time: f32,
@@ -608,6 +614,7 @@ impl DisplayState {
             use_dirs: HashSet::new(),
             use_dir: None,
             hit_positions: HashSet::new(),
+            entities_at_cursor: Vec::new(),
             dt: 0.0,
             time: 0.0,
             time_of_cursor_toggle: 0.0,
