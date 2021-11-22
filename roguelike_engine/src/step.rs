@@ -102,6 +102,7 @@ pub fn post_step(game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
     let (map_width, map_height) = game.data.map.size();
 
+    // indicate FoV information
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
@@ -112,6 +113,29 @@ pub fn post_step(game: &mut Game) {
                 fov_result = game.data.pos_in_fov_edge(player_id, pos, &game.config);
             }
             game.msg_log.log(Msg::TileFov(pos, fov_result));
+        }
+    }
+
+    // if in use-mode, output use-direction.
+    if let UseAction::Item(item_class) = game.settings.use_action {
+        if let Some(item_index) = game.data.entities.item_by_class(player_id, item_class) {
+            if let Some(use_dir) = game.settings.use_dir {
+                let use_result = game.data.calculate_use_move(player_id,
+                                                              item_index,
+                                                              use_dir,
+                                                              game.settings.move_mode);
+                if let Some(pos) = use_result.pos {
+                    game.msg_log.log(Msg::UsePos(pos));
+                }
+
+                if let Some(dir) = game.settings.use_dir {
+                    game.msg_log.log(Msg::UseDir(dir));
+                }
+
+                for pos in use_result.hit_positions {
+                    game.msg_log.log(Msg::UseHitPos(pos));
+                }
+            }
         }
     }
 }

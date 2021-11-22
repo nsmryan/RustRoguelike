@@ -247,6 +247,9 @@ impl Display {
     pub fn process_message(&mut self, msg: Msg, data: &mut Level, config: &Config) {
         match msg {
             Msg::StartTurn => {
+                self.state.use_pos = None;
+                self.state.use_dir = None;
+                self.state.hit_positions.clear();
                 self.state.sound_tiles.clear();
             }
 
@@ -480,6 +483,22 @@ impl Display {
                 self.state.fov.insert(pos, fov_result);
             }
 
+            Msg::UsePos(pos) => {
+                self.state.use_pos = Some(pos);
+            }
+
+            Msg::UseDir(dir) => {
+                self.state.use_dir = Some(dir);
+            }
+
+            Msg::UseDirClear => {
+                self.state.use_dir = None;
+            }
+
+            Msg::UseHitPos(pos) => {
+                self.state.hit_positions.push(pos);
+            }
+
             _ => {
             }
         }
@@ -554,6 +573,9 @@ pub struct DisplayState {
 
     // fov information for this turn
     pub fov: HashMap<Pos, FovResult>,
+    pub use_pos: Option<Pos>,
+    pub use_dir: Option<Direction>,
+    pub hit_positions: Vec<Pos>,
 
     pub dt: f32,
     pub time: f32,
@@ -575,6 +597,9 @@ impl DisplayState {
             current_turn_fov: Vec::new(),
             sound_tiles: Vec::new(),
             fov: HashMap::new(),
+            use_pos: None,
+            use_dir: None,
+            hit_positions: Vec::new(),
             dt: 0.0,
             time: 0.0,
             time_of_cursor_toggle: 0.0,

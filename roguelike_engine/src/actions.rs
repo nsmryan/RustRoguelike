@@ -473,6 +473,8 @@ pub fn handle_input_use(input_action: InputAction,
                     msg_log.log(Msg::DropItem(player_id, item_index as u64));
 
                     settings.use_dir = None;
+                    msg_log.log(Msg::UseDirClear);
+
                     change_state(settings, GameState::Playing);
                 }
             }
@@ -494,6 +496,8 @@ pub fn handle_input_use(input_action: InputAction,
 
         (InputAction::AbortUse, true) => {
             settings.use_dir = None;
+            msg_log.log(Msg::UseDirClear);
+
             change_state(settings, GameState::Playing);
         }
 
@@ -564,7 +568,10 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::StartUseInteract, true) => {
             settings.use_action = UseAction::Interact;
+
             settings.use_dir = None;
+            msg_log.log(Msg::UseDirClear);
+
             ensure_leave_cursor(settings, msg_log);
             change_state(settings, GameState::Use);
             msg_log.log(Msg::StartUseInteract);
@@ -701,18 +708,28 @@ fn find_item(item_class: ItemClass, data: &Level) -> Option<usize> {
         return maybe_index;
 }
 
-fn use_dir(dir: Direction, data: &Level, settings: &mut GameSettings, _msg_log: &mut MsgLog) {
+fn use_dir(dir: Direction, data: &Level, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     if let UseAction::Item(item_class) = settings.use_action {
         if let Some(item_index) = find_item(item_class, data) {
             let use_result = data.calculate_use_move(player_id, item_index as usize, dir, settings.move_mode);
-            if use_result.pos.is_some() {
+
+            msg_log.log(Msg::UseDirClear);
+            if let Some(use_pos) = use_result.pos {
                 settings.use_dir = Some(dir);
+                msg_log.log(Msg::UseDir(dir));
+                msg_log.log(Msg::UsePos(use_pos));
+            }
+
+            msg_log.log(Msg::UseHitPosClear);
+            for pos in use_result.hit_positions.iter() {
+                msg_log.log(Msg::UseHitPos(*pos));
             }
         }
     } else if settings.use_action == UseAction::Interact {
         settings.use_dir = Some(dir);
+        msg_log.log(Msg::UseDir(dir));
     } else {
         panic!("Using an item, but no such item in inventory!");
     }
@@ -805,6 +822,7 @@ fn start_use_item(item_class: ItemClass, data: &Level, settings: &mut GameSettin
             settings.use_action = UseAction::Item(item_class);
 
             settings.use_dir = None;
+            msg_log.log(Msg::UseDirClear);
 
             change_state(settings, GameState::Use);
 

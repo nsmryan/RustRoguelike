@@ -98,6 +98,11 @@ pub enum Msg {
     Forget(EntityId),
     Dodged(EntityId),
     TileFov(Pos, FovResult),
+    UsePos(Pos),
+    UseDir(Direction),
+    UseDirClear,
+    UseHitPos(Pos),
+    UseHitPosClear,
 }
 
 impl fmt::Display for Msg {
@@ -201,6 +206,11 @@ impl fmt::Display for Msg {
             Msg::Forget(entity_id) => write!(f, "forget {}", entity_id),
             Msg::Dodged(entity_id) => write!(f, "dodged {}", entity_id),
             Msg::TileFov(pos, fov_result) => write!(f, "fov_result {} {} {}", pos.x, pos.y, fov_result),
+            Msg::UsePos(pos) => write!(f, "use_pos {} {}", pos.x, pos.y),
+            Msg::UseDir(dir) => write!(f, "use_dir {}", dir),
+            Msg::UseDirClear => write!(f, "use_dir_clear"),
+            Msg::UseHitPos(pos) => write!(f, "use_hit_pos {} {}", pos.x, pos.y),
+            Msg::UseHitPosClear => write!(f, "use_hit_clear"),
         }
     }
 }

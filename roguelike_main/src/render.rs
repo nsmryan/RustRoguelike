@@ -1023,7 +1023,6 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
 
         let mut use_pos = None;
         if let UseAction::Item(item_class) = game.settings.use_action {
-
             if let Some(item_index) = game.data.entities.item_by_class(player_id, item_class) {
                 let use_result = game.data.calculate_use_move(player_id,
                                                               item_index,
@@ -1064,6 +1063,7 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
 
 fn render_overlay_use_item(panel: &mut Panel,
                            item_class: ItemClass,
+                           display_state: &mut DisplayState,
                            game: &mut Game,
                            sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -1077,21 +1077,22 @@ fn render_overlay_use_item(panel: &mut Panel,
 
     let sprite_key = lookup_spritekey(sprites, "tiles");
 
+
     if let Some(item_index) = game.data.entities.item_by_class(player_id, item_class) {
-        if let Some(use_dir) = game.settings.use_dir {
-            let use_result = game.data.calculate_use_move(player_id,
-                                                          item_index,
-                                                          use_dir,
-                                                          game.settings.move_mode);
-            if let Some(_pos) = use_result.pos {
+        dbg!();
+        if let Some(use_dir) = display_state.use_dir {
+                dbg!();
+            if let Some(_use_pos) = display_state.use_pos {
+                dbg!();
                 let arrow_pos = use_dir.offset_pos(player_pos, 1);
                 render_arrow(panel, sprite_key, use_dir, arrow_pos, direction_color);
 
-                for hit_pos in use_result.hit_positions {
-                   panel.highlight_cmd(attack_highlight_color, hit_pos);
+                for hit_pos in display_state.hit_positions.iter() {
+                   panel.highlight_cmd(attack_highlight_color, *hit_pos);
                 }
             }
         } else {
+            dbg!();
             // try each direction, keeping track of all hit positions to draw a highlight
             // on those tiles, and keeping track of all move positions to avoid drawing
             // multiple highlights on movements tiles that are re-used between directions.
@@ -1194,7 +1195,7 @@ fn render_game_overlays(panel: &mut Panel,
                 }
             }
         } else if let UseAction::Item(item_class) = game.settings.use_action {
-            render_overlay_use_item(panel, item_class, game, sprites);
+            render_overlay_use_item(panel, item_class, display_state, game, sprites);
         }
     }
 
