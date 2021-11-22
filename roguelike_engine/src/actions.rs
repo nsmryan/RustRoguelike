@@ -831,6 +831,7 @@ fn start_use_item(item_class: ItemClass, data: &Level, settings: &mut GameSettin
                                                          settings.move_mode);
                 if let Some(hit_pos) = use_result.pos {
                     msg_log.log(Msg::UseHitPos(hit_pos));
+                    msg_log.log(Msg::UseOption(hit_pos, *dir));
                 }
             }
 

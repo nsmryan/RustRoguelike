@@ -610,8 +610,6 @@ fn render_wall_shadow(panel: &mut Panel, pos: Pos, game: &mut Game, sprites: &Ve
 }
 
 fn render_map_above(panel: &mut Panel, display_state: &DisplayState, game: &mut Game, sprites: &Vec<SpriteSheet>) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-
     let (map_width, map_height) = game.data.map.size();
 
     let sprite_key = lookup_spritekey(sprites, "tiles");
@@ -1017,23 +1015,13 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
 
         let player_id = game.data.find_by_name(EntityName::Player).unwrap();
         let player_pos = game.data.entities.pos[&player_id];
-        let use_dir = game.settings.use_dir.unwrap(); // already checked for is_some
 
-        let mut use_pos = None;
-        if let UseAction::Item(item_class) = game.settings.use_action {
-            if let Some(item_index) = game.data.entities.item_by_class(player_id, item_class) {
-                let use_result = game.data.calculate_use_move(player_id,
-                                                              item_index,
-                                                              use_dir,
-                                                              game.settings.move_mode);
-                use_pos = use_result.pos;
-            }
-        } else {
-            // if interacting, draw player ghost only if the tile is clear
+        let mut use_pos;
+        if let Some(use_dir) = display_state.use_dir {
             let target_pos = use_dir.offset_pos(player_pos, 1);
-            if game.data.clear_path(player_pos, target_pos, false) {
-                use_pos = Some(target_pos);
-            }
+            use_pos = Some(target_pos);
+        } else {
+            use_pos = display_state.use_pos;
         }
 
         if let Some(pos) = use_pos {
@@ -1076,7 +1064,7 @@ fn render_overlay_use_item(panel: &mut Panel,
     let sprite_key = lookup_spritekey(sprites, "tiles");
 
 
-    if let Some(item_index) = game.data.entities.item_by_class(player_id, item_class) {
+    if let Some(_item_index) = game.data.entities.item_by_class(player_id, item_class) {
         if let Some(use_dir) = display_state.use_dir {
             if let Some(_use_pos) = display_state.use_pos {
                 let arrow_pos = use_dir.offset_pos(player_pos, 1);
@@ -1087,28 +1075,21 @@ fn render_overlay_use_item(panel: &mut Panel,
                 }
             }
         } else {
-            // try each direction, keeping track of all hit positions to draw a highlight
-            // on those tiles, and keeping track of all move positions to avoid drawing
-            // multiple highlights on movements tiles that are re-used between directions.
-            // TODO may need to move this calculation into start_use_item and 
-            // emit the set of hit positions.
-            for dir in Direction::move_actions().iter() {
-                let use_result = game.data.calculate_use_move(player_id,
-                                                             item_index,
-                                                             *dir,
-                                                             game.settings.move_mode);
-                if let Some(pos) = use_result.pos {
-                    let arrow_pos = dir.offset_pos(player_pos, 1);
-                    render_arrow(panel, sprite_key, *dir, arrow_pos, direction_color);
+            for (use_pos, use_dir) in display_state.use_dirs.iter() {
+                // skip player positions for highlights
+                if *use_pos != player_pos {
+                    panel.highlight_cmd(highlight_color, *use_pos);
                 }
-            }
-            
-            for use_pos in display_state.use_positions.iter() {
-               panel.highlight_cmd(highlight_color, *use_pos);
+
+                let arrow_pos = use_dir.offset_pos(player_pos, 1);
+                render_arrow(panel, sprite_key, *use_dir, arrow_pos, direction_color);
             }
 
             for hit_pos in display_state.hit_positions.iter() {
-               panel.highlight_cmd(attack_highlight_color, *hit_pos);
+                // skip the player's position for attack highlights.
+                if *hit_pos != player_pos {
+                   panel.highlight_cmd(attack_highlight_color, *hit_pos);
+                }
             }
         }
     }

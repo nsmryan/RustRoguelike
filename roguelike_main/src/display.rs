@@ -249,7 +249,7 @@ impl Display {
         match msg {
             Msg::StartTurn => {
                 self.state.use_pos = None;
-                self.state.use_positions.clear();
+                self.state.use_dirs.clear();
                 self.state.use_dir = None;
                 self.state.hit_positions.clear();
                 self.state.sound_tiles.clear();
@@ -487,11 +487,14 @@ impl Display {
 
             Msg::UsePos(pos) => {
                 self.state.use_pos = Some(pos);
-                self.state.use_positions.insert(pos);
             }
 
             Msg::UseDir(dir) => {
                 self.state.use_dir = Some(dir);
+            }
+
+            Msg::UseOption(pos, dir) => {
+                self.state.use_dirs.insert((pos, dir));
             }
 
             Msg::UseDirClear => {
@@ -577,7 +580,7 @@ pub struct DisplayState {
     // fov information for this turn
     pub fov: HashMap<Pos, FovResult>,
     pub use_pos: Option<Pos>,
-    pub use_positions: HashSet<Pos>,
+    pub use_dirs: HashSet<(Pos, Direction)>,
     pub use_dir: Option<Direction>,
     pub hit_positions: HashSet<Pos>,
 
@@ -602,7 +605,7 @@ impl DisplayState {
             sound_tiles: Vec::new(),
             fov: HashMap::new(),
             use_pos: None,
-            use_positions: HashSet::new(),
+            use_dirs: HashSet::new(),
             use_dir: None,
             hit_positions: HashSet::new(),
             dt: 0.0,
