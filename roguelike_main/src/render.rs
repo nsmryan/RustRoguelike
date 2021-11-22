@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use logging_timer::timer;
 
 use roguelike_core::types::*;
@@ -1092,8 +1090,6 @@ fn render_overlay_use_item(panel: &mut Panel,
             // try each direction, keeping track of all hit positions to draw a highlight
             // on those tiles, and keeping track of all move positions to avoid drawing
             // multiple highlights on movements tiles that are re-used between directions.
-            let mut hit_positions: HashSet<Pos> = HashSet::new();
-            let mut move_positions: HashSet<Pos> = HashSet::new();
             // TODO may need to move this calculation into start_use_item and 
             // emit the set of hit positions.
             for dir in Direction::move_actions().iter() {
@@ -1102,21 +1098,14 @@ fn render_overlay_use_item(panel: &mut Panel,
                                                              *dir,
                                                              game.settings.move_mode);
                 if let Some(pos) = use_result.pos {
-                    if !move_positions.contains(&pos) {
-                       panel.highlight_cmd(highlight_color, pos);
-                    }
-                    move_positions.insert(pos);
                     let arrow_pos = dir.offset_pos(player_pos, 1);
                     render_arrow(panel, sprite_key, *dir, arrow_pos, direction_color);
-                    hit_positions.extend(use_result.hit_positions.iter());
                 }
             }
-
-            /*
-            for hit_pos in hit_positions {
-               panel.highlight_cmd(attack_highlight_color, hit_pos);
+            
+            for use_pos in display_state.use_positions.iter() {
+               panel.highlight_cmd(highlight_color, *use_pos);
             }
-            */
 
             for hit_pos in display_state.hit_positions.iter() {
                panel.highlight_cmd(attack_highlight_color, *hit_pos);
