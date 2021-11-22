@@ -1079,11 +1079,8 @@ fn render_overlay_use_item(panel: &mut Panel,
 
 
     if let Some(item_index) = game.data.entities.item_by_class(player_id, item_class) {
-        dbg!();
         if let Some(use_dir) = display_state.use_dir {
-                dbg!();
             if let Some(_use_pos) = display_state.use_pos {
-                dbg!();
                 let arrow_pos = use_dir.offset_pos(player_pos, 1);
                 render_arrow(panel, sprite_key, use_dir, arrow_pos, direction_color);
 
@@ -1092,7 +1089,6 @@ fn render_overlay_use_item(panel: &mut Panel,
                 }
             }
         } else {
-            dbg!();
             // try each direction, keeping track of all hit positions to draw a highlight
             // on those tiles, and keeping track of all move positions to avoid drawing
             // multiple highlights on movements tiles that are re-used between directions.
