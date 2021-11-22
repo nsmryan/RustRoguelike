@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 use bmp::Image;
 
@@ -496,7 +497,7 @@ impl Display {
             }
 
             Msg::UseHitPos(pos) => {
-                self.state.hit_positions.push(pos);
+                self.state.hit_positions.insert(pos);
             }
 
             _ => {
@@ -575,7 +576,7 @@ pub struct DisplayState {
     pub fov: HashMap<Pos, FovResult>,
     pub use_pos: Option<Pos>,
     pub use_dir: Option<Direction>,
-    pub hit_positions: Vec<Pos>,
+    pub hit_positions: HashSet<Pos>,
 
     pub dt: f32,
     pub time: f32,
@@ -599,7 +600,7 @@ impl DisplayState {
             fov: HashMap::new(),
             use_pos: None,
             use_dir: None,
-            hit_positions: Vec::new(),
+            hit_positions: HashSet::new(),
             dt: 0.0,
             time: 0.0,
             time_of_cursor_toggle: 0.0,

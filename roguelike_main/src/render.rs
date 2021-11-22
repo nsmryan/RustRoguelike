@@ -1094,6 +1094,8 @@ fn render_overlay_use_item(panel: &mut Panel,
             // multiple highlights on movements tiles that are re-used between directions.
             let mut hit_positions: HashSet<Pos> = HashSet::new();
             let mut move_positions: HashSet<Pos> = HashSet::new();
+            // TODO may need to move this calculation into start_use_item and 
+            // emit the set of hit positions.
             for dir in Direction::move_actions().iter() {
                 let use_result = game.data.calculate_use_move(player_id,
                                                              item_index,
@@ -1110,8 +1112,14 @@ fn render_overlay_use_item(panel: &mut Panel,
                 }
             }
 
+            /*
             for hit_pos in hit_positions {
                panel.highlight_cmd(attack_highlight_color, hit_pos);
+            }
+            */
+
+            for hit_pos in display_state.hit_positions.iter() {
+               panel.highlight_cmd(attack_highlight_color, *hit_pos);
             }
         }
     }
