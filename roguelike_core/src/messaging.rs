@@ -14,8 +14,9 @@ use crate::movement::Attack;
 pub enum Msg {
     StartTurn,
     Pass,
-    Crushed(EntityId, Pos), // object that did the crushing, position
-    Sound(EntityId, Pos, usize, bool), // object causing sound, location, radius, whether animation will play
+    Crushed(EntityId, Pos), // entity that did the crushing, position
+    Sound(EntityId, Pos, usize), // entity causing sound, location, radius
+    SoundHitTile(EntityId, Pos, usize, Pos), // entity causing sound, source pos, radius, hit pos
     SoundTrapTriggered(EntityId, EntityId), // trap, entity
     SpikeTrapTriggered(EntityId, EntityId), // trap, entity
     BlinkTrapTriggered(EntityId, EntityId), // trap, entity
@@ -98,6 +99,7 @@ pub enum Msg {
     Forget(EntityId),
     Dodged(EntityId),
     TileFov(Pos, FovResult),
+    EntityInFov(EntityId, FovResult),
     UsePos(Pos),
     UseDir(Direction),
     UseDirClear,
@@ -113,7 +115,8 @@ impl fmt::Display for Msg {
             Msg::StartTurn => write!(f, "startturn"),
             Msg::Pass => write!(f, "pass"),
             Msg::Crushed(entity_id, pos) => write!(f, "crushed {} {} {}", entity_id, pos.x, pos.y),
-            Msg::Sound(entity_id, pos, radius, animate) => write!(f, "sound {} {} {} {} {}", entity_id, pos.x, pos.y, radius, animate),
+            Msg::Sound(entity_id, pos, radius) => write!(f, "sound {} {} {} {}", entity_id, pos.x, pos.y, radius),
+            Msg::SoundHitTile(entity_id, source_pos, radius, hit_pos) => write!(f, "sound {} {} {} {} {} {}", entity_id, source_pos.x, source_pos.y, radius, hit_pos.x, hit_pos.y),
             Msg::SoundTrapTriggered(trap_id, entity_id) => write!(f, "sound_trap_triggered {} {}", trap_id, entity_id),
             Msg::SpikeTrapTriggered(trap_id, entity_id) => write!(f, "spike_trap_triggered {} {}", trap_id, entity_id),
             Msg::BlinkTrapTriggered(trap_id, entity_id) => write!(f, "blink_trap_triggered {} {}", trap_id, entity_id),
@@ -208,6 +211,7 @@ impl fmt::Display for Msg {
             Msg::Forget(entity_id) => write!(f, "forget {}", entity_id),
             Msg::Dodged(entity_id) => write!(f, "dodged {}", entity_id),
             Msg::TileFov(pos, fov_result) => write!(f, "fov_result {} {} {}", pos.x, pos.y, fov_result),
+            Msg::EntityInFov(entity_id, in_fov) => write!(f, "entity_in_fov {} {}", entity_id, in_fov),
             Msg::UsePos(pos) => write!(f, "use_pos {} {}", pos.x, pos.y),
             Msg::UseDir(dir) => write!(f, "use_dir {}", dir),
             Msg::UseDirClear => write!(f, "use_dir_clear"),
@@ -228,7 +232,7 @@ impl Msg {
             }
 
             Msg::Crushed(_obj_id, _pos) => {
-                return "An object has been crushed".to_string();
+                return "An entity has been crushed".to_string();
             }
 
             Msg::Pass => {
@@ -536,18 +540,17 @@ impl MsgLog {
 
     pub fn pop(&mut self) -> Option<Msg> {
         let msg = self.messages.pop_front();
-        if let Some(msg) = msg {
-            self.turn_messages.push_back(msg);
-        }
         return msg;
     }
 
     pub fn log(&mut self, msg: Msg) {
         self.messages.push_back(msg);
+        self.turn_messages.push_back(msg);
     }
 
     pub fn log_front(&mut self, msg: Msg) {
         self.messages.push_front(msg);
+        self.turn_messages.push_front(msg);
     }
 
     pub fn clear(&mut self) {

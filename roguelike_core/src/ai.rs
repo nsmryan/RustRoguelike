@@ -115,9 +115,8 @@ pub fn ai_idle(monster_id: EntityId,
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     if config.sound_golem_idle_radius > 0 {
-        let should_animate = true;
         let monster_pos = data.entities.pos[&monster_id];
-        msg_log.log(Msg::Sound(monster_id, monster_pos, config.sound_golem_idle_radius, should_animate));
+        msg_log.log(Msg::Sound(monster_id, monster_pos, config.sound_golem_idle_radius));
     }
 
     if ai_is_in_fov(monster_id, player_id, data, config) {

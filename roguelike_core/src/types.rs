@@ -249,15 +249,18 @@ impl Level {
         return radius;
     }
 
-    pub fn is_in_fov(&self, entity_id: EntityId, other_id: EntityId, config: &Config) -> bool {
+    pub fn is_in_fov(&self, entity_id: EntityId, other_id: EntityId, config: &Config) -> FovResult {
         let stance = self.entities.stance[&entity_id];
         let other_stance = self.entities.stance.get(&other_id).unwrap_or(&Stance::Standing);
         let crouching = stance == Stance::Crouching || other_stance == &Stance::Crouching;
 
         let other_pos = self.entities.pos[&other_id];
 
-        let is_removing = self.entities.needs_removal[&other_id];
-        return !is_removing && self.fov_check(entity_id, other_pos, crouching, config) == FovResult::Inside;
+        if self.entities.needs_removal[&other_id] {
+            return FovResult::Outside;
+        } else {
+            return self.fov_check(entity_id, other_pos, crouching, config);
+        }
     }
 
     pub fn pos_in_fov_edge(&self, entity_id: EntityId, other_pos: Pos, config: &Config) -> FovResult {

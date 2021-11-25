@@ -256,7 +256,7 @@ fn render_info(panel: &mut Panel,
         // only display first object
         if let Some(obj_id) = object_ids.first() {
             let entity_in_fov = game.settings.god_mode ||
-                                game.data.is_in_fov(player_id, *obj_id, &game.config);
+                                display_state.entities_in_fov[&obj_id] == FovResult::Inside;
 
             // only display things in the player's FOV
             if entity_in_fov {
@@ -934,8 +934,6 @@ fn render_entity(panel: &mut Panel,
     let pos = game.data.entities.pos[&entity_id];
     animation_result.pos = pos;
 
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-
     // only draw if within the map (outside is (-1, -1) like if in inventory)
     // and not about to be removed.
     if !game.data.map.is_within_bounds(pos) ||
@@ -943,9 +941,8 @@ fn render_entity(panel: &mut Panel,
            return None;
     }
 
-    let is_in_fov = 
-       game.data.is_in_fov(player_id, entity_id, &game.config) ||
-       game.settings.god_mode;
+    let is_in_fov =
+       display_state.entities_in_fov[&entity_id] == FovResult::Inside || game.settings.god_mode;
 
     if is_in_fov {
         if let Some(anims) = display_state.animations.get_mut(&entity_id) {
@@ -988,12 +985,7 @@ fn render_entity(panel: &mut Panel,
     } else {
         // if not in FoV, see if we need to add an impression for a golem
         if game.data.entities.typ[&entity_id] == EntityType::Enemy {
-            game.data.entities.status[&player_id].extra_fov += 1;
-            let is_in_fov_ext = 
-               game.data.is_in_fov(player_id, entity_id, &game.config);
-            game.data.entities.status[&player_id].extra_fov -= 1;
-
-            if is_in_fov_ext {
+            if display_state.entities_in_fov[&entity_id] == FovResult::Edge {
                 if display_state.impressions.iter().all(|impresssion| impresssion.pos != pos) {
                     let tiles = lookup_spritekey(sprites, "tiles");
                     let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
@@ -1026,7 +1018,7 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
         let player_id = game.data.find_by_name(EntityName::Player).unwrap();
         let player_pos = game.data.entities.pos[&player_id];
 
-        let mut use_pos;
+        let use_pos;
         if let Some(use_dir) = display_state.use_dir {
             let target_pos = use_dir.offset_pos(player_pos, 1);
             use_pos = Some(target_pos);
@@ -1216,13 +1208,14 @@ fn render_game_overlays(panel: &mut Panel,
                game.data.entities.status[&entity_id].alive {
                render_attack_overlay(panel,
                                      game,
+                                     display_state,
                                      entity_id,
                                      sprites);
             }
         }
     }
 
-    render_overlay_alertness(panel, tiles_key, game);
+    render_overlay_alertness(panel, display_state, tiles_key, game);
 }
 
 fn render_overlays(panel: &mut Panel,
@@ -1305,9 +1298,7 @@ fn render_overlays(panel: &mut Panel,
             for x in 0..map_width {
                 let pos = Pos::new(x, y);
 
-                let is_in_fov =
-                    game.data.pos_in_fov(player_id, pos, &game.config);
-                if is_in_fov {
+                if display_state.fov[&pos] == FovResult::Inside {
                     //tile_sprite.draw_char(panel, MAP_GROUND as char, pos, game.config.color_light_green);
                     let sprite = Sprite::new(MAP_GROUND as u32, tiles_key);
                     panel.sprite_cmd(sprite, game.config.color_light_green, pos);
@@ -1319,16 +1310,15 @@ fn render_overlays(panel: &mut Panel,
     // draw attack and fov position highlights
     if let Some(_mouse_xy) = cursor_pos {
         // Draw monster attack overlay
-        //let object_ids = game.data.get_entities_at_pos(mouse_xy);
-        for entity_id in display_state.entities_at_cursor.iter() {
-            let pos = game.data.entities.pos[entity_id];
+        for entity_id in display_state.entities_at_cursor.clone() {
+            let pos = game.data.entities.pos[&entity_id];
 
-            if game.data.pos_in_fov(player_id, pos, &game.config) &&
-               *entity_id != player_id &&
-               game.data.entities.status[entity_id].alive {
-               render_attack_overlay(panel, game, *entity_id, sprites);
-               render_fov_overlay(panel, game, *entity_id);
-               render_movement_overlay(panel, game, *entity_id, sprites);
+            if display_state.fov[&pos] == FovResult::Inside &&
+               entity_id != player_id &&
+               game.data.entities.status[&entity_id].alive {
+               render_attack_overlay(panel, game, display_state, entity_id, sprites);
+               render_fov_overlay(panel, game, entity_id);
+               render_movement_overlay(panel, game, display_state, entity_id, sprites);
             }
         }
     }
@@ -1421,15 +1411,15 @@ fn render_overlays(panel: &mut Panel,
     }
 }
 
-fn render_overlay_alertness(panel: &mut Panel, sprite_key: SpriteKey, game: &mut Game) {
+fn render_overlay_alertness(panel: &mut Panel, display_state: &mut DisplayState, sprite_key: SpriteKey, game: &mut Game) {
     let alertness_color = game.config.color_pink;
     let scale = 0.5;
     for entity_id in game.data.entities.ids.iter() {
-        let pos = game.data.entities.pos[entity_id];
-
-        if pos.x == -1 && pos.y == -1 {
+        if display_state.entities_in_fov[&entity_id] != FovResult::Inside {
             continue;
         }
+
+        let pos = game.data.entities.pos[entity_id];
 
         let mut status_drawn: bool = false;
         if let Some(status) = game.data.entities.status.get(entity_id) {
@@ -1515,6 +1505,7 @@ fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> 
 
 fn render_attack_overlay(panel: &mut Panel,
                          game: &mut Game,
+                         display_state: &mut DisplayState,
                          entity_id: EntityId,
                          sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -1539,7 +1530,7 @@ fn render_attack_overlay(panel: &mut Panel,
                      let in_bounds = game.data.map.is_within_bounds(*pos);
                      let traps_block = false;
                      let clear = game.data.clear_path(object_pos, *pos, traps_block);
-                     let player_can_see = in_bounds && game.data.pos_in_fov(player_id, *pos, &game.config);
+                     let player_can_see = in_bounds && display_state.fov[pos] == FovResult::Inside;
                      // check for player position so it gets highligted, even
                      // though the player causes 'clear_path' to fail.
                      return player_can_see && in_bounds && (clear || *pos == player_pos);
@@ -1553,6 +1544,8 @@ fn render_attack_overlay(panel: &mut Panel,
     }
 }
 
+// NOTE(frontend) the calculations done below would require a front end to
+// know all tiles visible to all entities.
 fn render_fov_overlay(panel: &mut Panel,
                       game: &mut Game,
                       entity_id: EntityId) {
@@ -1578,10 +1571,9 @@ fn render_fov_overlay(panel: &mut Panel,
 
 fn render_movement_overlay(panel: &mut Panel,
                            game: &mut Game,
+                           display_state: &mut DisplayState,
                            entity_id: EntityId,
                            sprites: &Vec<SpriteSheet>) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-
     let entity_pos = game.data.entities.pos[&entity_id];
 
     let mut highlight_color = game.config.color_light_grey;
@@ -1591,8 +1583,7 @@ fn render_movement_overlay(panel: &mut Panel,
 
     if let Some(reach) = game.data.entities.movement.get(&entity_id) {
         for move_pos in reach.reachables(entity_pos) {
-            let visible = game.data.pos_in_fov(player_id, move_pos, &game.config);
-            if visible {
+            if display_state.fov[&move_pos] == FovResult::Inside {
                 let chr = game.data.entities.chr[&entity_id];
 
                 let sprite = Sprite::new(chr as u32, tiles_key);

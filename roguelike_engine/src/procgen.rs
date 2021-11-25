@@ -487,7 +487,8 @@ fn place_monsters(game: &mut Game, player_id: EntityId, cmds: &Vec<ProcCmd>) {
                     _ => { id = None; },
                 }
                 if let Some(id) = id {
-                    if game.data.is_in_fov(id, player_id, &game.config) {
+                    // if the entity can see the player, turn it around so it is facing away.
+                    if game.data.is_in_fov(id, player_id, &game.config) == FovResult::Inside {
                         game.data.entities.direction[&id] = 
                             game.data.entities.direction[&id].reverse();
                     }

@@ -40,8 +40,6 @@ pub fn step_logic(game: &mut Game) -> bool {
         game.data.entities.status[id].blinked = false;
     }
 
-    game.msg_log.log_front(Msg::StartTurn);
-
     resolve_messages(game);
 
     let won_level = level_exit_condition_met(&game.data);
@@ -112,8 +110,13 @@ pub fn post_step(game: &mut Game) {
             } else {
                 fov_result = game.data.pos_in_fov_edge(player_id, pos, &game.config);
             }
-            game.msg_log.log(Msg::TileFov(pos, fov_result));
+            game.msg_log.log_front(Msg::TileFov(pos, fov_result));
         }
+    }
+
+    for entity_id in game.data.entities.ids.iter() {
+        let in_fov = game.data.is_in_fov(player_id, *entity_id, &game.config);
+        game.msg_log.log_front(Msg::EntityInFov(*entity_id, in_fov));
     }
 
     // if in use-mode, output use-direction.
@@ -125,15 +128,15 @@ pub fn post_step(game: &mut Game) {
                                                               use_dir,
                                                               game.settings.move_mode);
                 if let Some(pos) = use_result.pos {
-                    game.msg_log.log(Msg::UsePos(pos));
+                    game.msg_log.log_front(Msg::UsePos(pos));
                 }
 
                 if let Some(dir) = game.settings.use_dir {
-                    game.msg_log.log(Msg::UseDir(dir));
+                    game.msg_log.log_front(Msg::UseDir(dir));
                 }
 
                 for pos in use_result.hit_positions {
-                    game.msg_log.log(Msg::UseHitPos(pos));
+                    game.msg_log.log_front(Msg::UseHitPos(pos));
                 }
             }
         }
@@ -143,9 +146,12 @@ pub fn post_step(game: &mut Game) {
     if let Some(cursor_pos) = game.settings.cursor {
         let entities = game.data.get_entities_at_pos(cursor_pos);
         for entity in entities {
-            game.msg_log.log(Msg::EntityAtCursor(entity));
+            game.msg_log.log_front(Msg::EntityAtCursor(entity));
         }
     }
+
+    game.msg_log.log_front(Msg::StartTurn);
+
 }
 
 /// Check whether the exit condition for the game is met.

@@ -36,17 +36,20 @@ pub fn resolve_messages(game: &mut Game) {
                 crushed(entity_id, pos, &mut game.data, &mut game.msg_log, &game.config);
             }
 
-            Msg::Sound(cause_id, source_pos, radius, _should_animate) => {
+            Msg::Sound(cause_id, source_pos, radius) => {
                 let sound_aoe =
                     aoe_fill(&game.data.map, AoeEffect::Sound, source_pos, radius, &game.config);
 
-                let who_heard =
-                    game.data.within_aoe(&sound_aoe);
+                for sound_pos in sound_aoe.positions() {
+                    game.msg_log.log_front(Msg::SoundHitTile(cause_id, source_pos, radius, sound_pos));
+                }
+            }
 
-                for obj_id in who_heard {
-                    if obj_id != cause_id {
+            Msg::SoundHitTile(cause_id, source_pos, _radius, tile_pos) => {
+                for heard_id in game.data.get_entities_at_pos(tile_pos) {
+                    if heard_id != cause_id {
                         // TODO replace with an Alerted message
-                        game.data.entities.messages[&obj_id].push(Message::Sound(cause_id, source_pos));
+                        game.data.entities.messages[&heard_id].push(Message::Sound(cause_id, source_pos));
                     }
                 }
             }
@@ -61,7 +64,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::JumpWall(entity_id, _start, end) => {
-                game.msg_log.log_front(Msg::Sound(entity_id, end, game.config.sound_radius_run, true));
+                game.msg_log.log_front(Msg::Sound(entity_id, end, game.config.sound_radius_run));
             }
 
 
@@ -77,7 +80,7 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::Yell(entity_id) => {
                 let pos = game.data.entities.pos[&entity_id];
-                game.msg_log.log_front(Msg::Sound(entity_id, pos, game.config.yell_radius, true));
+                game.msg_log.log_front(Msg::Sound(entity_id, pos, game.config.yell_radius));
                 game.data.entities.took_turn[&entity_id] = true;
             }
 
@@ -92,7 +95,7 @@ pub fn resolve_messages(game: &mut Game) {
             Msg::Attack(attacker, attacked, _damage) => {
                 // TODO move attack function here, and remove push Msg::Attack in attack function
                 let pos = game.data.entities.pos[&attacked];
-                game.msg_log.log_front(Msg::Sound(attacker, pos, game.config.sound_radius_attack, true)); 
+                game.msg_log.log_front(Msg::Sound(attacker, pos, game.config.sound_radius_attack)); 
             }
 
             Msg::Stabbed(_attacker_id, _attacked_id) => {
@@ -158,7 +161,7 @@ pub fn resolve_messages(game: &mut Game) {
                 let source_pos = game.data.entities.pos[&trap];
 
                 // the triggering entity is considered the source of the sound
-                game.msg_log.log(Msg::Sound(entity_id, source_pos, game.config.sound_radius_trap, true));
+                game.msg_log.log(Msg::Sound(entity_id, source_pos, game.config.sound_radius_trap));
             }
 
             Msg::BlinkTrapTriggered(trap, entity_id) => {
@@ -372,7 +375,7 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::Ping(entity_id, pos) => {
                 if use_energy(entity_id, &mut game.data, &mut game.msg_log) {
-                    game.msg_log.log_front(Msg::Sound(entity_id, pos, game.config.ping_sound_radius, true));
+                    game.msg_log.log_front(Msg::Sound(entity_id, pos, game.config.ping_sound_radius));
                 }
             }
 
@@ -680,13 +683,13 @@ fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, data: &mut Level
     let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
     let amount = 1;
     msg_log.log(Msg::Pushed(entity_id, hit_entity, direction, amount, false));
-    msg_log.log_front(Msg::Sound(entity_id, second, config.sound_radius_hammer, true));
+    msg_log.log_front(Msg::Sound(entity_id, second, config.sound_radius_hammer));
 
     if let Some(hp) = data.entities.hp.get(&hit_entity) {
         let damage = hp.hp;
 
         msg_log.log(Msg::Killed(entity_id, hit_entity, damage));
-        msg_log.log(Msg::Sound(entity_id, second, config.sound_radius_blunt, true));
+        msg_log.log(Msg::Sound(entity_id, second, config.sound_radius_blunt));
     }
 }
 
@@ -734,7 +737,7 @@ fn process_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attac
                 }
 
                 msg_log.log(Msg::Froze(hit_entity, stun_turns));
-                msg_log.log(Msg::Sound(entity_id, hit_pos, hit_sound_radius, true));
+                msg_log.log(Msg::Sound(entity_id, hit_pos, hit_sound_radius));
             }
         }
     } else {
@@ -1078,7 +1081,7 @@ fn hammer_hit_wall(entity: EntityId, blocked: Blocked, data: &mut Level, msg_log
 
         let next_pos = next_from_to(entity_pos, hit_pos);
         msg_log.log_front(Msg::Crushed(entity, next_pos)); 
-        msg_log.log_front(Msg::Sound(entity, blocked.end_pos, config.sound_radius_attack, true)); 
+        msg_log.log_front(Msg::Sound(entity, blocked.end_pos, config.sound_radius_attack)); 
     } else {
         // hammer hit an inter-tile wall
         let wall_loc: Pos;
@@ -1210,7 +1213,7 @@ fn crushed(entity_id: EntityId, pos: Pos, data: &mut Level, msg_log: &mut MsgLog
         }
     }
 
-    msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_crushed, true));
+    msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_crushed));
 }
 
 fn use_energy(entity_id: EntityId, data: &mut Level, msg_log: &mut MsgLog) -> bool {
@@ -1336,7 +1339,7 @@ fn throw_item(player_id: EntityId,
     data.entities.took_turn[&player_id] = true;
 
     // NOTE the radius here is the stone radius, regardless of item type
-    msg_log.log_front(Msg::Sound(player_id, hit_pos, config.sound_radius_stone, true));
+    msg_log.log_front(Msg::Sound(player_id, hit_pos, config.sound_radius_stone));
 
     if data.entities.item[&item_id] == Item::SeedOfStone {
         data.map[hit_pos] = Tile::wall();
@@ -1491,8 +1494,8 @@ fn make_move_sound(entity_id: EntityId,
         sound_radius -= 1;
     }
 
-    msg_log.log_front(Msg::Sound(entity_id, pos, sound_radius, true));
-    msg_log.log_front(Msg::Sound(entity_id, original_pos, sound_radius, true));
+    msg_log.log_front(Msg::Sound(entity_id, pos, sound_radius));
+    msg_log.log_front(Msg::Sound(entity_id, original_pos, sound_radius));
 }
 
 fn process_moved_message(entity_id: EntityId,
@@ -1519,8 +1522,8 @@ fn process_moved_message(entity_id: EntityId,
                 make_move_sound(entity_id, original_pos, pos, *move_mode, data, msg_log, config);
             }
         } else if pos != original_pos && data.entities.typ[&entity_id] == EntityType::Enemy {
-            msg_log.log_front(Msg::Sound(entity_id, original_pos, config.sound_radius_monster, true));
-            msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_monster, true));
+            msg_log.log_front(Msg::Sound(entity_id, original_pos, config.sound_radius_monster));
+            msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_monster));
         } // NOTE other entities do not make sounds on movement, such as items
     }
 

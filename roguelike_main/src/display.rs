@@ -254,6 +254,8 @@ impl Display {
                 self.state.hit_positions.clear();
                 self.state.entities_at_cursor.clear();
                 self.state.sound_tiles.clear();
+                self.state.fov.clear();
+                self.state.entities_in_fov.clear();
             }
 
             Msg::CursorState(state, pos) => {
@@ -267,33 +269,37 @@ impl Display {
                 self.state.time_of_cursor_toggle = self.state.time;
             }
 
-            Msg::Sound(cause_id, source_pos, radius, should_animate) => {
-                if should_animate {
-                    // NOTE this is a duplicate computation, also done in logic message processing
+            Msg::Sound(_cause_id, _source_pos, _radius) => {
+            }
+
+            Msg::SoundHitTile(cause_id, source_pos, radius, hit_pos) => {
+                // Add to this turn's sound tiles list
+                self.state.sound_tiles.push(hit_pos);
+
+                let player_id = data.find_by_name(EntityName::Player).unwrap();
+                let player_pos = data.entities.pos[&player_id];
+
+                // only play the sound effect if the player position is included
+                let sound_hits_player = hit_pos == player_pos;
+                let sound_from_monster = data.entities.typ.get(&cause_id) == Some(&EntityType::Enemy);
+
+                let player_can_see_source = 
+                    self.state.entities_in_fov[&cause_id] == FovResult::Inside;
+
+                let visible_monster_sound = sound_from_monster && player_can_see_source;
+                if !visible_monster_sound && sound_hits_player {
                     let sound_aoe =
                         aoe_fill(&data.map, AoeEffect::Sound, source_pos, radius, config);
 
-                    // Add to this turn's sound tiles list
-                    self.state.sound_tiles.extend(sound_aoe.positions().iter());
+                    let sound_effect = Effect::sound(sound_aoe);
+                    self.state.play_effect(sound_effect);
 
-                    let player_id = data.find_by_name(EntityName::Player).unwrap();
-                    let player_pos = data.entities.pos[&player_id];
-
-                    // only play the sound effect if the player position is included
-                    let sound_hits_player = sound_aoe.positions().iter().any(|pos| *pos == player_pos);
-                    let sound_from_monster = data.entities.typ.get(&cause_id) == Some(&EntityType::Enemy);
-                    let player_can_see_source = data.is_in_fov(player_id, cause_id, config);
-                    let visible_monster_sound = sound_from_monster && player_can_see_source;
-                    if !visible_monster_sound && sound_hits_player {
-                        let sound_effect = Effect::sound(sound_aoe);
-                        self.state.play_effect(sound_effect);
-
-                        let pos = data.entities.pos[&cause_id];
-                        // NOTE it is slightly odd to look up this sprite sheet here...
-                        let tiles = lookup_spritekey(&self.sprites, "tiles");
-                        let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
-                        self.state.impressions.push(Impression::new(impression_sprite, pos));
-                    }
+                    let pos = data.entities.pos[&cause_id];
+                    // NOTE it is slightly odd to look up this sprite sheet here and not in
+                    // render.rs.
+                    let tiles = lookup_spritekey(&self.sprites, "tiles");
+                    let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
+                    self.state.impressions.push(Impression::new(impression_sprite, pos));
                 }
             }
 
@@ -435,8 +441,9 @@ impl Display {
                 self.state.prev_turn_fov.extend(self.state.current_turn_fov.iter());
                 self.state.current_turn_fov.clear();
 
+                // TODO try to use fov and entities_in_fov instead of recalculating
                 for entity_id in data.entities.ids.clone() {
-                    if entity_id != player_id && data.is_in_fov(player_id, entity_id, config) {
+                    if entity_id != player_id && self.state.entities_in_fov[&entity_id] == FovResult::Inside {
                         self.state.current_turn_fov.push(entity_id);
                     }
                 }
@@ -446,7 +453,7 @@ impl Display {
                         continue;
                     }
 
-                    if !data.is_in_fov(player_id, *entity_id, config) {
+                    if self.state.entities_in_fov[entity_id] != FovResult::Inside {
                         if let Some(sprite) = self.state.drawn_sprites.get(entity_id) {
                             let pos = data.entities.pos[entity_id];
                             self.state.impressions.push(Impression::new(*sprite, pos));
@@ -457,12 +464,7 @@ impl Display {
                 /* Remove impressions that are currently visible */
                 let mut impressions_visible = Vec::new();
                 for (index, impression) in self.state.impressions.iter().enumerate() {
-                    data.entities.status[&player_id].extra_fov += 1;
-                    let is_in_fov_ext = 
-                       data.pos_in_fov(player_id, impression.pos, &config);
-                    data.entities.status[&player_id].extra_fov -= 1;
-
-                    if is_in_fov_ext {
+                    if self.state.fov[&impression.pos] == FovResult::Inside {
                         impressions_visible.push(index);
                     }
                 }
@@ -484,6 +486,10 @@ impl Display {
 
             Msg::TileFov(pos, fov_result) => {
                 self.state.fov.insert(pos, fov_result);
+            }
+
+            Msg::EntityInFov(entity_id, in_fov) => {
+                self.state.entities_in_fov.insert(entity_id, in_fov);
             }
 
             Msg::UsePos(pos) => {
@@ -584,6 +590,7 @@ pub struct DisplayState {
 
     // fov information for this turn
     pub fov: HashMap<Pos, FovResult>,
+    pub entities_in_fov: HashMap<EntityId, FovResult>,
     pub use_pos: Option<Pos>,
     pub use_dirs: HashSet<(Pos, Direction)>,
     pub use_dir: Option<Direction>,
@@ -610,6 +617,7 @@ impl DisplayState {
             current_turn_fov: Vec::new(),
             sound_tiles: Vec::new(),
             fov: HashMap::new(),
+            entities_in_fov: HashMap::new(),
             use_pos: None,
             use_dirs: HashSet::new(),
             use_dir: None,
