@@ -98,7 +98,10 @@ pub fn step_logic(game: &mut Game) -> bool {
 
 pub fn post_step(game: &mut Game) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_pos = game.data.entities.pos[&player_id];
     let (map_width, map_height) = game.data.map.size();
+
+    let mut player_fov = Vec::new();
 
     // indicate FoV information
     for y in 0..map_height {
@@ -111,12 +114,62 @@ pub fn post_step(game: &mut Game) {
                 fov_result = game.data.pos_in_fov_edge(player_id, pos, &game.config);
             }
             game.msg_log.log_front(Msg::TileFov(pos, fov_result));
+
+            // TODO should this be != Outside, to include Edge?
+            if fov_result == FovResult::Inside {
+                player_fov.push(pos);
+            }
         }
     }
 
     for entity_id in game.data.entities.ids.iter() {
+        let typ = game.data.entities.typ[&entity_id];
+        if typ != EntityType::Player && typ != EntityType::Enemy {
+            continue;
+        }
+
+        let entity_pos = game.data.entities.pos[&entity_id];
+        if !game.data.map.is_within_bounds(entity_pos) {
+            continue;
+        }
+
+        // emit whether entity is in player FOV
         let in_fov = game.data.is_in_fov(player_id, *entity_id, &game.config);
         game.msg_log.log_front(Msg::EntityInFov(*entity_id, in_fov));
+
+        // emit visible movement positions
+        if let Some(reach) = game.data.entities.movement.get(&entity_id) {
+            for move_pos in reach.reachables(entity_pos) {
+                if !game.data.map.is_within_bounds(move_pos) {
+                    continue;
+                }
+
+                if game.data.pos_in_fov(*entity_id, move_pos, &game.config) {
+                    game.msg_log.log(Msg::EntityMovement(*entity_id, move_pos));
+                }
+            }
+        }
+
+        // emit visible attack positions
+        if let Some(reach) = game.data.entities.attack.get(&entity_id) {
+            for attack_pos in reach.reachables(entity_pos) {
+                if !game.data.map.is_within_bounds(attack_pos) {
+                    continue;
+                }
+
+                if game.data.pos_in_fov(*entity_id, attack_pos, &game.config) &&
+                   (game.data.clear_path(entity_pos, attack_pos, false) || attack_pos == player_pos) {
+                    game.msg_log.log(Msg::EntityAttack(*entity_id, attack_pos));
+                }
+            }
+        }
+
+        // emit visible tiles for entity that are visible to player
+        for pos in player_fov.iter() {
+            if game.data.pos_in_fov(*entity_id, *pos, &game.config) {
+                game.msg_log.log(Msg::EntityFov(*entity_id, *pos));
+            }
+        }
     }
 
     // if in use-mode, output use-direction.

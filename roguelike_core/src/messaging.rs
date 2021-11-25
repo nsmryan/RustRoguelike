@@ -107,6 +107,9 @@ pub enum Msg {
     UseHitPosClear,
     UseOption(Pos, Direction),
     EntityAtCursor(EntityId),
+    EntityMovement(EntityId, Pos),
+    EntityAttack(EntityId, Pos),
+    EntityFov(EntityId, Pos),
 }
 
 impl fmt::Display for Msg {
@@ -219,6 +222,9 @@ impl fmt::Display for Msg {
             Msg::UseHitPosClear => write!(f, "use_hit_clear"),
             Msg::UseOption(pos, dir) => write!(f, "use_option {} {} {}", pos.x, pos.y, dir),
             Msg::EntityAtCursor(entity_id) => write!(f, "entity_at_cursor {}", entity_id),
+            Msg::EntityMovement(entity_id, pos) => write!(f, "entity_movement {} {} {}", entity_id, pos.x, pos.y),
+            Msg::EntityAttack(entity_id, pos) => write!(f, "entity_attack {} {} {}", entity_id, pos.x, pos.y),
+            Msg::EntityFov(entity_id, pos) => write!(f, "entity_fov {} {} {}", entity_id, pos.x, pos.y),
         }
     }
 }

@@ -255,8 +255,9 @@ fn render_info(panel: &mut Panel,
 
         // only display first object
         if let Some(obj_id) = object_ids.first() {
-            let entity_in_fov = game.settings.god_mode ||
-                                display_state.entities_in_fov[&obj_id] == FovResult::Inside;
+            let entity_in_fov =
+                game.settings.god_mode ||
+                display_state.entities_in_fov.get(&obj_id) == Some(&FovResult::Inside);
 
             // only display things in the player's FOV
             if entity_in_fov {
@@ -942,7 +943,8 @@ fn render_entity(panel: &mut Panel,
     }
 
     let is_in_fov =
-       display_state.entities_in_fov[&entity_id] == FovResult::Inside || game.settings.god_mode;
+       display_state.entities_in_fov.get(&entity_id) == Some(&FovResult::Inside) ||
+       game.settings.god_mode;
 
     if is_in_fov {
         if let Some(anims) = display_state.animations.get_mut(&entity_id) {
@@ -1415,7 +1417,7 @@ fn render_overlay_alertness(panel: &mut Panel, display_state: &mut DisplayState,
     let alertness_color = game.config.color_pink;
     let scale = 0.5;
     for entity_id in game.data.entities.ids.iter() {
-        if display_state.entities_in_fov[&entity_id] != FovResult::Inside {
+        if display_state.entities_in_fov.get(&entity_id) != Some(&FovResult::Inside) {
             continue;
         }
 
@@ -1518,6 +1520,7 @@ fn render_attack_overlay(panel: &mut Panel,
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
+    // TODO replace with entity_attacks
     if let Some(reach) = game.data.entities.attack.get(&entity_id) {
         let attack_positions = 
             reach.offsets()
@@ -1574,21 +1577,17 @@ fn render_movement_overlay(panel: &mut Panel,
                            display_state: &mut DisplayState,
                            entity_id: EntityId,
                            sprites: &Vec<SpriteSheet>) {
-    let entity_pos = game.data.entities.pos[&entity_id];
-
     let mut highlight_color = game.config.color_light_grey;
     highlight_color.a = game.config.grid_alpha_overlay;
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
-    if let Some(reach) = game.data.entities.movement.get(&entity_id) {
-        for move_pos in reach.reachables(entity_pos) {
-            if display_state.fov[&move_pos] == FovResult::Inside {
-                let chr = game.data.entities.chr[&entity_id];
+    if let Some(move_positions) = display_state.entity_movements.get(&entity_id) {
+        let chr = game.data.entities.chr[&entity_id];
+        let sprite = Sprite::new(chr as u32, tiles_key);
 
-                let sprite = Sprite::new(chr as u32, tiles_key);
-                panel.sprite_cmd(sprite, highlight_color, move_pos);
-            }
+        for move_pos in move_positions.iter() {
+            panel.sprite_cmd(sprite, highlight_color, *move_pos);
         }
     }
 }

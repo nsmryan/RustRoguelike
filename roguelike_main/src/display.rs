@@ -253,6 +253,9 @@ impl Display {
                 self.state.use_dir = None;
                 self.state.hit_positions.clear();
                 self.state.entities_at_cursor.clear();
+                self.state.entity_movements.clear();
+                self.state.entity_attacks.clear();
+                self.state.entity_fov.clear();
                 self.state.sound_tiles.clear();
                 self.state.fov.clear();
                 self.state.entities_in_fov.clear();
@@ -267,9 +270,6 @@ impl Display {
                     self.state.play_effect(fade_effect);
                 }
                 self.state.time_of_cursor_toggle = self.state.time;
-            }
-
-            Msg::Sound(_cause_id, _source_pos, _radius) => {
             }
 
             Msg::SoundHitTile(cause_id, source_pos, radius, hit_pos) => {
@@ -443,7 +443,8 @@ impl Display {
 
                 // TODO try to use fov and entities_in_fov instead of recalculating
                 for entity_id in data.entities.ids.clone() {
-                    if entity_id != player_id && self.state.entities_in_fov[&entity_id] == FovResult::Inside {
+                    if entity_id != player_id && 
+                       self.state.entities_in_fov.get(&entity_id) == Some(&FovResult::Inside) {
                         self.state.current_turn_fov.push(entity_id);
                     }
                 }
@@ -514,6 +515,27 @@ impl Display {
 
             Msg::EntityAtCursor(entity_id) => {
                 self.state.entities_at_cursor.push(entity_id);
+            }
+
+            Msg::EntityMovement(entity_id, pos) => {
+                if self.state.entity_movements.get(&entity_id).is_none() {
+                    self.state.entity_movements.insert(entity_id, Vec::new());
+                }
+                self.state.entity_movements.get_mut(&entity_id).unwrap().push(pos);
+            }
+
+            Msg::EntityAttack(entity_id, pos) => {
+                if self.state.entity_attacks.get(&entity_id).is_none() {
+                    self.state.entity_attacks.insert(entity_id, Vec::new());
+                }
+                self.state.entity_attacks.get_mut(&entity_id).unwrap().push(pos);
+            }
+
+            Msg::EntityFov(entity_id, pos) => {
+                if self.state.entity_fov.get(&entity_id).is_none() {
+                    self.state.entity_fov.insert(entity_id, Vec::new());
+                }
+                self.state.entity_fov.get_mut(&entity_id).unwrap().push(pos);
             }
 
             _ => {
@@ -588,7 +610,7 @@ pub struct DisplayState {
     // tiles that heard a sound
     pub sound_tiles: Vec<Pos>,
 
-    // fov information for this turn
+    // turn data from messages
     pub fov: HashMap<Pos, FovResult>,
     pub entities_in_fov: HashMap<EntityId, FovResult>,
     pub use_pos: Option<Pos>,
@@ -596,7 +618,11 @@ pub struct DisplayState {
     pub use_dir: Option<Direction>,
     pub hit_positions: HashSet<Pos>,
     pub entities_at_cursor: Vec<EntityId>,
+    pub entity_movements: HashMap<EntityId, Vec<Pos>>,
+    pub entity_attacks: HashMap<EntityId, Vec<Pos>>,
+    pub entity_fov: HashMap<EntityId, Vec<Pos>>,
 
+    // cursor visual effect state
     pub dt: f32,
     pub time: f32,
     pub time_of_cursor_toggle: f32,
@@ -623,6 +649,9 @@ impl DisplayState {
             use_dir: None,
             hit_positions: HashSet::new(),
             entities_at_cursor: Vec::new(),
+            entity_movements: HashMap::new(),
+            entity_attacks: HashMap::new(),
+            entity_fov: HashMap::new(),
             dt: 0.0,
             time: 0.0,
             time_of_cursor_toggle: 0.0,
