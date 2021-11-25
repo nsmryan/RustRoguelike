@@ -124,17 +124,16 @@ pub fn post_step(game: &mut Game) {
 
     for entity_id in game.data.entities.ids.iter() {
         let typ = game.data.entities.typ[&entity_id];
-        if typ != EntityType::Player && typ != EntityType::Enemy {
-            continue;
-        }
-
         let entity_pos = game.data.entities.pos[&entity_id];
         if !game.data.map.is_within_bounds(entity_pos) {
             continue;
         }
 
         // emit whether entity is in player FOV
-        let in_fov = game.data.is_in_fov(player_id, *entity_id, &game.config);
+        let mut in_fov = game.data.is_in_fov(player_id, *entity_id, &game.config);
+        if game.settings.god_mode {
+            in_fov = FovResult::Inside;
+        }
         game.msg_log.log_front(Msg::EntityInFov(*entity_id, in_fov));
 
         // emit visible movement positions
@@ -148,6 +147,10 @@ pub fn post_step(game: &mut Game) {
                     game.msg_log.log(Msg::EntityMovement(*entity_id, move_pos));
                 }
             }
+        }
+
+        if typ != EntityType::Player && typ != EntityType::Enemy {
+            continue;
         }
 
         // emit visible attack positions

@@ -961,6 +961,8 @@ fn render_entity(panel: &mut Panel,
                         if game.data.entities.armed.get(&entity_id) == Some(&false) {
                             color = game.config.color_warm_grey;
                         }
+                        // TODO added in because the color doesn't seem to be actually used.
+                        color = Color::new(255, 255, 255, 255);
 
                         panel.sprite_cmd(sprite, color, animation_result.pos);
                     }
@@ -1601,6 +1603,7 @@ fn render_entity_ghost(panel: &mut Panel,
     let entity_pos = game.data.entities.pos[&entity_id];
 
     let alpha = game.data.entities.color[&entity_id].a;
+    assert!(alpha == 255);
     game.data.entities.color[&entity_id].a = game.config.ghost_alpha;
 
     game.data.entities.pos[&entity_id] = render_pos;
