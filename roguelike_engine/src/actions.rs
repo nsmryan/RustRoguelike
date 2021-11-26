@@ -469,7 +469,7 @@ pub fn handle_input_use(input_action: InputAction,
 
         (InputAction::DropItem, true) => {
             if let UseAction::Item(item_class) = settings.use_action {
-                if let Some(item_index) = find_item(item_class, data) {
+                if let Some(item_index) = data.find_item(item_class) {
                     msg_log.log(Msg::DropItem(player_id, item_index as u64));
 
                     settings.use_dir = None;
@@ -627,7 +627,7 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::ThrowItem(throw_pos, item_class), true) => {
-            if let Some(item_index) = find_item(item_class, data) { 
+            if let Some(item_index) = data.find_item(item_class) { 
                 let player_pos = data.entities.pos[&player_id];
                 let item_id = data.entities.inventory[&player_id][item_index];
                 msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos));
@@ -695,24 +695,11 @@ fn ensure_leave_cursor(settings: &mut GameSettings, msg_log: &mut MsgLog) {
     }
 }
 
-// The item index is usually determined by the ItemClass, but for Misc it can
-// only be a stone.
-fn find_item(item_class: ItemClass, data: &Level) -> Option<usize> {
-        let player_id = data.find_by_name(EntityName::Player).unwrap();
-        let maybe_index;
-        if item_class == ItemClass::Misc {
-            maybe_index = data.entities.item_by_type(player_id, Item::Stone);
-        } else {
-            maybe_index = data.entities.item_by_class(player_id, item_class);
-        }
-        return maybe_index;
-}
-
 fn use_dir(dir: Direction, data: &Level, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     let player_id = data.find_by_name(EntityName::Player).unwrap();
 
     if let UseAction::Item(item_class) = settings.use_action {
-        if let Some(item_index) = find_item(item_class, data) {
+        if let Some(item_index) = data.find_item(item_class) {
             let use_result = data.calculate_use_move(player_id, item_index as usize, dir, settings.move_mode);
 
             msg_log.log(Msg::UseDirClear);
@@ -743,7 +730,7 @@ fn finalize_use_item(data: &Level, settings: &mut GameSettings, msg_log: &mut Ms
         // NOTE there should be no way to get here without a direction
         let dir = settings.use_dir.expect("Finalizing use mode for an item with no direction to take!");
 
-        if let Some(item_index) = find_item(item_class, data) {
+        if let Some(item_index) = data.find_item(item_class) {
             let item_id = data.entities.inventory[&player_id][item_index];
             let item = data.entities.item[&item_id];
 
@@ -810,7 +797,8 @@ fn start_use_item(item_class: ItemClass, data: &Level, settings: &mut GameSettin
 
     ensure_leave_cursor(settings, msg_log);
 
-    if let Some(item_index) = data.entities.item_by_class(player_id, item_class) {
+    //if let Some(item_index) = data.entities.item_by_class(player_id, item_class) {
+    if let Some(item_index) = data.find_item(item_class) {
         let item_id = data.entities.inventory[&player_id][item_index as usize];
 
         if data.entities.item[&item_id] == Item::Herb {

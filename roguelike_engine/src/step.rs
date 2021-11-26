@@ -177,7 +177,7 @@ pub fn post_step(game: &mut Game) {
 
     // if in use-mode, output use-direction.
     if let UseAction::Item(item_class) = game.settings.use_action {
-        if let Some(item_index) = game.data.entities.item_by_class(player_id, item_class) {
+        if let Some(item_index) = game.data.find_item(item_class) {
             if let Some(use_dir) = game.settings.use_dir {
                 let use_result = game.data.calculate_use_move(player_id,
                                                               item_index,
@@ -564,6 +564,7 @@ fn test_use_mode_stone() {
     game.step_game(InputAction::UseDir(Direction::Right));
     game.step_game(InputAction::FinalizeUse);
 
+    // the stone lands on the gol
     assert_eq!(gol_pos, game.data.entities.pos[&stone]);
 
     // The gol remains in its starting position because it was stunned by the stone.

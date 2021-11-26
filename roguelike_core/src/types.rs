@@ -180,6 +180,19 @@ impl Level {
                        .collect::<Vec<Pos>>();
     }
 
+    // The item index is usually determined by the ItemClass, but for Misc it can
+    // only be a stone.
+    pub fn find_item(&self, item_class: ItemClass) -> Option<usize> {
+            let player_id = self.find_by_name(EntityName::Player).unwrap();
+            let maybe_index;
+            if item_class == ItemClass::Misc {
+                maybe_index = self.entities.item_by_type(player_id, Item::Stone);
+            } else {
+                maybe_index = self.entities.item_by_class(player_id, item_class);
+            }
+            return maybe_index;
+    }
+
     pub fn path_between(&self,
                         start: Pos,
                         end: Pos,

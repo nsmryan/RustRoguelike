@@ -245,7 +245,7 @@ impl Display {
         self.state.effects.clear();
     }
 
-    pub fn process_message(&mut self, msg: Msg, data: &mut Level, config: &Config) {
+    pub fn process_message(&mut self, msg: Msg, level: &mut Level, config: &Config) {
         match msg {
             Msg::StartTurn => {
                 self.state.use_pos = None;
@@ -276,12 +276,12 @@ impl Display {
                 // Add to this turn's sound tiles list
                 self.state.sound_tiles.push(hit_pos);
 
-                let player_id = data.find_by_name(EntityName::Player).unwrap();
-                let player_pos = data.entities.pos[&player_id];
+                let player_id = level.find_by_name(EntityName::Player).unwrap();
+                let player_pos = level.entities.pos[&player_id];
 
                 // only play the sound effect if the player position is included
                 let sound_hits_player = hit_pos == player_pos;
-                let sound_from_monster = data.entities.typ.get(&cause_id) == Some(&EntityType::Enemy);
+                let sound_from_monster = level.entities.typ.get(&cause_id) == Some(&EntityType::Enemy);
 
                 let player_can_see_source = 
                     self.state.entities_in_fov[&cause_id] == FovResult::Inside;
@@ -289,12 +289,12 @@ impl Display {
                 let visible_monster_sound = sound_from_monster && player_can_see_source;
                 if !visible_monster_sound && sound_hits_player {
                     let sound_aoe =
-                        aoe_fill(&data.map, AoeEffect::Sound, source_pos, radius, config);
+                        aoe_fill(&level.map, AoeEffect::Sound, source_pos, radius, config);
 
                     let sound_effect = Effect::sound(sound_aoe);
                     self.state.play_effect(sound_effect);
 
-                    let pos = data.entities.pos[&cause_id];
+                    let pos = level.entities.pos[&cause_id];
                     // NOTE it is slightly odd to look up this sprite sheet here and not in
                     // render.rs.
                     let tiles = lookup_spritekey(&self.sprites, "tiles");
@@ -306,11 +306,11 @@ impl Display {
             Msg::ItemThrow(_thrower, item_id, start, _end) => {
                 // this uses the entity's position instead of 'end' because we
                 // want where it hit, not where it was thrown to.
-                let end = data.entities.pos[&item_id];
+                let end = level.entities.pos[&item_id];
 
-                let sound_aoe = aoe_fill(&data.map, AoeEffect::Sound, end, config.sound_radius_stone, config);
+                let sound_aoe = aoe_fill(&level.map, AoeEffect::Sound, end, config.sound_radius_stone, config);
 
-                let chr = data.entities.chr[&item_id];
+                let chr = level.entities.chr[&item_id];
                 let item_sprite = self.static_sprite("tiles", chr);
 
                 let move_anim = Animation::Between(item_sprite, start, end, 0.0, config.item_throw_speed);
@@ -323,18 +323,18 @@ impl Display {
             }
 
             Msg::PickedUp(entity_id, _item_id) => {
-                self.play_idle_animation(entity_id, data, config);
+                self.play_idle_animation(entity_id, level, config);
             }
 
             Msg::Facing(entity_id, _pos) => {
-                self.play_idle_animation(entity_id, data, config);
+                self.play_idle_animation(entity_id, level, config);
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
-                if data.entities.typ[&attacked] != EntityType::Player {
+                if level.entities.typ[&attacked] != EntityType::Player {
                     self.state.clear_animations(attacked);
 
-                    let sprite_name = format!("{:?}_death", data.entities.name[&attacked]);
+                    let sprite_name = format!("{:?}_death", level.entities.name[&attacked]);
                     if self.sprite_exists(&sprite_name) {
                         let sprite = self.new_sprite(&sprite_name, 1.0);
                         self.state.play_animation(attacked, Animation::Once(sprite));
@@ -377,47 +377,47 @@ impl Display {
             }
 
             Msg::HammerSwing(entity_id, _item_id, _pos) => {
-                if data.entities.typ[&entity_id] == EntityType::Player {
+                if level.entities.typ[&entity_id] == EntityType::Player {
                     // TODO need hammer animation
                     //let attack_sprite =
                     //    self.new_sprite("player_attack_hammer".to_string(), config.player_attack_hammer_speed);
                     //let attack_anim = Animation::Once(attack_sprite);
                     //self.state.play_animation(entity_id, attack_anim);
 
-                    //if let Some(idle_anim) = self.get_idle_animation(entity_id, data, config) {
+                    //if let Some(idle_anim) = self.get_idle_animation(entity_id, level, config) {
                     //    self.state.append_animation(entity_id, idle_anim);
                     //}
                 }
             }
 
             Msg::Stabbed(entity_id, _hit_entity) => {
-                if data.entities.typ[&entity_id] == EntityType::Player {
+                if level.entities.typ[&entity_id] == EntityType::Player {
                     // TODO need dagger animation
                     //let attack_sprite =
                     //    self.new_sprite("player_attack_dagger".to_string(), config.player_attack_speed);
                     //let attack_anim = Animation::Once(attack_sprite);
                     //self.state.play_animation(entity_id, attack_anim);
 
-                    //if let Some(idle_anim) = self.get_idle_animation(entity_id, data, config) {
+                    //if let Some(idle_anim) = self.get_idle_animation(entity_id, level, config) {
                     //    self.state.append_animation(entity_id, idle_anim);
                     //}
                 }
             }
 
             Msg::Attack(attacker, attacked, _damage) => {
-                if data.entities.typ[&attacker] == EntityType::Player {
+                if level.entities.typ[&attacker] == EntityType::Player {
                     // TODO need attack animation
                     //let attack_sprite =
                     //    self.new_sprite("player_attack".to_string(), config.player_attack_speed);
                     //let attack_anim = Animation::Once(attack_sprite);
                     //self.state.play_animation(attacker, attack_anim);
 
-                    //if let Some(idle_anim) = self.get_idle_animation(attacker, data, config) {
+                    //if let Some(idle_anim) = self.get_idle_animation(attacker, level, config) {
                     //    self.state.play_animation(attacker, idle_anim);
                     //}
                 } else {
-                    let attacker_pos = data.entities.pos[&attacker];
-                    let attacked_pos = data.entities.pos[&attacked];
+                    let attacker_pos = level.entities.pos[&attacker];
+                    let attacked_pos = level.entities.pos[&attacked];
                     let beam_effect = Effect::beam(config.beam_duration, attacker_pos, attacked_pos);
                     self.state.play_effect(beam_effect);
                 }
@@ -429,20 +429,20 @@ impl Display {
             }
 
             Msg::SpawnedObject(entity_id, _typ, _pos, _name, _facing) => {
-                if data.entities.ids.contains(&entity_id) {
-                    self.play_idle_animation(entity_id, data, config);
+                if level.entities.ids.contains(&entity_id) {
+                    self.play_idle_animation(entity_id, level, config);
                 }
             }
 
             Msg::PlayerTurn => {
-                let player_id = data.find_by_name(EntityName::Player).unwrap();
+                let player_id = level.find_by_name(EntityName::Player).unwrap();
 
                 self.state.prev_turn_fov.clear();
                 self.state.prev_turn_fov.extend(self.state.current_turn_fov.iter());
                 self.state.current_turn_fov.clear();
 
                 // TODO try to use fov and entities_in_fov instead of recalculating
-                for entity_id in data.entities.ids.clone() {
+                for entity_id in level.entities.ids.clone() {
                     if entity_id != player_id && 
                        self.state.entities_in_fov.get(&entity_id) == Some(&FovResult::Inside) {
                         self.state.current_turn_fov.push(entity_id);
@@ -450,13 +450,13 @@ impl Display {
                 }
 
                 for entity_id in self.state.prev_turn_fov.iter() {
-                    if data.entities.typ.get(entity_id) != Some(&EntityType::Enemy) {
+                    if level.entities.typ.get(entity_id) != Some(&EntityType::Enemy) {
                         continue;
                     }
 
                     if self.state.entities_in_fov[entity_id] != FovResult::Inside {
                         if let Some(sprite) = self.state.drawn_sprites.get(entity_id) {
-                            let pos = data.entities.pos[entity_id];
+                            let pos = level.entities.pos[entity_id];
                             self.state.impressions.push(Impression::new(*sprite, pos));
                         }
                     }

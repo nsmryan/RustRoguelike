@@ -1651,15 +1651,14 @@ fn test_fov_blocked_by_wall_down() {
 
 #[test]
 fn test_fov_blocked_by_tall_grass() {
-    let radius = 10;
     let mut map = Map::from_dims(10, 10);
 
     let pos = Pos::new(5, 5);
     map[pos] = Tile::tall_grass();
-    let low = false;
     assert!(map.path_blocked_fov(Pos::new(4, 5), Pos::new(5, 5)).is_some());
 
     // TODO its not clear whether tall grass should block LoS this way.
+    //let radius = 10;
     //assert_eq!(false, map.is_in_fov(Pos::new(4, 5), Pos::new(5, 5), radius, false));
 }
 
