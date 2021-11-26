@@ -202,10 +202,10 @@ impl Display {
     }
 
     pub fn get_idle_animation(&mut self, entity_id: EntityId, entities: &Entities, config: &Config) -> Option<Animation> {
-        let name = entities.name[&entity_id];
+        let name = self.state.name[&entity_id];
 
         if name == EntityName::Player || name == EntityName::Gol || name == EntityName::Pawn || name == EntityName::Rook {
-            let name = entities.name[&entity_id];
+            let name = self.state.name[&entity_id];
             let stance = entities.stance[&entity_id];
             let direction = entities.direction[&entity_id];
 
@@ -221,15 +221,15 @@ impl Display {
 
             return Some(anim);
         } else {
-            if entities.name[&entity_id] == EntityName::Key {
+            if self.state.name[&entity_id] == EntityName::Key {
                 return Some(self.loop_sprite("key", config.idle_speed));
-            } else if entities.name[&entity_id] == EntityName::SpikeTrap {
+            } else if self.state.name[&entity_id] == EntityName::SpikeTrap {
                 return Some(self.loop_sprite("trap_damage", config.idle_speed));
-            } else if entities.name[&entity_id] == EntityName::Armil {
+            } else if self.state.name[&entity_id] == EntityName::Armil {
                 return Some(self.loop_sprite("armil_idle", config.idle_speed));
-            } else if entities.name[&entity_id] == EntityName::Lantern {
+            } else if self.state.name[&entity_id] == EntityName::Lantern {
                 return Some(self.loop_sprite("lantern_idle", config.fire_speed));
-            } else if entities.name[&entity_id] == EntityName::Grass {
+            } else if self.state.name[&entity_id] == EntityName::Grass {
                 return Some(self.random_sprite("grassanim", config.grass_idle_speed));
             }
         }
@@ -280,7 +280,7 @@ impl Display {
 
                 // only play the sound effect if the player position is included
                 let sound_hits_player = hit_pos == player_pos;
-                let sound_from_monster = level.entities.typ.get(&cause_id) == Some(&EntityType::Enemy);
+                let sound_from_monster = self.state.typ.get(&cause_id) == Some(&EntityType::Enemy);
 
                 let player_can_see_source = 
                     self.state.entity_is_in_fov(cause_id) == FovResult::Inside;
@@ -428,6 +428,7 @@ impl Display {
                 self.state.chr.insert(entity_id, chr as char);
                 self.state.pos.insert(entity_id, pos);
                 self.state.typ.insert(entity_id, typ);
+                self.state.name.insert(entity_id, name);
                 self.state.ids.push(entity_id);
 
                 if level.entities.ids.contains(&entity_id) {
@@ -477,6 +478,7 @@ impl Display {
                 self.state.chr.remove(&entity_id);
                 self.state.pos.remove(&entity_id);
                 self.state.typ.remove(&entity_id);
+                self.state.name.remove(&entity_id);
 
                 let ix_pos = self.state.ids.iter().position(|val| *val == entity_id).unwrap();
                 self.state.ids.remove(ix_pos);
@@ -614,6 +616,7 @@ pub struct DisplayState {
     pub chr: Comp<char>,
     pub pos: Comp<Pos>,
     pub typ: Comp<EntityType>,
+    pub name: Comp<EntityName>,
 
     // impressions left on map
     pub impressions: Vec<Impression>,
@@ -656,6 +659,7 @@ impl DisplayState {
             chr: Comp::new(),
             pos: Comp::new(),
             typ: Comp::new(),
+            name: Comp::new(),
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),
             sound_tiles: Vec::new(),
