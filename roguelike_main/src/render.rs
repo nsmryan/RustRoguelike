@@ -973,8 +973,6 @@ fn render_entity(panel: &mut Panel,
                         anims.push_front(anim);
                     }
                 }
-
-                //display_state.animations.insert(entity_id, anims);
             }
         } else {
             let color = game.data.entities.color[&entity_id];

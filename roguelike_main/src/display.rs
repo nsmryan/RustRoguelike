@@ -20,7 +20,7 @@ use roguelike_core::utils::aoe_fill;
 use roguelike_core::movement::{Direction};
 use roguelike_core::rng::Rand32;
 
-use roguelike_engine::game::Game;
+use roguelike_engine::game::{Game, GameSettings};
 
 use crate::animation::{Str, Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use crate::drawcmd::*;
@@ -195,19 +195,19 @@ impl Display {
         return anim;
     }
 
-    pub fn play_idle_animation(&mut self, entity_id: EntityId, data: &mut Level, config: &Config) {
-        if let Some(anim) = self.get_idle_animation(entity_id, data, config) {
+    pub fn play_idle_animation(&mut self, entity_id: EntityId, level: &mut Level, config: &Config) {
+        if let Some(anim) = self.get_idle_animation(entity_id, level, config) {
             self.state.play_animation(entity_id, anim);
         }
     }
 
-    pub fn get_idle_animation(&mut self, entity_id: EntityId, data: &mut Level, config: &Config) -> Option<Animation> {
-        let name = data.entities.name[&entity_id];
+    pub fn get_idle_animation(&mut self, entity_id: EntityId, level: &mut Level, config: &Config) -> Option<Animation> {
+        let name = level.entities.name[&entity_id];
 
         if name == EntityName::Player || name == EntityName::Gol || name == EntityName::Pawn || name == EntityName::Rook {
-            let name = data.entities.name[&entity_id];
-            let stance = data.entities.stance[&entity_id];
-            let direction = data.entities.direction[&entity_id];
+            let name = level.entities.name[&entity_id];
+            let stance = level.entities.stance[&entity_id];
+            let direction = level.entities.direction[&entity_id];
 
             let sheet_direction = sheet_direction(direction);
             let mut sheet_name = format!("{}_{}_{}", name, stance, sheet_direction);
@@ -221,15 +221,15 @@ impl Display {
 
             return Some(anim);
         } else {
-            if data.entities.name[&entity_id] == EntityName::Key {
+            if level.entities.name[&entity_id] == EntityName::Key {
                 return Some(self.loop_sprite("key", config.idle_speed));
-            } else if data.entities.name[&entity_id] == EntityName::SpikeTrap {
+            } else if level.entities.name[&entity_id] == EntityName::SpikeTrap {
                 return Some(self.loop_sprite("trap_damage", config.idle_speed));
-            } else if data.entities.name[&entity_id] == EntityName::Armil {
+            } else if level.entities.name[&entity_id] == EntityName::Armil {
                 return Some(self.loop_sprite("armil_idle", config.idle_speed));
-            } else if data.entities.name[&entity_id] == EntityName::Lantern {
+            } else if level.entities.name[&entity_id] == EntityName::Lantern {
                 return Some(self.loop_sprite("lantern_idle", config.fire_speed));
-            } else if data.entities.name[&entity_id] == EntityName::Grass {
+            } else if level.entities.name[&entity_id] == EntityName::Grass {
                 return Some(self.random_sprite("grassanim", config.grass_idle_speed));
             }
         }
@@ -240,7 +240,6 @@ impl Display {
     pub fn clear_level_state(&mut self) {
         self.state.impressions.clear();
         self.state.prev_turn_fov.clear();
-        self.state.current_turn_fov.clear();
         self.state.sound_tiles.clear();
         self.state.effects.clear();
     }
@@ -438,14 +437,9 @@ impl Display {
                 let player_id = level.find_by_name(EntityName::Player).unwrap();
 
                 self.state.prev_turn_fov.clear();
-                self.state.prev_turn_fov.extend(self.state.current_turn_fov.iter());
-                self.state.current_turn_fov.clear();
-
-                // TODO try to use fov and entities_in_fov instead of recalculating
-                for entity_id in level.entities.ids.clone() {
-                    if entity_id != player_id && 
-                       self.state.entities_in_fov.get(&entity_id) == Some(&FovResult::Inside) {
-                        self.state.current_turn_fov.push(entity_id);
+                for (entity_id, fov_result) in self.state.entities_in_fov.iter() {
+                    if *fov_result == FovResult::Inside {
+                        self.state.prev_turn_fov.push(*entity_id);
                     }
                 }
 
@@ -545,17 +539,19 @@ impl Display {
 
     pub fn draw_all(&mut self, game: &mut Game) {
         self.process_draw_commands();
-        self.copy_panels(game);
+        self.copy_panels(game.data.map.size(), &game.settings);
         self.state.update_animations(&mut game.rng, &game.config);
     }
 
-    pub fn copy_panels(&mut self, game: &mut Game) {
+    pub fn copy_panels(&mut self, dims: (i32, i32), settings: &GameSettings) {
+        let dims = (dims.0 as u32, dims.1 as u32);
+
         /* Split Screen Into Sections */
         let screen_area = self.canvas_panel.area();
         let (_map_area, _rest_area) = screen_area.split_top(self.panels[&PanelName::Map].cells.1 as usize);
 
         let map_cell_dims = self.panels[&PanelName::Map].cell_dims();
-        let (map_width, map_height) = (map_cell_dims.0 * game.data.map.width() as u32, map_cell_dims.1 * game.data.map.height() as u32);
+        let (map_width, map_height) = (map_cell_dims.0 * dims.0, map_cell_dims.1 * dims.1);
         let map_src = Rect::new(0, 0, map_width, map_height);
         let map_rect = Rect::new(0, 0, SCREEN_WIDTH, SCREEN_WIDTH);
         self.canvas.copy(&self.textures[&PanelName::Map], map_src, map_rect).unwrap();
@@ -572,7 +568,7 @@ impl Display {
         let player_rect = Rect::new(2 * SCREEN_WIDTH as i32 / 3, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);
         self.canvas.copy(&self.textures[&PanelName::Player], None, player_rect).unwrap();
 
-        if game.settings.state.is_menu() {
+        if settings.state.is_menu() {
             let canvas_panel = &mut self.canvas_panel;
             let menu_panel = &self.panels[&PanelName::Menu];
 
@@ -605,7 +601,6 @@ pub struct DisplayState {
 
     // FOV information used when drawing
     pub prev_turn_fov: Vec<EntityId>,
-    pub current_turn_fov: Vec<EntityId>,
 
     // tiles that heard a sound
     pub sound_tiles: Vec<Pos>,
@@ -640,7 +635,6 @@ impl DisplayState {
             drawn_sprites: Comp::new(),
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),
-            current_turn_fov: Vec::new(),
             sound_tiles: Vec::new(),
             fov: HashMap::new(),
             entities_in_fov: HashMap::new(),
