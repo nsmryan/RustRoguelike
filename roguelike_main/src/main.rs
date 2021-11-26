@@ -463,7 +463,7 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
     {
         let _draw_timer = timer!("DRAW");
         let update_time = Instant::now();
-        display.draw_all(game);
+        display.draw_all(game.data.map.size(), &mut game.rng, &game.config, &game.settings);
 
         {
             let _present_timer = timer!("PRESENT");

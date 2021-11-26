@@ -537,10 +537,10 @@ impl Display {
         }
     }
 
-    pub fn draw_all(&mut self, game: &mut Game) {
+    pub fn draw_all(&mut self, dims: (i32, i32), rng: &mut Rand32, config: &Config, settings: &GameSettings) {
         self.process_draw_commands();
-        self.copy_panels(game.data.map.size(), &game.settings);
-        self.state.update_animations(&mut game.rng, &game.config);
+        self.copy_panels(dims, settings);
+        self.state.update_animations(rng, config);
     }
 
     pub fn copy_panels(&mut self, dims: (i32, i32), settings: &GameSettings) {
