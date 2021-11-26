@@ -351,18 +351,18 @@ impl Level {
     }
 
     pub fn get_entities_at_pos(&mut self, check_pos: Pos) -> Vec<EntityId> {
-        let mut object_ids: Vec<EntityId> = Vec::new();
+        let mut entity_ids: Vec<EntityId> = Vec::new();
 
         for key in self.entities.ids.iter() {
             let pos = self.entities.pos[key];
             let is_mouse = self.entities.name[key] == EntityName::Mouse;
 
             if !is_mouse && check_pos == pos {
-                object_ids.push(*key);
+                entity_ids.push(*key);
             }
         }
 
-        return object_ids;
+        return entity_ids;
     }
 
     pub fn clear_path_up_to(&self, start: Pos, end: Pos, traps_block: bool) -> bool {
@@ -1745,16 +1745,16 @@ impl Entities {
     }
 
     pub fn get_names_at_pos(&mut self, check_pos: Pos, name: EntityName) -> Vec<EntityId> {
-        let mut object_ids: Vec<EntityId> = Vec::new();
+        let mut entity_ids: Vec<EntityId> = Vec::new();
 
         for key in self.ids.iter() {
             let pos = self.pos[key];
             if pos == check_pos && name == self.name[key] {
-                object_ids.push(*key);
+                entity_ids.push(*key);
             }
         }
 
-        return object_ids;
+        return entity_ids;
     }
 
     pub fn add_skill(&mut self, entity_id: EntityId, skill: Skill) {
@@ -1782,7 +1782,7 @@ impl Entities {
             }
         }
 
-        // remove objects waiting removal
+        // remove entities waiting removal
         for key in to_remove {
             self.mark_for_removal(key);
         }

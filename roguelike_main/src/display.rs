@@ -428,6 +428,7 @@ impl Display {
                 self.state.chr.insert(entity_id, chr as char);
                 self.state.pos.insert(entity_id, pos);
                 self.state.typ.insert(entity_id, typ);
+                self.state.ids.push(entity_id);
 
                 if level.entities.ids.contains(&entity_id) {
                     self.play_idle_animation(entity_id, &level.entities, config);
@@ -476,6 +477,9 @@ impl Display {
                 self.state.chr.remove(&entity_id);
                 self.state.pos.remove(&entity_id);
                 self.state.typ.remove(&entity_id);
+
+                let ix_pos = self.state.ids.iter().position(|val| *val == entity_id).unwrap();
+                self.state.ids.remove(ix_pos);
             }
 
             Msg::NewLevel => {
@@ -597,6 +601,8 @@ pub struct DisplayState {
     // currently active effects
     pub effects: Vec<Effect>,
 
+    pub ids: Vec<EntityId>,
+
     // animation information
     pub animations: Comp<VecDeque<Animation>>,
     pub next_anim_key: i64,
@@ -643,6 +649,7 @@ impl DisplayState {
     pub fn new() -> DisplayState {
         return DisplayState {
             effects: Vec::new(),
+            ids: Vec::new(),
             animations: Comp::<VecDeque<Animation>>::new(),
             next_anim_key: 0,
             drawn_sprites: Comp::new(),

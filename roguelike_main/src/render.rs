@@ -1201,7 +1201,7 @@ fn render_game_overlays(panel: &mut Panel,
 
     // render attack overlay highlighting squares that an entity can attack
     if game.settings.overlay {
-        let keys = game.data.entities.ids.iter().map(|id| *id).collect::<Vec<EntityId>>();
+        let keys = display_state.ids.iter().map(|id| *id).collect::<Vec<EntityId>>();
         for entity_id in keys {
             let pos = game.data.entities.pos[&entity_id];
 
@@ -1416,7 +1416,7 @@ fn render_overlays(panel: &mut Panel,
 fn render_overlay_alertness(panel: &mut Panel, display_state: &mut DisplayState, sprite_key: SpriteKey, game: &mut Game) {
     let alertness_color = game.config.color_pink;
     let scale = 0.5;
-    for entity_id in game.data.entities.ids.iter() {
+    for entity_id in display_state.ids.iter() {
         if display_state.entity_is_in_fov(*entity_id) != FovResult::Inside {
             continue;
         }
