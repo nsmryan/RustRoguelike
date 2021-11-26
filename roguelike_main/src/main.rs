@@ -447,6 +447,10 @@ pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), Str
 }
 
 fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(), String> {
+    if game.msg_log.turn_messages.len() > 0 {
+        dbg!(game.msg_log.turn_messages.len());
+    }
+
     for msg in game.msg_log.turn_messages.iter() {
         display.process_message(*msg, &mut game.data, &game.config);
     }

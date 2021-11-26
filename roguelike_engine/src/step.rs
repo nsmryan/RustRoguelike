@@ -113,7 +113,12 @@ pub fn post_step(game: &mut Game) {
             } else {
                 fov_result = game.data.pos_in_fov_edge(player_id, pos, &game.config);
             }
-            game.msg_log.log_front(Msg::TileFov(pos, fov_result));
+
+            // only send if inside or on edge- outside is most common, so it is assumed
+            // if no message is sent.
+            if fov_result != FovResult::Outside {
+                game.msg_log.log_front(Msg::TileFov(pos, fov_result));
+            }
 
             // TODO should this be != Outside, to include Edge?
             if fov_result == FovResult::Inside {
@@ -134,7 +139,11 @@ pub fn post_step(game: &mut Game) {
         if game.settings.god_mode {
             in_fov = FovResult::Inside;
         }
-        game.msg_log.log_front(Msg::EntityInFov(*entity_id, in_fov));
+
+        // outside is the most common fov result, so it is assumed if no entry is sent.
+        if in_fov != FovResult::Outside {
+            game.msg_log.log_front(Msg::EntityInFov(*entity_id, in_fov));
+        }
 
         // emit visible movement positions
         if let Some(reach) = game.data.entities.movement.get(&entity_id) {

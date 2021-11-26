@@ -283,7 +283,7 @@ impl Display {
                 let sound_from_monster = level.entities.typ.get(&cause_id) == Some(&EntityType::Enemy);
 
                 let player_can_see_source = 
-                    self.state.entities_in_fov[&cause_id] == FovResult::Inside;
+                    self.state.entity_is_in_fov(cause_id) == FovResult::Inside;
 
                 let visible_monster_sound = sound_from_monster && player_can_see_source;
                 if !visible_monster_sound && sound_hits_player {
@@ -447,7 +447,7 @@ impl Display {
                         continue;
                     }
 
-                    if self.state.entities_in_fov[entity_id] != FovResult::Inside {
+                    if self.state.entity_is_in_fov(*entity_id) != FovResult::Inside {
                         if let Some(sprite) = self.state.drawn_sprites.get(entity_id) {
                             let pos = level.entities.pos[entity_id];
                             self.state.impressions.push(Impression::new(*sprite, pos));
@@ -458,7 +458,7 @@ impl Display {
                 /* Remove impressions that are currently visible */
                 let mut impressions_visible = Vec::new();
                 for (index, impression) in self.state.impressions.iter().enumerate() {
-                    if self.state.fov[&impression.pos] == FovResult::Inside {
+                    if self.state.pos_is_in_fov(impression.pos) == FovResult::Inside {
                         impressions_visible.push(index);
                     }
                 }
@@ -690,6 +690,22 @@ impl DisplayState {
 
     pub fn pop_animation(&mut self, entity_id: EntityId) {
         self.animations[&entity_id].pop_front();
+    }
+
+    pub fn entity_is_in_fov(&self, entity_id: EntityId) -> FovResult {
+        if let Some(fov_result) = self.entities_in_fov.get(&entity_id) {
+            return *fov_result;
+        }
+
+        return FovResult::Outside;
+    }
+
+    pub fn pos_is_in_fov(&self, pos: Pos) -> FovResult {
+        if let Some(fov_result) = self.fov.get(&pos) {
+            return *fov_result;
+        }
+
+        return FovResult::Outside;
     }
 
     pub fn show_debug(&mut self, name: &str, value: String) {

@@ -257,7 +257,7 @@ fn render_info(panel: &mut Panel,
         if let Some(obj_id) = object_ids.first() {
             let entity_in_fov =
                 game.settings.god_mode ||
-                display_state.entities_in_fov.get(&obj_id) == Some(&FovResult::Inside);
+                display_state.entity_is_in_fov(*obj_id) == FovResult::Inside;
 
             // only display things in the player's FOV
             if entity_in_fov {
@@ -642,7 +642,7 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, game: &mut 
                 }
             }
 
-            let fov_result = display_state.fov[&pos];
+            let fov_result = display_state.pos_is_in_fov(pos);
 
             // apply a FoW darkening to cells
             if game.config.fog_of_war && fov_result != FovResult::Inside {
@@ -943,7 +943,7 @@ fn render_entity(panel: &mut Panel,
     }
 
     let is_in_fov =
-       display_state.entities_in_fov.get(&entity_id) == Some(&FovResult::Inside) ||
+       display_state.entity_is_in_fov(entity_id) == FovResult::Inside ||
        game.settings.god_mode;
 
     if is_in_fov {
@@ -987,7 +987,7 @@ fn render_entity(panel: &mut Panel,
     } else {
         // if not in FoV, see if we need to add an impression for a golem
         if game.data.entities.typ[&entity_id] == EntityType::Enemy {
-            if display_state.entities_in_fov[&entity_id] == FovResult::Edge {
+            if display_state.entity_is_in_fov(entity_id) == FovResult::Edge {
                 if display_state.impressions.iter().all(|impresssion| impresssion.pos != pos) {
                     let tiles = lookup_spritekey(sprites, "tiles");
                     let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
@@ -1300,7 +1300,7 @@ fn render_overlays(panel: &mut Panel,
             for x in 0..map_width {
                 let pos = Pos::new(x, y);
 
-                if display_state.fov[&pos] == FovResult::Inside {
+                if display_state.pos_is_in_fov(pos) == FovResult::Inside {
                     //tile_sprite.draw_char(panel, MAP_GROUND as char, pos, game.config.color_light_green);
                     let sprite = Sprite::new(MAP_GROUND as u32, tiles_key);
                     panel.sprite_cmd(sprite, game.config.color_light_green, pos);
@@ -1315,7 +1315,7 @@ fn render_overlays(panel: &mut Panel,
         for entity_id in display_state.entities_at_cursor.clone() {
             let pos = game.data.entities.pos[&entity_id];
 
-            if display_state.fov[&pos] == FovResult::Inside &&
+            if display_state.pos_is_in_fov(pos) == FovResult::Inside &&
                entity_id != player_id &&
                game.data.entities.status[&entity_id].alive {
                render_attack_overlay(panel, game, display_state, entity_id, sprites);
@@ -1417,7 +1417,7 @@ fn render_overlay_alertness(panel: &mut Panel, display_state: &mut DisplayState,
     let alertness_color = game.config.color_pink;
     let scale = 0.5;
     for entity_id in game.data.entities.ids.iter() {
-        if display_state.entities_in_fov.get(&entity_id) != Some(&FovResult::Inside) {
+        if display_state.entity_is_in_fov(*entity_id) != FovResult::Inside {
             continue;
         }
 
@@ -1533,7 +1533,7 @@ fn render_attack_overlay(panel: &mut Panel,
                      let in_bounds = game.data.map.is_within_bounds(*pos);
                      let traps_block = false;
                      let clear = game.data.clear_path(object_pos, *pos, traps_block);
-                     let player_can_see = in_bounds && display_state.fov[pos] == FovResult::Inside;
+                     let player_can_see = in_bounds && display_state.pos_is_in_fov(*pos) == FovResult::Inside;
                      // check for player position so it gets highligted, even
                      // though the player causes 'clear_path' to fail.
                      return player_can_see && in_bounds && (clear || *pos == player_pos);
