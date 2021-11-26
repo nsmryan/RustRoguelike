@@ -305,7 +305,7 @@ impl Display {
             Msg::ItemLanded(item_id, start, end) => {
                 let sound_aoe = aoe_fill(&level.map, AoeEffect::Sound, end, config.sound_radius_stone, config);
 
-                let chr = level.entities.chr[&item_id];
+                let chr = self.state.chr[&item_id];
                 let item_sprite = self.static_sprite("tiles", chr);
 
                 let move_anim = Animation::Between(item_sprite, start, end, 0.0, config.item_throw_speed);
@@ -423,7 +423,42 @@ impl Display {
                 self.state.play_animation(jumper, jump_anim);
             }
 
-            Msg::SpawnedObject(entity_id, _typ, _pos, _name, _facing) => {
+            Msg::SpawnedObject(entity_id, _typ, _pos, name, _facing) => {
+                let mut chr = ' ' as u8;
+                match name {
+                    EntityName::Player => chr = ENTITY_PLAYER,
+                    EntityName::Gol => chr = '\u{98}' as u8,
+                    EntityName::Pawn => chr = '\u{A5}' as u8,
+                    EntityName::Rook => chr = '\u{A5}' as u8,
+                    EntityName::Column => chr = MAP_COLUMN,
+                    EntityName::Key => chr = ENTITY_KEY,
+                    EntityName::Exit => chr = ENTITY_EXIT,
+                    EntityName::Dagger => chr = ENTITY_DAGGER,
+                    EntityName::Hammer => chr = ENTITY_HAMMER,
+                    EntityName::Spear => chr = ENTITY_SPEAR,
+                    EntityName::GreatSword => chr = ENTITY_GREATSWORD,
+                    EntityName::Sword => chr = ENTITY_SWORD,
+                    EntityName::Shield => chr = ENTITY_SHIELD,
+                    EntityName::Lantern => chr = ENTITY_LANTERN,
+                    EntityName::SeedOfStone => chr = ENTITY_SEED_OF_STONE,
+                    EntityName::GlassEye => chr = ENTITY_GLASS_EYE,
+                    EntityName::Teleporter => chr = ENTITY_TELEPORTER,
+                    EntityName::Spire => chr = '\u{15}' as u8,
+                    EntityName::Armil => chr = '\u{98}' as u8,
+                    EntityName::SpikeTrap => chr = MAP_TALL_SPIKES,
+                    EntityName::BlinkTrap => chr = ENTITY_BLINK_TRAP,
+                    EntityName::FreezeTrap => chr = ENTITY_FREEZE_TRAP,
+                    EntityName::SoundTrap => chr = ENTITY_TRAP_SOUND,
+                    EntityName::GateTrigger => chr = ENTITY_GATE_TRIGGER,
+                    EntityName::Stone => chr = ENTITY_STONE,
+                    EntityName::Energy => chr = ENTITY_ENERGY,
+                    EntityName::Herb => chr = ENTITY_HERB,
+                    //Mouse, Cursor, Grass, Other
+                    _ => {},
+                }
+
+                self.state.chr.insert(entity_id, chr as char);
+
                 if level.entities.ids.contains(&entity_id) {
                     self.play_idle_animation(entity_id, &level.entities, config);
                 }
@@ -592,6 +627,9 @@ pub struct DisplayState {
     // sprites drawn this frame
     pub drawn_sprites: Comp<Sprite>,
 
+    // entity characters
+    pub chr: Comp<char>,
+
     // impressions left on map
     pub impressions: Vec<Impression>,
 
@@ -629,6 +667,7 @@ impl DisplayState {
             animations: Comp::<VecDeque<Animation>>::new(),
             next_anim_key: 0,
             drawn_sprites: Comp::new(),
+            chr: Comp::new(),
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),
             sound_tiles: Vec::new(),

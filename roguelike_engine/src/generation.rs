@@ -28,7 +28,7 @@ pub enum MapGenType {
 
 
 pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(0, 0, EntityType::Player, ENTITY_PLAYER as char, Color::white(), EntityName::Player, true);
+    let entity_id = entities.create_entity(0, 0, EntityType::Player, Color::white(), EntityName::Player, true);
 
     entities.status[&entity_id].alive = true;
     entities.hp.insert(entity_id, Hp { max_hp: config.player_health, hp: config.player_health, });
@@ -54,7 +54,7 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
 }
 
 pub fn make_column(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Column, MAP_COLUMN as char, Color::white(), EntityName::Column, true);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Column, Color::white(), EntityName::Column, true);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Column, entities.direction[&entity_id]));
 
@@ -62,7 +62,7 @@ pub fn make_column(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
 }
 
 pub fn make_energy(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Energy, ENTITY_ENERGY as char, Color::white(), EntityName::Energy, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Energy, Color::white(), EntityName::Energy, false);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Energy, entities.direction[&entity_id]));
 
@@ -70,7 +70,7 @@ pub fn make_energy(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
 }
 
 pub fn make_dagger(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_DAGGER as char, Color::white(), EntityName::Dagger, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, Color::white(), EntityName::Dagger, false);
 
     entities.modifier.insert(entity_id, ItemModifier::new());
     entities.item.insert(entity_id,  Item::Dagger);
@@ -82,7 +82,7 @@ pub fn make_dagger(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
 }
 
 pub fn make_hammer(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_HAMMER as char, Color::white(), EntityName::Hammer, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, Color::white(), EntityName::Hammer, false);
 
     entities.modifier.insert(entity_id, ItemModifier::new());
     entities.item.insert(entity_id,  Item::Hammer);
@@ -94,7 +94,7 @@ pub fn make_hammer(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
 }
 
 pub fn make_spear(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SPEAR as char, Color::white(), EntityName::Spear, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, Color::white(), EntityName::Spear, false);
 
     entities.modifier.insert(entity_id, ItemModifier::new());
     entities.item.insert(entity_id,  Item::Spear);
@@ -106,7 +106,7 @@ pub fn make_spear(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
 }
 
 pub fn make_sword(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SWORD as char, Color::white(), EntityName::Sword, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, Color::white(), EntityName::Sword, false);
 
     entities.item.insert(entity_id,  Item::Sword);
 
@@ -119,7 +119,7 @@ pub fn make_sword(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
 }
 
 pub fn make_greatsword(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_GREATSWORD as char, Color::white(), EntityName::GreatSword, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, Color::white(), EntityName::GreatSword, false);
 
     entities.item.insert(entity_id,  Item::GreatSword);
 
@@ -132,7 +132,7 @@ pub fn make_greatsword(entities: &mut Entities, _config: &Config, pos: Pos, msg_
 }
 
 pub fn make_shield(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_SHIELD as char, Color::white(), EntityName::Shield, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, Color::white(), EntityName::Shield, false);
 
     entities.item.insert(entity_id,  Item::Shield);
 
@@ -145,7 +145,7 @@ pub fn make_shield(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
 }
 
 pub fn make_key(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_KEY as char, Color::white(), EntityName::Key, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, Color::white(), EntityName::Key, false);
     
     entities.item.insert(entity_id,  Item::Key);
 
@@ -157,7 +157,7 @@ pub fn make_key(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &m
 }
 
 pub fn make_mouse(entities: &mut Entities, _config: &Config, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(-1, -1, EntityType::Other, ' ', Color::white(), EntityName::Mouse, false);
+    let entity_id = entities.create_entity(-1, -1, EntityType::Other, Color::white(), EntityName::Mouse, false);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], Pos::new(-1, -1), EntityName::Mouse, entities.direction[&entity_id]));
 
@@ -165,7 +165,7 @@ pub fn make_mouse(entities: &mut Entities, _config: &Config, msg_log: &mut MsgLo
 }
 
 pub fn make_light(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Other, ' ', Color::white(), EntityName::Other, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Other, Color::white(), EntityName::Other, false);
 
     entities.illuminate.insert(entity_id, SKILL_ILLUMINATE_RADIUS);
 
@@ -175,7 +175,7 @@ pub fn make_light(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
 }
 
 pub fn make_cursor(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Other, ' ', Color::white(), EntityName::Cursor, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Other, Color::white(), EntityName::Cursor, false);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], Pos::new(-1, -1), EntityName::Cursor, entities.direction[&entity_id]));
 
@@ -187,7 +187,7 @@ pub fn ensure_grass(entities: &mut Entities, pos: Pos, msg_log: &mut MsgLog) -> 
     if let Some(grass_entity) = entities.get_names_at_pos(pos, EntityName::Grass).get(0) {
         entity_id = *grass_entity;
     } else {
-        entity_id = entities.create_entity(pos.x, pos.y, EntityType::Environment, ' ', Color::white(), EntityName::Grass, false);
+        entity_id = entities.create_entity(pos.x, pos.y, EntityType::Environment, Color::white(), EntityName::Grass, false);
 
         msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Grass, entities.direction[&entity_id]));
     }
@@ -196,7 +196,7 @@ pub fn ensure_grass(entities: &mut Entities, pos: Pos, msg_log: &mut MsgLog) -> 
 }
 
 pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{98}', Color::white(), EntityName::Gol, true);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, Color::white(), EntityName::Gol, true);
 
     entities.hp.insert(entity_id,  Hp { max_hp: 10, hp: 10, });
     entities.ai.insert(entity_id,  Ai::Basic);
@@ -217,7 +217,7 @@ pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
 } 
 
 pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{A5}', Color::white(), EntityName::Pawn, true);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, Color::white(), EntityName::Pawn, true);
 
     entities.hp.insert(entity_id,  Hp { max_hp: 16, hp: 16, });
     entities.ai.insert(entity_id,  Ai::Basic);
@@ -238,7 +238,7 @@ pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
 }
 
 pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{15}', Color::white(), EntityName::Spire, true);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, Color::white(), EntityName::Spire, true);
 
     entities.hp.insert(entity_id,  Hp { max_hp: 16, hp: 16, });
     entities.ai.insert(entity_id,  Ai::Basic);
@@ -259,7 +259,7 @@ pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
 }
 
 pub fn make_rook(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{A5}', Color::white(), EntityName::Rook, true);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, Color::white(), EntityName::Rook, true);
 
     entities.hp.insert(entity_id,  Hp { max_hp: 16, hp: 16, });
     entities.ai.insert(entity_id,  Ai::Basic);
@@ -280,7 +280,7 @@ pub fn make_rook(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
 }
 
 pub fn make_armil(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, '\u{98}', Color::white(), EntityName::Armil, true);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Enemy, Color::white(), EntityName::Armil, true);
 
     entities.hp.insert(entity_id,  Hp { max_hp: 10, hp: 10, });
     entities.ai.insert(entity_id,  Ai::Basic);
@@ -300,7 +300,7 @@ pub fn make_armil(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
 } 
 
 pub fn make_sound_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_TRAP_SOUND as char, Color::white(), EntityName::SoundTrap, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, Color::white(), EntityName::SoundTrap, false);
 
     entities.trap.insert(entity_id,  Trap::Sound);
     entities.armed.insert(entity_id,  true);
@@ -312,7 +312,7 @@ pub fn make_sound_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg_
 }
 
 pub fn make_spike_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, MAP_TALL_SPIKES as char, Color::white(), EntityName::SpikeTrap, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, Color::white(), EntityName::SpikeTrap, false);
 
     entities.trap.insert(entity_id,  Trap::Spikes);
     entities.armed.insert(entity_id,  true);
@@ -324,7 +324,7 @@ pub fn make_spike_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg_
 }
 
 pub fn make_blink_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_BLINK_TRAP as char, Color::white(), EntityName::BlinkTrap, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, Color::white(), EntityName::BlinkTrap, false);
 
     entities.trap.insert(entity_id,  Trap::Blink);
     entities.armed.insert(entity_id,  true);
@@ -336,7 +336,7 @@ pub fn make_blink_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg_
 }
 
 pub fn make_freeze_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_FREEZE_TRAP as char, Color::white(), EntityName::FreezeTrap, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, Color::white(), EntityName::FreezeTrap, false);
 
     entities.trap.insert(entity_id,  Trap::Freeze);
     entities.armed.insert(entity_id,  true);
@@ -348,7 +348,7 @@ pub fn make_freeze_trap(entities: &mut Entities, _config: &Config, pos: Pos, msg
 }
 
 pub fn make_gate_trigger(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Trigger, ENTITY_GATE_TRIGGER as char, Color::white(), EntityName::GateTrigger, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Trigger, Color::white(), EntityName::GateTrigger, false);
 
     entities.gate_pos.insert(entity_id, Pos::new(-1, -1));
 
@@ -358,7 +358,7 @@ pub fn make_gate_trigger(entities: &mut Entities, _config: &Config, pos: Pos, ms
 }
 
 pub fn make_exit(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, ENTITY_EXIT as char, Color::white(), EntityName::Exit, false);
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, Color::white(), EntityName::Exit, false);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Exit, entities.direction[&entity_id]));
 
@@ -366,40 +366,40 @@ pub fn make_exit(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &
 }
 
 pub fn make_stone(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = make_item_generic(entities, ENTITY_STONE, Item::Stone, EntityName::Stone, pos, msg_log);
+    let entity_id = make_item_generic(entities, Item::Stone, EntityName::Stone, pos, msg_log);
     return entity_id;
 }
 
 pub fn make_seed_of_stone(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = make_item_generic(entities, ENTITY_SEED_OF_STONE, Item::SeedOfStone, EntityName::SeedOfStone, pos, msg_log);
+    let entity_id = make_item_generic(entities, Item::SeedOfStone, EntityName::SeedOfStone, pos, msg_log);
     return entity_id;
 }
 
 pub fn make_glass_eye(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = make_item_generic(entities, ENTITY_GLASS_EYE, Item::GlassEye, EntityName::GlassEye, pos, msg_log);
+    let entity_id = make_item_generic(entities, Item::GlassEye, EntityName::GlassEye, pos, msg_log);
     return entity_id;
 }
 
 pub fn make_herb(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = make_item_generic(entities, ENTITY_HERB, Item::Herb, EntityName::Herb, pos, msg_log);
+    let entity_id = make_item_generic(entities, Item::Herb, EntityName::Herb, pos, msg_log);
     return entity_id;
 }
 
 pub fn make_teleporter(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = make_item_generic(entities, ENTITY_TELEPORTER, Item::Teleporter, EntityName::Teleporter, pos, msg_log);
+    let entity_id = make_item_generic(entities, Item::Teleporter, EntityName::Teleporter, pos, msg_log);
     return entity_id;
 }
 
 pub fn make_lantern(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = make_item_generic(entities, ENTITY_LANTERN, Item::Lantern, EntityName::Lantern, pos, msg_log);
+    let entity_id = make_item_generic(entities, Item::Lantern, EntityName::Lantern, pos, msg_log);
 
     entities.illuminate.insert(entity_id, LANTERN_ILLUMINATE_RADIUS);
 
     return entity_id;
 }
 
-pub fn make_item_generic(entities: &mut Entities, chr: u8, item: Item, name: EntityName, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, chr as char, Color::white(), name, true);
+pub fn make_item_generic(entities: &mut Entities, item: Item, name: EntityName, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, Color::white(), name, true);
 
     entities.item.insert(entity_id,  item);
     entities.status[&entity_id].alive = false;

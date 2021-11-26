@@ -1483,7 +1483,6 @@ pub struct Entities {
     pub ids: Vec<EntityId>,
     pub next_id: EntityId,
     pub pos: Comp<Pos>,
-    pub chr: Comp<char>,
     pub name: Comp<EntityName>,
     pub hp: Comp<Hp>,
     pub ai: Comp<Ai>,
@@ -1597,7 +1596,7 @@ impl Entities {
         return None;
     }
 
-    pub fn create_entity(&mut self, x: i32, y: i32, typ: EntityType, chr: char, color: Color, name: EntityName, blocks: bool) -> EntityId {
+    pub fn create_entity(&mut self, x: i32, y: i32, typ: EntityType, color: Color, name: EntityName, blocks: bool) -> EntityId {
         let id = self.next_id;
         self.next_id += 1;
         self.ids.push(id);
@@ -1605,7 +1604,6 @@ impl Entities {
         // add fields that all entities share
         self.pos.insert(id, Pos::new(x, y));
         self.typ.insert(id, typ);
-        self.chr.insert(id, chr);
         self.color.insert(id, color);
         self.name.insert(id, name);
         self.blocks.insert(id, blocks);
@@ -1825,7 +1823,6 @@ impl Entities {
         }
 
         move_component!(pos);
-        move_component!(chr);
         move_component!(name);
         move_component!(hp);
         move_component!(stance);
@@ -1873,7 +1870,6 @@ impl Entities {
         self.ids.remove(ix_pos);
 
         self.pos.remove(&id);
-        self.chr.remove(&id);
         self.name.remove(&id);
         self.hp.remove(&id);
         self.stance.remove(&id);

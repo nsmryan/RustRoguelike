@@ -978,7 +978,7 @@ fn render_entity(panel: &mut Panel,
             let color = game.data.entities.color[&entity_id];
 
             let tiles = lookup_spritekey(sprites, "tiles");
-            let chr = game.data.entities.chr[&entity_id];
+            let chr = display_state.chr[&entity_id];
             let sprite = Sprite::new(chr as u32, tiles);
 
             panel.sprite_cmd(sprite, color, pos);
@@ -1583,7 +1583,7 @@ fn render_movement_overlay(panel: &mut Panel,
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
     if let Some(move_positions) = display_state.entity_movements.get(&entity_id) {
-        let chr = game.data.entities.chr[&entity_id];
+        let chr = display_state.chr[&entity_id];
         let sprite = Sprite::new(chr as u32, tiles_key);
 
         for move_pos in move_positions.iter() {
