@@ -281,8 +281,8 @@ fn render_info(panel: &mut Panel,
                 text_list.push(format!("{:?}", game.data.entities.name[obj_id]));
 
                 // show facing direction for player and monsters
-                if game.data.entities.typ[obj_id] == EntityType::Player ||
-                   game.data.entities.typ[obj_id] == EntityType::Enemy {
+                if display_state.typ[obj_id] == EntityType::Player ||
+                   display_state.typ[obj_id] == EntityType::Enemy {
                     if let Some(direction) = game.data.entities.direction.get(obj_id) {
                         text_list.push(format!("Facing {}", direction));
                     }
@@ -986,7 +986,7 @@ fn render_entity(panel: &mut Panel,
         }
     } else {
         // if not in FoV, see if we need to add an impression for a golem
-        if game.data.entities.typ[&entity_id] == EntityType::Enemy {
+        if display_state.typ[&entity_id] == EntityType::Enemy {
             if display_state.entity_is_in_fov(entity_id) == FovResult::Edge {
                 if display_state.impressions.iter().all(|impresssion| impresssion.pos != pos) {
                     let tiles = lookup_spritekey(sprites, "tiles");
@@ -1040,7 +1040,7 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
             let entity_id = game.data.entities.ids[index];
             index += 1;
 
-            if !game.data.entities.needs_removal[&entity_id] && game.data.entities.typ[&entity_id] == typ {
+            if !game.data.entities.needs_removal[&entity_id] && display_state.typ[&entity_id] == typ {
                 let maybe_sprite = render_entity(panel, entity_id, display_state, game, sprites);
 
                 if let Some(sprite) = maybe_sprite {

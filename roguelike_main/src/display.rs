@@ -326,7 +326,7 @@ impl Display {
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
-                if level.entities.typ[&attacked] != EntityType::Player {
+                if self.state.typ[&attacked] != EntityType::Player {
                     self.state.clear_animations(attacked);
 
                     let sprite_name = format!("{:?}_death", level.entities.name[&attacked]);
@@ -372,7 +372,7 @@ impl Display {
             }
 
             Msg::HammerSwing(entity_id, _item_id, _pos) => {
-                if level.entities.typ[&entity_id] == EntityType::Player {
+                if self.state.typ[&entity_id] == EntityType::Player {
                     // TODO need hammer animation
                     //let attack_sprite =
                     //    self.new_sprite("player_attack_hammer".to_string(), config.player_attack_hammer_speed);
@@ -386,7 +386,7 @@ impl Display {
             }
 
             Msg::Stabbed(entity_id, _hit_entity) => {
-                if level.entities.typ[&entity_id] == EntityType::Player {
+                if self.state.typ[&entity_id] == EntityType::Player {
                     // TODO need dagger animation
                     //let attack_sprite =
                     //    self.new_sprite("player_attack_dagger".to_string(), config.player_attack_speed);
@@ -400,7 +400,7 @@ impl Display {
             }
 
             Msg::Attack(attacker, attacked, _damage) => {
-                if level.entities.typ[&attacker] == EntityType::Player {
+                if self.state.typ[&attacker] == EntityType::Player {
                     // TODO need attack animation
                     //let attack_sprite =
                     //    self.new_sprite("player_attack".to_string(), config.player_attack_speed);
