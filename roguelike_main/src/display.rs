@@ -424,39 +424,7 @@ impl Display {
             }
 
             Msg::SpawnedObject(entity_id, _typ, _pos, name, _facing) => {
-                let mut chr = ' ' as u8;
-                match name {
-                    EntityName::Player => chr = ENTITY_PLAYER,
-                    EntityName::Gol => chr = '\u{98}' as u8,
-                    EntityName::Pawn => chr = '\u{A5}' as u8,
-                    EntityName::Rook => chr = '\u{A5}' as u8,
-                    EntityName::Column => chr = MAP_COLUMN,
-                    EntityName::Key => chr = ENTITY_KEY,
-                    EntityName::Exit => chr = ENTITY_EXIT,
-                    EntityName::Dagger => chr = ENTITY_DAGGER,
-                    EntityName::Hammer => chr = ENTITY_HAMMER,
-                    EntityName::Spear => chr = ENTITY_SPEAR,
-                    EntityName::GreatSword => chr = ENTITY_GREATSWORD,
-                    EntityName::Sword => chr = ENTITY_SWORD,
-                    EntityName::Shield => chr = ENTITY_SHIELD,
-                    EntityName::Lantern => chr = ENTITY_LANTERN,
-                    EntityName::SeedOfStone => chr = ENTITY_SEED_OF_STONE,
-                    EntityName::GlassEye => chr = ENTITY_GLASS_EYE,
-                    EntityName::Teleporter => chr = ENTITY_TELEPORTER,
-                    EntityName::Spire => chr = '\u{15}' as u8,
-                    EntityName::Armil => chr = '\u{98}' as u8,
-                    EntityName::SpikeTrap => chr = MAP_TALL_SPIKES,
-                    EntityName::BlinkTrap => chr = ENTITY_BLINK_TRAP,
-                    EntityName::FreezeTrap => chr = ENTITY_FREEZE_TRAP,
-                    EntityName::SoundTrap => chr = ENTITY_TRAP_SOUND,
-                    EntityName::GateTrigger => chr = ENTITY_GATE_TRIGGER,
-                    EntityName::Stone => chr = ENTITY_STONE,
-                    EntityName::Energy => chr = ENTITY_ENERGY,
-                    EntityName::Herb => chr = ENTITY_HERB,
-                    //Mouse, Cursor, Grass, Other
-                    _ => {},
-                }
-
+                let chr = entity_name_to_chr(name);
                 self.state.chr.insert(entity_id, chr as char);
 
                 if level.entities.ids.contains(&entity_id) {
@@ -767,6 +735,42 @@ fn needs_flip_horiz(direction: Direction) -> bool {
         Direction::DownRight => return false,
         Direction::DownLeft => return true,
     }
+}
+
+fn entity_name_to_chr(name: EntityName) -> char {
+    let mut chr = ' ' as u8;
+    match name {
+        EntityName::Player => chr = ENTITY_PLAYER,
+        EntityName::Gol => chr = '\u{98}' as u8,
+        EntityName::Pawn => chr = '\u{A5}' as u8,
+        EntityName::Rook => chr = '\u{A5}' as u8,
+        EntityName::Column => chr = MAP_COLUMN,
+        EntityName::Key => chr = ENTITY_KEY,
+        EntityName::Exit => chr = ENTITY_EXIT,
+        EntityName::Dagger => chr = ENTITY_DAGGER,
+        EntityName::Hammer => chr = ENTITY_HAMMER,
+        EntityName::Spear => chr = ENTITY_SPEAR,
+        EntityName::GreatSword => chr = ENTITY_GREATSWORD,
+        EntityName::Sword => chr = ENTITY_SWORD,
+        EntityName::Shield => chr = ENTITY_SHIELD,
+        EntityName::Lantern => chr = ENTITY_LANTERN,
+        EntityName::SeedOfStone => chr = ENTITY_SEED_OF_STONE,
+        EntityName::GlassEye => chr = ENTITY_GLASS_EYE,
+        EntityName::Teleporter => chr = ENTITY_TELEPORTER,
+        EntityName::Spire => chr = '\u{15}' as u8,
+        EntityName::Armil => chr = '\u{98}' as u8,
+        EntityName::SpikeTrap => chr = MAP_TALL_SPIKES,
+        EntityName::BlinkTrap => chr = ENTITY_BLINK_TRAP,
+        EntityName::FreezeTrap => chr = ENTITY_FREEZE_TRAP,
+        EntityName::SoundTrap => chr = ENTITY_TRAP_SOUND,
+        EntityName::GateTrigger => chr = ENTITY_GATE_TRIGGER,
+        EntityName::Stone => chr = ENTITY_STONE,
+        EntityName::Energy => chr = ENTITY_ENERGY,
+        EntityName::Herb => chr = ENTITY_HERB,
+        //Mouse, Cursor, Grass, Other
+        _ => {},
+    }
+    return chr as char;
 }
 
 fn create_texture(texture_creator: &mut TextureCreator<WindowContext>, pixel_format: PixelFormatEnum, num_pixels: (u32, u32)) -> Texture {
