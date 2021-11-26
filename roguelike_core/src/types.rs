@@ -46,6 +46,11 @@ impl<T> Comp<T> {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.ids.clear();
+        self.store.clear();
+    }
+
     pub fn remove(&mut self, entity_id: &EntityId) {
         let result = self.ids.binary_search(&entity_id);
         match result {
@@ -663,6 +668,7 @@ impl Level {
         return result;
     }
 
+    // NOTE this is no longer used
     // clear all entities, except those in the given vector.
     pub fn clear_except(&mut self, exceptions: Vec<EntityId>) {
         let mut dont_clear: Vec<EntityId> = Vec::new();

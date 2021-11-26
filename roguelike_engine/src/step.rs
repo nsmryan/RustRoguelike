@@ -2,8 +2,7 @@ use logging_timer::timer;
 
 use roguelike_core::types::*;
 use roguelike_core::ai::*;
-use roguelike_core::messaging::{Msg, MsgLog};
-use roguelike_core::map::{FovResult};
+use roguelike_core::messaging::{Msg, MsgLog, MsgLogDir};
 
 #[cfg(test)]
 use roguelike_core::movement::MoveMode;
@@ -91,132 +90,7 @@ pub fn step_logic(game: &mut Game) -> bool {
     // perform count down of entities waiting to be removed
     game.data.entities.count_down();
 
-    post_step(game);
-
     return level_exit_condition_met(&game.data);
-}
-
-pub fn post_step(game: &mut Game) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
-    let (map_width, map_height) = game.data.map.size();
-
-    let mut player_fov = Vec::new();
-
-    // indicate FoV information
-    for y in 0..map_height {
-        for x in 0..map_width {
-            let pos = Pos::new(x, y);
-            let fov_result;
-            if game.settings.god_mode {
-                fov_result = FovResult::Inside;
-            } else {
-                fov_result = game.data.pos_in_fov_edge(player_id, pos, &game.config);
-            }
-
-            // only send if inside or on edge- outside is most common, so it is assumed
-            // if no message is sent.
-            if fov_result != FovResult::Outside {
-                game.msg_log.log_front(Msg::TileFov(pos, fov_result));
-            }
-
-            // TODO should this be != Outside, to include Edge?
-            if fov_result == FovResult::Inside {
-                player_fov.push(pos);
-            }
-        }
-    }
-
-    for entity_id in game.data.entities.ids.iter() {
-        let typ = game.data.entities.typ[&entity_id];
-        let entity_pos = game.data.entities.pos[&entity_id];
-        if !game.data.map.is_within_bounds(entity_pos) {
-            continue;
-        }
-
-        // emit whether entity is in player FOV
-        let mut in_fov = game.data.is_in_fov(player_id, *entity_id, &game.config);
-        if game.settings.god_mode {
-            in_fov = FovResult::Inside;
-        }
-
-        // outside is the most common fov result, so it is assumed if no entry is sent.
-        if in_fov != FovResult::Outside {
-            game.msg_log.log_front(Msg::EntityInFov(*entity_id, in_fov));
-        }
-
-        // emit visible movement positions
-        if let Some(reach) = game.data.entities.movement.get(&entity_id) {
-            for move_pos in reach.reachables(entity_pos) {
-                if !game.data.map.is_within_bounds(move_pos) {
-                    continue;
-                }
-
-                if game.data.pos_in_fov(*entity_id, move_pos, &game.config) {
-                    game.msg_log.log(Msg::EntityMovement(*entity_id, move_pos));
-                }
-            }
-        }
-
-        if typ != EntityType::Player && typ != EntityType::Enemy {
-            continue;
-        }
-
-        // emit visible attack positions
-        if let Some(reach) = game.data.entities.attack.get(&entity_id) {
-            for attack_pos in reach.reachables(entity_pos) {
-                if !game.data.map.is_within_bounds(attack_pos) {
-                    continue;
-                }
-
-                if game.data.pos_in_fov(*entity_id, attack_pos, &game.config) &&
-                   (game.data.clear_path(entity_pos, attack_pos, false) || attack_pos == player_pos) {
-                    game.msg_log.log(Msg::EntityAttack(*entity_id, attack_pos));
-                }
-            }
-        }
-
-        // emit visible tiles for entity that are visible to player
-        for pos in player_fov.iter() {
-            if game.data.pos_in_fov(*entity_id, *pos, &game.config) {
-                game.msg_log.log(Msg::EntityFov(*entity_id, *pos));
-            }
-        }
-    }
-
-    // if in use-mode, output use-direction.
-    if let UseAction::Item(item_class) = game.settings.use_action {
-        if let Some(item_index) = game.data.find_item(item_class) {
-            if let Some(use_dir) = game.settings.use_dir {
-                let use_result = game.data.calculate_use_move(player_id,
-                                                              item_index,
-                                                              use_dir,
-                                                              game.settings.move_mode);
-                if let Some(pos) = use_result.pos {
-                    game.msg_log.log_front(Msg::UsePos(pos));
-                }
-
-                if let Some(dir) = game.settings.use_dir {
-                    game.msg_log.log_front(Msg::UseDir(dir));
-                }
-
-                for pos in use_result.hit_positions {
-                    game.msg_log.log_front(Msg::UseHitPos(pos));
-                }
-            }
-        }
-    }
-
-    // report entities at the cursor position
-    if let Some(cursor_pos) = game.settings.cursor {
-        let entities = game.data.get_entities_at_pos(cursor_pos);
-        for entity in entities {
-            game.msg_log.log_front(Msg::EntityAtCursor(entity));
-        }
-    }
-
-    game.msg_log.log_front(Msg::StartTurn);
-
 }
 
 /// Check whether the exit condition for the game is met.

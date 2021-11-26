@@ -12,6 +12,7 @@ use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::utils::tile_fill_metric;
+use roguelike_core::movement::MoveType;
 
 use crate::generation::*;
 use crate::game::*;
@@ -22,9 +23,9 @@ use crate::vault::*;
 pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     let player_position: Pos;
 
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    game.data.clear_except(vec!(player_id));
-
+    //let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    //game.data.clear_except(vec!(player_id));
+    game.clear_level_except_player();
     game.settings.map_load_config = map_load_config.clone();
 
     match map_load_config {
@@ -152,7 +153,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     }
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    //game.msg_log.log(Msg::Moved(player_id, MoveType::Move, player_position));
+    game.msg_log.log(Msg::Moved(player_id, MoveType::Blink, player_position));
     game.data.entities.set_pos(player_id, player_position);
 
     if game.config.write_map_distribution {
@@ -170,7 +171,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
     }
 
-    game.msg_log.log(Msg::NewLevel);
+    game.msg_log.log_front(Msg::NewLevel);
 }
 
 pub fn read_map_xp(config: &Config,

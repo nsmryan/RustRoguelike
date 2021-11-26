@@ -532,6 +532,12 @@ impl Msg {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Hash, Debug, Serialize, Deserialize)]
+pub enum MsgLogDir {
+    Front,
+    Back,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MsgLog {
     pub messages: VecDeque<Msg>,
@@ -559,6 +565,13 @@ impl MsgLog {
     pub fn log_front(&mut self, msg: Msg) {
         self.messages.push_front(msg);
         self.turn_messages.push_front(msg);
+    }
+
+    pub fn log_dir(&mut self, msg: Msg, log_dir: MsgLogDir) {
+        match log_dir {
+            MsgLogDir::Front => self.log_front(msg),
+            MsgLogDir::Back => self.log(msg),
+        }
     }
 
     pub fn clear(&mut self) {

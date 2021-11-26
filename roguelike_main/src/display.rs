@@ -242,22 +242,28 @@ impl Display {
         self.state.prev_turn_fov.clear();
         self.state.sound_tiles.clear();
         self.state.effects.clear();
+
+        self.clear_turn_state();
+    }
+
+    pub fn clear_turn_state(&mut self) {
+        self.state.use_pos = None;
+        self.state.use_dirs.clear();
+        self.state.use_dir = None;
+        self.state.hit_positions.clear();
+        self.state.entities_at_cursor.clear();
+        self.state.entity_movements.clear();
+        self.state.entity_attacks.clear();
+        self.state.entity_fov.clear();
+        self.state.sound_tiles.clear();
+        self.state.fov.clear();
+        self.state.entities_in_fov.clear();
     }
 
     pub fn process_message(&mut self, msg: Msg, level: &mut Level, config: &Config) {
         match msg {
             Msg::StartTurn => {
-                self.state.use_pos = None;
-                self.state.use_dirs.clear();
-                self.state.use_dir = None;
-                self.state.hit_positions.clear();
-                self.state.entities_at_cursor.clear();
-                self.state.entity_movements.clear();
-                self.state.entity_attacks.clear();
-                self.state.entity_fov.clear();
-                self.state.sound_tiles.clear();
-                self.state.fov.clear();
-                self.state.entities_in_fov.clear();
+                self.clear_turn_state();
             }
 
             Msg::CursorState(state, pos) => {
@@ -431,9 +437,7 @@ impl Display {
                 self.state.name.insert(entity_id, name);
                 self.state.ids.push(entity_id);
 
-                if level.entities.ids.contains(&entity_id) {
-                    self.play_idle_animation(entity_id, &level.entities, config);
-                }
+                self.play_idle_animation(entity_id, &level.entities, config);
             }
 
             Msg::PlayerTurn => {
@@ -447,7 +451,7 @@ impl Display {
                 }
 
                 for entity_id in self.state.prev_turn_fov.iter() {
-                    if level.entities.typ.get(entity_id) != Some(&EntityType::Enemy) {
+                    if self.state.typ.get(entity_id) != Some(&EntityType::Enemy) {
                         continue;
                     }
 
@@ -480,8 +484,9 @@ impl Display {
                 self.state.typ.remove(&entity_id);
                 self.state.name.remove(&entity_id);
 
-                let ix_pos = self.state.ids.iter().position(|val| *val == entity_id).unwrap();
-                self.state.ids.remove(ix_pos);
+                if let Some(ix_pos) = self.state.ids.iter().position(|val| *val == entity_id) {
+                    self.state.ids.remove(ix_pos);
+                }
             }
 
             Msg::NewLevel => {

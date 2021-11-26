@@ -1137,11 +1137,15 @@ fn killed_entity(attacked: EntityId, data: &mut Level, msg_log: &mut MsgLog, con
 }
 
 fn remove_entity(entity_id: EntityId, data: &mut Level) {
-    data.entities.status[&entity_id].alive = false;
+    // The entity can already be removed if the removal message was logged
+    // to indicate to other systems an internal change in state such as a new map.
+    if data.entities.ids.contains(&entity_id) {
+        data.entities.status[&entity_id].alive = false;
 
-    data.entities.blocks[&entity_id] = false;
+        data.entities.blocks[&entity_id] = false;
 
-    data.entities.mark_for_removal(entity_id);
+        data.entities.mark_for_removal(entity_id);
+    }
 }
 
 fn pushed_entity(pusher: EntityId,

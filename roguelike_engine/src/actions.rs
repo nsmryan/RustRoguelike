@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 
 use roguelike_core::movement::{Direction, Reach, MoveMode};
 use roguelike_core::types::*;
-use roguelike_core::messaging::{Msg, MsgLog};
+use roguelike_core::messaging::{Msg, MsgLog, MsgLogDir};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
 use roguelike_core::utils::{scale_pos, distance, sub_pos, add_pos, next_from_to};
@@ -14,7 +14,6 @@ use roguelike_core::map::{astar_next_pos, Surface};
 use crate::game::*;
 use crate::input::*;
 use crate::make_map;
-
 
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -249,7 +248,7 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
 
         InputAction::RegenerateMap => {
             let _position = make_map::make_map(&game.config.map_load.clone(), game);
-            game.msg_log.log(Msg::NewLevel);
+            game.msg_log.log_front(Msg::NewLevel);
             return true;
         }
 

@@ -19,6 +19,8 @@ use crate::animation::{Sprite, SpriteKey, Effect, Animation, AnimationResult, Pa
 
 
 pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites: &Vec<SpriteSheet>, game: &mut Game, dt: f32) -> Result<(), String> {
+    display_state.show_debug("ids", format!("{}", display_state.ids.len()));
+
     display_state.dt = dt;
     display_state.time += dt;
 
@@ -932,13 +934,12 @@ fn render_entity(panel: &mut Panel,
                  sprites: &Vec<SpriteSheet>) -> Option<Sprite> {
     let mut animation_result = AnimationResult::new();
 
-    let pos = game.data.entities.pos[&entity_id];
+    let pos = display_state.pos[&entity_id];
     animation_result.pos = pos;
 
     // only draw if within the map (outside is (-1, -1) like if in inventory)
     // and not about to be removed.
-    if !game.data.map.is_within_bounds(pos) ||
-       game.data.entities.needs_removal[&entity_id] {
+    if !game.data.map.is_within_bounds(pos) {
            return None;
     }
 
@@ -955,14 +956,14 @@ fn render_entity(panel: &mut Panel,
                     display_state.play_effect(effect);
                 } else {
                     if let Some(sprite) = animation_result.sprite {
-                        let mut color = game.data.entities.color[&entity_id];
+                        //let mut color = game.data.entities.color[&entity_id];
 
-                        // unarmed traps are grayed out
-                        if game.data.entities.armed.get(&entity_id) == Some(&false) {
-                            color = game.config.color_warm_grey;
-                        }
+                        //// unarmed traps are grayed out
+                        //if game.data.entities.armed.get(&entity_id) == Some(&false) {
+                        //    color = game.config.color_warm_grey;
+                        //}
                         // TODO added in because the color doesn't seem to be actually used.
-                        color = Color::new(255, 255, 255, 255);
+                        let color = Color::new(255, 255, 255, 255);
 
                         panel.sprite_cmd(sprite, color, animation_result.pos);
                     }
@@ -975,7 +976,9 @@ fn render_entity(panel: &mut Panel,
                 }
             }
         } else {
-            let color = game.data.entities.color[&entity_id];
+            //let color = game.data.entities.color[&entity_id];
+            // TODO added in because the color doesn't seem to be actually used.
+            let color = Color::new(255, 255, 255, 255);
 
             let tiles = lookup_spritekey(sprites, "tiles");
             let chr = display_state.chr[&entity_id];
@@ -1018,7 +1021,7 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
         // need special rendering. Otherwise the player is rendered as normal.
 
         let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-        let player_pos = game.data.entities.pos[&player_id];
+        let player_pos = display_state.pos[&player_id];
 
         let use_pos;
         if let Some(use_dir) = display_state.use_dir {
@@ -1030,17 +1033,18 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
 
         if let Some(pos) = use_pos {
             render_entity_ghost(panel, player_id, player_pos, game, display_state, sprites);
-            game.data.entities.pos[&player_id] = pos;
+            display_state.pos[&player_id] = pos;
             render_entity(panel, player_id, display_state, game, sprites);
-            game.data.entities.pos[&player_id] = player_pos;
+            display_state.pos[&player_id] = player_pos;
         }
     } else {
         let mut index = 0;
-        while index < game.data.entities.ids.len() {
-            let entity_id = game.data.entities.ids[index];
+        while index < display_state.ids.len() {
+            let entity_id = display_state.ids[index];
             index += 1;
 
-            if !game.data.entities.needs_removal[&entity_id] && display_state.typ[&entity_id] == typ {
+            //if !game.data.entities.needs_removal[&entity_id] && display_state.typ[&entity_id] == typ {
+            if display_state.typ[&entity_id] == typ {
                 let maybe_sprite = render_entity(panel, entity_id, display_state, game, sprites);
 
                 if let Some(sprite) = maybe_sprite {
@@ -1057,7 +1061,7 @@ fn render_overlay_use_item(panel: &mut Panel,
                            game: &mut Game,
                            sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
+    let player_pos = display_state.pos[&player_id];
 
     let direction_color = Color::white();
     let mut attack_highlight_color = game.config.color_red;
@@ -1118,7 +1122,7 @@ fn render_game_overlays(panel: &mut Panel,
                         game: &mut Game,
                         sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
+    let player_pos = display_state.pos[&player_id];
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
@@ -1132,7 +1136,7 @@ fn render_game_overlays(panel: &mut Panel,
                     highlight_color.a = 100;
                     panel.highlight_cmd(highlight_color, gate_pos);
                 } else if game.data.entities.name[&entity] == EntityName::FreezeTrap {
-                    let trap_pos = game.data.entities.pos[&entity];
+                    let trap_pos = display_state.pos[&entity];
                     let freeze_aoe =
                         aoe_fill(&game.data.map, AoeEffect::Freeze, trap_pos, game.config.freeze_trap_radius, &game.config);
                     for pos in freeze_aoe.positions() {
@@ -1185,7 +1189,7 @@ fn render_game_overlays(panel: &mut Panel,
             let entity_id = game.data.entities.ids[index];
             index += 1;
 
-            let pos = game.data.entities.pos[&entity_id];
+            let pos = display_state.pos[&entity_id];
 
             if pos.x == -1 && pos.y == -1 {
                 continue;
@@ -1203,7 +1207,7 @@ fn render_game_overlays(panel: &mut Panel,
     if game.settings.overlay {
         let keys = display_state.ids.iter().map(|id| *id).collect::<Vec<EntityId>>();
         for entity_id in keys {
-            let pos = game.data.entities.pos[&entity_id];
+            let pos = display_state.pos[&entity_id];
 
             if entity_id != player_id &&
                game.data.map.is_within_bounds(pos) &&
@@ -1226,7 +1230,7 @@ fn render_overlays(panel: &mut Panel,
                    cursor_pos: Option<Pos>,
                    sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
+    let player_pos = display_state.pos[&player_id];
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
@@ -1313,7 +1317,7 @@ fn render_overlays(panel: &mut Panel,
     if let Some(_mouse_xy) = cursor_pos {
         // Draw monster attack overlay
         for entity_id in display_state.entities_at_cursor.clone() {
-            let pos = game.data.entities.pos[&entity_id];
+            let pos = display_state.pos[&entity_id];
 
             if display_state.pos_is_in_fov(pos) == FovResult::Inside &&
                entity_id != player_id &&
@@ -1330,8 +1334,8 @@ fn render_overlays(panel: &mut Panel,
 
     // draw mouse path overlays
     if let Some(mouse_id) = game.data.find_by_name(EntityName::Mouse) {
-        let mouse_pos = game.data.entities.pos[&mouse_id];
-        let player_pos = game.data.entities.pos[&player_id];
+        let mouse_pos = display_state.pos[&mouse_id];
+        let player_pos = display_state.pos[&player_id];
 
         if game.config.draw_star_path {
             // get a path to the mouse path, regardless of distance
@@ -1371,7 +1375,7 @@ fn render_overlays(panel: &mut Panel,
                                &mut game.data) {
                 // draw a highlight on that square
                 // don't draw overlay on top of character
-                if movement.pos != game.data.entities.pos[&player_id] {
+                if movement.pos != display_state.pos[&player_id] {
                     let dxy = sub_pos(movement.pos, player_pos);
                     let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
                     let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
@@ -1421,7 +1425,7 @@ fn render_overlay_alertness(panel: &mut Panel, display_state: &mut DisplayState,
             continue;
         }
 
-        let pos = game.data.entities.pos[entity_id];
+        let pos = display_state.pos[entity_id];
 
         let mut status_drawn: bool = false;
         if let Some(status) = game.data.entities.status.get(entity_id) {
@@ -1511,9 +1515,9 @@ fn render_attack_overlay(panel: &mut Panel,
                          entity_id: EntityId,
                          sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = game.data.entities.pos[&player_id];
+    let player_pos = display_state.pos[&player_id];
 
-    let object_pos = game.data.entities.pos[&entity_id];
+    let object_pos = display_state.pos[&entity_id];
 
     let mut attack_highlight_color = game.config.color_red;
     attack_highlight_color.a = game.config.highlight_alpha_attack;
@@ -1598,13 +1602,13 @@ fn render_entity_ghost(panel: &mut Panel,
                        game: &mut Game,
                        display_state: &mut DisplayState,
                        sprites: &Vec<SpriteSheet>) {
-    let entity_pos = game.data.entities.pos[&entity_id];
+    let entity_pos = display_state.pos[&entity_id];
 
     let alpha = game.data.entities.color[&entity_id].a;
     assert!(alpha == 255);
     game.data.entities.color[&entity_id].a = game.config.ghost_alpha;
 
-    game.data.entities.pos[&entity_id] = render_pos;
+    display_state.pos[&entity_id] = render_pos;
 
     // a little ugly, but set the delta time to 0 so the render_entity function does not
     // step the animation forward when rendering a ghost.
@@ -1614,7 +1618,7 @@ fn render_entity_ghost(panel: &mut Panel,
     display_state.dt = dt;
 
     game.data.entities.color[&entity_id].a = alpha;
-    game.data.entities.pos[&entity_id] = entity_pos;
+    display_state.pos[&entity_id] = entity_pos;
 }
 
 fn render_arrow(panel: &mut Panel,

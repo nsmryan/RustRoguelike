@@ -29,6 +29,7 @@ use roguelike_core::types::*;
 use roguelike_core::config::Config;
 use roguelike_core::constants::*;
 use roguelike_core::map::MapLoadConfig;
+use roguelike_core::messaging::MsgLogDir;
 
 use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
@@ -36,7 +37,6 @@ use roguelike_engine::actions::*;
 use roguelike_engine::input::*;
 use roguelike_engine::make_map::{make_map, read_map_xp};
 use roguelike_engine::log::*;
-use roguelike_engine::step::post_step;
 
 use roguelike_lib::commands::*;
 
@@ -246,7 +246,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
     });
 
     // running the post step first sets up the game before the first turn.
-    post_step(&mut game);
+    game.emit_state_messages(MsgLogDir::Front);
 
     /* Main Game Loop */
     let mut frame_time = Instant::now();
@@ -330,6 +330,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
                 }
 
                 if game.settings.state == GameState::Win {
+                    // TODO probably not necessary, given level messaging
                     display.clear_level_state();
                     recording.clear();
                 } else if game.settings.state == GameState::Exit {
