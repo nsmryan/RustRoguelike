@@ -20,7 +20,7 @@ use roguelike_core::utils::aoe_fill;
 use roguelike_core::movement::{Direction};
 use roguelike_core::rng::Rand32;
 
-use roguelike_engine::game::{Game, GameSettings};
+use roguelike_engine::game::GameSettings;
 
 use crate::animation::{Str, Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use crate::drawcmd::*;
@@ -195,19 +195,19 @@ impl Display {
         return anim;
     }
 
-    pub fn play_idle_animation(&mut self, entity_id: EntityId, level: &mut Level, config: &Config) {
-        if let Some(anim) = self.get_idle_animation(entity_id, level, config) {
+    pub fn play_idle_animation(&mut self, entity_id: EntityId, entities: &Entities, config: &Config) {
+        if let Some(anim) = self.get_idle_animation(entity_id, entities, config) {
             self.state.play_animation(entity_id, anim);
         }
     }
 
-    pub fn get_idle_animation(&mut self, entity_id: EntityId, level: &mut Level, config: &Config) -> Option<Animation> {
-        let name = level.entities.name[&entity_id];
+    pub fn get_idle_animation(&mut self, entity_id: EntityId, entities: &Entities, config: &Config) -> Option<Animation> {
+        let name = entities.name[&entity_id];
 
         if name == EntityName::Player || name == EntityName::Gol || name == EntityName::Pawn || name == EntityName::Rook {
-            let name = level.entities.name[&entity_id];
-            let stance = level.entities.stance[&entity_id];
-            let direction = level.entities.direction[&entity_id];
+            let name = entities.name[&entity_id];
+            let stance = entities.stance[&entity_id];
+            let direction = entities.direction[&entity_id];
 
             let sheet_direction = sheet_direction(direction);
             let mut sheet_name = format!("{}_{}_{}", name, stance, sheet_direction);
@@ -221,15 +221,15 @@ impl Display {
 
             return Some(anim);
         } else {
-            if level.entities.name[&entity_id] == EntityName::Key {
+            if entities.name[&entity_id] == EntityName::Key {
                 return Some(self.loop_sprite("key", config.idle_speed));
-            } else if level.entities.name[&entity_id] == EntityName::SpikeTrap {
+            } else if entities.name[&entity_id] == EntityName::SpikeTrap {
                 return Some(self.loop_sprite("trap_damage", config.idle_speed));
-            } else if level.entities.name[&entity_id] == EntityName::Armil {
+            } else if entities.name[&entity_id] == EntityName::Armil {
                 return Some(self.loop_sprite("armil_idle", config.idle_speed));
-            } else if level.entities.name[&entity_id] == EntityName::Lantern {
+            } else if entities.name[&entity_id] == EntityName::Lantern {
                 return Some(self.loop_sprite("lantern_idle", config.fire_speed));
-            } else if level.entities.name[&entity_id] == EntityName::Grass {
+            } else if entities.name[&entity_id] == EntityName::Grass {
                 return Some(self.random_sprite("grassanim", config.grass_idle_speed));
             }
         }
@@ -302,11 +302,7 @@ impl Display {
                 }
             }
 
-            Msg::ItemThrow(_thrower, item_id, start, _end) => {
-                // this uses the entity's position instead of 'end' because we
-                // want where it hit, not where it was thrown to.
-                let end = level.entities.pos[&item_id];
-
+            Msg::ItemLanded(item_id, start, end) => {
                 let sound_aoe = aoe_fill(&level.map, AoeEffect::Sound, end, config.sound_radius_stone, config);
 
                 let chr = level.entities.chr[&item_id];
@@ -322,11 +318,11 @@ impl Display {
             }
 
             Msg::PickedUp(entity_id, _item_id) => {
-                self.play_idle_animation(entity_id, level, config);
+                self.play_idle_animation(entity_id, &level.entities, config);
             }
 
             Msg::Facing(entity_id, _pos) => {
-                self.play_idle_animation(entity_id, level, config);
+                self.play_idle_animation(entity_id, &level.entities, config);
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
@@ -429,7 +425,7 @@ impl Display {
 
             Msg::SpawnedObject(entity_id, _typ, _pos, _name, _facing) => {
                 if level.entities.ids.contains(&entity_id) {
-                    self.play_idle_animation(entity_id, level, config);
+                    self.play_idle_animation(entity_id, &level.entities, config);
                 }
             }
 

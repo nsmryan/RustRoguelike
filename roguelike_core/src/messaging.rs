@@ -28,6 +28,7 @@ pub enum Msg {
     PickedUp(EntityId, EntityId), // entity, item
     PickUp(EntityId), // entity trying to pick up an item
     ItemThrow(EntityId, EntityId, Pos, Pos), // thrower, stone id, start, end
+    ItemLanded(EntityId, Pos, Pos), // stone id, start, end
     TryAttack(EntityId, Attack, Pos), // attacker, attack description, attack pos
     Attack(EntityId, EntityId, i32), // attacker, attacked, hp lost
     Blunt(Pos, Pos), // attacker position, attacked position
@@ -131,6 +132,7 @@ impl fmt::Display for Msg {
             Msg::PickedUp(entity_id, item_id) => write!(f, "picked_up {} {}", entity_id, item_id),
             Msg::PickUp(entity_id) => write!(f, "pickup {}", entity_id),
             Msg::ItemThrow(entity_id, item_id, start, end) => write!(f, "item_throw {} {} {} {} {} {}", entity_id, item_id, start.x, start.y, end.x, end.y),
+            Msg::ItemLanded(item_id, start, end) => write!(f, "item_landed {} {} {} {} {}", item_id, start.x, start.y, end.x, end.y),
             Msg::TryAttack(entity_id, attack, pos) => {
                 match attack {
                     Attack::Attack(target_id) => write!(f, "try_attack {} {} {} {}", entity_id, target_id, pos.x, pos.y),

@@ -1362,6 +1362,8 @@ fn throw_item(player_id: EntityId,
         msg_log.log_front(Msg::Moved(player_id, MoveType::Blink, end_pos));
         remove_entity(item_id, data);
     }
+
+    msg_log.log(Msg::ItemLanded(item_id, start_pos, hit_pos));
 }
 
 fn find_blink_pos(pos: Pos, rng: &mut Rand32, data: &mut Level) -> Option<Pos> {
