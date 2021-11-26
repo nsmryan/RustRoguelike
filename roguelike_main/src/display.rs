@@ -276,7 +276,7 @@ impl Display {
                 self.state.sound_tiles.push(hit_pos);
 
                 let player_id = level.find_by_name(EntityName::Player).unwrap();
-                let player_pos = level.entities.pos[&player_id];
+                let player_pos = self.state.pos[&player_id];
 
                 // only play the sound effect if the player position is included
                 let sound_hits_player = hit_pos == player_pos;
@@ -293,7 +293,7 @@ impl Display {
                     let sound_effect = Effect::sound(sound_aoe);
                     self.state.play_effect(sound_effect);
 
-                    let pos = level.entities.pos[&cause_id];
+                    let pos = self.state.pos[&cause_id];
                     // NOTE it is slightly odd to look up this sprite sheet here and not in
                     // render.rs.
                     let tiles = lookup_spritekey(&self.sprites, "tiles");
@@ -411,8 +411,8 @@ impl Display {
                     //    self.state.play_animation(attacker, idle_anim);
                     //}
                 } else {
-                    let attacker_pos = level.entities.pos[&attacker];
-                    let attacked_pos = level.entities.pos[&attacked];
+                    let attacker_pos = self.state.pos[&attacker];
+                    let attacked_pos = self.state.pos[&attacked];
                     let beam_effect = Effect::beam(config.beam_duration, attacker_pos, attacked_pos);
                     self.state.play_effect(beam_effect);
                 }
@@ -423,9 +423,11 @@ impl Display {
                 self.state.play_animation(jumper, jump_anim);
             }
 
-            Msg::SpawnedObject(entity_id, _typ, _pos, name, _facing) => {
+            Msg::SpawnedObject(entity_id, typ, pos, name, _facing) => {
                 let chr = entity_name_to_chr(name);
                 self.state.chr.insert(entity_id, chr as char);
+                self.state.pos.insert(entity_id, pos);
+                self.state.typ.insert(entity_id, typ);
 
                 if level.entities.ids.contains(&entity_id) {
                     self.play_idle_animation(entity_id, &level.entities, config);
@@ -449,7 +451,7 @@ impl Display {
 
                     if self.state.entity_is_in_fov(*entity_id) != FovResult::Inside {
                         if let Some(sprite) = self.state.drawn_sprites.get(entity_id) {
-                            let pos = level.entities.pos[entity_id];
+                            let pos = self.state.pos[entity_id];
                             self.state.impressions.push(Impression::new(*sprite, pos));
                         }
                     }
@@ -471,11 +473,18 @@ impl Display {
 
             Msg::RemovedEntity(entity_id) => {
                 self.state.animations.remove(&entity_id);
+                self.state.chr.remove(&entity_id);
+                self.state.pos.remove(&entity_id);
+                self.state.typ.remove(&entity_id);
             }
 
             Msg::NewLevel => {
                 self.clear_level_state();
                 self.state.play_effect(Effect::particles(1.0));
+            }
+
+            Msg::Moved(entity_id, _move_type, pos) => {
+                self.state.pos[&entity_id] = pos;
             }
 
             Msg::TileFov(pos, fov_result) => {
@@ -595,8 +604,10 @@ pub struct DisplayState {
     // sprites drawn this frame
     pub drawn_sprites: Comp<Sprite>,
 
-    // entity characters
+    // entity information
     pub chr: Comp<char>,
+    pub pos: Comp<Pos>,
+    pub typ: Comp<EntityType>,
 
     // impressions left on map
     pub impressions: Vec<Impression>,
@@ -636,6 +647,8 @@ impl DisplayState {
             next_anim_key: 0,
             drawn_sprites: Comp::new(),
             chr: Comp::new(),
+            pos: Comp::new(),
+            typ: Comp::new(),
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),
             sound_tiles: Vec::new(),
