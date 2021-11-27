@@ -87,9 +87,9 @@ pub enum Msg {
     ArmDisarmTrap(EntityId, EntityId), // acting entity, trap id
     PlaceTrap(EntityId, Pos, EntityId), // placing entity, position, trap id
     SpawnedObject(EntityId, EntityType, Pos, EntityName, Direction),
-    FaceTowards(EntityId, Pos),
-    SetFacing(EntityId, Direction),
-    Facing(EntityId, Direction),
+    FaceTowards(EntityId, Pos), // set facing towards a position
+    SetFacing(EntityId, Direction), // set the facing to a direction
+    Facing(EntityId, Direction), // facing was modified for an entity
     AiAttack(EntityId),
     RemovedEntity(EntityId),
     StartUseItem(EntityId),
