@@ -38,7 +38,7 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites
     let menu_panel = panels.get_mut(&PanelName::Menu).unwrap();
 
     if game.settings.state == GameState::Inventory {
-        render_inventory(menu_panel, game);
+        render_inventory(menu_panel, display_state, game);
     } else if game.settings.state == GameState::SkillMenu {
         render_skill_menu(menu_panel, game);
     } else if game.settings.state == GameState::ClassMenu {
@@ -99,13 +99,13 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &m
     /* Draw Player Info */
     {
         let player_panel = &mut panels.get_mut(&PanelName::Player).unwrap();
-        render_player_info(player_panel, game);
+        render_player_info(player_panel, display_state, game);
     }
 
     /* Draw Inventory */
     {
         let inventory_panel = &mut panels.get_mut(&PanelName::Inventory).unwrap();
-        render_inventory(inventory_panel, game);
+        render_inventory(inventory_panel, display_state, game);
     }
 
     /* Draw Game Info */
@@ -171,7 +171,7 @@ fn render_bar(panel: &mut Panel,
     }
 }
 
-fn render_player_info(panel: &mut Panel, game: &mut Game) {
+fn render_player_info(panel: &mut Panel, display_state: &DisplayState, game: &mut Game) {
     render_placard(panel, "Player");
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
@@ -203,7 +203,7 @@ fn render_player_info(panel: &mut Panel, game: &mut Game) {
     list.push(format!(""));
 
 
-    let stance = game.data.entities.stance[&player_id];
+    let stance = display_state.stance[&player_id];
     list.push(format!("{}", stance));
     list.push("next move".to_string());
     let stance = game.settings.move_mode;
@@ -280,12 +280,12 @@ fn render_info(panel: &mut Panel,
                     y_pos += 1;
                 }
 
-                text_list.push(format!("{:?}", game.data.entities.name[obj_id]));
+                text_list.push(format!("{:?}", display_state.name[obj_id]));
 
                 // show facing direction for player and monsters
                 if display_state.typ[obj_id] == EntityType::Player ||
                    display_state.typ[obj_id] == EntityType::Enemy {
-                    if let Some(direction) = game.data.entities.direction.get(obj_id) {
+                    if let Some(direction) = display_state.direction.get(obj_id) {
                         text_list.push(format!("Facing {}", direction));
                     }
                 }
@@ -408,7 +408,7 @@ fn render_confirm_quit(panel: &mut Panel) {
 }
 
 /// Render an inventory section within the given area
-fn render_inventory(panel: &mut Panel, game: &mut Game) {
+fn render_inventory(panel: &mut Panel, display_state: &DisplayState, game: &mut Game) {
     // Render header
     render_placard(panel, "Inventory");
 
@@ -429,7 +429,7 @@ fn render_inventory(panel: &mut Panel, game: &mut Game) {
         let item_id = game.data.entities.inventory[&player_id][index];
 
         if game.data.entities.item[&item_id].class() == ItemClass::Primary {
-            let item_text = format!("{:?}", game.data.entities.name[&item_id]);
+            let item_text = format!("{:?}", display_state.name[&item_id]);
             let text_pos = Pos::new(x_offset + 2, y_pos);
             panel.text_cmd(&item_text, ui_color, text_pos);
             break;
@@ -447,7 +447,7 @@ fn render_inventory(panel: &mut Panel, game: &mut Game) {
         let item_id = game.data.entities.inventory[&player_id][index];
 
         if game.data.entities.item[&item_id].class() == ItemClass::Consumable {
-            let item_text = format!("{:?}", game.data.entities.name[&item_id]);
+            let item_text = format!("{:?}", display_state.name[&item_id]);
             let text_pos = Pos::new(x_offset + 2, y_pos);
             panel.text_cmd(&item_text, ui_color, text_pos);
             break;
@@ -492,7 +492,7 @@ fn render_inventory(panel: &mut Panel, game: &mut Game) {
 
         if game.data.entities.item[&item_id].class() == ItemClass::Misc &&
            game.data.entities.item[&item_id] != Item::Stone {
-            let item_text = format!("{:?}", game.data.entities.name[&item_id]);
+            let item_text = format!("{:?}", display_state.name[&item_id]);
             let text_pos = Pos::new(x_offset + 2, y_pos);
             panel.text_cmd(&item_text, ui_color, text_pos);
             y_pos += 1;
@@ -1130,12 +1130,12 @@ fn render_game_overlays(panel: &mut Panel,
         if let Some(cursor_pos) = game.settings.cursor {
             // render trigger plate wall highlight if selected
             for entity in display_state.entities_at_cursor.iter() {
-                if game.data.entities.name[&entity] == EntityName::GateTrigger {
+                if display_state.name[&entity] == EntityName::GateTrigger {
                     let gate_pos = game.data.entities.gate_pos[&entity];
                     let mut highlight_color: Color = game.config.color_red;
                     highlight_color.a = 100;
                     panel.highlight_cmd(highlight_color, gate_pos);
-                } else if game.data.entities.name[&entity] == EntityName::FreezeTrap {
+                } else if display_state.name[&entity] == EntityName::FreezeTrap {
                     let trap_pos = display_state.pos[&entity];
                     let freeze_aoe =
                         aoe_fill(&game.data.map, AoeEffect::Freeze, trap_pos, game.config.freeze_trap_radius, &game.config);
