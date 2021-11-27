@@ -810,6 +810,7 @@ fn resolve_attack(entity_id: EntityId,
 
     // any time an entity attacks, they change to standing stance
     data.entities.stance[&entity_id] = Stance::Standing;
+    msg_log.log(Msg::Stance(entity_id, data.entities.stance[&entity_id]));
 
     match attack_info {
         Attack::Attack(target_id) => {
@@ -1521,6 +1522,7 @@ fn process_moved_message(entity_id: EntityId,
         if let Some(move_mode) = data.entities.move_mode.get(&entity_id) {
             if let Some(stance) = data.entities.stance.get(&entity_id) {
                 data.entities.stance[&entity_id] = update_stance(move_type, *move_mode, *stance);
+                msg_log.log(Msg::Stance(entity_id, data.entities.stance[&entity_id]));
             }
 
             // make a noise based on how fast the entity is moving and the terrain

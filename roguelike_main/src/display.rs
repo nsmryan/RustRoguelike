@@ -195,31 +195,35 @@ impl Display {
         return anim;
     }
 
-    pub fn play_idle_animation(&mut self, entity_id: EntityId, entities: &Entities, config: &Config) {
-        if let Some(anim) = self.get_idle_animation(entity_id, entities, config) {
+    pub fn play_idle_animation(&mut self, entity_id: EntityId, config: &Config) {
+        if let Some(anim) = self.get_idle_animation(entity_id, config) {
             self.state.play_animation(entity_id, anim);
         }
     }
 
-    pub fn get_idle_animation(&mut self, entity_id: EntityId, entities: &Entities, config: &Config) -> Option<Animation> {
+    pub fn get_idle_animation(&mut self, entity_id: EntityId, config: &Config) -> Option<Animation> {
         let name = self.state.name[&entity_id];
 
         if name == EntityName::Player || name == EntityName::Gol || name == EntityName::Pawn || name == EntityName::Rook {
-            let name = self.state.name[&entity_id];
-            let stance = entities.stance[&entity_id];
-            let direction = entities.direction[&entity_id];
+            // we check for stance first in case the entity has been created but no stance is yet
+            // available.
+            if self.state.stance.get(&entity_id).is_some() {
+                let name = self.state.name[&entity_id];
+                let stance = self.state.stance[&entity_id];
+                let direction = self.state.direction[&entity_id];
 
-            let sheet_direction = sheet_direction(direction);
-            let mut sheet_name = format!("{}_{}_{}", name, stance, sheet_direction);
+                let sheet_direction = sheet_direction(direction);
+                let mut sheet_name = format!("{}_{}_{}", name, stance, sheet_direction);
 
-            if !self.sprite_exists(&sheet_name) {
-                sheet_name = format!("{}_{}_{}", name, Stance::Standing, sheet_direction);
+                if !self.sprite_exists(&sheet_name) {
+                    sheet_name = format!("{}_{}_{}", name, Stance::Standing, sheet_direction);
+                }
+
+                let mut anim = self.loop_sprite(&sheet_name, config.idle_speed);
+                anim.sprite_anim_mut().unwrap().flip_horiz = needs_flip_horiz(direction);
+
+                return Some(anim);
             }
-
-            let mut anim = self.loop_sprite(&sheet_name, config.idle_speed);
-            anim.sprite_anim_mut().unwrap().flip_horiz = needs_flip_horiz(direction);
-
-            return Some(anim);
         } else {
             if self.state.name[&entity_id] == EntityName::Key {
                 return Some(self.loop_sprite("key", config.idle_speed));
@@ -260,7 +264,7 @@ impl Display {
         self.state.entities_in_fov.clear();
     }
 
-    pub fn process_message(&mut self, msg: Msg, level: &mut Level, config: &Config) {
+    pub fn process_message(&mut self, msg: Msg, map: &Map, config: &Config) {
         match msg {
             Msg::StartTurn => {
                 self.clear_turn_state();
@@ -281,7 +285,13 @@ impl Display {
                 // Add to this turn's sound tiles list
                 self.state.sound_tiles.push(hit_pos);
 
-                let player_id = level.find_by_name(EntityName::Player).unwrap();
+                let mut player_id = None;
+                for (key, nam) in self.state.name.iter() {
+                    if *nam == EntityName::Player {
+                        player_id = Some(key);
+                    }
+                }
+                let player_id = player_id.unwrap();
                 let player_pos = self.state.pos[&player_id];
 
                 // only play the sound effect if the player position is included
@@ -294,7 +304,7 @@ impl Display {
                 let visible_monster_sound = sound_from_monster && player_can_see_source;
                 if !visible_monster_sound && sound_hits_player {
                     let sound_aoe =
-                        aoe_fill(&level.map, AoeEffect::Sound, source_pos, radius, config);
+                        aoe_fill(map, AoeEffect::Sound, source_pos, radius, config);
 
                     let sound_effect = Effect::sound(sound_aoe);
                     self.state.play_effect(sound_effect);
@@ -309,7 +319,7 @@ impl Display {
             }
 
             Msg::ItemLanded(item_id, start, end) => {
-                let sound_aoe = aoe_fill(&level.map, AoeEffect::Sound, end, config.sound_radius_stone, config);
+                let sound_aoe = aoe_fill(map, AoeEffect::Sound, end, config.sound_radius_stone, config);
 
                 let chr = self.state.chr[&item_id];
                 let item_sprite = self.static_sprite("tiles", chr);
@@ -324,11 +334,16 @@ impl Display {
             }
 
             Msg::PickedUp(entity_id, _item_id) => {
-                self.play_idle_animation(entity_id, &level.entities, config);
+                self.play_idle_animation(entity_id, config);
+            }
+
+            Msg::Stance(entity_id, stance) => {
+                self.state.stance.insert(entity_id, stance);
+                self.play_idle_animation(entity_id, config);
             }
 
             Msg::Facing(entity_id, direction) => {
-                self.play_idle_animation(entity_id, &level.entities, config);
+                self.play_idle_animation(entity_id, config);
                 self.state.direction[&entity_id] = direction;
             }
 
@@ -336,7 +351,7 @@ impl Display {
                 if self.state.typ[&attacked] != EntityType::Player {
                     self.state.clear_animations(attacked);
 
-                    let sprite_name = format!("{:?}_death", level.entities.name[&attacked]);
+                    let sprite_name = format!("{:?}_death", self.state.name[&attacked]);
                     if self.sprite_exists(&sprite_name) {
                         let sprite = self.new_sprite(&sprite_name, 1.0);
                         self.state.play_animation(attacked, Animation::Once(sprite));
@@ -386,7 +401,7 @@ impl Display {
                     //let attack_anim = Animation::Once(attack_sprite);
                     //self.state.play_animation(entity_id, attack_anim);
 
-                    //if let Some(idle_anim) = self.get_idle_animation(entity_id, level, config) {
+                    //if let Some(idle_anim) = self.get_idle_animation(entity_id, config) {
                     //    self.state.append_animation(entity_id, idle_anim);
                     //}
                 }
@@ -400,7 +415,7 @@ impl Display {
                     //let attack_anim = Animation::Once(attack_sprite);
                     //self.state.play_animation(entity_id, attack_anim);
 
-                    //if let Some(idle_anim) = self.get_idle_animation(entity_id, level, config) {
+                    //if let Some(idle_anim) = self.get_idle_animation(entity_id, config) {
                     //    self.state.append_animation(entity_id, idle_anim);
                     //}
                 }
@@ -414,7 +429,7 @@ impl Display {
                     //let attack_anim = Animation::Once(attack_sprite);
                     //self.state.play_animation(attacker, attack_anim);
 
-                    //if let Some(idle_anim) = self.get_idle_animation(attacker, level, config) {
+                    //if let Some(idle_anim) = self.get_idle_animation(attacker, config) {
                     //    self.state.play_animation(attacker, idle_anim);
                     //}
                 } else {
@@ -439,12 +454,10 @@ impl Display {
                 self.state.direction.insert(entity_id, facing);
                 self.state.ids.push(entity_id);
 
-                self.play_idle_animation(entity_id, &level.entities, config);
+                self.play_idle_animation(entity_id, config);
             }
 
             Msg::PlayerTurn => {
-                let player_id = level.find_by_name(EntityName::Player).unwrap();
-
                 self.state.prev_turn_fov.clear();
                 for (entity_id, fov_result) in self.state.entities_in_fov.iter() {
                     if *fov_result == FovResult::Inside {

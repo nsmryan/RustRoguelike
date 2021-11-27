@@ -111,6 +111,7 @@ pub enum Msg {
     EntityMovement(EntityId, Pos),
     EntityAttack(EntityId, Pos),
     EntityFov(EntityId, Pos),
+    Stance(EntityId, Stance),
 }
 
 impl fmt::Display for Msg {
@@ -227,6 +228,7 @@ impl fmt::Display for Msg {
             Msg::EntityMovement(entity_id, pos) => write!(f, "entity_movement {} {} {}", entity_id, pos.x, pos.y),
             Msg::EntityAttack(entity_id, pos) => write!(f, "entity_attack {} {} {}", entity_id, pos.x, pos.y),
             Msg::EntityFov(entity_id, pos) => write!(f, "entity_fov {} {} {}", entity_id, pos.x, pos.y),
+            Msg::Stance(entity_id, stance) => write!(f, "entity_fov {} {}", entity_id, stance),
         }
     }
 }

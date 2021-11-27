@@ -431,7 +431,7 @@ pub fn read_message_log(message_file: &str) -> Vec<String> {
 // NOTE duplicate code in main.rs
 fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(), String> {
     for msg in game.msg_log.turn_messages.iter() {
-        display.process_message(*msg, &mut game.data, &game.config);
+        display.process_message(*msg, &game.data.map, &game.config);
     }
 
     /* Draw the Game to the Screen */
