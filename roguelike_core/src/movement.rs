@@ -653,7 +653,9 @@ impl Reach {
         let mut offsets = Vec::new();
         for end in end_points {
             for pos in line_inclusive(Pos::new(0, 0), end) {
-                offsets.push(Pos::from(pos));
+                if !offsets.contains(&pos) {
+                    offsets.push(Pos::from(pos));
+                }
             }
         }
 
@@ -698,6 +700,16 @@ pub fn test_reach_offsets_single() {
                                        .collect::<Vec<Pos>>();
 
     assert!(offsets.iter().all(|p| expected_pos.iter().any(|other| other == p)));
+}
+
+#[test]
+pub fn test_reach_reachables() {
+    let single = Reach::Single(1);
+    let offsets = single.offsets();
+    assert_eq!(8, offsets.len());
+
+    let positions = single.reachables(Pos::new(5, 5));
+    assert_eq!(8, positions.len());
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

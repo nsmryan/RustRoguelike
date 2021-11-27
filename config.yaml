@@ -175,6 +175,8 @@ fog_of_war: true
 
 # initial player health
 player_health: 3
+# initial player energy
+player_energy: 3
 # alpha of explored but not visible tiles
 explored_alpha: 160
 # alpha of tiles just beyond field of view

@@ -191,15 +191,26 @@ impl Game {
                 self.msg_log.log_dir(Msg::EntityInFov(*entity_id, in_fov), log_dir);
             }
 
-            // emit visible movement positions
-            if let Some(reach) = self.data.entities.movement.get(&entity_id) {
-                for move_pos in reach.reachables(entity_pos) {
-                    if !self.data.map.is_within_bounds(move_pos) {
-                        continue;
-                    }
+            // There is no need for movement or attack information for these types of entities.
+            if typ == EntityType::Environment ||
+               typ == EntityType::Trigger ||
+               typ == EntityType::Column ||
+               typ == EntityType::Energy ||
+               typ == EntityType::Item {
+                continue;
+            }
 
-                    if self.data.pos_in_fov(*entity_id, move_pos, &self.config) {
-                        self.msg_log.log_dir(Msg::EntityMovement(*entity_id, move_pos), log_dir);
+            // emit visible movement positions
+            if in_fov == FovResult::Inside {
+                if let Some(reach) = self.data.entities.movement.get(&entity_id) {
+                    for move_pos in reach.reachables(entity_pos) {
+                        if !self.data.map.is_within_bounds(move_pos) {
+                            continue;
+                        }
+
+                        if self.data.pos_in_fov(player_id, move_pos, &self.config) {
+                            self.msg_log.log_dir(Msg::EntityMovement(*entity_id, move_pos), log_dir);
+                        }
                     }
                 }
             }
@@ -209,23 +220,27 @@ impl Game {
             }
 
             // emit visible attack positions
-            if let Some(reach) = self.data.entities.attack.get(&entity_id) {
-                for attack_pos in reach.reachables(entity_pos) {
-                    if !self.data.map.is_within_bounds(attack_pos) {
-                        continue;
-                    }
+            if in_fov == FovResult::Inside {
+                if let Some(reach) = self.data.entities.attack.get(&entity_id) {
+                    for attack_pos in reach.reachables(entity_pos) {
+                        if !self.data.map.is_within_bounds(attack_pos) {
+                            continue;
+                        }
 
-                    if self.data.pos_in_fov(*entity_id, attack_pos, &self.config) &&
-                       (self.data.clear_path(entity_pos, attack_pos, false) || attack_pos == player_pos) {
-                        self.msg_log.log_dir(Msg::EntityAttack(*entity_id, attack_pos), log_dir);
+                        if self.data.pos_in_fov(*entity_id, attack_pos, &self.config) &&
+                           (self.data.clear_path(entity_pos, attack_pos, false) || attack_pos == player_pos) {
+                            self.msg_log.log_dir(Msg::EntityAttack(*entity_id, attack_pos), log_dir);
+                        }
                     }
                 }
             }
 
             // emit visible tiles for entity that are visible to player
-            for pos in player_fov.iter() {
-                if self.data.pos_in_fov(*entity_id, *pos, &self.config) {
-                    self.msg_log.log_dir(Msg::EntityFov(*entity_id, *pos), log_dir);
+            if in_fov == FovResult::Inside && *entity_id != player_id {
+                for pos in player_fov.iter() {
+                    if self.data.pos_in_fov(*entity_id, *pos, &self.config) {
+                        self.msg_log.log_dir(Msg::EntityFov(*entity_id, *pos), log_dir);
+                    }
                 }
             }
         }

@@ -60,6 +60,7 @@ pub struct Config {
     pub ping_sound_radius: usize,
     pub fog_of_war: bool,
     pub player_health: i32,
+    pub player_energy: u32,
     pub explored_alpha: u8,
     pub fov_edge_alpha: u8,
     pub sound_rubble_radius: usize,

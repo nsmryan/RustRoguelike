@@ -46,7 +46,7 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
 
     entities.class.insert(entity_id, EntityClass::General);
 
-    entities.energy.insert(entity_id, 3);
+    entities.energy.insert(entity_id, config.player_energy);
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], Pos::new(0, 0), EntityName::Player, entities.direction[&entity_id]));
 

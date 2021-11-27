@@ -429,12 +429,13 @@ impl Display {
                 self.state.play_animation(jumper, jump_anim);
             }
 
-            Msg::SpawnedObject(entity_id, typ, pos, name, _facing) => {
+            Msg::SpawnedObject(entity_id, typ, pos, name, facing) => {
                 let chr = entity_name_to_chr(name);
                 self.state.chr.insert(entity_id, chr as char);
                 self.state.pos.insert(entity_id, pos);
                 self.state.typ.insert(entity_id, typ);
                 self.state.name.insert(entity_id, name);
+                self.state.direction.insert(entity_id, facing);
                 self.state.ids.push(entity_id);
 
                 self.play_idle_animation(entity_id, &level.entities, config);
@@ -483,6 +484,8 @@ impl Display {
                 self.state.pos.remove(&entity_id);
                 self.state.typ.remove(&entity_id);
                 self.state.name.remove(&entity_id);
+                self.state.direction.remove(&entity_id);
+                self.state.stance.remove(&entity_id);
 
                 if let Some(ix_pos) = self.state.ids.iter().position(|val| *val == entity_id) {
                     self.state.ids.remove(ix_pos);
@@ -622,6 +625,8 @@ pub struct DisplayState {
     pub pos: Comp<Pos>,
     pub typ: Comp<EntityType>,
     pub name: Comp<EntityName>,
+    pub direction: Comp<Direction>,
+    pub stance: Comp<Stance>,
 
     // impressions left on map
     pub impressions: Vec<Impression>,
@@ -665,6 +670,8 @@ impl DisplayState {
             pos: Comp::new(),
             typ: Comp::new(),
             name: Comp::new(),
+            direction: Comp::new(),
+            stance: Comp::new(),
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),
             sound_tiles: Vec::new(),
