@@ -145,7 +145,7 @@ impl Game {
 
         let mut player_fov = Vec::new();
 
-        if log_dir == MsgLogDir::Back {
+        if self.data.entities.took_turn[&player_id] && log_dir == MsgLogDir::Back {
             self.msg_log.log(Msg::StartTurn);
         }
 
@@ -276,7 +276,7 @@ impl Game {
             }
         }
 
-        if log_dir == MsgLogDir::Front {
+        if self.data.entities.took_turn[&player_id] && log_dir == MsgLogDir::Front {
             self.msg_log.log_front(Msg::StartTurn);
         }
     }

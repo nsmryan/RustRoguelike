@@ -563,6 +563,10 @@ impl Display {
                 self.state.use_dir = None;
             }
 
+            Msg::UseHitPosClear => {
+                self.state.hit_positions.clear();
+            }
+
             Msg::UseHitPos(pos) => {
                 self.state.hit_positions.insert(pos);
             }
