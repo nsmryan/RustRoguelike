@@ -236,10 +236,10 @@ impl FromStr for InputAction {
 pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> bool {
     match input_action {
         InputAction::ExploreAll => {
-            for x in 0..game.data.map.width() {
-                for y in 0..game.data.map.height() {
+            for x in 0..game.level.map.width() {
+                for y in 0..game.level.map.height() {
                     let pos = Pos::new(x, y);
-                    game.data.map[pos].explored = true;
+                    game.level.map[pos].explored = true;
                 }
             }
 
@@ -256,20 +256,20 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
             // toggle god mode flag
             game.settings.god_mode = !game.settings.god_mode;
 
-            let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+            let player_id = game.level.find_by_name(EntityName::Player).unwrap();
             if game.settings.god_mode {
                 let god_mode_hp = 1000;
                 let god_mode_energy = 1000;
-                game.msg_log.log(Msg::Healed(player_id, god_mode_hp - game.data.entities.hp[&player_id].hp));
-                game.msg_log.log(Msg::GainEnergy(player_id, god_mode_energy - game.data.entities.energy[&player_id]));
+                game.msg_log.log(Msg::Healed(player_id, god_mode_hp - game.level.entities.hp[&player_id].hp));
+                game.msg_log.log(Msg::GainEnergy(player_id, god_mode_energy - game.level.entities.energy[&player_id]));
 
-                game.data.entities.hp[&player_id].hp = god_mode_hp;
-                game.data.entities.hp[&player_id].max_hp = god_mode_hp;
-                game.data.entities.energy[&player_id] = god_mode_energy;
+                game.level.entities.hp[&player_id].hp = god_mode_hp;
+                game.level.entities.hp[&player_id].max_hp = god_mode_hp;
+                game.level.entities.energy[&player_id] = god_mode_energy;
             } else {
-                game.data.entities.hp[&player_id].hp = game.config.player_health;
-                game.data.entities.hp[&player_id].max_hp = game.config.player_health;
-                game.data.entities.energy[&player_id] = game.config.player_energy;
+                game.level.entities.hp[&player_id].hp = game.config.player_health;
+                game.level.entities.hp[&player_id].max_hp = game.config.player_health;
+                game.level.entities.energy[&player_id] = game.config.player_energy;
             }
 
             return true;
@@ -324,7 +324,7 @@ pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings, m
 }
 
 pub fn handle_input_skill_menu(input: InputAction,
-                               data: &Level,
+                               level: &Level,
                                settings: &mut GameSettings,
                                msg_log: &mut MsgLog) {
                                
@@ -342,7 +342,7 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::SelectEntry(skill_index) => {
-            handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, data, msg_log);
+            handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, level, msg_log);
             change_state(settings, GameState::Playing, msg_log);
         }
 
@@ -411,17 +411,17 @@ pub fn handle_input_confirm_quit(input: InputAction, settings: &mut GameSettings
 }
 
 pub fn handle_input(input_action: InputAction,
-                    data: &Level,
+                    level: &Level,
                     settings: &mut GameSettings,
                     msg_log: &mut MsgLog,
                     config: &Config) {
     match settings.state {
         GameState::Playing => {
-            handle_input_playing(input_action, data, settings, msg_log, config);
+            handle_input_playing(input_action, level, settings, msg_log, config);
         }
 
         GameState::Use => {
-            handle_input_use(input_action, data, settings, msg_log, config);
+            handle_input_use(input_action, level, settings, msg_log, config);
         }
 
         GameState::Win => {
@@ -435,7 +435,7 @@ pub fn handle_input(input_action: InputAction,
         }
 
         GameState::SkillMenu => {
-            handle_input_skill_menu(input_action, data, settings, msg_log);
+            handle_input_skill_menu(input_action, level, settings, msg_log);
         }
 
         GameState::ClassMenu => {
@@ -452,13 +452,13 @@ pub fn handle_input(input_action: InputAction,
 }
 
 pub fn handle_input_use(input_action: InputAction,
-                        data: &Level,
+                        level: &Level,
                         settings: &mut GameSettings,
                         msg_log: &mut MsgLog,
                         _config: &Config) {
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
 
-    let player_alive = data.entities.status[&player_id].alive;
+    let player_alive = level.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
         (InputAction::Run, true) => {
@@ -479,7 +479,7 @@ pub fn handle_input_use(input_action: InputAction,
 
         (InputAction::DropItem, true) => {
             if let UseAction::Item(item_class) = settings.use_action {
-                if let Some(item_index) = data.find_item(item_class) {
+                if let Some(item_index) = level.find_item(item_class) {
                     msg_log.log(Msg::DropItem(player_id, item_index as u64));
 
                     settings.use_dir = None;
@@ -491,17 +491,17 @@ pub fn handle_input_use(input_action: InputAction,
         }
 
         (InputAction::StartUseItem(item_class), true) => {
-            start_use_item(item_class, data, settings, msg_log);
+            start_use_item(item_class, level, settings, msg_log);
         }
 
         (InputAction::UseDir(dir), true) => {
-            use_dir(dir, data, settings, msg_log);
+            use_dir(dir, level, settings, msg_log);
         }
 
         (InputAction::FinalizeUse, true) => {
             change_state(settings, GameState::Playing, msg_log);
 
-            finalize_use_item(data, settings, msg_log);
+            finalize_use_item(level, settings, msg_log);
         }
 
         (InputAction::AbortUse, true) => {
@@ -525,14 +525,14 @@ pub fn handle_input_use(input_action: InputAction,
 }
 
 pub fn handle_input_playing(input_action: InputAction,
-                            data: &Level,
+                            level: &Level,
                             settings: &mut GameSettings,
                             msg_log: &mut MsgLog,
                             config: &Config) {
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = data.entities.pos[&player_id];
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
+    let player_pos = level.entities.pos[&player_id];
 
-    let player_alive = data.entities.status[&player_id].alive;
+    let player_alive = level.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
         (InputAction::Run, true) => {
@@ -558,7 +558,7 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::MoveTowardsCursor(), true) => {
             if let Some(cursor_pos) = settings.cursor {
-                let maybe_next_pos = astar_next_pos(&data.map, player_pos, cursor_pos, None, None);
+                let maybe_next_pos = astar_next_pos(&level.map, player_pos, cursor_pos, None, None);
                 if let Some(next_pos) = maybe_next_pos {
                     if let Some(direction) = Direction::from_positions(player_pos, next_pos) {
                         let move_amount = settings.move_mode.move_amount();
@@ -569,11 +569,11 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::SkillPos(pos, action_mode, skill_index), true) => {
-            handle_skill(skill_index, ActionLoc::Place(pos), action_mode, data, msg_log);
+            handle_skill(skill_index, ActionLoc::Place(pos), action_mode, level, msg_log);
         }
 
         (InputAction::SkillFacing(action_mode, skill_index), true) => {
-            handle_skill(skill_index, ActionLoc::Facing, action_mode, data, msg_log);
+            handle_skill(skill_index, ActionLoc::Facing, action_mode, level, msg_log);
         }
 
         (InputAction::StartUseInteract, true) => {
@@ -588,7 +588,7 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::StartUseItem(item_class), true) => {
-            start_use_item(item_class, data, settings, msg_log);
+            start_use_item(item_class, level, settings, msg_log);
         }
 
         (InputAction::CursorReturn, _) => {
@@ -615,7 +615,7 @@ pub fn handle_input_playing(input_action: InputAction,
                     new_pos = add_pos(cursor_pos, dir_move);
                 }
 
-                let new_pos = data.map.clamp(new_pos);
+                let new_pos = level.map.clamp(new_pos);
                 settings.cursor = Some(new_pos);
                 msg_log.log(Msg::CursorMove(new_pos));
             }
@@ -634,14 +634,14 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Pass, true) => {
-            let direction = data.entities.direction[&player_id];
+            let direction = level.entities.direction[&player_id];
             msg_log.log(Msg::TryMove(player_id, direction, 0, settings.move_mode));
         }
 
         (InputAction::ThrowItem(throw_pos, item_class), true) => {
-            if let Some(item_index) = data.find_item(item_class) { 
-                let player_pos = data.entities.pos[&player_id];
-                let item_id = data.entities.inventory[&player_id][item_index];
+            if let Some(item_index) = level.find_item(item_class) { 
+                let player_pos = level.entities.pos[&player_id];
+                let item_id = level.entities.inventory[&player_id][item_index];
                 msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos));
             }
         }
@@ -679,7 +679,7 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Interact(dir), _) => {
-            let pos = data.entities.pos[&player_id];
+            let pos = level.entities.pos[&player_id];
 
             let interact_pos = 
                 if let Some(dir) = dir {
@@ -707,12 +707,12 @@ fn ensure_leave_cursor(settings: &mut GameSettings, msg_log: &mut MsgLog) {
     }
 }
 
-fn use_dir(dir: Direction, data: &Level, settings: &mut GameSettings, msg_log: &mut MsgLog) {
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
+fn use_dir(dir: Direction, level: &Level, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     if let UseAction::Item(item_class) = settings.use_action {
-        if let Some(item_index) = data.find_item(item_class) {
-            let use_result = data.calculate_use_move(player_id, item_index as usize, dir, settings.move_mode);
+        if let Some(item_index) = level.find_item(item_class) {
+            let use_result = level.calculate_use_move(player_id, item_index as usize, dir, settings.move_mode);
 
             msg_log.log(Msg::UseDirClear);
             if let Some(use_pos) = use_result.pos {
@@ -734,9 +734,9 @@ fn use_dir(dir: Direction, data: &Level, settings: &mut GameSettings, msg_log: &
     }
 }
 
-fn finalize_use_item(data: &Level, settings: &mut GameSettings, msg_log: &mut MsgLog) {
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = data.entities.pos[&player_id];
+fn finalize_use_item(level: &Level, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
+    let player_pos = level.entities.pos[&player_id];
 
     // If there is no direction, the user tried an invalid movement.
     // Returning here will just end use-mode.
@@ -748,11 +748,11 @@ fn finalize_use_item(data: &Level, settings: &mut GameSettings, msg_log: &mut Ms
         // NOTE there should be no way to get here without a direction
         let dir = settings.use_dir.expect("Finalizing use mode for an item with no direction to take!");
 
-        if let Some(item_index) = data.find_item(item_class) {
-            let item_id = data.entities.inventory[&player_id][item_index];
-            let item = data.entities.item[&item_id];
+        if let Some(item_index) = level.find_item(item_class) {
+            let item_id = level.entities.inventory[&player_id][item_index];
+            let item = level.entities.item[&item_id];
 
-            let use_result = data.calculate_use_move(player_id, item_index, dir, settings.move_mode);
+            let use_result = level.calculate_use_move(player_id, item_index, dir, settings.move_mode);
 
             // determine action to take based on weapon type
             if item == Item::Hammer {
@@ -766,7 +766,7 @@ fn finalize_use_item(data: &Level, settings: &mut GameSettings, msg_log: &mut Ms
             } else {
                 // we should not be able to finalize use mode without a valid move position.
                 let move_pos = use_result.pos.expect("Using an item with no move position?!");
-                let player_pos = data.entities.pos[&player_id];
+                let player_pos = level.entities.pos[&player_id];
                 if move_pos != player_pos {
                     let dist = distance(move_pos, player_pos) as usize;
                     msg_log.log(Msg::TryMove(player_id, dir, dist, settings.move_mode));
@@ -788,8 +788,8 @@ fn finalize_use_item(data: &Level, settings: &mut GameSettings, msg_log: &mut Ms
     } else if settings.use_action == UseAction::Interact {
         if let Some(dir) = settings.use_dir {
             let target_pos = dir.offset_pos(player_pos, 1);
-            if let Some(item_id) = data.item_at_pos(target_pos) {
-                if data.entities.trap.get(&item_id).is_some() {
+            if let Some(item_id) = level.item_at_pos(target_pos) {
+                if level.entities.trap.get(&item_id).is_some() {
                     // if there is a trap, interact with it
                     msg_log.log(Msg::Interact(player_id, target_pos));
                 } else {
@@ -810,16 +810,16 @@ fn finalize_use_item(data: &Level, settings: &mut GameSettings, msg_log: &mut Ms
     }
 }
 
-fn start_use_item(item_class: ItemClass, data: &Level, settings: &mut GameSettings, msg_log: &mut MsgLog) {
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
+fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     ensure_leave_cursor(settings, msg_log);
 
-    //if let Some(item_index) = data.entities.item_by_class(player_id, item_class) {
-    if let Some(item_index) = data.find_item(item_class) {
-        let item_id = data.entities.inventory[&player_id][item_index as usize];
+    //if let Some(item_index) = level.entities.item_by_class(player_id, item_class) {
+    if let Some(item_index) = level.find_item(item_class) {
+        let item_id = level.entities.inventory[&player_id][item_index as usize];
 
-        if data.entities.item[&item_id] == Item::Herb {
+        if level.entities.item[&item_id] == Item::Herb {
             msg_log.log(Msg::EatHerb(player_id, item_id));
         } else {
             // Allow entering use-mode even if there are no places to move
@@ -831,7 +831,7 @@ fn start_use_item(item_class: ItemClass, data: &Level, settings: &mut GameSettin
             msg_log.log(Msg::UseDirClear);
 
             for dir in Direction::move_actions().iter() {
-                let use_result = data.calculate_use_move(player_id,
+                let use_result = level.calculate_use_move(player_id,
                                                          item_index,
                                                          *dir,
                                                          settings.move_mode);
@@ -851,19 +851,19 @@ fn start_use_item(item_class: ItemClass, data: &Level, settings: &mut GameSettin
 pub fn handle_skill(skill_index: usize,
                     action_loc: ActionLoc,
                     action_mode: ActionMode,
-                    data: &Level, 
+                    level: &Level, 
                     msg_log: &mut MsgLog) {
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     /* Check for Valid Skill Use */
     // # check if we have enough energy to carry out the skill
-    if data.entities.energy[&player_id] <= 0 {
+    if level.entities.energy[&player_id] <= 0 {
         msg_log.log(Msg::NotEnoughEnergy(player_id));
         return;
     }
 
     // get the skill in the player's list of skills
-    if skill_index >= data.entities.skills[&player_id].len() {
+    if skill_index >= level.entities.skills[&player_id].len() {
         // NOTE we may want a message indicating that the skill index was invalid
         return;
     }
@@ -875,7 +875,7 @@ pub fn handle_skill(skill_index: usize,
     let skill_pos;
     match action_loc {
         ActionLoc::Dir(dir) => {
-            let player_pos = data.entities.pos[&player_id];
+            let player_pos = level.entities.pos[&player_id];
             if let Some(pos) = reach.furthest_in_direction(player_pos, dir) {
                 skill_pos = pos;
             } else {
@@ -888,8 +888,8 @@ pub fn handle_skill(skill_index: usize,
         }
 
         ActionLoc::Facing => {
-            let dir = data.entities.direction[&player_id];
-            let player_pos = data.entities.pos[&player_id];
+            let dir = level.entities.direction[&player_id];
+            let player_pos = level.entities.pos[&player_id];
             if let Some(pos) = reach.furthest_in_direction(player_pos, dir) {
                 skill_pos = pos;
             } else {
@@ -899,17 +899,17 @@ pub fn handle_skill(skill_index: usize,
 
         ActionLoc::None => {
             //NOTE this used to return, but now uses current position.
-            skill_pos = data.entities.pos[&player_id];
+            skill_pos = level.entities.pos[&player_id];
         }
     }
 
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = data.entities.pos[&player_id];
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
+    let player_pos = level.entities.pos[&player_id];
     let dxy = sub_pos(skill_pos, player_pos);
     let direction: Option<Direction> = Direction::from_dxy(dxy.x, dxy.y);
 
     /* Carry Out Skill */
-    match data.entities.skills[&player_id][skill_index] {
+    match level.entities.skills[&player_id][skill_index] {
         Skill::GrassThrow => {
             if let Some(direction) = Direction::from_dxy(dxy.x, dxy.y) {
                 msg_log.log(Msg::GrassThrow(player_id, direction));
@@ -941,18 +941,18 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::PassWall => {
-            let player_id = data.find_by_name(EntityName::Player).unwrap();
-            let player_pos = data.entities.pos[&player_id];
+            let player_id = level.find_by_name(EntityName::Player).unwrap();
+            let player_pos = level.entities.pos[&player_id];
 
             if let Some(dir) = Direction::from_positions(player_pos, skill_pos) {
                 let target_pos = dir.offset_pos(player_pos, 1);
 
-                let blocked = data.map.path_blocked_move(player_pos, target_pos);
+                let blocked = level.map.path_blocked_move(player_pos, target_pos);
                 
                 if let Some(blocked) = blocked {
-                    if data.map[blocked.end_pos].block_move {
+                    if level.map[blocked.end_pos].block_move {
                         let next = next_from_to(player_pos, blocked.end_pos);
-                        if  !data.map[next].block_move {
+                        if  !level.map[next].block_move {
                             msg_log.log(Msg::PassWall(player_id, next));
                         }
                     } else {
@@ -963,8 +963,8 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::Rubble => {
-            let player_id = data.find_by_name(EntityName::Player).unwrap();
-            let player_pos = data.entities.pos[&player_id];
+            let player_id = level.find_by_name(EntityName::Player).unwrap();
+            let player_pos = level.entities.pos[&player_id];
 
             if distance(player_pos, skill_pos) == 1 {
                 msg_log.log(Msg::Rubble(player_id, skill_pos));
@@ -972,8 +972,8 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::Reform => {
-            let player_id = data.find_by_name(EntityName::Player).unwrap();
-            let player_pos = data.entities.pos[&player_id];
+            let player_id = level.find_by_name(EntityName::Player).unwrap();
+            let player_pos = level.entities.pos[&player_id];
 
             if distance(player_pos, skill_pos) == 1 {
                 msg_log.log(Msg::Reform(player_id, skill_pos));
@@ -981,10 +981,10 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::StoneThrow => {
-            let player_pos = data.entities.pos[&player_id];
-            let mut near_rubble = data.map[player_pos].surface == Surface::Rubble;
-            for pos in data.map.neighbors(player_pos) {
-                if data.map[pos].surface == Surface::Rubble {
+            let player_pos = level.entities.pos[&player_id];
+            let mut near_rubble = level.map[player_pos].surface == Surface::Rubble;
+            for pos in level.map.neighbors(player_pos) {
+                if level.map[pos].surface == Surface::Rubble {
                     near_rubble = true;
                 }
                 if near_rubble {
@@ -1000,13 +1000,13 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::StoneSkin => {
-            let player_id = data.find_by_name(EntityName::Player).unwrap();
+            let player_id = level.find_by_name(EntityName::Player).unwrap();
             msg_log.log(Msg::StoneSkin(player_id));
         }
 
         Skill::Swap => {
-            let player_id = data.find_by_name(EntityName::Player).unwrap();
-            if let Some(entity_id) = data.has_blocking_entity(skill_pos) {
+            let player_id = level.find_by_name(EntityName::Player).unwrap();
+            if let Some(entity_id) = level.has_blocking_entity(skill_pos) {
                 msg_log.log(Msg::Swap(player_id, entity_id));
             }
         }
@@ -1047,7 +1047,7 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::WhirlWind => {
-            if data.map.is_within_bounds(skill_pos) {
+            if level.map.is_within_bounds(skill_pos) {
                 msg_log.log(Msg::WhirlWind(player_id, skill_pos));
             }
         }

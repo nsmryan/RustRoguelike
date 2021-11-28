@@ -22,21 +22,21 @@ use crate::vault::*;
 pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     let player_position: Pos;
 
-    //let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    //game.data.clear_except(vec!(player_id));
+    //let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+    //game.level.clear_except(vec!(player_id));
     game.clear_level_except_player();
     game.settings.map_load_config = map_load_config.clone();
 
     match map_load_config {
         MapLoadConfig::TestMap => {
-            game.data.map = Map::from_dims(11, 12);
+            game.level.map = Map::from_dims(11, 12);
             make_test_map(game);
             player_position = Pos::new(0, 0);
         }
 
         MapLoadConfig::Empty => {
             let new_map = Map::from_dims(10, 10);
-            game.data.map = new_map;
+            game.level.map = new_map;
             player_position = Pos::new(0, 0);
         }
 
@@ -51,7 +51,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
                 }
             }
 
-            game.data.map = generate_bare_map(MAP_WIDTH as u32, MAP_HEIGHT as u32, &template_file, &mut game.rng);
+            game.level.map = generate_bare_map(MAP_WIDTH as u32, MAP_HEIGHT as u32, &template_file, &mut game.rng);
             player_position = saturate_map(game, &cmds);
         }
 
@@ -61,7 +61,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
             let mut max_width = 0;
             let mut max_height = 0;
             for vault in game.vaults.iter() {
-                let (width, height) = vault.data.map.size();
+                let (width, height) = vault.level.map.size();
                 max_width = std::cmp::max(max_width, width);
                 max_height = std::cmp::max(max_height, height);
             }
@@ -70,7 +70,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
 
             let map_width = std::cmp::min(MAP_WIDTH as u32, max_dim as u32 * square as u32);
             let map_height = std::cmp::min(MAP_HEIGHT as u32, max_dim as u32 * square as u32);
-            game.data.map = Map::from_dims(map_width, map_height);
+            game.level.map = Map::from_dims(map_width, map_height);
 
             let vaults = game.vaults.clone();
             for (index, vault) in vaults.iter().enumerate() {
@@ -79,22 +79,22 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
                 let offset = Pos::new(max_width * x_pos as i32 + 2 * x_pos as i32,
                                       max_height * y_pos as i32 + 2 * y_pos as i32);
 
-                place_vault(&mut game.data, vault, offset, &mut game.rng);
+                place_vault(&mut game.level, vault, offset, &mut game.rng);
             }
         }
 
         MapLoadConfig::VaultFile(file_name) => {
             let vault: Vault = parse_vault(&format!("resources/{}", file_name), &game.config);
-            let (vault_width, vault_height) = vault.data.map.size();
+            let (vault_width, vault_height) = vault.level.map.size();
             let map_width = 3 * vault_width;
             let map_height = 3 * vault_height;
 
-            //game.data.map = Map::with_vec(vault.data.map.tiles);
-            game.data.map = Map::from_dims(map_width as u32, map_height as u32);
-            place_vault_with(&mut game.data, &vault, Pos::new(0, 0), Rotation::Degrees0, false);
-            place_vault_with(&mut game.data, &vault, Pos::new(2*vault_width, 0), Rotation::Degrees90, false);
-            place_vault_with(&mut game.data, &vault, Pos::new(0, 2*vault_height), Rotation::Degrees180, false);
-            place_vault_with(&mut game.data, &vault, Pos::new(2*vault_width, 2*vault_height), Rotation::Degrees270, false);
+            //game.level.map = Map::with_vec(vault.level.map.tiles);
+            game.level.map = Map::from_dims(map_width as u32, map_height as u32);
+            place_vault_with(&mut game.level, &vault, Pos::new(0, 0), Rotation::Degrees0, false);
+            place_vault_with(&mut game.level, &vault, Pos::new(2*vault_width, 0), Rotation::Degrees90, false);
+            place_vault_with(&mut game.level, &vault, Pos::new(0, 2*vault_height), Rotation::Degrees180, false);
+            place_vault_with(&mut game.level, &vault, Pos::new(2*vault_width, 2*vault_height), Rotation::Degrees270, false);
 
             player_position = Pos::new(4, 4);
         }
@@ -109,58 +109,58 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
 
             let map_name = format!("resources/{}", maps[game.settings.level_num]);
             let mut position =
-                read_map_xp(&game.config, &mut game.data, &mut game.msg_log, &map_name);
+                read_map_xp(&game.config, &mut game.level, &mut game.msg_log, &map_name);
             if position == (0, 0) {
-                position = (game.data.map.width() / 2, game.data.map.height() / 2);
+                position = (game.level.map.width() / 2, game.level.map.height() / 2);
             }
             player_position = Pos::from(position);
         }
 
         MapLoadConfig::Random => {
-            game.data.map = Map::from_dims(MAP_WIDTH as u32, MAP_HEIGHT as u32);
-            let starting_position = make_island(&mut game.data, &game.config, &mut game.msg_log, &mut game.rng);
+            game.level.map = Map::from_dims(MAP_WIDTH as u32, MAP_HEIGHT as u32);
+            let starting_position = make_island(&mut game.level, &game.config, &mut game.msg_log, &mut game.rng);
             player_position = Pos::from(starting_position);
         }
 
         MapLoadConfig::TestWall => {
-            let (new_map, position) = make_wall_test_map(&mut game.data.entities, &game.config, &mut game.msg_log);
-            game.data.map = new_map;
+            let (new_map, position) = make_wall_test_map(&mut game.level.entities, &game.config, &mut game.msg_log);
+            game.level.map = new_map;
             player_position = Pos::from(position);
         }
 
         MapLoadConfig::TestPlayer => {
-            let (new_map, position) = make_player_test_map(&mut game.data.entities, &game.config, &mut game.msg_log);
-            game.data.map = new_map;
+            let (new_map, position) = make_player_test_map(&mut game.level.entities, &game.config, &mut game.msg_log);
+            game.level.map = new_map;
             player_position = Pos::from(position);
         }
 
         MapLoadConfig::TestCorner => {
-            let (new_map, position) = make_corner_test_map(&mut game.data.entities, &game.config, &mut game.msg_log);
-            game.data.map = new_map;
+            let (new_map, position) = make_corner_test_map(&mut game.level.entities, &game.config, &mut game.msg_log);
+            game.level.map = new_map;
             player_position = Pos::from(position);
         }
 
         MapLoadConfig::TestTraps => {
-            let (new_map, position) = make_trap_test_map(&mut game.data.entities, &game.config, &mut game.msg_log);
-            game.data.map = new_map;
+            let (new_map, position) = make_trap_test_map(&mut game.level.entities, &game.config, &mut game.msg_log);
+            game.level.map = new_map;
             player_position = Pos::from(position);
         }
     }
 
-    if game.data.find_by_name(EntityName::Mouse).is_none() {
-        make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
+    if game.level.find_by_name(EntityName::Mouse).is_none() {
+        make_mouse(&mut game.level.entities, &game.config, &mut game.msg_log);
     }
 
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     game.msg_log.log(Msg::SetPos(player_id, player_position));
-    game.data.entities.set_pos(player_id, player_position);
+    game.level.entities.set_pos(player_id, player_position);
 
     if game.config.write_map_distribution {
         let max = (2 * TILE_FILL_METRIC_DIST + 1).pow(2);
         let mut counts = vec![0; max + 1];
 
-        for pos in game.data.map.get_all_pos() {
-            let amount = tile_fill_metric(&game.data.map, pos);
+        for pos in game.level.map.get_all_pos() {
+            let amount = tile_fill_metric(&game.level.map, pos);
             counts[amount] += 1;
         }
 
@@ -174,7 +174,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
 }
 
 pub fn read_map_xp(config: &Config,
-                   data: &mut Level,
+                   level: &mut Level,
                    msg_log: &mut MsgLog,
                    file_name: &str) -> (i32, i32) {
     trace!("opening map {}", file_name);
@@ -182,10 +182,10 @@ pub fn read_map_xp(config: &Config,
 
     let mut buf_reader = BufReader::new(file);
 
-    trace!("reading in map data");
+    trace!("reading in map level");
     let xp = XpFile::read(&mut buf_reader).unwrap();
 
-    data.map = Map::from_dims(xp.layers[0].width as u32, xp.layers[0].height as u32);
+    level.map = Map::from_dims(xp.layers[0].width as u32, xp.layers[0].height as u32);
     let mut player_position = (0, 0);
 
     for (layer_index, layer) in xp.layers.iter().enumerate() {
@@ -211,17 +211,17 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             MAP_WATER => {
-                                data.map[pos] = Tile::water();
-                                data.map[pos].chr = MAP_WATER;
+                                level.map[pos] = Tile::water();
+                                level.map[pos].chr = MAP_WATER;
                             }
 
                             MAP_RUBBLE => {
-                                data.map[pos].surface = Surface::Rubble;
+                                level.map[pos].surface = Surface::Rubble;
                             }
 
                             MAP_GRASS => {
-                                data.map[pos].surface = Surface::Grass;
-                                ensure_grass(&mut data.entities, pos, msg_log);
+                                level.map[pos].surface = Surface::Grass;
+                                ensure_grass(&mut level.entities, pos, msg_log);
                             }
 
                             _ => {
@@ -233,158 +233,158 @@ pub fn read_map_xp(config: &Config,
                     MAP_LAYER_ENVIRONMENT => {
                         match chr as u8 {
                             MAP_COLUMN => {
-                                make_column(&mut data.entities, config, pos, msg_log);
+                                make_column(&mut level.entities, config, pos, msg_log);
                             }
 
                             MAP_THIN_WALL_TOP => {
-                                data.map[pos].chr = 0;
-                                data.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
+                                level.map[pos].chr = 0;
+                                level.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM => {
-                                data.map[pos].chr = 0; 
-                                data.map[pos].bottom_wall = Wall::ShortWall;
+                                level.map[pos].chr = 0; 
+                                level.map[pos].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_LEFT => {
-                                data.map[pos].chr = 0; 
-                                data.map[pos].left_wall = Wall::ShortWall;
+                                level.map[pos].chr = 0; 
+                                level.map[pos].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_RIGHT => {
-                                data.map[pos].chr = 0; 
-                                data.map[(x + 1, y)].left_wall = Wall::ShortWall;
+                                level.map[pos].chr = 0; 
+                                level.map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_TOP_LEFT => {
-                                data.map[pos].chr = 0; 
-                                data.map[pos].left_wall = Wall::ShortWall;
-                                data.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
+                                level.map[pos].chr = 0; 
+                                level.map[pos].left_wall = Wall::ShortWall;
+                                level.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM_LEFT => {
-                                data.map[pos].chr = 0; 
-                                data.map[pos].left_wall = Wall::ShortWall;
-                                data.map[pos].bottom_wall = Wall::ShortWall;
+                                level.map[pos].chr = 0; 
+                                level.map[pos].left_wall = Wall::ShortWall;
+                                level.map[pos].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_TOP_RIGHT => {
-                                data.map[pos].chr = 0; 
-                                data.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
-                                data.map[(x - 1, y)].left_wall = Wall::ShortWall;
+                                level.map[pos].chr = 0; 
+                                level.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
+                                level.map[(x - 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM_RIGHT => {
-                                data.map[pos].chr = 0; 
-                                data.map[pos].bottom_wall = Wall::ShortWall;
-                                data.map[(x + 1, y)].left_wall = Wall::ShortWall;
+                                level.map[pos].chr = 0; 
+                                level.map[pos].bottom_wall = Wall::ShortWall;
+                                level.map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_TOP => {
-                                data.map[pos].chr = 0; 
-                                data.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
+                                level.map[pos].chr = 0; 
+                                level.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_LEFT => {
-                                data.map[pos].chr = 0; 
-                                data.map[pos].left_wall = Wall::TallWall;
+                                level.map[pos].chr = 0; 
+                                level.map[pos].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_RIGHT => {
-                                data.map[pos].chr = 0; 
-                                data.map[(x + 1, y)].left_wall = Wall::ShortWall;
+                                level.map[pos].chr = 0; 
+                                level.map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM => {
-                                data.map[pos].chr = 0; 
-                                data.map[pos].bottom_wall = Wall::TallWall;
+                                level.map[pos].chr = 0; 
+                                level.map[pos].bottom_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_TOP_LEFT => {
-                                data.map[pos].chr = 0; 
-                                data.map[pos].left_wall = Wall::TallWall;
-                                data.map[(x, y - 1)].bottom_wall = Wall::TallWall;
+                                level.map[pos].chr = 0; 
+                                level.map[pos].left_wall = Wall::TallWall;
+                                level.map[(x, y - 1)].bottom_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM_LEFT => {
-                                data.map[pos].chr = 0; 
-                                data.map[pos].bottom_wall = Wall::TallWall;
-                                data.map[pos].left_wall = Wall::TallWall;
+                                level.map[pos].chr = 0; 
+                                level.map[pos].bottom_wall = Wall::TallWall;
+                                level.map[pos].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_TOP_RIGHT => {
-                                data.map[pos].chr = 0; 
-                                data.map[(x, y - 1)].bottom_wall = Wall::TallWall;
-                                data.map[(x + 1, y)].left_wall = Wall::TallWall;
+                                level.map[pos].chr = 0; 
+                                level.map[(x, y - 1)].bottom_wall = Wall::TallWall;
+                                level.map[(x + 1, y)].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM_RIGHT => {
-                                data.map[pos].chr = 0; 
-                                data.map[pos].bottom_wall = Wall::TallWall;
-                                data.map[(x + 1, y)].left_wall = Wall::TallWall;
+                                level.map[pos].chr = 0; 
+                                level.map[pos].bottom_wall = Wall::TallWall;
+                                level.map[(x + 1, y)].left_wall = Wall::TallWall;
                             }
 
                             MAP_DOT_TOP_LEFT => {
-                                data.map[pos].chr = chr as u8;
-                                data.map[pos].block_move = true;
+                                level.map[pos].chr = chr as u8;
+                                level.map[pos].block_move = true;
                             }
 
                             MAP_DOT_TOP_RIGHT => {
-                                data.map[pos].chr = chr as u8;
-                                data.map[pos].block_move = true;
+                                level.map[pos].chr = chr as u8;
+                                level.map[pos].block_move = true;
                             }
 
                             MAP_DOT_BOTTOM_LEFT => {
-                                data.map[pos].chr = chr as u8;
-                                data.map[pos].block_move = true;
+                                level.map[pos].chr = chr as u8;
+                                level.map[pos].block_move = true;
                             }
 
                             MAP_DOT_BOTTOM_RIGHT => {
-                                data.map[pos].chr = chr as u8;
-                                data.map[pos].block_move = true;
+                                level.map[pos].chr = chr as u8;
+                                level.map[pos].block_move = true;
                             }
 
                             MAP_ROOK => {
-                                data.map[pos].chr = chr as u8;
-                                data.map[pos].block_move = true;
+                                level.map[pos].chr = chr as u8;
+                                level.map[pos].block_move = true;
                             }
 
                             MAP_ORB => {
-                                data.map[pos].chr = chr as u8;
-                                data.map[pos].block_move = true;
+                                level.map[pos].chr = chr as u8;
+                                level.map[pos].block_move = true;
                             }
 
                             MAP_EMPTY => {
-                                data.map[pos].chr = MAP_EMPTY_CHAR;
+                                level.map[pos].chr = MAP_EMPTY_CHAR;
                             }
 
                             MAP_STATUE_1 | MAP_STATUE_2 | MAP_STATUE_3 |
                                 MAP_STATUE_4 | MAP_STATUE_5 | MAP_STATUE_6 => {
-                                    data.map[pos].chr = chr as u8;
-                                    data.map[pos].block_move = true;
-                                    data.map[pos].block_sight = true;
+                                    level.map[pos].chr = chr as u8;
+                                    level.map[pos].block_move = true;
+                                    level.map[pos].block_sight = true;
                                 }
 
                             MAP_WIDE_SPIKES | MAP_TALL_SPIKES => {
-                                data.map[pos].chr = chr as u8;
-                                data.map[pos].block_move = true;
-                                    data.map[pos].block_sight = true;
+                                level.map[pos].chr = chr as u8;
+                                level.map[pos].block_move = true;
+                                    level.map[pos].block_sight = true;
                             }
 
                             MAP_WALL => {
-                                data.map[pos].chr = chr as u8;
-                                data.map[pos].block_move = true;
-                                data.map[pos].block_sight = true;
+                                level.map[pos].chr = chr as u8;
+                                level.map[pos].block_move = true;
+                                level.map[pos].block_sight = true;
                             }
 
                             ENTITY_CLOAK_GUY => {
-                                data.map[pos].chr = chr as u8;
-                                data.map[pos].block_move = true;
+                                level.map[pos].chr = chr as u8;
+                                level.map[pos].block_move = true;
                             }
 
                             _ => {
-                                data.map[pos].chr = chr as u8;
-                                data.map[pos].block_move = true;
+                                level.map[pos].chr = chr as u8;
+                                level.map[pos].block_move = true;
                             }
                         }
                     }
@@ -399,15 +399,15 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_GOL => {
-                                make_gol(&mut data.entities, config, pos, msg_log);
+                                make_gol(&mut level.entities, config, pos, msg_log);
                             }
 
                             ENTITY_EXIT => {
-                                make_exit(&mut data.entities, config, pos, msg_log);
+                                make_exit(&mut level.entities, config, pos, msg_log);
                             }
 
                             ENTITY_ELF => {
-                                make_pawn(&mut data.entities, config, pos, msg_log);
+                                make_pawn(&mut level.entities, config, pos, msg_log);
                             }
 
                             MAP_EMPTY => {
@@ -415,27 +415,27 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             ENTITY_DAGGER => {
-                                make_dagger(&mut data.entities, config, pos, msg_log);
+                                make_dagger(&mut level.entities, config, pos, msg_log);
                             }
 
                             ENTITY_KEY => {
-                                make_key(&mut data.entities, config, pos, msg_log);
+                                make_key(&mut level.entities, config, pos, msg_log);
                             }
 
                             ENTITY_STONE => {
-                                make_stone(&mut data.entities, config, pos, msg_log);
+                                make_stone(&mut level.entities, config, pos, msg_log);
                             }
 
                             ENTITY_SHIELD => {
-                                make_shield(&mut data.entities, config, Pos::new(x, y), msg_log);
+                                make_shield(&mut level.entities, config, Pos::new(x, y), msg_log);
                             }
 
                             ENTITY_HAMMER => {
-                                make_hammer(&mut data.entities, config, Pos::new(x, y), msg_log);
+                                make_hammer(&mut level.entities, config, Pos::new(x, y), msg_log);
                             }
  
                             ENTITY_SPIKE_TRAP => {
-                                make_spike_trap(&mut data.entities, config, pos, msg_log);
+                                make_spike_trap(&mut level.entities, config, pos, msg_log);
                             }
 
                             _ => {

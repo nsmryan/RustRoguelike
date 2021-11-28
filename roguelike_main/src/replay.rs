@@ -93,8 +93,8 @@ pub fn test_recording() {
 
     make_map(&config.map_load, &mut game);
 
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let starting_pos = game.data.entities.pos[&player_id];
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+    let starting_pos = game.level.entities.pos[&player_id];
 
     
     // starting at (0,0)
@@ -104,7 +104,7 @@ pub fn test_recording() {
     input_action = InputAction::Move(Direction::Right);
     game.step_game(input_action);
     recording.action(&game, input_action);
-    let step1_pos = game.data.entities.pos[&player_id];
+    let step1_pos = game.level.entities.pos[&player_id];
     assert_eq!(starting_pos.x + 1, step1_pos.x);
     assert_eq!(starting_pos.y, step1_pos.y);
 
@@ -112,19 +112,19 @@ pub fn test_recording() {
     input_action = InputAction::Move(Direction::Down);
     game.step_game(input_action);
     recording.action(&game, input_action);
-    let step2_pos = game.data.entities.pos[&player_id];
+    let step2_pos = game.level.entities.pos[&player_id];
     assert_eq!(starting_pos.x + 1, step2_pos.x);
     assert_eq!(starting_pos.y + 1, step2_pos.y);
 
     // undo the walk down (1, 0)
     let game = recording.backward();
-    let step1_pos = game.data.entities.pos[&player_id];
+    let step1_pos = game.level.entities.pos[&player_id];
     assert_eq!(starting_pos.x + 1, step1_pos.x);
     assert_eq!(starting_pos.y, step1_pos.y);
 
     // undo the walk right (0, 0)
     let mut game = recording.backward();
-    let step0_pos = game.data.entities.pos[&player_id];
+    let step0_pos = game.level.entities.pos[&player_id];
     assert_eq!(starting_pos.x, step0_pos.x);
     assert_eq!(starting_pos.y, step0_pos.y);
 
@@ -132,19 +132,19 @@ pub fn test_recording() {
     input_action = InputAction::Move(Direction::Down);
     game.step_game(input_action);
     recording.action(&game, input_action);
-    let step1_2_pos = game.data.entities.pos[&player_id];
+    let step1_2_pos = game.level.entities.pos[&player_id];
     assert_eq!(starting_pos.x, step1_2_pos.x);
     assert_eq!(starting_pos.y + 1, step1_2_pos.y);
 
     // replay walk right (1, 1)
     let game = recording.forward().unwrap();
-    let step2_2_pos = game.data.entities.pos[&player_id];
+    let step2_2_pos = game.level.entities.pos[&player_id];
     assert_eq!(starting_pos.x + 1, step2_2_pos.x);
     assert_eq!(starting_pos.y + 1, step2_2_pos.y);
 
     // replay walk down (1, 2)
     let game = recording.forward().unwrap();
-    let step3_2_pos = game.data.entities.pos[&player_id];
+    let step3_2_pos = game.level.entities.pos[&player_id];
     assert_eq!(starting_pos.x + 1, step3_2_pos.x);
     assert_eq!(starting_pos.y + 2, step3_2_pos.y);
 }
@@ -431,7 +431,7 @@ pub fn read_message_log(message_file: &str) -> Vec<String> {
 // NOTE duplicate code in main.rs
 fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(), String> {
     for msg in game.msg_log.turn_messages.iter() {
-        display.process_message(*msg, &game.data.map, &game.config);
+        display.process_message(*msg, &game.level.map, &game.config);
     }
 
     /* Draw the Game to the Screen */

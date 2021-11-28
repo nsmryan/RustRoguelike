@@ -126,9 +126,9 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
 }
 
 fn check_map(game: &Game) {
-    for wall_pos in game.data.map.get_wall_pos() {
-        for id in game.data.entities.ids.iter() {
-            if wall_pos == game.data.entities.pos[id] {
+    for wall_pos in game.level.map.get_wall_pos() {
+        for id in game.level.entities.ids.iter() {
+            if wall_pos == game.level.entities.pos[id] {
                 panic!("A wall overlapped with an entity!");
             }
         }
@@ -153,7 +153,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     clear_island(game, island_radius);
 
     /* detect structures left */
-    let mut structures = find_structures(&game.data.map);
+    let mut structures = find_structures(&game.level.map);
     eprintln!();
     eprintln!("{} singles", structures.iter().filter(|s| s.typ == StructureType::Single).count());
     eprintln!("{} lines", structures.iter().filter(|s| s.typ == StructureType::Line).count());
@@ -180,11 +180,11 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     clear_island(game, island_radius);
 
     // find a place to put the player
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     // TODO ideally we would loop instead of unwrap, generating new levels
     // until a player position was found.
     let player_pos = find_available_on_side(game, true).unwrap();
-    game.data.entities.pos[&player_id] = player_pos;
+    game.level.entities.pos[&player_id] = player_pos;
 
     clear_island(game, island_radius);
 
@@ -225,15 +225,15 @@ fn modify_structures(game: &mut Game, cmds: &Vec<ProcCmd>, structures: &mut Vec<
         // turn some lone single-tile walls into columns
         if structure.typ == StructureType::Single {
             if rng_range(&mut game.rng, 0.0, 1.0) < 0.3 {
-                make_column(&mut game.data.entities, &game.config, structure.blocks[0], &mut game.msg_log);
+                make_column(&mut game.level.entities, &game.config, structure.blocks[0], &mut game.msg_log);
                 to_remove.push(index);
             }
         } else if rng_range(&mut game.rng, 0.0, 1.0) < 0.3 {
             if num_rubbles < max_rubbles {
                 let index = rng_range_u32(&mut game.rng, 0, structure.blocks.len() as u32) as usize;
                 let block = structure.blocks[index];
-                game.data.map[block] = Tile::empty();
-                game.data.map[block].surface = Surface::Rubble;
+                game.level.map[block] = Tile::empty();
+                game.level.map[block].surface = Surface::Rubble;
                 num_rubbles += 1;
             }
         }
@@ -248,16 +248,16 @@ fn modify_structures(game: &mut Game, cmds: &Vec<ProcCmd>, structures: &mut Vec<
            }
 
            for pos in structure.blocks.iter() {
-               game.data.map[*pos] = Tile::empty();
+               game.level.map[*pos] = Tile::empty();
 
-               for neighbor in game.data.map.cardinal_neighbors(*pos) {
-                   if game.data.map.is_within_bounds(neighbor) &&
-                      game.data.map[neighbor].block_move {
+               for neighbor in game.level.map.cardinal_neighbors(*pos) {
+                   if game.level.map.is_within_bounds(neighbor) &&
+                      game.level.map[neighbor].block_move {
                        if pos.x != neighbor.x {
-                           game.data.map[*pos].bottom_wall = wall_type;
+                           game.level.map[*pos].bottom_wall = wall_type;
                        }
                        if pos.y != neighbor.y {
-                           game.data.map[*pos].left_wall = wall_type;
+                           game.level.map[*pos].left_wall = wall_type;
                        }
                    }
                } 
@@ -270,7 +270,7 @@ fn modify_structures(game: &mut Game, cmds: &Vec<ProcCmd>, structures: &mut Vec<
     to_remove.reverse();
     for index in to_remove.iter() {
         for block in structures[*index].blocks.iter() {
-            game.data.map[*block] = Tile::empty();
+            game.level.map[*block] = Tile::empty();
         }
         structures.swap_remove(*index);
     }
@@ -279,21 +279,21 @@ fn modify_structures(game: &mut Game, cmds: &Vec<ProcCmd>, structures: &mut Vec<
 /// Look for intertile walls that are adjacent to full tile walls.
 /// These don't make sense in 3D, so remove them.
 fn ensure_iter_and_full_walls(game: &mut Game) {
-    let (width, height) = game.data.map.size();
+    let (width, height) = game.level.map.size();
 
     for y in 0..(height - 1) {
         for x in 0..(width - 1) {
-            if game.data.map[(x, y)].block_move {
-                game.data.map[(x, y)].left_wall = Wall::Empty;
-                game.data.map[(x, y)].bottom_wall = Wall::Empty;
+            if game.level.map[(x, y)].block_move {
+                game.level.map[(x, y)].left_wall = Wall::Empty;
+                game.level.map[(x, y)].bottom_wall = Wall::Empty;
             }
 
-            if game.data.map[(x + 1, y)].block_move {
-                game.data.map[(x, y)].left_wall = Wall::Empty;
+            if game.level.map[(x + 1, y)].block_move {
+                game.level.map[(x, y)].left_wall = Wall::Empty;
             }
 
-            if game.data.map[(x, y + 1)].block_move {
-                game.data.map[(x, y)].bottom_wall = Wall::Empty;
+            if game.level.map[(x, y + 1)].block_move {
+                game.level.map[(x, y)].bottom_wall = Wall::Empty;
             }
         }
     }
@@ -301,27 +301,27 @@ fn ensure_iter_and_full_walls(game: &mut Game) {
 
 /// Ensure that diagonal full tile walls do not occur.
 fn handle_diagonal_full_tile_walls(game: &mut Game) {
-    let (width, height) = game.data.map.size();
+    let (width, height) = game.level.map.size();
 
     for y in 0..(height - 1) {
         for x in 0..(width - 1) {
-            if game.data.map[(x, y)].block_move         && 
-               game.data.map[(x + 1, y + 1)].block_move &&
-               !game.data.map[(x + 1, y)].block_move    && 
-               !game.data.map[(x, y + 1)].block_move {
-                   game.data.map[(x + 1, y)] = Tile::wall();
-            } else if game.data.map[(x + 1, y)].block_move  && 
-                      game.data.map[(x, y + 1)].block_move  &&
-                      !game.data.map[(x, y)].block_move &&
-                      !game.data.map[(x + 1, y + 1)].block_move {
-                   game.data.map[(x, y)] = Tile::wall();
+            if game.level.map[(x, y)].block_move         && 
+               game.level.map[(x + 1, y + 1)].block_move &&
+               !game.level.map[(x + 1, y)].block_move    && 
+               !game.level.map[(x, y + 1)].block_move {
+                   game.level.map[(x + 1, y)] = Tile::wall();
+            } else if game.level.map[(x + 1, y)].block_move  && 
+                      game.level.map[(x, y + 1)].block_move  &&
+                      !game.level.map[(x, y)].block_move &&
+                      !game.level.map[(x + 1, y + 1)].block_move {
+                   game.level.map[(x, y)] = Tile::wall();
             }
         }
     }
 }
 
 fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
-    let potential_pos = game.data.get_clear_pos();
+    let potential_pos = game.level.get_clear_pos();
 
     let mut num_items = 0;
     let max_items = cmds.iter().filter_map(|cmd| {
@@ -350,13 +350,13 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
                 let pos = potential_pos[index];
 
                 match typ {
-                    Item::Dagger => { make_dagger(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
-                    Item::Sword => { make_sword(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
-                    Item::Shield => { make_shield(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
-                    Item::Hammer => { make_hammer(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
-                    Item::Spear => { make_spear(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
-                    Item::Stone => { make_stone(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
-                    Item::Lantern => { make_lantern(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    Item::Dagger => { make_dagger(&mut game.level.entities, &game.config, pos, &mut game.msg_log); },
+                    Item::Sword => { make_sword(&mut game.level.entities, &game.config, pos, &mut game.msg_log); },
+                    Item::Shield => { make_shield(&mut game.level.entities, &game.config, pos, &mut game.msg_log); },
+                    Item::Hammer => { make_hammer(&mut game.level.entities, &game.config, pos, &mut game.msg_log); },
+                    Item::Spear => { make_spear(&mut game.level.entities, &game.config, pos, &mut game.msg_log); },
+                    Item::Stone => { make_stone(&mut game.level.entities, &game.config, pos, &mut game.msg_log); },
+                    Item::Lantern => { make_lantern(&mut game.level.entities, &game.config, pos, &mut game.msg_log); },
                     _ => {},
                 }
             }
@@ -365,13 +365,13 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
 }
 
 fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
-    let potential_pos = game.data.get_clear_pos();
+    let potential_pos = game.level.get_clear_pos();
 
     let mut near_walls = HashSet::new();
 
     for pos in potential_pos {
-        for neighbor in game.data.map.cardinal_neighbors(pos) {
-            if game.data.map[neighbor].tile_type == TileType::Wall {
+        for neighbor in game.level.map.cardinal_neighbors(pos) {
+            if game.level.map[neighbor].tile_type == TileType::Wall {
                 near_walls.insert(pos);
             }
         }
@@ -396,24 +396,24 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
         let gate_pos = gate_positions[gate_pos_index];
         gate_positions.swap_remove(gate_pos_index);
 
-        let trigger = make_gate_trigger(&mut game.data.entities, &game.config, gate_pos, &mut game.msg_log);
+        let trigger = make_gate_trigger(&mut game.level.entities, &game.config, gate_pos, &mut game.msg_log);
 
         // Find a nearby position to use as the trigger's gate. this should always succeed because
         // the position was chosen to be near a wall.
-        for neighbor in game.data.map.cardinal_neighbors(gate_pos) {
-            if game.data.map[neighbor].tile_type == TileType::Wall {
-                game.data.entities.gate_pos[&trigger] = neighbor;
+        for neighbor in game.level.map.cardinal_neighbors(gate_pos) {
+            if game.level.map[neighbor].tile_type == TileType::Wall {
+                game.level.entities.gate_pos[&trigger] = neighbor;
                 break;
             }
         }
 
         // clear the surface of the tile.
-        game.data.map[gate_pos] = Tile::empty();
+        game.level.map[gate_pos] = Tile::empty();
     }
 }
 
 fn place_traps(game: &mut Game, cmds: &Vec<ProcCmd>) {
-    let potential_pos = game.data.get_clear_pos();
+    let potential_pos = game.level.get_clear_pos();
 
     let mut num_traps = 0;
     let max_traps = cmds.iter().filter_map(|cmd| {
@@ -442,25 +442,25 @@ fn place_traps(game: &mut Game, cmds: &Vec<ProcCmd>) {
                 let pos = potential_pos[index];
 
                 match typ {
-                    Trap::Spikes => { make_spike_trap(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
-                    Trap::Sound => { make_sound_trap(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
-                    Trap::Blink => { make_blink_trap(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
-                    Trap::Freeze => { make_freeze_trap(&mut game.data.entities, &game.config, pos, &mut game.msg_log); },
+                    Trap::Spikes => { make_spike_trap(&mut game.level.entities, &game.config, pos, &mut game.msg_log); },
+                    Trap::Sound => { make_sound_trap(&mut game.level.entities, &game.config, pos, &mut game.msg_log); },
+                    Trap::Blink => { make_blink_trap(&mut game.level.entities, &game.config, pos, &mut game.msg_log); },
+                    Trap::Freeze => { make_freeze_trap(&mut game.level.entities, &game.config, pos, &mut game.msg_log); },
                 }
 
                 // clear tile surface
-                game.data.map[pos] = Tile::empty();
+                game.level.map[pos] = Tile::empty();
             }
         }
     }
 }
 
 fn place_monsters(game: &mut Game, player_id: EntityId, cmds: &Vec<ProcCmd>) {
-    let player_pos = game.data.entities.pos[&player_id];
+    let player_pos = game.level.entities.pos[&player_id];
 
     // get empty positions, but make sure they are not close to the player
     let mut potential_pos = 
-        game.data.get_clear_pos()
+        game.level.get_clear_pos()
                  .iter()
                  .filter(|p| distance(player_pos, **p) > 4)
                  .map(|p| *p)
@@ -482,18 +482,18 @@ fn place_monsters(game: &mut Game, player_id: EntityId, cmds: &Vec<ProcCmd>) {
 
                 let id;
                 match typ {
-                    EntityName::Gol => { id = Some(make_gol(&mut game.data.entities, &game.config, pos, &mut game.msg_log)); },
-                    EntityName::Pawn => { id = Some(make_pawn(&mut game.data.entities, &game.config, pos, &mut game.msg_log)); },
-                    EntityName::Spire => { id = Some(make_spire(&mut game.data.entities, &game.config, pos, &mut game.msg_log)); },
-                    EntityName::Armil => { id = Some(make_armil(&mut game.data.entities, &game.config, pos, &mut game.msg_log)); },
-                    EntityName::Rook => { id = Some(make_rook(&mut game.data.entities, &game.config, pos, &mut game.msg_log)); },
+                    EntityName::Gol => { id = Some(make_gol(&mut game.level.entities, &game.config, pos, &mut game.msg_log)); },
+                    EntityName::Pawn => { id = Some(make_pawn(&mut game.level.entities, &game.config, pos, &mut game.msg_log)); },
+                    EntityName::Spire => { id = Some(make_spire(&mut game.level.entities, &game.config, pos, &mut game.msg_log)); },
+                    EntityName::Armil => { id = Some(make_armil(&mut game.level.entities, &game.config, pos, &mut game.msg_log)); },
+                    EntityName::Rook => { id = Some(make_rook(&mut game.level.entities, &game.config, pos, &mut game.msg_log)); },
                     _ => { id = None; },
                 }
                 if let Some(id) = id {
                     // if the entity can see the player, turn it around so it is facing away.
-                    if game.data.is_in_fov(id, player_id, &game.config) == FovResult::Inside {
-                        game.data.entities.direction[&id] = 
-                            game.data.entities.direction[&id].reverse();
+                    if game.level.is_in_fov(id, player_id, &game.config) == FovResult::Inside {
+                        game.level.entities.direction[&id] = 
+                            game.level.entities.direction[&id].reverse();
                     }
                 }
 
@@ -508,7 +508,7 @@ fn place_vaults(game: &mut Game, cmds: &Vec<ProcCmd>) {
     for cmd in cmds.iter() {
         if let ProcCmd::Vaults(max) = cmd {
             for _ in 0..*max {
-                let (width, height) = game.data.map.size();
+                let (width, height) = game.level.map.size();
                 let x = rng_range_i32(&mut game.rng, 0, width);
                 let y = rng_range_i32(&mut game.rng, 0, height);
                 let offset = Pos::new(x, y);
@@ -516,14 +516,14 @@ fn place_vaults(game: &mut Game, cmds: &Vec<ProcCmd>) {
                 let vault_index = rng_range_u32(&mut game.rng, 0, game.vaults.len() as u32) as usize;
                 let vault = &game.vaults[vault_index];
                 eprintln!("Placing vault {} at {}", vault_index, offset);
-                place_vault(&mut game.data, vault, offset, &mut game.rng);
+                place_vault(&mut game.level, vault, offset, &mut game.rng);
             }
         }
     }
 }
 
 // TODO rotate and mirror according to tags
-pub fn place_vault(data: &mut Level, vault: &Vault, offset: Pos, rng: &mut Rand32) {
+pub fn place_vault(level: &mut Level, vault: &Vault, offset: Pos, rng: &mut Rand32) {
                         
     let mirror = !vault.tags.contains(&VaultTag::NoMirror) && rng_range(rng, 0.0, 1.0) < 0.5;
 
@@ -535,26 +535,26 @@ pub fn place_vault(data: &mut Level, vault: &Vault, offset: Pos, rng: &mut Rand3
         rotation = rotations[index];
     }
 
-    place_vault_with(data, vault, offset, rotation, mirror);
+    place_vault_with(level, vault, offset, rotation, mirror);
 }
 
-pub fn place_vault_with(data: &mut Level, vault: &Vault, offset: Pos, rotation: Rotation, mirror: bool) {
+pub fn place_vault_with(level: &mut Level, vault: &Vault, offset: Pos, rotation: Rotation, mirror: bool) {
     let mut actual_vault = vault.clone();
-    actual_vault.data.map = reorient_map(&actual_vault.data.map, rotation, mirror);
+    actual_vault.level.map = reorient_map(&actual_vault.level.map, rotation, mirror);
 
-    let (width, height) = actual_vault.data.map.size();
+    let (width, height) = actual_vault.level.map.size();
 
     // update map with vault tiles
-    for vault_pos in actual_vault.data.map.get_all_pos() {
+    for vault_pos in actual_vault.level.map.get_all_pos() {
         let map_pos = add_pos(offset, vault_pos);
-        if data.map.is_within_bounds(map_pos) {
-            data.map[map_pos] = actual_vault.data.map[vault_pos];
+        if level.map.is_within_bounds(map_pos) {
+            level.map[map_pos] = actual_vault.level.map[vault_pos];
 
-            for entity_id in data.get_entities_at_pos(map_pos) {
-                if data.entities.typ[&entity_id] == EntityType::Player {
-                    data.map[vault_pos] = Tile::empty();
+            for entity_id in level.get_entities_at_pos(map_pos) {
+                if level.entities.typ[&entity_id] == EntityType::Player {
+                    level.map[vault_pos] = Tile::empty();
                 } else {
-                    data.entities.remove_entity(entity_id);
+                    level.entities.remove_entity(entity_id);
                 }
             }
         }
@@ -564,15 +564,15 @@ pub fn place_vault_with(data: &mut Level, vault: &Vault, offset: Pos, rotation: 
     let mut vault_entities_to_remove: Vec<EntityId> = Vec::new();
 
     // move entities to their new place in the map
-    let mut entities = actual_vault.data.entities.clone();
-    for id in actual_vault.data.entities.ids.iter() {
+    let mut entities = actual_vault.level.entities.clone();
+    for id in actual_vault.level.entities.ids.iter() {
         let mut entity_pos = entities.pos[id];
         if mirror {
             entity_pos = mirror_in_x(entity_pos, width);
         }
         entity_pos = rotation.rotate(entity_pos, width, height);
         entity_pos = add_pos(offset, entity_pos);
-        if data.map.is_within_bounds(entity_pos) && !data.map[entity_pos].block_move {
+        if level.map.is_within_bounds(entity_pos) && !level.map[entity_pos].block_move {
             entities.pos[id] = entity_pos;
         } else {
             vault_entities_to_remove.push(*id);
@@ -580,8 +580,8 @@ pub fn place_vault_with(data: &mut Level, vault: &Vault, offset: Pos, rotation: 
         }
 
         // look for entities already at this position
-        for entity_id in data.get_entities_at_pos(entity_pos) {
-            if data.entities.typ[&entity_id] == EntityType::Player {
+        for entity_id in level.get_entities_at_pos(entity_pos) {
+            if level.entities.typ[&entity_id] == EntityType::Player {
                 // remove vault entity to avoid removing player
                 vault_entities_to_remove.push(*id);
             } else {
@@ -595,22 +595,22 @@ pub fn place_vault_with(data: &mut Level, vault: &Vault, offset: Pos, rotation: 
     }
 
     for remove_id in entities_to_remove {
-        data.entities.remove_entity(remove_id);
+        level.entities.remove_entity(remove_id);
     }
 
-    data.entities.merge(&entities);
+    level.entities.merge(&entities);
 }
 
 fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
-    let (width, height) = game.data.map.size();
+    let (width, height) = game.level.map.size();
 
     let mut potential_grass_pos = Vec::new();
     for x in 0..width {
         for y in 0..height {
             let pos = Pos::new(x, y);
 
-            if !game.data.map[pos].block_move {
-                let count = floodfill(&game.data.map, pos, 3).len();
+            if !game.level.map[pos].block_move {
+                let count = floodfill(&game.level.map, pos, 3).len();
                 if count > 28 && count < 35 {
                     potential_grass_pos.push(pos);
                 }
@@ -622,16 +622,16 @@ fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
     let num_grass_to_place = std::cmp::min(num_grass_to_place, potential_grass_pos.len());
     for pos_index in 0..num_grass_to_place {
         let pos = potential_grass_pos[pos_index];
-        game.data.map[pos].surface = Surface::Grass;
-        ensure_grass(&mut game.data.entities, pos, &mut game.msg_log);
+        game.level.map[pos].surface = Surface::Grass;
+        ensure_grass(&mut game.level.entities, pos, &mut game.msg_log);
 
         for _ in 0..4 {
             let offset_pos = Pos::new(pos.x + rng_range_i32(&mut game.rng, 0, disperse),
                                       pos.y + rng_range_i32(&mut game.rng, 0, disperse));
-            if game.data.map.is_within_bounds(offset_pos) &&
-               !game.data.map[offset_pos].block_move {
-                game.data.map[offset_pos].surface = Surface::Grass;
-                ensure_grass(&mut game.data.entities, offset_pos, &mut game.msg_log);
+            if game.level.map.is_within_bounds(offset_pos) &&
+               !game.level.map[offset_pos].block_move {
+                game.level.map[offset_pos].surface = Surface::Grass;
+                ensure_grass(&mut game.level.entities, offset_pos, &mut game.msg_log);
             }
         }
     }
@@ -641,10 +641,10 @@ fn find_available_on_side(game: &mut Game, left: bool) -> Option<Pos> {
     let mut avail_pos: Option<Pos> = None;
     let mut x_most = if left { i32::MAX } else { 0 };
 
-    let potential_pos = game.data.get_clear_pos();
+    let potential_pos = game.level.get_clear_pos();
     let mut index = 1.0;
     for pos in potential_pos {
-        if !game.data.map[pos].block_move && game.data.has_blocking_entity(pos).is_none() {
+        if !game.level.map[pos].block_move && game.level.has_blocking_entity(pos).is_none() {
             let x_more;
             let x_more_strict;
             if left {
@@ -675,10 +675,10 @@ fn find_available_on_side(game: &mut Game, left: bool) -> Option<Pos> {
 fn find_available_tile(game: &mut Game) -> Option<Pos> {
     let mut avail_pos = None;
 
-    let potential_pos = game.data.get_clear_pos();
+    let potential_pos = game.level.get_clear_pos();
     let mut index = 1.0;
     for pos in potential_pos {
-        if game.data.has_blocking_entity(pos).is_none() {
+        if game.level.has_blocking_entity(pos).is_none() {
             if rng_range(&mut game.rng, 0.0, 1.0) < (1.0 / index) {
                 avail_pos = Some(pos);
             }
@@ -711,17 +711,17 @@ fn clear_path_to(game: &mut Game, start_pos: Pos, target_pos: Pos) {
     let path = 
         astar(&start_pos,
               |&pos| {
-                  game.data.map.cardinal_neighbors(pos)
+                  game.level.map.cardinal_neighbors(pos)
                                .iter()
-                               .map(|p| (*p, move_tile_cost(pos, *p, &game.data.map)))
+                               .map(|p| (*p, move_tile_cost(pos, *p, &game.level.map)))
                                .collect::<Vec<(Pos, i32)>>()
               },
-              |&pos| blocked_tile_cost(pos, &game.data.map) + distance(start_pos, pos) as i32,
+              |&pos| blocked_tile_cost(pos, &game.level.map) + distance(start_pos, pos) as i32,
               |&pos| pos == target_pos);
 
     if let Some((results, _cost)) = path {
         for pos in results {
-            game.data.map[pos].clear_walls();
+            game.level.map[pos].clear_walls();
         }
     }
 }
@@ -729,11 +729,11 @@ fn clear_path_to(game: &mut Game, start_pos: Pos, target_pos: Pos) {
 fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
     // place goal and key
     let key_pos = find_available_tile(game).unwrap();
-    game.data.map[key_pos] = Tile::empty();
-    for entity_id in game.data.get_entities_at_pos(key_pos) {
-        game.data.entities.remove_entity(entity_id);
+    game.level.map[key_pos] = Tile::empty();
+    for entity_id in game.level.get_entities_at_pos(key_pos) {
+        game.level.entities.remove_entity(entity_id);
     }
-    make_key(&mut game.data.entities, &game.config, key_pos, &mut game.msg_log);
+    make_key(&mut game.level.entities, &game.config, key_pos, &mut game.msg_log);
     clear_path_to(game, player_pos, key_pos);
 
     // Find the goal position, ensuring it is not too close to the key
@@ -742,11 +742,11 @@ fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
         goal_pos = find_available_tile(game).unwrap();
     }
 
-    game.data.map[goal_pos] = Tile::empty();
-    for entity_id in game.data.get_entities_at_pos(goal_pos) {
-        game.data.entities.remove_entity(entity_id);
+    game.level.map[goal_pos] = Tile::empty();
+    for entity_id in game.level.get_entities_at_pos(goal_pos) {
+        game.level.entities.remove_entity(entity_id);
     }
-    make_exit(&mut game.data.entities, &game.config, goal_pos, &mut game.msg_log);
+    make_exit(&mut game.level.entities, &game.config, goal_pos, &mut game.msg_log);
     clear_path_to(game, player_pos, goal_pos);
 }
 
@@ -755,7 +755,7 @@ fn clear_island(game: &mut Game, island_radius: i32) {
         return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt();
     }
 
-    let (width, height) = game.data.map.size();
+    let (width, height) = game.level.map.size();
     let x_mid = width / 2;
     let y_mid = height / 2;
     let mid_pos = Pos::new(x_mid, y_mid);
@@ -765,11 +765,11 @@ fn clear_island(game: &mut Game, island_radius: i32) {
             let pos = Pos::new(x, y);
 
             if dist(pos, mid_pos) >= island_radius as f32 {
-                game.data.map[pos] = Tile::water();
-                game.data.map[pos].chr = MAP_WATER;
+                game.level.map[pos] = Tile::water();
+                game.level.map[pos].chr = MAP_WATER;
 
-                for entity_id in game.data.has_entities(pos).clone() {
-                    game.data.entities.remove_entity(entity_id);
+                for entity_id in game.level.has_entities(pos).clone() {
+                    game.level.entities.remove_entity(entity_id);
                 }
             }
         }

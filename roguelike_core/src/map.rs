@@ -1706,4 +1706,3 @@ fn test_path_blocked_all() {
     assert_eq!(false, blocked_positions[3].blocked_tile);
     assert_eq!(Wall::TallWall, blocked_positions[3].wall_type);
 }
-

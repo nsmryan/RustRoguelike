@@ -176,7 +176,7 @@ fn render_bar(panel: &mut Panel,
 fn render_player_info(panel: &mut Panel, display_state: &DisplayState, game: &mut Game) {
     render_placard(panel, "Player");
 
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
     let mut list: Vec<String> = Vec::new();
 
@@ -185,7 +185,7 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState, game: &mu
 
     let x_offset = 3;
 
-    if let Some(hp) = game.data.entities.hp.get(&player_id) {
+    if let Some(hp) = game.level.entities.hp.get(&player_id) {
         let current_hp = if hp.hp > 0 {
             hp.hp
         } else {
@@ -237,7 +237,7 @@ fn render_info(panel: &mut Panel,
 
         let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
-        let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+        let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
         let object_ids = display_state.entities_at_cursor.clone();
 
@@ -267,7 +267,7 @@ fn render_info(panel: &mut Panel,
             if entity_in_fov {
                 drawn_info = true;
 
-                if let Some(hp) = game.data.entities.hp.get(obj_id) {
+                if let Some(hp) = game.level.entities.hp.get(obj_id) {
                     y_pos += 1;
 
                     let health_color = Color::new(0x96, 0x54, 0x56, 255);
@@ -294,7 +294,7 @@ fn render_info(panel: &mut Panel,
 
                 if matches!(display_state.hp.get(obj_id), Some(0)) {
                     text_list.push(format!("  {}", "dead"));
-                } else if let Some(behave) = game.data.entities.behavior.get(obj_id) {
+                } else if let Some(behave) = game.level.entities.behavior.get(obj_id) {
                     text_list.push(format!("currently {}", behave));
                 }
             }
@@ -313,33 +313,33 @@ fn render_info(panel: &mut Panel,
         let text_pos = Pos::new(x_offset, y_pos);
         panel.text_list_cmd(&text_list, text_color, text_pos);
 
-        let tile_in_fov = game.data.pos_in_fov(player_id, info_pos, &game.config);
+        let tile_in_fov = game.level.pos_in_fov(player_id, info_pos, &game.config);
         if tile_in_fov {
-            if game.data.map[info_pos].tile_type == TileType::Water {
+            if game.level.map[info_pos].tile_type == TileType::Water {
                 text_list.push("Tile is water".to_string());
             } else {
-                text_list.push(format!("Tile is {:?}",  game.data.map[info_pos].surface));
+                text_list.push(format!("Tile is {:?}",  game.level.map[info_pos].surface));
             }
 
-            if game.data.map[info_pos].bottom_wall != Wall::Empty {
+            if game.level.map[info_pos].bottom_wall != Wall::Empty {
                 text_list.push("Lower wall".to_string());
             }
 
-            if game.data.map.is_within_bounds(move_x(info_pos, 1)) &&
-               game.data.map[move_x(info_pos, 1)].left_wall != Wall::Empty {
+            if game.level.map.is_within_bounds(move_x(info_pos, 1)) &&
+               game.level.map[move_x(info_pos, 1)].left_wall != Wall::Empty {
                 text_list.push("Right wall".to_string());
             }
 
-            if game.data.map.is_within_bounds(move_y(info_pos, -1)) &&
-               game.data.map[move_y(info_pos, -1)].bottom_wall != Wall::Empty {
+            if game.level.map.is_within_bounds(move_y(info_pos, -1)) &&
+               game.level.map[move_y(info_pos, -1)].bottom_wall != Wall::Empty {
                 text_list.push("Top wall".to_string());
             }
 
-            if game.data.map[info_pos].left_wall != Wall::Empty {
+            if game.level.map[info_pos].left_wall != Wall::Empty {
                 text_list.push("Left wall".to_string());
             }
 
-            if game.data.map[info_pos].block_move {
+            if game.level.map[info_pos].block_move {
                 text_list.push(format!("blocked"));
             }
         }
@@ -349,14 +349,14 @@ fn render_info(panel: &mut Panel,
 }
 
 fn render_skill_menu(panel: &mut Panel, game: &mut Game) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
     // Render header
     render_placard(panel, "Skills");
 
     let mut list = Vec::new();
 
-    for (index, skill) in game.data.entities.skills[&player_id].iter().enumerate() {
+    for (index, skill) in game.level.entities.skills[&player_id].iter().enumerate() {
         list.push(format!("{} {:?}", index, skill));
     }
 
@@ -414,7 +414,7 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, game: &mut 
     // Render header
     render_placard(panel, "Inventory");
 
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
     // TODO this color comes from the UI mockups as a light brown
     let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
@@ -427,10 +427,10 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, game: &mut 
     panel.text_cmd("z", ui_color, Pos::new(x_offset, y_pos));
 
     let mut index = 0;
-    while index < game.data.entities.inventory[&player_id].len() {
-        let item_id = game.data.entities.inventory[&player_id][index];
+    while index < game.level.entities.inventory[&player_id].len() {
+        let item_id = game.level.entities.inventory[&player_id][index];
 
-        if game.data.entities.item[&item_id].class() == ItemClass::Primary {
+        if game.level.entities.item[&item_id].class() == ItemClass::Primary {
             let item_text = format!("{:?}", display_state.name[&item_id]);
             let text_pos = Pos::new(x_offset + 2, y_pos);
             panel.text_cmd(&item_text, ui_color, text_pos);
@@ -445,10 +445,10 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, game: &mut 
     panel.text_cmd(&"x", ui_color, Pos::new(x_offset, y_pos));
 
     let mut index = 0;
-    while index < game.data.entities.inventory[&player_id].len() {
-        let item_id = game.data.entities.inventory[&player_id][index];
+    while index < game.level.entities.inventory[&player_id].len() {
+        let item_id = game.level.entities.inventory[&player_id][index];
 
-        if game.data.entities.item[&item_id].class() == ItemClass::Consumable {
+        if game.level.entities.item[&item_id].class() == ItemClass::Consumable {
             let item_text = format!("{:?}", display_state.name[&item_id]);
             let text_pos = Pos::new(x_offset + 2, y_pos);
             panel.text_cmd(&item_text, ui_color, text_pos);
@@ -464,10 +464,10 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, game: &mut 
 
     let mut num_stones = 0;
     let mut index = 0;
-    while index < game.data.entities.inventory[&player_id].len() {
-        let item_id = game.data.entities.inventory[&player_id][index];
+    while index < game.level.entities.inventory[&player_id].len() {
+        let item_id = game.level.entities.inventory[&player_id][index];
 
-        if game.data.entities.item[&item_id] == Item::Stone {
+        if game.level.entities.item[&item_id] == Item::Stone {
             num_stones += 1;
         }
 
@@ -489,11 +489,11 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, game: &mut 
 
     // Draw Remaining Items
     let mut index = 0;
-    while index < game.data.entities.inventory[&player_id].len() {
-        let item_id= game.data.entities.inventory[&player_id][index];
+    while index < game.level.entities.inventory[&player_id].len() {
+        let item_id= game.level.entities.inventory[&player_id][index];
 
-        if game.data.entities.item[&item_id].class() == ItemClass::Misc &&
-           game.data.entities.item[&item_id] != Item::Stone {
+        if game.level.entities.item[&item_id].class() == ItemClass::Misc &&
+           game.level.entities.item[&item_id] != Item::Stone {
             let item_text = format!("{:?}", display_state.name[&item_id]);
             let text_pos = Pos::new(x_offset + 2, y_pos);
             panel.text_cmd(&item_text, ui_color, text_pos);
@@ -506,7 +506,7 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, game: &mut 
 
 /// render the background files, including water tiles
 fn render_background(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteSheet>) {
-    let (map_width, map_height) = game.data.map.size();
+    let (map_width, map_height) = game.level.map.size();
 
     let sprite_key = lookup_spritekey(sprites, "tiles");
 
@@ -514,7 +514,7 @@ fn render_background(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteShe
         for x in 0..map_width {
             let map_pos = Pos::new(x, y);
 
-            let tile = &game.data.map[(x, y)];
+            let tile = &game.level.map[(x, y)];
             // TODO why are these branches identical?
             if tile.tile_type != TileType::Water {
                 let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
@@ -550,17 +550,17 @@ fn surface_chr(surface: Surface) -> Option<u8> {
 fn render_wall_shadow(panel: &mut Panel, pos: Pos, game: &mut Game, sprites: &Vec<SpriteSheet>) {
     let shadow_sprite_key = lookup_spritekey(sprites, "shadows");
 
-    let tile = game.data.map[pos];
+    let tile = game.level.map[pos];
 
-    let (_map_width, map_height) = game.data.map.size();
+    let (_map_width, map_height) = game.level.map.size();
     let (x, y) = pos.to_tuple();
 
     let left_valid = x - 1 > 0;
     let down_valid = y + 1 < map_height;
     let down_left_valid = left_valid && down_valid;
-    let left_wall = left_valid && game.data.map[(x - 1, y)].tile_type == TileType::Wall;
-    let down_wall = down_valid && game.data.map[(x, y + 1)].tile_type == TileType::Wall;
-    let down_left_wall = down_left_valid && game.data.map[(x - 1, y + 1)].tile_type == TileType::Wall;
+    let left_wall = left_valid && game.level.map[(x - 1, y)].tile_type == TileType::Wall;
+    let down_wall = down_valid && game.level.map[(x, y + 1)].tile_type == TileType::Wall;
+    let down_left_wall = down_left_valid && game.level.map[(x - 1, y + 1)].tile_type == TileType::Wall;
 
     let shadow_color = game.config.color_shadow;
 
@@ -625,7 +625,7 @@ fn render_wall_shadow(panel: &mut Panel, pos: Pos, game: &mut Game, sprites: &Ve
 }
 
 fn render_map_above(panel: &mut Panel, display_state: &DisplayState, game: &mut Game, sprites: &Vec<SpriteSheet>) {
-    let (map_width, map_height) = game.data.map.size();
+    let (map_width, map_height) = game.level.map.size();
 
     let sprite_key = lookup_spritekey(sprites, "tiles");
     for y in 0..map_height {
@@ -633,7 +633,7 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, game: &mut 
             let pos = Pos::new(x, y);
             /* draw the between-tile walls appropriate to this tile */
             {
-                let tile = game.data.map[pos];
+                let tile = game.level.map[pos];
                 let wall_color = Color::white();
 
                 // Lower walls
@@ -657,7 +657,7 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, game: &mut 
                 if is_in_fov_ext {
                     blackout_color.a = game.config.fov_edge_alpha;
                     panel.sprite_cmd(sprite, blackout_color, pos);
-                } else if game.data.map[pos].explored {
+                } else if game.level.map[pos].explored {
                     blackout_color.a = game.config.explored_alpha;
                     panel.sprite_cmd(sprite, blackout_color, pos);
                 } else {
@@ -669,7 +669,7 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, game: &mut 
 }
 
 fn render_map_middle(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteSheet>) {
-    let (map_width, map_height) = game.data.map.size();
+    let (map_width, map_height) = game.level.map.size();
 
     let sprite_key = lookup_spritekey(sprites, "tiles");
     for y in 0..map_height {
@@ -679,14 +679,14 @@ fn render_map_middle(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteShe
             render_wall_shadow(panel, pos, game, sprites);
 
             /* draw the between-tile walls appropriate to this tile */
-            render_intertile_walls_below(panel, &mut game.data.map, sprite_key, pos);
+            render_intertile_walls_below(panel, &mut game.level.map, sprite_key, pos);
         }
     }
 }
 
 /// Render the map, with environment and walls
 fn render_map(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteSheet>) {
-    let (map_width, map_height) = game.data.map.size();
+    let (map_width, map_height) = game.level.map.size();
 
     let sprite_key = lookup_spritekey(sprites, "tiles");
     for y in 0..map_height {
@@ -701,7 +701,7 @@ fn render_map(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteSheet>) {
             }
 
             // Render game stuff
-            let tile = game.data.map[pos];
+            let tile = game.level.map[pos];
 
             let chr = tile.chr;
 
@@ -774,7 +774,7 @@ fn render_effects(panel: &mut Panel,
                   display_state: &mut DisplayState,
                   game: &mut Game,
                   sprites: &Vec<SpriteSheet>) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
     let mut index = 0;
     while index < display_state.effects.len() {
@@ -799,7 +799,7 @@ fn render_effects(panel: &mut Panel,
                     particles[index].duration -= display_state.dt;
 
                     // if the particle is finished, or has left the map, remove it.
-                    if particles[index].duration < 0.0 || !game.data.map.is_within_bounds(cell) {
+                    if particles[index].duration < 0.0 || !game.level.map.is_within_bounds(cell) {
                         particles.swap_remove(index);
                     } else {
                         // offset the particle according to how long it has been running.
@@ -807,7 +807,7 @@ fn render_effects(panel: &mut Panel,
                         let draw_pos = move_x(particles[index].pos, x_offset);
                         let draw_cell = panel.cell_from_pixel(draw_pos);
 
-                        if game.data.map.is_within_bounds(draw_cell) && game.data.pos_in_fov(player_id, draw_cell, &game.config) {
+                        if game.level.map.is_within_bounds(draw_cell) && game.level.pos_in_fov(player_id, draw_cell, &game.config) {
                             let mut color = Color::white();
                             // fade the particle out according to how long it has been running.
                             color.a = (255.0 * (particles[index].duration / game.config.particle_duration)) as u8;
@@ -833,8 +833,8 @@ fn render_effects(panel: &mut Panel,
                     //            tiles and simply pasting them, perhaps saving time from not
                     //            needing to blend.
                     for pos in dist_positions.iter() {
-                        if !game.data.map[*pos].block_move &&
-                           game.data.pos_in_fov(player_id, *pos, &game.config) {
+                        if !game.level.map[*pos].block_move &&
+                           game.level.pos_in_fov(player_id, *pos, &game.config) {
                            panel.highlight_cmd(highlight_color, *pos);
                            panel.outline_cmd(highlight_color, *pos);
                         }
@@ -941,7 +941,7 @@ fn render_entity(panel: &mut Panel,
 
     // only draw if within the map (outside is (-1, -1) like if in inventory)
     // and not about to be removed.
-    if !game.data.map.is_within_bounds(pos) {
+    if !game.level.map.is_within_bounds(pos) {
            return None;
     }
 
@@ -958,10 +958,10 @@ fn render_entity(panel: &mut Panel,
                     display_state.play_effect(effect);
                 } else {
                     if let Some(sprite) = animation_result.sprite {
-                        //let mut color = game.data.entities.color[&entity_id];
+                        //let mut color = game.level.entities.color[&entity_id];
 
                         //// unarmed traps are grayed out
-                        //if game.data.entities.armed.get(&entity_id) == Some(&false) {
+                        //if game.level.entities.armed.get(&entity_id) == Some(&false) {
                         //    color = game.config.color_warm_grey;
                         //}
                         // TODO added in because the color doesn't seem to be actually used.
@@ -978,7 +978,7 @@ fn render_entity(panel: &mut Panel,
                 }
             }
         } else {
-            //let color = game.data.entities.color[&entity_id];
+            //let color = game.level.entities.color[&entity_id];
             // TODO added in because the color doesn't seem to be actually used.
             let color = Color::new(255, 255, 255, 255);
 
@@ -1022,7 +1022,7 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
         // For the player in use-mode, while holding down a direction, we
         // need special rendering. Otherwise the player is rendered as normal.
 
-        let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+        let player_id = game.level.find_by_name(EntityName::Player).unwrap();
         let player_pos = display_state.pos[&player_id];
 
         let use_pos;
@@ -1061,7 +1061,7 @@ fn render_overlay_use_item(panel: &mut Panel,
                            display_state: &mut DisplayState,
                            game: &mut Game,
                            sprites: &Vec<SpriteSheet>) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     let player_pos = display_state.pos[&player_id];
 
     let direction_color = Color::white();
@@ -1073,7 +1073,7 @@ fn render_overlay_use_item(panel: &mut Panel,
     let sprite_key = lookup_spritekey(sprites, "tiles");
 
 
-    if let Some(_item_index) = game.data.entities.item_by_class(player_id, item_class) {
+    if let Some(_item_index) = game.level.entities.item_by_class(player_id, item_class) {
         if let Some(use_dir) = display_state.use_dir {
             if let Some(_use_pos) = display_state.use_pos {
                 let arrow_pos = use_dir.offset_pos(player_pos, 1);
@@ -1122,7 +1122,7 @@ fn render_game_overlays(panel: &mut Panel,
                         display_state: &mut DisplayState,
                         game: &mut Game,
                         sprites: &Vec<SpriteSheet>) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     let player_pos = display_state.pos[&player_id];
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
@@ -1132,14 +1132,14 @@ fn render_game_overlays(panel: &mut Panel,
             // render trigger plate wall highlight if selected
             for entity in display_state.entities_at_cursor.iter() {
                 if display_state.name[&entity] == EntityName::GateTrigger {
-                    let gate_pos = game.data.entities.gate_pos[&entity];
+                    let gate_pos = game.level.entities.gate_pos[&entity];
                     let mut highlight_color: Color = game.config.color_red;
                     highlight_color.a = 100;
                     panel.highlight_cmd(highlight_color, gate_pos);
                 } else if display_state.name[&entity] == EntityName::FreezeTrap {
                     let trap_pos = display_state.pos[&entity];
                     let freeze_aoe =
-                        aoe_fill(&game.data.map, AoeEffect::Freeze, trap_pos, game.config.freeze_trap_radius, &game.config);
+                        aoe_fill(&game.level.map, AoeEffect::Freeze, trap_pos, game.config.freeze_trap_radius, &game.config);
                     for pos in freeze_aoe.positions() {
                         let mut highlight_color: Color = game.config.color_blueish_grey;
                         highlight_color.a = 100;
@@ -1171,7 +1171,7 @@ fn render_game_overlays(panel: &mut Panel,
         if UseAction::Interact == game.settings.use_action {
             for dir in Direction::move_actions().iter() {
                 let target_pos = dir.offset_pos(player_pos, 1);
-                if game.data.clear_path(player_pos, target_pos, false) {
+                if game.level.clear_path(player_pos, target_pos, false) {
                     panel.highlight_cmd(highlight_color, target_pos);
 
                     render_arrow(panel, tiles_key, *dir, target_pos, direction_color);
@@ -1226,7 +1226,7 @@ fn render_overlays(panel: &mut Panel,
                    game: &mut Game,
                    cursor_pos: Option<Pos>,
                    sprites: &Vec<SpriteSheet>) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     let player_pos = display_state.pos[&player_id];
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
@@ -1234,8 +1234,8 @@ fn render_overlays(panel: &mut Panel,
     // render a grid of numbers if enabled
     if game.config.overlay_directions {
 
-        let map_width = game.data.map.width();
-        let map_height = game.data.map.height();
+        let map_width = game.level.map.width();
+        let map_height = game.level.map.height();
         for y in 0..map_height {
             for x in 0..map_width {
                 let pos = Pos::new(x, y);
@@ -1275,7 +1275,7 @@ fn render_overlays(panel: &mut Panel,
             // render player ghost
             if cursor_pos != player_pos && game.input.target == None {
 
-                let maybe_next_pos = astar_next_pos(&game.data.map, player_pos, cursor_pos, None, None);
+                let maybe_next_pos = astar_next_pos(&game.level.map, player_pos, cursor_pos, None, None);
                 if let Some(next_pos) = maybe_next_pos {
                     let dxy = sub_pos(next_pos, player_pos);
                     let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
@@ -1295,8 +1295,8 @@ fn render_overlays(panel: &mut Panel,
 
     // render FOV if enabled
     if game.config.overlay_player_fov {
-        let map_width = game.data.map.width();
-        let map_height = game.data.map.height();
+        let map_width = game.level.map.width();
+        let map_height = game.level.map.height();
         for y in 0..map_height {
             for x in 0..map_width {
                 let pos = Pos::new(x, y);
@@ -1318,7 +1318,7 @@ fn render_overlays(panel: &mut Panel,
 
             if display_state.pos_is_in_fov(pos) == FovResult::Inside &&
                entity_id != player_id &&
-               game.data.entities.status[&entity_id].alive {
+               game.level.entities.status[&entity_id].alive {
                render_attack_overlay(panel, game, display_state, entity_id, sprites);
                render_fov_overlay(panel, game, entity_id);
                render_movement_overlay(panel, game, display_state, entity_id, sprites);
@@ -1330,13 +1330,13 @@ fn render_overlays(panel: &mut Panel,
     highlight_color.a = game.config.highlight_player_move;
 
     // draw mouse path overlays
-    if let Some(mouse_id) = game.data.find_by_name(EntityName::Mouse) {
+    if let Some(mouse_id) = game.level.find_by_name(EntityName::Mouse) {
         let mouse_pos = display_state.pos[&mouse_id];
         let player_pos = display_state.pos[&player_id];
 
         if game.config.draw_star_path {
             // get a path to the mouse path, regardless of distance
-            let path = astar_path(&game.data.map, player_pos, mouse_pos, None, None);
+            let path = astar_path(&game.level.map, player_pos, mouse_pos, None, None);
             for pos in path {
                 //tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, highlight_color);
                 let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
@@ -1390,7 +1390,7 @@ fn render_overlays(panel: &mut Panel,
     if game.config.overlay_floodfill {
         let mut highlight_color = game.config.color_light_orange;
         highlight_color.a = 50;
-        let fill_metric = map_fill_metric(&game.data.map);
+        let fill_metric = map_fill_metric(&game.level.map);
 
         for (pos, near_count) in fill_metric {
             let amount = near_count as f32 / 50.0;
@@ -1416,7 +1416,7 @@ fn render_overlay_alertness(panel: &mut Panel, display_state: &mut DisplayState,
         let pos = display_state.pos[entity_id];
 
         let mut status_drawn: bool = false;
-        if let Some(status) = game.data.entities.status.get(entity_id) {
+        if let Some(status) = game.level.entities.status.get(entity_id) {
             if status.frozen > 0 {
                 status_drawn = true;
                 let sprite = Sprite::new(ASTERISK as u32, sprite_key);
@@ -1428,7 +1428,7 @@ fn render_overlay_alertness(panel: &mut Panel, display_state: &mut DisplayState,
         }
 
         if !status_drawn {
-            if let Some(behavior) = game.data.entities.behavior.get(entity_id) {
+            if let Some(behavior) = game.level.entities.behavior.get(entity_id) {
                 match behavior {
                     Behavior::Idle => {
                     }
@@ -1518,17 +1518,17 @@ fn render_attack_overlay(panel: &mut Panel,
 fn render_fov_overlay(panel: &mut Panel,
                       game: &mut Game,
                       entity_id: EntityId) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
     let mut highlight_color = game.config.color_light_grey;
     highlight_color.a = game.config.grid_alpha_overlay;
 
-    for y in 0..game.data.map.height() {
-        for x in 0..game.data.map.width() {
+    for y in 0..game.level.map.height() {
+        for x in 0..game.level.map.width() {
             let map_pos = Pos::new(x, y);
 
-            let visible = game.data.pos_in_fov(entity_id, map_pos, &game.config) &&
-                          game.data.pos_in_fov(player_id, map_pos, &game.config);
+            let visible = game.level.pos_in_fov(entity_id, map_pos, &game.config) &&
+                          game.level.pos_in_fov(player_id, map_pos, &game.config);
 
 
             if visible {
@@ -1566,9 +1566,9 @@ fn render_entity_ghost(panel: &mut Panel,
                        sprites: &Vec<SpriteSheet>) {
     let entity_pos = display_state.pos[&entity_id];
 
-    let alpha = game.data.entities.color[&entity_id].a;
+    let alpha = game.level.entities.color[&entity_id].a;
     assert!(alpha == 255);
-    game.data.entities.color[&entity_id].a = game.config.ghost_alpha;
+    game.level.entities.color[&entity_id].a = game.config.ghost_alpha;
 
     display_state.pos[&entity_id] = render_pos;
 
@@ -1579,7 +1579,7 @@ fn render_entity_ghost(panel: &mut Panel,
     render_entity(panel, entity_id, display_state, game, sprites);
     display_state.dt = dt;
 
-    game.data.entities.color[&entity_id].a = alpha;
+    game.level.entities.color[&entity_id].a = alpha;
     display_state.pos[&entity_id] = entity_pos;
 }
 

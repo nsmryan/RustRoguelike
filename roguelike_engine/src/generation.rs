@@ -466,24 +466,24 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
     }
 }
 
-pub fn make_island(data: &mut Level,
+pub fn make_island(level: &mut Level,
                    config: &Config,
                    msg_log: &mut MsgLog,
                    rng: &mut Rand32) -> Pos {
-    let center = Pos::new(data.map.width() / 2, data.map.height() / 2);
+    let center = Pos::new(level.map.width() / 2, level.map.height() / 2);
 
     let mut water_tile_positions = Vec::new();
 
     /* Create Island */
     // the center has land, the remaining square are filled with water
-    for x in 0..data.map.width() {
-        for y in 0..data.map.height() {
+    for x in 0..level.map.width() {
+        for y in 0..level.map.height() {
             let pos = Pos::new(x, y);
 
             if distance(pos, center) <= ISLAND_RADIUS {
-                data.map[pos] = Tile::empty();
+                level.map[pos] = Tile::empty();
             } else {
-                data.map[pos] = Tile::water();
+                level.map[pos] = Tile::water();
                 water_tile_positions.push((x, y));
             }
         }
@@ -500,7 +500,7 @@ pub fn make_island(data: &mut Level,
 
         // Buildings are generated separately, so don't add them in random generation
         if obstacle != Obstacle::Building {
-            add_obstacle(&mut data.map, pos, obstacle, rng);
+            add_obstacle(&mut level.map, pos, obstacle, rng);
         }
     }
 
@@ -508,15 +508,15 @@ pub fn make_island(data: &mut Level,
     for _ in 0..rng_range_u32(rng, 3, 5) {
         let rand_pos = random_offset(rng, ISLAND_RADIUS);
         let pos = Pos::new(center.x + rand_pos.x, center.y + rand_pos.y);
-        add_obstacle(&mut data.map, pos, Obstacle::Building, rng);
+        add_obstacle(&mut level.map, pos, Obstacle::Building, rng);
     }
 
     /* random subtraction */
     for _ in 0..ISLAND_NUM_SUBTRACTIONS_ATTEMPTS {
         let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-        if data.map[pos].tile_type == TileType::Wall {
-            data.map[pos] = Tile::empty();
+        if level.map[pos].tile_type == TileType::Wall {
+            level.map[pos] = Tile::empty();
         }
     }
 
@@ -525,8 +525,8 @@ pub fn make_island(data: &mut Level,
         let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
         let obstacle = choose(rng, &obstacles).unwrap();
 
-        if data.map[pos].tile_type == TileType::Wall {
-            add_obstacle(&mut data.map, pos, obstacle, rng);
+        if level.map[pos].tile_type == TileType::Wall {
+            add_obstacle(&mut level.map, pos, obstacle, rng);
         }
     }
 
@@ -534,8 +534,8 @@ pub fn make_island(data: &mut Level,
     for _ in 0..10 {
         let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-        if data.map.is_empty(pos) {
-            make_stone(&mut data.entities, config, pos, msg_log);
+        if level.map.is_empty(pos) {
+            make_stone(&mut level.entities, config, pos, msg_log);
         }
     }
 
@@ -544,8 +544,8 @@ pub fn make_island(data: &mut Level,
         loop {
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !data.has_blocking_entity(pos).is_some()  {
-                make_gol(&mut data.entities, config, pos, msg_log);
+            if !level.has_blocking_entity(pos).is_some()  {
+                make_gol(&mut level.entities, config, pos, msg_log);
                 break;
             }
         }
@@ -555,8 +555,8 @@ pub fn make_island(data: &mut Level,
         loop {
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !data.has_blocking_entity(pos).is_some()  {
-                make_pawn(&mut data.entities, config, pos, msg_log);
+            if !level.has_blocking_entity(pos).is_some()  {
+                make_pawn(&mut level.entities, config, pos, msg_log);
                 break;
             }
         }
@@ -566,39 +566,39 @@ pub fn make_island(data: &mut Level,
         loop {
             let pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-            if !data.has_blocking_entity(pos).is_some() {
-                make_spire(&mut data.entities, config, pos, msg_log);
+            if !level.has_blocking_entity(pos).is_some() {
+                make_spire(&mut level.entities, config, pos, msg_log);
                 break;
             }
         }
     }
 
-    let x = rng_range_i32(rng, 0, data.map.width());
-    let y = rng_range_i32(rng, 0, data.map.height());
+    let x = rng_range_i32(rng, 0, level.map.width());
+    let y = rng_range_i32(rng, 0, level.map.height());
     let pos = Pos::new(x, y);
 
-    if !data.has_blocking_entity(pos).is_some()  {
-        make_key(&mut data.entities, config, Pos::new(x, y), msg_log);
+    if !level.has_blocking_entity(pos).is_some()  {
+        make_key(&mut level.entities, config, Pos::new(x, y), msg_log);
     }
 
     /* add key object */
     let mut pos = pos_in_radius(center, ISLAND_RADIUS, rng);
 
-    while !data.map.is_empty(pos) {
+    while !level.map.is_empty(pos) {
         pos = pos_in_radius(center, ISLAND_RADIUS, rng);
     }
-    make_key(&mut data.entities, &config, pos, msg_log);
+    make_key(&mut level.entities, &config, pos, msg_log);
 
     /* add exit */
     // find edge of island
-    let map_size = data.map.size();
+    let map_size = level.map.size();
     let mut edge_positions = Vec::new();
     for x in 0..map_size.0 {
         for y in 0..map_size.1 {
             let pos = Pos::from((x, y));
 
-            if !(data.map[pos].tile_type == TileType::Water) &&
-                 near_tile_type(&data.map, pos, TileType::Water) {
+            if !(level.map[pos].tile_type == TileType::Water) &&
+                 near_tile_type(&level.map, pos, TileType::Water) {
                 edge_positions.push(pos);
             }
         }
@@ -607,11 +607,11 @@ pub fn make_island(data: &mut Level,
     let edge_pos = edge_positions[rng_range_u32(rng, 0, edge_positions.len() as u32) as usize];
 
     // make the random edge position the exit
-    data.map.tiles[edge_pos.x as usize][edge_pos.y as usize] = Tile::exit();
+    level.map.tiles[edge_pos.x as usize][edge_pos.y as usize] = Tile::exit();
 
     /* Ensure that objects placed outside of the island are removed */
     for pos in water_tile_positions {
-        data.map[pos].tile_type = TileType::Water;
+        level.map[pos].tile_type = TileType::Water;
     }
 
     return center;
@@ -648,15 +648,15 @@ pub fn make_test_map(game: &mut Game) {
     //running should jump over wall
     //back up should also work
     //up then down should jump over wall
-    game.data.map[(0, 1)].bottom_wall = Wall::ShortWall;
+    game.level.map[(0, 1)].bottom_wall = Wall::ShortWall;
 
     // right hit wall, moves to (2,2)
     // right again hit wall, doesn't move player
-    game.data.map[(3, 2)].block_move = true;
-    game.data.map[(3, 2)].tile_type = TileType::Wall;
+    game.level.map[(3, 2)].block_move = true;
+    game.level.map[(3, 2)].tile_type = TileType::Wall;
 
     // move down works- left wall is next to player
-    game.data.map[(2, 3)].left_wall = Wall::ShortWall;
+    game.level.map[(2, 3)].left_wall = Wall::ShortWall;
 
     // add walls -- --
     //             v
@@ -665,26 +665,26 @@ pub fn make_test_map(game: &mut Game) {
     //where v is a monster facing down,
     //s is a spike trap.
     //make sure that the trap triggers and hurts the monster
-    game.data.map[(0, 8)].block_move = true;
-    game.data.map[(0, 8)].tile_type = TileType::Wall;
-    game.data.map[(1, 8)].block_move = true;
-    game.data.map[(1, 8)].tile_type = TileType::Wall;
-    game.data.map[(3, 8)].block_move = true;
-    game.data.map[(3, 8)].tile_type = TileType::Wall;
+    game.level.map[(0, 8)].block_move = true;
+    game.level.map[(0, 8)].tile_type = TileType::Wall;
+    game.level.map[(1, 8)].block_move = true;
+    game.level.map[(1, 8)].tile_type = TileType::Wall;
+    game.level.map[(3, 8)].block_move = true;
+    game.level.map[(3, 8)].tile_type = TileType::Wall;
 
-    let elf = make_pawn(&mut game.data.entities, &game.config, Pos::new(2, 9), &mut game.msg_log);
-    game.data.entities.direction[&elf] = Direction::Down;
-    make_spike_trap(&mut game.data.entities, &game.config, Pos::new(2, 10), &mut game.msg_log);
+    let elf = make_pawn(&mut game.level.entities, &game.config, Pos::new(2, 9), &mut game.msg_log);
+    game.level.entities.direction[&elf] = Direction::Down;
+    make_spike_trap(&mut game.level.entities, &game.config, Pos::new(2, 10), &mut game.msg_log);
 
 
-    make_dagger(&mut game.data.entities, &game.config, Pos::new(3, 10), &mut game.msg_log);
+    make_dagger(&mut game.level.entities, &game.config, Pos::new(3, 10), &mut game.msg_log);
 
-    game.data.map[(8, 10)].left_wall = Wall::ShortWall;
-    make_gol(&mut game.data.entities, &game.config, Pos::new(8, 10), &mut game.msg_log);
+    game.level.map[(8, 10)].left_wall = Wall::ShortWall;
+    make_gol(&mut game.level.entities, &game.config, Pos::new(8, 10), &mut game.msg_log);
 
     // test columns falling into each other
-    make_column(&mut game.data.entities, &game.config, Pos::new(7, 5), &mut game.msg_log);
-    make_column(&mut game.data.entities, &game.config, Pos::new(7, 6), &mut game.msg_log);
+    make_column(&mut game.level.entities, &game.config, Pos::new(7, 5), &mut game.msg_log);
+    make_column(&mut game.level.entities, &game.config, Pos::new(7, 6), &mut game.msg_log);
 
     // could add surface testing- sounds are loud on rubble, soft on grass
     

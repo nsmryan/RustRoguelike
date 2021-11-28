@@ -156,7 +156,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         }
     }
 
-    make_mouse(&mut game.data.entities, &game.config, &mut game.msg_log);
+    make_mouse(&mut game.level.entities, &game.config, &mut game.msg_log);
 
     /* Create Map */
     let mut map_config: MapLoadConfig;
@@ -322,7 +322,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
 
                 for msg_index in 0..game.msg_log.turn_messages.len() {
                     let msg = game.msg_log.turn_messages[msg_index];
-                    let msg_line = &msg.msg_line(&game.data);
+                    let msg_line = &msg.msg_line(&game.level);
                     if msg_line.len() > 0 {
                         log.log_console(msg_line);
                     }
@@ -365,8 +365,8 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
         }
 
         /* Save Game */
-        let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-        if game.data.entities.hp[&player_id].hp > 0 {
+        let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+        if game.level.entities.hp[&player_id].hp > 0 {
             if game.settings.running && any_updates && game.config.save_load {
                 let old_state = game.settings.state;
                 game.settings.state = GameState::Playing;
@@ -418,12 +418,12 @@ fn save_record(record_name: &str) {
 fn reload_config(config_modified_time: &mut SystemTime, game: &mut Game) {
     /* Reload map if configured to do so */
     if game.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
-        let player = game.data.find_by_name(EntityName::Player).unwrap();
+        let player = game.level.find_by_name(EntityName::Player).unwrap();
 
         let map_file = format!("resources/{}", game.config.map_file);
-        game.data.entities.clear();
-        let player_pos = read_map_xp(&game.config, &mut game.data, &mut game.msg_log, &map_file);
-        game.data.entities.set_pos(player, Pos::from(player_pos));
+        game.level.entities.clear();
+        let player_pos = read_map_xp(&game.config, &mut game.level, &mut game.msg_log, &map_file);
+        game.level.entities.set_pos(player, Pos::from(player_pos));
     }
 
     /* Reload Configuration */
@@ -453,7 +453,7 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
     }
 
     for msg in game.msg_log.turn_messages.iter() {
-        display.process_message(*msg, &game.data.map, &game.config);
+        display.process_message(*msg, &game.level.map, &game.config);
     }
 
     /* Draw the Game to the Screen */
@@ -468,7 +468,7 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
     {
         let _draw_timer = timer!("DRAW");
         let update_time = Instant::now();
-        display.draw_all(game.data.map.size(), &mut game.rng, &game.config);
+        display.draw_all(game.level.map.size(), &mut game.rng, &game.config);
 
         {
             let _present_timer = timer!("PRESENT");

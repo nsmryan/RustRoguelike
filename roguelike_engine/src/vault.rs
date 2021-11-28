@@ -50,18 +50,18 @@ impl FromStr for VaultTag {
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Vault {
-    pub data: Level,
+    pub level: Level,
     pub tags: Vec<VaultTag>,
 }
 
 impl Vault {
     pub fn new(tiles: Vec<Vec<Tile>>, tags: Vec<VaultTag>) -> Vault {
         let map = Map::with_vec(tiles);
-        return Vault { data: Level::new(map, Entities::new()), tags };
+        return Vault { level: Level::new(map, Entities::new()), tags };
     }
 
     pub fn empty() -> Vault {
-        return Vault { data: Level::empty(0, 0), tags: Vec::new() };
+        return Vault { level: Level::empty(0, 0), tags: Vec::new() };
     }
 }
 
@@ -147,7 +147,7 @@ fn parse_ascii_chars(lines: Vec<Vec<char>>, config: &Config) -> Vault {
             let left_wall = lines[y * 2][x * 2];
             let bottom_wall = lines[y * 2 + 1][x * 2 + 1];
             let tile = tile_from_ascii(tile_chr, left_wall, bottom_wall, Pos::new(x as i32, y as i32), &mut vault, config);
-            vault.data.map[(x as i32, y as i32)] = tile;
+            vault.level.map[(x as i32, y as i32)] = tile;
         }
     }
 
@@ -180,25 +180,25 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos,
         'I' => {
             tile = Tile::empty();
             let mut msg_log = MsgLog::new();
-            make_column(&mut vault.data.entities, config, pos, &mut msg_log);
+            make_column(&mut vault.level.entities, config, pos, &mut msg_log);
         }
 
         'p' => {
             tile = Tile::empty();
             let mut msg_log = MsgLog::new();
-            make_pawn(&mut vault.data.entities, config, pos, &mut msg_log);
+            make_pawn(&mut vault.level.entities, config, pos, &mut msg_log);
         }
 
         'g' => {
             tile = Tile::empty();
             let mut msg_log = MsgLog::new();
-            make_gol(&mut vault.data.entities, config, pos, &mut msg_log);
+            make_gol(&mut vault.level.entities, config, pos, &mut msg_log);
         }
 
         'o' => {
             tile = Tile::empty();
             let mut msg_log = MsgLog::new();
-            make_stone(&mut vault.data.entities, config, pos, &mut msg_log);
+            make_stone(&mut vault.level.entities, config, pos, &mut msg_log);
         }
 
         '*' => {
@@ -214,7 +214,7 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos,
         'v' => {
             tile = Tile::empty();
             let mut msg_log = MsgLog::new();
-            make_dagger(&mut vault.data.entities, config, pos, &mut msg_log);
+            make_dagger(&mut vault.level.entities, config, pos, &mut msg_log);
         }
 
         _ => {

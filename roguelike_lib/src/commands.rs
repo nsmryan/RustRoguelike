@@ -270,7 +270,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
     // TODO this isn't really correct- perhaps we could pass get_ticks() to execute_game_command
     let ticks = 0;
 
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
     match command {
         GameCmd::PlayerId => {
@@ -278,7 +278,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         }
 
         GameCmd::Pos(id) => {
-            if let Some(pos) = game.data.entities.pos.get(id) {
+            if let Some(pos) = game.level.entities.pos.get(id) {
                 return format!("{} {} {} {}", name, id, pos.x, pos.y);
             } else {
                 return format!("{}", name);
@@ -287,14 +287,14 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
 
         GameCmd::SetPos(id, x, y) => {
             // TODO this could return an error if id not found instead of failing silently
-            if game.data.entities.pos.contains_key(id) {
-                game.data.entities.pos[id] = Pos::new(*x, *y);
+            if game.level.entities.pos.contains_key(id) {
+                game.level.entities.pos[id] = Pos::new(*x, *y);
             }
             return format!("{}", name);
         }
 
         GameCmd::Hp(id) => {
-            if let Some(hp) = game.data.entities.hp.get(id) {
+            if let Some(hp) = game.level.entities.hp.get(id) {
                 let hp = hp.hp;
                 return format!("{} {}", name, hp);
             }
@@ -302,53 +302,53 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         }
 
         GameCmd::SetHp(id, hp) => {
-            if game.data.entities.hp.contains_key(id) {
-                game.data.entities.hp[id].hp = *hp;
+            if game.level.entities.hp.contains_key(id) {
+                game.level.entities.hp[id].hp = *hp;
             }
             return format!("{}", name);
         }
 
         GameCmd::Facing(id) => {
-            if let Some(dir) = game.data.entities.direction.get(id) {
+            if let Some(dir) = game.level.entities.direction.get(id) {
                 return format!("{} {}", name, dir);
             }
             return format!("{}", name);
         }
 
         GameCmd::SetFacing(id, dir) => {
-            if game.data.entities.direction.contains_key(id) {
-                game.data.entities.direction[id] = *dir;
+            if game.level.entities.direction.contains_key(id) {
+                game.level.entities.direction[id] = *dir;
             }
             return format!("{}", name);
         }
 
         GameCmd::MapSize => {
-            return format!("{} {} {}", name, game.data.map.width(), game.data.map.height());
+            return format!("{} {} {}", name, game.level.map.width(), game.level.map.height());
         }
 
         GameCmd::TileWalls(x, y) => {
-            let tile = game.data.map[(*x, *y)];
+            let tile = game.level.map[(*x, *y)];
             return format!("{} {} {} {} {} {}", name, x, y, tile.tile_type, tile.left_wall, tile.bottom_wall);
         }
 
         GameCmd::SetTileWalls(x, y, typ, left_wall, bottom_wall) => {
-            game.data.map[(*x, *y)].tile_type = *typ;
-            game.data.map[(*x, *y)].block_move = typ.is_wall();
-            game.data.map[(*x, *y)].block_sight = typ.is_wall();
+            game.level.map[(*x, *y)].tile_type = *typ;
+            game.level.map[(*x, *y)].block_move = typ.is_wall();
+            game.level.map[(*x, *y)].block_sight = typ.is_wall();
             if typ.is_wall() {
-                game.data.map[(*x, *y)].chr = MAP_WALL;
+                game.level.map[(*x, *y)].chr = MAP_WALL;
             }
-            game.data.map[(*x, *y)].left_wall = *left_wall;
-            game.data.map[(*x, *y)].bottom_wall = *bottom_wall;
+            game.level.map[(*x, *y)].left_wall = *left_wall;
+            game.level.map[(*x, *y)].bottom_wall = *bottom_wall;
             return format!("{}", name);
         }
 
         GameCmd::Surface(x, y) => {
-            return format!("{} {} {} {}", name, x, y, game.data.map[(*x, *y)].surface);
+            return format!("{} {} {} {}", name, x, y, game.level.map[(*x, *y)].surface);
         }
 
         GameCmd::SetSurface(x, y, surface) => {
-            game.data.map[(*x, *y)].surface = *surface;
+            game.level.map[(*x, *y)].surface = *surface;
             return format!("{}", name);
         }
 
@@ -359,7 +359,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
 
         GameCmd::Spawn(entity_name, x, y) => {
             let pos = Pos::new(*x, *y);
-            let id = make_entity(&mut game.data.entities,
+            let id = make_entity(&mut game.level.entities,
                                  &game.config,
                                  *entity_name,
                                  pos,
@@ -368,7 +368,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         }
 
         GameCmd::Remove(id) => {
-            game.data.entities.remove_entity(*id);
+            game.level.entities.remove_entity(*id);
             game.msg_log.log(Msg::RemovedEntity(*id));
             return format!("{}", name);
         }
@@ -379,22 +379,22 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         }
 
         GameCmd::Give(item) => {
-            let pos = game.data.entities.pos[&player_id];
-            let item_id = make_item(&mut game.data.entities, &game.config, *item, pos, &mut game.msg_log);
-            game.data.entities.pick_up_item(player_id, item_id);
+            let pos = game.level.entities.pos[&player_id];
+            let item_id = make_item(&mut game.level.entities, &game.config, *item, pos, &mut game.msg_log);
+            game.level.entities.pick_up_item(player_id, item_id);
             return format!("{}", name);
         }
 
         GameCmd::EntityName(id) => {
-            return format!("{} {}", name, game.data.entities.name[id]);
+            return format!("{} {}", name, game.level.entities.name[id]);
         }
 
         GameCmd::EntityType(id) => {
-            return format!("{} {}", name, game.data.entities.typ[id]);
+            return format!("{} {}", name, game.level.entities.typ[id]);
         }
 
         GameCmd::ListEntities => {
-            let ids = game.data.entities.ids.iter()
+            let ids = game.level.entities.ids.iter()
                           .map(|id| id.to_string())
                           .collect::<Vec<String>>()
                           .join(" ");
@@ -403,7 +403,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         }
 
         GameCmd::ListEntitiesPos(x, y) => {
-            let ids = game.data.get_entities_at_pos(Pos::new(*x, *y))
+            let ids = game.level.get_entities_at_pos(Pos::new(*x, *y))
                                .iter()
                                .map(|id| id.to_string())
                                .collect::<Vec<String>>()
@@ -440,38 +440,38 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         }
 
         GameCmd::StoneThrower(onoff) => {
-            game.data.entities.passive[&player_id].stone_thrower = *onoff;
+            game.level.entities.passive[&player_id].stone_thrower = *onoff;
             return format!("{}", name);
         }
 
         GameCmd::WhetStone(onoff) => {
-            game.data.entities.passive[&player_id].whet_stone = *onoff;
+            game.level.entities.passive[&player_id].whet_stone = *onoff;
             return format!("{}", name);
         }
 
         GameCmd::SoftShoes(onoff) => {
-            game.data.entities.passive[&player_id].soft_shoes = *onoff;
+            game.level.entities.passive[&player_id].soft_shoes = *onoff;
             return format!("{}", name);
         }
 
         GameCmd::LightTouch(onoff) => {
-            game.data.entities.passive[&player_id].light_touch = *onoff;
+            game.level.entities.passive[&player_id].light_touch = *onoff;
             return format!("{}", name);
         }
 
         GameCmd::SureFooted(onoff) => {
-            game.data.entities.passive[&player_id].sure_footed = *onoff;
+            game.level.entities.passive[&player_id].sure_footed = *onoff;
             return format!("{}", name);
         }
 
         GameCmd::QuickReflexes(onoff) => {
-            game.data.entities.passive[&player_id].quick_reflexes = *onoff;
+            game.level.entities.passive[&player_id].quick_reflexes = *onoff;
             return format!("{}", name);
         }
 
         GameCmd::Visible(entity_id, x, y) => {
             let pos = Pos::new(*x, *y);
-            let visible = game.data.pos_in_fov(*entity_id, pos, &game.config);
+            let visible = game.level.pos_in_fov(*entity_id, pos, &game.config);
             return format!("{} {}", name, visible);
         }
 
