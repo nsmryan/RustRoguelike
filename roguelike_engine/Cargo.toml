@@ -26,4 +26,5 @@ rand = {version = "0.8", default-features = false, features = ["small_rng", "std
 
 smallvec = "1.4"
 
+roguelike_utils = { path = "../roguelike_utils" }
 roguelike_core = { path = "../roguelike_core" }

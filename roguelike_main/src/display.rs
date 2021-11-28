@@ -11,6 +11,8 @@ use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{PixelFormatEnum};
 
+use roguelike_utils::rng::Rand32;
+
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::config::*;
@@ -18,7 +20,6 @@ use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::utils::aoe_fill;
 use roguelike_core::movement::{Direction};
-use roguelike_core::rng::Rand32;
 
 use crate::animation::{Str, Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use crate::drawcmd::*;

@@ -18,12 +18,13 @@ use euclid::*;
 
 use serde_derive::*;
 
+use roguelike_utils::line::*;
+use roguelike_utils::rng::*;
+
 use crate::types::*;
 use crate::constants::*;
 use crate::utils::*;
 use crate::movement::Direction;
-use crate::line::*;
-use crate::rng::Rand32;
 
 
 // multiplier used to scale costs up in astar, allowing small

@@ -610,6 +610,7 @@ dependencies = [
  "log",
  "logging_timer",
  "pathfinding",
+ "roguelike_utils",
  "serde",
  "serde_derive",
  "serde_yaml",
@@ -630,6 +631,7 @@ dependencies = [
  "rand",
  "rexpaint",
  "roguelike_core",
+ "roguelike_utils",
  "serde",
  "serde_derive",
  "serde_yaml",
@@ -663,11 +665,22 @@ dependencies = [
  "roguelike_core",
  "roguelike_engine",
  "roguelike_lib",
+ "roguelike_utils",
  "sdl2",
  "serde",
  "serde_derive",
  "serde_yaml",
  "simple-logging",
+]
+
+[[package]]
+name = "roguelike_utils"
+version = "0.1.0"
+dependencies = [
+ "euclid",
+ "serde",
+ "serde_derive",
+ "serde_yaml",
 ]
 
 [[package]]

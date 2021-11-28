@@ -6,10 +6,11 @@ use euclid::*;
 
 use serde::{Serialize, Deserialize};
 
+use roguelike_utils::line::*;
+
 use crate::types::*;
 use crate::utils::*;
 use crate::map::{Wall, Blocked, TileType};
-use crate::line::*;
 
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

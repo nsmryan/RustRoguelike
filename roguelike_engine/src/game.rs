@@ -1,12 +1,13 @@
 use serde::{Serialize, Deserialize};
 use logging_timer::timer;
 
+use roguelike_utils::rng::Rand32;
+
 use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::MsgLog;
 use roguelike_core::movement::{Direction, MoveMode};
-use roguelike_core::rng::Rand32;
 use roguelike_core::messaging::*;
 
 use crate::actions;

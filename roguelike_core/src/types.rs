@@ -10,12 +10,13 @@ use pathfinding::directed::astar::astar;
 
 use euclid::Point2D;
 
+use roguelike_utils::line::*;
+
 use crate::ai::{Ai, Behavior};
 use crate::map::*;
 use crate::movement::*;
 use crate::utils::*;
 use crate::config::Config;
-use crate::line::*;
 use crate::constants::*;
 
 

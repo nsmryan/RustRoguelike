@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::types::*;
+use euclid::Point2D;
 
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
@@ -19,7 +19,7 @@ pub struct Line {
 }
 
 impl Line {
-    pub fn new(start: Pos, end: Pos, include_start: bool) -> Line {
+    pub fn new(start: Point2D::<i32, ()>, end: Point2D::<i32, ()>, include_start: bool) -> Line {
         let mut line: Line = Default::default();
 
         line.include_start = include_start;
@@ -62,10 +62,10 @@ impl Line {
         return line;
     }
 
-    pub fn step(&mut self) -> Option<Pos> {
+    pub fn step(&mut self) -> Option<Point2D::<i32, ()>> {
         if self.include_start {
             self.include_start = false;
-            return Some(Pos::new(self.orig_x, self.orig_y));
+            return Some(Point2D::<i32, ()>::new(self.orig_x, self.orig_y));
         }
 
         if self.step_x * self.delta_x > self.step_y * self.delta_y {
@@ -96,29 +96,29 @@ impl Line {
         let x: i32 = self.orig_x;
         let y: i32 = self.orig_y;
 
-        return Some(Pos::new(x, y));
+        return Some(Point2D::<i32, ()>::new(x, y));
     }
 }
 
 impl Iterator for Line {
-    type Item = Pos;
+    type Item = Point2D::<i32, ()>;
 
-    fn next(&mut self) -> Option<Pos> {
+    fn next(&mut self) -> Option<Point2D::<i32, ()>> {
         return self.step();
     }
 }
 
 // does not include start position
-pub fn line(start: Pos, end: Pos) -> Vec<Pos> {
+pub fn line(start: Point2D::<i32, ()>, end: Point2D::<i32, ()>) -> Vec<Point2D::<i32, ()>> {
     let include_start = false;
     let line = Line::new(start, end, include_start);
-    let points = line.collect::<Vec<Pos>>();
+    let points = line.collect::<Vec<Point2D::<i32, ()>>>();
 
     return points;
 }
 
 // includes end position, even if line is 0 distance
-pub fn line_inclusive(start: Pos, end: Pos) -> Vec<Pos> {
+pub fn line_inclusive(start: Point2D::<i32, ()>, end: Point2D::<i32, ()>) -> Vec<Point2D::<i32, ()>> {
 
     let mut points = line(start, end);
 
@@ -130,10 +130,10 @@ pub fn line_inclusive(start: Pos, end: Pos) -> Vec<Pos> {
 }
 
 // includes start position
-pub fn line_between(start: Pos, end: Pos) -> Vec<Pos> {
+pub fn line_between(start: Point2D::<i32, ()>, end: Point2D::<i32, ()>) -> Vec<Point2D::<i32, ()>> {
     let include_start = true;
     let line = Line::new(start, end, include_start);
-    let points = line.collect::<Vec<Pos>>();
+    let points = line.collect::<Vec<Point2D::<i32, ()>>>();
 
     return points;
 }
@@ -151,8 +151,8 @@ pub fn test_lines() {
                 continue;
             }
 
-            let start = Pos::new(0, 0);
-            let end = Pos::new(x_offset, y_offset);
+            let start = Point2D::<i32, ()>::new(0, 0);
+            let end = Point2D::<i32, ()>::new(x_offset, y_offset);
             let path = line(start, end);
 
             assert!(path[0] != start);

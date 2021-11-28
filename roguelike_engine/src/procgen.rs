@@ -15,12 +15,13 @@ use image::GenericImageView;
 
 use euclid::*;
 
+use roguelike_utils::line::*;
+use roguelike_utils::rng::Rand32;
+
 use roguelike_core::constants::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::utils::*;
-use roguelike_core::line::*;
-use roguelike_core::rng::Rand32;
 
 use crate::generation::*;
 use crate::game::*;

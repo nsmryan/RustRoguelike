@@ -2,14 +2,15 @@ use std::collections::HashSet; use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-use crate::rng::Rand32;
+use roguelike_utils::line::*;
+use roguelike_utils::rng::*;
+
 use crate::ai::Behavior;
 use crate::constants::{HAMMER_DAMAGE, SWORD_DAMAGE, TILE_FILL_METRIC_DIST};
 use crate::map::{Surface};
 use crate::types::*;
 use crate::movement::{Reach, MoveMode, check_collision, MoveType, Direction};
 use crate::messaging::*;
-use crate::line::*;
 use crate::config::Config;
 use crate::map::{Map, AoeEffect, Aoe, Wall, astar_neighbors, TileType};
 use crate::constants::*;
@@ -71,7 +72,6 @@ pub fn shuffle<A>(rng: &mut Rand32, items: &mut Vec<A>) {
 }
 
 pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
-    //return (((pos1.x - pos2.x).pow(2) + (pos1.y - pos2.y).pow(2)) as f32).sqrt() as i32;
     let line = line(pos1, pos2);
     return line.iter().count() as i32;
 }
