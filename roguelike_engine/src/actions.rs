@@ -276,13 +276,13 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
         }
 
         InputAction::ForceExit => {
-            change_state(&mut game.settings, GameState::Exit);
+            change_state(&mut game.settings, GameState::Exit, &mut game.msg_log);
             return true;
         }
 
         InputAction::Exit => {
             if game.settings.state != GameState::ConfirmQuit {
-                change_state(&mut game.settings, GameState::ConfirmQuit);
+                change_state(&mut game.settings, GameState::ConfirmQuit, &mut game.msg_log);
                 return true;
             } else {
                 return false;
@@ -300,22 +300,22 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
     }
 }
 
-pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings) {
+pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     match input {
         InputAction::Inventory => {
-            change_state(settings, GameState::Playing);
+            change_state(settings, GameState::Playing, msg_log);
         }
 
         InputAction::Esc => {
-            change_state(settings, GameState::Playing);
+            change_state(settings, GameState::Playing, msg_log);
         }
 
         InputAction::SkillMenu => {
-            change_state(settings, GameState::SkillMenu);
+            change_state(settings, GameState::SkillMenu, msg_log);
         }
 
         InputAction::ClassMenu => {
-            change_state(settings, GameState::ClassMenu);
+            change_state(settings, GameState::ClassMenu, msg_log);
         }
 
         _ => {
@@ -330,24 +330,24 @@ pub fn handle_input_skill_menu(input: InputAction,
                                
     match input {
         InputAction::Inventory => {
-            change_state(settings, GameState::Inventory);
+            change_state(settings, GameState::Inventory, msg_log);
         }
 
         InputAction::SkillMenu => {
-            change_state(settings, GameState::Playing);
+            change_state(settings, GameState::Playing, msg_log);
         }
 
         InputAction::ClassMenu => {
-            change_state(settings, GameState::ClassMenu);
+            change_state(settings, GameState::ClassMenu, msg_log);
         }
 
         InputAction::SelectEntry(skill_index) => {
             handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, data, msg_log);
-            change_state(settings, GameState::Playing);
+            change_state(settings, GameState::Playing, msg_log);
         }
 
         InputAction::Esc => {
-            change_state(settings, GameState::Playing);
+            change_state(settings, GameState::Playing, msg_log);
         }
 
         _ => {
@@ -360,15 +360,15 @@ pub fn handle_input_class_menu(input: InputAction,
                                msg_log: &mut MsgLog) {
     match input {
         InputAction::Inventory => {
-            change_state(settings, GameState::Inventory);
+            change_state(settings, GameState::Inventory, msg_log);
         }
 
         InputAction::ClassMenu => {
-            change_state(settings, GameState::Playing);
+            change_state(settings, GameState::Playing, msg_log);
         }
 
         InputAction::SkillMenu => {
-            change_state(settings, GameState::SkillMenu);
+            change_state(settings, GameState::SkillMenu, msg_log);
         }
 
         InputAction::SelectEntry(class_index) => {
@@ -377,12 +377,12 @@ pub fn handle_input_class_menu(input: InputAction,
                 // give player skills from a particular class
                 msg_log.log(Msg::AddClass(classes[class_index]));
 
-                change_state(settings, GameState::Playing);
+                change_state(settings, GameState::Playing, msg_log);
             }
         }
 
         InputAction::Esc => {
-            change_state(settings, GameState::Playing);
+            change_state(settings, GameState::Playing, msg_log);
         }
 
         _ => {
@@ -393,16 +393,16 @@ pub fn handle_input_class_menu(input: InputAction,
 pub fn handle_input_confirm_quit(input: InputAction, settings: &mut GameSettings, msg_log: &mut MsgLog) {
     match input {
         InputAction::Esc => {
-            change_state(settings, GameState::Playing);
+            change_state(settings, GameState::Playing, msg_log);
         }
 
         InputAction::Exit => {
-            change_state(settings, GameState::Exit);
+            change_state(settings, GameState::Exit, msg_log);
         }
 
         InputAction::Restart => {
             msg_log.log(Msg::Restart);
-            change_state(settings, GameState::Playing);
+            change_state(settings, GameState::Playing, msg_log);
         }
 
         _ => {
@@ -431,7 +431,7 @@ pub fn handle_input(input_action: InputAction,
         }
 
         GameState::Inventory => {
-            handle_input_inventory(input_action, settings);
+            handle_input_inventory(input_action, settings, msg_log);
         }
 
         GameState::SkillMenu => {
@@ -485,7 +485,7 @@ pub fn handle_input_use(input_action: InputAction,
                     settings.use_dir = None;
                     msg_log.log(Msg::UseDirClear);
 
-                    change_state(settings, GameState::Playing);
+                    change_state(settings, GameState::Playing, msg_log);
                 }
             }
         }
@@ -499,7 +499,7 @@ pub fn handle_input_use(input_action: InputAction,
         }
 
         (InputAction::FinalizeUse, true) => {
-            change_state(settings, GameState::Playing);
+            change_state(settings, GameState::Playing, msg_log);
 
             finalize_use_item(data, settings, msg_log);
         }
@@ -508,11 +508,11 @@ pub fn handle_input_use(input_action: InputAction,
             settings.use_dir = None;
             msg_log.log(Msg::UseDirClear);
 
-            change_state(settings, GameState::Playing);
+            change_state(settings, GameState::Playing, msg_log);
         }
 
         (InputAction::Esc, true) => {
-            change_state(settings, GameState::Playing);
+            change_state(settings, GameState::Playing, msg_log);
         }
 
         (InputAction::OverlayToggle, _) => {
@@ -583,7 +583,7 @@ pub fn handle_input_playing(input_action: InputAction,
             msg_log.log(Msg::UseDirClear);
 
             ensure_leave_cursor(settings, msg_log);
-            change_state(settings, GameState::Use);
+            change_state(settings, GameState::Use, msg_log);
             msg_log.log(Msg::StartUseInteract);
         }
 
@@ -665,15 +665,15 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Inventory, true) => {
-            change_state(settings, GameState::Inventory);
+            change_state(settings, GameState::Inventory, msg_log);
         }
 
         (InputAction::SkillMenu, true) => {
-            change_state(settings, GameState::SkillMenu);
+            change_state(settings, GameState::SkillMenu, msg_log);
         }
 
         (InputAction::ClassMenu, true) => {
-            change_state(settings, GameState::ClassMenu);
+            change_state(settings, GameState::ClassMenu, msg_log);
         }
 
         (InputAction::Interact(dir), _) => {
@@ -839,7 +839,7 @@ fn start_use_item(item_class: ItemClass, data: &Level, settings: &mut GameSettin
                 }
             }
 
-            change_state(settings, GameState::Use);
+            change_state(settings, GameState::Use, msg_log);
 
             msg_log.log(Msg::StartUseItem(item_id));
         }
@@ -1059,9 +1059,11 @@ pub fn handle_skill(skill_index: usize,
 }
 
 // TODO is this println okay to leave in? seems like it should be in stderr?
-fn change_state(settings: &mut GameSettings, new_state: GameState) {
+fn change_state(settings: &mut GameSettings, new_state: GameState, msg_log: &mut MsgLog) {
     if new_state != settings.state {
         settings.state = new_state;
+
+        msg_log.log(Msg::ChangeState(new_state));
 
         match new_state {
             GameState::Inventory => {

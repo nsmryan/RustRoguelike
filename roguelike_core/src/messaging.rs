@@ -116,6 +116,7 @@ pub enum Msg {
     UsedEnergy(EntityId),
     Healed(EntityId, i32),
     SetPos(EntityId, Pos),
+    ChangeState(GameState),
 }
 
 impl fmt::Display for Msg {
@@ -237,6 +238,7 @@ impl fmt::Display for Msg {
             Msg::UsedEnergy(entity_id) => write!(f, "used_energy {}", entity_id),
             Msg::Healed(entity_id, amount) => write!(f, "healed {} {}", entity_id, amount),
             Msg::SetPos(entity_id, pos) => write!(f, "set_pos {} {} {}", entity_id, pos.x, pos.y),
+            Msg::ChangeState(state) => write!(f, "change_state {}", state),
         }
     }
 }

@@ -745,6 +745,12 @@ impl DisplayState {
                 anim.step(self.dt, rng, config);
             }
         }
+
+        for effect in self.effects.iter_mut() {
+            if let Effect::Attack(_from, _to, sprite_anim) = effect {
+                sprite_anim.step(self.dt);
+            }
+        }
     }
 
     pub fn play_effect(&mut self, effect: Effect) {
