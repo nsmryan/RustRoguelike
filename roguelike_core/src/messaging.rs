@@ -112,6 +112,10 @@ pub enum Msg {
     EntityAttack(EntityId, Pos),
     EntityFov(EntityId, Pos),
     Stance(EntityId, Stance),
+    GainEnergy(EntityId, u32),
+    UsedEnergy(EntityId),
+    Healed(EntityId, i32),
+    SetPos(EntityId, Pos),
 }
 
 impl fmt::Display for Msg {
@@ -229,6 +233,10 @@ impl fmt::Display for Msg {
             Msg::EntityAttack(entity_id, pos) => write!(f, "entity_attack {} {} {}", entity_id, pos.x, pos.y),
             Msg::EntityFov(entity_id, pos) => write!(f, "entity_fov {} {} {}", entity_id, pos.x, pos.y),
             Msg::Stance(entity_id, stance) => write!(f, "entity_fov {} {}", entity_id, stance),
+            Msg::GainEnergy(entity_id, amount) => write!(f, "gain_energy {} {}", entity_id, amount),
+            Msg::UsedEnergy(entity_id) => write!(f, "used_energy {}", entity_id),
+            Msg::Healed(entity_id, amount) => write!(f, "healed {} {}", entity_id, amount),
+            Msg::SetPos(entity_id, pos) => write!(f, "set_pos {} {} {}", entity_id, pos.x, pos.y),
         }
     }
 }
@@ -525,6 +533,10 @@ impl Msg {
 
             Msg::Dodged(entity_id) => {
                 return format!("{:?} dodged an attack", data.entities.name[entity_id]);
+            }
+
+            Msg::Healed(entity_id, amount) => {
+                return format!("{:?} healed by {}", data.entities.name[entity_id], amount);
             }
 
             _ => {

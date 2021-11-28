@@ -153,7 +153,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     }
 
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    game.msg_log.log(Msg::Moved(player_id, MoveType::Blink, player_position));
+    game.msg_log.log(Msg::SetPos(player_id, player_position));
     game.data.entities.set_pos(player_id, player_position);
 
     if game.config.write_map_distribution {

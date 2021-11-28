@@ -352,15 +352,24 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::HealSkill(entity_id, amount) => {
                 if use_energy(entity_id, &mut game.data, &mut game.msg_log) {
+                    let old_hp = game.data.entities.hp[&entity_id].hp;
                     game.data.entities.hp[&entity_id].hp = 
                         std::cmp::min(game.data.entities.hp[&entity_id].max_hp,
                                       game.data.entities.hp[&entity_id].hp + amount as i32);
 
                     game.data.entities.took_turn[&entity_id] = true;
+
+                    let amount = game.data.entities.hp[&entity_id].hp - old_hp;
+                    if amount > 0 {
+                        game.msg_log.log(Msg::Healed(entity_id, amount));
+                    }
                 }
             }
 
             Msg::EatHerb(entity_id, item_id) => {
+                let heal_amount = game.data.entities.hp[&entity_id].max_hp - game.data.entities.hp[&entity_id].hp;
+                game.msg_log.log(Msg::Healed(entity_id, heal_amount));
+               
                 game.data.entities.hp[&entity_id].hp = game.data.entities.hp[&entity_id].max_hp;
                 game.data.entities.remove_item(entity_id, item_id);
                 game.msg_log.log(Msg::Remove(item_id));
@@ -1229,10 +1238,12 @@ fn use_energy(entity_id: EntityId, data: &mut Level, msg_log: &mut MsgLog) -> bo
     // NOTE this uses the entity's class, not the skill's class
     let has_energy = data.entities.energy[&entity_id] > 0;
     let mut enough_energy: bool = false;
+    let mut used_energy: bool = false;
     match class {
         EntityClass::General => {
             if data.entities.energy[&entity_id] > 0 {
                 enough_energy = true;
+                used_energy = true;
                 data.entities.energy[&entity_id] -= 1;
             }
         }
@@ -1242,6 +1253,7 @@ fn use_energy(entity_id: EntityId, data: &mut Level, msg_log: &mut MsgLog) -> bo
             if free_energy || has_energy {
                 if !free_energy && has_energy {
                     data.entities.energy[&entity_id] -= 1;
+                    used_energy = true;
                 }
 
                 enough_energy = true;
@@ -1258,6 +1270,7 @@ fn use_energy(entity_id: EntityId, data: &mut Level, msg_log: &mut MsgLog) -> bo
             if free_energy || has_energy {
                 if !free_energy && has_energy {
                     data.entities.energy[&entity_id] -= 1;
+                    used_energy = true;
                 }
 
                 enough_energy = true;
@@ -1268,6 +1281,7 @@ fn use_energy(entity_id: EntityId, data: &mut Level, msg_log: &mut MsgLog) -> bo
         EntityClass::Clockwork => {
             if data.entities.energy[&entity_id] > 0 {
                 enough_energy = true;
+                used_energy = true;
                 data.entities.energy[&entity_id] -= 1;
             }
         }
@@ -1275,6 +1289,7 @@ fn use_energy(entity_id: EntityId, data: &mut Level, msg_log: &mut MsgLog) -> bo
         EntityClass::Hierophant => {
             if data.entities.energy[&entity_id] > 0 {
                 enough_energy = true;
+                used_energy = true;
                 data.entities.energy[&entity_id] -= 1;
             }
         }
@@ -1283,6 +1298,10 @@ fn use_energy(entity_id: EntityId, data: &mut Level, msg_log: &mut MsgLog) -> bo
             // The wind class does not use energy.
             enough_energy = true;
         }
+    }
+
+    if used_energy {
+        msg_log.log(Msg::UsedEnergy(entity_id));
     }
 
     return enough_energy;
@@ -1542,6 +1561,7 @@ fn process_moved_message(entity_id: EntityId,
             data.entities.typ[other_id] == EntityType::Energy {
                 data.entities.energy[&player_id] += 1;
                 data.entities.needs_removal[other_id] = true;
+                msg_log.log(Msg::GainEnergy(player_id, 1));
             }
         }
     }

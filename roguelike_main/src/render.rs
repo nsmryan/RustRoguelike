@@ -195,7 +195,7 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState, game: &mu
         render_bar(panel, hp.max_hp, current_hp, bar_pos, health_color, Color::white(), false);
     }
 
-    let energy = game.data.entities.energy[&player_id];
+    let energy = display_state.energy[&player_id];
     // TODO this color orange comes from the UI mockups
     let energy_color = Color::new(0xaf, 0x83, 0x56, 255);
     render_pips(panel, energy, Pos::new(1, 3), energy_color);
@@ -290,7 +290,7 @@ fn render_info(panel: &mut Panel,
                     }
                 }
 
-                if game.data.entities.hp.get_mut(obj_id).map_or(false, |hp| hp.hp <= 0) {
+                if matches!(display_state.hp.get(obj_id), Some(0)) {
                     text_list.push(format!("  {}", "dead"));
                 } else if let Some(behave) = game.data.entities.behavior.get(obj_id) {
                     text_list.push(format!("currently {}", behave));
@@ -1185,8 +1185,8 @@ fn render_game_overlays(panel: &mut Panel,
     if game.config.draw_directional_arrow {
         let direction_color = Color::white();
         let mut index = 0;
-        while index < game.data.entities.ids.len() {
-            let entity_id = game.data.entities.ids[index];
+        while index < display_state.ids.len() {
+            let entity_id = display_state.ids[index];
             index += 1;
 
             let pos = display_state.pos[&entity_id];
@@ -1195,10 +1195,8 @@ fn render_game_overlays(panel: &mut Panel,
                 continue;
             }
 
-            if game.data.entities.status[&entity_id].alive {
-                if let Some(dir) = game.data.entities.direction.get(&entity_id) {
-                    render_arrow(panel, tiles_key, *dir, pos, direction_color);
-                }
+            if let Some(dir) = display_state.direction.get(&entity_id) {
+                render_arrow(panel, tiles_key, *dir, pos, direction_color);
             }
         }
     }
@@ -1209,9 +1207,7 @@ fn render_game_overlays(panel: &mut Panel,
         for entity_id in keys {
             let pos = display_state.pos[&entity_id];
 
-            if entity_id != player_id &&
-               game.data.map.is_within_bounds(pos) &&
-               game.data.entities.status[&entity_id].alive {
+            if pos.x >= 0 && pos.y >= 0 && entity_id != player_id {
                render_attack_overlay(panel,
                                      game,
                                      display_state,
@@ -1365,23 +1361,14 @@ fn render_overlays(panel: &mut Panel,
     // Draw overlays if enabled
     if game.settings.overlay {
         // Draw player movement overlay
-        for dir in Direction::move_actions().iter() {
-            // for all movements except staying still
-            // calculate the move that would occur
-            if let Some(movement) =
-                calculate_move(*dir,
-                               game.data.entities.movement[&player_id],
-                               player_id,
-                               &mut game.data) {
-                // draw a highlight on that square
-                // don't draw overlay on top of character
-                if movement.pos != display_state.pos[&player_id] {
-                    let dxy = sub_pos(movement.pos, player_pos);
-                    let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-                    let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
+        let player_pos = display_state.pos[&player_id];
+        for move_pos in display_state.entity_movements[&player_id].clone() {
+            if move_pos != player_pos {
+                let dxy = sub_pos(move_pos, player_pos);
+                let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+                let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
 
-                    render_entity_ghost(panel, player_id, shadow_cursor_pos, game, display_state, sprites);
-                }
+                render_entity_ghost(panel, player_id, shadow_cursor_pos, game, display_state, sprites);
             }
         }
 
@@ -1515,39 +1502,15 @@ fn render_attack_overlay(panel: &mut Panel,
                          entity_id: EntityId,
                          sprites: &Vec<SpriteSheet>) {
     let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-    let player_pos = display_state.pos[&player_id];
-
-    let object_pos = display_state.pos[&entity_id];
 
     let mut attack_highlight_color = game.config.color_red;
     attack_highlight_color.a = game.config.highlight_alpha_attack;
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
-    // TODO replace with entity_attacks
-    if let Some(reach) = game.data.entities.attack.get(&entity_id) {
-        let attack_positions = 
-            reach.offsets()
-                 .iter()
-                 .map(|offset| Pos::new(object_pos.x as i32 + offset.x,
-                                        object_pos.y as i32 + offset.y))
-                 // filter out positions that are outside of the map, or with no clear
-                 // path from the entity to the reached position
-                 .filter(|pos| {
-                     let in_bounds = game.data.map.is_within_bounds(*pos);
-                     let traps_block = false;
-                     let clear = game.data.clear_path(object_pos, *pos, traps_block);
-                     let player_can_see = in_bounds && display_state.pos_is_in_fov(*pos) == FovResult::Inside;
-                     // check for player position so it gets highligted, even
-                     // though the player causes 'clear_path' to fail.
-                     return player_can_see && in_bounds && (clear || *pos == player_pos);
-                 })
-                 .collect::<Vec<Pos>>();
-
-        for position in attack_positions {
-            let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
-            panel.sprite_cmd(sprite, attack_highlight_color, position);
-        }
+    for position in display_state.entity_attacks[&entity_id].iter() {
+        let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
+        panel.sprite_cmd(sprite, attack_highlight_color, *position);
     }
 }
 

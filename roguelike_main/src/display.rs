@@ -337,9 +337,27 @@ impl Display {
                 self.play_idle_animation(entity_id, config);
             }
 
+            Msg::Healed(entity_id, amount) => {
+                if self.state.hp.get(&entity_id).is_none() {
+                    self.state.hp.insert(entity_id, 0);
+                }
+                self.state.hp[&entity_id] += amount;
+            }
+
             Msg::Stance(entity_id, stance) => {
                 self.state.stance.insert(entity_id, stance);
                 self.play_idle_animation(entity_id, config);
+            }
+
+            Msg::GainEnergy(entity_id, amount) => {
+                if self.state.energy.get(&entity_id).is_none() {
+                    self.state.energy.insert(entity_id, 0);
+                }
+                self.state.energy[&entity_id] += amount;
+            }
+
+            Msg::UsedEnergy(entity_id) => {
+                self.state.energy[&entity_id] -= 1;
             }
 
             Msg::Facing(entity_id, direction) => {
@@ -500,6 +518,8 @@ impl Display {
                 self.state.name.remove(&entity_id);
                 self.state.direction.remove(&entity_id);
                 self.state.stance.remove(&entity_id);
+                self.state.energy.remove(&entity_id);
+                self.state.hp.remove(&entity_id);
 
                 if let Some(ix_pos) = self.state.ids.iter().position(|val| *val == entity_id) {
                     self.state.ids.remove(ix_pos);
@@ -512,6 +532,10 @@ impl Display {
             }
 
             Msg::Moved(entity_id, _move_type, pos) => {
+                self.state.pos[&entity_id] = pos;
+            }
+
+            Msg::SetPos(entity_id, pos) => {
                 self.state.pos[&entity_id] = pos;
             }
 
@@ -641,6 +665,8 @@ pub struct DisplayState {
     pub name: Comp<EntityName>,
     pub direction: Comp<Direction>,
     pub stance: Comp<Stance>,
+    pub energy: Comp<u32>,
+    pub hp: Comp<i32>,
 
     // impressions left on map
     pub impressions: Vec<Impression>,
@@ -686,6 +712,8 @@ impl DisplayState {
             name: Comp::new(),
             direction: Comp::new(),
             stance: Comp::new(),
+            energy: Comp::new(),
+            hp: Comp::new(),
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),
             sound_tiles: Vec::new(),
