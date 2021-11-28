@@ -1016,7 +1016,7 @@ fn render_impressions(panel: &mut Panel, display_state: &mut DisplayState, game:
 }
 
 fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut DisplayState, game: &mut Game, sprites: &Vec<SpriteSheet>) {
-    if typ == EntityType::Player && display_state.state == GameState::Use && game.settings.use_dir.is_some() {
+    if typ == EntityType::Player && display_state.state == GameState::Use && display_state.use_dir.is_some() {
         // For the player in use-mode, while holding down a direction, we
         // need special rendering. Otherwise the player is rendered as normal.
 

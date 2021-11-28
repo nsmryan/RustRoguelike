@@ -20,8 +20,6 @@ use roguelike_core::utils::aoe_fill;
 use roguelike_core::movement::{Direction};
 use roguelike_core::rng::Rand32;
 
-use roguelike_engine::game::GameSettings;
-
 use crate::animation::{Str, Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use crate::drawcmd::*;
 
@@ -274,7 +272,8 @@ impl Display {
                 self.state.state = new_state;
             }
 
-            Msg::CursorMove(pos) => {
+            Msg::CursorMove(_pos) => {
+                // clear entities at cursor at move- positions will come in separate messages
                 self.state.entities_at_cursor.clear();
             }
 
@@ -609,13 +608,13 @@ impl Display {
         }
     }
 
-    pub fn draw_all(&mut self, dims: (i32, i32), rng: &mut Rand32, config: &Config, settings: &GameSettings) {
+    pub fn draw_all(&mut self, dims: (i32, i32), rng: &mut Rand32, config: &Config) {
         self.process_draw_commands();
-        self.copy_panels(dims, settings);
+        self.copy_panels(dims);
         self.state.update_animations(rng, config);
     }
 
-    pub fn copy_panels(&mut self, dims: (i32, i32), settings: &GameSettings) {
+    pub fn copy_panels(&mut self, dims: (i32, i32)) {
         let dims = (dims.0 as u32, dims.1 as u32);
 
         /* Split Screen Into Sections */
@@ -640,7 +639,7 @@ impl Display {
         let player_rect = Rect::new(2 * SCREEN_WIDTH as i32 / 3, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);
         self.canvas.copy(&self.textures[&PanelName::Player], None, player_rect).unwrap();
 
-        if settings.state.is_menu() {
+        if self.state.state.is_menu() {
             let canvas_panel = &mut self.canvas_panel;
             let menu_panel = &self.panels[&PanelName::Menu];
 
