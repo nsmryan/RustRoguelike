@@ -12,7 +12,6 @@ use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::utils::tile_fill_metric;
-use roguelike_core::movement::MoveType;
 
 use crate::generation::*;
 use crate::game::*;

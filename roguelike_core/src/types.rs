@@ -1602,6 +1602,10 @@ impl Entities {
         return None;
     }
 
+    pub fn summarize_entity(&mut self, id: EntityId) -> String {
+        return format!("Entity {:?}: {} at {}", self.name[&id], self.typ[&id], self.pos[&id]);
+    }
+
     pub fn create_entity(&mut self, x: i32, y: i32, typ: EntityType, color: Color, name: EntityName, blocks: bool) -> EntityId {
         let id = self.next_id;
         self.next_id += 1;

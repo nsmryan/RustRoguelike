@@ -1500,8 +1500,6 @@ fn render_attack_overlay(panel: &mut Panel,
                          display_state: &mut DisplayState,
                          entity_id: EntityId,
                          sprites: &Vec<SpriteSheet>) {
-    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
-
     let mut attack_highlight_color = game.config.color_red;
     attack_highlight_color.a = game.config.highlight_alpha_attack;
 

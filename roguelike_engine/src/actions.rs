@@ -259,9 +259,13 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
             let player_id = game.data.find_by_name(EntityName::Player).unwrap();
             if game.settings.god_mode {
                 let god_mode_hp = 1000;
+                let god_mode_energy = 1000;
+                game.msg_log.log(Msg::Healed(player_id, god_mode_hp - game.data.entities.hp[&player_id].hp));
+                game.msg_log.log(Msg::GainEnergy(player_id, god_mode_energy - game.data.entities.energy[&player_id]));
+
                 game.data.entities.hp[&player_id].hp = god_mode_hp;
                 game.data.entities.hp[&player_id].max_hp = god_mode_hp;
-                game.data.entities.energy[&player_id] = 1000;
+                game.data.entities.energy[&player_id] = god_mode_energy;
             } else {
                 game.data.entities.hp[&player_id].hp = game.config.player_health;
                 game.data.entities.hp[&player_id].max_hp = game.config.player_health;
