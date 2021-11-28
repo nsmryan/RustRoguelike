@@ -736,6 +736,12 @@ fn finalize_use_item(data: &Level, settings: &mut GameSettings, msg_log: &mut Ms
     let player_id = data.find_by_name(EntityName::Player).unwrap();
     let player_pos = data.entities.pos[&player_id];
 
+    // If there is no direction, the user tried an invalid movement.
+    // Returning here will just end use-mode.
+    if settings.use_dir.is_none() {
+        return;
+    }
+
     if let UseAction::Item(item_class) = settings.use_action {
         // NOTE there should be no way to get here without a direction
         let dir = settings.use_dir.expect("Finalizing use mode for an item with no direction to take!");
