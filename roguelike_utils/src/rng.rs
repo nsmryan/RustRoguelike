@@ -42,12 +42,13 @@
 //! apart from some in the unit tests, and is generally neato.
 
 #![forbid(unsafe_code)]
-#![forbid(missing_docs)]
 #![forbid(missing_debug_implementations)]
 #![forbid(unused_results)]
 use core::ops::Range;
 
 use serde::{Serialize, Deserialize};
+
+use euclid::Point2D;
 
 /// A PRNG producing a 32-bit output.
 ///
@@ -120,6 +121,12 @@ impl Rand32 {
         let xorshifted: u32 = (((oldstate >> 18) ^ oldstate) >> 27) as u32;
         let rot: u32 = (oldstate >> 59) as u32;
         xorshifted.rotate_right(rot)
+    }
+
+    pub fn rand_u64(&mut self) -> u64 {
+        let low = self.rand_u32() as u64;
+        let high = self.rand_u32() as u64;
+        return low | (high << 32);
     }
 
     /// Produces a random `i32` in the range `[i32::MIN, i32::MAX]`.
@@ -284,6 +291,62 @@ impl Rand64 {
             }
         }
         (m.wrapping_shr(64)) as u64 + range.start
+    }
+}
+
+// END OF oorandom code, start of some utility functions
+pub fn rng_bool(rng: &mut Rand32) -> bool {
+    return (rng.rand_u32() & 1) == 1;
+}
+
+pub fn rng_trial(rng: &mut Rand32, prob: f32) -> bool {
+    return rng.rand_float() < prob;
+}
+
+pub fn rng_range(rng: &mut Rand32, low: f32, high: f32) -> f32 {
+    let r = rng.rand_float();
+    return low + r * (high - low);
+}
+
+pub fn rng_pos(rng: &mut Rand32, bounds: (i32, i32)) -> Point2D<i32, ()> {
+    let x = rng_range_i32(rng, 0, bounds.0);
+    let y = rng_range_i32(rng, 0, bounds.1);
+    return Point2D::<i32, ()>::new(x, y);
+}
+
+pub fn rng_range_i32(rng: &mut Rand32, low: i32, high: i32) -> i32 {
+    if low == high {
+        return low;
+    } else {
+        let r = rng.rand_i32().abs();
+        return low + (r % (high - low));
+    }
+}
+
+pub fn rng_range_u32(rng: &mut Rand32, low: u32, high: u32) -> u32 {
+    if low == high {
+        return low;
+    } else {
+        return rng.rand_range(low..high);
+    }
+}
+
+pub fn choose<A: Copy>(rng: &mut Rand32, items: &Vec<A>) -> Option<A> {
+    if items.len() > 0 {
+        return Some(items[rng_range_u32(rng, 0, items.len() as u32) as usize]);
+    } else {
+        return None;
+    }
+}
+
+pub fn shuffle<A>(rng: &mut Rand32, items: &mut Vec<A>) {
+    let len = items.len();
+
+    for index in 0..(len - 1) {
+        if rng_bool(rng) {
+            let swap_pos = rng_range_u32(rng, index as u32 + 1, len as u32) as usize;
+            items.swap(index, swap_pos);
+        }
     }
 }
 

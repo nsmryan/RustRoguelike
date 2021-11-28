@@ -7,6 +7,7 @@ use euclid::*;
 use serde::{Serialize, Deserialize};
 
 use roguelike_utils::line::*;
+use roguelike_utils::comp::*;
 
 use crate::types::*;
 use crate::utils::*;

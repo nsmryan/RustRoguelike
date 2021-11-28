@@ -2,6 +2,8 @@ use std::fmt;
 
 use serde::{Serialize, Deserialize};
 
+use roguelike_utils::comp::*;
+
 use crate::constants::*;
 use crate::types::*;
 use crate::movement::*;

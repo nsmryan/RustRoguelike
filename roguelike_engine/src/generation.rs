@@ -2,7 +2,8 @@ use std::collections::VecDeque;
 
 use serde::{Serialize, Deserialize};
 
-use roguelike_utils::rng::Rand32;
+use roguelike_utils::rng::*;
+use roguelike_utils::comp::*;
 
 use roguelike_core::ai::{Behavior, Ai};
 use roguelike_core::map::*;
@@ -11,7 +12,7 @@ use roguelike_core::constants::*;
 use roguelike_core::movement::*;
 use roguelike_core::messaging::*;
 use roguelike_core::config::*;
-use roguelike_core::utils::{rand_from_pos, distance, rng_range_u32, rng_range_i32, choose};
+use roguelike_core::utils::{rand_from_pos, distance};
 
 use crate::game::*;
 use crate::procgen::*;

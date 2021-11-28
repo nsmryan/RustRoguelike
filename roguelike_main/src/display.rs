@@ -12,6 +12,7 @@ use sdl2::rect::{Rect};
 use sdl2::pixels::{PixelFormatEnum};
 
 use roguelike_utils::rng::Rand32;
+use roguelike_utils::comp::*;
 
 use roguelike_core::types::*;
 use roguelike_core::constants::*;

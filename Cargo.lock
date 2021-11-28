@@ -647,6 +647,7 @@ dependencies = [
  "log",
  "roguelike_core",
  "roguelike_engine",
+ "roguelike_utils",
  "serde",
  "serde_derive",
  "simple-logging",

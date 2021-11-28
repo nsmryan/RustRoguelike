@@ -1,12 +1,11 @@
 use serde::{Serialize, Deserialize};
 
-use roguelike_utils::rng::Rand32;
+use roguelike_utils::rng::*;
 
 use roguelike_core::types::{Pos, Color};
 use roguelike_core::utils::{distance, move_towards};
 use roguelike_core::map::Aoe;
 use roguelike_core::config::Config;
-use roguelike_core::utils::rng_range;
 
 
 pub type SpriteKey = usize;

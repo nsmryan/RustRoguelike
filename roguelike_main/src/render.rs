@@ -1,8 +1,9 @@
 use logging_timer::timer;
 
 use roguelike_utils::line::line;
-use roguelike_utils::rng::Rand32;
+use roguelike_utils::rng::*;
 use roguelike_utils::perlin::Perlin;
+use roguelike_utils::comp::*;
 
 use roguelike_core::types::*;
 use roguelike_core::map::*;

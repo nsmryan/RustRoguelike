@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 use logging_timer::timer;
 
 use roguelike_utils::rng::Rand32;
+use roguelike_utils::comp::*;
 
 use roguelike_core::types::*;
 use roguelike_core::config::*;

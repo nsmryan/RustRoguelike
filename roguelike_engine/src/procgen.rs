@@ -16,7 +16,8 @@ use image::GenericImageView;
 use euclid::*;
 
 use roguelike_utils::line::*;
-use roguelike_utils::rng::Rand32;
+use roguelike_utils::rng::*;
+use roguelike_utils::comp::*;
 
 use roguelike_core::constants::*;
 use roguelike_core::map::*;
@@ -97,6 +98,7 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
                         Orientation::DiagonallyFlippedClockwise180,
                         Orientation::DiagonallyFlippedClockwise270];
 
+    // Rand32 cannot be used here because of the RngCore trait restriction.
     let seed: [u8; 32] = [rng.rand_u32() as u8; 32];
     let mut small_rng = SmallRng::from_seed(seed);
     let map_image = 

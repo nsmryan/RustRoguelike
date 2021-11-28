@@ -1,7 +1,8 @@
 #[allow(unused_imports)]
 
 use roguelike_utils::line::*;
-use roguelike_utils::rng::Rand32;
+use roguelike_utils::rng::*;
+use roguelike_utils::comp::*;
 
 use roguelike_core::types::*;
 use roguelike_core::ai::{Behavior, ai_move_to_attack_pos, ai_can_hit_target, ai_take_turn, ai_is_in_fov};

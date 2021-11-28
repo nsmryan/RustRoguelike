@@ -3,6 +3,8 @@ use std::collections::VecDeque;
 
 use serde::{Serialize, Deserialize};
 
+use roguelike_utils::comp::*;
+
 use crate::types::*;
 use crate::map::*;
 use crate::movement::{MoveType, MoveMode, Direction};
