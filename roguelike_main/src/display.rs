@@ -361,8 +361,8 @@ impl Display {
             }
 
             Msg::Facing(entity_id, direction) => {
-                self.play_idle_animation(entity_id, config);
                 self.state.direction[&entity_id] = direction;
+                self.play_idle_animation(entity_id, config);
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
