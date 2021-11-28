@@ -488,6 +488,60 @@ fn test_use_mode_drop() {
     assert_eq!(GameState::Playing, game.settings.state);
 }
 
+#[test]
+fn test_throw_stone() {
+    let mut game = Game::new(0, Config::from_file("../config.yaml"));
+    make_map(&MapLoadConfig::Empty, &mut game);
+
+    let player_id = game.data.find_by_name(EntityName::Player).unwrap();
+    let start_pos = game.data.entities.pos[&player_id];
+
+    /* test throwing at a column */
+    let stone = make_stone(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    game.step_game(InputAction::Pickup);
+
+    // throwing at an enemy is covered by test_use_mode_stone
+    let col_pos = move_x(start_pos, PLAYER_THROW_DIST as i32);
+    let col = make_column(&mut game.data.entities, &game.config, col_pos, &mut game.msg_log);
+
+    game.step_game(InputAction::StartUseItem(ItemClass::Misc));
+    game.step_game(InputAction::UseDir(Direction::Right));
+    game.step_game(InputAction::FinalizeUse);
+
+    // the stone lands before the column
+    let land_pos = move_x(start_pos, PLAYER_THROW_DIST as i32 - 1);
+    assert_eq!(land_pos, game.data.entities.pos[&stone]);
+
+
+    /* test throwing at a wall */
+    let stone = make_stone(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    game.step_game(InputAction::Pickup);
+
+    let wall_pos = move_y(start_pos, 3 as i32);
+    game.data.map[wall_pos] = Tile::wall();
+
+    game.step_game(InputAction::StartUseItem(ItemClass::Misc));
+    game.step_game(InputAction::UseDir(Direction::Down));
+    game.step_game(InputAction::FinalizeUse);
+
+    // throwing the stone down at the wall lands it just before the wall.
+    let land_pos = move_y(start_pos, 2);
+    assert_eq!(land_pos, game.data.entities.pos[&stone]);
+  
+    /* test throwing at a empty floor */
+    let stone = make_stone(&mut game.data.entities, &game.config, start_pos, &mut game.msg_log);
+    game.step_game(InputAction::Pickup);
+
+    let floor_pos = Direction::DownRight.offset_pos(start_pos, PLAYER_THROW_DIST as i32);
+
+    game.step_game(InputAction::StartUseItem(ItemClass::Misc));
+    game.step_game(InputAction::UseDir(Direction::DownRight));
+    game.step_game(InputAction::FinalizeUse);
+
+    // throwing the stone into an empty area lands it where it is thrown
+    assert_eq!(floor_pos, game.data.entities.pos[&stone]);
+}
+
 fn clean_entities(entities: &mut Entities, msg_log: &mut MsgLog) {
     let mut remove_ids: Vec<EntityId> = Vec::new();
     for id in entities.ids.iter() {

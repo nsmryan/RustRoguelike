@@ -1043,7 +1043,6 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
             let entity_id = display_state.ids[index];
             index += 1;
 
-            //if !game.data.entities.needs_removal[&entity_id] && display_state.typ[&entity_id] == typ {
             if display_state.typ[&entity_id] == typ {
                 let maybe_sprite = render_entity(panel, entity_id, display_state, game, sprites);
 
