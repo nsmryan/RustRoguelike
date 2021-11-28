@@ -137,7 +137,7 @@ fn check_map(game: &Game) {
 
 pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     // this is problematic for movement, so ensure they don't occur
-    handle_diagonal_full_tile_walls(game);
+    handle_diagonal_full_tile_walls(&mut game.level.map);
 
     /* clear out an island */
     let island_radius =
@@ -203,7 +203,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     clear_island(game, island_radius);
 
     // ensure that the map looks okay in 3D
-    ensure_iter_and_full_walls(game);
+    ensure_iter_and_full_walls(&mut game.level.map);
 
     check_map(game);
 
@@ -278,43 +278,43 @@ fn modify_structures(game: &mut Game, cmds: &Vec<ProcCmd>, structures: &mut Vec<
 
 /// Look for intertile walls that are adjacent to full tile walls.
 /// These don't make sense in 3D, so remove them.
-fn ensure_iter_and_full_walls(game: &mut Game) {
-    let (width, height) = game.level.map.size();
+fn ensure_iter_and_full_walls(map: &mut Map) {
+    let (width, height) = map.size();
 
     for y in 0..(height - 1) {
         for x in 0..(width - 1) {
-            if game.level.map[(x, y)].block_move {
-                game.level.map[(x, y)].left_wall = Wall::Empty;
-                game.level.map[(x, y)].bottom_wall = Wall::Empty;
+            if map[(x, y)].block_move {
+                map[(x, y)].left_wall = Wall::Empty;
+                map[(x, y)].bottom_wall = Wall::Empty;
             }
 
-            if game.level.map[(x + 1, y)].block_move {
-                game.level.map[(x, y)].left_wall = Wall::Empty;
+            if map[(x + 1, y)].block_move {
+                map[(x, y)].left_wall = Wall::Empty;
             }
 
-            if game.level.map[(x, y + 1)].block_move {
-                game.level.map[(x, y)].bottom_wall = Wall::Empty;
+            if map[(x, y + 1)].block_move {
+                map[(x, y)].bottom_wall = Wall::Empty;
             }
         }
     }
 }
 
 /// Ensure that diagonal full tile walls do not occur.
-fn handle_diagonal_full_tile_walls(game: &mut Game) {
-    let (width, height) = game.level.map.size();
+fn handle_diagonal_full_tile_walls(map: &mut Map) {
+    let (width, height) = map.size();
 
     for y in 0..(height - 1) {
         for x in 0..(width - 1) {
-            if game.level.map[(x, y)].block_move         && 
-               game.level.map[(x + 1, y + 1)].block_move &&
-               !game.level.map[(x + 1, y)].block_move    && 
-               !game.level.map[(x, y + 1)].block_move {
-                   game.level.map[(x + 1, y)] = Tile::wall();
-            } else if game.level.map[(x + 1, y)].block_move  && 
-                      game.level.map[(x, y + 1)].block_move  &&
-                      !game.level.map[(x, y)].block_move &&
-                      !game.level.map[(x + 1, y + 1)].block_move {
-                   game.level.map[(x, y)] = Tile::wall();
+            if map[(x, y)].block_move         && 
+               map[(x + 1, y + 1)].block_move &&
+               !map[(x + 1, y)].block_move    && 
+               !map[(x, y + 1)].block_move {
+                   map[(x + 1, y)] = Tile::wall();
+            } else if map[(x + 1, y)].block_move  && 
+                      map[(x, y + 1)].block_move  &&
+                      !map[(x, y)].block_move &&
+                      !map[(x + 1, y + 1)].block_move {
+                   map[(x, y)] = Tile::wall();
             }
         }
     }
