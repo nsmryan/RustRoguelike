@@ -37,13 +37,13 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites
 
     let menu_panel = panels.get_mut(&PanelName::Menu).unwrap();
 
-    if game.settings.state == GameState::Inventory {
+    if display_state.state == GameState::Inventory {
         render_inventory(menu_panel, display_state, game);
-    } else if game.settings.state == GameState::SkillMenu {
+    } else if display_state.state == GameState::SkillMenu {
         render_skill_menu(menu_panel, game);
-    } else if game.settings.state == GameState::ClassMenu {
+    } else if display_state.state == GameState::ClassMenu {
         render_class_menu(menu_panel);
-    } else if game.settings.state == GameState::ConfirmQuit {
+    } else if display_state.state == GameState::ConfirmQuit {
         render_confirm_quit(menu_panel);
     }
 
@@ -237,7 +237,7 @@ fn render_info(panel: &mut Panel,
 
         let player_id = game.data.find_by_name(EntityName::Player).unwrap();
 
-        let object_ids = game.data.get_entities_at_pos(info_pos);
+        let object_ids = display_state.entities_at_cursor.clone();
 
         let mut y_pos = 1;
 
@@ -1016,7 +1016,7 @@ fn render_impressions(panel: &mut Panel, display_state: &mut DisplayState, game:
 }
 
 fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut DisplayState, game: &mut Game, sprites: &Vec<SpriteSheet>) {
-    if typ == EntityType::Player && game.settings.state == GameState::Use && game.settings.use_dir.is_some() {
+    if typ == EntityType::Player && display_state.state == GameState::Use && game.settings.use_dir.is_some() {
         // For the player in use-mode, while holding down a direction, we
         // need special rendering. Otherwise the player is rendered as normal.
 
@@ -1156,7 +1156,7 @@ fn render_game_overlays(panel: &mut Panel,
     }
 
     // Draw use-mode overlay
-    if game.settings.state == GameState::Use {
+    if display_state.state == GameState::Use {
 
         let mut highlight_color = game.config.color_light_grey;
         highlight_color.a = game.config.grid_alpha_overlay;

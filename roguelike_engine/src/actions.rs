@@ -615,7 +615,9 @@ pub fn handle_input_playing(input_action: InputAction,
                     new_pos = add_pos(cursor_pos, dir_move);
                 }
 
-                settings.cursor = Some(data.map.clamp(new_pos));
+                let new_pos = data.map.clamp(new_pos);
+                settings.cursor = Some(new_pos);
+                msg_log.log(Msg::CursorMove(new_pos));
             }
         }
 
@@ -1063,7 +1065,7 @@ fn change_state(settings: &mut GameSettings, new_state: GameState, msg_log: &mut
     if new_state != settings.state {
         settings.state = new_state;
 
-        msg_log.log(Msg::ChangeState(new_state));
+        msg_log.log(Msg::GameState(new_state));
 
         match new_state {
             GameState::Inventory => {

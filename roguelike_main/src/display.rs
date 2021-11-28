@@ -270,6 +270,14 @@ impl Display {
                 self.clear_turn_state();
             }
 
+            Msg::GameState(new_state) => {
+                self.state.state = new_state;
+            }
+
+            Msg::CursorMove(pos) => {
+                self.state.entities_at_cursor.clear();
+            }
+
             Msg::CursorState(state, pos) => {
                 if !state {
                     let tiles = lookup_spritekey(&self.sprites, "tiles");
@@ -672,6 +680,9 @@ pub struct DisplayState {
     pub energy: Comp<u32>,
     pub hp: Comp<i32>,
 
+    // game state
+    pub state: GameState,
+
     // impressions left on map
     pub impressions: Vec<Impression>,
 
@@ -718,6 +729,7 @@ impl DisplayState {
             stance: Comp::new(),
             energy: Comp::new(),
             hp: Comp::new(),
+            state: GameState::Playing,
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),
             sound_tiles: Vec::new(),
