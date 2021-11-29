@@ -940,8 +940,8 @@ fn render_entity(panel: &mut Panel,
 
     // only draw if within the map (outside is (-1, -1) like if in inventory)
     // and not about to be removed.
-    if !game.level.map.is_within_bounds(pos) {
-           return None;
+    if pos.x < 0 || pos.y < 0 {
+        return None;
     }
 
     let color = color.unwrap_or(Color::new(255, 255, 255, 255));
@@ -1052,13 +1052,14 @@ fn render_overlay_use_item(panel: &mut Panel,
     let player_pos = display_state.pos[&player_id];
 
     let direction_color = Color::white();
+
     let mut attack_highlight_color = game.config.color_red;
     attack_highlight_color.a = game.config.grid_alpha_overlay;
+
     let mut highlight_color = game.config.color_light_grey;
     highlight_color.a = game.config.grid_alpha_overlay;
 
     let sprite_key = lookup_spritekey(sprites, "tiles");
-
 
     if let Some(_item_index) = game.level.entities.item_by_class(player_id, item_class) {
         if let Some(use_dir) = display_state.use_dir {
@@ -1156,13 +1157,11 @@ fn render_game_overlays(panel: &mut Panel,
         attack_highlight_color.a = game.config.grid_alpha_overlay;
 
         if UseAction::Interact == game.settings.use_action {
-            for dir in Direction::move_actions().iter() {
-                let target_pos = dir.offset_pos(player_pos, 1);
-                if game.level.clear_path(player_pos, target_pos, false) {
-                    panel.highlight_cmd(highlight_color, target_pos);
+            for use_pos in display_state.use_pos.iter() {
+                panel.highlight_cmd(highlight_color, *use_pos);
 
-                    render_arrow(panel, tiles_key, *dir, target_pos, direction_color);
-                }
+                let dir = Direction::from_positions(player_pos, *use_pos).unwrap();
+                render_arrow(panel, tiles_key, dir, *use_pos, direction_color);
             }
         } else if let UseAction::Item(item_class) = game.settings.use_action {
             render_overlay_use_item(panel, item_class, display_state, game, sprites);
