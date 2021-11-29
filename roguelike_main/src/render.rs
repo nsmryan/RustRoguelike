@@ -259,9 +259,7 @@ fn render_info(panel: &mut Panel,
 
         // only display first object
         if let Some(obj_id) = object_ids.first() {
-            let entity_in_fov =
-                game.settings.god_mode ||
-                display_state.entity_is_in_fov(*obj_id) == FovResult::Inside;
+            let entity_in_fov = display_state.entity_is_in_fov(*obj_id) == FovResult::Inside;
 
             // only display things in the player's FOV
             if entity_in_fov {
@@ -949,8 +947,7 @@ fn render_entity(panel: &mut Panel,
     let color = color.unwrap_or(Color::new(255, 255, 255, 255));
 
     let is_in_fov =
-       display_state.entity_is_in_fov(entity_id) == FovResult::Inside ||
-       game.settings.god_mode;
+       display_state.entity_is_in_fov(entity_id) == FovResult::Inside;
 
     if is_in_fov {
         if let Some(anims) = display_state.animations.get_mut(&entity_id) {
