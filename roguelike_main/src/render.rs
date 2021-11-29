@@ -94,7 +94,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &m
             let _extra = timer!("EXTRA");
             render_impressions(panel, display_state, game);
             render_effects(panel, display_state, game, sprites);
-            render_overlays(panel, display_state, game, game.settings.cursor, sprites);
+            render_overlays(panel, display_state, game, sprites);
         }
     }
 
@@ -1224,7 +1224,6 @@ fn render_game_overlays(panel: &mut Panel,
 fn render_overlays(panel: &mut Panel,
                    display_state: &mut DisplayState,
                    game: &mut Game,
-                   cursor_pos: Option<Pos>,
                    sprites: &Vec<SpriteSheet>) {
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     let player_pos = display_state.pos[&player_id];
@@ -1261,7 +1260,7 @@ fn render_overlays(panel: &mut Panel,
     // render cursor if enabled
     if game.config.use_cursor {
         // render cursor itself
-        if let Some(cursor_pos) = game.settings.cursor {
+        if let Some(cursor_pos) = display_state.cursor_pos {
             let time_since_toggle = display_state.time - display_state.time_of_cursor_toggle;
             let time_since_toggle = clampf(time_since_toggle, 0.0, game.config.cursor_fade_seconds);
 
@@ -1311,7 +1310,7 @@ fn render_overlays(panel: &mut Panel,
     }
 
     // draw attack and fov position highlights
-    if let Some(_mouse_xy) = cursor_pos {
+    if let Some(_cursor_pos) = display_state.cursor_pos {
         // Draw monster attack overlay
         for entity_id in display_state.entities_at_cursor.clone() {
             let pos = display_state.pos[&entity_id];

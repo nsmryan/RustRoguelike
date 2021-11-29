@@ -274,19 +274,26 @@ impl Display {
                 self.state.state = new_state;
             }
 
-            Msg::CursorMove(_pos) => {
+            Msg::CursorMove(pos) => {
                 // clear entities at cursor at move- positions will come in separate messages
                 self.state.entities_at_cursor.clear();
+                self.state.cursor_pos = Some(pos);
             }
 
             Msg::CursorState(state, pos) => {
-                if !state {
+                if state {
+                    self.state.cursor_pos = Some(pos);
+                } else {
+                    self.state.cursor_pos = None;
+
                     let tiles = lookup_spritekey(&self.sprites, "tiles");
                     let cursor_sprite = Sprite::new(ENTITY_CURSOR as u32, tiles);
                     let color = config.color_mint_green;
                     let fade_effect = Effect::fade(cursor_sprite, color, config.cursor_alpha, 0, pos, config.cursor_fade_seconds);
                     self.state.play_effect(fade_effect);
                 }
+
+
                 self.state.time_of_cursor_toggle = self.state.time;
             }
 
@@ -709,7 +716,7 @@ pub struct DisplayState {
     pub dt: f32,
     pub time: f32,
     pub time_of_cursor_toggle: f32,
-    pub last_cursor_pos: Pos,
+    pub cursor_pos: Option<Pos>,
 
     pub debug_entries: HashMap<String, String>,
 }
@@ -747,7 +754,7 @@ impl DisplayState {
             dt: 0.0,
             time: 0.0,
             time_of_cursor_toggle: 0.0,
-            last_cursor_pos: Pos::new(0, 0),
+            cursor_pos: None,
             debug_entries: HashMap::<String, String>::new(),
         };
     }
