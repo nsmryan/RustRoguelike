@@ -1565,7 +1565,6 @@ fn render_entity_ghost(panel: &mut Panel,
     render_entity(panel, entity_id, display_state, game, Some(ghost_color), sprites);
     display_state.dt = dt;
 
-    //game.level.entities.color[&entity_id].a = alpha;
     display_state.pos[&entity_id] = entity_pos;
 }
 

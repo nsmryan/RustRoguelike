@@ -1389,7 +1389,6 @@ pub struct Entities {
     // NOTE not sure about keeping these ones, or packaging into larger ones
     pub sound: Comp<Pos>, // source position
     pub typ: Comp<EntityType>,
-    pub color: Comp<Color>,
     pub blocks: Comp<bool>,
     pub needs_removal: Comp<bool>,
 
@@ -1475,7 +1474,7 @@ impl Entities {
         return format!("Entity {:?}: {} at {}", self.name[&id], self.typ[&id], self.pos[&id]);
     }
 
-    pub fn create_entity(&mut self, x: i32, y: i32, typ: EntityType, color: Color, name: EntityName, blocks: bool) -> EntityId {
+    pub fn create_entity(&mut self, x: i32, y: i32, typ: EntityType, name: EntityName, blocks: bool) -> EntityId {
         let id = self.next_id;
         self.next_id += 1;
         self.ids.push(id);
@@ -1483,7 +1482,6 @@ impl Entities {
         // add fields that all entities share
         self.pos.insert(id, Pos::new(x, y));
         self.typ.insert(id, typ);
-        self.color.insert(id, color);
         self.name.insert(id, name);
         self.blocks.insert(id, blocks);
         self.direction.insert(id, Direction::Up);
@@ -1727,7 +1725,6 @@ impl Entities {
         move_component!(gate_pos);
         move_component!(took_turn);
         move_component!(durability);
-        move_component!(color);
         move_component!(blocks);
         move_component!(needs_removal);
         move_component!(messages);
@@ -1776,7 +1773,6 @@ impl Entities {
         self.gate_pos.remove(&id);
         self.took_turn.remove(&id);
         self.durability.remove(&id);
-        self.color.remove(&id);
         self.blocks.remove(&id);
         self.needs_removal.remove(&id);
         self.messages.remove(&id);
