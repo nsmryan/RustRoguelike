@@ -370,8 +370,10 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
             if game.settings.running && any_updates && game.config.save_load {
                 let old_state = game.settings.state;
                 game.settings.state = GameState::Playing;
+                display.state.state = GameState::Playing;
                 game_sender.send((game.clone(), display.state.clone())).unwrap();
                 game.settings.state = old_state;
+                display.state.state = old_state;
             }
         } else {
             let path = Path::new(GAME_SAVE_FILE);

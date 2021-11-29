@@ -232,7 +232,7 @@ fn render_info(panel: &mut Panel,
                game: &mut Game) {
     render_placard(panel, "Info");
 
-    if let Some(info_pos) = game.settings.cursor {
+    if let Some(info_pos) = display_state.cursor_pos {
         let x_offset = 5;
 
         let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
@@ -933,6 +933,7 @@ fn render_entity(panel: &mut Panel,
                  entity_id: EntityId,
                  display_state: &mut DisplayState,
                  game: &mut Game,
+                 color: Option<Color>,
                  sprites: &Vec<SpriteSheet>) -> Option<Sprite> {
     let mut animation_result = AnimationResult::new();
 
@@ -944,6 +945,8 @@ fn render_entity(panel: &mut Panel,
     if !game.level.map.is_within_bounds(pos) {
            return None;
     }
+
+    let color = color.unwrap_or(Color::new(255, 255, 255, 255));
 
     let is_in_fov =
        display_state.entity_is_in_fov(entity_id) == FovResult::Inside ||
@@ -958,15 +961,6 @@ fn render_entity(panel: &mut Panel,
                     display_state.play_effect(effect);
                 } else {
                     if let Some(sprite) = animation_result.sprite {
-                        //let mut color = game.level.entities.color[&entity_id];
-
-                        //// unarmed traps are grayed out
-                        //if game.level.entities.armed.get(&entity_id) == Some(&false) {
-                        //    color = game.config.color_warm_grey;
-                        //}
-                        // TODO added in because the color doesn't seem to be actually used.
-                        let color = Color::new(255, 255, 255, 255);
-
                         panel.sprite_cmd(sprite, color, animation_result.pos);
                     }
 
@@ -978,10 +972,6 @@ fn render_entity(panel: &mut Panel,
                 }
             }
         } else {
-            //let color = game.level.entities.color[&entity_id];
-            // TODO added in because the color doesn't seem to be actually used.
-            let color = Color::new(255, 255, 255, 255);
-
             let tiles = lookup_spritekey(sprites, "tiles");
             let chr = display_state.chr[&entity_id];
             let sprite = Sprite::new(chr as u32, tiles);
@@ -1036,7 +1026,7 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
         if let Some(pos) = use_pos {
             render_entity_ghost(panel, player_id, player_pos, game, display_state, sprites);
             display_state.pos[&player_id] = pos;
-            render_entity(panel, player_id, display_state, game, sprites);
+            render_entity(panel, player_id, display_state, game, None, sprites);
             display_state.pos[&player_id] = player_pos;
         }
     } else {
@@ -1046,7 +1036,7 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
             index += 1;
 
             if display_state.typ[&entity_id] == typ {
-                let maybe_sprite = render_entity(panel, entity_id, display_state, game, sprites);
+                let maybe_sprite = render_entity(panel, entity_id, display_state, game, None, sprites);
 
                 if let Some(sprite) = maybe_sprite {
                     display_state.drawn_sprites.insert(entity_id, sprite);
@@ -1128,7 +1118,7 @@ fn render_game_overlays(panel: &mut Panel,
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
     if game.config.use_cursor {
-        if let Some(cursor_pos) = game.settings.cursor {
+        if let Some(cursor_pos) = display_state.cursor_pos {
             // render trigger plate wall highlight if selected
             for entity in display_state.entities_at_cursor.iter() {
                 if display_state.name[&entity] == EntityName::GateTrigger {
@@ -1565,20 +1555,17 @@ fn render_entity_ghost(panel: &mut Panel,
                        sprites: &Vec<SpriteSheet>) {
     let entity_pos = display_state.pos[&entity_id];
 
-    let alpha = game.level.entities.color[&entity_id].a;
-    assert!(alpha == 255);
-    game.level.entities.color[&entity_id].a = game.config.ghost_alpha;
-
     display_state.pos[&entity_id] = render_pos;
 
     // a little ugly, but set the delta time to 0 so the render_entity function does not
     // step the animation forward when rendering a ghost.
     let dt = display_state.dt;
     display_state.dt = 0.0;
-    render_entity(panel, entity_id, display_state, game, sprites);
+    let ghost_color = Color::new(255, 255, 255, game.config.ghost_alpha);
+    render_entity(panel, entity_id, display_state, game, Some(ghost_color), sprites);
     display_state.dt = dt;
 
-    game.level.entities.color[&entity_id].a = alpha;
+    //game.level.entities.color[&entity_id].a = alpha;
     display_state.pos[&entity_id] = entity_pos;
 }
 
