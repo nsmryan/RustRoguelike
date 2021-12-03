@@ -353,11 +353,16 @@ impl Display {
                 self.play_idle_animation(entity_id, config);
             }
 
-            Msg::Healed(entity_id, amount) => {
+            Msg::Healed(entity_id, amount, max_hp) => {
                 if self.state.hp.get(&entity_id).is_none() {
                     self.state.hp.insert(entity_id, 0);
                 }
                 self.state.hp[&entity_id] += amount;
+
+                if self.state.max_hp.get(&entity_id).is_none() {
+                    self.state.max_hp.insert(entity_id, 0);
+                }
+                self.state.max_hp[&entity_id] = max_hp;
             }
 
             Msg::Stance(entity_id, stance) => {
@@ -536,6 +541,7 @@ impl Display {
                 self.state.stance.remove(&entity_id);
                 self.state.energy.remove(&entity_id);
                 self.state.hp.remove(&entity_id);
+                self.state.max_hp.remove(&entity_id);
 
                 if let Some(ix_pos) = self.state.ids.iter().position(|val| *val == entity_id) {
                     self.state.ids.remove(ix_pos);
@@ -687,6 +693,7 @@ pub struct DisplayState {
     pub stance: Comp<Stance>,
     pub energy: Comp<u32>,
     pub hp: Comp<i32>,
+    pub max_hp: Comp<i32>,
 
     // game state
     pub state: GameState,
@@ -737,6 +744,7 @@ impl DisplayState {
             stance: Comp::new(),
             energy: Comp::new(),
             hp: Comp::new(),
+            max_hp: Comp::new(),
             state: GameState::Playing,
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),

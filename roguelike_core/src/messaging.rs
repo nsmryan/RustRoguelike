@@ -116,7 +116,7 @@ pub enum Msg {
     Stance(EntityId, Stance),
     GainEnergy(EntityId, u32),
     UsedEnergy(EntityId),
-    Healed(EntityId, i32),
+    Healed(EntityId, i32, i32),
     SetPos(EntityId, Pos),
     GameState(GameState),
     CursorMove(Pos),
@@ -239,7 +239,7 @@ impl fmt::Display for Msg {
             Msg::Stance(entity_id, stance) => write!(f, "entity_fov {} {}", entity_id, stance),
             Msg::GainEnergy(entity_id, amount) => write!(f, "gain_energy {} {}", entity_id, amount),
             Msg::UsedEnergy(entity_id) => write!(f, "used_energy {}", entity_id),
-            Msg::Healed(entity_id, amount) => write!(f, "healed {} {}", entity_id, amount),
+            Msg::Healed(entity_id, amount, max_hp) => write!(f, "healed {} {} {}", entity_id, amount, max_hp),
             Msg::SetPos(entity_id, pos) => write!(f, "set_pos {} {} {}", entity_id, pos.x, pos.y),
             Msg::GameState(state) => write!(f, "game_state {}", state),
             Msg::CursorMove(pos) => write!(f, "cursor_move {} {}", pos.x, pos.y),
@@ -541,7 +541,7 @@ impl Msg {
                 return format!("{:?} dodged an attack", data.entities.name[entity_id]);
             }
 
-            Msg::Healed(entity_id, amount) => {
+            Msg::Healed(entity_id, amount, _max_hp) => {
                 return format!("{:?} healed by {}", data.entities.name[entity_id], amount);
             }
 

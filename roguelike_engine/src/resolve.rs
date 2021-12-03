@@ -363,14 +363,16 @@ pub fn resolve_messages(game: &mut Game) {
 
                     let amount = game.level.entities.hp[&entity_id].hp - old_hp;
                     if amount > 0 {
-                        game.msg_log.log(Msg::Healed(entity_id, amount));
+                        let max_hp = game.level.entities.hp[&entity_id].max_hp;
+                        game.msg_log.log(Msg::Healed(entity_id, amount, max_hp));
                     }
                 }
             }
 
             Msg::EatHerb(entity_id, item_id) => {
                 let heal_amount = game.level.entities.hp[&entity_id].max_hp - game.level.entities.hp[&entity_id].hp;
-                game.msg_log.log(Msg::Healed(entity_id, heal_amount));
+                let max_hp = game.level.entities.hp[&entity_id].max_hp;
+                game.msg_log.log(Msg::Healed(entity_id, heal_amount, max_hp));
                
                 game.level.entities.hp[&entity_id].hp = game.level.entities.hp[&entity_id].max_hp;
                 game.level.entities.remove_item(entity_id, item_id);

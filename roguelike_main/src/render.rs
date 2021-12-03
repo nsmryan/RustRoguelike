@@ -265,13 +265,14 @@ fn render_info(panel: &mut Panel,
             if entity_in_fov {
                 drawn_info = true;
 
-                if let Some(hp) = game.level.entities.hp.get(obj_id) {
+                if let Some(hp) = display_state.hp.get(obj_id) {
                     y_pos += 1;
 
                     let health_color = Color::new(0x96, 0x54, 0x56, 255);
+                    let max_hp = display_state.max_hp[obj_id];
                     render_bar(panel,
-                               hp.max_hp,
-                               hp.hp,
+                               max_hp,
+                               *hp,
                                Pos::new(1, y_pos),
                                health_color,
                                Color::white(),
@@ -930,7 +931,6 @@ fn render_effects(panel: &mut Panel,
 fn render_entity(panel: &mut Panel,
                  entity_id: EntityId,
                  display_state: &mut DisplayState,
-                 game: &mut Game,
                  color: Option<Color>,
                  sprites: &Vec<SpriteSheet>) -> Option<Sprite> {
     let mut animation_result = AnimationResult::new();
@@ -1023,7 +1023,7 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
         if let Some(pos) = use_pos {
             render_entity_ghost(panel, player_id, player_pos, game, display_state, sprites);
             display_state.pos[&player_id] = pos;
-            render_entity(panel, player_id, display_state, game, None, sprites);
+            render_entity(panel, player_id, display_state, None, sprites);
             display_state.pos[&player_id] = player_pos;
         }
     } else {
@@ -1033,7 +1033,7 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
             index += 1;
 
             if display_state.typ[&entity_id] == typ {
-                let maybe_sprite = render_entity(panel, entity_id, display_state, game, None, sprites);
+                let maybe_sprite = render_entity(panel, entity_id, display_state, None, sprites);
 
                 if let Some(sprite) = maybe_sprite {
                     display_state.drawn_sprites.insert(entity_id, sprite);
@@ -1558,7 +1558,7 @@ fn render_entity_ghost(panel: &mut Panel,
     let dt = display_state.dt;
     display_state.dt = 0.0;
     let ghost_color = Color::new(255, 255, 255, game.config.ghost_alpha);
-    render_entity(panel, entity_id, display_state, game, Some(ghost_color), sprites);
+    render_entity(panel, entity_id, display_state, Some(ghost_color), sprites);
     display_state.dt = dt;
 
     display_state.pos[&entity_id] = entity_pos;
