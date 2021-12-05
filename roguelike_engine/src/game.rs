@@ -278,6 +278,13 @@ impl Game {
             }
         }
 
+        // report current player inventory
+        for item_id in self.level.entities.inventory[&player_id].iter() {
+            let item = self.level.entities.item[&item_id];
+            let item_class = item.class();
+            self.msg_log.log(Msg::InventoryItem(item, item_class));
+        }
+
         if self.level.entities.took_turn[&player_id] && log_dir == MsgLogDir::Front {
             self.msg_log.log_front(Msg::StartTurn);
         }

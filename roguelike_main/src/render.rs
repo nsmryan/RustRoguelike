@@ -27,7 +27,7 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites
     display_state.time += dt;
 
     /* Draw Background */
-    render_background(panels.get_mut(&PanelName::Map).unwrap(), game, sprites);
+    render_background(panels.get_mut(&PanelName::Map).unwrap(), &game.level.map, sprites);
 
     /* Draw Map */
     render_panels(panels, display_state, game, sprites);
@@ -185,16 +185,17 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState, game: &mu
 
     let x_offset = 3;
 
-    if let Some(hp) = game.level.entities.hp.get(&player_id) {
-        let current_hp = if hp.hp > 0 {
-            hp.hp
+    if let Some(hp) = display_state.hp.get(&player_id) {
+        let max_hp = display_state.max_hp[&player_id];
+        let current_hp = if *hp > 0 {
+            *hp
         } else {
             0
         };
         // TODO this color red comes from the UI mockups
         let health_color = Color::new(0x96, 0x54, 0x56, 255);
         let bar_pos = Pos::new(1, 2);
-        render_bar(panel, hp.max_hp, current_hp, bar_pos, health_color, Color::white(), false);
+        render_bar(panel, max_hp, current_hp, bar_pos, health_color, Color::white(), false);
     }
 
     let energy = display_state.energy[&player_id];
@@ -236,8 +237,6 @@ fn render_info(panel: &mut Panel,
         let x_offset = 5;
 
         let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
-
-        let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
         let object_ids = display_state.entities_at_cursor.clone();
 
@@ -312,8 +311,9 @@ fn render_info(panel: &mut Panel,
         let text_pos = Pos::new(x_offset, y_pos);
         panel.text_list_cmd(&text_list, text_color, text_pos);
 
-        let tile_in_fov = game.level.pos_in_fov(player_id, info_pos, &game.config);
-        if tile_in_fov {
+        let tile_in_fov = display_state.fov[&info_pos];
+        //let tile_in_fov = game.level.pos_in_fov(player_id, info_pos, &game.config);
+        if tile_in_fov == FovResult::Inside {
             if game.level.map[info_pos].tile_type == TileType::Water {
                 text_list.push("Tile is water".to_string());
             } else {
@@ -489,7 +489,7 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, game: &mut 
     // Draw Remaining Items
     let mut index = 0;
     while index < game.level.entities.inventory[&player_id].len() {
-        let item_id= game.level.entities.inventory[&player_id][index];
+        let item_id = game.level.entities.inventory[&player_id][index];
 
         if game.level.entities.item[&item_id].class() == ItemClass::Misc &&
            game.level.entities.item[&item_id] != Item::Stone {
@@ -504,8 +504,8 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, game: &mut 
 }
 
 /// render the background files, including water tiles
-fn render_background(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteSheet>) {
-    let (map_width, map_height) = game.level.map.size();
+fn render_background(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
+    let (map_width, map_height) = map.size();
 
     let sprite_key = lookup_spritekey(sprites, "tiles");
 
@@ -513,7 +513,7 @@ fn render_background(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteShe
         for x in 0..map_width {
             let map_pos = Pos::new(x, y);
 
-            let tile = &game.level.map[(x, y)];
+            let tile = &map[(x, y)];
             // TODO why are these branches identical?
             if tile.tile_type != TileType::Water {
                 let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);

@@ -301,13 +301,7 @@ impl Display {
                 // Add to this turn's sound tiles list
                 self.state.sound_tiles.push(hit_pos);
 
-                let mut player_id = None;
-                for (key, nam) in self.state.name.iter() {
-                    if *nam == EntityName::Player {
-                        player_id = Some(key);
-                    }
-                }
-                let player_id = player_id.unwrap();
+                let player_id = self.state.player_id();
                 let player_pos = self.state.pos[&player_id];
 
                 // only play the sound effect if the player position is included
@@ -618,6 +612,11 @@ impl Display {
                 self.state.entity_fov.get_mut(&entity_id).unwrap().push(pos);
             }
 
+            Msg::InventoryItem(item, item_class) => {
+                let player_id = self.state.player_id();
+                self.state.inventory[&player_id] = (item, item_class);
+            }
+
             _ => {
             }
         }
@@ -694,6 +693,7 @@ pub struct DisplayState {
     pub energy: Comp<u32>,
     pub hp: Comp<i32>,
     pub max_hp: Comp<i32>,
+    pub inventory: Comp<(Item, ItemClass)>,
 
     // game state
     pub state: GameState,
@@ -745,6 +745,7 @@ impl DisplayState {
             energy: Comp::new(),
             hp: Comp::new(),
             max_hp: Comp::new(),
+            inventory: Comp::new(),
             state: GameState::Playing,
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),
@@ -779,6 +780,16 @@ impl DisplayState {
                 sprite_anim.step(self.dt);
             }
         }
+    }
+
+    pub fn player_id(&self) -> EntityId {
+        let mut player_id = None;
+        for (key, nam) in self.name.iter() {
+            if *nam == EntityName::Player {
+                player_id = Some(key);
+            }
+        }
+        return player_id.unwrap();
     }
 
     pub fn play_effect(&mut self, effect: Effect) {

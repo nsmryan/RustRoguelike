@@ -120,6 +120,7 @@ pub enum Msg {
     SetPos(EntityId, Pos),
     GameState(GameState),
     CursorMove(Pos),
+    InventoryItem(Item, ItemClass),
 }
 
 impl fmt::Display for Msg {
@@ -243,6 +244,7 @@ impl fmt::Display for Msg {
             Msg::SetPos(entity_id, pos) => write!(f, "set_pos {} {} {}", entity_id, pos.x, pos.y),
             Msg::GameState(state) => write!(f, "game_state {}", state),
             Msg::CursorMove(pos) => write!(f, "cursor_move {} {}", pos.x, pos.y),
+            Msg::InventoryItem(item, item_class) => write!(f, "inventory_item {} {}", item, item_class),
         }
     }
 }
