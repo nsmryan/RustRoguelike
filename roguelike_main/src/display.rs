@@ -262,6 +262,7 @@ impl Display {
         self.state.sound_tiles.clear();
         self.state.fov.clear();
         self.state.entities_in_fov.clear();
+        self.state.inventory.clear();
     }
 
     pub fn process_message(&mut self, msg: Msg, map: &Map, config: &Config) {
@@ -613,8 +614,7 @@ impl Display {
             }
 
             Msg::InventoryItem(item, item_class) => {
-                let player_id = self.state.player_id();
-                self.state.inventory[&player_id] = (item, item_class);
+                self.state.inventory.push((item, item_class));
             }
 
             _ => {
@@ -693,7 +693,7 @@ pub struct DisplayState {
     pub energy: Comp<u32>,
     pub hp: Comp<i32>,
     pub max_hp: Comp<i32>,
-    pub inventory: Comp<(Item, ItemClass)>,
+    pub inventory: Vec<(Item, ItemClass)>,
 
     // game state
     pub state: GameState,
@@ -745,7 +745,7 @@ impl DisplayState {
             energy: Comp::new(),
             hp: Comp::new(),
             max_hp: Comp::new(),
-            inventory: Comp::new(),
+            inventory: Vec::new(),
             state: GameState::Playing,
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),

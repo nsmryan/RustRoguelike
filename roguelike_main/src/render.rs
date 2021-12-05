@@ -40,7 +40,7 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites
     let menu_panel = panels.get_mut(&PanelName::Menu).unwrap();
 
     if display_state.state == GameState::Inventory {
-        render_inventory(menu_panel, display_state, game);
+        render_inventory(menu_panel, display_state);
     } else if display_state.state == GameState::SkillMenu {
         render_skill_menu(menu_panel, game);
     } else if display_state.state == GameState::ClassMenu {
@@ -107,7 +107,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &m
     /* Draw Inventory */
     {
         let inventory_panel = &mut panels.get_mut(&PanelName::Inventory).unwrap();
-        render_inventory(inventory_panel, display_state, game);
+        render_inventory(inventory_panel, display_state);
     }
 
     /* Draw Game Info */
@@ -409,11 +409,9 @@ fn render_confirm_quit(panel: &mut Panel) {
 }
 
 /// Render an inventory section within the given area
-fn render_inventory(panel: &mut Panel, display_state: &DisplayState, game: &mut Game) {
+fn render_inventory(panel: &mut Panel, display_state: &DisplayState) {
     // Render header
     render_placard(panel, "Inventory");
-
-    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
     // TODO this color comes from the UI mockups as a light brown
     let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
@@ -425,36 +423,26 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, game: &mut 
     // Draw Primary Items
     panel.text_cmd("z", ui_color, Pos::new(x_offset, y_pos));
 
-    let mut index = 0;
-    while index < game.level.entities.inventory[&player_id].len() {
-        let item_id = game.level.entities.inventory[&player_id][index];
-
-        if game.level.entities.item[&item_id].class() == ItemClass::Primary {
-            let item_text = format!("{:?}", display_state.name[&item_id]);
+    for (item, item_class) in display_state.inventory.iter() {
+        if *item_class == ItemClass::Primary {
+            let item_text = format!("{:?}", item);
             let text_pos = Pos::new(x_offset + 2, y_pos);
             panel.text_cmd(&item_text, ui_color, text_pos);
             break;
         }
-
-        index += 1;
     }
     y_pos += 1;
 
     // Draw Consumable Items
     panel.text_cmd(&"x", ui_color, Pos::new(x_offset, y_pos));
 
-    let mut index = 0;
-    while index < game.level.entities.inventory[&player_id].len() {
-        let item_id = game.level.entities.inventory[&player_id][index];
-
-        if game.level.entities.item[&item_id].class() == ItemClass::Consumable {
-            let item_text = format!("{:?}", display_state.name[&item_id]);
+    for (item, item_class) in display_state.inventory.iter() {
+        if *item_class == ItemClass::Consumable {
+            let item_text = format!("{:?}", item);
             let text_pos = Pos::new(x_offset + 2, y_pos);
             panel.text_cmd(&item_text, ui_color, text_pos);
             break;
         }
-
-        index += 1;
     }
     y_pos += 1;
 
@@ -462,15 +450,10 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, game: &mut 
     panel.text_cmd(&"c", ui_color, Pos::new(x_offset, y_pos));
 
     let mut num_stones = 0;
-    let mut index = 0;
-    while index < game.level.entities.inventory[&player_id].len() {
-        let item_id = game.level.entities.inventory[&player_id][index];
-
-        if game.level.entities.item[&item_id] == Item::Stone {
+    for (item, _item_class) in display_state.inventory.iter() {
+        if *item == Item::Stone {
             num_stones += 1;
         }
-
-        index += 1;
     }
 
     if num_stones > 0 {
@@ -487,19 +470,13 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, game: &mut 
     y_pos += 1;
 
     // Draw Remaining Items
-    let mut index = 0;
-    while index < game.level.entities.inventory[&player_id].len() {
-        let item_id = game.level.entities.inventory[&player_id][index];
-
-        if game.level.entities.item[&item_id].class() == ItemClass::Misc &&
-           game.level.entities.item[&item_id] != Item::Stone {
-            let item_text = format!("{:?}", display_state.name[&item_id]);
+    for (item, item_class) in display_state.inventory.iter() {
+        if *item_class == ItemClass::Misc && *item != Item::Stone {
+            let item_text = format!("{:?}", item);
             let text_pos = Pos::new(x_offset + 2, y_pos);
             panel.text_cmd(&item_text, ui_color, text_pos);
             y_pos += 1;
         }
-
-        index += 1;
     }
 }
 
