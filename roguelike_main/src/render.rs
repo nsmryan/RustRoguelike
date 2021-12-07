@@ -287,7 +287,7 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState, level: &Leve
 
                 if matches!(display_state.hp.get(obj_id), Some(0)) {
                     text_list.push(format!("  {}", "dead"));
-                } else if let Some(behave) = level.entities.behavior.get(obj_id) {
+                } else if let Some(behave) = display_state.behavior.get(obj_id) {
                     text_list.push(format!("currently {}", behave));
                 }
             }
@@ -1405,7 +1405,7 @@ fn render_overlay_alertness(panel: &mut Panel,
         }
 
         if !status_drawn {
-            if let Some(behavior) = entities.behavior.get(entity_id) {
+            if let Some(behavior) = display_state.behavior.get(entity_id) {
                 match behavior {
                     Behavior::Idle => {
                     }

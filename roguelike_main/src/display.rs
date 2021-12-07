@@ -16,6 +16,7 @@ use roguelike_utils::comp::*;
 
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
+use roguelike_core::ai::*;
 use roguelike_core::config::*;
 use roguelike_core::messaging::*;
 use roguelike_core::map::*;
@@ -298,6 +299,14 @@ impl Display {
                 self.state.time_of_cursor_toggle = self.state.time;
             }
 
+            Msg::StateChange(entity_id, behavior) => {
+                if self.state.behavior.get(&entity_id).is_none() {
+                    self.state.behavior.insert(entity_id, behavior);
+                } else {
+                    self.state.behavior[&entity_id] = behavior;
+                }
+            }
+
             Msg::SoundHitTile(cause_id, source_pos, radius, hit_pos) => {
                 // Add to this turn's sound tiles list
                 self.state.sound_tiles.push(hit_pos);
@@ -535,6 +544,7 @@ impl Display {
                 self.state.direction.remove(&entity_id);
                 self.state.stance.remove(&entity_id);
                 self.state.energy.remove(&entity_id);
+                self.state.behavior.remove(&entity_id);
                 self.state.hp.remove(&entity_id);
                 self.state.max_hp.remove(&entity_id);
 
@@ -693,6 +703,7 @@ pub struct DisplayState {
     pub energy: Comp<u32>,
     pub hp: Comp<i32>,
     pub max_hp: Comp<i32>,
+    pub behavior: Comp<Behavior>,
     pub inventory: Vec<(Item, ItemClass)>,
 
     // game state
@@ -746,6 +757,7 @@ impl DisplayState {
             energy: Comp::new(),
             hp: Comp::new(),
             max_hp: Comp::new(),
+            behavior: Comp::new(),
             inventory: Vec::new(),
             state: GameState::Playing,
             impressions: Vec::new(),

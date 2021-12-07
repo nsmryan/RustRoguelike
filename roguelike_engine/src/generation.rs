@@ -221,6 +221,7 @@ pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mu
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Gol, entities.direction[&entity_id]));
     msg_log.log(Msg::Stance(entity_id, entities.stance[&entity_id]));
     msg_log.log(Msg::Healed(entity_id, entities.hp[&entity_id].hp, entities.hp[&entity_id].hp));
+    msg_log.log(Msg::StateChange(entity_id, entities.behavior[&entity_id]));
     
     return entity_id;
 } 
@@ -244,6 +245,7 @@ pub fn make_pawn(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Pawn, entities.direction[&entity_id]));
     msg_log.log(Msg::Stance(entity_id, entities.stance[&entity_id]));
     msg_log.log(Msg::Healed(entity_id, entities.hp[&entity_id].hp, entities.hp[&entity_id].hp));
+    msg_log.log(Msg::StateChange(entity_id, entities.behavior[&entity_id]));
 
     return entity_id;
 }
@@ -267,6 +269,7 @@ pub fn make_spire(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Spire, entities.direction[&entity_id]));
     msg_log.log(Msg::Stance(entity_id, entities.stance[&entity_id]));
     msg_log.log(Msg::Healed(entity_id, entities.hp[&entity_id].hp, entities.hp[&entity_id].hp));
+    msg_log.log(Msg::StateChange(entity_id, entities.behavior[&entity_id]));
 
     return entity_id;
 }
@@ -290,6 +293,7 @@ pub fn make_rook(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &m
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Rook, entities.direction[&entity_id]));
     msg_log.log(Msg::Stance(entity_id, entities.stance[&entity_id]));
     msg_log.log(Msg::Healed(entity_id, entities.hp[&entity_id].hp, entities.hp[&entity_id].hp));
+    msg_log.log(Msg::StateChange(entity_id, entities.behavior[&entity_id]));
 
     return entity_id;
 }
@@ -312,6 +316,7 @@ pub fn make_armil(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Armil, entities.direction[&entity_id]));
     msg_log.log(Msg::Stance(entity_id, entities.stance[&entity_id]));
     msg_log.log(Msg::Healed(entity_id, entities.hp[&entity_id].hp, entities.hp[&entity_id].hp));
+    msg_log.log(Msg::StateChange(entity_id, entities.behavior[&entity_id]));
     
     return entity_id;
 } 
