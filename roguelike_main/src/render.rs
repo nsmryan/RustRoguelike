@@ -42,7 +42,7 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites
     if display_state.state == GameState::Inventory {
         render_inventory(menu_panel, display_state);
     } else if display_state.state == GameState::SkillMenu {
-        render_skill_menu(menu_panel, game);
+        render_skill_menu(menu_panel, display_state, &game.level.entities);
     } else if display_state.state == GameState::ClassMenu {
         render_class_menu(menu_panel);
     } else if display_state.state == GameState::ConfirmQuit {
@@ -101,7 +101,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &m
     /* Draw Player Info */
     {
         let player_panel = &mut panels.get_mut(&PanelName::Player).unwrap();
-        render_player_info(player_panel, display_state, game);
+        render_player_info(player_panel, display_state, &game.settings);
     }
 
     /* Draw Inventory */
@@ -113,7 +113,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &m
     /* Draw Game Info */
     {
         let info_panel = &mut panels.get_mut(&PanelName::Info).unwrap();
-        render_info(info_panel, display_state, game);
+        render_info(info_panel, display_state, &game.level);
     }
 }
 
@@ -173,10 +173,10 @@ fn render_bar(panel: &mut Panel,
     }
 }
 
-fn render_player_info(panel: &mut Panel, display_state: &DisplayState, game: &mut Game) {
+fn render_player_info(panel: &mut Panel, display_state: &DisplayState, settings: &GameSettings) {
     render_placard(panel, "Player");
 
-    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+    let player_id = display_state.player_id();
 
     let mut list: Vec<String> = Vec::new();
 
@@ -209,7 +209,7 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState, game: &mu
     let stance = display_state.stance[&player_id];
     list.push(format!("{}", stance));
     list.push("next move".to_string());
-    let stance = game.settings.move_mode;
+    let stance = settings.move_mode;
     list.push(format!("{}", stance));
 
     list.push(format!(""));
@@ -221,16 +221,14 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState, game: &mu
     list.push(format!(""));
     list.push(format!(""));
     list.push(format!(""));
-    list.push(format!("turn {}", game.settings.turn_count));
+    list.push(format!("turn {}", settings.turn_count));
 
     let text_pos = Pos::new(x_offset, 5);
 
     panel.text_list_cmd(&list, color, text_pos);
 }
 
-fn render_info(panel: &mut Panel,
-               display_state: &mut DisplayState,
-               game: &mut Game) {
+fn render_info(panel: &mut Panel, display_state: &mut DisplayState, level: &Level) {
     render_placard(panel, "Info");
 
     if let Some(info_pos) = display_state.cursor_pos {
@@ -292,7 +290,7 @@ fn render_info(panel: &mut Panel,
 
                 if matches!(display_state.hp.get(obj_id), Some(0)) {
                     text_list.push(format!("  {}", "dead"));
-                } else if let Some(behave) = game.level.entities.behavior.get(obj_id) {
+                } else if let Some(behave) = level.entities.behavior.get(obj_id) {
                     text_list.push(format!("currently {}", behave));
                 }
             }
@@ -312,33 +310,32 @@ fn render_info(panel: &mut Panel,
         panel.text_list_cmd(&text_list, text_color, text_pos);
 
         let tile_in_fov = display_state.fov[&info_pos];
-        //let tile_in_fov = game.level.pos_in_fov(player_id, info_pos, &game.config);
         if tile_in_fov == FovResult::Inside {
-            if game.level.map[info_pos].tile_type == TileType::Water {
+            if level.map[info_pos].tile_type == TileType::Water {
                 text_list.push("Tile is water".to_string());
             } else {
-                text_list.push(format!("Tile is {:?}",  game.level.map[info_pos].surface));
+                text_list.push(format!("Tile is {:?}",  level.map[info_pos].surface));
             }
 
-            if game.level.map[info_pos].bottom_wall != Wall::Empty {
+            if level.map[info_pos].bottom_wall != Wall::Empty {
                 text_list.push("Lower wall".to_string());
             }
 
-            if game.level.map.is_within_bounds(move_x(info_pos, 1)) &&
-               game.level.map[move_x(info_pos, 1)].left_wall != Wall::Empty {
+            if level.map.is_within_bounds(move_x(info_pos, 1)) &&
+               level.map[move_x(info_pos, 1)].left_wall != Wall::Empty {
                 text_list.push("Right wall".to_string());
             }
 
-            if game.level.map.is_within_bounds(move_y(info_pos, -1)) &&
-               game.level.map[move_y(info_pos, -1)].bottom_wall != Wall::Empty {
+            if level.map.is_within_bounds(move_y(info_pos, -1)) &&
+               level.map[move_y(info_pos, -1)].bottom_wall != Wall::Empty {
                 text_list.push("Top wall".to_string());
             }
 
-            if game.level.map[info_pos].left_wall != Wall::Empty {
+            if level.map[info_pos].left_wall != Wall::Empty {
                 text_list.push("Left wall".to_string());
             }
 
-            if game.level.map[info_pos].block_move {
+            if level.map[info_pos].block_move {
                 text_list.push(format!("blocked"));
             }
         }
@@ -347,15 +344,15 @@ fn render_info(panel: &mut Panel,
     }
 }
 
-fn render_skill_menu(panel: &mut Panel, game: &mut Game) {
-    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+fn render_skill_menu(panel: &mut Panel, display_state: &DisplayState, entities: &Entities) {
+    let player_id = display_state.player_id();
 
     // Render header
     render_placard(panel, "Skills");
 
     let mut list = Vec::new();
 
-    for (index, skill) in game.level.entities.skills[&player_id].iter().enumerate() {
+    for (index, skill) in entities.skills[&player_id].iter().enumerate() {
         list.push(format!("{} {:?}", index, skill));
     }
 
@@ -523,22 +520,20 @@ fn surface_chr(surface: Surface) -> Option<u8> {
 }
 
 /// Render Wall Shadows (full tile and intertile walls, left and down)
-fn render_wall_shadow(panel: &mut Panel, pos: Pos, game: &mut Game, sprites: &Vec<SpriteSheet>) {
+fn render_wall_shadow(panel: &mut Panel, pos: Pos, map: &Map, sprites: &Vec<SpriteSheet>, shadow_color: Color) {
     let shadow_sprite_key = lookup_spritekey(sprites, "shadows");
 
-    let tile = game.level.map[pos];
+    let tile = map[pos];
 
-    let (_map_width, map_height) = game.level.map.size();
+    let (_map_width, map_height) = map.size();
     let (x, y) = pos.to_tuple();
 
     let left_valid = x - 1 > 0;
     let down_valid = y + 1 < map_height;
     let down_left_valid = left_valid && down_valid;
-    let left_wall = left_valid && game.level.map[(x - 1, y)].tile_type == TileType::Wall;
-    let down_wall = down_valid && game.level.map[(x, y + 1)].tile_type == TileType::Wall;
-    let down_left_wall = down_left_valid && game.level.map[(x - 1, y + 1)].tile_type == TileType::Wall;
-
-    let shadow_color = game.config.color_shadow;
+    let left_wall = left_valid && map[(x - 1, y)].tile_type == TileType::Wall;
+    let down_wall = down_valid && map[(x, y + 1)].tile_type == TileType::Wall;
+    let down_left_wall = down_left_valid && map[(x - 1, y + 1)].tile_type == TileType::Wall;
 
     /* render full tile wall shadows */
     if tile.tile_type == TileType::Wall {
@@ -652,7 +647,8 @@ fn render_map_middle(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteShe
         for x in 0..map_width {
             let pos = Pos::new(x, y);
 
-            render_wall_shadow(panel, pos, game, sprites);
+            let shadow_color = game.config.color_shadow;
+            render_wall_shadow(panel, pos, &game.level.map, sprites, shadow_color);
 
             /* draw the between-tile walls appropriate to this tile */
             render_intertile_walls_below(panel, &mut game.level.map, sprite_key, pos);
