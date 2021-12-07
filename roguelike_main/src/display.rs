@@ -726,6 +726,7 @@ pub struct DisplayState {
     pub cursor_pos: Option<Pos>,
 
     pub debug_entries: HashMap<String, String>,
+    pub rng: Rand32,
 }
 
 impl DisplayState {
@@ -765,6 +766,7 @@ impl DisplayState {
             time_of_cursor_toggle: 0.0,
             cursor_pos: None,
             debug_entries: HashMap::<String, String>::new(),
+            rng: Rand32::new(0),
         };
     }
 

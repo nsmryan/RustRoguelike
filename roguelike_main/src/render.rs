@@ -2,7 +2,6 @@ use logging_timer::timer;
 
 use roguelike_utils::line::line;
 use roguelike_utils::rng::*;
-use roguelike_utils::perlin::Perlin;
 use roguelike_utils::comp::*;
 
 use roguelike_core::types::*;
@@ -68,7 +67,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &m
             render_entity_type(panel, EntityType::Trigger, display_state, &game.config, sprites);
             render_entity_type(panel, EntityType::Item, display_state, &game.config, sprites);
 
-            render_map_middle(panel, game, sprites);
+            render_map_middle(panel, &game.level.map, &game.config, sprites);
         }
 
         {
@@ -87,7 +86,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &m
 
         {
             let _mapabove = timer!("MAPABOVE");
-            render_map_above(panel, display_state, game, sprites);
+            render_map_above(panel, display_state, &game.level.map, &game.config, sprites);
         }
 
         {
@@ -595,8 +594,8 @@ fn render_wall_shadow(panel: &mut Panel, pos: Pos, map: &Map, sprites: &Vec<Spri
     }
 }
 
-fn render_map_above(panel: &mut Panel, display_state: &DisplayState, game: &mut Game, sprites: &Vec<SpriteSheet>) {
-    let (map_width, map_height) = game.level.map.size();
+fn render_map_above(panel: &mut Panel, display_state: &DisplayState, map: &Map, config: &Config, sprites: &Vec<SpriteSheet>) {
+    let (map_width, map_height) = map.size();
 
     let sprite_key = lookup_spritekey(sprites, "tiles");
     for y in 0..map_height {
@@ -604,7 +603,7 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, game: &mut 
             let pos = Pos::new(x, y);
             /* draw the between-tile walls appropriate to this tile */
             {
-                let tile = game.level.map[pos];
+                let tile = map[pos];
                 let wall_color = Color::white();
 
                 // Lower walls
@@ -620,16 +619,16 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, game: &mut 
             let fov_result = display_state.pos_is_in_fov(pos);
 
             // apply a FoW darkening to cells
-            if game.config.fog_of_war && fov_result != FovResult::Inside {
+            if config.fog_of_war && fov_result != FovResult::Inside {
                 let is_in_fov_ext = fov_result == FovResult::Edge;
 
                 let mut blackout_color = Color::black();
                 let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
                 if is_in_fov_ext {
-                    blackout_color.a = game.config.fov_edge_alpha;
+                    blackout_color.a = config.fov_edge_alpha;
                     panel.sprite_cmd(sprite, blackout_color, pos);
-                } else if game.level.map[pos].explored {
-                    blackout_color.a = game.config.explored_alpha;
+                } else if map[pos].explored {
+                    blackout_color.a = config.explored_alpha;
                     panel.sprite_cmd(sprite, blackout_color, pos);
                 } else {
                     panel.fill_cmd(pos, blackout_color);
@@ -639,19 +638,19 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, game: &mut 
     }
 }
 
-fn render_map_middle(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteSheet>) {
-    let (map_width, map_height) = game.level.map.size();
+fn render_map_middle(panel: &mut Panel, map: &Map, config: &Config, sprites: &Vec<SpriteSheet>) {
+    let (map_width, map_height) = map.size();
 
     let sprite_key = lookup_spritekey(sprites, "tiles");
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
 
-            let shadow_color = game.config.color_shadow;
-            render_wall_shadow(panel, pos, &game.level.map, sprites, shadow_color);
+            let shadow_color = config.color_shadow;
+            render_wall_shadow(panel, pos, map, sprites, shadow_color);
 
             /* draw the between-tile walls appropriate to this tile */
-            render_intertile_walls_below(panel, &mut game.level.map, sprite_key, pos);
+            render_intertile_walls_below(panel, map, sprite_key, pos);
         }
     }
 }
@@ -756,9 +755,9 @@ fn render_effects(panel: &mut Panel,
         let mut effect = display_state.effects[index].clone();
         match &mut effect {
             Effect::Particles(rate, particles) => {
-                if particles.len() < game.config.max_particles && rng_trial(&mut game.rng, *rate) {
+                if particles.len() < game.config.max_particles && rng_trial(&mut display_state.rng, *rate) {
                     let size = (panel.num_pixels.0 as i32, panel.num_pixels.1 as i32);
-                    let pos = rng_pos(&mut game.rng, size);
+                    let pos = rng_pos(&mut display_state.rng, size);
                     particles.push(Particle::new(game.config.particle_duration, pos));
                 }
 
@@ -779,7 +778,8 @@ fn render_effects(panel: &mut Panel,
                         let draw_pos = move_x(particles[index].pos, x_offset);
                         let draw_cell = panel.cell_from_pixel(draw_pos);
 
-                        if game.level.map.is_within_bounds(draw_cell) && game.level.pos_in_fov(player_id, draw_cell, &game.config) {
+                        if game.level.map.is_within_bounds(draw_cell) && 
+                           game.level.pos_in_fov(player_id, draw_cell, &game.config) {
                             let mut color = Color::white();
                             // fade the particle out according to how long it has been running.
                             color.a = (255.0 * (particles[index].duration / game.config.particle_duration)) as u8;
@@ -1066,10 +1066,10 @@ fn render_overlay_use_item(panel: &mut Panel,
 }
 
 fn render_sound_overlay(panel: &mut Panel,
-                           display_state: &mut DisplayState,
-                           game: &mut Game) {
-    let mut highlight_sound: Color = game.config.color_warm_grey;
-    highlight_sound.a = game.config.sound_alpha;
+                        display_state: &mut DisplayState,
+                        config: &Config) {
+    let mut highlight_sound: Color = config.color_warm_grey;
+    highlight_sound.a = config.sound_alpha;
     // NOTE(perf) this clone is only necessary because draw commands
     // mut borrow the entire display state, instead of only the draw_cmd hashmap or
     // even just the vec of commands.
@@ -1113,7 +1113,7 @@ fn render_game_overlays(panel: &mut Panel,
             // render some extra player information if cursor is over player's tile
             if cursor_pos == player_pos {
                 // Draw sound tiles overlay
-                render_sound_overlay(panel, display_state, game);
+                render_sound_overlay(panel, display_state, &game.config);
             }
         }
     }
@@ -1332,7 +1332,7 @@ fn render_overlays(panel: &mut Panel,
         }
 
         // Draw sound tiles overlay
-        render_sound_overlay(panel, display_state, game);
+        render_sound_overlay(panel, display_state, &game.config);
 
         // Outline tiles within FOV for clarity
         render_fov_overlay(panel, display_state, &game.level, &game.config, player_id);
@@ -1412,6 +1412,7 @@ fn render_overlay_alertness(panel: &mut Panel, display_state: &mut DisplayState,
     }
 }
 
+/*
 fn empty_tile_color(config: &Config, pos: Pos, visible: bool, rng: &mut Rand32) -> Color {
     let low_color;
     let high_color;
@@ -1432,6 +1433,7 @@ fn empty_tile_color(config: &Config, pos: Pos, visible: bool, rng: &mut Rand32) 
 
    return color;
 }
+*/
 
 fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> Color {
     let color = match (tile.tile_type, visible) {
@@ -1471,8 +1473,6 @@ fn render_attack_overlay(panel: &mut Panel,
     }
 }
 
-// NOTE(frontend) the calculations done below would require a front end to
-// know all tiles visible to all entities.
 fn render_fov_overlay(panel: &mut Panel,
                       display_state: &DisplayState,
                       level: &Level,
