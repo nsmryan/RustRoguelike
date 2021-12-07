@@ -146,8 +146,6 @@ map_load: #TestVaults
 #FromFile: "maps.txt"
 
 map_file: map.xp
-draw_mouse_line: false
-draw_star_path: false
 
 # throttle to frame rate
 frame_rate: 30

@@ -45,8 +45,6 @@ pub struct Config {
     pub map_file: String,
     pub idle_speed: f32,
     pub grass_idle_speed: f32,
-    pub draw_mouse_line: bool,
-    pub draw_star_path: bool,
     pub frame_rate: usize,
     pub item_throw_speed: f32,
     pub key_speed: f32,

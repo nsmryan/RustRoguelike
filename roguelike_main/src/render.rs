@@ -1183,9 +1183,13 @@ fn render_game_overlays(panel: &mut Panel,
     render_overlay_alertness(panel, display_state, tiles_key, &level.entities, config);
 }
 
-fn render_overlay_direction(panel: &mut Panel, display_state: &mut DisplayState, game: &Game, tiles_key: SpriteKey) {
-    let map_width = game.level.map.width();
-    let map_height = game.level.map.height();
+fn render_overlay_direction(panel: &mut Panel,
+                            display_state: &mut DisplayState,
+                            map: &Map,
+                            config: &Config,
+                            tiles_key: SpriteKey) {
+    let map_width = map.width();
+    let map_height = map.height();
 
     let player_id = display_state.player_id();
     let player_pos = display_state.pos[&player_id];
@@ -1200,13 +1204,13 @@ fn render_overlay_direction(panel: &mut Panel, display_state: &mut DisplayState,
                 let res: i8 = x_diff as i8 - y_diff as i8;
                 if res <= 0 {
                     let sprite = Sprite::new(MAP_GROUND as u32, tiles_key);
-                    panel.sprite_cmd(sprite, game.config.color_light_green, pos);
+                    panel.sprite_cmd(sprite, config.color_light_green, pos);
                 } else {
                     let sprite = Sprite::new(MAP_GROUND as u32, tiles_key);
-                    panel.sprite_cmd(sprite, game.config.color_light_grey, pos);
+                    panel.sprite_cmd(sprite, config.color_light_grey, pos);
                 }
                 let sprite = Sprite::new(('0' as u8 + res.abs() as u8) as u32, tiles_key);
-                panel.sprite_cmd(sprite, game.config.color_red, pos);
+                panel.sprite_cmd(sprite, config.color_red, pos);
             }
         }
     }
@@ -1251,23 +1255,30 @@ fn render_overlay_cursor(panel: &mut Panel, display_state: &mut DisplayState, ga
     }
 }
 
-fn render_overlay_fov(panel: &mut Panel, display_state: &mut DisplayState, game: &Game, tiles_key: SpriteKey) {
-    let map_width = game.level.map.width();
-    let map_height = game.level.map.height();
+fn render_overlay_fov(panel: &mut Panel,
+                      display_state: &mut DisplayState,
+                      map: &Map,
+                      config: &Config,
+                      tiles_key: SpriteKey) {
+    let map_width = map.width();
+    let map_height = map.height();
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
 
             if display_state.pos_is_in_fov(pos) == FovResult::Inside {
-                //tile_sprite.draw_char(panel, MAP_GROUND as char, pos, game.config.color_light_green);
                 let sprite = Sprite::new(MAP_GROUND as u32, tiles_key);
-                panel.sprite_cmd(sprite, game.config.color_light_green, pos);
+                panel.sprite_cmd(sprite, config.color_light_green, pos);
             }
         }
     }
 }
 
-fn render_overlay_attack(panel: &mut Panel, display_state: &mut DisplayState, game: &Game, sprites: &Vec<SpriteSheet>) {
+fn render_overlay_attack(panel: &mut Panel,
+                         display_state: &mut DisplayState,
+                         level: &Level,
+                         config: &Config,
+                         sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
 
     // Draw monster attack overlay
@@ -1276,23 +1287,26 @@ fn render_overlay_attack(panel: &mut Panel, display_state: &mut DisplayState, ga
 
         if display_state.pos_is_in_fov(pos) == FovResult::Inside &&
            entity_id != player_id &&
-           game.level.entities.status[&entity_id].alive {
-           render_attack_overlay(panel, &game.config, display_state, entity_id, sprites);
-           render_fov_overlay(panel, display_state, &game.level, &game.config, entity_id);
-           render_movement_overlay(panel, &game.config, display_state, entity_id, sprites);
+           level.entities.status[&entity_id].alive {
+           render_attack_overlay(panel, config, display_state, entity_id, sprites);
+           render_fov_overlay(panel, display_state, level, config, entity_id);
+           render_movement_overlay(panel, config, display_state, entity_id, sprites);
         }
     }
 }
 
-fn render_overlay_floodfill(panel: &mut Panel, game: &Game, tiles_key: SpriteKey) {
-    let mut highlight_color = game.config.color_light_orange;
+fn render_overlay_floodfill(panel: &mut Panel,
+                            level: &Level,
+                            config: &Config,
+                            tiles_key: SpriteKey) {
+    let mut highlight_color = config.color_light_orange;
 
     highlight_color.a = 50;
-    let fill_metric = map_fill_metric(&game.level.map);
+    let fill_metric = map_fill_metric(&level.map);
 
     for (pos, near_count) in fill_metric {
         let amount = near_count as f32 / 50.0;
-        let adj_color = lerp_color(game.config.color_ice_blue, game.config.color_red, amount);
+        let adj_color = lerp_color(config.color_ice_blue, config.color_red, amount);
 
         //tile_sprite.draw_char(panel, , pos, adj_color);
         let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
@@ -1312,7 +1326,7 @@ fn render_overlays(panel: &mut Panel,
 
     // render a grid of numbers if enabled
     if game.config.overlay_directions {
-        render_overlay_direction(panel, display_state, game, tiles_key);
+        render_overlay_direction(panel, display_state, &game.level.map, &game.config, tiles_key);
     }
 
     // render cursor if enabled
@@ -1322,48 +1336,16 @@ fn render_overlays(panel: &mut Panel,
 
     // render FOV if enabled
     if game.config.overlay_player_fov {
-        render_overlay_fov(panel, display_state, game, tiles_key);
+        render_overlay_fov(panel, display_state, &game.level.map, &game.config, tiles_key);
     }
 
     // draw attack and fov position highlights
     if let Some(_cursor_pos) = display_state.cursor_pos {
-        render_overlay_attack(panel, display_state, game, sprites);
+        render_overlay_attack(panel, display_state, &game.level, &game.config, sprites);
     }
 
     let mut highlight_color: Color = game.config.color_warm_grey;
     highlight_color.a = game.config.highlight_player_move;
-
-    // draw mouse path overlays
-    /*
-    if let Some(mouse_id) = game.level.find_by_name(EntityName::Mouse) {
-        let mouse_pos = display_state.pos[&mouse_id];
-        let player_pos = display_state.pos[&player_id];
-
-        if game.config.draw_star_path {
-            // get a path to the mouse path, regardless of distance
-            let path = astar_path(&game.level.map, player_pos, mouse_pos, None, None);
-            for pos in path {
-                //tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, highlight_color);
-                let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
-                panel.sprite_cmd(sprite, highlight_color, pos);
-            }
-        }
-
-        if game.config.draw_mouse_line {
-            // mouse pos at 0, 0 occurs when the mouse has not moved since startup.
-            // this may cause a weirdness on the corner of the map
-            if mouse_pos != Pos::new(0, 0) {
-                let line = line(player_pos, mouse_pos).into_iter();
-                for pos in line {
-                    let pos = Pos::from(pos);
-                    //tile_sprite.draw_char(panel, MAP_EMPTY_CHAR as char, pos, highlight_color);
-                    let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
-                    panel.sprite_cmd(sprite, highlight_color, pos);
-                }
-            }
-        }
-    }
-    */
 
     // Draw overlays if enabled
     if game.settings.overlay {
@@ -1394,7 +1376,7 @@ fn render_overlays(panel: &mut Panel,
     // 40 are nearly fully open
     // 49 may be fully open
     if game.config.overlay_floodfill {
-        render_overlay_floodfill(panel, game, tiles_key);
+        render_overlay_floodfill(panel, &game.level, &game.config, tiles_key);
     }
 }
 
