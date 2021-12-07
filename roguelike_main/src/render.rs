@@ -1278,8 +1278,8 @@ fn render_overlays(panel: &mut Panel,
                entity_id != player_id &&
                game.level.entities.status[&entity_id].alive {
                render_attack_overlay(panel, &game.config, display_state, entity_id, sprites);
-               render_fov_overlay(panel, display_state, game, entity_id);
-               render_movement_overlay(panel, game, display_state, entity_id, sprites);
+               render_fov_overlay(panel, display_state, &game.level, &game.config, entity_id);
+               render_movement_overlay(panel, &game.config, display_state, entity_id, sprites);
             }
         }
     }
@@ -1335,7 +1335,7 @@ fn render_overlays(panel: &mut Panel,
         render_sound_overlay(panel, display_state, game);
 
         // Outline tiles within FOV for clarity
-        render_fov_overlay(panel, display_state, game, player_id);
+        render_fov_overlay(panel, display_state, &game.level, &game.config, player_id);
     }
 
     // NOTE floodfill ranges:
@@ -1475,19 +1475,20 @@ fn render_attack_overlay(panel: &mut Panel,
 // know all tiles visible to all entities.
 fn render_fov_overlay(panel: &mut Panel,
                       display_state: &DisplayState,
-                      game: &mut Game,
+                      level: &Level,
+                      config: &Config,
                       entity_id: EntityId) {
     let player_id = display_state.player_id();
 
-    let mut highlight_color = game.config.color_light_grey;
-    highlight_color.a = game.config.grid_alpha_overlay;
+    let mut highlight_color = config.color_light_grey;
+    highlight_color.a = config.grid_alpha_overlay;
 
-    for y in 0..game.level.map.height() {
-        for x in 0..game.level.map.width() {
+    for y in 0..level.map.height() {
+        for x in 0..level.map.width() {
             let map_pos = Pos::new(x, y);
 
-            let visible = game.level.pos_in_fov(entity_id, map_pos, &game.config) &&
-                          game.level.pos_in_fov(player_id, map_pos, &game.config);
+            let visible = level.pos_in_fov(entity_id, map_pos, config) &&
+                          level.pos_in_fov(player_id, map_pos, config);
 
 
             if visible {
@@ -1498,12 +1499,12 @@ fn render_fov_overlay(panel: &mut Panel,
 }
 
 fn render_movement_overlay(panel: &mut Panel,
-                           game: &mut Game,
+                           config: &Config,
                            display_state: &mut DisplayState,
                            entity_id: EntityId,
                            sprites: &Vec<SpriteSheet>) {
-    let mut highlight_color = game.config.color_light_grey;
-    highlight_color.a = game.config.grid_alpha_overlay;
+    let mut highlight_color = config.color_light_grey;
+    highlight_color.a = config.grid_alpha_overlay;
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
