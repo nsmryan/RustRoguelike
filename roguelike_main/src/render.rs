@@ -59,25 +59,25 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &m
 
         {
             let _map = timer!("MAP");
-            render_map(panel, game, sprites);
+            render_map(panel, &game.level.map, sprites);
         }
 
         {
             let _mid = timer!("MID");
-            render_entity_type(panel, EntityType::Environment, display_state, game, sprites);
-            render_entity_type(panel, EntityType::Trigger, display_state, game, sprites);
-            render_entity_type(panel, EntityType::Item, display_state, game, sprites);
+            render_entity_type(panel, EntityType::Environment, display_state, &game.config, sprites);
+            render_entity_type(panel, EntityType::Trigger, display_state, &game.config, sprites);
+            render_entity_type(panel, EntityType::Item, display_state, &game.config, sprites);
 
             render_map_middle(panel, game, sprites);
         }
 
         {
             let _above = timer!("ABOVE");
-            render_entity_type(panel, EntityType::Energy, display_state, game, sprites);
-            render_entity_type(panel, EntityType::Enemy, display_state, game, sprites);
-            render_entity_type(panel, EntityType::Column, display_state, game, sprites);
-            render_entity_type(panel, EntityType::Player, display_state, game, sprites);
-            render_entity_type(panel, EntityType::Other, display_state, game, sprites);
+            render_entity_type(panel, EntityType::Energy, display_state, &game.config, sprites);
+            render_entity_type(panel, EntityType::Enemy, display_state, &game.config, sprites);
+            render_entity_type(panel, EntityType::Column, display_state, &game.config, sprites);
+            render_entity_type(panel, EntityType::Player, display_state, &game.config, sprites);
+            render_entity_type(panel, EntityType::Other, display_state, &game.config, sprites);
         }
 
         {
@@ -92,7 +92,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &m
 
         {
             let _extra = timer!("EXTRA");
-            render_impressions(panel, display_state, game);
+            render_impressions(panel, display_state, &game.config);
             render_effects(panel, display_state, game, sprites);
             render_overlays(panel, display_state, game, sprites);
         }
@@ -657,8 +657,8 @@ fn render_map_middle(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteShe
 }
 
 /// Render the map, with environment and walls
-fn render_map(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteSheet>) {
-    let (map_width, map_height) = game.level.map.size();
+fn render_map(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
+    let (map_width, map_height) = map.size();
 
     let sprite_key = lookup_spritekey(sprites, "tiles");
     for y in 0..map_height {
@@ -673,7 +673,7 @@ fn render_map(panel: &mut Panel, game: &mut Game, sprites: &Vec<SpriteSheet>) {
             }
 
             // Render game stuff
-            let tile = game.level.map[pos];
+            let tile = map[pos];
 
             let chr = tile.chr;
 
@@ -965,24 +965,24 @@ fn render_entity(panel: &mut Panel,
     return animation_result.sprite;
 }
 
-fn render_impressions(panel: &mut Panel, display_state: &mut DisplayState, game: &mut Game) {
+fn render_impressions(panel: &mut Panel, display_state: &mut DisplayState, config: &Config) {
     // check for entities that have left FOV and make an impression for them
     let mut index = 0;
     while index < display_state.impressions.len() {
         let impression = display_state.impressions[index];
         index += 1;
         panel.sprite_cmd(impression.sprite,
-                                 game.config.color_light_grey,
+                                 config.color_light_grey,
                                  impression.pos);
     }
 }
 
-fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut DisplayState, game: &mut Game, sprites: &Vec<SpriteSheet>) {
+fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut DisplayState, config: &Config, sprites: &Vec<SpriteSheet>) {
     if typ == EntityType::Player && display_state.state == GameState::Use && display_state.use_dir.is_some() {
         // For the player in use-mode, while holding down a direction, we
         // need special rendering. Otherwise the player is rendered as normal.
 
-        let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+        let player_id = display_state.player_id();
         let player_pos = display_state.pos[&player_id];
 
         let use_pos;
@@ -994,7 +994,7 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
         }
 
         if let Some(pos) = use_pos {
-            render_entity_ghost(panel, player_id, player_pos, &game.config, display_state, sprites);
+            render_entity_ghost(panel, player_id, player_pos, config, display_state, sprites);
             display_state.pos[&player_id] = pos;
             render_entity(panel, player_id, display_state, None, sprites);
             display_state.pos[&player_id] = player_pos;
@@ -1019,18 +1019,18 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
 fn render_overlay_use_item(panel: &mut Panel,
                            item_class: ItemClass,
                            display_state: &mut DisplayState,
-                           game: &mut Game,
+                           config: &Config,
                            sprites: &Vec<SpriteSheet>) {
-    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+    let player_id = display_state.player_id();
     let player_pos = display_state.pos[&player_id];
 
     let direction_color = Color::white();
 
-    let mut attack_highlight_color = game.config.color_red;
-    attack_highlight_color.a = game.config.grid_alpha_overlay;
+    let mut attack_highlight_color = config.color_red;
+    attack_highlight_color.a = config.grid_alpha_overlay;
 
-    let mut highlight_color = game.config.color_light_grey;
-    highlight_color.a = game.config.grid_alpha_overlay;
+    let mut highlight_color = config.color_light_grey;
+    highlight_color.a = config.grid_alpha_overlay;
 
     let sprite_key = lookup_spritekey(sprites, "tiles");
 
@@ -1137,7 +1137,7 @@ fn render_game_overlays(panel: &mut Panel,
                 render_arrow(panel, tiles_key, dir, *use_pos, direction_color);
             }
         } else if let UseAction::Item(item_class) = game.settings.use_action {
-            render_overlay_use_item(panel, item_class, display_state, game, sprites);
+            render_overlay_use_item(panel, item_class, display_state, &game.config, sprites);
         }
     }
 
@@ -1278,7 +1278,7 @@ fn render_overlays(panel: &mut Panel,
                entity_id != player_id &&
                game.level.entities.status[&entity_id].alive {
                render_attack_overlay(panel, &game.config, display_state, entity_id, sprites);
-               render_fov_overlay(panel, game, entity_id);
+               render_fov_overlay(panel, display_state, game, entity_id);
                render_movement_overlay(panel, game, display_state, entity_id, sprites);
             }
         }
@@ -1335,7 +1335,7 @@ fn render_overlays(panel: &mut Panel,
         render_sound_overlay(panel, display_state, game);
 
         // Outline tiles within FOV for clarity
-        render_fov_overlay(panel, game, player_id);
+        render_fov_overlay(panel, display_state, game, player_id);
     }
 
     // NOTE floodfill ranges:
@@ -1474,9 +1474,10 @@ fn render_attack_overlay(panel: &mut Panel,
 // NOTE(frontend) the calculations done below would require a front end to
 // know all tiles visible to all entities.
 fn render_fov_overlay(panel: &mut Panel,
+                      display_state: &DisplayState,
                       game: &mut Game,
                       entity_id: EntityId) {
-    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+    let player_id = display_state.player_id();
 
     let mut highlight_color = game.config.color_light_grey;
     highlight_color.a = game.config.grid_alpha_overlay;
