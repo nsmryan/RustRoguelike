@@ -998,7 +998,7 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
         }
 
         if let Some(pos) = use_pos {
-            render_entity_ghost(panel, player_id, player_pos, game, display_state, sprites);
+            render_entity_ghost(panel, player_id, player_pos, &game.config, display_state, sprites);
             display_state.pos[&player_id] = pos;
             render_entity(panel, player_id, display_state, None, sprites);
             display_state.pos[&player_id] = player_pos;
@@ -1038,7 +1038,7 @@ fn render_overlay_use_item(panel: &mut Panel,
 
     let sprite_key = lookup_spritekey(sprites, "tiles");
 
-    if let Some(_item_index) = game.level.entities.item_by_class(player_id, item_class) {
+    if display_state.inventory.iter().position(|(_item, class)| *class == item_class).is_some() {
         if let Some(use_dir) = display_state.use_dir {
             if let Some(_use_pos) = display_state.use_pos {
                 let arrow_pos = use_dir.offset_pos(player_pos, 1);
@@ -1087,7 +1087,7 @@ fn render_game_overlays(panel: &mut Panel,
                         display_state: &mut DisplayState,
                         game: &mut Game,
                         sprites: &Vec<SpriteSheet>) {
-    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+    let player_id = display_state.player_id();
     let player_pos = display_state.pos[&player_id];
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
@@ -1173,7 +1173,7 @@ fn render_game_overlays(panel: &mut Panel,
 
             if pos.x >= 0 && pos.y >= 0 && entity_id != player_id {
                render_attack_overlay(panel,
-                                     game,
+                                     &game.config,
                                      display_state,
                                      entity_id,
                                      sprites);
@@ -1188,7 +1188,7 @@ fn render_overlays(panel: &mut Panel,
                    display_state: &mut DisplayState,
                    game: &mut Game,
                    sprites: &Vec<SpriteSheet>) {
-    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+    let player_id = display_state.player_id();
     let player_pos = display_state.pos[&player_id];
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
@@ -1248,7 +1248,7 @@ fn render_overlays(panel: &mut Panel,
                     }
 
                     if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {
-                        render_entity_ghost(panel, player_id, player_ghost_pos, game, display_state, sprites);
+                        render_entity_ghost(panel, player_id, player_ghost_pos, &game.config, display_state, sprites);
                     }
                 }
             }
@@ -1281,7 +1281,7 @@ fn render_overlays(panel: &mut Panel,
             if display_state.pos_is_in_fov(pos) == FovResult::Inside &&
                entity_id != player_id &&
                game.level.entities.status[&entity_id].alive {
-               render_attack_overlay(panel, game, display_state, entity_id, sprites);
+               render_attack_overlay(panel, &game.config, display_state, entity_id, sprites);
                render_fov_overlay(panel, game, entity_id);
                render_movement_overlay(panel, game, display_state, entity_id, sprites);
             }
@@ -1331,7 +1331,7 @@ fn render_overlays(panel: &mut Panel,
                 let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
                 let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
 
-                render_entity_ghost(panel, player_id, shadow_cursor_pos, game, display_state, sprites);
+                render_entity_ghost(panel, player_id, shadow_cursor_pos, &game.config, display_state, sprites);
             }
         }
 
@@ -1460,12 +1460,12 @@ fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> 
 }
 
 fn render_attack_overlay(panel: &mut Panel,
-                         game: &mut Game,
+                         config: &Config,
                          display_state: &mut DisplayState,
                          entity_id: EntityId,
                          sprites: &Vec<SpriteSheet>) {
-    let mut attack_highlight_color = game.config.color_red;
-    attack_highlight_color.a = game.config.highlight_alpha_attack;
+    let mut attack_highlight_color = config.color_red;
+    attack_highlight_color.a = config.highlight_alpha_attack;
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
@@ -1523,7 +1523,7 @@ fn render_movement_overlay(panel: &mut Panel,
 fn render_entity_ghost(panel: &mut Panel,
                        entity_id: EntityId,
                        render_pos: Pos,
-                       game: &mut Game,
+                       config: &Config,
                        display_state: &mut DisplayState,
                        sprites: &Vec<SpriteSheet>) {
     let entity_pos = display_state.pos[&entity_id];
@@ -1534,7 +1534,7 @@ fn render_entity_ghost(panel: &mut Panel,
     // step the animation forward when rendering a ghost.
     let dt = display_state.dt;
     display_state.dt = 0.0;
-    let ghost_color = Color::new(255, 255, 255, game.config.ghost_alpha);
+    let ghost_color = Color::new(255, 255, 255, config.ghost_alpha);
     render_entity(panel, entity_id, display_state, Some(ghost_color), sprites);
     display_state.dt = dt;
 
