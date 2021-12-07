@@ -53,48 +53,46 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites
 
 
 fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &Game, sprites: &Vec<SpriteSheet>) {
-    if game.settings.render_map {
-        let panel = &mut panels.get_mut(&PanelName::Map).unwrap();
+    let panel = &mut panels.get_mut(&PanelName::Map).unwrap();
 
-        {
-            let _map = timer!("MAP");
-            render_map(panel, &game.level.map, sprites);
-        }
+    {
+        let _map = timer!("MAP");
+        render_map(panel, &game.level.map, sprites);
+    }
 
-        {
-            let _mid = timer!("MID");
-            render_entity_type(panel, EntityType::Environment, display_state, &game.config, sprites);
-            render_entity_type(panel, EntityType::Trigger, display_state, &game.config, sprites);
-            render_entity_type(panel, EntityType::Item, display_state, &game.config, sprites);
+    {
+        let _mid = timer!("MID");
+        render_entity_type(panel, EntityType::Environment, display_state, &game.config, sprites);
+        render_entity_type(panel, EntityType::Trigger, display_state, &game.config, sprites);
+        render_entity_type(panel, EntityType::Item, display_state, &game.config, sprites);
 
-            render_map_middle(panel, &game.level.map, &game.config, sprites);
-        }
+        render_map_middle(panel, &game.level.map, &game.config, sprites);
+    }
 
-        {
-            let _above = timer!("ABOVE");
-            render_entity_type(panel, EntityType::Energy, display_state, &game.config, sprites);
-            render_entity_type(panel, EntityType::Enemy, display_state, &game.config, sprites);
-            render_entity_type(panel, EntityType::Column, display_state, &game.config, sprites);
-            render_entity_type(panel, EntityType::Player, display_state, &game.config, sprites);
-            render_entity_type(panel, EntityType::Other, display_state, &game.config, sprites);
-        }
+    {
+        let _above = timer!("ABOVE");
+        render_entity_type(panel, EntityType::Energy, display_state, &game.config, sprites);
+        render_entity_type(panel, EntityType::Enemy, display_state, &game.config, sprites);
+        render_entity_type(panel, EntityType::Column, display_state, &game.config, sprites);
+        render_entity_type(panel, EntityType::Player, display_state, &game.config, sprites);
+        render_entity_type(panel, EntityType::Other, display_state, &game.config, sprites);
+    }
 
-        {
-            let _overlays_game = timer!("OVERLAYSGAME");
-            render_game_overlays(panel, display_state, &game.level, &game.settings, &game.config, sprites);
-        }
+    {
+        let _overlays_game = timer!("OVERLAYSGAME");
+        render_game_overlays(panel, display_state, &game.level, &game.settings, &game.config, sprites);
+    }
 
-        {
-            let _mapabove = timer!("MAPABOVE");
-            render_map_above(panel, display_state, &game.level.map, &game.config, sprites);
-        }
+    {
+        let _mapabove = timer!("MAPABOVE");
+        render_map_above(panel, display_state, &game.level.map, &game.config, sprites);
+    }
 
-        {
-            let _extra = timer!("EXTRA");
-            render_impressions(panel, display_state, &game.config);
-            render_effects(panel, display_state, &game.level, &game.config, sprites);
-            render_overlays(panel, display_state, game, sprites);
-        }
+    {
+        let _extra = timer!("EXTRA");
+        render_impressions(panel, display_state, &game.config);
+        render_effects(panel, display_state, &game.level, &game.config, sprites);
+        render_overlays(panel, display_state, game, sprites);
     }
 
     /* Draw Player Info */
