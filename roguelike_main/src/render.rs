@@ -1177,7 +1177,7 @@ fn render_game_overlays(panel: &mut Panel,
         }
     }
 
-    render_overlay_alertness(panel, display_state, tiles_key, game);
+    render_overlay_alertness(panel, display_state, tiles_key, &game.level.entities, &game.config);
 }
 
 fn render_overlays(panel: &mut Panel,
@@ -1363,8 +1363,12 @@ fn render_overlays(panel: &mut Panel,
     }
 }
 
-fn render_overlay_alertness(panel: &mut Panel, display_state: &mut DisplayState, sprite_key: SpriteKey, game: &mut Game) {
-    let alertness_color = game.config.color_pink;
+fn render_overlay_alertness(panel: &mut Panel,
+                            display_state: &mut DisplayState,
+                            sprite_key: SpriteKey,
+                            entities: &Entities,
+                            config: &Config) {
+    let alertness_color = config.color_pink;
     let scale = 0.5;
     for entity_id in display_state.ids.iter() {
         if display_state.entity_is_in_fov(*entity_id) != FovResult::Inside {
@@ -1374,7 +1378,7 @@ fn render_overlay_alertness(panel: &mut Panel, display_state: &mut DisplayState,
         let pos = display_state.pos[entity_id];
 
         let mut status_drawn: bool = false;
-        if let Some(status) = game.level.entities.status.get(entity_id) {
+        if let Some(status) = entities.status.get(entity_id) {
             if status.frozen > 0 {
                 status_drawn = true;
                 let sprite = Sprite::new(ASTERISK as u32, sprite_key);
@@ -1386,7 +1390,7 @@ fn render_overlay_alertness(panel: &mut Panel, display_state: &mut DisplayState,
         }
 
         if !status_drawn {
-            if let Some(behavior) = game.level.entities.behavior.get(entity_id) {
+            if let Some(behavior) = entities.behavior.get(entity_id) {
                 match behavior {
                     Behavior::Idle => {
                     }
