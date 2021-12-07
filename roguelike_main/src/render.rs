@@ -92,7 +92,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &m
         {
             let _extra = timer!("EXTRA");
             render_impressions(panel, display_state, &game.config);
-            render_effects(panel, display_state, game, sprites);
+            render_effects(panel, display_state, &game.level, &game.config, sprites);
             render_overlays(panel, display_state, game, sprites);
         }
     }
@@ -743,9 +743,10 @@ fn render_intertile_walls_below(panel: &mut Panel,
 /// resulting vector of effects is then saved as the new effects vector.
 fn render_effects(panel: &mut Panel,
                   display_state: &mut DisplayState,
-                  game: &mut Game,
+                  level: &Level,
+                  config: &Config,
                   sprites: &Vec<SpriteSheet>) {
-    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     let mut index = 0;
     while index < display_state.effects.len() {
@@ -755,10 +756,10 @@ fn render_effects(panel: &mut Panel,
         let mut effect = display_state.effects[index].clone();
         match &mut effect {
             Effect::Particles(rate, particles) => {
-                if particles.len() < game.config.max_particles && rng_trial(&mut display_state.rng, *rate) {
+                if particles.len() < config.max_particles && rng_trial(&mut display_state.rng, *rate) {
                     let size = (panel.num_pixels.0 as i32, panel.num_pixels.1 as i32);
                     let pos = rng_pos(&mut display_state.rng, size);
-                    particles.push(Particle::new(game.config.particle_duration, pos));
+                    particles.push(Particle::new(config.particle_duration, pos));
                 }
 
                 let sprite_key = lookup_spritekey(sprites, "particle_speck");
@@ -770,19 +771,19 @@ fn render_effects(panel: &mut Panel,
                     particles[index].duration -= display_state.dt;
 
                     // if the particle is finished, or has left the map, remove it.
-                    if particles[index].duration < 0.0 || !game.level.map.is_within_bounds(cell) {
+                    if particles[index].duration < 0.0 || !level.map.is_within_bounds(cell) {
                         particles.swap_remove(index);
                     } else {
                         // offset the particle according to how long it has been running.
-                        let x_offset = (dims.0 as f32 * (game.config.particle_duration - particles[index].duration)) as i32;
+                        let x_offset = (dims.0 as f32 * (config.particle_duration - particles[index].duration)) as i32;
                         let draw_pos = move_x(particles[index].pos, x_offset);
                         let draw_cell = panel.cell_from_pixel(draw_pos);
 
-                        if game.level.map.is_within_bounds(draw_cell) && 
-                           game.level.pos_in_fov(player_id, draw_cell, &game.config) {
+                        if level.map.is_within_bounds(draw_cell) && 
+                           level.pos_in_fov(player_id, draw_cell, config) {
                             let mut color = Color::white();
                             // fade the particle out according to how long it has been running.
-                            color.a = (255.0 * (particles[index].duration / game.config.particle_duration)) as u8;
+                            color.a = (255.0 * (particles[index].duration / config.particle_duration)) as u8;
                             let sprite = Sprite::new(0, sprite_key);
                             panel.sprite_at_pixel_cmd(sprite, color, draw_pos);
                         }
@@ -792,33 +793,33 @@ fn render_effects(panel: &mut Panel,
             }
 
             Effect::Sound(sound_aoe, sound_dt) => {
-                let mut highlight_color = game.config.color_warm_grey;
+                let mut highlight_color = config.color_warm_grey;
 
                 let radius = sound_aoe.positions.len();
-                let sound_interval = game.config.sound_timeout / radius as f32;
+                let sound_interval = config.sound_timeout / radius as f32;
                 let cur_dist = *sound_dt / sound_interval;
                 for (dist, dist_positions) in sound_aoe.positions.iter().enumerate() {
                     highlight_color.a =
-                        game.config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
+                        config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
 
                     // NOTE(perf) with the new texture system, consider rendering a series of sound
                     //            tiles and simply pasting them, perhaps saving time from not
                     //            needing to blend.
                     for pos in dist_positions.iter() {
-                        if !game.level.map[*pos].block_move &&
-                           game.level.pos_in_fov(player_id, *pos, &game.config) {
+                        if !level.map[*pos].block_move &&
+                           level.pos_in_fov(player_id, *pos, config) {
                            panel.highlight_cmd(highlight_color, *pos);
                            panel.outline_cmd(highlight_color, *pos);
                         }
                     }
                 }
 
-                if *sound_dt >= game.config.sound_timeout {
+                if *sound_dt >= config.sound_timeout {
                     effect_complete = true;
                 } else {
-                    *sound_dt += 1.0 / game.config.frame_rate as f32;
-                    if *sound_dt > game.config.sound_timeout {
-                        *sound_dt = game.config.sound_timeout;
+                    *sound_dt += 1.0 / config.frame_rate as f32;
+                    if *sound_dt > config.sound_timeout {
+                        *sound_dt = config.sound_timeout;
                     }
                 }
             }
