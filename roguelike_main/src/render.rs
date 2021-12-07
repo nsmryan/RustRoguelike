@@ -19,7 +19,7 @@ use crate::drawcmd::*;
 use crate::animation::{Sprite, SpriteKey, Effect, Animation, AnimationResult, Particle};
 
 
-pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites: &Vec<SpriteSheet>, game: &mut Game, dt: f32) -> Result<(), String> {
+pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites: &Vec<SpriteSheet>, game: &Game, dt: f32) -> Result<(), String> {
     display_state.show_debug("ids", format!("{}", display_state.ids.len()));
 
     display_state.dt = dt;
@@ -52,7 +52,7 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites
 }
 
 
-fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &mut Game, sprites: &Vec<SpriteSheet>) {
+fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &Game, sprites: &Vec<SpriteSheet>) {
     if game.settings.render_map {
         let panel = &mut panels.get_mut(&PanelName::Map).unwrap();
 
@@ -81,7 +81,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &m
 
         {
             let _overlays_game = timer!("OVERLAYSGAME");
-            render_game_overlays(panel, display_state, game, sprites);
+            render_game_overlays(panel, display_state, &game.level, &game.settings, &game.config, sprites);
         }
 
         {
@@ -1082,28 +1082,30 @@ fn render_sound_overlay(panel: &mut Panel,
 
 fn render_game_overlays(panel: &mut Panel,
                         display_state: &mut DisplayState,
-                        game: &mut Game,
+                        level: &Level,
+                        settings: &GameSettings,
+                        config: &Config,
                         sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
     let player_pos = display_state.pos[&player_id];
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
-    if game.config.use_cursor {
+    if config.use_cursor {
         if let Some(cursor_pos) = display_state.cursor_pos {
             // render trigger plate wall highlight if selected
             for entity in display_state.entities_at_cursor.iter() {
                 if display_state.name[&entity] == EntityName::GateTrigger {
-                    let gate_pos = game.level.entities.gate_pos[&entity];
-                    let mut highlight_color: Color = game.config.color_red;
+                    let gate_pos = level.entities.gate_pos[&entity];
+                    let mut highlight_color: Color = config.color_red;
                     highlight_color.a = 100;
                     panel.highlight_cmd(highlight_color, gate_pos);
                 } else if display_state.name[&entity] == EntityName::FreezeTrap {
                     let trap_pos = display_state.pos[&entity];
                     let freeze_aoe =
-                        aoe_fill(&game.level.map, AoeEffect::Freeze, trap_pos, game.config.freeze_trap_radius, &game.config);
+                        aoe_fill(&level.map, AoeEffect::Freeze, trap_pos, config.freeze_trap_radius, config);
                     for pos in freeze_aoe.positions() {
-                        let mut highlight_color: Color = game.config.color_blueish_grey;
+                        let mut highlight_color: Color = config.color_blueish_grey;
                         highlight_color.a = 100;
                         panel.highlight_cmd(highlight_color, pos);
                     }
@@ -1114,7 +1116,7 @@ fn render_game_overlays(panel: &mut Panel,
             // render some extra player information if cursor is over player's tile
             if cursor_pos == player_pos {
                 // Draw sound tiles overlay
-                render_sound_overlay(panel, display_state, &game.config);
+                render_sound_overlay(panel, display_state, config);
             }
         }
     }
@@ -1122,28 +1124,28 @@ fn render_game_overlays(panel: &mut Panel,
     // Draw use-mode overlay
     if display_state.state == GameState::Use {
 
-        let mut highlight_color = game.config.color_light_grey;
-        highlight_color.a = game.config.grid_alpha_overlay;
+        let mut highlight_color = config.color_light_grey;
+        highlight_color.a = config.grid_alpha_overlay;
 
         let direction_color = Color::white();
 
-        let mut attack_highlight_color = game.config.color_red;
-        attack_highlight_color.a = game.config.grid_alpha_overlay;
+        let mut attack_highlight_color = config.color_red;
+        attack_highlight_color.a = config.grid_alpha_overlay;
 
-        if UseAction::Interact == game.settings.use_action {
+        if UseAction::Interact == settings.use_action {
             for use_pos in display_state.use_pos.iter() {
                 panel.highlight_cmd(highlight_color, *use_pos);
 
                 let dir = Direction::from_positions(player_pos, *use_pos).unwrap();
                 render_arrow(panel, tiles_key, dir, *use_pos, direction_color);
             }
-        } else if let UseAction::Item(item_class) = game.settings.use_action {
-            render_overlay_use_item(panel, item_class, display_state, &game.config, sprites);
+        } else if let UseAction::Item(item_class) = settings.use_action {
+            render_overlay_use_item(panel, item_class, display_state, &config, sprites);
         }
     }
 
     // draw direction overlays
-    if game.config.draw_directional_arrow {
+    if config.draw_directional_arrow {
         let direction_color = Color::white();
         let mut index = 0;
         while index < display_state.ids.len() {
@@ -1163,14 +1165,14 @@ fn render_game_overlays(panel: &mut Panel,
     }
 
     // render attack overlay highlighting squares that an entity can attack
-    if game.settings.overlay {
+    if settings.overlay {
         let keys = display_state.ids.iter().map(|id| *id).collect::<Vec<EntityId>>();
         for entity_id in keys {
             let pos = display_state.pos[&entity_id];
 
             if pos.x >= 0 && pos.y >= 0 && entity_id != player_id {
                render_attack_overlay(panel,
-                                     &game.config,
+                                     config,
                                      display_state,
                                      entity_id,
                                      sprites);
@@ -1178,12 +1180,12 @@ fn render_game_overlays(panel: &mut Panel,
         }
     }
 
-    render_overlay_alertness(panel, display_state, tiles_key, &game.level.entities, &game.config);
+    render_overlay_alertness(panel, display_state, tiles_key, &level.entities, config);
 }
 
 fn render_overlays(panel: &mut Panel,
                    display_state: &mut DisplayState,
-                   game: &mut Game,
+                   game: &Game,
                    sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
     let player_pos = display_state.pos[&player_id];
