@@ -1212,11 +1212,10 @@ fn render_overlay_direction(panel: &mut Panel,
 
 fn render_overlay_cursor(panel: &mut Panel, display_state: &mut DisplayState, game: &Game, sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
-    let player_pos = display_state.pos[&player_id];
-
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
     // render cursor itself
+    // TODO cursor_pos may be removed here once player_ghost state is used?
     if let Some(cursor_pos) = display_state.cursor_pos {
         let time_since_toggle = display_state.time - display_state.time_of_cursor_toggle;
         let time_since_toggle = clampf(time_since_toggle, 0.0, game.config.cursor_fade_seconds);
@@ -1229,6 +1228,10 @@ fn render_overlay_cursor(panel: &mut Panel, display_state: &mut DisplayState, ga
         panel.sprite_cmd(sprite, color, cursor_pos);
 
         // render player ghost
+        if let Some(player_ghost_pos) = display_state.player_ghost {
+            render_entity_ghost(panel, player_id, player_ghost_pos, &game.config, display_state, sprites);
+        }
+        /*
         if cursor_pos != player_pos && game.input.target == None {
 
             let maybe_next_pos = astar_next_pos(&game.level.map, player_pos, cursor_pos, None, None);
@@ -1246,6 +1249,7 @@ fn render_overlay_cursor(panel: &mut Panel, display_state: &mut DisplayState, ga
                 }
             }
         }
+        */
     }
 }
 

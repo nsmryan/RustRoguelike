@@ -124,6 +124,7 @@ pub enum Msg {
     AddSkill(Skill),
     GatePos(EntityId, Pos),
     Frozen(EntityId, bool),
+    PlayerGhost(Pos),
 }
 
 impl fmt::Display for Msg {
@@ -251,6 +252,7 @@ impl fmt::Display for Msg {
             Msg::AddSkill(skill) => write!(f, "add_skill {}", skill),
             Msg::GatePos(entity_id, pos) => write!(f, "gate_pos {} {} {}", entity_id, pos.x, pos.y),
             Msg::Frozen(entity_id, state) => write!(f, "frozen {} {}", entity_id, state),
+            Msg::PlayerGhost(pos) => write!(f, "player_ghost {} {}", pos.x, pos.y),
         }
     }
 }

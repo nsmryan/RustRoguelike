@@ -4,6 +4,7 @@ use logging_timer::timer;
 use roguelike_utils::rng::Rand32;
 use roguelike_utils::comp::*;
 
+use roguelike_core::utils::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::map::*;
@@ -283,6 +284,26 @@ impl Game {
             let item = self.level.entities.item[&item_id];
             let item_class = item.class();
             self.msg_log.log(Msg::InventoryItem(item, item_class));
+        }
+
+        // indicate player ghost position based on cursor, if in cursor mode
+        if let Some(cursor_pos) = self.settings.cursor {
+            if cursor_pos != player_pos && self.input.target == None {
+                let maybe_next_pos = astar_next_pos(&self.level.map, player_pos, cursor_pos, None, None);
+                if let Some(next_pos) = maybe_next_pos {
+                    let dxy = sub_pos(next_pos, player_pos);
+                    let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+
+                    let mut reach = reach_by_mode(MoveMode::Sneak);
+                    if !self.input.cursor && self.input.shift {
+                        reach = reach_by_mode(MoveMode::Run);
+                    }
+
+                    if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {
+                        self.msg_log.log(Msg::PlayerGhost(player_ghost_pos));
+                    }
+                }
+            }
         }
 
         if self.level.entities.took_turn[&player_id] && log_dir == MsgLogDir::Front {

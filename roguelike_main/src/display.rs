@@ -266,6 +266,7 @@ impl Display {
         self.state.fov.clear();
         self.state.entities_in_fov.clear();
         self.state.inventory.clear();
+        self.state.player_ghost = None;
     }
 
     pub fn process_message(&mut self, msg: Msg, map: &Map, config: &Config) {
@@ -645,6 +646,10 @@ impl Display {
                 self.state.frozen.insert(entity_id, state);
             }
 
+            Msg::PlayerGhost(player_ghost) => {
+                self.state.player_ghost = Some(player_ghost);
+            }
+
             _ => {
             }
         }
@@ -726,6 +731,7 @@ pub struct DisplayState {
     pub skills: Vec<Skill>,
     pub gate_pos: Comp<Pos>,
     pub frozen: Comp<bool>,
+    pub player_ghost: Option<Pos>,
 
     // game state
     pub state: GameState,
@@ -783,6 +789,7 @@ impl DisplayState {
             skills: Vec::new(),
             gate_pos: Comp::new(),
             frozen: Comp::new(),
+            player_ghost: None,
             state: GameState::Playing,
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),
