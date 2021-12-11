@@ -197,49 +197,45 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::AddClass(class) => {
                 game.level.entities.skills[&player_id].clear();
+                game.level.entities.class[&player_id] = class;
 
                 match class {
                     EntityClass::General => {
-                        game.level.entities.class[&player_id] = class;
-                        game.level.entities.add_skill(player_id, Skill::Blink);
-                        game.level.entities.add_skill(player_id, Skill::Sprint);
+                        add_skill(game, Skill::Blink);
+                        add_skill(game, Skill::Sprint);
                     }
 
                     EntityClass::Monolith => {
-                        game.level.entities.class[&player_id] = class;
-                        game.level.entities.add_skill(player_id, Skill::PassWall);
-                        game.level.entities.add_skill(player_id, Skill::Rubble);
-                        game.level.entities.add_skill(player_id, Skill::StoneThrow);
-                        game.level.entities.add_skill(player_id, Skill::Reform);
-                        game.level.entities.add_skill(player_id, Skill::StoneSkin);
+                        add_skill(game, Skill::PassWall);
+                        add_skill(game, Skill::Rubble);
+                        add_skill(game, Skill::StoneThrow);
+                        add_skill(game, Skill::Reform);
+                        add_skill(game, Skill::StoneSkin);
                     }
 
                     EntityClass::Grass => {
-                        game.level.entities.class[&player_id] = class;
-                        game.level.entities.add_skill(player_id, Skill::GrassWall);
-                        game.level.entities.add_skill(player_id, Skill::GrassThrow);
-                        game.level.entities.add_skill(player_id, Skill::GrassBlade);
-                        game.level.entities.add_skill(player_id, Skill::GrassShoes);
-                        game.level.entities.add_skill(player_id, Skill::GrassCover);
+                        add_skill(game, Skill::GrassWall);
+                        add_skill(game, Skill::GrassThrow);
+                        add_skill(game, Skill::GrassBlade);
+                        add_skill(game, Skill::GrassShoes);
+                        add_skill(game, Skill::GrassCover);
                     }
 
                     EntityClass::Clockwork => {
-                        game.level.entities.class[&player_id] = class;
-                        game.level.entities.add_skill(player_id, Skill::Push);
+                        add_skill(game, Skill::Push);
                     }
 
                     EntityClass::Hierophant => {
-                        game.level.entities.class[&player_id] = class;
-                        game.level.entities.add_skill(player_id, Skill::Illuminate);
-                        game.level.entities.add_skill(player_id, Skill::Heal);
-                        game.level.entities.add_skill(player_id, Skill::FarSight);
-                        game.level.entities.add_skill(player_id, Skill::Ping);
+                        add_skill(game, Skill::Illuminate);
+                        add_skill(game, Skill::Heal);
+                        add_skill(game, Skill::FarSight);
+                        add_skill(game, Skill::Ping);
                     }
 
                     EntityClass::Wind => {
-                        game.level.entities.add_skill(player_id, Skill::PassThrough);
-                        game.level.entities.add_skill(player_id, Skill::WhirlWind);
-                        game.level.entities.add_skill(player_id, Skill::Swift);
+                        add_skill(game, Skill::PassThrough);
+                        add_skill(game, Skill::WhirlWind);
+                        add_skill(game, Skill::Swift);
                     }
                 }
             }
@@ -1621,6 +1617,12 @@ fn trample_grass_walls(level: &mut Level, start_pos: Pos, end_pos: Pos) {
             trample_grass_move(level, move_y(start_pos, -1), end_pos);
         }
     }
+}
+
+fn add_skill(game: &mut Game, skill: Skill) {
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+    game.level.entities.add_skill(player_id, skill);
+    game.msg_log.log(Msg::AddSkill(skill));
 }
 
 fn trample_grass_move(level: &mut Level, start_pos: Pos, end_pos: Pos) {

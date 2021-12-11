@@ -627,6 +627,14 @@ impl Display {
                 self.state.inventory.push((item, item_class));
             }
 
+            Msg::AddClass(_class) => {
+                self.state.skills.clear();
+            }
+
+            Msg::AddSkill(skill) => {
+                self.state.skills.push(skill);
+            }
+
             _ => {
             }
         }
@@ -705,6 +713,7 @@ pub struct DisplayState {
     pub max_hp: Comp<i32>,
     pub behavior: Comp<Behavior>,
     pub inventory: Vec<(Item, ItemClass)>,
+    pub skills: Vec<Skill>,
 
     // game state
     pub state: GameState,
@@ -759,6 +768,7 @@ impl DisplayState {
             max_hp: Comp::new(),
             behavior: Comp::new(),
             inventory: Vec::new(),
+            skills: Vec::new(),
             state: GameState::Playing,
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),

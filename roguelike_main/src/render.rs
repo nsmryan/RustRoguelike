@@ -41,7 +41,7 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites
     if display_state.state == GameState::Inventory {
         render_inventory(menu_panel, display_state);
     } else if display_state.state == GameState::SkillMenu {
-        render_skill_menu(menu_panel, display_state, &game.level.entities);
+        render_skill_menu(menu_panel, display_state);
     } else if display_state.state == GameState::ClassMenu {
         render_class_menu(menu_panel);
     } else if display_state.state == GameState::ConfirmQuit {
@@ -341,15 +341,13 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState, level: &Leve
     }
 }
 
-fn render_skill_menu(panel: &mut Panel, display_state: &DisplayState, entities: &Entities) {
-    let player_id = display_state.player_id();
-
+fn render_skill_menu(panel: &mut Panel, display_state: &DisplayState) {
     // Render header
     render_placard(panel, "Skills");
 
     let mut list = Vec::new();
 
-    for (index, skill) in entities.skills[&player_id].iter().enumerate() {
+    for (index, skill) in display_state.skills.iter().enumerate() {
         list.push(format!("{} {:?}", index, skill));
     }
 
@@ -800,9 +798,6 @@ fn render_effects(panel: &mut Panel,
                     highlight_color.a =
                         config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
 
-                    // NOTE(perf) with the new texture system, consider rendering a series of sound
-                    //            tiles and simply pasting them, perhaps saving time from not
-                    //            needing to blend.
                     for pos in dist_positions.iter() {
                         if !level.map[*pos].block_move &&
                            level.pos_in_fov(player_id, *pos, config) {

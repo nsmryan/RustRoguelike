@@ -121,6 +121,7 @@ pub enum Msg {
     GameState(GameState),
     CursorMove(Pos),
     InventoryItem(Item, ItemClass),
+    AddSkill(Skill),
 }
 
 impl fmt::Display for Msg {
@@ -245,6 +246,7 @@ impl fmt::Display for Msg {
             Msg::GameState(state) => write!(f, "game_state {}", state),
             Msg::CursorMove(pos) => write!(f, "cursor_move {} {}", pos.x, pos.y),
             Msg::InventoryItem(item, item_class) => write!(f, "inventory_item {} {}", item, item_class),
+            Msg::AddSkill(skill) => write!(f, "add_skill {}", skill),
         }
     }
 }

@@ -682,6 +682,35 @@ pub enum Skill {
     Swift,
 }
 
+impl fmt::Display for Skill {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Skill::GrassWall => write!(f, "grass_wall"),
+            Skill::GrassThrow => write!(f, "grass_throw"),
+            Skill::GrassBlade => write!(f, "grass_blade"),
+            Skill::GrassShoes => write!(f, "grass_shoes"),
+            Skill::GrassCover => write!(f, "grass_cover"),
+            Skill::Blink => write!(f, "blink"),
+            Skill::PassWall => write!(f, "pass_wall"),
+            Skill::Rubble => write!(f, "rubble"),
+            Skill::StoneThrow => write!(f, "stone_throw"),
+            Skill::Reform => write!(f, "reform"),
+            Skill::Swap => write!(f, "swap"),
+            Skill::Push => write!(f, "push"),
+            Skill::Illuminate => write!(f, "illuminate"),
+            Skill::Heal => write!(f, "heal"),
+            Skill::FarSight => write!(f, "farsight"),
+            Skill::Sprint => write!(f, "sprint"),
+            Skill::Ping => write!(f, "ping"),
+            Skill::StoneSkin => write!(f, "stone_skin"),
+            Skill::PassThrough => write!(f, "pass_through"),
+            Skill::WhirlWind => write!(f, "whirlwind"),
+            Skill::Swift => write!(f, "swift"),
+        }
+    }
+}
+
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Default)]
 pub struct Color {
     pub r: u8,
