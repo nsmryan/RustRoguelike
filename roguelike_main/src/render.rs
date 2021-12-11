@@ -1210,46 +1210,26 @@ fn render_overlay_direction(panel: &mut Panel,
     }
 }
 
-fn render_overlay_cursor(panel: &mut Panel, display_state: &mut DisplayState, game: &Game, sprites: &Vec<SpriteSheet>) {
+fn render_overlay_cursor(panel: &mut Panel, display_state: &mut DisplayState, config: &Config, sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
     // render cursor itself
-    // TODO cursor_pos may be removed here once player_ghost state is used?
     if let Some(cursor_pos) = display_state.cursor_pos {
         let time_since_toggle = display_state.time - display_state.time_of_cursor_toggle;
-        let time_since_toggle = clampf(time_since_toggle, 0.0, game.config.cursor_fade_seconds);
+        let time_since_toggle = clampf(time_since_toggle, 0.0, config.cursor_fade_seconds);
 
-        let mut color = game.config.color_mint_green;
-        let percent = time_since_toggle / game.config.cursor_fade_seconds;
-        color.a = (game.config.cursor_alpha as f32 * percent) as u8;
+        let mut color = config.color_mint_green;
+        let percent = time_since_toggle / config.cursor_fade_seconds;
+        color.a = (config.cursor_alpha as f32 * percent) as u8;
 
         let sprite = Sprite::new(ENTITY_CURSOR as u32, tiles_key);
         panel.sprite_cmd(sprite, color, cursor_pos);
 
         // render player ghost
         if let Some(player_ghost_pos) = display_state.player_ghost {
-            render_entity_ghost(panel, player_id, player_ghost_pos, &game.config, display_state, sprites);
+            render_entity_ghost(panel, player_id, player_ghost_pos, &config, display_state, sprites);
         }
-        /*
-        if cursor_pos != player_pos && game.input.target == None {
-
-            let maybe_next_pos = astar_next_pos(&game.level.map, player_pos, cursor_pos, None, None);
-            if let Some(next_pos) = maybe_next_pos {
-                let dxy = sub_pos(next_pos, player_pos);
-                let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-
-                let mut reach = reach_by_mode(MoveMode::Sneak);
-                if !game.input.cursor && game.input.shift {
-                    reach = reach_by_mode(MoveMode::Run);
-                }
-
-                if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {
-                    render_entity_ghost(panel, player_id, player_ghost_pos, &game.config, display_state, sprites);
-                }
-            }
-        }
-        */
     }
 }
 
@@ -1329,7 +1309,7 @@ fn render_overlays(panel: &mut Panel,
 
     // render cursor if enabled
     if game.config.use_cursor {
-        render_overlay_cursor(panel, display_state, game, sprites);
+        render_overlay_cursor(panel, display_state, &game.config, sprites);
     }
 
     // render FOV if enabled
