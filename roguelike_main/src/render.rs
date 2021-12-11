@@ -800,7 +800,7 @@ fn render_effects(panel: &mut Panel,
 
                     for pos in dist_positions.iter() {
                         if !level.map[*pos].block_move &&
-                           level.pos_in_fov(player_id, *pos, config) {
+                           display_state.pos_is_in_fov(*pos) == FovResult::Inside {
                            panel.highlight_cmd(highlight_color, *pos);
                            panel.outline_cmd(highlight_color, *pos);
                         }
@@ -1487,7 +1487,7 @@ fn render_fov_overlay(panel: &mut Panel,
             let map_pos = Pos::new(x, y);
 
             let entity_fov = display_state.entity_fov[&entity_id].iter().position(|p| *p == map_pos).is_some();
-            let player_fov = display_state.fov[&map_pos] == FovResult::Inside;
+            let player_fov = display_state.pos_is_in_fov(map_pos) == FovResult::Inside;
                           
             if player_fov && entity_fov {
                 panel.outline_cmd(highlight_color, map_pos);
