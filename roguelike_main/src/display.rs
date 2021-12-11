@@ -746,6 +746,7 @@ pub struct DisplayState {
     pub sound_tiles: Vec<Pos>,
 
     // turn data from messages
+    // Player FoV information. Missing tiles are Fov::Outside.
     pub fov: HashMap<Pos, FovResult>,
     pub entities_in_fov: HashMap<EntityId, FovResult>,
     pub use_pos: Option<Pos>,

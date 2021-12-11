@@ -80,7 +80,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &G
 
     {
         let _overlays_game = timer!("OVERLAYSGAME");
-        render_game_overlays(panel, display_state, &game.level, &game.settings, &game.config, sprites);
+        render_game_overlays(panel, display_state, &game.level.map, &game.settings, &game.config, sprites);
     }
 
     {
@@ -742,7 +742,7 @@ fn render_effects(panel: &mut Panel,
                   level: &Level,
                   config: &Config,
                   sprites: &Vec<SpriteSheet>) {
-    let player_id = level.find_by_name(EntityName::Player).unwrap();
+    let player_id = display_state.player_id();
 
     let mut index = 0;
     while index < display_state.effects.len() {
@@ -1075,7 +1075,7 @@ fn render_sound_overlay(panel: &mut Panel,
 
 fn render_game_overlays(panel: &mut Panel,
                         display_state: &mut DisplayState,
-                        level: &Level,
+                        map: &Map,
                         settings: &GameSettings,
                         config: &Config,
                         sprites: &Vec<SpriteSheet>) {
@@ -1097,7 +1097,7 @@ fn render_game_overlays(panel: &mut Panel,
                 } else if display_state.name[&entity] == EntityName::FreezeTrap {
                     let trap_pos = display_state.pos[&entity];
                     let freeze_aoe =
-                        aoe_fill(&level.map, AoeEffect::Freeze, trap_pos, config.freeze_trap_radius, config);
+                        aoe_fill(map, AoeEffect::Freeze, trap_pos, config.freeze_trap_radius, config);
                     for pos in freeze_aoe.positions() {
                         let mut highlight_color: Color = config.color_blueish_grey;
                         highlight_color.a = 100;
@@ -1254,7 +1254,7 @@ fn render_overlay_fov(panel: &mut Panel,
 
 fn render_overlay_attack(panel: &mut Panel,
                          display_state: &mut DisplayState,
-                         level: &Level,
+                         map: &Map,
                          config: &Config,
                          sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
@@ -1267,7 +1267,7 @@ fn render_overlay_attack(panel: &mut Panel,
            entity_id != player_id &&
            display_state.typ[&entity_id] == EntityType::Enemy {
            render_attack_overlay(panel, config, display_state, entity_id, sprites);
-           render_fov_overlay(panel, display_state, level, config, entity_id);
+           render_fov_overlay(panel, display_state, map, config, entity_id);
            render_movement_overlay(panel, config, display_state, entity_id, sprites);
         }
     }
@@ -1321,7 +1321,7 @@ fn render_overlays(panel: &mut Panel,
 
     // draw attack and fov position highlights
     if let Some(_cursor_pos) = display_state.cursor_pos {
-        render_overlay_attack(panel, display_state, level, config, sprites);
+        render_overlay_attack(panel, display_state, &level.map, config, sprites);
     }
 
     let mut highlight_color: Color = config.color_warm_grey;
@@ -1345,7 +1345,7 @@ fn render_overlays(panel: &mut Panel,
         render_sound_overlay(panel, display_state, config);
 
         // Outline tiles within FOV for clarity
-        render_fov_overlay(panel, display_state, level, config, player_id);
+        render_fov_overlay(panel, display_state, &level.map, config, player_id);
     }
 
     // NOTE floodfill ranges:
@@ -1477,23 +1477,20 @@ fn render_attack_overlay(panel: &mut Panel,
 
 fn render_fov_overlay(panel: &mut Panel,
                       display_state: &DisplayState,
-                      level: &Level,
+                      map: &Map,
                       config: &Config,
                       entity_id: EntityId) {
-    let player_id = display_state.player_id();
-
     let mut highlight_color = config.color_light_grey;
     highlight_color.a = config.grid_alpha_overlay;
 
-    for y in 0..level.map.height() {
-        for x in 0..level.map.width() {
+    for y in 0..map.height() {
+        for x in 0..map.width() {
             let map_pos = Pos::new(x, y);
 
-            let visible = level.pos_in_fov(entity_id, map_pos, config) &&
-                          level.pos_in_fov(player_id, map_pos, config);
-
-
-            if visible {
+            let entity_fov = display_state.entity_fov[&entity_id].iter().position(|p| *p == map_pos).is_some();
+            let player_fov = display_state.fov[&map_pos] == FovResult::Inside;
+                          
+            if player_fov && entity_fov {
                 panel.outline_cmd(highlight_color, map_pos);
             }
         }
