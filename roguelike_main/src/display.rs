@@ -247,6 +247,7 @@ impl Display {
         self.state.prev_turn_fov.clear();
         self.state.sound_tiles.clear();
         self.state.effects.clear();
+        self.state.gate_pos.clear();
 
         self.clear_turn_state();
     }
