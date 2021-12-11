@@ -1174,7 +1174,7 @@ fn render_game_overlays(panel: &mut Panel,
         }
     }
 
-    render_overlay_alertness(panel, display_state, tiles_key, &level.entities, config);
+    render_overlay_alertness(panel, display_state, tiles_key, config);
 }
 
 fn render_overlay_direction(panel: &mut Panel,
@@ -1377,7 +1377,6 @@ fn render_overlays(panel: &mut Panel,
 fn render_overlay_alertness(panel: &mut Panel,
                             display_state: &mut DisplayState,
                             sprite_key: SpriteKey,
-                            entities: &Entities,
                             config: &Config) {
     let alertness_color = config.color_pink;
     let scale = 0.5;
@@ -1389,8 +1388,8 @@ fn render_overlay_alertness(panel: &mut Panel,
         let pos = display_state.pos[entity_id];
 
         let mut status_drawn: bool = false;
-        if let Some(status) = entities.status.get(entity_id) {
-            if status.frozen > 0 {
+        if let Some(state) = display_state.frozen.get(entity_id) {
+            if *state {
                 status_drawn = true;
                 let sprite = Sprite::new(ASTERISK as u32, sprite_key);
                 panel.sprite_scaled_cmd(sprite, scale,

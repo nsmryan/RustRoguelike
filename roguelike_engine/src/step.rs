@@ -64,6 +64,10 @@ pub fn step_logic(game: &mut Game) -> bool {
         if let Some(mut status) = game.level.entities.status.get_mut(entity_id) {
             if status.frozen > 0 {
                 status.frozen -= 1;
+
+                if status.frozen == 0 {
+                    game.msg_log.log(Msg::Frozen(*entity_id, false));
+                }
             }
 
             if status.stone > 0 {

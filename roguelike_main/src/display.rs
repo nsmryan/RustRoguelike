@@ -248,6 +248,7 @@ impl Display {
         self.state.sound_tiles.clear();
         self.state.effects.clear();
         self.state.gate_pos.clear();
+        self.state.frozen.clear();
 
         self.clear_turn_state();
     }
@@ -640,6 +641,10 @@ impl Display {
                 self.state.gate_pos.insert(entity_id, pos);
             }
 
+            Msg::Frozen(entity_id, state) => {
+                self.state.frozen.insert(entity_id, state);
+            }
+
             _ => {
             }
         }
@@ -720,6 +725,7 @@ pub struct DisplayState {
     pub inventory: Vec<(Item, ItemClass)>,
     pub skills: Vec<Skill>,
     pub gate_pos: Comp<Pos>,
+    pub frozen: Comp<bool>,
 
     // game state
     pub state: GameState,
@@ -776,6 +782,7 @@ impl DisplayState {
             inventory: Vec::new(),
             skills: Vec::new(),
             gate_pos: Comp::new(),
+            frozen: Comp::new(),
             state: GameState::Playing,
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),

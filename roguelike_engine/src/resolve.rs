@@ -179,6 +179,8 @@ pub fn resolve_messages(game: &mut Game) {
                 if entity_id == player_id || game.level.entities.ai.get(&entity_id).is_some() {
                     game.level.entities.status[&entity_id].frozen = num_turns;
                     game.level.entities.behavior[&entity_id] = Behavior::Idle;
+
+                    game.msg_log.log(Msg::Frozen(entity_id, true));
                 }
             }
 
