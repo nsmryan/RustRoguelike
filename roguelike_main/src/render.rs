@@ -92,7 +92,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &G
         let _extra = timer!("EXTRA");
         render_impressions(panel, display_state, &game.config);
         render_effects(panel, display_state, &game.level, &game.config, sprites);
-        render_overlays(panel, display_state, game, sprites);
+        render_overlays(panel, display_state, &game.level, &game.config, &game.settings, sprites);
     }
 
     /* Draw Player Info */
@@ -1296,37 +1296,39 @@ fn render_overlay_floodfill(panel: &mut Panel,
 
 fn render_overlays(panel: &mut Panel,
                    display_state: &mut DisplayState,
-                   game: &Game,
+                   level: &Level,
+                   config: &Config,
+                   settings: &GameSettings,
                    sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
     // render a grid of numbers if enabled
-    if game.config.overlay_directions {
-        render_overlay_direction(panel, display_state, &game.level.map, &game.config, tiles_key);
+    if config.overlay_directions {
+        render_overlay_direction(panel, display_state, &level.map, config, tiles_key);
     }
 
     // render cursor if enabled
-    if game.config.use_cursor {
-        render_overlay_cursor(panel, display_state, &game.config, sprites);
+    if config.use_cursor {
+        render_overlay_cursor(panel, display_state, config, sprites);
     }
 
     // render FOV if enabled
-    if game.config.overlay_player_fov {
-        render_overlay_fov(panel, display_state, &game.level.map, &game.config, tiles_key);
+    if config.overlay_player_fov {
+        render_overlay_fov(panel, display_state, &level.map, config, tiles_key);
     }
 
     // draw attack and fov position highlights
     if let Some(_cursor_pos) = display_state.cursor_pos {
-        render_overlay_attack(panel, display_state, &game.level, &game.config, sprites);
+        render_overlay_attack(panel, display_state, level, config, sprites);
     }
 
-    let mut highlight_color: Color = game.config.color_warm_grey;
-    highlight_color.a = game.config.highlight_player_move;
+    let mut highlight_color: Color = config.color_warm_grey;
+    highlight_color.a = config.highlight_player_move;
 
     // Draw overlays if enabled
-    if game.settings.overlay {
+    if settings.overlay {
         // Draw player movement overlay
         let player_pos = display_state.pos[&player_id];
         for move_pos in display_state.entity_movements[&player_id].clone() {
@@ -1335,15 +1337,15 @@ fn render_overlays(panel: &mut Panel,
                 let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
                 let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
 
-                render_entity_ghost(panel, player_id, shadow_cursor_pos, &game.config, display_state, sprites);
+                render_entity_ghost(panel, player_id, shadow_cursor_pos, config, display_state, sprites);
             }
         }
 
         // Draw sound tiles overlay
-        render_sound_overlay(panel, display_state, &game.config);
+        render_sound_overlay(panel, display_state, config);
 
         // Outline tiles within FOV for clarity
-        render_fov_overlay(panel, display_state, &game.level, &game.config, player_id);
+        render_fov_overlay(panel, display_state, level, config, player_id);
     }
 
     // NOTE floodfill ranges:
@@ -1353,8 +1355,8 @@ fn render_overlays(panel: &mut Panel,
     // low 30s tend to be next to a shear wall
     // 40 are nearly fully open
     // 49 may be fully open
-    if game.config.overlay_floodfill {
-        render_overlay_floodfill(panel, &game.level, &game.config, tiles_key);
+    if config.overlay_floodfill {
+        render_overlay_floodfill(panel, level, config, tiles_key);
     }
 }
 
