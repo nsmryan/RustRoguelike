@@ -635,6 +635,10 @@ impl Display {
                 self.state.skills.push(skill);
             }
 
+            Msg::GatePos(entity_id, pos) => {
+                self.state.gate_pos.insert(entity_id, pos);
+            }
+
             _ => {
             }
         }
@@ -714,6 +718,7 @@ pub struct DisplayState {
     pub behavior: Comp<Behavior>,
     pub inventory: Vec<(Item, ItemClass)>,
     pub skills: Vec<Skill>,
+    pub gate_pos: Comp<Pos>,
 
     // game state
     pub state: GameState,
@@ -769,6 +774,7 @@ impl DisplayState {
             behavior: Comp::new(),
             inventory: Vec::new(),
             skills: Vec::new(),
+            gate_pos: Comp::new(),
             state: GameState::Playing,
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),

@@ -1089,10 +1089,11 @@ fn render_game_overlays(panel: &mut Panel,
             // render trigger plate wall highlight if selected
             for entity in display_state.entities_at_cursor.iter() {
                 if display_state.name[&entity] == EntityName::GateTrigger {
-                    let gate_pos = level.entities.gate_pos[&entity];
-                    let mut highlight_color: Color = config.color_red;
-                    highlight_color.a = 100;
-                    panel.highlight_cmd(highlight_color, gate_pos);
+                    if let Some(gate_pos) = display_state.gate_pos.get(&entity) {
+                        let mut highlight_color: Color = config.color_red;
+                        highlight_color.a = 100;
+                        panel.highlight_cmd(highlight_color, *gate_pos);
+                    }
                 } else if display_state.name[&entity] == EntityName::FreezeTrap {
                     let trap_pos = display_state.pos[&entity];
                     let freeze_aoe =

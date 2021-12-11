@@ -23,6 +23,7 @@ use roguelike_core::constants::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::utils::*;
+use roguelike_core::messaging::*;
 
 use crate::generation::*;
 use crate::game::*;
@@ -403,6 +404,7 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
         for neighbor in game.level.map.cardinal_neighbors(gate_pos) {
             if game.level.map[neighbor].tile_type == TileType::Wall {
                 game.level.entities.gate_pos[&trigger] = neighbor;
+                game.msg_log.log(Msg::GatePos(trigger, neighbor));
                 break;
             }
         }
