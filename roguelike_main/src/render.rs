@@ -91,7 +91,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &G
     {
         let _extra = timer!("EXTRA");
         render_impressions(panel, display_state, &game.config);
-        render_effects(panel, display_state, &game.level, &game.config, sprites);
+        render_effects(panel, display_state, &game.level.map, &game.config, sprites);
         render_overlays(panel, display_state, &game.level.map, &game.config, &game.settings, sprites);
     }
 
@@ -739,11 +739,9 @@ fn render_intertile_walls_below(panel: &mut Panel,
 /// resulting vector of effects is then saved as the new effects vector.
 fn render_effects(panel: &mut Panel,
                   display_state: &mut DisplayState,
-                  level: &Level,
+                  map: &Map,
                   config: &Config,
                   sprites: &Vec<SpriteSheet>) {
-    let player_id = display_state.player_id();
-
     let mut index = 0;
     while index < display_state.effects.len() {
         let mut effect_complete = false;
@@ -767,7 +765,7 @@ fn render_effects(panel: &mut Panel,
                     particles[index].duration -= display_state.dt;
 
                     // if the particle is finished, or has left the map, remove it.
-                    if particles[index].duration < 0.0 || !level.map.is_within_bounds(cell) {
+                    if particles[index].duration < 0.0 || !map.is_within_bounds(cell) {
                         particles.swap_remove(index);
                     } else {
                         // offset the particle according to how long it has been running.
@@ -775,8 +773,8 @@ fn render_effects(panel: &mut Panel,
                         let draw_pos = move_x(particles[index].pos, x_offset);
                         let draw_cell = panel.cell_from_pixel(draw_pos);
 
-                        if level.map.is_within_bounds(draw_cell) && 
-                           level.pos_in_fov(player_id, draw_cell, config) {
+                        if map.is_within_bounds(draw_cell) && 
+                           display_state.pos_is_in_fov(draw_cell) == FovResult::Inside {
                             let mut color = Color::white();
                             // fade the particle out according to how long it has been running.
                             color.a = (255.0 * (particles[index].duration / config.particle_duration)) as u8;
@@ -799,7 +797,7 @@ fn render_effects(panel: &mut Panel,
                         config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
 
                     for pos in dist_positions.iter() {
-                        if !level.map[*pos].block_move &&
+                        if !map[*pos].block_move &&
                            display_state.pos_is_in_fov(*pos) == FovResult::Inside {
                            panel.highlight_cmd(highlight_color, *pos);
                            panel.outline_cmd(highlight_color, *pos);
