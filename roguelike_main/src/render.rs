@@ -110,7 +110,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &G
     /* Draw Game Info */
     {
         let info_panel = &mut panels.get_mut(&PanelName::Info).unwrap();
-        render_info(info_panel, display_state, &game.level);
+        render_info(info_panel, display_state, &game.level.map);
     }
 }
 
@@ -225,7 +225,7 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState, settings:
     panel.text_list_cmd(&list, color, text_pos);
 }
 
-fn render_info(panel: &mut Panel, display_state: &mut DisplayState, level: &Level) {
+fn render_info(panel: &mut Panel, display_state: &mut DisplayState, map: &Map) {
     render_placard(panel, "Info");
 
     if let Some(info_pos) = display_state.cursor_pos {
@@ -308,31 +308,31 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState, level: &Leve
 
         let tile_in_fov = display_state.fov[&info_pos];
         if tile_in_fov == FovResult::Inside {
-            if level.map[info_pos].tile_type == TileType::Water {
+            if map[info_pos].tile_type == TileType::Water {
                 text_list.push("Tile is water".to_string());
             } else {
-                text_list.push(format!("Tile is {:?}",  level.map[info_pos].surface));
+                text_list.push(format!("Tile is {:?}",  map[info_pos].surface));
             }
 
-            if level.map[info_pos].bottom_wall != Wall::Empty {
+            if map[info_pos].bottom_wall != Wall::Empty {
                 text_list.push("Lower wall".to_string());
             }
 
-            if level.map.is_within_bounds(move_x(info_pos, 1)) &&
-               level.map[move_x(info_pos, 1)].left_wall != Wall::Empty {
+            if map.is_within_bounds(move_x(info_pos, 1)) &&
+               map[move_x(info_pos, 1)].left_wall != Wall::Empty {
                 text_list.push("Right wall".to_string());
             }
 
-            if level.map.is_within_bounds(move_y(info_pos, -1)) &&
-               level.map[move_y(info_pos, -1)].bottom_wall != Wall::Empty {
+            if map.is_within_bounds(move_y(info_pos, -1)) &&
+               map[move_y(info_pos, -1)].bottom_wall != Wall::Empty {
                 text_list.push("Top wall".to_string());
             }
 
-            if level.map[info_pos].left_wall != Wall::Empty {
+            if map[info_pos].left_wall != Wall::Empty {
                 text_list.push("Left wall".to_string());
             }
 
-            if level.map[info_pos].block_move {
+            if map[info_pos].block_move {
                 text_list.push(format!("blocked"));
             }
         }
