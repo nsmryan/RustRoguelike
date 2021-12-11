@@ -1280,7 +1280,7 @@ fn render_overlay_attack(panel: &mut Panel,
 
         if display_state.pos_is_in_fov(pos) == FovResult::Inside &&
            entity_id != player_id &&
-           level.entities.status[&entity_id].alive {
+           display_state.typ[&entity_id] == EntityType::Enemy {
            render_attack_overlay(panel, config, display_state, entity_id, sprites);
            render_fov_overlay(panel, display_state, level, config, entity_id);
            render_movement_overlay(panel, config, display_state, entity_id, sprites);
@@ -1481,9 +1481,11 @@ fn render_attack_overlay(panel: &mut Panel,
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
-    for position in display_state.entity_attacks[&entity_id].iter() {
-        let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
-        panel.sprite_cmd(sprite, attack_highlight_color, *position);
+    if let Some(attack_positions) = display_state.entity_attacks.get(&entity_id) {
+        for position in attack_positions.iter() {
+            let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
+            panel.sprite_cmd(sprite, attack_highlight_color, *position);
+        }
     }
 }
 
