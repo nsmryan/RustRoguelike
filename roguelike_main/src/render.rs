@@ -29,7 +29,7 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites
     render_background(panels.get_mut(&PanelName::Map).unwrap(), &game.level.map, sprites);
 
     /* Draw Map */
-    render_panels(panels, display_state, game, sprites);
+    render_panels(panels, display_state, &game.level.map, &game.config, &game.settings, sprites);
 
     /* Draw Debug Overlay */
     if game.settings.debug_enabled {
@@ -52,53 +52,58 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites
 }
 
 
-fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &Game, sprites: &Vec<SpriteSheet>) {
+fn render_panels(panels: &mut Panels,
+                 display_state: &mut DisplayState,
+                 map: &Map,
+                 config: &Config,
+                 settings: &GameSettings,
+                 sprites: &Vec<SpriteSheet>) {
     let panel = &mut panels.get_mut(&PanelName::Map).unwrap();
 
     {
         let _map = timer!("MAP");
-        render_map(panel, &game.level.map, sprites);
+        render_map(panel, map, sprites);
     }
 
     {
         let _mid = timer!("MID");
-        render_entity_type(panel, EntityType::Environment, display_state, &game.config, sprites);
-        render_entity_type(panel, EntityType::Trigger, display_state, &game.config, sprites);
-        render_entity_type(panel, EntityType::Item, display_state, &game.config, sprites);
+        render_entity_type(panel, EntityType::Environment, display_state, config, sprites);
+        render_entity_type(panel, EntityType::Trigger, display_state, config, sprites);
+        render_entity_type(panel, EntityType::Item, display_state, config, sprites);
 
-        render_map_middle(panel, &game.level.map, &game.config, sprites);
+        render_map_middle(panel, map, config, sprites);
     }
 
     {
         let _above = timer!("ABOVE");
-        render_entity_type(panel, EntityType::Energy, display_state, &game.config, sprites);
-        render_entity_type(panel, EntityType::Enemy, display_state, &game.config, sprites);
-        render_entity_type(panel, EntityType::Column, display_state, &game.config, sprites);
-        render_entity_type(panel, EntityType::Player, display_state, &game.config, sprites);
-        render_entity_type(panel, EntityType::Other, display_state, &game.config, sprites);
+        render_entity_type(panel, EntityType::Energy, display_state, config, sprites);
+        render_entity_type(panel, EntityType::Enemy, display_state, config, sprites);
+        render_entity_type(panel, EntityType::Column, display_state, config, sprites);
+        render_entity_type(panel, EntityType::Player, display_state, config, sprites);
+        render_entity_type(panel, EntityType::Other, display_state, config, sprites);
     }
 
     {
         let _overlays_game = timer!("OVERLAYSGAME");
-        render_game_overlays(panel, display_state, &game.level.map, &game.settings, &game.config, sprites);
+        render_game_overlays(panel, display_state, map, settings, config, sprites);
     }
 
     {
         let _mapabove = timer!("MAPABOVE");
-        render_map_above(panel, display_state, &game.level.map, &game.config, sprites);
+        render_map_above(panel, display_state, map, config, sprites);
     }
 
     {
         let _extra = timer!("EXTRA");
-        render_impressions(panel, display_state, &game.config);
-        render_effects(panel, display_state, &game.level.map, &game.config, sprites);
-        render_overlays(panel, display_state, &game.level.map, &game.config, &game.settings, sprites);
+        render_impressions(panel, display_state, config);
+        render_effects(panel, display_state, map, config, sprites);
+        render_overlays(panel, display_state, map, config, settings, sprites);
     }
 
     /* Draw Player Info */
     {
         let player_panel = &mut panels.get_mut(&PanelName::Player).unwrap();
-        render_player_info(player_panel, display_state, &game.settings);
+        render_player_info(player_panel, display_state, settings);
     }
 
     /* Draw Inventory */
@@ -110,7 +115,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &G
     /* Draw Game Info */
     {
         let info_panel = &mut panels.get_mut(&PanelName::Info).unwrap();
-        render_info(info_panel, display_state, &game.level.map);
+        render_info(info_panel, display_state, map);
     }
 }
 
