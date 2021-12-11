@@ -92,7 +92,7 @@ fn render_panels(panels: &mut Panels, display_state: &mut DisplayState, game: &G
         let _extra = timer!("EXTRA");
         render_impressions(panel, display_state, &game.config);
         render_effects(panel, display_state, &game.level, &game.config, sprites);
-        render_overlays(panel, display_state, &game.level, &game.config, &game.settings, sprites);
+        render_overlays(panel, display_state, &game.level.map, &game.config, &game.settings, sprites);
     }
 
     /* Draw Player Info */
@@ -1106,7 +1106,6 @@ fn render_game_overlays(panel: &mut Panel,
                 }
             }
 
-            // TODO track cursor pos and state with message and use here instead
             // render some extra player information if cursor is over player's tile
             if cursor_pos == player_pos {
                 // Draw sound tiles overlay
@@ -1274,13 +1273,13 @@ fn render_overlay_attack(panel: &mut Panel,
 }
 
 fn render_overlay_floodfill(panel: &mut Panel,
-                            level: &Level,
+                            map: &Map,
                             config: &Config,
                             tiles_key: SpriteKey) {
     let mut highlight_color = config.color_light_orange;
 
     highlight_color.a = 50;
-    let fill_metric = map_fill_metric(&level.map);
+    let fill_metric = map_fill_metric(map);
 
     for (pos, near_count) in fill_metric {
         let amount = near_count as f32 / 50.0;
@@ -1296,7 +1295,7 @@ fn render_overlay_floodfill(panel: &mut Panel,
 
 fn render_overlays(panel: &mut Panel,
                    display_state: &mut DisplayState,
-                   level: &Level,
+                   map: &Map,
                    config: &Config,
                    settings: &GameSettings,
                    sprites: &Vec<SpriteSheet>) {
@@ -1306,7 +1305,7 @@ fn render_overlays(panel: &mut Panel,
 
     // render a grid of numbers if enabled
     if config.overlay_directions {
-        render_overlay_direction(panel, display_state, &level.map, config, tiles_key);
+        render_overlay_direction(panel, display_state, map, config, tiles_key);
     }
 
     // render cursor if enabled
@@ -1316,12 +1315,12 @@ fn render_overlays(panel: &mut Panel,
 
     // render FOV if enabled
     if config.overlay_player_fov {
-        render_overlay_fov(panel, display_state, &level.map, config, tiles_key);
+        render_overlay_fov(panel, display_state, map, config, tiles_key);
     }
 
     // draw attack and fov position highlights
     if let Some(_cursor_pos) = display_state.cursor_pos {
-        render_overlay_attack(panel, display_state, &level.map, config, sprites);
+        render_overlay_attack(panel, display_state, map, config, sprites);
     }
 
     let mut highlight_color: Color = config.color_warm_grey;
@@ -1345,7 +1344,7 @@ fn render_overlays(panel: &mut Panel,
         render_sound_overlay(panel, display_state, config);
 
         // Outline tiles within FOV for clarity
-        render_fov_overlay(panel, display_state, &level.map, config, player_id);
+        render_fov_overlay(panel, display_state, map, config, player_id);
     }
 
     // NOTE floodfill ranges:
@@ -1356,7 +1355,7 @@ fn render_overlays(panel: &mut Panel,
     // 40 are nearly fully open
     // 49 may be fully open
     if config.overlay_floodfill {
-        render_overlay_floodfill(panel, level, config, tiles_key);
+        render_overlay_floodfill(panel, map, config, tiles_key);
     }
 }
 
