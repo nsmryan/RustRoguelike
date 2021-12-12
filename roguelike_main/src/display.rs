@@ -23,6 +23,8 @@ use roguelike_core::map::*;
 use roguelike_core::utils::aoe_fill;
 use roguelike_core::movement::{Direction};
 
+use roguelike_engine::game::{UseAction};
+
 use crate::animation::{Str, Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use crate::drawcmd::*;
 
@@ -273,6 +275,7 @@ impl Display {
         match msg {
             Msg::StartTurn => {
                 self.clear_turn_state();
+                self.state.turn_count += 1;
             }
 
             Msg::GameState(new_state) => {
@@ -733,6 +736,13 @@ pub struct DisplayState {
     pub frozen: Comp<bool>,
     pub player_ghost: Option<Pos>,
 
+    // settings
+    pub debug_enabled: bool,
+    pub overlay: bool,
+    pub use_action: UseAction,
+
+    pub turn_count: usize,
+
     // game state
     pub state: GameState,
 
@@ -791,6 +801,10 @@ impl DisplayState {
             gate_pos: Comp::new(),
             frozen: Comp::new(),
             player_ghost: None,
+            debug_enabled: false,
+            overlay: false,
+            use_action: UseAction::Interact,
+            turn_count: 0,
             state: GameState::Playing,
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),

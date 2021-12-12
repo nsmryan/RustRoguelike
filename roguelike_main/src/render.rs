@@ -214,16 +214,7 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState, settings:
     let stance = settings.move_mode;
     list.push(format!("{}", stance));
 
-    list.push(format!(""));
-    list.push(format!(""));
-    list.push(format!(""));
-    list.push(format!(""));
-    list.push(format!(""));
-    list.push(format!(""));
-    list.push(format!(""));
-    list.push(format!(""));
-    list.push(format!(""));
-    list.push(format!("turn {}", settings.turn_count));
+    list.push(format!("turn {}", display_state.turn_count));
 
     let text_pos = Pos::new(x_offset, 5);
 
@@ -1484,6 +1475,10 @@ fn render_fov_overlay(panel: &mut Panel,
                       entity_id: EntityId) {
     let mut highlight_color = config.color_light_grey;
     highlight_color.a = config.grid_alpha_overlay;
+
+    if display_state.entity_fov.get(&entity_id).is_none() {
+        return;
+    }
 
     for y in 0..map.height() {
         for x in 0..map.width() {
