@@ -9,7 +9,7 @@ use roguelike_core::types::*;
 use roguelike_core::config::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::MsgLog;
-use roguelike_core::movement::{Direction, MoveMode};
+use roguelike_core::movement::{Direction, MoveMode, Reach};
 use roguelike_core::messaging::*;
 
 use crate::actions;
@@ -269,6 +269,18 @@ impl Game {
                     }
                 }
             }
+        } else if self.settings.use_action == UseAction::Interact {
+            if let Some(dir) = self.settings.use_dir {
+                self.msg_log.log_dir(Msg::UseDir(dir), log_dir);
+            }
+
+            let player_pos = self.level.entities.pos[&player_id];
+            for pos in Reach::Single(1).reachables(player_pos) {
+                //self.msg_log.log(Msg::UseHitPos(pos));
+                //self.msg_log.log(Msg::UsePos(pos));
+                let dir = Direction::from_positions(player_pos, pos).unwrap();
+                self.msg_log.log(Msg::UseOption(pos, dir));
+            }
         }
 
         // report entities at the cursor position
@@ -318,11 +330,6 @@ impl Game {
     pub fn load_from_string(game_str: &str) -> Game {
         return serde_yaml::from_str(game_str).unwrap();
     }
-}
-#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
-pub enum UseAction {
-    Item(ItemClass),
-    Interact,
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]

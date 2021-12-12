@@ -128,6 +128,7 @@ pub enum Msg {
     Overlay(bool),
     DebugEnabled(bool),
     NextMoveMode(MoveMode),
+    UseAction(UseAction),
 }
 
 impl fmt::Display for Msg {
@@ -259,6 +260,7 @@ impl fmt::Display for Msg {
             Msg::Overlay(state) => write!(f, "overlay {}", state),
             Msg::DebugEnabled(state) => write!(f, "debug_enabled {}", state),
             Msg::NextMoveMode(move_mode) => write!(f, "next_move_mode {}", move_mode),
+            Msg::UseAction(use_action) => write!(f, "use_action {}", use_action),
         }
     }
 }

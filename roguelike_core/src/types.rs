@@ -1029,6 +1029,35 @@ impl FromStr for ItemClass {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Debug, Serialize, Deserialize)]
+pub enum UseAction {
+    Item(ItemClass),
+    Interact,
+}
+
+impl fmt::Display for UseAction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            UseAction::Item(item_class) => item_class.fmt(f),
+            UseAction::Interact => write!(f, "interact"),
+        }
+    }
+}
+
+impl FromStr for UseAction {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "interact" {
+            return Ok(UseAction::Interact);
+        } else {
+            return ItemClass::from_str(string).map(|item_class| UseAction::Item(item_class));
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Hp {
     pub max_hp: i32,

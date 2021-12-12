@@ -442,7 +442,7 @@ pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), Str
     game.settings.god_mode = true;
 
     game.step_game(InputAction::None);
-    render_all(&mut display.panels, &mut display.state, &display.sprites, game, 0.1)?;
+    render_all(&mut display.panels, &mut display.state, &display.sprites, &game.level.map, &game.config, 0.1)?;
 
     display.save_screenshot("screenshot");
 
@@ -462,7 +462,7 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
     {
         let command_time = Instant::now();
         let _render_timer = timer!("RENDER");
-        render_all(&mut display.panels, &mut display.state, &display.sprites, game, dt)?;
+        render_all(&mut display.panels, &mut display.state, &display.sprites, &game.level.map, &game.config, dt)?;
         let ct = Instant::now().duration_since(command_time).as_secs_f32();
         display.state.show_debug("ct", format!("{}", ct));
     }

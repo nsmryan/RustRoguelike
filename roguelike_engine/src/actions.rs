@@ -584,6 +584,7 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::StartUseInteract, true) => {
             settings.use_action = UseAction::Interact;
+            msg_log.log(Msg::UseAction(settings.use_action));
 
             settings.use_dir = None;
             msg_log.log(Msg::UseDirClear);
@@ -833,6 +834,7 @@ fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut GameSetti
             // in case the player wants to check pressing shift or ctrl
             // for additional spaces.
             settings.use_action = UseAction::Item(item_class);
+            msg_log.log(Msg::UseAction(settings.use_action));
 
             settings.use_dir = None;
             msg_log.log(Msg::UseDirClear);

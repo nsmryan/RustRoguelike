@@ -663,6 +663,10 @@ impl Display {
                 self.state.debug_enabled = state;
             }
 
+            Msg::UseAction(use_action) => {
+                self.state.use_action = use_action;
+            }
+
             _ => {
             }
         }
@@ -750,6 +754,7 @@ pub struct DisplayState {
     pub debug_enabled: bool,
     pub overlay: bool,
     pub move_mode: MoveMode,
+    pub use_action: UseAction,
 
     pub turn_count: usize,
 
@@ -814,6 +819,7 @@ impl DisplayState {
             debug_enabled: false,
             overlay: false,
             move_mode: MoveMode::Walk,
+            use_action: UseAction::Interact,
             turn_count: 0,
             state: GameState::Playing,
             impressions: Vec::new(),

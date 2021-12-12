@@ -12,24 +12,22 @@ use roguelike_core::config::*;
 use roguelike_core::utils::*;
 use roguelike_core::ai::*;
 
-use roguelike_engine::game::*;
-
 use crate::display::*;
 use crate::drawcmd::*;
 use crate::animation::{Sprite, SpriteKey, Effect, Animation, AnimationResult, Particle};
 
 
-pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites: &Vec<SpriteSheet>, game: &Game, dt: f32) -> Result<(), String> {
+pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites: &Vec<SpriteSheet>, map: &Map, config: &Config, dt: f32) -> Result<(), String> {
     display_state.show_debug("ids", format!("{}", display_state.ids.len()));
 
     display_state.dt = dt;
     display_state.time += dt;
 
     /* Draw Background */
-    render_background(panels.get_mut(&PanelName::Map).unwrap(), &game.level.map, sprites);
+    render_background(panels.get_mut(&PanelName::Map).unwrap(), map, sprites);
 
     /* Draw Map */
-    render_panels(panels, display_state, &game.level.map, &game.config, &game.settings, sprites);
+    render_panels(panels, display_state, map, config, sprites);
 
     /* Draw Debug Overlay */
     if display_state.debug_enabled {
@@ -56,7 +54,6 @@ fn render_panels(panels: &mut Panels,
                  display_state: &mut DisplayState,
                  map: &Map,
                  config: &Config,
-                 settings: &GameSettings,
                  sprites: &Vec<SpriteSheet>) {
     let panel = &mut panels.get_mut(&PanelName::Map).unwrap();
 
@@ -85,7 +82,7 @@ fn render_panels(panels: &mut Panels,
 
     {
         let _overlays_game = timer!("OVERLAYSGAME");
-        render_game_overlays(panel, display_state, map, settings, config, sprites);
+        render_game_overlays(panel, display_state, map, config, sprites);
     }
 
     {
@@ -1070,7 +1067,6 @@ fn render_sound_overlay(panel: &mut Panel,
 fn render_game_overlays(panel: &mut Panel,
                         display_state: &mut DisplayState,
                         map: &Map,
-                        settings: &GameSettings,
                         config: &Config,
                         sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
@@ -1119,14 +1115,19 @@ fn render_game_overlays(panel: &mut Panel,
         let mut attack_highlight_color = config.color_red;
         attack_highlight_color.a = config.grid_alpha_overlay;
 
-        if UseAction::Interact == settings.use_action {
-            for use_pos in display_state.use_pos.iter() {
-                panel.highlight_cmd(highlight_color, *use_pos);
+        let sprite_key = lookup_spritekey(sprites, "tiles");
+        if UseAction::Interact == display_state.use_action {
+            if let Some(use_dir) = display_state.use_dir {
+                let arrow_pos = use_dir.offset_pos(player_pos, 1);
+                render_arrow(panel, sprite_key, use_dir, arrow_pos, direction_color);
+            } else {
+                for (use_pos, use_dir) in display_state.use_dirs.iter() {
+                    panel.highlight_cmd(highlight_color, *use_pos);
 
-                let dir = Direction::from_positions(player_pos, *use_pos).unwrap();
-                render_arrow(panel, tiles_key, dir, *use_pos, direction_color);
+                    render_arrow(panel, tiles_key, *use_dir, *use_pos, direction_color);
+                }
             }
-        } else if let UseAction::Item(item_class) = settings.use_action {
+        } else if let UseAction::Item(item_class) = display_state.use_action {
             render_overlay_use_item(panel, item_class, display_state, &config, sprites);
         }
     }
