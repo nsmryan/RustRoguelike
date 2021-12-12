@@ -21,9 +21,7 @@ use roguelike_core::config::*;
 use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::utils::aoe_fill;
-use roguelike_core::movement::{Direction};
-
-use roguelike_engine::game::{UseAction};
+use roguelike_core::movement::{Direction, MoveMode};
 
 use crate::animation::{Str, Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use crate::drawcmd::*;
@@ -653,6 +651,18 @@ impl Display {
                 self.state.player_ghost = Some(player_ghost);
             }
 
+            Msg::NextMoveMode(move_mode) => {
+                self.state.move_mode = move_mode;
+            }
+
+            Msg::Overlay(state) => {
+                self.state.overlay = state;
+            }
+
+            Msg::DebugEnabled(state) => {
+                self.state.debug_enabled = state;
+            }
+
             _ => {
             }
         }
@@ -739,7 +749,7 @@ pub struct DisplayState {
     // settings
     pub debug_enabled: bool,
     pub overlay: bool,
-    pub use_action: UseAction,
+    pub move_mode: MoveMode,
 
     pub turn_count: usize,
 
@@ -803,7 +813,7 @@ impl DisplayState {
             player_ghost: None,
             debug_enabled: false,
             overlay: false,
-            use_action: UseAction::Interact,
+            move_mode: MoveMode::Walk,
             turn_count: 0,
             state: GameState::Playing,
             impressions: Vec::new(),

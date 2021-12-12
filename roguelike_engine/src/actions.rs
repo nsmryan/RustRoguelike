@@ -291,6 +291,7 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
 
         InputAction::DebugToggle => {
             game.settings.debug_enabled = !game.settings.debug_enabled;
+            game.msg_log.log(Msg::DebugEnabled(game.settings.debug_enabled));
             return true;
         }
 
@@ -467,6 +468,7 @@ pub fn handle_input_use(input_action: InputAction,
             } else {
                 settings.move_mode = MoveMode::Run;
             }
+            msg_log.log(Msg::NextMoveMode(settings.move_mode));
         }
 
         (InputAction::Sneak, true) => {
@@ -475,6 +477,7 @@ pub fn handle_input_use(input_action: InputAction,
             } else {
                 settings.move_mode = MoveMode::Sneak;
             }
+            msg_log.log(Msg::NextMoveMode(settings.move_mode));
         }
 
         (InputAction::DropItem, true) => {
@@ -517,6 +520,7 @@ pub fn handle_input_use(input_action: InputAction,
 
         (InputAction::OverlayToggle, _) => {
             settings.overlay = !settings.overlay;
+            msg_log.log(Msg::Overlay(settings.overlay));
         }
 
         (_, _) => {
@@ -541,6 +545,7 @@ pub fn handle_input_playing(input_action: InputAction,
             } else {
                 settings.move_mode = MoveMode::Run;
             }
+            msg_log.log(Msg::NextMoveMode(settings.move_mode));
         }
 
         (InputAction::Sneak, true) => {
@@ -549,6 +554,7 @@ pub fn handle_input_playing(input_action: InputAction,
             } else {
                 settings.move_mode = MoveMode::Sneak;
             }
+            msg_log.log(Msg::NextMoveMode(settings.move_mode));
         }
 
         (InputAction::Move(direction), true) => {
@@ -664,6 +670,7 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::OverlayToggle, _) => {
             settings.overlay = !settings.overlay;
+            msg_log.log(Msg::Overlay(settings.overlay));
         }
 
         (InputAction::Inventory, true) => {

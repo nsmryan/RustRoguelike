@@ -125,6 +125,9 @@ pub enum Msg {
     GatePos(EntityId, Pos),
     Frozen(EntityId, bool),
     PlayerGhost(Pos),
+    Overlay(bool),
+    DebugEnabled(bool),
+    NextMoveMode(MoveMode),
 }
 
 impl fmt::Display for Msg {
@@ -253,6 +256,9 @@ impl fmt::Display for Msg {
             Msg::GatePos(entity_id, pos) => write!(f, "gate_pos {} {} {}", entity_id, pos.x, pos.y),
             Msg::Frozen(entity_id, state) => write!(f, "frozen {} {}", entity_id, state),
             Msg::PlayerGhost(pos) => write!(f, "player_ghost {} {}", pos.x, pos.y),
+            Msg::Overlay(state) => write!(f, "overlay {}", state),
+            Msg::DebugEnabled(state) => write!(f, "debug_enabled {}", state),
+            Msg::NextMoveMode(move_mode) => write!(f, "next_move_mode {}", move_mode),
         }
     }
 }

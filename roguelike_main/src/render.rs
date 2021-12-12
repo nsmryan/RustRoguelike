@@ -32,7 +32,7 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites
     render_panels(panels, display_state, &game.level.map, &game.config, &game.settings, sprites);
 
     /* Draw Debug Overlay */
-    if game.settings.debug_enabled {
+    if display_state.debug_enabled {
         render_debug(panels.get_mut(&PanelName::Map).unwrap(), display_state);
     }
 
@@ -97,13 +97,13 @@ fn render_panels(panels: &mut Panels,
         let _extra = timer!("EXTRA");
         render_impressions(panel, display_state, config);
         render_effects(panel, display_state, map, config, sprites);
-        render_overlays(panel, display_state, map, config, settings, sprites);
+        render_overlays(panel, display_state, map, config, sprites);
     }
 
     /* Draw Player Info */
     {
         let player_panel = &mut panels.get_mut(&PanelName::Player).unwrap();
-        render_player_info(player_panel, display_state, settings);
+        render_player_info(player_panel, display_state);
     }
 
     /* Draw Inventory */
@@ -175,7 +175,7 @@ fn render_bar(panel: &mut Panel,
     }
 }
 
-fn render_player_info(panel: &mut Panel, display_state: &DisplayState, settings: &GameSettings) {
+fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
     render_placard(panel, "Player");
 
     let player_id = display_state.player_id();
@@ -211,7 +211,7 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState, settings:
     let stance = display_state.stance[&player_id];
     list.push(format!("{}", stance));
     list.push("next move".to_string());
-    let stance = settings.move_mode;
+    let stance = display_state.move_mode;
     list.push(format!("{}", stance));
 
     list.push(format!("turn {}", display_state.turn_count));
@@ -1152,7 +1152,7 @@ fn render_game_overlays(panel: &mut Panel,
     }
 
     // render attack overlay highlighting squares that an entity can attack
-    if settings.overlay {
+    if display_state.overlay {
         let keys = display_state.ids.iter().map(|id| *id).collect::<Vec<EntityId>>();
         for entity_id in keys {
             let pos = display_state.pos[&entity_id];
@@ -1291,7 +1291,6 @@ fn render_overlays(panel: &mut Panel,
                    display_state: &mut DisplayState,
                    map: &Map,
                    config: &Config,
-                   settings: &GameSettings,
                    sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
 
@@ -1321,7 +1320,7 @@ fn render_overlays(panel: &mut Panel,
     highlight_color.a = config.highlight_player_move;
 
     // Draw overlays if enabled
-    if settings.overlay {
+    if display_state.overlay {
         // Draw player movement overlay
         let player_pos = display_state.pos[&player_id];
         for move_pos in display_state.entity_movements[&player_id].clone() {
