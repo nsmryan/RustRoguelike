@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 mod throttler;
 mod keyboard;
 mod replay;

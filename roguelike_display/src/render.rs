@@ -299,8 +299,7 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState, map: &Map) {
         let text_pos = Pos::new(x_offset, y_pos);
         panel.text_list_cmd(&text_list, text_color, text_pos);
 
-        let tile_in_fov = display_state.fov[&info_pos];
-        if tile_in_fov == FovResult::Inside {
+        if display_state.fov.get(&info_pos) == Some(&FovResult::Inside) {
             if map[info_pos].tile_type == TileType::Water {
                 text_list.push("Tile is water".to_string());
             } else {
