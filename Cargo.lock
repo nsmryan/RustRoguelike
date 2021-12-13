@@ -620,6 +620,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "roguelike_display"
+version = "0.1.0"
+dependencies = [
+ "bmp",
+ "gumdrop",
+ "log",
+ "logging_timer",
+ "rmp",
+ "rmp-serde",
+ "roguelike_core",
+ "roguelike_engine",
+ "roguelike_utils",
+ "sdl2",
+ "serde",
+ "serde_derive",
+ "serde_yaml",
+ "simple-logging",
+]
+
+[[package]]
 name = "roguelike_engine"
 version = "0.1.0"
 dependencies = [
@@ -664,6 +684,7 @@ dependencies = [
  "rmp",
  "rmp-serde",
  "roguelike_core",
+ "roguelike_display",
  "roguelike_engine",
  "roguelike_lib",
  "roguelike_utils",

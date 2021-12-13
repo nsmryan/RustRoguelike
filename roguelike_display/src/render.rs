@@ -1426,7 +1426,6 @@ fn empty_tile_color(config: &Config, pos: Pos, visible: bool, rng: &mut Rand32) 
 
    return color;
 }
-*/
 
 fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> Color {
     let color = match (tile.tile_type, visible) {
@@ -1449,6 +1448,7 @@ fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> 
 
     return color;
 }
+*/
 
 fn render_attack_overlay(panel: &mut Panel,
                          config: &Config,

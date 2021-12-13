@@ -1,12 +1,7 @@
 #![allow(dead_code)]
 mod throttler;
-mod render;
-mod display;
 mod keyboard;
-mod load;
 mod replay;
-mod animation;
-mod drawcmd;
 
 use std::fs;
 use std::io::{BufRead, Write, Cursor};
@@ -40,10 +35,11 @@ use roguelike_engine::log::*;
 
 use roguelike_lib::commands::*;
 
+use roguelike_display::load::*;
+use roguelike_display::display::*;
+use roguelike_display::render::*;
+
 use crate::throttler::*;
-use crate::render::*;
-use crate::display::*;
-use crate::load::*;
 use crate::replay::*;
 
 

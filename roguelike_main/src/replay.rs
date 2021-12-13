@@ -17,8 +17,8 @@ use roguelike_engine::actions::*;
 use roguelike_engine::make_map::make_map;
 use roguelike_engine::log::*;
 
-use crate::display::*;
-use crate::render::*;
+use roguelike_display::display::*;
+use roguelike_display::render::*;
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]

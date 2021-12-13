@@ -1,9 +1,8 @@
 [package]
-name = "roguelike_main"
+name = "roguelike_display"
 version = "0.1.0"
 authors = ["nsmryan <nsmryan@gmail.com>"]
 edition = "2018"
-default-run="rl"
 
 [dependencies]
 sdl2 = { version = "0.34", features = ["image", "unsafe_textures", "ttf"] }
@@ -25,10 +24,4 @@ rmp = "*"
 roguelike_utils = { path = "../roguelike_utils" }
 roguelike_core = { path = "../roguelike_core" }
 roguelike_engine = { path = "../roguelike_engine" }
-roguelike_lib = { path = "../roguelike_lib" }
-roguelike_display = { path = "../roguelike_display" }
-
-[[bin]]
-name = "rl"
-path = "src/main.rs"
 
