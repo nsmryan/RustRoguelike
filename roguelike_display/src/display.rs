@@ -551,6 +551,8 @@ impl Display {
                 self.state.behavior.remove(&entity_id);
                 self.state.hp.remove(&entity_id);
                 self.state.max_hp.remove(&entity_id);
+                self.state.gate_pos.remove(&entity_id);
+                self.state.frozen.remove(&entity_id);
 
                 if let Some(ix_pos) = self.state.ids.iter().position(|val| *val == entity_id) {
                     self.state.ids.remove(ix_pos);

@@ -268,14 +268,14 @@ impl Level {
     }
 
     pub fn item_at_pos(&self, pos: Pos) -> Option<EntityId> {
-        for key in self.entities.ids.iter() {
+        for entity_id in self.entities.ids.iter() {
             let is_disarmed_trap =
-                self.entities.trap.get(key).is_some() &&
-                self.entities.armed.get(key) == Some(&false);
-            let is_item = self.entities.item.get(key).is_some();
+                self.entities.trap.get(entity_id).is_some() &&
+                self.entities.armed.get(entity_id) == Some(&false);
+            let is_item = self.entities.item.get(entity_id).is_some();
 
-            if self.entities.pos[key] == pos && (is_item || is_disarmed_trap) {
-                return Some(*key);
+            if self.entities.pos[entity_id] == pos && (is_item || is_disarmed_trap) {
+                return Some(*entity_id);
             }
         }
 

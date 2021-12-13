@@ -1438,7 +1438,7 @@ fn inventory_drop_item(entity_id: EntityId,
                        item_index: usize,
                        level: &mut Level,
                        msg_log: &mut MsgLog) {
-    let player_pos = level.entities.pos[&entity_id];
+    let entity_pos = level.entities.pos[&entity_id];
 
     if let Some(item_id) = level.entities.inventory[&entity_id].get(item_index).map(|v| *v) {
         // Find a place to drop the item, without placing it on the same tile
@@ -1446,12 +1446,13 @@ fn inventory_drop_item(entity_id: EntityId,
         let mut found_tile = false;
         let mut dist = 1;
         while !found_tile && dist < 10 {
-            let positions = floodfill(&level.map, player_pos, dist);
+            let positions = floodfill(&level.map, entity_pos, dist);
 
             for pos in positions {
                 if level.item_at_pos(pos).is_none() {
                     level.entities.remove_item(entity_id, item_id);
                     level.entities.set_pos(item_id, pos);
+                    msg_log.log(Msg::Moved(item_id, MoveType::Blink, pos));
 
                     found_tile = true;
                     break;
