@@ -284,7 +284,9 @@ impl Game {
     }
 
     fn emit_any_action_state(self: &mut Game) {
-        self.emit_use_mode_messages();
+        if self.settings.state == GameState::Use {
+            self.emit_use_mode_messages();
+        }
 
         // indicate player ghost position based on cursor, if in cursor mode
         self.emit_cursor_ghost_position();
@@ -292,6 +294,12 @@ impl Game {
         // report entities at the cursor position
         self.emit_entities_at_cursor();
 
+        // report current player inventory
+        // this is here because picking up and dropping items does not take a turn
+        self.emit_inventory();
+    }
+
+    pub fn emit_turn_messages(&mut self) {
         let player_id = self.level.find_by_name(EntityName::Player).unwrap();
         let player_pos = self.level.entities.pos[&player_id];
         let reach = reach_by_mode(self.settings.move_mode);
@@ -304,11 +312,6 @@ impl Game {
                 self.msg_log.log(Msg::EntityMovement(player_id, move_pos));
             }
         }
-    }
-
-    pub fn emit_turn_messages(&mut self) {
-        // report current player inventory
-        self.emit_inventory();
     }
 
     fn emit_inventory(self: &mut Game) {
