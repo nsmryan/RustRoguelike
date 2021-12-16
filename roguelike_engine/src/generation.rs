@@ -163,13 +163,13 @@ pub fn make_key(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &m
     return entity_id;
 }
 
-pub fn make_mouse(entities: &mut Entities, _config: &Config, msg_log: &mut MsgLog) -> EntityId {
-    let entity_id = entities.create_entity(-1, -1, EntityType::Other, EntityName::Mouse, false);
-
-    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], Pos::new(-1, -1), EntityName::Mouse, entities.direction[&entity_id]));
-
-    return entity_id;
-}
+//pub fn make_mouse(entities: &mut Entities, _config: &Config, msg_log: &mut MsgLog) -> EntityId {
+//    let entity_id = entities.create_entity(-1, -1, EntityType::Other, EntityName::Mouse, false);
+//
+//    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], Pos::new(-1, -1), EntityName::Mouse, entities.direction[&entity_id]));
+//
+//    return entity_id;
+//}
 
 pub fn make_light(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Other, EntityName::Other, false);
@@ -447,7 +447,7 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
         EntityName::Sword => make_sword(entities, config, pos, msg_log),
         EntityName::Shield => make_shield(entities, config, pos, msg_log),
         EntityName::Key => make_key(entities, config, pos, msg_log),
-        EntityName::Mouse => make_mouse(entities, config, msg_log),
+        //EntityName::Mouse => make_mouse(entities, config, msg_log),
         EntityName::Cursor => make_cursor(entities, config, pos, msg_log),
         EntityName::Gol => make_gol(entities, config, pos, msg_log),
         EntityName::Spire => make_spire(entities, config, pos, msg_log),

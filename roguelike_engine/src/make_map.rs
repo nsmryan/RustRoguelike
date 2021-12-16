@@ -22,8 +22,6 @@ use crate::vault::*;
 pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     let player_position: Pos;
 
-    //let player_id = game.level.find_by_name(EntityName::Player).unwrap();
-    //game.level.clear_except(vec!(player_id));
     game.clear_level_except_player();
     game.settings.map_load_config = map_load_config.clone();
 
@@ -147,9 +145,9 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
     }
 
-    if game.level.find_by_name(EntityName::Mouse).is_none() {
-        make_mouse(&mut game.level.entities, &game.config, &mut game.msg_log);
-    }
+    //if game.level.find_by_name(EntityName::Mouse).is_none() {
+       //make_mouse(&mut game.level.entities, &game.config, &mut game.msg_log);
+    //}
 
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     game.msg_log.log(Msg::SetPos(player_id, player_position));
@@ -170,7 +168,8 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
     }
 
-    game.msg_log.log_front(Msg::NewLevel);
+    game.msg_log.log(Msg::NewLevel);
+    game.settings.new_map = true;
 }
 
 pub fn read_map_xp(config: &Config,

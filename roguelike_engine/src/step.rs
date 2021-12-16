@@ -51,13 +51,17 @@ pub fn step_logic(game: &mut Game) -> bool {
        game.level.entities.status[&player_id].alive &&
        !won_level {
         step_ai(game);
+        dbg!("__________________________");
     }
     drop(monster);
 
+    resolve_messages(game);
+
     // send PlayerTurn action in case there is cleanup to perform, or another system
     // needs to know that the turn is finished.
-    game.msg_log.log(Msg::PlayerTurn);
-    resolve_messages(game);
+    if game.level.entities.took_turn[&player_id] {
+        game.msg_log.log(Msg::PlayerTurn);
+    }
 
     // check status effects
     for entity_id in game.level.entities.ids.iter() {

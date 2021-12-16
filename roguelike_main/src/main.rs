@@ -23,7 +23,6 @@ use roguelike_core::types::*;
 use roguelike_core::config::Config;
 use roguelike_core::constants::*;
 use roguelike_core::map::MapLoadConfig;
-use roguelike_core::messaging::MsgLogDir;
 
 use roguelike_engine::game::*;
 use roguelike_engine::generation::*;
@@ -151,7 +150,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         }
     }
 
-    make_mouse(&mut game.level.entities, &game.config, &mut game.msg_log);
+    //make_mouse(&mut game.level.entities, &game.config, &mut game.msg_log);
 
     /* Create Map */
     let mut map_config: MapLoadConfig;
@@ -241,7 +240,9 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
     });
 
     // running the post step first sets up the game before the first turn.
-    game.emit_state_messages(MsgLogDir::Front);
+    game.emit_state_messages();
+    update_display(&mut game, &mut display, 0.1)?;
+    game.msg_log.clear();
 
     /* Main Game Loop */
     let mut frame_time = Instant::now();
@@ -445,10 +446,6 @@ pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), Str
 }
 
 fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(), String> {
-    if game.msg_log.turn_messages.len() > 0 {
-        dbg!(game.msg_log.turn_messages.len());
-    }
-
     for msg in game.msg_log.turn_messages.iter() {
         display.process_message(*msg, &game.level.map, &game.config);
     }

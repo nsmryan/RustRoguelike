@@ -1322,16 +1322,7 @@ fn render_overlays(panel: &mut Panel,
     // Draw overlays if enabled
     if display_state.overlay {
         // Draw player movement overlay
-        let player_pos = display_state.pos[&player_id];
-        for move_pos in display_state.entity_movements[&player_id].clone() {
-            if move_pos != player_pos {
-                let dxy = sub_pos(move_pos, player_pos);
-                let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-                let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
-
-                render_entity_ghost(panel, player_id, shadow_cursor_pos, config, display_state, sprites);
-            }
-        }
+        render_overlay_movement(panel, display_state, config, sprites);
 
         // Draw sound tiles overlay
         render_sound_overlay(panel, display_state, config);
@@ -1349,6 +1340,24 @@ fn render_overlays(panel: &mut Panel,
     // 49 may be fully open
     if config.overlay_floodfill {
         render_overlay_floodfill(panel, map, config, tiles_key);
+    }
+}
+
+fn render_overlay_movement(panel: &mut Panel,
+                           display_state: &mut DisplayState,
+                           config: &Config,
+                           sprites: &Vec<SpriteSheet>) {
+    let player_id = display_state.player_id();
+    let player_pos = display_state.pos[&player_id];
+
+    for move_pos in display_state.entity_movements[&player_id].clone() {
+        if move_pos != player_pos {
+            let dxy = sub_pos(move_pos, player_pos);
+            let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+            let shadow_cursor_pos = direction.offset_pos(player_pos, 1);
+
+            render_entity_ghost(panel, player_id, shadow_cursor_pos, config, display_state, sprites);
+        }
     }
 }
 

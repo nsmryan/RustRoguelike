@@ -138,12 +138,15 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::StateChange(entity_id, behavior) => {
+                let original_behavior = game.level.entities.behavior[&entity_id];
+
                 game.level.entities.behavior[&entity_id] = behavior;
 
                 // if the entity hasn't completed a turn, the state change continues their turn.
                 // NOTE this might be better off as a message! emit it every time a state change
                 // occurs?
-                if !game.level.entities.took_turn[&entity_id] {
+                if !game.level.entities.took_turn[&entity_id] &&
+                    game.level.entities.behavior[&entity_id] != original_behavior {
                    ai_take_turn(entity_id, &mut game.level, &game.config, &mut game.msg_log);
                 }
             }

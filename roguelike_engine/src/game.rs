@@ -91,6 +91,8 @@ impl Game {
     }
 
     pub fn step_game(&mut self, input_action: InputAction) -> bool {
+        let player_id = self.level.find_by_name(EntityName::Player).unwrap();
+
         let input_handled = actions::handle_input_universal(input_action, self);
 
         if !input_handled {
@@ -102,7 +104,7 @@ impl Game {
                                   &self.config);
         }
 
-        if self.msg_log.messages.len() > 0 {
+        if self.msg_log.turn_messages.len() > 0 {
             let _step = timer!("STEP");
             let finished_level = step_logic(self);
 
@@ -135,24 +137,42 @@ impl Game {
                 }
             }
 
-            self.emit_state_messages(MsgLogDir::Back);
+            if self.level.entities.took_turn[&player_id] {
+                self.msg_log.log(Msg::StartTurn);
+            }
         }
+
+        if input_action != InputAction::None {
+            self.emit_any_action_state();
+        }
+
+        if self.msg_log.turn_messages.len() > 0 {
+            //self.emit_any_message_state();
+        }
+
+        if self.level.entities.took_turn[&player_id] || self.settings.new_map {
+            self.emit_took_turn_state();
+        }
+
+        self.settings.new_map = false;
+
 
         return self.settings.state != GameState::Exit;
     }
 
-    pub fn emit_state_messages(&mut self, log_dir: MsgLogDir) {
+    pub fn emit_state_messages(&mut self) {
+        self.msg_log.log(Msg::StartTurn);
+        self.emit_took_turn_state();
+        //self.emit_any_message_state();
+        self.emit_any_action_state();
+    }
+
+    fn emit_player_fov(self: &mut Game) -> Vec<Pos> {
         let player_id = self.level.find_by_name(EntityName::Player).unwrap();
-        let player_pos = self.level.entities.pos[&player_id];
-        let (map_width, map_height) = self.level.map.size();
 
         let mut player_fov = Vec::new();
 
-        if self.level.entities.took_turn[&player_id] && log_dir == MsgLogDir::Back {
-            self.msg_log.log(Msg::StartTurn);
-        }
-
-        // indicate FoV information
+        let (map_width, map_height) = self.level.map.size();
         for y in 0..map_height {
             for x in 0..map_width {
                 let pos = Pos::new(x, y);
@@ -166,7 +186,7 @@ impl Game {
                 // only send if inside or on edge- outside is most common, so it is assumed
                 // if no message is sent.
                 if fov_result != FovResult::Outside {
-                    self.msg_log.log_dir(Msg::TileFov(pos, fov_result), log_dir);
+                    self.msg_log.log(Msg::TileFov(pos, fov_result));
                 }
 
                 // TODO should this be != Outside, to include Edge?
@@ -176,102 +196,168 @@ impl Game {
             }
         }
 
-        for entity_id in self.level.entities.ids.iter() {
-            let typ = self.level.entities.typ[&entity_id];
-            let entity_pos = self.level.entities.pos[&entity_id];
-            if !self.level.map.is_within_bounds(entity_pos) {
-                continue;
-            }
+        return player_fov;
+    }
 
-            // emit whether entity is in player FOV
-            let mut in_fov = self.level.is_in_fov(player_id, *entity_id, &self.config);
-            if self.settings.god_mode {
-                in_fov = FovResult::Inside;
-            }
+    fn emit_entity_information(self: &mut Game, entity_id: EntityId, player_fov: &Vec<Pos>) {
+        let player_id = self.level.find_by_name(EntityName::Player).unwrap();
+        let player_pos = self.level.entities.pos[&player_id];
 
-            // outside is the most common fov result, so it is assumed if no entry is sent.
-            if in_fov != FovResult::Outside {
-                self.msg_log.log_dir(Msg::EntityInFov(*entity_id, in_fov), log_dir);
-            }
+        // emit whether entity is in player FOV
+        let mut in_fov = self.level.is_in_fov(player_id, entity_id, &self.config);
+        if self.settings.god_mode {
+            in_fov = FovResult::Inside;
+        }
 
-            // There is no need for movement or attack information for these types of entities.
-            if typ == EntityType::Environment ||
-               typ == EntityType::Trigger ||
-               typ == EntityType::Column ||
-               typ == EntityType::Energy ||
-               typ == EntityType::Item {
-                continue;
-            }
+        // outside is the most common fov result, so it is assumed if no entry is sent.
+        if in_fov != FovResult::Outside {
+            self.msg_log.log(Msg::EntityInFov(entity_id, in_fov));
+        }
 
-            // emit visible movement positions
-            if in_fov == FovResult::Inside {
-                if let Some(reach) = self.level.entities.movement.get(&entity_id) {
-                    for move_pos in reach.reachables(entity_pos) {
-                        if !self.level.map.is_within_bounds(move_pos) {
-                            continue;
-                        }
+        // Only report movement and attack information for the player and golems.
+        let typ = self.level.entities.typ[&entity_id];
+        if typ != EntityType::Player && typ != EntityType::Enemy {
+            return;
+        }
+        let entity_pos = self.level.entities.pos[&entity_id];
 
-                        if self.level.pos_in_fov(player_id, move_pos, &self.config) {
-                            self.msg_log.log_dir(Msg::EntityMovement(*entity_id, move_pos), log_dir);
-                        }
-                    }
+        // emit visible movement positions
+        if in_fov == FovResult::Inside {
+            if let Some(reach) = self.level.entities.movement.get(&entity_id) {
+                let mut reach = *reach;
+
+                // The player's reach is reported using the move mode instead of stance.
+                if entity_id == player_id {
+                    reach = reach_by_mode(self.settings.move_mode);
                 }
-            }
 
-            if typ != EntityType::Player && typ != EntityType::Enemy {
-                continue;
-            }
-
-            // emit visible attack positions
-            if in_fov == FovResult::Inside {
-                if let Some(reach) = self.level.entities.attack.get(&entity_id) {
-                    for attack_pos in reach.reachables(entity_pos) {
-                        if !self.level.map.is_within_bounds(attack_pos) {
-                            continue;
-                        }
-
-                        if self.level.pos_in_fov(*entity_id, attack_pos, &self.config) &&
-                           (self.level.clear_path(entity_pos, attack_pos, false) || attack_pos == player_pos) {
-                            self.msg_log.log_dir(Msg::EntityAttack(*entity_id, attack_pos), log_dir);
-                        }
+                for move_pos in reach.reachables(entity_pos) {
+                    if !self.level.map.is_within_bounds(move_pos) {
+                        continue;
                     }
-                }
-            }
 
-            // emit visible tiles for entity that are visible to player
-            if in_fov == FovResult::Inside && *entity_id != player_id {
-                for pos in player_fov.iter() {
-                    if self.level.pos_in_fov(*entity_id, *pos, &self.config) {
-                        self.msg_log.log_dir(Msg::EntityFov(*entity_id, *pos), log_dir);
+                    if self.level.pos_in_fov(player_id, move_pos, &self.config) {
+                        self.msg_log.log(Msg::EntityMovement(entity_id, move_pos));
                     }
                 }
             }
         }
+
+        // emit visible attack positions
+        if in_fov == FovResult::Inside {
+            if let Some(reach) = self.level.entities.attack.get(&entity_id) {
+                for attack_pos in reach.reachables(entity_pos) {
+                    if !self.level.map.is_within_bounds(attack_pos) {
+                        continue;
+                    }
+
+                    if self.level.pos_in_fov(entity_id, attack_pos, &self.config) &&
+                       (self.level.clear_path(entity_pos, attack_pos, false) || attack_pos == player_pos) {
+                        self.msg_log.log(Msg::EntityAttack(entity_id, attack_pos));
+                    }
+                }
+            }
+        }
+
+        // emit visible tiles for entity that are visible to player
+        if in_fov == FovResult::Inside && entity_id != player_id {
+            for pos in player_fov.iter() {
+                if self.level.pos_in_fov(entity_id, *pos, &self.config) {
+                    self.msg_log.log(Msg::EntityFov(entity_id, *pos));
+                }
+            }
+        }
+    }
+
+    fn emit_took_turn_state(self: &mut Game) {
+        // indicate FoV information
+        let player_fov = self.emit_player_fov();
+
+        // NOTE(perf) unnecessary clone
+        for entity_id in self.level.entities.ids.clone().iter() {
+            let entity_pos = self.level.entities.pos[&entity_id];
+            if !self.level.map.is_within_bounds(entity_pos) {
+                continue;
+            }
+            self.emit_entity_information(*entity_id, &player_fov);
+        }
+    }
+
+    fn emit_any_action_state(self: &mut Game) {
+        self.emit_use_mode_messages();
+
+        // indicate player ghost position based on cursor, if in cursor mode
+        self.emit_cursor_ghost_position();
+
+        // report entities at the cursor position
+        self.emit_entities_at_cursor();
+
+        let player_id = self.level.find_by_name(EntityName::Player).unwrap();
+        let player_pos = self.level.entities.pos[&player_id];
+        let reach = reach_by_mode(self.settings.move_mode);
+        for move_pos in reach.reachables(player_pos) {
+            if !self.level.map.is_within_bounds(move_pos) {
+                continue;
+            }
+
+            if self.level.pos_in_fov(player_id, move_pos, &self.config) {
+                self.msg_log.log(Msg::EntityMovement(player_id, move_pos));
+            }
+        }
+    }
+
+    pub fn emit_turn_messages(&mut self) {
+        // report current player inventory
+        self.emit_inventory();
+    }
+
+    fn emit_inventory(self: &mut Game) {
+        let player_id = self.level.find_by_name(EntityName::Player).unwrap();
+
+        for item_id in self.level.entities.inventory[&player_id].iter() {
+            let item = self.level.entities.item[&item_id];
+            let item_class = item.class();
+            self.msg_log.log(Msg::InventoryItem(item, item_class));
+        }
+    }
+
+    fn emit_entities_at_cursor(self: &mut Game) {
+        if let Some(cursor_pos) = self.settings.cursor {
+            let entities = self.level.get_entities_at_pos(cursor_pos);
+            for entity in entities {
+                self.msg_log.log(Msg::EntityAtCursor(entity));
+            }
+        }
+    }
+
+    fn emit_use_mode_messages(self: &mut Game) {
+        let player_id = self.level.find_by_name(EntityName::Player).unwrap();
 
         // if in use-mode, output use-direction.
         if let UseAction::Item(item_class) = self.settings.use_action {
             if let Some(item_index) = self.level.find_item(item_class) {
                 if let Some(use_dir) = self.settings.use_dir {
                     let use_result = self.level.calculate_use_move(player_id,
-                                                                  item_index,
-                                                                  use_dir,
-                                                                  self.settings.move_mode);
+                                                                   item_index,
+                                                                   use_dir,
+                                                                   self.settings.move_mode);
+
                     if let Some(pos) = use_result.pos {
-                        self.msg_log.log_dir(Msg::UsePos(pos), log_dir);
+                        self.msg_log.log(Msg::UsePos(pos));
                     }
 
                     if let Some(dir) = self.settings.use_dir {
-                        self.msg_log.log_dir(Msg::UseDir(dir), log_dir);
+                        self.msg_log.log(Msg::UseDir(dir));
                     }
 
                     for pos in use_result.hit_positions {
-                        self.msg_log.log_dir(Msg::UseHitPos(pos), log_dir);
+                        self.msg_log.log(Msg::UseHitPos(pos));
                     }
                 }
             }
         } else if self.settings.use_action == UseAction::Interact {
             if let Some(dir) = self.settings.use_dir {
-                self.msg_log.log_dir(Msg::UseDir(dir), log_dir);
+                self.msg_log.log(Msg::UseDir(dir));
             }
 
             let player_pos = self.level.entities.pos[&player_id];
@@ -282,25 +368,12 @@ impl Game {
                 self.msg_log.log(Msg::UseOption(pos, dir));
             }
         }
-
-        // report entities at the cursor position
-        if let Some(cursor_pos) = self.settings.cursor {
-            let entities = self.level.get_entities_at_pos(cursor_pos);
-            for entity in entities {
-                self.msg_log.log_dir(Msg::EntityAtCursor(entity), log_dir);
-            }
-        }
-
-        if self.level.entities.took_turn[&player_id] {
-            // report current player inventory
-            for item_id in self.level.entities.inventory[&player_id].iter() {
-                let item = self.level.entities.item[&item_id];
-                let item_class = item.class();
-                self.msg_log.log(Msg::InventoryItem(item, item_class));
-            }
-        }
-
-        // indicate player ghost position based on cursor, if in cursor mode
+    }
+    
+    fn emit_cursor_ghost_position(self: &mut Game) {
+        let player_id = self.level.find_by_name(EntityName::Player).unwrap();
+        let player_pos = self.level.entities.pos[&player_id];
+        
         if let Some(cursor_pos) = self.settings.cursor {
             if cursor_pos != player_pos && self.input.target == None {
                 let maybe_next_pos = astar_next_pos(&self.level.map, player_pos, cursor_pos, None, None);
@@ -318,10 +391,6 @@ impl Game {
                     }
                 }
             }
-        }
-
-        if self.level.entities.took_turn[&player_id] && log_dir == MsgLogDir::Front {
-            self.msg_log.log_front(Msg::StartTurn);
         }
     }
 
@@ -349,6 +418,7 @@ pub struct GameSettings {
     pub move_mode: MoveMode,
     pub debug_enabled: bool,
     pub map_load_config: MapLoadConfig,
+    pub new_map: bool,
 }
 
 impl GameSettings {
@@ -367,6 +437,7 @@ impl GameSettings {
             move_mode: MoveMode::Walk,
             debug_enabled: false,
             map_load_config: MapLoadConfig::Empty,
+            new_map: false,
         };
     }
 }
