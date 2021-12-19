@@ -169,7 +169,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
     }
 
     game.msg_log.log(Msg::NewLevel);
-    game.settings.new_map = true;
+    game.settings.map_changed = true;
 }
 
 pub fn read_map_xp(config: &Config,

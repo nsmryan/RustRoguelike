@@ -32,7 +32,7 @@ use crate::movement::Direction;
 pub const ASTAR_COST_MULTIPLIER: i32 = 100;
 
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum TileType {
     Empty,
     ShortWall,
@@ -83,6 +83,16 @@ impl TileType {
             TileType::Wall => true,
             TileType::Water => false,
             TileType::Exit => false,
+        }
+    }
+
+    pub fn chr(&self) -> char {
+        match self {
+            TileType::Empty => 'e',
+            TileType::ShortWall => 's',
+            TileType::Wall => 'w',
+            TileType::Water => 'a',
+            TileType::Exit => 'x',
         }
     }
 }
@@ -223,7 +233,7 @@ impl FromStr for MapLoadConfig {
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Surface {
     Floor,
     Rubble,
@@ -255,6 +265,16 @@ impl FromStr for Surface {
         }
 
         return Err(format!("Could not parse '{}' as Surface", s));
+    }
+}
+
+impl Surface {
+    pub fn chr(&self) -> char {
+        match self {
+            Surface::Floor => 'f',
+            Surface::Rubble => 'r',
+            Surface::Grass => 'g',
+        }
     }
 }
 
@@ -296,7 +316,7 @@ fn test_blocked_type() {
     assert_eq!(true, BlockedType::Move.blocking(Wall::TallWall, Surface::Floor));
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Hash, Eq, Debug, PartialEq, Serialize, Deserialize)]
 #[repr(C, packed)]
 pub struct Tile {
     pub block_move: bool,
@@ -325,6 +345,25 @@ impl Tile {
             chr: ' ' as u8,
             surface: Surface::Floor,
         }
+    }
+
+    pub fn short_bottom_wall() -> Self {
+        let mut tile = Tile::empty();
+        tile.bottom_wall = Wall::ShortWall;
+        return tile;
+    }
+
+    pub fn short_left_wall() -> Self {
+        let mut tile = Tile::empty();
+        tile.left_wall = Wall::ShortWall;
+        return tile;
+    }
+
+    pub fn short_left_and_bottom_wall() -> Self {
+        let mut tile = Tile::empty();
+        tile.left_wall = Wall::ShortWall;
+        tile.bottom_wall = Wall::ShortWall;
+        return tile;
     }
 
     pub fn water() -> Self {
@@ -453,6 +492,54 @@ impl Tile {
         if self.left_wall == Wall::TallWall {
             self.left_wall = Wall::ShortWall;
         }
+    }
+
+    pub fn chrs(&self) -> [char; 9] {
+        let mut chrs: [char; 9] = ['0'; 9];
+
+        let mut index = 0;
+        if self.block_move {
+            chrs[index] = '1';
+        } else {
+            chrs[index] = '0';
+        }
+        index += 1;
+
+        if self.block_sight {
+            chrs[index] = '1';
+        } else {
+            chrs[index] = '0';
+        }
+        index += 1;
+
+        //if self.explored {
+        //    chrs[index] = '1';
+        //} else {
+        //    chrs[index] = '0';
+        //}
+        //index += 1;
+
+        chrs[index] = self.tile_type.chr();
+        index += 1;
+
+        chrs[index] = self.bottom_wall.chr();
+        index += 1;
+
+        chrs[index] = self.bottom_material.chr();
+        index += 1;
+
+        chrs[index] = self.left_wall.chr();
+        index += 1;
+
+        chrs[index] = self.left_material.chr();
+        index += 1;
+
+        chrs[index] = self.chr as char;
+        index += 1;
+
+        chrs[index] = self.surface.chr();
+
+        return chrs;
     }
 }
 
@@ -672,7 +759,7 @@ impl Obstacle {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub enum Wall {
     Empty,
     ShortWall,
@@ -713,6 +800,14 @@ impl Wall {
             Wall::Empty => true,
             Wall::ShortWall => false,
             Wall::TallWall => false,
+        }
+    }
+
+    pub fn chr(&self) -> char {
+        match self {
+            Wall::Empty => 'e',
+            Wall::ShortWall => 's',
+            Wall::TallWall => 't',
         }
     }
 }
@@ -1288,6 +1383,175 @@ impl Map {
                 panic!("Placing an intertile wall on a diagonal makes no sense!");
             }
         }
+    }
+
+    pub fn chrs(&self) -> Vec<char> {
+        let mut chrs = Vec::new();
+        for y in 0..self.height() {
+            for x in 0..self.width() {
+                for chr in self[(x, y)].chrs().iter() {
+                    chrs.push(*chr);
+                }
+            }
+        }
+
+        return chrs;
+    }
+
+    pub fn common_tiles() -> Vec<Tile> {
+        let mut common_tiles = Vec::new();
+        common_tiles.push(Tile::empty());
+        common_tiles.push(Tile::water());
+        common_tiles.push(Tile::grass());
+        common_tiles.push(Tile::rubble());
+        common_tiles.push(Tile::short_wall());
+        common_tiles.push(Tile::wall());
+        common_tiles.push(Tile::short_left_wall());
+        common_tiles.push(Tile::short_bottom_wall());
+        common_tiles.push(Tile::short_left_and_bottom_wall());
+
+        return common_tiles;
+    }
+
+    pub fn tile_summary(&self) -> Vec<Tile> {
+        let mut tile_set = HashSet::new();
+
+        //let common_tiles = Map::common_tiles();
+        for y in 0..self.height() {
+            for x in 0..self.width() {
+                let tile = self[(x, y)];
+                //if common_tiles.iter().position(|t| *t == tile).is_none() {
+                    //tile_set.insert(tile);
+                //}
+                tile_set.insert(tile);
+            }
+        }
+
+        return tile_set.iter().map(|t| *t).collect::<Vec<Tile>>();
+    }
+
+    pub fn compact_chrs(&self) -> Vec<char> {
+        let mut chrs = Vec::new();
+
+        let summary = self.tile_summary();
+        //let common_tiles = Map::common_tiles();
+
+        // push summary tiles first
+        for common_tile in summary.iter() {
+            for chr in common_tile.chrs().iter() {
+                chrs.push(*chr);
+            }
+        }
+        // separate by !.
+        chrs.push('!');
+
+        // emit map tiles
+        for y in 0..self.height() {
+            for x in 0..self.width() {
+                let tile = self[(x, y)];
+
+                //if common_tiles.contains(&tile) {
+                //    // emit common tile character
+                //    if tile == Tile::empty() {
+                //        chrs.push('.');
+                //    } else if tile == Tile::water() {
+                //        chrs.push('=');
+                //    } else if tile == Tile::grass() {
+                //        chrs.push('*');
+                //    } else if tile == Tile::rubble() {
+                //        chrs.push('%');
+                //    } else if tile == Tile::short_wall() {
+                //        chrs.push('$');
+                //    } else if tile == Tile::wall() {
+                //        chrs.push('#');
+                //    } else if tile == Tile::short_left_wall() {
+                //        chrs.push('|');
+                //    } else if tile == Tile::short_bottom_wall() {
+                //        chrs.push('_');
+                //    } else if tile == Tile::short_left_and_bottom_wall() {
+                //        chrs.push('+');
+                //    } else {
+                //        panic!("Missing common tile check!");
+                //    }
+                //} else if let Some(tile_index) = summary.iter().position(|t| *t == tile) {
+                if let Some(tile_index) = summary.iter().position(|t| *t == tile) {
+                    // emit tile index character
+                    if tile_index > 26 {
+                        panic!("Not enough letters!");
+                    }
+                    let chr;
+                    if tile.explored {
+                        chr = char::from('A' as u8 + tile_index as u8);
+                    } else {
+                        chr = char::from('a' as u8 + tile_index as u8);
+                    }
+                    chrs.push(chr);
+                } else {
+                    // Literal tiles are omitted as they would make runs harder
+                    // to detect. One option would be to record their position
+                    // and expand them while finding runs. However, this does
+                    // not appear to be necessary, so for now just panic.
+                    panic!("literal tile required!");
+                    // emit tile literal
+                    //chrs.push('@');
+                    //for chr in tile.chrs().iter() {
+                    //    chrs.push(*chr);
+                    //}
+                }
+            }
+        }
+
+        let mut read_index = 0;
+        // skip to start of map tiles
+        while chrs[read_index] != '!' {
+            read_index += 1;
+        }
+        // skip '!' character
+        read_index += 1;
+
+        let mut count = 0;
+        let mut write_index = read_index;
+        while read_index < chrs.len() {
+            let cur_char = chrs[read_index];
+            let mut index_run_end = read_index;
+            for offset in 1..11 {
+                if offset + read_index >= chrs.len() {
+                    break;
+                }
+
+                if chrs[offset + read_index] != chrs[read_index] {
+                    break;
+                }
+                index_run_end += 1;
+            }
+
+            let run_length = index_run_end - read_index + 1;
+            if run_length > 2 {
+                let count_chr;
+                if run_length == 11 {
+                    count_chr = '1';
+                } else if run_length == 10 {
+                    count_chr = '0';
+                } else {
+                    count_chr = ('0' as u8 + run_length as u8) as char;
+                }
+                chrs[write_index] = count_chr;
+                write_index += 1;
+                chrs[write_index] = cur_char;
+                write_index += 1;
+
+                read_index = index_run_end + 1;
+                count += run_length;
+            } else {
+                chrs[write_index] = chrs[read_index];
+                write_index += 1;
+                read_index += 1;
+                count += 1;
+            }
+        }
+        chrs.truncate(write_index);
+
+        return chrs;
     }
 }
 

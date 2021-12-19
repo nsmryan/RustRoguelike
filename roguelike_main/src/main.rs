@@ -25,7 +25,6 @@ use roguelike_core::constants::*;
 use roguelike_core::map::MapLoadConfig;
 
 use roguelike_engine::game::*;
-use roguelike_engine::generation::*;
 use roguelike_engine::actions::*;
 use roguelike_engine::input::*;
 use roguelike_engine::make_map::{make_map, read_map_xp};
@@ -243,6 +242,11 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
     game.emit_state_messages();
     update_display(&mut game, &mut display, 0.1)?;
     game.msg_log.clear();
+
+    //dbg!("chrs len {}", game.level.map.chrs().len());
+    //dbg!("comp len {}", game.level.map.compact_chrs().len());
+    //println!("{}", game.level.map.compact_chrs().into_iter().collect::<String>());
+    game.level.map.compact_chrs();
 
     /* Main Game Loop */
     let mut frame_time = Instant::now();

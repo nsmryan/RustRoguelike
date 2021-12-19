@@ -150,11 +150,11 @@ impl Game {
             //self.emit_any_message_state();
         }
 
-        if self.level.entities.took_turn[&player_id] || self.settings.new_map {
+        if self.level.entities.took_turn[&player_id] || self.settings.map_changed {
             self.emit_took_turn_state();
         }
 
-        self.settings.new_map = false;
+        self.settings.map_changed = false;
 
 
         return self.settings.state != GameState::Exit;
@@ -421,7 +421,7 @@ pub struct GameSettings {
     pub move_mode: MoveMode,
     pub debug_enabled: bool,
     pub map_load_config: MapLoadConfig,
-    pub new_map: bool,
+    pub map_changed: bool,
 }
 
 impl GameSettings {
@@ -440,7 +440,7 @@ impl GameSettings {
             move_mode: MoveMode::Walk,
             debug_enabled: false,
             map_load_config: MapLoadConfig::Empty,
-            new_map: false,
+            map_changed: false,
         };
     }
 }

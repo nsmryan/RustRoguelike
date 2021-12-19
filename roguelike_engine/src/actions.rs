@@ -271,6 +271,9 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
                 game.level.entities.hp[&player_id].max_hp = game.config.player_health;
                 game.level.entities.energy[&player_id] = game.config.player_energy;
             }
+            
+            // this causes FoV information to be emitted.
+            game.settings.map_changed = true;
 
             return true;
         }
