@@ -269,6 +269,10 @@ impl Display {
         self.state.player_ghost = None;
     }
 
+    pub fn map_message(&mut self, map_str: &str) {
+        parse_map(map_str, &mut self.state.map);
+    }
+
     pub fn process_message(&mut self, msg: Msg, map: &Map, config: &Config) {
         match msg {
             Msg::StartTurn => {
@@ -757,6 +761,8 @@ pub struct DisplayState {
     pub frozen: Comp<bool>,
     pub player_ghost: Option<Pos>,
 
+    pub map: Map,
+
     // settings
     pub debug_enabled: bool,
     pub overlay: bool,
@@ -823,6 +829,7 @@ impl DisplayState {
             gate_pos: Comp::new(),
             frozen: Comp::new(),
             player_ghost: None,
+            map: Map::from_dims(1, 1),
             debug_enabled: false,
             overlay: false,
             move_mode: MoveMode::Walk,
@@ -1036,3 +1043,161 @@ fn create_panels(width: u32, height: u32) -> HashMap<PanelName, Panel> {
     return panels;
 }
 
+fn parse_map(map_str: &str, map: &mut Map) {
+    let mut parts = map_str.split("!");
+    let width = parts.next().unwrap().parse::<i32>().unwrap();
+    let height = parts.next().unwrap().parse::<i32>().unwrap();
+
+    if map.width() != width || map.height() != height {
+        *map = Map::from_dims(width as u32, height as u32);
+    }
+
+    let summary = parts.next().unwrap();
+    let chrs = parts.next().unwrap();
+
+    let mut summary_tiles = Vec::new();
+    for index in 0..(summary.len() / 9) {
+        let tile_index = index * 9;
+        let tile = chrs_tile(&summary[tile_index..(tile_index + 9)]);
+        summary_tiles.push(tile);
+    }
+
+    let chrs = chrs.chars().collect::<Vec<char>>();
+    let mut index = 0;
+    let mut map_index = 0;
+    while index < chrs.len() {
+        let chr = chrs[index];
+
+        if chr >= '0' || chr <= '9' {
+            let chr_index = chr as u8 - '0' as u8;
+
+            let times;
+            if chr_index == 0 {
+                times = 10;
+            } else if chr_index == 1 {
+                times = 11;
+            } else {
+                times = chr_index;
+            }
+
+            index += 1;
+            let tile_chr = chrs[index];
+            index += 1;
+
+            let chr_index;
+            let explored;
+            if tile_chr.is_ascii_lowercase() {
+                chr_index = chr as u8 - 'a' as u8;
+                explored = false;
+            } else {
+                chr_index = chr as u8 - 'A' as u8;
+                explored = true;
+            }
+            let mut tile = summary_tiles[chr_index as usize];
+            tile.explored = explored;
+
+            for _ in 0..times {
+                let (x, y) = coord_from_index(map_index, width);
+                map[(x, y)] = tile;
+
+                map_index += 1;
+            }
+        } else {
+            let chr_index;
+            let explored;
+            if chrs[index].is_ascii_lowercase() {
+                chr_index = chr as u8 - 'a' as u8;
+                explored = false;
+            } else {
+                chr_index = chr as u8 - 'A' as u8;
+                explored = true;
+            }
+            let mut tile = summary_tiles[chr_index as usize];
+            tile.explored = explored;
+
+            let tile = summary_tiles[chr_index as usize];
+            let (x, y) = coord_from_index(map_index, width);
+            map[(x, y)] = tile;
+            map_index += 1;
+
+            index += 1;
+        }
+    }
+}
+
+fn coord_from_index(index: i32, width: i32) -> (i32, i32) {
+    return (index / width, index % width);
+}
+
+
+fn chrs_tile(summary: &str) -> Tile {
+    let chrs = summary.chars().collect::<Vec<char>>();
+
+    let mut tile_index = 0;
+
+    let mut tile = Tile::empty();
+    tile.block_move = chr_bool(chrs[tile_index]);
+    tile_index += 1;
+
+    tile.block_sight = chr_bool(chrs[tile_index]);
+    tile_index += 1;
+
+    tile.tile_type = chr_tile_type(chrs[tile_index]);
+    tile_index += 1;
+
+    tile.bottom_wall = chr_wall(chrs[tile_index]);
+    tile_index += 1;
+
+    tile.bottom_material = chr_surface(chrs[tile_index]);
+    tile_index += 1;
+
+    tile.left_wall = chr_wall(chrs[tile_index]);
+    tile_index += 1;
+
+    tile.left_material = chr_surface(chrs[tile_index]);
+    tile_index += 1;
+
+    tile.chr = chrs[tile_index] as u8;
+    tile_index += 1;
+
+    tile.surface = chr_surface(chrs[tile_index]);
+
+    return tile;
+}
+
+fn chr_tile_type(chr: char) -> TileType {
+    match chr {
+        'e' => TileType::Empty,
+        's' => TileType::ShortWall,
+        'w' => TileType::Wall,
+        'a' => TileType::Water,
+        'x' => TileType::Exit,
+        _ => panic!("unexpected tile_type char!"),
+    }
+}
+
+fn chr_wall(chr: char) -> Wall {
+    match chr {
+        'e' => Wall::Empty,
+        's' => Wall::ShortWall,
+        't' => Wall::TallWall,
+        _ => panic!("unexpected wall char!"),
+    }
+}
+
+fn chr_surface(chr: char) -> Surface {
+    match chr {
+        'f' => Surface::Floor,
+        'r' => Surface::Rubble,
+        'g' => Surface::Grass,
+        _ => panic!("unexpected surface char!"),
+    }
+}
+
+fn chr_bool(chr: char) -> bool {
+    match chr {
+        '0' => false,
+        '1' => true,
+        _ => panic!("unexpected bool char!"),
+    }
+}

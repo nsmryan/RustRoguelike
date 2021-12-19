@@ -52,6 +52,10 @@ impl Log {
         self.log(LogMsgType::Key, log_message);
     }
 
+    pub fn log_map(&mut self, log_message: &str) {
+        self.log(LogMsgType::Map, log_message);
+    }
+
     pub fn log(&mut self, typ: LogMsgType, log_message: &str) {
         let log_msg = format!("{}: {}\n", typ, log_message);
         self.message_log.write(log_msg.as_bytes()).unwrap();
@@ -66,6 +70,7 @@ pub enum LogMsgType {
     Console,
     Msg,
     Key,
+    Map,
 }
 
 impl fmt::Display for LogMsgType {
@@ -75,6 +80,7 @@ impl fmt::Display for LogMsgType {
             LogMsgType::Console => write!(f, "CONSOLE"),
             LogMsgType::Msg => write!(f, "MSG"),
             LogMsgType::Key => write!(f, "KEY"),
+            LogMsgType::Map => write!(f, "MAP"),
         }
     }
 }

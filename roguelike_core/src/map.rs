@@ -1398,31 +1398,12 @@ impl Map {
         return chrs;
     }
 
-    pub fn common_tiles() -> Vec<Tile> {
-        let mut common_tiles = Vec::new();
-        common_tiles.push(Tile::empty());
-        common_tiles.push(Tile::water());
-        common_tiles.push(Tile::grass());
-        common_tiles.push(Tile::rubble());
-        common_tiles.push(Tile::short_wall());
-        common_tiles.push(Tile::wall());
-        common_tiles.push(Tile::short_left_wall());
-        common_tiles.push(Tile::short_bottom_wall());
-        common_tiles.push(Tile::short_left_and_bottom_wall());
-
-        return common_tiles;
-    }
-
     pub fn tile_summary(&self) -> Vec<Tile> {
         let mut tile_set = HashSet::new();
 
-        //let common_tiles = Map::common_tiles();
         for y in 0..self.height() {
             for x in 0..self.width() {
                 let tile = self[(x, y)];
-                //if common_tiles.iter().position(|t| *t == tile).is_none() {
-                    //tile_set.insert(tile);
-                //}
                 tile_set.insert(tile);
             }
         }
@@ -1430,13 +1411,19 @@ impl Map {
         return tile_set.iter().map(|t| *t).collect::<Vec<Tile>>();
     }
 
-    pub fn compact_chrs(&self) -> Vec<char> {
+    pub fn compact_chrs(&self) -> String {
         let mut chrs = Vec::new();
 
         let summary = self.tile_summary();
-        //let common_tiles = Map::common_tiles();
+        if summary.len() > 26 {
+            panic!("Not enough letters!");
+        }
 
-        // push summary tiles first
+        for chr in format!("{}!{}!", self.width(), self.height()).chars() {
+            chrs.push(chr);
+        }
+
+        // push summary tiles
         for common_tile in summary.iter() {
             for chr in common_tile.chrs().iter() {
                 chrs.push(*chr);
@@ -1450,35 +1437,8 @@ impl Map {
             for x in 0..self.width() {
                 let tile = self[(x, y)];
 
-                //if common_tiles.contains(&tile) {
-                //    // emit common tile character
-                //    if tile == Tile::empty() {
-                //        chrs.push('.');
-                //    } else if tile == Tile::water() {
-                //        chrs.push('=');
-                //    } else if tile == Tile::grass() {
-                //        chrs.push('*');
-                //    } else if tile == Tile::rubble() {
-                //        chrs.push('%');
-                //    } else if tile == Tile::short_wall() {
-                //        chrs.push('$');
-                //    } else if tile == Tile::wall() {
-                //        chrs.push('#');
-                //    } else if tile == Tile::short_left_wall() {
-                //        chrs.push('|');
-                //    } else if tile == Tile::short_bottom_wall() {
-                //        chrs.push('_');
-                //    } else if tile == Tile::short_left_and_bottom_wall() {
-                //        chrs.push('+');
-                //    } else {
-                //        panic!("Missing common tile check!");
-                //    }
-                //} else if let Some(tile_index) = summary.iter().position(|t| *t == tile) {
                 if let Some(tile_index) = summary.iter().position(|t| *t == tile) {
                     // emit tile index character
-                    if tile_index > 26 {
-                        panic!("Not enough letters!");
-                    }
                     let chr;
                     if tile.explored {
                         chr = char::from('A' as u8 + tile_index as u8);
@@ -1486,17 +1446,6 @@ impl Map {
                         chr = char::from('a' as u8 + tile_index as u8);
                     }
                     chrs.push(chr);
-                } else {
-                    // Literal tiles are omitted as they would make runs harder
-                    // to detect. One option would be to record their position
-                    // and expand them while finding runs. However, this does
-                    // not appear to be necessary, so for now just panic.
-                    panic!("literal tile required!");
-                    // emit tile literal
-                    //chrs.push('@');
-                    //for chr in tile.chrs().iter() {
-                    //    chrs.push(*chr);
-                    //}
                 }
             }
         }
@@ -1509,7 +1458,6 @@ impl Map {
         // skip '!' character
         read_index += 1;
 
-        let mut count = 0;
         let mut write_index = read_index;
         while read_index < chrs.len() {
             let cur_char = chrs[read_index];
@@ -1541,17 +1489,15 @@ impl Map {
                 write_index += 1;
 
                 read_index = index_run_end + 1;
-                count += run_length;
             } else {
                 chrs[write_index] = chrs[read_index];
                 write_index += 1;
                 read_index += 1;
-                count += 1;
             }
         }
         chrs.truncate(write_index);
 
-        return chrs;
+        return chrs.iter().collect::<String>();
     }
 }
 

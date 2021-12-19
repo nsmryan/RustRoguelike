@@ -243,11 +243,6 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
     update_display(&mut game, &mut display, 0.1)?;
     game.msg_log.clear();
 
-    //dbg!("chrs len {}", game.level.map.chrs().len());
-    //dbg!("comp len {}", game.level.map.compact_chrs().len());
-    //println!("{}", game.level.map.compact_chrs().into_iter().collect::<String>());
-    game.level.map.compact_chrs();
-
     /* Main Game Loop */
     let mut frame_time = Instant::now();
     while game.settings.running {
@@ -453,6 +448,9 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
     for msg in game.msg_log.turn_messages.iter() {
         display.process_message(*msg, &game.level.map, &game.config);
     }
+
+    let map_str = game.level.map.compact_chrs();
+    display.map_message(&map_str);
 
     /* Draw the Game to the Screen */
     {
