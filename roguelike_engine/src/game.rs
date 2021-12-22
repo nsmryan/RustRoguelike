@@ -146,10 +146,6 @@ impl Game {
             self.emit_any_action_state();
         }
 
-        if self.msg_log.turn_messages.len() > 0 {
-            //self.emit_any_message_state();
-        }
-
         if self.level.entities.took_turn[&player_id] || self.settings.map_changed {
             self.emit_took_turn_state();
         }
@@ -163,7 +159,6 @@ impl Game {
     pub fn emit_state_messages(&mut self) {
         self.msg_log.log(Msg::StartTurn);
         self.emit_took_turn_state();
-        //self.emit_any_message_state();
         self.emit_any_action_state();
     }
 

@@ -26,6 +26,7 @@ use roguelike_engine::generation::*;
 // fov
 // convenience, like visible entity ids
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd)]
 pub enum GameCmd {
     PlayerId,
     Pos(u64),

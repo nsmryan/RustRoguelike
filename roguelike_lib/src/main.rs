@@ -39,7 +39,7 @@ pub fn main() {
                 }
 
                 let map_str = game.level.map.compact_chrs();
-                log.log_map(map_str);
+                log.log_map(&map_str);
             }
         }
     }

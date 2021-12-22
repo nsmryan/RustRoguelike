@@ -31,7 +31,7 @@ use crate::movement::Direction;
 pub const ASTAR_COST_MULTIPLIER: i32 = 100;
 
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialOrd, Ord, PartialEq, Serialize, Deserialize)]
 pub enum TileType {
     Empty,
     ShortWall,
@@ -232,7 +232,7 @@ impl FromStr for MapLoadConfig {
 }
 
 
-#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialOrd, PartialEq, Serialize, Deserialize)]
 pub enum Surface {
     Floor,
     Rubble,
@@ -733,7 +733,7 @@ impl Obstacle {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Wall {
     Empty,
     ShortWall,
