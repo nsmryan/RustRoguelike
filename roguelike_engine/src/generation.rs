@@ -68,6 +68,14 @@ pub fn make_column(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
     return entity_id;
 }
 
+pub fn make_statue(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Column, EntityName::Statue, true);
+
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Statue, entities.direction[&entity_id]));
+
+    return entity_id;
+}
+
 pub fn make_energy(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Energy, EntityName::Energy, false);
 
@@ -719,8 +727,7 @@ pub fn make_wall_test_map(entities: &mut Entities,
     //make_armil(entities, config, Pos::new(5, 5), msg_log);
     make_column(entities, config, Pos::new(6, 4), msg_log);
 
-    map[(2, 6)].block_move = true;
-    map[(2, 6)].chr = MAP_STATUE_1 as u8;
+    make_statue(entities, config, Pos::new(2, 6), msg_log);
 
     make_dagger(entities, config, Pos::new(position.0, position.1), msg_log);
     make_sword(entities, config, Pos::new(1, 1), msg_log);

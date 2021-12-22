@@ -487,16 +487,20 @@ fn render_background(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
     }
 }
 
-fn surface_chr(surface: Surface) -> Option<u8> {
+fn surface_chr(surface: Surface, block_sight: bool) -> Option<u8> {
     match surface {
         Surface::Rubble => {
             return Some(MAP_RUBBLE);
         }
 
         Surface::Grass => {
-            // Grass is animated now
-            //return Some(MAP_GRASS);
-            return None;
+            if block_sight {
+                // tall grass sprite (not animated)
+                return Some(ENTITY_TALL_GRASS);
+            } else {
+                // Grass is animated now
+                return None;
+            }
         }
 
         Surface::Floor => {
@@ -673,7 +677,7 @@ fn render_map(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
                 panel.sprite_cmd(sprite, Color::white(), pos);
             }
 
-            if let Some(chr) = surface_chr(tile.surface) {
+            if let Some(chr) = surface_chr(tile.surface, tile.block_sight) {
                 let sprite = Sprite::new(chr as u32, sprite_key);
                 panel.sprite_cmd(sprite, Color::white(), pos);
             }
@@ -1247,7 +1251,6 @@ fn render_overlay_fov(panel: &mut Panel,
 
 fn render_overlay_attack(panel: &mut Panel,
                          display_state: &mut DisplayState,
-                         map: &Map,
                          config: &Config,
                          sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
@@ -1260,7 +1263,7 @@ fn render_overlay_attack(panel: &mut Panel,
            entity_id != player_id &&
            display_state.typ[&entity_id] == EntityType::Enemy {
            render_attack_overlay(panel, config, display_state, entity_id, sprites);
-           render_fov_overlay(panel, display_state, map, config, entity_id);
+           render_fov_overlay(panel, display_state, config, entity_id);
            render_movement_overlay(panel, config, display_state, entity_id, sprites);
         }
     }
@@ -1313,7 +1316,7 @@ fn render_overlays(panel: &mut Panel,
 
     // draw attack and fov position highlights
     if let Some(_cursor_pos) = display_state.cursor_pos {
-        render_overlay_attack(panel, display_state, map, config, sprites);
+        render_overlay_attack(panel, display_state, config, sprites);
     }
 
     let mut highlight_color: Color = config.color_warm_grey;
@@ -1328,7 +1331,7 @@ fn render_overlays(panel: &mut Panel,
         render_sound_overlay(panel, display_state, config);
 
         // Outline tiles within FOV for clarity
-        render_fov_overlay(panel, display_state, map, config, player_id);
+        render_fov_overlay(panel, display_state, config, player_id);
     }
 
     // NOTE floodfill ranges:
@@ -1478,7 +1481,6 @@ fn render_attack_overlay(panel: &mut Panel,
 
 fn render_fov_overlay(panel: &mut Panel,
                       display_state: &DisplayState,
-                      map: &Map,
                       config: &Config,
                       entity_id: EntityId) {
     let mut highlight_color = config.color_light_grey;
@@ -1488,8 +1490,8 @@ fn render_fov_overlay(panel: &mut Panel,
         return;
     }
 
-    for y in 0..map.height() {
-        for x in 0..map.width() {
+    for y in 0..display_state.map.height() {
+        for x in 0..display_state.map.width() {
             let map_pos = Pos::new(x, y);
 
             let entity_fov = display_state.entity_fov[&entity_id].iter().position(|p| *p == map_pos).is_some();

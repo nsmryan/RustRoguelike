@@ -1154,6 +1154,7 @@ pub enum EntityName {
     Energy,
     Herb,
     Grass,
+    Statue,
     Other,
 }
 
@@ -1196,6 +1197,7 @@ impl fmt::Display for EntityName {
             EntityName::Energy => write!(f, "energy"),
             EntityName::Herb => write!(f, "herb"),
             EntityName::Grass => write!(f, "grass"),
+            EntityName::Statue => write!(f, "statue"),
             EntityName::Other => write!(f, "other"),
         }
     }
@@ -1268,6 +1270,8 @@ impl FromStr for EntityName {
             return Ok(EntityName::Herb);
         } else if s == "grass" {
             return Ok(EntityName::Grass);
+        } else if s == "statue" {
+            return Ok(EntityName::Statue);
         } else if s == "other" {
             return Ok(EntityName::Other);
         }

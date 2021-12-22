@@ -62,6 +62,8 @@ pub struct Display {
     // TODO this may not be necessary- the canvas is not like other panels
     // try to just store the area, or the pixel dimensions, instead of a panel.
     pub canvas_panel: Panel,
+
+    pub rng: Rand32,
 }
 
 impl Display {
@@ -89,7 +91,9 @@ impl Display {
                          panels,
                          intern: HashMap::new(),
                          next_str: 0,
-                         canvas_panel};
+                         canvas_panel,
+                         rng: Rand32::new(0),
+        };
     }
 
     pub fn add_string(&mut self, string: &str) -> usize {
@@ -236,6 +240,11 @@ impl Display {
                 return Some(self.loop_sprite("lantern_idle", config.fire_speed));
             } else if self.state.name[&entity_id] == EntityName::Grass {
                 return Some(self.random_sprite("grassanim", config.grass_idle_speed));
+            } else if self.state.name[&entity_id] == EntityName::Statue {
+                let statues = vec!(MAP_STATUE_1, MAP_STATUE_2, MAP_STATUE_3, MAP_STATUE_4, MAP_STATUE_5, MAP_STATUE_6);
+                let index = roguelike_utils::rng::choose(&mut self.rng, &statues).unwrap();
+                let sprite = self.static_sprite("tiles", index as char);
+                return Some(Animation::Loop(sprite));
             }
         }
 
@@ -270,7 +279,7 @@ impl Display {
     }
 
     pub fn map_message(&mut self, map_str: &str) {
-        parse_map(map_str, &mut self.state.map);
+        //parse_map(map_str, &mut self.state.map);
     }
 
     pub fn process_message(&mut self, msg: Msg, map: &Map, config: &Config) {
@@ -1000,6 +1009,7 @@ fn entity_name_to_chr(name: EntityName) -> char {
         EntityName::Stone => chr = ENTITY_STONE,
         EntityName::Energy => chr = ENTITY_ENERGY,
         EntityName::Herb => chr = ENTITY_HERB,
+        EntityName::Statue => chr = MAP_STATUE_1,
         //Mouse, Cursor, Grass, Other
         _ => {},
     }
@@ -1058,7 +1068,7 @@ fn parse_map(map_str: &str, map: &mut Map) {
     let mut summary_tiles = Vec::new();
     for index in 0..(summary.len() / 9) {
         let tile_index = index * 9;
-        let tile = chrs_tile(&summary[tile_index..(tile_index + 9)]);
+        let tile = chrs_tile(&summary[tile_index..(tile_index + 10)]);
         summary_tiles.push(tile);
     }
 
@@ -1135,6 +1145,7 @@ fn chrs_tile(summary: &str) -> Tile {
 
     let mut tile_index = 0;
 
+    dbg!(summary);
     let mut tile = Tile::empty();
     tile.block_move = chr_bool(chrs[tile_index]);
     tile_index += 1;

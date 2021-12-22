@@ -391,7 +391,7 @@ impl Tile {
         let mut tile = Tile::empty();
         tile.block_sight = true;
         tile.surface = Surface::Grass;
-        tile.chr = ENTITY_TALL_GRASS;
+        tile.chr = ' ' as u8; //ENTITY_TALL_GRASS;
         return tile;
     }
 

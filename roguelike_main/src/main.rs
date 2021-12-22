@@ -321,7 +321,10 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
                     if msg_line.len() > 0 {
                         log.log_console(msg_line);
                     }
-                    log.log_msg(&format!("{}", msg));
+
+                    if !game.config.minimal_output {
+                        log.log_msg(&format!("{}", msg));
+                    }
                 }
 
                 if game.settings.state == GameState::Win {

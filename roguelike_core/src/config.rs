@@ -108,6 +108,7 @@ pub struct Config {
     pub cursor_fade_seconds: f32,
     pub cursor_alpha: u8,
     pub save_load: bool,
+    pub minimal_output: bool,
 }
 
 impl Config {

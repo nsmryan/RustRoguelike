@@ -258,3 +258,6 @@ cursor_fade_seconds: 0.25
 # Whether or not to save the game between turns and load it on startup.
 # When the player loses, the game is delete.
 save_load: true
+
+# Whether or not to print messages
+minimal_output: true

@@ -358,7 +358,7 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             MAP_STATUE_1 | MAP_STATUE_2 | MAP_STATUE_3 |
-                                MAP_STATUE_4 | MAP_STATUE_5 | MAP_STATUE_6 => {
+                            MAP_STATUE_4 | MAP_STATUE_5 | MAP_STATUE_6 => {
                                     level.map[pos].chr = chr as u8;
                                     level.map[pos].block_move = true;
                                     level.map[pos].block_sight = true;

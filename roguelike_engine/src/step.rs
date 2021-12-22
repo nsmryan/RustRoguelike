@@ -51,7 +51,6 @@ pub fn step_logic(game: &mut Game) -> bool {
        game.level.entities.status[&player_id].alive &&
        !won_level {
         step_ai(game);
-        dbg!("__________________________");
     }
     drop(monster);
 

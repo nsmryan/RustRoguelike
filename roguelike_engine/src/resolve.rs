@@ -222,8 +222,8 @@ pub fn resolve_messages(game: &mut Game) {
                         add_skill(game, Skill::GrassWall);
                         add_skill(game, Skill::GrassThrow);
                         add_skill(game, Skill::GrassBlade);
-                        add_skill(game, Skill::GrassShoes);
                         add_skill(game, Skill::GrassCover);
+                        add_skill(game, Skill::GrassShoes);
                     }
 
                     EntityClass::Clockwork => {
@@ -341,6 +341,7 @@ pub fn resolve_messages(game: &mut Game) {
                     let next_pos = facing.offset_pos(entity_pos, 1);
                     game.level.map[next_pos] = Tile::tall_grass();
                     ensure_grass(&mut game.level.entities, next_pos, &mut game.msg_log);
+                    game.level.entities.took_turn[&entity_id] = true;
                 }
             }
 
@@ -378,6 +379,8 @@ pub fn resolve_messages(game: &mut Game) {
                 game.level.entities.hp[&entity_id].hp = game.level.entities.hp[&entity_id].max_hp;
                 game.level.entities.remove_item(entity_id, item_id);
                 game.msg_log.log(Msg::Remove(item_id));
+
+                game.level.entities.took_turn[&entity_id] = true;
             }
 
             Msg::FarSight(entity_id, amount) => {
@@ -390,6 +393,7 @@ pub fn resolve_messages(game: &mut Game) {
             Msg::Ping(entity_id, pos) => {
                 if use_energy(entity_id, &mut game.level, &mut game.msg_log) {
                     game.msg_log.log_front(Msg::Sound(entity_id, pos, game.config.ping_sound_radius));
+                    game.level.entities.took_turn[&entity_id] = true;
                 }
             }
 
@@ -406,17 +410,16 @@ pub fn resolve_messages(game: &mut Game) {
                     let blocked = game.level.map.path_blocked_move(pos, rubble_pos);
 
                     if let Some(blocked) = blocked {
+                        resolve_rubble(blocked, &mut game.level.map);
+                    } else if let Some(blocked_id) = game.level.has_blocking_entity(rubble_pos) {
                         // if we hit a column, turn it into rubble
-                        if let Some(blocked_id) = game.level.has_blocking_entity(blocked.end_pos) {
-                            if game.level.entities.name[&blocked_id] == EntityName::Column {
-                                remove_entity(blocked_id, &mut game.level);
-                                game.level.map[blocked.end_pos].surface = Surface::Rubble;
-                            }
-                        } else {
-                            resolve_rubble(blocked, &mut game.level.map);
-                            game.level.entities.took_turn[&entity_id] = true;
+                        if game.level.entities.typ[&blocked_id] == EntityType::Column {
+                            remove_entity(blocked_id, &mut game.level);
+                            game.level.map[rubble_pos].surface = Surface::Rubble;
                         }
                     }
+
+                    game.level.entities.took_turn[&entity_id] = true;
                 }
             }
 
@@ -448,6 +451,8 @@ pub fn resolve_messages(game: &mut Game) {
                     }
 
                     game.level.map[rubble_pos].surface = Surface::Floor;
+
+                    game.level.entities.took_turn[&entity_id] = true;
                 }
             }
 
@@ -473,10 +478,11 @@ pub fn resolve_messages(game: &mut Game) {
                             let attack = Attack::Stab(target_id, false);
                             resolve_attack(entity_id, attack, attack_pos, &mut game.level, &mut game.msg_log, &game.config);
 
-                            game.level.entities.took_turn[&entity_id] = true;
                             break;
                         }
                     }
+
+                    game.level.entities.took_turn[&entity_id] = true;
                 }
             }
 
@@ -494,6 +500,7 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::StoneSkin(entity_id) => {
                 game.level.entities.status[&entity_id].stone = SKILL_STONE_SKIN_TURNS;
+                game.level.entities.took_turn[&entity_id] = true;
             }
 
             Msg::Swap(entity_id, target_id) => {
@@ -1215,7 +1222,7 @@ fn crushed(entity_id: EntityId, pos: Pos, level: &mut Level, msg_log: &mut MsgLo
             continue;
         }
 
-        if level.entities.name[&crushed_id] == EntityName::Column {
+        if level.entities.typ[&crushed_id] == EntityType::Column {
             let pos_diff = sub_pos(pos, level.entities.pos[&entity_id]);
             let next_pos = next_pos(level.entities.pos[&entity_id], pos_diff);
 
@@ -1593,6 +1600,10 @@ fn process_moved_message(entity_id: EntityId,
         trample_grass_walls(level, original_pos, pos);
     }
 
+    if level.map[pos].block_sight && level.map[pos].surface == Surface::Grass {
+        level.map[pos].block_sight = false;
+    }
+
     // if entity is a monster, which is also alert, and there is a path to the player,
     // then face the player
     if let Some(target_pos) = level.entities.target(entity_id) {
@@ -1605,6 +1616,12 @@ fn process_moved_message(entity_id: EntityId,
             msg_log.log_front(Msg::SetFacing(entity_id, dir));
         }
     }
+}
+
+fn add_skill(game: &mut Game, skill: Skill) {
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+    game.level.entities.add_skill(player_id, skill);
+    game.msg_log.log(Msg::AddSkill(skill));
 }
 
 fn trample_grass_walls(level: &mut Level, start_pos: Pos, end_pos: Pos) {
@@ -1623,12 +1640,6 @@ fn trample_grass_walls(level: &mut Level, start_pos: Pos, end_pos: Pos) {
             trample_grass_move(level, move_y(start_pos, -1), end_pos);
         }
     }
-}
-
-fn add_skill(game: &mut Game, skill: Skill) {
-    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
-    game.level.entities.add_skill(player_id, skill);
-    game.msg_log.log(Msg::AddSkill(skill));
 }
 
 fn trample_grass_move(level: &mut Level, start_pos: Pos, end_pos: Pos) {
