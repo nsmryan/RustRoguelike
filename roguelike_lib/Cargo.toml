@@ -15,10 +15,6 @@ roguelike_utils = { path = "../roguelike_utils" }
 roguelike_core = { path = "../roguelike_core" }
 roguelike_engine = { path = "../roguelike_engine" }
 
-#[lib]
-#name = "rust_roguelike"
-#crate-type = ["cdylib"]
-
 [[bin]]
 name = "rl_engine"
 path = "src/main.rs"

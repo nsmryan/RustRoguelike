@@ -23,5 +23,4 @@ rmp = "*"
 
 roguelike_utils = { path = "../roguelike_utils" }
 roguelike_core = { path = "../roguelike_core" }
-roguelike_engine = { path = "../roguelike_engine" }
 

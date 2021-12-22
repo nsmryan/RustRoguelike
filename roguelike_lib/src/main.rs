@@ -33,13 +33,14 @@ pub fn main() {
             if let Ok(cmd) = msg.parse::<GameCmd>() {
                 let result = execute_game_command(&cmd, &mut game);
                 log.log_output(&result);
-            }
-        }
 
-        // TODO is this actually necessary? it seems like it should be
-        // using turn_messages instead, or done jnternally
-        for msg in game.msg_log.turn_messages.iter() {
-            log.log_msg(&format!("{}", msg));
+                for msg in game.msg_log.turn_messages.iter() {
+                    log.log_msg(&format!("{}", msg));
+                }
+
+                let map_str = game.level.map.compact_chrs();
+                log.log_map(map_str);
+            }
         }
     }
 }

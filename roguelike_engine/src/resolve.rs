@@ -135,6 +135,9 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::PickUp(entity_id) => {
                 pick_item_up(entity_id, &mut game.level, &mut game.msg_log);
+
+                // this is necessary to re-emit entity information about the item being picked up
+                game.settings.map_changed = true;
             }
 
             Msg::StateChange(entity_id, behavior) => {

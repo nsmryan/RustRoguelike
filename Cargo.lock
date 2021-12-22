@@ -630,7 +630,6 @@ dependencies = [
  "rmp",
  "rmp-serde",
  "roguelike_core",
- "roguelike_engine",
  "roguelike_utils",
  "sdl2",
  "serde",
