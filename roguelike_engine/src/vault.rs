@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use serde::{Serialize, Deserialize};
 
-use roguelike_core::constants::*;
 use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
@@ -170,7 +169,7 @@ fn tile_from_ascii(tile_chr: char, left_wall: char, bottom_wall: char, pos: Pos,
         }
         
         '#' => {
-            tile = Tile::wall_with(MAP_WALL as char);
+            tile = Tile::wall();
         }
 
         '"' | '`' => {

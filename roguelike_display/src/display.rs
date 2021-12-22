@@ -279,7 +279,7 @@ impl Display {
     }
 
     pub fn map_message(&mut self, map_str: &str) {
-        //parse_map(map_str, &mut self.state.map);
+        parse_map(map_str, &mut self.state.map);
     }
 
     pub fn process_message(&mut self, msg: Msg, map: &Map, config: &Config) {
@@ -1066,9 +1066,10 @@ fn parse_map(map_str: &str, map: &mut Map) {
     let chrs = parts.next().unwrap();
 
     let mut summary_tiles = Vec::new();
-    for index in 0..(summary.len() / 9) {
-        let tile_index = index * 9;
-        let tile = chrs_tile(&summary[tile_index..(tile_index + 10)]);
+    for index in 0..(summary.len() / 8) {
+        let tile_index = index * 8;
+        let summary = &summary[tile_index..(tile_index + 8)];
+        let tile = chrs_tile(summary);
         summary_tiles.push(tile);
     }
 
@@ -1078,7 +1079,7 @@ fn parse_map(map_str: &str, map: &mut Map) {
     while index < chrs.len() {
         let chr = chrs[index];
 
-        if chr >= '0' || chr <= '9' {
+        if chr >= '0' && chr <= '9' {
             let chr_index = chr as u8 - '0' as u8;
 
             let times;
@@ -1097,10 +1098,10 @@ fn parse_map(map_str: &str, map: &mut Map) {
             let chr_index;
             let explored;
             if tile_chr.is_ascii_lowercase() {
-                chr_index = chr as u8 - 'a' as u8;
+                chr_index = tile_chr as u8 - 'a' as u8;
                 explored = false;
             } else {
-                chr_index = chr as u8 - 'A' as u8;
+                chr_index = tile_chr as u8 - 'A' as u8;
                 explored = true;
             }
             let mut tile = summary_tiles[chr_index as usize];
@@ -1136,7 +1137,7 @@ fn parse_map(map_str: &str, map: &mut Map) {
 }
 
 fn coord_from_index(index: i32, width: i32) -> (i32, i32) {
-    return (index / width, index % width);
+    return (index % width, index / width);
 }
 
 
@@ -1145,7 +1146,6 @@ fn chrs_tile(summary: &str) -> Tile {
 
     let mut tile_index = 0;
 
-    dbg!(summary);
     let mut tile = Tile::empty();
     tile.block_move = chr_bool(chrs[tile_index]);
     tile_index += 1;
@@ -1166,9 +1166,6 @@ fn chrs_tile(summary: &str) -> Tile {
     tile_index += 1;
 
     tile.left_material = chr_surface(chrs[tile_index]);
-    tile_index += 1;
-
-    tile.chr = chrs[tile_index] as u8;
     tile_index += 1;
 
     tile.surface = chr_surface(chrs[tile_index]);

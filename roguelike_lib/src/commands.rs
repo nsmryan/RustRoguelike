@@ -6,7 +6,6 @@ use roguelike_core::types::*;
 use roguelike_core::movement::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::*;
-use roguelike_core::constants::*;
 
 use roguelike_engine::input::*;
 use roguelike_engine::game::*;
@@ -335,9 +334,6 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
             game.level.map[(*x, *y)].tile_type = *typ;
             game.level.map[(*x, *y)].block_move = typ.is_wall();
             game.level.map[(*x, *y)].block_sight = typ.is_wall();
-            if typ.is_wall() {
-                game.level.map[(*x, *y)].chr = MAP_WALL;
-            }
             game.level.map[(*x, *y)].left_wall = *left_wall;
             game.level.map[(*x, *y)].bottom_wall = *bottom_wall;
             return format!("{}", name);

@@ -17,17 +17,17 @@ use crate::drawcmd::*;
 use crate::animation::{Sprite, SpriteKey, Effect, Animation, AnimationResult, Particle};
 
 
-pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites: &Vec<SpriteSheet>, map: &Map, config: &Config, dt: f32) -> Result<(), String> {
+pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites: &Vec<SpriteSheet>, config: &Config, dt: f32) -> Result<(), String> {
     display_state.show_debug("ids", format!("{}", display_state.ids.len()));
 
     display_state.dt = dt;
     display_state.time += dt;
 
     /* Draw Background */
-    render_background(panels.get_mut(&PanelName::Map).unwrap(), map, sprites);
+    render_background(panels.get_mut(&PanelName::Map).unwrap(), &display_state.map, sprites);
 
     /* Draw Map */
-    render_panels(panels, display_state, map, config, sprites);
+    render_panels(panels, display_state, config, sprites);
 
     /* Draw Debug Overlay */
     if display_state.debug_enabled {
@@ -52,14 +52,13 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites
 
 fn render_panels(panels: &mut Panels,
                  display_state: &mut DisplayState,
-                 map: &Map,
                  config: &Config,
                  sprites: &Vec<SpriteSheet>) {
     let panel = &mut panels.get_mut(&PanelName::Map).unwrap();
 
     {
         let _map = timer!("MAP");
-        render_map(panel, map, sprites);
+        render_map(panel, &display_state.map, sprites);
     }
 
     {
@@ -68,7 +67,7 @@ fn render_panels(panels: &mut Panels,
         render_entity_type(panel, EntityType::Trigger, display_state, config, sprites);
         render_entity_type(panel, EntityType::Item, display_state, config, sprites);
 
-        render_map_middle(panel, map, config, sprites);
+        render_map_middle(panel, &display_state.map, config, sprites);
     }
 
     {
@@ -82,19 +81,19 @@ fn render_panels(panels: &mut Panels,
 
     {
         let _overlays_game = timer!("OVERLAYSGAME");
-        render_game_overlays(panel, display_state, map, config, sprites);
+        render_game_overlays(panel, display_state, config, sprites);
     }
 
     {
         let _mapabove = timer!("MAPABOVE");
-        render_map_above(panel, display_state, map, config, sprites);
+        render_map_above(panel, display_state, config, sprites);
     }
 
     {
         let _extra = timer!("EXTRA");
         render_impressions(panel, display_state, config);
-        render_effects(panel, display_state, map, config, sprites);
-        render_overlays(panel, display_state, map, config, sprites);
+        render_effects(panel, display_state, config, sprites);
+        render_overlays(panel, display_state, config, sprites);
     }
 
     /* Draw Player Info */
@@ -112,7 +111,7 @@ fn render_panels(panels: &mut Panels,
     /* Draw Game Info */
     {
         let info_panel = &mut panels.get_mut(&PanelName::Info).unwrap();
-        render_info(info_panel, display_state, map);
+        render_info(info_panel, display_state);
     }
 }
 
@@ -218,7 +217,7 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
     panel.text_list_cmd(&list, color, text_pos);
 }
 
-fn render_info(panel: &mut Panel, display_state: &mut DisplayState, map: &Map) {
+fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
     render_placard(panel, "Info");
 
     if let Some(info_pos) = display_state.cursor_pos {
@@ -300,31 +299,31 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState, map: &Map) {
         panel.text_list_cmd(&text_list, text_color, text_pos);
 
         if display_state.fov.get(&info_pos) == Some(&FovResult::Inside) {
-            if map[info_pos].tile_type == TileType::Water {
+            if display_state.map[info_pos].tile_type == TileType::Water {
                 text_list.push("Tile is water".to_string());
             } else {
-                text_list.push(format!("Tile is {:?}",  map[info_pos].surface));
+                text_list.push(format!("Tile is {:?}",  display_state.map[info_pos].surface));
             }
 
-            if map[info_pos].bottom_wall != Wall::Empty {
+            if display_state.map[info_pos].bottom_wall != Wall::Empty {
                 text_list.push("Lower wall".to_string());
             }
 
-            if map.is_within_bounds(move_x(info_pos, 1)) &&
-               map[move_x(info_pos, 1)].left_wall != Wall::Empty {
+            if display_state.map.is_within_bounds(move_x(info_pos, 1)) &&
+               display_state.map[move_x(info_pos, 1)].left_wall != Wall::Empty {
                 text_list.push("Right wall".to_string());
             }
 
-            if map.is_within_bounds(move_y(info_pos, -1)) &&
-               map[move_y(info_pos, -1)].bottom_wall != Wall::Empty {
+            if display_state.map.is_within_bounds(move_y(info_pos, -1)) &&
+               display_state.map[move_y(info_pos, -1)].bottom_wall != Wall::Empty {
                 text_list.push("Top wall".to_string());
             }
 
-            if map[info_pos].left_wall != Wall::Empty {
+            if display_state.map[info_pos].left_wall != Wall::Empty {
                 text_list.push("Left wall".to_string());
             }
 
-            if map[info_pos].block_move {
+            if display_state.map[info_pos].block_move {
                 text_list.push(format!("blocked"));
             }
         }
@@ -586,8 +585,8 @@ fn render_wall_shadow(panel: &mut Panel, pos: Pos, map: &Map, sprites: &Vec<Spri
     }
 }
 
-fn render_map_above(panel: &mut Panel, display_state: &DisplayState, map: &Map, config: &Config, sprites: &Vec<SpriteSheet>) {
-    let (map_width, map_height) = map.size();
+fn render_map_above(panel: &mut Panel, display_state: &DisplayState, config: &Config, sprites: &Vec<SpriteSheet>) {
+    let (map_width, map_height) = display_state.map.size();
 
     let sprite_key = lookup_spritekey(sprites, "tiles");
     for y in 0..map_height {
@@ -595,7 +594,7 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, map: &Map, 
             let pos = Pos::new(x, y);
             /* draw the between-tile walls appropriate to this tile */
             {
-                let tile = map[pos];
+                let tile = display_state.map[pos];
                 let wall_color = Color::white();
 
                 // Lower walls
@@ -619,7 +618,7 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, map: &Map, 
                 if is_in_fov_ext {
                     blackout_color.a = config.fov_edge_alpha;
                     panel.sprite_cmd(sprite, blackout_color, pos);
-                } else if map[pos].explored {
+                } else if display_state.map[pos].explored {
                     blackout_color.a = config.explored_alpha;
                     panel.sprite_cmd(sprite, blackout_color, pos);
                 } else {
@@ -666,16 +665,15 @@ fn render_map(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
             // Render game stuff
             let tile = map[pos];
 
-            let chr = tile.chr;
-
             // if the tile is not empty or water, draw it
+            let mut chr = MAP_EMPTY_CHAR;
             if tile.tile_type == TileType::Water {
-                let sprite = Sprite::new(MAP_WATER as u32, sprite_key);
-                panel.sprite_cmd(sprite, Color::white(), pos);
-            } else if chr != MAP_EMPTY_CHAR {
-                let sprite = Sprite::new(chr as u32, sprite_key);
-                panel.sprite_cmd(sprite, Color::white(), pos);
+                chr = MAP_WATER;
+            } else if tile.tile_type == TileType::Wall {
+                chr = MAP_WALL;
             }
+            let sprite = Sprite::new(chr as u32, sprite_key);
+            panel.sprite_cmd(sprite, Color::white(), pos);
 
             if let Some(chr) = surface_chr(tile.surface, tile.block_sight) {
                 let sprite = Sprite::new(chr as u32, sprite_key);
@@ -735,7 +733,6 @@ fn render_intertile_walls_below(panel: &mut Panel,
 /// resulting vector of effects is then saved as the new effects vector.
 fn render_effects(panel: &mut Panel,
                   display_state: &mut DisplayState,
-                  map: &Map,
                   config: &Config,
                   sprites: &Vec<SpriteSheet>) {
     let mut index = 0;
@@ -761,7 +758,7 @@ fn render_effects(panel: &mut Panel,
                     particles[index].duration -= display_state.dt;
 
                     // if the particle is finished, or has left the map, remove it.
-                    if particles[index].duration < 0.0 || !map.is_within_bounds(cell) {
+                    if particles[index].duration < 0.0 || !display_state.map.is_within_bounds(cell) {
                         particles.swap_remove(index);
                     } else {
                         // offset the particle according to how long it has been running.
@@ -769,7 +766,7 @@ fn render_effects(panel: &mut Panel,
                         let draw_pos = move_x(particles[index].pos, x_offset);
                         let draw_cell = panel.cell_from_pixel(draw_pos);
 
-                        if map.is_within_bounds(draw_cell) && 
+                        if display_state.map.is_within_bounds(draw_cell) && 
                            display_state.pos_is_in_fov(draw_cell) == FovResult::Inside {
                             let mut color = Color::white();
                             // fade the particle out according to how long it has been running.
@@ -793,7 +790,7 @@ fn render_effects(panel: &mut Panel,
                         config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
 
                     for pos in dist_positions.iter() {
-                        if !map[*pos].block_move &&
+                        if !display_state.map[*pos].block_move &&
                            display_state.pos_is_in_fov(*pos) == FovResult::Inside {
                            panel.highlight_cmd(highlight_color, *pos);
                            panel.outline_cmd(highlight_color, *pos);
@@ -1069,7 +1066,6 @@ fn render_sound_overlay(panel: &mut Panel,
 
 fn render_game_overlays(panel: &mut Panel,
                         display_state: &mut DisplayState,
-                        map: &Map,
                         config: &Config,
                         sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
@@ -1090,7 +1086,7 @@ fn render_game_overlays(panel: &mut Panel,
                 } else if display_state.name[&entity] == EntityName::FreezeTrap {
                     let trap_pos = display_state.pos[&entity];
                     let freeze_aoe =
-                        aoe_fill(map, AoeEffect::Freeze, trap_pos, config.freeze_trap_radius, config);
+                        aoe_fill(&display_state.map, AoeEffect::Freeze, trap_pos, config.freeze_trap_radius, config);
                     for pos in freeze_aoe.positions() {
                         let mut highlight_color: Color = config.color_blueish_grey;
                         highlight_color.a = 100;
@@ -1176,11 +1172,10 @@ fn render_game_overlays(panel: &mut Panel,
 
 fn render_overlay_direction(panel: &mut Panel,
                             display_state: &mut DisplayState,
-                            map: &Map,
                             config: &Config,
                             tiles_key: SpriteKey) {
-    let map_width = map.width();
-    let map_height = map.height();
+    let map_width = display_state.map.width();
+    let map_height = display_state.map.height();
 
     let player_id = display_state.player_id();
     let player_pos = display_state.pos[&player_id];
@@ -1232,11 +1227,10 @@ fn render_overlay_cursor(panel: &mut Panel, display_state: &mut DisplayState, co
 
 fn render_overlay_fov(panel: &mut Panel,
                       display_state: &mut DisplayState,
-                      map: &Map,
                       config: &Config,
                       tiles_key: SpriteKey) {
-    let map_width = map.width();
-    let map_height = map.height();
+    let map_width = display_state.map.width();
+    let map_height = display_state.map.height();
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
@@ -1292,7 +1286,6 @@ fn render_overlay_floodfill(panel: &mut Panel,
 
 fn render_overlays(panel: &mut Panel,
                    display_state: &mut DisplayState,
-                   map: &Map,
                    config: &Config,
                    sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
@@ -1301,7 +1294,7 @@ fn render_overlays(panel: &mut Panel,
 
     // render a grid of numbers if enabled
     if config.overlay_directions {
-        render_overlay_direction(panel, display_state, map, config, tiles_key);
+        render_overlay_direction(panel, display_state, config, tiles_key);
     }
 
     // render cursor if enabled
@@ -1311,7 +1304,7 @@ fn render_overlays(panel: &mut Panel,
 
     // render FOV if enabled
     if config.overlay_player_fov {
-        render_overlay_fov(panel, display_state, map, config, tiles_key);
+        render_overlay_fov(panel, display_state, config, tiles_key);
     }
 
     // draw attack and fov position highlights
@@ -1342,7 +1335,7 @@ fn render_overlays(panel: &mut Panel,
     // 40 are nearly fully open
     // 49 may be fully open
     if config.overlay_floodfill {
-        render_overlay_floodfill(panel, map, config, tiles_key);
+        render_overlay_floodfill(panel, &display_state.map, config, tiles_key);
     }
 }
 

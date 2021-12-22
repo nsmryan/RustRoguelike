@@ -211,7 +211,6 @@ pub fn read_map_xp(config: &Config,
 
                             MAP_WATER => {
                                 level.map[pos] = Tile::water();
-                                level.map[pos].chr = MAP_WATER;
                             }
 
                             MAP_RUBBLE => {
@@ -236,153 +235,126 @@ pub fn read_map_xp(config: &Config,
                             }
 
                             MAP_THIN_WALL_TOP => {
-                                level.map[pos].chr = 0;
                                 level.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM => {
-                                level.map[pos].chr = 0; 
                                 level.map[pos].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_LEFT => {
-                                level.map[pos].chr = 0; 
                                 level.map[pos].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_RIGHT => {
-                                level.map[pos].chr = 0; 
                                 level.map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_TOP_LEFT => {
-                                level.map[pos].chr = 0; 
                                 level.map[pos].left_wall = Wall::ShortWall;
                                 level.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM_LEFT => {
-                                level.map[pos].chr = 0; 
                                 level.map[pos].left_wall = Wall::ShortWall;
                                 level.map[pos].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_TOP_RIGHT => {
-                                level.map[pos].chr = 0; 
                                 level.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                                 level.map[(x - 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THIN_WALL_BOTTOM_RIGHT => {
-                                level.map[pos].chr = 0; 
                                 level.map[pos].bottom_wall = Wall::ShortWall;
                                 level.map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_TOP => {
-                                level.map[pos].chr = 0; 
                                 level.map[(x, y - 1)].bottom_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_LEFT => {
-                                level.map[pos].chr = 0; 
                                 level.map[pos].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_RIGHT => {
-                                level.map[pos].chr = 0; 
                                 level.map[(x + 1, y)].left_wall = Wall::ShortWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM => {
-                                level.map[pos].chr = 0; 
                                 level.map[pos].bottom_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_TOP_LEFT => {
-                                level.map[pos].chr = 0; 
                                 level.map[pos].left_wall = Wall::TallWall;
                                 level.map[(x, y - 1)].bottom_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM_LEFT => {
-                                level.map[pos].chr = 0; 
                                 level.map[pos].bottom_wall = Wall::TallWall;
                                 level.map[pos].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_TOP_RIGHT => {
-                                level.map[pos].chr = 0; 
                                 level.map[(x, y - 1)].bottom_wall = Wall::TallWall;
                                 level.map[(x + 1, y)].left_wall = Wall::TallWall;
                             }
 
                             MAP_THICK_WALL_BOTTOM_RIGHT => {
-                                level.map[pos].chr = 0; 
                                 level.map[pos].bottom_wall = Wall::TallWall;
                                 level.map[(x + 1, y)].left_wall = Wall::TallWall;
                             }
 
                             MAP_DOT_TOP_LEFT => {
-                                level.map[pos].chr = chr as u8;
                                 level.map[pos].block_move = true;
                             }
 
                             MAP_DOT_TOP_RIGHT => {
-                                level.map[pos].chr = chr as u8;
                                 level.map[pos].block_move = true;
                             }
 
                             MAP_DOT_BOTTOM_LEFT => {
-                                level.map[pos].chr = chr as u8;
                                 level.map[pos].block_move = true;
                             }
 
                             MAP_DOT_BOTTOM_RIGHT => {
-                                level.map[pos].chr = chr as u8;
                                 level.map[pos].block_move = true;
                             }
 
                             MAP_ROOK => {
-                                level.map[pos].chr = chr as u8;
                                 level.map[pos].block_move = true;
                             }
 
                             MAP_ORB => {
-                                level.map[pos].chr = chr as u8;
                                 level.map[pos].block_move = true;
                             }
 
                             MAP_EMPTY => {
-                                level.map[pos].chr = MAP_EMPTY_CHAR;
                             }
 
                             MAP_STATUE_1 | MAP_STATUE_2 | MAP_STATUE_3 |
                             MAP_STATUE_4 | MAP_STATUE_5 | MAP_STATUE_6 => {
-                                    level.map[pos].chr = chr as u8;
+                                // NOTE this should use make_statue instead
                                     level.map[pos].block_move = true;
                                     level.map[pos].block_sight = true;
                                 }
 
                             MAP_WIDE_SPIKES | MAP_TALL_SPIKES => {
-                                level.map[pos].chr = chr as u8;
                                 level.map[pos].block_move = true;
                                     level.map[pos].block_sight = true;
                             }
 
                             MAP_WALL => {
-                                level.map[pos].chr = chr as u8;
                                 level.map[pos].block_move = true;
                                 level.map[pos].block_sight = true;
                             }
 
                             ENTITY_CLOAK_GUY => {
-                                level.map[pos].chr = chr as u8;
                                 level.map[pos].block_move = true;
                             }
 
                             _ => {
-                                level.map[pos].chr = chr as u8;
                                 level.map[pos].block_move = true;
                             }
                         }

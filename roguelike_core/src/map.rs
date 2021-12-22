@@ -22,7 +22,6 @@ use roguelike_utils::line::*;
 use roguelike_utils::rng::*;
 
 use crate::types::*;
-use crate::constants::*;
 use crate::utils::*;
 use crate::movement::Direction;
 
@@ -327,7 +326,6 @@ pub struct Tile {
     pub bottom_material: Surface,
     pub left_wall: Wall,
     pub left_material: Surface,
-    pub chr: u8,
     pub surface: Surface,
 }
 
@@ -342,7 +340,6 @@ impl Tile {
             left_wall: Wall::Empty,
             bottom_material: Surface::Floor,
             left_material: Surface::Floor,
-            chr: ' ' as u8,
             surface: Surface::Floor,
         }
     }
@@ -376,7 +373,6 @@ impl Tile {
             left_wall: Wall::Empty,
             bottom_material: Surface::Floor,
             left_material: Surface::Floor,
-            chr: ' ' as u8,
             surface: Surface::Floor,
         }
     }
@@ -391,7 +387,6 @@ impl Tile {
         let mut tile = Tile::empty();
         tile.block_sight = true;
         tile.surface = Surface::Grass;
-        tile.chr = ' ' as u8; //ENTITY_TALL_GRASS;
         return tile;
     }
 
@@ -402,10 +397,6 @@ impl Tile {
     }
 
     pub fn wall() -> Self {
-        return Tile::wall_with(MAP_WALL as char);
-    }
-
-    pub fn wall_with(chr: char) -> Self {
         Tile { block_move: true,
                block_sight: true,
                explored: false,
@@ -414,16 +405,11 @@ impl Tile {
                left_wall: Wall::Empty,
                bottom_material: Surface::Floor,
                left_material: Surface::Floor,
-               chr: chr as u8,
                surface: Surface::Floor,
         }
     }
 
     pub fn short_wall() -> Self {
-        return Tile::short_wall_with(' ');
-    }
-
-    pub fn short_wall_with(chr: char) -> Self {
         Tile {
             block_move: false,
             block_sight: false,
@@ -433,7 +419,6 @@ impl Tile {
             left_wall: Wall::Empty,
             bottom_material: Surface::Floor,
             left_material: Surface::Floor,
-            chr: chr as u8,
             surface: Surface::Floor,
         }
     }
@@ -455,7 +440,6 @@ impl Tile {
             left_wall: Wall::Empty,
             bottom_material: Surface::Floor,
             left_material: Surface::Floor,
-            chr: ' ' as u8,
             surface: Surface::Floor,
         }
     }
@@ -494,8 +478,8 @@ impl Tile {
         }
     }
 
-    pub fn chrs(&self) -> [char; 9] {
-        let mut chrs: [char; 9] = ['0'; 9];
+    pub fn chrs(&self) -> [char; 8] {
+        let mut chrs: [char; 8] = ['0'; 8];
 
         let mut index = 0;
         if self.block_move {
@@ -512,13 +496,6 @@ impl Tile {
         }
         index += 1;
 
-        //if self.explored {
-        //    chrs[index] = '1';
-        //} else {
-        //    chrs[index] = '0';
-        //}
-        //index += 1;
-
         chrs[index] = self.tile_type.chr();
         index += 1;
 
@@ -532,9 +509,6 @@ impl Tile {
         index += 1;
 
         chrs[index] = self.left_material.chr();
-        index += 1;
-
-        chrs[index] = self.chr as char;
         index += 1;
 
         chrs[index] = self.surface.chr();

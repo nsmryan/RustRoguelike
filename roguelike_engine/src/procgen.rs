@@ -19,7 +19,6 @@ use roguelike_utils::line::*;
 use roguelike_utils::rng::*;
 use roguelike_utils::comp::*;
 
-use roguelike_core::constants::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::utils::*;
@@ -118,7 +117,7 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
             let pixel = map_image.get_pixel(x, y);
             if pixel.0[0] == 0 {
                 let pos = Pos::new(x as i32, y as i32);
-                new_map[pos] = Tile::wall_with(MAP_WALL as char);
+                new_map[pos] = Tile::wall();
             }
          }
     }
@@ -768,7 +767,6 @@ fn clear_island(game: &mut Game, island_radius: i32) {
 
             if dist(pos, mid_pos) >= island_radius as f32 {
                 game.level.map[pos] = Tile::water();
-                game.level.map[pos].chr = MAP_WATER;
 
                 for entity_id in game.level.has_entities(pos).clone() {
                     game.level.entities.remove_entity(entity_id);

@@ -492,7 +492,6 @@ pub fn resolve_messages(game: &mut Game) {
                     if use_energy(entity_id, &mut game.level, &mut game.msg_log) {
                         game.level.map[pos].surface = Surface::Floor;
                         game.level.map[pos].block_move = true;
-                        game.level.map[pos].chr = MAP_WALL;
                         game.level.entities.took_turn[&entity_id] = true;
                     }
                 }
@@ -1012,7 +1011,6 @@ fn resolve_blink(entity_id: EntityId, level: &mut Level, rng: &mut Rand32, msg_l
 fn place_rubble(pos: Pos, map: &mut Map) {
     map[pos].surface = Surface::Rubble;
     map[pos].block_move = false;
-    map[pos].chr = ' ' as u8;
     map[pos].tile_type = TileType::Empty;
 }
 
@@ -1099,7 +1097,6 @@ fn hammer_hit_wall(entity: EntityId, blocked: Blocked, level: &mut Level, msg_lo
         level.map[hit_pos].block_move = false;
         level.map[hit_pos].block_sight = false;
         level.map[hit_pos].tile_type = TileType::Empty;
-        level.map[hit_pos].chr = ' ' as u8;
 
         let next_pos = next_from_to(entity_pos, hit_pos);
         msg_log.log_front(Msg::Crushed(entity, next_pos)); 
