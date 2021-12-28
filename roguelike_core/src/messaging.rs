@@ -138,7 +138,7 @@ impl fmt::Display for Msg {
             Msg::Pass => write!(f, "pass"),
             Msg::Crushed(entity_id, pos) => write!(f, "crushed {} {} {}", entity_id, pos.x, pos.y),
             Msg::Sound(entity_id, pos, radius) => write!(f, "sound {} {} {} {}", entity_id, pos.x, pos.y, radius),
-            Msg::SoundHitTile(entity_id, source_pos, radius, hit_pos) => write!(f, "sound_hit_file {} {} {} {} {} {}", entity_id, source_pos.x, source_pos.y, radius, hit_pos.x, hit_pos.y),
+            Msg::SoundHitTile(entity_id, source_pos, radius, hit_pos) => write!(f, "sound_hit_tile {} {} {} {} {} {}", entity_id, source_pos.x, source_pos.y, radius, hit_pos.x, hit_pos.y),
             Msg::SoundTrapTriggered(trap_id, entity_id) => write!(f, "sound_trap_triggered {} {}", trap_id, entity_id),
             Msg::SpikeTrapTriggered(trap_id, entity_id) => write!(f, "spike_trap_triggered {} {}", trap_id, entity_id),
             Msg::BlinkTrapTriggered(trap_id, entity_id) => write!(f, "blink_trap_triggered {} {}", trap_id, entity_id),

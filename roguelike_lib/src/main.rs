@@ -33,6 +33,9 @@ pub fn main() {
     }
     game.msg_log.clear();
 
+    let map_str = game.level.map.compact_chrs();
+    log.log_map(&map_str);
+
     while game.settings.running {
 
         if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(100)) {
