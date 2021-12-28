@@ -27,6 +27,12 @@ pub fn main() {
 
     let mut log = Log::new();
 
+    game.emit_state_messages();
+    for msg in game.msg_log.turn_messages.iter() {
+        log.log_msg(&format!("{}", msg));
+    }
+    game.msg_log.clear();
+
     while game.settings.running {
 
         if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(100)) {
@@ -40,6 +46,8 @@ pub fn main() {
 
                 let map_str = game.level.map.compact_chrs();
                 log.log_map(&map_str);
+
+                game.msg_log.clear();
             }
         }
     }
