@@ -386,6 +386,11 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
 
     let mut gate_positions = near_walls.iter().map(|p| *p).collect::<Vec<Pos>>();
 
+    // the positions must be sorted because they come from a HashSet which does not
+    // guarentee a particular order when collected into a vector.
+    let width = game.level.map.width();
+    gate_positions.sort_unstable_by(|p1, p2| (p1.x + p1.y * width).cmp(&(p2.x + p2.y * width)));
+
     // if there are no possible positions, exit early
     if gate_positions.len() == 0 {
         return;

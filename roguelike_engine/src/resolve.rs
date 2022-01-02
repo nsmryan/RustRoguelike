@@ -199,8 +199,8 @@ pub fn resolve_messages(game: &mut Game) {
                 //untriggered(trigger, level, &mut game.msg_log);
             }
 
-            Msg::Triggered(trigger, _entity_id) => {
-                triggered(trigger, &mut game.level);
+            Msg::Triggered(trigger, entity_id) => {
+                triggered(trigger, entity_id, &mut game.level, &mut game.msg_log);
             }
 
             Msg::AddClass(class) => {
@@ -803,7 +803,7 @@ fn freeze_trap_triggered(trap: EntityId, cause_id: EntityId, level: &mut Level, 
     }
 }
 
-fn triggered(trigger: EntityId, level: &mut Level) {
+fn triggered(trigger: EntityId, entity_id: EntityId, level: &mut Level, msg_log: &mut MsgLog) {
     if level.entities.name[&trigger] == EntityName::GateTrigger {
         let wall_pos = level.entities.gate_pos[&trigger];
 
@@ -820,6 +820,8 @@ fn triggered(trigger: EntityId, level: &mut Level) {
             level.entities.status[&trigger].active = true;
             level.map[wall_pos] = Tile::empty();
         }
+
+        msg_log.log(Msg::GateTriggered(trigger, entity_id));
     }
 }
 

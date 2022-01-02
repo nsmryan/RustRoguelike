@@ -55,8 +55,8 @@ use euclid::Point2D;
 /// The current implementation is `PCG-XSH-RR`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Rand32 {
-    state: u64,
-    inc: u64,
+    pub state: u64,
+    pub inc: u64,
 }
 
 impl Rand32 {

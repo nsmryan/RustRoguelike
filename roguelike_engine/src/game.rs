@@ -279,6 +279,8 @@ impl Game {
     }
 
     fn emit_any_action_state(self: &mut Game) {
+        self.msg_log.log(Msg::PlayerAction);
+
         if self.settings.state == GameState::Use {
             self.emit_use_mode_messages();
         }

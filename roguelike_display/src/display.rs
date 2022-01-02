@@ -289,6 +289,11 @@ impl Display {
                 self.state.turn_count += 1;
             }
 
+            Msg::PlayerAction => {
+                // inventory is re-emitted after every action, so clear it first
+                self.state.inventory.clear();
+            }
+
             Msg::GameState(new_state) => {
                 self.state.state = new_state;
             }

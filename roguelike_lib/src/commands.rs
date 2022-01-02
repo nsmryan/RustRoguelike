@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use std::fmt::Display;
 
 use roguelike_utils::comp::*;
 
@@ -69,8 +70,7 @@ impl FromStr for GameCmd {
         let s: &mut str = &mut string.to_string();
         s.make_ascii_lowercase();
 
-        // TODO probably next() for cmd and have only arguments in args
-        let mut args = s.split(" "); // .collect::<Vec<&str>>();
+        let mut args = s.split(" ");
         let cmd = args.next().unwrap();
 
         if cmd == "player_id" {
@@ -149,7 +149,19 @@ impl FromStr for GameCmd {
             let y  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::ListEntitiesPos(x, y));
         } else if cmd == "key" {
-            let chr = args.next().ok_or("no arg")?.parse::<char>().map_err(|err| format!("{}", err))?;
+            let chr_name = args.next().ok_or("no arg")?;
+            let chr;
+            if chr_name == "space" {
+                chr = ' ';
+            } else if chr_name == "backspace" {
+                chr = '\x08';
+            } else if chr_name == "return" {
+                chr = '\x0d';
+            } else if chr_name == "esc" {
+                chr = '\x1b';
+            } else {
+                chr = chr_name.parse::<char>().map_err(|err| format!("{}", err))?;
+            }
             let dir = args.next().ok_or("no arg")?.parse::<KeyDir>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::Key(chr, dir));
         } else if cmd == "ctrl" {
@@ -476,4 +488,3 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         // game.step_game(input_action);
     }
 }
-
