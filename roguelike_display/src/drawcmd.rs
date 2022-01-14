@@ -209,8 +209,9 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             let font_height = query.height;
 
             let char_height = cell_height;
-            let char_width = ((cell_width * font_width) / font_height) - 16;
-
+            //let char_width = ((cell_width * font_width) / font_height) - 16;
+            //let char_width = ((cell_width * font_width) / font_height) - font_width;
+            let char_width = (cell_width * font_width) / font_height;
 
             let pixel_width = (*width * cell_width) as i32;
             let mut x_offset;
@@ -281,7 +282,8 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             let font_height = query.height;
 
             let char_height = cell_height;
-            let char_width = ((cell_height * font_width) / font_height) - 16;
+            //let char_width = ((cell_height * font_width) / font_height) - 16;
+            let char_width = (cell_height * font_width) / font_height;
 
             canvas.set_blend_mode(BlendMode::Blend);
             sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
@@ -331,13 +333,14 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             let width = cell_width * dims.0 - (2 * offset_x as u32);
             let height = cell_height * dims.1 - (2 * offset_y as u32);
 
+            let size = (panel.num_pixels.0 / panel.cells.0) / 10;
             if *filled {
                 canvas.fill_rect(Rect::new(x, y, width, height)).unwrap();
             } else {
-                canvas.fill_rect(Rect::new(x, y, 3, height)).unwrap();
-                canvas.fill_rect(Rect::new(x, y, width, 3)).unwrap();
-                canvas.fill_rect(Rect::new(x + width as i32, y, 3, height)).unwrap();
-                canvas.fill_rect(Rect::new(x, y + height as i32, width, 3)).unwrap();
+                canvas.fill_rect(Rect::new(x, y, size, height)).unwrap();
+                canvas.fill_rect(Rect::new(x, y, width, size)).unwrap();
+                canvas.fill_rect(Rect::new(x + width as i32, y, size, height + size)).unwrap();
+                canvas.fill_rect(Rect::new(x, y + height as i32, width + size, size)).unwrap();
             }
         }
 
@@ -647,59 +650,61 @@ impl Panel {
         self.draw_cmds.push(cmd);
     }
 
-    pub fn process_cmds(&mut self, clear: bool, texture: &mut Texture, canvas: &mut WindowCanvas, sprites: &mut Vec<SpriteSheet>) {
+    pub fn process_cmds_if_new(&mut self, clear: bool, texture: &mut Texture, canvas: &mut WindowCanvas, sprites: &mut Vec<SpriteSheet>) {
         // As a simple optimization, only redraw if the commands haven't changed. This is common
         // for informational panels.
         if self.draw_cmds != self.old_draw_cmds {
-            // Collect a map of positions which are going to be filled, to avoid drawing
-            // aligned sprites below those tiles.
-            let mut fill_map = HashMap::<Pos, u32>::new();
-            for cmd in self.draw_cmds.iter() {
-                if let DrawCmd::Fill(pos, _color) = cmd {
-                    if !fill_map.contains_key(pos) {
-                        fill_map.insert(*pos, 0);
-                    }
-                    fill_map.get_mut(pos).map(|count| *count += 1);
-                }
-            }
-
-            canvas.with_texture_canvas(texture, |canvas| {
-                // we don't clear the map as the background was already drawn over it.
-                // TODO consider removing background panel and just using map- it was an
-                // optimization that we may be able to remove if other optimizations are good enough
-                // TODO if the fill cmd optimization has enough of an effect, the background
-                // panel optimization may be unnecessary
-                if clear {
-                  canvas.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
-                  canvas.clear();
-                }
-
-                for cmd in self.draw_cmds.iter() {
-                    // Check if there is going to be a fill in this position,
-                    // in which case there is no need to draw an aligned command.
-                    if cmd.aligned() {
-                        let pos = cmd.pos();
-                        if fill_map.contains_key(&pos) {
-                            let is_fill =  matches!(cmd, DrawCmd::Fill(_, _));
-
-                            if let Some(count) = fill_map.get_mut(&pos) {
-                                if *count > 0 && is_fill {
-                                    *count -= 1;
-                                }
-
-                                if *count > 0 {
-                                    continue;
-                                }
-                            }
-                        }
-                    }
-                    process_draw_cmd(self, canvas, sprites, cmd);
-                }
-            }).unwrap();
+            self.process_cmds(clear,
+                              texture,
+                              canvas,
+                              sprites);
 
             self.old_draw_cmds.clear();
             std::mem::swap(&mut self.draw_cmds, &mut self.old_draw_cmds);
         }
+    }
+
+    pub fn process_cmds(&mut self, clear: bool, texture: &mut Texture, canvas: &mut WindowCanvas, sprites: &mut Vec<SpriteSheet>) {
+        // Collect a map of positions which are going to be filled, to avoid drawing
+        // aligned sprites below those tiles.
+        let mut fill_map = HashMap::<Pos, u32>::new();
+        for cmd in self.draw_cmds.iter() {
+            if let DrawCmd::Fill(pos, _color) = cmd {
+                if !fill_map.contains_key(pos) {
+                    fill_map.insert(*pos, 0);
+                }
+                fill_map.get_mut(pos).map(|count| *count += 1);
+            }
+        }
+
+        canvas.with_texture_canvas(texture, |canvas| {
+            if clear {
+              canvas.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+              canvas.clear();
+            }
+
+            for cmd in self.draw_cmds.iter() {
+                // Check if there is going to be a fill in this position,
+                // in which case there is no need to draw an aligned command.
+                if cmd.aligned() {
+                    let pos = cmd.pos();
+                    if fill_map.contains_key(&pos) {
+                        let is_fill = matches!(cmd, DrawCmd::Fill(_, _));
+
+                        if let Some(count) = fill_map.get_mut(&pos) {
+                            if *count > 0 && is_fill {
+                                *count -= 1;
+                            }
+
+                            if *count > 0 {
+                                continue;
+                            }
+                        }
+                    }
+                }
+                process_draw_cmd(self, canvas, sprites, cmd);
+            }
+        }).unwrap();
 
         self.draw_cmds.clear();
     }

@@ -1,5 +1,4 @@
 use std::str::FromStr;
-use std::fmt::Display;
 
 use roguelike_utils::comp::*;
 

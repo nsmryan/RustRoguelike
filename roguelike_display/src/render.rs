@@ -172,7 +172,7 @@ fn render_bar(panel: &mut Panel,
 }
 
 fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
-    render_placard(panel, "Player");
+    //render_placard(panel, "Player");
 
     let player_id = display_state.player_id();
 
@@ -201,9 +201,6 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
     let energy_color = Color::new(0xaf, 0x83, 0x56, 255);
     render_pips(panel, energy, Pos::new(1, 3), energy_color);
 
-    list.push(format!(""));
-
-
     let stance = display_state.stance[&player_id];
     list.push(format!("{}", stance));
     list.push("next move".to_string());
@@ -218,7 +215,7 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
 }
 
 fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
-    render_placard(panel, "Info");
+    //render_placard(panel, "Info");
 
     if let Some(info_pos) = display_state.cursor_pos {
         let x_offset = 5;
@@ -394,7 +391,7 @@ fn render_confirm_quit(panel: &mut Panel) {
 /// Render an inventory section within the given area
 fn render_inventory(panel: &mut Panel, display_state: &DisplayState) {
     // Render header
-    render_placard(panel, "Inventory");
+    //render_placard(panel, "Inventory");
 
     // TODO this color comes from the UI mockups as a light brown
     let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
