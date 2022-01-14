@@ -51,6 +51,7 @@ pub struct Display {
 
     pub textures: HashMap<PanelName, Texture>,
     pub panels: HashMap<PanelName, Panel>,
+    pub screen_areas: HashMap<PanelName, Area>,
 
     pub screen_texture: Texture,
 
@@ -74,7 +75,24 @@ impl Display {
         let canvas_cell_dims = (SCREEN_WIDTH / (FONT_WIDTH as u32 * 1), SCREEN_HEIGHT / (FONT_HEIGHT as u32 * 1));
         //let canvas_cell_dims = (SCREEN_WIDTH / (FONT_WIDTH as u32 * 2), SCREEN_HEIGHT / (FONT_HEIGHT as u32 * 2));
         let canvas_panel = Panel::new((SCREEN_WIDTH, SCREEN_HEIGHT), canvas_cell_dims);
-        let panels = create_panels(canvas_cell_dims.0, canvas_cell_dims.1);
+        
+        /* Lay out screen areas */
+        let screen_area = canvas_panel.area();
+        let (map_area, rest_area) = screen_area.split_top(canvas_panel.cells.0 as usize - 2);
+        let (inventory_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 3);
+        let (info_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 3);
+        let player_area = rest_area;
+        // The menu has the same dimensions as the UI areas.
+        let menu_area = screen_area.centered(info_area.width, info_area.height);
+
+        let mut screen_areas = HashMap::new();
+        screen_areas.insert(PanelName::Map, map_area);
+        screen_areas.insert(PanelName::Info, info_area);
+        screen_areas.insert(PanelName::Player, player_area);
+        screen_areas.insert(PanelName::Inventory, inventory_area);
+        screen_areas.insert(PanelName::Menu, menu_area);
+
+        let panels = create_panels(&screen_areas);
 
         let mut textures = HashMap::new();
 
@@ -92,6 +110,7 @@ impl Display {
                          sprites: Vec::new(),
                          next_sprite_key: 0,
                          panels,
+                         screen_areas,
                          screen_texture,
                          intern: HashMap::new(),
                          next_str: 0,
@@ -713,43 +732,34 @@ impl Display {
         let panels = &mut self.panels;
         let textures = &mut self.textures;
         let state = self.state.state;
+        let screen_areas = &self.screen_areas;
 
         self.canvas.with_texture_canvas(&mut self.screen_texture, |canvas| {
             let dims = (dims.0 as u32, dims.1 as u32);
 
             /* Split Screen Into Sections */
-            let screen_area = canvas_panel.area();
-            //let (_map_area, rest_area) = screen_area.split_top(panels[&PanelName::Map].cells.1 as usize);
-            let (map_area, rest_area) = screen_area.split_top(canvas_panel.cells.0 as usize - 2);
-
-            //let screen_cell_dims = canvas_panel.cell_dims();
             let map_cell_dims = panels[&PanelName::Map].cell_dims();
             let (map_width, map_height) = (map_cell_dims.0 * dims.0, map_cell_dims.1 * dims.1);
             let map_src = Rect::new(0, 0, map_width, map_height);
-            //let map_rect = Rect::new(screen_cell_dims.0 as i32,
-            //                         screen_cell_dims.1 as i32,
-            //                         SCREEN_WIDTH - screen_cell_dims.0 * 2,
-            //                         SCREEN_WIDTH - screen_cell_dims.1 * 2);
-            let map_rect = canvas_panel.get_rect_within(&map_area, panels[&PanelName::Map].cells);
+            let map_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Map]);
             canvas.copy(&textures[&PanelName::Map], map_src, map_rect).unwrap();
 
+            let inventory_area = screen_areas[&PanelName::Inventory];
+            let map_area = screen_areas[&PanelName::Map];
             let filled = false;
             let cell_offset = 0.5;
             let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
-            canvas_panel.rect_cmd(Pos::new(rest_area.x_offset as i32, rest_area.y_offset as i32),
-                                  (rest_area.width as u32, rest_area.height as u32),
+            canvas_panel.rect_cmd(Pos::new(inventory_area.x_offset as i32, inventory_area.y_offset as i32),
+                                  (map_area.width as u32, inventory_area.height as u32),
                                   cell_offset,
                                   filled,
                                   ui_color);
 
             /* Draw Inventory Panel */
-            let (inventory_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 3);
-            let inventory_rect = canvas_panel.get_rect_within(&inventory_area, panels[&PanelName::Inventory].cells);
-            //dbg!(inventory_area, inventory_rect, rest_area);
-            dbg!(inventory_area, canvas_panel.get_rect_from_area(&inventory_area), inventory_rect, canvas_panel.cells, panels[&PanelName::Inventory].cells);
-            //let inventory_rect = Rect::new(0, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);
+            let inventory_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Inventory]);
             canvas.copy(&textures[&PanelName::Inventory], None, inventory_rect).unwrap();
 
+            let inventory_area = &screen_areas[&PanelName::Inventory];
             let text_color = Color::new(0, 0, 0, 255);
             let highlight_color = Color::new(0xcd, 0xb4, 0x96, 255);
             canvas_panel.justify_cmd("Inventory",
@@ -758,15 +768,12 @@ impl Display {
                                      highlight_color,
                                      Pos::new(inventory_area.x_offset as i32, inventory_area.y_offset as i32),
                                      inventory_area.width as u32);
-            canvas_panel.text_cmd("Inventory",
-                                  highlight_color,
-                                  Pos::new(inventory_area.x_offset as i32, inventory_area.y_offset as i32 + 1));
 
             /* Draw Game Info Panel */
-            //let info_rect = Rect::new(SCREEN_WIDTH as i32 / 3, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);
-            let (info_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 3);
-            let info_rect = canvas_panel.get_rect_within(&info_area, panels[&PanelName::Info].cells);
+            let info_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Info]);
             canvas.copy(&textures[&PanelName::Info], None, info_rect).unwrap();
+
+            let info_area = &screen_areas[&PanelName::Info];
             canvas_panel.justify_cmd("Info",
                                      Justify::Center,
                                      text_color,
@@ -775,10 +782,10 @@ impl Display {
                                      info_area.width as u32);
 
             /* Draw Player Info Panel */
-            //let player_rect = Rect::new(2 * SCREEN_WIDTH as i32 / 3, SCREEN_WIDTH as i32, SCREEN_WIDTH / 3, SCREEN_HEIGHT - SCREEN_WIDTH);
-            let player_area = rest_area;
-            let player_rect = canvas_panel.get_rect_within(&player_area, panels[&PanelName::Player].cells);
+            let player_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Player]);
             canvas.copy(&textures[&PanelName::Player], None, player_rect).unwrap();
+
+            let player_area = &screen_areas[&PanelName::Player];
             canvas_panel.justify_cmd("Player",
                                      Justify::Center,
                                      text_color,
@@ -787,11 +794,8 @@ impl Display {
                                      player_area.width as u32);
 
             if state.is_menu() {
-                let menu_panel = &panels[&PanelName::Menu];
-
-                let menu_area = screen_area.centered(menu_panel.cells.0 as usize, menu_panel.cells.1 as usize);
-                let dst = canvas_panel.get_rect_within(&menu_area, menu_panel.cells);
-                canvas.copy(&textures[&PanelName::Menu], None, dst).unwrap();
+                let menu_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Menu]);
+                canvas.copy(&textures[&PanelName::Menu], None, menu_rect).unwrap();
             }
         }).unwrap();
 
@@ -1088,36 +1092,35 @@ fn create_texture(texture_creator: &mut TextureCreator<WindowContext>, pixel_for
     return texture_creator.create_texture_target(pixel_format, num_pixels.0, num_pixels.1).unwrap();
 }
 
-fn create_panels(width: u32, height: u32) -> HashMap<PanelName, Panel> {
+fn create_panels(screen_areas: &HashMap<PanelName, Area>) -> HashMap<PanelName, Panel> {
     let mut panels = HashMap::new();
 
     let over_sample = 5;
 
     let map_pixels = (over_sample * MAP_WIDTH as u32 * FONT_WIDTH as u32, over_sample * MAP_HEIGHT as u32 * FONT_HEIGHT as u32);
-    let map_dims = (MAP_WIDTH as u32, MAP_HEIGHT as u32);
+    let map_dims = screen_areas[&PanelName::Map].dims();
+    let map_dims = (map_dims.0 as u32, map_dims.1 as u32);
     let map_panel = Panel::new(map_pixels, map_dims);
     panels.insert(PanelName::Map, map_panel);
 
-    let info_width = width / 3;
-
     let over_sample = 10;
 
-    //let info_dims = (info_width, height - MAP_HEIGHT as u32);
-    let info_dims = (12, 12);
+    let info_dims = screen_areas[&PanelName::Info].dims();
+    let info_dims = (info_dims.0 as u32, info_dims.1 as u32);
     let info_pixels = (over_sample * info_dims.0 * FONT_WIDTH as u32, over_sample * info_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Info, Panel::new(info_pixels, info_dims));
 
-    //let inventory_dims = (info_width, height - MAP_HEIGHT as u32);
-    let inventory_dims = (12, 12);
+    let inventory_dims = screen_areas[&PanelName::Inventory].dims();
+    let inventory_dims = (inventory_dims.0 as u32, inventory_dims.1 as u32);
     let inventory_pixels = (over_sample * inventory_dims.0 * FONT_WIDTH as u32, over_sample * inventory_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Inventory, Panel::new(inventory_pixels, inventory_dims));
 
-    //let player_dims = (info_width, height - MAP_HEIGHT as u32);
-    let player_dims = (12, 12);
+    let player_dims = screen_areas[&PanelName::Player].dims();
+    let player_dims = (player_dims.0 as u32, player_dims.1 as u32);
     let player_pixels = (over_sample * player_dims.0 * FONT_WIDTH as u32, over_sample * player_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Player, Panel::new(player_pixels, player_dims));
 
-    let menu_dims = (info_width, info_width);
+    let menu_dims = info_dims;
     let menu_pixels = (over_sample * menu_dims.0 * FONT_WIDTH as u32, over_sample * menu_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Menu, Panel::new(menu_pixels, menu_dims));
 

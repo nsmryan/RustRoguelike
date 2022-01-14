@@ -369,6 +369,10 @@ impl Area {
         return Area { x_offset, y_offset, width, height };
     }
 
+    pub fn dims(&self) -> (usize, usize) {
+        return (self.width, self.height);
+    }
+
     pub fn split_left(&self, left_width: usize) -> (Area, Area) {
         assert!(left_width <= self.width);
 
