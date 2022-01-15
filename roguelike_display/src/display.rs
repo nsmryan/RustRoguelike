@@ -73,7 +73,6 @@ impl Display {
         let pixel_format = texture_creator.default_pixel_format();
 
         let canvas_cell_dims = (SCREEN_WIDTH / (FONT_WIDTH as u32 * 1), SCREEN_HEIGHT / (FONT_HEIGHT as u32 * 1));
-        //let canvas_cell_dims = (SCREEN_WIDTH / (FONT_WIDTH as u32 * 2), SCREEN_HEIGHT / (FONT_HEIGHT as u32 * 2));
         let canvas_panel = Panel::new((SCREEN_WIDTH, SCREEN_HEIGHT), canvas_cell_dims);
         
         /* Lay out screen areas */
@@ -82,8 +81,7 @@ impl Display {
         let (inventory_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 3);
         let (info_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 3);
         let player_area = rest_area;
-        // The menu has the same dimensions as the UI areas.
-        let menu_area = screen_area.centered(info_area.width, info_area.height);
+        let menu_area = screen_area.centered((info_area.width as f32 * 1.5) as usize, (info_area.height as f32 * 1.5) as usize);
 
         let mut screen_areas = HashMap::new();
         screen_areas.insert(PanelName::Map, map_area);
@@ -1103,7 +1101,7 @@ fn create_panels(screen_areas: &HashMap<PanelName, Area>) -> HashMap<PanelName, 
     let map_panel = Panel::new(map_pixels, map_dims);
     panels.insert(PanelName::Map, map_panel);
 
-    let over_sample = 10;
+    let over_sample = 5;
 
     let info_dims = screen_areas[&PanelName::Info].dims();
     let info_dims = (info_dims.0 as u32, info_dims.1 as u32);
