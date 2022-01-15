@@ -9,9 +9,9 @@ use pathfinding::directed::astar::astar;
 use rand::rngs::SmallRng;
 use rand::{SeedableRng};
 
-use wfc_image::*;
-use image;
-use image::GenericImageView;
+//use wfc_image::*;
+//use image;
+//use image::GenericImageView;
 use wfc_rs::{WfcImage, Wfc};
 
 use euclid::*;
@@ -89,7 +89,8 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
 
     // TODO can this unsafe be removed?
     // TODO Is there any issue using NonNull and having two copies of this pointer?
-    // TODO Memory is not cleaned up correctly here, due to segfault in Wfc::drop
+    // TODO Memory is not cleaned up correctly here, due to segfault in Wfc::drop.
+    // TODO Seed wfc with rng for consistency.
     unsafe {
         let image = WfcImage::from_file(template_file).unwrap();
         let mut wfc = Wfc::overlapping(32, 32, image, 3, 3, true, true, true, true).unwrap();
