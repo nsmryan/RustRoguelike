@@ -12,6 +12,7 @@ use rand::{SeedableRng};
 use wfc_image::*;
 use image;
 use image::GenericImageView;
+use wfc_rs::{WfcImage, Wfc};
 
 use euclid::*;
 
@@ -86,6 +87,27 @@ impl ProcCmd {
 pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut Rand32) -> Map {
     let mut new_map = Map::from_dims(width, height);
 
+    // TODO can this unsafe be removed?
+    // TODO Is there any issue using NonNull and having two copies of this pointer?
+    // TODO Memory is not cleaned up correctly here, due to segfault in Wfc::drop
+    unsafe {
+        let image = WfcImage::from_file(template_file).unwrap();
+        let mut wfc = Wfc::overlapping(32, 32, image, 3, 3, true, true, true, true).unwrap();
+        let pixel_bytes = wfc.vec();
+
+        for x in 0..width {
+            for y in 0..height {
+                let offset = image.as_ref().component_cnt * width as i32 * y as i32 + image.as_ref().component_cnt * x as i32;
+                let pixel = pixel_bytes[offset as usize];
+                if pixel == 0 {
+                    let pos = Pos::new(x as i32, y as i32);
+                    new_map[pos] = Tile::wall();
+                }
+             }
+        }
+    }
+
+    /*
     let file = File::open(template_file).unwrap();
     let reader = BufReader::new(file);
     let seed_image = image::load(reader, image::ImageFormat::Png).unwrap();
@@ -121,6 +143,7 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
             }
          }
     }
+    */
 
     return new_map;
 }

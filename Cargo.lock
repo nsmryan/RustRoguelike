@@ -54,6 +54,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
 
 [[package]]
+name = "cc"
+version = "1.0.72"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22a9137b95ea06864e018375b72adfb7db6e6f68cfc8df5a04d00288050485ee"
+
+[[package]]
 name = "cfg-if"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -656,6 +662,7 @@ dependencies = [
  "serde_yaml",
  "simple-logging",
  "smallvec",
+ "wfc-rs",
  "wfc_image",
 ]
 
@@ -882,6 +889,16 @@ dependencies = [
  "grid_2d",
  "hashbrown",
  "rand",
+]
+
+[[package]]
+name = "wfc-rs"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e16b8503aca3fbc07154d2bf083d140ae496dad49d8ee2ed50bf298fc3b9bfe"
+dependencies = [
+ "cc",
+ "libc",
 ]
 
 [[package]]
