@@ -26,8 +26,8 @@ pub enum DrawCmd {
     SpriteAtPixel(Sprite, Color, Pos),
     HighlightTile(Color, Pos),
     OutlineTile(Color, Pos),
-    Text(String, Color, Pos),
-    TextJustify(String, Justify, Color, Color, Pos, u32), // text, justify, fg color, bg color, pos, width in cells
+    Text(String, Color, Pos, f32),
+    TextJustify(String, Justify, Color, Color, Pos, u32, f32), // text, justify, fg color, bg color, pos, width in cells, scale
     Rect(Pos, (u32, u32), f32, bool, Color), // start cell, num cells width/height, offset percent into cell, color
     Fill(Pos, Color),
 }
@@ -44,8 +44,8 @@ impl DrawCmd {
             DrawCmd::SpriteAtPixel(_, _, pos) => *pos,
             DrawCmd::HighlightTile(_, pos) => *pos,
             DrawCmd::OutlineTile(_, pos) => *pos,
-            DrawCmd::Text(_, _, pos) => *pos,
-            DrawCmd::TextJustify(_, _, _, _, pos, _) => *pos,
+            DrawCmd::Text(_, _, pos, _) => *pos,
+            DrawCmd::TextJustify(_, _, _, _, pos, _, _) => *pos,
             DrawCmd::Rect(pos, _, _, _, _) => *pos,
             DrawCmd::Fill(pos, _) => *pos,
         }
@@ -195,7 +195,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             draw_tile_highlight(panel, canvas, *pos, *color);
         }
 
-        DrawCmd::TextJustify(string, justify, fg_color, bg_color, start_pos, width) => {
+        DrawCmd::TextJustify(string, justify, fg_color, bg_color, start_pos, width, scale) => {
             let ascii_width = ASCII_END - ASCII_START;
 
             let sprite_key = lookup_spritekey(sprites, "font");
@@ -208,10 +208,12 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             let font_width = query.width / ascii_width;
             let font_height = query.height;
 
-            let char_height = cell_height;
-            //let char_width = ((cell_width * font_width) / font_height) - 16;
-            //let char_width = ((cell_width * font_width) / font_height) - font_width;
-            let char_width = (cell_width * font_width) / font_height;
+            //let char_height = cell_height;
+            //let char_width = (cell_width * font_width) / font_height;
+
+            let char_height = (cell_height as f32 * scale) as u32;
+            let char_width = (cell_height * font_width) / font_height;
+            let char_width = (char_width as f32 * scale) as u32;
 
             let pixel_width = (*width * cell_width) as i32;
             let mut x_offset;
@@ -268,7 +270,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             }
         }
 
-        DrawCmd::Text(string, color, start_pos) => {
+        DrawCmd::Text(string, color, start_pos, scale) => {
             let ascii_width = ASCII_END - ASCII_START;
 
             let sprite_key = lookup_spritekey(sprites, "font");
@@ -281,9 +283,9 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             let font_width = query.width / ascii_width;
             let font_height = query.height;
 
-            let char_height = cell_height;
-            //let char_width = ((cell_height * font_width) / font_height) - 16;
+            let char_height = (cell_height as f32 * scale) as u32;
             let char_width = (cell_height * font_width) / font_height;
+            let char_width = (char_width as f32 * scale) as u32;
 
             canvas.set_blend_mode(BlendMode::Blend);
             sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
@@ -621,22 +623,22 @@ impl Panel {
         self.draw_cmd(cmd);
     }
 
-    pub fn justify_cmd(&mut self, text: &str, justify: Justify, fg_color: Color, bg_color: Color, text_pos: Pos, width: u32) {
+    pub fn justify_cmd(&mut self, text: &str, justify: Justify, fg_color: Color, bg_color: Color, text_pos: Pos, width: u32, scale: f32) {
         let string = text.to_string();
-        let cmd = DrawCmd::TextJustify(string, justify, fg_color, bg_color, text_pos, width);
+        let cmd = DrawCmd::TextJustify(string, justify, fg_color, bg_color, text_pos, width, scale);
         self.draw_cmd(cmd);
     }
 
-    pub fn text_cmd(&mut self, text: &str, color: Color, pos: Pos) {
+    pub fn text_cmd(&mut self, text: &str, color: Color, pos: Pos, scale: f32) {
         let string = text.to_string();
-        let cmd = DrawCmd::Text(string, color, pos);
+        let cmd = DrawCmd::Text(string, color, pos, scale);
         self.draw_cmd(cmd);
     }
 
-    pub fn text_list_cmd(&mut self, text_list: &Vec<String>, color: Color, cell: Pos) {
+    pub fn text_list_cmd(&mut self, text_list: &Vec<String>, color: Color, cell: Pos, scale: f32) {
         for (index, text) in text_list.iter().enumerate() {
             let text_cell = Pos::new(cell.x, cell.y + index as i32);
-            self.text_cmd(text, color, text_cell);
+            self.text_cmd(text, color, text_cell, scale);
         }
     }
 

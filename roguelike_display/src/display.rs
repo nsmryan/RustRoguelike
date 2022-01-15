@@ -732,6 +732,8 @@ impl Display {
         let state = self.state.state;
         let screen_areas = &self.screen_areas;
 
+        let section_name_scale = 1.2;
+
         self.canvas.with_texture_canvas(&mut self.screen_texture, |canvas| {
             let dims = (dims.0 as u32, dims.1 as u32);
 
@@ -765,7 +767,8 @@ impl Display {
                                      text_color,
                                      highlight_color,
                                      Pos::new(inventory_area.x_offset as i32, inventory_area.y_offset as i32),
-                                     inventory_area.width as u32);
+                                     inventory_area.width as u32, 
+                                     section_name_scale);
 
             /* Draw Game Info Panel */
             let info_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Info]);
@@ -777,7 +780,8 @@ impl Display {
                                      text_color,
                                      highlight_color,
                                      Pos::new(2 * info_area.x_offset as i32, info_area.y_offset as i32),
-                                     info_area.width as u32);
+                                     info_area.width as u32, 
+                                     section_name_scale);
 
             /* Draw Player Info Panel */
             let player_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Player]);
@@ -789,7 +793,8 @@ impl Display {
                                      text_color,
                                      highlight_color,
                                      Pos::new(2 * player_area.x_offset as i32, player_area.y_offset as i32),
-                                     player_area.width as u32);
+                                     player_area.width as u32, 
+                                     section_name_scale);
 
             if state.is_menu() {
                 let menu_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Menu]);
@@ -1101,20 +1106,21 @@ fn create_panels(screen_areas: &HashMap<PanelName, Area>) -> HashMap<PanelName, 
     let map_panel = Panel::new(map_pixels, map_dims);
     panels.insert(PanelName::Map, map_panel);
 
-    let over_sample = 5;
+    let over_sample = 10;
+    let multiplier = 1.2;
 
     let info_dims = screen_areas[&PanelName::Info].dims();
-    let info_dims = (info_dims.0 as u32, info_dims.1 as u32);
+    let info_dims = ((info_dims.0 as f32 / multiplier) as u32, (info_dims.1 as f32 / multiplier) as u32);
     let info_pixels = (over_sample * info_dims.0 * FONT_WIDTH as u32, over_sample * info_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Info, Panel::new(info_pixels, info_dims));
 
     let inventory_dims = screen_areas[&PanelName::Inventory].dims();
-    let inventory_dims = (inventory_dims.0 as u32, inventory_dims.1 as u32);
+    let inventory_dims = ((inventory_dims.0 as f32 / multiplier) as u32, (inventory_dims.1 as f32 / multiplier) as u32);
     let inventory_pixels = (over_sample * inventory_dims.0 * FONT_WIDTH as u32, over_sample * inventory_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Inventory, Panel::new(inventory_pixels, inventory_dims));
 
     let player_dims = screen_areas[&PanelName::Player].dims();
-    let player_dims = (player_dims.0 as u32, player_dims.1 as u32);
+    let player_dims = ((player_dims.0 as f32 / multiplier) as u32, (player_dims.1 as f32 / multiplier) as u32);
     let player_pixels = (over_sample * player_dims.0 * FONT_WIDTH as u32, over_sample * player_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Player, Panel::new(player_pixels, player_dims));
 

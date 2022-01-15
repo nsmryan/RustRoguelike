@@ -124,7 +124,7 @@ fn render_debug(panel: &mut Panel, display_state: &mut DisplayState) {
 
     let text_pos = Pos::new(1, 1);
     let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
-    panel.text_list_cmd(&text_list, text_color, text_pos);
+    panel.text_list_cmd(&text_list, text_color, text_pos, 1.0);
 }
 
 /// Draw an outline and title around an area of the screen
@@ -139,7 +139,8 @@ fn render_placard(panel: &mut Panel, text: &str) {
                       text_color,
                       highlight_color,
                       Pos::new(0, 0),
-                      panel.cells.0);
+                      panel.cells.0,
+                      1.0);
 }
 
 fn render_pips(panel: &mut Panel,
@@ -211,7 +212,7 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
 
     let text_pos = Pos::new(x_offset, 5);
 
-    panel.text_list_cmd(&list, color, text_pos);
+    panel.text_list_cmd(&list, color, text_pos, 1.0);
 }
 
 fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
@@ -232,7 +233,7 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
 
         let text_pos = Pos::new(x_offset, y_pos);
 
-        panel.text_list_cmd(&text_list, text_color, text_pos);
+        panel.text_list_cmd(&text_list, text_color, text_pos, 1.0);
 
         text_list.clear();
 
@@ -293,7 +294,7 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
         }
 
         let text_pos = Pos::new(x_offset, y_pos);
-        panel.text_list_cmd(&text_list, text_color, text_pos);
+        panel.text_list_cmd(&text_list, text_color, text_pos, 1.0);
 
         if display_state.fov.get(&info_pos) == Some(&FovResult::Inside) {
             if display_state.map[info_pos].tile_type == TileType::Water {
@@ -325,7 +326,7 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
             }
         }
 
-        panel.text_list_cmd(&text_list, text_color, text_pos);
+        panel.text_list_cmd(&text_list, text_color, text_pos, 1.0);
     }
 }
 
@@ -345,7 +346,7 @@ fn render_skill_menu(panel: &mut Panel, display_state: &DisplayState) {
     // TODO this color comes from the ui mockups as a light brown
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
-    panel.text_list_cmd(&list, color, text_pos);
+    panel.text_list_cmd(&list, color, text_pos, 1.0);
 }
 
 fn render_class_menu(panel: &mut Panel) {
@@ -364,7 +365,7 @@ fn render_class_menu(panel: &mut Panel) {
     // TODO this color comes from the ui mockups as a light brown
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
-    panel.text_list_cmd(&list, color, text_pos);
+    panel.text_list_cmd(&list, color, text_pos, 1.0);
 }
 
 fn render_confirm_quit(panel: &mut Panel) {
@@ -385,7 +386,7 @@ fn render_confirm_quit(panel: &mut Panel) {
     // TODO this color comes from the UI mockups as a light brown
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
-    panel.text_list_cmd(&list, color, text_pos);
+    panel.text_list_cmd(&list, color, text_pos, 1.0);
 }
 
 /// Render an inventory section within the given area
@@ -401,33 +402,33 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState) {
     let x_offset = 5;
 
     // Draw Primary Items
-    panel.text_cmd("z", ui_color, Pos::new(x_offset, y_pos));
+    panel.text_cmd("z", ui_color, Pos::new(x_offset, y_pos), 1.0);
 
     for (item, item_class) in display_state.inventory.iter() {
         if *item_class == ItemClass::Primary {
             let item_text = format!("{:?}", item);
             let text_pos = Pos::new(x_offset + 2, y_pos);
-            panel.text_cmd(&item_text, ui_color, text_pos);
+            panel.text_cmd(&item_text, ui_color, text_pos, 1.0);
             break;
         }
     }
     y_pos += 1;
 
     // Draw Consumable Items
-    panel.text_cmd(&"x", ui_color, Pos::new(x_offset, y_pos));
+    panel.text_cmd(&"x", ui_color, Pos::new(x_offset, y_pos), 1.0);
 
     for (item, item_class) in display_state.inventory.iter() {
         if *item_class == ItemClass::Consumable {
             let item_text = format!("{:?}", item);
             let text_pos = Pos::new(x_offset + 2, y_pos);
-            panel.text_cmd(&item_text, ui_color, text_pos);
+            panel.text_cmd(&item_text, ui_color, text_pos, 1.0);
             break;
         }
     }
     y_pos += 1;
 
     // Draw Stones Items
-    panel.text_cmd(&"c", ui_color, Pos::new(x_offset, y_pos));
+    panel.text_cmd(&"c", ui_color, Pos::new(x_offset, y_pos), 1.0);
 
     let mut num_stones = 0;
     for (item, _item_class) in display_state.inventory.iter() {
@@ -437,13 +438,13 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState) {
     }
 
     if num_stones > 0 {
-        panel.text_cmd(&"c", ui_color, Pos::new(x_offset, y_pos));
+        panel.text_cmd(&"c", ui_color, Pos::new(x_offset, y_pos), 1.0);
 
         let text_pos = Pos::new(x_offset + 2, y_pos);
-        panel.text_cmd(&"stone", ui_color, text_pos);
+        panel.text_cmd(&"stone", ui_color, text_pos, 1.0);
 
         let num_text = format!("({})", num_stones);
-        panel.text_cmd(&num_text, ui_color, Pos::new(x_offset + 8, y_pos));
+        panel.text_cmd(&num_text, ui_color, Pos::new(x_offset + 8, y_pos), 1.0);
     }
 
     y_pos += 1;
@@ -454,7 +455,7 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState) {
         if *item_class == ItemClass::Misc && *item != Item::Stone {
             let item_text = format!("{:?}", item);
             let text_pos = Pos::new(x_offset + 2, y_pos);
-            panel.text_cmd(&item_text, ui_color, text_pos);
+            panel.text_cmd(&item_text, ui_color, text_pos, 1.0);
             y_pos += 1;
         }
     }
@@ -1277,7 +1278,7 @@ fn render_overlay_floodfill(panel: &mut Panel,
         let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
         panel.sprite_cmd(sprite, adj_color, pos);
 
-        panel.text_cmd(&format!("{}", near_count), highlight_color, pos);
+        panel.text_cmd(&format!("{}", near_count), highlight_color, pos, 1.0);
     }
 }
 
