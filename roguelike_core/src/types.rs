@@ -432,9 +432,16 @@ impl Level {
         match item {
             Item::Stone | Item::SeedOfStone | Item::GlassEye |
             Item::Lantern | Item::Teleporter | Item::SpikeTrap | 
-            Item::SoundTrap | Item::BlinkTrap | Item::FreezeTrap => {
+            Item::SoundTrap | Item::BlinkTrap | Item::FreezeTrap |
+            Item::Sling => {
+                let dist = if item == Item::Sling {
+                    PLAYER_THROW_DIST
+                } else {
+                    SLING_THROW_DIST
+                };
+
                 result.pos = Some(pos);
-                let end_pos = dir.offset_pos(pos, PLAYER_THROW_DIST as i32);
+                let end_pos = dir.offset_pos(pos, dist as i32);
                 let hit_pos = self.throw_towards(pos, end_pos);
                 for travel_pos in line(pos, hit_pos) {
                     result.hit_positions.push(travel_pos);
@@ -816,8 +823,8 @@ impl FromStr for ActionMode {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct ItemModifier {
-    fragile: bool,
-    modifier: i32,
+    pub fragile: bool,
+    pub modifier: i32,
 }
 
 impl ItemModifier {

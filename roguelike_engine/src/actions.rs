@@ -652,7 +652,7 @@ pub fn handle_input_playing(input_action: InputAction,
             if let Some(item_index) = level.find_item(item_class) { 
                 let player_pos = level.entities.pos[&player_id];
                 let item_id = level.entities.inventory[&player_id][item_index];
-                msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos));
+                msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos, false));
             }
         }
 
@@ -773,7 +773,12 @@ fn finalize_use_item(level: &Level, settings: &mut GameSettings, msg_log: &mut M
                 msg_log.log(Msg::PlaceTrap(player_id, place_pos, item_id));
             } else if item == Item::Stone || item == Item::Lantern || item == Item::SeedOfStone || item == Item::Herb {
                 let throw_pos = dir.offset_pos(player_pos, PLAYER_THROW_DIST as i32);
-                msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos));
+                msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos, false));
+            } else if item == Item::Sling {
+                let throw_pos = dir.offset_pos(player_pos, SLING_THROW_DIST as i32);
+                if let Some(stone_id) = level.has_item_in_inventory(player_id, Item::Stone) {
+                    msg_log.log(Msg::ItemThrow(player_id, stone_id, player_pos, throw_pos, true));
+                }
             } else {
                 // we should not be able to finalize use mode without a valid move position.
                 let move_pos = use_result.pos.expect("Using an item with no move position?!");

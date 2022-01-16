@@ -420,6 +420,11 @@ pub fn make_teleporter(entities: &mut Entities, _config: &Config, pos: Pos, msg_
     return entity_id;
 }
 
+pub fn make_sling(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id = make_item_generic(entities, Item::Sling, EntityName::Sling, pos, msg_log);
+    return entity_id;
+}
+
 pub fn make_lantern(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = make_item_generic(entities, Item::Lantern, EntityName::Lantern, pos, msg_log);
 
@@ -434,6 +439,7 @@ pub fn make_item_generic(entities: &mut Entities, item: Item, name: EntityName, 
     entities.item.insert(entity_id,  item);
     entities.status[&entity_id].alive = false;
     entities.blocks.insert(entity_id,  false);
+    entities.modifier.insert(entity_id, ItemModifier::new());
 
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, name, entities.direction[&entity_id]));
 
@@ -470,6 +476,7 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
         EntityName::Stone => make_stone(entities, config, pos, msg_log),
         EntityName::Lantern => make_lantern(entities, config, pos, msg_log),
         EntityName::Teleporter => make_teleporter(entities, config, pos, msg_log),
+        EntityName::Sling => make_sling(entities, config, pos, msg_log),
         EntityName::Herb => make_herb(entities, config, pos, msg_log),
         _ => {
             dbg!(entity_name);

@@ -29,7 +29,7 @@ pub enum Msg {
     PlayerDeath,
     PickedUp(EntityId, EntityId), // entity, item
     PickUp(EntityId), // entity trying to pick up an item
-    ItemThrow(EntityId, EntityId, Pos, Pos), // thrower, stone id, start, end
+    ItemThrow(EntityId, EntityId, Pos, Pos, bool), // thrower, stone id, start, end, hard
     ItemLanded(EntityId, Pos, Pos), // stone id, start, end
     TryAttack(EntityId, Attack, Pos), // attacker, attack description, attack pos
     Attack(EntityId, EntityId, i32), // attacker, attacked, hp lost
@@ -150,7 +150,7 @@ impl fmt::Display for Msg {
             Msg::PlayerDeath => write!(f, "player_death"),
             Msg::PickedUp(entity_id, item_id) => write!(f, "picked_up {} {}", entity_id, item_id),
             Msg::PickUp(entity_id) => write!(f, "pickup {}", entity_id),
-            Msg::ItemThrow(entity_id, item_id, start, end) => write!(f, "item_throw {} {} {} {} {} {}", entity_id, item_id, start.x, start.y, end.x, end.y),
+            Msg::ItemThrow(entity_id, item_id, start, end, hard) => write!(f, "item_throw {} {} {} {} {} {} {}", entity_id, item_id, start.x, start.y, end.x, end.y, hard),
             Msg::ItemLanded(item_id, start, end) => write!(f, "item_landed {} {} {} {} {}", item_id, start.x, start.y, end.x, end.y),
             Msg::TryAttack(entity_id, attack, pos) => {
                 match attack {
@@ -318,7 +318,7 @@ impl Msg {
                                data.entities.name[item_id].clone());
             }
 
-            Msg::ItemThrow(_thrower, _item, _start, _end) => {
+            Msg::ItemThrow(_thrower, _item, _start, _end, _hard) => {
                 return "Item throw".to_string();
             }
 

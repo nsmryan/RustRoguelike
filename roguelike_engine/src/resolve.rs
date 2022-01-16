@@ -56,12 +56,12 @@ pub fn resolve_messages(game: &mut Game) {
                 }
             }
 
-            Msg::ItemThrow(entity_id, item_id, start, end) => {
+            Msg::ItemThrow(entity_id, item_id, start, end, hard) => {
                 if start == end {
                     // TODO make this drop an item
                     //inventory_drop_item(entity_id, item_index as usize, level, &mut game.msg_log);
                 } else {
-                    throw_item(entity_id, item_id, start, end, &mut game.level, &mut game.rng, &mut game.msg_log, &game.config);
+                    throw_item(entity_id, item_id, start, end, hard, &mut game.level, &mut game.rng, &mut game.msg_log, &game.config);
                 }
             }
 
@@ -1345,6 +1345,7 @@ fn throw_item(player_id: EntityId,
               item_id: EntityId,
               start_pos: Pos,
               end_pos: Pos,
+              hard: bool,
               level: &mut Level,
               rng: &mut Rand32,
               msg_log: &mut MsgLog,
@@ -1362,6 +1363,10 @@ fn throw_item(player_id: EntityId,
             let mut stun_turns = level.entities.item[&item_id].throw_stun_turns();
 
             if level.entities.passive[&player_id].stone_thrower {
+                stun_turns += 1;
+            }
+
+            if hard {
                 stun_turns += 1;
             }
 
