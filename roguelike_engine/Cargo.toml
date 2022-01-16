@@ -21,7 +21,7 @@ logging_timer = "1.0"
 
 #wfc_image = "0.11"
 #image = { version = "*", default-features = false, features = ["png"] }
-wfc-rs = "*"
+wfc-rs = "0.4"
 
 rand = {version = "0.8", default-features = false, features = ["small_rng", "std"] }
 

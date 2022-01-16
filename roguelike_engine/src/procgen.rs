@@ -9,9 +9,6 @@ use pathfinding::directed::astar::astar;
 //use rand::rngs::SmallRng;
 //use rand::{SeedableRng};
 
-//use wfc_image::*;
-//use image;
-//use image::GenericImageView;
 use wfc_rs::{WfcImage, Wfc};
 
 use euclid::*;
@@ -88,64 +85,28 @@ impl ProcCmd {
 pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut Rand32) -> Map {
     let mut new_map = Map::from_dims(width, height);
 
-    // TODO can this unsafe be removed?
-    // TODO Is there any issue using NonNull and having two copies of this pointer?
-    // TODO Memory is not cleaned up correctly here, due to segfault in Wfc::drop.
-    // TODO Seed wfc with rng for consistency.
-    unsafe {
-        let image = WfcImage::from_file(template_file).unwrap();
-        let mut wfc = Wfc::overlapping(32, 32, image, 3, 3, true, true, true, true).unwrap();
-        let pixel_bytes = wfc.vec();
+    let image = WfcImage::from_file(template_file).unwrap();
+    let mut wfc = Wfc::overlapping(width as i32, height as i32, image, 3, 3, true, true, true, true).unwrap();
 
-        for x in 0..width {
-            for y in 0..height {
-                let offset = image.as_ref().component_cnt * width as i32 * y as i32 + image.as_ref().component_cnt * x as i32;
-                let pixel = pixel_bytes[offset as usize];
-                if pixel == 0 {
-                    let pos = Pos::new(x as i32, y as i32);
-                    new_map[pos] = Tile::wall();
-                }
-             }
-        }
-    }
+    wfc.run(None, Some(rng.rand_u32())).unwrap();
 
-    /*
-    let file = File::open(template_file).unwrap();
-    let reader = BufReader::new(file);
-    let seed_image = image::load(reader, image::ImageFormat::Png).unwrap();
-    let orientations = [Orientation::Original,
-                        Orientation::Clockwise90,
-                        Orientation::Clockwise180,
-                        Orientation::Clockwise270,
-                        Orientation::DiagonallyFlipped,
-                        Orientation::DiagonallyFlippedClockwise90,
-                        Orientation::DiagonallyFlippedClockwise180,
-                        Orientation::DiagonallyFlippedClockwise270];
+    let pixel_bytes = wfc.vec();
 
-    // Rand32 cannot be used here because of the RngCore trait restriction.
-    let seed: [u8; 32] = [rng.rand_u32() as u8; 32];
-    let mut small_rng = SmallRng::from_seed(seed);
-    let map_image = 
-        wfc_image::generate_image_with_rng(&seed_image,
-                                           core::num::NonZeroU32::new(3).unwrap(),
-                                           wfc_image::Size::new(width, height),
-                                           &orientations, 
-                                           wfc_image::wrap::WrapNone,
-                                           ForbidNothing,
-                                           wfc_image::retry::NumTimes(3),
-                                           &mut small_rng).unwrap();
-    map_image.save("wfc_map.png").unwrap();
+    let component_cnt = unsafe { image.as_ref().unwrap().component_cnt };
 
     for x in 0..width {
         for y in 0..height {
-            let pixel = map_image.get_pixel(x, y);
-            if pixel.0[0] == 0 {
+            let x_offset = component_cnt * x as i32;
+            let y_offset = component_cnt * width as i32 * y as i32;
+            let offset = x_offset + y_offset;
+
+            let pixel = pixel_bytes[offset as usize];
+            if pixel == 0 {
                 let pos = Pos::new(x as i32, y as i32);
                 new_map[pos] = Tile::wall();
             }
          }
     }
-    */
 
     return new_map;
 }
