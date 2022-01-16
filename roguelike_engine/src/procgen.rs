@@ -105,7 +105,7 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
                 let pos = Pos::new(x as i32, y as i32);
                 new_map[pos] = Tile::wall();
             }
-         }
+        }
     }
 
     return new_map;
