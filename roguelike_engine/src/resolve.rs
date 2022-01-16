@@ -947,7 +947,8 @@ fn resolve_try_movement(entity_id: EntityId,
             let traps_block = false;
             if level.clear_path(entity_pos, movement.pos, traps_block) {
                 if movement.typ == MoveType::Move {
-                    msg_log.log_front(Msg::Moved(entity_id, movement.typ, movement.pos));
+                    //msg_log.log_front(Msg::Moved(entity_id, movement.typ, movement.pos));
+                    msg_log.log(Msg::Moved(entity_id, movement.typ, movement.pos));
 
                     if amount > 1 {
                         msg_log.log(Msg::TryMove(entity_id, direction, amount - 1, move_mode));
