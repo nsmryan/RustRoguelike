@@ -350,6 +350,7 @@ impl Game {
                         self.msg_log.log(Msg::UseDir(dir));
                     }
 
+                    self.msg_log.log(Msg::UseHitPosClear);
                     for pos in use_result.hit_positions {
                         self.msg_log.log(Msg::UseHitPos(pos));
                     }
