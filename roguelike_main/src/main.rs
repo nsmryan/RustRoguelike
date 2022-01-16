@@ -103,32 +103,40 @@ fn main() {
 pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     /* Create SDL Context */
     let sdl_context = sdl2::init()?;
-    let video = sdl_context.video()?;
-    let mut timer = sdl_context.timer()?;
-    let window = video.window("Rust Roguelike", SCREEN_WIDTH, SCREEN_HEIGHT)
-                      .position_centered().build().map_err(|e| e.to_string())?;
 
-    let canvas = window.into_canvas()
+    let mut display;
+    let mut timer;
+    let canvas;
+
+    {
+        let video = sdl_context.video()?;
+        timer = sdl_context.timer()?;
+        let window = video.window("Rust Roguelike", SCREEN_WIDTH, SCREEN_HEIGHT)
+                          .position_centered().build().map_err(|e| e.to_string())?;
+
+        canvas = window.into_canvas()
                        .accelerated()
                        .build()
                        .map_err(|e| e.to_string())?;
-    let texture_creator = canvas.texture_creator();
 
-    /* Create Display Structures */
-    let mut display = Display::new(canvas);
+        let texture_creator = canvas.texture_creator();
 
-    /* Load Textures */
-    load_sprites(&texture_creator, &mut display);
-    load_sprite(&texture_creator, &mut display, "resources/rustrogueliketiles.png", "tiles");
-    load_sprite(&texture_creator, &mut display, "resources/shadowtiles.png", "shadows");
-    load_sprite(&texture_creator, &mut display, "resources/Particle_Speck.png", "particle_speck");
+        /* Create Display Structures */
+        display = Display::new(canvas);
 
-    let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
-    let font_texture = load_font(&ttf_context,
-                                 &texture_creator,
-                                 "Inconsolata-Bold.ttf".to_string(),
-                                 24);
-    display.add_spritesheet("font".to_string(), font_texture);
+        /* Load Textures */
+        load_sprites(&texture_creator, &mut display);
+        load_sprite(&texture_creator, &mut display, "resources/rustrogueliketiles.png", "tiles");
+        load_sprite(&texture_creator, &mut display, "resources/shadowtiles.png", "shadows");
+        load_sprite(&texture_creator, &mut display, "resources/Particle_Speck.png", "particle_speck");
+
+        let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
+        let font_texture = load_font(&ttf_context,
+                                     &texture_creator,
+                                     "Inconsolata-Bold.ttf".to_string(),
+                                     24);
+        display.add_spritesheet("font".to_string(), font_texture);
+    }
 
     /* Create Game Structure */
     let config = Config::from_file(CONFIG_NAME);
@@ -138,44 +146,23 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
     let mut game_from_file = false;
     if config.save_load {
-        if let Ok(bytes) = std::fs::read(GAME_SAVE_FILE) {
-            let cur = Cursor::new(&bytes[..]);
-            let mut de = Deserializer::new(cur);
-            if let Ok((game_loaded, display_loaded)) = Deserialize::deserialize(&mut de) {
-                game = game_loaded;
-                display.state = display_loaded;
-                game_from_file = true;
-            } 
+        if let Some((game_loaded, display_loaded)) = load_save(GAME_SAVE_FILE) {
+            game = game_loaded;
+            display.state = display_loaded;
+            game_from_file = true;
         }
     }
 
-    //make_mouse(&mut game.level.entities, &game.config, &mut game.msg_log);
-
     /* Create Map */
-    let mut map_config: MapLoadConfig;
-
-    if let Some(procgen_map) = opts.procgen_map.clone() {
-        map_config = MapLoadConfig::ProcGen(procgen_map);
-    } else {
-        map_config = config.map_load.clone();
-    }
-
-    if let Some(map_config_str) = &opts.map_config {
-        let cli_map_config = map_config_str.parse::<MapLoadConfig>()
-                                           .expect("Could not parse map config option!");
-        map_config = cli_map_config;
-    }
+    let map_config: MapLoadConfig = create_map_config(&opts, &config);
 
     // save map config to a file
     let mut map_config_file = std::fs::File::create(MAP_CONFIG_NAME).unwrap();
     map_config_file.write_all(map_config.to_string().as_bytes()).unwrap();
 
-    /* Run Game or Take Screenshot */
-    if opts.screenshot {
-        make_map(&map_config, &mut game);
-        take_screenshot(&mut game, &mut display).unwrap();
-        return Ok(());
-    } else if let Some(record_name) = opts.check {
+    /* Run Game, Check Recording, or Rerecord */
+    if let Some(record_name) = opts.check {
+        /* Check Recording */
         let delay = opts.delay.unwrap_or(0);
         let mut event_pump = sdl_context.event_pump().unwrap();
 
@@ -185,6 +172,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
             return check_single_record(&mut game, &mut display, &mut event_pump, &record_name, delay);
         }
     } else if let Some(record_name) = opts.rerecord {
+        /* Re-record */
         let delay = opts.delay.unwrap_or(0);
         let mut event_pump = sdl_context.event_pump().unwrap();
         if record_name == "all" {
@@ -193,7 +181,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
             return rerecord_single(&mut game, &mut display, &mut event_pump, &record_name, delay);
         }
     } else {
-        // run game loop
+        /* Run Game */
         if !game_from_file {
             make_map(&map_config, &mut game);
         }
@@ -225,18 +213,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
     // Serialization and storage take at least 6 ms, so this is done
     // in a separate thread to prevent taking time from the main loop.
     let (game_sender, game_receiver) = channel::<(Game, DisplayState)>();
-    let _save_thread = thread::spawn(move || {
-        loop {
-            if let Ok(game) = game_receiver.recv() {
-                let mut buf = Vec::new();
-                game.serialize(&mut Serializer::new(&mut buf)).unwrap();
-                let mut save_game_file = std::fs::File::create(GAME_SAVE_FILE).unwrap();
-                save_game_file.write_all(&buf).unwrap();
-            } else {
-                break;
-            }
-        }
-    });
+    let _save_thread = thread::spawn(move || { save_game_thread(game_receiver); });
 
     // running the post step first sets up the game before the first turn.
     game.emit_state_messages();
@@ -478,6 +455,48 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
     }
 
     return Ok(());
+}
+
+fn load_save(filename: &str) -> Option<(Game, DisplayState)> {
+    if let Ok(bytes) = std::fs::read(filename) {
+        let cur = Cursor::new(&bytes[..]);
+        let mut de = Deserializer::new(cur);
+        if let Ok((game_loaded, display_loaded)) = Deserialize::deserialize(&mut de) {
+            return Some((game_loaded, display_loaded));
+        } 
+    }
+    return None
+}
+
+fn create_map_config(opts: &GameOptions, config: &Config) -> MapLoadConfig {
+    let map_config: MapLoadConfig;
+
+    if let Some(procgen_map) = opts.procgen_map.clone() {
+        map_config = MapLoadConfig::ProcGen(procgen_map);
+    } else {
+        if let Some(map_config_str) = &opts.map_config {
+            let cli_map_config = map_config_str.parse::<MapLoadConfig>()
+                                               .expect("Could not parse map config option!");
+            map_config = cli_map_config;
+        } else {
+            map_config = config.map_load.clone();
+        }
+    }
+
+    return map_config;
+}
+
+fn save_game_thread(game_receiver: Receiver<(Game, DisplayState)>) {
+    loop {
+        if let Ok(game) = game_receiver.recv() {
+            let mut buf = Vec::new();
+            game.serialize(&mut Serializer::new(&mut buf)).unwrap();
+            let mut save_game_file = std::fs::File::create(GAME_SAVE_FILE).unwrap();
+            save_game_file.write_all(&buf).unwrap();
+        } else {
+            break;
+        }
+    }
 }
 
 fn process_commands(io_recv: &Receiver<String>, game: &mut Game, log: &mut Log) -> bool {

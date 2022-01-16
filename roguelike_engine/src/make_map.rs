@@ -77,7 +77,7 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
                 let offset = Pos::new(max_width * x_pos as i32 + 2 * x_pos as i32,
                                       max_height * y_pos as i32 + 2 * y_pos as i32);
 
-                place_vault(&mut game.level, vault, offset, &mut game.rng);
+                place_vault(&mut game.level, vault, offset, &mut game.rng, &game.config, &mut game.msg_log);
             }
         }
 
@@ -89,10 +89,10 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
 
             //game.level.map = Map::with_vec(vault.level.map.tiles);
             game.level.map = Map::from_dims(map_width as u32, map_height as u32);
-            place_vault_with(&mut game.level, &vault, Pos::new(0, 0), Rotation::Degrees0, false);
-            place_vault_with(&mut game.level, &vault, Pos::new(2*vault_width, 0), Rotation::Degrees90, false);
-            place_vault_with(&mut game.level, &vault, Pos::new(0, 2*vault_height), Rotation::Degrees180, false);
-            place_vault_with(&mut game.level, &vault, Pos::new(2*vault_width, 2*vault_height), Rotation::Degrees270, false);
+            place_vault_with(&mut game.level, &vault, Pos::new(0, 0), Rotation::Degrees0, &game.config, &mut game.msg_log, false);
+            place_vault_with(&mut game.level, &vault, Pos::new(2*vault_width, 0), Rotation::Degrees90, &game.config, &mut game.msg_log, false);
+            place_vault_with(&mut game.level, &vault, Pos::new(0, 2*vault_height), Rotation::Degrees180, &game.config, &mut game.msg_log, false);
+            place_vault_with(&mut game.level, &vault, Pos::new(2*vault_width, 2*vault_height), Rotation::Degrees270, &game.config, &mut game.msg_log, false);
 
             player_position = Pos::new(4, 4);
         }
@@ -145,31 +145,31 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
     }
 
-    //if game.level.find_by_name(EntityName::Mouse).is_none() {
-       //make_mouse(&mut game.level.entities, &game.config, &mut game.msg_log);
-    //}
-
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     game.msg_log.log(Msg::SetPos(player_id, player_position));
     game.level.entities.set_pos(player_id, player_position);
 
     if game.config.write_map_distribution {
-        let max = (2 * TILE_FILL_METRIC_DIST + 1).pow(2);
-        let mut counts = vec![0; max + 1];
-
-        for pos in game.level.map.get_all_pos() {
-            let amount = tile_fill_metric(&game.level.map, pos);
-            counts[amount] += 1;
-        }
-
-        let mut file = File::create("map_emptiness_distribution.txt").unwrap();
-        for (index, count) in counts.iter().enumerate() {
-            write!(file, "{} {}\n", index, count).unwrap();
-        }
+        write_map_distribution(game);
     }
 
     game.msg_log.log(Msg::NewLevel);
     game.settings.map_changed = true;
+}
+
+fn write_map_distribution(game: &mut Game) {
+    let max = (2 * TILE_FILL_METRIC_DIST + 1).pow(2);
+    let mut counts = vec![0; max + 1];
+
+    for pos in game.level.map.get_all_pos() {
+        let amount = tile_fill_metric(&game.level.map, pos);
+        counts[amount] += 1;
+    }
+
+    let mut file = File::create("map_emptiness_distribution.txt").unwrap();
+    for (index, count) in counts.iter().enumerate() {
+        write!(file, "{} {}\n", index, count).unwrap();
+    }
 }
 
 pub fn read_map_xp(config: &Config,

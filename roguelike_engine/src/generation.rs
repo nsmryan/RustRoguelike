@@ -455,7 +455,6 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
         EntityName::Sword => make_sword(entities, config, pos, msg_log),
         EntityName::Shield => make_shield(entities, config, pos, msg_log),
         EntityName::Key => make_key(entities, config, pos, msg_log),
-        //EntityName::Mouse => make_mouse(entities, config, msg_log),
         EntityName::Cursor => make_cursor(entities, config, pos, msg_log),
         EntityName::Gol => make_gol(entities, config, pos, msg_log),
         EntityName::Spire => make_spire(entities, config, pos, msg_log),

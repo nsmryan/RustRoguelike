@@ -1,13 +1,13 @@
 use std::fs::File;
-use std::io::{Read, BufReader};
+use std::io::{Read};
 use std::collections::HashSet;
 
 use serde::{Serialize, Deserialize};
 
 use pathfinding::directed::astar::astar;
 
-use rand::rngs::SmallRng;
-use rand::{SeedableRng};
+//use rand::rngs::SmallRng;
+//use rand::{SeedableRng};
 
 use wfc_image::*;
 use image;
@@ -19,6 +19,7 @@ use roguelike_utils::line::*;
 use roguelike_utils::rng::*;
 use roguelike_utils::comp::*;
 
+use roguelike_core::config::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::utils::*;
@@ -522,14 +523,14 @@ fn place_vaults(game: &mut Game, cmds: &Vec<ProcCmd>) {
                 let vault_index = rng_range_u32(&mut game.rng, 0, game.vaults.len() as u32) as usize;
                 let vault = &game.vaults[vault_index];
                 eprintln!("Placing vault {} at {}", vault_index, offset);
-                place_vault(&mut game.level, vault, offset, &mut game.rng);
+                place_vault(&mut game.level, vault, offset, &mut game.rng, &game.config, &mut game.msg_log);
             }
         }
     }
 }
 
 // TODO rotate and mirror according to tags
-pub fn place_vault(level: &mut Level, vault: &Vault, offset: Pos, rng: &mut Rand32) {
+pub fn place_vault(level: &mut Level, vault: &Vault, offset: Pos, rng: &mut Rand32, config: &Config, msg_log: &mut MsgLog) {
                         
     let mirror = !vault.tags.contains(&VaultTag::NoMirror) && rng_range(rng, 0.0, 1.0) < 0.5;
 
@@ -541,10 +542,10 @@ pub fn place_vault(level: &mut Level, vault: &Vault, offset: Pos, rng: &mut Rand
         rotation = rotations[index];
     }
 
-    place_vault_with(level, vault, offset, rotation, mirror);
+    place_vault_with(level, vault, offset, rotation, config, msg_log, mirror);
 }
 
-pub fn place_vault_with(level: &mut Level, vault: &Vault, offset: Pos, rotation: Rotation, mirror: bool) {
+pub fn place_vault_with(level: &mut Level, vault: &Vault, offset: Pos, rotation: Rotation, config: &Config, msg_log: &mut MsgLog, mirror: bool) {
     let mut actual_vault = vault.clone();
     actual_vault.level.map = reorient_map(&actual_vault.level.map, rotation, mirror);
 
@@ -558,9 +559,12 @@ pub fn place_vault_with(level: &mut Level, vault: &Vault, offset: Pos, rotation:
 
             for entity_id in level.get_entities_at_pos(map_pos) {
                 if level.entities.typ[&entity_id] == EntityType::Player {
+                    // Clear the player's tile, so they are not trapped in a wall or something.
                     level.map[vault_pos] = Tile::empty();
                 } else {
+                    // Remove other entities- they are overwritten by the vault.
                     level.entities.remove_entity(entity_id);
+                    msg_log.log(Msg::Remove(entity_id));
                 }
             }
         }
@@ -588,9 +592,10 @@ pub fn place_vault_with(level: &mut Level, vault: &Vault, offset: Pos, rotation:
         // look for entities already at this position
         for entity_id in level.get_entities_at_pos(entity_pos) {
             if level.entities.typ[&entity_id] == EntityType::Player {
-                // remove vault entity to avoid removing player
+                // Remove vault entity to avoid removing player.
                 vault_entities_to_remove.push(*id);
             } else {
+                // Remove entity from the level to make way for the vault's entity.
                 entities_to_remove.push(entity_id);
             }
         }
@@ -602,9 +607,12 @@ pub fn place_vault_with(level: &mut Level, vault: &Vault, offset: Pos, rotation:
 
     for remove_id in entities_to_remove {
         level.entities.remove_entity(remove_id);
+        msg_log.log(Msg::Remove(remove_id));
     }
 
-    level.entities.merge(&entities);
+    for id in entities.ids.iter() {
+        make_entity(&mut level.entities, config, entities.name[id], entities.pos[id], msg_log);
+    }
 }
 
 fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
