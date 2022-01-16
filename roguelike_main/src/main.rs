@@ -27,7 +27,7 @@ use roguelike_core::map::MapLoadConfig;
 use roguelike_engine::game::*;
 use roguelike_engine::actions::*;
 use roguelike_engine::input::*;
-use roguelike_engine::make_map::{make_map, read_map_xp};
+use roguelike_engine::make_map::{make_map};
 use roguelike_engine::log::*;
 
 use roguelike_lib::commands::*;
@@ -393,16 +393,6 @@ fn save_record(record_name: &str) {
 }
 
 fn reload_config(config_modified_time: &mut SystemTime, game: &mut Game) {
-    /* Reload map if configured to do so */
-    if game.config.load_map_file_every_frame && Path::new("resources/map.xp").exists() {
-        let player = game.level.find_by_name(EntityName::Player).unwrap();
-
-        let map_file = format!("resources/{}", game.config.map_file);
-        game.level.entities.clear();
-        let player_pos = read_map_xp(&game.config, &mut game.level, &mut game.msg_log, &map_file);
-        game.level.entities.set_pos(player, Pos::from(player_pos));
-    }
-
     /* Reload Configuration */
     if let Ok(current_config_modified_time) = fs::metadata(CONFIG_NAME) {
         let current_config_modified_time = current_config_modified_time.modified().unwrap();
