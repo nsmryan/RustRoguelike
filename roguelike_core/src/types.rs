@@ -837,6 +837,7 @@ pub enum Item {
     GreatSword,
     Sword,
     Lantern,
+    Sling,
     Teleporter,
     Herb,
     SeedOfStone,
@@ -859,6 +860,7 @@ impl fmt::Display for Item {
             Item::GreatSword => write!(f, "greatsword"),
             Item::Sword => write!(f, "sword"),
             Item::Lantern => write!(f, "lantern"),
+            Item::Sling => write!(f, "sling"),
             Item::Teleporter => write!(f, "teleporter"),
             Item::Herb => write!(f, "herb"),
             Item::SeedOfStone => write!(f, "seedofstone"),
@@ -891,6 +893,8 @@ impl FromStr for Item {
             return Ok(Item::Spear);
         } else if s == "lantern" {
             return Ok(Item::Lantern);
+        } else if s == "sling" {
+            return Ok(Item::Sling);
         } else if s == "greatsword" {
             return Ok(Item::GreatSword);
         } else if s == "sword" {
@@ -928,6 +932,7 @@ impl Item {
             Item::Spear => ItemClass::Primary,
             Item::GreatSword => ItemClass::Primary,
             Item::Sword => ItemClass::Primary,
+            Item::Sling => ItemClass::Primary,
             Item::Teleporter => ItemClass::Consumable,
             Item::Herb => ItemClass::Consumable,
             Item::SeedOfStone => ItemClass::Consumable,
@@ -955,6 +960,7 @@ impl Item {
             Item::SeedOfStone => EntityName::SeedOfStone,
             Item::GlassEye => EntityName::GlassEye,
             Item::Lantern => EntityName::Lantern,
+            Item::Sling => EntityName::Sling,
             Item::SpikeTrap => EntityName::SpikeTrap,
             Item::SoundTrap => EntityName::SoundTrap,
             Item::BlinkTrap => EntityName::BlinkTrap,
@@ -970,6 +976,7 @@ impl Item {
             Item::Spear => Some(WeaponType::Pierce),
             Item::GreatSword => Some(WeaponType::Slash),
             Item::Sword => Some(WeaponType::Slash),
+            Item::Sling => Some(WeaponType::Blunt),
 
             Item::Teleporter => None,
             Item::SeedOfStone => None,
@@ -1138,6 +1145,7 @@ pub enum EntityName {
     Sword,
     Shield,
     Lantern,
+    Sling,
     SeedOfStone,
     GlassEye,
     Teleporter,
@@ -1181,6 +1189,7 @@ impl fmt::Display for EntityName {
             EntityName::Sword => write!(f, "sword"),
             EntityName::Teleporter => write!(f, "teleporter"),
             EntityName::Lantern => write!(f, "lantern"),
+            EntityName::Sling => write!(f, "sling"),
             EntityName::SeedOfStone => write!(f, "seedofstone"),
             EntityName::GlassEye => write!(f, "glasseye"),
             EntityName::Shield => write!(f, "shield"),
@@ -1238,6 +1247,8 @@ impl FromStr for EntityName {
             return Ok(EntityName::Sword);
         } else if s == "lantern" {
             return Ok(EntityName::Lantern);
+        } else if s == "sling" {
+            return Ok(EntityName::Sling);
         } else if s == "seedofstone" {
             return Ok(EntityName::SeedOfStone);
         } else if s == "glasseye" {
@@ -1740,66 +1751,6 @@ impl Entities {
 
         if found {
             self.inventory[&entity_id].remove(index);
-        }
-    }
-
-    // NOTE cloning entities may not remap all entity ids that an entity tracks!
-    // this could cause subtle problems, so this is really only for level generation.
-    pub fn clone_entity(&mut self, other: &Entities, entity_id: EntityId) {
-        let new_id = self.next_id;
-        self.next_id += 1;
-
-        self.ids.push(new_id);
-
-        // this macro simply clones a component and inserts into the self
-        // entity map with the new id.
-        macro_rules! move_component {
-            ($comp_name:ident) => {
-                if let Some($comp_name) = other.$comp_name.get(&entity_id) {
-                    self.$comp_name.insert(new_id, $comp_name.clone());
-                }
-            }
-        }
-
-        move_component!(pos);
-        move_component!(name);
-        move_component!(hp);
-        move_component!(stance);
-        move_component!(ai);
-        move_component!(behavior);
-        move_component!(fov_radius);
-        move_component!(attack_type);
-        move_component!(item);
-        move_component!(movement);
-        move_component!(attack);
-        move_component!(trap);
-        move_component!(energy);
-        move_component!(count_down);
-        move_component!(move_mode);
-        move_component!(direction);
-        move_component!(selected_item);
-        move_component!(class);
-        move_component!(skills);
-        move_component!(sound);
-        move_component!(typ);
-        move_component!(status);
-        move_component!(illuminate);
-        move_component!(gate_pos);
-        move_component!(took_turn);
-        move_component!(durability);
-        move_component!(blocks);
-        move_component!(needs_removal);
-        move_component!(messages);
-
-        // NOTE this might not work if entity IDs are left!
-        if let Some(inventory) = other.inventory.get(&entity_id) { 
-            assert_eq!(0, inventory.len());
-        }
-    }
-
-    pub fn merge(&mut self, other: &Entities) {
-        for id in other.ids.iter() {
-            self.clone_entity(other, *id);
         }
     }
 

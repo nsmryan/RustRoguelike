@@ -171,6 +171,7 @@ pub const ENTITY_HAMMER: u8 = 251;
 pub const ENTITY_SPEAR: u8 = 250;
 pub const ENTITY_GREATSWORD: u8 = 254;
 pub const ENTITY_LANTERN: u8 = 134;
+pub const ENTITY_SLING: u8 = 8;
 
 /* Entities */
 pub const ENTITY_GOL: u8 = 152;

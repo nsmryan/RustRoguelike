@@ -540,6 +540,10 @@ impl Display {
                 self.state.name.insert(entity_id, name);
                 self.state.direction.insert(entity_id, facing);
 
+                if entity_id == 10 {
+                    dbg!(self.state.name[&entity_id]);
+                }
+
                 if let Some(ix_pos) = self.state.ids.iter().position(|val| *val == entity_id) {
                     panic!(format!("entity id {} already at position {}", entity_id, ix_pos));
                 }
