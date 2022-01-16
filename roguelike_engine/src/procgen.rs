@@ -1,13 +1,13 @@
 use std::fs::File;
-use std::io::{Read};
+use std::io::{Read, BufReader};
 use std::collections::HashSet;
 
 use serde::{Serialize, Deserialize};
 
 use pathfinding::directed::astar::astar;
 
-//use rand::rngs::SmallRng;
-//use rand::{SeedableRng};
+use rand::rngs::SmallRng;
+use rand::{SeedableRng};
 
 use wfc_image::*;
 use image;
