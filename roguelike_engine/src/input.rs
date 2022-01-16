@@ -154,7 +154,7 @@ impl Input {
     }
 
     pub fn action_mode(&self) -> ActionMode {
-        if self.alt {
+        if self.ctrl {
             return ActionMode::Alternate;
         } else {
             return ActionMode::Primary;
@@ -361,7 +361,7 @@ impl Input {
                 self.target = Some(Target::skill(index as usize));
             } else if let Some(input_dir) = InputDirection::from_chr(chr) {
                 self.direction = Some(input_dir);
-            } else if !(self.cursor && self.alt) {
+            } else if !(self.cursor && self.ctrl) {
                 if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
                     let item_class = CLASSES[index];
                     self.target = Some(Target::item(item_class));
@@ -439,7 +439,7 @@ impl Input {
                     InputDirection::Dir(dir) => {
                         if self.cursor {
                            action = InputAction::CursorMove(dir, self.ctrl, self.shift);
-                        } else if self.alt {
+                        } else if self.ctrl {
                             action = InputAction::Interact(Some(dir));
                         } else {
                             action = InputAction::Move(dir);
@@ -447,7 +447,7 @@ impl Input {
                     }
 
                     InputDirection::Current => {
-                        if !self.cursor && self.alt {
+                        if !self.cursor && self.ctrl {
                             action = InputAction::Interact(None);
                         } else {
                             action = InputAction::Pass;
