@@ -1082,6 +1082,7 @@ fn render_game_overlays(panel: &mut Panel,
         if let Some(cursor_pos) = display_state.cursor_pos {
             // render trigger plate wall highlight if selected
             for entity in display_state.entities_at_cursor.iter() {
+                dbg!(entity, display_state.pos.get(&entity));
                 if display_state.name[&entity] == EntityName::GateTrigger {
                     if let Some(gate_pos) = display_state.gate_pos.get(&entity) {
                         let mut highlight_color: Color = config.color_red;
