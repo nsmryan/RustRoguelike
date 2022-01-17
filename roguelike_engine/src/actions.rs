@@ -1061,7 +1061,7 @@ pub fn handle_skill(skill_index: usize,
 
         Skill::Roll => {
             if let Some(direction) = direction {
-                msg_log.log(Msg::Roll(player_id, direction, SKILL_SPRINT_AMOUNT));
+                msg_log.log(Msg::Roll(player_id, direction, SKILL_ROLL_AMOUNT));
             }
         }
 

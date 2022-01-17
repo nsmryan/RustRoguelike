@@ -550,7 +550,9 @@ fn render_wall_shadow(panel: &mut Panel, pos: Pos, map: &Map, sprites: &Vec<Spri
             let shadow_pos = Pos::new(x - 1, y + 1);
             panel.sprite_cmd(shadow_lower_left, shadow_color, shadow_pos);
         }
-    } else if tile.left_wall == Wall::ShortWall {
+    } 
+
+    if tile.left_wall == Wall::ShortWall {
         // left
         if left_valid {
             let shadow_pos = Pos::new(x - 1, y);
@@ -564,21 +566,21 @@ fn render_wall_shadow(panel: &mut Panel, pos: Pos, map: &Map, sprites: &Vec<Spri
             let shadow_left_lower = Sprite::new(SHADOW_INTERTILE_LEFT_DOWN as u32, shadow_sprite_key);
             panel.sprite_cmd(shadow_left_lower, shadow_color, shadow_pos);
         }
-    } else if tile.bottom_wall == Wall::ShortWall {
-        if down_valid {
-            // lower
-            if down_valid {
-                let shadow_lower_right = Sprite::new(SHADOW_INTERTILE_DOWN as u32, shadow_sprite_key);
-                let shadow_pos = Pos::new(x, y + 1);
-                panel.sprite_cmd(shadow_lower_right, shadow_color, shadow_pos);
-            }
+    } 
 
-            // left down
-            if down_left_valid {
-                let shadow_lower_left = Sprite::new(SHADOW_INTERTILE_DOWN_LEFT as u32, shadow_sprite_key);
-                let shadow_pos = Pos::new(x - 1, y + 1);
-                panel.sprite_cmd(shadow_lower_left, shadow_color, shadow_pos);
-            }
+    if tile.bottom_wall == Wall::ShortWall {
+        // lower
+        if down_valid {
+            let shadow_lower_right = Sprite::new(SHADOW_INTERTILE_DOWN as u32, shadow_sprite_key);
+            let shadow_pos = Pos::new(x, y + 1);
+            panel.sprite_cmd(shadow_lower_right, shadow_color, shadow_pos);
+        }
+
+        // left down
+        if down_left_valid {
+            let shadow_lower_left = Sprite::new(SHADOW_INTERTILE_DOWN_LEFT as u32, shadow_sprite_key);
+            let shadow_pos = Pos::new(x - 1, y + 1);
+            panel.sprite_cmd(shadow_lower_left, shadow_color, shadow_pos);
         }
     }
 }
@@ -638,8 +640,16 @@ fn render_map_middle(panel: &mut Panel, map: &Map, config: &Config, sprites: &Ve
             let shadow_color = config.color_shadow;
             render_wall_shadow(panel, pos, map, sprites, shadow_color);
 
+            let tile = map[pos];
+
+            if tile.tile_type == TileType::Wall {
+                let chr = MAP_WALL;
+                let sprite = Sprite::new(chr as u32, sprite_key);
+                panel.sprite_cmd(sprite, Color::white(), pos);
+            }
+
             /* draw the between-tile walls appropriate to this tile */
-            render_intertile_walls_below(panel, map, sprite_key, pos);
+            render_intertile_walls(panel, map, sprite_key, pos);
         }
     }
 }
@@ -664,14 +674,11 @@ fn render_map(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
             let tile = map[pos];
 
             // if the tile is not empty or water, draw it
-            let mut chr = MAP_EMPTY_CHAR;
             if tile.tile_type == TileType::Water {
-                chr = MAP_WATER;
-            } else if tile.tile_type == TileType::Wall {
-                chr = MAP_WALL;
+                let chr = MAP_WATER;
+                let sprite = Sprite::new(chr as u32, sprite_key);
+                panel.sprite_cmd(sprite, Color::white(), pos);
             }
-            let sprite = Sprite::new(chr as u32, sprite_key);
-            panel.sprite_cmd(sprite, Color::white(), pos);
 
             if let Some(chr) = surface_chr(tile.surface, tile.block_sight) {
                 let sprite = Sprite::new(chr as u32, sprite_key);
@@ -681,7 +688,7 @@ fn render_map(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
     }
 }
 
-fn render_intertile_walls_below(panel: &mut Panel,
+fn render_intertile_walls(panel: &mut Panel,
                                 map: &Map,
                                 sprite_key: SpriteKey,
                                 pos: Pos) {
