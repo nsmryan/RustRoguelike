@@ -5,7 +5,7 @@ authors = ["nsmryan <nsmryan@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-pathfinding = "2.0"
+pathfinding = "<= 2.0"
 
 symmetric-shadowcasting = "0.2"
 
