@@ -1401,6 +1401,18 @@ fn throw_item(player_id: EntityId,
                 ensure_grass(&mut level.entities, seed_pos, msg_log);
             }
         }
+    } else if level.entities.item[&item_id] == Item::GlassEye {
+        for pos in level.map.pos_in_radius(hit_pos, GLASS_EYE_RADIUS) {
+            for eyed_id in level.get_entities_at_pos(pos) {
+                // check if outside FoV. Inside entities are already visible,
+                // and entities on the edge should already have impressions, so
+                // we don't need to make one here.
+                if level.entities.typ[&eyed_id] == EntityType::Enemy &&
+                   level.is_in_fov(player_id, eyed_id, config) == FovResult::Outside {
+                    msg_log.log(Msg::Impression(pos));
+                }
+            }
+        }
     } else if level.entities.item[&item_id] == Item::Teleporter {
         let end_x = rng_range_i32(rng, hit_pos.x - 1, hit_pos.x + 1);
         let end_y = rng_range_i32(rng, hit_pos.y - 1, hit_pos.y + 1);

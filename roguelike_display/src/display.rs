@@ -382,6 +382,12 @@ impl Display {
                 }
             }
 
+            Msg::Impression(pos) => {
+                let tiles = lookup_spritekey(&self.sprites, "tiles");
+                let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
+                self.state.impressions.push(Impression::new(impression_sprite, pos));
+            }
+
             Msg::ItemLanded(item_id, start, end) => {
                 let sound_aoe = aoe_fill(map, AoeEffect::Sound, end, config.sound_radius_stone, config);
 

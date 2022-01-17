@@ -130,6 +130,7 @@ pub enum Msg {
     NextMoveMode(MoveMode),
     UseAction(UseAction),
     PlayerAction,
+    Impression(Pos),
 }
 
 impl fmt::Display for Msg {
@@ -263,6 +264,7 @@ impl fmt::Display for Msg {
             Msg::NextMoveMode(move_mode) => write!(f, "next_move_mode {}", move_mode),
             Msg::UseAction(use_action) => write!(f, "use_action {}", use_action),
             Msg::PlayerAction => write!(f, "player_action"),
+            Msg::Impression(pos) => write!(f, "impression {} {}", pos.x, pos.y),
         }
     }
 }
