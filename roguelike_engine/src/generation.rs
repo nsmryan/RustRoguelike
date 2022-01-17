@@ -405,6 +405,11 @@ pub fn make_seed_of_stone(entities: &mut Entities, _config: &Config, pos: Pos, m
     return entity_id;
 }
 
+pub fn make_seed_cache(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id = make_item_generic(entities, Item::SeedCache, EntityName::SeedCache, pos, msg_log);
+    return entity_id;
+}
+
 pub fn make_glass_eye(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = make_item_generic(entities, Item::GlassEye, EntityName::GlassEye, pos, msg_log);
     return entity_id;
@@ -478,6 +483,7 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
         EntityName::Teleporter => make_teleporter(entities, config, pos, msg_log),
         EntityName::Sling => make_sling(entities, config, pos, msg_log),
         EntityName::Herb => make_herb(entities, config, pos, msg_log),
+        EntityName::SeedCache => make_seed_cache(entities, config, pos, msg_log),
         _ => {
             dbg!(entity_name);
             panic!("Cannot create this entity this way");

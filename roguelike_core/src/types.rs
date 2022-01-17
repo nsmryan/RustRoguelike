@@ -433,7 +433,7 @@ impl Level {
             Item::Stone | Item::SeedOfStone | Item::GlassEye |
             Item::Lantern | Item::Teleporter | Item::SpikeTrap | 
             Item::SoundTrap | Item::BlinkTrap | Item::FreezeTrap |
-            Item::Sling => {
+            Item::Sling | Item::SeedCache => {
                 let dist = if item == Item::Sling {
                     PLAYER_THROW_DIST
                 } else {
@@ -848,6 +848,7 @@ pub enum Item {
     Teleporter,
     Herb,
     SeedOfStone,
+    SeedCache,
     GlassEye,
     SpikeTrap,
     SoundTrap,
@@ -871,6 +872,7 @@ impl fmt::Display for Item {
             Item::Teleporter => write!(f, "teleporter"),
             Item::Herb => write!(f, "herb"),
             Item::SeedOfStone => write!(f, "seedofstone"),
+            Item::SeedCache => write!(f, "seedcache"),
             Item::GlassEye => write!(f, "glasseye"),
             Item::SpikeTrap => write!(f, "spiketrap"),
             Item::SoundTrap => write!(f, "soundtrap"),
@@ -912,6 +914,8 @@ impl FromStr for Item {
             return Ok(Item::Herb);
         } else if s == "seedofstone" {
             return Ok(Item::SeedOfStone);
+        } else if s == "seedcache" {
+            return Ok(Item::SeedCache);
         } else if s == "glasseye" {
             return Ok(Item::GlassEye);
         } else if s == "spiketrap" {
@@ -943,6 +947,7 @@ impl Item {
             Item::Teleporter => ItemClass::Consumable,
             Item::Herb => ItemClass::Consumable,
             Item::SeedOfStone => ItemClass::Consumable,
+            Item::SeedCache => ItemClass::Consumable,
             Item::GlassEye => ItemClass::Consumable,
             Item::Lantern => ItemClass::Consumable,
             Item::SpikeTrap => ItemClass::Consumable,
@@ -965,6 +970,7 @@ impl Item {
             Item::Teleporter => EntityName::Teleporter,
             Item::Herb => EntityName::Herb,
             Item::SeedOfStone => EntityName::SeedOfStone,
+            Item::SeedCache => EntityName::SeedCache,
             Item::GlassEye => EntityName::GlassEye,
             Item::Lantern => EntityName::Lantern,
             Item::Sling => EntityName::Sling,
@@ -987,6 +993,7 @@ impl Item {
 
             Item::Teleporter => None,
             Item::SeedOfStone => None,
+            Item::SeedCache => None,
             Item::GlassEye => None,
             Item::Herb => None,
             Item::Stone => None,
@@ -1154,6 +1161,7 @@ pub enum EntityName {
     Lantern,
     Sling,
     SeedOfStone,
+    SeedCache,
     GlassEye,
     Teleporter,
     Spire,
@@ -1198,6 +1206,7 @@ impl fmt::Display for EntityName {
             EntityName::Lantern => write!(f, "lantern"),
             EntityName::Sling => write!(f, "sling"),
             EntityName::SeedOfStone => write!(f, "seedofstone"),
+            EntityName::SeedCache => write!(f, "seedcache"),
             EntityName::GlassEye => write!(f, "glasseye"),
             EntityName::Shield => write!(f, "shield"),
             EntityName::Spire => write!(f, "spire"),
@@ -1258,6 +1267,8 @@ impl FromStr for EntityName {
             return Ok(EntityName::Sling);
         } else if s == "seedofstone" {
             return Ok(EntityName::SeedOfStone);
+        } else if s == "seedcache" {
+            return Ok(EntityName::SeedCache);
         } else if s == "glasseye" {
             return Ok(EntityName::GlassEye);
         } else if s == "shield" {

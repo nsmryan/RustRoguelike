@@ -1385,6 +1385,7 @@ fn throw_item(player_id: EntityId,
     // NOTE the radius here is the stone radius, regardless of item type
     msg_log.log_front(Msg::Sound(player_id, hit_pos, config.sound_radius_stone));
 
+    /* Resolve Specific Items */
     if level.entities.item[&item_id] == Item::SeedOfStone {
         level.map[hit_pos] = Tile::wall();
         // this is playing a little fast and lose- we assume that if
@@ -1394,9 +1395,13 @@ fn throw_item(player_id: EntityId,
             remove_entity(entity_id, level);
         }
         remove_entity(item_id, level);
-    }
-
-    if level.entities.item[&item_id] == Item::Teleporter {
+    } else if level.entities.item[&item_id] == Item::SeedCache {
+        for seed_pos in floodfill(&level.map, hit_pos, SEED_CACHE_RADIUS) {
+            if rng_trial(rng, 0.70) {
+                ensure_grass(&mut level.entities, seed_pos, msg_log);
+            }
+        }
+    } else if level.entities.item[&item_id] == Item::Teleporter {
         let end_x = rng_range_i32(rng, hit_pos.x - 1, hit_pos.x + 1);
         let end_y = rng_range_i32(rng, hit_pos.y - 1, hit_pos.y + 1);
         let mut end_pos = Pos::new(end_x, end_y);
