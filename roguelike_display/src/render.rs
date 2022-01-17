@@ -1078,34 +1078,31 @@ fn render_game_overlays(panel: &mut Panel,
 
     let tiles_key = lookup_spritekey(sprites, "tiles");
 
-    if config.use_cursor {
-        if let Some(cursor_pos) = display_state.cursor_pos {
-            // render trigger plate wall highlight if selected
-            for entity in display_state.entities_at_cursor.iter() {
-                dbg!(entity, display_state.pos.get(&entity));
-                if display_state.name[&entity] == EntityName::GateTrigger {
-                    if let Some(gate_pos) = display_state.gate_pos.get(&entity) {
-                        let mut highlight_color: Color = config.color_red;
-                        highlight_color.a = 100;
-                        panel.highlight_cmd(highlight_color, *gate_pos);
-                    }
-                } else if display_state.name[&entity] == EntityName::FreezeTrap {
-                    let trap_pos = display_state.pos[&entity];
-                    let freeze_aoe =
-                        aoe_fill(&display_state.map, AoeEffect::Freeze, trap_pos, config.freeze_trap_radius, config);
-                    for pos in freeze_aoe.positions() {
-                        let mut highlight_color: Color = config.color_blueish_grey;
-                        highlight_color.a = 100;
-                        panel.highlight_cmd(highlight_color, pos);
-                    }
+    if let Some(cursor_pos) = display_state.cursor_pos {
+        // render trigger plate wall highlight if selected
+        for entity in display_state.entities_at_cursor.iter() {
+            if display_state.name[&entity] == EntityName::GateTrigger {
+                if let Some(gate_pos) = display_state.gate_pos.get(&entity) {
+                    let mut highlight_color: Color = config.color_red;
+                    highlight_color.a = 100;
+                    panel.highlight_cmd(highlight_color, *gate_pos);
+                }
+            } else if display_state.name[&entity] == EntityName::FreezeTrap {
+                let trap_pos = display_state.pos[&entity];
+                let freeze_aoe =
+                    aoe_fill(&display_state.map, AoeEffect::Freeze, trap_pos, config.freeze_trap_radius, config);
+                for pos in freeze_aoe.positions() {
+                    let mut highlight_color: Color = config.color_blueish_grey;
+                    highlight_color.a = 100;
+                    panel.highlight_cmd(highlight_color, pos);
                 }
             }
+        }
 
-            // render some extra player information if cursor is over player's tile
-            if cursor_pos == player_pos {
-                // Draw sound tiles overlay
-                render_sound_overlay(panel, display_state, config);
-            }
+        // render some extra player information if cursor is over player's tile
+        if cursor_pos == player_pos {
+            // Draw sound tiles overlay
+            render_sound_overlay(panel, display_state, config);
         }
     }
 
@@ -1304,9 +1301,7 @@ fn render_overlays(panel: &mut Panel,
     }
 
     // render cursor if enabled
-    if config.use_cursor {
-        render_overlay_cursor(panel, display_state, config, sprites);
-    }
+    render_overlay_cursor(panel, display_state, config, sprites);
 
     // render FOV if enabled
     if config.overlay_player_fov {

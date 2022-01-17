@@ -217,8 +217,6 @@ dampen_blocked_tile: 3
 dampen_short_wall: 1
 dampen_tall_wall: 2
 
-use_cursor: true
-
 # how far to move cursor when shift is held
 cursor_fast_move_dist: 3
 

@@ -92,7 +92,6 @@ pub struct Config {
     pub dampen_blocked_tile: i32,
     pub dampen_short_wall: i32,
     pub dampen_tall_wall: i32,
-    pub use_cursor: bool,
     pub cursor_fast_move_dist: i32,
     pub repeat_delay: f32,
     pub write_map_distribution: bool,

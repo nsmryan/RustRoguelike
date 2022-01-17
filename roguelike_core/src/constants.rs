@@ -81,7 +81,7 @@ pub const FREEZE_TRAP_NUM_TURNS: usize = 5;
 
 /* Player */
 pub const PLAYER_THROW_DIST: usize = 5;
-pub const SLING_THROW_DIST: usize = 7;
+pub const SLING_THROW_DIST: usize = 71;
 
 pub const PLAYER_MAX_ITEMS: usize = 3;
 
