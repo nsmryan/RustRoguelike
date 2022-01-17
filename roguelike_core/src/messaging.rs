@@ -77,6 +77,7 @@ pub enum Msg {
     FarSight(EntityId, usize), // entity, amount
     Ping(EntityId, Pos),
     Sprint(EntityId, Direction, usize), // entity, direction, amount
+    Roll(EntityId, Direction, usize), // entity, direction, amount
     Rubble(EntityId, Pos),
     Reform(EntityId, Pos),
     StoneSkin(EntityId),
@@ -211,6 +212,7 @@ impl fmt::Display for Msg {
             Msg::FarSight(entity_id, amount) => write!(f, "farsight {} {}", entity_id, amount),
             Msg::Ping(entity_id, pos) => write!(f, "ping {} {} {}", entity_id, pos.x, pos.y),
             Msg::Sprint(entity_id, direction, amount) => write!(f, "sprint {} {} {}", entity_id, direction, amount),
+            Msg::Roll(entity_id, direction, amount) => write!(f, "roll {} {} {}", entity_id, direction, amount),
             Msg::Rubble(entity_id, pos) => write!(f, "rubble {} {} {}", entity_id, pos.x, pos.y),
             Msg::Reform(entity_id, pos) => write!(f, "reform {} {} {}", entity_id, pos.x, pos.y),
             Msg::StoneSkin(entity_id) => write!(f, "reform {}", entity_id),
@@ -509,6 +511,10 @@ impl Msg {
 
             Msg::Sprint(entity_id, _direction, _amount) => {
                 return format!("{:?} has sprinted!", data.entities.name[entity_id]);
+            }
+
+            Msg::Roll(entity_id, _direction, _amount) => {
+                return format!("{:?} has rolled!", data.entities.name[entity_id]);
             }
 
             Msg::Rubble(entity_id, pos) => {

@@ -211,6 +211,7 @@ pub fn resolve_messages(game: &mut Game) {
                     EntityClass::General => {
                         add_skill(game, Skill::Blink);
                         add_skill(game, Skill::Sprint);
+                        add_skill(game, Skill::Roll);
                     }
 
                     EntityClass::Monolith => {
@@ -403,6 +404,13 @@ pub fn resolve_messages(game: &mut Game) {
             Msg::Sprint(entity_id, direction, amount) => {
                 if use_energy(entity_id, &mut game.level, &mut game.msg_log) {
                     game.msg_log.log(Msg::TryMove(entity_id, direction, amount, MoveMode::Run));
+                    game.level.entities.took_turn[&entity_id] = true;
+                }
+            }
+
+            Msg::Roll(entity_id, direction, amount) => {
+                if use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                    game.msg_log.log(Msg::TryMove(entity_id, direction, amount, MoveMode::Sneak));
                     game.level.entities.took_turn[&entity_id] = true;
                 }
             }

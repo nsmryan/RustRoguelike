@@ -955,8 +955,8 @@ fn render_impressions(panel: &mut Panel, display_state: &mut DisplayState, confi
         let impression = display_state.impressions[index];
         index += 1;
         panel.sprite_cmd(impression.sprite,
-                                 config.color_light_grey,
-                                 impression.pos);
+                         config.color_light_grey,
+                         impression.pos);
     }
 }
 

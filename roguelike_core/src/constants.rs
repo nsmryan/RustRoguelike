@@ -65,6 +65,7 @@ pub const SKILL_HEAL_AMOUNT: usize = LANTERN_ILLUMINATE_RADIUS;
 pub const SKILL_FARSIGHT_FOV_AMOUNT: usize = 1;
 pub const SKILL_PUSH_STUN_TURNS: usize = 3;
 pub const SKILL_SPRINT_AMOUNT: usize = 3;
+pub const SKILL_ROLL_AMOUNT: usize = 2;
 pub const SKILL_STONE_SKIN_TURNS: usize = 4;
 pub const SKILL_SWIFT_DISTANCE: usize = 4;
 pub const SKILL_QUICK_REFLEXES_PERCENT: f32 = 0.5;
