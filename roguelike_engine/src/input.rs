@@ -439,8 +439,6 @@ impl Input {
                     InputDirection::Dir(dir) => {
                         if self.cursor {
                            action = InputAction::CursorMove(dir, self.ctrl, self.shift);
-                        } else if self.ctrl {
-                            action = InputAction::Interact(Some(dir));
                         } else {
                             action = InputAction::Move(dir);
                         }
