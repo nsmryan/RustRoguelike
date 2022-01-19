@@ -162,11 +162,10 @@ impl Level {
         return fov_result == FovResult::Inside;
     }
 
-    fn fov_check_player(&self, entity_id: EntityId, check_pos: Pos, crouching: bool, _config: &Config) -> FovResult {
+    fn fov_check_player(&self, entity_id: EntityId, check_pos: Pos, crouching: bool, view_distance: i32) -> FovResult {
         let entity_pos = self.entities.pos[&entity_id];
-        let radius: i32 = self.fov_radius(entity_id);
 
-        let mut can_see = self.map.is_in_fov_edge(entity_pos, check_pos, radius, crouching);
+        let mut can_see = self.map.is_in_fov_edge(entity_pos, check_pos, view_distance, crouching);
 
         // If we can't see the tile, check for a latern that illuminates it, allowing
         // us to see it anyway. Ignore tiles that are blocked for sight anyway.
@@ -209,16 +208,36 @@ impl Level {
             return FovResult::Outside;
         }
 
+        let entity_pos = self.entities.pos[&entity_id];
+        let mut view_distance: i32 = self.fov_radius(entity_id);
+
+        for to_pos in line(entity_pos, check_pos) {
+            for from_pos in line(check_pos, entity_pos) {
+                // If the lines overlap, check for magnifiers
+                if to_pos == from_pos {
+                    for (entity_id, fov_block) in self.entities.fov_block.iter() {
+                        if self.entities.pos[&entity_id] == to_pos {
+                            if let FovBlock::Magnify(amount) = fov_block {
+                                // This check is done here only it is not repeated for all
+                                // positions. It would be better to calculate it once and 
+                                // check outside this for loop.
+                                if self.fov_check(entity_id, to_pos, crouching, _config) == FovResult::Inside {
+                                    view_distance += *amount as i32;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         let mut fov_result;
 
         if self.entities.typ[&entity_id] == EntityType::Player {
-            fov_result = self.fov_check_player(entity_id, check_pos, crouching, _config);
+            fov_result = self.fov_check_player(entity_id, check_pos, crouching, view_distance);
         } else {
             if let Some(dir) = self.entities.direction.get(&entity_id) {
-                let entity_pos = self.entities.pos[&entity_id];
-                let radius: i32 = self.fov_radius(entity_id);
-
-                if self.map.is_in_fov_direction(entity_pos, check_pos, radius, *dir, crouching) {
+                if self.map.is_in_fov_direction(entity_pos, check_pos, view_distance, *dir, crouching) {
                     fov_result = FovResult::Inside;
                 } else {
                     fov_result = FovResult::Outside;
@@ -231,7 +250,7 @@ impl Level {
         // If the position is within Fov then apply modifiers from fog, etc.
         if fov_result != FovResult::Outside {
             let entity_pos = self.entities.pos[&entity_id];
-            let mut remaining_radius: i32 = self.fov_radius(entity_id);
+            //let mut remaining_radius: i32 = self.fov_radius(entity_id);
 
             // Search along a line from the entity, to the given position,
             // and search back from the given position to the entity, looking
@@ -256,10 +275,14 @@ impl Level {
                                         // If an entity makes the tile completely
                                         // outside of the FoV, we can just return
                                         // immediately.
-                                        if *amount as i32 > remaining_radius {
+                                        if *amount as i32 > view_distance {
                                             return FovResult::Outside
                                         }
-                                        remaining_radius -= *amount as i32;
+                                        view_distance -= *amount as i32;
+                                    }
+
+                                    FovBlock::Magnify(_) => {
+                                        // magnification is handled before FoV above.
                                     }
                                 }
                             }
@@ -269,10 +292,12 @@ impl Level {
             }
 
             let pos_dist = distance_maximum(entity_pos, check_pos);
-            if pos_dist == remaining_radius + 1 {
+            if pos_dist == view_distance + 1 {
                 fov_result = FovResult::Edge;
-            } else if pos_dist <= remaining_radius {
+            } else if pos_dist <= view_distance {
                 fov_result = FovResult::Inside;
+            } else {
+                fov_result = FovResult::Outside;
             }
         }
 
@@ -650,6 +675,7 @@ pub enum FovBlock {
     Block,
     Transparent,
     Opaque(usize),
+    Magnify(usize),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -1252,6 +1278,8 @@ pub enum EntityName {
     Herb,
     Grass,
     Statue,
+    Smoke,
+    Magnifier,
     Other,
 }
 
@@ -1297,6 +1325,8 @@ impl fmt::Display for EntityName {
             EntityName::Herb => write!(f, "herb"),
             EntityName::Grass => write!(f, "grass"),
             EntityName::Statue => write!(f, "statue"),
+            EntityName::Smoke => write!(f, "smoke"),
+            EntityName::Magnifier => write!(f, "magnifier"),
             EntityName::Other => write!(f, "other"),
         }
     }
@@ -1375,6 +1405,10 @@ impl FromStr for EntityName {
             return Ok(EntityName::Grass);
         } else if s == "statue" {
             return Ok(EntityName::Statue);
+        } else if s == "smoke" {
+            return Ok(EntityName::Smoke);
+        } else if s == "magnifier" {
+            return Ok(EntityName::Magnifier);
         } else if s == "other" {
             return Ok(EntityName::Other);
         }

@@ -260,6 +260,15 @@ impl Display {
                 return Some(self.loop_sprite("armil_idle", config.idle_speed));
             } else if self.state.name[&entity_id] == EntityName::Lantern {
                 return Some(self.loop_sprite("lantern_idle", config.fire_speed));
+            } else if self.state.name[&entity_id] == EntityName::Smoke {
+                let sprite = self.static_sprite("tiles", ENTITY_SMOKE as char);
+                return Some(Animation::Loop(sprite));
+            } else if self.state.name[&entity_id] == EntityName::Magnifier {
+                let sprite = self.static_sprite("tiles", ENTITY_MAGNIFIER as char);
+                return Some(Animation::Loop(sprite));
+            } else if self.state.name[&entity_id] == EntityName::Sling {
+                let sprite = self.static_sprite("tiles", ENTITY_SLING as char);
+                return Some(Animation::Loop(sprite));
             } else if self.state.name[&entity_id] == EntityName::Grass {
                 return Some(self.random_sprite("grassanim", config.grass_idle_speed));
             } else if self.state.name[&entity_id] == EntityName::Statue {

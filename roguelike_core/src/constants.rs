@@ -81,7 +81,7 @@ pub const FREEZE_TRAP_NUM_TURNS: usize = 5;
 
 /* Player */
 pub const PLAYER_THROW_DIST: usize = 5;
-pub const SLING_THROW_DIST: usize = 71;
+pub const SLING_THROW_DIST: usize = 7;
 
 pub const PLAYER_MAX_ITEMS: usize = 3;
 
@@ -175,7 +175,8 @@ pub const ENTITY_HAMMER: u8 = 251;
 pub const ENTITY_SPEAR: u8 = 250;
 pub const ENTITY_GREATSWORD: u8 = 254;
 pub const ENTITY_LANTERN: u8 = 134;
-pub const ENTITY_SLING: u8 = 8;
+pub const ENTITY_SLING: u8 = 143;
+pub const ENTITY_SEEDCACHE: u8 = 143;
 
 /* Entities */
 pub const ENTITY_GOL: u8 = 152;
@@ -188,6 +189,8 @@ pub const ENTITY_TELEPORTER: u8 = 8;
 pub const ENTITY_HERB: u8 = 24;
 pub const ENTITY_SEED_OF_STONE: u8 = 244;
 pub const ENTITY_GLASS_EYE: u8 = 6;
+pub const ENTITY_SMOKE: u8 = 15;
+pub const ENTITY_MAGNIFIER: u8 = 231;
 
 /* Map Objects */
 pub const ENTITY_EXIT: u8 = 135;

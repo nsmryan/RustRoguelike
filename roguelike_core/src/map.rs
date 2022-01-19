@@ -161,6 +161,7 @@ pub enum MapLoadConfig {
     TestMap,
     TestWall,
     Empty,
+    TestSmoke,
     TestCorner,
     TestPlayer,
     TestVaults,
@@ -183,6 +184,7 @@ impl fmt::Display for MapLoadConfig {
             MapLoadConfig::TestMap => write!(f, "test_map"),
             MapLoadConfig::TestWall => write!(f, "test_wall"),
             MapLoadConfig::Empty => write!(f, "empty"),
+            MapLoadConfig::TestSmoke => write!(f, "test_smoke"),
             MapLoadConfig::TestCorner => write!(f, "test_corner"),
             MapLoadConfig::TestPlayer => write!(f, "test_player"),
             MapLoadConfig::TestVaults => write!(f, "test_vaults"),
@@ -210,6 +212,8 @@ impl FromStr for MapLoadConfig {
             return Ok(MapLoadConfig::Empty);
         } else if s == "test_corner" {
             return Ok(MapLoadConfig::TestCorner);
+        } else if s == "test_smoke" {
+            return Ok(MapLoadConfig::TestSmoke);
         } else if s == "test_player" {
             return Ok(MapLoadConfig::TestPlayer);
         } else if s == "test_vaults" {

@@ -266,4 +266,4 @@ cursor_line: false
 # Debug option to display positions that effect FoV blocking between the player
 # and the cursor. These are the positions that where fog or other effects will
 # effect LoS.
-blocking_positions: false
+blocking_positions: true

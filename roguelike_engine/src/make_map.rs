@@ -38,6 +38,18 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
             player_position = Pos::new(0, 0);
         }
 
+        MapLoadConfig::TestSmoke => {
+            let new_map = Map::from_dims(10, 10);
+            game.level.map = new_map;
+            player_position = Pos::new(0, 0);
+
+            make_smoke(&mut game.level.entities, &game.config, Pos::new(5, 1), 1, &mut game.msg_log);
+            make_smoke(&mut game.level.entities, &game.config, Pos::new(5, 4), 2, &mut game.msg_log);
+            make_smoke(&mut game.level.entities, &game.config, Pos::new(5, 7), 3, &mut game.msg_log);
+            make_magnifier(&mut game.level.entities, &game.config, Pos::new(3, 2), 1, &mut game.msg_log);
+            make_magnifier(&mut game.level.entities, &game.config, Pos::new(3, 6), 3, &mut game.msg_log);
+        }
+
         MapLoadConfig::ProcGen(procgen_params) => {
             let file_name = format!("resources/procgen/{}", procgen_params);
             let cmds = ProcCmd::from_file(&file_name);
