@@ -180,7 +180,7 @@ pub const ENTITY_GLASS_EYE: u8 = 127;
 pub const ENTITY_SEED_CACHE: u8 = 109;
 pub const ENTITY_HERB: u8 = 111;
 pub const ENTITY_SEED_OF_STONE: u8 = 244;
-pub const ENTITY_TELEPORTER: u8 = 8;
+pub const ENTITY_TELEPORTER: u8 = 110;
 
 /* Entities */
 pub const ENTITY_GOL: u8 = 152;
