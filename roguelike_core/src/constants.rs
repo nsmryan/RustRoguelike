@@ -176,7 +176,11 @@ pub const ENTITY_SPEAR: u8 = 250;
 pub const ENTITY_GREATSWORD: u8 = 254;
 pub const ENTITY_LANTERN: u8 = 134;
 pub const ENTITY_SLING: u8 = 143;
-pub const ENTITY_SEEDCACHE: u8 = 143;
+pub const ENTITY_GLASS_EYE: u8 = 127;
+pub const ENTITY_SEED_CACHE: u8 = 109;
+pub const ENTITY_HERB: u8 = 111;
+pub const ENTITY_SEED_OF_STONE: u8 = 244;
+pub const ENTITY_TELEPORTER: u8 = 8;
 
 /* Entities */
 pub const ENTITY_GOL: u8 = 152;
@@ -185,10 +189,6 @@ pub const ENTITY_CLOAK_GUY: u8 = 141;
 pub const ENTITY_ELF: u8 = 165;
 pub const ENTITY_UNKNOWN: u8 = 239;
 pub const ENTITY_ENERGY: u8 = 6;
-pub const ENTITY_TELEPORTER: u8 = 8;
-pub const ENTITY_HERB: u8 = 24;
-pub const ENTITY_SEED_OF_STONE: u8 = 244;
-pub const ENTITY_GLASS_EYE: u8 = 6;
 pub const ENTITY_SMOKE: u8 = 15;
 pub const ENTITY_MAGNIFIER: u8 = 231;
 

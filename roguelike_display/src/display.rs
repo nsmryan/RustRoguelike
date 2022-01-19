@@ -269,6 +269,21 @@ impl Display {
             } else if self.state.name[&entity_id] == EntityName::Sling {
                 let sprite = self.static_sprite("tiles", ENTITY_SLING as char);
                 return Some(Animation::Loop(sprite));
+            } else if self.state.name[&entity_id] == EntityName::GlassEye {
+                let sprite = self.static_sprite("tiles", ENTITY_GLASS_EYE as char);
+                return Some(Animation::Loop(sprite));
+            } else if self.state.name[&entity_id] == EntityName::Herb {
+                let sprite = self.static_sprite("tiles", ENTITY_HERB as char);
+                return Some(Animation::Loop(sprite));
+            } else if self.state.name[&entity_id] == EntityName::SeedOfStone {
+                let sprite = self.static_sprite("tiles", ENTITY_SEED_OF_STONE as char);
+                return Some(Animation::Loop(sprite));
+            } else if self.state.name[&entity_id] == EntityName::SeedCache {
+                let sprite = self.static_sprite("tiles", ENTITY_SEED_CACHE as char);
+                return Some(Animation::Loop(sprite));
+            } else if self.state.name[&entity_id] == EntityName::Teleporter {
+                let sprite = self.static_sprite("tiles", ENTITY_TELEPORTER as char);
+                return Some(Animation::Loop(sprite));
             } else if self.state.name[&entity_id] == EntityName::Grass {
                 return Some(self.random_sprite("grassanim", config.grass_idle_speed));
             } else if self.state.name[&entity_id] == EntityName::Statue {
