@@ -209,22 +209,74 @@ impl Level {
             return FovResult::Outside;
         }
 
+        let mut fov_result;
+
         if self.entities.typ[&entity_id] == EntityType::Player {
-            return self.fov_check_player(entity_id, check_pos, crouching, _config);
+            fov_result = self.fov_check_player(entity_id, check_pos, crouching, _config);
         } else {
             if let Some(dir) = self.entities.direction.get(&entity_id) {
                 let entity_pos = self.entities.pos[&entity_id];
                 let radius: i32 = self.fov_radius(entity_id);
 
                 if self.map.is_in_fov_direction(entity_pos, check_pos, radius, *dir, crouching) {
-                    return FovResult::Inside;
+                    fov_result = FovResult::Inside;
                 } else {
-                    return FovResult::Outside;
+                    fov_result = FovResult::Outside;
                 }
             } else {
                 panic!("tried to perform is_in_fov on entity without facing");
             }
         }
+
+        // If the position is within Fov then apply modifiers from fog, etc.
+        if fov_result != FovResult::Outside {
+            let entity_pos = self.entities.pos[&entity_id];
+            let mut remaining_radius: i32 = self.fov_radius(entity_id);
+
+            // Search along a line from the entity, to the given position,
+            // and search back from the given position to the entity, looking
+            // for matching positions.
+            for to_pos in line(entity_pos, check_pos) {
+                for from_pos in line(check_pos, entity_pos) {
+                    // If the lines overlap, check for FoV modifying entities.
+                    if to_pos == from_pos {
+                        for (entity_id, fov_block) in self.entities.fov_block.iter() {
+                            if self.entities.pos[&entity_id] == to_pos {
+                                match fov_block {
+                                    FovBlock::Block => {
+                                        // Blocking entities completly block LoS
+                                        return FovResult::Outside;
+                                    }
+
+                                    FovBlock::Transparent => {
+                                        // Transparent FovBlockers have no effect.
+                                    }
+
+                                    FovBlock::Opaque(amount) => {
+                                        // If an entity makes the tile completely
+                                        // outside of the FoV, we can just return
+                                        // immediately.
+                                        if *amount as i32 > remaining_radius {
+                                            return FovResult::Outside
+                                        }
+                                        remaining_radius -= *amount as i32;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let pos_dist = distance_maximum(entity_pos, check_pos);
+            if pos_dist == remaining_radius + 1 {
+                fov_result = FovResult::Edge;
+            } else if pos_dist <= remaining_radius {
+                fov_result = FovResult::Inside;
+            }
+        }
+
+        return fov_result;
     }
 
     pub fn find_by_name(&self, name: EntityName) -> Option<EntityId> {
@@ -591,6 +643,13 @@ impl ItemUseResult {
             hit_positions: Vec::new(),
         };
     }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum FovBlock {
+    Block,
+    Transparent,
+    Opaque(usize),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -1491,6 +1550,7 @@ pub struct Entities {
     pub took_turn: Comp<bool>,
     pub durability: Comp<usize>,
     pub modifier: Comp<ItemModifier>,
+    pub fov_block: Comp<FovBlock>,
 
     // NOTE not sure about keeping these ones, or packaging into larger ones
     pub sound: Comp<Pos>, // source position

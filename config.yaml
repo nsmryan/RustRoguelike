@@ -260,3 +260,10 @@ minimal_output: true
 # When the player loses, the game is delete.
 save_load: true
 
+# Debug option for drawing a line from the player to the cursor.
+cursor_line: false
+
+# Debug option to display positions that effect FoV blocking between the player
+# and the cursor. These are the positions that where fog or other effects will
+# effect LoS.
+blocking_positions: false

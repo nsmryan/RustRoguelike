@@ -108,6 +108,8 @@ pub struct Config {
     pub cursor_alpha: u8,
     pub save_load: bool,
     pub minimal_output: bool,
+    pub cursor_line: bool,
+    pub blocking_positions: bool,
 }
 
 impl Config {

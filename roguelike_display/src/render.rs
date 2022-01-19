@@ -1108,7 +1108,6 @@ fn render_game_overlays(panel: &mut Panel,
 
     // Draw use-mode overlay
     if display_state.state == GameState::Use {
-
         let mut highlight_color = config.color_light_grey;
         highlight_color.a = config.grid_alpha_overlay;
 
@@ -1166,6 +1165,37 @@ fn render_game_overlays(panel: &mut Panel,
                                      display_state,
                                      entity_id,
                                      sprites);
+            }
+        }
+    }
+
+    if config.cursor_line {
+        if let Some(cursor_pos) = display_state.cursor_pos {
+            for pos in line(player_pos, cursor_pos) {
+                let mut highlight_color: Color = config.color_orange;
+                highlight_color.a = 100;
+                panel.highlight_cmd(highlight_color, pos);
+            }
+
+            for pos in line(cursor_pos, player_pos) {
+                let mut highlight_color: Color = config.color_light_green;
+                highlight_color.a = 100;
+                panel.highlight_cmd(highlight_color, pos);
+            }
+        }
+    }
+
+    if config.blocking_positions {
+        if let Some(cursor_pos) = display_state.cursor_pos {
+            for to_pos in line(player_pos, cursor_pos) {
+                for from_pos in line(player_pos, cursor_pos) {
+                    // If the lines overlap, check for FoV modifying entities.
+                    if to_pos == from_pos {
+                        let mut highlight_color: Color = config.color_rose_red;
+                        highlight_color.a = 100;
+                        panel.highlight_cmd(highlight_color, to_pos);
+                    }
+                }
             }
         }
     }
