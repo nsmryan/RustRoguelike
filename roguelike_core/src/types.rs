@@ -127,6 +127,9 @@ impl Level {
     }
 
     pub fn fov_radius(&self, entity_id: EntityId) -> i32 {
+        if self.entities.fov_radius.get(&entity_id).is_none() {
+            dbg!(entity_id, self.entities.name[&entity_id], self.entities.typ[&entity_id]);
+        }
         let mut radius: i32 = self.entities.fov_radius[&entity_id];
 
         if let Some(status) = self.entities.status.get(&entity_id) {
@@ -215,8 +218,8 @@ impl Level {
             for from_pos in line(check_pos, entity_pos) {
                 // If the lines overlap, check for magnifiers
                 if to_pos == from_pos {
-                    for (entity_id, fov_block) in self.entities.fov_block.iter() {
-                        if self.entities.pos[&entity_id] == to_pos {
+                    for (fov_block_id, fov_block) in self.entities.fov_block.iter() {
+                        if self.entities.pos[&fov_block_id] == to_pos {
                             if let FovBlock::Magnify(amount) = fov_block {
                                 // This check is done here only it is not repeated for all
                                 // positions. It would be better to calculate it once and 
