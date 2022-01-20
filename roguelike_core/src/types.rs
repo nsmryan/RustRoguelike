@@ -218,13 +218,17 @@ impl Level {
             for from_pos in line(check_pos, entity_pos) {
                 // If the lines overlap, check for magnifiers
                 if to_pos == from_pos {
+                    // fov_check_result is an Option to avoid computing this fov_check unless there
+                    // is actually a magnifier in line with the entity's FoV.
+                    let mut fov_check_result = None;
                     for (fov_block_id, fov_block) in self.entities.fov_block.iter() {
                         if self.entities.pos[&fov_block_id] == to_pos {
                             if let FovBlock::Magnify(amount) = fov_block {
-                                // This check is done here only it is not repeated for all
-                                // positions. It would be better to calculate it once and 
-                                // check outside this for loop.
-                                if self.fov_check(entity_id, to_pos, crouching, _config) == FovResult::Inside {
+                                if fov_check_result.is_none() {
+                                    fov_check_result = Some(self.fov_check(entity_id, to_pos, crouching, _config) == FovResult::Inside);
+                                }
+
+                                if let Some(true) = fov_check_result {
                                     view_distance += *amount as i32;
                                 }
                             }

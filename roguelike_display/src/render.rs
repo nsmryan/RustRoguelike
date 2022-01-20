@@ -1188,7 +1188,7 @@ fn render_game_overlays(panel: &mut Panel,
     if config.blocking_positions {
         if let Some(cursor_pos) = display_state.cursor_pos {
             for to_pos in line(player_pos, cursor_pos) {
-                for from_pos in line(player_pos, cursor_pos) {
+                for from_pos in line(cursor_pos, player_pos) {
                     // If the lines overlap, check for FoV modifying entities.
                     if to_pos == from_pos {
                         let mut highlight_color: Color = config.color_rose_red;
