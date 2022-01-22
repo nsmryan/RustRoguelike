@@ -573,9 +573,9 @@ checksum = "fd6fbd9a79829dd1ad0cc20627bf1ed606756a7f77edff7b66b7064f9cb327c6"
 
 [[package]]
 name = "wfc-rs"
-version = "0.4.1"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17511acab2bd277f040852740a66dbbc9a5b3cf277a69efff7b85b4a14c150e4"
+checksum = "423fc8124249e1087f010260590c23184388e5709c3b6bfc1c8650f7ad889443"
 dependencies = [
  "cc",
  "libc",

@@ -19,9 +19,7 @@ log = "0.4"
 simple-logging = "2.0"
 logging_timer = "1.0"
 
-#wfc_image = "0.11"
-#image = { version = "*", default-features = false, features = ["png"] }
-wfc-rs = "0.4"
+wfc-rs = "0.5"
 
 rand = {version = "0.8", default-features = false, features = ["small_rng", "std"] }
 
