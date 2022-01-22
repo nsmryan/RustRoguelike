@@ -587,7 +587,9 @@ impl Display {
                     }
                 }
 
+                // Update impressions based on previous FoV and current FoV.
                 for entity_id in self.state.prev_turn_fov.iter() {
+                    // Impressions are only of golems.
                     if self.state.typ.get(entity_id) != Some(&EntityType::Enemy) {
                         continue;
                     }
@@ -607,6 +609,8 @@ impl Display {
                         impressions_visible.push(index);
                     }
                 }
+                // We need to sort and reverse in order to swap_remove from the end each time,
+                // avoiding the need to move sections of the original vector with 'remove'.
                 impressions_visible.sort();
                 impressions_visible.reverse();
                 for index in impressions_visible.iter() {

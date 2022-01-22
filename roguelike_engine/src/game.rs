@@ -152,6 +152,11 @@ impl Game {
 
         self.settings.map_changed = false;
 
+        // send PlayerTurn action in case there is cleanup to perform, or another system
+        // needs to know that the turn is finished.
+        if self.level.entities.took_turn[&player_id] {
+            self.msg_log.log(Msg::PlayerTurn);
+        }
 
         return self.settings.state != GameState::Exit;
     }

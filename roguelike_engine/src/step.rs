@@ -56,12 +56,6 @@ pub fn step_logic(game: &mut Game) -> bool {
 
     resolve_messages(game);
 
-    // send PlayerTurn action in case there is cleanup to perform, or another system
-    // needs to know that the turn is finished.
-    if game.level.entities.took_turn[&player_id] {
-        game.msg_log.log(Msg::PlayerTurn);
-    }
-
     // check status effects
     for entity_id in game.level.entities.ids.iter() {
         if let Some(mut status) = game.level.entities.status.get_mut(entity_id) {
