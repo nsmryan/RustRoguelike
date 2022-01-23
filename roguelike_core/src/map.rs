@@ -430,7 +430,10 @@ impl Tile {
         self.block_move = false;
         self.block_sight = false;
         self.bottom_wall = Wall::Empty;
+        self.bottom_material = Surface::Floor;
         self.left_wall = Wall::Empty;
+        self.left_material = Surface::Floor;
+        self.tile_type = TileType::Empty;
     }
 
     pub fn exit() -> Self {
