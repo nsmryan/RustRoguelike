@@ -479,7 +479,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
 
         GameCmd::Visible(entity_id, x, y) => {
             let pos = Pos::new(*x, *y);
-            let visible = game.level.pos_in_fov(*entity_id, pos, &game.config);
+            let visible = game.level.pos_in_fov(*entity_id, pos);
             return format!("{} {}", name, visible);
         }
 

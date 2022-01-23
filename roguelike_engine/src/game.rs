@@ -129,7 +129,7 @@ impl Game {
                 // careful not to set map if not needed- this will clear the fov cache
                 if !self.level.map[pos].explored {
                     let visible =
-                        self.level.pos_in_fov(player_id, pos, &self.config) ||
+                        self.level.pos_in_fov(player_id, pos) ||
                         self.settings.god_mode;
                     if visible {
                         self.level.map[pos].explored = true;
@@ -180,7 +180,7 @@ impl Game {
                 if self.settings.god_mode {
                     fov_result = FovResult::Inside;
                 } else {
-                    fov_result = self.level.pos_in_fov_edge(player_id, pos, &self.config);
+                    fov_result = self.level.pos_in_fov_edge(player_id, pos);
                 }
 
                 // only send if inside or on edge- outside is most common, so it is assumed
@@ -204,7 +204,7 @@ impl Game {
         let player_pos = self.level.entities.pos[&player_id];
 
         // emit whether entity is in player FOV
-        let mut in_fov = self.level.is_in_fov(player_id, entity_id, &self.config);
+        let mut in_fov = self.level.is_in_fov(player_id, entity_id);
         if self.settings.god_mode {
             in_fov = FovResult::Inside;
         }
@@ -236,7 +236,7 @@ impl Game {
                         continue;
                     }
 
-                    if self.level.pos_in_fov(player_id, move_pos, &self.config) {
+                    if self.level.pos_in_fov(player_id, move_pos) {
                         self.msg_log.log(Msg::EntityMovement(entity_id, move_pos));
                     }
                 }
@@ -251,7 +251,7 @@ impl Game {
                         continue;
                     }
 
-                    if self.level.pos_in_fov(entity_id, attack_pos, &self.config) &&
+                    if self.level.pos_in_fov(entity_id, attack_pos) &&
                        (self.level.clear_path(entity_pos, attack_pos, false) || attack_pos == player_pos) {
                         self.msg_log.log(Msg::EntityAttack(entity_id, attack_pos));
                     }
@@ -262,7 +262,7 @@ impl Game {
         // emit visible tiles for entity that are visible to player
         if in_fov == FovResult::Inside && entity_id != player_id {
             for pos in player_fov.iter() {
-                if self.level.pos_in_fov(entity_id, *pos, &self.config) {
+                if self.level.pos_in_fov(entity_id, *pos) {
                     self.msg_log.log(Msg::EntityFov(entity_id, *pos));
                 }
             }
@@ -310,7 +310,7 @@ impl Game {
                 continue;
             }
 
-            if self.level.pos_in_fov(player_id, move_pos, &self.config) {
+            if self.level.pos_in_fov(player_id, move_pos) {
                 self.msg_log.log(Msg::EntityMovement(player_id, move_pos));
             }
         }

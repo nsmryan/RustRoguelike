@@ -15,7 +15,7 @@ use roguelike_core::config::*;
 use roguelike_core::utils::*;
 use roguelike_core::map::*;
 
-use crate::generation::{make_energy, make_light, ensure_grass};
+use crate::generation::{make_energy, make_light, ensure_grass, make_smoke};
 use crate::game::Game;
 use crate::make_map::{make_map};
 
@@ -1409,6 +1409,15 @@ fn throw_item(player_id: EntityId,
                 ensure_grass(&mut level.entities, seed_pos, msg_log);
             }
         }
+    } else if level.entities.item[&item_id] == Item::SmokeBomb {
+        make_smoke(&mut level.entities, config, hit_pos, config.smoke_bomb_fov_block, msg_log);
+        for smoke_pos in floodfill(&level.map, hit_pos, SMOKE_BOMB_CACHE_RADIUS) {
+            if smoke_pos != hit_pos {
+                if rng_trial(rng, 0.30) {
+                    make_smoke(&mut level.entities, config, smoke_pos, config.smoke_bomb_fov_block, msg_log);
+                }
+            }
+        }
     } else if level.entities.item[&item_id] == Item::GlassEye {
         for pos in level.map.pos_in_radius(hit_pos, GLASS_EYE_RADIUS) {
             for eyed_id in level.get_entities_at_pos(pos) {
@@ -1416,7 +1425,7 @@ fn throw_item(player_id: EntityId,
                 // and entities on the edge should already have impressions, so
                 // we don't need to make one here.
                 if level.entities.typ[&eyed_id] == EntityType::Enemy &&
-                   level.is_in_fov(player_id, eyed_id, config) == FovResult::Outside {
+                   level.is_in_fov(player_id, eyed_id) == FovResult::Outside {
                     msg_log.log(Msg::Impression(pos));
                 }
             }

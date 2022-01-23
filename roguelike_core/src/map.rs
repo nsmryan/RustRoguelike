@@ -320,7 +320,6 @@ fn test_blocked_type() {
 }
 
 #[derive(Clone, Copy, Hash, Eq, Debug, PartialEq, Serialize, Deserialize)]
-#[repr(C, packed)]
 pub struct Tile {
     pub block_move: bool,
     pub block_sight: bool,

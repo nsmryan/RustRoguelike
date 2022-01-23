@@ -110,6 +110,7 @@ pub struct Config {
     pub minimal_output: bool,
     pub cursor_line: bool,
     pub blocking_positions: bool,
+    pub smoke_bomb_fov_block: usize,
 }
 
 impl Config {

@@ -267,3 +267,7 @@ cursor_line: false
 # and the cursor. These are the positions that where fog or other effects will
 # effect LoS.
 blocking_positions: true
+
+# Number of tiles that a smoke bomb reduces the FoV
+smoke_bomb_fov_block: 1
+

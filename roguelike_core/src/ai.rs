@@ -244,7 +244,7 @@ pub fn ai_fov_cost(monster_id: EntityId,
                    check_pos: Pos,
                    target_pos: Pos,
                    data: &mut Level,
-                   config: &Config) -> usize {
+                   _config: &Config) -> usize {
     let monster_pos = data.entities.pos[&monster_id];
 
     // the fov_cost is added in if the next move would leave the target's FOV
@@ -252,7 +252,7 @@ pub fn ai_fov_cost(monster_id: EntityId,
     let cur_dir = data.entities.direction[&monster_id];
     data.entities.face(monster_id, target_pos);
     let cost =
-        if data.pos_in_fov(monster_id, target_pos, config) {
+        if data.pos_in_fov(monster_id, target_pos) {
              NOT_IN_FOV_COST
         } else {
             0
@@ -325,7 +325,7 @@ pub fn ai_can_hit_target(data: &mut Level,
                          monster_id: EntityId,
                          target_pos: Pos,
                          reach: &Reach,
-                         config: &Config) -> Option<Pos> {
+                         _config: &Config) -> Option<Pos> {
     let mut hit_pos = None;
     let monster_pos = data.entities.pos[&monster_id];
 
@@ -336,7 +336,7 @@ pub fn ai_can_hit_target(data: &mut Level,
 
     // we don't use ai_is_in_fov here because the other checks already
     // cover blocked movement.
-    let within_fov = data.pos_in_fov(monster_id, target_pos, config);
+    let within_fov = data.pos_in_fov(monster_id, target_pos);
 
     let traps_block = false;
 
@@ -411,11 +411,11 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
 }
 
 // NOTE perhaps this should be merged into is_in_fov?
-pub fn ai_is_in_fov(monster_id: EntityId, target_id: EntityId, data: &mut Level, config: &Config) -> bool {
+pub fn ai_is_in_fov(monster_id: EntityId, target_id: EntityId, data: &mut Level, _config: &Config) -> bool {
     let monster_pos = data.entities.pos[&monster_id];
     let target_pos = data.entities.pos[&target_id];
 
-    let within_fov = data.pos_in_fov(monster_id, target_pos, config);
+    let within_fov = data.pos_in_fov(monster_id, target_pos);
     let move_blocked = data.map.path_blocked_move(monster_pos, target_pos);
 
     if within_fov && move_blocked.is_some() {
