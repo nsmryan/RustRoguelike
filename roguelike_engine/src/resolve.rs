@@ -15,7 +15,7 @@ use roguelike_core::config::*;
 use roguelike_core::utils::*;
 use roguelike_core::map::*;
 
-use crate::generation::{make_energy, make_light, ensure_grass, make_smoke};
+use crate::generation::{make_energy, make_light, ensure_grass, make_smoke, make_magnifier};
 use crate::game::Game;
 use crate::make_map::{make_map};
 
@@ -1418,6 +1418,8 @@ fn throw_item(player_id: EntityId,
                 }
             }
         }
+    } else if level.entities.item[&item_id] == Item::LookingGlass {
+        make_magnifier(&mut level.entities, config, hit_pos, config.looking_glass_magnify_amount, msg_log);
     } else if level.entities.item[&item_id] == Item::GlassEye {
         for pos in level.map.pos_in_radius(hit_pos, GLASS_EYE_RADIUS) {
             for eyed_id in level.get_entities_at_pos(pos) {

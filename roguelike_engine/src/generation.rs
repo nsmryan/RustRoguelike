@@ -420,6 +420,11 @@ pub fn make_smoke_bomb(entities: &mut Entities, _config: &Config, pos: Pos, msg_
     return entity_id;
 }
 
+pub fn make_looking_glass(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id = make_item_generic(entities, Item::LookingGlass, EntityName::LookingGlass, pos, msg_log);
+    return entity_id;
+}
+
 pub fn make_seed_cache(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = make_item_generic(entities, Item::SeedCache, EntityName::SeedCache, pos, msg_log);
     return entity_id;
@@ -487,6 +492,7 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
         EntityName::Pawn => make_pawn(entities, config, pos, msg_log),
         EntityName::SoundTrap => make_sound_trap(entities, config, pos, msg_log),
         EntityName::SeedOfStone => make_seed_of_stone(entities, config, pos, msg_log),
+        EntityName::LookingGlass => make_looking_glass(entities, config, pos, msg_log),
         EntityName::SmokeBomb => make_smoke_bomb(entities, config, pos, msg_log),
         EntityName::GlassEye => make_glass_eye(entities, config, pos, msg_log),
         EntityName::SpikeTrap => make_spike_trap(entities, config, pos, msg_log),

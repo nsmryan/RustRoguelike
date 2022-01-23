@@ -550,7 +550,8 @@ impl Level {
             Item::Stone | Item::SeedOfStone | Item::GlassEye |
             Item::Lantern | Item::Teleporter | Item::SpikeTrap | 
             Item::SoundTrap | Item::BlinkTrap | Item::FreezeTrap |
-            Item::Sling | Item::SeedCache | Item::SmokeBomb => {
+            Item::Sling | Item::SeedCache | Item::SmokeBomb |
+            Item::LookingGlass => {
                 let dist = if item == Item::Sling {
                     PLAYER_THROW_DIST
                 } else {
@@ -977,6 +978,7 @@ pub enum Item {
     SeedOfStone,
     SeedCache,
     SmokeBomb,
+    LookingGlass,
     GlassEye,
     SpikeTrap,
     SoundTrap,
@@ -1002,6 +1004,7 @@ impl fmt::Display for Item {
             Item::SeedOfStone => write!(f, "seedofstone"),
             Item::SeedCache => write!(f, "seedcache"),
             Item::SmokeBomb => write!(f, "smokebomb"),
+            Item::LookingGlass => write!(f, "lookinglass"),
             Item::GlassEye => write!(f, "glasseye"),
             Item::SpikeTrap => write!(f, "spiketrap"),
             Item::SoundTrap => write!(f, "soundtrap"),
@@ -1047,6 +1050,8 @@ impl FromStr for Item {
             return Ok(Item::SeedCache);
         } else if s == "smokebomb" {
             return Ok(Item::SmokeBomb);
+        } else if s == "lookingglass" {
+            return Ok(Item::LookingGlass);
         } else if s == "glasseye" {
             return Ok(Item::GlassEye);
         } else if s == "spiketrap" {
@@ -1080,6 +1085,7 @@ impl Item {
             Item::SeedOfStone => ItemClass::Consumable,
             Item::SeedCache => ItemClass::Consumable,
             Item::SmokeBomb => ItemClass::Consumable,
+            Item::LookingGlass => ItemClass::Consumable,
             Item::GlassEye => ItemClass::Consumable,
             Item::Lantern => ItemClass::Consumable,
             Item::SpikeTrap => ItemClass::Consumable,
@@ -1104,6 +1110,7 @@ impl Item {
             Item::SeedOfStone => EntityName::SeedOfStone,
             Item::SeedCache => EntityName::SeedCache,
             Item::SmokeBomb => EntityName::SmokeBomb,
+            Item::LookingGlass => EntityName::LookingGlass,
             Item::GlassEye => EntityName::GlassEye,
             Item::Lantern => EntityName::Lantern,
             Item::Sling => EntityName::Sling,
@@ -1128,6 +1135,7 @@ impl Item {
             Item::SeedOfStone => None,
             Item::SeedCache => None,
             Item::SmokeBomb => None,
+            Item::LookingGlass => None,
             Item::GlassEye => None,
             Item::Herb => None,
             Item::Stone => None,
@@ -1297,6 +1305,7 @@ pub enum EntityName {
     SeedOfStone,
     SeedCache,
     SmokeBomb,
+    LookingGlass,
     GlassEye,
     Teleporter,
     Spire,
@@ -1344,7 +1353,8 @@ impl fmt::Display for EntityName {
             EntityName::Sling => write!(f, "sling"),
             EntityName::SeedOfStone => write!(f, "seedofstone"),
             EntityName::SeedCache => write!(f, "seedcache"),
-            EntityName::SmokeBomb => write!(f, "SmokeBomb"),
+            EntityName::SmokeBomb => write!(f, "smokebomb"),
+            EntityName::LookingGlass => write!(f, "lookingglass"),
             EntityName::GlassEye => write!(f, "glasseye"),
             EntityName::Shield => write!(f, "shield"),
             EntityName::Spire => write!(f, "spire"),
@@ -1411,6 +1421,8 @@ impl FromStr for EntityName {
             return Ok(EntityName::SeedCache);
         } else if s == "smokebomb" {
             return Ok(EntityName::SmokeBomb);
+        } else if s == "lookingglass" {
+            return Ok(EntityName::LookingGlass);
         } else if s == "glasseye" {
             return Ok(EntityName::GlassEye);
         } else if s == "shield" {

@@ -111,6 +111,7 @@ pub struct Config {
     pub cursor_line: bool,
     pub blocking_positions: bool,
     pub smoke_bomb_fov_block: usize,
+    pub looking_glass_magnify_amount: usize,
 }
 
 impl Config {
