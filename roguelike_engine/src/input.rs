@@ -195,6 +195,7 @@ impl Input {
 
             InputEvent::Esc => {
                 action = InputAction::Esc;
+                self.cursor = false;
             }
 
             InputEvent::Tab => {
