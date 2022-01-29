@@ -278,7 +278,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             let query = sprite_sheet.texture.query();
 
             let cell_dims = panel.cell_dims();
-            let (_cell_width, cell_height) = cell_dims;
+            let (cell_width, cell_height) = cell_dims;
 
             let font_width = query.width / ascii_width;
             let font_height = query.height;
@@ -291,7 +291,8 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
             sprite_sheet.texture.set_alpha_mod(color.a);
 
-            let mut pos = *start_pos;
+            let y_offset = start_pos.y * cell_height as i32;
+            let mut x_offset = start_pos.x * cell_width as i32;
             for chr in string.chars() {
                 let chr_num = chr.to_lowercase().next().unwrap();
                 let chr_index = chr_num as i32 - ASCII_START as i32;
@@ -301,21 +302,20 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                                     font_width,
                                     font_height);
 
-                let dst_pos = Pos::new(pos.x * char_width as i32,
-                                       pos.y * cell_height as i32);
+                let dst_pos = Pos::new(x_offset, y_offset);
                 let dst = Rect::new(dst_pos.x as i32,
                                     dst_pos.y as i32,
                                     char_width as u32,
                                     char_height as u32);
 
                 canvas.copy_ex(&sprite_sheet.texture,
-                                     Some(src),
-                                     Some(dst),
-                                     0.0,
-                                     None,
-                                     false,
-                                     false).unwrap();
-                pos.x += 1;
+                               Some(src),
+                               Some(dst),
+                               0.0,
+                               None,
+                               false,
+                               false).unwrap();
+                x_offset += char_width as i32;
             }
         }
 
