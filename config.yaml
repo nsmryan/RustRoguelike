@@ -277,3 +277,4 @@ smoke_turns: 6
 # Magification of a thrown looking glass
 looking_glass_magnify_amount: 2
 
+hp_render_duration: 50

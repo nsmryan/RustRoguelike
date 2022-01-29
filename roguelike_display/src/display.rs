@@ -441,6 +441,10 @@ impl Display {
                     self.state.max_hp.insert(entity_id, 0);
                 }
                 self.state.max_hp[&entity_id] = max_hp;
+
+                let entity_pos = self.state.pos[&entity_id];
+                let heal_num = Effect::hp_change(amount, entity_pos, config.hp_render_duration);
+                self.state.play_effect(heal_num);
             }
 
             Msg::Stance(entity_id, stance) => {
@@ -539,6 +543,10 @@ impl Display {
             }
 
             Msg::Attack(attacker, attacked, damage) => {
+                let attacked_pos = self.state.pos[&attacked];
+                let hit_nums = Effect::hp_change(-damage, attacked_pos, config.hp_render_duration);
+                self.state.play_effect(hit_nums);
+
                 if self.state.typ[&attacker] == EntityType::Player {
                     // TODO need attack animation
                     //let attack_sprite =
@@ -551,7 +559,6 @@ impl Display {
                     //}
                 } else {
                     let attacker_pos = self.state.pos[&attacker];
-                    let attacked_pos = self.state.pos[&attacked];
                     let beam_effect = Effect::beam(config.beam_duration, attacker_pos, attacked_pos);
                     self.state.play_effect(beam_effect);
                 }

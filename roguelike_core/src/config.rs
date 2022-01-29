@@ -113,6 +113,7 @@ pub struct Config {
     pub smoke_bomb_fov_block: usize,
     pub smoke_turns: usize,
     pub looking_glass_magnify_amount: usize,
+    pub hp_render_duration: usize,
 }
 
 impl Config {

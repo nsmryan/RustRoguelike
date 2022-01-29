@@ -880,6 +880,20 @@ fn render_effects(panel: &mut Panel,
                 *time_taken += display_state.dt;
                 effect_complete = time_taken >= seconds;
             }
+
+            Effect::HpChange(change, pos, count_down) => {
+                let color;
+                if *change >= 0 {
+                    color = config.color_mint_green;
+                } else {
+                    color = config.color_red;
+                }
+                panel.text_cmd(&format!("{}", *change), color, *pos, 1.0);
+
+                *count_down -= 1;
+
+                effect_complete = *count_down == 0;
+            }
         }
         display_state.effects[index] = effect;
 
