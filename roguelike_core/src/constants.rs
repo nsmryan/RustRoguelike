@@ -74,7 +74,7 @@ pub const SKILL_QUICK_REFLEXES_PERCENT: f32 = 0.5;
 pub const LANTERN_ILLUMINATE_RADIUS: usize = 2;
 pub const ILLUMINATE_AMOUNT: usize = LANTERN_ILLUMINATE_RADIUS;
 pub const SEED_CACHE_RADIUS: usize = 1;
-pub const SMOKE_BOMB_CACHE_RADIUS: usize = 1;
+pub const SMOKE_BOMB_RADIUS: usize = 1;
 pub const GLASS_EYE_RADIUS: i32 = 4;
 
 /* Trap Settings */

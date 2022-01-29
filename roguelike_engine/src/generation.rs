@@ -321,10 +321,11 @@ pub fn make_armil(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
     return entity_id;
 } 
 
-pub fn make_smoke(entities: &mut Entities, _config: &Config, pos: Pos, amount: usize, msg_log: &mut MsgLog) -> EntityId {
+pub fn make_smoke(entities: &mut Entities, config: &Config, pos: Pos, amount: usize, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Environment, EntityName::Smoke, false);
 
     entities.fov_block.insert(entity_id,  FovBlock::Opaque(amount));
+    entities.count_down.insert(entity_id,  config.smoke_turns);
     msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Smoke, entities.direction[&entity_id]));
     
     return entity_id;

@@ -1411,7 +1411,7 @@ fn throw_item(player_id: EntityId,
         }
     } else if level.entities.item[&item_id] == Item::SmokeBomb {
         make_smoke(&mut level.entities, config, hit_pos, config.smoke_bomb_fov_block, msg_log);
-        for smoke_pos in floodfill(&level.map, hit_pos, SMOKE_BOMB_CACHE_RADIUS) {
+        for smoke_pos in floodfill(&level.map, hit_pos, SMOKE_BOMB_RADIUS) {
             if smoke_pos != hit_pos {
                 if rng_trial(rng, 0.30) {
                     make_smoke(&mut level.entities, config, smoke_pos, config.smoke_bomb_fov_block, msg_log);

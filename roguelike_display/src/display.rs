@@ -538,7 +538,7 @@ impl Display {
                 }
             }
 
-            Msg::Attack(attacker, attacked, _damage) => {
+            Msg::Attack(attacker, attacked, damage) => {
                 if self.state.typ[&attacker] == EntityType::Player {
                     // TODO need attack animation
                     //let attack_sprite =
@@ -555,6 +555,7 @@ impl Display {
                     let beam_effect = Effect::beam(config.beam_duration, attacker_pos, attacked_pos);
                     self.state.play_effect(beam_effect);
                 }
+                self.state.hp[&attacked] -= damage;
             }
 
             Msg::JumpWall(jumper, start, end) => {
