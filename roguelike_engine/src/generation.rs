@@ -133,6 +133,19 @@ pub fn make_sword(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: 
     return entity_id;
 }
 
+pub fn make_axe(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, EntityName::Axe, false);
+
+    entities.item.insert(entity_id,  Item::Axe);
+
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Axe, entities.direction[&entity_id]));
+    entities.durability.insert(entity_id, ITEM_DURABILITY);
+
+    entities.modifier.insert(entity_id, ItemModifier::new());
+
+    return entity_id;
+}
+
 pub fn make_greatsword(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, EntityName::GreatSword, false);
 
@@ -485,6 +498,7 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
         EntityName::GreatSword => make_greatsword(entities, config, pos, msg_log),
         EntityName::Spear => make_spear(entities, config, pos, msg_log),
         EntityName::Sword => make_sword(entities, config, pos, msg_log),
+        EntityName::Axe => make_axe(entities, config, pos, msg_log),
         EntityName::Shield => make_shield(entities, config, pos, msg_log),
         EntityName::Key => make_key(entities, config, pos, msg_log),
         EntityName::Cursor => make_cursor(entities, config, pos, msg_log),
