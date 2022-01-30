@@ -88,19 +88,6 @@ pub fn step_logic(game: &mut Game) -> bool {
                 game.level.entities.status[&player_id].hammer_raised = Some((item_id, dir, turns - 1));
             }
         }
-
-        // Reduce smoke entity visibilities
-        //for entity_id in game.level.entities.ids.clone() {
-        //    if game.level.entities.name[&entity_id] == EntityName::Smoke {
-        //        if let FovBlock::Opaque(amount) = game.level.entities.fov_block[&entity_id] {
-        //            if amount <= 1 {
-        //                game.level.entities.mark_for_removal(entity_id);
-        //            } else {
-        //                game.level.entities.fov_block[&entity_id] = FovBlock::Opaque(amount - 1);
-        //            }
-        //        }
-        //    }
-        //}
     }
 
     // perform count down of entities waiting to be removed

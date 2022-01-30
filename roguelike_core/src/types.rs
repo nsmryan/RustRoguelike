@@ -317,7 +317,7 @@ impl Level {
                     for from_pos in line(check_pos, entity_pos) {
                         // If the lines overlap, check for FoV modifying entities.
                         if to_pos == from_pos {
-                            for (entity_id, fov_block) in self.entities.fov_block.iter() {
+                            for (_entity_id, fov_block) in self.entities.fov_block.iter() {
                                 if matches!(fov_block, FovBlock::Opaque(_)) || matches!(fov_block, FovBlock::Block) {
 
                                     // We just return fov_result here as the remaining modifications
