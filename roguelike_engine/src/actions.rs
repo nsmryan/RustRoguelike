@@ -787,8 +787,9 @@ fn finalize_use_item(level: &Level, settings: &mut GameSettings, msg_log: &mut M
                 let move_pos = use_result.pos.expect("Using an item with no move position?!");
                 let player_pos = level.entities.pos[&player_id];
                 if move_pos != player_pos {
+                    let move_dir = Direction::from_positions(player_pos, move_pos).unwrap();
                     let dist = distance(move_pos, player_pos) as usize;
-                    msg_log.log(Msg::TryMove(player_id, dir, dist, settings.move_mode));
+                    msg_log.log(Msg::TryMove(player_id, move_dir, dist, settings.move_mode));
                 }
 
                 let weapon_type = item.weapon_type().expect("This item does not have a weapon type!");

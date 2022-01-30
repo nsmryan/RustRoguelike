@@ -684,6 +684,30 @@ impl Level {
                 // TODO add in great sword positions
             }
 
+            Item::Khopesh => {
+                let target_pos = dir.offset_pos(pos, 1);
+                let move_pos = dir.reverse().offset_pos(pos, 1);
+                if self.clear_path(pos, move_pos, false) {
+                    result.pos = Some(move_pos);
+                    result.hit_positions.push(target_pos);
+                }
+            }
+
+            Item::Axe => {
+                let target_pos = dir.offset_pos(pos, 1);
+                if self.clear_path(pos, target_pos, false) {
+                    result.pos = Some(pos);
+
+                    result.hit_positions.push(target_pos);
+
+                    let left_pos = dir.clockwise().offset_pos(pos, 1);
+                    result.hit_positions.push(left_pos);
+
+                    let right_pos = dir.counterclockwise().offset_pos(pos, 1);
+                    result.hit_positions.push(right_pos);
+                }
+            }
+
             Item::Sword => {
                 let target_pos = dir.offset_pos(pos, 1);
                 if self.clear_path(pos, target_pos, false) {
@@ -1017,6 +1041,8 @@ pub enum Item {
     Hammer,
     Spear,
     GreatSword,
+    Axe,
+    Khopesh,
     Sword,
     Lantern,
     Sling,
@@ -1044,6 +1070,8 @@ impl fmt::Display for Item {
             Item::Spear => write!(f, "spear"),
             Item::GreatSword => write!(f, "greatsword"),
             Item::Sword => write!(f, "sword"),
+            Item::Axe => write!(f, "axe"),
+            Item::Khopesh => write!(f, "khopesh"),
             Item::Lantern => write!(f, "lantern"),
             Item::Sling => write!(f, "sling"),
             Item::Teleporter => write!(f, "teleporter"),
@@ -1081,6 +1109,10 @@ impl FromStr for Item {
             return Ok(Item::Spear);
         } else if s == "lantern" {
             return Ok(Item::Lantern);
+        } else if s == "axe" {
+            return Ok(Item::Axe);
+        } else if s == "khopesh" {
+            return Ok(Item::Khopesh);
         } else if s == "sling" {
             return Ok(Item::Sling);
         } else if s == "greatsword" {
@@ -1126,6 +1158,8 @@ impl Item {
             Item::Spear => ItemClass::Primary,
             Item::GreatSword => ItemClass::Primary,
             Item::Sword => ItemClass::Primary,
+            Item::Axe => ItemClass::Primary,
+            Item::Khopesh => ItemClass::Primary,
             Item::Sling => ItemClass::Primary,
             Item::Teleporter => ItemClass::Consumable,
             Item::Herb => ItemClass::Consumable,
@@ -1152,6 +1186,8 @@ impl Item {
             Item::Spear => EntityName::Spear,
             Item::GreatSword => EntityName::GreatSword,
             Item::Sword => EntityName::Sword,
+            Item::Axe => EntityName::Axe,
+            Item::Khopesh => EntityName::Khopesh,
             Item::Teleporter => EntityName::Teleporter,
             Item::Herb => EntityName::Herb,
             Item::SeedOfStone => EntityName::SeedOfStone,
@@ -1177,6 +1213,8 @@ impl Item {
             Item::GreatSword => Some(WeaponType::Slash),
             Item::Sword => Some(WeaponType::Slash),
             Item::Sling => Some(WeaponType::Blunt),
+            Item::Axe => Some(WeaponType::Slash),
+            Item::Khopesh => Some(WeaponType::Slash),
 
             Item::Teleporter => None,
             Item::SeedOfStone => None,
@@ -1348,6 +1386,8 @@ pub enum EntityName {
     Sword,
     Shield,
     Lantern,
+    Axe,
+    Khopesh,
     Sling,
     SeedOfStone,
     SeedCache,
@@ -1394,6 +1434,8 @@ impl fmt::Display for EntityName {
             EntityName::Hammer => write!(f, "hammer"),
             EntityName::Spear => write!(f, "spear"),
             EntityName::GreatSword => write!(f, "greatsword"),
+            EntityName::Axe => write!(f, "axe"),
+            EntityName::Khopesh => write!(f, "khopesh"),
             EntityName::Sword => write!(f, "sword"),
             EntityName::Teleporter => write!(f, "teleporter"),
             EntityName::Lantern => write!(f, "lantern"),
@@ -1458,6 +1500,10 @@ impl FromStr for EntityName {
             return Ok(EntityName::GreatSword);
         } else if s == "sword" {
             return Ok(EntityName::Sword);
+        } else if s == "axe" {
+            return Ok(EntityName::Axe);
+        } else if s == "khopesh" {
+            return Ok(EntityName::Khopesh);
         } else if s == "lantern" {
             return Ok(EntityName::Lantern);
         } else if s == "sling" {
