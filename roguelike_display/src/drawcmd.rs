@@ -26,8 +26,9 @@ pub enum DrawCmd {
     SpriteAtPixel(Sprite, Color, Pos),
     HighlightTile(Color, Pos),
     OutlineTile(Color, Pos),
-    Text(String, Color, Pos, f32),
-    TextJustify(String, Justify, Color, Color, Pos, u32, f32), // text, justify, fg color, bg color, pos, width in cells, scale
+    Text(String, Color, Pos, f32), // text, color, tile position, scale
+    TextAtPixel(String, Color, f32, f32, f32), // text, color, x, y, scale
+    TextJustify(String, Justify, Color, Color, Pos, u32, f32), // text, justify, fg color, bg color, tile pos, width in cells, scale
     Rect(Pos, (u32, u32), f32, bool, Color), // start cell, num cells width/height, offset percent into cell, color
     Fill(Pos, Color),
 }
@@ -45,6 +46,7 @@ impl DrawCmd {
             DrawCmd::HighlightTile(_, pos) => *pos,
             DrawCmd::OutlineTile(_, pos) => *pos,
             DrawCmd::Text(_, _, pos, _) => *pos,
+            DrawCmd::TextAtPixel(_, _, x, y, _) => Pos::new(*x as i32, *y as i32),
             DrawCmd::TextJustify(_, _, _, _, pos, _, _) => *pos,
             DrawCmd::Rect(pos, _, _, _, _) => *pos,
             DrawCmd::Fill(pos, _) => *pos,
@@ -267,6 +269,57 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                                      None,
                                      false,
                                      false).unwrap();
+            }
+        }
+
+        DrawCmd::TextAtPixel(string, color, x, y, scale) => {
+            let ascii_width = ASCII_END - ASCII_START;
+
+            let sprite_key = lookup_spritekey(sprites, "font");
+            let sprite_sheet = &mut sprites[sprite_key];
+            let query = sprite_sheet.texture.query();
+
+            let cell_dims = panel.cell_dims();
+            let (cell_width, cell_height) = cell_dims;
+
+            let font_width = query.width / ascii_width;
+            let font_height = query.height;
+
+            let char_height = (cell_height as f32 * scale) as u32;
+            let char_width = (cell_height * font_width) / font_height;
+            let char_width = (char_width as f32 * scale) as u32;
+
+            canvas.set_blend_mode(BlendMode::Blend);
+            sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
+            sprite_sheet.texture.set_alpha_mod(color.a);
+
+            let text_pixel_width = string.len() as i32 * char_width as i32;
+
+            let mut x_offset = (*x * cell_width as f32) as i32 - (text_pixel_width / 2);
+            let y_offset = (*y * cell_height as f32) as i32;
+            for chr in string.chars() {
+                let chr_num = chr.to_lowercase().next().unwrap();
+                let chr_index = chr_num as i32 - ASCII_START as i32;
+
+                let src = Rect::new(font_width as i32 * chr_index,
+                                    0,
+                                    font_width,
+                                    font_height);
+
+                let dst_pos = Pos::new(x_offset, y_offset);
+                let dst = Rect::new(dst_pos.x as i32,
+                                    dst_pos.y as i32,
+                                    char_width as u32,
+                                    char_height as u32);
+
+                canvas.copy_ex(&sprite_sheet.texture,
+                               Some(src),
+                               Some(dst),
+                               0.0,
+                               None,
+                               false,
+                               false).unwrap();
+                x_offset += char_width as i32;
             }
         }
 
@@ -632,6 +685,12 @@ impl Panel {
     pub fn text_cmd(&mut self, text: &str, color: Color, pos: Pos, scale: f32) {
         let string = text.to_string();
         let cmd = DrawCmd::Text(string, color, pos, scale);
+        self.draw_cmd(cmd);
+    }
+
+    pub fn text_at_pixel_cmd(&mut self, text: &str, color: Color, x: f32, y: f32, scale: f32) {
+        let string = text.to_string();
+        let cmd = DrawCmd::TextAtPixel(string, color, x, y, scale);
         self.draw_cmd(cmd);
     }
 

@@ -55,6 +55,11 @@ color_red:
   g: 0
   b: 0
   a: 255
+color_light_red:
+  r: 0xDC
+  g: 0x14
+  b: 0x3C
+  a: 255
 color_medium_grey:
   r: 40
   g: 40
@@ -277,4 +282,4 @@ smoke_turns: 6
 # Magification of a thrown looking glass
 looking_glass_magnify_amount: 2
 
-hp_render_duration: 50
+hp_render_duration: 20

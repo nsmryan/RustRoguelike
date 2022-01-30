@@ -443,7 +443,7 @@ impl Display {
                 self.state.max_hp[&entity_id] = max_hp;
 
                 let entity_pos = self.state.pos[&entity_id];
-                let heal_num = Effect::hp_change(amount, entity_pos, config.hp_render_duration);
+                let heal_num = Effect::hp_change(amount, entity_pos);
                 self.state.play_effect(heal_num);
             }
 
@@ -544,7 +544,7 @@ impl Display {
 
             Msg::Attack(attacker, attacked, damage) => {
                 let attacked_pos = self.state.pos[&attacked];
-                let hit_nums = Effect::hp_change(-damage, attacked_pos, config.hp_render_duration);
+                let hit_nums = Effect::hp_change(-damage, attacked_pos);
                 self.state.play_effect(hit_nums);
 
                 if self.state.typ[&attacker] == EntityType::Player {
