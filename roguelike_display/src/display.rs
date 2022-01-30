@@ -427,8 +427,13 @@ impl Display {
                 self.state.append_animation(item_id, loop_anim);
             }
 
-            Msg::PickedUp(entity_id, _item_id) => {
+            Msg::PickedUp(entity_id, item_id) => {
                 self.play_idle_animation(entity_id, config);
+
+                // Remove the item from FOV, as picking it up will not
+                // take a turn, and therefore not re-emit all entity 
+                // FOV information.
+                self.state.entities_in_fov.remove(&item_id);
             }
 
             Msg::Healed(entity_id, amount, max_hp) => {
@@ -443,7 +448,7 @@ impl Display {
                 self.state.max_hp[&entity_id] = max_hp;
 
                 let entity_pos = self.state.pos[&entity_id];
-                let heal_num = Effect::hp_change(amount, entity_pos, config.hp_render_duration);
+                let heal_num = Effect::hp_change(amount, entity_pos);
                 self.state.play_effect(heal_num);
             }
 
@@ -544,7 +549,7 @@ impl Display {
 
             Msg::Attack(attacker, attacked, damage) => {
                 let attacked_pos = self.state.pos[&attacked];
-                let hit_nums = Effect::hp_change(-damage, attacked_pos, config.hp_render_duration);
+                let hit_nums = Effect::hp_change(-damage, attacked_pos);
                 self.state.play_effect(hit_nums);
 
                 if self.state.typ[&attacker] == EntityType::Player {

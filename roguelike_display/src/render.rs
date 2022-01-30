@@ -881,18 +881,25 @@ fn render_effects(panel: &mut Panel,
                 effect_complete = time_taken >= seconds;
             }
 
-            Effect::HpChange(change, pos, count_down) => {
-                let color;
+            Effect::HpChange(change, pos, count) => {
+                let percent_done = *count as f32 / config.hp_render_duration as f32;
+
+                let mut color;
                 if *change >= 0 {
                     color = config.color_mint_green;
                 } else {
-                    color = config.color_red;
+                    color = config.color_light_red;
                 }
-                panel.text_cmd(&format!("{}", *change), color, *pos, 1.0);
 
-                *count_down -= 1;
+                color.a = 255 - (255.0 * percent_done) as u8;
 
-                effect_complete = *count_down == 0;
+                let x = pos.x as f32 + 0.5;
+                let y = pos.y as f32 - 0.5 - (percent_done);
+                panel.text_at_pixel_cmd(&format!("{}", *change), color, x, y, 0.7);
+
+                *count += 1;
+
+                effect_complete = *count == config.hp_render_duration;
             }
         }
         display_state.effects[index] = effect;

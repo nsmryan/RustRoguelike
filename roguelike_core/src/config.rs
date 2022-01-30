@@ -22,6 +22,7 @@ pub struct Config {
     pub color_very_dark_blue: Color,    
     pub color_orange: Color,
     pub color_red: Color,
+    pub color_light_red: Color,
     pub color_medium_grey: Color,
     pub color_mint_green: Color,
     pub color_blueish_grey: Color,
