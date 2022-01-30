@@ -190,7 +190,7 @@ pub const ENTITY_CLOAK_GUY: u8 = 141;
 pub const ENTITY_ELF: u8 = 165;
 pub const ENTITY_UNKNOWN: u8 = 239;
 pub const ENTITY_ENERGY: u8 = 6;
-pub const ENTITY_SMOKE: u8 = 15;
+pub const ENTITY_SMOKE: u8 = 126;
 pub const ENTITY_MAGNIFIER: u8 = 231;
 
 /* Map Objects */
@@ -213,6 +213,11 @@ pub const SHADOW_INTERTILE_LEFT: u8 = 3;
 pub const SHADOW_INTERTILE_LEFT_DOWN: u8 = 7;
 pub const SHADOW_INTERTILE_DOWN: u8 = 5;
 pub const SHADOW_INTERTILE_DOWN_LEFT: u8 = 4;
+
+pub const GRASS_INTERTILE_UP: u8 = 105;
+pub const GRASS_INTERTILE_DOWN: u8 = 106;
+pub const GRASS_INTERTILE_LEFT: u8 = 107;
+pub const GRASS_INTERTILE_RIGHT: u8 = 108;
 
 /* Triggers */
 pub const ENTITY_GATE_TRIGGER: u8 = ENTITY_TRIGGER_2;

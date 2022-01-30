@@ -31,15 +31,15 @@ pub enum ReplayResult {
 
 #[derive(Clone, Debug)]
 pub struct Recording {
-    states: Vec<Game>,
+    states: Vec<(Game, DisplayState)>,
     inputs: Vec<InputAction>,
     cursor: usize,
 }
 
 impl Recording {
-    pub fn new(game: &Game) -> Recording {
+    pub fn new(game: &Game, display_state: &DisplayState) -> Recording {
         let mut states = Vec::new();
-        states.push(game.clone());
+        states.push((game.clone(), display_state.clone()));
         return Recording {
             states: states,
             inputs: Vec::new(),
@@ -47,20 +47,21 @@ impl Recording {
         };
     }
 
-    pub fn forward(self: &mut Recording) -> Option<Game> {
+    pub fn forward(self: &mut Recording) -> Option<(Game, DisplayState)> {
         if let Some(action) = self.inputs.get(self.cursor) {
-            let mut game = self.states[self.states.len() - 1].clone();
+            let (mut game, display_state) = self.states[self.states.len() - 1].clone();
             game.step_game(*action);
             let return_game = game.clone();
-            self.states.push(game);
+            let return_display_state = display_state.clone();
+            self.states.push((game, display_state));
             self.cursor = std::cmp::min(self.cursor + 1, self.inputs.len());
-            return Some(return_game);
+            return Some((return_game, return_display_state));
         } else {
             return None;
         }
     }
     
-    pub fn backward(self: &mut Recording) -> Game {
+    pub fn backward(self: &mut Recording) -> (Game, DisplayState) {
         if self.cursor > 0 {
             self.cursor = self.cursor - 1;
             self.states.pop();
@@ -69,8 +70,8 @@ impl Recording {
         return self.states[self.states.len() - 1].clone();
     }
 
-    pub fn action(self: &mut Recording, game: &Game, action: InputAction) {
-        self.states.push(game.clone());
+    pub fn action(self: &mut Recording, game: &Game, display_state: &DisplayState, action: InputAction) {
+        self.states.push((game.clone(), display_state.clone()));
         self.inputs.insert(self.cursor, action);
         self.cursor += 1;
     }

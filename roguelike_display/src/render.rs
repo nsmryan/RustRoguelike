@@ -697,7 +697,10 @@ fn render_intertile_walls(panel: &mut Panel,
     let wall_color = Color::white();
 
     // Left walls
-    if tile.left_wall == Wall::ShortWall {
+    if tile.left_wall == Wall::ShortWall && tile.left_material == Surface::Grass {
+        let sprite = Sprite::new(GRASS_INTERTILE_LEFT as u32, sprite_key);
+        panel.sprite_cmd(sprite, wall_color, pos);
+    } else if tile.left_wall == Wall::ShortWall {
         let sprite = Sprite::new(MAP_THIN_WALL_LEFT as u32, sprite_key);
         panel.sprite_cmd(sprite, wall_color, pos);
     } else if tile.left_wall == Wall::TallWall {
@@ -709,7 +712,10 @@ fn render_intertile_walls(panel: &mut Panel,
     if x + 1 < map.width() {
         let right_pos = Pos::new(pos.x + 1, pos.y);
         let right_tile = &map[right_pos];
-        if right_tile.left_wall == Wall::ShortWall {
+        if right_tile.left_wall == Wall::ShortWall && right_tile.left_material == Surface::Grass {
+            let sprite = Sprite::new(GRASS_INTERTILE_RIGHT as u32, sprite_key);
+            panel.sprite_cmd(sprite, wall_color, pos);
+        } else if right_tile.left_wall == Wall::ShortWall {
             let sprite = Sprite::new(MAP_THIN_WALL_RIGHT as u32, sprite_key);
             panel.sprite_cmd(sprite, wall_color, pos);
         } else if right_tile.left_wall == Wall::TallWall {
@@ -722,7 +728,10 @@ fn render_intertile_walls(panel: &mut Panel,
     if y - 1 >= 0 {
         let up_pos = Pos::new(pos.x, pos.y - 1);
         let up_tile = &map[up_pos];
-        if up_tile.bottom_wall == Wall::ShortWall {
+        if up_tile.bottom_wall == Wall::ShortWall && up_tile.bottom_material == Surface::Grass {
+            let sprite = Sprite::new(GRASS_INTERTILE_UP as u32, sprite_key);
+            panel.sprite_cmd(sprite, wall_color, pos);
+        } else if up_tile.bottom_wall == Wall::ShortWall {
             let sprite = Sprite::new(MAP_THIN_WALL_TOP as u32, sprite_key);
             panel.sprite_cmd(sprite, wall_color, pos);
         } else if up_tile.bottom_wall == Wall::TallWall {

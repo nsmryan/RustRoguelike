@@ -200,7 +200,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
     let mut config_modified_time = fs::metadata(CONFIG_NAME).unwrap().modified().unwrap();
 
     let mut log = Log::new();
-    let mut recording = Recording::new(&game);
+    let mut recording = Recording::new(&game, &display.state);
 
     /* Setup FPS Throttling */
     let frame_ms = 1000 / game.config.frame_rate as u64;
@@ -238,12 +238,17 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
 
             for sdl2_event in event_pump.poll_iter() {
                 if let Some(event) = keyboard::translate_event(sdl2_event) {
+                    // First check for [ and ], which are processed outside of the normal input
+                    // system.
                     if game.config.recording && matches!(event, InputEvent::Char('[', KeyDir::Up)) {
-                        game = recording.backward();
+                        let (new_game, new_display_state) = recording.backward();
+                        game = new_game;
+                        display.state = new_display_state;
                         any_updates = true;
                     } else if game.config.recording && matches!(event, InputEvent::Char(']', KeyDir::Up)) {
-                        if let Some(new_game) = recording.forward() {
+                        if let Some((new_game, new_display_state)) = recording.forward() {
                             game = new_game;
+                            display.state = new_display_state;
                         }
                         any_updates = true;
                     } else {
@@ -289,7 +294,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
                 game.step_game(input_action);
                 
                 if game.config.recording && input_action != InputAction::None {
-                    recording.action(&game, input_action);
+                    recording.action(&game, &display.state, input_action);
                 }
 
                 for msg_index in 0..game.msg_log.turn_messages.len() {

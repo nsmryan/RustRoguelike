@@ -168,42 +168,15 @@ impl Level {
     fn fov_check_player(&self, entity_id: EntityId, check_pos: Pos, crouching: bool, view_distance: i32) -> FovResult {
         let entity_pos = self.entities.pos[&entity_id];
 
-        let mut can_see = self.map.is_in_fov_edge(entity_pos, check_pos, view_distance, crouching);
+        let fov_result = self.map.is_in_fov_edge(entity_pos, check_pos, view_distance, crouching);
 
         // If we can't see the tile, check for a latern that illuminates it, allowing
         // us to see it anyway. Ignore tiles that are blocked for sight anyway.
-        if can_see != FovResult::Inside && !self.map[check_pos].block_sight {
-            // check for illumination that might make this tile visible.
-            for (id, illuminate_radius) in self.entities.illuminate.iter() {
-                let illuminate_radius = *illuminate_radius as i32;
+        //if fov_result != FovResult::Inside && !self.map[check_pos].block_sight {
+            //fov_result = self.check_illumination(entity_id, fov_result, check_pos, ILLUMINATE_FOV_RADIUS, crouching);
+        //}
 
-                let illuminator_on_map = self.entities.pos[&id].x >= 0 && self.entities.pos[&id].y >= 0;
-
-                if illuminate_radius != 0 && illuminator_on_map && !self.entities.needs_removal[&id] {
-                    let illuminate_pos = self.entities.pos[&id];
-
-                    let pos_near_illuminator = self.map.is_in_fov(illuminate_pos, check_pos, illuminate_radius, crouching);
-                    if pos_near_illuminator {
-                        // Check that the position is within the radius visible through
-                        // illumination. This prevents seeing illuminated tiles that are just
-                        // too far for the player to reasonably see.
-                        if self.map.is_in_fov(entity_pos, check_pos, ILLUMINATE_FOV_RADIUS, crouching) {
-                            let max_axis_dist = distance_maximum(illuminate_pos, check_pos);
-                            if max_axis_dist < illuminate_radius {
-                                // The position is fully within the illumination radius.
-                                can_see = can_see.combine(FovResult::Inside);
-                            } else if max_axis_dist == illuminate_radius {
-                                // The position is just at the edge of the illumation radius.
-                                can_see = can_see.combine(FovResult::Edge);
-                            }
-                            // Otherwise return the original result, Edge or Outside.
-                        }
-                    }
-                }
-            }
-        }
-
-        return can_see;
+        return fov_result;
     }
 
     fn fov_magnification(&self, entity_id: EntityId, check_pos: Pos, crouching: bool) -> i32 {
@@ -239,7 +212,7 @@ impl Level {
     }
     
     fn fov_reduction(&self, entity_id: EntityId, check_pos: Pos, view_distance: i32) -> i32 {
-        let mut new_view_distance = view_distance;
+        let mut reduction = 0;
 
         let entity_pos = self.entities.pos[&entity_id];
 
@@ -266,10 +239,10 @@ impl Level {
                                     // If an entity makes the tile completely
                                     // outside of the FoV, we can just return
                                     // immediately.
-                                    if *amount as i32 > new_view_distance {
-                                        return 0;
+                                    if *amount as i32 + reduction > view_distance {
+                                        return view_distance;
                                     }
-                                    new_view_distance -= *amount as i32;
+                                    reduction += *amount as i32;
                                 }
 
                                 FovBlock::Magnify(_) => {
@@ -282,7 +255,7 @@ impl Level {
             }
         }
 
-        return new_view_distance;
+        return reduction;
     }
 
     fn fov_check(&self, entity_id: EntityId, check_pos: Pos, crouching: bool) -> FovResult {
@@ -314,9 +287,13 @@ impl Level {
             }
         }
 
+        let mut fog_reduction = 0;
+
         // If the position is within Fov then apply modifiers from fog, etc.
         if fov_result != FovResult::Outside {
-            view_distance = self.fov_reduction(entity_id, check_pos, view_distance);
+            fog_reduction = self.fov_reduction(entity_id, check_pos, view_distance);
+            // This subtraction is safe due to checks within fov_reduction.
+            view_distance -= fog_reduction;
 
             let pos_dist = distance_maximum(entity_pos, check_pos);
             if pos_dist == view_distance + 1 {
@@ -325,6 +302,76 @@ impl Level {
                 fov_result = FovResult::Inside;
             } else {
                 fov_result = FovResult::Outside;
+            }
+        }
+
+
+        if self.entities.typ[&entity_id] == EntityType::Player {
+            // If we can't see the tile, check for a latern that illuminates it, allowing
+            // us to see it anyway. Ignore tiles that are blocked for sight anyway.
+            if fov_result != FovResult::Inside && !self.map[check_pos].block_sight {
+                // First, check that there is no FoV blocker between the player
+                // and the check position. If there is, we return the current answer.
+                // Otherwise we check for illuminators.
+                for to_pos in line(entity_pos, check_pos) {
+                    for from_pos in line(check_pos, entity_pos) {
+                        // If the lines overlap, check for FoV modifying entities.
+                        if to_pos == from_pos {
+                            for (_entity_id, fov_block) in self.entities.fov_block.iter() {
+                                if matches!(fov_block, FovBlock::Opaque(_)) || matches!(fov_block, FovBlock::Block) {
+
+                                    // We just return fov_result here as the remaining modifications
+                                    // only apply illumination which does not pierce the fog.
+                                    return fov_result;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                fov_result = self.check_illumination(entity_id, fov_result, check_pos, fog_reduction, crouching);
+            }
+        }
+
+
+        return fov_result;
+    }
+
+    pub fn check_illumination(&self, entity_id: EntityId, init_fov_result: FovResult, check_pos: Pos, reduction: i32, crouching: bool) -> FovResult {
+        let mut fov_result = init_fov_result;
+        let entity_pos = self.entities.pos[&entity_id];
+        
+        if reduction > ILLUMINATE_FOV_RADIUS {
+            return fov_result;
+        }
+        let illuminate_fov_radius = ILLUMINATE_FOV_RADIUS - reduction;
+
+        // check for illumination that might make this tile visible.
+        for (id, illuminate_radius) in self.entities.illuminate.iter() {
+            let illuminate_radius = *illuminate_radius as i32;
+
+            let illuminator_on_map = self.entities.pos[&id].x >= 0 && self.entities.pos[&id].y >= 0;
+
+            if illuminate_radius != 0 && illuminator_on_map && !self.entities.needs_removal[&id] {
+                let illuminate_pos = self.entities.pos[&id];
+
+                let pos_near_illuminator = self.map.is_in_fov(illuminate_pos, check_pos, illuminate_radius, crouching);
+                if pos_near_illuminator {
+                    // Check that the position is within the radius visible through
+                    // illumination. This prevents seeing illuminated tiles that are just
+                    // too far for the player to reasonably see.
+                    if self.map.is_in_fov(entity_pos, check_pos, illuminate_fov_radius, crouching) {
+                        let max_axis_dist = distance_maximum(illuminate_pos, check_pos);
+                        if max_axis_dist < illuminate_radius {
+                            // The position is fully within the illumination radius.
+                            fov_result = fov_result.combine(FovResult::Inside);
+                        } else if max_axis_dist == illuminate_radius {
+                            // The position is just at the edge of the illumation radius.
+                            fov_result = fov_result.combine(FovResult::Edge);
+                        }
+                        // Otherwise return the original result, Edge or Outside.
+                    }
+                }
             }
         }
 
