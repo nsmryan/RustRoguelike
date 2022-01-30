@@ -146,6 +146,19 @@ pub fn make_axe(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &m
     return entity_id;
 }
 
+pub fn make_khopesh(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, EntityName::Khopesh, false);
+
+    entities.item.insert(entity_id,  Item::Khopesh);
+
+    msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Khopesh, entities.direction[&entity_id]));
+    entities.durability.insert(entity_id, ITEM_DURABILITY);
+
+    entities.modifier.insert(entity_id, ItemModifier::new());
+
+    return entity_id;
+}
+
 pub fn make_greatsword(entities: &mut Entities, _config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
     let entity_id = entities.create_entity(pos.x, pos.y, EntityType::Item, EntityName::GreatSword, false);
 
@@ -496,6 +509,7 @@ pub fn make_entity(entities: &mut Entities, config: &Config, entity_name: Entity
         EntityName::Dagger => make_dagger(entities, config, pos, msg_log),
         EntityName::Hammer => make_hammer(entities, config, pos, msg_log),
         EntityName::GreatSword => make_greatsword(entities, config, pos, msg_log),
+        EntityName::Khopesh => make_khopesh(entities, config, pos, msg_log),
         EntityName::Spear => make_spear(entities, config, pos, msg_log),
         EntityName::Sword => make_sword(entities, config, pos, msg_log),
         EntityName::Axe => make_axe(entities, config, pos, msg_log),
