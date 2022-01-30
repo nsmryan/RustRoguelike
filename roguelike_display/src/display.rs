@@ -427,8 +427,13 @@ impl Display {
                 self.state.append_animation(item_id, loop_anim);
             }
 
-            Msg::PickedUp(entity_id, _item_id) => {
+            Msg::PickedUp(entity_id, item_id) => {
                 self.play_idle_animation(entity_id, config);
+
+                // Remove the item from FOV, as picking it up will not
+                // take a turn, and therefore not re-emit all entity 
+                // FOV information.
+                self.state.entities_in_fov.remove(&item_id);
             }
 
             Msg::Healed(entity_id, amount, max_hp) => {
