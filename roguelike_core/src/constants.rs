@@ -214,6 +214,11 @@ pub const SHADOW_INTERTILE_LEFT_DOWN: u8 = 7;
 pub const SHADOW_INTERTILE_DOWN: u8 = 5;
 pub const SHADOW_INTERTILE_DOWN_LEFT: u8 = 4;
 
+pub const GRASS_INTERTILE_UP: u8 = 105;
+pub const GRASS_INTERTILE_DOWN: u8 = 106;
+pub const GRASS_INTERTILE_LEFT: u8 = 107;
+pub const GRASS_INTERTILE_RIGHT: u8 = 108;
+
 /* Triggers */
 pub const ENTITY_GATE_TRIGGER: u8 = ENTITY_TRIGGER_2;
 
