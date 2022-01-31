@@ -98,13 +98,15 @@ pub fn test_recording() {
     let starting_pos = game.level.entities.pos[&player_id];
 
     
+    let display_state = DisplayState::new();
+
     // starting at (0,0)
-    let mut recording = Recording::new(&game);
+    let mut recording = Recording::new(&game, &display_state);
 
     // walk right (1, 0)
     input_action = InputAction::Move(Direction::Right);
     game.step_game(input_action);
-    recording.action(&game, input_action);
+    recording.action(&game, &display_state, input_action);
     let step1_pos = game.level.entities.pos[&player_id];
     assert_eq!(starting_pos.x + 1, step1_pos.x);
     assert_eq!(starting_pos.y, step1_pos.y);
@@ -112,19 +114,19 @@ pub fn test_recording() {
     // walk down (1, 1)
     input_action = InputAction::Move(Direction::Down);
     game.step_game(input_action);
-    recording.action(&game, input_action);
+    recording.action(&game, &display_state, input_action);
     let step2_pos = game.level.entities.pos[&player_id];
     assert_eq!(starting_pos.x + 1, step2_pos.x);
     assert_eq!(starting_pos.y + 1, step2_pos.y);
 
     // undo the walk down (1, 0)
-    let game = recording.backward();
+    let (game, display_state) = recording.backward();
     let step1_pos = game.level.entities.pos[&player_id];
     assert_eq!(starting_pos.x + 1, step1_pos.x);
     assert_eq!(starting_pos.y, step1_pos.y);
 
     // undo the walk right (0, 0)
-    let mut game = recording.backward();
+    let (mut game, display_state) = recording.backward();
     let step0_pos = game.level.entities.pos[&player_id];
     assert_eq!(starting_pos.x, step0_pos.x);
     assert_eq!(starting_pos.y, step0_pos.y);
@@ -132,19 +134,19 @@ pub fn test_recording() {
     // go down first, and then replay the previous actions (0, 1)
     input_action = InputAction::Move(Direction::Down);
     game.step_game(input_action);
-    recording.action(&game, input_action);
+    recording.action(&game, &display_state, input_action);
     let step1_2_pos = game.level.entities.pos[&player_id];
     assert_eq!(starting_pos.x, step1_2_pos.x);
     assert_eq!(starting_pos.y + 1, step1_2_pos.y);
 
     // replay walk right (1, 1)
-    let game = recording.forward().unwrap();
+    let (game, display_state) = recording.forward().unwrap();
     let step2_2_pos = game.level.entities.pos[&player_id];
     assert_eq!(starting_pos.x + 1, step2_2_pos.x);
     assert_eq!(starting_pos.y + 1, step2_2_pos.y);
 
     // replay walk down (1, 2)
-    let game = recording.forward().unwrap();
+    let (game, display_state) = recording.forward().unwrap();
     let step3_2_pos = game.level.entities.pos[&player_id];
     assert_eq!(starting_pos.x + 1, step3_2_pos.x);
     assert_eq!(starting_pos.y + 2, step3_2_pos.y);
