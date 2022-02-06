@@ -58,8 +58,6 @@ impl Default for MoveMode {
 impl MoveMode {
     pub fn increase(&self) -> MoveMode {
         match self {
-            // Removed Walking (issue 151), so sneak -> run
-            // MoveMode::Sneak => MoveMode::Walk,
             MoveMode::Sneak => MoveMode::Walk,
             MoveMode::Run => MoveMode::Run,
             MoveMode::Walk => MoveMode::Run,
@@ -68,8 +66,6 @@ impl MoveMode {
 
     pub fn decrease(&self) -> MoveMode {
         match self {
-            // Removed Walking (issue 151), so run -> sneak
-            // MoveMode::Sneak => MoveMode::Walk,
             MoveMode::Sneak => MoveMode::Sneak,
             MoveMode::Run => MoveMode::Walk,
             MoveMode::Walk => MoveMode::Sneak,

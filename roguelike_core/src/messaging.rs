@@ -183,7 +183,7 @@ impl fmt::Display for Msg {
             }
             Msg::Collided(entity_id, pos) => write!(f, "collided {} {} {}", entity_id, pos.x, pos.y),
             Msg::Yell(entity_id) => write!(f, "yell {}", entity_id),
-            Msg::ChangeMoveMode(entity_id, upwards) => write!(f, "chage_move_mode {} {}", entity_id, upwards),
+            Msg::ChangeMoveMode(entity_id, upwards) => write!(f, "change_move_mode {} {}", entity_id, upwards),
             Msg::MoveMode(entity_id, move_mode) => write!(f, "move_mode {} {}", entity_id, move_mode),
             Msg::TriedRunWithHeavyEquipment => write!(f, "tried_run_with_heavy_equipment"),
             Msg::Hit(entity_id, pos, weapon_type, attack_style) => write!(f, "hit {} {} {} {} {}", entity_id, pos.x, pos.y, weapon_type, attack_style),

@@ -115,6 +115,12 @@ pub struct Config {
     pub smoke_turns: usize,
     pub looking_glass_magnify_amount: usize,
     pub hp_render_duration: usize,
+    pub x_offset_buttons: i32,
+    pub y_offset_buttons: i32,
+    pub x_spacing_buttons: i32,
+    pub y_spacing_buttons: i32,
+    pub x_scale_buttons: f32,
+    pub y_scale_buttons: f32,
 }
 
 impl Config {

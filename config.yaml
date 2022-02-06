@@ -259,7 +259,7 @@ attack_animation_speed: 40.0
 cursor_fade_seconds: 0.25
 
 # Whether or not to print messages
-minimal_output: true
+minimal_output: false
 
 # Whether or not to save the game between turns and load it on startup.
 # When the player loses, the game is delete.
@@ -283,3 +283,10 @@ smoke_turns: 6
 looking_glass_magnify_amount: 2
 
 hp_render_duration: 20
+
+x_offset_buttons: 150
+y_offset_buttons: 250
+x_spacing_buttons: 1000
+y_spacing_buttons: 350
+x_scale_buttons: 6.0
+y_scale_buttons: 2.0

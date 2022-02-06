@@ -23,7 +23,7 @@ pub enum Justify {
 pub enum DrawCmd {
     Sprite(Sprite, Color, Pos),
     SpriteScaled(Sprite, f32, Option<Direction>, Color, Pos),
-    SpriteAtPixel(Sprite, Color, Pos),
+    SpriteAtPixel(Sprite, Color, Pos, f32, f32), // sprite, color, pos, x scale, y scale
     HighlightTile(Color, Pos),
     OutlineTile(Color, Pos),
     Text(String, Color, Pos, f32), // text, color, tile position, scale
@@ -35,14 +35,14 @@ pub enum DrawCmd {
 
 impl DrawCmd {
     pub fn aligned(&self) -> bool {
-        return !matches!(self, DrawCmd::SpriteAtPixel(_, _, _));
+        return !matches!(self, DrawCmd::SpriteAtPixel(_, _, _, _, _));
     }
 
     pub fn pos(&self) -> Pos {
         match self {
             DrawCmd::Sprite(_, _, pos) => *pos,
             DrawCmd::SpriteScaled(_, _, _, _, pos) => *pos,
-            DrawCmd::SpriteAtPixel(_, _, pos) => *pos,
+            DrawCmd::SpriteAtPixel(_, _, pos, _, _) => *pos,
             DrawCmd::HighlightTile(_, pos) => *pos,
             DrawCmd::OutlineTile(_, pos) => *pos,
             DrawCmd::Text(_, _, pos, _) => *pos,
@@ -160,7 +160,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                            false).unwrap();
         }
 
-        DrawCmd::SpriteAtPixel(sprite, color, pos) => {
+        DrawCmd::SpriteAtPixel(sprite, color, pos, x_scale, y_scale) => {
             let sprite_sheet = &mut sprites[sprite.key];
 
             let pos = Pos::new(pos.x, pos.y);
@@ -173,8 +173,8 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
 
             let dst = Rect::new(pos.x as i32,
                                 pos.y as i32,
-                                cell_width as u32,
-                                cell_height as u32);
+                                (cell_width as f32 * x_scale) as u32,
+                                (cell_height as f32 * y_scale) as u32);
 
             canvas.set_blend_mode(BlendMode::Blend);
             sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
@@ -651,8 +651,13 @@ impl Panel {
                          final_target_height as u32);
     }
 
+    pub fn sprite_at_pixel_scaled_cmd(&mut self, sprite: Sprite, color: Color, pos: Pos, x_scale: f32, y_scale: f32) {
+        let cmd = DrawCmd::SpriteAtPixel(sprite, color, pos, x_scale, y_scale);
+        self.draw_cmd(cmd);
+    }
+
     pub fn sprite_at_pixel_cmd(&mut self, sprite: Sprite, color: Color, pos: Pos) {
-        let cmd = DrawCmd::SpriteAtPixel(sprite, color, pos);
+        let cmd = DrawCmd::SpriteAtPixel(sprite, color, pos, 1.0, 1.0);
         self.draw_cmd(cmd);
     }
 
@@ -794,6 +799,25 @@ impl SpriteSheet {
         let rows = height / FONT_HEIGHT as usize;
         let cols = width / FONT_WIDTH as usize;
         let num_sprites = cols * rows;
+
+        return SpriteSheet {
+            texture,
+            name,
+            num_sprites,
+            rows,
+            cols,
+            width,
+            height,
+        };
+    }
+
+    pub fn single(name: String, texture: Texture) -> SpriteSheet {
+        let tex_info = texture.query();
+        let width = tex_info.width as usize;
+        let height = tex_info.height as usize;
+        let num_sprites = 1;
+        let rows = 1;
+        let cols = 1;
 
         return SpriteSheet {
             texture,

@@ -174,6 +174,13 @@ impl Display {
         self.sprites.insert(sprite_key, sprite_sheet);
     }
 
+    pub fn add_sprite(&mut self, name: String, texture: Texture) {
+        let sprite_key = self.next_sprite_key;
+        let sprite_sheet = SpriteSheet::single(name, texture);
+        self.next_sprite_key += 1;
+        self.sprites.insert(sprite_key, sprite_sheet);
+    }
+
     pub fn sprite_exists(&self, name: &str) -> bool {
         for sprite_sheet in self.sprites.iter() {
             if sprite_sheet.name == *name {
