@@ -1601,6 +1601,11 @@ fn process_moved_message(entity_id: EntityId,
         if pos != original_pos && level.entities.typ[&entity_id] == EntityType::Enemy {
             msg_log.log_front(Msg::Sound(entity_id, original_pos, config.sound_radius_monster));
             msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_monster));
+        } else if level.entities.typ[&entity_id] == EntityType::Item {
+            // Dropping the item at your feet is silent. Other item movements make a sound.
+            if pos != original_pos {
+                msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_stone));
+            }
         } else {
             // Only normal movements update the stance. Others like Blink leave it as-is.
             if move_type == MoveType::Move {

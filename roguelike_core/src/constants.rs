@@ -191,6 +191,7 @@ pub const ENTITY_ELF: u8 = 165;
 pub const ENTITY_UNKNOWN: u8 = 239;
 pub const ENTITY_ENERGY: u8 = 6;
 pub const ENTITY_SMOKE: u8 = 124;
+pub const ENTITY_KHOPESH: u8 = 123;
 pub const ENTITY_MAGNIFIER: u8 = 231;
 
 /* Map Objects */

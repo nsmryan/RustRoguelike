@@ -263,6 +263,9 @@ impl Display {
             } else if self.state.name[&entity_id] == EntityName::Smoke {
                 let sprite = self.static_sprite("tiles", ENTITY_SMOKE as char);
                 return Some(Animation::Loop(sprite));
+            } else if self.state.name[&entity_id] == EntityName::Khopesh {
+                let sprite = self.static_sprite("tiles", ENTITY_KHOPESH as char);
+                return Some(Animation::Loop(sprite));
             } else if self.state.name[&entity_id] == EntityName::Magnifier {
                 let sprite = self.static_sprite("tiles", ENTITY_MAGNIFIER as char);
                 return Some(Animation::Loop(sprite));
