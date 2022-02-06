@@ -26,8 +26,8 @@ pub fn resolve_messages(game: &mut Game) {
     /* Handle Message Log */
     while let Some(msg) = game.msg_log.pop() {
         match msg {
-            Msg::Moved(entity_id, move_type, pos) => {
-               process_moved_message(entity_id, move_type, pos, &mut game.level, &mut game.msg_log, &mut game.rng, &game.config);
+            Msg::Moved(entity_id, move_type, move_mode, pos) => {
+               process_moved_message(entity_id, move_type, move_mode, pos, &mut game.level, &mut game.msg_log, &mut game.rng, &game.config);
             }
 
             Msg::Interact(entity_id, pos) => {
@@ -176,8 +176,8 @@ pub fn resolve_messages(game: &mut Game) {
                 let source_pos = game.level.entities.pos[&trap];
 
                 if let Some(blink_pos) = find_blink_pos(source_pos, &mut game.rng, &mut game.level) {
-                    game.level.entities.set_pos(entity_id, blink_pos);
-                    game.level.entities.status[&entity_id].blinked = true;
+                    //game.level.entities.set_pos(entity_id, blink_pos);
+                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, blink_pos));
                 }
             }
 
@@ -533,9 +533,8 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::PassWall(entity_id, pos) => {
                 if use_energy(entity_id, &mut game.level, &mut game.msg_log) {
-                    game.level.entities.set_pos(entity_id, pos);
-                    game.msg_log.log(Msg::MoveMode(entity_id, MoveMode::Walk));
-                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Move, pos));
+                    //game.level.entities.set_pos(entity_id, pos);
+                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, pos));
 
                     game.level.entities.took_turn[&entity_id] = true;
                 }
@@ -610,7 +609,7 @@ pub fn resolve_messages(game: &mut Game) {
                 let clear_path = game.level.map.path_blocked(entity_pos, dest, BlockedType::Move).is_none();
                 let blocked_pos = game.level.pos_blocked(dest);
                 if  clear_path && !blocked_pos {
-                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, dest));
+                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, dest));
 
                     for pos in line_inclusive(entity_pos, dest) {
                         for other_id in game.level.get_entities_at_pos(pos) {
@@ -640,7 +639,7 @@ pub fn resolve_messages(game: &mut Game) {
 
                 let traps_block = false;
                 if !near_walls && game.level.clear_path(entity_pos, pos, traps_block) {
-                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, pos));
+                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, pos));
                 } // NOTE could create a failed whirlwind message, or generic failed skill message
             }
 
@@ -660,7 +659,7 @@ pub fn resolve_messages(game: &mut Game) {
 
                     let traps_block = false;
                     if !near_walls && game.level.clear_path(entity_pos, dest, traps_block) {
-                        game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, dest));
+                        game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, dest));
                     }
                 }
             }
@@ -858,7 +857,7 @@ fn resolve_attack(entity_id: EntityId,
             }
 
             if move_into && entity_pos != attack_pos {
-                msg_log.log(Msg::Moved(entity_id, MoveType::Move, attack_pos));
+                msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, attack_pos));
             }
 
             // this is done after the Moved msg to ensure that the attack
@@ -932,7 +931,7 @@ fn resolve_try_movement(entity_id: EntityId,
         }
 
         MoveType::Pass => {
-            msg_log.log_front(Msg::Moved(entity_id, MoveType::Pass, movement.pos));
+            msg_log.log_front(Msg::Moved(entity_id, MoveType::Pass, MoveMode::Walk, movement.pos));
         }
 
         MoveType::WallKick => {
@@ -956,7 +955,7 @@ fn resolve_try_movement(entity_id: EntityId,
             if level.clear_path(entity_pos, movement.pos, traps_block) {
                 if movement.typ == MoveType::Move {
                     //msg_log.log_front(Msg::Moved(entity_id, movement.typ, movement.pos));
-                    msg_log.log(Msg::Moved(entity_id, movement.typ, movement.pos));
+                    msg_log.log(Msg::Moved(entity_id, movement.typ, move_mode, movement.pos));
 
                     if amount > 1 {
                         msg_log.log(Msg::TryMove(entity_id, direction, amount - 1, move_mode));
@@ -968,7 +967,7 @@ fn resolve_try_movement(entity_id: EntityId,
             } else if movement.typ == MoveType::JumpWall {
                 // no clear path to moved position
                 msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
-                msg_log.log_front(Msg::Moved(entity_id, movement.typ, movement.pos));
+                msg_log.log_front(Msg::Moved(entity_id, movement.typ, MoveMode::Walk, movement.pos));
             } else {
                 panic!("Why would we not have a clear path, but have received this movement?");
                 // TODO move towards position, perhaps emitting a Collide
@@ -978,8 +977,12 @@ fn resolve_try_movement(entity_id: EntityId,
 
         MoveType::Blink => {
             if !level.pos_blocked(movement.pos) {
-                msg_log.log_front(Msg::Moved(entity_id, movement.typ, movement.pos));
+                msg_log.log_front(Msg::Moved(entity_id, movement.typ, MoveMode::Walk, movement.pos));
             }
+        }
+
+        MoveType::Misc => {
+            msg_log.log(Msg::Moved(entity_id, movement.typ, MoveMode::Walk, movement.pos));
         }
     }
 
@@ -1203,8 +1206,7 @@ fn pushed_entity(pusher: EntityId,
             msg_log.log_front(Msg::Crushed(pusher, next_pos));
 
             if move_into && pos_on_map(level.entities.pos[&pusher]) {
-                let movement = Movement::step_to(pushed_pos);
-                msg_log.log(Msg::Moved(pusher, movement.typ, pushed_pos));
+                msg_log.log(Msg::Moved(pusher, MoveType::Misc, MoveMode::Walk, pushed_pos));
             }
         }
     } else if level.entities.status[&pushed].alive {
@@ -1384,8 +1386,8 @@ fn throw_item(player_id: EntityId,
 
     level.entities.set_pos(item_id, start_pos);
 
-    let movement = Movement::step_to(hit_pos);
-    msg_log.log(Msg::Moved(item_id, movement.typ, hit_pos));
+    //let movement = Movement::step_to(hit_pos);
+    msg_log.log(Msg::Moved(item_id, MoveType::Misc, MoveMode::Walk, hit_pos));
 
     level.entities.remove_item(player_id, item_id);
     level.entities.took_turn[&player_id] = true;
@@ -1439,7 +1441,7 @@ fn throw_item(player_id: EntityId,
         if !level.map.is_within_bounds(end_pos) {
             end_pos = hit_pos;
         }
-        msg_log.log_front(Msg::Moved(player_id, MoveType::Blink, end_pos));
+        msg_log.log_front(Msg::Moved(player_id, MoveType::Blink, MoveMode::Walk, end_pos));
         remove_entity(item_id, level);
     }
 
@@ -1506,7 +1508,7 @@ fn inventory_drop_item(entity_id: EntityId,
                 if level.item_at_pos(pos).is_none() {
                     level.entities.remove_item(entity_id, item_id);
                     level.entities.set_pos(item_id, pos);
-                    msg_log.log(Msg::Moved(item_id, MoveType::Blink, pos));
+                    msg_log.log(Msg::Moved(item_id, MoveType::Blink, MoveMode::Walk, pos));
 
                     found_tile = true;
                     break;
@@ -1583,6 +1585,7 @@ fn make_move_sound(entity_id: EntityId,
 
 fn process_moved_message(entity_id: EntityId,
                          move_type: MoveType,
+                         move_mode: MoveMode,
                          pos: Pos,
                          level: &mut Level,
                          msg_log: &mut MsgLog,
@@ -1595,21 +1598,27 @@ fn process_moved_message(entity_id: EntityId,
     level.entities.took_turn[&entity_id] = true;
 
     if move_type != MoveType::Blink {
-        if let Some(move_mode) = level.entities.move_mode.get(&entity_id) {
-            if let Some(stance) = level.entities.stance.get(&entity_id) {
-                level.entities.stance[&entity_id] = update_stance(move_type, *move_mode, *stance);
-                msg_log.log(Msg::Stance(entity_id, level.entities.stance[&entity_id]));
+        if pos != original_pos && level.entities.typ[&entity_id] == EntityType::Enemy {
+            msg_log.log_front(Msg::Sound(entity_id, original_pos, config.sound_radius_monster));
+            msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_monster));
+        } else {
+            // Only normal movements update the stance. Others like Blink leave it as-is.
+            if move_type == MoveType::Move {
+                if let Some(stance) = level.entities.stance.get(&entity_id) {
+                    level.entities.stance[&entity_id] = update_stance(move_type, move_mode, *stance);
+                    msg_log.log(Msg::Stance(entity_id, level.entities.stance[&entity_id]));
+                }
             }
 
             // make a noise based on how fast the entity is moving and the terrain
             if pos != original_pos {
-                make_move_sound(entity_id, original_pos, pos, *move_mode, level, msg_log, config);
+                make_move_sound(entity_id, original_pos, pos, move_mode, level, msg_log, config);
             }
-        } else if pos != original_pos && level.entities.typ[&entity_id] == EntityType::Enemy {
-            msg_log.log_front(Msg::Sound(entity_id, original_pos, config.sound_radius_monster));
-            msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_monster));
         } // NOTE other entities do not make sounds on movement, such as items
     }
+
+    // This is cleared in the start of the next turn when the game is stepped.
+    level.entities.status[&entity_id].blinked = move_type == MoveType::Blink;
 
     // check if player walks on energy
     if entity_id == player_id {
@@ -1763,7 +1772,6 @@ fn resolve_triggered_traps(entity_id: EntityId,
             }
 
             Trap::Blink => {
-                level.entities.status[&entity_id].blinked = true;
                 msg_log.log(Msg::BlinkTrapTriggered(*trap, entity_id));
                 level.entities.mark_for_removal(*trap);
             }

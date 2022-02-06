@@ -107,6 +107,7 @@ pub enum MoveType {
     WallKick,
     Collide,
     Blink,
+    Misc,
 }
 
 impl fmt::Display for MoveType {
@@ -118,6 +119,7 @@ impl fmt::Display for MoveType {
             MoveType::WallKick => write!(f, "wallkick"),
             MoveType::Collide => write!(f, "collide"),
             MoveType::Blink => write!(f, "blink"),
+            MoveType::Misc => write!(f, "misc"),
         }
     }
 }

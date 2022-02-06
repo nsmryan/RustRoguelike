@@ -656,7 +656,7 @@ impl Display {
                 self.state.play_effect(Effect::particles(1.0));
             }
 
-            Msg::Moved(entity_id, _move_type, pos) => {
+            Msg::Moved(entity_id, _move_type, _move_mode, pos) => {
                 self.state.pos[&entity_id] = pos;
             }
 
@@ -759,6 +759,13 @@ impl Display {
 
             Msg::UseAction(use_action) => {
                 self.state.use_action = use_action;
+            }
+
+            Msg::SpikeTrapTriggered(trap, _entity_id) |
+            Msg::SoundTrapTriggered(trap, _entity_id) |
+            Msg::BlinkTrapTriggered(trap, _entity_id) |
+            Msg::FreezeTrapTriggered(trap, _entity_id) => {
+                self.state.pos[&trap] = Pos::new(-1, -1);
             }
 
             _ => {

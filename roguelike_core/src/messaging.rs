@@ -41,7 +41,7 @@ pub enum Msg {
     Push(EntityId, Direction, usize), // attacker, direction, amount
     Pushed(EntityId, EntityId, Direction, usize, bool), // attacker, attacked, direction, amount, move into pushed square
     TryMove(EntityId, Direction, usize, MoveMode),
-    Moved(EntityId, MoveType, Pos),
+    Moved(EntityId, MoveType, MoveMode, Pos),
     Interact(EntityId, Pos),
     JumpWall(EntityId, Pos, Pos), // current pos, new pos
     WallKick(EntityId, Pos),
@@ -170,7 +170,7 @@ impl fmt::Display for Msg {
             Msg::Push(entity_id, direction, amount) => write!(f, "pushed {} {} {}", entity_id, direction, amount),
             Msg::Pushed(entity_id, target_id, direction, amount, follow) => write!(f, "pushed {} {} {} {} {}", entity_id, target_id, direction, amount, follow),
             Msg::TryMove(entity_id, direction, amount, move_mode) => write!(f, "try_move {} {} {} {}", entity_id, direction, amount, move_mode),
-            Msg::Moved(entity_id, move_type, pos) => write!(f, "moved {} {} {} {}", entity_id, move_type, pos.x, pos.y),
+            Msg::Moved(entity_id, move_type, move_mode, pos) => write!(f, "moved {} {} {} {} {}", entity_id, move_type, move_mode, pos.x, pos.y),
             Msg::Interact(entity_id, pos) => write!(f, "interact {} {} {}", entity_id, pos.x, pos.y),
             Msg::JumpWall(entity_id, pos, new_pos) => write!(f, "jump_wall {} {} {} {} {}", entity_id, pos.x, pos.y, new_pos.x, new_pos.y),
             Msg::WallKick(entity_id, pos) => write!(f, "wall_kick {} {} {}", entity_id, pos.y, pos.y),
@@ -353,7 +353,7 @@ impl Msg {
                 return "".to_string();
             }
 
-            Msg::Moved(entity_id, move_type, pos) => {
+            Msg::Moved(entity_id, move_type, _move_mode, pos) => {
                 if let MoveType::Pass = move_type {
                     return format!("{:?} passed their turn", data.entities.name[entity_id]);
                 } else {

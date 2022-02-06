@@ -143,12 +143,12 @@ pub fn push_attack(entity_id: EntityId,
     if move_result.no_collision() {
         if move_into {
             let move_into_pos = move_towards(pos, other_pos, 1);
-            msg_log.log_front(Msg::Moved(entity_id, MoveType::Move, move_into_pos));
+            msg_log.log_front(Msg::Moved(entity_id, MoveType::Move, MoveMode::Walk, move_into_pos));
         }
 
         data.entities.status[&target].frozen += config.push_stun_turns;
 
-        msg_log.log_front(Msg::Moved(target, MoveType::Move, past_pos));
+        msg_log.log_front(Msg::Moved(target, MoveType::Move, MoveMode::Walk, past_pos));
     } else {
         // otherwise crush them against the wall/entity
         damage = data.entities.hp[&target].hp;
