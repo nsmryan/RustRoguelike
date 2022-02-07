@@ -967,7 +967,7 @@ fn resolve_try_movement(entity_id: EntityId,
             } else if movement.typ == MoveType::JumpWall {
                 // no clear path to moved position
                 msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
-                msg_log.log_front(Msg::Moved(entity_id, movement.typ, MoveMode::Walk, movement.pos));
+                msg_log.log(Msg::Moved(entity_id, movement.typ, MoveMode::Walk, movement.pos));
             } else {
                 panic!("Why would we not have a clear path, but have received this movement?");
                 // TODO move towards position, perhaps emitting a Collide
