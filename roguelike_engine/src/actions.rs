@@ -561,7 +561,8 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Move(direction), true) => {
-            let move_amount = settings.move_mode.move_amount();
+            let move_amount = move_amount(settings.move_mode, config);
+            //let move_amount = settings.move_mode.move_amount();
             msg_log.log(Msg::TryMove(player_id, direction, move_amount, settings.move_mode));
         }
 
@@ -570,7 +571,7 @@ pub fn handle_input_playing(input_action: InputAction,
                 let maybe_next_pos = astar_next_pos(&level.map, player_pos, cursor_pos, None, None);
                 if let Some(next_pos) = maybe_next_pos {
                     if let Some(direction) = Direction::from_positions(player_pos, next_pos) {
-                        let move_amount = settings.move_mode.move_amount();
+                        let move_amount = move_amount(settings.move_mode, config);
                         msg_log.log(Msg::TryMove(player_id, direction, move_amount, settings.move_mode));
                     }
                 }
@@ -1133,3 +1134,10 @@ fn change_state(settings: &mut GameSettings, new_state: GameState, msg_log: &mut
     }
 }
 
+fn move_amount(move_mode: MoveMode, config: &Config) -> usize {
+    match move_mode {
+        MoveMode::Sneak => return config.move_tiles_sneak,
+        MoveMode::Walk => return config.move_tiles_walk,
+        MoveMode::Run => return config.move_tiles_run,
+    }
+}

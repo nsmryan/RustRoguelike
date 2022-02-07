@@ -115,6 +115,9 @@ pub struct Config {
     pub smoke_turns: usize,
     pub looking_glass_magnify_amount: usize,
     pub hp_render_duration: usize,
+    pub move_tiles_sneak: usize,
+    pub move_tiles_walk: usize,
+    pub move_tiles_run: usize,
 }
 
 impl Config {

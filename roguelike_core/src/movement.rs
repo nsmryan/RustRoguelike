@@ -76,6 +76,7 @@ impl MoveMode {
         }
     }
 
+    /*
     pub fn move_amount(&self) -> usize {
         match self {
             MoveMode::Sneak => 1,
@@ -83,6 +84,7 @@ impl MoveMode {
             MoveMode::Run => 2,
         }
     }
+    */
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

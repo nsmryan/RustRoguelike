@@ -283,3 +283,7 @@ smoke_turns: 6
 looking_glass_magnify_amount: 2
 
 hp_render_duration: 20
+
+move_tiles_sneak: 1
+move_tiles_walk: 1
+move_tiles_run: 3
