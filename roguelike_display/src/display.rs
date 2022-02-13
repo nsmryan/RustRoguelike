@@ -255,7 +255,8 @@ impl Display {
             if self.state.name[&entity_id] == EntityName::Key {
                 return Some(self.loop_sprite("key", config.idle_speed));
             } else if self.state.name[&entity_id] == EntityName::SpikeTrap {
-                return Some(self.loop_sprite("trap_damage", config.idle_speed));
+                let sprite = self.static_sprite("tiles", ENTITY_SPIKE_TRAP as char);
+                return Some(Animation::Loop(sprite));
             } else if self.state.name[&entity_id] == EntityName::Armil {
                 return Some(self.loop_sprite("armil_idle", config.idle_speed));
             } else if self.state.name[&entity_id] == EntityName::Lantern {

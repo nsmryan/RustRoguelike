@@ -823,6 +823,9 @@ pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked:
     }
 
     if jumped_wall {
+        // NOTE if the entity has LandRoll, use this definition for new_pos,
+        // otherwise use the regular definition.
+        // let new_pos = next_pos(pos, delta_pos);
         let new_pos = blocked.end_pos;
 
         movement = Some(Movement::move_to(new_pos, MoveType::JumpWall));

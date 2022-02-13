@@ -535,6 +535,11 @@ pub fn floodfill_sound(map: &Map, start: Pos, radius: usize, config: &Config) ->
             let adjacents = map.neighbors(*pos);
 
             for next_pos in adjacents {
+                if pos.x < 0 || pos.y < 0 || next_pos.x < 0 || next_pos.y < 0 {
+                    dbg!(pos, next_pos);
+                    panic!("sound damping will crash with this input!");
+                }
+
                 let new_cost = 1 + cost + sound_dampening(map, *pos, next_pos, config);
 
                 if new_cost > radius as i32 {

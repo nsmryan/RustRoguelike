@@ -775,7 +775,8 @@ fn finalize_use_item(level: &Level, settings: &mut GameSettings, msg_log: &mut M
             } else if item == Item::Stone || item == Item::Lantern || 
                       item == Item::SeedOfStone ||item == Item::SeedCache || 
                       item == Item::Herb || item == Item::GlassEye ||
-                      item == Item::SmokeBomb || item == Item::LookingGlass {
+                      item == Item::SmokeBomb || item == Item::LookingGlass ||
+                      item == Item::Thumper {
                 let throw_pos = dir.offset_pos(player_pos, PLAYER_THROW_DIST as i32);
                 msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos, false));
             } else if item == Item::Sling {

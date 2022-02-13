@@ -16,7 +16,7 @@ use roguelike_core::config::*;
 use roguelike_core::movement::*;
 #[cfg(test)]
 use roguelike_core::map::*;
-#[cfg(test)]
+
 use roguelike_core::constants::*;
 
 #[cfg(test)]
@@ -51,6 +51,7 @@ pub fn step_logic(game: &mut Game) -> bool {
        game.level.entities.status[&player_id].alive &&
        !won_level {
         step_ai(game);
+        run_thumpers(game);
     }
     drop(monster);
 
@@ -543,6 +544,15 @@ fn test_throw_stone() {
 
     // throwing the stone into an empty area lands it where it is thrown
     assert_eq!(floor_pos, game.level.entities.pos[&stone]);
+}
+
+fn run_thumpers(game: &mut Game) {
+    for id in game.level.entities.ids.iter() {
+        if game.level.entities.name[id] == EntityName::Thumper {
+            let pos = game.level.entities.pos[id];
+            game.msg_log.log(Msg::Sound(*id, pos, SOUND_RADIUS_THUMPER));
+        }
+    }
 }
 
 fn clean_entities(entities: &mut Entities, msg_log: &mut MsgLog) {

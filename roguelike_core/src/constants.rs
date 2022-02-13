@@ -76,6 +76,7 @@ pub const ILLUMINATE_AMOUNT: usize = LANTERN_ILLUMINATE_RADIUS;
 pub const SEED_CACHE_RADIUS: usize = 1;
 pub const SMOKE_BOMB_RADIUS: usize = 1;
 pub const GLASS_EYE_RADIUS: i32 = 4;
+pub const SOUND_RADIUS_THUMPER: usize = 3;
 
 /* Trap Settings */
 pub const FREEZE_TRAP_NUM_TURNS: usize = 5;
@@ -180,8 +181,9 @@ pub const ENTITY_SLING: u8 = 143;
 pub const ENTITY_GLASS_EYE: u8 = 127;
 pub const ENTITY_SEED_CACHE: u8 = 109;
 pub const ENTITY_HERB: u8 = 111;
-pub const ENTITY_SEED_OF_STONE: u8 = 244;
+pub const ENTITY_SEED_OF_STONE: u8 = 122;
 pub const ENTITY_TELEPORTER: u8 = 110;
+pub const ENTITY_ENERGY_BALL: u8 = 123;
 
 /* Entities */
 pub const ENTITY_GOL: u8 = 152;
@@ -192,7 +194,7 @@ pub const ENTITY_UNKNOWN: u8 = 239;
 pub const ENTITY_ENERGY: u8 = 6;
 pub const ENTITY_SMOKE: u8 = 124;
 pub const ENTITY_KHOPESH: u8 = 123;
-pub const ENTITY_MAGNIFIER: u8 = 231;
+pub const ENTITY_MAGNIFIER: u8 = 127;
 
 /* Map Objects */
 pub const ENTITY_EXIT: u8 = 135;
@@ -224,7 +226,7 @@ pub const GRASS_INTERTILE_RIGHT: u8 = 108;
 pub const ENTITY_GATE_TRIGGER: u8 = ENTITY_TRIGGER_2;
 
 /* Traps */
-pub const ENTITY_SPIKE_TRAP: u8 = 136;
+pub const ENTITY_SPIKE_TRAP: u8 = 119;
 pub const ENTITY_BLINK_TRAP: u8 = ENTITY_TRIGGER_1;
 pub const ENTITY_TRAP_SOUND: u8 = ENTITY_TRIGGER_5;
 pub const ENTITY_FREEZE_TRAP: u8 = ENTITY_TRIGGER_4;
