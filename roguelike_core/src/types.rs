@@ -1697,6 +1697,7 @@ pub struct StatusEffect {
     pub active: bool,
     pub alive: bool,
     pub stone: usize,
+    pub land_roll: bool,
     pub hammer_raised: Option<(EntityId, Direction, usize)>, // item id, direction to hit, turns to wait
 }
 
