@@ -290,3 +290,7 @@ x_spacing_buttons: 1000
 y_spacing_buttons: 350
 x_scale_buttons: 6.0
 y_scale_buttons: 2.0
+
+move_tiles_sneak: 1
+move_tiles_walk: 1
+move_tiles_run: 2

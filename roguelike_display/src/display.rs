@@ -262,13 +262,17 @@ impl Display {
             if self.state.name[&entity_id] == EntityName::Key {
                 return Some(self.loop_sprite("key", config.idle_speed));
             } else if self.state.name[&entity_id] == EntityName::SpikeTrap {
-                return Some(self.loop_sprite("trap_damage", config.idle_speed));
+                let sprite = self.static_sprite("tiles", ENTITY_SPIKE_TRAP as char);
+                return Some(Animation::Loop(sprite));
             } else if self.state.name[&entity_id] == EntityName::Armil {
                 return Some(self.loop_sprite("armil_idle", config.idle_speed));
             } else if self.state.name[&entity_id] == EntityName::Lantern {
                 return Some(self.loop_sprite("lantern_idle", config.fire_speed));
             } else if self.state.name[&entity_id] == EntityName::Smoke {
                 let sprite = self.static_sprite("tiles", ENTITY_SMOKE as char);
+                return Some(Animation::Loop(sprite));
+            } else if self.state.name[&entity_id] == EntityName::Khopesh {
+                let sprite = self.static_sprite("tiles", ENTITY_KHOPESH as char);
                 return Some(Animation::Loop(sprite));
             } else if self.state.name[&entity_id] == EntityName::Magnifier {
                 let sprite = self.static_sprite("tiles", ENTITY_MAGNIFIER as char);
@@ -663,7 +667,7 @@ impl Display {
                 self.state.play_effect(Effect::particles(1.0));
             }
 
-            Msg::Moved(entity_id, _move_type, pos) => {
+            Msg::Moved(entity_id, _move_type, _move_mode, pos) => {
                 self.state.pos[&entity_id] = pos;
             }
 
@@ -766,6 +770,13 @@ impl Display {
 
             Msg::UseAction(use_action) => {
                 self.state.use_action = use_action;
+            }
+
+            Msg::SpikeTrapTriggered(trap, _entity_id) |
+            Msg::SoundTrapTriggered(trap, _entity_id) |
+            Msg::BlinkTrapTriggered(trap, _entity_id) |
+            Msg::FreezeTrapTriggered(trap, _entity_id) => {
+                self.state.pos[&trap] = Pos::new(-1, -1);
             }
 
             _ => {

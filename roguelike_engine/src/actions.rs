@@ -561,7 +561,8 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Move(direction), true) => {
-            let move_amount = settings.move_mode.move_amount();
+            let move_amount = move_amount(settings.move_mode, config);
+            //let move_amount = settings.move_mode.move_amount();
             msg_log.log(Msg::TryMove(player_id, direction, move_amount, settings.move_mode));
         }
 
@@ -570,7 +571,7 @@ pub fn handle_input_playing(input_action: InputAction,
                 let maybe_next_pos = astar_next_pos(&level.map, player_pos, cursor_pos, None, None);
                 if let Some(next_pos) = maybe_next_pos {
                     if let Some(direction) = Direction::from_positions(player_pos, next_pos) {
-                        let move_amount = settings.move_mode.move_amount();
+                        let move_amount = move_amount(settings.move_mode, config);
                         msg_log.log(Msg::TryMove(player_id, direction, move_amount, settings.move_mode));
                     }
                 }
@@ -774,7 +775,8 @@ fn finalize_use_item(level: &Level, settings: &mut GameSettings, msg_log: &mut M
             } else if item == Item::Stone || item == Item::Lantern || 
                       item == Item::SeedOfStone ||item == Item::SeedCache || 
                       item == Item::Herb || item == Item::GlassEye ||
-                      item == Item::SmokeBomb || item == Item::LookingGlass {
+                      item == Item::SmokeBomb || item == Item::LookingGlass ||
+                      item == Item::Thumper {
                 let throw_pos = dir.offset_pos(player_pos, PLAYER_THROW_DIST as i32);
                 msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos, false));
             } else if item == Item::Sling {
@@ -1133,3 +1135,10 @@ fn change_state(settings: &mut GameSettings, new_state: GameState, msg_log: &mut
     }
 }
 
+fn move_amount(move_mode: MoveMode, config: &Config) -> usize {
+    match move_mode {
+        MoveMode::Sneak => return config.move_tiles_sneak,
+        MoveMode::Walk => return config.move_tiles_walk,
+        MoveMode::Run => return config.move_tiles_run,
+    }
+}

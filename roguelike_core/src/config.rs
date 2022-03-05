@@ -121,6 +121,9 @@ pub struct Config {
     pub y_spacing_buttons: i32,
     pub x_scale_buttons: f32,
     pub y_scale_buttons: f32,
+    pub move_tiles_sneak: usize,
+    pub move_tiles_walk: usize,
+    pub move_tiles_run: usize,
 }
 
 impl Config {

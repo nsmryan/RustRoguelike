@@ -72,6 +72,7 @@ impl MoveMode {
         }
     }
 
+    /*
     pub fn move_amount(&self) -> usize {
         match self {
             MoveMode::Sneak => 1,
@@ -79,6 +80,7 @@ impl MoveMode {
             MoveMode::Run => 2,
         }
     }
+    */
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -103,6 +105,7 @@ pub enum MoveType {
     WallKick,
     Collide,
     Blink,
+    Misc,
 }
 
 impl fmt::Display for MoveType {
@@ -114,6 +117,7 @@ impl fmt::Display for MoveType {
             MoveType::WallKick => write!(f, "wallkick"),
             MoveType::Collide => write!(f, "collide"),
             MoveType::Blink => write!(f, "blink"),
+            MoveType::Misc => write!(f, "misc"),
         }
     }
 }
@@ -124,6 +128,7 @@ pub struct Movement {
     pub pos: Pos,
     pub typ: MoveType,
     pub attack: Option<Attack>,
+    pub wall: Option<Pos>,
 }
 
 impl Default for Movement {
@@ -132,6 +137,7 @@ impl Default for Movement {
             pos: Pos::new(0, 0),
             typ: MoveType::Pass,
             attack: None,
+            wall: None,
         };
     }
 }
@@ -142,6 +148,7 @@ impl Movement {
             pos: pos,
             typ: MoveType::Move,
             attack: None,
+            wall: None,
         };
     }
 
@@ -150,6 +157,7 @@ impl Movement {
             pos,
             typ,
             attack,
+            wall: None,
         };
     }
 
@@ -162,6 +170,7 @@ impl Movement {
             pos,
             typ,
             attack: None,
+            wall: None,
         };
     }
 
@@ -170,6 +179,7 @@ impl Movement {
             pos,
             typ,
             attack: Some(attack),
+            wall: None,
         };
     }
 }
@@ -739,14 +749,14 @@ impl MoveResult {
 pub fn check_collision(pos: Pos,
                        dx: i32,
                        dy: i32,
-                       data: &Level) -> MoveResult {
+                       level: &Level) -> MoveResult {
     let mut last_pos = pos;
     let mut result: MoveResult =
         MoveResult::with_pos(pos + Vector2D::new(dx, dy));
 
     // if no movement occurs, no need to check walls and entities.
     if !(dx == 0 && dy == 0) {
-        if let Some(blocked) = data.map.path_blocked_move(pos, Pos::new(pos.x + dx, pos.y + dy)) {
+        if let Some(blocked) = level.map.path_blocked_move(pos, Pos::new(pos.x + dx, pos.y + dy)) {
             result.blocked = Some(blocked);
             result.move_pos = blocked.start_pos;
         } 
@@ -757,7 +767,7 @@ pub fn check_collision(pos: Pos,
         for line_tuple in move_line {
             let line_pos = Pos::from(line_tuple);
 
-            if let Some(key) = data.has_blocking_entity(line_pos) {
+            if let Some(key) = level.has_blocking_entity(line_pos) {
                 result.move_pos = last_pos;
                 result.entity = Some(key);
                 break;
@@ -778,17 +788,17 @@ pub fn check_collision(pos: Pos,
     return result;
 }
 
-pub fn entity_move_not_blocked(entity_id: EntityId, move_pos: Pos, delta_pos: Pos, data: &Level) -> Option<Movement> {
+pub fn entity_move_not_blocked(entity_id: EntityId, move_pos: Pos, delta_pos: Pos, level: &Level) -> Option<Movement> {
     let movement: Option<Movement>;
 
-    let pos = data.entities.pos[&entity_id];
+    let pos = level.entities.pos[&entity_id];
 
     let next_pos = next_pos(pos, delta_pos);
-    if let Some(_other_id) = data.has_blocking_entity(next_pos) {
+    if let Some(_other_id) = level.has_blocking_entity(next_pos) {
         movement = Some(Movement::move_to(move_pos, MoveType::Move));
 
         // NOTE removing dagger use by movement- only occurs in use mode
-        //if can_stab(data, entity_id, other_id) {
+        //if can_stab(level, entity_id, other_id) {
         //   let attack = Attack::Stab(other_id, true);
         //   movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
         //} else {
@@ -801,31 +811,42 @@ pub fn entity_move_not_blocked(entity_id: EntityId, move_pos: Pos, delta_pos: Po
     return movement;
 }
 
-pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked: &Blocked, data: &Level) -> Option<Movement> {
-    let mut movement: Option<Movement>;
+pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked: &Blocked, level: &Level) -> Option<Movement> {
+    let movement: Option<Movement>;
 
-    let pos = data.entities.pos[&entity_id];
+    let pos = level.entities.pos[&entity_id];
     let mut jumped_wall = false;
 
-    if data.entities.move_mode[&entity_id] == MoveMode::Run &&
-       data.entities.stance[&entity_id] != Stance::Crouching {
+    if level.entities.move_mode[&entity_id] == MoveMode::Run &&
+       level.entities.stance[&entity_id] != Stance::Crouching {
         if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
             jumped_wall = true;
         } 
     }
 
     if jumped_wall {
-        let new_pos = blocked.end_pos;
+        let mut new_pos = blocked.end_pos;
+        if let Some(status) = level.entities.status.get(&entity_id) {
+            if status.land_roll {
+                new_pos = next_pos(pos, delta_pos);
+            }
+        }
 
-        movement = Some(Movement::move_to(new_pos, MoveType::JumpWall));
+        let mut jump_move = Movement::move_to(new_pos, MoveType::JumpWall);
 
         let next_pos = next_pos(pos, delta_pos);
-        if let Some(other_id) = data.has_blocking_entity(next_pos) {
-            if can_stab(data, entity_id, other_id) {
+        if let Some(other_id) = level.has_blocking_entity(next_pos) {
+            if can_stab(level, entity_id, other_id) {
                let attack = Attack::Stab(other_id, true);
-               movement = Some(Movement::attack(new_pos, MoveType::JumpWall, attack));
+               jump_move = Movement::attack(new_pos, MoveType::JumpWall, attack);
            }
         }
+
+        // Save the position at which the movement was blocked by a wall, which
+        // is the start position of the Blocked structure.
+        jump_move.wall = Some(blocked.start_pos);
+
+        movement = Some(jump_move);
     } else {
         // else move up to the wall (start_pos is just before the colliding tile)
         movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
@@ -838,25 +859,25 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId,
                                      other_id: EntityId,
                                      move_pos: Pos,
                                      delta_pos: Pos,
-                                     data: &Level) -> Option<Movement> {
+                                     level: &Level) -> Option<Movement> {
     let movement: Option<Movement>;
 
-    let pos = data.entities.pos[&entity_id];
-    if can_stab(data, entity_id, other_id) {
+    let pos = level.entities.pos[&entity_id];
+    if can_stab(level, entity_id, other_id) {
         let attack = Attack::Stab(other_id, true);
         movement = Some(Movement::attack(move_pos, MoveType::Move, attack));
-    } else if data.entities.blocks[&other_id] {
-        let other_pos = data.entities.pos[&other_id];
+    } else if level.entities.blocks[&other_id] {
+        let other_pos = level.entities.pos[&other_id];
         let next = next_pos(pos, delta_pos);
-        if !data.map.is_within_bounds(next) {
+        if !level.map.is_within_bounds(next) {
             return None;
         }
 
-        let next_tile_water = data.map[next].tile_type == TileType::Water;
-        let push_is_blocked = data.map.path_blocked_move(other_pos, next).is_some();
-        let is_column = data.entities.typ[&other_id] == EntityType::Column;
+        let next_tile_water = level.map[next].tile_type == TileType::Water;
+        let push_is_blocked = level.map.path_blocked_move(other_pos, next).is_some();
+        let is_column = level.entities.typ[&other_id] == EntityType::Column;
 
-        if data.can_push(entity_id, other_id) && !next_tile_water && !(push_is_blocked && is_column) {
+        if level.can_push(entity_id, other_id) && !next_tile_water && !(push_is_blocked && is_column) {
             let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
             let push_amount = 1;
             // TODO issue 150 this is where pushing comes from. 
@@ -872,11 +893,11 @@ pub fn entity_move_blocked_by_entity(entity_id: EntityId,
     return movement;
 }
 
-pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: EntityId, blocked: &Blocked, delta_pos: Pos, data: &Level) -> Option<Movement> {
+pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: EntityId, blocked: &Blocked, delta_pos: Pos, level: &Level) -> Option<Movement> {
     let movement: Option<Movement>;
 
-    let entity_pos = data.entities.pos[&other_id];
-    let pos = data.entities.pos[&entity_id];
+    let entity_pos = level.entities.pos[&other_id];
+    let pos = level.entities.pos[&entity_id];
 
     let entity_dist = distance(pos, entity_pos);
     let wall_dist = distance(pos, blocked.end_pos);
@@ -885,9 +906,9 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
     if entity_dist < wall_dist {
         let dxy = sub_pos(entity_pos, pos);
         let attack: Option<Attack>;
-        if can_stab(data, entity_id, other_id) {
+        if can_stab(level, entity_id, other_id) {
             attack = Some(Attack::Stab(other_id, true));
-        } else if data.map[next_pos(pos, dxy)].tile_type != TileType::Water {
+        } else if level.map[next_pos(pos, dxy)].tile_type != TileType::Water {
             let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
             let push_amount = 1;
             attack = Some(Attack::Push(other_id, direction, push_amount));
@@ -905,7 +926,7 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
     } else if entity_dist > wall_dist {
         // we reach wall first, entity second
         let mut jumped_wall = false;
-        if data.entities.move_mode[&entity_id] == MoveMode::Run {
+        if level.entities.move_mode[&entity_id] == MoveMode::Run {
             if !blocked.blocked_tile && blocked.wall_type == Wall::ShortWall {
                 jumped_wall = true;
             } 
@@ -913,7 +934,7 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
 
         if jumped_wall {
             let attack =
-                if can_stab(data, entity_id, other_id) {
+                if can_stab(level, entity_id, other_id) {
                     Attack::Stab(other_id, true)
                 } else {
                     let direction = Direction::from_dxy(delta_pos.x, delta_pos.y).unwrap();
@@ -945,37 +966,37 @@ pub fn entity_move_blocked_by_entity_and_wall(entity_id: EntityId, other_id: Ent
 pub fn calculate_move(dir: Direction,
                       reach: Reach,
                       entity_id: EntityId,
-                      data: &Level) -> Option<Movement> {
+                      level: &Level) -> Option<Movement> {
     let mut movement: Option<Movement>;
 
-    let pos = data.entities.pos[&entity_id];
+    let pos = level.entities.pos[&entity_id];
 
     // get the location we would move to given the input direction
     if let Some(delta_pos) = reach.move_with_reach(&dir) {
         let (dx, dy) = delta_pos.to_tuple();
 
         // check if movement collides with a blocked location or an entity
-        let move_result = check_collision(pos, dx, dy, data);
+        let move_result = check_collision(pos, dx, dy, level);
 
         match (move_result.blocked, move_result.entity) {
             // both blocked by wall and by entity
             (Some(blocked), Some(other_id)) => {
-                movement = entity_move_blocked_by_entity_and_wall(entity_id, other_id, &blocked, delta_pos, data);
+                movement = entity_move_blocked_by_entity_and_wall(entity_id, other_id, &blocked, delta_pos, level);
             }
 
             // blocked by entity only
             (None, Some(other_id)) => {
-                movement = entity_move_blocked_by_entity(entity_id, other_id, move_result.move_pos, delta_pos, data);
+                movement = entity_move_blocked_by_entity(entity_id, other_id, move_result.move_pos, delta_pos, level);
             }
 
             // blocked by wall only
             (Some(blocked), None) => {
-                movement = entity_move_blocked_by_wall(entity_id, delta_pos, &blocked, data);
+                movement = entity_move_blocked_by_wall(entity_id, delta_pos, &blocked, level);
             }
 
             // not blocked at all
             (None, None) => {
-                movement = entity_move_not_blocked(entity_id, move_result.move_pos, delta_pos, data);
+                movement = entity_move_not_blocked(entity_id, move_result.move_pos, delta_pos, level);
             }
         }
     } else {

@@ -598,7 +598,7 @@ impl Level {
             Item::Lantern | Item::Teleporter | Item::SpikeTrap | 
             Item::SoundTrap | Item::BlinkTrap | Item::FreezeTrap |
             Item::Sling | Item::SeedCache | Item::SmokeBomb |
-            Item::LookingGlass => {
+            Item::LookingGlass | Item::Thumper => {
                 let dist = if item == Item::Sling {
                     PLAYER_THROW_DIST
                 } else {
@@ -1045,6 +1045,7 @@ pub enum Item {
     Khopesh,
     Sword,
     Lantern,
+    Thumper,
     Sling,
     Teleporter,
     Herb,
@@ -1073,6 +1074,7 @@ impl fmt::Display for Item {
             Item::Axe => write!(f, "axe"),
             Item::Khopesh => write!(f, "khopesh"),
             Item::Lantern => write!(f, "lantern"),
+            Item::Thumper => write!(f, "thumper"),
             Item::Sling => write!(f, "sling"),
             Item::Teleporter => write!(f, "teleporter"),
             Item::Herb => write!(f, "herb"),
@@ -1109,6 +1111,8 @@ impl FromStr for Item {
             return Ok(Item::Spear);
         } else if s == "lantern" {
             return Ok(Item::Lantern);
+        } else if s == "thumper" {
+            return Ok(Item::Thumper);
         } else if s == "axe" {
             return Ok(Item::Axe);
         } else if s == "khopesh" {
@@ -1169,6 +1173,7 @@ impl Item {
             Item::LookingGlass => ItemClass::Consumable,
             Item::GlassEye => ItemClass::Consumable,
             Item::Lantern => ItemClass::Consumable,
+            Item::Thumper => ItemClass::Consumable,
             Item::SpikeTrap => ItemClass::Consumable,
             Item::SoundTrap => ItemClass::Consumable,
             Item::BlinkTrap => ItemClass::Consumable,
@@ -1196,6 +1201,7 @@ impl Item {
             Item::LookingGlass => EntityName::LookingGlass,
             Item::GlassEye => EntityName::GlassEye,
             Item::Lantern => EntityName::Lantern,
+            Item::Thumper => EntityName::Thumper,
             Item::Sling => EntityName::Sling,
             Item::SpikeTrap => EntityName::SpikeTrap,
             Item::SoundTrap => EntityName::SoundTrap,
@@ -1226,6 +1232,7 @@ impl Item {
             Item::Stone => None,
             Item::Key => None,
             Item::Lantern => None,
+            Item::Thumper => None,
             Item::SpikeTrap => None,
             Item::SoundTrap => None,
             Item::BlinkTrap => None,
@@ -1386,6 +1393,7 @@ pub enum EntityName {
     Sword,
     Shield,
     Lantern,
+    Thumper,
     Axe,
     Khopesh,
     Sling,
@@ -1439,6 +1447,7 @@ impl fmt::Display for EntityName {
             EntityName::Sword => write!(f, "sword"),
             EntityName::Teleporter => write!(f, "teleporter"),
             EntityName::Lantern => write!(f, "lantern"),
+            EntityName::Thumper => write!(f, "thumper"),
             EntityName::Sling => write!(f, "sling"),
             EntityName::SeedOfStone => write!(f, "seedofstone"),
             EntityName::SeedCache => write!(f, "seedcache"),
@@ -1506,6 +1515,8 @@ impl FromStr for EntityName {
             return Ok(EntityName::Khopesh);
         } else if s == "lantern" {
             return Ok(EntityName::Lantern);
+        } else if s == "thumper" {
+            return Ok(EntityName::Thumper);
         } else if s == "sling" {
             return Ok(EntityName::Sling);
         } else if s == "seedofstone" {
@@ -1686,6 +1697,7 @@ pub struct StatusEffect {
     pub active: bool,
     pub alive: bool,
     pub stone: usize,
+    pub land_roll: bool,
     pub hammer_raised: Option<(EntityId, Direction, usize)>, // item id, direction to hit, turns to wait
 }
 
