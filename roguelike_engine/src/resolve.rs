@@ -954,7 +954,6 @@ fn resolve_try_movement(entity_id: EntityId,
             let traps_block = false;
             if level.clear_path(entity_pos, movement.pos, traps_block) {
                 if movement.typ == MoveType::Move {
-                    //msg_log.log_front(Msg::Moved(entity_id, movement.typ, movement.pos));
                     msg_log.log(Msg::Moved(entity_id, movement.typ, move_mode, movement.pos));
 
                     if amount > 1 {
@@ -965,13 +964,28 @@ fn resolve_try_movement(entity_id: EntityId,
                     panic!("Can we even get here? No clear path, but didn't decide to jump a wall?");
                 }
             } else if movement.typ == MoveType::JumpWall {
-                // no clear path to moved position
-                msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
-                msg_log.log(Msg::Moved(entity_id, movement.typ, MoveMode::Walk, movement.pos));
+                if let Some(wall_pos) = movement.wall {
+                    // If the entity is not next to the wall, move them next to the wall.
+                    if entity_pos != wall_pos {
+                        msg_log.log(Msg::Moved(entity_id, MoveType::Move, move_mode, wall_pos));
+                    }
+
+                    // Jump over the wall
+                    let after_wall_pos = direction.offset_pos(wall_pos, 1);
+                    msg_log.log(Msg::JumpWall(entity_id, wall_pos, after_wall_pos));
+                    // Actually move over the wall with a JumpWall move_type.
+                    msg_log.log(Msg::Moved(entity_id, movement.typ, move_mode, movement.pos));
+
+                    // If the wall jump does not end next to the wall, emit another message
+                    // indicating the move from the other end of the wall to the final location.
+                    if after_wall_pos != movement.pos {
+                        msg_log.log(Msg::Moved(entity_id, movement.typ, move_mode, movement.pos));
+                    }
+                } else {
+                    panic!("Wall jump with no recorded wall position!");
+                }
             } else {
                 panic!("Why would we not have a clear path, but have received this movement?");
-                // TODO move towards position, perhaps emitting a Collide
-                // message. This is likely causing the jump wall issue!
             }
         }
 

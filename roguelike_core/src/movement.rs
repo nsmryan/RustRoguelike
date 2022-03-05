@@ -132,6 +132,7 @@ pub struct Movement {
     pub pos: Pos,
     pub typ: MoveType,
     pub attack: Option<Attack>,
+    pub wall: Option<Pos>,
 }
 
 impl Default for Movement {
@@ -140,6 +141,7 @@ impl Default for Movement {
             pos: Pos::new(0, 0),
             typ: MoveType::Pass,
             attack: None,
+            wall: None,
         };
     }
 }
@@ -150,6 +152,7 @@ impl Movement {
             pos: pos,
             typ: MoveType::Move,
             attack: None,
+            wall: None,
         };
     }
 
@@ -158,6 +161,7 @@ impl Movement {
             pos,
             typ,
             attack,
+            wall: None,
         };
     }
 
@@ -170,6 +174,7 @@ impl Movement {
             pos,
             typ,
             attack: None,
+            wall: None,
         };
     }
 
@@ -178,6 +183,7 @@ impl Movement {
             pos,
             typ,
             attack: Some(attack),
+            wall: None,
         };
     }
 }
@@ -810,7 +816,7 @@ pub fn entity_move_not_blocked(entity_id: EntityId, move_pos: Pos, delta_pos: Po
 }
 
 pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked: &Blocked, level: &Level) -> Option<Movement> {
-    let mut movement: Option<Movement>;
+    let movement: Option<Movement>;
 
     let pos = level.entities.pos[&entity_id];
     let mut jumped_wall = false;
@@ -830,15 +836,21 @@ pub fn entity_move_blocked_by_wall(entity_id: EntityId, delta_pos: Pos, blocked:
             }
         }
 
-        movement = Some(Movement::move_to(new_pos, MoveType::JumpWall));
+        let mut jump_move = Movement::move_to(new_pos, MoveType::JumpWall);
 
         let next_pos = next_pos(pos, delta_pos);
         if let Some(other_id) = level.has_blocking_entity(next_pos) {
             if can_stab(level, entity_id, other_id) {
                let attack = Attack::Stab(other_id, true);
-               movement = Some(Movement::attack(new_pos, MoveType::JumpWall, attack));
+               jump_move = Movement::attack(new_pos, MoveType::JumpWall, attack);
            }
         }
+
+        // Save the position at which the movement was blocked by a wall, which
+        // is the start position of the Blocked structure.
+        jump_move.wall = Some(blocked.start_pos);
+
+        movement = Some(jump_move);
     } else {
         // else move up to the wall (start_pos is just before the colliding tile)
         movement = Some(Movement::move_to(blocked.start_pos, MoveType::Move));
