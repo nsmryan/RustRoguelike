@@ -386,12 +386,12 @@ fn render_confirm_quit(panel: &mut Panel) {
     panel.text_list_cmd(&list, ui_color, text_pos, 1.0);
 }
 
-fn render_button(name: &str, x_offset: i32, y_offset: i32, panel: &mut Panel, sprites: &Vec<SpriteSheet>, config: &Config) {
+fn render_button(name: &str, x_offset: f32, y_offset: f32, panel: &mut Panel, sprites: &Vec<SpriteSheet>, config: &Config) {
     let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
     let button_key = lookup_spritekey(sprites, name);
     let button = Sprite::new(0, button_key);
-    panel.sprite_at_pixel_scaled_cmd(button, ui_color, Pos::new(x_offset, y_offset), config.x_scale_buttons, config.y_scale_buttons);
+    panel.sprite_float_scaled_cmd(button, ui_color, x_offset, y_offset, config.x_scale_buttons, config.y_scale_buttons);
 }
 
 /// Render an inventory section within the given area
@@ -402,7 +402,9 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
     let mut y_offset = config.y_offset_buttons;
 
     render_button("a_button_base", x_offset, y_offset, panel, sprites, config);
-    panel.text_float_cmd("Sword", ui_color, x_offset as f32 + config.ui_inv_name_x_offset, y_offset as f32 + config.ui_inv_name_y_offset, config.ui_inv_name_scale);
+    let text_x_offset = x_offset + config.ui_inv_name_x_offset;
+    let text_y_offset = y_offset + config.ui_inv_name_y_offset;
+    panel.text_float_cmd("Sword", ui_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
 
     x_offset += config.x_spacing_buttons;
     render_button("s_button_base", x_offset, y_offset, panel, sprites, config);

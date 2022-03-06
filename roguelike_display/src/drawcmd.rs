@@ -23,7 +23,7 @@ pub enum Justify {
 pub enum DrawCmd {
     Sprite(Sprite, Color, Pos),
     SpriteScaled(Sprite, f32, Option<Direction>, Color, Pos),
-    SpriteAtPixel(Sprite, Color, Pos, f32, f32), // sprite, color, pos, x scale, y scale
+    SpriteFloat(Sprite, Color, f32, f32, f32, f32), // sprite, color, x, y, x scale, y scale
     HighlightTile(Color, Pos),
     OutlineTile(Color, Pos),
     Text(String, Color, Pos, f32), // text, color, tile position, scale
@@ -35,14 +35,16 @@ pub enum DrawCmd {
 
 impl DrawCmd {
     pub fn aligned(&self) -> bool {
-        return !matches!(self, DrawCmd::SpriteAtPixel(_, _, _, _, _));
+        let float_sprite = matches!(self, DrawCmd::SpriteFloat(_, _, _, _, _));
+        let float_text = matches!(self, DrawCmd::TextFloat(_, _, _, _, _));
+        return !(float_sprite || float_text);
     }
 
     pub fn pos(&self) -> Pos {
         match self {
             DrawCmd::Sprite(_, _, pos) => *pos,
             DrawCmd::SpriteScaled(_, _, _, _, pos) => *pos,
-            DrawCmd::SpriteAtPixel(_, _, pos, _, _) => *pos,
+            DrawCmd::SpriteFloat(_, _, x, y, _, _) => Pos::new(*x as i32, *y as i32),
             DrawCmd::HighlightTile(_, pos) => *pos,
             DrawCmd::OutlineTile(_, pos) => *pos,
             DrawCmd::Text(_, _, pos, _) => *pos,
@@ -160,7 +162,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                            false).unwrap();
         }
 
-        DrawCmd::SpriteAtPixel(sprite, color, pos, x_scale, y_scale) => {
+        DrawCmd::SpriteFloat(sprite, color, x, y, x_scale, y_scale) => {
             let sprite_sheet = &mut sprites[sprite.key];
 
             let cell_dims = panel.cell_dims();
@@ -169,8 +171,12 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
 
             let (cell_width, cell_height) = cell_dims;
 
-            let dst = Rect::new(pos.x as i32,
-                                pos.y as i32,
+            let x_offset = (*x * cell_width as f32) as i32;
+            let y_offset = (*y * cell_height as f32) as i32;
+
+            // NOTE this assumes that sprites are a single cell width and height.
+            let dst = Rect::new(x_offset,
+                                y_offset,
                                 (cell_width as f32 * x_scale) as u32,
                                 (cell_height as f32 * y_scale) as u32);
 
@@ -646,13 +652,13 @@ impl Panel {
                          final_target_height as u32);
     }
 
-    pub fn sprite_at_pixel_scaled_cmd(&mut self, sprite: Sprite, color: Color, pos: Pos, x_scale: f32, y_scale: f32) {
-        let cmd = DrawCmd::SpriteAtPixel(sprite, color, pos, x_scale, y_scale);
+    pub fn sprite_float_scaled_cmd(&mut self, sprite: Sprite, color: Color, x: f32, y: f32, x_scale: f32, y_scale: f32) {
+        let cmd = DrawCmd::SpriteFloat(sprite, color, x, y, x_scale, y_scale);
         self.draw_cmd(cmd);
     }
 
-    pub fn sprite_at_pixel_cmd(&mut self, sprite: Sprite, color: Color, pos: Pos) {
-        let cmd = DrawCmd::SpriteAtPixel(sprite, color, pos, 1.0, 1.0);
+    pub fn sprite_float_cmd(&mut self, sprite: Sprite, color: Color, x: f32, y: f32) {
+        let cmd = DrawCmd::SpriteFloat(sprite, color, x, y, 1.0, 1.0);
         self.draw_cmd(cmd);
     }
 
