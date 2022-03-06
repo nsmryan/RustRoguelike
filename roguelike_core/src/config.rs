@@ -128,6 +128,14 @@ pub struct Config {
     pub ui_inv_name_x_offset: f32,
     pub ui_inv_name_y_offset: f32,
     pub ui_inv_name_scale: f32,
+
+    pub ui_inv_name_0_x_offset: f32,
+    pub ui_inv_name_0_y_offset: f32,
+    pub ui_inv_name_0_scale: f32,
+
+    pub ui_inv_name_1_x_offset: f32,
+    pub ui_inv_name_1_y_offset: f32,
+    pub ui_inv_name_1_scale: f32,
 }
 
 impl Config {

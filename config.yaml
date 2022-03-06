@@ -299,3 +299,11 @@ move_tiles_run: 2
 ui_inv_name_x_offset: 4.0
 ui_inv_name_y_offset: 0.3
 ui_inv_name_scale: 1.2
+
+ui_inv_name_0_x_offset: 3.2
+ui_inv_name_0_y_offset: 0.0
+ui_inv_name_0_scale: 1.0
+
+ui_inv_name_1_x_offset: 4.5
+ui_inv_name_1_y_offset: 0.8
+ui_inv_name_1_scale: 1.0

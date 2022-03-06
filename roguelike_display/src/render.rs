@@ -390,6 +390,87 @@ fn render_button(name: &str, x_offset: f32, y_offset: f32, panel: &mut Panel, sp
     panel.sprite_float_scaled_cmd(button, ui_color, x_offset, y_offset, config.x_scale_buttons, config.y_scale_buttons);
 }
 
+fn render_skill(skill: Skill, x_offset: f32, y_offset: f32, panel: &mut Panel, config: &Config) {
+    let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
+
+    let first_word: String;
+    let mut second_word = "";
+    match skill {
+        Skill::GrassWall => {
+            first_word = "grass".to_string();
+            second_word = "wall";
+        },
+
+        Skill::GrassThrow => {
+            first_word = "grass".to_string();
+            second_word = "throw";
+        },
+
+        Skill::GrassBlade => {
+            first_word = "grass".to_string();
+            second_word = "blade";
+        },
+
+        Skill::GrassShoes => {
+            first_word = "grass".to_string();
+            second_word = "shoes";
+        },
+
+        Skill::GrassCover => {
+            first_word = "grass".to_string();
+            second_word = "cover";
+        },
+
+        Skill::PassWall => {
+            first_word = "pass".to_string();
+            second_word = "wall";
+        },
+
+        Skill::StoneThrow => {
+            first_word = "stone".to_string();
+            second_word = "throw";
+        },
+
+        Skill::FarSight => {
+            first_word = "far".to_string();
+            second_word = "sight";
+        },
+
+        Skill::StoneSkin => {
+            first_word = "stone".to_string();
+            second_word = "skin";
+        },
+
+        Skill::PassThrough => {
+            first_word = "pass".to_string();
+            second_word = "through";
+        },
+
+        Skill::WhirlWind => {
+            first_word = "whirl".to_string();
+            second_word = "wind";
+        },
+
+        _ => {
+            first_word = format!("{:?}", skill);
+        }
+    }
+
+    if second_word.len() > 0 {
+        let first_x_offset = x_offset + config.ui_inv_name_0_x_offset;
+        let first_y_offset = y_offset + config.ui_inv_name_0_y_offset;
+        panel.text_float_cmd(&first_word, ui_color, first_x_offset, first_y_offset, config.ui_inv_name_0_scale);
+
+        let second_x_offset = x_offset + config.ui_inv_name_1_x_offset;
+        let second_y_offset = y_offset + config.ui_inv_name_1_y_offset;
+        panel.text_float_cmd(&second_word, ui_color, second_x_offset, second_y_offset, config.ui_inv_name_1_scale);
+    } else {
+        let text_x_offset = x_offset + config.ui_inv_name_x_offset;
+        let text_y_offset = y_offset + config.ui_inv_name_y_offset;
+        panel.text_float_cmd(&first_word, ui_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
+    }
+}
+
 /// Render an inventory section within the given area
 fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &Vec<SpriteSheet>, config: &Config) {
     let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
@@ -398,6 +479,25 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
     let mut y_offset = config.y_offset_buttons;
 
     render_button("a_button_base", x_offset, y_offset, panel, sprites, config);
+    if let Some(skill) = display_state.skills.get(0) {
+        render_skill(*skill, x_offset, y_offset, panel, config);
+    }
+
+    x_offset += config.x_spacing_buttons;
+    render_button("s_button_base", x_offset, y_offset, panel, sprites, config);
+    if let Some(skill) = display_state.skills.get(1) {
+        render_skill(*skill, x_offset, y_offset, panel, config);
+    }
+
+    x_offset += config.x_spacing_buttons;
+    render_button("d_button_base", x_offset, y_offset, panel, sprites, config);
+    if let Some(skill) = display_state.skills.get(2) {
+        render_skill(*skill, x_offset, y_offset, panel, config);
+    }
+
+    x_offset = config.x_offset_buttons;
+    y_offset += config.y_spacing_buttons;
+    render_button("z_button_base", x_offset, y_offset, panel, sprites, config);
     let text_x_offset = x_offset + config.ui_inv_name_x_offset;
     let text_y_offset = y_offset + config.ui_inv_name_y_offset;
     for (item, item_class) in display_state.inventory.iter() {
@@ -409,7 +509,7 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
     }
 
     x_offset += config.x_spacing_buttons;
-    render_button("s_button_base", x_offset, y_offset, panel, sprites, config);
+    render_button("x_button_base", x_offset, y_offset, panel, sprites, config);
     let text_x_offset = x_offset + config.ui_inv_name_x_offset;
     let text_y_offset = y_offset + config.ui_inv_name_y_offset;
     for (item, item_class) in display_state.inventory.iter() {
@@ -421,7 +521,7 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
     }
 
     x_offset += config.x_spacing_buttons;
-    render_button("d_button_base", x_offset, y_offset, panel, sprites, config);
+    render_button("c_button_base", x_offset, y_offset, panel, sprites, config);
     let text_x_offset = x_offset + config.ui_inv_name_x_offset;
     let text_y_offset = y_offset + config.ui_inv_name_y_offset;
     let mut num_stones = 0;
@@ -434,16 +534,6 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
         let item_text = format!("Stone x{}", num_stones);
         panel.text_float_cmd(&item_text, ui_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
     }
-
-    x_offset = config.x_offset_buttons;
-    y_offset += config.y_spacing_buttons;
-    render_button("z_button_base", x_offset, y_offset, panel, sprites, config);
-
-    x_offset += config.x_spacing_buttons;
-    render_button("x_button_base", x_offset, y_offset, panel, sprites, config);
-
-    x_offset += config.x_spacing_buttons;
-    render_button("c_button_base", x_offset, y_offset, panel, sprites, config);
 
     // Render each object's name in inventory
     /*
