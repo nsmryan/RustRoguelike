@@ -18,12 +18,13 @@ pub type Str = usize;
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Particle {
     pub duration: f32,
-    pub pos: Pos,
+    pub x: f32,
+    pub y: f32,
 }
 
 impl Particle {
-    pub fn new(duration: f32, pos: Pos) -> Particle {
-        return Particle { duration, pos };
+    pub fn new(duration: f32, x: f32, y: f32) -> Particle {
+        return Particle { duration, x, y };
     }
 }
 

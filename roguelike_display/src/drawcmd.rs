@@ -35,7 +35,7 @@ pub enum DrawCmd {
 
 impl DrawCmd {
     pub fn aligned(&self) -> bool {
-        let float_sprite = matches!(self, DrawCmd::SpriteFloat(_, _, _, _, _));
+        let float_sprite = matches!(self, DrawCmd::SpriteFloat(_, _, _, _, _, _));
         let float_text = matches!(self, DrawCmd::TextFloat(_, _, _, _, _));
         return !(float_sprite || float_text);
     }

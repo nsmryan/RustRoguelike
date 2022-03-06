@@ -783,17 +783,16 @@ fn render_effects(panel: &mut Panel,
         match &mut effect {
             Effect::Particles(rate, particles) => {
                 if particles.len() < config.max_particles && rng_trial(&mut display_state.rng, *rate) {
-                    let size = (panel.num_pixels.0 as i32, panel.num_pixels.1 as i32);
-                    let pos = rng_pos(&mut display_state.rng, size);
-                    particles.push(Particle::new(config.particle_duration, pos));
+                    let x = rng_range(&mut display_state.rng, 0.0, panel.cells.0 as f32);
+                    let y = rng_range(&mut display_state.rng, 0.0, panel.cells.1 as f32);
+                    particles.push(Particle::new(config.particle_duration, x, y));
                 }
 
                 let sprite_key = lookup_spritekey(sprites, "particle_speck");
 
-                let dims = panel.cell_dims();
                 let mut index = 0;
                 while index < particles.len() {
-                    let cell = panel.cell_from_pixel(particles[index].pos);
+                    let cell = Pos::new(particles[index].x as i32, particles[index].y as i32);
                     particles[index].duration -= display_state.dt;
 
                     // if the particle is finished, or has left the map, remove it.
@@ -801,17 +800,17 @@ fn render_effects(panel: &mut Panel,
                         particles.swap_remove(index);
                     } else {
                         // offset the particle according to how long it has been running.
-                        let x_offset = (dims.0 as f32 * (config.particle_duration - particles[index].duration)) as i32;
-                        let draw_pos = move_x(particles[index].pos, x_offset);
-                        let draw_cell = panel.cell_from_pixel(draw_pos);
+                        let x_offset = config.particle_speed * (config.particle_duration - particles[index].duration);
+                        let new_x = particles[index].x +  x_offset;
+                        let new_cell = Pos::new(new_x as i32, particles[index].y as i32);
 
-                        if display_state.map.is_within_bounds(draw_cell) && 
-                           display_state.pos_is_in_fov(draw_cell) == FovResult::Inside {
+                        if display_state.map.is_within_bounds(new_cell) && 
+                           display_state.pos_is_in_fov(new_cell) == FovResult::Inside {
                             let mut color = Color::white();
                             // fade the particle out according to how long it has been running.
                             color.a = (255.0 * (particles[index].duration / config.particle_duration)) as u8;
                             let sprite = Sprite::new(0, sprite_key);
-                            panel.sprite_at_pixel_cmd(sprite, color, draw_pos);
+                            panel.sprite_float_cmd(sprite, color, new_x, particles[index].y);
                         }
                         index += 1;
                     }
@@ -892,11 +891,11 @@ fn render_effects(panel: &mut Panel,
             Effect::Attack(from, to, sprite_anim) => {
                 let sprite = sprite_anim.sprite();
 
-                let pixel_from = panel.pixel_from_cell(move_next_to(*from, *to));
-                let pixel_to = panel.pixel_from_cell(*to);
-                let pixel_pos = Pos::new((pixel_from.x + pixel_to.x) / 2,
-                                         (pixel_from.y + pixel_to.y) / 2);
-                panel.sprite_at_pixel_cmd(sprite, Color::white(), pixel_pos);
+                let pos_from = move_next_to(*from, *to);
+                let pos_to = panel.pixel_from_cell(*to);
+                let x_offset = (pos_from.x + pos_to.x) as f32 / 2.0;
+                let y_offset = (pos_from.y + pos_to.y) as f32 / 2.0;
+                panel.sprite_float_cmd(sprite, Color::white(), x_offset, y_offset);
 
                 // if the sprite animation looped back to the beginning, end the effect
                 if sprite_anim.looped {
