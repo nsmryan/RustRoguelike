@@ -285,17 +285,17 @@ looking_glass_magnify_amount: 2
 
 hp_render_duration: 20
 
-x_offset_buttons: 0.5
-y_offset_buttons: 2.0
-x_spacing_buttons: 6.5
-y_spacing_buttons: 3.0
-x_scale_buttons: 6.0
+x_offset_buttons: 0.05
+y_offset_buttons: 2.5
+x_spacing_buttons: 6.7
+y_spacing_buttons: 2.5
+x_scale_buttons: 6.5
 y_scale_buttons: 2.0
 
 move_tiles_sneak: 1
 move_tiles_walk: 1
 move_tiles_run: 2
 
-ui_inv_name_x_offset: 0.0
-ui_inv_name_y_offset: 0.0
-ui_inv_name_scale: 1.0
+ui_inv_name_x_offset: 4.0
+ui_inv_name_y_offset: 0.3
+ui_inv_name_scale: 1.2

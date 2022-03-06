@@ -179,9 +179,6 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
 
     let mut list: Vec<String> = Vec::new();
 
-    // TODO this color comes from the UI mockups as a light brown
-    let color = Color::new(0xcd, 0xb4, 0x96, 255);
-
     let x_offset = 1;
 
     if let Some(hp) = display_state.hp.get(&player_id) {
@@ -212,7 +209,8 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
 
     let text_pos = Pos::new(x_offset, 5);
 
-    panel.text_list_cmd(&list, color, text_pos, 1.0);
+    let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
+    panel.text_list_cmd(&list, ui_color, text_pos, 1.0);
 }
 
 fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
@@ -339,12 +337,11 @@ fn render_skill_menu(panel: &mut Panel, display_state: &DisplayState) {
     }
 
     let y_pos = 2;
-    let text_pos = Pos::new(2, y_pos);
+    let text_pos = Pos::new(1, y_pos);
 
-    // TODO this color comes from the ui mockups as a light brown
-    let color = Color::new(0xcd, 0xb4, 0x96, 255);
+    let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
-    panel.text_list_cmd(&list, color, text_pos, 1.0);
+    panel.text_list_cmd(&list, ui_color, text_pos, 1.0);
 }
 
 fn render_class_menu(panel: &mut Panel) {
@@ -358,12 +355,11 @@ fn render_class_menu(panel: &mut Panel) {
     }
 
     let y_pos = 2;
-    let text_pos = Pos::new(2, y_pos);
+    let text_pos = Pos::new(1, y_pos);
 
-    // TODO this color comes from the ui mockups as a light brown
-    let color = Color::new(0xcd, 0xb4, 0x96, 255);
+    let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
-    panel.text_list_cmd(&list, color, text_pos, 1.0);
+    panel.text_list_cmd(&list, ui_color, text_pos, 1.0);
 }
 
 fn render_confirm_quit(panel: &mut Panel) {
@@ -379,7 +375,7 @@ fn render_confirm_quit(panel: &mut Panel) {
     list.push("r: restart".to_string());
 
     let y_pos = 2;
-    let text_pos = Pos::new(5, y_pos);
+    let text_pos = Pos::new(1, y_pos);
 
     let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
@@ -404,13 +400,40 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
     render_button("a_button_base", x_offset, y_offset, panel, sprites, config);
     let text_x_offset = x_offset + config.ui_inv_name_x_offset;
     let text_y_offset = y_offset + config.ui_inv_name_y_offset;
-    panel.text_float_cmd("Sword", ui_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
+    for (item, item_class) in display_state.inventory.iter() {
+        if *item_class == ItemClass::Primary {
+            let item_text = format!("{:?}", item);
+            panel.text_float_cmd(&item_text, ui_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
+            break;
+        }
+    }
 
     x_offset += config.x_spacing_buttons;
     render_button("s_button_base", x_offset, y_offset, panel, sprites, config);
+    let text_x_offset = x_offset + config.ui_inv_name_x_offset;
+    let text_y_offset = y_offset + config.ui_inv_name_y_offset;
+    for (item, item_class) in display_state.inventory.iter() {
+        if *item_class == ItemClass::Consumable {
+            let item_text = format!("{:?}", item);
+            panel.text_float_cmd(&item_text, ui_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
+            break;
+        }
+    }
 
     x_offset += config.x_spacing_buttons;
     render_button("d_button_base", x_offset, y_offset, panel, sprites, config);
+    let text_x_offset = x_offset + config.ui_inv_name_x_offset;
+    let text_y_offset = y_offset + config.ui_inv_name_y_offset;
+    let mut num_stones = 0;
+    for (item, _item_class) in display_state.inventory.iter() {
+        if *item == Item::Stone {
+            num_stones += 1;
+        }
+    }
+    if num_stones > 0 {
+        let item_text = format!("Stone x{}", num_stones);
+        panel.text_float_cmd(&item_text, ui_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
+    }
 
     x_offset = config.x_offset_buttons;
     y_offset += config.y_spacing_buttons;
@@ -423,6 +446,7 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
     render_button("c_button_base", x_offset, y_offset, panel, sprites, config);
 
     // Render each object's name in inventory
+    /*
     let mut y_pos = 2;
     let x_offset = 1;
 
@@ -484,6 +508,7 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
             y_pos += 1;
         }
     }
+    */
 }
 
 /// render the background files, including water tiles
