@@ -78,9 +78,9 @@ impl Display {
         /* Lay out screen areas */
         let screen_area = canvas_panel.area();
         let (map_area, rest_area) = screen_area.split_top(canvas_panel.cells.0 as usize - 2);
-        let (inventory_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 3);
-        let (info_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 3);
-        let player_area = rest_area;
+        let (player_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 4);
+        let (inventory_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 2);
+        let info_area = rest_area;
         let menu_area = screen_area.centered((info_area.width as f32 * 1.5) as usize, (info_area.height as f32 * 1.5) as usize);
 
         let mut screen_areas = HashMap::new();
@@ -373,7 +373,6 @@ impl Display {
                     let fade_effect = Effect::fade(cursor_sprite, color, config.cursor_alpha, 0, pos, config.cursor_fade_seconds);
                     self.state.play_effect(fade_effect);
                 }
-
 
                 self.state.time_of_cursor_toggle = self.state.time;
             }
@@ -809,13 +808,13 @@ impl Display {
             let map_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Map]);
             canvas.copy(&textures[&PanelName::Map], map_src, map_rect).unwrap();
 
-            let inventory_area = screen_areas[&PanelName::Inventory];
+            let player_area = screen_areas[&PanelName::Player];
             let map_area = screen_areas[&PanelName::Map];
             let filled = false;
             let cell_offset = 0.5;
             let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
-            canvas_panel.rect_cmd(Pos::new(inventory_area.x_offset as i32, inventory_area.y_offset as i32),
-                                  (map_area.width as u32, inventory_area.height as u32),
+            canvas_panel.rect_cmd(Pos::new(player_area.x_offset as i32, player_area.y_offset as i32),
+                                  (map_area.width as u32, player_area.height as u32),
                                   cell_offset,
                                   filled,
                                   ui_color);

@@ -182,7 +182,7 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
     // TODO this color comes from the UI mockups as a light brown
     let color = Color::new(0xcd, 0xb4, 0x96, 255);
 
-    let x_offset = 3;
+    let x_offset = 1;
 
     if let Some(hp) = display_state.hp.get(&player_id) {
         let max_hp = display_state.max_hp[&player_id];
@@ -216,8 +216,6 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
 }
 
 fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
-    //render_placard(panel, "Info");
-
     if let Some(info_pos) = display_state.cursor_pos {
         let x_offset = 1;
 
@@ -383,49 +381,44 @@ fn render_confirm_quit(panel: &mut Panel) {
     let y_pos = 2;
     let text_pos = Pos::new(5, y_pos);
 
-    // TODO this color comes from the UI mockups as a light brown
-    let color = Color::new(0xcd, 0xb4, 0x96, 255);
+    let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
-    panel.text_list_cmd(&list, color, text_pos, 1.0);
+    panel.text_list_cmd(&list, ui_color, text_pos, 1.0);
+}
+
+fn render_button(name: &str, x_offset: i32, y_offset: i32, panel: &mut Panel, sprites: &Vec<SpriteSheet>, config: &Config) {
+    let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
+
+    let button_key = lookup_spritekey(sprites, name);
+    let button = Sprite::new(0, button_key);
+    panel.sprite_at_pixel_scaled_cmd(button, ui_color, Pos::new(x_offset, y_offset), config.x_scale_buttons, config.y_scale_buttons);
 }
 
 /// Render an inventory section within the given area
 fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &Vec<SpriteSheet>, config: &Config) {
-    // TODO this color comes from the UI mockups as a light brown
     let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
     let mut x_offset = config.x_offset_buttons;
     let mut y_offset = config.y_offset_buttons;
 
-    let a_button_key = lookup_spritekey(sprites, "a_button_base");
-    let a_button = Sprite::new(0, a_button_key);
-    panel.sprite_at_pixel_scaled_cmd(a_button, ui_color, Pos::new(x_offset, y_offset), config.x_scale_buttons, config.y_scale_buttons);
+    render_button("a_button_base", x_offset, y_offset, panel, sprites, config);
+    panel.text_float_cmd("Sword", ui_color, x_offset as f32 + config.ui_inv_name_x_offset, y_offset as f32 + config.ui_inv_name_y_offset, config.ui_inv_name_scale);
 
     x_offset += config.x_spacing_buttons;
-    let s_button_key = lookup_spritekey(sprites, "s_button_base");
-    let s_button = Sprite::new(0, s_button_key);
-    panel.sprite_at_pixel_scaled_cmd(s_button, ui_color, Pos::new(x_offset, y_offset), config.x_scale_buttons, config.y_scale_buttons);
+    render_button("s_button_base", x_offset, y_offset, panel, sprites, config);
 
     x_offset += config.x_spacing_buttons;
-    let d_button_key = lookup_spritekey(sprites, "d_button_base");
-    let d_button = Sprite::new(0, d_button_key);
-    panel.sprite_at_pixel_scaled_cmd(d_button, ui_color, Pos::new(x_offset, y_offset), config.x_scale_buttons, config.y_scale_buttons);
+    render_button("d_button_base", x_offset, y_offset, panel, sprites, config);
 
     x_offset = config.x_offset_buttons;
     y_offset += config.y_spacing_buttons;
-    let z_button_key = lookup_spritekey(sprites, "z_button_base");
-    let z_button = Sprite::new(0, z_button_key);
-    panel.sprite_at_pixel_scaled_cmd(z_button, ui_color, Pos::new(x_offset, y_offset), config.x_scale_buttons, config.y_scale_buttons);
+    render_button("z_button_base", x_offset, y_offset, panel, sprites, config);
 
     x_offset += config.x_spacing_buttons;
-    let x_button_key = lookup_spritekey(sprites, "x_button_base");
-    let x_button = Sprite::new(0, x_button_key);
-    panel.sprite_at_pixel_scaled_cmd(x_button, ui_color, Pos::new(x_offset, y_offset), config.x_scale_buttons, config.y_scale_buttons);
+    render_button("x_button_base", x_offset, y_offset, panel, sprites, config);
 
     x_offset += config.x_spacing_buttons;
-    let c_button_key = lookup_spritekey(sprites, "c_button_base");
-    let c_button = Sprite::new(0, c_button_key);
-    panel.sprite_at_pixel_scaled_cmd(c_button, ui_color, Pos::new(x_offset, y_offset), config.x_scale_buttons, config.y_scale_buttons);
+    render_button("c_button_base", x_offset, y_offset, panel, sprites, config);
 
     // Render each object's name in inventory
     let mut y_pos = 2;
@@ -934,7 +927,7 @@ fn render_effects(panel: &mut Panel,
 
                 let x = pos.x as f32 + 0.5;
                 let y = pos.y as f32 - 0.5 - (percent_done);
-                panel.text_at_pixel_cmd(&format!("{}", *change), color, x, y, 0.7);
+                panel.text_float_cmd(&format!("{}", *change), color, x, y, 0.7);
 
                 *count += 1;
 

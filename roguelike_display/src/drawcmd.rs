@@ -27,7 +27,7 @@ pub enum DrawCmd {
     HighlightTile(Color, Pos),
     OutlineTile(Color, Pos),
     Text(String, Color, Pos, f32), // text, color, tile position, scale
-    TextAtPixel(String, Color, f32, f32, f32), // text, color, x, y, scale
+    TextFloat(String, Color, f32, f32, f32), // text, color, x, y, scale
     TextJustify(String, Justify, Color, Color, Pos, u32, f32), // text, justify, fg color, bg color, tile pos, width in cells, scale
     Rect(Pos, (u32, u32), f32, bool, Color), // start cell, num cells width/height, offset percent into cell, color
     Fill(Pos, Color),
@@ -46,7 +46,7 @@ impl DrawCmd {
             DrawCmd::HighlightTile(_, pos) => *pos,
             DrawCmd::OutlineTile(_, pos) => *pos,
             DrawCmd::Text(_, _, pos, _) => *pos,
-            DrawCmd::TextAtPixel(_, _, x, y, _) => Pos::new(*x as i32, *y as i32),
+            DrawCmd::TextFloat(_, _, x, y, _) => Pos::new(*x as i32, *y as i32),
             DrawCmd::TextJustify(_, _, _, _, pos, _, _) => *pos,
             DrawCmd::Rect(pos, _, _, _, _) => *pos,
             DrawCmd::Fill(pos, _) => *pos,
@@ -163,8 +163,6 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
         DrawCmd::SpriteAtPixel(sprite, color, pos, x_scale, y_scale) => {
             let sprite_sheet = &mut sprites[sprite.key];
 
-            let pos = Pos::new(pos.x, pos.y);
-
             let cell_dims = panel.cell_dims();
 
             let src = sprite_sheet.sprite_src(sprite.index as usize);
@@ -209,9 +207,6 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
 
             let font_width = query.width / ascii_width;
             let font_height = query.height;
-
-            //let char_height = cell_height;
-            //let char_width = (cell_width * font_width) / font_height;
 
             let char_height = (cell_height as f32 * scale) as u32;
             let char_width = (cell_height * font_width) / font_height;
@@ -272,7 +267,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             }
         }
 
-        DrawCmd::TextAtPixel(string, color, x, y, scale) => {
+        DrawCmd::TextFloat(string, color, x, y, scale) => {
             let ascii_width = ASCII_END - ASCII_START;
 
             let sprite_key = lookup_spritekey(sprites, "font");
@@ -693,9 +688,11 @@ impl Panel {
         self.draw_cmd(cmd);
     }
 
-    pub fn text_at_pixel_cmd(&mut self, text: &str, color: Color, x: f32, y: f32, scale: f32) {
+    // NOTE This command uses f32 positions where 0.0 is the first cell, 1.0 is the second cell,
+    // and 0.5 is the pixel in the middle of the cell, etc.
+    pub fn text_float_cmd(&mut self, text: &str, color: Color, x: f32, y: f32, scale: f32) {
         let string = text.to_string();
-        let cmd = DrawCmd::TextAtPixel(string, color, x, y, scale);
+        let cmd = DrawCmd::TextFloat(string, color, x, y, scale);
         self.draw_cmd(cmd);
     }
 

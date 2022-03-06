@@ -124,6 +124,9 @@ pub struct Config {
     pub move_tiles_sneak: usize,
     pub move_tiles_walk: usize,
     pub move_tiles_run: usize,
+    pub ui_inv_name_x_offset: f32,
+    pub ui_inv_name_y_offset: f32,
+    pub ui_inv_name_scale: f32,
 }
 
 impl Config {
