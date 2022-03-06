@@ -781,6 +781,17 @@ impl Panel {
 
         self.draw_cmds.clear();
     }
+
+    pub fn outline_area(&mut self, area: &Area) {
+        let filled = false;
+        let cell_offset = 0.5;
+        let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
+        self.rect_cmd(Pos::new(area.x_offset as i32, area.y_offset as i32),
+                      (area.width as u32, area.height as u32),
+                      cell_offset,
+                      filled,
+                      ui_color);
+    }
 }
 
 pub struct SpriteSheet {

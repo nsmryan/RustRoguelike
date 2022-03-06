@@ -839,6 +839,7 @@ impl Display {
             canvas.copy(&textures[&PanelName::Info], None, info_rect).unwrap();
 
             let info_area = &screen_areas[&PanelName::Info];
+            canvas_panel.outline_area(info_area);
             canvas_panel.justify_cmd("Info",
                                      Justify::Center,
                                      text_color,
@@ -852,6 +853,12 @@ impl Display {
             canvas.copy(&textures[&PanelName::Player], None, player_rect).unwrap();
 
             let player_area = &screen_areas[&PanelName::Player];
+            //canvas_panel.rect_cmd(Pos::new(player_area.x_offset as i32, player_area.y_offset as i32),
+            //                      (player_area.width as u32, player_area.height as u32),
+            //                      cell_offset,
+            //                      filled,
+            //                      ui_color);
+            canvas_panel.outline_area(player_area);
             canvas_panel.justify_cmd("Player",
                                      Justify::Center,
                                      text_color,

@@ -285,10 +285,10 @@ looking_glass_magnify_amount: 2
 
 hp_render_duration: 20
 
-x_offset_buttons: 150
-y_offset_buttons: 250
-x_spacing_buttons: 1000
-y_spacing_buttons: 350
+x_offset_buttons: 0.5
+y_offset_buttons: 2.0
+x_spacing_buttons: 6.5
+y_spacing_buttons: 3.0
 x_scale_buttons: 6.0
 y_scale_buttons: 2.0
 
