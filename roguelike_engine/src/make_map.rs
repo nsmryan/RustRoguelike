@@ -115,6 +115,12 @@ pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
             player_position = Pos::from(position);
         }
 
+        MapLoadConfig::TestArmil => {
+            let (new_map, position) = make_wall_test_armil(&mut game.level.entities, &game.config, &mut game.msg_log);
+            game.level.map = new_map;
+            player_position = Pos::from(position);
+        }
+
         MapLoadConfig::TestPlayer => {
             let (new_map, position) = make_player_test_map(&mut game.level.entities, &game.config, &mut game.msg_log);
             game.level.map = new_map;

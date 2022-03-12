@@ -683,6 +683,7 @@ impl Display {
             }
 
             Msg::Moved(entity_id, _move_type, _move_mode, pos) => {
+                dbg!(entity_id, pos);
                 self.state.pos[&entity_id] = pos;
             }
 

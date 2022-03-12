@@ -164,6 +164,7 @@ pub enum MapLoadConfig {
     TestSmoke,
     TestCorner,
     TestPlayer,
+    TestArmil,
     TestVaults,
     TestTraps,
     VaultFile(String),
@@ -186,6 +187,7 @@ impl fmt::Display for MapLoadConfig {
             MapLoadConfig::TestSmoke => write!(f, "test_smoke"),
             MapLoadConfig::TestCorner => write!(f, "test_corner"),
             MapLoadConfig::TestPlayer => write!(f, "test_player"),
+            MapLoadConfig::TestArmil => write!(f, "test_armil"),
             MapLoadConfig::TestVaults => write!(f, "test_vaults"),
             MapLoadConfig::TestTraps => write!(f, "test_traps"),
             MapLoadConfig::VaultFile(file) => write!(f, "vault_file {}", file),
@@ -214,6 +216,8 @@ impl FromStr for MapLoadConfig {
             return Ok(MapLoadConfig::TestSmoke);
         } else if s == "test_player" {
             return Ok(MapLoadConfig::TestPlayer);
+        } else if s == "test_armil" {
+            return Ok(MapLoadConfig::TestArmil);
         } else if s == "test_vaults" {
             return Ok(MapLoadConfig::TestVaults);
         } else if s == "test_traps" {

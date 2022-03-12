@@ -148,7 +148,7 @@ pub fn push_attack(entity_id: EntityId,
 
         data.entities.status[&target].frozen += config.push_stun_turns;
 
-        msg_log.log_front(Msg::Moved(target, MoveType::Move, MoveMode::Walk, past_pos));
+        msg_log.log(Msg::Moved(target, MoveType::Move, MoveMode::Walk, past_pos));
     } else {
         // otherwise crush them against the wall/entity
         damage = data.entities.hp[&target].hp;
