@@ -166,7 +166,6 @@ pub enum MapLoadConfig {
     TestPlayer,
     TestVaults,
     TestTraps,
-    FromFile(String),
     VaultFile(String),
     ProcGen(String),
 }
@@ -189,7 +188,6 @@ impl fmt::Display for MapLoadConfig {
             MapLoadConfig::TestPlayer => write!(f, "test_player"),
             MapLoadConfig::TestVaults => write!(f, "test_vaults"),
             MapLoadConfig::TestTraps => write!(f, "test_traps"),
-            MapLoadConfig::FromFile(file) => write!(f, "from_file {}", file),
             MapLoadConfig::VaultFile(file) => write!(f, "vault_file {}", file),
             MapLoadConfig::ProcGen(file) => write!(f, "procgen {}", file),
         }
@@ -220,9 +218,6 @@ impl FromStr for MapLoadConfig {
             return Ok(MapLoadConfig::TestVaults);
         } else if s == "test_traps" {
             return Ok(MapLoadConfig::TestTraps);
-        } else if s.starts_with("from_file") {
-            let args = s.split(" ").collect::<Vec<&str>>();
-            return Ok(MapLoadConfig::FromFile(args[1].to_string()));
         } else if s.starts_with("vault_file") {
             let args = s.split(" ").collect::<Vec<&str>>();
             return Ok(MapLoadConfig::VaultFile(args[1].to_string()));
