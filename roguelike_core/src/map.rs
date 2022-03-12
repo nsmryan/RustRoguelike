@@ -1327,7 +1327,12 @@ impl Map {
     pub fn place_intertile_wall(&mut self, pos: Pos, material: Surface, direction: Direction) {
         match direction {
             Direction::Left => {
-                if self[pos].left_wall == Wall::Empty {
+                let left_pos = move_x(pos, -1);
+                let tile_supports_wall = self.is_within_bounds(left_pos) && 
+                                         !self[left_pos].does_tile_block(BlockedType::Move) && 
+                                         self[pos].tile_type != TileType::Water;
+
+                if tile_supports_wall && self[pos].left_wall == Wall::Empty {
                     self[pos].left_wall = Wall::ShortWall;
                     self[pos].left_material = material;
                 }
@@ -1335,7 +1340,11 @@ impl Map {
 
             Direction::Right => {
                 let pos = move_x(pos, 1);
-                if self.is_within_bounds(pos) && self[pos].left_wall == Wall::Empty {
+                let tile_supports_wall = self.is_within_bounds(pos) && 
+                                         !self[pos].does_tile_block(BlockedType::Move) && 
+                                         self[pos].tile_type != TileType::Water;
+
+                if tile_supports_wall && self[pos].left_wall == Wall::Empty {
                     self[pos].left_wall = Wall::ShortWall;
                     self[pos].left_material = material;
                 }
@@ -1343,15 +1352,26 @@ impl Map {
 
             Direction::Up => {
                 let pos = move_y(pos, -1);
-                if self.is_within_bounds(pos) && self[pos].bottom_wall == Wall::Empty {
+                let tile_supports_wall = self.is_within_bounds(pos) && 
+                                         !self[pos].does_tile_block(BlockedType::Move) && 
+                                         self[pos].tile_type != TileType::Water;
+
+                if tile_supports_wall && self[pos].bottom_wall == Wall::Empty {
                     self[pos].bottom_wall = Wall::ShortWall;
                     self[pos].bottom_material = material;
                 }
             }
 
             Direction::Down => {
-                self[pos].bottom_wall = Wall::ShortWall;
-                self[pos].bottom_material = material;
+                let down_pos = move_y(pos, 1);
+                let tile_supports_wall = self.is_within_bounds(down_pos) &&
+                                         !self[down_pos].does_tile_block(BlockedType::Move) &&
+                                         self[down_pos].tile_type != TileType::Water;
+
+                if tile_supports_wall && self[pos].bottom_wall == Wall::Empty {
+                    self[pos].bottom_wall = Wall::ShortWall;
+                    self[pos].bottom_material = material;
+                }
             }
 
             Direction::DownLeft | Direction::DownRight | Direction::UpLeft | Direction::UpRight => {
