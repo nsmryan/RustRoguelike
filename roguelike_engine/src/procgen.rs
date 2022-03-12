@@ -6,9 +6,6 @@ use serde::{Serialize, Deserialize};
 
 use pathfinding::directed::astar::astar;
 
-//use rand::rngs::SmallRng;
-//use rand::{SeedableRng};
-
 use wfc_rs::{WfcImage, Wfc};
 
 use euclid::*;
@@ -487,6 +484,9 @@ fn place_monsters(game: &mut Game, player_id: EntityId, cmds: &Vec<ProcCmd>) {
                         game.level.entities.direction[&id] = 
                             game.level.entities.direction[&id].reverse();
                     }
+
+                    // Ensure that golems are not trapped or unreachable.
+                    clear_path_to(game, player_pos, pos);
                 }
 
                 potential_pos.remove(index);
