@@ -416,8 +416,7 @@ impl Display {
                     self.state.entity_is_in_fov(cause_id) == FovResult::Inside;
 
                 let visible_monster_sound = sound_from_monster && player_can_see_source;
-                let hit_pos_not_player = player_pos != hit_pos;
-                if !visible_monster_sound && sound_hits_player && hit_pos_not_player {
+                if !visible_monster_sound && sound_hits_player && cause_id != player_id {
                     let sound_aoe =
                         aoe_fill(map, AoeEffect::Sound, source_pos, radius, config);
 
