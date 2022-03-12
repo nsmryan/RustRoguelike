@@ -181,8 +181,7 @@ pub fn resolve_messages(game: &mut Game) {
                 let source_pos = game.level.entities.pos[&trap];
 
                 if let Some(blink_pos) = find_blink_pos(source_pos, &mut game.rng, &mut game.level) {
-                    //game.level.entities.set_pos(entity_id, blink_pos);
-                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, blink_pos));
+                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, blink_pos));
                 }
             }
 
