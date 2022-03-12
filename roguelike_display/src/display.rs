@@ -80,7 +80,7 @@ impl Display {
         let screen_area = canvas_panel.area();
         let (top_area, rest_area) = screen_area.split_top(canvas_panel.cells.0 as usize - 2);
         let (pip_area, map_area) = top_area.split_top(PIP_HEIGHT as usize);
-        let (player_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 4);
+        let (player_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 6);
         let (inventory_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 2);
         let info_area = rest_area;
         let menu_area = screen_area.centered((info_area.width as f32 * 1.5) as usize, (info_area.height as f32 * 1.5) as usize);
@@ -349,6 +349,10 @@ impl Display {
                 self.state.msg_lines.pop_front();
             }
         }
+    }
+
+    pub fn clear_console_messages(&mut self) {
+        self.state.msg_lines.clear();
     }
 
     pub fn process_message(&mut self, msg: Msg, map: &Map, config: &Config) {

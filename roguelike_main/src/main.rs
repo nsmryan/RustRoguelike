@@ -220,6 +220,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
     game.emit_state_messages();
     update_display(&mut game, &mut display, 0.1)?;
     game.msg_log.clear();
+    display.clear_console_messages();
 
     /* Main Game Loop */
     let mut frame_time = Instant::now();

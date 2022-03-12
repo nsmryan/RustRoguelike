@@ -1,4 +1,5 @@
 #[allow(unused_imports)]
+use std::mem;
 
 use roguelike_utils::line::*;
 use roguelike_utils::rng::*;
@@ -151,6 +152,10 @@ pub fn resolve_messages(game: &mut Game) {
                 if !game.level.entities.took_turn[&entity_id] &&
                     game.level.entities.behavior[&entity_id] != original_behavior {
                    ai_take_turn(entity_id, &mut game.level, &game.config, &mut game.msg_log);
+                }
+
+                if mem::discriminant(&behavior) != mem::discriminant(&original_behavior) {
+                    game.msg_log.log(Msg::BehaviorChanged(entity_id, behavior));
                 }
             }
 

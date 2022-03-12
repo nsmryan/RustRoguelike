@@ -42,11 +42,11 @@ impl Default for Behavior {
 }
 
 impl Behavior {
-    pub fn description(&self) -> String {
+    pub fn description(&self) -> &str {
         match self {
-            Behavior::Idle => "idle".to_string(),
-            Behavior::Investigating(_position) => "investigating".to_string(),
-            Behavior::Attacking(_obj_id) => "attacking".to_string(),
+            Behavior::Idle => "idle",
+            Behavior::Investigating(_position) => "investigating",
+            Behavior::Attacking(_obj_id) => "attacking",
         }
     }
 

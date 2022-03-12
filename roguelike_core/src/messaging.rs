@@ -46,6 +46,7 @@ pub enum Msg {
     JumpWall(EntityId, Pos, Pos), // current pos, new pos
     WallKick(EntityId, Pos),
     StateChange(EntityId, Behavior),
+    BehaviorChanged(EntityId, Behavior),
     Collided(EntityId, Pos),
     Yell(EntityId),
     ChangeMoveMode(EntityId, bool), // true = increase, false = decrease
@@ -179,6 +180,13 @@ impl fmt::Display for Msg {
                     Behavior::Idle => write!(f, "state_change_idle {}", entity_id),
                     Behavior::Investigating(pos) => write!(f, "state_change_investigating {} {} {}", entity_id, pos.x, pos.y),
                     Behavior::Attacking(target_id) => write!(f, "state_change_attacking {} {}", entity_id, target_id),
+                }
+            }
+            Msg::BehaviorChanged(entity_id, behavior) => {
+                match behavior {
+                    Behavior::Idle => write!(f, "behavior_changed_idle {}", entity_id),
+                    Behavior::Investigating(pos) => write!(f, "behavior_changed_investigating {} {} {}", entity_id, pos.x, pos.y),
+                    Behavior::Attacking(target_id) => write!(f, "behavior_changed_attacking {} {}", entity_id, target_id),
                 }
             }
             Msg::Collided(entity_id, pos) => write!(f, "collided {} {} {}", entity_id, pos.x, pos.y),
@@ -332,7 +340,7 @@ impl Msg {
             }
 
             Msg::Attack(attacker, attacked, damage) => {
-                return format!("{:?} attacked {:?} for {} damage",
+                return format!("{:?} hit {:?} ({} damage)",
                                data.entities.name[attacker],
                                data.entities.name[attacked],
                                damage);
@@ -374,9 +382,13 @@ impl Msg {
                 return "Did a wallkick".to_string();
             }
 
-            Msg::StateChange(_entity_id, behavior) => {
-                return format!("Changed state to {:?}", *behavior);
+            Msg::BehaviorChanged(entity_id, behavior) => {
+                return format!("{:?} is now {}", data.entities.name[entity_id], behavior.description());
             }
+
+            //Msg::StateChange(entity_id, behavior) => {
+            //    return format!("{:?} is now {}", data.entities.name[entity_id], behavior.description());
+            //}
 
             Msg::Yell(entity_id) => {
                 return format!("{:?} yelled", data.entities.name[entity_id]);
@@ -450,13 +462,14 @@ impl Msg {
                 return format!("{:?} was frozen!", data.entities.name[entity_id]);
             }
 
-            Msg::Triggered(_trap, entity_id) => {
-                return format!("{:?} triggered something!", data.entities.name[entity_id]);
-            }
+            // These probably doesn't need to be printed
+            //Msg::Triggered(trap, entity_id) => {
+            //    return format!("{:?} triggered a {:?} trap!", data.entities.name[entity_id], data.entities.name[trap]);
+            //}
 
-            Msg::Untriggered(_trap, entity_id) => {
-                return format!("{:?} stepped off something!", data.entities.name[entity_id]);
-            }
+            //Msg::Untriggered(_trap, entity_id) => {
+            //    return format!("{:?} stepped off something!", data.entities.name[entity_id]);
+            //}
 
             Msg::AddClass(class) => {
                 return format!("Player chose class {:?}!", class);
