@@ -142,11 +142,13 @@ pub fn ai_idle(monster_id: EntityId,
     } else if let Some(Message::Hit(_entity_id, origin_pos)) = level.entities.was_hit(monster_id) {
         msg_log.log(Msg::FaceTowards(monster_id, origin_pos));
         msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(origin_pos)));
-    } else if let Some(Message::Sound(entity_id, sound_pos)) = level.entities.heard_sound(monster_id) {
-        let is_player = entity_id == player_id;
+    } else if let Some(Message::Sound(sound_cause_id, sound_pos)) = level.entities.heard_sound(monster_id) {
+        let can_see = level.pos_in_fov(monster_id, sound_pos);
 
-        let needs_investigation = is_player;
+        let caused_by_golem = level.entities.typ[&sound_cause_id] == EntityType::Enemy;
+        let needs_investigation = !(can_see && caused_by_golem);
 
+        // Don't investigate a sound caused by another golem that you can see.
         if needs_investigation {
             msg_log.log(Msg::FaceTowards(monster_id, sound_pos));
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(sound_pos)));

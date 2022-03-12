@@ -342,7 +342,6 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
             text_list.push(display_state.msg_lines[index].clone());
         }
         let text_pos = Pos::new(1, 1);
-        text_list.reverse();
         panel.text_list_cmd(&text_list, text_color, text_pos, 1.0);
     }
 }
