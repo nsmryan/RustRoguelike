@@ -244,8 +244,9 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
         let mut drawn_info = false;
 
         // only display first object
-        if let Some(obj_id) = object_ids.first() {
-            let entity_in_fov = display_state.entity_is_in_fov(*obj_id) == FovResult::Inside;
+        //if let Some(obj_id) = object_ids.first() {
+        for obj_id in object_ids {
+            let entity_in_fov = display_state.entity_is_in_fov(obj_id) == FovResult::Inside;
 
             // only display things in the player's FOV
             if entity_in_fov {
@@ -267,25 +268,25 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
                 //    y_pos += 1;
                 //}
 
-                text_list.push(format!("{:?}", display_state.name[obj_id]));
-                if let Some(hp) = display_state.hp.get(obj_id) {
-                    text_list.push(format!("hp {:?}", hp));
+                text_list.push(format!("* {:?}", display_state.name[&obj_id]));
+                if let Some(hp) = display_state.hp.get(&obj_id) {
+                    text_list.push(format!(" hp {:?}", hp));
                 } else {
                     text_list.push("".to_string());
                 }
 
                 // show facing direction for player and monsters
-                if display_state.typ[obj_id] == EntityType::Player ||
-                   display_state.typ[obj_id] == EntityType::Enemy {
-                    if let Some(direction) = display_state.direction.get(obj_id) {
-                        text_list.push(format!("Facing {}", direction));
+                if display_state.typ[&obj_id] == EntityType::Player ||
+                   display_state.typ[&obj_id] == EntityType::Enemy {
+                    if let Some(direction) = display_state.direction.get(&obj_id) {
+                        text_list.push(format!(" facing {}", direction));
                     }
                 }
 
-                if matches!(display_state.hp.get(obj_id), Some(0)) {
+                if matches!(display_state.hp.get(&obj_id), Some(0)) {
                     text_list.push(format!("  {}", "dead"));
-                } else if let Some(behave) = display_state.behavior.get(obj_id) {
-                    text_list.push(format!("currently {}", behave));
+                } else if let Some(behave) = display_state.behavior.get(&obj_id) {
+                    text_list.push(format!(" currently {}", behave.description()));
                 }
             }
         }
@@ -294,7 +295,7 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
         if !drawn_info {
             for impr in display_state.impressions.iter() {
                 if impr.pos == info_pos {
-                    text_list.push("Golem".to_string());
+                    text_list.push("* Golem".to_string());
                     break;
                 }
             }

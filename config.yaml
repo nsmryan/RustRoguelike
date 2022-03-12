@@ -272,7 +272,7 @@ cursor_line: false
 # Debug option to display positions that effect FoV blocking between the player
 # and the cursor. These are the positions that where fog or other effects will
 # effect LoS.
-blocking_positions: true
+blocking_positions: false
 
 # Number of tiles that a smoke bomb reduces the FoV
 smoke_bomb_fov_block: 2
