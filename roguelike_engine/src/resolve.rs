@@ -935,7 +935,8 @@ fn resolve_try_movement(entity_id: EntityId,
         }
 
         MoveType::Pass => {
-            msg_log.log_front(Msg::Moved(entity_id, MoveType::Pass, MoveMode::Walk, movement.pos));
+            let move_mode = level.entities.move_mode[&entity_id];
+            msg_log.log_front(Msg::Moved(entity_id, MoveType::Pass, move_mode, movement.pos));
         }
 
         MoveType::WallKick => {
@@ -1629,10 +1630,12 @@ fn process_moved_message(entity_id: EntityId,
             }
         } else {
             // Only normal movements update the stance. Others like Blink leave it as-is.
-            if move_type == MoveType::Move {
+            if move_type != MoveType::Blink && move_type != MoveType::Misc {
                 if let Some(stance) = level.entities.stance.get(&entity_id) {
+                    dbg!(&stance, move_type, move_mode);
                     level.entities.stance[&entity_id] = update_stance(move_type, move_mode, *stance);
                     msg_log.log(Msg::Stance(entity_id, level.entities.stance[&entity_id]));
+                    dbg!(&level.entities.stance[&entity_id]);
                 }
             }
 

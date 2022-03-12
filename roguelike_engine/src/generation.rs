@@ -754,8 +754,9 @@ pub fn make_test_map(game: &mut Game) {
     game.level.map[(3, 8)].block_move = true;
     game.level.map[(3, 8)].tile_type = TileType::Wall;
 
-    let elf = make_pawn(&mut game.level.entities, &game.config, Pos::new(2, 9), &mut game.msg_log);
-    game.level.entities.direction[&elf] = Direction::Down;
+    //let golem = make_pawn(&mut game.level.entities, &game.config, Pos::new(2, 9), &mut game.msg_log);
+    let golem = make_gol(&mut game.level.entities, &game.config, Pos::new(2, 9), &mut game.msg_log);
+    game.level.entities.direction[&golem] = Direction::Down;
     make_spike_trap(&mut game.level.entities, &game.config, Pos::new(2, 10), &mut game.msg_log);
 
 
@@ -791,8 +792,10 @@ pub fn make_wall_test_map(entities: &mut Entities,
     map[(4, 4)].bottom_wall = Wall::ShortWall;
     map[(5, 4)].bottom_wall = Wall::ShortWall;
   
-    let pawn = make_pawn(entities, config, Pos::new(5, 5), msg_log);
-    entities.direction[&pawn] = Direction::Up;
+    //let golem = make_pawn(entities, config, Pos::new(5, 5), msg_log);
+    let golem = make_gol(entities, config, Pos::new(5, 5), msg_log);
+
+    entities.direction[&golem] = Direction::Up;
     //make_gol(entities, config, Pos::new(5, 5), msg_log);
     //make_armil(entities, config, Pos::new(5, 5), msg_log);
     make_column(entities, config, Pos::new(6, 4), msg_log);

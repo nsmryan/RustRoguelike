@@ -1340,6 +1340,7 @@ pub enum Stance {
 
 impl Stance {
     pub fn waited(&self, move_mode: MoveMode) -> Stance {
+        dbg!();
         match (self, move_mode) {
             (Stance::Crouching, MoveMode::Run) => Stance::Standing,
             (Stance::Standing, MoveMode::Sneak) => Stance::Crouching,
