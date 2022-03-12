@@ -139,6 +139,9 @@ pub fn ai_idle(monster_id: EntityId,
         } else {
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(entity_pos)));
         }
+    } else if let Some(Message::Hit(_entity_id, origin_pos)) = data.entities.was_hit(monster_id) {
+        msg_log.log(Msg::FaceTowards(monster_id, origin_pos));
+        msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(origin_pos)));
     } else if let Some(Message::Sound(entity_id, sound_pos)) = data.entities.heard_sound(monster_id) {
         let is_player = entity_id == player_id;
 
@@ -177,7 +180,10 @@ pub fn ai_investigate(target_pos: Pos,
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(player_pos)));
         }
     } else { // the monster can't see the player
-        if let Some(Message::Sound(_entity_id, pos)) = data.entities.heard_sound(monster_id) {
+        if let Some(Message::Hit(_entity_id, origin_pos)) = data.entities.was_hit(monster_id) {
+            msg_log.log(Msg::FaceTowards(monster_id, origin_pos));
+            msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(origin_pos)));
+        } else if let Some(Message::Sound(_entity_id, pos)) = data.entities.heard_sound(monster_id) {
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(pos)));
         } else {
             if target_pos == monster_pos { 

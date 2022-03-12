@@ -298,6 +298,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
                     recording.action(&game, &display.state, input_action);
                 }
 
+                log.console_output_only = game.config.minimal_output;
                 for msg_index in 0..game.msg_log.turn_messages.len() {
                     let msg = game.msg_log.turn_messages[msg_index];
                     let msg_line = &msg.msg_line(&game.level);
@@ -433,6 +434,7 @@ pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), Str
 fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(), String> {
     for msg in game.msg_log.turn_messages.iter() {
         display.process_message(*msg, &game.level.map, &game.config);
+        display.console_message(msg.msg_line(&game.level), &game.config);
     }
 
     let map_str = game.level.map.compact_chrs();

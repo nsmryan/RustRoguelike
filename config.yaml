@@ -260,7 +260,7 @@ attack_animation_speed: 40.0
 cursor_fade_seconds: 0.25
 
 # Whether or not to print messages
-minimal_output: false
+minimal_output: true
 
 # Whether or not to save the game between turns and load it on startup.
 # When the player loses, the game is delete.
@@ -307,3 +307,6 @@ ui_inv_name_0_scale: 1.0
 ui_inv_name_1_x_offset: 4.5
 ui_inv_name_1_y_offset: 0.8
 ui_inv_name_1_scale: 1.0
+
+# How many lines of message output to display in info panel
+display_console_lines: 8

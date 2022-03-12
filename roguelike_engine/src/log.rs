@@ -9,6 +9,7 @@ use crate::actions::*;
 pub struct Log {
     pub action_log: File,
     pub message_log: File,
+    pub console_output_only: bool,
 }
 
 impl Log {
@@ -24,6 +25,7 @@ impl Log {
         let log = Log {
             action_log,
             message_log,
+            console_output_only: false,
         };
 
         return log;
@@ -57,10 +59,12 @@ impl Log {
     }
 
     pub fn log(&mut self, typ: LogMsgType, log_message: &str) {
-        let log_msg = format!("{}: {}\n", typ, log_message);
-        self.message_log.write(log_msg.as_bytes()).unwrap();
-        print!("{}", log_msg);
-        stdout().flush().unwrap();
+        if typ == LogMsgType::Console || !self.console_output_only {
+            let log_msg = format!("{}: {}\n", typ, log_message);
+            self.message_log.write(log_msg.as_bytes()).unwrap();
+            print!("{}", log_msg);
+            stdout().flush().unwrap();
+        }
     }
 }
 

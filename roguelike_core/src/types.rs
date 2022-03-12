@@ -1705,6 +1705,7 @@ pub struct StatusEffect {
 pub enum Message {
     Sound(EntityId, Pos),
     Attack(EntityId),
+    Hit(EntityId, Pos),
 }
 
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
@@ -1922,6 +1923,14 @@ impl Entities {
 
     pub fn heard_sound(&mut self, entity_id: EntityId) -> Option<Message> {
         if let Some(index) = self.messages[&entity_id].iter().position(|msg| matches!(msg, Message::Sound(_, _))) {
+            return Some(self.messages[&entity_id].remove(index));
+        } else {
+            return None;
+        }
+    }
+
+    pub fn was_hit(&mut self, entity_id: EntityId) -> Option<Message> {
+        if let Some(index) = self.messages[&entity_id].iter().position(|msg| matches!(msg, Message::Hit(_, _))) {
             return Some(self.messages[&entity_id].remove(index));
         } else {
             return None;

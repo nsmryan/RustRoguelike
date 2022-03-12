@@ -34,11 +34,12 @@ pub enum PanelName {
     Player,
     Inventory,
     Menu,
+    Pip,
 }
 
 impl PanelName {
-    pub fn names() -> [PanelName; 5] {
-        return [PanelName::Info, PanelName::Map, PanelName::Player, PanelName::Inventory, PanelName::Menu];
+    pub fn names() -> [PanelName; 6] {
+        return [PanelName::Info, PanelName::Map, PanelName::Player, PanelName::Inventory, PanelName::Menu, PanelName::Pip];
     }
 }
 
@@ -77,7 +78,8 @@ impl Display {
         
         /* Lay out screen areas */
         let screen_area = canvas_panel.area();
-        let (map_area, rest_area) = screen_area.split_top(canvas_panel.cells.0 as usize - 2);
+        let (top_area, rest_area) = screen_area.split_top(canvas_panel.cells.0 as usize - 2);
+        let (pip_area, map_area) = top_area.split_top(PIP_HEIGHT as usize);
         let (player_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 4);
         let (inventory_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 2);
         let info_area = rest_area;
@@ -85,6 +87,7 @@ impl Display {
 
         let mut screen_areas = HashMap::new();
         screen_areas.insert(PanelName::Map, map_area);
+        screen_areas.insert(PanelName::Pip, pip_area);
         screen_areas.insert(PanelName::Info, info_area);
         screen_areas.insert(PanelName::Player, player_area);
         screen_areas.insert(PanelName::Inventory, inventory_area);
@@ -337,6 +340,15 @@ impl Display {
 
     pub fn map_message(&mut self, map_str: &str) {
         parse_map(map_str, &mut self.state.map);
+    }
+
+    pub fn console_message(&mut self, msg_line: String, config: &Config) {
+        if msg_line.len() > 0 {
+            self.state.msg_lines.push_back(msg_line);
+            if self.state.msg_lines.len() > config.display_console_lines {
+                self.state.msg_lines.pop_front();
+            }
+        }
     }
 
     pub fn process_message(&mut self, msg: Msg, map: &Map, config: &Config) {
@@ -801,7 +813,15 @@ impl Display {
         self.canvas.with_texture_canvas(&mut self.screen_texture, |canvas| {
             let dims = (dims.0 as u32, dims.1 as u32);
 
-            /* Split Screen Into Sections */
+            /* Draw Screen in Sections */
+            let pip_cell_dims = panels[&PanelName::Pip].cell_dims();
+            let (pip_width, pip_height) = (pip_cell_dims.0 * dims.0, pip_cell_dims.1 * dims.1);
+            let pip_src = Rect::new(0, 0, pip_width, pip_height);
+            let pip_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Pip]);
+            canvas.copy(&textures[&PanelName::Pip], pip_src, pip_rect).unwrap();
+
+            //let map_area = &screen_areas[&PanelName::Map];
+            //canvas_panel.outline_area(map_area, 0.05);
             let map_cell_dims = panels[&PanelName::Map].cell_dims();
             let (map_width, map_height) = (map_cell_dims.0 * dims.0, map_cell_dims.1 * dims.1);
             let map_src = Rect::new(0, 0, map_width, map_height);
@@ -839,7 +859,7 @@ impl Display {
             canvas.copy(&textures[&PanelName::Info], None, info_rect).unwrap();
 
             let info_area = &screen_areas[&PanelName::Info];
-            canvas_panel.outline_area(info_area);
+            canvas_panel.outline_area(info_area, 0.5);
             canvas_panel.justify_cmd("Info",
                                      Justify::Center,
                                      text_color,
@@ -853,7 +873,7 @@ impl Display {
             canvas.copy(&textures[&PanelName::Player], None, player_rect).unwrap();
 
             let player_area = &screen_areas[&PanelName::Player];
-            canvas_panel.outline_area(player_area);
+            canvas_panel.outline_area(player_area, 0.5);
             canvas_panel.justify_cmd("Player",
                                      Justify::Center,
                                      text_color,
@@ -933,6 +953,8 @@ pub struct DisplayState {
     // tiles that heard a sound
     pub sound_tiles: Vec<Pos>,
 
+    pub msg_lines: VecDeque<String>,
+
     // turn data from messages
     // Player FoV information. Missing tiles are Fov::Outside.
     pub fov: HashMap<Pos, FovResult>,
@@ -989,6 +1011,7 @@ impl DisplayState {
             impressions: Vec::new(),
             prev_turn_fov: Vec::new(),
             sound_tiles: Vec::new(),
+            msg_lines: VecDeque::new(),
             fov: HashMap::new(),
             entities_in_fov: HashMap::new(),
             use_pos: None,
@@ -1165,6 +1188,12 @@ fn create_panels(screen_areas: &HashMap<PanelName, Area>) -> HashMap<PanelName, 
     let mut panels = HashMap::new();
 
     let over_sample = 5;
+
+    let pip_pixels = (over_sample * PIP_WIDTH as u32 * FONT_WIDTH as u32, over_sample * PIP_HEIGHT as u32 * FONT_HEIGHT as u32);
+    let pip_dims = screen_areas[&PanelName::Pip].dims();
+    let pip_dims = (pip_dims.0 as u32, pip_dims.1 as u32);
+    let pip_panel = Panel::new(pip_pixels, pip_dims);
+    panels.insert(PanelName::Pip, pip_panel);
 
     let map_pixels = (over_sample * MAP_WIDTH as u32 * FONT_WIDTH as u32, over_sample * MAP_HEIGHT as u32 * FONT_HEIGHT as u32);
     let map_dims = screen_areas[&PanelName::Map].dims();

@@ -54,6 +54,12 @@ fn render_panels(panels: &mut Panels,
                  display_state: &mut DisplayState,
                  config: &Config,
                  sprites: &Vec<SpriteSheet>) {
+    {
+        let pip_panel = &mut panels.get_mut(&PanelName::Pip).unwrap();
+        let _pip = timer!("PIP");
+        render_pip(pip_panel, display_state);
+    }
+
     let panel = &mut panels.get_mut(&PanelName::Map).unwrap();
 
     {
@@ -143,34 +149,34 @@ fn render_placard(panel: &mut Panel, text: &str) {
                       1.0);
 }
 
-fn render_pips(panel: &mut Panel,
-               num_pips: u32,
-               pos: Pos,
-               color: Color) {
-    if num_pips > 0 {
-        for pip_index in 0..num_pips as i32 {
-            let filled = true;
-            let pip_pos = move_x(pos, pip_index);
-            panel.rect_cmd(pip_pos, (1, 1), 0.12, filled, color);
-        }
-    }
-}
-
-fn render_bar(panel: &mut Panel,
-              full: i32,
-              current: i32,
-              pos: Pos,
-              fg_color: Color,
-              bg_color: Color,
-              draw_outline: bool) {
-    let filled = true;
-    panel.rect_cmd(pos, (current as u32, 1), 0.0, filled, fg_color);
-
-    if draw_outline {
-        let filled = false;
-        panel.rect_cmd(pos, (full as u32, 1), 0.0, filled, bg_color);
-    }
-}
+//fn render_pips(panel: &mut Panel,
+//               num_pips: u32,
+//               pos: Pos,
+//               color: Color) {
+//    if num_pips > 0 {
+//        for pip_index in 0..num_pips as i32 {
+//            let filled = true;
+//            let pip_pos = move_x(pos, pip_index);
+//            panel.rect_cmd(pip_pos, (1, 1), 0.12, filled, color);
+//        }
+//    }
+//}
+//
+//fn render_bar(panel: &mut Panel,
+//              full: i32,
+//              current: i32,
+//              pos: Pos,
+//              fg_color: Color,
+//              bg_color: Color,
+//              draw_outline: bool) {
+//    let filled = true;
+//    panel.rect_cmd(pos, (current as u32, 1), 0.0, filled, fg_color);
+//
+//    if draw_outline {
+//        let filled = false;
+//        panel.rect_cmd(pos, (full as u32, 1), 0.0, filled, bg_color);
+//    }
+//}
 
 fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
     //render_placard(panel, "Player");
@@ -181,23 +187,23 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
 
     let x_offset = 1;
 
-    if let Some(hp) = display_state.hp.get(&player_id) {
-        let max_hp = display_state.max_hp[&player_id];
-        let current_hp = if *hp > 0 {
-            *hp
-        } else {
-            0
-        };
-        // TODO this color red comes from the UI mockups
-        let health_color = Color::new(0x96, 0x54, 0x56, 255);
-        let bar_pos = Pos::new(1, 2);
-        render_bar(panel, max_hp, current_hp, bar_pos, health_color, Color::white(), false);
-    }
+    //if let Some(hp) = display_state.hp.get(&player_id) {
+    //    let max_hp = display_state.max_hp[&player_id];
+    //    let current_hp = if *hp > 0 {
+    //        *hp
+    //    } else {
+    //        0
+    //    };
+    //    // TODO this color red comes from the UI mockups
+    //    let health_color = Color::new(0x96, 0x54, 0x56, 255);
+    //    let bar_pos = Pos::new(1, 2);
+    //    render_bar(panel, max_hp, current_hp, bar_pos, health_color, Color::white(), false);
+    //}
 
-    let energy = display_state.energy[&player_id];
-    // TODO this color orange comes from the UI mockups
-    let energy_color = Color::new(0xaf, 0x83, 0x56, 255);
-    render_pips(panel, energy, Pos::new(1, 3), energy_color);
+    //let energy = display_state.energy[&player_id];
+    //// TODO this color orange comes from the UI mockups
+    //let energy_color = Color::new(0xaf, 0x83, 0x56, 255);
+    //render_pips(panel, energy, Pos::new(1, 3), energy_color);
 
     let stance = display_state.stance[&player_id];
     list.push(format!("{}", stance));
@@ -207,17 +213,17 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
 
     list.push(format!("turn {}", display_state.turn_count));
 
-    let text_pos = Pos::new(x_offset, 5);
+    let text_pos = Pos::new(x_offset, 1);
 
     let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
     panel.text_list_cmd(&list, ui_color, text_pos, 1.0);
 }
 
 fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
+    let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
+
     if let Some(info_pos) = display_state.cursor_pos {
         let x_offset = 1;
-
-        let text_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
         let object_ids = display_state.entities_at_cursor.clone();
 
@@ -245,23 +251,28 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
             if entity_in_fov {
                 drawn_info = true;
 
-                if let Some(hp) = display_state.hp.get(obj_id) {
-                    y_pos += 1;
+                //if let Some(hp) = display_state.hp.get(obj_id) {
+                //    y_pos += 1;
 
-                    let health_color = Color::new(0x96, 0x54, 0x56, 255);
-                    let max_hp = display_state.max_hp[obj_id];
-                    render_bar(panel,
-                               max_hp,
-                               *hp,
-                               Pos::new(1, y_pos),
-                               health_color,
-                               Color::white(),
-                               false);
+                //    let health_color = Color::new(0x96, 0x54, 0x56, 255);
+                //    let max_hp = display_state.max_hp[obj_id];
+                //    render_bar(panel,
+                //               max_hp,
+                //               *hp,
+                //               Pos::new(1, y_pos),
+                //               health_color,
+                //               Color::white(),
+                //               false);
 
-                    y_pos += 1;
-                }
+                //    y_pos += 1;
+                //}
 
                 text_list.push(format!("{:?}", display_state.name[obj_id]));
+                if let Some(hp) = display_state.hp.get(obj_id) {
+                    text_list.push(format!("hp {:?}", hp));
+                } else {
+                    text_list.push("".to_string());
+                }
 
                 // show facing direction for player and monsters
                 if display_state.typ[obj_id] == EntityType::Player ||
@@ -322,6 +333,15 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
             }
         }
 
+        panel.text_list_cmd(&text_list, text_color, text_pos, 1.0);
+    } else {
+        // otherwise show console log messages
+        let mut text_list = Vec::new();
+        for index in 0..display_state.msg_lines.len() {
+            text_list.push(display_state.msg_lines[index].clone());
+        }
+        let text_pos = Pos::new(1, 1);
+        text_list.reverse();
         panel.text_list_cmd(&text_list, text_color, text_pos, 1.0);
     }
 }
@@ -790,6 +810,46 @@ fn render_map_middle(panel: &mut Panel, map: &Map, config: &Config, sprites: &Ve
 
             /* draw the between-tile walls appropriate to this tile */
             render_intertile_walls(panel, map, sprite_key, pos);
+        }
+    }
+}
+
+fn render_pip(panel: &mut Panel, display_state: &DisplayState) {
+    let player_id = display_state.player_id();
+
+    if let Some(hp) = display_state.hp.get(&player_id) {
+        let health_color = Color::new(0x96, 0x54, 0x56, 255);
+
+        //let max_hp = display_state.max_hp[&player_id];
+
+        let bar_width = MAP_WIDTH as f32 / 8.0;
+
+        let current_hp = if *hp > 0 {
+            *hp
+        } else {
+            0
+        };
+        for hp_index in 0..current_hp {
+            let offset = 0.1;
+            let bar_x = hp_index as f32 * bar_width + offset;
+            let bar_y = offset;
+            let filled = hp_index <= *hp;
+            panel.rect_float_cmd(bar_x, bar_y, (bar_width as f32 - offset * 2.0, 1.0 - offset * 2.0), filled, health_color);
+        }
+    }
+
+    if let Some(energy) = display_state.energy.get(&player_id) {
+        let energy_color = Color::new(176, 132, 87, 255);
+            
+        let bar_width = MAP_WIDTH as f32 / 8.0;
+
+        for energy_index in 0..*energy {
+            let x_offset = 0.3;
+            let y_offset = 0.2;
+            let bar_x = energy_index as f32 * bar_width + x_offset;
+            let bar_y = 1.0 + y_offset;
+            let filled = energy_index <= *energy;
+            panel.rect_float_cmd(bar_x, bar_y, (bar_width as f32 - x_offset * 2.0, 1.0 - y_offset * 2.0), filled, energy_color);
         }
     }
 }

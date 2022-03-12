@@ -1395,6 +1395,9 @@ fn throw_item(player_id: EntityId,
             }
 
             msg_log.log(Msg::Froze(hit_entity, stun_turns));
+
+            let player_pos = level.entities.pos[&player_id];
+            level.entities.messages[&hit_entity].push(Message::Hit(player_id, player_pos));
         }
     }
 

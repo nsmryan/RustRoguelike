@@ -275,9 +275,10 @@ impl fmt::Display for Msg {
 impl Msg {
     pub fn msg_line(&self, data: &Level) -> String {
         match self {
-            Msg::StartTurn => {
-                return "Starting turn".to_string();
-            }
+            // No need to show this to the player
+            //Msg::StartTurn => {
+            //    return "Starting turn".to_string();
+            //}
 
             Msg::Crushed(_obj_id, _pos) => {
                 return "An entity has been crushed".to_string();

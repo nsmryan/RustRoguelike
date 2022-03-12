@@ -100,6 +100,9 @@ pub const MSG_HEIGHT: u32 = PANEL_HEIGHT - 1;
 pub const MAP_WIDTH: i32 = 20;
 pub const MAP_HEIGHT: i32 = 20;
 
+pub const PIP_WIDTH: i32 = MAP_WIDTH;
+pub const PIP_HEIGHT: i32 = 2;
+
 pub const ISLAND_DISTANCE: i32 = 7;
 
 pub const ISLAND_RADIUS: i32 = 15;

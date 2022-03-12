@@ -136,6 +136,8 @@ pub struct Config {
     pub ui_inv_name_1_x_offset: f32,
     pub ui_inv_name_1_y_offset: f32,
     pub ui_inv_name_1_scale: f32,
+
+    pub display_console_lines: usize,
 }
 
 impl Config {

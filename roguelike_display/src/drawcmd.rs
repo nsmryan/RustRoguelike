@@ -30,6 +30,7 @@ pub enum DrawCmd {
     TextFloat(String, Color, f32, f32, f32), // text, color, x, y, scale
     TextJustify(String, Justify, Color, Color, Pos, u32, f32), // text, justify, fg color, bg color, tile pos, width in cells, scale
     Rect(Pos, (u32, u32), f32, bool, Color), // start cell, num cells width/height, offset percent into cell, color
+    RectFloat(f32, f32, (f32, f32), bool, Color), // x, y, width/height, color
     Fill(Pos, Color),
 }
 
@@ -51,6 +52,7 @@ impl DrawCmd {
             DrawCmd::TextFloat(_, _, x, y, _) => Pos::new(*x as i32, *y as i32),
             DrawCmd::TextJustify(_, _, _, _, pos, _, _) => *pos,
             DrawCmd::Rect(pos, _, _, _, _) => *pos,
+            DrawCmd::RectFloat(x, y, _, _, _) => Pos::new(*x as i32, *y as i32),
             DrawCmd::Fill(pos, _) => *pos,
         }
     }
@@ -400,6 +402,32 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             }
         }
 
+        DrawCmd::RectFloat(x, y, dims, filled, color) => {
+            let (cell_width, cell_height) = panel.cell_dims();
+
+            canvas.set_draw_color(sdl2_color(*color));
+
+            let x_offset = (*x * cell_width as f32) as i32;
+            let y_offset = (*y * cell_height as f32) as i32;
+
+            let width = (dims.0 * cell_width as f32) as u32;
+            let height = (dims.1 * cell_height as f32) as u32;
+
+            let size = (panel.num_pixels.0 / panel.cells.0) / 5;
+            if *filled {
+                canvas.fill_rect(Rect::new(x_offset, y_offset, width, height)).unwrap();
+            } else {
+                // left down
+                canvas.fill_rect(Rect::new(x_offset, y_offset, size, height)).unwrap();
+                // top
+                canvas.fill_rect(Rect::new(x_offset, y_offset, width + size, size)).unwrap();
+                // right down
+                canvas.fill_rect(Rect::new(x_offset + width as i32, y_offset, size, height)).unwrap();
+                // bottom
+                canvas.fill_rect(Rect::new(x_offset, y_offset + height as i32 - size as i32, width + size, size)).unwrap();
+            }
+        }
+
         DrawCmd::Fill(pos, color) => {
             let (cell_width, cell_height) = panel.cell_dims();
             canvas.set_draw_color(sdl2_color(*color));
@@ -714,6 +742,11 @@ impl Panel {
         self.draw_cmd(cmd);
     }
 
+    pub fn rect_float_cmd(&mut self, x: f32, y: f32, dims: (f32, f32), filled: bool, color: Color) {
+        let cmd = DrawCmd::RectFloat(x, y, dims, filled, color);
+        self.draw_cmd(cmd);
+    }
+
     pub fn fill_cmd(&mut self, pos: Pos, color: Color) {
         let cmd = DrawCmd::Fill(pos, color);
         self.draw_cmd(cmd);
@@ -724,9 +757,15 @@ impl Panel {
     }
 
     pub fn process_cmds_if_new(&mut self, clear: bool, texture: &mut Texture, canvas: &mut WindowCanvas, sprites: &mut Vec<SpriteSheet>) {
-        // As a simple optimization, only redraw if the commands haven't changed. This is common
-        // for informational panels.
-        if self.draw_cmds != self.old_draw_cmds {
+        // If there are no commands, just clear the panel with black.
+        if self.draw_cmds.len() == 0 {
+            canvas.with_texture_canvas(texture, |canvas| {
+                  canvas.set_draw_color(Sdl2Color::RGBA(0, 0, 0, 255));
+                  canvas.clear();
+            }).unwrap();
+        } else if self.draw_cmds != self.old_draw_cmds {
+            // As a simple optimization, only redraw if the commands haven't changed. This is common
+            // for informational panels.
             self.process_cmds(clear,
                               texture,
                               canvas,
@@ -782,9 +821,8 @@ impl Panel {
         self.draw_cmds.clear();
     }
 
-    pub fn outline_area(&mut self, area: &Area) {
+    pub fn outline_area(&mut self, area: &Area, cell_offset: f32) {
         let filled = false;
-        let cell_offset = 0.5;
         let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
         self.rect_cmd(Pos::new(area.x_offset as i32, area.y_offset as i32),
                       (area.width as u32, area.height as u32),
