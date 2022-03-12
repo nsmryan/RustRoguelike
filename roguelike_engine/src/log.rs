@@ -59,7 +59,7 @@ impl Log {
     }
 
     pub fn log(&mut self, typ: LogMsgType, log_message: &str) {
-        if typ == LogMsgType::Console || !self.console_output_only {
+        if typ == LogMsgType::Console || typ == LogMsgType::Output || !self.console_output_only {
             let log_msg = format!("{}: {}\n", typ, log_message);
             self.message_log.write(log_msg.as_bytes()).unwrap();
             print!("{}", log_msg);

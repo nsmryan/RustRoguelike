@@ -159,7 +159,7 @@ fn step_ai(game: &mut Game) {
 
        resolve_messages(game);
 
-       // if there are remaining messages for an entity, clear them
+       // If there are remaining messages for an entity, clear them
        game.level.entities.messages[key].clear();
     }
 }

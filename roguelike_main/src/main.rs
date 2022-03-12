@@ -299,7 +299,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
                     recording.action(&game, &display.state, input_action);
                 }
 
-                log.console_output_only = game.config.minimal_output;
+                log.console_output_only = !game.config.minimal_output;
                 for msg_index in 0..game.msg_log.turn_messages.len() {
                     let msg = game.msg_log.turn_messages[msg_index];
                     let msg_line = &msg.msg_line(&game.level);

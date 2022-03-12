@@ -753,6 +753,10 @@ pub fn make_test_map(game: &mut Game) {
     game.level.map[(1, 8)].tile_type = TileType::Wall;
     game.level.map[(3, 8)].block_move = true;
     game.level.map[(3, 8)].tile_type = TileType::Wall;
+    game.level.map[(3, 7)].block_move = true;
+    game.level.map[(3, 7)].tile_type = TileType::Wall;
+    game.level.map[(3, 6)].block_move = true;
+    game.level.map[(3, 6)].tile_type = TileType::Wall;
 
     //let golem = make_pawn(&mut game.level.entities, &game.config, Pos::new(2, 9), &mut game.msg_log);
     let golem = make_gol(&mut game.level.entities, &game.config, Pos::new(2, 9), &mut game.msg_log);

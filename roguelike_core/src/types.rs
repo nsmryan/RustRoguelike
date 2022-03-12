@@ -1707,6 +1707,7 @@ pub enum Message {
     Sound(EntityId, Pos),
     Attack(EntityId),
     Hit(EntityId, Pos),
+    Disappeared(EntityId),
 }
 
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
@@ -1912,6 +1913,14 @@ impl Entities {
         }
 
         return traps;
+    }
+
+    pub fn target_disappeared(&mut self, entity_id: EntityId) -> Option<Message> {
+        if let Some(index) = self.messages[&entity_id].iter().position(|msg| matches!(msg, Message::Disappeared(_))) {
+            return Some(self.messages[&entity_id].remove(index));
+        } else {
+            return None;
+        }
     }
 
     pub fn was_attacked(&mut self, entity_id: EntityId) -> Option<Message> {

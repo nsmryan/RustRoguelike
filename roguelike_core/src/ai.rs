@@ -56,13 +56,13 @@ impl Behavior {
 }
 
 pub fn ai_take_turn(monster_id: EntityId,
-                    data: &mut Level,
+                    level: &mut Level,
                     config: &Config,
                     msg_log: &mut MsgLog) {
-    if data.entities.status[&monster_id].alive {
-        match data.entities.ai.get(&monster_id) {
+    if level.entities.status[&monster_id].alive {
+        match level.entities.ai.get(&monster_id) {
             Some(Ai::Basic) => {
-                basic_ai_take_turn(monster_id, data, msg_log, config);
+                basic_ai_take_turn(monster_id, level, msg_log, config);
             }
 
             None => {
@@ -73,24 +73,24 @@ pub fn ai_take_turn(monster_id: EntityId,
 }
 
 pub fn basic_ai_take_turn(monster_id: EntityId,
-                          data: &mut Level,
+                          level: &mut Level,
                           msg_log: &mut MsgLog,
                           config: &Config) {
-    let monster_pos = data.entities.pos[&monster_id];
+    let monster_pos = level.entities.pos[&monster_id];
 
-    if data.map.is_within_bounds(monster_pos) {
-        if data.entities.status[&monster_id].frozen == 0 {
-            match data.entities.behavior[&monster_id] {
+    if level.map.is_within_bounds(monster_pos) {
+        if level.entities.status[&monster_id].frozen == 0 {
+            match level.entities.behavior[&monster_id] {
                 Behavior::Idle => {
-                    ai_idle(monster_id, data, msg_log, config);
+                    ai_idle(monster_id, level, msg_log, config);
                 }
 
                 Behavior::Investigating(target_pos) => {
-                    ai_investigate(target_pos, monster_id, data, msg_log, config);
+                    ai_investigate(target_pos, monster_id, level, msg_log, config);
                 }
 
                 Behavior::Attacking(object_id) => {
-                    ai_attack(monster_id, object_id, data, msg_log, config);
+                    ai_attack(monster_id, object_id, level, msg_log, config);
                 }
             }
         }
@@ -99,10 +99,10 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
 
 pub fn ai_attack(monster_id: EntityId,
                  target_id: EntityId,
-                 data: &mut Level,
+                 level: &mut Level,
                  msg_log: &mut MsgLog,
                  _config: &Config) {
-    let target_pos = data.entities.pos[&target_id];
+    let target_pos = level.entities.pos[&target_id];
 
     // we need to turn towards the target first, so the
     // rest of the processing is done in the AIAttack message
@@ -111,38 +111,38 @@ pub fn ai_attack(monster_id: EntityId,
 }
 
 pub fn ai_idle(monster_id: EntityId,
-               data: &mut Level,
+               level: &mut Level,
                msg_log: &mut MsgLog,
                config: &Config) {
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     if config.sound_golem_idle_radius > 0 {
-        let monster_pos = data.entities.pos[&monster_id];
+        let monster_pos = level.entities.pos[&monster_id];
         msg_log.log(Msg::Sound(monster_id, monster_pos, config.sound_golem_idle_radius));
     }
 
-    if ai_is_in_fov(monster_id, player_id, data, config) {
-        let player_pos = data.entities.pos[&player_id];
+    if ai_is_in_fov(monster_id, player_id, level, config) {
+        let player_pos = level.entities.pos[&player_id];
         msg_log.log(Msg::FaceTowards(monster_id, player_pos));
 
-        if data.entities.attack.get(&monster_id).is_some() {
+        if level.entities.attack.get(&monster_id).is_some() {
             msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(player_id)));
         } else {
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(player_pos)));
         }
-    } else if let Some(Message::Attack(entity_id)) = data.entities.was_attacked(monster_id) {
-    let entity_pos = data.entities.pos[&entity_id];
+    } else if let Some(Message::Attack(entity_id)) = level.entities.was_attacked(monster_id) {
+    let entity_pos = level.entities.pos[&entity_id];
         msg_log.log(Msg::FaceTowards(monster_id, entity_pos));
 
-        if data.entities.attack.get(&monster_id).is_some() {
+        if level.entities.attack.get(&monster_id).is_some() {
             msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(entity_id)));
         } else {
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(entity_pos)));
         }
-    } else if let Some(Message::Hit(_entity_id, origin_pos)) = data.entities.was_hit(monster_id) {
+    } else if let Some(Message::Hit(_entity_id, origin_pos)) = level.entities.was_hit(monster_id) {
         msg_log.log(Msg::FaceTowards(monster_id, origin_pos));
         msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(origin_pos)));
-    } else if let Some(Message::Sound(entity_id, sound_pos)) = data.entities.heard_sound(monster_id) {
+    } else if let Some(Message::Sound(entity_id, sound_pos)) = level.entities.heard_sound(monster_id) {
         let is_player = entity_id == player_id;
 
         let needs_investigation = is_player;
@@ -156,53 +156,74 @@ pub fn ai_idle(monster_id: EntityId,
 
 pub fn ai_investigate(target_pos: Pos, 
                       monster_id: EntityId,
-                      data: &mut Level,
+                      level: &mut Level,
                       msg_log: &mut MsgLog,
                       config: &Config) {
-    let player_id = data.find_by_name(EntityName::Player).unwrap();
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
 
-    let monster_pos = data.entities.pos[&monster_id];
+    let monster_pos = level.entities.pos[&monster_id];
 
-    let player_in_fov = ai_is_in_fov(monster_id, player_id, data, config);
+    let player_in_fov = ai_is_in_fov(monster_id, player_id, level, config);
 
     if player_in_fov {
-        //let fov_path_clear = data.map.path_blocked_fov(monster_pos, player_pos).is_none();
-        let player_pos = data.entities.pos[&player_id];
+        //let fov_path_clear = level.map.path_blocked_fov(monster_pos, player_pos).is_none();
+        let player_pos = level.entities.pos[&player_id];
         msg_log.log(Msg::FaceTowards(monster_id, player_pos));
 
-        if data.entities.attack.get(&monster_id).is_some() {
+        if level.entities.attack.get(&monster_id).is_some() {
             msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(player_id)));
         } else {
             // if the monster cannot attack, just keep walking towards the target.
-            ai_move_towards_target(player_pos, monster_id, data, msg_log);
+            ai_move_towards_target(player_pos, monster_id, level, msg_log);
 
-            data.entities.took_turn[&monster_id] = true;
+            level.entities.took_turn[&monster_id] = true;
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(player_pos)));
         }
     } else { // the monster can't see the player
-        if let Some(Message::Hit(_entity_id, origin_pos)) = data.entities.was_hit(monster_id) {
+        if let Some(Message::Hit(_entity_id, origin_pos)) = level.entities.was_hit(monster_id) {
             msg_log.log(Msg::FaceTowards(monster_id, origin_pos));
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(origin_pos)));
-        } else if let Some(Message::Sound(_entity_id, pos)) = data.entities.heard_sound(monster_id) {
-            msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(pos)));
+        } else if let Some(Message::Sound(sound_cause_id, sound_pos)) = level.entities.heard_sound(monster_id) {
+            let can_see = level.pos_in_fov(monster_id, sound_pos);
+
+            let caused_by_golem = level.entities.typ[&sound_cause_id] == EntityType::Enemy;
+            let needs_investigation = !(can_see && caused_by_golem);
+
+            // Only investigate if: we can't see the tile, or we can see it and there is not
+            // already a golem there.
+            // This prevents golems from following each other around when they should realize
+            // that a sound is caued by another golem
+            if needs_investigation {
+                msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(sound_pos)));
+            }
         } else {
-            if target_pos == monster_pos { 
+            // If the golem reached the target, they become idle.
+            // If they are next to the target, and it is occupied, they also become idle,
+            // but face towards the target in case they aren't already.
+            // Otherwise they attempt to step towards the target position.
+            let nearly_reached_target = distance(target_pos, monster_pos) == 1 && level.pos_blocked(target_pos);
+            let reached_target = target_pos == monster_pos;
+            if reached_target || nearly_reached_target {
+                if nearly_reached_target {
+                    msg_log.log(Msg::FaceTowards(monster_id, target_pos));
+                }
+
                 // monster reached their target position
-                data.entities.took_turn[&monster_id] = true;
+                level.entities.took_turn[&monster_id] = true;
                 msg_log.log(Msg::StateChange(monster_id, Behavior::Idle));
             } else {
-                ai_move_towards_target(target_pos, monster_id, data, msg_log);
+                ai_move_towards_target(target_pos, monster_id, level, msg_log);
             }
         }
     }
 }
 
-fn ai_move_towards_target(target_pos: Pos, monster_id: EntityId, data: &mut Level, msg_log: &mut MsgLog) {
-    let monster_pos = data.entities.pos[&monster_id];
+fn ai_move_towards_target(target_pos: Pos, monster_id: EntityId, level: &mut Level, msg_log: &mut MsgLog) {
+    let monster_pos = level.entities.pos[&monster_id];
 
     // if the monster has not reached its target, move towards the target.
     let must_reach = false;
-    let pos_offset = ai_take_astar_step(monster_id, target_pos, must_reach, &data);
+    let pos_offset = ai_take_astar_step(monster_id, target_pos, must_reach, &level);
     let move_pos = add_pos(monster_pos, pos_offset);
 
     if let Some(direction) = Direction::from_positions(monster_pos, move_pos) {
@@ -212,36 +233,36 @@ fn ai_move_towards_target(target_pos: Pos, monster_id: EntityId, data: &mut Leve
 
 pub fn ai_pos_that_hit_target(monster_id: EntityId,
                               target_id: EntityId,
-                              data: &mut Level,
+                              level: &mut Level,
                               config: &Config) -> Vec<Pos> {
     let mut potential_move_targets = Vec::new();
 
-    let target_pos = data.entities.pos[&target_id];
-    let monster_pos = data.entities.pos[&monster_id];
+    let target_pos = level.entities.pos[&target_id];
+    let monster_pos = level.entities.pos[&monster_id];
 
     // check all movement options in case one lets us hit the target
-    let attack = data.entities.attack[&monster_id];
-    let direction = data.entities.direction[&monster_id];
+    let attack = level.entities.attack[&monster_id];
+    let direction = level.entities.direction[&monster_id];
     for move_action in &Direction::move_actions() {
         for attack_offset in attack.attacks_with_reach(&move_action) {
             let attackable_pos = add_pos(target_pos, attack_offset);
 
             if attackable_pos == monster_pos ||
-               !data.map.is_within_bounds(attackable_pos) {
+               !level.map.is_within_bounds(attackable_pos) {
                 continue;
             }
 
-            data.entities.set_pos(monster_id, attackable_pos);
-            data.entities.face(monster_id, target_pos);
-            let can_hit = ai_can_hit_target(data, monster_id, target_pos, &attack, config).is_some();
+            level.entities.set_pos(monster_id, attackable_pos);
+            level.entities.face(monster_id, target_pos);
+            let can_hit = ai_can_hit_target(level, monster_id, target_pos, &attack, config).is_some();
 
             if can_hit {
                 potential_move_targets.push(attackable_pos);
             }
         }
     }
-    data.entities.set_pos(monster_id, monster_pos);
-    data.entities.direction[&monster_id] = direction;
+    level.entities.set_pos(monster_id, monster_pos);
+    level.entities.direction[&monster_id] = direction;
 
     return potential_move_targets;
 }
@@ -249,22 +270,22 @@ pub fn ai_pos_that_hit_target(monster_id: EntityId,
 pub fn ai_fov_cost(monster_id: EntityId,
                    check_pos: Pos,
                    target_pos: Pos,
-                   data: &mut Level,
+                   level: &mut Level,
                    _config: &Config) -> usize {
-    let monster_pos = data.entities.pos[&monster_id];
+    let monster_pos = level.entities.pos[&monster_id];
 
     // the fov_cost is added in if the next move would leave the target's FOV
-    data.entities.set_pos(monster_id, check_pos);
-    let cur_dir = data.entities.direction[&monster_id];
-    data.entities.face(monster_id, target_pos);
+    level.entities.set_pos(monster_id, check_pos);
+    let cur_dir = level.entities.direction[&monster_id];
+    level.entities.face(monster_id, target_pos);
     let cost =
-        if data.pos_in_fov(monster_id, target_pos) {
+        if level.pos_in_fov(monster_id, target_pos) {
              NOT_IN_FOV_COST
         } else {
             0
         };
-    data.entities.direction[&monster_id] = cur_dir;
-    data.entities.set_pos(monster_id, monster_pos);
+    level.entities.direction[&monster_id] = cur_dir;
+    level.entities.set_pos(monster_id, monster_pos);
 
     return cost;
 }
@@ -273,15 +294,15 @@ pub fn ai_target_pos_cost(monster_id: EntityId,
                           target_id: EntityId,
                           check_pos: Pos,
                           lowest_cost: usize,
-                          data: &mut Level,
+                          level: &mut Level,
                           config: &Config) -> Option<(usize, Pos)> {
-    let monster_pos = data.entities.pos[&monster_id];
-    let target_pos = data.entities.pos[&target_id];
-    let movement = data.entities.movement[&monster_id];
+    let monster_pos = level.entities.pos[&monster_id];
+    let target_pos = level.entities.pos[&target_id];
+    let movement = level.entities.movement[&monster_id];
 
     let mut cost: usize = 0;
 
-    cost += ai_fov_cost(monster_id, check_pos, target_pos, data, config);
+    cost += ai_fov_cost(monster_id, check_pos, target_pos, level, config);
 
     // if the current cost is already higher then the lowest cost found so far,
     // there is no reason to consider this path
@@ -297,7 +318,7 @@ pub fn ai_target_pos_cost(monster_id: EntityId,
 
     let must_reach = true;
     let traps_block = true;
-    let path = data.path_between(monster_pos, check_pos, movement, must_reach, traps_block, None);
+    let path = level.path_between(monster_pos, check_pos, movement, must_reach, traps_block, None);
 
     // paths contain the starting square, so less than 2 is no path at all
     if path.len() < 2 {
@@ -311,10 +332,10 @@ pub fn ai_target_pos_cost(monster_id: EntityId,
     return Some((cost, next_pos));
 }
 
-pub fn ai_attempt_step(monster_id: EntityId, new_pos: Pos, data: &Level) -> Option<Pos> {
-    let monster_pos = data.entities.pos[&monster_id];
+pub fn ai_attempt_step(monster_id: EntityId, new_pos: Pos, level: &Level) -> Option<Pos> {
+    let monster_pos = level.entities.pos[&monster_id];
 
-    let pos_offset = ai_take_astar_step(monster_id, new_pos, true, &data);
+    let pos_offset = ai_take_astar_step(monster_id, new_pos, true, &level);
 
     let step_pos;
     if pos_mag(pos_offset) > 0 {
@@ -327,13 +348,13 @@ pub fn ai_attempt_step(monster_id: EntityId, new_pos: Pos, data: &Level) -> Opti
 }
 
 
-pub fn ai_can_hit_target(data: &mut Level,
+pub fn ai_can_hit_target(level: &mut Level,
                          monster_id: EntityId,
                          target_pos: Pos,
                          reach: &Reach,
                          _config: &Config) -> Option<Pos> {
     let mut hit_pos = None;
-    let monster_pos = data.entities.pos[&monster_id];
+    let monster_pos = level.entities.pos[&monster_id];
 
     // don't allow hitting from the same tile...
     if target_pos == monster_pos {
@@ -342,7 +363,7 @@ pub fn ai_can_hit_target(data: &mut Level,
 
     // we don't use ai_is_in_fov here because the other checks already
     // cover blocked movement.
-    let within_fov = data.pos_in_fov(monster_id, target_pos);
+    let within_fov = level.pos_in_fov(monster_id, target_pos);
 
     let traps_block = false;
 
@@ -350,9 +371,9 @@ pub fn ai_can_hit_target(data: &mut Level,
     // clear_path_up_to checks for entities, not including the target pos
     // which contains the player, while path_blocked_move only checks the map
     // up to and including the player pos.
-    let clear_path = data.clear_path_up_to(monster_pos, target_pos, traps_block);
-    let clear_map = data.entities.attack_type[&monster_id] == AttackType::Ranged ||
-                    data.map.path_blocked_move(monster_pos, target_pos).is_none();
+    let clear_path = level.clear_path_up_to(monster_pos, target_pos, traps_block);
+    let clear_map = level.entities.attack_type[&monster_id] == AttackType::Ranged ||
+                    level.map.path_blocked_move(monster_pos, target_pos).is_none();
 
     if within_fov && clear_path && clear_map {
         // get all locations they can hit
@@ -372,15 +393,15 @@ pub fn ai_can_hit_target(data: &mut Level,
 
 pub fn ai_move_to_attack_pos(monster_id: EntityId,
                              target_id: EntityId,
-                             data: &mut Level,
+                             level: &mut Level,
                              config: &Config) -> Option<Pos> {
-    let monster_pos = data.entities.pos[&monster_id];
+    let monster_pos = level.entities.pos[&monster_id];
 
-    let old_dir = data.entities.direction[&monster_id];
+    let old_dir = level.entities.direction[&monster_id];
 
     let mut new_pos = monster_pos;
 
-    let mut potential_move_targets = ai_pos_that_hit_target(monster_id, target_id, data, config);
+    let mut potential_move_targets = ai_pos_that_hit_target(monster_id, target_id, level, config);
 
     // sort by distance to monster to we consider closer positions first, allowing us to
     // skip far away paths we won't take anyway.
@@ -394,10 +415,10 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     // look through all potential positions for the shortest path
     let mut lowest_cost = std::usize::MAX;
     for target in potential_move_targets {
-        let maybe_cost = ai_target_pos_cost(monster_id, target_id, target, lowest_cost, data, config);
+        let maybe_cost = ai_target_pos_cost(monster_id, target_id, target, lowest_cost, level, config);
 
         if let Some((cost, next_pos)) = maybe_cost {
-            let turn_dir = data.entities.face_to(monster_id, next_pos);
+            let turn_dir = level.entities.face_to(monster_id, next_pos);
             let turn_amount = old_dir.turn_amount(turn_dir);
 
             path_solutions.push(((cost, turn_amount.abs()), next_pos));
@@ -412,22 +433,22 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
     }
 
     // step towards the closest location that lets us hit the target
-    let maybe_pos = ai_attempt_step(monster_id, new_pos, &data);
+    let maybe_pos = ai_attempt_step(monster_id, new_pos, &level);
     return maybe_pos;
 }
 
 // NOTE perhaps this should be merged into is_in_fov?
-pub fn ai_is_in_fov(monster_id: EntityId, target_id: EntityId, data: &mut Level, _config: &Config) -> bool {
-    let monster_pos = data.entities.pos[&monster_id];
-    let target_pos = data.entities.pos[&target_id];
+pub fn ai_is_in_fov(monster_id: EntityId, target_id: EntityId, level: &mut Level, _config: &Config) -> bool {
+    let monster_pos = level.entities.pos[&monster_id];
+    let target_pos = level.entities.pos[&target_id];
 
-    let within_fov = data.pos_in_fov(monster_id, target_pos);
-    let move_blocked = data.map.path_blocked_move(monster_pos, target_pos);
+    let within_fov = level.pos_in_fov(monster_id, target_pos);
+    let move_blocked = level.map.path_blocked_move(monster_pos, target_pos);
 
     if within_fov && move_blocked.is_some() {
         let move_blocked = move_blocked.unwrap();
         let blocked_by_short_wall = move_blocked.wall_type == Wall::ShortWall;
-        let target_stance = data.entities.stance[&target_id];
+        let target_stance = level.entities.stance[&target_id];
 
         return blocked_by_short_wall && target_stance != Stance::Crouching;
     } else {
@@ -435,13 +456,13 @@ pub fn ai_is_in_fov(monster_id: EntityId, target_id: EntityId, data: &mut Level,
     }
 }
 
-fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, data: &Level) -> Option<i32> {
+fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, level: &Level) -> Option<i32> {
     let mut cost = Some(1);
 
     // check for an armed trap in the list of entities on this tile
-    for entity_id in data.has_entities(next) {
-        if data.entities.trap.get(&entity_id).is_some() &&
-           data.entities.armed.get(&entity_id) == Some(&true) {
+    for entity_id in level.has_entities(next) {
+        if level.entities.trap.get(&entity_id).is_some() &&
+           level.entities.armed.get(&entity_id) == Some(&true) {
                // NOTE determined randomly. could be infinite, or smaller?
                cost = None;
         }
@@ -453,13 +474,13 @@ fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, data: &Level) -> Option<i32
 fn ai_astar_step(monster_id: EntityId,
                  target_pos: Pos,
                  must_reach: bool,
-                 data: &Level) -> Vec<Pos> {
-    let reach = data.entities.movement[&monster_id];
-    let monster_pos = data.entities.pos[&monster_id];
+                 level: &Level) -> Vec<Pos> {
+    let reach = level.entities.movement[&monster_id];
+    let monster_pos = level.entities.pos[&monster_id];
 
     let traps_block = true;
 
-    let path = data.path_between(monster_pos, target_pos, reach, must_reach, traps_block, Some(ai_astar_cost));
+    let path = level.path_between(monster_pos, target_pos, reach, must_reach, traps_block, Some(ai_astar_cost));
 
     return path;
 }
@@ -467,11 +488,11 @@ fn ai_astar_step(monster_id: EntityId,
 fn ai_take_astar_step(monster_id: EntityId,
                       target_pos: Pos,
                       must_reach: bool,
-                      data: &Level) -> Pos {
-    let path = ai_astar_step(monster_id, target_pos, must_reach, data);
+                      level: &Level) -> Pos {
+    let path = ai_astar_step(monster_id, target_pos, must_reach, level);
 
     if path.len() > 1 {
-        let monster_pos = data.entities.pos[&monster_id];
+        let monster_pos = level.entities.pos[&monster_id];
         return step_towards(monster_pos, path[1]);
     } else {
         return Pos::new(0, 0);

@@ -52,6 +52,7 @@ pub fn resolve_messages(game: &mut Game) {
                 for heard_id in game.level.get_entities_at_pos(tile_pos) {
                     if heard_id != cause_id {
                         // TODO replace with an Alerted message
+                        //dbg!(&source_pos, &tile_pos, &heard_id, &cause_id);
                         game.level.entities.messages[&heard_id].push(Message::Sound(cause_id, source_pos));
                     }
                 }
@@ -1632,10 +1633,8 @@ fn process_moved_message(entity_id: EntityId,
             // Only normal movements update the stance. Others like Blink leave it as-is.
             if move_type != MoveType::Blink && move_type != MoveType::Misc {
                 if let Some(stance) = level.entities.stance.get(&entity_id) {
-                    dbg!(&stance, move_type, move_mode);
                     level.entities.stance[&entity_id] = update_stance(move_type, move_mode, *stance);
                     msg_log.log(Msg::Stance(entity_id, level.entities.stance[&entity_id]));
-                    dbg!(&level.entities.stance[&entity_id]);
                 }
             }
 
@@ -1696,6 +1695,15 @@ fn process_moved_message(entity_id: EntityId,
         let diff = sub_pos(pos, original_pos);
         if let Some(dir) = Direction::from_dxy(diff.x, diff.y) {
             msg_log.log_front(Msg::SetFacing(entity_id, dir));
+        }
+    }
+
+    // For blinking movements, check if the entity disappears from the perspective of an entity.
+    if move_type == MoveType::Blink {
+        for behave_id in level.entities.behavior.ids.iter() {
+            if level.entities.behavior[behave_id] == Behavior::Attacking(entity_id) {
+                level.entities.messages[behave_id].push(Message::Disappeared(entity_id));
+            }
         }
     }
 }
@@ -1861,9 +1869,18 @@ fn resolve_ai_attack(entity_id: EntityId,
             msg_log.log(Msg::TryAttack(entity_id, attack_info, target_pos));
         }
     } else if !ai_is_in_fov(entity_id, target_id, level, config) {
-        // if we lose the target, end the turn
-        level.entities.took_turn[&entity_id] = true;
-        msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
+        // If the target disappeared, change to idle- there is no need to
+        // pursue their last position if we saw them blink away.
+        if level.entities.target_disappeared(entity_id).is_some() {
+            msg_log.log(Msg::StateChange(entity_id, Behavior::Idle));
+        } else {
+            // If we lose the target, end the turn and investigate their current position.
+            // This allows the golem to 'see' a player move behind a wall and still investigate
+            // them instead of losing track of their position.
+            level.entities.took_turn[&entity_id] = true;
+            let current_target_pos = level.entities.pos[&target_id];
+            msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(current_target_pos)));
+        }
     } else {
         // can see target, but can't hit them. try to move to a position where we can hit them
         let maybe_pos = ai_move_to_attack_pos(entity_id, target_id, level, config);

@@ -59,6 +59,7 @@ pub enum GameCmd {
     SureFooted(bool),
     QuickReflexes(bool),
     Visible(EntityId, i32, i32),
+    Blink,
     Exit,
 }
 
@@ -195,6 +196,8 @@ impl FromStr for GameCmd {
             let x  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
             let y  = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
             return Ok(GameCmd::Visible(id, x, y));
+        } else if cmd == "blink" {
+            return Ok(GameCmd::Blink);
         } else if cmd == "exit" {
             return Ok(GameCmd::Exit);
         }
@@ -267,6 +270,8 @@ impl GameCmd {
             return "quick_reflexes";
         } else if matches!(self, GameCmd::Visible(_, _, _)) {
             return "visible";
+        } else if matches!(self, GameCmd::Blink) {
+            return "blink";
         } else if matches!(self, GameCmd::Exit) {
             return "exit";
         } else {
@@ -357,6 +362,11 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
 
         GameCmd::SetSurface(x, y, surface) => {
             game.level.map[(*x, *y)].surface = *surface;
+            return format!("{}", name);
+        }
+
+        GameCmd::Blink => {
+            game.msg_log.log(Msg::Blink(player_id));
             return format!("{}", name);
         }
 
