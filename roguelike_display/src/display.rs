@@ -416,19 +416,21 @@ impl Display {
                     self.state.entity_is_in_fov(cause_id) == FovResult::Inside;
 
                 let visible_monster_sound = sound_from_monster && player_can_see_source;
-                if !visible_monster_sound && sound_hits_player && cause_id != player_id {
+                if !visible_monster_sound && sound_hits_player {
                     let sound_aoe =
                         aoe_fill(map, AoeEffect::Sound, source_pos, radius, config);
 
                     let sound_effect = Effect::sound(sound_aoe);
                     self.state.play_effect(sound_effect);
 
-                    let pos = self.state.pos[&cause_id];
-                    // NOTE it is slightly odd to look up this sprite sheet here and not in
-                    // render.rs.
-                    let tiles = lookup_spritekey(&self.sprites, "tiles");
-                    let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
-                    self.state.impressions.push(Impression::new(impression_sprite, pos));
+                    if cause_id != player_id {
+                        let pos = self.state.pos[&cause_id];
+                        // NOTE it is slightly odd to look up this sprite sheet here and not in
+                        // render.rs.
+                        let tiles = lookup_spritekey(&self.sprites, "tiles");
+                        let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
+                        self.state.impressions.push(Impression::new(impression_sprite, pos));
+                    }
                 }
             }
 
