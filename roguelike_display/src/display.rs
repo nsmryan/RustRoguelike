@@ -434,6 +434,11 @@ impl Display {
                 }
             }
 
+            Msg::Restart => {
+                self.state.skills.clear();
+                self.clear_console_messages();
+            }
+
             Msg::Impression(pos) => {
                 let tiles = lookup_spritekey(&self.sprites, "tiles");
                 let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
@@ -682,6 +687,7 @@ impl Display {
             Msg::NewLevel => {
                 self.clear_level_state();
                 self.state.play_effect(Effect::particles(1.0));
+                self.clear_console_messages();
             }
 
             Msg::Moved(entity_id, _move_type, _move_mode, pos) => {

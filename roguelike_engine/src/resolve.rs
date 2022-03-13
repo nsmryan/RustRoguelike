@@ -608,6 +608,25 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::Restart => {
                 make_map(&game.settings.map_load_config.clone(), game);
+
+                let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+
+                if game.level.entities.hp[&player_id].hp != game.level.entities.hp[&player_id].max_hp {
+                    let hp_diff = game.level.entities.hp[&player_id].max_hp - game.level.entities.hp[&player_id].hp;
+                    game.level.entities.hp[&player_id].hp = 
+                        game.level.entities.hp[&player_id].max_hp;
+                    game.msg_log.log(Msg::Healed(player_id, hp_diff, game.level.entities.hp[&player_id].max_hp));
+                }
+
+                if game.config.player_energy > game.level.entities.energy[&player_id] {
+                    let energy_diff = game.config.player_energy - game.level.entities.energy[&player_id];
+                    game.level.entities.energy[&player_id] = game.config.player_energy;
+                    game.msg_log.log(Msg::GainEnergy(player_id, energy_diff));
+                }
+
+                game.level.entities.skills[&player_id].clear();
+                game.level.entities.inventory[&player_id].clear();
+                game.level.entities.class[&player_id] = EntityClass::General;
             }
 
             Msg::PassThrough(entity_id, direction) => {
