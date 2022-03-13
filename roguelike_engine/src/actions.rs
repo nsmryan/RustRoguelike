@@ -28,6 +28,7 @@ pub enum ActionLoc {
 pub enum InputAction {
     Run,
     Sneak,
+    Walk,
     Alt,
     Move(Direction),
     MoveTowardsCursor(),
@@ -72,6 +73,7 @@ impl fmt::Display for InputAction {
         match self {
             InputAction::Run => write!(f, "run"),
             InputAction::Sneak => write!(f, "sneak"),
+            InputAction::Walk => write!(f, "walk"),
             InputAction::Alt => write!(f, "alt"),
             InputAction::Move(direction) => {
                 match direction {
@@ -152,6 +154,8 @@ impl FromStr for InputAction {
             return Ok(InputAction::Run);
         } else if args[0] == "sneak" {
             return Ok(InputAction::Sneak);
+        } else if args[0] == "walk" {
+            return Ok(InputAction::Walk);
         } else if args[0] == "alt" {
             return Ok(InputAction::Alt);
         } else if args[0] == "pass" {
@@ -466,20 +470,17 @@ pub fn handle_input_use(input_action: InputAction,
 
     match (input_action, player_alive) {
         (InputAction::Run, true) => {
-            if settings.move_mode == MoveMode::Run {
-                settings.move_mode = MoveMode::Walk;
-            } else {
-                settings.move_mode = MoveMode::Run;
-            }
+            settings.move_mode = MoveMode::Run;
             msg_log.log(Msg::NextMoveMode(settings.move_mode));
         }
 
         (InputAction::Sneak, true) => {
-            if settings.move_mode == MoveMode::Sneak {
-                settings.move_mode = MoveMode::Walk;
-            } else {
-                settings.move_mode = MoveMode::Sneak;
-            }
+            settings.move_mode = MoveMode::Sneak;
+            msg_log.log(Msg::NextMoveMode(settings.move_mode));
+        }
+
+        (InputAction::Walk, true) => {
+            settings.move_mode = MoveMode::Walk;
             msg_log.log(Msg::NextMoveMode(settings.move_mode));
         }
 
@@ -543,20 +544,17 @@ pub fn handle_input_playing(input_action: InputAction,
 
     match (input_action, player_alive) {
         (InputAction::Run, true) => {
-            if settings.move_mode == MoveMode::Run {
-                settings.move_mode = MoveMode::Walk;
-            } else {
-                settings.move_mode = MoveMode::Run;
-            }
+            settings.move_mode = MoveMode::Run;
             msg_log.log(Msg::NextMoveMode(settings.move_mode));
         }
 
         (InputAction::Sneak, true) => {
-            if settings.move_mode == MoveMode::Sneak {
-                settings.move_mode = MoveMode::Walk;
-            } else {
-                settings.move_mode = MoveMode::Sneak;
-            }
+            settings.move_mode = MoveMode::Sneak;
+            msg_log.log(Msg::NextMoveMode(settings.move_mode));
+        }
+
+        (InputAction::Walk, true) => {
+            settings.move_mode = MoveMode::Walk;
             msg_log.log(Msg::NextMoveMode(settings.move_mode));
         }
 

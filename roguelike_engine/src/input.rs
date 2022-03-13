@@ -213,8 +213,10 @@ impl Input {
                     self.ctrl = dir == KeyDir::Down;
                 }
 
-                if dir == KeyDir::Down {
-                    action = InputAction::Sneak;
+                match dir {
+                    KeyDir::Down => action = InputAction::Sneak,
+                    KeyDir::Up => action = InputAction::Walk,
+                    _ => {},
                 }
             }
 
@@ -223,8 +225,10 @@ impl Input {
                     self.shift = dir == KeyDir::Down;
                 }
 
-                if dir == KeyDir::Down {
-                    action = InputAction::Run;
+                match dir {
+                    KeyDir::Down => action = InputAction::Run,
+                    KeyDir::Up => action = InputAction::Walk,
+                    _ => {},
                 }
             }
 
