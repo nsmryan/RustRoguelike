@@ -277,6 +277,8 @@ pub fn resolve_messages(game: &mut Game) {
                 if use_energy(entity_id, &mut game.level, &mut game.msg_log) {
                     let entity_pos = game.level.entities.pos[&entity_id];
 
+                    game.level.entities.took_turn[&entity_id] = true;
+
                     match direction {
                         Direction::Left | Direction::Right | Direction::Up | Direction::Down => {
                             game.level.map.place_intertile_wall(entity_pos, Surface::Grass, direction);
