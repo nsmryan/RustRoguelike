@@ -213,6 +213,10 @@ impl Input {
                     self.ctrl = dir == KeyDir::Down;
                 }
 
+                // TODO remove if removing old input system with held state...
+                //if dir == KeyDir::Down {
+                //    action = InputAction::Sneak;
+                //}
                 match dir {
                     KeyDir::Down => action = InputAction::Sneak,
                     KeyDir::Up => action = InputAction::Walk,
@@ -225,6 +229,10 @@ impl Input {
                     self.shift = dir == KeyDir::Down;
                 }
 
+                // TODO remove if removing old input system with held state...
+                //if dir == KeyDir::Down {
+                //    action = InputAction::Run;
+                //}
                 match dir {
                     KeyDir::Down => action = InputAction::Run,
                     KeyDir::Up => action = InputAction::Walk,

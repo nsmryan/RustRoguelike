@@ -469,6 +469,24 @@ pub fn handle_input_use(input_action: InputAction,
     let player_alive = level.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
+        // TODO remove if removing old input system with held state...
+        //(InputAction::Run, true) => {
+        //    if settings.move_mode == MoveMode::Run {
+        //        settings.move_mode = MoveMode::Walk;
+        //    } else {
+        //        settings.move_mode = MoveMode::Run;
+        //    }
+        //    msg_log.log(Msg::NextMoveMode(settings.move_mode));
+        //}
+
+        //(InputAction::Sneak, true) => {
+        //    if settings.move_mode == MoveMode::Sneak {
+        //        settings.move_mode = MoveMode::Walk;
+        //    } else {
+        //        settings.move_mode = MoveMode::Sneak;
+        //    }
+        //    msg_log.log(Msg::NextMoveMode(settings.move_mode));
+        //}
         (InputAction::Run, true) => {
             settings.move_mode = MoveMode::Run;
             msg_log.log(Msg::NextMoveMode(settings.move_mode));
@@ -543,6 +561,24 @@ pub fn handle_input_playing(input_action: InputAction,
     let player_alive = level.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
+        // TODO remove if removing old input system with held state...
+        //(InputAction::Run, true) => {
+        //    if settings.move_mode == MoveMode::Run {
+        //        settings.move_mode = MoveMode::Walk;
+        //    } else {
+        //        settings.move_mode = MoveMode::Run;
+        //    }
+        //    msg_log.log(Msg::NextMoveMode(settings.move_mode));
+        //}
+
+        //(InputAction::Sneak, true) => {
+        //    if settings.move_mode == MoveMode::Sneak {
+        //        settings.move_mode = MoveMode::Walk;
+        //    } else {
+        //        settings.move_mode = MoveMode::Sneak;
+        //    }
+        //    msg_log.log(Msg::NextMoveMode(settings.move_mode));
+        //}
         (InputAction::Run, true) => {
             settings.move_mode = MoveMode::Run;
             msg_log.log(Msg::NextMoveMode(settings.move_mode));
@@ -557,6 +593,7 @@ pub fn handle_input_playing(input_action: InputAction,
             settings.move_mode = MoveMode::Walk;
             msg_log.log(Msg::NextMoveMode(settings.move_mode));
         }
+
 
         (InputAction::Move(direction), true) => {
             let move_amount = move_amount(settings.move_mode, config);
