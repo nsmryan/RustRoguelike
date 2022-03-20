@@ -388,6 +388,19 @@ impl Level {
         return None;
     }
 
+    pub fn get_golem_at_pos(&mut self, check_pos: Pos) -> Option<EntityId> {
+        for key in self.entities.ids.iter() {
+            let pos = self.entities.pos[key];
+            let is_golem = self.entities.typ[key] == EntityType::Enemy;
+
+            if is_golem && check_pos == pos {
+                return Some(*key);
+            }
+        }
+
+        return None;
+    }
+
     pub fn get_entities_at_pos(&mut self, check_pos: Pos) -> Vec<EntityId> {
         let mut entity_ids: Vec<EntityId> = Vec::new();
 
@@ -1705,7 +1718,7 @@ pub struct StatusEffect {
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Message {
-    Sound(EntityId, Pos),
+    Sound(Pos),
     Attack(EntityId),
     Hit(EntityId, Pos),
     Disappeared(EntityId),
@@ -1939,7 +1952,7 @@ impl Entities {
     }
 
     pub fn heard_sound(&mut self, entity_id: EntityId) -> Option<Message> {
-        if let Some(index) = self.messages[&entity_id].iter().position(|msg| matches!(msg, Message::Sound(_, _))) {
+        if let Some(index) = self.messages[&entity_id].iter().position(|msg| matches!(msg, Message::Sound(_))) {
             return Some(self.messages[&entity_id].remove(index));
         } else {
             return None;

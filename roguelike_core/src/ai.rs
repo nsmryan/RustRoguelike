@@ -142,10 +142,10 @@ pub fn ai_idle(monster_id: EntityId,
     } else if let Some(Message::Hit(_entity_id, origin_pos)) = level.entities.was_hit(monster_id) {
         msg_log.log(Msg::FaceTowards(monster_id, origin_pos));
         msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(origin_pos)));
-    } else if let Some(Message::Sound(sound_cause_id, sound_pos)) = level.entities.heard_sound(monster_id) {
+    } else if let Some(Message::Sound(sound_pos)) = level.entities.heard_sound(monster_id) {
         let can_see = level.pos_in_fov(monster_id, sound_pos);
 
-        let caused_by_golem = level.entities.typ[&sound_cause_id] == EntityType::Enemy;
+        let caused_by_golem = level.get_golem_at_pos(sound_pos).is_some();
         let needs_investigation = !(can_see && caused_by_golem);
 
         // Don't investigate a sound caused by another golem that you can see.
@@ -184,9 +184,10 @@ pub fn ai_investigate(target_pos: Pos,
     } else { // the monster can't see the player
         if let Some(Message::Attack(entity_id)) = level.entities.was_attacked(monster_id) {
             let entity_pos = level.entities.pos[&entity_id];
+            // Just face towards the attacker. We can act on this on the next turn.
             msg_log.log(Msg::FaceTowards(monster_id, entity_pos));
 
-            // Just face towards the attacker. We can act on this on the next turn.
+            // NOTE Removed so we only face towards the attacker.
             //if level.entities.attack.get(&monster_id).is_some() {
             //    msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(entity_id)));
             //} else {
@@ -195,10 +196,10 @@ pub fn ai_investigate(target_pos: Pos,
         } else if let Some(Message::Hit(_entity_id, origin_pos)) = level.entities.was_hit(monster_id) {
             msg_log.log(Msg::FaceTowards(monster_id, origin_pos));
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(origin_pos)));
-        } else if let Some(Message::Sound(sound_cause_id, sound_pos)) = level.entities.heard_sound(monster_id) {
+        } else if let Some(Message::Sound(sound_pos)) = level.entities.heard_sound(monster_id) {
             let can_see = level.pos_in_fov(monster_id, sound_pos);
 
-            let caused_by_golem = level.entities.typ[&sound_cause_id] == EntityType::Enemy;
+            let caused_by_golem = level.get_golem_at_pos(sound_pos).is_some();
             let needs_investigation = !(can_see && caused_by_golem);
 
             // Only investigate if: we can't see the tile, or we can see it and there is not

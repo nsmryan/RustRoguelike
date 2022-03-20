@@ -53,7 +53,7 @@ pub fn resolve_messages(game: &mut Game) {
                     if heard_id != cause_id {
                         // TODO replace with an Alerted message
                         //dbg!(&source_pos, &tile_pos, &heard_id, &cause_id);
-                        game.level.entities.messages[&heard_id].push(Message::Sound(cause_id, source_pos));
+                        game.level.entities.messages[&heard_id].push(Message::Sound(source_pos));
                     }
                 }
             }
@@ -702,17 +702,6 @@ pub fn resolve_messages(game: &mut Game) {
     }
 
     /* Process Player Messages */
-    for message in game.level.entities.messages[&player_id].iter() {
-        if let Message::Sound(obj_id, _pos) = message {
-            if *obj_id == player_id {
-                panic!("Player sent themselves a message?")
-            }
-
-            let _player_pos = game.level.entities.pos[&player_id];
-
-            // TODO need to add impression if not in FOV (#274)
-        }
-    }
     game.level.entities.messages[&player_id].clear();
 }
 
