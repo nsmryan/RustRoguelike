@@ -1646,15 +1646,14 @@ fn render_overlay_alertness(panel: &mut Panel,
                 let sprite = Sprite::new(ASTERISK as u32, sprite_key);
                 let scale = 0.2;
 
+                let row_width = 4;
                 for index in 0..*num_turns {
-                    let x = pos.x as f32 + (1.0 - scale * (index + 1) as f32);
-                    let y = pos.y as f32;
+                    let row = index / row_width;
+                    let col = index % row_width;
+                    let x = pos.x as f32 + (1.0 - scale * (col + 1) as f32);
+                    let y = pos.y as f32 + (row as f32 * scale);
                     panel.sprite_float_scaled_cmd(sprite, alertness_color, x, y, scale, scale);
                 }
-                //panel.sprite_scaled_cmd(sprite, scale,
-                //                        Some(Direction::UpRight),
-                //                        alertness_color,
-                //                        pos);
             }
         }
 
