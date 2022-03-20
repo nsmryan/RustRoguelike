@@ -6,7 +6,7 @@ use roguelike_utils::rng::*;
 use roguelike_utils::comp::*;
 
 use roguelike_core::types::*;
-use roguelike_core::ai::{Behavior, ai_move_to_attack_pos, ai_can_hit_target, ai_take_turn, ai_is_in_fov};
+use roguelike_core::ai::{Behavior, ai_move_to_attack_pos, ai_can_hit_target, ai_take_turn};
 use roguelike_core::map::{Surface, AoeEffect};
 use roguelike_core::messaging::{MsgLog, Msg};
 use roguelike_core::constants::*;
@@ -1892,7 +1892,7 @@ fn resolve_ai_attack(entity_id: EntityId,
             let attack_info = Attack::Attack(target_id);
             msg_log.log(Msg::TryAttack(entity_id, attack_info, target_pos));
         }
-    } else if !ai_is_in_fov(entity_id, target_id, level, config) {
+    } else if level.is_in_fov(entity_id, target_id) != FovResult::Inside {
         // If the target disappeared, change to idle- there is no need to
         // pursue their last position if we saw them blink away.
         if level.entities.target_disappeared(entity_id).is_some() {

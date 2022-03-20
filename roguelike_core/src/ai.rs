@@ -10,7 +10,7 @@ use crate::movement::*;
 use crate::messaging::*;
 use crate::utils::*;
 use crate::config::Config;
-use crate::map::Wall;
+use crate::map::FovResult;
 
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -108,9 +108,9 @@ pub fn ai_alert(monster_id: EntityId,
                 target_id: EntityId,
                 level: &mut Level,
                 msg_log: &mut MsgLog,
-                config: &Config) {
+                _config: &Config) {
     let target_pos = level.entities.pos[&target_id];
-    let target_in_fov = ai_is_in_fov(monster_id, target_id, level, config);
+    let target_in_fov = level.is_in_fov(monster_id, target_id) == FovResult::Inside;
 
     if target_in_fov {
         // Can see target- attack
@@ -145,7 +145,7 @@ pub fn ai_idle(monster_id: EntityId,
         msg_log.log(Msg::Sound(monster_id, monster_pos, config.sound_golem_idle_radius));
     }
 
-    if ai_is_in_fov(monster_id, player_id, level, config) {
+    if level.is_in_fov(monster_id, player_id) == FovResult::Inside {
         let player_pos = level.entities.pos[&player_id];
         msg_log.log(Msg::FaceTowards(monster_id, player_pos));
 
@@ -186,12 +186,12 @@ pub fn ai_investigate(target_pos: Pos,
                       monster_id: EntityId,
                       level: &mut Level,
                       msg_log: &mut MsgLog,
-                      config: &Config) {
+                      _config: &Config) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     let monster_pos = level.entities.pos[&monster_id];
 
-    let player_in_fov = ai_is_in_fov(monster_id, player_id, level, config);
+    let player_in_fov = level.is_in_fov(monster_id, player_id) == FovResult::Inside;
 
     if player_in_fov {
         //let fov_path_clear = level.map.path_blocked_fov(monster_pos, player_pos).is_none();
@@ -400,7 +400,7 @@ pub fn ai_can_hit_target(level: &mut Level,
         return None;
     }
 
-    // we don't use ai_is_in_fov here because the other checks already
+    // we don't use is_in_fov here because the other checks already
     // cover blocked movement.
     let within_fov = level.pos_in_fov(monster_id, target_pos);
 
@@ -477,23 +477,23 @@ pub fn ai_move_to_attack_pos(monster_id: EntityId,
 }
 
 // NOTE perhaps this should be merged into is_in_fov?
-pub fn ai_is_in_fov(monster_id: EntityId, target_id: EntityId, level: &mut Level, _config: &Config) -> bool {
-    let monster_pos = level.entities.pos[&monster_id];
-    let target_pos = level.entities.pos[&target_id];
-
-    let within_fov = level.pos_in_fov(monster_id, target_pos);
-    let move_blocked = level.map.path_blocked_move(monster_pos, target_pos);
-
-    if within_fov && move_blocked.is_some() {
-        let move_blocked = move_blocked.unwrap();
-        let blocked_by_short_wall = move_blocked.wall_type == Wall::ShortWall;
-        let target_stance = level.entities.stance[&target_id];
-
-        return blocked_by_short_wall && target_stance != Stance::Crouching;
-    } else {
-        return within_fov;
-    }
-}
+//pub fn ai_is_in_fov(monster_id: EntityId, target_id: EntityId, level: &mut Level, _config: &Config) -> bool {
+//    let monster_pos = level.entities.pos[&monster_id];
+//    let target_pos = level.entities.pos[&target_id];
+//
+//    let within_fov = level.pos_in_fov(monster_id, target_pos);
+//    let move_blocked = level.map.path_blocked_move(monster_pos, target_pos);
+//
+//    if within_fov && move_blocked.is_some() {
+//        let move_blocked = move_blocked.unwrap();
+//        let blocked_by_short_wall = move_blocked.wall_type == Wall::ShortWall;
+//        let target_stance = level.entities.stance[&target_id];
+//
+//        return blocked_by_short_wall && target_stance != Stance::Crouching;
+//    } else {
+//        return within_fov;
+//    }
+//}
 
 fn ai_astar_cost(_start: Pos, _prev: Pos, next: Pos, level: &Level) -> Option<i32> {
     let mut cost = Some(1);
