@@ -195,6 +195,18 @@ pub fn resolve_messages(game: &mut Game) {
                 }
             }
 
+            Msg::Thaw(entity_id, _amount) => {
+                if let Some(mut status) = game.level.entities.status.get_mut(&entity_id) {
+                    if status.frozen > 0 {
+                        status.frozen -= 1;
+                    }
+
+                    if status.frozen == 0 {
+                        game.msg_log.log(Msg::Frozen(entity_id, false));
+                    }
+                }
+            }
+
             Msg::FreezeTrapTriggered(trap, cause_id) => {
                 freeze_trap_triggered(trap, cause_id, &mut game.level, &mut game.msg_log, &game.config);
             }

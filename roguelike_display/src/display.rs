@@ -780,8 +780,12 @@ impl Display {
                 self.state.gate_pos.insert(entity_id, pos);
             }
 
-            Msg::Frozen(entity_id, state) => {
-                self.state.frozen.insert(entity_id, state);
+            Msg::Froze(entity_id, num_turns) => {
+                self.state.frozen.insert(entity_id, num_turns);
+            }
+
+            Msg::Thaw(entity_id, num_turns) => {
+                self.state.frozen[&entity_id] -= num_turns;
             }
 
             Msg::PlayerGhost(player_ghost) => {
@@ -949,7 +953,7 @@ pub struct DisplayState {
     pub inventory: Vec<(Item, ItemClass)>,
     pub skills: Vec<Skill>,
     pub gate_pos: Comp<Pos>,
-    pub frozen: Comp<bool>,
+    pub frozen: Comp<usize>,
     pub player_ghost: Option<Pos>,
 
     pub map: Map,

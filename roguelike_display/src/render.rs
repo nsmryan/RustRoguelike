@@ -1640,14 +1640,21 @@ fn render_overlay_alertness(panel: &mut Panel,
         let pos = display_state.pos[entity_id];
 
         let mut status_drawn: bool = false;
-        if let Some(state) = display_state.frozen.get(entity_id) {
-            if *state {
+        if let Some(num_turns) = display_state.frozen.get(entity_id) {
+            if *num_turns > 0 {
                 status_drawn = true;
                 let sprite = Sprite::new(ASTERISK as u32, sprite_key);
-                panel.sprite_scaled_cmd(sprite, scale,
-                                        Some(Direction::UpRight),
-                                        alertness_color,
-                                        pos);
+                let scale = 0.2;
+
+                for index in 0..*num_turns {
+                    let x = pos.x as f32 + (1.0 - scale * (index + 1) as f32);
+                    let y = pos.y as f32;
+                    panel.sprite_float_scaled_cmd(sprite, alertness_color, x, y, scale, scale);
+                }
+                //panel.sprite_scaled_cmd(sprite, scale,
+                //                        Some(Direction::UpRight),
+                //                        alertness_color,
+                //                        pos);
             }
         }
 
