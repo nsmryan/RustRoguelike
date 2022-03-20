@@ -627,6 +627,8 @@ pub fn resolve_messages(game: &mut Game) {
                 game.level.entities.skills[&player_id].clear();
                 game.level.entities.inventory[&player_id].clear();
                 game.level.entities.class[&player_id] = EntityClass::General;
+                game.level.entities.status[&player_id] = StatusEffect::default();
+                game.level.entities.status[&player_id].alive = true;
             }
 
             Msg::PassThrough(entity_id, direction) => {
