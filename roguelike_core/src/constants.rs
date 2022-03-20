@@ -242,4 +242,5 @@ pub const ARROW_DIAG: u8 = 17;
 pub const EXCLAMATION_POINT: u8 = 33 as u8;
 pub const QUESTION_MARK: u8 = 63 as u8;
 pub const ASTERISK: u8 = 239; // NOTE there is no asterisk currently, so this is a marker
+pub const AT_SYMBOL: u8 = 64;
 

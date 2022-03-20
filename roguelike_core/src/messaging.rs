@@ -180,6 +180,7 @@ impl fmt::Display for Msg {
             Msg::StateChange(entity_id, behavior) => {
                 match behavior {
                     Behavior::Idle => write!(f, "state_change_idle {}", entity_id),
+                    Behavior::Alert(entity_id) => write!(f, "state_change_alert {}", entity_id),
                     Behavior::Investigating(pos) => write!(f, "state_change_investigating {} {} {}", entity_id, pos.x, pos.y),
                     Behavior::Attacking(target_id) => write!(f, "state_change_attacking {} {}", entity_id, target_id),
                 }
@@ -187,6 +188,7 @@ impl fmt::Display for Msg {
             Msg::BehaviorChanged(entity_id, behavior) => {
                 match behavior {
                     Behavior::Idle => write!(f, "behavior_changed_idle {}", entity_id),
+                    Behavior::Alert(entity_id) => write!(f, "behavior_changed_alert {}", entity_id),
                     Behavior::Investigating(pos) => write!(f, "behavior_changed_investigating {} {} {}", entity_id, pos.x, pos.y),
                     Behavior::Attacking(target_id) => write!(f, "behavior_changed_attacking {} {}", entity_id, target_id),
                 }

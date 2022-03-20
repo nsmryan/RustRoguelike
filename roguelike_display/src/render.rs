@@ -1664,6 +1664,14 @@ fn render_overlay_alertness(panel: &mut Panel,
                     Behavior::Idle => {
                     }
 
+                    Behavior::Alert(_) => {
+                        let sprite = Sprite::new(EXCLAMATION_POINT as u32, sprite_key);
+                        panel.sprite_scaled_cmd(sprite, scale,
+                                                Some(Direction::UpRight),
+                                                alertness_color,
+                                                pos);
+                    }
+
                     Behavior::Investigating(_) => {
                         let sprite = Sprite::new(QUESTION_MARK as u32, sprite_key);
                         panel.sprite_scaled_cmd(sprite, scale,

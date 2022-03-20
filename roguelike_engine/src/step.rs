@@ -184,7 +184,7 @@ fn test_ai_idle_player_in_fov() {
 
     assert_eq!(2, game.msg_log.messages.len());
     assert_eq!(game.msg_log.messages[0], Msg::FaceTowards(gol, player_pos));
-    assert_eq!(game.msg_log.messages[1], Msg::StateChange(gol, Behavior::Attacking(player_id)));
+    assert_eq!(game.msg_log.messages[1], Msg::StateChange(gol, Behavior::Alert(player_id)));
 }
 
 #[test]
@@ -249,7 +249,7 @@ fn test_ai_idle_heard_sound() {
 
     // if the monster hears a sound, they investigate
     let sound_pos = Pos::new(0, 1);
-    game.level.entities.messages[&gol].push(Message::Sound(player_id, sound_pos));
+    game.level.entities.messages[&gol].push(Message::Sound(sound_pos));
     ai_idle(gol, &mut game.level, &mut game.msg_log, &game.config);
 
     assert_eq!(2, game.msg_log.messages.len());
@@ -308,7 +308,7 @@ fn test_ai_investigate_not_in_fov_heard_sound() {
 
     // if the monster hears a sound, they investigate
     let sound_pos = Pos::new(0, 1);
-    game.level.entities.messages[&gol].push(Message::Sound(player_id, sound_pos));
+    game.level.entities.messages[&gol].push(Message::Sound(sound_pos));
     ai_investigate(player_pos, gol, &mut game.level, &mut game.msg_log, &game.config);
 
     assert_eq!(1, game.msg_log.messages.len());
@@ -336,7 +336,7 @@ fn test_ai_investigate_moves() {
     // if the monster hears a sound, they investigate
     let sound_pos = Pos::new(0, 1);
     game.msg_log.clear();
-    game.level.entities.messages[&gol].push(Message::Sound(player_id, sound_pos));
+    game.level.entities.messages[&gol].push(Message::Sound(sound_pos));
     ai_investigate(sound_pos, gol, &mut game.level, &mut game.msg_log, &game.config);
 
     assert_eq!(1, game.msg_log.messages.len());
