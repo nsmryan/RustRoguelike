@@ -131,7 +131,7 @@ pub fn ai_idle(monster_id: EntityId,
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(player_pos)));
         }
     } else if let Some(Message::Attack(entity_id)) = level.entities.was_attacked(monster_id) {
-    let entity_pos = level.entities.pos[&entity_id];
+        let entity_pos = level.entities.pos[&entity_id];
         msg_log.log(Msg::FaceTowards(monster_id, entity_pos));
 
         if level.entities.attack.get(&monster_id).is_some() {
@@ -182,7 +182,17 @@ pub fn ai_investigate(target_pos: Pos,
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(player_pos)));
         }
     } else { // the monster can't see the player
-        if let Some(Message::Hit(_entity_id, origin_pos)) = level.entities.was_hit(monster_id) {
+        if let Some(Message::Attack(entity_id)) = level.entities.was_attacked(monster_id) {
+            let entity_pos = level.entities.pos[&entity_id];
+            msg_log.log(Msg::FaceTowards(monster_id, entity_pos));
+
+            // Just face towards the attacker. We can act on this on the next turn.
+            //if level.entities.attack.get(&monster_id).is_some() {
+            //    msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(entity_id)));
+            //} else {
+            //    msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(entity_pos)));
+            //}
+        } else if let Some(Message::Hit(_entity_id, origin_pos)) = level.entities.was_hit(monster_id) {
             msg_log.log(Msg::FaceTowards(monster_id, origin_pos));
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(origin_pos)));
         } else if let Some(Message::Sound(sound_cause_id, sound_pos)) = level.entities.heard_sound(monster_id) {
