@@ -498,7 +498,13 @@ impl Display {
             }
 
             Msg::UsedEnergy(entity_id) => {
-                self.state.energy[&entity_id] -= 1;
+                if !self.state.god_mode {
+                    self.state.energy[&entity_id] -= 1;
+                }
+            }
+
+            Msg::GodMode(state) => {
+                self.state.god_mode = state;
             }
 
             Msg::Facing(entity_id, direction) => {
@@ -600,7 +606,10 @@ impl Display {
                     let beam_effect = Effect::beam(config.beam_duration, attacker_pos, attacked_pos);
                     self.state.play_effect(beam_effect);
                 }
-                self.state.hp[&attacked] -= damage;
+
+                if !self.state.god_mode {
+                    self.state.hp[&attacked] -= damage;
+                }
             }
 
             Msg::JumpWall(jumper, start, end) => {
@@ -986,6 +995,8 @@ pub struct DisplayState {
     pub time_of_cursor_toggle: f32,
     pub cursor_pos: Option<Pos>,
 
+    pub god_mode: bool,
+
     pub debug_entries: HashMap<String, String>,
     pub rng: Rand32,
 }
@@ -1038,6 +1049,7 @@ impl DisplayState {
             time: 0.0,
             time_of_cursor_toggle: 0.0,
             cursor_pos: None,
+            god_mode: false,
             debug_entries: HashMap::<String, String>::new(),
             rng: Rand32::new(0),
         };

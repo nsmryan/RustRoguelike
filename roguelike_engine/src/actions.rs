@@ -261,20 +261,10 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
             game.settings.god_mode = !game.settings.god_mode;
 
             let player_id = game.level.find_by_name(EntityName::Player).unwrap();
-            if game.settings.god_mode {
-                let god_mode_hp = 1000;
-                let god_mode_energy = 1000;
-                game.msg_log.log(Msg::Healed(player_id, god_mode_hp - game.level.entities.hp[&player_id].hp, god_mode_hp));
-                game.msg_log.log(Msg::GainEnergy(player_id, god_mode_energy - game.level.entities.energy[&player_id]));
+            game.level.entities.status[&player_id].god_mode = 
+                !game.level.entities.status[&player_id].god_mode;
 
-                game.level.entities.hp[&player_id].hp = god_mode_hp;
-                game.level.entities.hp[&player_id].max_hp = god_mode_hp;
-                game.level.entities.energy[&player_id] = god_mode_energy;
-            } else {
-                game.level.entities.hp[&player_id].hp = game.config.player_health;
-                game.level.entities.hp[&player_id].max_hp = game.config.player_health;
-                game.level.entities.energy[&player_id] = game.config.player_energy;
-            }
+            game.msg_log.log(Msg::GodMode(game.settings.god_mode));
             
             // this causes FoV information to be emitted.
             game.settings.map_changed = true;
