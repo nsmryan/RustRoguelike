@@ -729,6 +729,10 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::Esc, true) => {
+            if settings.cursor.is_none() {
+                change_state(settings, GameState::ConfirmQuit, msg_log);
+            }
+
             ensure_leave_cursor(settings, msg_log);
         }
 
