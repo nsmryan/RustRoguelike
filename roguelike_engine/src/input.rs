@@ -170,7 +170,7 @@ impl Input {
     }
 
     pub fn handle_event(&mut self,
-                        settings: &mut GameSettings,
+                        settings: &mut Settings,
                         event: InputEvent,
                         ticks: u32,
                         config: &Config) -> InputAction {
@@ -262,7 +262,7 @@ impl Input {
         return action;
     }
 
-    fn handle_char(&mut self, chr: char, dir: KeyDir, ticks: u32, settings: &GameSettings, config: &Config) -> InputAction {
+    fn handle_char(&mut self, chr: char, dir: KeyDir, ticks: u32, settings: &Settings, config: &Config) -> InputAction {
         match dir {
             KeyDir::Up => {
                 return self.handle_char_up(chr, settings);
@@ -278,7 +278,7 @@ impl Input {
         }
     }
 
-    fn handle_char_up(&mut self, chr: char, settings: &GameSettings) -> InputAction {
+    fn handle_char_up(&mut self, chr: char, settings: &Settings) -> InputAction {
         if let Some(index) = self.char_down_order.iter().position(|c| *c == chr) {
             self.char_down_order.remove(index);
         }
@@ -331,7 +331,7 @@ impl Input {
         }
     }
 
-    fn handle_char_down(&mut self, chr: char, settings: &GameSettings) -> InputAction {
+    fn handle_char_down(&mut self, chr: char, settings: &Settings) -> InputAction {
         // intercept debug toggle so it is not part of the regular control flow.
         if chr == DEBUG_TOGGLE_KEY {
             return InputAction::DebugToggle;
@@ -390,7 +390,7 @@ impl Input {
         return action;
     }
 
-    fn handle_char_held(&mut self, chr: char, ticks: u32, settings: &GameSettings, config: &Config) -> InputAction {
+    fn handle_char_held(&mut self, chr: char, ticks: u32, settings: &Settings, config: &Config) -> InputAction {
         let mut action = InputAction::None;
 
         if let Some(held_state) = self.char_held.get(&chr) {
@@ -442,7 +442,7 @@ impl Input {
         }
     }
 
-    fn apply_char(&mut self, chr: char, settings: &GameSettings) -> InputAction {
+    fn apply_char(&mut self, chr: char, settings: &Settings) -> InputAction {
         let mut action: InputAction = InputAction::None;
 
         // check if the key being released is the one that set the input direction.
@@ -492,7 +492,7 @@ impl Input {
         return action;
     }
 
-    fn use_skill(&mut self, skill_index: usize, settings: &GameSettings) -> InputAction {
+    fn use_skill(&mut self, skill_index: usize, settings: &Settings) -> InputAction {
         if self.cursor {
             if let Some(cursor_pos) = settings.cursor {
                 return InputAction::SkillPos(cursor_pos, self.action_mode(), skill_index);
@@ -583,7 +583,7 @@ fn direction_from_digit(chr: char) -> Option<Direction> {
 #[test]
 fn test_input_movement() {
     let mut input = Input::new();
-    let mut settings = GameSettings::new();
+    let mut settings = Settings::new();
     let time = 0;
     let config = Config::from_file("../config.yaml");
 
@@ -599,7 +599,7 @@ fn test_input_movement() {
 #[test]
 fn test_input_use_mode_enter() {
     let mut input = Input::new();
-    let mut settings = GameSettings::new();
+    let mut settings = Settings::new();
     let time = 0;
     let config = Config::from_file("../config.yaml");
 
@@ -627,7 +627,7 @@ fn test_input_use_mode_enter() {
 #[test]
 fn test_input_use_mode_exit() {
     let mut input = Input::new();
-    let mut settings = GameSettings::new();
+    let mut settings = Settings::new();
     let time = 0;
     let config = Config::from_file("../config.yaml");
 
@@ -653,7 +653,7 @@ fn test_input_use_mode_exit() {
 #[test]
 fn test_input_use_mode_abort() {
     let mut input = Input::new();
-    let mut settings = GameSettings::new();
+    let mut settings = Settings::new();
     let time = 0;
     let config = Config::from_file("../config.yaml");
 
@@ -677,7 +677,7 @@ fn test_input_use_mode_abort() {
 #[test]
 fn test_input_cursor_problem() {
     let mut input = Input::new();
-    let mut settings = GameSettings::new();
+    let mut settings = Settings::new();
     let time = 0;
     let config = Config::from_file("../config.yaml");
 

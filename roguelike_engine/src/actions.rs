@@ -298,7 +298,7 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
     }
 }
 
-pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+pub fn handle_input_inventory(input: InputAction, settings: &mut Settings, msg_log: &mut MsgLog) {
     match input {
         InputAction::Inventory => {
             change_state(settings, GameState::Playing, msg_log);
@@ -323,7 +323,7 @@ pub fn handle_input_inventory(input: InputAction, settings: &mut GameSettings, m
 
 pub fn handle_input_skill_menu(input: InputAction,
                                level: &Level,
-                               settings: &mut GameSettings,
+                               settings: &mut Settings,
                                msg_log: &mut MsgLog) {
                                
     match input {
@@ -354,7 +354,7 @@ pub fn handle_input_skill_menu(input: InputAction,
 }
 
 pub fn handle_input_class_menu(input: InputAction,
-                               settings: &mut GameSettings,
+                               settings: &mut Settings,
                                msg_log: &mut MsgLog) {
     match input {
         InputAction::Inventory => {
@@ -388,7 +388,7 @@ pub fn handle_input_class_menu(input: InputAction,
     }
 }
 
-pub fn handle_input_confirm_quit(input: InputAction, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+pub fn handle_input_confirm_quit(input: InputAction, settings: &mut Settings, msg_log: &mut MsgLog) {
     match input {
         InputAction::Esc => {
             change_state(settings, GameState::Playing, msg_log);
@@ -410,7 +410,7 @@ pub fn handle_input_confirm_quit(input: InputAction, settings: &mut GameSettings
 
 pub fn handle_input(input_action: InputAction,
                     level: &Level,
-                    settings: &mut GameSettings,
+                    settings: &mut Settings,
                     msg_log: &mut MsgLog,
                     config: &Config) {
     match settings.state {
@@ -451,7 +451,7 @@ pub fn handle_input(input_action: InputAction,
 
 pub fn handle_input_use(input_action: InputAction,
                         level: &Level,
-                        settings: &mut GameSettings,
+                        settings: &mut Settings,
                         msg_log: &mut MsgLog,
                         _config: &Config) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
@@ -542,7 +542,7 @@ pub fn handle_input_use(input_action: InputAction,
 
 pub fn handle_input_playing(input_action: InputAction,
                             level: &Level,
-                            settings: &mut GameSettings,
+                            settings: &mut Settings,
                             msg_log: &mut MsgLog,
                             config: &Config) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
@@ -737,14 +737,14 @@ pub fn handle_input_playing(input_action: InputAction,
     }
 }
 
-fn ensure_leave_cursor(settings: &mut GameSettings, msg_log: &mut MsgLog) {
+fn ensure_leave_cursor(settings: &mut Settings, msg_log: &mut MsgLog) {
     if let Some(pos) = settings.cursor {
         msg_log.log(Msg::CursorState(false, pos));
         settings.cursor = None;
     }
 }
 
-fn use_dir(dir: Direction, level: &Level, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+fn use_dir(dir: Direction, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     if let UseAction::Item(item_class) = settings.use_action {
@@ -771,7 +771,7 @@ fn use_dir(dir: Direction, level: &Level, settings: &mut GameSettings, msg_log: 
     }
 }
 
-fn finalize_use_item(level: &Level, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+fn finalize_use_item(level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
     let player_pos = level.entities.pos[&player_id];
 
@@ -857,7 +857,7 @@ fn finalize_use_item(level: &Level, settings: &mut GameSettings, msg_log: &mut M
     }
 }
 
-fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut GameSettings, msg_log: &mut MsgLog) {
+fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     ensure_leave_cursor(settings, msg_log);
@@ -1115,7 +1115,7 @@ pub fn handle_skill(skill_index: usize,
 }
 
 // TODO is this println okay to leave in? seems like it should be in stderr?
-fn change_state(settings: &mut GameSettings, new_state: GameState, msg_log: &mut MsgLog) {
+fn change_state(settings: &mut Settings, new_state: GameState, msg_log: &mut MsgLog) {
     if new_state != settings.state {
         settings.state = new_state;
 

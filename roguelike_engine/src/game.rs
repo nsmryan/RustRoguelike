@@ -25,7 +25,7 @@ use crate::vault::*;
 pub struct Game {
     pub config: Config,
     pub level: Level,
-    pub settings: GameSettings,
+    pub settings: Settings,
     pub msg_log: MsgLog,
     pub rng: Rand32,
     pub vaults: Vec<Vault>,
@@ -51,7 +51,7 @@ impl Game {
         let state = Game {
             config,
             level,
-            settings: GameSettings::new(),
+            settings: Settings::new(),
             msg_log,
             rng: rng,
             vaults,
@@ -410,7 +410,7 @@ impl Game {
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
-pub struct GameSettings {
+pub struct Settings {
     pub turn_count: usize,
     pub test_mode: bool,
     pub map_type: MapGenType,
@@ -427,9 +427,9 @@ pub struct GameSettings {
     pub map_changed: bool,
 }
 
-impl GameSettings {
-    pub fn new() -> GameSettings {
-        return GameSettings {
+impl Settings {
+    pub fn new() -> Settings {
+        return Settings {
             turn_count: 0,
             test_mode: false,
             map_type: MapGenType::Island,
