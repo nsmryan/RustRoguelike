@@ -122,7 +122,7 @@ tile_noise_scaler: 4.0
 # alpha for player move highlight
 highlight_player_move: 226
 # alpha for player attack highlight
-highlight_alpha_attack: 25
+highlight_alpha_attack: 45
 # alpha for sound highlight
 sound_alpha: 86
 # alpha for tile grid lines

@@ -1402,8 +1402,7 @@ fn render_game_overlays(panel: &mut Panel,
                render_attack_overlay(panel,
                                      config,
                                      display_state,
-                                     entity_id,
-                                     sprites);
+                                     entity_id);
             }
         }
     }
@@ -1528,7 +1527,7 @@ fn render_overlay_attack(panel: &mut Panel,
         if display_state.pos_is_in_fov(pos) == FovResult::Inside &&
            entity_id != player_id &&
            display_state.typ[&entity_id] == EntityType::Enemy {
-           render_attack_overlay(panel, config, display_state, entity_id, sprites);
+           render_attack_overlay(panel, config, display_state, entity_id);
            render_fov_overlay(panel, display_state, config, entity_id);
            render_movement_overlay(panel, config, display_state, entity_id, sprites);
         }
@@ -1727,17 +1726,13 @@ fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> 
 fn render_attack_overlay(panel: &mut Panel,
                          config: &Config,
                          display_state: &mut DisplayState,
-                         entity_id: EntityId,
-                         sprites: &Vec<SpriteSheet>) {
+                         entity_id: EntityId) {
     let mut attack_highlight_color = config.color_red;
     attack_highlight_color.a = config.highlight_alpha_attack;
 
-    let tiles_key = lookup_spritekey(sprites, "tiles");
-
     if let Some(attack_positions) = display_state.entity_attacks.get(&entity_id) {
-        for position in attack_positions.iter() {
-            let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
-            panel.sprite_cmd(sprite, attack_highlight_color, *position);
+        for pos in attack_positions.iter() {
+            panel.highlight_cmd(attack_highlight_color, *pos);
         }
     }
 }
@@ -1775,14 +1770,13 @@ fn render_movement_overlay(panel: &mut Panel,
     let mut highlight_color = config.color_light_grey;
     highlight_color.a = config.grid_alpha_overlay;
 
-    let tiles_key = lookup_spritekey(sprites, "tiles");
-
     if let Some(move_positions) = display_state.entity_movements.get(&entity_id) {
-        let chr = display_state.chr[&entity_id];
-        let sprite = Sprite::new(chr as u32, tiles_key);
-
+        let current_pos = display_state.pos[&entity_id];
+        let sprite_key = lookup_spritekey(sprites, "tiles");
         for move_pos in move_positions.iter() {
-            panel.sprite_cmd(sprite, highlight_color, *move_pos);
+            if let Some(dir) = Direction::from_positions(current_pos, *move_pos) {
+                render_arrow(panel, sprite_key, dir, *move_pos, highlight_color);
+            }
         }
     }
 }
