@@ -339,10 +339,20 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
         // otherwise show console log messages
         let mut text_list = Vec::new();
         for index in 0..display_state.msg_lines.len() {
-            text_list.push(display_state.msg_lines[index].clone());
+            let (turn, msg) = display_state.msg_lines[index].clone();
+
+            let color = if turn % 2 == 0 {
+                text_color
+            } else {
+                let mut color = text_color;
+                color.a = 200;
+                color
+            };
+
+            text_list.push((color, msg));
         }
         let text_pos = Pos::new(1, 1);
-        panel.text_list_cmd(&text_list, text_color, text_pos, 1.0);
+        panel.colored_text_list_cmd(&text_list, text_pos, 1.0);
     }
 }
 

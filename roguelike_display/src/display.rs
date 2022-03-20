@@ -344,7 +344,7 @@ impl Display {
 
     pub fn console_message(&mut self, msg_line: String, config: &Config) {
         if msg_line.len() > 0 {
-            self.state.msg_lines.push_back(msg_line);
+            self.state.msg_lines.push_back((self.state.turn_count, msg_line));
             if self.state.msg_lines.len() > config.display_console_lines {
                 self.state.msg_lines.pop_front();
             }
@@ -974,7 +974,8 @@ pub struct DisplayState {
     // tiles that heard a sound
     pub sound_tiles: Vec<Pos>,
 
-    pub msg_lines: VecDeque<String>,
+    // Action log with turn count.
+    pub msg_lines: VecDeque<(usize, String)>,
 
     // turn data from messages
     // Player FoV information. Missing tiles are Fov::Outside.

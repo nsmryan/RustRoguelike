@@ -737,6 +737,13 @@ impl Panel {
         }
     }
 
+    pub fn colored_text_list_cmd(&mut self, text_list: &Vec<(Color, String)>, cell: Pos, scale: f32) {
+        for (index, (color, text)) in text_list.iter().enumerate() {
+            let text_cell = Pos::new(cell.x, cell.y + index as i32);
+            self.text_cmd(text, *color, text_cell, scale);
+        }
+    }
+
     pub fn rect_cmd(&mut self, pos: Pos, dims: (u32, u32), offset: f32, filled: bool, color: Color) {
         let cmd = DrawCmd::Rect(pos, dims, offset, filled, color);
         self.draw_cmd(cmd);
