@@ -412,7 +412,7 @@ fn reload_config(config_modified_time: &mut SystemTime, game: &mut Game) {
 }
 
 pub fn take_screenshot(game: &mut Game, display: &mut Display) -> Result<(), String> {
-    game.settings.god_mode = true;
+    game.settings.test_mode = true;
 
     game.step_game(InputAction::None);
     render_all(&mut display.panels, &mut display.state, &display.sprites, &game.config, 0.1)?;

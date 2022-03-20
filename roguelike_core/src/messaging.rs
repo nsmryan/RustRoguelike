@@ -133,7 +133,7 @@ pub enum Msg {
     UseAction(UseAction),
     PlayerAction,
     Impression(Pos),
-    GodMode(bool),
+    TestMode(bool),
 }
 
 impl fmt::Display for Msg {
@@ -276,7 +276,7 @@ impl fmt::Display for Msg {
             Msg::UseAction(use_action) => write!(f, "use_action {}", use_action),
             Msg::PlayerAction => write!(f, "player_action"),
             Msg::Impression(pos) => write!(f, "impression {} {}", pos.x, pos.y),
-            Msg::GodMode(state) => write!(f, "god_mode {}", state),
+            Msg::TestMode(state) => write!(f, "test_mode {}", state),
         }
     }
 }
@@ -589,8 +589,8 @@ impl Msg {
                 return format!("{:?} healed by {}", data.entities.name[entity_id], amount);
             }
 
-            Msg::GodMode(state) => {
-                return format!("God mode {}", state);
+            Msg::TestMode(state) => {
+                return format!("Test mode {}", state);
             }
 
             _ => {

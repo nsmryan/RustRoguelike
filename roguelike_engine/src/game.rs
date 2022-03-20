@@ -130,7 +130,7 @@ impl Game {
                 if !self.level.map[pos].explored {
                     let visible =
                         self.level.pos_in_fov(player_id, pos) ||
-                        self.settings.god_mode;
+                        self.settings.test_mode;
                     if visible {
                         self.level.map[pos].explored = true;
                     }
@@ -177,7 +177,7 @@ impl Game {
             for x in 0..map_width {
                 let pos = Pos::new(x, y);
                 let fov_result;
-                if self.settings.god_mode {
+                if self.settings.test_mode {
                     fov_result = FovResult::Inside;
                 } else {
                     fov_result = self.level.pos_in_fov_edge(player_id, pos);
@@ -205,7 +205,7 @@ impl Game {
 
         // emit whether entity is in player FOV
         let mut in_fov = self.level.is_in_fov(player_id, entity_id);
-        if self.settings.god_mode {
+        if self.settings.test_mode {
             in_fov = FovResult::Inside;
         }
 
@@ -412,7 +412,7 @@ impl Game {
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct GameSettings {
     pub turn_count: usize,
-    pub god_mode: bool,
+    pub test_mode: bool,
     pub map_type: MapGenType,
     pub state: GameState,
     pub overlay: bool,
@@ -431,7 +431,7 @@ impl GameSettings {
     pub fn new() -> GameSettings {
         return GameSettings {
             turn_count: 0,
-            god_mode: false,
+            test_mode: false,
             map_type: MapGenType::Island,
             state: GameState::Playing,
             overlay: false,

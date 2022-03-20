@@ -1302,7 +1302,7 @@ fn try_use_energy(entity_id: EntityId, level: &mut Level, msg_log: &mut MsgLog) 
     let class = level.entities.class[&entity_id];
 
     // NOTE this uses the entity's class, not the skill's class
-    let has_energy = level.entities.status[&entity_id].god_mode || level.entities.energy[&entity_id] > 0;
+    let has_energy = level.entities.status[&entity_id].test_mode || level.entities.energy[&entity_id] > 0;
     let mut enough_energy: bool = false;
     let mut used_energy: bool = false;
     match class {

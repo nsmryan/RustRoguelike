@@ -535,7 +535,7 @@ pub fn alpha_up_to_action(chr: char) -> InputAction {
         }
 
         't' => {
-            input_action = InputAction::GodMode;
+            input_action = InputAction::TestMode;
         }
 
         'p' => {

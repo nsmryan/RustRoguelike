@@ -1700,7 +1700,7 @@ pub struct StatusEffect {
     pub stone: usize,
     pub land_roll: bool,
     pub hammer_raised: Option<(EntityId, Direction, usize)>, // item id, direction to hit, turns to wait
-    pub god_mode: bool,
+    pub test_mode: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -1889,14 +1889,14 @@ impl Entities {
     }
 
     pub fn use_energy(&mut self, entity_id: EntityId) {
-        if !self.status[&entity_id].god_mode {
+        if !self.status[&entity_id].test_mode {
             self.energy[&entity_id] -= 1;
         }
     }
 
     pub fn take_damage(&mut self, entity_id: EntityId, damage: i32) {
         if let Some(hp) = self.hp.get_mut(&entity_id) {
-            if damage > 0 && !self.status[&entity_id].god_mode {
+            if damage > 0 && !self.status[&entity_id].test_mode {
                 hp.hp -= damage;
             }
         }

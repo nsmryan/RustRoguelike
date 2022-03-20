@@ -58,7 +58,7 @@ pub enum InputAction {
     ForceExit,
     ExploreAll,
     RegenerateMap,
-    GodMode,
+    TestMode,
     IncreaseMoveMode,
     DecreaseMoveMode,
     OverlayToggle,
@@ -109,7 +109,7 @@ impl fmt::Display for InputAction {
             InputAction::ForceExit => write!(f, "force_exit"),
             InputAction::ExploreAll => write!(f, "exploreall"),
             InputAction::RegenerateMap => write!(f, "regenmap"),
-            InputAction::GodMode => write!(f, "godmode"),
+            InputAction::TestMode => write!(f, "testmode"),
             InputAction::Yell => write!(f, "yell"),
             InputAction::IncreaseMoveMode => write!(f, "faster"),
             InputAction::DecreaseMoveMode => write!(f, "slower"),
@@ -201,8 +201,8 @@ impl FromStr for InputAction {
         } else if args[0] == "interact" {
             let dir = args[1].parse::<Direction>().ok();
             return Ok(InputAction::Interact(dir));
-        } else if args[0] == "godmode" {
-            return Ok(InputAction::GodMode);
+        } else if args[0] == "testmode" {
+            return Ok(InputAction::TestMode);
         } else if args[0] == "skill" {
             return Ok(InputAction::SkillMenu);
         } else if args[0] == "class" {
@@ -256,15 +256,15 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
             return true;
         }
 
-        InputAction::GodMode => {
+        InputAction::TestMode => {
             // toggle god mode flag
-            game.settings.god_mode = !game.settings.god_mode;
+            game.settings.test_mode = !game.settings.test_mode;
 
             let player_id = game.level.find_by_name(EntityName::Player).unwrap();
-            game.level.entities.status[&player_id].god_mode = 
-                !game.level.entities.status[&player_id].god_mode;
+            game.level.entities.status[&player_id].test_mode = 
+                !game.level.entities.status[&player_id].test_mode;
 
-            game.msg_log.log(Msg::GodMode(game.settings.god_mode));
+            game.msg_log.log(Msg::TestMode(game.settings.test_mode));
             
             // this causes FoV information to be emitted.
             game.settings.map_changed = true;
