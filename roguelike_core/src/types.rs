@@ -1720,7 +1720,7 @@ pub struct StatusEffect {
 pub enum Message {
     Sound(Pos),
     Attack(EntityId),
-    Hit(EntityId, Pos),
+    Hit(Pos),
     Disappeared(EntityId),
 }
 
@@ -1960,7 +1960,7 @@ impl Entities {
     }
 
     pub fn was_hit(&mut self, entity_id: EntityId) -> Option<Message> {
-        if let Some(index) = self.messages[&entity_id].iter().position(|msg| matches!(msg, Message::Hit(_, _))) {
+        if let Some(index) = self.messages[&entity_id].iter().position(|msg| matches!(msg, Message::Hit(_))) {
             return Some(self.messages[&entity_id].remove(index));
         } else {
             return None;

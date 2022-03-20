@@ -139,7 +139,7 @@ pub fn ai_idle(monster_id: EntityId,
         } else {
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(entity_pos)));
         }
-    } else if let Some(Message::Hit(_entity_id, origin_pos)) = level.entities.was_hit(monster_id) {
+    } else if let Some(Message::Hit(origin_pos)) = level.entities.was_hit(monster_id) {
         msg_log.log(Msg::FaceTowards(monster_id, origin_pos));
         msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(origin_pos)));
     } else if let Some(Message::Sound(sound_pos)) = level.entities.heard_sound(monster_id) {
@@ -193,7 +193,7 @@ pub fn ai_investigate(target_pos: Pos,
             //} else {
             //    msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(entity_pos)));
             //}
-        } else if let Some(Message::Hit(_entity_id, origin_pos)) = level.entities.was_hit(monster_id) {
+        } else if let Some(Message::Hit(origin_pos)) = level.entities.was_hit(monster_id) {
             msg_log.log(Msg::FaceTowards(monster_id, origin_pos));
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(origin_pos)));
         } else if let Some(Message::Sound(sound_pos)) = level.entities.heard_sound(monster_id) {
