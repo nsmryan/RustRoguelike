@@ -1414,7 +1414,7 @@ fn throw_item(player_id: EntityId,
 
     if let Some(hit_entity) = level.has_blocking_entity(hit_pos) {
         if level.entities.typ[&hit_entity] == EntityType::Enemy {
-            let mut stun_turns = level.entities.item[&item_id].throw_stun_turns();
+            let mut stun_turns = level.entities.item[&item_id].throw_stun_turns(config);
 
             if level.entities.passive[&player_id].stone_thrower {
                 stun_turns += 1;
@@ -1424,7 +1424,10 @@ fn throw_item(player_id: EntityId,
                 stun_turns += 1;
             }
 
-            msg_log.log(Msg::Froze(hit_entity, stun_turns));
+            if stun_turns > 0 {
+
+                msg_log.log(Msg::Froze(hit_entity, stun_turns));
+            }
 
             let player_pos = level.entities.pos[&player_id];
             level.entities.messages[&hit_entity].push(Message::Hit(player_pos));

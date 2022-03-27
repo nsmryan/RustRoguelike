@@ -1262,11 +1262,11 @@ impl Item {
         }
     }
 
-    pub fn throw_stun_turns(&self) -> usize {
+    pub fn throw_stun_turns(&self, config: &Config) -> usize {
         match self {
-            Item::Stone => STONE_STUN_TURNS,
-            Item::Spear => SPEAR_STUN_TURNS,
-            _ => DEFAULT_ITEM_STUN_TURNS,
+            Item::Stone => config.stun_turns_throw_stone,
+            Item::Spear => config.stun_turns_throw_spear,
+            _ => config.stun_turns_throw_default,
         }
     }
 }
