@@ -123,15 +123,31 @@ fn check_map(game: &Game) {
 
     for pos in game.level.map.get_all_pos() {
         let entities = game.level.get_entities_at_pos(pos);
-        let has_golems = count_entities(game, EntityType::Enemy, &entities) > 0;
-        let has_items = count_entities(game, EntityType::Item, &entities) > 0;
-        let has_columns = count_entities(game, EntityType::Column, &entities) > 0;
-        let has_triggers = count_entities(game, EntityType::Trigger, &entities) > 0;
+
+        let num_golems = count_entities(game, EntityType::Enemy, &entities);
+        let num_items = count_entities(game, EntityType::Item, &entities);
+        let num_columns = count_entities(game, EntityType::Column, &entities);
+        let num_triggers = count_entities(game, EntityType::Trigger, &entities);
+
+        let has_golems = num_golems > 0;
+        let has_items = num_items > 0;
+        let has_columns = num_columns > 0;
+        let has_triggers = num_triggers > 0;
 
         let num_types = has_golems as usize + has_items as usize + has_columns as usize + has_triggers as usize;
         if num_types > 1 {
             eprintln!("has: golems {}, items {}, columns {}, triggers {}", has_golems, has_items, has_columns, has_triggers);
             panic!("Too many types of entities on a single tile!");
+        }
+
+        if num_golems > 1 {
+            eprintln!("golems {} on a single tile", num_golems);
+            panic!("Too many golems on a single tile");
+        }
+
+        if num_triggers > 1 {
+            eprintln!("triggers {} on a single tile", num_triggers);
+            panic!("Too many triggers on a single tile");
         }
     }
 }
@@ -1064,3 +1080,4 @@ pub fn add_obstacle(map: &mut Map, pos: Pos, obstacle: Obstacle, rng: &mut Rand3
         }
     }
 }
+
