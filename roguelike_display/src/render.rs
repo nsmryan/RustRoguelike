@@ -341,7 +341,7 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
         for index in 0..display_state.msg_lines.len() {
             let (turn, msg) = display_state.msg_lines[index].clone();
 
-            let color = if turn % 2 == 0 {
+            let color = if (turn + 1) == display_state.turn_count {
                 text_color
             } else {
                 let mut color = text_color;
