@@ -1652,8 +1652,10 @@ fn render_overlay_alertness(panel: &mut Panel,
                     let col = index % row_width;
                     let x = pos.x as f32 + (1.0 - scale * (col + 1) as f32);
                     let y = pos.y as f32 + (row as f32 * scale);
+                    // NOTE using an '*' doesn't really show up well. A rectangle would be better,
+                    // but this seems to have trouble at small pixel scales with floating point
+                    // locations.
                     panel.sprite_float_scaled_cmd(sprite, alertness_color, x, y, scale, scale);
-                    //panel.rect_float_cmd(x, y, (scale * 0.9, scale * 0.9), true, alertness_color);
                 }
             }
         }

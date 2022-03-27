@@ -146,19 +146,6 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     /* modify structures with rubble, columns, etc */
     modify_structures(game, cmds, &mut structures);
 
-    // lay down grass with a given dispersion and range from the found tile
-    let range_disperse =
-        cmds.iter().filter_map(|cmd| {
-            if let ProcCmd::Grass(range, disperse) = cmd {
-                return Some((range, disperse)) 
-            };
-            return None;
-    }).next().unwrap_or((&(0, 0), &0));
-    let high = (range_disperse.0).1 as u32;
-    let low = (range_disperse.0).0 as u32;
-    let num_grass_to_place = rng_range_u32(&mut game.rng, low, high) as usize;
-    place_grass(game, num_grass_to_place, *range_disperse.1);
-
     // clear about the island again to ensure tiles haven't been placed outside
     clear_island(game, island_radius);
 
@@ -181,6 +168,19 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     // find a place to put the key and goal, ensuring that they are reachable
     place_key_and_goal(game, player_pos);
+
+    // lay down grass with a given dispersion and range from the found tile
+    let range_disperse =
+        cmds.iter().filter_map(|cmd| {
+            if let ProcCmd::Grass(range, disperse) = cmd {
+                return Some((range, disperse)) 
+            };
+            return None;
+    }).next().unwrap_or((&(0, 0), &0));
+    let high = (range_disperse.0).1 as u32;
+    let low = (range_disperse.0).0 as u32;
+    let num_grass_to_place = rng_range_u32(&mut game.rng, low, high) as usize;
+    place_grass(game, num_grass_to_place, *range_disperse.1);
 
     // clear the island once more just in case
     clear_island(game, island_radius);
@@ -304,7 +304,7 @@ fn handle_diagonal_full_tile_walls(map: &mut Map) {
 }
 
 fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
-    let potential_pos = game.level.get_clear_pos();
+    let potential_pos = game.level.get_no_entity_pos();
 
     let mut num_items = 0;
     let max_items = cmds.iter().filter_map(|cmd| {
@@ -348,7 +348,7 @@ fn place_items(game: &mut Game, cmds: &Vec<ProcCmd>) {
 }
 
 fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
-    let potential_pos = game.level.get_clear_pos();
+    let potential_pos = game.level.get_no_entity_pos();
 
     let mut near_walls = HashSet::new();
 
@@ -402,7 +402,7 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
 }
 
 fn place_traps(game: &mut Game, cmds: &Vec<ProcCmd>) {
-    let potential_pos = game.level.get_clear_pos();
+    let potential_pos = game.level.get_no_entity_pos();
 
     let mut num_traps = 0;
     let max_traps = cmds.iter().filter_map(|cmd| {
@@ -449,11 +449,11 @@ fn place_monsters(game: &mut Game, player_id: EntityId, cmds: &Vec<ProcCmd>) {
 
     // get empty positions, but make sure they are not close to the player
     let mut potential_pos = 
-        game.level.get_clear_pos()
-                 .iter()
-                 .filter(|p| distance(player_pos, **p) > 4)
-                 .map(|p| *p)
-                 .collect::<Vec<Pos>>();
+        game.level.get_no_entity_pos()
+                  .iter()
+                  .filter(|p| distance(player_pos, **p) > 4)
+                  .map(|p| *p)
+                  .collect::<Vec<Pos>>();
 
     for cmd in cmds.iter() {
         if let ProcCmd::Entities(typ, min, max) = cmd {
@@ -640,7 +640,7 @@ fn find_available_on_side(game: &mut Game, left: bool) -> Option<Pos> {
     let mut avail_pos: Option<Pos> = None;
     let mut x_most = if left { i32::MAX } else { 0 };
 
-    let potential_pos = game.level.get_clear_pos();
+    let potential_pos = game.level.get_no_entity_pos();
     let mut index = 1.0;
     for pos in potential_pos {
         if !game.level.map[pos].block_move && game.level.has_blocking_entity(pos).is_none() {
@@ -674,7 +674,7 @@ fn find_available_on_side(game: &mut Game, left: bool) -> Option<Pos> {
 fn find_available_tile(game: &mut Game) -> Option<Pos> {
     let mut avail_pos = None;
 
-    let potential_pos = game.level.get_clear_pos();
+    let potential_pos = game.level.get_no_entity_pos();
     let mut index = 1.0;
     for pos in potential_pos {
         if game.level.has_blocking_entity(pos).is_none() {

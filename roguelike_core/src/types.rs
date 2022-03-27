@@ -54,6 +54,15 @@ impl Level {
                        .collect::<Vec<Pos>>();
     }
 
+    pub fn get_no_entity_pos(&self) -> Vec<Pos> {
+        return self.map.get_empty_pos()
+                       .iter()
+                       .map(|pos| *pos)
+                       .filter(|pos| self.has_entity(*pos).is_none())
+                       .filter(|pos| !self.map[*pos].block_move)
+                       .collect::<Vec<Pos>>();
+    }
+
     // The item index is usually determined by the ItemClass, but for Misc it can
     // only be a stone.
     pub fn find_item(&self, item_class: ItemClass) -> Option<usize> {
@@ -401,7 +410,7 @@ impl Level {
         return None;
     }
 
-    pub fn get_entities_at_pos(&mut self, check_pos: Pos) -> Vec<EntityId> {
+    pub fn get_entities_at_pos(&self, check_pos: Pos) -> Vec<EntityId> {
         let mut entity_ids: Vec<EntityId> = Vec::new();
 
         for key in self.entities.ids.iter() {
