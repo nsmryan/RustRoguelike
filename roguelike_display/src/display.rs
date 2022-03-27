@@ -626,7 +626,8 @@ impl Display {
                 self.state.direction.insert(entity_id, facing);
 
                 if let Some(ix_pos) = self.state.ids.iter().position(|val| *val == entity_id) {
-                    panic!(format!("entity id {} already at position {}", entity_id, ix_pos));
+                    eprintln!("entity id {} already at position {}", entity_id, ix_pos);
+                    panic!();
                 }
 
                 self.state.ids.push(entity_id);
