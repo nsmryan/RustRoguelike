@@ -318,6 +318,7 @@ impl Display {
         self.state.effects.clear();
         self.state.gate_pos.clear();
         self.state.frozen.clear();
+        self.state.cursor_pos = None;
 
         self.clear_turn_state();
     }
@@ -436,6 +437,8 @@ impl Display {
 
             Msg::Restart => {
                 self.state.skills.clear();
+                self.state.turn_count = 0;
+                self.clear_level_state();
                 self.clear_console_messages();
             }
 

@@ -486,6 +486,12 @@ impl Input {
             // If we are not releasing a direction, skill, or item then try other keys.
             if action == InputAction::None {
                 action = alpha_up_to_action(chr);
+                
+                // Slightly hacky, but if we are going to restart we need to clear
+                // the cursor state.
+                if action == InputAction::Restart {
+                    self.cursor = false;
+                }
             }
         }
 

@@ -400,6 +400,7 @@ pub fn handle_input_confirm_quit(input: InputAction, settings: &mut Settings, ms
 
         InputAction::Restart => {
             msg_log.log(Msg::Restart);
+
             change_state(settings, GameState::Playing, msg_log);
         }
 
