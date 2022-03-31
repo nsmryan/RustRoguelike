@@ -44,6 +44,9 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites
         render_class_menu(menu_panel);
     } else if display_state.state == GameState::ConfirmQuit {
         render_confirm_quit(menu_panel);
+    } else if display_state.state == GameState::HelpMenu {
+        let help_panel = panels.get_mut(&PanelName::Help).unwrap();
+        render_help(help_panel);
     }
 
     Ok(())
@@ -403,6 +406,22 @@ fn render_confirm_quit(panel: &mut Panel) {
     list.push("esc: continue".to_string());
     list.push("".to_string());
     list.push("r: restart".to_string());
+
+    let y_pos = 2;
+    let text_pos = Pos::new(1, y_pos);
+
+    let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
+
+    panel.text_list_cmd(&list, ui_color, text_pos, 1.0);
+}
+
+fn render_help(panel: &mut Panel) {
+    // Render header
+    render_placard(panel, "Help");
+
+    let mut list = Vec::new();
+
+    list.push("Help".to_string());
 
     let y_pos = 2;
     let text_pos = Pos::new(1, y_pos);

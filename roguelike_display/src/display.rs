@@ -35,11 +35,12 @@ pub enum PanelName {
     Inventory,
     Menu,
     Pip,
+    Help,
 }
 
 impl PanelName {
-    pub fn names() -> [PanelName; 6] {
-        return [PanelName::Info, PanelName::Map, PanelName::Player, PanelName::Inventory, PanelName::Menu, PanelName::Pip];
+    pub fn names() -> [PanelName; 7] {
+        return [PanelName::Info, PanelName::Map, PanelName::Player, PanelName::Inventory, PanelName::Menu, PanelName::Pip, PanelName::Help];
     }
 }
 
@@ -84,6 +85,7 @@ impl Display {
         let (inventory_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 2);
         let info_area = rest_area;
         let menu_area = screen_area.centered((info_area.width as f32 * 1.5) as usize, (info_area.height as f32 * 1.5) as usize);
+        let help_area = screen_area.centered((screen_area.width as f32 * 0.5) as usize, (screen_area.height as f32 * 0.5) as usize);
 
         let mut screen_areas = HashMap::new();
         screen_areas.insert(PanelName::Map, map_area);
@@ -92,6 +94,7 @@ impl Display {
         screen_areas.insert(PanelName::Player, player_area);
         screen_areas.insert(PanelName::Inventory, inventory_area);
         screen_areas.insert(PanelName::Menu, menu_area);
+        screen_areas.insert(PanelName::Help, help_area);
 
         let panels = create_panels(&screen_areas);
 
@@ -912,8 +915,13 @@ impl Display {
                                      section_name_scale);
 
             if state.is_menu() {
-                let menu_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Menu]);
-                canvas.copy(&textures[&PanelName::Menu], None, menu_rect).unwrap();
+                if state ==  GameState::HelpMenu {
+                    let help_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Help]);
+                    canvas.copy(&textures[&PanelName::Help], None, help_rect).unwrap();
+                } else {
+                    let menu_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Menu]);
+                    canvas.copy(&textures[&PanelName::Menu], None, menu_rect).unwrap();
+                }
             }
         }).unwrap();
 
@@ -1252,9 +1260,16 @@ fn create_panels(screen_areas: &HashMap<PanelName, Area>) -> HashMap<PanelName, 
     let player_pixels = (over_sample * player_dims.0 * FONT_WIDTH as u32, over_sample * player_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Player, Panel::new(player_pixels, player_dims));
 
-    let menu_dims = info_dims;
+    //let menu_dims = info_dims;
+    let menu_dims = screen_areas[&PanelName::Menu].dims();
+    let menu_dims = ((menu_dims.0 as f32 / multiplier) as u32, (menu_dims.1 as f32 / multiplier) as u32);
     let menu_pixels = (over_sample * menu_dims.0 * FONT_WIDTH as u32, over_sample * menu_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Menu, Panel::new(menu_pixels, menu_dims));
+
+    let help_dims = screen_areas[&PanelName::Help].dims();
+    let help_dims = ((help_dims.0 as f32 / multiplier) as u32, (help_dims.1 as f32 / multiplier) as u32);
+    let help_pixels = (over_sample * help_dims.0 * FONT_WIDTH as u32, over_sample * help_dims.1 * FONT_HEIGHT as u32);
+    panels.insert(PanelName::Help, Panel::new(help_pixels, help_dims));
 
     return panels;
 }

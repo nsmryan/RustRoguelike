@@ -485,7 +485,7 @@ impl Input {
 
             // If we are not releasing a direction, skill, or item then try other keys.
             if action == InputAction::None {
-                action = alpha_up_to_action(chr);
+                action = alpha_up_to_action(chr, self.shift);
                 
                 // Slightly hacky, but if we are going to restart we need to clear
                 // the cursor state.
@@ -512,7 +512,7 @@ impl Input {
 }
 
 
-pub fn alpha_up_to_action(chr: char) -> InputAction {
+pub fn alpha_up_to_action(chr: char, shift: bool) -> InputAction {
     let input_action: InputAction;
 
     match chr {
@@ -562,6 +562,15 @@ pub fn alpha_up_to_action(chr: char) -> InputAction {
 
         'h' => {
             input_action = InputAction::ClassMenu;
+        }
+
+        '/' => {
+            // shift + / = ?
+            if shift {
+                input_action = InputAction::HelpMenu;
+            } else {
+                input_action = InputAction::None;
+            }
         }
 
         _ => {

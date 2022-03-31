@@ -184,6 +184,8 @@ pub fn keycode_to_char(key: Keycode) -> Option<char> {
         Keycode::RightBracket => Some(']'),
         Keycode::Backquote => Some('`'),
         Keycode::Backslash => Some('\\'),
+        Keycode::Question => Some('?'),
+        Keycode::Slash => Some('/'),
         _ => None,
     }
 }

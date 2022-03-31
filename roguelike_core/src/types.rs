@@ -973,6 +973,7 @@ pub enum GameState {
     Inventory,
     SkillMenu,
     ClassMenu,
+    HelpMenu,
     ConfirmQuit,
     Use,
     Exit,
@@ -987,6 +988,7 @@ impl fmt::Display for GameState {
             GameState::Inventory => write!(f, "inventory"),
             GameState::SkillMenu => write!(f, "skillmenu"),
             GameState::ClassMenu => write!(f, "classmenu"),
+            GameState::HelpMenu => write!(f, "helpmenu"),
             GameState::ConfirmQuit => write!(f, "confirmquit"),
             GameState::Use => write!(f, "use"),
             GameState::Exit => write!(f, "exit"),
@@ -1005,6 +1007,7 @@ impl GameState {
         return self == GameState::Inventory   ||
                self == GameState::SkillMenu   ||
                self == GameState::ConfirmQuit ||
+               self == GameState::HelpMenu    ||
                self == GameState::ClassMenu;
     }
 }

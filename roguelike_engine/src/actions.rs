@@ -53,6 +53,7 @@ pub enum InputAction {
     Inventory,
     SkillMenu,
     ClassMenu,
+    HelpMenu,
     Exit,
     Esc,
     ForceExit,
@@ -104,6 +105,7 @@ impl fmt::Display for InputAction {
             InputAction::Inventory => write!(f, "inventory"),
             InputAction::SkillMenu => write!(f, "skill"),
             InputAction::ClassMenu => write!(f, "class"),
+            InputAction::HelpMenu => write!(f, "help"),
             InputAction::Exit => write!(f, "exit"),
             InputAction::Esc => write!(f, "esc"),
             InputAction::ForceExit => write!(f, "force_exit"),
@@ -207,6 +209,8 @@ impl FromStr for InputAction {
             return Ok(InputAction::SkillMenu);
         } else if args[0] == "class" {
             return Ok(InputAction::ClassMenu);
+        } else if args[0] == "help" {
+            return Ok(InputAction::HelpMenu);
         } else if args[0] == "esc" {
             return Ok(InputAction::Esc);
         } else if args[0] == "force_exit" {
@@ -316,6 +320,10 @@ pub fn handle_input_inventory(input: InputAction, settings: &mut Settings, msg_l
             change_state(settings, GameState::ClassMenu, msg_log);
         }
 
+        InputAction::HelpMenu => {
+            change_state(settings, GameState::HelpMenu, msg_log);
+        }
+
         _ => {
         }
     }
@@ -337,6 +345,10 @@ pub fn handle_input_skill_menu(input: InputAction,
 
         InputAction::ClassMenu => {
             change_state(settings, GameState::ClassMenu, msg_log);
+        }
+
+        InputAction::HelpMenu => {
+            change_state(settings, GameState::HelpMenu, msg_log);
         }
 
         InputAction::SelectEntry(skill_index) => {
@@ -365,6 +377,10 @@ pub fn handle_input_class_menu(input: InputAction,
             change_state(settings, GameState::Playing, msg_log);
         }
 
+        InputAction::HelpMenu => {
+            change_state(settings, GameState::HelpMenu, msg_log);
+        }
+
         InputAction::SkillMenu => {
             change_state(settings, GameState::SkillMenu, msg_log);
         }
@@ -377,6 +393,35 @@ pub fn handle_input_class_menu(input: InputAction,
 
                 change_state(settings, GameState::Playing, msg_log);
             }
+        }
+
+        InputAction::Esc => {
+            change_state(settings, GameState::Playing, msg_log);
+        }
+
+        _ => {
+        }
+    }
+}
+
+pub fn handle_input_help_menu(input: InputAction,
+                              settings: &mut Settings,
+                              msg_log: &mut MsgLog) {
+    match input {
+        InputAction::Inventory => {
+            change_state(settings, GameState::Inventory, msg_log);
+        }
+
+        InputAction::ClassMenu => {
+            change_state(settings, GameState::Playing, msg_log);
+        }
+
+        InputAction::HelpMenu => {
+            change_state(settings, GameState::Playing, msg_log);
+        }
+
+        InputAction::SkillMenu => {
+            change_state(settings, GameState::SkillMenu, msg_log);
         }
 
         InputAction::Esc => {
@@ -423,10 +468,7 @@ pub fn handle_input(input_action: InputAction,
             handle_input_use(input_action, level, settings, msg_log, config);
         }
 
-        GameState::Win => {
-        }
-
-        GameState::Lose => {
+        GameState::Win | GameState::Lose => {
         }
 
         GameState::Inventory => {
@@ -439,6 +481,10 @@ pub fn handle_input(input_action: InputAction,
 
         GameState::ClassMenu => {
             handle_input_class_menu(input_action, settings, msg_log);
+        }
+
+        GameState::HelpMenu => {
+            handle_input_help_menu(input_action, settings, msg_log);
         }
 
         GameState::ConfirmQuit => {
@@ -714,6 +760,10 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::ClassMenu, true) => {
             change_state(settings, GameState::ClassMenu, msg_log);
+        }
+
+        (InputAction::HelpMenu, true) => {
+            change_state(settings, GameState::HelpMenu, msg_log);
         }
 
         (InputAction::Interact(dir), _) => {
@@ -1140,6 +1190,10 @@ fn change_state(settings: &mut Settings, new_state: GameState, msg_log: &mut Msg
 
             GameState::ClassMenu => {
                 println!("CONSOLE: Selecting a class");
+            }
+
+            GameState::HelpMenu => {
+                println!("CONSOLE: Help menu");
             }
 
             GameState::ConfirmQuit => {
