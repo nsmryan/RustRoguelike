@@ -1077,7 +1077,7 @@ fn render_effects(panel: &mut Panel,
                 let sprite = sprite_anim.sprite();
 
                 let pos_from = move_next_to(*from, *to);
-                let pos_to = panel.pixel_from_cell(*to);
+                let pos_to = to;
                 let x_offset = (pos_from.x + pos_to.x) as f32 / 2.0;
                 let y_offset = (pos_from.y + pos_to.y) as f32 / 2.0;
                 panel.sprite_float_cmd(sprite, Color::white(), x_offset, y_offset);

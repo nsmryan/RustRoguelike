@@ -557,8 +557,8 @@ impl Display {
                     sprite_anim.rotation = turns as f64 * 45.0;
                 }
 
-                let blunt_attack = Effect::attack(from, to, sprite_anim);
-                self.state.play_effect(blunt_attack);
+                let attack_effect = Effect::attack(from, to, sprite_anim);
+                self.state.play_effect(attack_effect);
             }
 
             Msg::HammerSwing(entity_id, _item_id, _pos) => {
