@@ -160,6 +160,7 @@ pub enum MapLoadConfig {
     Random,
     TestMap,
     TestWall,
+    TestColumns,
     Empty,
     TestSmoke,
     TestCorner,
@@ -183,6 +184,7 @@ impl fmt::Display for MapLoadConfig {
             MapLoadConfig::Random => write!(f, "random"),
             MapLoadConfig::TestMap => write!(f, "test_map"),
             MapLoadConfig::TestWall => write!(f, "test_wall"),
+            MapLoadConfig::TestColumns => write!(f, "test_columns"),
             MapLoadConfig::Empty => write!(f, "empty"),
             MapLoadConfig::TestSmoke => write!(f, "test_smoke"),
             MapLoadConfig::TestCorner => write!(f, "test_corner"),
@@ -206,6 +208,8 @@ impl FromStr for MapLoadConfig {
             return Ok(MapLoadConfig::Random);
         } else if s == "test_map" {
             return Ok(MapLoadConfig::TestMap);
+        } else if s == "test_columns" {
+            return Ok(MapLoadConfig::TestColumns);
         } else if s == "test_wall" {
             return Ok(MapLoadConfig::TestWall);
         } else if s == "empty" {

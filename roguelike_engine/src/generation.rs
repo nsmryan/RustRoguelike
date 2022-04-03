@@ -779,6 +779,29 @@ pub fn make_test_map(game: &mut Game) {
     // attacking, item use, etc
 }
 
+pub fn make_column_test_map(entities: &mut Entities,
+                            config: &Config,
+                            msg_log: &mut MsgLog) -> (Map, Pos) {
+    let mut map = Map::from_dims(11, 11);
+    let position = (1, 3);
+
+    let golem = make_gol(entities, config, Pos::new(5, 5), msg_log);
+
+    entities.direction[&golem] = Direction::Left;
+
+    make_column(entities, config, Pos::new(4, 3), msg_log);
+    make_column(entities, config, Pos::new(4, 4), msg_log);
+    make_column(entities, config, Pos::new(4, 5), msg_log);
+    make_column(entities, config, Pos::new(4, 6), msg_log);
+
+    make_column(entities, config, Pos::new(3, 3), msg_log);
+    make_column(entities, config, Pos::new(3, 4), msg_log);
+    make_column(entities, config, Pos::new(3, 5), msg_log);
+    make_column(entities, config, Pos::new(3, 6), msg_log);
+
+    return (map, Pos::from(position));
+}
+
 pub fn make_wall_test_map(entities: &mut Entities,
                           config: &Config,
                           msg_log: &mut MsgLog) -> (Map, Pos) {
