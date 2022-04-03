@@ -752,6 +752,13 @@ impl Level {
             }
         }
 
+        // Its possible that there is a valid move position, but no position to
+        // hit. In this case, suppress the move position to indicate that the
+        // use-mode movement is invalid.
+        if result.hit_positions.len() == 0 {
+            result.pos = None;
+        }
+
         return result;
     }
 

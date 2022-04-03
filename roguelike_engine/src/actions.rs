@@ -865,25 +865,28 @@ fn finalize_use_item(level: &Level, settings: &mut Settings, msg_log: &mut MsgLo
                     msg_log.log(Msg::ItemThrow(player_id, stone_id, player_pos, throw_pos, true));
                 }
             } else {
-                // we should not be able to finalize use mode without a valid move position.
-                let move_pos = use_result.pos.expect("Using an item with no move position?!");
-                let player_pos = level.entities.pos[&player_id];
-                if move_pos != player_pos {
-                    let move_dir = Direction::from_positions(player_pos, move_pos).unwrap();
-                    let dist = distance(move_pos, player_pos) as usize;
-                    msg_log.log(Msg::TryMove(player_id, move_dir, dist, settings.move_mode));
-                }
+                // It is possible to select a direction, then press shift, causing the move to be
+                // invalid. In this case we just suppress the action, and return to playing.
+                // Otherwise, process the move below.
+                if let Some(move_pos) = use_result.pos {
+                    let player_pos = level.entities.pos[&player_id];
+                    if move_pos != player_pos {
+                        let move_dir = Direction::from_positions(player_pos, move_pos).unwrap();
+                        let dist = distance(move_pos, player_pos) as usize;
+                        msg_log.log(Msg::TryMove(player_id, move_dir, dist, settings.move_mode));
+                    }
 
-                let weapon_type = item.weapon_type().expect("This item does not have a weapon type!");
-                let mut attack_type = AttackStyle::Normal;
-                if item == Item::Spear && settings.move_mode == MoveMode::Run {
-                    attack_type = AttackStyle::Strong;
-                } else if item == Item::Dagger {
-                    attack_type = AttackStyle::Stealth;
-                }
+                    let weapon_type = item.weapon_type().expect("This item does not have a weapon type!");
+                    let mut attack_type = AttackStyle::Normal;
+                    if item == Item::Spear && settings.move_mode == MoveMode::Run {
+                        attack_type = AttackStyle::Strong;
+                    } else if item == Item::Dagger {
+                        attack_type = AttackStyle::Stealth;
+                    }
 
-                for hit_pos in use_result.hit_positions {
-                    msg_log.log(Msg::Hit(player_id, hit_pos, weapon_type, attack_type));
+                    for hit_pos in use_result.hit_positions {
+                        msg_log.log(Msg::Hit(player_id, hit_pos, weapon_type, attack_type));
+                    }
                 }
             }
         }
