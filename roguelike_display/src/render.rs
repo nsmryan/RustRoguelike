@@ -458,6 +458,13 @@ fn render_help(panel: &mut Panel) {
     list.push("\tExtra information is given for tiles under the cursor.".to_string());
     list.push("\tHold shift for fast movement.".to_string());
     list.push("\tHold ctrl for tiles around the player.".to_string());
+    list.push("".to_string());
+    list.push("Skills:".to_string());
+    list.push("h brings up the class menu.".to_string());
+    list.push("\tCurrently, a class may be selected at any time.".to_string());
+    list.push("j brings up the skill list.".to_string());
+    list.push("a, s, d uses the corresponding skill.".to_string());
+    list.push("\tSkills may apply immediately or show direction.".to_string());
 
     let y_pos = 2;
     let text_pos = Pos::new(1, y_pos);
