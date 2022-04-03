@@ -440,7 +440,7 @@ fn render_help(panel: &mut Panel) {
     list.push("\tor present options for where to use the item.".to_string());
     list.push("".to_string());
     list.push("C is always for stones.".to_string());
-    list.push("\tUsing a stone will present directions to throw".to_string());
+    list.push("\tUsing a stone will present directions to throw.".to_string());
     list.push("".to_string());
     list.push("Hold shift to perform 'fast' actions.".to_string());
     list.push("\tWhen moving shift will run".to_string());
@@ -451,6 +451,7 @@ fn render_help(panel: &mut Panel) {
     list.push("\tWhen moving ctrl will sneak".to_string());
     list.push("\tIn cursor mode, ctrl will keep the cursor next to the player".to_string());
     list.push("\tIn cursor mode, ctrl may cause an alternate movement or use".to_string());
+    list.push("\tTab returns the cursor to the player's tile.".to_string());
     list.push("".to_string());
     list.push("Space enters cursor mode.".to_string());
     list.push("\tUse the arrow keys or number keys to move the cursor.".to_string());

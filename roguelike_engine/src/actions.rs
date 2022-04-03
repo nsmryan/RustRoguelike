@@ -677,6 +677,7 @@ pub fn handle_input_playing(input_action: InputAction,
         (InputAction::CursorReturn, _) => {
             if settings.cursor.is_some() {
                 settings.cursor = Some(player_pos);
+                msg_log.log(Msg::CursorMove(player_pos));
             }
         }
 

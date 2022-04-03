@@ -460,6 +460,8 @@ impl Input {
                     InputDirection::Current => {
                         if !self.cursor && self.ctrl {
                             action = InputAction::Interact(None);
+                        } else if self.cursor && self.ctrl {
+                           action = InputAction::CursorReturn;
                         } else {
                             action = InputAction::Pass;
                         } 
