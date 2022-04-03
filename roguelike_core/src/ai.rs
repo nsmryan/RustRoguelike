@@ -21,7 +21,7 @@ pub enum Ai {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Behavior {
     Idle,
-    Alert(EntityId),
+    Alert(Pos),
     Investigating(Pos),
     Attacking(EntityId),
 }
@@ -30,7 +30,7 @@ impl fmt::Display for Behavior {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Behavior::Idle => write!(f, "idle"),
-            Behavior::Alert(entity_id) => write!(f, "alert {}", entity_id),
+            Behavior::Alert(pos) => write!(f, "alert {} {}", pos.x, pos.y),
             Behavior::Investigating(pos) => write!(f, "investigating {} {}", pos.x, pos.y),
             Behavior::Attacking(entity_id) => write!(f, "attacking {}", entity_id),
         }
@@ -47,7 +47,7 @@ impl Behavior {
     pub fn description(&self) -> &str {
         match self {
             Behavior::Idle => "idle",
-            Behavior::Alert(_entity_id) => "alert",
+            Behavior::Alert(_pos) => "alert",
             Behavior::Investigating(_position) => "investigating",
             Behavior::Attacking(_entity_id) => "attacking",
         }
@@ -88,8 +88,8 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
                     ai_idle(monster_id, level, msg_log, config);
                 }
 
-                Behavior::Alert(entity_id) => {
-                    ai_alert(monster_id, entity_id, level, msg_log, config);
+                Behavior::Alert(pos) => {
+                    ai_alert(monster_id, pos, level, msg_log, config);
                 }
 
                 Behavior::Investigating(target_pos) => {
@@ -105,19 +105,20 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
 }
 
 pub fn ai_alert(monster_id: EntityId,
-                target_id: EntityId,
+                target_pos: Pos,
                 level: &mut Level,
                 msg_log: &mut MsgLog,
                 _config: &Config) {
-    let target_pos = level.entities.pos[&target_id];
-    let target_in_fov = level.is_in_fov(monster_id, target_id) == FovResult::Inside;
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
+    let can_see_target = level.is_in_fov(monster_id, player_id) == FovResult::Inside;
 
-    if target_in_fov {
+    if can_see_target {
         // Can see target- attack
-        msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(target_id)));
+        msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(player_id)));
     } else {
         // Can't see target- investigate their last position.
-        msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(target_pos)));
+        let player_pos = level.entities.pos[&player_id];
+        msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(player_pos)));
     }
 }
 
@@ -150,8 +151,7 @@ pub fn ai_idle(monster_id: EntityId,
         msg_log.log(Msg::FaceTowards(monster_id, player_pos));
 
         if level.entities.attack.get(&monster_id).is_some() {
-            //msg_log.log(Msg::StateChange(monster_id, Behavior::Attacking(player_id)));
-            msg_log.log(Msg::StateChange(monster_id, Behavior::Alert(player_id)));
+            msg_log.log(Msg::StateChange(monster_id, Behavior::Alert(player_pos)));
             level.entities.took_turn[&monster_id] = true;
         } else {
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(player_pos)));
@@ -167,7 +167,7 @@ pub fn ai_idle(monster_id: EntityId,
         }
     } else if let Some(Message::Hit(origin_pos)) = level.entities.was_hit(monster_id) {
         msg_log.log(Msg::FaceTowards(monster_id, origin_pos));
-        msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(origin_pos)));
+        msg_log.log(Msg::StateChange(monster_id, Behavior::Alert(origin_pos)));
     } else if let Some(Message::Sound(sound_pos)) = level.entities.heard_sound(monster_id) {
         let can_see = level.pos_in_fov(monster_id, sound_pos);
 
