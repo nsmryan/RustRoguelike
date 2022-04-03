@@ -85,7 +85,7 @@ impl Display {
         let (inventory_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 2);
         let info_area = rest_area;
         let menu_area = screen_area.centered((info_area.width as f32 * 1.5) as usize, (info_area.height as f32 * 1.5) as usize);
-        let help_area = screen_area.centered((screen_area.width as f32 * 0.5) as usize, (screen_area.height as f32 * 0.5) as usize);
+        let help_area = screen_area.centered((screen_area.width as f32 * 0.8) as usize, (screen_area.height as f32 * 0.9) as usize);
 
         let mut screen_areas = HashMap::new();
         screen_areas.insert(PanelName::Map, map_area);
@@ -913,7 +913,17 @@ impl Display {
                                      Pos::new(2 * player_area.x_offset as i32, player_area.y_offset as i32),
                                      player_area.width as u32, 
                                      section_name_scale);
+        }).unwrap();
 
+        // Execute draw commands for the main canvas.
+        let clear = false;
+        canvas_panel.process_cmds(clear,
+                                  &mut self.screen_texture,
+                                  &mut self.canvas,
+                                  &mut self.sprites);
+
+        // Render the menus last to ensure that they display on top of everything.
+        self.canvas.with_texture_canvas(&mut self.screen_texture, |canvas| {
             if state.is_menu() {
                 if state ==  GameState::HelpMenu {
                     let help_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Help]);
@@ -925,12 +935,7 @@ impl Display {
             }
         }).unwrap();
 
-        let clear = false;
-        canvas_panel.process_cmds(clear,
-                                  &mut self.screen_texture,
-                                  &mut self.canvas,
-                                  &mut self.sprites);
-
+        // Finally, copy the main canvas to the screen.
         self.canvas.copy(&self.screen_texture, None, None).unwrap();
     }
 }

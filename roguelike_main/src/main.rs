@@ -238,6 +238,9 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
             // check for commands to execute
             any_updates |= process_commands(&io_recv, &mut game, &mut log);
 
+            // This is not the best timer, but input should not occur faster than 1 ms apart. Using
+            // ticks is better then Instant for serialization.
+            let ticks = timer.ticks();
             for sdl2_event in event_pump.poll_iter() {
                 if let Some(event) = keyboard::translate_event(sdl2_event) {
                     // First check for [ and ], which are processed outside of the normal input
@@ -254,15 +257,10 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
                         }
                         any_updates = true;
                     } else {
-                        // This is not the best timer, but input should not occur faster than 1 ms apart. Using
-                        // ticks is better then Instant for serialization.
-                        let ticks = timer.ticks();
                         let input_action = game.input.handle_event(&mut game.settings, event, ticks, &game.config);
                         input_actions.push(input_action);
 
-                        if input_action != InputAction::None {
-                            any_updates = true;
-                        }
+                        any_updates |= input_action != InputAction::None;
                     }
                 }
             }

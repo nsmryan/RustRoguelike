@@ -406,6 +406,8 @@ fn render_confirm_quit(panel: &mut Panel) {
     list.push("esc: continue".to_string());
     list.push("".to_string());
     list.push("r: restart".to_string());
+    list.push("".to_string());
+    list.push("?: help".to_string());
 
     let y_pos = 2;
     let text_pos = Pos::new(1, y_pos);
@@ -421,7 +423,40 @@ fn render_help(panel: &mut Panel) {
 
     let mut list = Vec::new();
 
-    list.push("Help".to_string());
+    list.push("? to bring up this help menu".to_string());
+    list.push("".to_string());
+    list.push("esc to bring up the main menu, or exit the current menu".to_string());
+    list.push("".to_string());
+    list.push("Arrow keys or number keys to move.".to_string());
+    list.push("\tThere is 8 directional movement.".to_string());
+    list.push("".to_string());
+    list.push("Items:".to_string());
+    list.push("To use an item:".to_string());
+    list.push("Z is always the primary item.".to_string());
+    list.push("\tThis will present options for how to apply the item".to_string());
+    list.push("".to_string());
+    list.push("X is a consumable item.".to_string());
+    list.push("\tUsing a consumable will either act immediately,".to_string());
+    list.push("\tor present options for where to use the item.".to_string());
+    list.push("".to_string());
+    list.push("C is always for stones.".to_string());
+    list.push("\tUsing a stone will present directions to throw".to_string());
+    list.push("".to_string());
+    list.push("Hold shift to perform 'fast' actions.".to_string());
+    list.push("\tWhen moving shift will run".to_string());
+    list.push("\tWhen moving the cursor, shift will move two tiles instead of one".to_string());
+    list.push("\tWhen using an item, shift may cause an alternate movement or use".to_string());
+    list.push("".to_string());
+    list.push("Hold ctrl to perform 'slow' actions.".to_string());
+    list.push("\tWhen moving ctrl will sneak".to_string());
+    list.push("\tIn cursor mode, ctrl will keep the cursor next to the player".to_string());
+    list.push("\tIn cursor mode, ctrl may cause an alternate movement or use".to_string());
+    list.push("".to_string());
+    list.push("Space enters cursor mode.".to_string());
+    list.push("\tUse the arrow keys or number keys to move the cursor.".to_string());
+    list.push("\tExtra information is given for tiles under the cursor.".to_string());
+    list.push("\tHold shift for fast movement.".to_string());
+    list.push("\tHold ctrl for tiles around the player.".to_string());
 
     let y_pos = 2;
     let text_pos = Pos::new(1, y_pos);
