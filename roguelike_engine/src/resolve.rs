@@ -73,7 +73,7 @@ pub fn resolve_messages(game: &mut Game) {
 
 
             Msg::Blink(entity_id) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::Blink, &mut game.level, &mut game.msg_log) {
                     resolve_blink(entity_id, &mut game.level, &mut game.rng, &mut game.msg_log);
                 }
             }
@@ -189,7 +189,12 @@ pub fn resolve_messages(game: &mut Game) {
             Msg::Froze(entity_id, num_turns) => {
                 if entity_id == player_id || game.level.entities.ai.get(&entity_id).is_some() {
                     game.level.entities.status[&entity_id].frozen = num_turns;
-                    game.level.entities.behavior[&entity_id] = Behavior::Idle;
+
+                    // If attacking, change to investigating the current target position.
+                    if let Some(Behavior::Attacking(target_id)) = game.level.entities.behavior.get(&entity_id) {
+                        let target_pos = game.level.entities.pos[&target_id];
+                        game.msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
+                    }
 
                     game.msg_log.log(Msg::Frozen(entity_id, true));
                 }
@@ -286,7 +291,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::GrassWall(entity_id, direction) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::GrassWall, &mut game.level, &mut game.msg_log) {
                     let entity_pos = game.level.entities.pos[&entity_id];
 
                     game.level.entities.took_turn[&entity_id] = true;
@@ -311,7 +316,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::GrassThrow(entity_id, direction) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::GrassThrow, &mut game.level, &mut game.msg_log) {
                     let pos = game.level.entities.pos[&entity_id];
 
                     for grass_pos in line_inclusive(pos, direction.offset_pos(pos, SKILL_GRASS_THROW_RADIUS as i32)) {
@@ -351,14 +356,14 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::GrassShoes(entity_id, _action_mode) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::GrassShoes, &mut game.level, &mut game.msg_log) {
                     game.level.entities.status[&entity_id].soft_steps = SKILL_GRASS_SHOES_TURNS;
                     game.level.entities.took_turn[&entity_id] = true;
                 }
             }
 
             Msg::GrassCover(entity_id, _action_mode) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::GrassCover, &mut game.level, &mut game.msg_log) {
                     let entity_pos = game.level.entities.pos[&entity_id];
                     let facing = game.level.entities.direction[&entity_id];
                     let next_pos = facing.offset_pos(entity_pos, 1);
@@ -369,7 +374,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::Illuminate(entity_id, pos, amount) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::Illuminate, &mut game.level, &mut game.msg_log) {
                     let light = make_light(&mut game.level.entities, &game.config, pos, &mut game.msg_log);
                     game.level.entities.illuminate[&light] = amount;
 
@@ -378,7 +383,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::HealSkill(entity_id, amount) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::Heal, &mut game.level, &mut game.msg_log) {
                     let old_hp = game.level.entities.hp[&entity_id].hp;
                     game.level.entities.hp[&entity_id].hp = 
                         std::cmp::min(game.level.entities.hp[&entity_id].max_hp,
@@ -407,35 +412,35 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::FarSight(entity_id, amount) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::FarSight, &mut game.level, &mut game.msg_log) {
                     game.level.entities.status[&entity_id].extra_fov += amount;
                     game.level.entities.took_turn[&entity_id] = true;
                 }
             }
 
             Msg::Ping(entity_id, pos) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::Ping, &mut game.level, &mut game.msg_log) {
                     game.msg_log.log_front(Msg::Sound(entity_id, pos, game.config.ping_sound_radius));
                     game.level.entities.took_turn[&entity_id] = true;
                 }
             }
 
             Msg::Sprint(entity_id, direction, amount) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::Sprint, &mut game.level, &mut game.msg_log) {
                     game.msg_log.log(Msg::TryMove(entity_id, direction, amount, MoveMode::Run));
                     game.level.entities.took_turn[&entity_id] = true;
                 }
             }
 
             Msg::Roll(entity_id, direction, amount) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::Roll, &mut game.level, &mut game.msg_log) {
                     game.msg_log.log(Msg::TryMove(entity_id, direction, amount, MoveMode::Sneak));
                     game.level.entities.took_turn[&entity_id] = true;
                 }
             }
 
             Msg::Rubble(entity_id, rubble_pos) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::Rubble, &mut game.level, &mut game.msg_log) {
                     let pos = game.level.entities.pos[&entity_id];
                     let blocked = game.level.map.path_blocked_move(pos, rubble_pos);
 
@@ -487,7 +492,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::GrassBlade(entity_id, action_mode, direction) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::GrassBlade, &mut game.level, &mut game.msg_log) {
                     let pos = game.level.entities.pos[&entity_id];
 
                     match action_mode {
@@ -519,7 +524,7 @@ pub fn resolve_messages(game: &mut Game) {
             Msg::Reform(entity_id, pos) => {
                 if game.level.map[pos].surface == Surface::Rubble &&
                    game.level.has_blocking_entity(pos).is_none() {
-                    if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                    if try_use_energy(entity_id, Skill::Reform, &mut game.level, &mut game.msg_log) {
                         game.level.map[pos].surface = Surface::Floor;
                         game.level.map[pos].block_move = true;
                         game.level.entities.took_turn[&entity_id] = true;
@@ -533,7 +538,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::Swap(entity_id, target_id) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::Swap, &mut game.level, &mut game.msg_log) {
 
                     let entity_dir = game.level.entities.direction[&entity_id];
                     let target_dir = game.level.entities.direction[&target_id];
@@ -551,7 +556,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::PassWall(entity_id, pos) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::PassWall, &mut game.level, &mut game.msg_log) {
                     //game.level.entities.set_pos(entity_id, pos);
                     game.msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, pos));
 
@@ -572,7 +577,7 @@ pub fn resolve_messages(game: &mut Game) {
 
 
             Msg::Push(entity_id, direction, amount) => {
-                if try_use_energy(entity_id, &mut game.level, &mut game.msg_log) {
+                if try_use_energy(entity_id, Skill::Push, &mut game.level, &mut game.msg_log) {
                     resolve_push_skill(entity_id, direction, amount, &mut game.level, &mut game.msg_log);
                 }
             }
@@ -1065,7 +1070,7 @@ fn resolve_blink(entity_id: EntityId, level: &mut Level, rng: &mut Rand32, msg_l
     let entity_pos = level.entities.pos[&entity_id];
 
     if let Some(blink_pos) = find_blink_pos(entity_pos, rng, level) {
-        level.entities.set_pos(entity_id, blink_pos);
+        msg_log.log_front(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, blink_pos));
     } else {
         msg_log.log(Msg::FailedBlink(entity_id));
     }
@@ -1303,10 +1308,12 @@ fn crushed(entity_id: EntityId, pos: Pos, level: &mut Level, msg_log: &mut MsgLo
     msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_crushed));
 }
 
-fn try_use_energy(entity_id: EntityId, level: &mut Level, msg_log: &mut MsgLog) -> bool {
+fn try_use_energy(entity_id: EntityId, skill: Skill, level: &mut Level, msg_log: &mut MsgLog) -> bool {
     let pos = level.entities.pos[&entity_id];
 
-    let class = level.entities.class[&entity_id];
+    // Use the Skill's own class instead of the entities.
+    //let class = level.entities.class[&entity_id];
+    let class = skill.class();
 
     // NOTE this uses the entity's class, not the skill's class
     let has_energy = level.entities.status[&entity_id].test_mode || level.entities.energy[&entity_id] > 0;

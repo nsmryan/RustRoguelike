@@ -782,7 +782,7 @@ pub fn make_test_map(game: &mut Game) {
 pub fn make_column_test_map(entities: &mut Entities,
                             config: &Config,
                             msg_log: &mut MsgLog) -> (Map, Pos) {
-    let mut map = Map::from_dims(11, 11);
+    let map = Map::from_dims(11, 11);
     let position = (1, 3);
 
     let golem = make_gol(entities, config, Pos::new(5, 5), msg_log);

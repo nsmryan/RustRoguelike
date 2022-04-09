@@ -898,19 +898,19 @@ pub enum Skill {
     GrassShoes,
     GrassCover,
     Blink,
+    Swap,
+    Sprint,
+    Roll,
     PassWall,
     Rubble,
     StoneThrow,
+    StoneSkin,
     Reform,
-    Swap,
     Push,
     Illuminate,
     Heal,
     FarSight,
-    Sprint,
-    Roll,
     Ping,
-    StoneSkin,
     PassThrough,
     WhirlWind,
     Swift,
@@ -941,6 +941,35 @@ impl fmt::Display for Skill {
             Skill::PassThrough => write!(f, "pass_through"),
             Skill::WhirlWind => write!(f, "whirlwind"),
             Skill::Swift => write!(f, "swift"),
+        }
+    }
+}
+
+impl Skill {
+    pub fn class(&self) -> EntityClass {
+        match self {
+            Skill::GrassWall => EntityClass::Grass,
+            Skill::GrassThrow => EntityClass::Grass,
+            Skill::GrassBlade => EntityClass::Grass,
+            Skill::GrassShoes => EntityClass::Grass,
+            Skill::GrassCover => EntityClass::Grass,
+            Skill::Blink => EntityClass::General,
+            Skill::Swap => EntityClass::General,
+            Skill::Sprint => EntityClass::General,
+            Skill::Roll => EntityClass::General,
+            Skill::PassWall => EntityClass::Monolith,
+            Skill::Rubble => EntityClass::Monolith,
+            Skill::StoneThrow => EntityClass::Monolith,
+            Skill::StoneSkin => EntityClass::Monolith,
+            Skill::Reform => EntityClass::Monolith,
+            Skill::Push => EntityClass::Clockwork,
+            Skill::Illuminate => EntityClass::Hierophant,
+            Skill::Heal => EntityClass::Hierophant,
+            Skill::FarSight => EntityClass::Hierophant,
+            Skill::Ping => EntityClass::Hierophant,
+            Skill::PassThrough => EntityClass::Wind,
+            Skill::WhirlWind => EntityClass::Wind,
+            Skill::Swift => EntityClass::Wind,
         }
     }
 }

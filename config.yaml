@@ -248,7 +248,7 @@ draw_directional_arrow: false
 # Stun durations for weapons
 stun_turns_blunt: 6
 stun_turns_pierce: 4
-stun_turns_slash: 4
+stun_turns_slash: 12
 stun_turns_extra: 2
 
 # alpha value used when rendering an entity ghost

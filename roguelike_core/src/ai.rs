@@ -105,7 +105,7 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
 }
 
 pub fn ai_alert(monster_id: EntityId,
-                target_pos: Pos,
+                _target_pos: Pos,
                 level: &mut Level,
                 msg_log: &mut MsgLog,
                 _config: &Config) {
