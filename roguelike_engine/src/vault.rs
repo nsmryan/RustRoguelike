@@ -6,6 +6,8 @@ use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
+use roguelike_core::entities::*;
+use roguelike_core::level::*;
 
 use crate::generation::*;
 

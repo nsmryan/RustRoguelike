@@ -19,6 +19,7 @@ use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::utils::*;
 use roguelike_core::messaging::*;
+use roguelike_core::level::*;
 
 use crate::generation::*;
 use crate::game::*;

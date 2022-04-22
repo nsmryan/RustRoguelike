@@ -16,6 +16,8 @@ use roguelike_core::config::*;
 use roguelike_core::movement::*;
 #[cfg(test)]
 use roguelike_core::map::*;
+use roguelike_core::entities::*;
+use roguelike_core::level::*;
 
 use roguelike_core::constants::*;
 

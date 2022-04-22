@@ -13,6 +13,8 @@ use roguelike_core::movement::*;
 use roguelike_core::messaging::*;
 use roguelike_core::config::*;
 use roguelike_core::utils::{rand_from_pos, distance};
+use roguelike_core::entities::*;
+use roguelike_core::level::*;
 
 use crate::game::*;
 use crate::procgen::*;

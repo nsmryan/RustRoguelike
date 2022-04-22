@@ -10,7 +10,9 @@ use roguelike_core::config::*;
 use roguelike_core::map::*;
 use roguelike_core::messaging::MsgLog;
 use roguelike_core::movement::{Direction, MoveMode, Reach};
+use roguelike_core::entities::*;
 use roguelike_core::messaging::*;
+use roguelike_core::level::*;
 
 use crate::actions;
 use crate::actions::InputAction;

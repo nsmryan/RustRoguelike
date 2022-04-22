@@ -13,6 +13,8 @@ use crate::messaging::*;
 use crate::config::Config;
 use crate::map::{Map, AoeEffect, Aoe, Wall, astar_neighbors, TileType};
 use crate::constants::*;
+use crate::entities::*;
+use crate::level::*;
 
 
 pub fn distance(pos1: Pos, pos2: Pos) -> i32 {

@@ -1,4 +1,6 @@
 pub mod types;
+pub mod entities;
+pub mod level;
 pub mod map;
 pub mod movement;
 pub mod constants;

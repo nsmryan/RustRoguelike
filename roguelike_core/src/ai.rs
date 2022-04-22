@@ -11,6 +11,7 @@ use crate::messaging::*;
 use crate::utils::*;
 use crate::config::Config;
 use crate::map::FovResult;
+use crate::level::*;
 
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

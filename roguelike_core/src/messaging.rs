@@ -10,6 +10,7 @@ use crate::map::*;
 use crate::movement::{MoveType, MoveMode, Direction};
 use crate::ai::Behavior;
 use crate::movement::Attack;
+use crate::level::*;
 
 
 #[derive(Copy, Clone, PartialEq, Debug, Deserialize, Serialize)]
