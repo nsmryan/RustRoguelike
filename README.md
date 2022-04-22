@@ -446,3 +446,22 @@ frequency.
 It also uses the map density information mentioned above to lay down
 grass in oppertune locations.
 
+## Building for Development
+
+The game has been developed in two environments:
+
+### Linux
+needs sdl2, sdl2_ttf, sdl_image
+
+### Windows
+
+To develop on Windows, first install MSYS2.
+
+use the Mingw64 shell (the blue one), and install rust, sdl2, sdl2_ttf, sdl2_image:
+
+```bash
+pacman -S mingw-x86_64-rust
+pacman -S mingw-x86_64-sdl2
+pacman -S mingw-x86_64-sdl2_ttf
+pacman -S mingw-x86_64-sdl2_image
+```

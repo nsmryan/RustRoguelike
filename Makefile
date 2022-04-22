@@ -1,10 +1,10 @@
 
 .PHONY: exe run rerun debug release test retest check recheck
-exe:
-	./target/debug/rl.exe
-
 run:
 	cargo run
+
+exe:
+	./target/debug/rl.exe
 
 rerun:
 	cargo watch -x run
