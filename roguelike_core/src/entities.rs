@@ -7,9 +7,8 @@ use roguelike_utils::comp::*;
 
 use crate::ai::{Ai, Behavior};
 use crate::movement::*;
-use crate::utils::*;
 use crate::types::*;
-use crate::map::{Pos, Direction};
+use crate::map::*;
 
 
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]

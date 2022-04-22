@@ -1,12 +1,9 @@
 use std::collections::HashSet; use std::collections::HashMap;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 
-use roguelike_utils::line::*;
 use roguelike_utils::comp::*;
 
 use crate::ai::Behavior;
-use crate::map::{Surface};
+use crate::map::*;
 use crate::types::*;
 use crate::movement::{Reach, MoveMode, check_collision, MoveType};
 use crate::messaging::*;
@@ -16,70 +13,6 @@ use crate::constants::*;
 use crate::entities::*;
 use crate::level::*;
 
-
-pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
-    let line = line(pos1, pos2);
-    return line.iter().count() as i32;
-}
-
-pub fn distance_tiles(pos1: Pos, pos2: Pos) -> i32 {
-    return (pos1.x - pos2.x).abs() + (pos1.y - pos2.y).abs();
-}
-
-pub fn distance_maximum(pos1: Pos, pos2: Pos) -> i32 {
-    return std::cmp::max((pos1.x - pos2.x).abs(), (pos1.y - pos2.y).abs());
-}
-
-pub fn pos_mag(pos: Pos) -> i32 {
-    return distance(Pos::new(0, 0), pos);
-}
-
-pub fn signedness(value: i32) -> i32 {
-    if value == 0 {
-        return 0;
-    } else {
-        return value.signum();
-    }
-}
-
-pub fn mirror_in_x(pos: Pos, width: i32) -> Pos {
-    return Pos::new(width - pos.x - 1, pos.y);
-}
-
-pub fn mirror_in_y(pos: Pos, height: i32) -> Pos {
-    return Pos::new(pos.x, height - pos.y - 1);
-}
-
-pub fn in_direction_of(start: Pos, end: Pos) -> Pos {
-    let dpos = sub_pos(end, start);
-    let dx = signedness(dpos.x);
-    let dy = signedness(dpos.y);
-
-    return add_pos(start, Pos::new(dx, dy));
-}
-
-#[test]
-pub fn test_in_direction_of() {
-    let start = Pos::new(1, 1);
-
-    assert_eq!(in_direction_of(start, Pos::new(0, 0)), Pos::new(0, 0));
-    assert_eq!(in_direction_of(start, Pos::new(10, 10)), Pos::new(2, 2));
-    assert_eq!(in_direction_of(start, Pos::new(10, 1)), Pos::new(2, 1));
-    assert_eq!(in_direction_of(start, Pos::new(1, 10)), Pos::new(1, 2));
-    assert_eq!(in_direction_of(start, Pos::new(1, -10)), Pos::new(1, 0));
-    assert_eq!(in_direction_of(start, Pos::new(-10, 1)), Pos::new(0, 1));
-    assert_eq!(in_direction_of(start, Pos::new(-10, -10)), Pos::new(0, 0));
-}
-
-pub fn is_ordinal(delta: Pos) -> bool {
-    return (delta.x == 0 && delta.y != 0) || 
-           (delta.y == 0 && delta.x != 0);
-}
-
-pub fn sort_by_distance_to(pos: Pos, positions: &mut Vec<Pos>) {
-    positions.sort_by(|a, b| distance(pos, *a)
-             .partial_cmp(&distance(pos, *b)).unwrap());
-}
 
 pub fn reduce_item_durability(data: &mut Level, entity_id: EntityId, item_id: EntityId) {
     if let Some(durability) = data.entities.durability.get_mut(&item_id) {
@@ -273,43 +206,6 @@ pub fn item_type_available(entity_id: EntityId, entities: &mut Entities, item_cl
     return None;
 }
 
-pub fn add_pos(pos1: Pos, pos2: Pos) -> Pos {
-    return Pos::new(pos1.x + pos2.x, pos1.y + pos2.y);
-}
-
-pub fn sub_pos(pos1: Pos, pos2: Pos) -> Pos {
-    return Pos::new(pos1.x - pos2.x, pos1.y - pos2.y);
-}
-
-pub fn scale_pos(pos: Pos, scale: i32) -> Pos {
-    return Pos::new(pos.x * scale, pos.y * scale);
-}
-
-pub fn move_towards(start: Pos, end: Pos, num_blocks: usize) -> Pos {
-    let line = line(start, end);
-
-    return Pos::from(line.iter().map(|p| *p).skip(num_blocks).next().unwrap_or(end));
-}
-
-pub fn pos_on_map(pos: Pos) -> bool {
-    return pos.x != -1 || pos.y != -1;
-}
-
-pub fn rand_from_pos(pos: Pos) -> f32 {
-    return rand_from_x_y(pos.x, pos.y);
-}
-
-pub fn rand_from_x_y(x: i32, y: i32) -> f32 {
-    let mut hasher = DefaultHasher::new();
-
-    (x as u32).hash(&mut hasher);
-    (y as u32).hash(&mut hasher);
- 
-    let result: u64 = hasher.finish();
-
-    return ((result & 0xFFFFFFFF) as f32) / 4294967295.0;
-}
-
 pub fn lerp(first: f32, second: f32, scale: f32) -> f32 {
     return first + ((second - first) * scale);
 }
@@ -339,29 +235,6 @@ pub fn reach_by_mode(move_mode: MoveMode) -> Reach {
     }
 }
 
-pub fn map_fill_metric(map: &Map) -> HashMap<Pos, usize> {
-    let mut metric_map: HashMap<Pos, usize> = HashMap::new();
-
-    for y in 0..map.height() {
-        for x in 0..map.width() {
-            let pos = Pos::new(x, y);
-            let fill_metric = tile_fill_metric(map, pos);
-            metric_map.insert(pos, fill_metric);
-        }
-    }
-
-    return metric_map;
-}
-
-pub fn tile_fill_metric(map: &Map, pos: Pos) -> usize {
-    if !map[pos].block_move && map[pos].tile_type != TileType::Water {
-        let near_count = floodfill(map, pos, TILE_FILL_METRIC_DIST).len();
-
-        return near_count;
-    }
-    return 0
-}
-
 pub fn clamp<N: Ord>(val: N, min: N, max: N) -> N {
     if val < min {
         return min;
@@ -382,44 +255,6 @@ pub fn clampf(val: f32, min: f32, max: f32) -> f32 {
     return val;
 }
 
-pub fn step_towards(start_pos: Pos, target_pos: Pos) -> Pos {
-    let dx = target_pos.x - start_pos.x;
-    let dy = target_pos.y - start_pos.y;
-    let delta_pos = Pos::new(signedness(dx), signedness(dy));
-    return delta_pos;
-}
-
-pub fn move_by(start: Pos, diff: Pos) -> Pos {
-    return Pos::new(start.x + diff.x, start.y + diff.y);
-}
-
-pub fn move_y(pos: Pos, offset_y: i32) -> Pos {
-    return Pos::new(pos.x, pos.y + offset_y);
-}
-
-pub fn move_x(pos: Pos, offset_x: i32) -> Pos {
-    return Pos::new(pos.x + offset_x, pos.y);
-}
-
-pub fn next_from_to(start: Pos, end: Pos) -> Pos {
-    let diff = sub_pos(end, start);
-    return next_pos(start, diff);
-}
-
-pub fn next_pos(pos: Pos, delta_pos: Pos) -> Pos {
-    let mut next_pos = add_pos(pos, delta_pos);
-
-    if delta_pos.x != 0 {
-        next_pos.x += delta_pos.x.signum();
-    }
-
-    if delta_pos.y != 0 {
-        next_pos.y += delta_pos.y.signum();
-    }
-
-    return next_pos;
-}
-
 pub fn can_stab(data: &Level, entity: EntityId, target: EntityId) -> bool {
     let entity_pos = data.entities.pos[&entity];
     let target_pos = data.entities.pos[&target];
@@ -431,37 +266,6 @@ pub fn can_stab(data: &Level, entity: EntityId, target: EntityId) -> bool {
     let not_attacking = !matches!(data.entities.behavior.get(&target), Some(Behavior::Attacking(_)));
 
     return is_enemy && using_dagger && clear_path && not_attacking;
-}
-
-pub fn dxy(start_pos: Pos, end_pos: Pos) -> (i32, i32) {
-    return (end_pos.x - start_pos.x, end_pos.y - start_pos.y);
-}
-
-pub fn move_next_to(start_pos: Pos, end_pos: Pos) -> Pos {
-    if distance(start_pos, end_pos) <= 1 {
-        return start_pos;
-    }
-
-    let line = line(start_pos, end_pos);
-
-    let mut second_to_last = *line.iter().next().unwrap();
-
-    for pos in line {
-        if pos != end_pos {
-            second_to_last = pos;
-        }
-    }
-
-    return second_to_last;
-}
-
-#[test]
-pub fn test_move_next_to() {
-    assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(5, 5)), Pos::new(4, 4));
-    assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(1, 1)), Pos::new(0, 0));
-    assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(-5, -5)), Pos::new(-4, -4));
-    assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(0, 5)), Pos::new(0, 4));
-    assert_eq!(move_next_to(Pos::new(0, 0), Pos::new(5, 0)), Pos::new(4, 0));
 }
 
 pub fn sound_dampening(map: &Map, start_pos: Pos, end_pos: Pos, config: &Config) -> i32 {
@@ -798,93 +602,6 @@ fn test_floodfill() {
     assert_eq!(6, flood.len());
 }
 
-pub fn visible_in_direction(start_pos: Pos, end_pos: Pos, dir: Direction) -> bool {
-    let pos_diff = sub_pos(end_pos, start_pos);
-    let x_sig = pos_diff.x.signum();
-    let y_sig = pos_diff.y.signum();
-
-    match dir {
-        Direction::Up => {
-            if y_sig < 1 {
-                return true;
-            }
-        }
-
-        Direction::Down => {
-            if y_sig > -1 {
-                return true;
-            }
-        }
-
-        Direction::Left => {
-            if x_sig < 1 {
-                return true;
-            }
-        }
-
-        Direction::Right => {
-            if x_sig > -1 {
-                return true;
-            }
-        }
-        Direction::DownLeft => {
-            if pos_diff.x - pos_diff.y < 0 {
-                return true;
-            }
-        }
-
-        Direction::DownRight => {
-            if pos_diff.x + pos_diff.y >= 0 {
-                return true;
-            }
-        }
-
-        Direction::UpLeft => {
-            if pos_diff.x + pos_diff.y <= 0 {
-                return true;
-            }
-        }
-
-        Direction::UpRight => {
-            if pos_diff.x - pos_diff.y > 0 {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-#[test]
-pub fn test_visible_in_direction() {
-    let dir = Direction::Up;
-
-    let start_pos = Pos::new(0, 0);
-    let end_pos = Pos::new(1, 0);
-    assert!(visible_in_direction(start_pos, end_pos, dir));
-
-    let end_pos = Pos::new(-1, 0);
-    assert!(visible_in_direction(start_pos, end_pos, dir));
-
-    let end_pos = Pos::new(-1, 0);
-    assert!(visible_in_direction(start_pos, end_pos, dir));
-
-    let end_pos = Pos::new(0, -1);
-    assert!(visible_in_direction(start_pos, end_pos, dir));
-
-    let end_pos = Pos::new(1, -1);
-    assert!(visible_in_direction(start_pos, end_pos, dir));
-
-    let end_pos = Pos::new(-1, -1);
-    assert!(visible_in_direction(start_pos, end_pos, dir));
-
-    let end_pos = Pos::new(2, -2);
-    assert!(visible_in_direction(start_pos, end_pos, dir));
-
-    let end_pos = Pos::new(-2, -2);
-    assert!(visible_in_direction(start_pos, end_pos, dir));
-}
-
 pub struct Cone {
     start: Pos,
     dir: Direction,
@@ -961,5 +678,28 @@ pub fn test_cone_up() {
     assert_eq!(Pos::new(0, -2), positions[6]);
     assert_eq!(Pos::new(1, -2), positions[7]);
     assert_eq!(Pos::new(2, -2), positions[8]);
+}
+
+pub fn map_fill_metric(map: &Map) -> HashMap<Pos, usize> {
+    let mut metric_map: HashMap<Pos, usize> = HashMap::new();
+
+    for y in 0..map.height() {
+        for x in 0..map.width() {
+            let pos = Pos::new(x, y);
+            let fill_metric = tile_fill_metric(map, pos);
+            metric_map.insert(pos, fill_metric);
+        }
+    }
+
+    return metric_map;
+}
+
+pub fn tile_fill_metric(map: &Map, pos: Pos) -> usize {
+    if !map[pos].block_move && map[pos].tile_type != TileType::Water {
+        let near_count = floodfill(map, pos, TILE_FILL_METRIC_DIST).len();
+
+        return near_count;
+    }
+    return 0
 }
 
