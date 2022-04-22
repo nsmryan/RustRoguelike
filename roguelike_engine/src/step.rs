@@ -3,7 +3,7 @@ use logging_timer::timer;
 use roguelike_utils::comp::*;
 
 #[cfg(test)]
-use roguelike_core::map::*;
+use roguelike_map::*;
 
 use roguelike_core::types::*;
 use roguelike_core::ai::*;

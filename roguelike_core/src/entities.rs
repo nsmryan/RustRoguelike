@@ -9,7 +9,7 @@ use crate::ai::{Ai, Behavior};
 use crate::movement::*;
 use crate::types::*;
 
-use roguelike_map::map::*;
+use roguelike_map::*;
 
 
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]

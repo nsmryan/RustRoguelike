@@ -4,7 +4,7 @@ use logging_timer::timer;
 use roguelike_utils::rng::Rand32;
 use roguelike_utils::comp::*;
 
-use roguelike_map::map::*;
+use roguelike_map::*;
 
 use roguelike_core::utils::*;
 use roguelike_core::types::*;

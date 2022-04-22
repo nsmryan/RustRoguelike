@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::Write;
 
-use roguelike_map::map::*;
+use roguelike_map::*;
 
 use roguelike_core::constants::*;
 use roguelike_core::messaging::*;

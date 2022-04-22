@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use serde::{Serialize, Deserialize};
 
-use roguelike_map::map::*;
+use roguelike_map::*;
 
 use roguelike_core::messaging::*;
 use roguelike_core::config::*;

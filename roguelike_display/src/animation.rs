@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 
 use roguelike_utils::rng::*;
 
-use roguelike_map::map::{Aoe, distance, Pos, move_towards};
+use roguelike_map::*;
 
 use roguelike_core::types::Color;
 use roguelike_core::config::Config;
