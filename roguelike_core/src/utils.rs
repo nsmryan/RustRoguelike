@@ -2,7 +2,7 @@ use std::collections::HashSet; use std::collections::HashMap;
 
 use roguelike_utils::comp::*;
 
-use roguelike_map::map::*;
+use roguelike_map::*;
 
 use crate::ai::Behavior;
 use crate::types::*;

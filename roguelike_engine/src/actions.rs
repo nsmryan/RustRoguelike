@@ -3,7 +3,7 @@ use std::fmt;
 
 use serde::{Serialize, Deserialize};
 
-use roguelike_map::map::*;
+use roguelike_map::*;
 
 use roguelike_core::movement::{Reach, MoveMode};
 use roguelike_core::types::*;
