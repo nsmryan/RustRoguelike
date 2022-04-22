@@ -1,8 +1,9 @@
 use std::fs::File;
 use std::io::Read;
 
+use roguelike_map::map::MapLoadConfig;
+
 use crate::types::*;
-use crate::map::*;
 
 
 use serde_derive::*;

@@ -6,8 +6,9 @@ use serde::{Serialize, Deserialize};
 
 use roguelike_utils::comp::*;
 
+use roguelike_map::map::*;
+
 use crate::movement::*;
-use crate::map::*;
 use crate::config::Config;
 
 

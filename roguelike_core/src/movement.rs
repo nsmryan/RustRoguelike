@@ -9,9 +9,10 @@ use serde::{Serialize, Deserialize};
 use roguelike_utils::line::*;
 use roguelike_utils::comp::*;
 
+use roguelike_map::map::*;
+
 use crate::types::*;
 use crate::utils::*;
-use crate::map::*;
 use crate::level::*;
 
 

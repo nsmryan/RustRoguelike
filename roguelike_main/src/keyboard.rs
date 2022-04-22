@@ -2,7 +2,7 @@ use sdl2::event::Event;
 use sdl2::mouse::MouseButton;
 use sdl2::keyboard::Keycode;
 
-use roguelike_core::map::Pos;
+use roguelike_map::map::Pos;
 
 use roguelike_engine::input::*;
 

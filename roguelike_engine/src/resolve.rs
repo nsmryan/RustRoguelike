@@ -5,16 +5,16 @@ use roguelike_utils::line::*;
 use roguelike_utils::rng::*;
 use roguelike_utils::comp::*;
 
+use roguelike_map::map::*;
+
 use roguelike_core::types::*;
 use roguelike_core::ai::{Behavior, ai_move_to_attack_pos, ai_can_hit_target, ai_take_turn};
-use roguelike_core::map::{Surface, AoeEffect};
 use roguelike_core::messaging::{MsgLog, Msg};
 use roguelike_core::constants::*;
 use roguelike_core::movement::{MoveMode, MoveType, Attack, Movement};
 use roguelike_core::movement;
 use roguelike_core::config::*;
 use roguelike_core::utils::*;
-use roguelike_core::map::*;
 use roguelike_core::level::*;
 
 use crate::generation::{make_energy, make_light, ensure_grass, make_smoke, make_magnifier};

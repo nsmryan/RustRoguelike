@@ -5,8 +5,9 @@ use serde::{Serialize, Deserialize};
 
 use roguelike_utils::comp::*;
 
+use roguelike_map::map::*;
+
 use crate::types::*;
-use crate::map::*;
 use crate::movement::{MoveType, MoveMode};
 use crate::ai::Behavior;
 use crate::movement::Attack;

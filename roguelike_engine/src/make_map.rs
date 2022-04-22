@@ -1,9 +1,10 @@
 use std::fs::File;
 use std::io::Write;
 
+use roguelike_map::map::*;
+
 use roguelike_core::constants::*;
 use roguelike_core::messaging::*;
-use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::utils::tile_fill_metric;
 

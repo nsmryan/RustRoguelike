@@ -4,12 +4,13 @@ use serde::{Serialize, Deserialize};
 
 use roguelike_utils::comp::*;
 
+use roguelike_map::map::*;
+
 use crate::constants::*;
 use crate::types::*;
 use crate::movement::*;
 use crate::messaging::*;
 use crate::config::Config;
-use crate::map::*;
 use crate::level::*;
 
 

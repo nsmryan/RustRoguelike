@@ -6,7 +6,8 @@ use pathfinding::directed::astar::astar;
 use roguelike_utils::line::*;
 use roguelike_utils::comp::*;
 
-use crate::map::*;
+use roguelike_map::map::*;
+
 use crate::movement::*;
 use crate::config::Config;
 use crate::constants::*;

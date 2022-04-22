@@ -2,13 +2,13 @@ use std::collections::HashSet; use std::collections::HashMap;
 
 use roguelike_utils::comp::*;
 
+use roguelike_map::map::*;
+
 use crate::ai::Behavior;
-use crate::map::*;
 use crate::types::*;
 use crate::movement::{Reach, MoveMode, check_collision, MoveType};
 use crate::messaging::*;
 use crate::config::Config;
-use crate::map::{Map, AoeEffect, Aoe, Wall, astar_neighbors, TileType, Direction, Pos};
 use crate::constants::*;
 use crate::entities::*;
 use crate::level::*;

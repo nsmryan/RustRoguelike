@@ -2,8 +2,9 @@ use std::str::FromStr;
 
 use roguelike_utils::comp::*;
 
+use roguelike_map::map::*;
+
 use roguelike_core::types::*;
-use roguelike_core::map::*;
 use roguelike_core::messaging::*;
 
 use roguelike_engine::input::*;
