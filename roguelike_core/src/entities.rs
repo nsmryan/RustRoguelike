@@ -9,6 +9,7 @@ use crate::ai::{Ai, Behavior};
 use crate::movement::*;
 use crate::utils::*;
 use crate::types::*;
+use crate::map::Pos;
 
 
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]

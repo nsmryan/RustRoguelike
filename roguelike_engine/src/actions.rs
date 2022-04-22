@@ -9,7 +9,7 @@ use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
 use roguelike_core::utils::{scale_pos, distance, sub_pos, add_pos, next_from_to};
-use roguelike_core::map::{astar_next_pos, Surface};
+use roguelike_core::map::{astar_next_pos, Surface, Pos};
 use roguelike_core::level::*;
 
 use crate::game::*;

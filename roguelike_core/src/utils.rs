@@ -11,7 +11,7 @@ use crate::types::*;
 use crate::movement::{Reach, MoveMode, check_collision, MoveType, Direction};
 use crate::messaging::*;
 use crate::config::Config;
-use crate::map::{Map, AoeEffect, Aoe, Wall, astar_neighbors, TileType};
+use crate::map::{Map, AoeEffect, Aoe, Wall, astar_neighbors, TileType, Pos};
 use crate::constants::*;
 use crate::entities::*;
 use crate::level::*;

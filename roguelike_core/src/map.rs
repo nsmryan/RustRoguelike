@@ -21,7 +21,6 @@ use serde_derive::*;
 use roguelike_utils::line::*;
 use roguelike_utils::rng::*;
 
-use crate::types::*;
 use crate::utils::*;
 use crate::movement::Direction;
 
@@ -30,6 +29,8 @@ use crate::movement::Direction;
 // adjustments of costs even though they are integers.
 pub const ASTAR_COST_MULTIPLIER: i32 = 100;
 
+
+pub type Pos = Point2D<i32, ()>;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialOrd, Ord, PartialEq, Serialize, Deserialize)]
 pub enum TileType {

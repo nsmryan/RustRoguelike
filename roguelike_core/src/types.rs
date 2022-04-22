@@ -4,15 +4,12 @@ use std::str::FromStr;
 
 use serde::{Serialize, Deserialize};
 
-use euclid::Point2D;
-
 use roguelike_utils::comp::*;
 
 use crate::movement::*;
+use crate::map::*;
 use crate::config::Config;
 
-
-pub type Pos = Point2D<i32, ()>;
 
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
