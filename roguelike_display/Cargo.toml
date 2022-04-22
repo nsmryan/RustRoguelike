@@ -22,5 +22,6 @@ rmp-serde = "*"
 rmp = "*"
 
 roguelike_utils = { path = "../roguelike_utils" }
+roguelike_map = { path = "../roguelike_map" }
 roguelike_core = { path = "../roguelike_core" }
 

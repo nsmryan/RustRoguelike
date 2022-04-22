@@ -14,8 +14,9 @@ use roguelike_utils::line::*;
 use roguelike_utils::rng::*;
 use roguelike_utils::comp::*;
 
+use roguelike_map::map::*;
+
 use roguelike_core::config::*;
-use roguelike_core::map::*;
 use roguelike_core::types::*;
 use roguelike_core::utils::*;
 use roguelike_core::messaging::*;

@@ -3,12 +3,13 @@ use std::fmt;
 
 use serde::{Serialize, Deserialize};
 
+use roguelike_map::map::*;
+
 use roguelike_core::movement::{Reach, MoveMode};
 use roguelike_core::types::*;
 use roguelike_core::messaging::{Msg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
-use roguelike_core::map::*;
 use roguelike_core::level::*;
 
 use crate::game::*;

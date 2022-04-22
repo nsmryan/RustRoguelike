@@ -14,12 +14,13 @@ use sdl2::pixels::{PixelFormatEnum};
 use roguelike_utils::rng::Rand32;
 use roguelike_utils::comp::*;
 
+use roguelike_map::map::*;
+
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
 use roguelike_core::ai::*;
 use roguelike_core::config::*;
 use roguelike_core::messaging::*;
-use roguelike_core::map::*;
 use roguelike_core::utils::aoe_fill;
 use roguelike_core::movement::{MoveMode};
 

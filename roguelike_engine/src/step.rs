@@ -2,6 +2,9 @@ use logging_timer::timer;
 
 use roguelike_utils::comp::*;
 
+#[cfg(test)]
+use roguelike_core::map::*;
+
 use roguelike_core::types::*;
 use roguelike_core::ai::*;
 use roguelike_core::messaging::{Msg, MsgLog};
@@ -14,8 +17,6 @@ use roguelike_core::utils::*;
 use roguelike_core::config::*;
 #[cfg(test)]
 use roguelike_core::movement::*;
-#[cfg(test)]
-use roguelike_core::map::*;
 use roguelike_core::entities::*;
 use roguelike_core::level::*;
 
