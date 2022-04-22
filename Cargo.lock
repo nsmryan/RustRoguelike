@@ -302,7 +302,6 @@ name = "roguelike_core"
 version = "0.1.0"
 dependencies = [
  "euclid",
- "itertools",
  "log",
  "logging_timer",
  "pathfinding",
