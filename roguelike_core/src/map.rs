@@ -22,7 +22,6 @@ use roguelike_utils::line::*;
 use roguelike_utils::rng::*;
 
 use crate::utils::*;
-use crate::movement::Direction;
 
 
 // multiplier used to scale costs up in astar, allowing small
@@ -31,6 +30,243 @@ pub const ASTAR_COST_MULTIPLIER: i32 = 100;
 
 
 pub type Pos = Point2D<i32, ()>;
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+pub enum Direction {
+    Left,
+    Right,
+    Up,
+    Down,
+    DownLeft,
+    DownRight,
+    UpLeft,
+    UpRight,
+}
+
+impl fmt::Display for Direction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Direction::Left => write!(f, "left"),
+            Direction::Right => write!(f, "right"),
+            Direction::Up => write!(f, "up"),
+            Direction::Down => write!(f, "down"),
+            Direction::DownLeft => write!(f, "downleft"),
+            Direction::DownRight => write!(f, "downright"),
+            Direction::UpLeft => write!(f, "upleft"),
+            Direction::UpRight => write!(f, "upright"),
+        }
+    }
+}
+
+impl FromStr for Direction {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "left" {
+            return Ok(Direction::Left);
+        } else if s == "right" {
+            return Ok(Direction::Right);
+        } else if s == "up" {
+            return Ok(Direction::Up);
+        } else if s == "down" {
+            return Ok(Direction::Down);
+        } else if s == "upright" {
+            return Ok(Direction::UpRight);
+        } else if s == "upleft" {
+            return Ok(Direction::UpLeft);
+        } else if s == "downright" {
+            return Ok(Direction::DownRight);
+        } else if s == "downleft" {
+            return Ok(Direction::DownLeft);
+        }
+
+        return Err(format!("Could not parse '{}' as Direction", s));
+    }
+}
+
+impl Direction {
+    pub fn from_dxy(dx: i32, dy: i32) -> Option<Direction> {
+        if dx == 0 && dy == 0 {
+            None
+        } else if dx == 0 && dy < 0 {
+            Some(Direction::Up)
+        } else if dx == 0 && dy > 0 {
+            Some(Direction::Down)
+        } else if dx > 0 && dy == 0 {
+            Some(Direction::Right)
+        } else if dx < 0 && dy == 0 {
+            Some(Direction::Left)
+        } else if dx > 0 && dy > 0 {
+            Some(Direction::DownRight)
+        } else if dx > 0 && dy < 0 {
+            Some(Direction::UpRight)
+        } else if dx < 0 && dy > 0 {
+            Some(Direction::DownLeft)
+        } else if dx < 0 && dy < 0 {
+            Some(Direction::UpLeft)
+        } else {
+            dbg!(dx, dy);
+            panic!("Direction should not exist");
+        }
+    }
+
+    pub fn from_positions(start: Pos, end: Pos) -> Option<Direction> {
+        let dxy = sub_pos(end, start);
+        return Direction::from_dxy(dxy.x, dxy.y);
+    }
+
+    pub fn reverse(&self) -> Direction {
+        match self {
+            Direction::Left => Direction::Right,
+            Direction::Right => Direction::Left,
+            Direction::Up => Direction::Down,
+            Direction::Down => Direction::Up,
+            Direction::DownLeft => Direction::UpRight,
+            Direction::DownRight => Direction::UpLeft,
+            Direction::UpLeft => Direction::DownRight,
+            Direction::UpRight => Direction::DownLeft,
+        }
+    }
+
+    pub fn horiz(self) -> bool {
+        match self {
+            Direction::Left | Direction::Right |
+            Direction::Up | Direction::Down => true,
+            _ => false,
+        }
+    }
+
+    pub fn diag(self) -> bool {
+        match self {
+            Direction::DownLeft | Direction::DownRight |
+            Direction::UpLeft   | Direction::UpRight => true,
+            _ => false,
+        }
+    }
+
+    pub fn into_move(&self) -> Pos {
+        match self {
+            Direction::Left => Pos::new(-1, 0),
+            Direction::Right => Pos::new(1, 0),
+            Direction::Up => Pos::new(0, -1),
+            Direction::Down => Pos::new(0, 1),
+            Direction::DownLeft => Pos::new(-1, 1),
+            Direction::DownRight => Pos::new(1, 1),
+            Direction::UpLeft => Pos::new(-1, -1),
+            Direction::UpRight => Pos::new(1, -1),
+        }
+    }
+
+    pub fn move_actions() -> [Direction; 8] {
+        return [Direction::Left,
+                Direction::Right,
+                Direction::Up,
+                Direction::Down,
+                Direction::DownLeft,
+                Direction::DownRight,
+                Direction::UpLeft,
+                Direction::UpRight];
+    }
+
+    pub fn from_f32(flt: f32) -> Direction {
+        let index = (flt * 8.0) as usize;
+        let dirs = Direction::move_actions();
+        return dirs[index];
+    }
+
+    pub fn offset_pos(&self, pos: Pos, amount: i32) -> Pos {
+        let mov = self.into_move();
+        return add_pos(pos, scale_pos(mov, amount));
+    }
+
+    pub fn turn_amount(&self, dir: Direction) -> i32 {
+        let dirs = Direction::directions();
+        let count = dirs.len() as i32;
+
+        let start_ix = dirs.iter().position(|d| *d == *self).unwrap() as i32;
+        let end_ix = dirs.iter().position(|d| *d == dir).unwrap() as i32;
+
+        if (end_ix - start_ix).abs() < 4 {
+            return end_ix - start_ix;
+        } else if end_ix > start_ix {
+            return (count - end_ix) + start_ix;
+        } else {
+            return (count - start_ix) + end_ix;
+        }
+    }
+
+    pub fn directions() -> [Direction; 8] {
+        use Direction::*;
+        let dirs = [DownLeft, Left, UpLeft, Up, UpRight, Right, DownRight, Down];
+        return dirs;
+    }
+
+    pub fn clockwise(&self) -> Direction {
+        match self {
+            Direction::Left => Direction::UpLeft,
+            Direction::Right => Direction::DownRight,
+            Direction::Up => Direction::UpRight,
+            Direction::Down => Direction::DownLeft,
+            Direction::DownLeft => Direction::Left,
+            Direction::DownRight => Direction::Down,
+            Direction::UpLeft => Direction::Up,
+            Direction::UpRight => Direction::Right,
+        }
+    }
+
+    pub fn counterclockwise(&self) -> Direction {
+        match self {
+            Direction::Left => Direction::DownLeft,
+            Direction::Right => Direction::UpRight,
+            Direction::Up => Direction::UpLeft,
+            Direction::Down => Direction::DownRight,
+            Direction::DownLeft => Direction::Down,
+            Direction::DownRight => Direction::Right,
+            Direction::UpLeft => Direction::Left,
+            Direction::UpRight => Direction::Up,
+        }
+    }
+}
+
+#[test]
+pub fn test_direction_turn_amount() {
+    assert_eq!(-1, Direction::Up.turn_amount(Direction::UpLeft));
+    assert_eq!(1, Direction::Up.turn_amount(Direction::UpRight));
+
+    for move_action in &Direction::move_actions() {
+        assert_eq!(0, move_action.turn_amount(*move_action));
+    }
+
+    assert_eq!(1, Direction::Down.turn_amount(Direction::DownLeft));
+    assert_eq!(-1, Direction::Down.turn_amount(Direction::DownRight));
+
+    assert_eq!(1, Direction::Left.turn_amount(Direction::UpLeft));
+    assert_eq!(-1, Direction::Left.turn_amount(Direction::DownLeft));
+}
+
+#[test]
+pub fn test_direction_clockwise() {
+    let dir = Direction::Right;
+
+    for _ in 0..8 {
+        let new_dir = dir.clockwise();
+        assert_eq!(1, dir.turn_amount(new_dir));
+    }
+    assert_eq!(Direction::Right, dir);
+}
+
+#[test]
+pub fn test_direction_counterclockwise() {
+    let dir = Direction::Right;
+
+    for _ in 0..8 {
+        let new_dir = dir.counterclockwise();
+        assert_eq!(-1, dir.turn_amount(new_dir));
+    }
+    assert_eq!(Direction::Right, dir);
+}
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialOrd, Ord, PartialEq, Serialize, Deserialize)]
 pub enum TileType {

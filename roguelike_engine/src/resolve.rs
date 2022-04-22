@@ -10,7 +10,7 @@ use roguelike_core::ai::{Behavior, ai_move_to_attack_pos, ai_can_hit_target, ai_
 use roguelike_core::map::{Surface, AoeEffect};
 use roguelike_core::messaging::{MsgLog, Msg};
 use roguelike_core::constants::*;
-use roguelike_core::movement::{MoveMode, MoveType, Attack, Movement, Direction};
+use roguelike_core::movement::{MoveMode, MoveType, Attack, Movement};
 use roguelike_core::movement;
 use roguelike_core::config::*;
 use roguelike_core::utils::*;

@@ -21,7 +21,7 @@ use roguelike_core::config::*;
 use roguelike_core::messaging::*;
 use roguelike_core::map::*;
 use roguelike_core::utils::aoe_fill;
-use roguelike_core::movement::{Direction, MoveMode};
+use roguelike_core::movement::{MoveMode};
 
 use crate::animation::{Str, Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use crate::drawcmd::*;

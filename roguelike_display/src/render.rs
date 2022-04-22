@@ -7,7 +7,6 @@ use roguelike_utils::comp::*;
 use roguelike_core::types::*;
 use roguelike_core::map::*;
 use roguelike_core::constants::*;
-use roguelike_core::movement::*;
 use roguelike_core::config::*;
 use roguelike_core::utils::*;
 use roguelike_core::ai::*;

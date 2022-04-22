@@ -7,7 +7,7 @@ use roguelike_utils::comp::*;
 
 use crate::types::*;
 use crate::map::*;
-use crate::movement::{MoveType, MoveMode, Direction};
+use crate::movement::{MoveType, MoveMode};
 use crate::ai::Behavior;
 use crate::movement::Attack;
 use crate::level::*;
