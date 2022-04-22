@@ -11,7 +11,7 @@ use roguelike_utils::comp::*;
 
 use crate::types::*;
 use crate::utils::*;
-use crate::map::{Wall, Blocked, TileType, Pos, Direction};
+use crate::map::*;
 use crate::level::*;
 
 

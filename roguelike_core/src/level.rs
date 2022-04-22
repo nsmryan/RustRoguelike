@@ -8,7 +8,6 @@ use roguelike_utils::comp::*;
 
 use crate::map::*;
 use crate::movement::*;
-use crate::utils::*;
 use crate::config::Config;
 use crate::constants::*;
 use crate::entities::*;

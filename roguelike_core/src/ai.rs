@@ -8,9 +8,8 @@ use crate::constants::*;
 use crate::types::*;
 use crate::movement::*;
 use crate::messaging::*;
-use crate::utils::*;
 use crate::config::Config;
-use crate::map::{FovResult, Pos, Direction};
+use crate::map::*;
 use crate::level::*;
 
 
