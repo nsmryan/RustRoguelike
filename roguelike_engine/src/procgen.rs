@@ -84,13 +84,13 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
     let mut new_map = Map::from_dims(width, height);
 
     let image = WfcImage::from_file(template_file).unwrap();
+    let component_cnt = image.component_cnt();
+
     let mut wfc = Wfc::overlapping(width as i32, height as i32, image, 3, 3, true, true, true, true).unwrap();
 
     wfc.run(None, Some(rng.rand_u32())).unwrap();
 
     let pixel_bytes = wfc.vec();
-
-    let component_cnt = unsafe { image.as_ref().unwrap().component_cnt };
 
     for x in 0..width {
         for y in 0..height {

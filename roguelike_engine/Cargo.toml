@@ -17,7 +17,7 @@ log = "0.4"
 simple-logging = "2.0"
 logging_timer = "1.0"
 
-wfc-rs = "0.5.3"
+wfc-rs = "0.6.1"
 
 rand = {version = "0.8", default-features = false, features = ["small_rng", "std"] }
 
@@ -25,3 +25,5 @@ smallvec = "1.4"
 
 roguelike_utils = { path = "../roguelike_utils" }
 roguelike_core = { path = "../roguelike_core" }
+
+libc = "0.2"

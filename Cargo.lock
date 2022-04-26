@@ -339,6 +339,7 @@ name = "roguelike_engine"
 version = "0.1.0"
 dependencies = [
  "euclid",
+ "libc",
  "log",
  "logging_timer",
  "pathfinding",
@@ -527,9 +528,9 @@ checksum = "fd6fbd9a79829dd1ad0cc20627bf1ed606756a7f77edff7b66b7064f9cb327c6"
 
 [[package]]
 name = "wfc-rs"
-version = "0.5.3"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f892229adc3d7514668fb17e271d96f5a7242ef122cb7dd0be0b9d8244c71cc"
+checksum = "504e6caba3d16dd976fd5c5ace9441a578cf3f70baa07edd1b80c63dde17564a"
 dependencies = [
  "cc",
  "libc",
