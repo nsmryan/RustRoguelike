@@ -1,5 +1,5 @@
 pub mod game;
-pub mod make_map;
+pub mod map_construct;
 pub mod actions;
 pub mod generation;
 pub mod resolve;

@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use roguelike_core::config::*;
 use roguelike_engine::game::*;
-use roguelike_engine::make_map::*;
+use roguelike_engine::map_construct::*;
 use roguelike_engine::log::*;
 
 use crate::commands::*;
@@ -21,7 +21,7 @@ pub fn main() {
     let mut game = Game::new(seed, config.clone());
     game.load_vaults("resources/vaults/");
 
-    make_map(&config.map_load, &mut game);
+    map_construct(&config.map_load, &mut game);
 
     let io_recv = spawn_input_reader();
 

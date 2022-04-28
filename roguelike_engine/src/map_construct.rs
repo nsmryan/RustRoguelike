@@ -14,7 +14,7 @@ use crate::procgen::*;
 use crate::vault::*;
 
 
-pub fn make_map(map_load_config: &MapLoadConfig, game: &mut Game) {
+pub fn map_construct(map_load_config: &MapLoadConfig, game: &mut Game) {
     let player_position: Pos;
 
     game.clear_level_except_player();

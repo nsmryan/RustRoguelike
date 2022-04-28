@@ -18,7 +18,7 @@ use roguelike_core::level::*;
 use crate::actions;
 use crate::actions::InputAction;
 use crate::generation::*;
-use crate::make_map::make_map;
+use crate::map_construct::map_construct;
 use crate::step::step_logic;
 use crate::input::*;
 use crate::vault::*;
@@ -121,7 +121,7 @@ impl Game {
 
                 self.settings.level_num += 1;
 
-                make_map(&self.config.map_load.clone(), self);
+                map_construct(&self.config.map_load.clone(), self);
             }
 
             /* Check for explored tiles */

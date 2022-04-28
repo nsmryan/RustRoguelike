@@ -14,7 +14,7 @@ use roguelike_core::level::*;
 
 use crate::game::*;
 use crate::input::*;
-use crate::make_map;
+use crate::map_construct::map_construct;
 
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -256,7 +256,7 @@ pub fn handle_input_universal(input_action: InputAction, game: &mut Game) -> boo
         }
 
         InputAction::RegenerateMap => {
-            let _position = make_map::make_map(&game.config.map_load.clone(), game);
+            let _position = map_construct(&game.config.map_load.clone(), game);
             game.msg_log.log_front(Msg::NewLevel);
             return true;
         }

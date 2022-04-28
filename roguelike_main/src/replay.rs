@@ -15,7 +15,7 @@ use roguelike_core::types::*;
 
 use roguelike_engine::game::*;
 use roguelike_engine::actions::*;
-use roguelike_engine::make_map::make_map;
+use roguelike_engine::map_construct::map_construct;
 use roguelike_engine::log::*;
 
 use roguelike_display::display::*;
@@ -93,7 +93,7 @@ pub fn test_recording() {
     let mut game = Game::new(0, config.clone());
     let mut input_action;
 
-    make_map(&config.map_load, &mut game);
+    map_construct(&config.map_load, &mut game);
 
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     let starting_pos = game.level.entities.pos[&player_id];
@@ -203,7 +203,7 @@ fn check_record(game: &mut Game, display: &mut Display, event_pump: &mut sdl2::E
     let map_config_string = std::fs::read_to_string(map_config_path).unwrap();
     let map_config = map_config_string.parse::<MapLoadConfig>().expect("Could not parse map config");
     eprintln!("Using map config: {}", &map_config);
-    make_map(&map_config, game);
+    map_construct(&map_config, game);
 
     let action_path = format!("{}/{}", path, Log::ACTION_LOG_NAME);
     let actions = read_action_log(&action_path);
@@ -369,7 +369,7 @@ fn rerecord(game: &mut Game, display: &mut Display, event_pump: &mut sdl2::Event
     let map_config_string = std::fs::read_to_string(map_config_path).unwrap();
     let map_config = map_config_string.parse::<MapLoadConfig>().expect("Could not parse map config");
     eprintln!("Using map config: {}", &map_config);
-    make_map(&map_config, game);
+    map_construct(&map_config, game);
 
     let action_path = format!("{}/{}", path, Log::ACTION_LOG_NAME);
     let actions = read_action_log(&action_path);

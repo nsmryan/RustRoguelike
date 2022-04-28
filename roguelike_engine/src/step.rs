@@ -27,7 +27,7 @@ use crate::actions::InputAction;
 #[cfg(test)]
 use crate::generation::*;
 #[cfg(test)]
-use crate::make_map::*;
+use crate::map_construct::*;
 
 use crate::resolve::resolve_messages;
 use crate::game::*;
@@ -130,7 +130,7 @@ pub fn test_game_step() {
     let mut input_action;
 
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
-    make_map(&MapLoadConfig::Empty, &mut game);
+    map_construct(&MapLoadConfig::Empty, &mut game);
     game.level.entities.pos[&player_id] = Pos::new(0, 0);
 
     input_action = InputAction::Move(Direction::Right);
@@ -172,7 +172,7 @@ fn step_ai(game: &mut Game) {
 fn test_ai_idle_player_in_fov() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config);
-    make_map(&MapLoadConfig::Empty, &mut game);
+    map_construct(&MapLoadConfig::Empty, &mut game);
 
     let start_pos = Pos::new(1, 1);
     let gol = make_gol(&mut game.level.entities, &game.config, start_pos, &mut game.msg_log);
@@ -194,7 +194,7 @@ fn test_ai_idle_player_in_fov() {
 fn test_ai_idle_was_attacked() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config);
-    make_map(&MapLoadConfig::Empty, &mut game);
+    map_construct(&MapLoadConfig::Empty, &mut game);
 
     let start_pos = Pos::new(0, 0);
     let gol = make_gol(&mut game.level.entities, &game.config, start_pos, &mut game.msg_log);
@@ -229,7 +229,7 @@ fn test_ai_idle_was_attacked() {
 fn test_ai_idle_heard_sound() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config);
-    make_map(&MapLoadConfig::Empty, &mut game);
+    map_construct(&MapLoadConfig::Empty, &mut game);
 
     let start_pos = Pos::new(0, 0);
     let gol = make_gol(&mut game.level.entities, &game.config, start_pos, &mut game.msg_log);
@@ -264,7 +264,7 @@ fn test_ai_idle_heard_sound() {
 fn test_ai_investigate_player_in_fov() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config);
-    make_map(&MapLoadConfig::Empty, &mut game);
+    map_construct(&MapLoadConfig::Empty, &mut game);
 
 
     let start_pos = Pos::new(0, 0);
@@ -289,7 +289,7 @@ fn test_ai_investigate_player_in_fov() {
 fn test_ai_investigate_not_in_fov_heard_sound() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config);
-    make_map(&MapLoadConfig::Empty, &mut game);
+    map_construct(&MapLoadConfig::Empty, &mut game);
 
 
     let start_pos = Pos::new(0, 0);
@@ -322,7 +322,7 @@ fn test_ai_investigate_not_in_fov_heard_sound() {
 fn test_ai_investigate_moves() {
     let config = Config::from_file("../config.yaml");
     let mut game = Game::new(0, config);
-    make_map(&MapLoadConfig::Empty, &mut game);
+    map_construct(&MapLoadConfig::Empty, &mut game);
 
 
     let start_pos = Pos::new(0, 0);
@@ -356,7 +356,7 @@ fn test_ai_investigate_moves() {
 #[test]
 fn test_pick_up_primary() {
     let mut game = Game::new(0, Config::from_file("../config.yaml"));
-    make_map(&MapLoadConfig::Empty, &mut game);
+    map_construct(&MapLoadConfig::Empty, &mut game);
 
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     let start_pos = game.level.entities.pos[&player_id];
@@ -383,7 +383,7 @@ fn test_pick_up_primary() {
 #[test]
 fn test_pick_up_consumables() {
     let mut game = Game::new(0, Config::from_file("../config.yaml"));
-    make_map(&MapLoadConfig::Empty, &mut game);
+    map_construct(&MapLoadConfig::Empty, &mut game);
 
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     let start_pos = game.level.entities.pos[&player_id];
@@ -410,7 +410,7 @@ fn test_pick_up_consumables() {
 #[test]
 fn test_pick_up_misc() {
     let mut game = Game::new(0, Config::from_file("../config.yaml"));
-    make_map(&MapLoadConfig::Empty, &mut game);
+    map_construct(&MapLoadConfig::Empty, &mut game);
 
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     let start_pos = game.level.entities.pos[&player_id];
@@ -435,7 +435,7 @@ fn test_pick_up_misc() {
 #[test]
 fn test_use_mode_stone() {
     let mut game = Game::new(0, Config::from_file("../config.yaml"));
-    make_map(&MapLoadConfig::Empty, &mut game);
+    map_construct(&MapLoadConfig::Empty, &mut game);
 
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     let start_pos = game.level.entities.pos[&player_id];
@@ -465,7 +465,7 @@ fn test_use_mode_stone() {
 #[test]
 fn test_use_mode_drop() {
     let mut game = Game::new(0, Config::from_file("../config.yaml"));
-    make_map(&MapLoadConfig::Empty, &mut game);
+    map_construct(&MapLoadConfig::Empty, &mut game);
 
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     let start_pos = game.level.entities.pos[&player_id];
@@ -499,7 +499,7 @@ fn test_use_mode_drop() {
 #[test]
 fn test_throw_stone() {
     let mut game = Game::new(0, Config::from_file("../config.yaml"));
-    make_map(&MapLoadConfig::Empty, &mut game);
+    map_construct(&MapLoadConfig::Empty, &mut game);
 
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     let start_pos = game.level.entities.pos[&player_id];

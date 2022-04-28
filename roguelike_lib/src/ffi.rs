@@ -14,7 +14,6 @@ use roguelike_core::config::Config;
 use roguelike_core::map::*;
 
 use roguelike_engine::game::*;
-use roguelike_engine::make_map::read_map_xp;
 use roguelike_engine::actions::*;
 
 
