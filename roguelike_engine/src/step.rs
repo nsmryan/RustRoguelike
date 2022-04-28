@@ -187,7 +187,7 @@ fn test_ai_idle_player_in_fov() {
 
     assert_eq!(2, game.msg_log.messages.len());
     assert_eq!(game.msg_log.messages[0], Msg::FaceTowards(gol, player_pos));
-    assert_eq!(game.msg_log.messages[1], Msg::StateChange(gol, Behavior::Alert(player_id)));
+    assert_eq!(game.msg_log.messages[1], Msg::StateChange(gol, Behavior::Alert(player_pos)));
 }
 
 #[test]

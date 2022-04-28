@@ -4,7 +4,7 @@ use std::io::BufRead;
 use std::str::FromStr;
 use std::cmp;
 
-use roguelike_map::map::MapLoadConfig;
+use roguelike_map::*;
 
 #[cfg(test)]
 use roguelike_core::config::*;
