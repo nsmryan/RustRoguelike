@@ -28,7 +28,7 @@ use roguelike_core::constants::*;
 use roguelike_engine::game::*;
 use roguelike_engine::actions::*;
 use roguelike_engine::input::*;
-use roguelike_engine::make_map::make_map;
+use roguelike_engine::map_construct::map_construct;
 use roguelike_engine::log::*;
 
 use roguelike_lib::commands::*;
@@ -185,7 +185,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
     } else {
         /* Run Game */
         if !game_from_file {
-            make_map(&map_config, &mut game);
+            map_construct(&map_config, &mut game);
         }
         let event_pump = sdl_context.event_pump().unwrap();
         return game_loop(game, display, opts, &mut timer, event_pump);

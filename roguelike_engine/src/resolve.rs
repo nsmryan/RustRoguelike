@@ -19,7 +19,7 @@ use roguelike_core::level::*;
 
 use crate::generation::{make_energy, make_light, ensure_grass, make_smoke, make_magnifier};
 use crate::game::{Game};
-use crate::make_map::{make_map};
+use crate::map_construct::map_construct;
 
 
 pub fn resolve_messages(game: &mut Game) {
@@ -625,7 +625,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::Restart => {
-                make_map(&game.settings.map_load_config.clone(), game);
+                map_construct(&game.settings.map_load_config.clone(), game);
 
                 let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
