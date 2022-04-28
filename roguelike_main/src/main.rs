@@ -19,7 +19,7 @@ use gumdrop::Options;
 use rmp_serde::{Deserializer, Serializer};
 use serde::{Deserialize, Serialize};
 
-use roguelike_map::map::MapLoadConfig;
+use roguelike_map::MapLoadConfig;
 
 use roguelike_core::types::*;
 use roguelike_core::config::Config;

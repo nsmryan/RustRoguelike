@@ -14,6 +14,7 @@ use roguelike_utils::line::*;
 
 use crate::utils::*;
 use crate::map::*;
+use crate::types::*;
 
 
 // multiplier used to scale costs up in astar, allowing small

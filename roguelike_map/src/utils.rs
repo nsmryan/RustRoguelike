@@ -3,10 +3,11 @@ use std::collections::hash_map::DefaultHasher;
 
 use euclid::*;
 
-use roguelike_utils::line::*;
+use roguelike_utils::line::line;
 use roguelike_utils::rng::*;
 
 use crate::map::*;
+use crate::types::*;
 
 
 pub fn distance(pos1: Pos, pos2: Pos) -> i32 {
