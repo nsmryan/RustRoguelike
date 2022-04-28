@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::Read;
 
-use roguelike_map::map::MapLoadConfig;
+use roguelike_map::MapLoadConfig;
 
 use crate::types::*;
 

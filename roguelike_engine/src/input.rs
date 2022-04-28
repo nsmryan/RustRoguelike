@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use serde::{Serialize, Deserialize};
 
-use roguelike_map::map::{Pos, Direction};
+use roguelike_map::{Pos, Direction};
 
 use roguelike_core::types::*;
 use roguelike_core::config::Config;
