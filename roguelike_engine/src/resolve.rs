@@ -50,12 +50,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::SoundHitTile(cause_id, source_pos, _radius, tile_pos) => {
-                for heard_id in game.level.get_entities_at_pos(tile_pos) {
-                    if heard_id != cause_id {
-                        // TODO replace with an Alerted message
-                        game.level.entities.messages[&heard_id].push(Message::Sound(source_pos));
-                    }
-                }
+                resolve_sound_hit_tile(cause_id, source_pos, tile_pos, game);
             }
 
             Msg::ItemThrow(entity_id, item_id, start, end, hard) => {
@@ -1657,3 +1652,11 @@ fn resolve_start_use_item(item_id: EntityId, game: &mut Game) {
     }
 }
 
+fn resolve_sound_hit_tile(cause_id: EntityId, source_pos: Pos, tile_pos: Pos, game: &mut Game) {
+    for heard_id in game.level.get_entities_at_pos(tile_pos) {
+        if heard_id != cause_id {
+            // TODO replace with an Alerted message
+            game.level.entities.messages[&heard_id].push(Message::Sound(source_pos));
+        }
+    }
+}
