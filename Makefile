@@ -1,5 +1,5 @@
 
-.PHONY: exe run rerun debug release test retest check recheck
+.PHONY: exe run rerun debug release test retest check recheck sloc
 run:
 	cargo run
 
@@ -29,4 +29,7 @@ check:
 
 clean:
 	cargo clean
+
+sloc:
+	cloc */src/*.rs --by-file
 
