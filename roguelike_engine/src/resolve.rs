@@ -401,93 +401,19 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::Restart => {
-                map_construct(&game.settings.map_load_config.clone(), game);
-
-                let player_id = game.level.find_by_name(EntityName::Player).unwrap();
-
-                if game.level.entities.hp[&player_id].hp != game.level.entities.hp[&player_id].max_hp {
-                    let hp_diff = game.level.entities.hp[&player_id].max_hp - game.level.entities.hp[&player_id].hp;
-                    game.level.entities.hp[&player_id].hp = 
-                        game.level.entities.hp[&player_id].max_hp;
-                    game.msg_log.log(Msg::Healed(player_id, hp_diff, game.level.entities.hp[&player_id].max_hp));
-                }
-
-                if game.config.player_energy > game.level.entities.energy[&player_id] {
-                    let energy_diff = game.config.player_energy - game.level.entities.energy[&player_id];
-                    game.level.entities.energy[&player_id] = game.config.player_energy;
-                    game.msg_log.log(Msg::GainEnergy(player_id, energy_diff));
-                }
-
-                game.level.entities.skills[&player_id].clear();
-                game.level.entities.inventory[&player_id].clear();
-                game.level.entities.class[&player_id] = EntityClass::General;
-                game.level.entities.status[&player_id] = StatusEffect::default();
-                game.level.entities.status[&player_id].alive = true;
-
-                game.settings.turn_count = 0;
-                game.settings.cursor = None;
-                game.settings.use_dir = None;
+                resolve_restart(game);
             }
 
             Msg::PassThrough(entity_id, direction) => {
-                let entity_pos = game.level.entities.pos[&entity_id];
-                let dest = direction.offset_pos(entity_pos, 3);
-                let clear_path = game.level.map.path_blocked(entity_pos, dest, BlockedType::Move).is_none();
-                let blocked_pos = game.level.pos_blocked(dest);
-                if  clear_path && !blocked_pos {
-                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, dest));
-
-                    for pos in line_inclusive(entity_pos, dest) {
-                        for other_id in game.level.get_entities_at_pos(pos) {
-                            if game.level.entities.typ[&other_id] == EntityType::Enemy {
-                                game.msg_log.log(Msg::Forget(other_id));
-                            }
-                        }
-                    }
-                }
+                resolve_passthrough(entity_id, direction, game);
             }
 
             Msg::WhirlWind(entity_id, pos) => {
-                let entity_pos = game.level.entities.pos[&entity_id];
-                let mut near_walls = false;
-                for dir in &Direction::directions() {
-                    let dir_pos = dir.offset_pos(pos, 1);
-
-                    if !game.level.map.is_within_bounds(dir_pos) {
-                        continue;
-                    }
-
-                    if game.level.map.move_blocked(pos, dir_pos, BlockedType::Move).is_some() {
-                        near_walls = true;
-                        break;
-                    }
-                }
-
-                let traps_block = false;
-                if !near_walls && game.level.clear_path(entity_pos, pos, traps_block) {
-                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, pos));
-                } // NOTE could create a failed whirlwind message, or generic failed skill message
+                resolve_whirlwind(entity_id, pos, game);
             }
 
             Msg::Swift(entity_id, direction) => {
-                let entity_pos = game.level.entities.pos[&entity_id];
-                let dest = direction.offset_pos(entity_pos, SKILL_SWIFT_DISTANCE as i32);
-
-                if game.level.map.is_within_bounds(dest) {
-
-                    let mut near_walls = false;
-                    for dir in &Direction::directions() {
-                        if game.level.map.move_blocked(dest, dir.offset_pos(dest, 1), BlockedType::Move).is_some() {
-                            near_walls = true;
-                            break;
-                        }
-                    }
-
-                    let traps_block = false;
-                    if !near_walls && game.level.clear_path(entity_pos, dest, traps_block) {
-                        game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, dest));
-                    }
-                }
+                resolve_swift(entity_id, direction, game);
             }
 
             Msg::Forget(entity_id) => {
@@ -1723,5 +1649,95 @@ fn resolve_swap(entity_id: EntityId, target_id: EntityId, game: &mut Game) {
     game.msg_log.log(Msg::SetFacing(target_id, entity_dir));
 
     game.level.entities.took_turn[&entity_id] = true;
+}
+
+fn resolve_restart(game: &mut Game) {
+    map_construct(&game.settings.map_load_config.clone(), game);
+
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+
+    if game.level.entities.hp[&player_id].hp != game.level.entities.hp[&player_id].max_hp {
+        let hp_diff = game.level.entities.hp[&player_id].max_hp - game.level.entities.hp[&player_id].hp;
+        game.level.entities.hp[&player_id].hp = 
+            game.level.entities.hp[&player_id].max_hp;
+        game.msg_log.log(Msg::Healed(player_id, hp_diff, game.level.entities.hp[&player_id].max_hp));
+    }
+
+    if game.config.player_energy > game.level.entities.energy[&player_id] {
+        let energy_diff = game.config.player_energy - game.level.entities.energy[&player_id];
+        game.level.entities.energy[&player_id] = game.config.player_energy;
+        game.msg_log.log(Msg::GainEnergy(player_id, energy_diff));
+    }
+
+    game.level.entities.skills[&player_id].clear();
+    game.level.entities.inventory[&player_id].clear();
+    game.level.entities.class[&player_id] = EntityClass::General;
+    game.level.entities.status[&player_id] = StatusEffect::default();
+    game.level.entities.status[&player_id].alive = true;
+
+    game.settings.turn_count = 0;
+    game.settings.cursor = None;
+    game.settings.use_dir = None;
+}
+
+fn resolve_passthrough(entity_id: EntityId, direction: Direction, game: &mut Game) {
+    let entity_pos = game.level.entities.pos[&entity_id];
+    let dest = direction.offset_pos(entity_pos, 3);
+    let clear_path = game.level.map.path_blocked(entity_pos, dest, BlockedType::Move).is_none();
+    let blocked_pos = game.level.pos_blocked(dest);
+    if  clear_path && !blocked_pos {
+        game.msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, dest));
+
+        for pos in line_inclusive(entity_pos, dest) {
+            for other_id in game.level.get_entities_at_pos(pos) {
+                if game.level.entities.typ[&other_id] == EntityType::Enemy {
+                    game.msg_log.log(Msg::Forget(other_id));
+                }
+            }
+        }
+    }
+}
+
+fn resolve_whirlwind(entity_id: EntityId, pos: Pos, game: &mut Game) {
+    let entity_pos = game.level.entities.pos[&entity_id];
+    let mut near_walls = false;
+    for dir in &Direction::directions() {
+        let dir_pos = dir.offset_pos(pos, 1);
+
+        if !game.level.map.is_within_bounds(dir_pos) {
+            continue;
+        }
+
+        if game.level.map.move_blocked(pos, dir_pos, BlockedType::Move).is_some() {
+            near_walls = true;
+            break;
+        }
+    }
+
+    let traps_block = false;
+    if !near_walls && game.level.clear_path(entity_pos, pos, traps_block) {
+        game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, pos));
+    } // NOTE could create a failed whirlwind message, or generic failed skill message
+}
+
+fn resolve_swift(entity_id: EntityId, direction: Direction, game: &mut Game) {
+    let entity_pos = game.level.entities.pos[&entity_id];
+    let dest = direction.offset_pos(entity_pos, SKILL_SWIFT_DISTANCE as i32);
+
+    if game.level.map.is_within_bounds(dest) {
+
+        let mut near_walls = false;
+        for dir in &Direction::directions() {
+            if game.level.map.move_blocked(dest, dir.offset_pos(dest, 1), BlockedType::Move).is_some() {
+                near_walls = true;
+                break;
+            }
+        }
+
+        let traps_block = false;
+        if !near_walls && game.level.clear_path(entity_pos, dest, traps_block) {
+            game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, dest));
+        }
+    }
 }
 
