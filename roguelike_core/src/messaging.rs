@@ -68,7 +68,7 @@ pub enum Msg {
     Triggered(EntityId, EntityId), // trap, entity
     Untriggered(EntityId, EntityId), // trap, entity
     AddClass(EntityClass),
-    DropItem(EntityId, EntityId), // entity, item
+    DropItem(EntityId, u64), // entity, item index
     GrassWall(EntityId, Direction),
     GrassThrow(EntityId, Direction),
     GrassShoes(EntityId, ActionMode),
@@ -209,12 +209,12 @@ impl fmt::Display for Msg {
             Msg::FailedBlink(entity_id) => write!(f, "failed_blink {}", entity_id),
             Msg::NotEnoughEnergy(entity_id) => write!(f, "not_enough_energy {}", entity_id),
             Msg::DropFailed(entity_id) => write!(f, "drop_failed {}", entity_id),
-            Msg::DroppedItem(entity_id, trap_id) => write!(f, "dropped_item {} {}", entity_id, trap_id),
+            Msg::DroppedItem(entity_id, item_id) => write!(f, "dropped_item {} {}", entity_id, item_id),
             Msg::PlayerTurn => write!(f, "player_turn"),
             Msg::Triggered(trap_id, entity_id) => write!(f, "triggered {} {}", trap_id, entity_id),
             Msg::Untriggered(trap_id, entity_id) => write!(f, "untriggered {} {}", trap_id, entity_id),
             Msg::AddClass(entity_class) => write!(f, "add_class {}", entity_class),
-            Msg::DropItem(entity_id, item_id) => write!(f, "drop_item {} {}", entity_id, item_id),
+            Msg::DropItem(entity_id, item_index) => write!(f, "drop_item {} {}", entity_id, item_index),
             Msg::GrassThrow(entity_id, direction) => write!(f, "grass_throw {} {}", entity_id, direction),
             Msg::GrassWall(entity_id, direction) => write!(f, "grass_wall {} {}", entity_id, direction),
             Msg::GrassShoes(entity_id, action_mode) => write!(f, "grass_shoes {} {}", entity_id, action_mode),
@@ -483,12 +483,8 @@ impl Msg {
                 return format!("Player chose class {:?}!", class);
             }
             
-            Msg::DropItem(entity_id, item_index) => {
-                if let Some(item_id) = data.entities.inventory[entity_id].get(*item_index as usize) {
-                    return format!("{:?} dropped a {:?}!", data.entities.name[entity_id], item_id);
-                } else {
-                    return "".to_string();
-                }
+            Msg::DroppedItem(entity_id, item_id) => {
+                return format!("{:?} dropped a {:?}!", data.entities.name[entity_id], data.entities.name[item_id]);
             }
 
             Msg::GrassThrow(entity_id, direction) => {

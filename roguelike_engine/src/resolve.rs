@@ -29,15 +29,15 @@ pub fn resolve_messages(game: &mut Game) {
     while let Some(msg) = game.msg_log.pop() {
         match msg {
             Msg::Moved(entity_id, move_type, move_mode, pos) => {
-               process_moved_message(entity_id, move_type, move_mode, pos, &mut game.level, &mut game.msg_log, &mut game.rng, &game.config);
+               resolve_moved_message(entity_id, move_type, move_mode, pos, &mut game.level, &mut game.msg_log, &mut game.rng, &game.config);
             }
 
             Msg::Interact(entity_id, pos) => {
-               process_interaction(entity_id, pos, &mut game.level, &mut game.msg_log, &game.config);
+               resolve_interaction(entity_id, pos, &mut game.level, &mut game.msg_log, &game.config);
             }
 
             Msg::Crushed(entity_id, pos) => {
-                crushed(entity_id, pos, &mut game.level, &mut game.msg_log, &game.config);
+                resolve_crushed(entity_id, pos, &mut game.level, &mut game.msg_log, &game.config);
             }
 
             Msg::Sound(cause_id, source_pos, radius) => {
@@ -53,7 +53,6 @@ pub fn resolve_messages(game: &mut Game) {
                 for heard_id in game.level.get_entities_at_pos(tile_pos) {
                     if heard_id != cause_id {
                         // TODO replace with an Alerted message
-                        //dbg!(&source_pos, &tile_pos, &heard_id, &cause_id);
                         game.level.entities.messages[&heard_id].push(Message::Sound(source_pos));
                     }
                 }
@@ -230,44 +229,49 @@ pub fn resolve_messages(game: &mut Game) {
                 game.level.entities.skills[&player_id].clear();
                 game.level.entities.class[&player_id] = class;
 
+                fn add_skill(game: &mut Game, entity_id: EntityId, skill: Skill) {
+                    game.level.entities.add_skill(entity_id, skill);
+                    game.msg_log.log(Msg::AddSkill(skill));
+                }
+
                 match class {
                     EntityClass::General => {
-                        add_skill(game, Skill::Blink);
-                        add_skill(game, Skill::Sprint);
-                        add_skill(game, Skill::Roll);
+                        add_skill(game, player_id, Skill::Blink);
+                        add_skill(game, player_id, Skill::Sprint);
+                        add_skill(game, player_id, Skill::Roll);
                     }
 
                     EntityClass::Monolith => {
-                        add_skill(game, Skill::PassWall);
-                        add_skill(game, Skill::Rubble);
-                        add_skill(game, Skill::StoneThrow);
-                        add_skill(game, Skill::Reform);
-                        add_skill(game, Skill::StoneSkin);
+                        add_skill(game, player_id, Skill::PassWall);
+                        add_skill(game, player_id, Skill::Rubble);
+                        add_skill(game, player_id, Skill::StoneThrow);
+                        add_skill(game, player_id, Skill::Reform);
+                        add_skill(game, player_id, Skill::StoneSkin);
                     }
 
                     EntityClass::Grass => {
-                        add_skill(game, Skill::GrassWall);
-                        add_skill(game, Skill::GrassThrow);
-                        add_skill(game, Skill::GrassBlade);
-                        add_skill(game, Skill::GrassCover);
-                        add_skill(game, Skill::GrassShoes);
+                        add_skill(game, player_id, Skill::GrassWall);
+                        add_skill(game, player_id, Skill::GrassThrow);
+                        add_skill(game, player_id, Skill::GrassBlade);
+                        add_skill(game, player_id, Skill::GrassCover);
+                        add_skill(game, player_id, Skill::GrassShoes);
                     }
 
                     EntityClass::Clockwork => {
-                        add_skill(game, Skill::Push);
+                        add_skill(game, player_id, Skill::Push);
                     }
 
                     EntityClass::Hierophant => {
-                        add_skill(game, Skill::Illuminate);
-                        add_skill(game, Skill::Heal);
-                        add_skill(game, Skill::FarSight);
-                        add_skill(game, Skill::Ping);
+                        add_skill(game, player_id, Skill::Illuminate);
+                        add_skill(game, player_id, Skill::Heal);
+                        add_skill(game, player_id, Skill::FarSight);
+                        add_skill(game, player_id, Skill::Ping);
                     }
 
                     EntityClass::Wind => {
-                        add_skill(game, Skill::PassThrough);
-                        add_skill(game, Skill::WhirlWind);
-                        add_skill(game, Skill::Swift);
+                        add_skill(game, player_id, Skill::PassThrough);
+                        add_skill(game, player_id, Skill::WhirlWind);
+                        add_skill(game, player_id, Skill::Swift);
                     }
                 }
             }
@@ -727,41 +731,6 @@ pub fn resolve_messages(game: &mut Game) {
     game.level.entities.messages[&player_id].clear();
 }
 
-fn hammer_swing(entity_id: EntityId, item_id: EntityId, pos: Pos, level: &mut Level, msg_log: &mut MsgLog) {
-    let entity_pos = level.entities.pos[&entity_id];
-
-    msg_log.log_front(Msg::Blunt(entity_pos, pos));
-
-    if let Some(blocked) = level.map.path_blocked_move(entity_pos, pos) {
-        msg_log.log_front(Msg::HammerHitWall(entity_id, blocked));
-        level.used_up_item(entity_id, item_id);
-    } else if let Some(hit_entity) = level.has_blocking_entity(pos) {
-        // we hit another entity!
-        msg_log.log_front(Msg::HammerHitEntity(entity_id, hit_entity));
-        level.used_up_item(entity_id, item_id);
-    }
-
-    level.entities.took_turn[&entity_id] = true;
-}
-
-fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
-    let first = level.entities.pos[&entity_id];
-    let second = level.entities.pos[&hit_entity];
-
-    let dxy = sub_pos(second, first);
-    let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
-    let amount = 1;
-    msg_log.log(Msg::Pushed(entity_id, hit_entity, direction, amount, false));
-    msg_log.log_front(Msg::Sound(entity_id, second, config.sound_radius_hammer));
-
-    if let Some(hp) = level.entities.hp.get(&hit_entity) {
-        let damage = hp.hp;
-
-        msg_log.log(Msg::Killed(entity_id, hit_entity, damage));
-        msg_log.log(Msg::Sound(entity_id, second, config.sound_radius_blunt));
-    }
-}
-
 fn process_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
     let entity_pos = level.entities.pos[&entity_id];
 
@@ -830,45 +799,6 @@ fn process_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attac
 
     // TODO maybe a UsedItem message for this, although only one per use.
     //reduce_item_durability(level, entity_id, item_id);
-}
-
-fn freeze_trap_triggered(trap: EntityId, cause_id: EntityId, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
-    let source_pos = level.entities.pos[&trap];
-
-    let freeze_aoe =
-        aoe_fill(&level.map, AoeEffect::Freeze, source_pos, config.freeze_trap_radius, config);
-
-    let who_hit =
-        level.within_aoe(&freeze_aoe);
-
-    for obj_id in who_hit {
-        // TODO probably need to filter out a bit more
-        if obj_id != cause_id && level.entities.status[&obj_id].alive {
-            msg_log.log(Msg::Froze(obj_id, FREEZE_TRAP_NUM_TURNS));
-        }
-    }
-}
-
-fn triggered(trigger: EntityId, entity_id: EntityId, level: &mut Level, msg_log: &mut MsgLog) {
-    if level.entities.name[&trigger] == EntityName::GateTrigger {
-        let wall_pos = level.entities.gate_pos[&trigger];
-
-        if level.entities.status[&trigger].active {
-            // raise the gate
-            level.entities.status[&trigger].active = false;
-
-            // only raise if no entities are on the square.
-            // otherwise wait for a move that leaves the trigger unblocked.
-            if level.has_entity(wall_pos).is_none() {
-                level.map[wall_pos] = Tile::wall();
-            }
-        } else {
-            level.entities.status[&trigger].active = true;
-            level.map[wall_pos] = Tile::empty();
-        }
-
-        msg_log.log(Msg::GateTriggered(trigger, entity_id));
-    }
 }
 
 fn resolve_attack(entity_id: EntityId,
@@ -1067,24 +997,6 @@ fn resolve_push_skill(entity_id: EntityId,
     level.entities.took_turn[&entity_id] = true;
 }
 
-fn resolve_blink(entity_id: EntityId, level: &mut Level, rng: &mut Rand32, msg_log: &mut MsgLog) {
-    let entity_pos = level.entities.pos[&entity_id];
-
-    if let Some(blink_pos) = find_blink_pos(entity_pos, rng, level) {
-        msg_log.log_front(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, blink_pos));
-    } else {
-        msg_log.log(Msg::FailedBlink(entity_id));
-    }
-
-    level.entities.took_turn[&entity_id] = true;
-}
-
-fn place_rubble(pos: Pos, map: &mut Map) {
-    map[pos].surface = Surface::Rubble;
-    map[pos].block_move = false;
-    map[pos].tile_type = TileType::Empty;
-}
-
 fn resolve_rubble(blocked: Blocked, map: &mut Map) {
     if map[blocked.end_pos].tile_type == TileType::Wall || 
        map[blocked.end_pos].tile_type == TileType::ShortWall {
@@ -1277,8 +1189,7 @@ fn pushed_entity(pusher: EntityId,
     level.entities.took_turn[&pusher] = true;
 }
 
-fn crushed(entity_id: EntityId, pos: Pos, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
-
+fn resolve_crushed(entity_id: EntityId, pos: Pos, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
     if level.map[pos].tile_type.is_wall() {
         level.map[pos] = Tile::empty();
     }
@@ -1510,85 +1421,7 @@ fn throw_item(player_id: EntityId,
     msg_log.log(Msg::ItemLanded(item_id, start_pos, hit_pos));
 }
 
-fn find_blink_pos(pos: Pos, rng: &mut Rand32, level: &mut Level) -> Option<Pos> {
-    let mut potential_positions = floodfill(&level.map, pos, BLINK_RADIUS);
-    while potential_positions.len() > 0 {
-        let ix = rng_range_u32(rng, 0, potential_positions.len() as u32) as usize;
-        let rand_pos = potential_positions[ix];
-
-        if level.has_blocking_entity(rand_pos).is_none() &&
-           level.map.path_blocked_move(pos, rand_pos).is_none() {
-               return Some(rand_pos);
-        }
-
-        potential_positions.swap_remove(ix);
-    }
-    
-    return None;
-}
-
-fn change_move_mode(entity_id: EntityId,
-                    increase: bool,
-                    level: &mut Level,
-                    msg_log: &mut MsgLog) {
-    if increase {
-        let holding_shield = level.using(entity_id, Item::Shield).is_some();
-        let holding_hammer = level.using(entity_id, Item::Hammer).is_some();
-
-        let move_mode = level.entities 
-                            .move_mode
-                            .get(&entity_id)
-                            .expect("Entity should have had a move mode!");
-        let new_move_mode = move_mode.increase();
-
-        if new_move_mode == movement::MoveMode::Run && (holding_shield || holding_hammer) {
-            msg_log.log(Msg::TriedRunWithHeavyEquipment);
-        } else {
-            msg_log.log(Msg::MoveMode(entity_id, new_move_mode));
-        }
-    } else {
-        let new_move_mode = level.entities.move_mode[&entity_id].decrease();
-        msg_log.log(Msg::MoveMode(entity_id, new_move_mode));
-    }
-}
-
-fn inventory_drop_item(entity_id: EntityId,
-                       item_index: usize,
-                       level: &mut Level,
-                       msg_log: &mut MsgLog) {
-    let entity_pos = level.entities.pos[&entity_id];
-
-    if let Some(item_id) = level.entities.inventory[&entity_id].get(item_index).map(|v| *v) {
-        // Find a place to drop the item, without placing it on the same tile
-        // as another item.
-        let mut found_tile = false;
-        let mut dist = 1;
-        while !found_tile && dist < 10 {
-            let positions = floodfill(&level.map, entity_pos, dist);
-
-            for pos in positions {
-                if level.item_at_pos(pos).is_none() {
-                    level.entities.remove_item(entity_id, item_id);
-                    level.entities.set_pos(item_id, pos);
-                    msg_log.log(Msg::Moved(item_id, MoveType::Blink, MoveMode::Walk, pos));
-
-                    found_tile = true;
-                    break;
-                }
-            }
-
-            dist += 1;
-        }
-
-        if found_tile {
-            level.entities.took_turn[&entity_id] = true;
-        } else {
-            msg_log.log(Msg::DropFailed(entity_id));
-        }
-    }
-}
-
-fn process_interaction(entity_id: EntityId,
+fn resolve_interaction(entity_id: EntityId,
                        interact_pos: Pos,
                        level: &mut Level, 
                        msg_log: &mut MsgLog,
@@ -1609,43 +1442,7 @@ fn process_interaction(entity_id: EntityId,
     }
 }
 
-fn make_move_sound(entity_id: EntityId,
-                   original_pos: Pos,
-                   pos: Pos,
-                   move_mode: MoveMode,
-                   level: &mut Level,
-                   msg_log: &mut MsgLog,
-                   config: &Config) {
-    let mut sound_radius;
-
-    match move_mode {
-        MoveMode::Sneak => sound_radius = config.sound_radius_sneak,
-        MoveMode::Walk => sound_radius = config.sound_radius_walk,
-        MoveMode::Run => sound_radius = config.sound_radius_run,
-    }
-
-    if level.map[pos].surface == Surface::Rubble {
-        // If the entity has no passives, or they do but are not sure footed.
-        if level.entities.passive.get(&entity_id).is_none() || !level.entities.passive[&entity_id].sure_footed {
-            sound_radius += config.sound_rubble_radius;
-        }
-    } else if level.map[pos].surface == Surface::Grass {
-        sound_radius -= config.sound_grass_radius;
-    }
-
-    if sound_radius > 0 && level.entities.status[&entity_id].soft_steps > 0 {
-        sound_radius -= 1;
-    }
-
-    if sound_radius > 0 && level.entities.passive[&entity_id].soft_shoes {
-        sound_radius -= 1;
-    }
-
-    msg_log.log_front(Msg::Sound(entity_id, pos, sound_radius));
-    msg_log.log_front(Msg::Sound(entity_id, original_pos, sound_radius));
-}
-
-fn process_moved_message(entity_id: EntityId,
+fn resolve_moved_message(entity_id: EntityId,
                          move_type: MoveType,
                          move_mode: MoveMode,
                          pos: Pos,
@@ -1743,77 +1540,6 @@ fn process_moved_message(entity_id: EntityId,
             if level.entities.behavior[behave_id] == Behavior::Attacking(entity_id) {
                 level.entities.messages[behave_id].push(Message::Disappeared(entity_id));
             }
-        }
-    }
-}
-
-fn add_skill(game: &mut Game, skill: Skill) {
-    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
-    game.level.entities.add_skill(player_id, skill);
-    game.msg_log.log(Msg::AddSkill(skill));
-}
-
-fn trample_grass_walls(level: &mut Level, start_pos: Pos, end_pos: Pos) {
-    match Direction::from_positions(start_pos, end_pos).unwrap() {
-        Direction::Left | Direction::Right | Direction::Up | Direction::Down => {
-            trample_grass_move(level, start_pos, end_pos);
-        }
-
-        Direction::DownLeft | Direction::DownRight => {
-            trample_grass_move(level, start_pos, move_y(start_pos, 1));
-            trample_grass_move(level, move_y(start_pos, 1), end_pos);
-        }
-
-        Direction::UpLeft | Direction::UpRight => {
-            trample_grass_move(level, start_pos, move_y(start_pos, -1));
-            trample_grass_move(level, move_y(start_pos, -1), end_pos);
-        }
-    }
-}
-
-fn trample_grass_move(level: &mut Level, start_pos: Pos, end_pos: Pos) {
-    let wall_pos;
-    let is_left_wall;
-    match Direction::from_positions(start_pos, end_pos).unwrap() {
-        Direction::Left => {
-            wall_pos = start_pos;
-            is_left_wall = true;
-        }
-
-        Direction::Right => {
-            wall_pos = end_pos;
-            is_left_wall = true;
-        }
-
-        Direction::Up => {
-            wall_pos = end_pos;
-            is_left_wall = false;
-        }
-
-        Direction::Down => {
-            wall_pos = start_pos;
-            is_left_wall = false;
-        }
-
-        Direction::DownLeft | Direction::DownRight | Direction::UpRight | Direction::UpLeft => {
-            panic!("Trampling a grass wall on a diagonal isn't possible!");
-        }
-    }
-
-    let material;
-    if is_left_wall {
-        material = level.map[wall_pos].left_material;
-    } else {
-        material = level.map[wall_pos].bottom_material;
-    }
-
-    if material == Surface::Grass {
-        if is_left_wall {
-            level.map[wall_pos].left_material = Surface::Floor;
-            level.map[wall_pos].left_wall = Wall::Empty;
-        } else {
-            level.map[wall_pos].bottom_material = Surface::Floor;
-            level.map[wall_pos].bottom_wall = Wall::Empty;
         }
     }
 }

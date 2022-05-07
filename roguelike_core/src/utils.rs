@@ -1,6 +1,7 @@
 use std::collections::HashSet; use std::collections::HashMap;
 
 use roguelike_utils::comp::*;
+use roguelike_utils::rng::*;
 
 use roguelike_map::*;
 
@@ -701,5 +702,277 @@ pub fn tile_fill_metric(map: &Map, pos: Pos) -> usize {
         return near_count;
     }
     return 0
+}
+
+pub fn make_move_sound(entity_id: EntityId,
+                       original_pos: Pos,
+                       pos: Pos,
+                       move_mode: MoveMode,
+                       level: &mut Level,
+                       msg_log: &mut MsgLog,
+                       config: &Config) {
+    let mut sound_radius;
+
+    match move_mode {
+        MoveMode::Sneak => sound_radius = config.sound_radius_sneak,
+        MoveMode::Walk => sound_radius = config.sound_radius_walk,
+        MoveMode::Run => sound_radius = config.sound_radius_run,
+    }
+
+    if level.map[pos].surface == Surface::Rubble {
+        // If the entity has no passives, or they do but are not sure footed.
+        if level.entities.passive.get(&entity_id).is_none() || !level.entities.passive[&entity_id].sure_footed {
+            sound_radius += config.sound_rubble_radius;
+        }
+    } else if level.map[pos].surface == Surface::Grass {
+        sound_radius -= config.sound_grass_radius;
+    }
+
+    if sound_radius > 0 && level.entities.status[&entity_id].soft_steps > 0 {
+        sound_radius -= 1;
+    }
+
+    if sound_radius > 0 && level.entities.passive[&entity_id].soft_shoes {
+        sound_radius -= 1;
+    }
+
+    msg_log.log_front(Msg::Sound(entity_id, pos, sound_radius));
+    msg_log.log_front(Msg::Sound(entity_id, original_pos, sound_radius));
+}
+
+pub fn trample_grass_move(level: &mut Level, start_pos: Pos, end_pos: Pos) {
+    let wall_pos;
+    let is_left_wall;
+    match Direction::from_positions(start_pos, end_pos).unwrap() {
+        Direction::Left => {
+            wall_pos = start_pos;
+            is_left_wall = true;
+        }
+
+        Direction::Right => {
+            wall_pos = end_pos;
+            is_left_wall = true;
+        }
+
+        Direction::Up => {
+            wall_pos = end_pos;
+            is_left_wall = false;
+        }
+
+        Direction::Down => {
+            wall_pos = start_pos;
+            is_left_wall = false;
+        }
+
+        Direction::DownLeft | Direction::DownRight | Direction::UpRight | Direction::UpLeft => {
+            panic!("Trampling a grass wall on a diagonal isn't possible!");
+        }
+    }
+
+    let material;
+    if is_left_wall {
+        material = level.map[wall_pos].left_material;
+    } else {
+        material = level.map[wall_pos].bottom_material;
+    }
+
+    if material == Surface::Grass {
+        if is_left_wall {
+            level.map[wall_pos].left_material = Surface::Floor;
+            level.map[wall_pos].left_wall = Wall::Empty;
+        } else {
+            level.map[wall_pos].bottom_material = Surface::Floor;
+            level.map[wall_pos].bottom_wall = Wall::Empty;
+        }
+    }
+}
+
+pub fn trample_grass_walls(level: &mut Level, start_pos: Pos, end_pos: Pos) {
+    match Direction::from_positions(start_pos, end_pos).unwrap() {
+        Direction::Left | Direction::Right | Direction::Up | Direction::Down => {
+            trample_grass_move(level, start_pos, end_pos);
+        }
+
+        Direction::DownLeft | Direction::DownRight => {
+            trample_grass_move(level, start_pos, move_y(start_pos, 1));
+            trample_grass_move(level, move_y(start_pos, 1), end_pos);
+        }
+
+        Direction::UpLeft | Direction::UpRight => {
+            trample_grass_move(level, start_pos, move_y(start_pos, -1));
+            trample_grass_move(level, move_y(start_pos, -1), end_pos);
+        }
+    }
+}
+
+pub fn inventory_drop_item(entity_id: EntityId,
+                           item_index: usize,
+                           level: &mut Level,
+                           msg_log: &mut MsgLog) {
+    let entity_pos = level.entities.pos[&entity_id];
+
+    if let Some(item_id) = level.entities.inventory[&entity_id].get(item_index).map(|v| *v) {
+        // Find a place to drop the item, without placing it on the same tile
+        // as another item.
+        let mut found_tile = false;
+        let mut dist = 1;
+        while !found_tile && dist < 10 {
+            let positions = floodfill(&level.map, entity_pos, dist);
+
+            for pos in positions {
+                if level.item_at_pos(pos).is_none() {
+                    level.entities.remove_item(entity_id, item_id);
+                    level.entities.set_pos(item_id, pos);
+
+                    msg_log.log(Msg::DroppedItem(entity_id, item_id));
+                    msg_log.log(Msg::Moved(item_id, MoveType::Blink, MoveMode::Walk, pos));
+                    found_tile = true;
+                    break;
+                }
+            }
+
+            dist += 1;
+        }
+
+        if found_tile {
+            level.entities.took_turn[&entity_id] = true;
+        } else {
+            msg_log.log(Msg::DropFailed(entity_id));
+        }
+    }
+}
+
+pub fn change_move_mode(entity_id: EntityId,
+                        increase: bool,
+                        level: &mut Level,
+                        msg_log: &mut MsgLog) {
+    if increase {
+        let holding_shield = level.using(entity_id, Item::Shield).is_some();
+        let holding_hammer = level.using(entity_id, Item::Hammer).is_some();
+
+        let move_mode = level.entities 
+                            .move_mode
+                            .get(&entity_id)
+                            .expect("Entity should have had a move mode!");
+        let new_move_mode = move_mode.increase();
+
+        if new_move_mode == MoveMode::Run && (holding_shield || holding_hammer) {
+            msg_log.log(Msg::TriedRunWithHeavyEquipment);
+        } else {
+            msg_log.log(Msg::MoveMode(entity_id, new_move_mode));
+        }
+    } else {
+        let new_move_mode = level.entities.move_mode[&entity_id].decrease();
+        msg_log.log(Msg::MoveMode(entity_id, new_move_mode));
+    }
+}
+
+pub fn find_blink_pos(pos: Pos, rng: &mut Rand32, level: &mut Level) -> Option<Pos> {
+    let mut potential_positions = floodfill(&level.map, pos, BLINK_RADIUS);
+    while potential_positions.len() > 0 {
+        let ix = rng_range_u32(rng, 0, potential_positions.len() as u32) as usize;
+        let rand_pos = potential_positions[ix];
+
+        if level.has_blocking_entity(rand_pos).is_none() &&
+           level.map.path_blocked_move(pos, rand_pos).is_none() {
+               return Some(rand_pos);
+        }
+
+        potential_positions.swap_remove(ix);
+    }
+    
+    return None;
+}
+
+pub fn hammer_swing(entity_id: EntityId, item_id: EntityId, pos: Pos, level: &mut Level, msg_log: &mut MsgLog) {
+    let entity_pos = level.entities.pos[&entity_id];
+
+    msg_log.log_front(Msg::Blunt(entity_pos, pos));
+
+    if let Some(blocked) = level.map.path_blocked_move(entity_pos, pos) {
+        msg_log.log_front(Msg::HammerHitWall(entity_id, blocked));
+        level.used_up_item(entity_id, item_id);
+    } else if let Some(hit_entity) = level.has_blocking_entity(pos) {
+        // we hit another entity!
+        msg_log.log_front(Msg::HammerHitEntity(entity_id, hit_entity));
+        level.used_up_item(entity_id, item_id);
+    }
+
+    level.entities.took_turn[&entity_id] = true;
+}
+
+pub fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
+    let first = level.entities.pos[&entity_id];
+    let second = level.entities.pos[&hit_entity];
+
+    let dxy = sub_pos(second, first);
+    let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
+    let amount = 1;
+    msg_log.log(Msg::Pushed(entity_id, hit_entity, direction, amount, false));
+    msg_log.log_front(Msg::Sound(entity_id, second, config.sound_radius_hammer));
+
+    if let Some(hp) = level.entities.hp.get(&hit_entity) {
+        let damage = hp.hp;
+
+        msg_log.log(Msg::Killed(entity_id, hit_entity, damage));
+        msg_log.log(Msg::Sound(entity_id, second, config.sound_radius_blunt));
+    }
+}
+
+pub fn freeze_trap_triggered(trap: EntityId, cause_id: EntityId, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
+    let source_pos = level.entities.pos[&trap];
+
+    let freeze_aoe =
+        aoe_fill(&level.map, AoeEffect::Freeze, source_pos, config.freeze_trap_radius, config);
+
+    let who_hit =
+        level.within_aoe(&freeze_aoe);
+
+    for obj_id in who_hit {
+        // TODO probably need to filter out a bit more
+        if obj_id != cause_id && level.entities.status[&obj_id].alive {
+            msg_log.log(Msg::Froze(obj_id, FREEZE_TRAP_NUM_TURNS));
+        }
+    }
+}
+
+pub fn triggered(trigger: EntityId, entity_id: EntityId, level: &mut Level, msg_log: &mut MsgLog) {
+    if level.entities.name[&trigger] == EntityName::GateTrigger {
+        let wall_pos = level.entities.gate_pos[&trigger];
+
+        if level.entities.status[&trigger].active {
+            // raise the gate
+            level.entities.status[&trigger].active = false;
+
+            // only raise if no entities are on the square.
+            // otherwise wait for a move that leaves the trigger unblocked.
+            if level.has_entity(wall_pos).is_none() {
+                level.map[wall_pos] = Tile::wall();
+            }
+        } else {
+            level.entities.status[&trigger].active = true;
+            level.map[wall_pos] = Tile::empty();
+        }
+
+        msg_log.log(Msg::GateTriggered(trigger, entity_id));
+    }
+}
+
+pub fn resolve_blink(entity_id: EntityId, level: &mut Level, rng: &mut Rand32, msg_log: &mut MsgLog) {
+    let entity_pos = level.entities.pos[&entity_id];
+
+    if let Some(blink_pos) = find_blink_pos(entity_pos, rng, level) {
+        msg_log.log_front(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, blink_pos));
+    } else {
+        msg_log.log(Msg::FailedBlink(entity_id));
+    }
+
+    level.entities.took_turn[&entity_id] = true;
+}
+
+pub fn place_rubble(pos: Pos, map: &mut Map) {
+    map[pos].surface = Surface::Rubble;
+    map[pos].block_move = false;
+    map[pos].tile_type = TileType::Empty;
 }
 

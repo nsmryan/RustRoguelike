@@ -304,6 +304,7 @@ dependencies = [
  "euclid",
  "log",
  "logging_timer",
+ "pathfinding",
  "roguelike_map",
  "roguelike_utils",
  "serde",
