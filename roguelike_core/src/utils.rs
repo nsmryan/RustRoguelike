@@ -936,28 +936,6 @@ pub fn freeze_trap_triggered(trap: EntityId, cause_id: EntityId, level: &mut Lev
     }
 }
 
-pub fn triggered(trigger: EntityId, entity_id: EntityId, level: &mut Level, msg_log: &mut MsgLog) {
-    if level.entities.name[&trigger] == EntityName::GateTrigger {
-        let wall_pos = level.entities.gate_pos[&trigger];
-
-        if level.entities.status[&trigger].active {
-            // raise the gate
-            level.entities.status[&trigger].active = false;
-
-            // only raise if no entities are on the square.
-            // otherwise wait for a move that leaves the trigger unblocked.
-            if level.has_entity(wall_pos).is_none() {
-                level.map[wall_pos] = Tile::wall();
-            }
-        } else {
-            level.entities.status[&trigger].active = true;
-            level.map[wall_pos] = Tile::empty();
-        }
-
-        msg_log.log(Msg::GateTriggered(trigger, entity_id));
-    }
-}
-
 pub fn place_rubble(pos: Pos, map: &mut Map) {
     map[pos].surface = Surface::Rubble;
     map[pos].block_move = false;

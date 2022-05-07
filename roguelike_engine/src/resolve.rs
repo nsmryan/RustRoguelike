@@ -73,7 +73,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::Pushed(pusher, pushed, direction, push_amount, move_into) => {
-                pushed_entity(pusher, pushed, direction, push_amount, move_into, &mut game.level, &game.config, &mut game.msg_log);
+                resolve_pushed_entity(pusher, pushed, direction, push_amount, move_into, &mut game.level, &game.config, &mut game.msg_log);
             }
 
             Msg::Yell(entity_id) => {
@@ -115,7 +115,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::HammerHitWall(entity_id, blocked) => {
-                hammer_hit_wall(entity_id, blocked, &mut game.level, &mut game.msg_log, &game.config);
+                resolve_hammer_hit_wall(entity_id, blocked, &mut game.level, &mut game.msg_log, &game.config);
             }
 
             Msg::TryAttack(entity_id, attack_info, attack_pos) => {
@@ -199,7 +199,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::Triggered(trigger, entity_id) => {
-                triggered(trigger, entity_id, &mut game.level, &mut game.msg_log);
+                resolve_triggered(trigger, entity_id, &mut game.level, &mut game.msg_log);
             }
 
             Msg::AddClass(class) => {
@@ -214,7 +214,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::Hit(entity_id, pos, weapon_type, attack_style) => {
-                process_hit(entity_id, pos, weapon_type, attack_style, &mut game.level, &mut game.msg_log, &game.config);
+                resolve_hit(entity_id, pos, weapon_type, attack_style, &mut game.level, &mut game.msg_log, &game.config);
             }
 
             Msg::ChangeMoveMode(entity_id, increase) => {
@@ -431,7 +431,7 @@ pub fn resolve_messages(game: &mut Game) {
     game.level.entities.messages[&player_id].clear();
 }
 
-fn process_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
+fn resolve_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
     let entity_pos = level.entities.pos[&entity_id];
 
     if let Some(hit_entity) = level.has_blocking_entity(hit_pos) {
@@ -762,7 +762,7 @@ fn resolve_rubble(blocked: Blocked, map: &mut Map) {
     }
 }
 
-fn hammer_hit_wall(entity: EntityId, blocked: Blocked, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
+fn resolve_hammer_hit_wall(entity: EntityId, blocked: Blocked, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
     let entity_pos = level.entities.pos[&entity];
     let hit_pos = blocked.end_pos;
 
@@ -815,14 +815,14 @@ fn hammer_hit_wall(entity: EntityId, blocked: Blocked, level: &mut Level, msg_lo
     }
 }
 
-fn pushed_entity(pusher: EntityId,
-                 pushed: EntityId,
-                 direction: Direction,
-                 push_amount: usize,
-                 move_into: bool,
-                 level: &mut Level,
-                 config: &Config,
-                 msg_log: &mut MsgLog) {
+fn resolve_pushed_entity(pusher: EntityId,
+                         pushed: EntityId,
+                         direction: Direction,
+                         push_amount: usize,
+                         move_into: bool,
+                         level: &mut Level,
+                         config: &Config,
+                         msg_log: &mut MsgLog) {
     let pushed_pos = level.entities.pos[&pushed];
     let pusher_pos = level.entities.pos[&pusher];
 
@@ -1644,6 +1644,28 @@ fn resolve_pick_item_up(entity_id: EntityId, level: &mut Level, msg_log: &mut Ms
         if let Some(to_drop_index) = to_drop_index {
             msg_log.log(Msg::DropItem(entity_id, to_drop_index as u64));
         }
+    }
+}
+
+fn resolve_triggered(trigger: EntityId, entity_id: EntityId, level: &mut Level, msg_log: &mut MsgLog) {
+    if level.entities.name[&trigger] == EntityName::GateTrigger {
+        let wall_pos = level.entities.gate_pos[&trigger];
+
+        if level.entities.status[&trigger].active {
+            // raise the gate
+            level.entities.status[&trigger].active = false;
+
+            // only raise if no entities are on the square.
+            // otherwise wait for a move that leaves the trigger unblocked.
+            if level.has_entity(wall_pos).is_none() {
+                level.map[wall_pos] = Tile::wall();
+            }
+        } else {
+            level.entities.status[&trigger].active = true;
+            level.map[wall_pos] = Tile::empty();
+        }
+
+        msg_log.log(Msg::GateTriggered(trigger, entity_id));
     }
 }
 
