@@ -252,40 +252,18 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::Illuminate(entity_id, pos, amount) => {
                 if try_use_energy(entity_id, Skill::Illuminate, &mut game.level, &mut game.msg_log) {
-                    let light = make_light(&mut game.level.entities, &game.config, pos, &mut game.msg_log);
-                    game.level.entities.illuminate[&light] = amount;
-
-                    game.level.entities.took_turn[&entity_id] = true;
+                    resolve_illuminate(entity_id, pos, amount, game);
                 }
             }
 
             Msg::HealSkill(entity_id, amount) => {
                 if try_use_energy(entity_id, Skill::Heal, &mut game.level, &mut game.msg_log) {
-                    let old_hp = game.level.entities.hp[&entity_id].hp;
-                    game.level.entities.hp[&entity_id].hp = 
-                        std::cmp::min(game.level.entities.hp[&entity_id].max_hp,
-                                      game.level.entities.hp[&entity_id].hp + amount as i32);
-
-                    game.level.entities.took_turn[&entity_id] = true;
-
-                    let amount = game.level.entities.hp[&entity_id].hp - old_hp;
-                    if amount > 0 {
-                        let max_hp = game.level.entities.hp[&entity_id].max_hp;
-                        game.msg_log.log(Msg::Healed(entity_id, amount, max_hp));
-                    }
+                    resolve_heal(entity_id, amount, game);
                 }
             }
 
             Msg::EatHerb(entity_id, item_id) => {
-                let heal_amount = game.level.entities.hp[&entity_id].max_hp - game.level.entities.hp[&entity_id].hp;
-                let max_hp = game.level.entities.hp[&entity_id].max_hp;
-                game.msg_log.log(Msg::Healed(entity_id, heal_amount, max_hp));
-               
-                game.level.entities.hp[&entity_id].hp = game.level.entities.hp[&entity_id].max_hp;
-                game.level.entities.remove_item(entity_id, item_id);
-                game.msg_log.log(Msg::Remove(item_id));
-
-                game.level.entities.took_turn[&entity_id] = true;
+                resolve_eat_herb(entity_id, item_id, game);
             }
 
             Msg::FarSight(entity_id, amount) => {
@@ -1695,5 +1673,39 @@ fn resolve_grass_cover(entity_id: EntityId, game: &mut Game) {
     let next_pos = facing.offset_pos(entity_pos, 1);
     game.level.map[next_pos] = Tile::tall_grass();
     ensure_grass(&mut game.level.entities, next_pos, &mut game.msg_log);
+    game.level.entities.took_turn[&entity_id] = true;
+}
+
+fn resolve_illuminate(entity_id: EntityId, pos: Pos, amount: usize, game: &mut Game) {
+    let light = make_light(&mut game.level.entities, &game.config, pos, &mut game.msg_log);
+    game.level.entities.illuminate[&light] = amount;
+
+    game.level.entities.took_turn[&entity_id] = true;
+}
+
+fn resolve_heal(entity_id: EntityId, amount: usize, game: &mut Game) {
+    let old_hp = game.level.entities.hp[&entity_id].hp;
+    game.level.entities.hp[&entity_id].hp = 
+        std::cmp::min(game.level.entities.hp[&entity_id].max_hp,
+                      game.level.entities.hp[&entity_id].hp + amount as i32);
+
+    game.level.entities.took_turn[&entity_id] = true;
+
+    let amount = game.level.entities.hp[&entity_id].hp - old_hp;
+    if amount > 0 {
+        let max_hp = game.level.entities.hp[&entity_id].max_hp;
+        game.msg_log.log(Msg::Healed(entity_id, amount, max_hp));
+    }
+}
+
+fn resolve_eat_herb(entity_id: EntityId, item_id: EntityId, game: &mut Game) {
+    let heal_amount = game.level.entities.hp[&entity_id].max_hp - game.level.entities.hp[&entity_id].hp;
+    let max_hp = game.level.entities.hp[&entity_id].max_hp;
+    game.msg_log.log(Msg::Healed(entity_id, heal_amount, max_hp));
+   
+    game.level.entities.hp[&entity_id].hp = game.level.entities.hp[&entity_id].max_hp;
+    game.level.entities.remove_item(entity_id, item_id);
+    game.msg_log.log(Msg::Remove(item_id));
+
     game.level.entities.took_turn[&entity_id] = true;
 }
