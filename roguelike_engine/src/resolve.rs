@@ -227,26 +227,7 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::GrassWall(entity_id, direction) => {
                 if try_use_energy(entity_id, Skill::GrassWall, &mut game.level, &mut game.msg_log) {
-                    let entity_pos = game.level.entities.pos[&entity_id];
-
-                    game.level.entities.took_turn[&entity_id] = true;
-
-                    match direction {
-                        Direction::Left | Direction::Right | Direction::Up | Direction::Down => {
-                            game.level.map.place_intertile_wall(entity_pos, Surface::Grass, direction);
-                            let next_to = direction.clockwise().clockwise().offset_pos(entity_pos, 1);
-                            game.level.map.place_intertile_wall(next_to, Surface::Grass, direction);
-                            let next_to = direction.counterclockwise().counterclockwise().offset_pos(entity_pos, 1);
-                            game.level.map.place_intertile_wall(next_to, Surface::Grass, direction);
-                        }
-
-                        Direction::DownLeft | Direction::DownRight | Direction::UpLeft | Direction::UpRight => {
-                            let next_to = direction.clockwise().offset_pos(entity_pos, 1);
-                            game.level.map.place_intertile_wall(next_to, Surface::Grass, direction.counterclockwise());
-                            let next_to = direction.counterclockwise().offset_pos(entity_pos, 1);
-                            game.level.map.place_intertile_wall(next_to, Surface::Grass, direction.clockwise());
-                        }
-                    }
+                    resolve_grass_wall(entity_id, direction, game);
                 }
             }
 
@@ -1682,6 +1663,29 @@ fn resolve_add_class(class: EntityClass, game: &mut Game) {
             add_skill(game, player_id, Skill::PassThrough);
             add_skill(game, player_id, Skill::WhirlWind);
             add_skill(game, player_id, Skill::Swift);
+        }
+    }
+}
+
+fn resolve_grass_wall(entity_id: EntityId, direction: Direction, game: &mut Game) {
+    let entity_pos = game.level.entities.pos[&entity_id];
+
+    game.level.entities.took_turn[&entity_id] = true;
+
+    match direction {
+        Direction::Left | Direction::Right | Direction::Up | Direction::Down => {
+            game.level.map.place_intertile_wall(entity_pos, Surface::Grass, direction);
+            let next_to = direction.clockwise().clockwise().offset_pos(entity_pos, 1);
+            game.level.map.place_intertile_wall(next_to, Surface::Grass, direction);
+            let next_to = direction.counterclockwise().counterclockwise().offset_pos(entity_pos, 1);
+            game.level.map.place_intertile_wall(next_to, Surface::Grass, direction);
+        }
+
+        Direction::DownLeft | Direction::DownRight | Direction::UpLeft | Direction::UpRight => {
+            let next_to = direction.clockwise().offset_pos(entity_pos, 1);
+            game.level.map.place_intertile_wall(next_to, Surface::Grass, direction.counterclockwise());
+            let next_to = direction.counterclockwise().offset_pos(entity_pos, 1);
+            game.level.map.place_intertile_wall(next_to, Surface::Grass, direction.clockwise());
         }
     }
 }
