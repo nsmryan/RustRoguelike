@@ -3,6 +3,7 @@ use logging_timer::timer;
 use roguelike_utils::line::line;
 use roguelike_utils::rng::*;
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 

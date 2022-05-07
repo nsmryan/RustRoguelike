@@ -2,6 +2,7 @@ use std::collections::HashSet; use std::collections::HashMap;
 
 use roguelike_utils::comp::*;
 use roguelike_utils::rng::*;
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 
@@ -207,19 +208,6 @@ pub fn item_type_available(entity_id: EntityId, entities: &mut Entities, item_cl
     return None;
 }
 
-pub fn lerp(first: f32, second: f32, scale: f32) -> f32 {
-    return first + ((second - first) * scale);
-}
-
-pub fn lerp_color(color1: Color, color2: Color, scale: f32) -> Color {
-    return Color {
-        r: lerp(color1.r as f32, color2.r as f32, scale) as u8,
-        g: lerp(color1.g as f32, color2.g as f32, scale) as u8,
-        b: lerp(color1.b as f32, color2.b as f32, scale) as u8,
-        a: lerp(color1.a as f32, color2.a as f32, scale) as u8,
-    };
-}
-
 pub fn reach_by_mode(move_mode: MoveMode) -> Reach {
     match move_mode {
         MoveMode::Sneak => {
@@ -234,26 +222,6 @@ pub fn reach_by_mode(move_mode: MoveMode) -> Reach {
             Reach::Single(2)
         }
     }
-}
-
-pub fn clamp<N: Ord>(val: N, min: N, max: N) -> N {
-    if val < min {
-        return min;
-    } else if val > max {
-        return max;
-    } 
-
-    return val;
-}
-
-pub fn clampf(val: f32, min: f32, max: f32) -> f32 {
-    if val < min {
-        return min;
-    } else if val > max {
-        return max;
-    } 
-
-    return val;
 }
 
 pub fn can_stab(data: &Level, entity: EntityId, target: EntityId) -> bool {
@@ -1031,5 +999,14 @@ pub fn remove_entity(entity_id: EntityId, level: &mut Level) {
 
         level.entities.mark_for_removal(entity_id);
     }
+}
+
+pub fn lerp_color(color1: Color, color2: Color, scale: f32) -> Color {
+    return Color {
+        r: lerp(color1.r as f32, color2.r as f32, scale) as u8,
+        g: lerp(color1.g as f32, color2.g as f32, scale) as u8,
+        b: lerp(color1.b as f32, color2.b as f32, scale) as u8,
+        a: lerp(color1.a as f32, color2.a as f32, scale) as u8,
+    };
 }
 
