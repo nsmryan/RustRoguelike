@@ -233,41 +233,7 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::GrassThrow(entity_id, direction) => {
                 if try_use_energy(entity_id, Skill::GrassThrow, &mut game.level, &mut game.msg_log) {
-                    let pos = game.level.entities.pos[&entity_id];
-
-                    for grass_pos in line_inclusive(pos, direction.offset_pos(pos, SKILL_GRASS_THROW_RADIUS as i32)) {
-
-                        // percent chance of not marking a tile
-                        if rng_trial(&mut game.rng, 0.75) {
-                            if game.level.map.is_within_bounds(grass_pos) && game.level.map[grass_pos].tile_type == TileType::Empty {
-                                game.level.map[grass_pos].surface = Surface::Grass;
-                                ensure_grass(&mut game.level.entities, grass_pos, &mut game.msg_log);
-                            }
-                        }
-
-                        // percent chance of marking a nearby tile
-                        if rng_trial(&mut game.rng, 0.35) {
-                            let other_pos;
-                            if rng_trial(&mut game.rng, 0.5) {
-                                other_pos = direction.clockwise().clockwise().offset_pos(grass_pos, 1);
-                            } else {
-                                other_pos = direction.counterclockwise().counterclockwise().offset_pos(grass_pos, 1);
-                            }
-
-                            if game.level.map.is_within_bounds(other_pos) && game.level.map[other_pos].tile_type == TileType::Empty {
-                                game.level.map[other_pos].surface = Surface::Grass;
-                                ensure_grass(&mut game.level.entities, other_pos, &mut game.msg_log);
-                            }
-                        }
-                    }
-                    // NOTE old cone style
-                    //for grass_pos in Cone::new(pos, direction, SKILL_GRASS_THROW_RADIUS as i32) {
-                    //    if game.level.map.is_within_bounds(grass_pos) && game.level.map[grass_pos].tile_type == TileType::Empty {
-                    //        game.level.map[grass_pos].surface = Surface::Grass;
-                    //        ensure_grass(&mut game.level.entities, grass_pos, &mut game.msg_log);
-                    //    }
-                    //}
-                    game.level.entities.took_turn[&entity_id] = true;
+                    resolve_grass_throw(entity_id, direction, game);
                 }
             }
 
@@ -280,12 +246,7 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::GrassCover(entity_id, _action_mode) => {
                 if try_use_energy(entity_id, Skill::GrassCover, &mut game.level, &mut game.msg_log) {
-                    let entity_pos = game.level.entities.pos[&entity_id];
-                    let facing = game.level.entities.direction[&entity_id];
-                    let next_pos = facing.offset_pos(entity_pos, 1);
-                    game.level.map[next_pos] = Tile::tall_grass();
-                    ensure_grass(&mut game.level.entities, next_pos, &mut game.msg_log);
-                    game.level.entities.took_turn[&entity_id] = true;
+                    resolve_grass_cover(entity_id, game);
                 }
             }
 
@@ -1688,4 +1649,51 @@ fn resolve_grass_wall(entity_id: EntityId, direction: Direction, game: &mut Game
             game.level.map.place_intertile_wall(next_to, Surface::Grass, direction.clockwise());
         }
     }
+}
+
+fn resolve_grass_throw(entity_id: EntityId, direction: Direction, game: &mut Game) {
+    let pos = game.level.entities.pos[&entity_id];
+
+    for grass_pos in line_inclusive(pos, direction.offset_pos(pos, SKILL_GRASS_THROW_RADIUS as i32)) {
+
+        // percent chance of not marking a tile
+        if rng_trial(&mut game.rng, 0.75) {
+            if game.level.map.is_within_bounds(grass_pos) && game.level.map[grass_pos].tile_type == TileType::Empty {
+                game.level.map[grass_pos].surface = Surface::Grass;
+                ensure_grass(&mut game.level.entities, grass_pos, &mut game.msg_log);
+            }
+        }
+
+        // percent chance of marking a nearby tile
+        if rng_trial(&mut game.rng, 0.35) {
+            let other_pos;
+            if rng_trial(&mut game.rng, 0.5) {
+                other_pos = direction.clockwise().clockwise().offset_pos(grass_pos, 1);
+            } else {
+                other_pos = direction.counterclockwise().counterclockwise().offset_pos(grass_pos, 1);
+            }
+
+            if game.level.map.is_within_bounds(other_pos) && game.level.map[other_pos].tile_type == TileType::Empty {
+                game.level.map[other_pos].surface = Surface::Grass;
+                ensure_grass(&mut game.level.entities, other_pos, &mut game.msg_log);
+            }
+        }
+    }
+    // NOTE old cone style
+    //for grass_pos in Cone::new(pos, direction, SKILL_GRASS_THROW_RADIUS as i32) {
+    //    if game.level.map.is_within_bounds(grass_pos) && game.level.map[grass_pos].tile_type == TileType::Empty {
+    //        game.level.map[grass_pos].surface = Surface::Grass;
+    //        ensure_grass(&mut game.level.entities, grass_pos, &mut game.msg_log);
+    //    }
+    //}
+    game.level.entities.took_turn[&entity_id] = true;
+}
+
+fn resolve_grass_cover(entity_id: EntityId, game: &mut Game) {
+    let entity_pos = game.level.entities.pos[&entity_id];
+    let facing = game.level.entities.direction[&entity_id];
+    let next_pos = facing.offset_pos(entity_pos, 1);
+    game.level.map[next_pos] = Tile::tall_grass();
+    ensure_grass(&mut game.level.entities, next_pos, &mut game.msg_log);
+    game.level.entities.took_turn[&entity_id] = true;
 }
