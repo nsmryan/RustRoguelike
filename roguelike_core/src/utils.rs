@@ -958,18 +958,6 @@ pub fn triggered(trigger: EntityId, entity_id: EntityId, level: &mut Level, msg_
     }
 }
 
-pub fn resolve_blink(entity_id: EntityId, level: &mut Level, rng: &mut Rand32, msg_log: &mut MsgLog) {
-    let entity_pos = level.entities.pos[&entity_id];
-
-    if let Some(blink_pos) = find_blink_pos(entity_pos, rng, level) {
-        msg_log.log_front(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, blink_pos));
-    } else {
-        msg_log.log(Msg::FailedBlink(entity_id));
-    }
-
-    level.entities.took_turn[&entity_id] = true;
-}
-
 pub fn place_rubble(pos: Pos, map: &mut Map) {
     map[pos].surface = Surface::Rubble;
     map[pos].block_move = false;

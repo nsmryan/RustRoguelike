@@ -59,18 +59,12 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::ItemThrow(entity_id, item_id, start, end, hard) => {
-                if start == end {
-                    // TODO make this drop an item
-                    //inventory_drop_item(entity_id, item_index as usize, level, &mut game.msg_log);
-                } else {
-                    throw_item(entity_id, item_id, start, end, hard, &mut game.level, &mut game.rng, &mut game.msg_log, &game.config);
-                }
+                throw_item(entity_id, item_id, start, end, hard, &mut game.level, &mut game.rng, &mut game.msg_log, &game.config);
             }
 
             Msg::JumpWall(entity_id, _start, end) => {
                 game.msg_log.log_front(Msg::Sound(entity_id, end, game.config.sound_radius_run));
             }
-
 
             Msg::Blink(entity_id) => {
                 if try_use_energy(entity_id, Skill::Blink, &mut game.level, &mut game.msg_log) {
@@ -83,9 +77,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::Yell(entity_id) => {
-                let pos = game.level.entities.pos[&entity_id];
-                game.msg_log.log_front(Msg::Sound(entity_id, pos, game.config.yell_radius));
-                game.level.entities.took_turn[&entity_id] = true;
+                resolve_yell(entity_id, &mut game.level, &mut game.msg_log, &game.config);
             }
 
             Msg::Remove(entity_id) => {
@@ -97,7 +89,6 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::Attack(attacker, attacked, _damage) => {
-                // TODO move attack function here, and remove push Msg::Attack in attack function
                 let pos = game.level.entities.pos[&attacked];
                 game.msg_log.log_front(Msg::Sound(attacker, pos, game.config.sound_radius_attack)); 
             }
@@ -143,21 +134,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::StateChange(entity_id, behavior) => {
-                let original_behavior = game.level.entities.behavior[&entity_id];
-
-                game.level.entities.behavior[&entity_id] = behavior;
-
-                // if the entity hasn't completed a turn, the state change continues their turn.
-                // NOTE this might be better off as a message! emit it every time a state change
-                // occurs?
-                if !game.level.entities.took_turn[&entity_id] &&
-                    game.level.entities.behavior[&entity_id] != original_behavior {
-                   ai_take_turn(entity_id, &mut game.level, &game.config, &mut game.msg_log);
-                }
-
-                if mem::discriminant(&behavior) != mem::discriminant(&original_behavior) {
-                    game.msg_log.log(Msg::BehaviorChanged(entity_id, behavior));
-                }
+                resolve_state_change(entity_id, behavior, &mut game.level, &mut game.msg_log, &game.config);
             }
 
             Msg::SpikeTrapTriggered(trap, entity_id) => {
@@ -226,54 +203,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::AddClass(class) => {
-                game.level.entities.skills[&player_id].clear();
-                game.level.entities.class[&player_id] = class;
-
-                fn add_skill(game: &mut Game, entity_id: EntityId, skill: Skill) {
-                    game.level.entities.add_skill(entity_id, skill);
-                    game.msg_log.log(Msg::AddSkill(skill));
-                }
-
-                match class {
-                    EntityClass::General => {
-                        add_skill(game, player_id, Skill::Blink);
-                        add_skill(game, player_id, Skill::Sprint);
-                        add_skill(game, player_id, Skill::Roll);
-                    }
-
-                    EntityClass::Monolith => {
-                        add_skill(game, player_id, Skill::PassWall);
-                        add_skill(game, player_id, Skill::Rubble);
-                        add_skill(game, player_id, Skill::StoneThrow);
-                        add_skill(game, player_id, Skill::Reform);
-                        add_skill(game, player_id, Skill::StoneSkin);
-                    }
-
-                    EntityClass::Grass => {
-                        add_skill(game, player_id, Skill::GrassWall);
-                        add_skill(game, player_id, Skill::GrassThrow);
-                        add_skill(game, player_id, Skill::GrassBlade);
-                        add_skill(game, player_id, Skill::GrassCover);
-                        add_skill(game, player_id, Skill::GrassShoes);
-                    }
-
-                    EntityClass::Clockwork => {
-                        add_skill(game, player_id, Skill::Push);
-                    }
-
-                    EntityClass::Hierophant => {
-                        add_skill(game, player_id, Skill::Illuminate);
-                        add_skill(game, player_id, Skill::Heal);
-                        add_skill(game, player_id, Skill::FarSight);
-                        add_skill(game, player_id, Skill::Ping);
-                    }
-
-                    EntityClass::Wind => {
-                        add_skill(game, player_id, Skill::PassThrough);
-                        add_skill(game, player_id, Skill::WhirlWind);
-                        add_skill(game, player_id, Skill::Swift);
-                    }
-                }
+                resolve_add_class(class, game);
             }
 
             Msg::MoveMode(entity_id, new_move_mode) => {
@@ -1327,6 +1257,11 @@ fn throw_item(player_id: EntityId,
               rng: &mut Rand32,
               msg_log: &mut MsgLog,
               config: &Config) {
+
+    if start_pos == end_pos {
+        panic!("Is it possible to throw an item and have it end where it started? Apparently yes")
+    }
+
     let throw_line = line(start_pos, end_pos);
 
     // get target position in direction of player click
@@ -1662,3 +1597,91 @@ fn resolve_ai_attack(entity_id: EntityId,
     }
 }
 
+fn resolve_yell(entity_id: EntityId, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
+    let pos = level.entities.pos[&entity_id];
+    msg_log.log_front(Msg::Sound(entity_id, pos, config.yell_radius));
+    level.entities.took_turn[&entity_id] = true;
+}
+
+fn resolve_blink(entity_id: EntityId, level: &mut Level, rng: &mut Rand32, msg_log: &mut MsgLog) {
+    let entity_pos = level.entities.pos[&entity_id];
+
+    if let Some(blink_pos) = find_blink_pos(entity_pos, rng, level) {
+        msg_log.log_front(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, blink_pos));
+    } else {
+        msg_log.log(Msg::FailedBlink(entity_id));
+    }
+
+    level.entities.took_turn[&entity_id] = true;
+}
+
+fn resolve_state_change(entity_id: EntityId, behavior: Behavior, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
+    let original_behavior = level.entities.behavior[&entity_id];
+
+    level.entities.behavior[&entity_id] = behavior;
+
+    // if the entity hasn't completed a turn, the state change continues their turn.
+    // NOTE this might be better off as a message! emit it every time a state change
+    // occurs?
+    if !level.entities.took_turn[&entity_id] &&
+        level.entities.behavior[&entity_id] != original_behavior {
+       ai_take_turn(entity_id, level, config, msg_log);
+    }
+
+    if mem::discriminant(&behavior) != mem::discriminant(&original_behavior) {
+        msg_log.log(Msg::BehaviorChanged(entity_id, behavior));
+    }
+}
+
+fn resolve_add_class(class: EntityClass, game: &mut Game) {
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+
+    game.level.entities.skills[&player_id].clear();
+    game.level.entities.class[&player_id] = class;
+
+    fn add_skill(game: &mut Game, entity_id: EntityId, skill: Skill) {
+        game.level.entities.add_skill(entity_id, skill);
+        game.msg_log.log(Msg::AddSkill(skill));
+    }
+
+    match class {
+        EntityClass::General => {
+            add_skill(game, player_id, Skill::Blink);
+            add_skill(game, player_id, Skill::Sprint);
+            add_skill(game, player_id, Skill::Roll);
+        }
+
+        EntityClass::Monolith => {
+            add_skill(game, player_id, Skill::PassWall);
+            add_skill(game, player_id, Skill::Rubble);
+            add_skill(game, player_id, Skill::StoneThrow);
+            add_skill(game, player_id, Skill::Reform);
+            add_skill(game, player_id, Skill::StoneSkin);
+        }
+
+        EntityClass::Grass => {
+            add_skill(game, player_id, Skill::GrassWall);
+            add_skill(game, player_id, Skill::GrassThrow);
+            add_skill(game, player_id, Skill::GrassBlade);
+            add_skill(game, player_id, Skill::GrassCover);
+            add_skill(game, player_id, Skill::GrassShoes);
+        }
+
+        EntityClass::Clockwork => {
+            add_skill(game, player_id, Skill::Push);
+        }
+
+        EntityClass::Hierophant => {
+            add_skill(game, player_id, Skill::Illuminate);
+            add_skill(game, player_id, Skill::Heal);
+            add_skill(game, player_id, Skill::FarSight);
+            add_skill(game, player_id, Skill::Ping);
+        }
+
+        EntityClass::Wind => {
+            add_skill(game, player_id, Skill::PassThrough);
+            add_skill(game, player_id, Skill::WhirlWind);
+            add_skill(game, player_id, Skill::Swift);
+        }
+    }
+}
