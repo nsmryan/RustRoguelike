@@ -59,7 +59,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::ItemThrow(entity_id, item_id, start, end, hard) => {
-                throw_item(entity_id, item_id, start, end, hard, &mut game.level, &mut game.rng, &mut game.msg_log, &game.config);
+                resolve_throw_item(entity_id, item_id, start, end, hard, &mut game.level, &mut game.rng, &mut game.msg_log, &game.config);
             }
 
             Msg::JumpWall(entity_id, _start, end) => {
@@ -85,7 +85,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::Killed(_attacker, attacked, _damage) => {
-                killed_entity(attacked, &mut game.level, &mut game.msg_log, &game.config);
+                resolve_killed_entity(attacked, &mut game.level, &mut game.msg_log, &game.config);
             }
 
             Msg::Attack(attacker, attacked, _damage) => {
@@ -127,7 +127,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::PickUp(entity_id) => {
-                pick_item_up(entity_id, &mut game.level, &mut game.msg_log);
+                resolve_pick_item_up(entity_id, &mut game.level, &mut game.msg_log);
 
                 // this is necessary to re-emit entity information about the item being picked up
                 game.settings.map_changed = true;
@@ -347,7 +347,9 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::PlaceTrap(entity_id, place_pos, trap_id) => {
-                place_trap(trap_id, place_pos, &mut game.level);
+                game.level.entities.set_pos(trap_id, place_pos);
+                game.level.entities.armed[&trap_id] = true;
+
                 game.level.entities.remove_from_inventory(entity_id, trap_id);
                 game.level.entities.took_turn[&entity_id] = true;
             }
@@ -813,41 +815,6 @@ fn hammer_hit_wall(entity: EntityId, blocked: Blocked, level: &mut Level, msg_lo
     }
 }
 
-fn killed_entity(attacked: EntityId, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
-    let attacked_pos = level.entities.pos[&attacked];
-
-    // if the attacked entities position is not blocked
-    if !level.map[attacked_pos].block_move {
-        // all non-player entities leave rubble
-        if level.entities.typ[&attacked] != EntityType::Player {
-            level.map[attacked_pos].surface = Surface::Rubble;
-        }
-
-        // leave energy ball
-        if level.entities.typ[&attacked] == EntityType::Enemy {
-            make_energy(&mut level.entities, config, attacked_pos, msg_log);
-        }
-    }
-
-    if let Some(hp) = level.entities.hp.get_mut(&attacked) {
-        hp.hp = 0;
-    }
-
-    remove_entity(attacked, level);
-}
-
-fn remove_entity(entity_id: EntityId, level: &mut Level) {
-    // The entity can already be removed if the removal message was logged
-    // to indicate to other systems an internal change in state such as a new map.
-    if level.entities.ids.contains(&entity_id) {
-        level.entities.status[&entity_id].alive = false;
-
-        level.entities.blocks[&entity_id] = false;
-
-        level.entities.mark_for_removal(entity_id);
-    }
-}
-
 fn pushed_entity(pusher: EntityId,
                  pushed: EntityId,
                  direction: Direction,
@@ -918,113 +885,15 @@ fn resolve_crushed(entity_id: EntityId, pos: Pos, level: &mut Level, msg_log: &m
     msg_log.log_front(Msg::Sound(entity_id, pos, config.sound_radius_crushed));
 }
 
-fn try_use_energy(entity_id: EntityId, skill: Skill, level: &mut Level, msg_log: &mut MsgLog) -> bool {
-    let pos = level.entities.pos[&entity_id];
-
-    // Use the Skill's own class instead of the entities.
-    //let class = level.entities.class[&entity_id];
-    let class = skill.class();
-
-    // NOTE this uses the entity's class, not the skill's class
-    let has_energy = level.entities.status[&entity_id].test_mode || level.entities.energy[&entity_id] > 0;
-    let mut enough_energy: bool = false;
-    let mut used_energy: bool = false;
-    match class {
-        EntityClass::General => {
-            if has_energy {
-                enough_energy = true;
-                used_energy = true;
-                level.entities.use_energy(entity_id);
-            }
-        }
-
-        EntityClass::Grass => {
-            let free_energy = level.map[pos].surface == Surface::Grass;
-            if free_energy || has_energy {
-                if !free_energy && has_energy {
-                    used_energy = true;
-                    level.entities.use_energy(entity_id);
-                }
-
-                enough_energy = true;
-                level.map[pos].surface = Surface::Floor;
-
-                if let Some(grass_id) = level.entities.get_names_at_pos(pos, EntityName::Grass).get(0) {
-                    msg_log.log(Msg::Remove(*grass_id));
-                }
-            }
-        }
-
-        EntityClass::Monolith => {
-            let free_energy = level.map[pos].surface == Surface::Rubble;
-            if free_energy || has_energy {
-                if !free_energy && has_energy {
-                    level.entities.use_energy(entity_id);
-                    used_energy = true;
-                }
-
-                enough_energy = true;
-                level.map[pos].surface = Surface::Floor;
-            }
-        }
-
-        EntityClass::Clockwork => {
-            if has_energy {
-                enough_energy = true;
-                used_energy = true;
-                level.entities.use_energy(entity_id);
-            }
-        }
-
-        EntityClass::Hierophant => {
-            if has_energy {
-                enough_energy = true;
-                used_energy = true;
-                level.entities.use_energy(entity_id);
-            }
-        }
-
-        EntityClass::Wind => {
-            // The wind class does not use energy.
-            enough_energy = true;
-        }
-    }
-
-    if used_energy {
-        msg_log.log(Msg::UsedEnergy(entity_id));
-    }
-
-    return enough_energy;
-}
-
-fn pick_item_up(entity_id: EntityId, level: &mut Level, msg_log: &mut MsgLog) {
-    let entity_pos = level.entities.pos[&entity_id];
-
-    if let Some(item_id) = level.item_at_pos(entity_pos) {
-        msg_log.log(Msg::PickedUp(entity_id, item_id));
-
-        let to_drop_index = level.entities.pick_up_item(entity_id, item_id);
-
-        if let Some(to_drop_index) = to_drop_index {
-            msg_log.log(Msg::DropItem(entity_id, to_drop_index as u64));
-        }
-    }
-}
-
-fn place_trap(trap_id: EntityId, place_pos: Pos, level: &mut Level) {
-    level.entities.set_pos(trap_id, place_pos);
-    level.entities.armed[&trap_id] = true;
-}
-
-fn throw_item(player_id: EntityId,
-              item_id: EntityId,
-              start_pos: Pos,
-              end_pos: Pos,
-              hard: bool,
-              level: &mut Level,
-              rng: &mut Rand32,
-              msg_log: &mut MsgLog,
-              config: &Config) {
+fn resolve_throw_item(player_id: EntityId,
+                      item_id: EntityId,
+                      start_pos: Pos,
+                      end_pos: Pos,
+                      hard: bool,
+                      level: &mut Level,
+                      rng: &mut Rand32,
+                      msg_log: &mut MsgLog,
+                      config: &Config) {
 
     if start_pos == end_pos {
         panic!("Is it possible to throw an item and have it end where it started? Apparently yes")
@@ -1737,6 +1606,43 @@ fn resolve_swift(entity_id: EntityId, direction: Direction, game: &mut Game) {
         let traps_block = false;
         if !near_walls && game.level.clear_path(entity_pos, dest, traps_block) {
             game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, dest));
+        }
+    }
+}
+
+fn resolve_killed_entity(attacked: EntityId, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
+    let attacked_pos = level.entities.pos[&attacked];
+
+    // if the attacked entities position is not blocked
+    if !level.map[attacked_pos].block_move {
+        // all non-player entities leave rubble
+        if level.entities.typ[&attacked] != EntityType::Player {
+            level.map[attacked_pos].surface = Surface::Rubble;
+        }
+
+        // leave energy ball
+        if level.entities.typ[&attacked] == EntityType::Enemy {
+            make_energy(&mut level.entities, config, attacked_pos, msg_log);
+        }
+    }
+
+    if let Some(hp) = level.entities.hp.get_mut(&attacked) {
+        hp.hp = 0;
+    }
+
+    remove_entity(attacked, level);
+}
+
+fn resolve_pick_item_up(entity_id: EntityId, level: &mut Level, msg_log: &mut MsgLog) {
+    let entity_pos = level.entities.pos[&entity_id];
+
+    if let Some(item_id) = level.item_at_pos(entity_pos) {
+        msg_log.log(Msg::PickedUp(entity_id, item_id));
+
+        let to_drop_index = level.entities.pick_up_item(entity_id, item_id);
+
+        if let Some(to_drop_index) = to_drop_index {
+            msg_log.log(Msg::DropItem(entity_id, to_drop_index as u64));
         }
     }
 }

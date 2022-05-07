@@ -964,3 +964,94 @@ pub fn place_rubble(pos: Pos, map: &mut Map) {
     map[pos].tile_type = TileType::Empty;
 }
 
+pub fn try_use_energy(entity_id: EntityId, skill: Skill, level: &mut Level, msg_log: &mut MsgLog) -> bool {
+    let pos = level.entities.pos[&entity_id];
+
+    // Use the Skill's own class instead of the entities.
+    //let class = level.entities.class[&entity_id];
+    let class = skill.class();
+
+    // NOTE this uses the entity's class, not the skill's class
+    let has_energy = level.entities.status[&entity_id].test_mode || level.entities.energy[&entity_id] > 0;
+    let mut enough_energy: bool = false;
+    let mut used_energy: bool = false;
+    match class {
+        EntityClass::General => {
+            if has_energy {
+                enough_energy = true;
+                used_energy = true;
+                level.entities.use_energy(entity_id);
+            }
+        }
+
+        EntityClass::Grass => {
+            let free_energy = level.map[pos].surface == Surface::Grass;
+            if free_energy || has_energy {
+                if !free_energy && has_energy {
+                    used_energy = true;
+                    level.entities.use_energy(entity_id);
+                }
+
+                enough_energy = true;
+                level.map[pos].surface = Surface::Floor;
+
+                if let Some(grass_id) = level.entities.get_names_at_pos(pos, EntityName::Grass).get(0) {
+                    msg_log.log(Msg::Remove(*grass_id));
+                }
+            }
+        }
+
+        EntityClass::Monolith => {
+            let free_energy = level.map[pos].surface == Surface::Rubble;
+            if free_energy || has_energy {
+                if !free_energy && has_energy {
+                    level.entities.use_energy(entity_id);
+                    used_energy = true;
+                }
+
+                enough_energy = true;
+                level.map[pos].surface = Surface::Floor;
+            }
+        }
+
+        EntityClass::Clockwork => {
+            if has_energy {
+                enough_energy = true;
+                used_energy = true;
+                level.entities.use_energy(entity_id);
+            }
+        }
+
+        EntityClass::Hierophant => {
+            if has_energy {
+                enough_energy = true;
+                used_energy = true;
+                level.entities.use_energy(entity_id);
+            }
+        }
+
+        EntityClass::Wind => {
+            // The wind class does not use energy.
+            enough_energy = true;
+        }
+    }
+
+    if used_energy {
+        msg_log.log(Msg::UsedEnergy(entity_id));
+    }
+
+    return enough_energy;
+}
+
+pub fn remove_entity(entity_id: EntityId, level: &mut Level) {
+    // The entity can already be removed if the removal message was logged
+    // to indicate to other systems an internal change in state such as a new map.
+    if level.entities.ids.contains(&entity_id) {
+        level.entities.status[&entity_id].alive = false;
+
+        level.entities.blocks[&entity_id] = false;
+
+        level.entities.mark_for_removal(entity_id);
+    }
+}
+
