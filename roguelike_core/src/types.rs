@@ -110,6 +110,38 @@ impl WeaponType {
     pub fn sharp(&self) -> bool {
         return *self == WeaponType::Slash || *self == WeaponType::Pierce;
     }
+
+    pub fn sound_radius(&self, config: &Config) -> usize {
+        match self {
+            WeaponType::Blunt => {
+                return config.sound_radius_blunt;
+            },
+
+            WeaponType::Pierce => {
+                return config.sound_radius_pierce;
+            },
+
+            WeaponType::Slash => {
+                return config.sound_radius_slash;
+            },
+        }
+    }
+
+    pub fn stun_turns(&self, config: &Config) -> usize {
+        match self {
+            WeaponType::Blunt => {
+                return config.stun_turns_blunt;
+            },
+
+            WeaponType::Pierce => {
+                return config.stun_turns_pierce;
+            },
+
+            WeaponType::Slash => {
+                return config.stun_turns_slash;
+            },
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]

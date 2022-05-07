@@ -380,26 +380,7 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::StartUseItem(item_id) => {
-                match game.level.entities.item[&item_id] {
-                    Item::Dagger => {
-                    }
-
-                    Item::Shield => {
-                    }
-
-                    Item::Hammer => {
-                    }
-
-                    Item::Sword => {
-                        //let mut offsets = SmallVec::new();
-                        //let dir = game.level.entities.direction[&player_id] as usize;
-                        //offsets[dir] = Some(ItemUse(Item::Sword, 1));
-                        //level.entities.
-                    }
-
-                    _ => {
-                    }
-                }
+                resolve_start_use_item(item_id, game);
             }
 
             Msg::Restart => {
@@ -445,24 +426,8 @@ fn resolve_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attac
         } else {
             // if we hit an enemy, stun them and make a sound.
             if level.entities.typ[&hit_entity] == EntityType::Enemy {
-                let mut hit_sound_radius;
-                let mut stun_turns;
-                match weapon_type {
-                    WeaponType::Blunt => {
-                        hit_sound_radius = config.sound_radius_blunt;
-                        stun_turns = config.stun_turns_blunt;
-                    },
-
-                    WeaponType::Pierce => {
-                        hit_sound_radius = config.sound_radius_pierce;
-                        stun_turns = config.stun_turns_pierce;
-                    },
-
-                    WeaponType::Slash => {
-                        hit_sound_radius = config.sound_radius_slash;
-                        stun_turns = config.stun_turns_slash;
-                    },
-                }
+                let mut hit_sound_radius = weapon_type.sound_radius(config);
+                let mut stun_turns = weapon_type.stun_turns(config);
 
                 // whet stone passive adds to sharp weapon stun turns
                 if level.entities.passive[&entity_id].whet_stone && weapon_type.sharp() {
@@ -1666,6 +1631,29 @@ fn resolve_triggered(trigger: EntityId, entity_id: EntityId, level: &mut Level, 
         }
 
         msg_log.log(Msg::GateTriggered(trigger, entity_id));
+    }
+}
+
+fn resolve_start_use_item(item_id: EntityId, game: &mut Game) {
+    match game.level.entities.item[&item_id] {
+        Item::Dagger => {
+        }
+
+        Item::Shield => {
+        }
+
+        Item::Hammer => {
+        }
+
+        Item::Sword => {
+            //let mut offsets = SmallVec::new();
+            //let dir = game.level.entities.direction[&player_id] as usize;
+            //offsets[dir] = Some(ItemUse(Item::Sword, 1));
+            //level.entities.
+        }
+
+        _ => {
+        }
     }
 }
 
