@@ -296,83 +296,17 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::Rubble(entity_id, rubble_pos) => {
                 if try_use_energy(entity_id, Skill::Rubble, &mut game.level, &mut game.msg_log) {
-                    let pos = game.level.entities.pos[&entity_id];
-                    let blocked = game.level.map.path_blocked_move(pos, rubble_pos);
-
-                    if let Some(blocked) = blocked {
-                        resolve_rubble(blocked, &mut game.level.map);
-                    } else if let Some(blocked_id) = game.level.has_blocking_entity(rubble_pos) {
-                        // if we hit a column, turn it into rubble
-                        if game.level.entities.typ[&blocked_id] == EntityType::Column {
-                            remove_entity(blocked_id, &mut game.level);
-                            game.level.map[rubble_pos].surface = Surface::Rubble;
-                        }
-                    }
-
-                    game.level.entities.took_turn[&entity_id] = true;
+                    resolve_rubble_skill(entity_id, rubble_pos, game);
                 }
             }
 
             Msg::StoneThrow(entity_id, target_pos) => {
-                let entity_pos = game.level.entities.pos[&entity_id];
-
-                let mut rubble_pos = None;
-                if game.level.map[entity_pos].surface == Surface::Rubble {
-                    rubble_pos = Some(entity_pos);
-                }
-
-                for pos in game.level.map.neighbors(entity_pos) {
-                    if game.level.map[pos].surface == Surface::Rubble {
-                        rubble_pos = Some(pos);
-                    }
-                }
-
-                if let Some(rubble_pos) = rubble_pos {
-                    for target_id in game.level.get_entities_at_pos(target_pos) {
-                        let target_pos = game.level.entities.pos[&target_id];
-                        let direction = Direction::from_positions(entity_pos, target_pos).expect("The player is on the same tile as a column?");
-
-                        if game.level.entities.typ[&target_id] == EntityType::Enemy {
-                            let move_into = false;
-                            push_attack(entity_id, target_id, direction, move_into, &mut game.level, &game.config, &mut game.msg_log);
-                        } else if game.level.entities.typ[&target_id] == EntityType::Column {
-                            game.msg_log.log(Msg::Pushed(entity_id, target_id, direction, 1, false));
-                        }
-                    }
-
-                    game.level.map[rubble_pos].surface = Surface::Floor;
-
-                    game.level.entities.took_turn[&entity_id] = true;
-                }
+                resolve_stone_thrown(entity_id, target_pos, game);
             }
 
             Msg::GrassBlade(entity_id, action_mode, direction) => {
                 if try_use_energy(entity_id, Skill::GrassBlade, &mut game.level, &mut game.msg_log) {
-                    let pos = game.level.entities.pos[&entity_id];
-
-                    match action_mode {
-                        ActionMode::Primary => {
-                            // TODO anything?
-                        }
-
-                        ActionMode::Alternate => {
-                            // TODO anything?
-                        }
-                    }
-
-                    let attack_pos = direction.offset_pos(pos, 1);
-                    let targets = game.level.get_entities_at_pos(attack_pos);
-
-                    for target_id in targets {
-                        if game.level.entities.typ[&target_id] == EntityType::Enemy {
-                            let attack = Attack::Stab(target_id, false);
-                            resolve_attack(entity_id, attack, attack_pos, &mut game.level, &mut game.msg_log, &game.config);
-
-                            break;
-                        }
-                    }
-
-                    game.level.entities.took_turn[&entity_id] = true;
+                    resolve_grass_blade(entity_id, action_mode, direction, game);
                 }
             }
 
@@ -394,19 +328,7 @@ pub fn resolve_messages(game: &mut Game) {
 
             Msg::Swap(entity_id, target_id) => {
                 if try_use_energy(entity_id, Skill::Swap, &mut game.level, &mut game.msg_log) {
-
-                    let entity_dir = game.level.entities.direction[&entity_id];
-                    let target_dir = game.level.entities.direction[&target_id];
-
-                    let start_pos = game.level.entities.pos[&entity_id];
-                    let end_pos = game.level.entities.pos[&target_id];
-                    game.level.entities.set_pos(entity_id, end_pos);
-                    game.level.entities.set_pos(target_id, start_pos);
-
-                    game.msg_log.log(Msg::SetFacing(entity_id, target_dir));
-                    game.msg_log.log(Msg::SetFacing(target_id, entity_dir));
-
-                    game.level.entities.took_turn[&entity_id] = true;
+                    resolve_swap(entity_id, target_id, game);
                 }
             }
 
@@ -1709,3 +1631,97 @@ fn resolve_eat_herb(entity_id: EntityId, item_id: EntityId, game: &mut Game) {
 
     game.level.entities.took_turn[&entity_id] = true;
 }
+
+fn resolve_rubble_skill(entity_id: EntityId, rubble_pos: Pos, game: &mut Game) {
+    let pos = game.level.entities.pos[&entity_id];
+    let blocked = game.level.map.path_blocked_move(pos, rubble_pos);
+
+    if let Some(blocked) = blocked {
+        resolve_rubble(blocked, &mut game.level.map);
+    } else if let Some(blocked_id) = game.level.has_blocking_entity(rubble_pos) {
+        // if we hit a column, turn it into rubble
+        if game.level.entities.typ[&blocked_id] == EntityType::Column {
+            remove_entity(blocked_id, &mut game.level);
+            game.level.map[rubble_pos].surface = Surface::Rubble;
+        }
+    }
+
+    game.level.entities.took_turn[&entity_id] = true;
+}
+
+fn resolve_stone_thrown(entity_id: EntityId, target_pos: Pos, game: &mut Game) {
+    let entity_pos = game.level.entities.pos[&entity_id];
+
+    let mut rubble_pos = None;
+    if game.level.map[entity_pos].surface == Surface::Rubble {
+        rubble_pos = Some(entity_pos);
+    }
+
+    for pos in game.level.map.neighbors(entity_pos) {
+        if game.level.map[pos].surface == Surface::Rubble {
+            rubble_pos = Some(pos);
+        }
+    }
+
+    if let Some(rubble_pos) = rubble_pos {
+        for target_id in game.level.get_entities_at_pos(target_pos) {
+            let target_pos = game.level.entities.pos[&target_id];
+            let direction = Direction::from_positions(entity_pos, target_pos).expect("The player is on the same tile as a column?");
+
+            if game.level.entities.typ[&target_id] == EntityType::Enemy {
+                let move_into = false;
+                push_attack(entity_id, target_id, direction, move_into, &mut game.level, &game.config, &mut game.msg_log);
+            } else if game.level.entities.typ[&target_id] == EntityType::Column {
+                game.msg_log.log(Msg::Pushed(entity_id, target_id, direction, 1, false));
+            }
+        }
+
+        game.level.map[rubble_pos].surface = Surface::Floor;
+
+        game.level.entities.took_turn[&entity_id] = true;
+    }
+}
+
+fn resolve_grass_blade(entity_id: EntityId, action_mode: ActionMode, direction: Direction, game: &mut Game) {
+    let pos = game.level.entities.pos[&entity_id];
+
+    match action_mode {
+        ActionMode::Primary => {
+            // TODO anything?
+        }
+
+        ActionMode::Alternate => {
+            // TODO anything?
+        }
+    }
+
+    let attack_pos = direction.offset_pos(pos, 1);
+    let targets = game.level.get_entities_at_pos(attack_pos);
+
+    for target_id in targets {
+        if game.level.entities.typ[&target_id] == EntityType::Enemy {
+            let attack = Attack::Stab(target_id, false);
+            resolve_attack(entity_id, attack, attack_pos, &mut game.level, &mut game.msg_log, &game.config);
+
+            break;
+        }
+    }
+
+    game.level.entities.took_turn[&entity_id] = true;
+}
+
+fn resolve_swap(entity_id: EntityId, target_id: EntityId, game: &mut Game) {
+    let entity_dir = game.level.entities.direction[&entity_id];
+    let target_dir = game.level.entities.direction[&target_id];
+
+    let start_pos = game.level.entities.pos[&entity_id];
+    let end_pos = game.level.entities.pos[&target_id];
+    game.level.entities.set_pos(entity_id, end_pos);
+    game.level.entities.set_pos(target_id, start_pos);
+
+    game.msg_log.log(Msg::SetFacing(entity_id, target_dir));
+    game.msg_log.log(Msg::SetFacing(target_id, entity_dir));
+
+    game.level.entities.took_turn[&entity_id] = true;
+}
+
