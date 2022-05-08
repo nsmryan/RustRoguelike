@@ -24,8 +24,8 @@ use roguelike_core::messaging::*;
 use roguelike_core::utils::aoe_fill;
 use roguelike_core::movement::{MoveMode};
 
-use crate::animation::{Str, Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
-use crate::drawcmd::*;
+use roguelike_draw::animation::{Str, Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
+use roguelike_draw::drawcmd::*;
 
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

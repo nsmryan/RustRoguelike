@@ -1,9 +1,8 @@
 [package]
-name = "roguelike_main"
+name = "roguelike_draw"
 version = "0.1.0"
 authors = ["nsmryan <nsmryan@gmail.com>"]
 edition = "2018"
-default-run="rl"
 
 [dependencies]
 sdl2 = { version = "0.34", features = ["image", "unsafe_textures", "ttf"] }
@@ -11,8 +10,6 @@ sdl2 = { version = "0.34", features = ["image", "unsafe_textures", "ttf"] }
 log = "0.4"
 simple-logging = "2.0"
 logging_timer = "1.0"
-
-gumdrop = "0.8"
 
 bmp = "0.5"
 
@@ -25,12 +22,4 @@ rmp = "*"
 roguelike_utils = { path = "../roguelike_utils" }
 roguelike_map = { path = "../roguelike_map" }
 roguelike_core = { path = "../roguelike_core" }
-roguelike_engine = { path = "../roguelike_engine" }
-roguelike_lib = { path = "../roguelike_lib" }
-roguelike_display = { path = "../roguelike_display" }
-roguelike_draw = { path = "../roguelike_draw" }
-
-[[bin]]
-name = "rl"
-path = "src/main.rs"
 

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use sdl2::render::{Texture, RenderTarget, WindowCanvas, BlendMode, Canvas};
-use sdl2::rect::{Rect};
+use sdl2::rect::Rect;
 use sdl2::pixels::{Color as Sdl2Color};
 
 use roguelike_map::{Pos, Direction};

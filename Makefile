@@ -38,6 +38,7 @@ sloc_crates:
 	cloc roguelike_core/src/*.rs
 	cloc roguelike_lib/src/*.rs
 	cloc roguelike_display/src/*.rs
+	cloc roguelike_draw/src/*.rs
 	cloc roguelike_engine/src/*.rs
 	cloc roguelike_main/src/*.rs
 	cloc roguelike_map/src/*.rs
