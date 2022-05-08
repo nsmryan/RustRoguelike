@@ -26,6 +26,7 @@ use roguelike_core::movement::{MoveMode};
 
 use roguelike_draw::animation::{Str, Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use roguelike_draw::drawcmd::*;
+use roguelike_draw::atlas::*;
 
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -61,6 +62,7 @@ pub struct Display {
     // sprite state
     pub sprites: Vec<SpriteSheet>,
     pub next_sprite_key: SpriteKey,
+    pub atlas: Vec<AtlasSheet>,
 
     pub intern: HashMap<String, Str>,
     pub next_str: usize,
@@ -108,12 +110,15 @@ impl Display {
 
         let screen_texture = create_texture(&mut texture_creator, pixel_format, (SCREEN_WIDTH, SCREEN_HEIGHT));
 
+        let atlas = parse_atlas_file("resources/spriteAtlas.txt");
+
         return Display { state: DisplayState::new(),
                          canvas,
                          texture_creator,
                          textures, 
                          sprites: Vec::new(),
                          next_sprite_key: 0,
+                         atlas,
                          panels,
                          screen_areas,
                          screen_texture,
