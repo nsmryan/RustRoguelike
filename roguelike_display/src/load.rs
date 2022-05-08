@@ -53,7 +53,7 @@ pub fn load_sprite(texture_creator: &TextureCreator<WindowContext>,
 /// for individual ascii characters.
 pub fn load_font(ttf_context: &Sdl2TtfContext,
                  texture_creator: &TextureCreator<WindowContext>,
-                 file_name: String,
+                 file_name: &str,
                  font_size: u16) -> Texture {
     let mut font = ttf_context.load_font(format!("resources/fonts/{}", file_name), font_size).expect("Could not load font file!");
     font.set_style(sdl2::ttf::FontStyle::BOLD);
