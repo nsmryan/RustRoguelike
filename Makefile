@@ -1,5 +1,5 @@
 
-.PHONY: exe run rerun debug release test retest check recheck sloc
+.PHONY: exe run rerun debug release test retest check recheck sloc sloc_crates atlas
 run:
 	cargo run
 
@@ -42,4 +42,16 @@ sloc_crates:
 	cloc roguelike_engine/src/*.rs
 	cloc roguelike_main/src/*.rs
 	cloc roguelike_map/src/*.rs
+
+atlas:
+	rm collectImages -rf
+	mkdir collectImages
+	find resources/animations -name "*.png" | xargs -I{} cp {} collectImages/
+	find resources/UI -name "*.png" | xargs -I{} cp {} collectImages/
+	cp resources/rustrogueliketiles.png collectImages/
+	cp resources/shadowtiles.png collectImages/
+	cp resources/Particle_Speck.png collectImages/
+	cp resources/Monoid.ttf collectImages/
+	atlas collectImages/ --imageout resources/spriteAtlas.png --textout resources/spriteAtlas.txt
+
 
