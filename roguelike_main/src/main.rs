@@ -129,8 +129,8 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         let sheet = true;
         load_sprites(&texture_creator, &mut display);
         load_sprite(&texture_creator, sheet, &mut display, "resources/rustrogueliketiles.png", "tiles");
-        load_sprite(&texture_creator, sheet, &mut display, "resources/shadowtiles.png", "shadows");
-        load_sprite(&texture_creator, sheet, &mut display, "resources/Particle_Speck.png", "particle_speck");
+        load_sprite(&texture_creator, sheet, &mut display, "resources/misc/shadowtiles.png", "shadows");
+        load_sprite(&texture_creator, sheet, &mut display, "resources/misc/Particle_Speck.png", "particle_speck");
 
         let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
         let font_texture = load_font(&ttf_context,

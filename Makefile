@@ -48,10 +48,10 @@ atlas:
 	mkdir collectImages
 	find resources/animations -name "*.png" | xargs -I{} cp {} collectImages/
 	find resources/UI -name "*.png" | xargs -I{} cp {} collectImages/
+	find resources/misc -name "*.png" | xargs -I{} cp {} collectImages/
 	cp resources/rustrogueliketiles.png collectImages/
-	cp resources/shadowtiles.png collectImages/
-	cp resources/Particle_Speck.png collectImages/
-	cp resources/Monoid.ttf collectImages/
+	cp resources/fonts/Inconsolata-Bold.ttf collectImages/
 	atlas collectImages/ --imageout resources/spriteAtlas.png --textout resources/spriteAtlas.txt
+	rm collectImages -rf
 
 

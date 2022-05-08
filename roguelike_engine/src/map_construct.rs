@@ -49,10 +49,10 @@ pub fn map_construct(map_load_config: &MapLoadConfig, game: &mut Game) {
             let file_name = format!("resources/procgen/{}", procgen_params);
             let cmds = ProcCmd::from_file(&file_name);
 
-            let mut template_file = "resources/wfc_seed_2.png".to_string();
+            let mut template_file = "resources/wfc/wfc_seed_2.png".to_string();
             for param in cmds.iter() {
                 if let ProcCmd::SeedFile(file_name) = param {
-                    template_file = format!("resources/{}", file_name);
+                    template_file = format!("resources/wfc/{}", file_name);
                 }
             }
 
