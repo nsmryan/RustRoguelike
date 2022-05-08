@@ -14,11 +14,11 @@ use crate::display::*;
 /// This assumes that all sprites have the same width and height. Otherwise we
 /// will need a configuration file of some kind to specify the dimensions of the sprites.
 pub fn load_sprites(texture_creator: &TextureCreator<WindowContext>, display: &mut Display) {
-    load_sprites_from("resources/animations".to_string(), true, texture_creator, display);
-    load_sprites_from("resources/UI".to_string(), false, texture_creator, display);
+    load_sprites_from(&"resources/animations".to_string(), true, texture_creator, display);
+    load_sprites_from(&"resources/UI".to_string(), false, texture_creator, display);
 }
 
-pub fn load_sprites_from(path: String, sheet: bool, texture_creator: &TextureCreator<WindowContext>, display: &mut Display) {
+pub fn load_sprites_from(path: &str, sheet: bool, texture_creator: &TextureCreator<WindowContext>, display: &mut Display) {
     for entry in fs::read_dir(path).unwrap() {
         let path = entry.unwrap().path();
 
@@ -28,8 +28,7 @@ pub fn load_sprites_from(path: String, sheet: bool, texture_creator: &TextureCre
             if metadata.is_file() && file_name.ends_with("png") {
                 load_sprite(texture_creator, sheet, display, file_name, &sprite_name);
             } else if metadata.is_dir() {
-                // NOTE likely unnecessary String
-                load_sprites_from(path.to_str().unwrap().to_string(), sheet, texture_creator, display);
+                load_sprites_from(path.to_str().unwrap(), sheet, texture_creator, display);
             }
         }
     }
