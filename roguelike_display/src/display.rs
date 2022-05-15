@@ -193,17 +193,17 @@ impl Display {
     }
 
     pub fn add_spritesheet(&mut self, name: String, texture: Texture) {
-        let sprite_key = self.next_sprite_key;
+        //let sprite_key = self.next_sprite_key;
         let sprite_sheet = SpriteSheet::new(name, texture);
-        self.next_sprite_key += 1;
-        self.sprites.insert(sprite_key, sprite_sheet);
+        //self.next_sprite_key += 1;
+        self.sprites.push(sprite_sheet);
     }
 
     pub fn add_sprite(&mut self, name: String, texture: Texture) {
-        let sprite_key = self.next_sprite_key;
+        //let sprite_key = self.next_sprite_key;
         let sprite_sheet = SpriteSheet::single(name, texture);
-        self.next_sprite_key += 1;
-        self.sprites.insert(sprite_key, sprite_sheet);
+        //self.next_sprite_key += 1;
+        self.sprites.push(sprite_sheet);
     }
 
     pub fn sprite_exists(&self, name: &str) -> bool {
@@ -238,6 +238,7 @@ impl Display {
     pub fn random_sprite(&mut self, sprite_name: &str, speed: f32) -> Animation {
         let sprite_anim = self.new_sprite(sprite_name, speed);
         let anim = Animation::RandomLoop(sprite_anim);
+        let status = anim.status(Pos::new(0, 0));
         return anim;
     }
 
@@ -284,45 +285,45 @@ impl Display {
                 return Some(anim);
             }
         } else {
-            if self.state.name[&entity_id] == EntityName::Key {
+            if name == EntityName::Key {
                 return Some(self.loop_sprite("key", config.idle_speed));
-            } else if self.state.name[&entity_id] == EntityName::SpikeTrap {
+            } else if name == EntityName::SpikeTrap {
                 let sprite = self.static_sprite("tiles", ENTITY_SPIKE_TRAP as char);
                 return Some(Animation::Loop(sprite));
-            } else if self.state.name[&entity_id] == EntityName::Armil {
+            } else if name == EntityName::Armil {
                 return Some(self.loop_sprite("armil_idle", config.idle_speed));
-            } else if self.state.name[&entity_id] == EntityName::Lantern {
+            } else if name == EntityName::Lantern {
                 return Some(self.loop_sprite("lantern_idle", config.fire_speed));
-            } else if self.state.name[&entity_id] == EntityName::Smoke {
+            } else if name == EntityName::Smoke {
                 let sprite = self.static_sprite("tiles", ENTITY_SMOKE as char);
                 return Some(Animation::Loop(sprite));
-            } else if self.state.name[&entity_id] == EntityName::Khopesh {
+            } else if name == EntityName::Khopesh {
                 let sprite = self.static_sprite("tiles", ENTITY_KHOPESH as char);
                 return Some(Animation::Loop(sprite));
-            } else if self.state.name[&entity_id] == EntityName::Magnifier {
+            } else if name == EntityName::Magnifier {
                 let sprite = self.static_sprite("tiles", ENTITY_MAGNIFIER as char);
                 return Some(Animation::Loop(sprite));
-            } else if self.state.name[&entity_id] == EntityName::Sling {
+            } else if name == EntityName::Sling {
                 let sprite = self.static_sprite("tiles", ENTITY_SLING as char);
                 return Some(Animation::Loop(sprite));
-            } else if self.state.name[&entity_id] == EntityName::GlassEye {
+            } else if name == EntityName::GlassEye {
                 let sprite = self.static_sprite("tiles", ENTITY_GLASS_EYE as char);
                 return Some(Animation::Loop(sprite));
-            } else if self.state.name[&entity_id] == EntityName::Herb {
+            } else if name == EntityName::Herb {
                 let sprite = self.static_sprite("tiles", ENTITY_HERB as char);
                 return Some(Animation::Loop(sprite));
-            } else if self.state.name[&entity_id] == EntityName::SeedOfStone {
+            } else if name == EntityName::SeedOfStone {
                 let sprite = self.static_sprite("tiles", ENTITY_SEED_OF_STONE as char);
                 return Some(Animation::Loop(sprite));
-            } else if self.state.name[&entity_id] == EntityName::SeedCache {
+            } else if name == EntityName::SeedCache {
                 let sprite = self.static_sprite("tiles", ENTITY_SEED_CACHE as char);
                 return Some(Animation::Loop(sprite));
-            } else if self.state.name[&entity_id] == EntityName::Teleporter {
+            } else if name == EntityName::Teleporter {
                 let sprite = self.static_sprite("tiles", ENTITY_TELEPORTER as char);
                 return Some(Animation::Loop(sprite));
-            } else if self.state.name[&entity_id] == EntityName::Grass {
+            } else if name == EntityName::Grass {
                 return Some(self.random_sprite("grassanim", config.grass_idle_speed));
-            } else if self.state.name[&entity_id] == EntityName::Statue {
+            } else if name == EntityName::Statue {
                 let statues = vec!(MAP_STATUE_1, MAP_STATUE_2, MAP_STATUE_3, MAP_STATUE_4, MAP_STATUE_5, MAP_STATUE_6);
                 let index = roguelike_utils::rng::choose(&mut self.rng, &statues).unwrap();
                 let sprite = self.static_sprite("tiles", index as char);
