@@ -115,18 +115,15 @@ impl Display {
         let atlas = texture_creator.load_texture("resources/spriteAtlas.png").expect("Could not load sprite atlas!");
 
         let mut sprites = Vec::new();
-        let mut next_sprite_key = 0;
         for sheet in atlas_sheets.iter() {
-            let sprite_key = next_sprite_key;
-
             let x_offset = sheet.x;
             let y_offset = sheet.y;
             let width = sheet.width as usize;
             let height = sheet.height as usize;
             let sprite_sheet = SpriteSheet::with_offset(format!("atlas_{}", sheet.name), x_offset, y_offset, width, height);
-            next_sprite_key += 1;
-            sprites.insert(sprite_key, sprite_sheet);
+            sprites.push(sprite_sheet);
         }
+        let next_sprite_key = sprites.len();
 
         return Display { state: DisplayState::new(),
                          canvas,

@@ -881,8 +881,6 @@ impl SpriteSheet {
     pub fn with_offset(name: String, x_offset: u32, y_offset: u32, width: usize, height: usize) -> SpriteSheet {
         let rows = height / FONT_HEIGHT as usize;
         let cols = width / FONT_WIDTH as usize;
-        assert!(rows > 0);
-        assert!(cols > 0);
         let num_sprites = cols * rows;
         let x_offset = 0;
         let y_offset = 0;
@@ -937,6 +935,8 @@ impl SpriteSheet {
         return (self.width / num_width, self.height / num_height);
     }
 
+    // Get the source rectangle for a particular sprite
+    // given by its index into the sprite sheet.
     fn sprite_src(&mut self, index: usize) -> Rect {
         let (num_cells_x, _num_cells_y) = self.num_cells();
         let sprite_x = index % num_cells_x;
