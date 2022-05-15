@@ -10,6 +10,7 @@ use sdl2::render::{Texture, WindowCanvas, TextureCreator};
 use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{PixelFormatEnum};
+use sdl2::image::LoadTexture;
 
 use roguelike_utils::rng::Rand32;
 use roguelike_utils::comp::*;
@@ -58,11 +59,11 @@ pub struct Display {
     pub screen_areas: HashMap<PanelName, Area>,
 
     pub screen_texture: Texture,
+    pub atlas: Texture,
 
     // sprite state
     pub sprites: Vec<SpriteSheet>,
     pub next_sprite_key: SpriteKey,
-    pub atlas: Vec<AtlasSheet>,
 
     pub intern: HashMap<String, Str>,
     pub next_str: usize,
@@ -110,14 +111,29 @@ impl Display {
 
         let screen_texture = create_texture(&mut texture_creator, pixel_format, (SCREEN_WIDTH, SCREEN_HEIGHT));
 
-        let atlas = parse_atlas_file("resources/spriteAtlas.txt");
+        let atlas_sheets = parse_atlas_file("resources/spriteAtlas.txt");
+        let atlas = texture_creator.load_texture("resources/spriteAtlas.png").expect("Could not load sprite atlas!");
+
+        let mut sprites = Vec::new();
+        let mut next_sprite_key = 0;
+        for sheet in atlas_sheets.iter() {
+            let sprite_key = next_sprite_key;
+
+            let x_offset = sheet.x;
+            let y_offset = sheet.y;
+            let width = sheet.width as usize;
+            let height = sheet.height as usize;
+            let sprite_sheet = SpriteSheet::with_offset(sheet.name.clone(), x_offset, y_offset, width, height);
+            //next_sprite_key += 1;
+            //sprites.insert(sprite_key, sprite_sheet);
+        }
 
         return Display { state: DisplayState::new(),
                          canvas,
                          texture_creator,
                          textures, 
-                         sprites: Vec::new(),
-                         next_sprite_key: 0,
+                         sprites,
+                         next_sprite_key,
                          atlas,
                          panels,
                          screen_areas,

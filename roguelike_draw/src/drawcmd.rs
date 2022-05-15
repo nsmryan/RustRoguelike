@@ -79,10 +79,10 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                                 cell_height as u32);
 
             canvas.set_blend_mode(BlendMode::Blend);
-            sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
-            sprite_sheet.texture.set_alpha_mod(color.a);
+            sprite_sheet.texture.as_mut().unwrap().set_color_mod(color.r, color.g, color.b);
+            sprite_sheet.texture.as_mut().unwrap().set_alpha_mod(color.a);
 
-            canvas.copy_ex(&sprite_sheet.texture,
+            canvas.copy_ex(&sprite_sheet.texture.as_mut().unwrap(),
                            Some(src),
                            Some(dst),
                            sprite.rotation,
@@ -153,10 +153,10 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                                 dst_height);
 
             canvas.set_blend_mode(BlendMode::Blend);
-            sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
-            sprite_sheet.texture.set_alpha_mod(color.a);
+            sprite_sheet.texture.as_mut().unwrap().set_color_mod(color.r, color.g, color.b);
+            sprite_sheet.texture.as_mut().unwrap().set_alpha_mod(color.a);
 
-            canvas.copy_ex(&sprite_sheet.texture,
+            canvas.copy_ex(&sprite_sheet.texture.as_mut().unwrap(),
                            Some(src),
                            Some(dst),
                            sprite.rotation,
@@ -184,10 +184,10 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                                 (cell_height as f32 * y_scale) as u32);
 
             canvas.set_blend_mode(BlendMode::Blend);
-            sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
-            sprite_sheet.texture.set_alpha_mod(color.a);
+            sprite_sheet.texture.as_mut().unwrap().set_color_mod(color.r, color.g, color.b);
+            sprite_sheet.texture.as_mut().unwrap().set_alpha_mod(color.a);
 
-            canvas.copy_ex(&sprite_sheet.texture,
+            canvas.copy_ex(&sprite_sheet.texture.as_mut().unwrap(),
                            Some(src),
                            Some(dst),
                            sprite.rotation,
@@ -209,7 +209,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
 
             let sprite_key = lookup_spritekey(sprites, "font");
             let sprite_sheet = &mut sprites[sprite_key];
-            let query = sprite_sheet.texture.query();
+            let query = sprite_sheet.texture.as_mut().unwrap().query();
 
             let cell_dims = panel.cell_dims();
             let (cell_width, cell_height) = cell_dims;
@@ -247,8 +247,8 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             canvas.set_draw_color(sdl2_color(*bg_color));
             canvas.fill_rect(Rect::new(x_offset, y_offset, string.len() as u32 * char_width, char_height)).unwrap();
 
-            sprite_sheet.texture.set_color_mod(fg_color.r, fg_color.g, fg_color.b);
-            sprite_sheet.texture.set_alpha_mod(fg_color.a);
+            sprite_sheet.texture.as_mut().unwrap().set_color_mod(fg_color.r, fg_color.g, fg_color.b);
+            sprite_sheet.texture.as_mut().unwrap().set_alpha_mod(fg_color.a);
 
             for chr in string.chars() {
                 let chr_num = chr.to_lowercase().next().unwrap();
@@ -266,7 +266,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                                     char_width as u32,
                                     char_height as u32);
 
-                canvas.copy_ex(&sprite_sheet.texture,
+                canvas.copy_ex(&sprite_sheet.texture.as_mut().unwrap(),
                                      Some(src),
                                      Some(dst),
                                      0.0,
@@ -281,7 +281,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
 
             let sprite_key = lookup_spritekey(sprites, "font");
             let sprite_sheet = &mut sprites[sprite_key];
-            let query = sprite_sheet.texture.query();
+            let query = sprite_sheet.texture.as_mut().unwrap().query();
 
             let cell_dims = panel.cell_dims();
             let (cell_width, cell_height) = cell_dims;
@@ -294,8 +294,8 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             let char_width = (char_width as f32 * scale) as u32;
 
             canvas.set_blend_mode(BlendMode::Blend);
-            sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
-            sprite_sheet.texture.set_alpha_mod(color.a);
+            sprite_sheet.texture.as_mut().unwrap().set_color_mod(color.r, color.g, color.b);
+            sprite_sheet.texture.as_mut().unwrap().set_alpha_mod(color.a);
 
             let text_pixel_width = string.len() as i32 * char_width as i32;
 
@@ -316,7 +316,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                                     char_width as u32,
                                     char_height as u32);
 
-                canvas.copy_ex(&sprite_sheet.texture,
+                canvas.copy_ex(&sprite_sheet.texture.as_mut().unwrap(),
                                Some(src),
                                Some(dst),
                                0.0,
@@ -332,7 +332,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
 
             let sprite_key = lookup_spritekey(sprites, "font");
             let sprite_sheet = &mut sprites[sprite_key];
-            let query = sprite_sheet.texture.query();
+            let query = sprite_sheet.texture.as_ref().unwrap().query();
 
             let cell_dims = panel.cell_dims();
             let (cell_width, cell_height) = cell_dims;
@@ -345,8 +345,8 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
             let char_width = (char_width as f32 * scale) as u32;
 
             canvas.set_blend_mode(BlendMode::Blend);
-            sprite_sheet.texture.set_color_mod(color.r, color.g, color.b);
-            sprite_sheet.texture.set_alpha_mod(color.a);
+            sprite_sheet.texture.as_mut().unwrap().set_color_mod(color.r, color.g, color.b);
+            sprite_sheet.texture.as_mut().unwrap().set_alpha_mod(color.a);
 
             let y_offset = start_pos.y * cell_height as i32;
             let mut x_offset = start_pos.x * cell_width as i32;
@@ -365,7 +365,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprites: &mut Vec<
                                     char_width as u32,
                                     char_height as u32);
 
-                canvas.copy_ex(&sprite_sheet.texture,
+                canvas.copy_ex(&sprite_sheet.texture.as_ref().unwrap(),
                                Some(src),
                                Some(dst),
                                0.0,
@@ -841,13 +841,15 @@ impl Panel {
 }
 
 pub struct SpriteSheet {
-    pub texture: Texture,
+    pub texture: Option<Texture>,
     pub name: String,
     pub num_sprites: usize,
     pub rows: usize,
     pub cols: usize,
     pub width: usize,
     pub height: usize,
+    pub x_offset: u32,
+    pub y_offset: u32,
 }
 
 impl SpriteSheet {
@@ -859,15 +861,41 @@ impl SpriteSheet {
         let rows = height / FONT_HEIGHT as usize;
         let cols = width / FONT_WIDTH as usize;
         let num_sprites = cols * rows;
+        let x_offset = 0;
+        let y_offset = 0;
 
         return SpriteSheet {
-            texture,
+            texture: Some(texture),
             name,
             num_sprites,
             rows,
             cols,
             width,
             height,
+            x_offset,
+            y_offset,
+
+        };
+    }
+
+    pub fn with_offset(name: String, x_offset: u32, y_offset: u32, width: usize, height: usize) -> SpriteSheet {
+        let rows = height / FONT_HEIGHT as usize;
+        let cols = width / FONT_WIDTH as usize;
+        let num_sprites = cols * rows;
+        let x_offset = 0;
+        let y_offset = 0;
+
+        return SpriteSheet {
+            texture: None,
+            name,
+            num_sprites,
+            rows,
+            cols,
+            width,
+            height,
+            x_offset,
+            y_offset,
+
         };
     }
 
@@ -878,15 +906,19 @@ impl SpriteSheet {
         let num_sprites = 1;
         let rows = 1;
         let cols = 1;
+        let x_offset = 0;
+        let y_offset = 0;
 
         return SpriteSheet {
-            texture,
+            texture: Some(texture),
             name,
             num_sprites,
             rows,
             cols,
             width,
             height,
+            x_offset,
+            y_offset,
         };
     }
 
