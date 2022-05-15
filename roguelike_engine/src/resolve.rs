@@ -17,6 +17,11 @@ use roguelike_core::config::*;
 use roguelike_core::utils::*;
 use roguelike_core::level::*;
 
+#[cfg(test)]
+use crate::actions::InputAction;
+#[cfg(test)]
+use crate::generation::*;
+
 use crate::generation::{make_energy, make_light, ensure_grass, make_smoke, make_magnifier};
 use crate::game::{Game};
 use crate::map_construct::map_construct;
@@ -1215,15 +1220,17 @@ fn resolve_blink(entity_id: EntityId, level: &mut Level, rng: &mut Rand32, msg_l
 fn resolve_state_change(entity_id: EntityId, behavior: Behavior, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
     let original_behavior = level.entities.behavior[&entity_id];
 
-    level.entities.behavior[&entity_id] = behavior;
-
-    // if the entity hasn't completed a turn, the state change continues their turn.
-    // NOTE this might be better off as a message! emit it every time a state change
-    // occurs?
+    // If the entity hasn't completed a turn, the state change continues their turn.
+    dbg!(behavior);
     if !level.entities.took_turn[&entity_id] &&
-        level.entities.behavior[&entity_id] != original_behavior {
+        level.entities.behavior[&entity_id] != original_behavior &&
+        !matches!(behavior, Behavior::Investigating(_)) {
        ai_take_turn(entity_id, level, config, msg_log);
+       dbg!("taking turn!");
     }
+    dbg!(level.entities.took_turn[&entity_id]);
+
+    level.entities.behavior[&entity_id] = behavior;
 
     if mem::discriminant(&behavior) != mem::discriminant(&original_behavior) {
         msg_log.log(Msg::BehaviorChanged(entity_id, behavior));
@@ -1659,4 +1666,30 @@ fn resolve_sound_hit_tile(cause_id: EntityId, source_pos: Pos, tile_pos: Pos, ga
             game.level.entities.messages[&heard_id].push(Message::Sound(source_pos));
         }
     }
+}
+
+#[test]
+pub fn test_ai_start_investigating_doesnt_take_turn() {
+    let mut config = Config::from_file("../config.yaml");
+    config.map_load = MapLoadConfig::Empty;
+    let mut game = Game::new(0, config.clone());
+    map_construct(&config.map_load, &mut game);
+
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+
+    // Place a golem a few tiles to the right.
+    let gol = make_gol(&mut game.level.entities, &game.config, Pos::new(3, 0), &mut game.msg_log);
+
+    // Place walls to the right and down from the player.
+    game.level.map[(1, 1)] = Tile::wall();
+    game.level.map[(1, 2)] = Tile::wall();
+    game.level.map[(1, 3)] = Tile::wall();
+
+    game.step_game(InputAction::Pass);
+    game.step_game(InputAction::Move(Direction::Down));
+    assert_eq!(Pos::new(0, 1), game.level.entities.pos[&player_id]);
+
+    // This fails because the golem does not get to take a turn once investigating.
+    assert!(matches!(game.level.entities.behavior[&gol], Behavior::Investigating(_)));
+    assert_eq!(Pos::new(2, 0), game.level.entities.pos[&gol]);
 }
