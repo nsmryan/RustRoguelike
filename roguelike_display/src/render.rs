@@ -699,7 +699,7 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
 fn render_background(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
     let (map_width, map_height) = map.size();
 
-    let sprite_key = lookup_spritekey(sprites, "tiles");
+    let sprite_key = lookup_spritekey(sprites, "atlas_rustrogueliketiles");
 
     for y in 0..map_height {
         for x in 0..map_width {
@@ -743,7 +743,7 @@ fn surface_chr(surface: Surface, block_sight: bool) -> Option<u8> {
 
 /// Render Wall Shadows (full tile and intertile walls, left and down)
 fn render_wall_shadow(panel: &mut Panel, pos: Pos, map: &Map, sprites: &Vec<SpriteSheet>, shadow_color: Color) {
-    let shadow_sprite_key = lookup_spritekey(sprites, "shadows");
+    let shadow_sprite_key = lookup_spritekey(sprites, "atlas_shadowtiles");
 
     let tile = map[pos];
 
@@ -822,7 +822,7 @@ fn render_wall_shadow(panel: &mut Panel, pos: Pos, map: &Map, sprites: &Vec<Spri
 fn render_map_above(panel: &mut Panel, display_state: &DisplayState, config: &Config, sprites: &Vec<SpriteSheet>) {
     let (map_width, map_height) = display_state.map.size();
 
-    let sprite_key = lookup_spritekey(sprites, "tiles");
+    let sprite_key = lookup_spritekey(sprites, "atlas_rustrogueliketiles");
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
@@ -866,7 +866,7 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, config: &Co
 fn render_map_middle(panel: &mut Panel, map: &Map, config: &Config, sprites: &Vec<SpriteSheet>) {
     let (map_width, map_height) = map.size();
 
-    let sprite_key = lookup_spritekey(sprites, "tiles");
+    let sprite_key = lookup_spritekey(sprites, "atlas_rustrogueliketiles");
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
@@ -932,7 +932,7 @@ fn render_pip(panel: &mut Panel, display_state: &DisplayState) {
 fn render_map(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
     let (map_width, map_height) = map.size();
 
-    let sprite_key = lookup_spritekey(sprites, "tiles");
+    let sprite_key = lookup_spritekey(sprites, "atlas_rustrogueliketiles");
     for y in 0..map_height {
         for x in 0..map_width {
             let pos = Pos::new(x, y);
@@ -1037,7 +1037,7 @@ fn render_effects(panel: &mut Panel,
                     particles.push(Particle::new(config.particle_duration, x, y));
                 }
 
-                let sprite_key = lookup_spritekey(sprites, "particle_speck");
+                let sprite_key = lookup_spritekey(sprites, "atlas_Particle_Speck");
 
                 let mut index = 0;
                 while index < particles.len() {
@@ -1096,7 +1096,7 @@ fn render_effects(panel: &mut Panel,
             }
 
             Effect::Beam(remaining, start, end) => {
-                let sprite_key = lookup_spritekey(sprites, "tiles");
+                let sprite_key = lookup_spritekey(sprites, "atlas_rustrogueliketiles");
 
                 let dxy = sub_pos(*end, *start);
                 let dir = Direction::from_dxy(dxy.x, dxy.y).unwrap();
@@ -1235,7 +1235,7 @@ fn render_entity(panel: &mut Panel,
                 }
             }
         } else {
-            let tiles = lookup_spritekey(sprites, "tiles");
+            let tiles = lookup_spritekey(sprites, "atlas_rustrogueliketiles");
             let chr = display_state.chr[&entity_id];
             let sprite = Sprite::new(chr as u32, tiles);
 
@@ -1247,7 +1247,7 @@ fn render_entity(panel: &mut Panel,
         if display_state.typ[&entity_id] == EntityType::Enemy {
             if display_state.entity_is_in_fov(entity_id) == FovResult::Edge {
                 if display_state.impressions.iter().all(|impresssion| impresssion.pos != pos) {
-                    let tiles = lookup_spritekey(sprites, "tiles");
+                    let tiles = lookup_spritekey(sprites, "atlas_rustrogueliketiles");
                     let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
                     display_state.impressions.push(Impression::new(impression_sprite, pos));
                 }
@@ -1325,7 +1325,7 @@ fn render_overlay_use_item(panel: &mut Panel,
     let mut highlight_color = config.color_light_grey;
     highlight_color.a = config.grid_alpha_overlay;
 
-    let sprite_key = lookup_spritekey(sprites, "tiles");
+    let sprite_key = lookup_spritekey(sprites, "atlas_rustrogueliketiles");
 
     if display_state.inventory.iter().position(|(_item, class)| *class == item_class).is_some() {
         if let Some(use_dir) = display_state.use_dir {
@@ -1379,7 +1379,7 @@ fn render_game_overlays(panel: &mut Panel,
     let player_id = display_state.player_id();
     let player_pos = display_state.pos[&player_id];
 
-    let tiles_key = lookup_spritekey(sprites, "tiles");
+    let tiles_key = lookup_spritekey(sprites, "atlas_rustrogueliketiles");
 
     if let Some(cursor_pos) = display_state.cursor_pos {
         // render trigger plate wall highlight if selected
@@ -1419,7 +1419,7 @@ fn render_game_overlays(panel: &mut Panel,
         let mut attack_highlight_color = config.color_red;
         attack_highlight_color.a = config.grid_alpha_overlay;
 
-        let sprite_key = lookup_spritekey(sprites, "tiles");
+        let sprite_key = lookup_spritekey(sprites, "atlas_rustrogueliketiles");
         if UseAction::Interact == display_state.use_action {
             if let Some(use_dir) = display_state.use_dir {
                 let arrow_pos = use_dir.offset_pos(player_pos, 1);
@@ -1539,7 +1539,7 @@ fn render_overlay_direction(panel: &mut Panel,
 
 fn render_overlay_cursor(panel: &mut Panel, display_state: &mut DisplayState, config: &Config, sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
-    let tiles_key = lookup_spritekey(sprites, "tiles");
+    let tiles_key = lookup_spritekey(sprites, "atlas_rustrogueliketiles");
 
     // render cursor itself
     if let Some(cursor_pos) = display_state.cursor_pos {
@@ -1625,7 +1625,7 @@ fn render_overlays(panel: &mut Panel,
                    sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
 
-    let tiles_key = lookup_spritekey(sprites, "tiles");
+    let tiles_key = lookup_spritekey(sprites, "atlas_rustrogueliketiles");
 
     // render a grid of numbers if enabled
     if config.overlay_directions {
@@ -1853,7 +1853,7 @@ fn render_movement_overlay(panel: &mut Panel,
 
     if let Some(move_positions) = display_state.entity_movements.get(&entity_id) {
         let current_pos = display_state.pos[&entity_id];
-        let sprite_key = lookup_spritekey(sprites, "tiles");
+        let sprite_key = lookup_spritekey(sprites, "atlas_rustrogueliketiles");
         for move_pos in move_positions.iter() {
             if let Some(dir) = Direction::from_positions(current_pos, *move_pos) {
                 render_arrow(panel, sprite_key, dir, *move_pos, highlight_color);
