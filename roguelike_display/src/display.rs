@@ -123,9 +123,9 @@ impl Display {
             let y_offset = sheet.y;
             let width = sheet.width as usize;
             let height = sheet.height as usize;
-            let sprite_sheet = SpriteSheet::with_offset(sheet.name.clone(), x_offset, y_offset, width, height);
-            //next_sprite_key += 1;
-            //sprites.insert(sprite_key, sprite_sheet);
+            let sprite_sheet = SpriteSheet::with_offset(format!("atlas_{}", sheet.name), x_offset, y_offset, width, height);
+            next_sprite_key += 1;
+            sprites.insert(sprite_key, sprite_sheet);
         }
 
         return Display { state: DisplayState::new(),

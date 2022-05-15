@@ -881,6 +881,8 @@ impl SpriteSheet {
     pub fn with_offset(name: String, x_offset: u32, y_offset: u32, width: usize, height: usize) -> SpriteSheet {
         let rows = height / FONT_HEIGHT as usize;
         let cols = width / FONT_WIDTH as usize;
+        assert!(rows > 0);
+        assert!(cols > 0);
         let num_sprites = cols * rows;
         let x_offset = 0;
         let y_offset = 0;
