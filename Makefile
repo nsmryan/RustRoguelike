@@ -1,4 +1,6 @@
 
+all: run
+
 .PHONY: exe run rerun debug release test retest check recheck sloc sloc_crates atlas
 run:
 	cargo run

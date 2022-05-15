@@ -163,6 +163,7 @@ impl Display {
             panel.process_cmds_if_new(clear,
                                       self.textures.get_mut(panel_name).unwrap(),
                                       canvas,
+                                      &mut self.atlas,
                                       &mut self.sprites);
         }
     }
@@ -238,7 +239,6 @@ impl Display {
     pub fn random_sprite(&mut self, sprite_name: &str, speed: f32) -> Animation {
         let sprite_anim = self.new_sprite(sprite_name, speed);
         let anim = Animation::RandomLoop(sprite_anim);
-        let status = anim.status(Pos::new(0, 0));
         return anim;
     }
 
@@ -940,6 +940,7 @@ impl Display {
         canvas_panel.process_cmds(clear,
                                   &mut self.screen_texture,
                                   &mut self.canvas,
+                                  &mut self.atlas,
                                   &mut self.sprites);
 
         // Render the menus last to ensure that they display on top of everything.
