@@ -159,12 +159,12 @@ fn step_ai(game: &mut Game) {
     let ai_ids: Vec<EntityId> = game.level.entities.active_ais();
 
     for key in ai_ids.iter() {
-       ai_take_turn(*key, &mut game.level, &game.config, &mut game.msg_log);
+        ai_take_turn(*key, &mut game.level, &game.config, &mut game.msg_log);
 
-       resolve_messages(game);
+        resolve_messages(game);
 
-       // If there are remaining messages for an entity, clear them
-       game.level.entities.messages[key].clear();
+        // If there are remaining messages for an entity, clear them
+        game.level.entities.messages[key].clear();
     }
 }
 
