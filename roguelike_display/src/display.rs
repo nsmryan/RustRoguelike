@@ -273,10 +273,10 @@ impl Display {
                 let direction = self.state.direction[&entity_id];
 
                 let sheet_direction = sheet_direction(direction);
-                let mut sheet_name = format!("{}_{}_{}", name, stance, sheet_direction);
+                let mut sheet_name = format!("atlas_{}_{}_{}", name, stance, sheet_direction);
 
                 if !self.sprite_exists(&sheet_name) {
-                    sheet_name = format!("{}_{}_{}", name, Stance::Standing, sheet_direction);
+                    sheet_name = format!("atlas_{}_{}_{}", name, Stance::Standing, sheet_direction);
                 }
 
                 let mut anim = self.loop_sprite(&sheet_name, config.idle_speed);
@@ -286,47 +286,47 @@ impl Display {
             }
         } else {
             if name == EntityName::Key {
-                return Some(self.loop_sprite("key", config.idle_speed));
+                return Some(self.loop_sprite("atlas_key", config.idle_speed));
             } else if name == EntityName::SpikeTrap {
-                let sprite = self.static_sprite("tiles", ENTITY_SPIKE_TRAP as char);
+                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_SPIKE_TRAP as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Armil {
-                return Some(self.loop_sprite("armil_idle", config.idle_speed));
+                return Some(self.loop_sprite("atlas_armil_idle", config.idle_speed));
             } else if name == EntityName::Lantern {
-                return Some(self.loop_sprite("lantern_idle", config.fire_speed));
+                return Some(self.loop_sprite("atlas_Lantern_Idle", config.fire_speed));
             } else if name == EntityName::Smoke {
-                let sprite = self.static_sprite("tiles", ENTITY_SMOKE as char);
+                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_SMOKE as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Khopesh {
-                let sprite = self.static_sprite("tiles", ENTITY_KHOPESH as char);
+                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_KHOPESH as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Magnifier {
-                let sprite = self.static_sprite("tiles", ENTITY_MAGNIFIER as char);
+                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_MAGNIFIER as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Sling {
-                let sprite = self.static_sprite("tiles", ENTITY_SLING as char);
+                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_SLING as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::GlassEye {
-                let sprite = self.static_sprite("tiles", ENTITY_GLASS_EYE as char);
+                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_GLASS_EYE as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Herb {
-                let sprite = self.static_sprite("tiles", ENTITY_HERB as char);
+                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_HERB as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::SeedOfStone {
-                let sprite = self.static_sprite("tiles", ENTITY_SEED_OF_STONE as char);
+                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_SEED_OF_STONE as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::SeedCache {
-                let sprite = self.static_sprite("tiles", ENTITY_SEED_CACHE as char);
+                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_SEED_CACHE as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Teleporter {
-                let sprite = self.static_sprite("tiles", ENTITY_TELEPORTER as char);
+                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_TELEPORTER as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Grass {
-                return Some(self.random_sprite("grassanim", config.grass_idle_speed));
+                return Some(self.random_sprite("atlas_GrassAnim", config.grass_idle_speed));
             } else if name == EntityName::Statue {
                 let statues = vec!(MAP_STATUE_1, MAP_STATUE_2, MAP_STATUE_3, MAP_STATUE_4, MAP_STATUE_5, MAP_STATUE_6);
                 let index = roguelike_utils::rng::choose(&mut self.rng, &statues).unwrap();
-                let sprite = self.static_sprite("tiles", index as char);
+                let sprite = self.static_sprite("atlas_rustrogueliketiles", index as char);
                 return Some(Animation::Loop(sprite));
             }
         }
@@ -407,7 +407,7 @@ impl Display {
                 } else {
                     self.state.cursor_pos = None;
 
-                    let tiles = lookup_spritekey(&self.sprites, "tiles");
+                    let tiles = lookup_spritekey(&self.sprites, "atlas_rustrogueliketiles");
                     let cursor_sprite = Sprite::new(ENTITY_CURSOR as u32, tiles);
                     let color = config.color_mint_green;
                     let fade_effect = Effect::fade(cursor_sprite, color, config.cursor_alpha, 0, pos, config.cursor_fade_seconds);
@@ -451,7 +451,7 @@ impl Display {
                         let pos = self.state.pos[&cause_id];
                         // NOTE it is slightly odd to look up this sprite sheet here and not in
                         // render.rs.
-                        let tiles = lookup_spritekey(&self.sprites, "tiles");
+                        let tiles = lookup_spritekey(&self.sprites, "atlas_rustrogueliketiles");
                         let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
                         self.state.impressions.push(Impression::new(impression_sprite, pos));
                     }
@@ -466,7 +466,7 @@ impl Display {
             }
 
             Msg::Impression(pos) => {
-                let tiles = lookup_spritekey(&self.sprites, "tiles");
+                let tiles = lookup_spritekey(&self.sprites, "atlas_rustrogueliketiles");
                 let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
                 self.state.impressions.push(Impression::new(impression_sprite, pos));
             }
@@ -475,7 +475,7 @@ impl Display {
                 let sound_aoe = aoe_fill(map, AoeEffect::Sound, end, config.sound_radius_stone, config);
 
                 let chr = self.state.chr[&item_id];
-                let item_sprite = self.static_sprite("tiles", chr);
+                let item_sprite = self.static_sprite("atlas_rustrogueliketiles", chr);
 
                 let move_anim = Animation::Between(item_sprite, start, end, 0.0, config.item_throw_speed);
                 let item_anim = Animation::PlayEffect(Effect::Sound(sound_aoe, 0.0));
@@ -639,7 +639,7 @@ impl Display {
             }
 
             Msg::JumpWall(jumper, start, end) => {
-                let jump_anim = self.between_sprite("playerjump_right", start, end, config.idle_speed);
+                let jump_anim = self.between_sprite("atlas_playerjump_right", start, end, config.idle_speed);
                 self.state.play_animation(jumper, jump_anim);
             }
 
