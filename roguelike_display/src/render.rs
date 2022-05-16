@@ -480,7 +480,7 @@ fn render_button(name: &str, x_offset: f32, y_offset: f32, panel: &mut Panel, sp
     let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
 
     let button_key = lookup_spritekey(sprites, name);
-    let button = Sprite::new(0, button_key);
+    let button = Sprite::from_key(button_key);
     panel.sprite_float_scaled_cmd(button, ui_color, x_offset, y_offset, config.x_scale_buttons, config.y_scale_buttons);
 }
 
@@ -628,71 +628,6 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
         let item_text = format!("Stone x{}", num_stones);
         panel.text_float_cmd(&item_text, ui_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
     }
-
-    // Render each object's name in inventory
-    /*
-    let mut y_pos = 2;
-    let x_offset = 1;
-
-    // Draw Primary Items
-    panel.text_cmd("z", ui_color, Pos::new(x_offset, y_pos), 1.0);
-
-    for (item, item_class) in display_state.inventory.iter() {
-        if *item_class == ItemClass::Primary {
-            let item_text = format!("{:?}", item);
-            let text_pos = Pos::new(x_offset + 2, y_pos);
-            panel.text_cmd(&item_text, ui_color, text_pos, 1.0);
-            break;
-        }
-    }
-    y_pos += 1;
-
-    // Draw Consumable Items
-    panel.text_cmd(&"x", ui_color, Pos::new(x_offset, y_pos), 1.0);
-
-    for (item, item_class) in display_state.inventory.iter() {
-        if *item_class == ItemClass::Consumable {
-            let item_text = format!("{:?}", item);
-            let text_pos = Pos::new(x_offset + 2, y_pos);
-            panel.text_cmd(&item_text, ui_color, text_pos, 1.0);
-            break;
-        }
-    }
-    y_pos += 1;
-
-    // Draw Stones Items
-    panel.text_cmd(&"c", ui_color, Pos::new(x_offset, y_pos), 1.0);
-
-    let mut num_stones = 0;
-    for (item, _item_class) in display_state.inventory.iter() {
-        if *item == Item::Stone {
-            num_stones += 1;
-        }
-    }
-
-    if num_stones > 0 {
-        panel.text_cmd(&"c", ui_color, Pos::new(x_offset, y_pos), 1.0);
-
-        let text_pos = Pos::new(x_offset + 2, y_pos);
-        panel.text_cmd(&"stone", ui_color, text_pos, 1.0);
-
-        let num_text = format!("({})", num_stones);
-        panel.text_cmd(&num_text, ui_color, Pos::new(x_offset + 8, y_pos), 1.0);
-    }
-
-    y_pos += 1;
-    y_pos += 1;
-
-    // Draw Remaining Items
-    for (item, item_class) in display_state.inventory.iter() {
-        if *item_class == ItemClass::Misc && *item != Item::Stone {
-            let item_text = format!("{:?}", item);
-            let text_pos = Pos::new(x_offset + 2, y_pos);
-            panel.text_cmd(&item_text, ui_color, text_pos, 1.0);
-            y_pos += 1;
-        }
-    }
-    */
 }
 
 /// render the background files, including water tiles
