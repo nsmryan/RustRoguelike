@@ -193,12 +193,12 @@ impl Display {
         shot.save(format!("{}.bmp", name)).unwrap();
     }
 
-    pub fn add_spritesheet(&mut self, name: String, texture: Texture) {
-        //let sprite_key = self.next_sprite_key;
-        let sprite_sheet = SpriteSheet::new(name, texture);
-        //self.next_sprite_key += 1;
-        self.sprites.push(sprite_sheet);
-    }
+    //pub fn add_spritesheet(&mut self, name: String, texture: Texture) {
+    //    //let sprite_key = self.next_sprite_key;
+    //    let sprite_sheet = SpriteSheet::new(name, texture);
+    //    //self.next_sprite_key += 1;
+    //    self.sprites.push(sprite_sheet);
+    //}
 
     pub fn add_sprite(&mut self, name: String, texture: Texture) {
         //let sprite_key = self.next_sprite_key;
