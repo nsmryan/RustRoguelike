@@ -33,7 +33,6 @@ use roguelike_engine::log::*;
 
 use roguelike_lib::commands::*;
 
-use roguelike_display::load::*;
 use roguelike_display::display::*;
 use roguelike_display::render::*;
 
@@ -124,14 +123,6 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
         /* Create Display Structures */
         display = Display::new(canvas);
-
-        /* Load Textures */
-        //let sheet = true;
-        //load_sprites(&texture_creator, &mut display);
-        //load_sprite(&texture_creator, sheet, &mut display, "resources/rustrogueliketiles.png", "tiles");
-        //load_sprite(&texture_creator, sheet, &mut display, "resources/misc/shadowtiles.png", "shadows");
-        //load_sprite(&texture_creator, sheet, &mut display, "resources/misc/Particle_Speck.png", "particle_speck");
-
         //let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
         //let font_texture = load_font(&ttf_context,
         //                             &texture_creator,

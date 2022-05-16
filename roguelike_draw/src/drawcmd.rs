@@ -206,7 +206,6 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
         }
 
         DrawCmd::TextJustify(string, justify, fg_color, bg_color, start_pos, width, scale) => {
-
             // TODO add fonts back in
             /*
             let ascii_width = ASCII_END - ASCII_START;
