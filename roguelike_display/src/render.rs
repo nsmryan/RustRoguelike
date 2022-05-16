@@ -572,26 +572,26 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
     let mut x_offset = config.x_offset_buttons;
     let mut y_offset = config.y_offset_buttons;
 
-    render_button("a_button_base", x_offset, y_offset, panel, sprites, config);
+    render_button("atlas_A_Button_Base", x_offset, y_offset, panel, sprites, config);
     if let Some(skill) = display_state.skills.get(0) {
         render_skill(*skill, x_offset, y_offset, panel, config);
     }
 
     x_offset += config.x_spacing_buttons;
-    render_button("s_button_base", x_offset, y_offset, panel, sprites, config);
+    render_button("atlas_S_Button_Base", x_offset, y_offset, panel, sprites, config);
     if let Some(skill) = display_state.skills.get(1) {
         render_skill(*skill, x_offset, y_offset, panel, config);
     }
 
     x_offset += config.x_spacing_buttons;
-    render_button("d_button_base", x_offset, y_offset, panel, sprites, config);
+    render_button("atlas_D_Button_Base", x_offset, y_offset, panel, sprites, config);
     if let Some(skill) = display_state.skills.get(2) {
         render_skill(*skill, x_offset, y_offset, panel, config);
     }
 
     x_offset = config.x_offset_buttons;
     y_offset += config.y_spacing_buttons;
-    render_button("z_button_base", x_offset, y_offset, panel, sprites, config);
+    render_button("atlas_Z_Button_Base", x_offset, y_offset, panel, sprites, config);
     let text_x_offset = x_offset + config.ui_inv_name_x_offset;
     let text_y_offset = y_offset + config.ui_inv_name_y_offset;
     for (item, item_class) in display_state.inventory.iter() {
@@ -603,7 +603,7 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
     }
 
     x_offset += config.x_spacing_buttons;
-    render_button("x_button_base", x_offset, y_offset, panel, sprites, config);
+    render_button("atlas_X_Button_Base", x_offset, y_offset, panel, sprites, config);
     let text_x_offset = x_offset + config.ui_inv_name_x_offset;
     let text_y_offset = y_offset + config.ui_inv_name_y_offset;
     for (item, item_class) in display_state.inventory.iter() {
@@ -615,7 +615,7 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
     }
 
     x_offset += config.x_spacing_buttons;
-    render_button("c_button_base", x_offset, y_offset, panel, sprites, config);
+    render_button("atlas_C_Button_Base", x_offset, y_offset, panel, sprites, config);
     let text_x_offset = x_offset + config.ui_inv_name_x_offset;
     let text_y_offset = y_offset + config.ui_inv_name_y_offset;
     let mut num_stones = 0;
