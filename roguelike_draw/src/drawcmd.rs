@@ -79,12 +79,12 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
             canvas.set_blend_mode(BlendMode::Blend);
 
 
-            let src_rect = sprite_sheet.sprite_src(sprite.index as usize);
+            let src_rect = sprite_sheet.sprite_src(sprite.index);
             sprite_texture.set_color_mod(color.r, color.g, color.b);
             sprite_texture.set_alpha_mod(color.a);
 
             canvas.copy_ex(sprite_texture,
-                           Some(src_rect),
+                           src_rect,
                            Some(dst_rect),
                            sprite.rotation,
                            None,
@@ -96,7 +96,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
             let cell_dims = panel.cell_dims();
             let sprite_sheet = &mut sprites[sprite.key];
 
-            let src = sprite_sheet.sprite_src(sprite.index as usize);
+            let src_rect = sprite_sheet.sprite_src(sprite.index);
 
             let (cell_width, cell_height) = cell_dims;
             let dst_width = (cell_width as f32 * scale) as u32;
@@ -158,7 +158,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
             sprite_texture.set_alpha_mod(color.a);
 
             canvas.copy_ex(sprite_texture,
-                           Some(src),
+                           src_rect,
                            Some(dst),
                            sprite.rotation,
                            None,
@@ -171,14 +171,13 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
 
             let cell_dims = panel.cell_dims();
 
-            let src = sprite_sheet.sprite_src(sprite.index as usize);
+            let src_rect = sprite_sheet.sprite_src(sprite.index);
 
             let (cell_width, cell_height) = cell_dims;
 
             let x_offset = (*x * cell_width as f32) as i32;
             let y_offset = (*y * cell_height as f32) as i32;
 
-            // NOTE this assumes that sprites are a single cell width and height.
             let dst = Rect::new(x_offset,
                                 y_offset,
                                 (cell_width as f32 * x_scale) as u32,
@@ -190,7 +189,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
             sprite_texture.set_alpha_mod(color.a);
 
             canvas.copy_ex(sprite_texture,
-                           Some(src),
+                           src_rect,
                            Some(dst),
                            sprite.rotation,
                            None,
@@ -207,6 +206,8 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
         }
 
         DrawCmd::TextJustify(string, justify, fg_color, bg_color, start_pos, width, scale) => {
+            // TODO add fonts back in
+            /*
             let ascii_width = ASCII_END - ASCII_START;
 
             let sprite_key = lookup_spritekey(sprites, "font");
@@ -277,9 +278,12 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
                                false,
                                false).unwrap();
             }
+            */
         }
 
         DrawCmd::TextFloat(string, color, x, y, scale) => {
+            // TODO add fonts back in
+            /*
             let ascii_width = ASCII_END - ASCII_START;
 
             let sprite_key = lookup_spritekey(sprites, "font");
@@ -329,9 +333,12 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
                                false).unwrap();
                 x_offset += char_width as i32;
             }
+            */
         }
 
         DrawCmd::Text(string, color, start_pos, scale) => {
+            // TODO add fonts back in
+            /*
             let ascii_width = ASCII_END - ASCII_START;
 
             let sprite_key = lookup_spritekey(sprites, "font");
@@ -379,6 +386,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
                                false).unwrap();
                 x_offset += char_width as i32;
             }
+            */
         }
 
         DrawCmd::Rect(pos, dims, offset, filled, color) => {
@@ -939,12 +947,28 @@ impl SpriteSheet {
 
     // Get the source rectangle for a particular sprite
     // given by its index into the sprite sheet.
-    fn sprite_src(&mut self, index: usize) -> Rect {
-        let (num_cells_x, _num_cells_y) = self.num_cells();
-        let sprite_x = index % num_cells_x;
-        let sprite_y = index / num_cells_x;
+    fn sprite_src(&mut self, index: Option<u32>) -> Rect {
+        let sprite_x;
+        let sprite_y;
+        let sprite_width;
+        let sprite_height;
 
-        let (sprite_width, sprite_height) = self.sprite_dims();
+        if let Some(index) = index {
+            let (num_cells_x, _num_cells_y) = self.num_cells();
+            let index = index as usize;
+            sprite_x = index % num_cells_x;
+            sprite_y = index / num_cells_x;
+
+            let dims = self.sprite_dims();
+            sprite_width = dims.0;
+            sprite_height = dims.1;
+        } else {
+            sprite_x = 0;
+            sprite_y = 0;
+            sprite_width = self.width;
+            sprite_height = self.height;
+        }
+
         let src = Rect::new(self.x_offset as i32 + (sprite_x * sprite_width) as i32,
                             self.y_offset as i32 + (sprite_y * sprite_height) as i32,
                             sprite_width as u32,
