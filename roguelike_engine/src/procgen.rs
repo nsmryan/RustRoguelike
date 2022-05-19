@@ -106,6 +106,8 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
             }
         }
     }
+	std::mem::forget(pixel_bytes);
+
 
     return new_map;
 }
