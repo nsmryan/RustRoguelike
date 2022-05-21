@@ -34,6 +34,17 @@ impl FromStr for AtlasSheet {
     }
 }
 
+pub struct AtlasFont {
+    pub name: String,
+    pub coords: Vec<(u32, u32)>,
+    pub width: u32,
+    pub height: u32,
+}
+
+pub struct Atlas {
+    sheets: Vec<AtlasSheet>,
+    fonts: HashMap<String, AtlasFont>,
+}
 
 pub fn parse_atlas_file(atlas_file: &str) -> Vec<AtlasSheet> {
     let file =

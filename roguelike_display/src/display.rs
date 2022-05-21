@@ -60,10 +60,7 @@ pub struct Display {
 
     pub screen_texture: Texture,
     pub atlas: Texture,
-
-    // sprite state
-    pub sprites: Vec<SpriteSheet>,
-    pub next_sprite_key: SpriteKey,
+    pub font: Font,
 
     pub intern: HashMap<String, Str>,
     pub next_str: usize,
@@ -114,6 +111,11 @@ impl Display {
         let atlas_sheets = parse_atlas_file("resources/spriteAtlas.txt");
         let atlas = texture_creator.load_texture("resources/spriteAtlas.png").expect("Could not load sprite atlas!");
 
+        let font_name = "Inconsolata-Bold.ttf";
+        let font_size = 24;
+        let mut font = ttf_context.load_font(format!("resources/fonts/{}", file_name), font_size).expect("Could not load font file!");
+        font.set_style(sdl2::ttf::FontStyle::BOLD);
+
         let mut sprites = Vec::new();
         for sheet in atlas_sheets.iter() {
             let x_offset = sheet.x;
@@ -123,15 +125,14 @@ impl Display {
             let sprite_sheet = SpriteSheet::with_offset(format!("atlas_{}", sheet.name), x_offset, y_offset, width, height);
             sprites.push(sprite_sheet);
         }
-        let next_sprite_key = sprites.len();
 
         return Display { state: DisplayState::new(),
                          canvas,
                          texture_creator,
                          textures, 
                          sprites,
-                         next_sprite_key,
                          atlas,
+                         font,
                          panels,
                          screen_areas,
                          screen_texture,
@@ -193,17 +194,8 @@ impl Display {
         shot.save(format!("{}.bmp", name)).unwrap();
     }
 
-    //pub fn add_spritesheet(&mut self, name: String, texture: Texture) {
-    //    //let sprite_key = self.next_sprite_key;
-    //    let sprite_sheet = SpriteSheet::new(name, texture);
-    //    //self.next_sprite_key += 1;
-    //    self.sprites.push(sprite_sheet);
-    //}
-
     pub fn add_sprite(&mut self, name: String, texture: Texture) {
-        //let sprite_key = self.next_sprite_key;
         let sprite_sheet = SpriteSheet::single(name, texture);
-        //self.next_sprite_key += 1;
         self.sprites.push(sprite_sheet);
     }
 
