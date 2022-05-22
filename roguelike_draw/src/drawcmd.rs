@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use sdl2::render::{Texture, RenderTarget, WindowCanvas, BlendMode, Canvas};
 use sdl2::rect::Rect;
@@ -866,32 +867,6 @@ pub struct SpriteSheet {
 }
 
 impl SpriteSheet {
-    /*
-    pub fn new(name: String, texture: Texture) -> SpriteSheet {
-        let tex_info = texture.query();
-        let width = tex_info.width as usize;
-        let height = tex_info.height as usize;
-
-        let rows = height / FONT_HEIGHT as usize;
-        let cols = width / FONT_WIDTH as usize;
-        let num_sprites = cols * rows;
-        let x_offset = 0;
-        let y_offset = 0;
-
-        return SpriteSheet {
-            name,
-            num_sprites,
-            rows,
-            cols,
-            width,
-            height,
-            x_offset,
-            y_offset,
-
-        };
-    }
-    */
-
     pub fn with_offset(name: String, x_offset: u32, y_offset: u32, width: usize, height: usize) -> SpriteSheet {
         let rows = height / FONT_HEIGHT as usize;
         let cols = width / FONT_WIDTH as usize;
@@ -977,6 +952,25 @@ impl SpriteSheet {
         return src;
     }
 }
+
+impl FromStr for SpriteSheet {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+
+        let mut args = s.split(" ");
+
+        let name = args.next().unwrap().to_string();
+        let x = args.next().ok_or("no arg")?.parse::<u32>().map_err(|err| format!("{}", err))?;
+        let y = args.next().ok_or("no arg")?.parse::<u32>().map_err(|err| format!("{}", err))?;
+        let width = args.next().ok_or("no arg")?.parse::<usize>().map_err(|err| format!("{}", err))?;
+        let height = args.next().ok_or("no arg")?.parse::<usize>().map_err(|err| format!("{}", err))?;
+        
+        return Ok(SpriteSheet::with_offset(name, x, y, width, height));
+    }
+}
+
 
 fn draw_outline_tile<T>(panel: &Panel,
                         canvas: &mut Canvas<T>,
