@@ -123,12 +123,6 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
 
         /* Create Display Structures */
         display = Display::new(canvas);
-        //let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
-        //let font_texture = load_font(&ttf_context,
-        //                             &texture_creator,
-        //                             &"Inconsolata-Bold.ttf",
-        //                             24);
-        //display.add_spritesheet("font".to_string(), font_texture);
     }
 
     /* Create Game Structure */

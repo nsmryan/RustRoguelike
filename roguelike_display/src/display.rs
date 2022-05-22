@@ -1,6 +1,8 @@
 use std::collections::VecDeque;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::str::FromStr;
+use std::io::BufRead;
 
 use bmp::Image;
 
@@ -27,7 +29,6 @@ use roguelike_core::movement::{MoveMode};
 
 use roguelike_draw::animation::{Str, Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
 use roguelike_draw::drawcmd::*;
-use roguelike_draw::atlas::*;
 
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -58,8 +59,9 @@ pub struct Display {
     pub panels: HashMap<PanelName, Panel>,
     pub screen_areas: HashMap<PanelName, Area>,
 
+    pub sprites: Vec<SpriteSheet>,
     pub screen_texture: Texture,
-    pub atlas: Texture,
+    pub atlas_texture: Texture,
     pub font: Font,
 
     pub intern: HashMap<String, Str>,
@@ -108,30 +110,21 @@ impl Display {
 
         let screen_texture = create_texture(&mut texture_creator, pixel_format, (SCREEN_WIDTH, SCREEN_HEIGHT));
 
-        let atlas_sheets = parse_atlas_file("resources/spriteAtlas.txt");
-        let atlas = texture_creator.load_texture("resources/spriteAtlas.png").expect("Could not load sprite atlas!");
+        let sprites = parse_atlas_file("resources/spriteAtlas.txt");
+        let atlas_texture = texture_creator.load_texture("resources/spriteAtlas.png").expect("Could not load sprite atlas!");
 
+        let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
         let font_name = "Inconsolata-Bold.ttf";
         let font_size = 24;
-        let mut font = ttf_context.load_font(format!("resources/fonts/{}", file_name), font_size).expect("Could not load font file!");
+        let mut font = ttf_context.load_font(format!("resources/fonts/{}", font_name), font_size).expect("Could not load font file!");
         font.set_style(sdl2::ttf::FontStyle::BOLD);
-
-        let mut sprites = Vec::new();
-        for sheet in atlas_sheets.iter() {
-            let x_offset = sheet.x;
-            let y_offset = sheet.y;
-            let width = sheet.width as usize;
-            let height = sheet.height as usize;
-            let sprite_sheet = SpriteSheet::with_offset(format!("atlas_{}", sheet.name), x_offset, y_offset, width, height);
-            sprites.push(sprite_sheet);
-        }
 
         return Display { state: DisplayState::new(),
                          canvas,
                          texture_creator,
                          textures, 
                          sprites,
-                         atlas,
+                         atlas_texture,
                          font,
                          panels,
                          screen_areas,
@@ -164,7 +157,7 @@ impl Display {
             panel.process_cmds_if_new(clear,
                                       self.textures.get_mut(panel_name).unwrap(),
                                       canvas,
-                                      &mut self.atlas,
+                                      &mut self.atlas_texture,
                                       &mut self.sprites);
         }
     }
@@ -932,7 +925,7 @@ impl Display {
         canvas_panel.process_cmds(clear,
                                   &mut self.screen_texture,
                                   &mut self.canvas,
-                                  &mut self.atlas,
+                                  &mut self.atlas_texture,
                                   &mut self.sprites);
 
         // Render the menus last to ensure that they display on top of everything.
@@ -951,6 +944,24 @@ impl Display {
         // Finally, copy the main canvas to the screen.
         self.canvas.copy(&self.screen_texture, None, None).unwrap();
     }
+}
+
+pub fn parse_atlas_file(atlas_file: &str) -> Vec<SpriteSheet> {
+    let file =
+        std::fs::File::open(&atlas_file).expect(&format!("Could not open atlas file '{}'", atlas_file));
+
+    let mut sheets: Vec<SpriteSheet> = Vec::new();
+
+    for line in std::io::BufReader::new(file).lines() {
+        let line = line.unwrap();
+        let line = line.to_string();
+
+        if let Ok(sheet) = SpriteSheet::from_str(&line) { 
+            sheets.push(sheet);
+        }
+    }
+
+    return sheets;
 }
 
 pub type Panels = HashMap<PanelName, Panel>;
