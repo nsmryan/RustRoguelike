@@ -119,8 +119,6 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
                        .build()
                        .map_err(|e| e.to_string())?;
 
-        let texture_creator = canvas.texture_creator();
-
         /* Create Display Structures */
         display = Display::new(canvas);
     }

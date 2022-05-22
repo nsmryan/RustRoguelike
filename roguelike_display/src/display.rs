@@ -13,6 +13,7 @@ use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{PixelFormatEnum};
 use sdl2::image::LoadTexture;
+use sdl2::ttf::Font;
 
 use roguelike_utils::rng::Rand32;
 use roguelike_utils::comp::*;
@@ -62,7 +63,8 @@ pub struct Display {
     pub sprites: Vec<SpriteSheet>,
     pub screen_texture: Texture,
     pub atlas_texture: Texture,
-    pub font: Font,
+    pub font: SpriteSheet,
+    pub font_texture: Texture,
 
     pub intern: HashMap<String, Str>,
     pub next_str: usize,
@@ -119,12 +121,30 @@ impl Display {
         let mut font = ttf_context.load_font(format!("resources/fonts/{}", font_name), font_size).expect("Could not load font file!");
         font.set_style(sdl2::ttf::FontStyle::BOLD);
 
+        let mut chrs: [u8; 256] = [0; 256];
+        for chr_ix in 0..256 {
+            chrs[chr_ix] = chr_ix as u8;
+        }
+
+        let text_surface = font.render_latin1(&chrs[ASCII_START as usize .. ASCII_END as usize])
+                               .blended(sdl2::pixels::Color::RGB(255, 255, 255))
+                               .unwrap();
+
+        let font_texture = texture_creator
+            .create_texture_from_surface(&text_surface)
+            .expect(&format!("Could not load font {}", font_name));
+
+        let font_query = font_texture.query();
+        let num_chars = (ASCII_END - ASCII_START + 1) as usize;
+        let font = SpriteSheet::new("font".to_string(), num_chars, 1, num_chars, font_query.width as usize, font_query.height as usize, 0, 0);
+
         return Display { state: DisplayState::new(),
                          canvas,
                          texture_creator,
                          textures, 
                          sprites,
                          atlas_texture,
+                         font_texture,
                          font,
                          panels,
                          screen_areas,
@@ -158,7 +178,9 @@ impl Display {
                                       self.textures.get_mut(panel_name).unwrap(),
                                       canvas,
                                       &mut self.atlas_texture,
-                                      &mut self.sprites);
+                                      &mut self.sprites,
+                                      &mut self.font_texture,
+                                      &mut self.font);
         }
     }
 
@@ -258,10 +280,10 @@ impl Display {
                 let direction = self.state.direction[&entity_id];
 
                 let sheet_direction = sheet_direction(direction);
-                let mut sheet_name = format!("atlas_{}_{}_{}", name, stance, sheet_direction);
+                let mut sheet_name = format!("{}_{}_{}", name, stance, sheet_direction);
 
                 if !self.sprite_exists(&sheet_name) {
-                    sheet_name = format!("atlas_{}_{}_{}", name, Stance::Standing, sheet_direction);
+                    sheet_name = format!("{}_{}_{}", name, Stance::Standing, sheet_direction);
                 }
 
                 let mut anim = self.loop_sprite(&sheet_name, config.idle_speed);
@@ -271,47 +293,47 @@ impl Display {
             }
         } else {
             if name == EntityName::Key {
-                return Some(self.loop_sprite("atlas_key", config.idle_speed));
+                return Some(self.loop_sprite("key", config.idle_speed));
             } else if name == EntityName::SpikeTrap {
-                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_SPIKE_TRAP as char);
+                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_SPIKE_TRAP as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Armil {
-                return Some(self.loop_sprite("atlas_armil_idle", config.idle_speed));
+                return Some(self.loop_sprite("armil_idle", config.idle_speed));
             } else if name == EntityName::Lantern {
-                return Some(self.loop_sprite("atlas_Lantern_Idle", config.fire_speed));
+                return Some(self.loop_sprite("Lantern_Idle", config.fire_speed));
             } else if name == EntityName::Smoke {
-                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_SMOKE as char);
+                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_SMOKE as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Khopesh {
-                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_KHOPESH as char);
+                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_KHOPESH as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Magnifier {
-                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_MAGNIFIER as char);
+                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_MAGNIFIER as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Sling {
-                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_SLING as char);
+                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_SLING as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::GlassEye {
-                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_GLASS_EYE as char);
+                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_GLASS_EYE as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Herb {
-                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_HERB as char);
+                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_HERB as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::SeedOfStone {
-                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_SEED_OF_STONE as char);
+                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_SEED_OF_STONE as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::SeedCache {
-                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_SEED_CACHE as char);
+                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_SEED_CACHE as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Teleporter {
-                let sprite = self.static_sprite("atlas_rustrogueliketiles", ENTITY_TELEPORTER as char);
+                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_TELEPORTER as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Grass {
-                return Some(self.random_sprite("atlas_GrassAnim", config.grass_idle_speed));
+                return Some(self.random_sprite("GrassAnim", config.grass_idle_speed));
             } else if name == EntityName::Statue {
                 let statues = vec!(MAP_STATUE_1, MAP_STATUE_2, MAP_STATUE_3, MAP_STATUE_4, MAP_STATUE_5, MAP_STATUE_6);
                 let index = roguelike_utils::rng::choose(&mut self.rng, &statues).unwrap();
-                let sprite = self.static_sprite("atlas_rustrogueliketiles", index as char);
+                let sprite = self.static_sprite("rustrogueliketiles", index as char);
                 return Some(Animation::Loop(sprite));
             }
         }
@@ -392,7 +414,7 @@ impl Display {
                 } else {
                     self.state.cursor_pos = None;
 
-                    let tiles = lookup_spritekey(&self.sprites, "atlas_rustrogueliketiles");
+                    let tiles = lookup_spritekey(&self.sprites, "rustrogueliketiles");
                     let cursor_sprite = Sprite::new(ENTITY_CURSOR as u32, tiles);
                     let color = config.color_mint_green;
                     let fade_effect = Effect::fade(cursor_sprite, color, config.cursor_alpha, 0, pos, config.cursor_fade_seconds);
@@ -436,7 +458,7 @@ impl Display {
                         let pos = self.state.pos[&cause_id];
                         // NOTE it is slightly odd to look up this sprite sheet here and not in
                         // render.rs.
-                        let tiles = lookup_spritekey(&self.sprites, "atlas_rustrogueliketiles");
+                        let tiles = lookup_spritekey(&self.sprites, "rustrogueliketiles");
                         let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
                         self.state.impressions.push(Impression::new(impression_sprite, pos));
                     }
@@ -451,7 +473,7 @@ impl Display {
             }
 
             Msg::Impression(pos) => {
-                let tiles = lookup_spritekey(&self.sprites, "atlas_rustrogueliketiles");
+                let tiles = lookup_spritekey(&self.sprites, "rustrogueliketiles");
                 let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
                 self.state.impressions.push(Impression::new(impression_sprite, pos));
             }
@@ -460,7 +482,7 @@ impl Display {
                 let sound_aoe = aoe_fill(map, AoeEffect::Sound, end, config.sound_radius_stone, config);
 
                 let chr = self.state.chr[&item_id];
-                let item_sprite = self.static_sprite("atlas_rustrogueliketiles", chr);
+                let item_sprite = self.static_sprite("rustrogueliketiles", chr);
 
                 let move_anim = Animation::Between(item_sprite, start, end, 0.0, config.item_throw_speed);
                 let item_anim = Animation::PlayEffect(Effect::Sound(sound_aoe, 0.0));
@@ -624,7 +646,7 @@ impl Display {
             }
 
             Msg::JumpWall(jumper, start, end) => {
-                let jump_anim = self.between_sprite("atlas_playerjump_right", start, end, config.idle_speed);
+                let jump_anim = self.between_sprite("jump_right", start, end, config.idle_speed);
                 self.state.play_animation(jumper, jump_anim);
             }
 
@@ -926,7 +948,9 @@ impl Display {
                                   &mut self.screen_texture,
                                   &mut self.canvas,
                                   &mut self.atlas_texture,
-                                  &mut self.sprites);
+                                  &mut self.sprites,
+                                  &mut self.font_texture,
+                                  &mut self.font);
 
         // Render the menus last to ensure that they display on top of everything.
         self.canvas.with_texture_canvas(&mut self.screen_texture, |canvas| {

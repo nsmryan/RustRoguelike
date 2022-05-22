@@ -150,9 +150,6 @@ impl SpriteAnim {
 
     pub fn sprite(&self) -> Sprite {
         let mut sprite = Sprite::with_flip(Some(self.index as u32), self.sprite_key, self.flip_horiz, self.flip_vert);
-        if sprite.key == 35 {
-            panic!("sprite?!")
-        }
         sprite.rotation = self.rotation;
         return sprite;
     }
@@ -255,9 +252,6 @@ impl Animation {
             }
 
             Animation::RandomLoop(ref sprite_anim) => {
-                if sprite_anim.sprite_key == 35 {
-                    panic!("random");
-                }
                 let sprite = sprite_anim.sprite();
                 animation_result.sprite = Some(sprite);
 

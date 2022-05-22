@@ -60,7 +60,13 @@ impl DrawCmd {
     }
 }
 
-fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &mut Texture, sprites: &mut Vec<SpriteSheet>,  cmd: &DrawCmd) {
+fn process_draw_cmd(panel: &Panel,
+                    canvas: &mut WindowCanvas,
+                    sprite_texture: &mut Texture,
+                    sprites: &mut Vec<SpriteSheet>,
+                    font_texture: &mut Texture,
+                    font: &mut SpriteSheet,
+                    cmd: &DrawCmd) {
     match cmd {
         DrawCmd::Sprite(sprite, color, pos) => {
             let sprite_sheet = &mut sprites[sprite.key];
@@ -207,14 +213,9 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
         }
 
         DrawCmd::TextJustify(string, justify, fg_color, bg_color, start_pos, width, scale) => {
-            // TODO add fonts back in
-            /*
             let ascii_width = ASCII_END - ASCII_START;
 
-            let sprite_key = lookup_spritekey(sprites, "font");
-            let sprite_sheet = &mut sprites[sprite_key];
-
-            let query = sprite_texture.query();
+            let query = font_texture.query();
 
             let cell_dims = panel.cell_dims();
             let (cell_width, cell_height) = cell_dims;
@@ -252,8 +253,8 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
             canvas.set_draw_color(sdl2_color(*bg_color));
             canvas.fill_rect(Rect::new(x_offset, y_offset, string.len() as u32 * char_width, char_height)).unwrap();
 
-            sprite_texture.set_color_mod(fg_color.r, fg_color.g, fg_color.b);
-            sprite_texture.set_alpha_mod(fg_color.a);
+            font_texture.set_color_mod(fg_color.r, fg_color.g, fg_color.b);
+            font_texture.set_alpha_mod(fg_color.a);
 
             for chr in string.chars() {
                 let chr_num = chr.to_lowercase().next().unwrap();
@@ -271,7 +272,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
                                     char_width as u32,
                                     char_height as u32);
 
-                canvas.copy_ex(sprite_texture,
+                canvas.copy_ex(font_texture,
                                Some(src),
                                Some(dst),
                                0.0,
@@ -279,18 +280,12 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
                                false,
                                false).unwrap();
             }
-            */
         }
 
         DrawCmd::TextFloat(string, color, x, y, scale) => {
-            // TODO add fonts back in
-            /*
             let ascii_width = ASCII_END - ASCII_START;
 
-            let sprite_key = lookup_spritekey(sprites, "font");
-            let sprite_sheet = &mut sprites[sprite_key];
-
-            let query = sprite_texture.query();
+            let query = font_texture.query();
 
             let cell_dims = panel.cell_dims();
             let (cell_width, cell_height) = cell_dims;
@@ -303,8 +298,8 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
             let char_width = (char_width as f32 * scale) as u32;
 
             canvas.set_blend_mode(BlendMode::Blend);
-            sprite_texture.set_color_mod(color.r, color.g, color.b);
-            sprite_texture.set_alpha_mod(color.a);
+            font_texture.set_color_mod(color.r, color.g, color.b);
+            font_texture.set_alpha_mod(color.a);
 
             let text_pixel_width = string.len() as i32 * char_width as i32;
 
@@ -325,7 +320,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
                                     char_width as u32,
                                     char_height as u32);
 
-                canvas.copy_ex(sprite_texture,
+                canvas.copy_ex(font_texture,
                                Some(src),
                                Some(dst),
                                0.0,
@@ -334,18 +329,12 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
                                false).unwrap();
                 x_offset += char_width as i32;
             }
-            */
         }
 
         DrawCmd::Text(string, color, start_pos, scale) => {
-            // TODO add fonts back in
-            /*
             let ascii_width = ASCII_END - ASCII_START;
 
-            let sprite_key = lookup_spritekey(sprites, "font");
-            let sprite_sheet = &mut sprites[sprite_key];
-
-            let query = sprite_texture.query();
+            let query = font_texture.query();
 
             let cell_dims = panel.cell_dims();
             let (cell_width, cell_height) = cell_dims;
@@ -358,8 +347,8 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
             let char_width = (char_width as f32 * scale) as u32;
 
             canvas.set_blend_mode(BlendMode::Blend);
-            sprite_texture.set_color_mod(color.r, color.g, color.b);
-            sprite_texture.set_alpha_mod(color.a);
+            font_texture.set_color_mod(color.r, color.g, color.b);
+            font_texture.set_alpha_mod(color.a);
 
             let y_offset = start_pos.y * cell_height as i32;
             let mut x_offset = start_pos.x * cell_width as i32;
@@ -378,7 +367,7 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
                                     char_width as u32,
                                     char_height as u32);
 
-                canvas.copy_ex(sprite_texture,
+                canvas.copy_ex(font_texture,
                                Some(src),
                                Some(dst),
                                0.0,
@@ -387,7 +376,6 @@ fn process_draw_cmd(panel: &Panel, canvas: &mut WindowCanvas, sprite_texture: &m
                                false).unwrap();
                 x_offset += char_width as i32;
             }
-            */
         }
 
         DrawCmd::Rect(pos, dims, offset, filled, color) => {
@@ -778,7 +766,14 @@ impl Panel {
         self.draw_cmds.push(cmd);
     }
 
-    pub fn process_cmds_if_new(&mut self, clear: bool, texture: &mut Texture, canvas: &mut WindowCanvas, sprite_texture: &mut Texture, sprites: &mut Vec<SpriteSheet>) {
+    pub fn process_cmds_if_new(&mut self,
+                               clear: bool,
+                               texture: &mut Texture,
+                               canvas: &mut WindowCanvas,
+                               sprite_texture: &mut Texture,
+                               sprites: &mut Vec<SpriteSheet>,
+                               font_texture: &mut Texture,
+                               font: &mut SpriteSheet) {
         // If there are no commands, just clear the panel with black.
         if self.draw_cmds.len() == 0 {
             canvas.with_texture_canvas(texture, |canvas| {
@@ -792,14 +787,23 @@ impl Panel {
                               texture,
                               canvas,
                               sprite_texture,
-                              sprites);
+                              sprites,
+                              font_texture,
+                              font);
 
             self.old_draw_cmds.clear();
             std::mem::swap(&mut self.draw_cmds, &mut self.old_draw_cmds);
         }
     }
 
-    pub fn process_cmds(&mut self, clear: bool, texture: &mut Texture, canvas: &mut WindowCanvas, sprite_texture: &mut Texture, sprites: &mut Vec<SpriteSheet>) {
+    pub fn process_cmds(&mut self,
+                        clear: bool,
+                        texture: &mut Texture,
+                        canvas: &mut WindowCanvas,
+                        sprite_texture: &mut Texture,
+                        sprites: &mut Vec<SpriteSheet>,
+                        font_texture: &mut Texture,
+                        font: &mut SpriteSheet) {
         // Collect a map of positions which are going to be filled, to avoid drawing
         // aligned sprites below those tiles.
         let mut fill_map = HashMap::<Pos, u32>::new();
@@ -837,7 +841,7 @@ impl Panel {
                         }
                     }
                 }
-                process_draw_cmd(self, canvas, sprite_texture, sprites, cmd);
+                process_draw_cmd(self, canvas, sprite_texture, sprites, font_texture, font, cmd);
             }
         }).unwrap();
 
@@ -867,6 +871,10 @@ pub struct SpriteSheet {
 }
 
 impl SpriteSheet {
+    pub fn new(name: String, num_sprites: usize, rows: usize, cols: usize, width: usize, height: usize, x_offset: u32, y_offset: u32) -> SpriteSheet {
+        return SpriteSheet { name, num_sprites, rows, cols, width, height, x_offset, y_offset };
+    }
+
     pub fn with_offset(name: String, x_offset: u32, y_offset: u32, width: usize, height: usize) -> SpriteSheet {
         let rows = height / FONT_HEIGHT as usize;
         let cols = width / FONT_WIDTH as usize;
