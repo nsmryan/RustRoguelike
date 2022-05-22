@@ -49,3 +49,4 @@ messages.txt
 *.code-workspace
 .vscode/*
 game.save
+atlas
