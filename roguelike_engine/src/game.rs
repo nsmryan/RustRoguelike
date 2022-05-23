@@ -114,8 +114,9 @@ impl Game {
             if finished_level {
                 // NOTE this is not a very general way to handle ending a level.
                 let player_id = self.level.find_by_name(EntityName::Player).unwrap();
-                let key_id = self.level.is_in_inventory(player_id, Item::Key).expect("Won level without key!");
-                self.level.entities.remove_item(player_id, key_id);
+                if let Some(key_id) = self.level.is_in_inventory(player_id, Item::Key) {
+                    self.level.entities.remove_item(player_id, key_id);
+                }
 
                 self.settings.state = GameState::Playing;
 

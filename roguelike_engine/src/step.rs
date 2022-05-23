@@ -110,7 +110,11 @@ fn level_exit_condition_met(level: &Level) -> bool {
 
     let mut exit_condition = false;
 
+    if (player_pos.x + 1) == level.map.width() {
+        exit_condition = true;
+    }
     // Have Key, On exit tile
+    /*
     if let Some(exit_id) = level.find_by_name(EntityName::Exit) {
         let exit_pos = level.entities.pos[&exit_id];
 
@@ -120,6 +124,7 @@ fn level_exit_condition_met(level: &Level) -> bool {
 
         exit_condition = has_key && on_exit_tile;
     }
+    */
 
     return exit_condition;
 }
