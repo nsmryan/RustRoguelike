@@ -20,8 +20,6 @@ use crate::display::*;
 
 
 pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites: &Vec<SpriteSheet>, config: &Config, dt: f32) -> Result<(), String> {
-    display_state.show_debug("ids", format!("{}", display_state.ids.len()));
-
     display_state.dt = dt;
     display_state.time += dt;
 
