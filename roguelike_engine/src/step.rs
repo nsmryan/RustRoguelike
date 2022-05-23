@@ -109,6 +109,8 @@ fn level_exit_condition_met(level: &Level) -> bool {
     let player_pos = level.entities.pos[&player_id];
 
     let mut exit_condition = false;
+
+    // Have Key, On exit tile
     if let Some(exit_id) = level.find_by_name(EntityName::Exit) {
         let exit_pos = level.entities.pos[&exit_id];
 

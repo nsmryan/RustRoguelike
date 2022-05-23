@@ -646,7 +646,7 @@ impl Display {
             }
 
             Msg::JumpWall(jumper, start, end) => {
-                let jump_anim = self.between_sprite("jump_right", start, end, config.idle_speed);
+                let jump_anim = self.between_sprite("playerjump_right", start, end, config.idle_speed);
                 self.state.play_animation(jumper, jump_anim);
             }
 
