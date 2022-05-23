@@ -459,8 +459,9 @@ impl Input {
                     }
 
                     InputDirection::Current => {
+                        // TODO clean up these conditions.
                         if !self.cursor && self.ctrl {
-                            action = InputAction::Interact(None);
+                            action = InputAction::Pass;
                         } else if self.cursor && self.ctrl {
                            action = InputAction::CursorReturn;
                         } else {
