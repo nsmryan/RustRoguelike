@@ -180,9 +180,13 @@ impl Map {
         let line = line(start, end);
 
         let path_blocked =
-            line.into_iter().any(|point| self[Pos::from(point)].block_move);
+            line.into_iter().any(|point| self.tile_is_blocking(Pos::from(point)));
 
         return !path_blocked;
+    }
+
+    pub fn tile_is_blocking(&self, pos: Pos) -> bool {
+        return self.is_within_bounds(pos) && self[pos].block_move;
     }
 
     pub fn pos_in_radius(&self, start: Pos, radius: i32) -> Vec<Pos> {

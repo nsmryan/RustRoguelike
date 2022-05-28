@@ -33,7 +33,7 @@ impl Level {
     }
 
     pub fn pos_blocked(&self, pos: Pos) -> bool {
-        return self.has_blocking_entity(pos).is_some() || self.map[pos].block_move;
+        return self.has_blocking_entity(pos).is_some() || self.map.tile_is_blocking(pos);
     }
 
     pub fn get_clear_pos(&self) -> Vec<Pos> {
@@ -41,7 +41,7 @@ impl Level {
                        .iter()
                        .map(|pos| *pos)
                        .filter(|pos| self.has_blocking_entity(*pos).is_none())
-                       .filter(|pos| !self.map[*pos].block_move)
+                       .filter(|pos| !self.map.tile_is_blocking(*pos))
                        .collect::<Vec<Pos>>();
     }
 
@@ -50,7 +50,7 @@ impl Level {
                        .iter()
                        .map(|pos| *pos)
                        .filter(|pos| self.has_entity(*pos).is_none())
-                       .filter(|pos| !self.map[*pos].block_move)
+                       .filter(|pos| !self.map.tile_is_blocking(*pos))
                        .collect::<Vec<Pos>>();
     }
 

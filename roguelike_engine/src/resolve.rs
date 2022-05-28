@@ -1518,9 +1518,12 @@ fn resolve_restart(game: &mut Game) {
 fn resolve_passthrough(entity_id: EntityId, direction: Direction, game: &mut Game) {
     let entity_pos = game.level.entities.pos[&entity_id];
     let dest = direction.offset_pos(entity_pos, 3);
-    let clear_path = game.level.map.path_blocked(entity_pos, dest, BlockedType::Move).is_none();
-    let blocked_pos = game.level.pos_blocked(dest);
-    if clear_path && !blocked_pos {
+    let next_pos = direction.offset_pos(entity_pos, 1);
+
+    let pass_through_entity = game.level.has_blocking_entity(next_pos).is_some();
+    let map_clear_path = game.level.map.path_blocked(entity_pos, dest, BlockedType::Move).is_none();
+    let dest_clear_pos = !game.level.pos_blocked(dest);
+    if map_clear_path && dest_clear_pos && pass_through_entity {
         game.msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, dest));
 
         for pos in line_inclusive(entity_pos, dest) {

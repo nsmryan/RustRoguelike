@@ -1052,9 +1052,9 @@ pub fn handle_skill(skill_index: usize,
                 let blocked = level.map.path_blocked_move(player_pos, target_pos);
                 
                 if let Some(blocked) = blocked {
-                    if level.map[blocked.end_pos].block_move {
+                    if level.map.tile_is_blocking(blocked.end_pos) {
                         let next = next_from_to(player_pos, blocked.end_pos);
-                        if  !level.map[next].block_move {
+                        if  !level.map.tile_is_blocking(next) {
                             msg_log.log(Msg::PassWall(player_id, next));
                         }
                     } else {

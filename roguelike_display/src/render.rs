@@ -332,7 +332,7 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
                 text_list.push("Left wall".to_string());
             }
 
-            if display_state.map[info_pos].block_move {
+            if display_state.map.tile_is_blocking(info_pos) {
                 text_list.push(format!("blocked"));
             }
         }
@@ -1010,7 +1010,7 @@ fn render_effects(panel: &mut Panel,
                         config.sound_alpha / ((dist as i16 - cur_dist as i16).abs() as u8 + 1);
 
                     for pos in dist_positions.iter() {
-                        if !display_state.map[*pos].block_move &&
+                        if !display_state.map.tile_is_blocking(*pos) &&
                            display_state.pos_is_in_fov(*pos) == FovResult::Inside {
                            panel.highlight_cmd(highlight_color, *pos);
                            panel.outline_cmd(highlight_color, *pos);
