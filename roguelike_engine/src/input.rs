@@ -308,10 +308,9 @@ impl Input {
                     }
                 }
             } else if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {
-                // releasing the item no longer takes you out of use-mode
-            } else if chr == 'd' {
-                // NOTE this is likely not needed- drop using 5 in use-mode
-                return InputAction::DropItem;
+                // Releasing the item does not take you out of use-mode.
+            } else if let Some(_index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+                // Releasing a skill key does not take you out of use-mode.
             } else {
                 return self.apply_char(chr, settings);
             }
@@ -362,6 +361,15 @@ impl Input {
                     self.target = Some(Target::item(item_class));
                     action = InputAction::StartUseItem(item_class);
                 }
+            } else if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+                // check if you press down the same item again, aborting use-mode
+                if self.target == Some(Target::Skill(index)) {
+                    action = InputAction::AbortUse;
+                    self.target = None;
+                } else {
+                    self.target = Some(Target::skill(index));
+                    action = InputAction::StartUseSkill(index, self.action_mode());
+                }
             }
         } else if !settings.state.is_menu() {
             if chr == 'o' {
@@ -371,8 +379,6 @@ impl Input {
                 action = InputAction::CursorToggle;
             } else if chr == 'e' {
                 action = InputAction::StartUseInteract;
-            } else if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
-                self.target = Some(Target::skill(index as usize));
             } else if let Some(input_dir) = InputDirection::from_chr(chr) {
                 self.direction = Some(input_dir);
             } else if !(self.cursor && self.ctrl) {
@@ -382,6 +388,13 @@ impl Input {
 
                     self.cursor = false;
                     action = InputAction::StartUseItem(item_class);
+                    // directions are cleared when entering use-mode
+                    self.direction = None;
+                } else if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+                    self.target = Some(Target::skill(index));
+
+                    self.cursor = false;
+                    action = InputAction::StartUseSkill(index, self.action_mode());
                     // directions are cleared when entering use-mode
                     self.direction = None;
                 }

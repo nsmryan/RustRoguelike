@@ -14,14 +14,14 @@ use crate::config::Config;
 
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct ItemUseResult {
+pub struct UseResult {
     pub pos: Option<Pos>,
     pub hit_positions: Vec<Pos>,
 }
 
-impl ItemUseResult {
-    pub fn new() -> ItemUseResult {
-        return ItemUseResult {
+impl UseResult {
+    pub fn new() -> UseResult {
+        return UseResult {
             pos: None,
             hit_positions: Vec::new(),
         };
@@ -666,7 +666,7 @@ impl FromStr for ItemClass {
 #[derive(Clone, Copy, PartialEq, Debug, Serialize, Deserialize)]
 pub enum UseAction {
     Item(ItemClass),
-    Skill(Skill),
+    Skill(Skill, ActionMode),
     Interact,
 }
 
@@ -674,7 +674,7 @@ impl fmt::Display for UseAction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             UseAction::Item(item_class) => write!(f, "item {}", item_class),
-            UseAction::Skill(skill) => write!(f, "skill {}", skill),
+            UseAction::Skill(skill, action_mode) => write!(f, "skill {} {}", skill, action_mode),
             UseAction::Interact => write!(f, "interact"),
         }
     }
@@ -692,9 +692,12 @@ impl FromStr for UseAction {
         if action == "interact" {
             return Ok(UseAction::Interact);
         } else if action == "skill" {
-            return ItemClass::from_str(args.next().unwrap()).map(|item_class| UseAction::Item(item_class));
+            let skill = Skill::from_str(args.next().unwrap())?;
+            let action_mode = ActionMode::from_str(args.next().unwrap())?;
+            return Ok(UseAction::Skill(skill, action_mode));
         } else if action == "item" {
-            return Skill::from_str(args.next().unwrap()).map(|skill| UseAction::Skill(skill));
+            let item_class = ItemClass::from_str(args.next().unwrap())?;
+            return Ok(UseAction::Item(item_class));
         } 
 
         return Err("Use action not decodable".to_string());

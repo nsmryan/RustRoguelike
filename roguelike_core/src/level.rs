@@ -57,14 +57,23 @@ impl Level {
     // The item index is usually determined by the ItemClass, but for Misc it can
     // only be a stone.
     pub fn find_item(&self, item_class: ItemClass) -> Option<usize> {
-            let player_id = self.find_by_name(EntityName::Player).unwrap();
-            let maybe_index;
-            if item_class == ItemClass::Misc {
-                maybe_index = self.entities.item_by_type(player_id, Item::Stone);
-            } else {
-                maybe_index = self.entities.item_by_class(player_id, item_class);
-            }
-            return maybe_index;
+        let player_id = self.find_by_name(EntityName::Player).unwrap();
+        let maybe_index;
+        if item_class == ItemClass::Misc {
+            maybe_index = self.entities.item_by_type(player_id, Item::Stone);
+        } else {
+            maybe_index = self.entities.item_by_class(player_id, item_class);
+        }
+        return maybe_index;
+    }
+
+    pub fn find_skill(&self, index: usize) -> Option<Skill> {
+        let player_id = self.find_by_name(EntityName::Player).unwrap();
+
+        if let Some(skill) = self.entities.skills[&player_id].get(index) {
+            return Some(*skill);
+        }
+        return None;
     }
 
     /// Find a path between positions while accounting for movement style (Reach),
@@ -605,13 +614,27 @@ impl Level {
         return hit_pos;
     }
 
-    pub fn calculate_use_move(&self, entity_id: EntityId, item_index: usize, dir: Direction, move_mode: MoveMode) -> ItemUseResult {
+    pub fn calculate_use_skill(&self, entity_id: EntityId, skill: Skill, dir: Direction, move_mode: MoveMode) -> UseResult {
+        let entity_pos = self.entities.pos[&entity_id];
+
+        let mut result = UseResult::new();
+
+        // TODO fill out result based on skill
+
+        let target_pos = dir.offset_pos(entity_pos, 1);
+        result.pos = Some(target_pos);
+        result.hit_positions.push(target_pos);
+
+        return result;
+    }
+
+    pub fn calculate_use_item(&self, entity_id: EntityId, item_index: usize, dir: Direction, move_mode: MoveMode) -> UseResult {
         let pos = self.entities.pos[&entity_id];
         let item_id = self.entities.inventory[&entity_id][item_index];
 
         let item = self.entities.item[&item_id];
 
-        let mut result = ItemUseResult::new();
+        let mut result = UseResult::new();
         match item {
             Item::Stone | Item::SeedOfStone | Item::GlassEye |
             Item::Lantern | Item::Teleporter | Item::SpikeTrap | 

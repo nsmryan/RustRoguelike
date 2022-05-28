@@ -379,9 +379,6 @@ pub fn resolve_messages(game: &mut Game) {
                 }
             }
 
-            Msg::StartUseItem(item_id) => {
-            }
-
             Msg::Restart => {
                 resolve_restart(game);
             }
