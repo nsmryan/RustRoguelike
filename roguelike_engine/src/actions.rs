@@ -1162,7 +1162,7 @@ pub fn handle_skill(skill_index: usize,
 
         Skill::Swift => {
             if let Some(direction) = direction {
-                msg_log.log(Msg::Swift(player_id, direction));
+                msg_log.log(Msg::TrySwift(player_id, direction));
             }
         }
     }

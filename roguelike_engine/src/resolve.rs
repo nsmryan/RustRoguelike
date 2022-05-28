@@ -394,7 +394,7 @@ pub fn resolve_messages(game: &mut Game) {
                 resolve_whirlwind(entity_id, pos, game);
             }
 
-            Msg::Swift(entity_id, direction) => {
+            Msg::TrySwift(entity_id, direction) => {
                 resolve_swift(entity_id, direction, game);
             }
 
@@ -1576,6 +1576,7 @@ fn resolve_swift(entity_id: EntityId, direction: Direction, game: &mut Game) {
         let traps_block = false;
         if !near_walls && game.level.clear_path(entity_pos, dest, traps_block) {
             game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, dest));
+            game.msg_log.log(Msg::Swift(entity_id, dest));
         }
     }
 }

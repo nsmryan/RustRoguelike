@@ -90,7 +90,8 @@ pub enum Msg {
     TryPassThrough(EntityId, Direction),
     PassThrough(EntityId),
     WhirlWind(EntityId, Pos),
-    Swift(EntityId, Direction),
+    TrySwift(EntityId, Direction),
+    Swift(EntityId, Pos),
     ArmDisarmTrap(EntityId, EntityId), // acting entity, trap id
     PlaceTrap(EntityId, Pos, EntityId), // placing entity, position, trap id
     SpawnedObject(EntityId, EntityType, Pos, EntityName, Direction),
@@ -237,7 +238,8 @@ impl fmt::Display for Msg {
             Msg::TryPassThrough(entity_id, dir) => write!(f, "try_passthrough {} {}", entity_id, dir),
             Msg::PassThrough(entity_id) => write!(f, "passthrough {}", entity_id),
             Msg::WhirlWind(entity_id, pos) => write!(f, "whirlwind {} {} {}", entity_id, pos.x, pos.y),
-            Msg::Swift(entity_id, direction) => write!(f, "swift {} {}", entity_id, direction),
+            Msg::TrySwift(entity_id, direction) => write!(f, "try_swift {} {}", entity_id, direction),
+            Msg::Swift(entity_id, pos) => write!(f, "swift {} {} {}", entity_id, pos.x, pos.y),
             Msg::ArmDisarmTrap(entity_id, trap_id) => write!(f, "arm_disarm_trap {} {}", entity_id, trap_id),
             Msg::PlaceTrap(entity_id, pos, trap_id) => write!(f, "place_trap {} {} {} {}", entity_id, pos.x, pos.y, trap_id),
             Msg::SpawnedObject(entity_id, entity_type, pos, entity_name, facing) => write!(f, "spawned {} {} {} {} {} {}", entity_id, entity_type, pos.x, pos.y, entity_name, facing),
