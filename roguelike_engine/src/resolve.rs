@@ -1223,14 +1223,11 @@ fn resolve_state_change(entity_id: EntityId, behavior: Behavior, level: &mut Lev
     let original_behavior = level.entities.behavior[&entity_id];
 
     // If the entity hasn't completed a turn, the state change continues their turn.
-    dbg!(behavior);
     if !level.entities.took_turn[&entity_id] &&
         level.entities.behavior[&entity_id] != original_behavior &&
         !matches!(behavior, Behavior::Investigating(_)) {
        ai_take_turn(entity_id, level, config, msg_log);
-       dbg!("taking turn!");
     }
-    dbg!(level.entities.took_turn[&entity_id]);
 
     level.entities.behavior[&entity_id] = behavior;
 
