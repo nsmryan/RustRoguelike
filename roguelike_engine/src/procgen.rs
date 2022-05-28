@@ -586,7 +586,7 @@ pub fn place_vault_with(level: &mut Level, vault: &Vault, offset: Pos, rotation:
                     level.map[vault_pos] = Tile::empty();
                 } else {
                     // Remove other entities- they are overwritten by the vault.
-                    level.entities.remove_entity(entity_id);
+                    level.entities.mark_for_removal(entity_id);
                     msg_log.log(Msg::Remove(entity_id));
                 }
             }
@@ -625,11 +625,11 @@ pub fn place_vault_with(level: &mut Level, vault: &Vault, offset: Pos, rotation:
     }
 
     for remove_id in vault_entities_to_remove {
-        entities.remove_entity(remove_id);
+        level.entities.mark_for_removal(remove_id);
     }
 
     for remove_id in entities_to_remove {
-        level.entities.remove_entity(remove_id);
+        level.entities.mark_for_removal(remove_id);
         msg_log.log(Msg::Remove(remove_id));
     }
 
@@ -728,16 +728,20 @@ fn find_available_tile(game: &mut Game) -> Option<Pos> {
 }
 
 fn clear_path_to(game: &mut Game, start_pos: Pos, target_pos: Pos) {
-    fn blocked_tile_cost(pos: Pos, map: &Map) -> i32 {
-        if map[pos].block_move {
+    fn blocked_tile_cost(pos: Pos, level: &Level) -> i32 {
+        // If blocked by map tile or by an entity, the tile costs more to enter.
+        if level.pos_blocked(pos) {
             return 15;
         } 
 
         return 0;
     }
 
-    fn move_tile_cost(pos: Pos, next_pos: Pos, map: &Map) -> i32 {
-        if map.path_blocked_move(pos, next_pos).is_some() {
+    fn move_tile_cost(pos: Pos, next_pos: Pos, level: &Level) -> i32 {
+        // Traps block here to ensure that the player doesn't have to step on
+        // a trap to complete the level.
+        let traps_block = true;
+        if !level.clear_path(pos, next_pos, traps_block) {
             return 15;
         } 
 
@@ -750,15 +754,19 @@ fn clear_path_to(game: &mut Game, start_pos: Pos, target_pos: Pos) {
               |&pos| {
                   game.level.map.cardinal_neighbors(pos)
                                .iter()
-                               .map(|p| (*p, move_tile_cost(pos, *p, &game.level.map)))
+                               .map(|p| (*p, move_tile_cost(pos, *p, &game.level)))
                                .collect::<Vec<(Pos, i32)>>()
               },
-              |&pos| blocked_tile_cost(pos, &game.level.map) + distance(start_pos, pos) as i32,
+              |&pos| blocked_tile_cost(pos, &game.level) + distance(start_pos, pos) as i32,
               |&pos| pos == target_pos);
 
     if let Some((results, _cost)) = path {
+        let player_id = game.level.find_by_name(EntityName::Player).unwrap();
         for pos in results {
             game.level.map[pos].clear_walls();
+            for entity_id in game.level.get_entities_at_pos(pos) {
+                game.level.entities.mark_for_removal(entity_id);
+            }
         }
     }
 }
@@ -768,7 +776,7 @@ fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
     let key_pos = find_available_tile(game).unwrap();
     game.level.map[key_pos] = Tile::empty();
     for entity_id in game.level.get_entities_at_pos(key_pos) {
-        game.level.entities.remove_entity(entity_id);
+        game.level.entities.mark_for_removal(entity_id);
     }
     make_key(&mut game.level.entities, &game.config, key_pos, &mut game.msg_log);
     clear_path_to(game, player_pos, key_pos);
@@ -781,7 +789,7 @@ fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
 
     game.level.map[goal_pos] = Tile::empty();
     for entity_id in game.level.get_entities_at_pos(goal_pos) {
-        game.level.entities.remove_entity(entity_id);
+        game.level.entities.mark_for_removal(entity_id);
     }
     make_exit(&mut game.level.entities, &game.config, goal_pos, &mut game.msg_log);
     clear_path_to(game, player_pos, goal_pos);
@@ -805,7 +813,7 @@ fn clear_island(game: &mut Game, island_radius: i32) {
                 game.level.map[pos] = Tile::water();
 
                 for entity_id in game.level.has_entities(pos).clone() {
-                    game.level.entities.remove_entity(entity_id);
+                    game.level.entities.mark_for_removal(entity_id);
                 }
             }
         }

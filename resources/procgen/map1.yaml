@@ -57,10 +57,6 @@
     - GreatSword
     - 2
     - 2
-- Items: 
-    - LookingGlass
-    - 10
-    - 10
 # MaxItems limits the number of items that can appear of any type
 - MaxItems: 15
 

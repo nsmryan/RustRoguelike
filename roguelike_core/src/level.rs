@@ -67,6 +67,9 @@ impl Level {
             return maybe_index;
     }
 
+    /// Find a path between positions while accounting for movement style (Reach),
+    /// traps, and a given cost function on movements.
+    /// The cost function is: starting position, current position, next position, level -> cost.
     pub fn path_between(&self,
                         start: Pos,
                         end: Pos,
@@ -416,12 +419,15 @@ impl Level {
         return entity_ids;
     }
 
+    /// Is there a clear path from the start position up to, but not including, the end position?
     pub fn clear_path_up_to(&self, start: Pos, end: Pos, traps_block: bool) -> bool {
         let up_to = move_next_to(start, end);
 
         return self.clear_path(start, up_to, traps_block);
     }
 
+    /// Is there a clear path from the start position to the end position?
+    /// This accounts for entities and map tiles, and may or may not block on traps.
     pub fn clear_path(&self, start: Pos, end: Pos, traps_block: bool) -> bool {
         let line = line_inclusive(start, end);
 
@@ -751,26 +757,6 @@ impl Level {
         }
 
         return result;
-    }
-
-    // NOTE this is no longer used
-    // clear all entities, except those in the given vector.
-    pub fn clear_except(&mut self, exceptions: Vec<EntityId>) {
-        let mut dont_clear: Vec<EntityId> = Vec::new();
-
-        for id in exceptions.iter() {
-            dont_clear.push(*id);
-
-            if let Some(inventory) = self.entities.inventory.get(id) {
-                dont_clear.extend(inventory);
-            }
-        }
-
-        for id in self.entities.ids.clone().iter() {
-            if !dont_clear.contains(&id) {
-                self.entities.remove_entity(*id);
-            }
-        }
     }
 }
 

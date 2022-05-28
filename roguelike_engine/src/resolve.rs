@@ -910,7 +910,7 @@ fn resolve_throw_item(player_id: EntityId,
         level.map[hit_pos] = Tile::wall();
         // this is playing a little fast and lose- we assume that if
         // the seed of stone hits a tile, that any entity at that tile
-        // is something we can destory like a sword or grass entity.
+        // is something we can destroy like a sword or grass entity.
         for entity_id in level.get_entities_at_pos(hit_pos) {
             remove_entity(entity_id, level);
         }

@@ -566,6 +566,7 @@ fn run_thumpers(game: &mut Game) {
     }
 }
 
+/// Remove entities that have previously been marked for removal.
 fn clean_entities(entities: &mut Entities, msg_log: &mut MsgLog) {
     let mut remove_ids: Vec<EntityId> = Vec::new();
     for id in entities.ids.iter() {
