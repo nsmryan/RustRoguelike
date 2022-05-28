@@ -37,7 +37,7 @@ pub const PAWN_MOVE_DISTANCE: usize = 1;
 pub const PAWN_ATTACK_DISTANCE: usize = 1;
 
 pub const ROOK_MOVE_DISTANCE: usize = 1;
-pub const ROOK_ATTACK_DISTANCE: usize = 1;
+pub const ROOK_ATTACK_DISTANCE: usize = 5;
 
 pub const ARMIL_MOVE_DISTANCE: usize = 1;
 
