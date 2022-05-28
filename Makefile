@@ -1,8 +1,9 @@
 ATLAS = "tools/atlas"
+ATLAS_SRC = $(ATLAS)/main.c $(ATLAS)/util.c $(ATLAS)/bitmap.c $(ATLAS)/lib/stb/stb_image.c $(ATLAS)/lib/stb/stb_image_write.c $(ATLAS)/lib/stb/stb_rect_pack.c $(ATLAS)/lib/stb/stb_truetype.c
 
 all: run
 
-.PHONY: exe run rerun debug release test retest check recheck sloc sloc_crates atlas
+.PHONY: exe run rerun debug release test retest check recheck sloc sloc_crates atlas clean
 run:
 	cargo run
 
@@ -30,9 +31,6 @@ recheck:
 check:
 	cargo check
 
-clean:
-	cargo clean
-
 sloc:
 	cloc */src/*.rs --by-file
 
@@ -47,14 +45,22 @@ sloc_crates:
 	cloc roguelike_map/src/*.rs
 
 atlas:
-	@gcc -std=gnu99 -O2 -o atlas $(ATLAS)/main.c $(ATLAS)/util.c $(ATLAS)/bitmap.c $(ATLAS)/lib/stb/stb_image.c $(ATLAS)/lib/stb/stb_image_write.c $(ATLAS)/lib/stb/stb_rect_pack.c $(ATLAS)/lib/stb/stb_truetype.c -lm
+	@echo "building atlas executable"
+	@gcc -std=gnu99 -O0 -o atlas $(ATLAS_SRC) -lm
+	@echo "collecting images"
 	@rm collectImages -rf
 	@mkdir collectImages
 	@find resources/animations -name "*.png" | xargs -I{} cp {} collectImages/
 	@find resources/UI -name "*.png" | xargs -I{} cp {} collectImages/
 	@find resources/misc -name "*.png" | xargs -I{} cp {} collectImages/
 	@cp resources/rustrogueliketiles.png collectImages/
+	@echo "building atlas image"
 	@./atlas collectImages/ --imageout resources/spriteAtlas.png --textout resources/spriteAtlas.txt
 	@rm collectImages -rf
+	@echo "done"
 
+clean:
+	@rm atlas
+	@cargo clean
+	@rm collectImages -rf
 
