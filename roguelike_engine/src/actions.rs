@@ -964,13 +964,7 @@ pub fn handle_skill(skill_index: usize,
     let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     /* Check for Valid Skill Use */
-    // # check if we have enough energy to carry out the skill
-    if level.entities.energy[&player_id] <= 0 {
-        msg_log.log(Msg::NotEnoughEnergy(player_id));
-        return;
-    }
-
-    // get the skill in the player's list of skills
+    // Fet the skill in the player's list of skills.
     if skill_index >= level.entities.skills[&player_id].len() {
         // NOTE we may want a message indicating that the skill index was invalid
         return;
@@ -1156,7 +1150,7 @@ pub fn handle_skill(skill_index: usize,
 
         Skill::PassThrough => {
             if let Some(direction) = direction {
-                msg_log.log(Msg::PassThrough(player_id, direction));
+                msg_log.log(Msg::TryPassThrough(player_id, direction));
             }
         }
 

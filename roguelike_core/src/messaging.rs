@@ -87,7 +87,8 @@ pub enum Msg {
     Swap(EntityId, EntityId), // casting entity, entity to swap with
     PassWall(EntityId, Pos),
     StoneThrow(EntityId, Pos),
-    PassThrough(EntityId, Direction),
+    TryPassThrough(EntityId, Direction),
+    PassThrough(EntityId),
     WhirlWind(EntityId, Pos),
     Swift(EntityId, Direction),
     ArmDisarmTrap(EntityId, EntityId), // acting entity, trap id
@@ -233,7 +234,8 @@ impl fmt::Display for Msg {
             Msg::Swap(entity_id, target_id) => write!(f, "swap {} {}", entity_id, target_id),
             Msg::PassWall(entity_id, pos) => write!(f, "pass_wall {} {} {}", entity_id, pos.x, pos.y),
             Msg::StoneThrow(entity_id, pos) => write!(f, "stone_throw {} {} {}", entity_id, pos.x, pos.y),
-            Msg::PassThrough(entity_id, dir) => write!(f, "passthrough {} {}", entity_id, dir),
+            Msg::TryPassThrough(entity_id, dir) => write!(f, "try_passthrough {} {}", entity_id, dir),
+            Msg::PassThrough(entity_id) => write!(f, "passthrough {}", entity_id),
             Msg::WhirlWind(entity_id, pos) => write!(f, "whirlwind {} {} {}", entity_id, pos.x, pos.y),
             Msg::Swift(entity_id, direction) => write!(f, "swift {} {}", entity_id, direction),
             Msg::ArmDisarmTrap(entity_id, trap_id) => write!(f, "arm_disarm_trap {} {}", entity_id, trap_id),
@@ -559,8 +561,8 @@ impl Msg {
                  return format!("{:?} throws stone", data.entities.name[entity_id]);
             }
 
-            Msg::PassThrough(entity_id, dir) => { 
-                return format!("{:?} passes through {}", data.entities.name[entity_id], dir);
+            Msg::PassThrough(entity_id) => { 
+                return format!("{:?} passes through like the wind", data.entities.name[entity_id]);
             }
 
             Msg::WhirlWind(entity_id, _pos) => { 

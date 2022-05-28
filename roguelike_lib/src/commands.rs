@@ -33,6 +33,7 @@ pub enum GameCmd {
     SetPos(u64, i32, i32),
     Hp(u64),
     SetHp(u64, i32),
+    Energy(u32),
     Facing(u64),
     SetFacing(u64, Direction),
     MapSize,
@@ -91,6 +92,9 @@ impl FromStr for GameCmd {
             } else {
                 return Ok(GameCmd::Hp(id));
             }
+        } else if cmd == "energy" {
+            let amount = args.next().ok_or("no arg")?.parse::<u32>().map_err(|err| format!("{}", err))?;
+            return Ok(GameCmd::Energy(amount));
         } else if cmd == "facing" {
             let id = args.next().ok_or("no arg")?.parse::<u64>().map_err(|err| format!("{}", err))?;
             if let Some(dir) = args.next() {
@@ -218,6 +222,8 @@ impl GameCmd {
             return "hp";
         } else if matches!(self, GameCmd::SetHp(_, _)) {
             return "set_hp";
+        } else if matches!(self, GameCmd::Energy(_)) {
+            return "energy";
         } else if matches!(self, GameCmd::Facing(_)) {
             return "facing";
         } else if matches!(self, GameCmd::SetFacing(_, _)) {
@@ -315,6 +321,11 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
                 return format!("{} {}", name, hp);
             }
             return format!("{}", name);
+        }
+
+        GameCmd::Energy(amount) => {
+            game.msg_log.log(Msg::GainEnergy(player_id, *amount));
+            return format!("{} {}", name, amount);
         }
 
         GameCmd::SetHp(id, hp) => {

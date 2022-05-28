@@ -380,14 +380,13 @@ pub fn resolve_messages(game: &mut Game) {
             }
 
             Msg::StartUseItem(item_id) => {
-                resolve_start_use_item(item_id, game);
             }
 
             Msg::Restart => {
                 resolve_restart(game);
             }
 
-            Msg::PassThrough(entity_id, direction) => {
+            Msg::TryPassThrough(entity_id, direction) => {
                 resolve_passthrough(entity_id, direction, game);
             }
 
@@ -1521,7 +1520,7 @@ fn resolve_passthrough(entity_id: EntityId, direction: Direction, game: &mut Gam
     let dest = direction.offset_pos(entity_pos, 3);
     let clear_path = game.level.map.path_blocked(entity_pos, dest, BlockedType::Move).is_none();
     let blocked_pos = game.level.pos_blocked(dest);
-    if  clear_path && !blocked_pos {
+    if clear_path && !blocked_pos {
         game.msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, dest));
 
         for pos in line_inclusive(entity_pos, dest) {
@@ -1531,6 +1530,7 @@ fn resolve_passthrough(entity_id: EntityId, direction: Direction, game: &mut Gam
                 }
             }
         }
+        game.msg_log.log(Msg::PassThrough(entity_id));
     }
 }
 
@@ -1633,29 +1633,6 @@ fn resolve_triggered(trigger: EntityId, entity_id: EntityId, level: &mut Level, 
         }
 
         msg_log.log(Msg::GateTriggered(trigger, entity_id));
-    }
-}
-
-fn resolve_start_use_item(item_id: EntityId, game: &mut Game) {
-    match game.level.entities.item[&item_id] {
-        Item::Dagger => {
-        }
-
-        Item::Shield => {
-        }
-
-        Item::Hammer => {
-        }
-
-        Item::Sword => {
-            //let mut offsets = SmallVec::new();
-            //let dir = game.level.entities.direction[&player_id] as usize;
-            //offsets[dir] = Some(ItemUse(Item::Sword, 1));
-            //level.entities.
-        }
-
-        _ => {
-        }
     }
 }
 
