@@ -412,6 +412,9 @@ pub fn resolve_messages(game: &mut Game) {
 }
 
 fn resolve_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
+    // Hitting always takes a turn currently.
+    level.entities.took_turn[&entity_id] = true;
+
     let entity_pos = level.entities.pos[&entity_id];
 
     if let Some(hit_entity) = level.has_blocking_entity(hit_pos) {
