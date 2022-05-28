@@ -802,9 +802,7 @@ pub fn inventory_drop_item(entity_id: EntityId,
             dist += 1;
         }
 
-        if found_tile {
-            level.entities.took_turn[&entity_id] = true;
-        } else {
+        if !found_tile {
             msg_log.log(Msg::DropFailed(entity_id));
         }
     }
