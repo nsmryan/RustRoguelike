@@ -112,11 +112,22 @@ pub fn generate_bare_map(width: u32, height: u32, template_file: &str, rng: &mut
     return new_map;
 }
 
-fn check_map(game: &Game) {
+fn check_map(game: &mut Game) {
+    // Remove walls that overlap with entities.
     for wall_pos in game.level.map.get_wall_pos() {
         for id in game.level.entities.ids.iter() {
             if wall_pos == game.level.entities.pos[id] {
-                panic!("A wall overlapped with an entity!");
+                game.level.map[wall_pos] = Tile::empty();
+            }
+        }
+    }
+
+    // Remove entities that ended up on water tiles.
+    for id in game.level.entities.ids.clone().iter() {
+        let pos = game.level.entities.pos[id];
+        if pos.x >= 0 || pos.y >= 0 {
+            if game.level.map[pos].tile_type == TileType::Water {
+                game.level.entities.mark_for_removal(*id);
             }
         }
     }
