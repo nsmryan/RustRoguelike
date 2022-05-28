@@ -165,13 +165,20 @@ pub fn test_game_step() {
 fn step_ai(game: &mut Game) {
     let ai_ids: Vec<EntityId> = game.level.entities.active_ais();
 
-    for key in ai_ids.iter() {
-        ai_take_turn(*key, &mut game.level, &game.config, &mut game.msg_log);
+    for entity_id in ai_ids.iter() {
+        while !game.level.entities.took_turn[entity_id] {
+            ai_take_turn(*entity_id, &mut game.level, &game.config, &mut game.msg_log);
 
-        resolve_messages(game);
+            // If the AI has nothing to do, end its turn
+            if game.msg_log.messages.len() == 0 {
+                game.level.entities.took_turn[entity_id] = true;
+            } else {
+                resolve_messages(game);
+            }
+        }
 
         // If there are remaining messages for an entity, clear them
-        game.level.entities.messages[key].clear();
+        game.level.entities.messages[entity_id].clear();
     }
 }
 
