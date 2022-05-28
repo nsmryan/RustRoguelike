@@ -292,7 +292,7 @@ impl Input {
                 return InputAction::SelectEntry(chr.to_digit(10).unwrap() as usize);
             }
 
-            return self.apply_char(chr, settings);
+            return menu_alpha_up_to_action(chr, self.shift);
         } else if settings.state == GameState::Use {
             if let Some(input_dir) = InputDirection::from_chr(chr) {
                 if let InputDirection::Dir(_dir) = input_dir {
@@ -515,8 +515,7 @@ impl Input {
     }
 }
 
-
-pub fn alpha_up_to_action(chr: char, shift: bool) -> InputAction {
+pub fn menu_alpha_up_to_action(chr: char, shift: bool) -> InputAction {
     let input_action: InputAction;
 
     match chr {
@@ -526,6 +525,55 @@ pub fn alpha_up_to_action(chr: char, shift: bool) -> InputAction {
 
         'q' => {
             input_action = InputAction::Exit;
+        }
+
+        'i' => {
+            input_action = InputAction::Inventory;
+        }
+
+        'l' => {
+            input_action = InputAction::ExploreAll;
+        }
+
+        't' => {
+            input_action = InputAction::TestMode;
+        }
+
+        'p' => {
+            input_action = InputAction::RegenerateMap;
+        }
+
+        'j' => {
+            input_action = InputAction::SkillMenu;
+        }
+
+        'h' => {
+            input_action = InputAction::ClassMenu;
+        }
+
+        '/' => {
+            // shift + / = ?
+            if shift {
+                input_action = InputAction::HelpMenu;
+            } else {
+                input_action = InputAction::None;
+            }
+        }
+
+        _ => {
+            input_action = InputAction::None;
+        }
+    }
+
+    return input_action;
+}
+
+pub fn alpha_up_to_action(chr: char, shift: bool) -> InputAction {
+    let input_action: InputAction;
+
+    match chr {
+        'r' => {
+            input_action = InputAction::Restart;
         }
 
         'g' => {
