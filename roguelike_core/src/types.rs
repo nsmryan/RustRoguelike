@@ -207,6 +207,62 @@ impl fmt::Display for Skill {
     }
 }
 
+impl FromStr for Skill {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        s.make_ascii_lowercase();
+        if s == "grass_wall" {
+            Ok(Skill::GrassWall)
+        } else if s == "grass_throw" {
+            Ok(Skill::GrassThrow)
+        } else if s == "grass_blade" {
+            Ok(Skill::GrassBlade)
+        } else if s == "grass_shoes" {
+            Ok(Skill::GrassShoes)
+        } else if s == "grass_cover" {
+            Ok(Skill::GrassCover)
+        } else if s == "blink" {
+            Ok(Skill::Blink)
+        } else if s == "pass_wall" {
+            Ok(Skill::PassWall)
+        } else if s == "rubble" {
+            Ok(Skill::Rubble)
+        } else if s == "stone_throw" {
+            Ok(Skill::StoneThrow)
+        } else if s == "reform" {
+            Ok(Skill::Reform)
+        } else if s == "swap" {
+            Ok(Skill::Swap)
+        } else if s == "push" {
+            Ok(Skill::Push)
+        } else if s == "illuminate" {
+            Ok(Skill::Illuminate)
+        } else if s == "heal" {
+            Ok(Skill::Heal)
+        } else if s == "farsight" {
+            Ok(Skill::FarSight)
+        } else if s == "sprint" {
+            Ok(Skill::Sprint)
+        } else if s == "roll" {
+            Ok(Skill::Roll)
+        } else if s == "ping" {
+            Ok(Skill::Ping)
+        } else if s == "stone_skin" {
+            Ok(Skill::StoneSkin)
+        } else if s == "pass_through" {
+            Ok(Skill::PassThrough)
+        } else if s == "whirlwind" {
+            Ok(Skill::WhirlWind)
+        } else if s == "swift" {
+            Ok(Skill::Swift)
+        } else {
+            Err("Could not decode skill!".to_string())
+        }
+    }
+}
+
 impl Skill {
     pub fn class(&self) -> EntityClass {
         match self {
@@ -610,13 +666,15 @@ impl FromStr for ItemClass {
 #[derive(Clone, Copy, PartialEq, Debug, Serialize, Deserialize)]
 pub enum UseAction {
     Item(ItemClass),
+    Skill(Skill),
     Interact,
 }
 
 impl fmt::Display for UseAction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            UseAction::Item(item_class) => item_class.fmt(f),
+            UseAction::Item(item_class) => write!(f, "item {}", item_class),
+            UseAction::Skill(skill) => write!(f, "skill {}", skill),
             UseAction::Interact => write!(f, "interact"),
         }
     }
@@ -628,11 +686,18 @@ impl FromStr for UseAction {
     fn from_str(string: &str) -> Result<Self, Self::Err> {
         let s: &mut str = &mut string.to_string();
         s.make_ascii_lowercase();
-        if s == "interact" {
+        let mut args = s.split(" ");
+        let action = args.next().unwrap();
+
+        if action == "interact" {
             return Ok(UseAction::Interact);
-        } else {
-            return ItemClass::from_str(string).map(|item_class| UseAction::Item(item_class));
-        }
+        } else if action == "skill" {
+            return ItemClass::from_str(args.next().unwrap()).map(|item_class| UseAction::Item(item_class));
+        } else if action == "item" {
+            return Skill::from_str(args.next().unwrap()).map(|skill| UseAction::Skill(skill));
+        } 
+
+        return Err("Use action not decodable".to_string());
     }
 }
 
