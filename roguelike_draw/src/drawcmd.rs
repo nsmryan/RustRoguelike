@@ -65,7 +65,7 @@ fn process_draw_cmd(panel: &Panel,
                     sprite_texture: &mut Texture,
                     sprites: &mut Vec<SpriteSheet>,
                     font_texture: &mut Texture,
-                    font: &mut SpriteSheet,
+                    _font: &mut SpriteSheet,
                     cmd: &DrawCmd) {
     match cmd {
         DrawCmd::Sprite(sprite, color, pos) => {

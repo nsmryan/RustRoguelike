@@ -13,7 +13,6 @@ use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{PixelFormatEnum};
 use sdl2::image::LoadTexture;
-use sdl2::ttf::Font;
 
 use roguelike_utils::rng::Rand32;
 use roguelike_utils::comp::*;
@@ -28,7 +27,7 @@ use roguelike_core::messaging::*;
 use roguelike_core::utils::aoe_fill;
 use roguelike_core::movement::{MoveMode};
 
-use roguelike_draw::animation::{Str, Sprite, Effect, SpriteKey, Animation, SpriteAnim, SpriteIndex};
+use roguelike_draw::animation::{Str, Sprite, Effect, Animation, SpriteAnim, SpriteIndex};
 use roguelike_draw::drawcmd::*;
 
 
