@@ -847,15 +847,18 @@ fn finalize_use_skill(skill: Skill, action_mode: ActionMode, level: &Level, sett
     let use_result = level.calculate_use_skill(player_id, skill, dir, settings.move_mode);
 
     // TODO implement
-    match skill {
-        Skill::GrassWall => {
-        }
+    //match skill {
+    //    Skill::GrassWall => {
+    //    }
 
-        _ => {
-            if let Some(pos) = use_result.pos {
-                handle_skill(skill, ActionLoc::Place(pos), action_mode, level, settings, msg_log);
-            }
-        }
+    //    _ => {
+    //        if let Some(pos) = use_result.pos {
+    //            handle_skill(skill, ActionLoc::Place(pos), action_mode, level, settings, msg_log);
+    //        }
+    //    }
+    //}
+    if let Some(pos) = use_result.pos {
+        handle_skill(skill, ActionLoc::Place(pos), action_mode, level, settings, msg_log);
     }
 }
 
@@ -973,7 +976,7 @@ fn start_use_skill(index: usize, action_mode: ActionMode, level: &Level, setting
     let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     if let Some(skill) = level.find_skill(index) {
-        if skill == Skill::GrassWall {
+        //if skill == Skill::GrassWall {
             ensure_leave_cursor(settings, msg_log);
 
             settings.use_action = UseAction::Skill(skill, action_mode);
@@ -996,11 +999,11 @@ fn start_use_skill(index: usize, action_mode: ActionMode, level: &Level, setting
             change_state(settings, GameState::Use, msg_log);
 
             msg_log.log(Msg::StartUseSkill(player_id));
-        } else {
-            let next_pos = level.entities.direction[&player_id].offset_pos(level.entities.pos[&player_id], 1);
-            let action_loc = ActionLoc::Place(next_pos);
-            handle_skill_index(index, action_loc, action_mode, level, settings, msg_log);
-        }
+        //} else {
+        //    let next_pos = level.entities.direction[&player_id].offset_pos(level.entities.pos[&player_id], 1);
+        //    let action_loc = ActionLoc::Place(next_pos);
+        //    handle_skill_index(index, action_loc, action_mode, level, settings, msg_log);
+        //}
     }
 }
 
@@ -1137,15 +1140,16 @@ pub fn handle_skill(skill: Skill,
 
         Skill::GrassWall => {
             // TODO should this stay here, or go to StartUseSkill?
-            settings.use_action = UseAction::Skill(skill, action_mode);
-            msg_log.log(Msg::UseAction(settings.use_action));
-            settings.use_dir = None;
-            msg_log.log(Msg::UseDirClear);
-            change_state(settings, GameState::Use, msg_log);
+            //settings.use_action = UseAction::Skill(skill, action_mode);
+            //msg_log.log(Msg::UseAction(settings.use_action));
+            //settings.use_dir = None;
+            //msg_log.log(Msg::UseDirClear);
+            //change_state(settings, GameState::Use, msg_log);
             // TODO remove when GrassWall is fully implemented with use-mode.
-            //if let Some(direction) = Direction::from_dxy(dxy.x, dxy.y) {
-            //    msg_log.log(Msg::GrassWall(player_id, direction));
-            //}
+            // Unless skill use is left as-is in which case remove the code above.
+            if let Some(direction) = Direction::from_dxy(dxy.x, dxy.y) {
+                msg_log.log(Msg::GrassWall(player_id, direction));
+            }
         }
 
         Skill::GrassCover => {
