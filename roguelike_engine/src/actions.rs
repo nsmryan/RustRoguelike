@@ -973,28 +973,34 @@ fn start_use_skill(index: usize, action_mode: ActionMode, level: &Level, setting
     let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     if let Some(skill) = level.find_skill(index) {
-        ensure_leave_cursor(settings, msg_log);
+        if skill == Skill::GrassWall {
+            ensure_leave_cursor(settings, msg_log);
 
-        settings.use_action = UseAction::Skill(skill, action_mode);
-        msg_log.log(Msg::UseAction(settings.use_action));
+            settings.use_action = UseAction::Skill(skill, action_mode);
+            msg_log.log(Msg::UseAction(settings.use_action));
 
-        settings.use_dir = None;
-        msg_log.log(Msg::UseDirClear);
+            settings.use_dir = None;
+            msg_log.log(Msg::UseDirClear);
 
-        for dir in Direction::move_actions().iter() {
-            let use_result = level.calculate_use_skill(player_id,
-                                                       skill,
-                                                       *dir,
-                                                       settings.move_mode);
-            if let Some(hit_pos) = use_result.pos {
-                msg_log.log(Msg::UseHitPos(hit_pos));
-                msg_log.log(Msg::UseOption(hit_pos, *dir));
+            for dir in Direction::move_actions().iter() {
+                let use_result = level.calculate_use_skill(player_id,
+                                                           skill,
+                                                           *dir,
+                                                           settings.move_mode);
+                if let Some(hit_pos) = use_result.pos {
+                    msg_log.log(Msg::UseHitPos(hit_pos));
+                    msg_log.log(Msg::UseOption(hit_pos, *dir));
+                }
             }
+
+            change_state(settings, GameState::Use, msg_log);
+
+            msg_log.log(Msg::StartUseSkill(player_id));
+        } else {
+            let next_pos = level.entities.direction[&player_id].offset_pos(level.entities.pos[&player_id], 1);
+            let action_loc = ActionLoc::Place(next_pos);
+            handle_skill_index(index, action_loc, action_mode, level, settings, msg_log);
         }
-
-        change_state(settings, GameState::Use, msg_log);
-
-        msg_log.log(Msg::StartUseSkill(player_id));
     }
 }
 
