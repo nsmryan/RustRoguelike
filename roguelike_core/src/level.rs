@@ -621,9 +621,8 @@ impl Level {
 
         // TODO fill out result based on skill
 
-        let target_pos = dir.offset_pos(entity_pos, 1);
-        result.pos = Some(target_pos);
-        let hit_pos = dir.offset_pos(entity_pos, 2);
+        result.pos = Some(entity_pos);
+        let hit_pos = dir.offset_pos(entity_pos, 1);
         result.hit_positions.push(hit_pos);
 
         return result;

@@ -857,8 +857,10 @@ fn finalize_use_skill(skill: Skill, action_mode: ActionMode, level: &Level, sett
     //        }
     //    }
     //}
-    if let Some(pos) = use_result.pos {
-        handle_skill(skill, ActionLoc::Place(pos), action_mode, level, settings, msg_log);
+    //if let Some(pos) = use_result.pos {
+    if use_result.hit_positions.len() > 0 {
+        let hit_pos = use_result.hit_positions[0];
+        handle_skill(skill, ActionLoc::Place(hit_pos), action_mode, level, settings, msg_log);
     }
 }
 
@@ -984,6 +986,7 @@ fn start_use_skill(index: usize, action_mode: ActionMode, level: &Level, setting
 
             settings.use_dir = None;
             msg_log.log(Msg::UseDirClear);
+            msg_log.log(Msg::UseHitPosClear);
 
             for dir in Direction::move_actions().iter() {
                 let use_result = level.calculate_use_skill(player_id,
@@ -1026,6 +1029,7 @@ fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings,
 
             settings.use_dir = None;
             msg_log.log(Msg::UseDirClear);
+            msg_log.log(Msg::UseHitPosClear);
 
             for dir in Direction::move_actions().iter() {
                 let use_result = level.calculate_use_item(player_id,
@@ -1111,7 +1115,6 @@ pub fn handle_skill(skill: Skill,
         }
     }
 
-    let player_id = level.find_by_name(EntityName::Player).unwrap();
     let player_pos = level.entities.pos[&player_id];
     let dxy = sub_pos(skill_pos, player_pos);
     let direction: Option<Direction> = Direction::from_dxy(dxy.x, dxy.y);
