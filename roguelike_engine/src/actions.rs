@@ -670,15 +670,7 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::StartUseInteract, true) => {
-            settings.use_action = UseAction::Interact;
-            msg_log.log(Msg::UseAction(settings.use_action));
-
-            settings.use_dir = None;
-            msg_log.log(Msg::UseDirClear);
-
-            ensure_leave_cursor(settings, msg_log);
-            change_state(settings, GameState::Use, msg_log);
-            msg_log.log(Msg::StartUseInteract);
+            start_use_interact(level, settings, msg_log);
         }
 
         (InputAction::StartUseItem(item_class), true) => {
@@ -817,10 +809,11 @@ fn ensure_leave_cursor(settings: &mut Settings, msg_log: &mut MsgLog) {
 
 fn log_use_result_messages(use_result: UseResult, dir: Direction, settings: &mut Settings, msg_log: &mut MsgLog) {
     msg_log.log(Msg::UseDirClear);
+
     if let Some(use_pos) = use_result.pos {
-        settings.use_dir = Some(dir);
         msg_log.log(Msg::UseDir(dir));
         msg_log.log(Msg::UsePos(use_pos));
+        settings.use_dir = Some(dir);
     }
 
     msg_log.log(Msg::UseHitPosClear);
@@ -964,6 +957,18 @@ fn finalize_use(level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
     }
 }
 
+fn start_use_interact(level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
+    settings.use_action = UseAction::Interact;
+    msg_log.log(Msg::UseAction(settings.use_action));
+
+    settings.use_dir = None;
+    msg_log.log(Msg::UseDirClear);
+
+    ensure_leave_cursor(settings, msg_log);
+    change_state(settings, GameState::Use, msg_log);
+    msg_log.log(Msg::StartUseInteract);
+}
+
 fn start_use_skill(index: usize, action_mode: ActionMode, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
 
@@ -1022,6 +1027,11 @@ fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings,
                     msg_log.log(Msg::UseHitPos(hit_pos));
                     msg_log.log(Msg::UseOption(hit_pos, *dir));
                 }
+
+                // TODO this will highlight in red all tiles hittable from any chose of direction.
+                //for hit_pos in use_result.hit_positions.iter() {
+                //    msg_log.log(Msg::UseHitPos(*hit_pos));
+                //}
             }
 
             change_state(settings, GameState::Use, msg_log);
@@ -1061,7 +1071,6 @@ pub fn handle_skill(skill: Skill,
     let reach = Reach::single(1);
 
     /* Determine Position Effected */
-    // NOTE we may want a message indicating that the skill was invalid
     let skill_pos;
     match action_loc {
         ActionLoc::Dir(dir) => {

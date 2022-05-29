@@ -623,7 +623,8 @@ impl Level {
 
         let target_pos = dir.offset_pos(entity_pos, 1);
         result.pos = Some(target_pos);
-        result.hit_positions.push(target_pos);
+        let hit_pos = dir.offset_pos(entity_pos, 2);
+        result.hit_positions.push(hit_pos);
 
         return result;
     }
