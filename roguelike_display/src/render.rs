@@ -255,22 +255,6 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
             if entity_in_fov {
                 drawn_info = true;
 
-                //if let Some(hp) = display_state.hp.get(obj_id) {
-                //    y_pos += 1;
-
-                //    let health_color = Color::new(0x96, 0x54, 0x56, 255);
-                //    let max_hp = display_state.max_hp[obj_id];
-                //    render_bar(panel,
-                //               max_hp,
-                //               *hp,
-                //               Pos::new(1, y_pos),
-                //               health_color,
-                //               Color::white(),
-                //               false);
-
-                //    y_pos += 1;
-                //}
-
                 text_list.push(format!("* {:?}", display_state.name[&obj_id]));
                 if let Some(hp) = display_state.hp.get(&obj_id) {
                     text_list.push(format!(" hp {:?}", hp));

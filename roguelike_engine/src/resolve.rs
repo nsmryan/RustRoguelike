@@ -478,20 +478,7 @@ fn resolve_attack(entity_id: EntityId,
         }
 
         Attack::Stab(target_id, move_into) => {
-            stab(entity_id, target_id, &mut level.entities, msg_log);
-
-            // TODO this comes from when items were single-use. Likely just remove this.
-            //if let Some(item_id) = level.using(entity_id, Item::Dagger) {
-                //level.used_up_item(entity_id, item_id);
-            //}
-
-            if move_into && entity_pos != attack_pos {
-                msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, attack_pos));
-            }
-
-            // this is done after the Moved msg to ensure that the attack
-            // animation plays instead of an idle animation
-            msg_log.log(Msg::Stabbed(entity_id, target_id));
+            panic!("Stabbing through an attack should no longer be possible!");
         }
 
         Attack::Push(target_id, direction, amount) => {

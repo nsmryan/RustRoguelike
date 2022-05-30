@@ -30,6 +30,7 @@ use roguelike_engine::actions::*;
 use roguelike_engine::input::*;
 use roguelike_engine::map_construct::map_construct;
 use roguelike_engine::log::*;
+use roguelike_engine::step::step_logic;
 
 use roguelike_lib::commands::*;
 
@@ -200,7 +201,10 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
     let (game_sender, game_receiver) = channel::<(Game, DisplayState)>();
     let _save_thread = thread::spawn(move || { save_game_thread(game_receiver); });
 
-    // running the post step first sets up the game before the first turn.
+    // Stepping logic here executes messages logged while setting up the level.
+    step_logic(&mut game);
+
+    // Running the post step first sets up the game before the first turn.
     game.emit_state_messages();
     update_display(&mut game, &mut display, 0.1)?;
     game.msg_log.clear();

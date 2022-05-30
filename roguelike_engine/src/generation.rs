@@ -824,7 +824,8 @@ pub fn make_wall_test_map(entities: &mut Entities,
     //let golem = make_pawn(entities, config, Pos::new(5, 5), msg_log);
     let golem = make_gol(entities, config, Pos::new(5, 5), msg_log);
 
-    entities.direction[&golem] = Direction::Up;
+    msg_log.log(Msg::SetFacing(golem, Direction::Up)); 
+    //entities.direction[&golem] = Direction::Up;
     //make_gol(entities, config, Pos::new(5, 5), msg_log);
     //make_armil(entities, config, Pos::new(5, 5), msg_log);
     make_column(entities, config, Pos::new(6, 4), msg_log);
