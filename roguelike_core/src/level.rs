@@ -619,8 +619,6 @@ impl Level {
 
         let mut result = UseResult::new();
 
-        // TODO fill out result based on skill
-
         result.pos = Some(entity_pos);
         let hit_pos = dir.offset_pos(entity_pos, 1);
         result.hit_positions.push(hit_pos);

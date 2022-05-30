@@ -846,18 +846,6 @@ fn finalize_use_skill(skill: Skill, action_mode: ActionMode, level: &Level, sett
     let dir = settings.use_dir.expect("Finalizing use mode for an skill with no direction to take!");
     let use_result = level.calculate_use_skill(player_id, skill, dir, settings.move_mode);
 
-    // TODO implement
-    //match skill {
-    //    Skill::GrassWall => {
-    //    }
-
-    //    _ => {
-    //        if let Some(pos) = use_result.pos {
-    //            handle_skill(skill, ActionLoc::Place(pos), action_mode, level, settings, msg_log);
-    //        }
-    //    }
-    //}
-    //if let Some(pos) = use_result.pos {
     if use_result.hit_positions.len() > 0 {
         let hit_pos = use_result.hit_positions[0];
         handle_skill(skill, ActionLoc::Place(hit_pos), action_mode, level, settings, msg_log);
@@ -948,11 +936,11 @@ fn finalize_use(level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
                     msg_log.log(Msg::PickUp(player_id));
                 }
             } else {
-                // if there is no item, just try to interact
+                // If there is no item, just try to interact.
                 msg_log.log(Msg::Interact(player_id, target_pos));
             }
         } else {
-            // if there is no direction, apply to current tile
+            // If there is no direction, apply to current tile.
             msg_log.log(Msg::PickUp(player_id));
         }
     } else if let UseAction::Skill(skill, action_mode) = settings.use_action {

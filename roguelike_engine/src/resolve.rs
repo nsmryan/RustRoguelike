@@ -1522,7 +1522,11 @@ fn resolve_passthrough(entity_id: EntityId, direction: Direction, game: &mut Gam
     let map_clear_path = game.level.map.path_blocked(entity_pos, dest, BlockedType::Move).is_none();
     let dest_clear_pos = !game.level.pos_blocked(dest);
     if map_clear_path && dest_clear_pos && pass_through_entity {
-        game.msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, dest));
+
+        // This move is a kind of blink, as we have already ensured that the movement will not
+        // hit anything, and we go directly to the destination without a TryMove (which would
+        // just run right into the golem we are passing through).
+        game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, dest));
 
         for pos in line_inclusive(entity_pos, dest) {
             for other_id in game.level.get_entities_at_pos(pos) {
