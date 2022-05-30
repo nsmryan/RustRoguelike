@@ -175,23 +175,22 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut Level, msg_log: &mu
 }
 
 pub fn stab(entity_id: EntityId, target: EntityId, entities: &mut Entities, msg_log: &mut MsgLog) {
-    let damage = entities.hp.get(&target).map_or(0, |f| f.hp);
+    if matches!(entities.behavior[&target], Behavior::Attacking(_)) {
+        let mut stun_turns = STAB_STUN_TURNS;
 
-    if damage != 0 {
+        // Add an extra turn if the golem is idle.
         if entities.behavior[&target] == Behavior::Idle {
-            msg_log.log(Msg::Attack(entity_id, target, damage));
-
-            entities.status[&target].alive = false;
-            entities.blocks[&target] = false;
-
-            msg_log.log(Msg::Killed(entity_id, target, damage));
-
-            entities.messages[&target].push(Message::Attack(entity_id));
-        } else {
-            msg_log.log(Msg::Froze(target, STAB_STUN_TURNS))
+            stun_turns += 1;
         }
-    } else {
-        panic!("Stabbed an enemy with no hp?");
+
+        // Add an extra turn if the golem is in the current direction that the player is facing.
+        let entity_pos = entities.pos[&entity_id];
+        let target_pos = entities.pos[&target];
+        if Direction::from_positions(entity_pos, target_pos) == Some(entities.direction[&entity_id]) {
+            stun_turns += 1;
+        }
+
+        msg_log.log(Msg::Froze(target, stun_turns))
     }
 }
 

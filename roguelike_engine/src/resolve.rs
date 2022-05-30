@@ -93,12 +93,6 @@ pub fn resolve_messages(game: &mut Game) {
                 game.msg_log.log_front(Msg::Sound(attacker, pos, game.config.sound_radius_attack)); 
             }
 
-            Msg::Stabbed(_attacker_id, _attacked_id) => {
-                // TODO this may be superceded by Hit, although perhaps Hit
-                // should break out into finer grain attacks.
-                //msg_log.log(Msg::Froze(attacked_id, game.config.dagger_stab_num_turns));
-            }
-
             Msg::HammerRaise(entity_id, item_index, dir) => {
                 let item_id = game.level.entities.inventory[&entity_id][item_index];
                 game.level.entities.status[&entity_id].hammer_raised = Some((item_id, dir, 1));
@@ -486,9 +480,10 @@ fn resolve_attack(entity_id: EntityId,
         Attack::Stab(target_id, move_into) => {
             stab(entity_id, target_id, &mut level.entities, msg_log);
 
-            if let Some(item_id) = level.using(entity_id, Item::Dagger) {
-                level.used_up_item(entity_id, item_id);
-            }
+            // TODO this comes from when items were single-use. Likely just remove this.
+            //if let Some(item_id) = level.using(entity_id, Item::Dagger) {
+                //level.used_up_item(entity_id, item_id);
+            //}
 
             if move_into && entity_pos != attack_pos {
                 msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, attack_pos));
@@ -1441,30 +1436,11 @@ fn resolve_stone_thrown(entity_id: EntityId, target_pos: Pos, game: &mut Game) {
     }
 }
 
-fn resolve_grass_blade(entity_id: EntityId, action_mode: ActionMode, direction: Direction, game: &mut Game) {
+fn resolve_grass_blade(entity_id: EntityId, _action_mode: ActionMode, direction: Direction, game: &mut Game) {
     let pos = game.level.entities.pos[&entity_id];
 
-    match action_mode {
-        ActionMode::Primary => {
-            // TODO anything?
-        }
-
-        ActionMode::Alternate => {
-            // TODO anything?
-        }
-    }
-
     let attack_pos = direction.offset_pos(pos, 1);
-    let targets = game.level.get_entities_at_pos(attack_pos);
-
-    for target_id in targets {
-        if game.level.entities.typ[&target_id] == EntityType::Enemy {
-            let attack = Attack::Stab(target_id, false);
-            resolve_attack(entity_id, attack, attack_pos, &mut game.level, &mut game.msg_log, &game.config);
-
-            break;
-        }
-    }
+    game.msg_log.log(Msg::Hit(entity_id, attack_pos, Item::Dagger.weapon_type().unwrap(), AttackStyle::Stealth));
 
     game.level.entities.took_turn[&entity_id] = true;
 }
