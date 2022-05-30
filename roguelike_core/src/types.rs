@@ -290,6 +290,40 @@ impl Skill {
             Skill::Swift => EntityClass::Wind,
         }
     }
+
+    pub fn mode(&self) -> SkillMode {
+        match self {
+            Skill::GrassWall => SkillMode::Direction,
+            Skill::GrassThrow => SkillMode::Direction,
+            Skill::GrassBlade => SkillMode::Direction,
+            Skill::GrassShoes => SkillMode::Immediate,
+            Skill::GrassCover => SkillMode::Direction,
+            Skill::Blink => SkillMode::Immediate,
+            Skill::Swap => SkillMode::Cursor,
+            Skill::Sprint => SkillMode::Direction,
+            Skill::Roll => SkillMode::Direction,
+            Skill::PassWall => SkillMode::Direction,
+            Skill::Rubble => SkillMode::Direction,
+            Skill::StoneThrow => SkillMode::Direction,
+            Skill::StoneSkin => SkillMode::Immediate,
+            Skill::Reform => SkillMode::Direction,
+            Skill::Push => SkillMode::Direction,
+            Skill::Illuminate => SkillMode::Direction,
+            Skill::Heal => SkillMode::Immediate,
+            Skill::FarSight => SkillMode::Immediate,
+            Skill::Ping => SkillMode::Cursor,
+            Skill::PassThrough => SkillMode::Direction,
+            Skill::WhirlWind => SkillMode::Cursor,
+            Skill::Swift => SkillMode::Direction,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum SkillMode {
+    Direction,
+    Cursor,
+    Immediate,
 }
 
 

@@ -974,46 +974,62 @@ fn start_use_interact(level: &Level, settings: &mut Settings, msg_log: &mut MsgL
     msg_log.log(Msg::StartUseInteract);
 }
 
+fn initialize_use_mode(use_action: UseAction, settings: &mut Settings, msg_log: &mut MsgLog) {
+    ensure_leave_cursor(settings, msg_log);
+
+    settings.use_action = use_action;
+    msg_log.log(Msg::UseAction(settings.use_action));
+
+    settings.use_dir = None;
+    msg_log.log(Msg::UseDirClear);
+    msg_log.log(Msg::UseHitPosClear);
+}
+
 fn start_use_skill(index: usize, action_mode: ActionMode, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     if let Some(skill) = level.find_skill(index) {
-        //if skill == Skill::GrassWall {
-            ensure_leave_cursor(settings, msg_log);
+        match skill.mode() {
+            SkillMode::Direction => {
+                initialize_use_mode(UseAction::Skill(skill, action_mode), settings, msg_log);
 
-            settings.use_action = UseAction::Skill(skill, action_mode);
-            msg_log.log(Msg::UseAction(settings.use_action));
+                for dir in Direction::move_actions().iter() {
+                    let use_result = 
+                        level.calculate_use_skill(player_id, skill, *dir, settings.move_mode);
 
-            settings.use_dir = None;
-            msg_log.log(Msg::UseDirClear);
-            msg_log.log(Msg::UseHitPosClear);
+                    if let Some(hit_pos) = use_result.pos {
+                        msg_log.log(Msg::UseHitPos(hit_pos));
+                        msg_log.log(Msg::UseOption(hit_pos, *dir));
+                    }
 
-            for dir in Direction::move_actions().iter() {
-                let use_result = level.calculate_use_skill(player_id,
-                                                           skill,
-                                                           *dir,
-                                                           settings.move_mode);
-                if let Some(hit_pos) = use_result.pos {
-                    msg_log.log(Msg::UseHitPos(hit_pos));
-                    msg_log.log(Msg::UseOption(hit_pos, *dir));
+                    // TODO this will highlight in red all tiles hittable from any chose of direction.
+                    //for hit_pos in use_result.hit_positions.iter() {
+                    //    msg_log.log(Msg::UseHitPos(*hit_pos));
+                    //}
                 }
+
+                change_state(settings, GameState::Use, msg_log);
+
+                msg_log.log(Msg::StartUseSkill(player_id));
             }
 
-            change_state(settings, GameState::Use, msg_log);
+            SkillMode::Immediate => {
+                // Handle the skill immediately, with no action location as the skill should not be
+                // directional or based on a position.
+                handle_skill_index(index, ActionLoc::None, action_mode, level, settings, msg_log);
+            }
 
-            msg_log.log(Msg::StartUseSkill(player_id));
-        //} else {
-        //    let next_pos = level.entities.direction[&player_id].offset_pos(level.entities.pos[&player_id], 1);
-        //    let action_loc = ActionLoc::Place(next_pos);
-        //    handle_skill_index(index, action_loc, action_mode, level, settings, msg_log);
-        //}
+            SkillMode::Cursor => {
+                // Record skill somewhere, and on exit cursor mode apply using handle_skill and the
+                // cursor location.
+                unimplemented!();
+            }
+        }
     }
 }
 
 fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
-
-    ensure_leave_cursor(settings, msg_log);
 
     if let Some(item_index) = level.find_item(item_class) {
         let item_id = level.entities.inventory[&player_id][item_index as usize];
@@ -1021,15 +1037,7 @@ fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings,
         if level.entities.item[&item_id] == Item::Herb {
             msg_log.log(Msg::EatHerb(player_id, item_id));
         } else {
-            // Allow entering use-mode even if there are no places to move
-            // in case the player wants to check pressing shift or ctrl
-            // for additional spaces.
-            settings.use_action = UseAction::Item(item_class);
-            msg_log.log(Msg::UseAction(settings.use_action));
-
-            settings.use_dir = None;
-            msg_log.log(Msg::UseDirClear);
-            msg_log.log(Msg::UseHitPosClear);
+            initialize_use_mode(UseAction::Item(item_class), settings, msg_log);
 
             for dir in Direction::move_actions().iter() {
                 let use_result = level.calculate_use_item(player_id,
@@ -1250,7 +1258,7 @@ pub fn handle_skill(skill: Skill,
         }
 
         Skill::FarSight => {
-            msg_log.log(Msg::FarSight(player_id, SKILL_FARSIGHT_FOV_AMOUNT));
+            msg_log.log(Msg::TryFarSight(player_id, SKILL_FARSIGHT_FOV_AMOUNT));
         }
 
         Skill::Sprint => {

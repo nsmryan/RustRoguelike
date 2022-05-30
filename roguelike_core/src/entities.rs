@@ -323,7 +323,7 @@ impl Entities {
     }
 
     pub fn mark_for_removal(&mut self, entity_id: EntityId) {
-        // removing the player is handled specially
+        // Removing the player is handled specially.
         if !matches!(self.typ.get(&entity_id), Some(EntityType::Player)) {
             self.needs_removal[&entity_id] = true;
         }

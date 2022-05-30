@@ -266,10 +266,11 @@ pub fn resolve_messages(game: &mut Game) {
                 resolve_eat_herb(entity_id, item_id, game);
             }
 
-            Msg::FarSight(entity_id, amount) => {
+            Msg::TryFarSight(entity_id, amount) => {
                 if try_use_energy(entity_id, Skill::FarSight, &mut game.level, &mut game.msg_log) {
                     game.level.entities.status[&entity_id].extra_fov += amount;
                     game.level.entities.took_turn[&entity_id] = true;
+                    game.msg_log.log(Msg::FarSight(entity_id, amount));
                 }
             }
 

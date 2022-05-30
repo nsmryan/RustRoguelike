@@ -775,8 +775,11 @@ fn clear_path_to(game: &mut Game, start_pos: Pos, target_pos: Pos) {
         let player_id = game.level.find_by_name(EntityName::Player).unwrap();
         for pos in results {
             game.level.map[pos].clear_walls();
-            for entity_id in game.level.get_entities_at_pos(pos) {
-                game.level.entities.mark_for_removal(entity_id);
+
+            if pos != start_pos && pos != target_pos {
+                for entity_id in game.level.get_entities_at_pos(pos) {
+                    game.level.entities.mark_for_removal(entity_id);
+                }
             }
         }
     }

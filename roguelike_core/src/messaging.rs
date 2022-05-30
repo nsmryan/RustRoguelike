@@ -77,6 +77,7 @@ pub enum Msg {
     Illuminate(EntityId, Pos, usize), // entity, position, amount
     HealSkill(EntityId, usize), // entity, amount
     EatHerb(EntityId, EntityId), // entity, item
+    TryFarSight(EntityId, usize), // entity, amount
     FarSight(EntityId, usize), // entity, amount
     Ping(EntityId, Pos),
     Sprint(EntityId, Direction, usize), // entity, direction, amount
@@ -226,6 +227,7 @@ impl fmt::Display for Msg {
             Msg::Illuminate(entity_id, pos, amount) => write!(f, "illuminate {} {} {} {}", entity_id, pos.x, pos.y, amount),
             Msg::HealSkill(entity_id, amount) => write!(f, "heal_skill {} {}", entity_id, amount),
             Msg::EatHerb(entity_id, item_id) => write!(f, "eat_herb {} {}", entity_id, item_id),
+            Msg::TryFarSight(entity_id, amount) => write!(f, "tryfarsight {} {}", entity_id, amount),
             Msg::FarSight(entity_id, amount) => write!(f, "farsight {} {}", entity_id, amount),
             Msg::Ping(entity_id, pos) => write!(f, "ping {} {} {}", entity_id, pos.x, pos.y),
             Msg::Sprint(entity_id, direction, amount) => write!(f, "sprint {} {} {}", entity_id, direction, amount),
