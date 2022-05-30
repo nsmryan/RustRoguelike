@@ -494,10 +494,12 @@ impl Input {
                     action = InputAction::ThrowItem(cursor_pos, item_class);
                 }
             } else {
+                // TODO This is from the previous way skills works- likely just delete it
+                // when SkillFacing, etc, are removed.
                 // if releasing target, apply the skill or item
-                if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
-                    action = self.use_skill(index, settings);
-                }
+                //if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+                    //action = self.use_skill(index, settings);
+                //}
             }
 
             // If we are not releasing a direction, skill, or item then try other keys.
