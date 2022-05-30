@@ -172,13 +172,13 @@ pub fn ai_idle(monster_id: EntityId,
     } else if let Some(Message::Sound(sound_pos)) = level.entities.heard_sound(monster_id) {
         let can_see = level.pos_in_fov(monster_id, sound_pos);
 
+        // Don't investigate a sound caused by another golem that you can see.
         let caused_by_golem = level.get_golem_at_pos(sound_pos).is_some();
         let needs_investigation = !(can_see && caused_by_golem);
 
-        // Don't investigate a sound caused by another golem that you can see.
         if needs_investigation {
             msg_log.log(Msg::FaceTowards(monster_id, sound_pos));
-            msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(sound_pos)));
+            msg_log.log(Msg::ReactToSound(monster_id, sound_pos));
         }
     }
 }

@@ -54,6 +54,16 @@ pub fn resolve_messages(game: &mut Game) {
                 }
             }
 
+            Msg::ReactToSound(entity_id, sound_pos) => {
+                if game.level.is_in_fov(entity_id, player_id) == FovResult::Inside {
+                    let player_pos = game.level.entities.pos[&player_id];
+                    game.msg_log.log(Msg::StateChange(entity_id, Behavior::Alert(player_pos)));
+                    game.level.entities.took_turn[&entity_id] = true;
+                } else {
+                    game.msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(sound_pos)));
+                }
+            }
+
             Msg::SoundHitTile(cause_id, source_pos, _radius, tile_pos) => {
                 resolve_sound_hit_tile(cause_id, source_pos, tile_pos, game);
             }
