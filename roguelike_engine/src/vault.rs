@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use parse_display::{Display, FromStr};
+
 use serde::{Serialize, Deserialize};
 
 use roguelike_utils::math::*;
@@ -14,42 +16,17 @@ use roguelike_core::level::*;
 use crate::generation::*;
 
 
-#[derive(Copy, Clone, PartialOrd, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Debug, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "lowercase")]
 pub enum VaultTag {
     Medium,
     Rare,
+    #[display("norot")]
     NoRotate,
     NoMirror,
     NoReplace,
     Common,
 }
-
-impl FromStr for VaultTag {
-    type Err = String;
-
-    fn from_str(original_str: &str) -> Result<Self, Self::Err> {
-
-        let s: &mut str = &mut original_str.to_string();
-        s.make_ascii_lowercase();
-
-        if s == "medium" {
-            return Ok(VaultTag::Medium);
-        } else if s == "rare" {
-            return Ok(VaultTag::Rare);
-        } else if s == "norot" {
-            return Ok(VaultTag::NoRotate);
-        } else if s == "nomirror" {
-            return Ok(VaultTag::NoMirror);
-        } else if s == "noreplace" {
-            return Ok(VaultTag::NoReplace);
-        } else if s == "common" {
-            return Ok(VaultTag::Common);
-        }
-
-        return Err(format!("Could not decode vault tag '{}'", original_str));
-    }
-}
-
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Vault {

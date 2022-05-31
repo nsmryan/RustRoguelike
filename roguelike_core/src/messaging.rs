@@ -1,7 +1,6 @@
 use std::fmt;
 use std::collections::VecDeque;
 
-use parse_display::{Display, FromStr};
 use serde::{Serialize, Deserialize};
 
 use roguelike_utils::comp::*;
@@ -16,254 +15,133 @@ use crate::movement::Attack;
 use crate::level::*;
 
 
-#[derive(Copy, Clone, PartialEq, Debug, Display, FromStr, Deserialize, Serialize)]
-#[display(style = "snake_case")]
+#[derive(Copy, Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub enum Msg {
-    #[display("startturn")]
     StartTurn,
     Pass,
-    #[display("crushed {0} {1}")]
     Crushed(EntityId, Pos), // entity that did the crushing, position
-    #[display("sound {0} {1} {2}")]
     Sound(EntityId, Pos, usize), // entity causing sound, location, radius
-    #[display("react_to_sound {0} {1}")]
     ReactToSound(EntityId, Pos), // entity causing sound, location
-    #[display("sound_hit_tile {0} {1} {2} {3}")]
     SoundHitTile(EntityId, Pos, usize, Pos), // entity causing sound, source pos, radius, hit pos
-    #[display("sound_trap_triggered {0} {1}")]
     SoundTrapTriggered(EntityId, EntityId), // trap, entity
-    #[display("spike_trap_triggered {0} {1}")]
     SpikeTrapTriggered(EntityId, EntityId), // trap, entity
-    #[display("blink_trap_triggered {0} {1}")]
     BlinkTrapTriggered(EntityId, EntityId), // trap, entity
-    #[display("blink {0}")]
     Blink(EntityId),
-    #[display("freeze_trap_triggered {0} {1}")]
     FreezeTrapTriggered(EntityId, EntityId), // trap, entity
-    #[display("gate_triggered {0} {1}")]
     GateTriggered(EntityId, EntityId), // trap, entity
-    #[display("froze {0} {1}")]
     Froze(EntityId, usize), // entity, num turns
     PlayerDeath,
-    #[display("picked_up {0} {1}")]
     PickedUp(EntityId, EntityId), // entity, item
-    #[display("pickup {0}")]
     PickUp(EntityId), // entity trying to pick up an item
-    #[display("item_throw {0} {1} {2} {3} {4}")]
     ItemThrow(EntityId, EntityId, Pos, Pos, bool), // thrower, stone id, start, end, hard
-    #[display("item_landed {0} {1} {2}")]
     ItemLanded(EntityId, Pos, Pos), // stone id, start, end
-    #[display("try_attack {0} {1} {2}")]
     TryAttack(EntityId, Attack, Pos), // attacker, attack description, attack pos
-    #[display("attack {0} {1} {2}")]
     Attack(EntityId, EntityId, i32), // attacker, attacked, hp lost
-    #[display("blink {0} {1}")]
     Blunt(Pos, Pos), // attacker position, attacked position
-    #[display("pierce {0} {1}")]
     Pierce(Pos, Pos), // attacker position, attacked position
-    #[display("slash {0} {1}")]
     Slash(Pos, Pos), // attacker position, attacked position
-    #[display("killed {0} {1} {2}")]
     Killed(EntityId, EntityId, i32), // attacker, attacked, hp lost
-    #[display("remove {0}")]
     Remove(EntityId), // entity_id
-    #[display("push {0} {1} {2}")]
     Push(EntityId, Direction, usize), // attacker, direction, amount
-    #[display("pushed {0} {1} {2} {3} {4}")]
     Pushed(EntityId, EntityId, Direction, usize, bool), // attacker, attacked, direction, amount, move into pushed square
-    #[display("try_move {0} {1} {2} {3}")]
     TryMove(EntityId, Direction, usize, MoveMode),
-    #[display("moved {0} {1} {2} {3}")]
     Moved(EntityId, MoveType, MoveMode, Pos),
-    #[display("interact {0} {1}")]
     Interact(EntityId, Pos),
-    #[display("jump_wall {0} {1} {2}")]
     JumpWall(EntityId, Pos, Pos), // current pos, new pos
-    #[display("wall_kick {0} {1}")]
     WallKick(EntityId, Pos),
-    #[display("state_changed {0} {1}")]
     StateChange(EntityId, Behavior),
-    #[display("behavior_changed {0} {1}")]
     BehaviorChanged(EntityId, Behavior),
-    #[display("collided {0} {1}")]
     Collided(EntityId, Pos),
-    #[display("yell {0}")]
     Yell(EntityId),
-    #[display("change_move_mode {0} {1}")]
     ChangeMoveMode(EntityId, bool), // true = increase, false = decrease
-    #[display("move_mode {0} {1}")]
     MoveMode(EntityId, MoveMode),
-    #[display("tried_run_with_heavy_equipment")]
     TriedRunWithHeavyEquipment,
-    #[display("hit {0} {1} {2} {3}")]
     Hit(EntityId, Pos, WeaponType, AttackStyle),
-    #[display("hammer_raise {0} {1} {2}")]
     HammerRaise(EntityId, usize, Direction), // entity, item index, direction moved
-    #[display("hammer_swing {0} {1} {2}")]
     HammerSwing(EntityId, EntityId, Pos), // entity, item, position swung at
-    #[display("hammer_hit_entity {0} {1}")]
     HammerHitEntity(EntityId, EntityId), // entity, hit entity
-    #[display("hammer_hit_wall {0} {1}")]
     HammerHitWall(EntityId, Blocked),
-    #[display("stabbed {0} {1}")]
     Stabbed(EntityId, EntityId), // entity, hit entity
-    #[display("failed_blink {0}")]
     FailedBlink(EntityId),
-    #[display("not_enough_energy {0}")]
     NotEnoughEnergy(EntityId),
-    #[display("drop_failed {0}")]
     DropFailed(EntityId),
-    #[display("dropped_item {0} {1}")]
     DroppedItem(EntityId, EntityId),
-    #[display("player_turn")]
     PlayerTurn,
-    #[display("triggered {0} {1}")]
     Triggered(EntityId, EntityId), // trap, entity
-    #[display("untriggered {0} {1}")]
     Untriggered(EntityId, EntityId), // trap, entity
-    #[display("add_class {0}")]
     AddClass(EntityClass),
-    #[display("drop_item {0} {1}")]
     DropItem(EntityId, u64), // entity, item index
-    #[display("grass_wall {0} {1}")]
     GrassWall(EntityId, Direction),
-    #[display("grass_throw {0} {1}")]
     GrassThrow(EntityId, Direction),
-    #[display("grass_shoes {0} {1}")]
     GrassShoes(EntityId, ActionMode),
-    #[display("grass_cover {0} {1}")]
     GrassCover(EntityId, ActionMode),
-    #[display("grass_blade {0} {1}")]
     GrassBlade(EntityId, ActionMode, Direction),
-    #[display("illuminate {0} {1} {2}")]
     Illuminate(EntityId, Pos, usize), // entity, position, amount
-    #[display("heal_skill {0} {1}")]
     HealSkill(EntityId, usize), // entity, amount
-    #[display("eat_herb {0} {1}")]
     EatHerb(EntityId, EntityId), // entity, item
-    #[display("try_farsight {0} {1}")]
     TryFarSight(EntityId, usize), // entity, amount
-    #[display("farsight {0} {1}")]
     FarSight(EntityId, usize), // entity, amount
-    #[display("ping {0} {1}")]
     Ping(EntityId, Pos),
-    #[display("sprint {0} {1} {2}")]
     Sprint(EntityId, Direction, usize), // entity, direction, amount
-    #[display("roll {0} {1} {2}")]
     Roll(EntityId, Direction, usize), // entity, direction, amount
-    #[display("rubble {0} {1}")]
     Rubble(EntityId, Pos),
-    #[display("reform {0} {1}")]
     Reform(EntityId, Pos),
-    #[display("stone_skin {0}")]
     StoneSkin(EntityId),
-    #[display("swap {0} {1}")]
     Swap(EntityId, EntityId), // casting entity, entity to swap with
-    #[display("pass_wall {0} {1}")]
     PassWall(EntityId, Pos),
-    #[display("stone_throw {0} {1}")]
     StoneThrow(EntityId, Pos),
-    #[display("try_passthrough {0} {1}")]
     TryPassThrough(EntityId, Direction),
-    #[display("passthrough {0}")]
     PassThrough(EntityId),
-    #[display("whirlwind {0} {1}")]
     WhirlWind(EntityId, Pos),
-    #[display("try_swift {0} {1}")]
     TrySwift(EntityId, Direction),
-    #[display("swift {0} {1}")]
     Swift(EntityId, Pos),
-    #[display("arm_disarm_trap {0} {1}")]
     ArmDisarmTrap(EntityId, EntityId), // acting entity, trap id
-    #[display("place_trap {0} {1}")]
     PlaceTrap(EntityId, Pos, EntityId), // placing entity, position, trap id
-    #[display("spawned_object {0} {1} {2} {3} {4}")]
     SpawnedObject(EntityId, EntityType, Pos, EntityName, Direction),
-    #[display("face_towards {0} {1}")]
     FaceTowards(EntityId, Pos), // set facing towards a position
-    #[display("set_facing {0} {1}")]
     SetFacing(EntityId, Direction), // set the facing to a direction
-    #[display("facing {0} {1}")]
     Facing(EntityId, Direction), // facing was modified for an entity
-    #[display("ai_attack {0}")]
     AiAttack(EntityId),
-    #[display("removed_entity {0}")]
     RemovedEntity(EntityId),
-    #[display("start_use_item {0}")]
     StartUseItem(EntityId),
-    #[display("start_use_skill {0}")]
     StartUseSkill(EntityId),
-    #[display("start_use_interact")]
     StartUseInteract,
-    #[display("newlevel")]
     NewLevel,
-    #[display("cursor_state {0} {1}")]
     CursorState(bool, Pos),
     Restart,
-    #[display("forget {0}")]
     Forget(EntityId),
-    #[display("dodged {0}")]
     Dodged(EntityId),
-    #[display("fov_reuslt {0} {1}")]
     TileFov(Pos, FovResult),
-    #[display("entity_in_fov {0} {1}")]
     EntityInFov(EntityId, FovResult),
-    #[display("use_pos {0}")]
     UsePos(Pos),
-    #[display("use_dir {0}")]
     UseDir(Direction),
     UseDirClear,
-    #[display("use_hit_pos {0}")]
     UseHitPos(Pos),
     UseHitPosClear,
-    #[display("use_option {0} {1}")]
     UseOption(Pos, Direction),
-    #[display("entity_at_cursor {0}")]
     EntityAtCursor(EntityId),
-    #[display("entity_movement {0} {1}")]
     EntityMovement(EntityId, Pos),
-    #[display("entity_attack {0} {1}")]
     EntityAttack(EntityId, Pos),
-    #[display("entity_fov {0} {1}")]
     EntityFov(EntityId, Pos),
-    #[display("stance {0} {1}")]
     Stance(EntityId, Stance),
-    #[display("gain_energy {0} {1}")]
     GainEnergy(EntityId, u32),
-    #[display("used_energy {0}")]
     UsedEnergy(EntityId),
-    #[display("healed {0} {1} {2}")]
     Healed(EntityId, i32, i32),
-    #[display("set_pos {0} {1}")]
     SetPos(EntityId, Pos),
-    #[display("game_state {0}")]
     GameState(GameState),
-    #[display("cursor_move {0}")]
     CursorMove(Pos),
-    #[display("inventory_item {0} {1}")]
     InventoryItem(Item, ItemClass),
-    #[display("add_skill {0}")]
     AddSkill(Skill),
-    #[display("gate_pos {0} {1}")]
     GatePos(EntityId, Pos),
-    #[display("frozen {0} {1}")]
     Frozen(EntityId, bool),
-    #[display("thaw {0} {1}")]
     Thaw(EntityId, usize),
-    #[display("player_ghost {0} {1}")]
     PlayerGhost(Pos),
-    #[display("overlay {0}")]
     Overlay(bool),
-    #[display("debug_enabled {0}")]
     DebugEnabled(bool),
-    #[display("next_move_mode {0}")]
     NextMoveMode(MoveMode),
-    #[display("use_action {0}")]
     UseAction(UseAction),
     PlayerAction,
-    #[display("impression {0}")]
     Impression(Pos),
-    #[display("test_mode {0}")]
     TestMode(bool),
 }
 
@@ -352,14 +230,14 @@ impl fmt::Display for Msg {
             Msg::Illuminate(entity_id, pos, amount) => write!(f, "illuminate {} {} {} {}", entity_id, pos.x, pos.y, amount),
             Msg::HealSkill(entity_id, amount) => write!(f, "heal_skill {} {}", entity_id, amount),
             Msg::EatHerb(entity_id, item_id) => write!(f, "eat_herb {} {}", entity_id, item_id),
-            Msg::TryFarSight(entity_id, amount) => write!(f, "tryfarsight {} {}", entity_id, amount),
+            Msg::TryFarSight(entity_id, amount) => write!(f, "try_farsight {} {}", entity_id, amount),
             Msg::FarSight(entity_id, amount) => write!(f, "farsight {} {}", entity_id, amount),
             Msg::Ping(entity_id, pos) => write!(f, "ping {} {} {}", entity_id, pos.x, pos.y),
             Msg::Sprint(entity_id, direction, amount) => write!(f, "sprint {} {} {}", entity_id, direction, amount),
             Msg::Roll(entity_id, direction, amount) => write!(f, "roll {} {} {}", entity_id, direction, amount),
             Msg::Rubble(entity_id, pos) => write!(f, "rubble {} {} {}", entity_id, pos.x, pos.y),
             Msg::Reform(entity_id, pos) => write!(f, "reform {} {} {}", entity_id, pos.x, pos.y),
-            Msg::StoneSkin(entity_id) => write!(f, "reform {}", entity_id),
+            Msg::StoneSkin(entity_id) => write!(f, "stone_skin {}", entity_id),
             Msg::Swap(entity_id, target_id) => write!(f, "swap {} {}", entity_id, target_id),
             Msg::PassWall(entity_id, pos) => write!(f, "pass_wall {} {} {}", entity_id, pos.x, pos.y),
             Msg::StoneThrow(entity_id, pos) => write!(f, "stone_throw {} {} {}", entity_id, pos.x, pos.y),

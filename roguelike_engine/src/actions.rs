@@ -1,6 +1,8 @@
 use std::str::FromStr;
 use std::fmt;
 
+use parse_display::{Display, FromStr};
+
 use serde::{Serialize, Deserialize};
 
 use roguelike_utils::math::*;
@@ -27,32 +29,44 @@ pub enum ActionLoc {
     None
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "lowercase")]
 pub enum InputAction {
     Run,
     Sneak,
     Walk,
     Alt,
+    #[display("{0}")]
     Move(Direction),
-    MoveTowardsCursor(),
+    MoveTowardsCursor,
+    #[display("skillpos {0} {1} {2}")]
     SkillPos(Pos, ActionMode, usize),
+    #[display("skill {0} {1}")]
     SkillFacing(ActionMode, usize),
+    #[display("startuseitem {0}")]
     StartUseItem(ItemClass),
+    #[display("startuseskill {0} {1}")]
     StartUseSkill(usize, ActionMode),
     StartUseInteract,
+    #[display("usedir {0}")]
     UseDir(Direction),
     FinalizeUse,
     AbortUse,
     Pass,
+    #[display("throwitem {0} {1}")]
     ThrowItem(Pos, ItemClass),
     Pickup,
     DropItem,
     Yell,
-    Interact(Option<Direction>),
+    #[display("interact {0}")]
+    Interact(PlayerDirection),
+    #[display("cursormove {0} {1} {2}")]
     CursorMove(Direction, bool, bool), // move direction, is relative, is long
     CursorReturn,
     CursorToggle,
+    #[display("mousepos {0}")]
     MousePos(Pos),
+    #[display("mousebutton {0} {1}")]
     MouseButton(MouseClick, KeyDir),
     Inventory,
     SkillMenu,
@@ -67,184 +81,11 @@ pub enum InputAction {
     IncreaseMoveMode,
     DecreaseMoveMode,
     OverlayToggle,
+    #[display("selectentry {0}")]
     SelectEntry(usize),
     DebugToggle,
     Restart,
     None,
-}
-
-impl fmt::Display for InputAction {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            InputAction::Run => write!(f, "run"),
-            InputAction::Sneak => write!(f, "sneak"),
-            InputAction::Walk => write!(f, "walk"),
-            InputAction::Alt => write!(f, "alt"),
-            InputAction::Move(direction) => {
-                match direction {
-                    Direction::Left => write!(f, "left"),
-                    Direction::Right => write!(f, "right"),
-                    Direction::Up => write!(f, "up"),
-                    Direction::Down => write!(f, "down"),
-                    Direction::DownLeft => write!(f, "downleft"),
-                    Direction::DownRight => write!(f, "downright"),
-                    Direction::UpLeft => write!(f, "upleft"),
-                    Direction::UpRight => write!(f, "upright"),
-                }
-            },
-            InputAction::MoveTowardsCursor() => write!(f, "movetowardscursor"),
-            InputAction::SkillPos(pos, action_mode, index) => write!(f, "skillpos {} {} {} {}", pos.x, pos.y, action_mode, index),
-            InputAction::SkillFacing(action_mode, index) => write!(f, "skill {} {}", action_mode, index),
-            InputAction::StartUseItem(item_class) => write!(f, "startuseitem {}", item_class),
-            InputAction::StartUseSkill(index, action_mode) => write!(f, "startuseskill {} {}", index, action_mode),
-            InputAction::StartUseInteract => write!(f, "startuseinteract"),
-            InputAction::UseDir(dir) => write!(f, "usedir {}", dir),
-            InputAction::FinalizeUse => write!(f, "finalizeuse"),
-            InputAction::AbortUse => write!(f, "abortuse"),
-            InputAction::Pass => write!(f, "pass"),
-            InputAction::ThrowItem(pos, item_class) => write!(f, "throwitem {} {} {}", pos.x, pos.y, item_class),
-            InputAction::MousePos(pos) => write!(f, "mousepos {:?} {:?}", pos.x, pos.y),
-            InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
-            InputAction::Pickup => write!(f, "pickup"),
-            InputAction::DropItem => write!(f, "drop"),
-            InputAction::Inventory => write!(f, "inventory"),
-            InputAction::SkillMenu => write!(f, "skill"),
-            InputAction::ClassMenu => write!(f, "class"),
-            InputAction::HelpMenu => write!(f, "help"),
-            InputAction::Exit => write!(f, "exit"),
-            InputAction::Esc => write!(f, "esc"),
-            InputAction::ForceExit => write!(f, "force_exit"),
-            InputAction::ExploreAll => write!(f, "exploreall"),
-            InputAction::RegenerateMap => write!(f, "regenmap"),
-            InputAction::TestMode => write!(f, "testmode"),
-            InputAction::Yell => write!(f, "yell"),
-            InputAction::IncreaseMoveMode => write!(f, "faster"),
-            InputAction::DecreaseMoveMode => write!(f, "slower"),
-            InputAction::OverlayToggle => write!(f, "overlaytoggle"),
-            InputAction::SelectEntry(item) => write!(f, "selectentry {}", item),
-            InputAction::Interact(dir) => write!(f, "interact {:?}", dir),
-            InputAction::CursorMove(dir, relative, long) => write!(f, "cursormove {:?} {} {}", dir, relative, long),
-            InputAction::CursorReturn => write!(f, "cursorreturn"),
-            InputAction::CursorToggle => write!(f, "cursortoggle"),
-            InputAction::DebugToggle => write!(f, "debugtoggle"),
-            InputAction::Restart => write!(f, "restart"),
-            InputAction::None => write!(f, "none"),
-        }
-    }
-}
-
-impl FromStr for InputAction {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        let args = s.split(" ").collect::<Vec<&str>>();
-
-        if args[0] == "left" {
-            return Ok(InputAction::Move(Direction::Left));
-        } else if args[0] == "right" {
-            return Ok(InputAction::Move(Direction::Right));
-        } else if args[0] == "up" {
-            return Ok(InputAction::Move(Direction::Up));
-        } else if args[0] == "down" {
-            return Ok(InputAction::Move(Direction::Down));
-        } else if args[0] == "upleft" {
-            return Ok(InputAction::Move(Direction::UpLeft));
-        } else if args[0] == "upright" {
-            return Ok(InputAction::Move(Direction::UpRight));
-        } else if args[0] == "downleft" {
-            return Ok(InputAction::Move(Direction::DownLeft));
-        } else if args[0] == "downright" {
-            return Ok(InputAction::Move(Direction::DownRight));
-        } else if args[0] == "run" {
-            return Ok(InputAction::Run);
-        } else if args[0] == "sneak" {
-            return Ok(InputAction::Sneak);
-        } else if args[0] == "walk" {
-            return Ok(InputAction::Walk);
-        } else if args[0] == "alt" {
-            return Ok(InputAction::Alt);
-        } else if args[0] == "pass" {
-            return Ok(InputAction::Pass);
-        } else if args[0] == "throwitem" {
-            let x = args[1].parse::<i32>().unwrap();
-            let y = args[1].parse::<i32>().unwrap();
-            let item_class = args[1].parse::<ItemClass>().unwrap();
-            return Ok(InputAction::ThrowItem(Pos::new(x, y), item_class));
-        } else if args[0] == "movetowardscursor" {
-            return Ok(InputAction::MoveTowardsCursor());
-        } else if args[0] == "skillpos" {
-            let x = args[1].parse::<i32>().unwrap();
-            let y = args[2].parse::<i32>().unwrap();
-            let action_mode = args[3].parse::<ActionMode>().unwrap();
-            let index = args[4].parse::<usize>().unwrap();
-            return Ok(InputAction::SkillPos(Pos::new(x, y), action_mode, index));
-        } else if args[0] == "skillfacing" {
-            let action_mode = args[1].parse::<ActionMode>().unwrap();
-            let index = args[2].parse::<usize>().unwrap();
-            return Ok(InputAction::SkillFacing(action_mode, index));
-        } else if args[0] == "startuseitem" {
-            let class = args[1].parse::<ItemClass>().unwrap();
-            return Ok(InputAction::StartUseItem(class));
-        } else if args[0] == "startuseskill" {
-            let index = args[1].parse::<usize>().unwrap();
-            let action_mode = args[2].parse::<ActionMode>().unwrap();
-            return Ok(InputAction::StartUseSkill(index, action_mode));
-        } else if args[0] == "usedir" {
-            let dir = args[1].parse::<Direction>().unwrap();
-            return Ok(InputAction::UseDir(dir));
-        } else if args[0] == "finalizeuse" {
-            return Ok(InputAction::FinalizeUse);
-        } else if args[0] == "abortuse" {
-            return Ok(InputAction::AbortUse);
-        } else if args[0] == "pickup" {
-            return Ok(InputAction::Pickup);
-        } else if args[0] == "drop" {
-            return Ok(InputAction::DropItem);
-        } else if args[0] == "yell" {
-            return Ok(InputAction::Yell);
-        } else if args[0] == "inventory" {
-            return Ok(InputAction::Inventory);
-        } else if s.starts_with("selectentry") {
-            let selection = args[1].parse::<usize>().unwrap();
-            return Ok(InputAction::SelectEntry(selection));
-        } else if args[0] == "interact" {
-            let dir = args[1].parse::<Direction>().ok();
-            return Ok(InputAction::Interact(dir));
-        } else if args[0] == "testmode" {
-            return Ok(InputAction::TestMode);
-        } else if args[0] == "skill" {
-            return Ok(InputAction::SkillMenu);
-        } else if args[0] == "class" {
-            return Ok(InputAction::ClassMenu);
-        } else if args[0] == "help" {
-            return Ok(InputAction::HelpMenu);
-        } else if args[0] == "esc" {
-            return Ok(InputAction::Esc);
-        } else if args[0] == "force_exit" {
-            return Ok(InputAction::ForceExit);
-        } else if args[0] == "faster" {
-            return Ok(InputAction::IncreaseMoveMode);
-        } else if args[0] == "slower" {
-            return Ok(InputAction::DecreaseMoveMode);
-        } else if args[0] == "cursormove" {
-            let dir = Direction::from_str(args[1]).unwrap();
-            let relative = bool::from_str(args[2]).unwrap();
-            let long = bool::from_str(args[3]).unwrap();
-            return Ok(InputAction::CursorMove(dir, relative, long));
-        } else if args[0] == "cursorreturn" {
-            return Ok(InputAction::CursorReturn);
-        } else if args[0] == "cursortoggle" {
-            return Ok(InputAction::CursorToggle);
-        } else if args[0] == "debugtoggle" {
-            return Ok(InputAction::DebugToggle);
-        } else if args[0] == "restart" {
-            return Ok(InputAction::Restart);
-        } else {
-            return Err(format!("Could not parse '{}' as InputAction", s));
-        }
-    }
 }
 
 /// Handle inputs that are the same regardless of game mode.
@@ -651,7 +492,7 @@ pub fn handle_input_playing(input_action: InputAction,
             msg_log.log(Msg::TryMove(player_id, direction, move_amount, settings.move_mode));
         }
 
-        (InputAction::MoveTowardsCursor(), true) => {
+        (InputAction::MoveTowardsCursor, true) => {
             if let Some(cursor_pos) = settings.cursor {
                 let maybe_next_pos = astar_next_pos(&level.map, player_pos, cursor_pos, None, None);
                 if let Some(next_pos) = maybe_next_pos {
@@ -780,7 +621,7 @@ pub fn handle_input_playing(input_action: InputAction,
             let pos = level.entities.pos[&player_id];
 
             let interact_pos = 
-                if let Some(dir) = dir {
+                if let Some(dir) = dir.to_direction() {
                     dir.offset_pos(pos, 1)
                 } else {
                     pos

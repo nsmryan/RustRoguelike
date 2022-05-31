@@ -3,6 +3,7 @@ use std::cmp::Ord;
 use std::str::FromStr;
 
 use serde::{Serialize, Deserialize};
+use parse_display::{Display, FromStr};
 
 use roguelike_utils::math::*;
 
@@ -20,33 +21,13 @@ const ITEM_KEYS: &[char] = &['z', 'x', 'c'];
 const CLASSES: &[ItemClass] = &[ItemClass::Primary, ItemClass::Consumable, ItemClass::Misc];
 const DEBUG_TOGGLE_KEY: char = '\\';
 
-#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "lowercase")]
 pub enum KeyDir {
     Up,
     Held,
     Down,
 }
-
-impl FromStr for KeyDir {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-
-        if s == "down" {
-            return Ok(KeyDir::Down);
-        } else if s == "held" {
-            return Ok(KeyDir::Held);
-        } else if s == "up" {
-            return Ok(KeyDir::Up);
-        }
-
-        dbg!(s);
-        panic!("KeyDir unexpected");
-    }
-}
-
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum InputDirection {
@@ -82,7 +63,8 @@ impl Target {
     }
 }
 
-#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "lowercase")]
 pub enum MouseClick {
     Left,
     Right,
@@ -207,7 +189,7 @@ impl Input {
 
             InputEvent::Enter(dir) => {
                 if dir == KeyDir::Up {
-                    action = InputAction::MoveTowardsCursor();
+                    action = InputAction::MoveTowardsCursor;
                 }
             }
 

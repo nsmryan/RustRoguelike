@@ -4,6 +4,8 @@ use std::hash::Hash;
 
 use serde_derive::*;
 
+use parse_display::{Display, FromStr};
+
 use roguelike_utils::math::Pos;
 
 use crate::pathing::*;
@@ -11,7 +13,8 @@ use crate::utils::*;
 use crate::map::*;
 
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "lowercase")]
 pub enum Direction {
     Left,
     Right,
@@ -21,49 +24,6 @@ pub enum Direction {
     DownRight,
     UpLeft,
     UpRight,
-}
-
-impl fmt::Display for Direction {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Direction::Left => write!(f, "left"),
-            Direction::Right => write!(f, "right"),
-            Direction::Up => write!(f, "up"),
-            Direction::Down => write!(f, "down"),
-            Direction::DownLeft => write!(f, "downleft"),
-            Direction::DownRight => write!(f, "downright"),
-            Direction::UpLeft => write!(f, "upleft"),
-            Direction::UpRight => write!(f, "upright"),
-        }
-    }
-}
-
-impl FromStr for Direction {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        if s == "left" {
-            return Ok(Direction::Left);
-        } else if s == "right" {
-            return Ok(Direction::Right);
-        } else if s == "up" {
-            return Ok(Direction::Up);
-        } else if s == "down" {
-            return Ok(Direction::Down);
-        } else if s == "upright" {
-            return Ok(Direction::UpRight);
-        } else if s == "upleft" {
-            return Ok(Direction::UpLeft);
-        } else if s == "downright" {
-            return Ok(Direction::DownRight);
-        } else if s == "downleft" {
-            return Ok(Direction::DownLeft);
-        }
-
-        return Err(format!("Could not parse '{}' as Direction", s));
-    }
 }
 
 impl Direction {
@@ -248,47 +208,57 @@ pub fn test_direction_counterclockwise() {
     assert_eq!(Direction::Right, dir);
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialOrd, Ord, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "lowercase")]
+pub enum PlayerDirection {
+    Left,
+    Right,
+    Up,
+    Down,
+    DownLeft,
+    DownRight,
+    UpLeft,
+    UpRight,
+    Center,
+}
+
+impl PlayerDirection {
+    pub fn from_direction(dir: Direction) -> PlayerDirection {
+        match dir {
+            Direction::Left => PlayerDirection::Left,
+            Direction::Right => PlayerDirection::Right,
+            Direction::Up => PlayerDirection::Up,
+            Direction::Down => PlayerDirection::Down,
+            Direction::DownLeft => PlayerDirection::DownLeft,
+            Direction::DownRight => PlayerDirection::DownRight,
+            Direction::UpLeft => PlayerDirection::UpLeft,
+            Direction::UpRight => PlayerDirection::UpRight,
+        }
+    }
+
+    pub fn to_direction(&self) -> Option<Direction> {
+        match self {
+            PlayerDirection::Left => Some(Direction::Left),
+            PlayerDirection::Right => Some(Direction::Right),
+            PlayerDirection::Up => Some(Direction::Up),
+            PlayerDirection::Down => Some(Direction::Down),
+            PlayerDirection::DownLeft => Some(Direction::DownLeft),
+            PlayerDirection::DownRight => Some(Direction::DownRight),
+            PlayerDirection::UpLeft => Some(Direction::UpLeft),
+            PlayerDirection::UpRight => Some(Direction::UpRight),
+            PlayerDirection::Center => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialOrd, Ord, PartialEq, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "lowercase")]
 pub enum TileType {
     Empty,
     ShortWall,
     Wall,
     Water,
     Exit,
-}
-
-impl fmt::Display for TileType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            TileType::Empty => write!(f, "empty"),
-            TileType::ShortWall => write!(f, "shortwall"),
-            TileType::Wall => write!(f, "wall"),
-            TileType::Water => write!(f, "water"),
-            TileType::Exit => write!(f, "exit"),
-        }
-    }
-}
-
-impl FromStr for TileType {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        if s == "empty" {
-            return Ok(TileType::Empty);
-        } else if s == "shortwall" {
-            return Ok(TileType::ShortWall);
-        } else if s == "wall" {
-            return Ok(TileType::Wall);
-        } else if s == "water" {
-            return Ok(TileType::Water);
-        } else if s == "exit" {
-            return Ok(TileType::Exit);
-        }
-
-        return Err(format!("Could not parse '{}' as TileType", s));
-    }
 }
 
 impl TileType {
@@ -346,7 +316,8 @@ impl Aoe {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "snake_case")]
 pub enum MapLoadConfig {
     Random,
     TestMap,
@@ -359,7 +330,9 @@ pub enum MapLoadConfig {
     TestArmil,
     TestVaults,
     TestTraps,
+    #[display("vault_file {0}")]
     VaultFile(String),
+    #[display("procgen {0}")]
     ProcGen(String),
 }
 
@@ -369,100 +342,12 @@ impl Default for MapLoadConfig {
     }
 }
 
-impl fmt::Display for MapLoadConfig {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            MapLoadConfig::Random => write!(f, "random"),
-            MapLoadConfig::TestMap => write!(f, "test_map"),
-            MapLoadConfig::TestWall => write!(f, "test_wall"),
-            MapLoadConfig::TestColumns => write!(f, "test_columns"),
-            MapLoadConfig::Empty => write!(f, "empty"),
-            MapLoadConfig::TestSmoke => write!(f, "test_smoke"),
-            MapLoadConfig::TestCorner => write!(f, "test_corner"),
-            MapLoadConfig::TestPlayer => write!(f, "test_player"),
-            MapLoadConfig::TestArmil => write!(f, "test_armil"),
-            MapLoadConfig::TestVaults => write!(f, "test_vaults"),
-            MapLoadConfig::TestTraps => write!(f, "test_traps"),
-            MapLoadConfig::VaultFile(file) => write!(f, "vault_file {}", file),
-            MapLoadConfig::ProcGen(file) => write!(f, "procgen {}", file),
-        }
-    }
-}
-
-impl FromStr for MapLoadConfig {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        if s == "random" {
-            return Ok(MapLoadConfig::Random);
-        } else if s == "test_map" {
-            return Ok(MapLoadConfig::TestMap);
-        } else if s == "test_columns" {
-            return Ok(MapLoadConfig::TestColumns);
-        } else if s == "test_wall" {
-            return Ok(MapLoadConfig::TestWall);
-        } else if s == "empty" {
-            return Ok(MapLoadConfig::Empty);
-        } else if s == "test_corner" {
-            return Ok(MapLoadConfig::TestCorner);
-        } else if s == "test_smoke" {
-            return Ok(MapLoadConfig::TestSmoke);
-        } else if s == "test_player" {
-            return Ok(MapLoadConfig::TestPlayer);
-        } else if s == "test_armil" {
-            return Ok(MapLoadConfig::TestArmil);
-        } else if s == "test_vaults" {
-            return Ok(MapLoadConfig::TestVaults);
-        } else if s == "test_traps" {
-            return Ok(MapLoadConfig::TestTraps);
-        } else if s.starts_with("vault_file") {
-            let args = s.split(" ").collect::<Vec<&str>>();
-            return Ok(MapLoadConfig::VaultFile(args[1].to_string()));
-        } else if s.starts_with("procgen") {
-            let args = s.split(" ").collect::<Vec<&str>>();
-            return Ok(MapLoadConfig::ProcGen(args[1].to_string()));
-        }
-
-        return Err(format!("Could not parse '{}' as MapLoadConfig", s));
-    }
-}
-
-
-#[derive(Clone, Copy, Debug, Hash, Eq, PartialOrd, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialOrd, PartialEq, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "lowercase")]
 pub enum Surface {
     Floor,
     Rubble,
     Grass,
-}
-
-impl fmt::Display for Surface {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Surface::Floor => write!(f, "floor"),
-            Surface::Rubble => write!(f, "rubble"),
-            Surface::Grass => write!(f, "grass"),
-        }
-    }
-}
-
-impl FromStr for Surface {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        if s == "floor" {
-            return Ok(Surface::Floor);
-        } else if s == "rubble" {
-            return Ok(Surface::Rubble);
-        } else if s == "grass" {
-            return Ok(Surface::Grass);
-        }
-
-        return Err(format!("Could not parse '{}' as Surface", s));
-    }
 }
 
 impl Surface {

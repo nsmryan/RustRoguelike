@@ -396,6 +396,7 @@ dependencies = [
  "bmp",
  "log",
  "logging_timer",
+ "parse-display",
  "rmp",
  "rmp-serde",
  "roguelike_core",
@@ -415,6 +416,7 @@ dependencies = [
  "libc",
  "log",
  "logging_timer",
+ "parse-display",
  "pathfinding",
  "rand",
  "roguelike_core",
@@ -471,6 +473,7 @@ name = "roguelike_map"
 version = "0.1.0"
 dependencies = [
  "itertools",
+ "parse-display",
  "pathfinding",
  "roguelike_utils",
  "serde",
