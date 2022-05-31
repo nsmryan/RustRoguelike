@@ -1,6 +1,7 @@
 use logging_timer::timer;
 
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 #[cfg(test)]
 use roguelike_map::*;
@@ -271,7 +272,7 @@ fn test_ai_idle_heard_sound() {
 
     assert_eq!(2, game.msg_log.messages.len());
     assert_eq!(game.msg_log.messages[0], Msg::FaceTowards(gol, sound_pos));
-    assert_eq!(game.msg_log.messages[1], Msg::StateChange(gol, Behavior::Investigating(sound_pos)));
+    assert_eq!(game.msg_log.messages[1], Msg::ReactToSound(gol, sound_pos));
 }
 
 #[test]

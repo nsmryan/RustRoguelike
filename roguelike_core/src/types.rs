@@ -2,6 +2,7 @@ use std::default::Default;
 use std::fmt;
 use std::str::FromStr;
 
+use parse_display::{Display, FromStr};
 use serde::{Serialize, Deserialize};
 
 use roguelike_utils::comp::*;
@@ -37,74 +38,20 @@ pub enum FovBlock {
     Magnify(usize),
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Display, FromStr, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+#[display(style = "snake_case")]
 pub enum AttackStyle {
     Stealth,
     Normal,
     Strong,
 }
 
-impl fmt::Display for AttackStyle {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            AttackStyle::Stealth => write!(f, "stealth"),
-            AttackStyle::Normal => write!(f, "normal"),
-            AttackStyle::Strong => write!(f, "strong"),
-        }
-    }
-}
-
-impl FromStr for AttackStyle {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        if s == "stealth" {
-            return Ok(AttackStyle::Stealth);
-        } else if s == "normal" {
-            return Ok(AttackStyle::Normal);
-        } else if s == "strong" {
-            return Ok(AttackStyle::Strong);
-        }
-
-        return Err(format!("Could not parse '{}' as AttackStyle", s));
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Display, FromStr, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+#[display(style = "snake_case")]
 pub enum WeaponType {
     Blunt,
     Pierce,
     Slash,
-}
-
-impl fmt::Display for WeaponType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            WeaponType::Blunt => write!(f, "blunt"),
-            WeaponType::Pierce => write!(f, "pierce"),
-            WeaponType::Slash => write!(f, "slash"),
-        }
-    }
-}
-
-impl FromStr for WeaponType {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        if s == "blunt" {
-            return Ok(WeaponType::Blunt);
-        } else if s == "pierce" {
-            return Ok(WeaponType::Pierce);
-        } else if s == "slash" {
-            return Ok(WeaponType::Slash);
-        }
-
-        return Err(format!("Could not parse '{}' as WeaponType", s));
-    }
 }
 
 impl WeaponType {
@@ -153,7 +100,8 @@ pub enum Trap {
     Freeze,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "snake_case")]
 pub enum Skill {
     GrassWall,
     GrassThrow,
@@ -177,91 +125,6 @@ pub enum Skill {
     PassThrough,
     WhirlWind,
     Swift,
-}
-
-impl fmt::Display for Skill {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Skill::GrassWall => write!(f, "grass_wall"),
-            Skill::GrassThrow => write!(f, "grass_throw"),
-            Skill::GrassBlade => write!(f, "grass_blade"),
-            Skill::GrassShoes => write!(f, "grass_shoes"),
-            Skill::GrassCover => write!(f, "grass_cover"),
-            Skill::Blink => write!(f, "blink"),
-            Skill::PassWall => write!(f, "pass_wall"),
-            Skill::Rubble => write!(f, "rubble"),
-            Skill::StoneThrow => write!(f, "stone_throw"),
-            Skill::Reform => write!(f, "reform"),
-            Skill::Swap => write!(f, "swap"),
-            Skill::Push => write!(f, "push"),
-            Skill::Illuminate => write!(f, "illuminate"),
-            Skill::Heal => write!(f, "heal"),
-            Skill::FarSight => write!(f, "farsight"),
-            Skill::Sprint => write!(f, "sprint"),
-            Skill::Roll => write!(f, "roll"),
-            Skill::Ping => write!(f, "ping"),
-            Skill::StoneSkin => write!(f, "stone_skin"),
-            Skill::PassThrough => write!(f, "pass_through"),
-            Skill::WhirlWind => write!(f, "whirlwind"),
-            Skill::Swift => write!(f, "swift"),
-        }
-    }
-}
-
-impl FromStr for Skill {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        if s == "grass_wall" {
-            Ok(Skill::GrassWall)
-        } else if s == "grass_throw" {
-            Ok(Skill::GrassThrow)
-        } else if s == "grass_blade" {
-            Ok(Skill::GrassBlade)
-        } else if s == "grass_shoes" {
-            Ok(Skill::GrassShoes)
-        } else if s == "grass_cover" {
-            Ok(Skill::GrassCover)
-        } else if s == "blink" {
-            Ok(Skill::Blink)
-        } else if s == "pass_wall" {
-            Ok(Skill::PassWall)
-        } else if s == "rubble" {
-            Ok(Skill::Rubble)
-        } else if s == "stone_throw" {
-            Ok(Skill::StoneThrow)
-        } else if s == "reform" {
-            Ok(Skill::Reform)
-        } else if s == "swap" {
-            Ok(Skill::Swap)
-        } else if s == "push" {
-            Ok(Skill::Push)
-        } else if s == "illuminate" {
-            Ok(Skill::Illuminate)
-        } else if s == "heal" {
-            Ok(Skill::Heal)
-        } else if s == "farsight" {
-            Ok(Skill::FarSight)
-        } else if s == "sprint" {
-            Ok(Skill::Sprint)
-        } else if s == "roll" {
-            Ok(Skill::Roll)
-        } else if s == "ping" {
-            Ok(Skill::Ping)
-        } else if s == "stone_skin" {
-            Ok(Skill::StoneSkin)
-        } else if s == "pass_through" {
-            Ok(Skill::PassThrough)
-        } else if s == "whirlwind" {
-            Ok(Skill::WhirlWind)
-        } else if s == "swift" {
-            Ok(Skill::Swift)
-        } else {
-            Err("Could not decode skill!".to_string())
-        }
-    }
 }
 
 impl Skill {
@@ -354,7 +217,8 @@ impl Color {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
+#[display(style="lowercase")]
 pub enum GameState {
     Playing,
     Win,
@@ -366,23 +230,6 @@ pub enum GameState {
     ConfirmQuit,
     Use,
     Exit,
-}
-
-impl fmt::Display for GameState {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            GameState::Playing => write!(f, "playing"),
-            GameState::Win => write!(f, "win"),
-            GameState::Lose => write!(f, "lose"),
-            GameState::Inventory => write!(f, "inventory"),
-            GameState::SkillMenu => write!(f, "skillmenu"),
-            GameState::ClassMenu => write!(f, "classmenu"),
-            GameState::HelpMenu => write!(f, "helpmenu"),
-            GameState::ConfirmQuit => write!(f, "confirmquit"),
-            GameState::Use => write!(f, "use"),
-            GameState::Exit => write!(f, "exit"),
-        }
-    }
 }
 
 impl Default for GameState {
@@ -402,37 +249,12 @@ impl GameState {
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
+#[display(style="snake_case")]
 pub enum ActionMode {
     Primary,
     Alternate,
 }
-
-impl fmt::Display for ActionMode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ActionMode::Primary => write!(f, "primary"),
-            ActionMode::Alternate => write!(f, "alternate"),
-        }
-    }
-}
-
-impl FromStr for ActionMode {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        if s == "primary" {
-            return Ok(ActionMode::Primary);
-        } else if s == "alternate" {
-            return Ok(ActionMode::Alternate);
-        }
-
-        return Err(format!("Could not parse '{}' as ActionMode", s));
-    }
-}
-
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct ItemModifier {
@@ -446,7 +268,8 @@ impl ItemModifier {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "lowercase")]
 pub enum Item {
     Stone,
     Key,
@@ -472,97 +295,6 @@ pub enum Item {
     SoundTrap,
     BlinkTrap,
     FreezeTrap,
-}
-
-impl fmt::Display for Item {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Item::Stone => write!(f, "stone"),
-            Item::Key => write!(f, "key"),
-            Item::Dagger => write!(f, "dagger"),
-            Item::Shield => write!(f, "shield"),
-            Item::Hammer => write!(f, "hammer"),
-            Item::Spear => write!(f, "spear"),
-            Item::GreatSword => write!(f, "greatsword"),
-            Item::Sword => write!(f, "sword"),
-            Item::Axe => write!(f, "axe"),
-            Item::Khopesh => write!(f, "khopesh"),
-            Item::Lantern => write!(f, "lantern"),
-            Item::Thumper => write!(f, "thumper"),
-            Item::Sling => write!(f, "sling"),
-            Item::Teleporter => write!(f, "teleporter"),
-            Item::Herb => write!(f, "herb"),
-            Item::SeedOfStone => write!(f, "seedofstone"),
-            Item::SeedCache => write!(f, "seedcache"),
-            Item::SmokeBomb => write!(f, "smokebomb"),
-            Item::LookingGlass => write!(f, "lookinglass"),
-            Item::GlassEye => write!(f, "glasseye"),
-            Item::SpikeTrap => write!(f, "spiketrap"),
-            Item::SoundTrap => write!(f, "soundtrap"),
-            Item::BlinkTrap => write!(f, "blinktrap"),
-            Item::FreezeTrap => write!(f, "freezetrap"),
-        }
-    }
-}
-
-impl FromStr for Item {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        if s == "stone" {
-            return Ok(Item::Stone);
-        } else if s == "key" {
-            return Ok(Item::Key);
-        } else if s == "dagger" {
-            return Ok(Item::Dagger);
-        } else if s == "shield" {
-            return Ok(Item::Shield);
-        } else if s == "hammer" {
-            return Ok(Item::Hammer);
-        } else if s == "spear" {
-            return Ok(Item::Spear);
-        } else if s == "lantern" {
-            return Ok(Item::Lantern);
-        } else if s == "thumper" {
-            return Ok(Item::Thumper);
-        } else if s == "axe" {
-            return Ok(Item::Axe);
-        } else if s == "khopesh" {
-            return Ok(Item::Khopesh);
-        } else if s == "sling" {
-            return Ok(Item::Sling);
-        } else if s == "greatsword" {
-            return Ok(Item::GreatSword);
-        } else if s == "sword" {
-            return Ok(Item::Sword);
-        } else if s == "teleporter" {
-            return Ok(Item::Teleporter);
-        } else if s == "herb" {
-            return Ok(Item::Herb);
-        } else if s == "seedofstone" {
-            return Ok(Item::SeedOfStone);
-        } else if s == "seedcache" {
-            return Ok(Item::SeedCache);
-        } else if s == "smokebomb" {
-            return Ok(Item::SmokeBomb);
-        } else if s == "lookingglass" {
-            return Ok(Item::LookingGlass);
-        } else if s == "glasseye" {
-            return Ok(Item::GlassEye);
-        } else if s == "spiketrap" {
-            return Ok(Item::SpikeTrap);
-        } else if s == "soundtrap" {
-            return Ok(Item::SoundTrap);
-        } else if s == "blinktrap" {
-            return Ok(Item::BlinkTrap);
-        } else if s == "freezetrap" {
-            return Ok(Item::FreezeTrap);
-        }
-
-        return Err(format!("Could not parse '{}' as Item", s));
-    }
 }
 
 impl Item {
@@ -664,80 +396,22 @@ impl Item {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
+#[display(style="snake_case")]
 pub enum ItemClass {
     Primary,
     Consumable,
     Misc,
 }
 
-impl fmt::Display for ItemClass {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            ItemClass::Primary => write!(f, "primary"),
-            ItemClass::Consumable => write!(f, "consumable"),
-            ItemClass::Misc => write!(f, "misc"),
-        }
-    }
-}
-
-impl FromStr for ItemClass {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        if s == "primary" {
-            return Ok(ItemClass::Primary);
-        } else if s == "consumable" {
-            return Ok(ItemClass::Consumable);
-        } else if s == "misc" {
-            return Ok(ItemClass::Misc);
-        }
-
-        return Err(format!("Could not parse '{}' as ItemClass", s));
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Debug, Serialize, Deserialize, Display, FromStr)]
+#[display(style="snake_case")]
 pub enum UseAction {
+    #[display("item {0}")]
     Item(ItemClass),
+    #[display("skill {0} {1}")]
     Skill(Skill, ActionMode),
     Interact,
-}
-
-impl fmt::Display for UseAction {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            UseAction::Item(item_class) => write!(f, "item {}", item_class),
-            UseAction::Skill(skill, action_mode) => write!(f, "skill {} {}", skill, action_mode),
-            UseAction::Interact => write!(f, "interact"),
-        }
-    }
-}
-
-impl FromStr for UseAction {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        let mut args = s.split(" ");
-        let action = args.next().unwrap();
-
-        if action == "interact" {
-            return Ok(UseAction::Interact);
-        } else if action == "skill" {
-            let skill = Skill::from_str(args.next().unwrap())?;
-            let action_mode = ActionMode::from_str(args.next().unwrap())?;
-            return Ok(UseAction::Skill(skill, action_mode));
-        } else if action == "item" {
-            let item_class = ItemClass::from_str(args.next().unwrap())?;
-            return Ok(UseAction::Item(item_class));
-        } 
-
-        return Err("Use action not decodable".to_string());
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -758,7 +432,8 @@ impl Default for InventoryAction {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
+#[display(style="snake_case")]
 pub enum Stance {
     Crouching,
     Standing,
@@ -777,35 +452,8 @@ impl Stance {
     }
 }
 
-impl fmt::Display for Stance {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Stance::Crouching => write!(f, "crouching"),
-            Stance::Standing => write!(f, "standing"),
-            Stance::Running => write!(f, "running"),
-        }
-    }
-}
-
-impl FromStr for Stance {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        if s == "crouching" {
-            return Ok(Stance::Crouching);
-        } else if s == "standing" {
-            return Ok(Stance::Standing);
-        } else if s == "running" {
-            return Ok(Stance::Running);
-        }
-
-        return Err(format!("Could not parse '{}' as Stance", s));
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
+#[display(style="lowercase")]
 pub enum EntityName {
     Player,
     Gol,
@@ -856,152 +504,8 @@ impl Default for EntityName {
     }
 }
 
-impl fmt::Display for EntityName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            EntityName::Player => write!(f, "player"),
-            EntityName::Gol => write!(f, "gol"),
-            EntityName::Pawn => write!(f, "pawn"),
-            EntityName::Rook => write!(f, "rook"),
-            EntityName::Column => write!(f, "column"),
-            EntityName::Key => write!(f, "key"),
-            EntityName::Exit => write!(f, "exit"),
-            EntityName::Dagger => write!(f, "dagger"),
-            EntityName::Hammer => write!(f, "hammer"),
-            EntityName::Spear => write!(f, "spear"),
-            EntityName::GreatSword => write!(f, "greatsword"),
-            EntityName::Axe => write!(f, "axe"),
-            EntityName::Khopesh => write!(f, "khopesh"),
-            EntityName::Sword => write!(f, "sword"),
-            EntityName::Teleporter => write!(f, "teleporter"),
-            EntityName::Lantern => write!(f, "lantern"),
-            EntityName::Thumper => write!(f, "thumper"),
-            EntityName::Sling => write!(f, "sling"),
-            EntityName::SeedOfStone => write!(f, "seedofstone"),
-            EntityName::SeedCache => write!(f, "seedcache"),
-            EntityName::SmokeBomb => write!(f, "smokebomb"),
-            EntityName::LookingGlass => write!(f, "lookingglass"),
-            EntityName::GlassEye => write!(f, "glasseye"),
-            EntityName::Shield => write!(f, "shield"),
-            EntityName::Spire => write!(f, "spire"),
-            EntityName::Armil => write!(f, "armil"),
-            EntityName::SpikeTrap => write!(f, "spiketrap"),
-            EntityName::BlinkTrap => write!(f, "blinktrap"),
-            EntityName::FreezeTrap => write!(f, "freezetrap"),
-            EntityName::SoundTrap => write!(f, "soundtrap"),
-            EntityName::GateTrigger => write!(f, "gatetrigger"),
-            EntityName::Stone => write!(f, "stone"),
-            EntityName::Mouse => write!(f, "mouse"),
-            EntityName::Cursor => write!(f, "cursor"),
-            EntityName::Energy => write!(f, "energy"),
-            EntityName::Herb => write!(f, "herb"),
-            EntityName::Grass => write!(f, "grass"),
-            EntityName::Statue => write!(f, "statue"),
-            EntityName::Smoke => write!(f, "smoke"),
-            EntityName::Magnifier => write!(f, "magnifier"),
-            EntityName::Other => write!(f, "other"),
-        }
-    }
-}
-
-impl FromStr for EntityName {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-
-        if s == "player" {
-            return Ok(EntityName::Player);
-        } else if s == "gol" {
-            return Ok(EntityName::Gol);
-        } else if s == "pawn" {
-            return Ok(EntityName::Pawn);
-        } else if s == "rook" {
-            return Ok(EntityName::Rook);
-        } else if s == "column" {
-            return Ok(EntityName::Column);
-        } else if s == "key" {
-            return Ok(EntityName::Key);
-        } else if s == "exit" {
-            return Ok(EntityName::Exit);
-        } else if s == "dagger" {
-            return Ok(EntityName::Dagger);
-        } else if s == "hammer" {
-            return Ok(EntityName::Hammer);
-        } else if s == "teleporter" {
-            return Ok(EntityName::Teleporter);
-        } else if s == "spear" {
-            return Ok(EntityName::Spear);
-        } else if s == "greatsword" {
-            return Ok(EntityName::GreatSword);
-        } else if s == "sword" {
-            return Ok(EntityName::Sword);
-        } else if s == "axe" {
-            return Ok(EntityName::Axe);
-        } else if s == "khopesh" {
-            return Ok(EntityName::Khopesh);
-        } else if s == "lantern" {
-            return Ok(EntityName::Lantern);
-        } else if s == "thumper" {
-            return Ok(EntityName::Thumper);
-        } else if s == "sling" {
-            return Ok(EntityName::Sling);
-        } else if s == "seedofstone" {
-            return Ok(EntityName::SeedOfStone);
-        } else if s == "seedcache" {
-            return Ok(EntityName::SeedCache);
-        } else if s == "smokebomb" {
-            return Ok(EntityName::SmokeBomb);
-        } else if s == "lookingglass" {
-            return Ok(EntityName::LookingGlass);
-        } else if s == "glasseye" {
-            return Ok(EntityName::GlassEye);
-        } else if s == "shield" {
-            return Ok(EntityName::Shield);
-        } else if s == "spire" {
-            return Ok(EntityName::Spire);
-        } else if s == "armil" {
-            return Ok(EntityName::Armil);
-        } else if s == "spiketrap" {
-            return Ok(EntityName::SpikeTrap);
-        } else if s == "blinktrap" {
-            return Ok(EntityName::BlinkTrap);
-        } else if s == "freezetrap" {
-            return Ok(EntityName::FreezeTrap);
-        } else if s == "soundtrap" {
-            return Ok(EntityName::SoundTrap);
-        } else if s == "gatetrigger" {
-            return Ok(EntityName::GateTrigger);
-        } else if s == "stone" {
-            return Ok(EntityName::Stone);
-        } else if s == "mouse" {
-            return Ok(EntityName::Mouse);
-        } else if s == "cursor" {
-            return Ok(EntityName::Cursor);
-        } else if s == "energy" {
-            return Ok(EntityName::Energy);
-        } else if s == "herb" {
-            return Ok(EntityName::Herb);
-        } else if s == "grass" {
-            return Ok(EntityName::Grass);
-        } else if s == "statue" {
-            return Ok(EntityName::Statue);
-        } else if s == "smoke" {
-            return Ok(EntityName::Smoke);
-        } else if s == "magnifier" {
-            return Ok(EntityName::Magnifier);
-        } else if s == "other" {
-            return Ok(EntityName::Other);
-        }
-
-        dbg!(s);
-        panic!("EntityName not expected!");
-    }
-}
-
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
+#[display(style="snake_case")]
 pub enum EntityType {
     Player,
     Enemy,
@@ -1013,58 +517,14 @@ pub enum EntityType {
     Other,
 }
 
-impl fmt::Display for EntityType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            EntityType::Player => write!(f, "player"),
-            EntityType::Enemy => write!(f, "enemy"),
-            EntityType::Item => write!(f, "item"),
-            EntityType::Column => write!(f, "column"),
-            EntityType::Energy => write!(f, "energy"),
-            EntityType::Trigger => write!(f, "trigger"),
-            EntityType::Environment => write!(f, "environment"),
-            EntityType::Other => write!(f, "other"),
-        }
-    }
-}
-
-impl FromStr for EntityType {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-
-        if s == "player" {
-            return Ok(EntityType::Player);
-        } else if s == "enemy" {
-            return Ok(EntityType::Enemy);
-        } else if s == "item" {
-            return Ok(EntityType::Item);
-        } else if s == "column" {
-            return Ok(EntityType::Column);
-        } else if s == "energy" {
-            return Ok(EntityType::Energy);
-        } else if s == "trigger" {
-            return Ok(EntityType::Trigger);
-        } else if s == "environment" {
-            return Ok(EntityType::Environment);
-        } else if s == "other" {
-            return Ok(EntityType::Other);
-        }
-
-        dbg!(s);
-        panic!("EntityType not expected!");
-    }
-}
-
 impl Default for EntityType {
     fn default() -> EntityType {
         return EntityType::Other;
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
+#[display(style="snake_case")]
 pub enum EntityClass {
     General,
     Grass,
@@ -1072,19 +532,6 @@ pub enum EntityClass {
     Clockwork,
     Hierophant,
     Wind,
-}
-
-impl fmt::Display for EntityClass {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            EntityClass::General => write!(f, "general"),
-            EntityClass::Grass => write!(f, "grass"),
-            EntityClass::Monolith => write!(f, "monolith"),
-            EntityClass::Clockwork => write!(f, "clockword"),
-            EntityClass::Hierophant => write!(f, "hierophant"),
-            EntityClass::Wind => write!(f, "wind"),
-        }
-    }
 }
 
 impl Default for EntityClass {

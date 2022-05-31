@@ -1,6 +1,6 @@
 use std::fmt;
 use serde::{Serialize, Deserialize};
-//use parse_display::{Display, FromStr};
+use parse_display::{Display, FromStr};
 
 use roguelike_utils::comp::*;
 use roguelike_utils::math::*;
@@ -20,24 +20,16 @@ pub enum Ai {
     Basic,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-//#[display(style = "snake_case")]
+#[derive(Clone, Display, FromStr, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[display(style = "snake_case")]
 pub enum Behavior {
     Idle,
+    #[display("alert {0}")]
     Alert(Pos),
+    #[display("investigating {0}")]
     Investigating(Pos),
+    #[display("attacking {0}")]
     Attacking(EntityId),
-}
-
-impl fmt::Display for Behavior {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Behavior::Idle => write!(f, "idle"),
-            Behavior::Alert(pos) => write!(f, "alert {} {}", pos.x, pos.y),
-            Behavior::Investigating(pos) => write!(f, "investigating {} {}", pos.x, pos.y),
-            Behavior::Attacking(entity_id) => write!(f, "attacking {}", entity_id),
-        }
-    }
 }
 
 impl Default for Behavior {

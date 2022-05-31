@@ -19,7 +19,7 @@ log = "0.4"
 simple-logging = "2.0"
 logging_timer = "1.0"
 
-#parse-display = "0.5.5"
+parse-display = "0.5.5"
 
 roguelike_utils = { path = "../roguelike_utils" }
 roguelike_map = { path = "../roguelike_map" }

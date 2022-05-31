@@ -2,6 +2,7 @@ use std::iter::Iterator;
 use std::fmt;
 use std::str::FromStr;
 
+use parse_display::{Display, FromStr};
 use serde::{Serialize, Deserialize};
 
 use roguelike_utils::line::*;
@@ -15,39 +16,12 @@ use crate::utils::*;
 use crate::level::*;
 
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "snake_case")]
 pub enum MoveMode {
     Sneak,
     Walk,
     Run,
-}
-
-impl fmt::Display for MoveMode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            MoveMode::Sneak => write!(f, "sneak"),
-            MoveMode::Walk => write!(f, "walk"),
-            MoveMode::Run => write!(f, "run"),
-        }
-    }
-}
-
-impl FromStr for MoveMode {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        if s == "sneak" {
-            return Ok(MoveMode::Sneak);
-        } else if s == "walk" {
-            return Ok(MoveMode::Walk);
-        } else if s == "run" {
-            return Ok(MoveMode::Run);
-        }
-
-        return Err(format!("Could not parse '{}' as MoveMode", s));
-    }
 }
 
 impl Default for MoveMode {
@@ -98,7 +72,8 @@ pub enum AttackType {
     Push,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "lowercase")]
 pub enum MoveType {
     Move,
     Pass,
@@ -108,21 +83,6 @@ pub enum MoveType {
     Blink,
     Misc,
 }
-
-impl fmt::Display for MoveType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            MoveType::Move => write!(f, "move"),
-            MoveType::Pass => write!(f, "pass"),
-            MoveType::JumpWall => write!(f, "jumpwall"),
-            MoveType::WallKick => write!(f, "wallkick"),
-            MoveType::Collide => write!(f, "collide"),
-            MoveType::Blink => write!(f, "blink"),
-            MoveType::Misc => write!(f, "misc"),
-        }
-    }
-}
-
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Movement {
@@ -442,6 +402,7 @@ pub fn test_reach_offsets_horiz() {
 
     let expected_pos =
         vec!((1, 0), (-1, 0), (0, 1), (0, -1)).iter()
+                                              .map(|pair| Pos::new(pair.0, pair.1))
                                               .collect::<Vec<Pos>>();
     assert!(offsets.iter().all(|p| expected_pos.iter().any(|other| other == p)));
 }
