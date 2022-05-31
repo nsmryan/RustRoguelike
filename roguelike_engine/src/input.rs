@@ -198,10 +198,6 @@ impl Input {
                     self.ctrl = dir == KeyDir::Down;
                 }
 
-                // TODO remove if removing old input system with held state...
-                //if dir == KeyDir::Down {
-                //    action = InputAction::Sneak;
-                //}
                 match dir {
                     KeyDir::Down => action = InputAction::Sneak,
                     KeyDir::Up => action = InputAction::Walk,
@@ -214,10 +210,6 @@ impl Input {
                     self.shift = dir == KeyDir::Down;
                 }
 
-                // TODO remove if removing old input system with held state...
-                //if dir == KeyDir::Down {
-                //    action = InputAction::Run;
-                //}
                 match dir {
                     KeyDir::Down => action = InputAction::Run,
                     KeyDir::Up => action = InputAction::Walk,
@@ -274,9 +266,9 @@ impl Input {
         if settings.state.is_menu() {
             if chr.is_ascii_digit() {
                 return InputAction::SelectEntry(chr.to_digit(10).unwrap() as usize);
+            } else {
+                return menu_alpha_up_to_action(chr, self.shift);
             }
-
-            return menu_alpha_up_to_action(chr, self.shift);
         } else if settings.state == GameState::Use {
             if let Some(input_dir) = InputDirection::from_chr(chr) {
                 if let InputDirection::Dir(_dir) = input_dir {
@@ -291,9 +283,9 @@ impl Input {
                         return InputAction::DropItem;
                     }
                 }
-            } else if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+            } else if let Some(_index) = get_item_index(chr) {
                 // Releasing the item does not take you out of use-mode.
-            } else if let Some(_index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+            } else if let Some(_index) = get_skill_index(chr) {
                 // Releasing a skill key does not take you out of use-mode.
             } else {
                 return self.apply_char(chr, settings);
@@ -345,7 +337,7 @@ impl Input {
                     self.target = Some(Target::item(item_class));
                     action = InputAction::StartUseItem(item_class);
                 }
-            } else if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+            } else if let Some(index) = get_skill_index(chr) {
                 // check if you press down the same item again, aborting use-mode
                 if self.target == Some(Target::Skill(index)) {
                     action = InputAction::AbortUse;
@@ -366,7 +358,7 @@ impl Input {
             } else if let Some(input_dir) = InputDirection::from_chr(chr) {
                 self.direction = Some(input_dir);
             } else if !(self.cursor && self.ctrl) {
-                if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+                if let Some(index) = get_item_index(chr) {
                     let item_class = CLASSES[index];
                     self.target = Some(Target::item(item_class));
 
@@ -374,7 +366,7 @@ impl Input {
                     action = InputAction::StartUseItem(item_class);
                     // directions are cleared when entering use-mode
                     self.direction = None;
-                } else if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+                } else if let Some(index) = get_skill_index(chr) {
                     self.target = Some(Target::skill(index));
 
                     self.cursor = false;
@@ -431,11 +423,11 @@ impl Input {
             self.direction = None;
         }
 
-        if let Some(_index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+        if let Some(_index) = get_skill_index(chr) {
             self.target = None;
         }
 
-        if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+        if let Some(_index) = get_item_index(chr) {
             self.target = None;
         }
     }
@@ -472,18 +464,11 @@ impl Input {
         } else {
             // Item release can only throw outside in cursor mode
             if self.cursor {
-                if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+                if let Some(index) = get_item_index(chr) {
                     let item_class = CLASSES[index];
                     let cursor_pos = settings.cursor.unwrap();
                     action = InputAction::ThrowItem(cursor_pos, item_class);
                 }
-            } else {
-                // TODO This is from the previous way skills works- likely just delete it
-                // when SkillFacing, etc, are removed.
-                // if releasing target, apply the skill or item
-                //if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
-                    //action = self.use_skill(index, settings);
-                //}
             }
 
             // If we are not releasing a direction, skill, or item then try other keys.
@@ -500,19 +485,6 @@ impl Input {
 
         return action;
     }
-
-    // TODO probably not needed anymore
-    //fn use_skill(&mut self, skill_index: usize, settings: &Settings) -> InputAction {
-    //    if self.cursor {
-    //        if let Some(cursor_pos) = settings.cursor {
-    //            return InputAction::SkillPos(cursor_pos, self.action_mode(), skill_index);
-    //        } else {
-    //            panic!("No cursor position while in cursor mode!");
-    //        }
-    //    } else {
-    //        return InputAction::SkillFacing(self.action_mode(), skill_index);
-    //    }
-    //}
 }
 
 pub fn menu_alpha_up_to_action(chr: char, shift: bool) -> InputAction {
@@ -645,6 +617,14 @@ fn direction_from_digit(chr: char) -> Option<Direction> {
         '9' => Some(Direction::UpRight),
         _ => None,
     }
+}
+
+fn get_item_index(chr: char) -> Option<usize> {
+    return  ITEM_KEYS.iter().position(|key| *key == chr);
+}
+
+fn get_skill_index(chr: char) -> Option<usize> {
+    return  SKILL_KEYS.iter().position(|key| *key == chr);
 }
 
 #[test]
