@@ -494,6 +494,8 @@ fn resolve_attack(entity_id: EntityId,
             msg_log.log(Msg::Pushed(entity_id, target_id, direction, amount, true));
         }
     }
+
+    level.entities.took_turn[&entity_id] = true;
 }
 
 fn resolve_try_move(entity_id: EntityId,
