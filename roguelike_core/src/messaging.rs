@@ -47,11 +47,11 @@ pub enum Msg {
     PlayerDeath,
     #[display("picked_up {0} {1}")]
     PickedUp(EntityId, EntityId), // entity, item
-    #[display("picked {0}")]
+    #[display("pickup {0}")]
     PickUp(EntityId), // entity trying to pick up an item
-    #[display("picked {0}")]
+    #[display("item_throw {0} {1} {2} {3} {4}")]
     ItemThrow(EntityId, EntityId, Pos, Pos, bool), // thrower, stone id, start, end, hard
-    #[display("item_throw {0} {1} {2}")]
+    #[display("item_landed {0} {1} {2}")]
     ItemLanded(EntityId, Pos, Pos), // stone id, start, end
     #[display("try_attack {0} {1} {2}")]
     TryAttack(EntityId, Attack, Pos), // attacker, attack description, attack pos
