@@ -834,9 +834,9 @@ fn start_use_skill(index: usize, action_mode: ActionMode, level: &Level, setting
                     }
 
                     // TODO this will highlight in red all tiles hittable from any chose of direction.
-                    //for hit_pos in use_result.hit_positions.iter() {
-                    //    msg_log.log(Msg::UseHitPos(*hit_pos));
-                    //}
+                    for hit_pos in use_result.hit_positions.iter() {
+                        msg_log.log(Msg::UseHitPos(*hit_pos));
+                    }
                 }
 
                 change_state(settings, GameState::Use, msg_log);
@@ -881,9 +881,9 @@ fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings,
                 }
 
                 // TODO this will highlight in red all tiles hittable from any chose of direction.
-                //for hit_pos in use_result.hit_positions.iter() {
-                //    msg_log.log(Msg::UseHitPos(*hit_pos));
-                //}
+                for hit_pos in use_result.hit_positions.iter() {
+                    msg_log.log(Msg::UseHitPos(*hit_pos));
+                }
             }
 
             change_state(settings, GameState::Use, msg_log);
