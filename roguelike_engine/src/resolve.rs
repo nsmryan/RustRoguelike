@@ -4,6 +4,7 @@ use std::mem;
 use roguelike_utils::line::*;
 use roguelike_utils::rng::*;
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 
@@ -54,6 +55,16 @@ pub fn resolve_messages(game: &mut Game) {
                 }
             }
 
+            Msg::ReactToSound(entity_id, sound_pos) => {
+                if game.level.is_in_fov(entity_id, player_id) == FovResult::Inside {
+                    let player_pos = game.level.entities.pos[&player_id];
+                    game.msg_log.log(Msg::StateChange(entity_id, Behavior::Alert(player_pos)));
+                    game.level.entities.took_turn[&entity_id] = true;
+                } else {
+                    game.msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(sound_pos)));
+                }
+            }
+
             Msg::SoundHitTile(cause_id, source_pos, _radius, tile_pos) => {
                 resolve_sound_hit_tile(cause_id, source_pos, tile_pos, game);
             }
@@ -91,12 +102,6 @@ pub fn resolve_messages(game: &mut Game) {
             Msg::Attack(attacker, attacked, _damage) => {
                 let pos = game.level.entities.pos[&attacked];
                 game.msg_log.log_front(Msg::Sound(attacker, pos, game.config.sound_radius_attack)); 
-            }
-
-            Msg::Stabbed(_attacker_id, _attacked_id) => {
-                // TODO this may be superceded by Hit, although perhaps Hit
-                // should break out into finer grain attacks.
-                //msg_log.log(Msg::Froze(attacked_id, game.config.dagger_stab_num_turns));
             }
 
             Msg::HammerRaise(entity_id, item_index, dir) => {
@@ -266,10 +271,11 @@ pub fn resolve_messages(game: &mut Game) {
                 resolve_eat_herb(entity_id, item_id, game);
             }
 
-            Msg::FarSight(entity_id, amount) => {
+            Msg::TryFarSight(entity_id, amount) => {
                 if try_use_energy(entity_id, Skill::FarSight, &mut game.level, &mut game.msg_log) {
                     game.level.entities.status[&entity_id].extra_fov += amount;
                     game.level.entities.took_turn[&entity_id] = true;
+                    game.msg_log.log(Msg::FarSight(entity_id, amount));
                 }
             }
 
@@ -379,9 +385,6 @@ pub fn resolve_messages(game: &mut Game) {
                 }
             }
 
-            Msg::StartUseItem(item_id) => {
-            }
-
             Msg::Restart => {
                 resolve_restart(game);
             }
@@ -470,13 +473,11 @@ fn resolve_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attac
 
 fn resolve_attack(entity_id: EntityId,
                   attack_info: Attack,
-                  attack_pos: Pos,
+                  _attack_pos: Pos,
                   level: &mut Level,
                   msg_log: &mut MsgLog,
                   _config: &Config) {
-    let entity_pos = level.entities.pos[&entity_id];
-
-    // any time an entity attacks, they change to standing stance
+    // Any time an entity attacks, they change to standing stance.
     level.entities.stance[&entity_id] = Stance::Standing;
     msg_log.log(Msg::Stance(entity_id, level.entities.stance[&entity_id]));
 
@@ -485,26 +486,16 @@ fn resolve_attack(entity_id: EntityId,
             attack(entity_id, target_id, level, msg_log);
         }
 
-        Attack::Stab(target_id, move_into) => {
-            stab(entity_id, target_id, &mut level.entities, msg_log);
-
-            if let Some(item_id) = level.using(entity_id, Item::Dagger) {
-                level.used_up_item(entity_id, item_id);
-            }
-
-            if move_into && entity_pos != attack_pos {
-                msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, attack_pos));
-            }
-
-            // this is done after the Moved msg to ensure that the attack
-            // animation plays instead of an idle animation
-            msg_log.log(Msg::Stabbed(entity_id, target_id));
+        Attack::Stab(_target_id, _move_into) => {
+            panic!("Stabbing through an attack should no longer be possible!");
         }
 
         Attack::Push(target_id, direction, amount) => {
             msg_log.log(Msg::Pushed(entity_id, target_id, direction, amount, true));
         }
     }
+
+    level.entities.took_turn[&entity_id] = true;
 }
 
 fn resolve_try_move(entity_id: EntityId,
@@ -870,7 +861,7 @@ fn resolve_throw_item(player_id: EntityId,
 
     // get target position in direction of player click
     let end_pos =
-        Pos::from(throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap());
+        throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
 
     let hit_pos = level.throw_towards(start_pos, end_pos);
 
@@ -1443,30 +1434,11 @@ fn resolve_stone_thrown(entity_id: EntityId, target_pos: Pos, game: &mut Game) {
     }
 }
 
-fn resolve_grass_blade(entity_id: EntityId, action_mode: ActionMode, direction: Direction, game: &mut Game) {
+fn resolve_grass_blade(entity_id: EntityId, _action_mode: ActionMode, direction: Direction, game: &mut Game) {
     let pos = game.level.entities.pos[&entity_id];
 
-    match action_mode {
-        ActionMode::Primary => {
-            // TODO anything?
-        }
-
-        ActionMode::Alternate => {
-            // TODO anything?
-        }
-    }
-
     let attack_pos = direction.offset_pos(pos, 1);
-    let targets = game.level.get_entities_at_pos(attack_pos);
-
-    for target_id in targets {
-        if game.level.entities.typ[&target_id] == EntityType::Enemy {
-            let attack = Attack::Stab(target_id, false);
-            resolve_attack(entity_id, attack, attack_pos, &mut game.level, &mut game.msg_log, &game.config);
-
-            break;
-        }
-    }
+    game.msg_log.log(Msg::Hit(entity_id, attack_pos, Item::Dagger.weapon_type().unwrap(), AttackStyle::Stealth));
 
     game.level.entities.took_turn[&entity_id] = true;
 }
@@ -1524,7 +1496,11 @@ fn resolve_passthrough(entity_id: EntityId, direction: Direction, game: &mut Gam
     let map_clear_path = game.level.map.path_blocked(entity_pos, dest, BlockedType::Move).is_none();
     let dest_clear_pos = !game.level.pos_blocked(dest);
     if map_clear_path && dest_clear_pos && pass_through_entity {
-        game.msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, dest));
+
+        // This move is a kind of blink, as we have already ensured that the movement will not
+        // hit anything, and we go directly to the destination without a TryMove (which would
+        // just run right into the golem we are passing through).
+        game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, dest));
 
         for pos in line_inclusive(entity_pos, dest) {
             for other_id in game.level.get_entities_at_pos(pos) {

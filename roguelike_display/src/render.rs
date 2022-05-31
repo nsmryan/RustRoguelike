@@ -255,22 +255,6 @@ fn render_info(panel: &mut Panel, display_state: &mut DisplayState) {
             if entity_in_fov {
                 drawn_info = true;
 
-                //if let Some(hp) = display_state.hp.get(obj_id) {
-                //    y_pos += 1;
-
-                //    let health_color = Color::new(0x96, 0x54, 0x56, 255);
-                //    let max_hp = display_state.max_hp[obj_id];
-                //    render_bar(panel,
-                //               max_hp,
-                //               *hp,
-                //               Pos::new(1, y_pos),
-                //               health_color,
-                //               Color::white(),
-                //               false);
-
-                //    y_pos += 1;
-                //}
-
                 text_list.push(format!("* {:?}", display_state.name[&obj_id]));
                 if let Some(hp) = display_state.hp.get(&obj_id) {
                     text_list.push(format!(" hp {:?}", hp));
@@ -1242,11 +1226,10 @@ fn render_entity_type(panel: &mut Panel, typ: EntityType, display_state: &mut Di
     }
 }
 
-fn render_overlay_use_item(panel: &mut Panel,
-                           item_class: ItemClass,
-                           display_state: &mut DisplayState,
-                           config: &Config,
-                           sprites: &Vec<SpriteSheet>) {
+fn render_overlay_use(panel: &mut Panel,
+                      display_state: &mut DisplayState,
+                      config: &Config,
+                      sprites: &Vec<SpriteSheet>) {
     let player_id = display_state.player_id();
     let player_pos = display_state.pos[&player_id];
 
@@ -1260,32 +1243,30 @@ fn render_overlay_use_item(panel: &mut Panel,
 
     let sprite_key = lookup_spritekey(sprites, "rustrogueliketiles");
 
-    if display_state.inventory.iter().position(|(_item, class)| *class == item_class).is_some() {
-        if let Some(use_dir) = display_state.use_dir {
-            if let Some(_use_pos) = display_state.use_pos {
-                let arrow_pos = use_dir.offset_pos(player_pos, 1);
-                render_arrow(panel, sprite_key, use_dir, arrow_pos, direction_color);
-
-                for hit_pos in display_state.hit_positions.iter() {
-                   panel.highlight_cmd(attack_highlight_color, *hit_pos);
-                }
-            }
-        } else {
-            for (use_pos, use_dir) in display_state.use_dirs.iter() {
-                // skip player positions for highlights
-                if *use_pos != player_pos {
-                    panel.highlight_cmd(highlight_color, *use_pos);
-                }
-
-                let arrow_pos = use_dir.offset_pos(player_pos, 1);
-                render_arrow(panel, sprite_key, *use_dir, arrow_pos, direction_color);
-            }
+    if let Some(use_dir) = display_state.use_dir {
+        if let Some(_use_pos) = display_state.use_pos {
+            let arrow_pos = use_dir.offset_pos(player_pos, 1);
+            render_arrow(panel, sprite_key, use_dir, arrow_pos, direction_color);
 
             for hit_pos in display_state.hit_positions.iter() {
-                // skip the player's position for attack highlights.
-                if *hit_pos != player_pos {
-                   panel.highlight_cmd(attack_highlight_color, *hit_pos);
-                }
+               panel.highlight_cmd(attack_highlight_color, *hit_pos);
+            }
+        }
+    } else {
+        for (use_pos, use_dir) in display_state.use_dirs.iter() {
+            // skip player positions for highlights
+            if *use_pos != player_pos {
+                panel.highlight_cmd(highlight_color, *use_pos);
+            }
+
+            let arrow_pos = use_dir.offset_pos(player_pos, 1);
+            render_arrow(panel, sprite_key, *use_dir, arrow_pos, direction_color);
+        }
+
+        for hit_pos in display_state.hit_positions.iter() {
+            // skip the player's position for attack highlights.
+            if *hit_pos != player_pos {
+               panel.highlight_cmd(attack_highlight_color, *hit_pos);
             }
         }
     }
@@ -1364,8 +1345,10 @@ fn render_game_overlays(panel: &mut Panel,
                     render_arrow(panel, tiles_key, *use_dir, *use_pos, direction_color);
                 }
             }
-        } else if let UseAction::Item(item_class) = display_state.use_action {
-            render_overlay_use_item(panel, item_class, display_state, &config, sprites);
+        } else if let UseAction::Item(_item_class) = display_state.use_action {
+            render_overlay_use(panel, display_state, &config, sprites);
+        } else if let UseAction::Skill(_skill, _action_mode) = display_state.use_action {
+            render_overlay_use(panel, display_state, &config, sprites);
         }
     }
 

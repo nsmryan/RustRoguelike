@@ -4,6 +4,7 @@ use pathfinding::directed::astar::astar;
 
 use roguelike_utils::line::*;
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 
@@ -57,14 +58,23 @@ impl Level {
     // The item index is usually determined by the ItemClass, but for Misc it can
     // only be a stone.
     pub fn find_item(&self, item_class: ItemClass) -> Option<usize> {
-            let player_id = self.find_by_name(EntityName::Player).unwrap();
-            let maybe_index;
-            if item_class == ItemClass::Misc {
-                maybe_index = self.entities.item_by_type(player_id, Item::Stone);
-            } else {
-                maybe_index = self.entities.item_by_class(player_id, item_class);
-            }
-            return maybe_index;
+        let player_id = self.find_by_name(EntityName::Player).unwrap();
+        let maybe_index;
+        if item_class == ItemClass::Misc {
+            maybe_index = self.entities.item_by_type(player_id, Item::Stone);
+        } else {
+            maybe_index = self.entities.item_by_class(player_id, item_class);
+        }
+        return maybe_index;
+    }
+
+    pub fn find_skill(&self, index: usize) -> Option<Skill> {
+        let player_id = self.find_by_name(EntityName::Player).unwrap();
+
+        if let Some(skill) = self.entities.skills[&player_id].get(index) {
+            return Some(*skill);
+        }
+        return None;
     }
 
     /// Find a path between positions while accounting for movement style (Reach),
@@ -432,8 +442,7 @@ impl Level {
         let line = line_inclusive(start, end);
 
         let path_blocked =
-            line.into_iter().any(|point| {
-                let pos = Pos::from(point);
+            line.into_iter().any(|pos| {
                 return self.has_blocking_entity(pos).is_some() || (traps_block && self.has_trap(pos).is_some());
             });
 
@@ -605,13 +614,25 @@ impl Level {
         return hit_pos;
     }
 
-    pub fn calculate_use_move(&self, entity_id: EntityId, item_index: usize, dir: Direction, move_mode: MoveMode) -> ItemUseResult {
+    pub fn calculate_use_skill(&self, entity_id: EntityId, skill: Skill, dir: Direction, move_mode: MoveMode) -> UseResult {
+        let entity_pos = self.entities.pos[&entity_id];
+
+        let mut result = UseResult::new();
+
+        result.pos = Some(entity_pos);
+        let hit_pos = dir.offset_pos(entity_pos, 1);
+        result.hit_positions.push(hit_pos);
+
+        return result;
+    }
+
+    pub fn calculate_use_item(&self, entity_id: EntityId, item_index: usize, dir: Direction, move_mode: MoveMode) -> UseResult {
         let pos = self.entities.pos[&entity_id];
         let item_id = self.entities.inventory[&entity_id][item_index];
 
         let item = self.entities.item[&item_id];
 
-        let mut result = ItemUseResult::new();
+        let mut result = UseResult::new();
         match item {
             Item::Stone | Item::SeedOfStone | Item::GlassEye |
             Item::Lantern | Item::Teleporter | Item::SpikeTrap | 

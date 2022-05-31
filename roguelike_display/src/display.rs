@@ -14,6 +14,7 @@ use sdl2::rect::{Rect};
 use sdl2::pixels::{PixelFormatEnum};
 use sdl2::image::LoadTexture;
 
+use roguelike_utils::math::*;
 use roguelike_utils::rng::Rand32;
 use roguelike_utils::comp::*;
 

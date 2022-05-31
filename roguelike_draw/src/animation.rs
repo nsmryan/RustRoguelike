@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 
+use roguelike_utils::math::*;
 use roguelike_utils::rng::*;
 
 use roguelike_map::*;

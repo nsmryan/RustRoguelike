@@ -1,8 +1,9 @@
 use std::fmt;
-
 use serde::{Serialize, Deserialize};
+use parse_display::{Display, FromStr};
 
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 
@@ -19,23 +20,16 @@ pub enum Ai {
     Basic,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Display, FromStr, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[display(style = "snake_case")]
 pub enum Behavior {
     Idle,
+    #[display("alert {0}")]
     Alert(Pos),
+    #[display("investigating {0}")]
     Investigating(Pos),
+    #[display("attacking {0}")]
     Attacking(EntityId),
-}
-
-impl fmt::Display for Behavior {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Behavior::Idle => write!(f, "idle"),
-            Behavior::Alert(pos) => write!(f, "alert {} {}", pos.x, pos.y),
-            Behavior::Investigating(pos) => write!(f, "investigating {} {}", pos.x, pos.y),
-            Behavior::Attacking(entity_id) => write!(f, "attacking {}", entity_id),
-        }
-    }
 }
 
 impl Default for Behavior {
@@ -172,13 +166,13 @@ pub fn ai_idle(monster_id: EntityId,
     } else if let Some(Message::Sound(sound_pos)) = level.entities.heard_sound(monster_id) {
         let can_see = level.pos_in_fov(monster_id, sound_pos);
 
+        // Don't investigate a sound caused by another golem that you can see.
         let caused_by_golem = level.get_golem_at_pos(sound_pos).is_some();
         let needs_investigation = !(can_see && caused_by_golem);
 
-        // Don't investigate a sound caused by another golem that you can see.
         if needs_investigation {
             msg_log.log(Msg::FaceTowards(monster_id, sound_pos));
-            msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(sound_pos)));
+            msg_log.log(Msg::ReactToSound(monster_id, sound_pos));
         }
     }
 }

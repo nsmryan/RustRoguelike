@@ -2,12 +2,12 @@ use std::iter::Iterator;
 use std::fmt;
 use std::str::FromStr;
 
-use euclid::*;
-
+use parse_display::{Display, FromStr};
 use serde::{Serialize, Deserialize};
 
 use roguelike_utils::line::*;
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 
@@ -16,39 +16,12 @@ use crate::utils::*;
 use crate::level::*;
 
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "snake_case")]
 pub enum MoveMode {
     Sneak,
     Walk,
     Run,
-}
-
-impl fmt::Display for MoveMode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            MoveMode::Sneak => write!(f, "sneak"),
-            MoveMode::Walk => write!(f, "walk"),
-            MoveMode::Run => write!(f, "run"),
-        }
-    }
-}
-
-impl FromStr for MoveMode {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        if s == "sneak" {
-            return Ok(MoveMode::Sneak);
-        } else if s == "walk" {
-            return Ok(MoveMode::Walk);
-        } else if s == "run" {
-            return Ok(MoveMode::Run);
-        }
-
-        return Err(format!("Could not parse '{}' as MoveMode", s));
-    }
 }
 
 impl Default for MoveMode {
@@ -99,7 +72,8 @@ pub enum AttackType {
     Push,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "lowercase")]
 pub enum MoveType {
     Move,
     Pass,
@@ -109,21 +83,6 @@ pub enum MoveType {
     Blink,
     Misc,
 }
-
-impl fmt::Display for MoveType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            MoveType::Move => write!(f, "move"),
-            MoveType::Pass => write!(f, "pass"),
-            MoveType::JumpWall => write!(f, "jumpwall"),
-            MoveType::WallKick => write!(f, "wallkick"),
-            MoveType::Collide => write!(f, "collide"),
-            MoveType::Blink => write!(f, "blink"),
-            MoveType::Misc => write!(f, "misc"),
-        }
-    }
-}
-
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Movement {
@@ -321,7 +280,7 @@ impl Reach {
 
         if let Some(pos) = self.move_with_reach(move_action) {
             for pos in line_inclusive(Pos::new(0, 0), pos) {
-                positions.push(Pos::from(pos));
+                positions.push(pos);
             }
         }
 
@@ -427,7 +386,7 @@ impl Reach {
         for end in end_points {
             for pos in line_inclusive(Pos::new(0, 0), end) {
                 if !offsets.contains(&pos) {
-                    offsets.push(Pos::from(pos));
+                    offsets.push(pos);
                 }
             }
         }
@@ -443,7 +402,7 @@ pub fn test_reach_offsets_horiz() {
 
     let expected_pos =
         vec!((1, 0), (-1, 0), (0, 1), (0, -1)).iter()
-                                              .map(|p| Pos::from(*p))
+                                              .map(|pair| Pos::new(pair.0, pair.1))
                                               .collect::<Vec<Pos>>();
     assert!(offsets.iter().all(|p| expected_pos.iter().any(|other| other == p)));
 }
@@ -517,7 +476,7 @@ pub fn check_collision(pos: Pos,
                        level: &Level) -> MoveResult {
     let mut last_pos = pos;
     let mut result: MoveResult =
-        MoveResult::with_pos(pos + Vector2D::new(dx, dy));
+        MoveResult::with_pos(add_pos(pos, Pos::new(dx, dy)));
 
     // if no movement occurs, no need to check walls and entities.
     if !(dx == 0 && dy == 0) {
@@ -529,9 +488,7 @@ pub fn check_collision(pos: Pos,
         // check for collision with an enitity
         let move_line = line_inclusive(pos, Pos::new(pos.x + dx, pos.y + dy));
 
-        for line_tuple in move_line {
-            let line_pos = Pos::from(line_tuple);
-
+        for line_pos in move_line {
             if let Some(key) = level.has_blocking_entity(line_pos) {
                 result.move_pos = last_pos;
                 result.entity = Some(key);

@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 use logging_timer::timer;
 
 use roguelike_utils::rng::Rand32;
+use roguelike_utils::math::*;
 use roguelike_utils::comp::*;
 
 use roguelike_map::*;
@@ -339,31 +340,45 @@ impl Game {
         }
     }
 
+    fn emit_use_result(self: &mut Game, use_result: UseResult) {
+        if let Some(pos) = use_result.pos {
+            self.msg_log.log(Msg::UsePos(pos));
+        }
+
+        if let Some(dir) = self.settings.use_dir {
+            self.msg_log.log(Msg::UseDir(dir));
+        }
+
+        self.msg_log.log(Msg::UseHitPosClear);
+        for pos in use_result.hit_positions {
+            self.msg_log.log(Msg::UseHitPos(pos));
+        }
+    }
+
     fn emit_use_mode_messages(self: &mut Game) {
         let player_id = self.level.find_by_name(EntityName::Player).unwrap();
 
-        // if in use-mode, output use-direction.
+        // If in use-mode, output:
+        // use-directions- currently valid use-mode directions.
+        // use-pos - use positions.
+        // use-hit-pos - positions potentially hit by a use-mode action.
         if let UseAction::Item(item_class) = self.settings.use_action {
             if let Some(item_index) = self.level.find_item(item_class) {
                 if let Some(use_dir) = self.settings.use_dir {
-                    let use_result = self.level.calculate_use_move(player_id,
+                    let use_result = self.level.calculate_use_item(player_id,
                                                                    item_index,
                                                                    use_dir,
                                                                    self.settings.move_mode);
-
-                    if let Some(pos) = use_result.pos {
-                        self.msg_log.log(Msg::UsePos(pos));
-                    }
-
-                    if let Some(dir) = self.settings.use_dir {
-                        self.msg_log.log(Msg::UseDir(dir));
-                    }
-
-                    self.msg_log.log(Msg::UseHitPosClear);
-                    for pos in use_result.hit_positions {
-                        self.msg_log.log(Msg::UseHitPos(pos));
-                    }
+                    self.emit_use_result(use_result);
                 }
+            }
+        } else if let UseAction::Skill(skill, _action_mode) = self.settings.use_action {
+            if let Some(use_dir) = self.settings.use_dir {
+                let use_result = self.level.calculate_use_skill(player_id,
+                                                               skill,
+                                                               use_dir,
+                                                               self.settings.move_mode);
+                self.emit_use_result(use_result);
             }
         } else if self.settings.use_action == UseAction::Interact {
             if let Some(dir) = self.settings.use_dir {

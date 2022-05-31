@@ -9,8 +9,6 @@ pathfinding = "<= 2.0"
 
 symmetric-shadowcasting = "0.2"
 
-euclid = { version = "0.20", features = ["serde"] }
-
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 serde_yaml = "0.8"
@@ -20,6 +18,8 @@ smallvec = "1.4"
 log = "0.4"
 simple-logging = "2.0"
 logging_timer = "1.0"
+
+parse-display = "0.5.5"
 
 roguelike_utils = { path = "../roguelike_utils" }
 roguelike_map = { path = "../roguelike_map" }

@@ -4,6 +4,7 @@ use serde::{Serialize, Deserialize};
 
 use roguelike_utils::rng::*;
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 
@@ -762,7 +763,7 @@ pub fn make_test_map(game: &mut Game) {
 
     //let golem = make_pawn(&mut game.level.entities, &game.config, Pos::new(2, 9), &mut game.msg_log);
     let golem = make_gol(&mut game.level.entities, &game.config, Pos::new(2, 9), &mut game.msg_log);
-    game.level.entities.direction[&golem] = Direction::Down;
+    game.msg_log.log(Msg::SetFacing(golem, Direction::Down)); 
     make_spike_trap(&mut game.level.entities, &game.config, Pos::new(2, 10), &mut game.msg_log);
 
 
@@ -789,7 +790,7 @@ pub fn make_column_test_map(entities: &mut Entities,
 
     let golem = make_gol(entities, config, Pos::new(5, 5), msg_log);
 
-    entities.direction[&golem] = Direction::Left;
+    msg_log.log(Msg::SetFacing(golem, Direction::Left)); 
 
     make_column(entities, config, Pos::new(4, 3), msg_log);
     make_column(entities, config, Pos::new(4, 4), msg_log);
@@ -824,7 +825,8 @@ pub fn make_wall_test_map(entities: &mut Entities,
     //let golem = make_pawn(entities, config, Pos::new(5, 5), msg_log);
     let golem = make_gol(entities, config, Pos::new(5, 5), msg_log);
 
-    entities.direction[&golem] = Direction::Up;
+    msg_log.log(Msg::SetFacing(golem, Direction::Up)); 
+    //entities.direction[&golem] = Direction::Up;
     //make_gol(entities, config, Pos::new(5, 5), msg_log);
     //make_armil(entities, config, Pos::new(5, 5), msg_log);
     make_column(entities, config, Pos::new(6, 4), msg_log);

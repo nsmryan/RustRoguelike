@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io::Write;
 
+use roguelike_utils::math::*;
+
 use roguelike_map::*;
 
 use roguelike_core::constants::*;
@@ -107,43 +109,43 @@ pub fn map_construct(map_load_config: &MapLoadConfig, game: &mut Game) {
         MapLoadConfig::Random => {
             game.level.map = Map::from_dims(MAP_WIDTH as u32, MAP_HEIGHT as u32);
             let starting_position = make_island(&mut game.level, &game.config, &mut game.msg_log, &mut game.rng);
-            player_position = Pos::from(starting_position);
+            player_position = starting_position;
         }
 
         MapLoadConfig::TestWall => {
             let (new_map, position) = make_wall_test_map(&mut game.level.entities, &game.config, &mut game.msg_log);
             game.level.map = new_map;
-            player_position = Pos::from(position);
+            player_position = position;
         }
 
         MapLoadConfig::TestColumns => {
             let (new_map, position) = make_column_test_map(&mut game.level.entities, &game.config, &mut game.msg_log);
             game.level.map = new_map;
-            player_position = Pos::from(position);
+            player_position = position;
         }
 
         MapLoadConfig::TestArmil => {
             let (new_map, position) = make_wall_test_armil(&mut game.level.entities, &game.config, &mut game.msg_log);
             game.level.map = new_map;
-            player_position = Pos::from(position);
+            player_position = position;
         }
 
         MapLoadConfig::TestPlayer => {
             let (new_map, position) = make_player_test_map(&mut game.level.entities, &game.config, &mut game.msg_log);
             game.level.map = new_map;
-            player_position = Pos::from(position);
+            player_position = position;
         }
 
         MapLoadConfig::TestCorner => {
             let (new_map, position) = make_corner_test_map(&mut game.level.entities, &game.config, &mut game.msg_log);
             game.level.map = new_map;
-            player_position = Pos::from(position);
+            player_position = position;
         }
 
         MapLoadConfig::TestTraps => {
             let (new_map, position) = make_trap_test_map(&mut game.level.entities, &game.config, &mut game.msg_log);
             game.level.map = new_map;
-            player_position = Pos::from(position);
+            player_position = position;
         }
     }
 

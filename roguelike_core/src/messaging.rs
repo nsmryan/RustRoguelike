@@ -4,6 +4,7 @@ use std::collections::VecDeque;
 use serde::{Serialize, Deserialize};
 
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 
@@ -20,6 +21,7 @@ pub enum Msg {
     Pass,
     Crushed(EntityId, Pos), // entity that did the crushing, position
     Sound(EntityId, Pos, usize), // entity causing sound, location, radius
+    ReactToSound(EntityId, Pos), // entity causing sound, location
     SoundHitTile(EntityId, Pos, usize, Pos), // entity causing sound, source pos, radius, hit pos
     SoundTrapTriggered(EntityId, EntityId), // trap, entity
     SpikeTrapTriggered(EntityId, EntityId), // trap, entity
@@ -77,6 +79,7 @@ pub enum Msg {
     Illuminate(EntityId, Pos, usize), // entity, position, amount
     HealSkill(EntityId, usize), // entity, amount
     EatHerb(EntityId, EntityId), // entity, item
+    TryFarSight(EntityId, usize), // entity, amount
     FarSight(EntityId, usize), // entity, amount
     Ping(EntityId, Pos),
     Sprint(EntityId, Direction, usize), // entity, direction, amount
@@ -101,6 +104,7 @@ pub enum Msg {
     AiAttack(EntityId),
     RemovedEntity(EntityId),
     StartUseItem(EntityId),
+    StartUseSkill(EntityId),
     StartUseInteract,
     NewLevel,
     CursorState(bool, Pos),
@@ -148,6 +152,7 @@ impl fmt::Display for Msg {
             Msg::Pass => write!(f, "pass"),
             Msg::Crushed(entity_id, pos) => write!(f, "crushed {} {} {}", entity_id, pos.x, pos.y),
             Msg::Sound(entity_id, pos, radius) => write!(f, "sound {} {} {} {}", entity_id, pos.x, pos.y, radius),
+            Msg::ReactToSound(entity_id, pos) => write!(f, "react_to_sound {} {} {}", entity_id, pos.x, pos.y),
             Msg::SoundHitTile(entity_id, source_pos, radius, hit_pos) => write!(f, "sound_hit_tile {} {} {} {} {} {}", entity_id, source_pos.x, source_pos.y, radius, hit_pos.x, hit_pos.y),
             Msg::SoundTrapTriggered(trap_id, entity_id) => write!(f, "sound_trap_triggered {} {}", trap_id, entity_id),
             Msg::SpikeTrapTriggered(trap_id, entity_id) => write!(f, "spike_trap_triggered {} {}", trap_id, entity_id),
@@ -225,13 +230,14 @@ impl fmt::Display for Msg {
             Msg::Illuminate(entity_id, pos, amount) => write!(f, "illuminate {} {} {} {}", entity_id, pos.x, pos.y, amount),
             Msg::HealSkill(entity_id, amount) => write!(f, "heal_skill {} {}", entity_id, amount),
             Msg::EatHerb(entity_id, item_id) => write!(f, "eat_herb {} {}", entity_id, item_id),
+            Msg::TryFarSight(entity_id, amount) => write!(f, "try_farsight {} {}", entity_id, amount),
             Msg::FarSight(entity_id, amount) => write!(f, "farsight {} {}", entity_id, amount),
             Msg::Ping(entity_id, pos) => write!(f, "ping {} {} {}", entity_id, pos.x, pos.y),
             Msg::Sprint(entity_id, direction, amount) => write!(f, "sprint {} {} {}", entity_id, direction, amount),
             Msg::Roll(entity_id, direction, amount) => write!(f, "roll {} {} {}", entity_id, direction, amount),
             Msg::Rubble(entity_id, pos) => write!(f, "rubble {} {} {}", entity_id, pos.x, pos.y),
             Msg::Reform(entity_id, pos) => write!(f, "reform {} {} {}", entity_id, pos.x, pos.y),
-            Msg::StoneSkin(entity_id) => write!(f, "reform {}", entity_id),
+            Msg::StoneSkin(entity_id) => write!(f, "stone_skin {}", entity_id),
             Msg::Swap(entity_id, target_id) => write!(f, "swap {} {}", entity_id, target_id),
             Msg::PassWall(entity_id, pos) => write!(f, "pass_wall {} {} {}", entity_id, pos.x, pos.y),
             Msg::StoneThrow(entity_id, pos) => write!(f, "stone_throw {} {} {}", entity_id, pos.x, pos.y),
@@ -249,6 +255,7 @@ impl fmt::Display for Msg {
             Msg::AiAttack(entity_id) => write!(f, "ai_attack {}", entity_id),
             Msg::RemovedEntity(entity_id) => write!(f, "removed {}", entity_id),
             Msg::StartUseItem(entity_id) => write!(f, "startuseitem {}", entity_id),
+            Msg::StartUseSkill(entity_id) => write!(f, "startuseskill {}", entity_id),
             Msg::StartUseInteract => write!(f, "startuseinteract"),
             Msg::NewLevel => write!(f, "newlevel"),
             Msg::CursorState(state, pos) => write!(f, "cursorstate {} {} {}", state, pos.x, pos.y),
@@ -267,7 +274,7 @@ impl fmt::Display for Msg {
             Msg::EntityMovement(entity_id, pos) => write!(f, "entity_movement {} {} {}", entity_id, pos.x, pos.y),
             Msg::EntityAttack(entity_id, pos) => write!(f, "entity_attack {} {} {}", entity_id, pos.x, pos.y),
             Msg::EntityFov(entity_id, pos) => write!(f, "entity_fov {} {} {}", entity_id, pos.x, pos.y),
-            Msg::Stance(entity_id, stance) => write!(f, "entity_fov {} {}", entity_id, stance),
+            Msg::Stance(entity_id, stance) => write!(f, "stance {} {}", entity_id, stance),
             Msg::GainEnergy(entity_id, amount) => write!(f, "gain_energy {} {}", entity_id, amount),
             Msg::UsedEnergy(entity_id) => write!(f, "used_energy {}", entity_id),
             Msg::Healed(entity_id, amount, max_hp) => write!(f, "healed {} {} {}", entity_id, amount, max_hp),

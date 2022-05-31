@@ -1,10 +1,9 @@
 use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
 
-use euclid::*;
-
 use roguelike_utils::line::line;
 use roguelike_utils::rng::*;
+use roguelike_utils::math::Pos;
 
 use crate::map::*;
 use crate::types::*;
@@ -42,7 +41,7 @@ pub fn scale_pos(pos: Pos, scale: i32) -> Pos {
 pub fn move_towards(start: Pos, end: Pos, num_blocks: usize) -> Pos {
     let line = line(start, end);
 
-    return Pos::from(line.iter().map(|p| *p).skip(num_blocks).next().unwrap_or(end));
+    return line.iter().map(|p| *p).skip(num_blocks).next().unwrap_or(end);
 }
 
 pub fn pos_on_map(pos: Pos) -> bool {
@@ -294,8 +293,8 @@ pub fn random_offset(rng: &mut Rand32, radius: i32) -> Pos {
 }
 
 pub fn pos_in_radius(pos: Pos, radius: i32, rng: &mut Rand32) -> Pos {
-    let offset = Vector2D::new(rng_range_i32(rng, -radius, radius),
-                               rng_range_i32(rng, -radius, radius));
-    return pos + offset;
+    let offset = Pos::new(rng_range_i32(rng, -radius, radius),
+                          rng_range_i32(rng, -radius, radius));
+    return add_pos(pos, offset);
 }
 

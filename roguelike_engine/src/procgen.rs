@@ -8,11 +8,10 @@ use pathfinding::directed::astar::astar;
 
 use wfc_rs::{WfcImage, Wfc};
 
-use euclid::*;
-
 use roguelike_utils::line::*;
 use roguelike_utils::rng::*;
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 
@@ -772,11 +771,13 @@ fn clear_path_to(game: &mut Game, start_pos: Pos, target_pos: Pos) {
               |&pos| pos == target_pos);
 
     if let Some((results, _cost)) = path {
-        let player_id = game.level.find_by_name(EntityName::Player).unwrap();
         for pos in results {
             game.level.map[pos].clear_walls();
-            for entity_id in game.level.get_entities_at_pos(pos) {
-                game.level.entities.mark_for_removal(entity_id);
+
+            if pos != start_pos && pos != target_pos {
+                for entity_id in game.level.get_entities_at_pos(pos) {
+                    game.level.entities.mark_for_removal(entity_id);
+                }
             }
         }
     }
@@ -1018,7 +1019,7 @@ pub fn place_block(map: &mut Map, start: Pos, width: i32, tile: Tile) -> Vec<Pos
 
     for x in 0..width {
         for y in 0..width {
-            let pos = start + Vector2D::new(x, y);
+            let pos = add_pos(start, Pos::new(x, y));
             map[pos] = tile;
             positions.push(pos);
         }

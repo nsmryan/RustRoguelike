@@ -3,8 +3,11 @@ use std::cmp::Ord;
 use std::str::FromStr;
 
 use serde::{Serialize, Deserialize};
+use parse_display::{Display, FromStr};
 
-use roguelike_map::{Pos, Direction};
+use roguelike_utils::math::*;
+
+use roguelike_map::Direction;
 
 use roguelike_core::types::*;
 use roguelike_core::config::Config;
@@ -18,33 +21,13 @@ const ITEM_KEYS: &[char] = &['z', 'x', 'c'];
 const CLASSES: &[ItemClass] = &[ItemClass::Primary, ItemClass::Consumable, ItemClass::Misc];
 const DEBUG_TOGGLE_KEY: char = '\\';
 
-#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "lowercase")]
 pub enum KeyDir {
     Up,
     Held,
     Down,
 }
-
-impl FromStr for KeyDir {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-
-        if s == "down" {
-            return Ok(KeyDir::Down);
-        } else if s == "held" {
-            return Ok(KeyDir::Held);
-        } else if s == "up" {
-            return Ok(KeyDir::Up);
-        }
-
-        dbg!(s);
-        panic!("KeyDir unexpected");
-    }
-}
-
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum InputDirection {
@@ -80,7 +63,8 @@ impl Target {
     }
 }
 
-#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "lowercase")]
 pub enum MouseClick {
     Left,
     Right,
@@ -205,7 +189,7 @@ impl Input {
 
             InputEvent::Enter(dir) => {
                 if dir == KeyDir::Up {
-                    action = InputAction::MoveTowardsCursor();
+                    action = InputAction::MoveTowardsCursor;
                 }
             }
 
@@ -308,10 +292,9 @@ impl Input {
                     }
                 }
             } else if let Some(_index) = ITEM_KEYS.iter().position(|key| *key == chr) {
-                // releasing the item no longer takes you out of use-mode
-            } else if chr == 'd' {
-                // NOTE this is likely not needed- drop using 5 in use-mode
-                return InputAction::DropItem;
+                // Releasing the item does not take you out of use-mode.
+            } else if let Some(_index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+                // Releasing a skill key does not take you out of use-mode.
             } else {
                 return self.apply_char(chr, settings);
             }
@@ -362,6 +345,15 @@ impl Input {
                     self.target = Some(Target::item(item_class));
                     action = InputAction::StartUseItem(item_class);
                 }
+            } else if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+                // check if you press down the same item again, aborting use-mode
+                if self.target == Some(Target::Skill(index)) {
+                    action = InputAction::AbortUse;
+                    self.target = None;
+                } else {
+                    self.target = Some(Target::skill(index));
+                    action = InputAction::StartUseSkill(index, self.action_mode());
+                }
             }
         } else if !settings.state.is_menu() {
             if chr == 'o' {
@@ -371,8 +363,6 @@ impl Input {
                 action = InputAction::CursorToggle;
             } else if chr == 'e' {
                 action = InputAction::StartUseInteract;
-            } else if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
-                self.target = Some(Target::skill(index as usize));
             } else if let Some(input_dir) = InputDirection::from_chr(chr) {
                 self.direction = Some(input_dir);
             } else if !(self.cursor && self.ctrl) {
@@ -382,6 +372,13 @@ impl Input {
 
                     self.cursor = false;
                     action = InputAction::StartUseItem(item_class);
+                    // directions are cleared when entering use-mode
+                    self.direction = None;
+                } else if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+                    self.target = Some(Target::skill(index));
+
+                    self.cursor = false;
+                    action = InputAction::StartUseSkill(index, self.action_mode());
                     // directions are cleared when entering use-mode
                     self.direction = None;
                 }
@@ -481,10 +478,12 @@ impl Input {
                     action = InputAction::ThrowItem(cursor_pos, item_class);
                 }
             } else {
+                // TODO This is from the previous way skills works- likely just delete it
+                // when SkillFacing, etc, are removed.
                 // if releasing target, apply the skill or item
-                if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
-                    action = self.use_skill(index, settings);
-                }
+                //if let Some(index) = SKILL_KEYS.iter().position(|key| *key == chr) {
+                    //action = self.use_skill(index, settings);
+                //}
             }
 
             // If we are not releasing a direction, skill, or item then try other keys.
@@ -502,17 +501,18 @@ impl Input {
         return action;
     }
 
-    fn use_skill(&mut self, skill_index: usize, settings: &Settings) -> InputAction {
-        if self.cursor {
-            if let Some(cursor_pos) = settings.cursor {
-                return InputAction::SkillPos(cursor_pos, self.action_mode(), skill_index);
-            } else {
-                panic!("No cursor position while in cursor mode!");
-            }
-        } else {
-            return InputAction::SkillFacing(self.action_mode(), skill_index);
-        }
-    }
+    // TODO probably not needed anymore
+    //fn use_skill(&mut self, skill_index: usize, settings: &Settings) -> InputAction {
+    //    if self.cursor {
+    //        if let Some(cursor_pos) = settings.cursor {
+    //            return InputAction::SkillPos(cursor_pos, self.action_mode(), skill_index);
+    //        } else {
+    //            panic!("No cursor position while in cursor mode!");
+    //        }
+    //    } else {
+    //        return InputAction::SkillFacing(self.action_mode(), skill_index);
+    //    }
+    //}
 }
 
 pub fn menu_alpha_up_to_action(chr: char, shift: bool) -> InputAction {

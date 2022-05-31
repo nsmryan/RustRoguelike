@@ -1,7 +1,11 @@
 use std::str::FromStr;
 use std::fmt;
 
+use parse_display::{Display, FromStr};
+
 use serde::{Serialize, Deserialize};
+
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 
@@ -25,31 +29,44 @@ pub enum ActionLoc {
     None
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "lowercase")]
 pub enum InputAction {
     Run,
     Sneak,
     Walk,
     Alt,
+    #[display("{0}")]
     Move(Direction),
-    MoveTowardsCursor(),
+    MoveTowardsCursor,
+    #[display("skillpos {0} {1} {2}")]
     SkillPos(Pos, ActionMode, usize),
+    #[display("skill {0} {1}")]
     SkillFacing(ActionMode, usize),
+    #[display("startuseitem {0}")]
     StartUseItem(ItemClass),
+    #[display("startuseskill {0} {1}")]
+    StartUseSkill(usize, ActionMode),
     StartUseInteract,
+    #[display("usedir {0}")]
     UseDir(Direction),
     FinalizeUse,
     AbortUse,
     Pass,
+    #[display("throwitem {0} {1}")]
     ThrowItem(Pos, ItemClass),
     Pickup,
     DropItem,
     Yell,
-    Interact(Option<Direction>),
+    #[display("interact {0}")]
+    Interact(PlayerDirection),
+    #[display("cursormove {0} {1} {2}")]
     CursorMove(Direction, bool, bool), // move direction, is relative, is long
     CursorReturn,
     CursorToggle,
+    #[display("mousepos {0}")]
     MousePos(Pos),
+    #[display("mousebutton {0} {1}")]
     MouseButton(MouseClick, KeyDir),
     Inventory,
     SkillMenu,
@@ -64,179 +81,11 @@ pub enum InputAction {
     IncreaseMoveMode,
     DecreaseMoveMode,
     OverlayToggle,
+    #[display("selectentry {0}")]
     SelectEntry(usize),
     DebugToggle,
     Restart,
     None,
-}
-
-impl fmt::Display for InputAction {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            InputAction::Run => write!(f, "run"),
-            InputAction::Sneak => write!(f, "sneak"),
-            InputAction::Walk => write!(f, "walk"),
-            InputAction::Alt => write!(f, "alt"),
-            InputAction::Move(direction) => {
-                match direction {
-                    Direction::Left => write!(f, "left"),
-                    Direction::Right => write!(f, "right"),
-                    Direction::Up => write!(f, "up"),
-                    Direction::Down => write!(f, "down"),
-                    Direction::DownLeft => write!(f, "downleft"),
-                    Direction::DownRight => write!(f, "downright"),
-                    Direction::UpLeft => write!(f, "upleft"),
-                    Direction::UpRight => write!(f, "upright"),
-                }
-            },
-            InputAction::MoveTowardsCursor() => write!(f, "movetowardscursor"),
-            InputAction::SkillPos(pos, action_mode, index) => write!(f, "skillpos {} {} {} {}", pos.x, pos.y, action_mode, index),
-            InputAction::SkillFacing(action_mode, index) => write!(f, "skill {} {}", action_mode, index),
-            InputAction::StartUseItem(item_class) => write!(f, "startuseitem {}", item_class),
-            InputAction::StartUseInteract => write!(f, "startuseinteract"),
-            InputAction::UseDir(dir) => write!(f, "usedir {}", dir),
-            InputAction::FinalizeUse => write!(f, "finalizeuse"),
-            InputAction::AbortUse => write!(f, "abortuse"),
-            InputAction::Pass => write!(f, "pass"),
-            InputAction::ThrowItem(pos, item_class) => write!(f, "throwitem {} {} {}", pos.x, pos.y, item_class),
-            InputAction::MousePos(pos) => write!(f, "mousepos {:?} {:?}", pos.x, pos.y),
-            InputAction::MouseButton(click, keydir) => write!(f, "mousebutton {:?} {:?}", click, keydir),
-            InputAction::Pickup => write!(f, "pickup"),
-            InputAction::DropItem => write!(f, "drop"),
-            InputAction::Inventory => write!(f, "inventory"),
-            InputAction::SkillMenu => write!(f, "skill"),
-            InputAction::ClassMenu => write!(f, "class"),
-            InputAction::HelpMenu => write!(f, "help"),
-            InputAction::Exit => write!(f, "exit"),
-            InputAction::Esc => write!(f, "esc"),
-            InputAction::ForceExit => write!(f, "force_exit"),
-            InputAction::ExploreAll => write!(f, "exploreall"),
-            InputAction::RegenerateMap => write!(f, "regenmap"),
-            InputAction::TestMode => write!(f, "testmode"),
-            InputAction::Yell => write!(f, "yell"),
-            InputAction::IncreaseMoveMode => write!(f, "faster"),
-            InputAction::DecreaseMoveMode => write!(f, "slower"),
-            InputAction::OverlayToggle => write!(f, "overlaytoggle"),
-            InputAction::SelectEntry(item) => write!(f, "selectentry {}", item),
-            InputAction::Interact(dir) => write!(f, "interact {:?}", dir),
-            InputAction::CursorMove(dir, relative, long) => write!(f, "cursormove {:?} {} {}", dir, relative, long),
-            InputAction::CursorReturn => write!(f, "cursorreturn"),
-            InputAction::CursorToggle => write!(f, "cursortoggle"),
-            InputAction::DebugToggle => write!(f, "debugtoggle"),
-            InputAction::Restart => write!(f, "restart"),
-            InputAction::None => write!(f, "none"),
-        }
-    }
-}
-
-impl FromStr for InputAction {
-    type Err = String;
-
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let s: &mut str = &mut string.to_string();
-        s.make_ascii_lowercase();
-        let args = s.split(" ").collect::<Vec<&str>>();
-
-        if args[0] == "left" {
-            return Ok(InputAction::Move(Direction::Left));
-        } else if args[0] == "right" {
-            return Ok(InputAction::Move(Direction::Right));
-        } else if args[0] == "up" {
-            return Ok(InputAction::Move(Direction::Up));
-        } else if args[0] == "down" {
-            return Ok(InputAction::Move(Direction::Down));
-        } else if args[0] == "upleft" {
-            return Ok(InputAction::Move(Direction::UpLeft));
-        } else if args[0] == "upright" {
-            return Ok(InputAction::Move(Direction::UpRight));
-        } else if args[0] == "downleft" {
-            return Ok(InputAction::Move(Direction::DownLeft));
-        } else if args[0] == "downright" {
-            return Ok(InputAction::Move(Direction::DownRight));
-        } else if args[0] == "run" {
-            return Ok(InputAction::Run);
-        } else if args[0] == "sneak" {
-            return Ok(InputAction::Sneak);
-        } else if args[0] == "walk" {
-            return Ok(InputAction::Walk);
-        } else if args[0] == "alt" {
-            return Ok(InputAction::Alt);
-        } else if args[0] == "pass" {
-            return Ok(InputAction::Pass);
-        } else if args[0] == "throwitem" {
-            let x = args[1].parse::<i32>().unwrap();
-            let y = args[1].parse::<i32>().unwrap();
-            let item_class = args[1].parse::<ItemClass>().unwrap();
-            return Ok(InputAction::ThrowItem(Pos::new(x, y), item_class));
-        } else if args[0] == "movetowardscursor" {
-            return Ok(InputAction::MoveTowardsCursor());
-        } else if args[0] == "skillpos" {
-            let x = args[1].parse::<i32>().unwrap();
-            let y = args[2].parse::<i32>().unwrap();
-            let action_mode = args[3].parse::<ActionMode>().unwrap();
-            let index = args[4].parse::<usize>().unwrap();
-            return Ok(InputAction::SkillPos(Pos::new(x, y), action_mode, index));
-        } else if args[0] == "skillfacing" {
-            let action_mode = args[1].parse::<ActionMode>().unwrap();
-            let index = args[2].parse::<usize>().unwrap();
-            return Ok(InputAction::SkillFacing(action_mode, index));
-        } else if args[0] == "startuseitem" {
-            let class = args[1].parse::<ItemClass>().unwrap();
-            return Ok(InputAction::StartUseItem(class));
-        } else if args[0] == "usedir" {
-            let dir = args[1].parse::<Direction>().unwrap();
-            return Ok(InputAction::UseDir(dir));
-        } else if args[0] == "finalizeuse" {
-            return Ok(InputAction::FinalizeUse);
-        } else if args[0] == "abortuse" {
-            return Ok(InputAction::AbortUse);
-        } else if args[0] == "pickup" {
-            return Ok(InputAction::Pickup);
-        } else if args[0] == "drop" {
-            return Ok(InputAction::DropItem);
-        } else if args[0] == "yell" {
-            return Ok(InputAction::Yell);
-        } else if args[0] == "inventory" {
-            return Ok(InputAction::Inventory);
-        } else if s.starts_with("selectentry") {
-            let selection = args[1].parse::<usize>().unwrap();
-            return Ok(InputAction::SelectEntry(selection));
-        } else if args[0] == "interact" {
-            let dir = args[1].parse::<Direction>().ok();
-            return Ok(InputAction::Interact(dir));
-        } else if args[0] == "testmode" {
-            return Ok(InputAction::TestMode);
-        } else if args[0] == "skill" {
-            return Ok(InputAction::SkillMenu);
-        } else if args[0] == "class" {
-            return Ok(InputAction::ClassMenu);
-        } else if args[0] == "help" {
-            return Ok(InputAction::HelpMenu);
-        } else if args[0] == "esc" {
-            return Ok(InputAction::Esc);
-        } else if args[0] == "force_exit" {
-            return Ok(InputAction::ForceExit);
-        } else if args[0] == "faster" {
-            return Ok(InputAction::IncreaseMoveMode);
-        } else if args[0] == "slower" {
-            return Ok(InputAction::DecreaseMoveMode);
-        } else if args[0] == "cursormove" {
-            let dir = Direction::from_str(args[1]).unwrap();
-            let relative = bool::from_str(args[2]).unwrap();
-            let long = bool::from_str(args[3]).unwrap();
-            return Ok(InputAction::CursorMove(dir, relative, long));
-        } else if args[0] == "cursorreturn" {
-            return Ok(InputAction::CursorReturn);
-        } else if args[0] == "cursortoggle" {
-            return Ok(InputAction::CursorToggle);
-        } else if args[0] == "debugtoggle" {
-            return Ok(InputAction::DebugToggle);
-        } else if args[0] == "restart" {
-            return Ok(InputAction::Restart);
-        } else {
-            return Err(format!("Could not parse '{}' as InputAction", s));
-        }
-    }
 }
 
 /// Handle inputs that are the same regardless of game mode.
@@ -353,7 +202,7 @@ pub fn handle_input_skill_menu(input: InputAction,
         }
 
         InputAction::SelectEntry(skill_index) => {
-            handle_skill(skill_index, ActionLoc::None, ActionMode::Primary, level, msg_log);
+            handle_skill_index(skill_index, ActionLoc::None, ActionMode::Primary, level, settings, msg_log);
             change_state(settings, GameState::Playing, msg_log);
         }
 
@@ -557,6 +406,10 @@ pub fn handle_input_use(input_action: InputAction,
             start_use_item(item_class, level, settings, msg_log);
         }
 
+        (InputAction::StartUseSkill(index, action_mode), true) => {
+            start_use_skill(index, action_mode, level, settings, msg_log);
+        }
+
         (InputAction::UseDir(dir), true) => {
             use_dir(dir, level, settings, msg_log);
         }
@@ -564,7 +417,7 @@ pub fn handle_input_use(input_action: InputAction,
         (InputAction::FinalizeUse, true) => {
             change_state(settings, GameState::Playing, msg_log);
 
-            finalize_use_item(level, settings, msg_log);
+            finalize_use(level, settings, msg_log);
         }
 
         (InputAction::AbortUse, true) => {
@@ -639,7 +492,7 @@ pub fn handle_input_playing(input_action: InputAction,
             msg_log.log(Msg::TryMove(player_id, direction, move_amount, settings.move_mode));
         }
 
-        (InputAction::MoveTowardsCursor(), true) => {
+        (InputAction::MoveTowardsCursor, true) => {
             if let Some(cursor_pos) = settings.cursor {
                 let maybe_next_pos = astar_next_pos(&level.map, player_pos, cursor_pos, None, None);
                 if let Some(next_pos) = maybe_next_pos {
@@ -652,27 +505,23 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::SkillPos(pos, action_mode, skill_index), true) => {
-            handle_skill(skill_index, ActionLoc::Place(pos), action_mode, level, msg_log);
+            handle_skill_index(skill_index, ActionLoc::Place(pos), action_mode, level, settings, msg_log);
         }
 
         (InputAction::SkillFacing(action_mode, skill_index), true) => {
-            handle_skill(skill_index, ActionLoc::Facing, action_mode, level, msg_log);
+            handle_skill_index(skill_index, ActionLoc::Facing, action_mode, level, settings, msg_log);
         }
 
         (InputAction::StartUseInteract, true) => {
-            settings.use_action = UseAction::Interact;
-            msg_log.log(Msg::UseAction(settings.use_action));
-
-            settings.use_dir = None;
-            msg_log.log(Msg::UseDirClear);
-
-            ensure_leave_cursor(settings, msg_log);
-            change_state(settings, GameState::Use, msg_log);
-            msg_log.log(Msg::StartUseInteract);
+            start_use_interact(settings, msg_log);
         }
 
         (InputAction::StartUseItem(item_class), true) => {
             start_use_item(item_class, level, settings, msg_log);
+        }
+
+        (InputAction::StartUseSkill(index, action_mode), true) => {
+            start_use_skill(index, action_mode, level, settings, msg_log);
         }
 
         (InputAction::CursorReturn, _) => {
@@ -772,7 +621,7 @@ pub fn handle_input_playing(input_action: InputAction,
             let pos = level.entities.pos[&player_id];
 
             let interact_pos = 
-                if let Some(dir) = dir {
+                if let Some(dir) = dir.to_direction() {
                     dir.offset_pos(pos, 1)
                 } else {
                     pos
@@ -801,34 +650,111 @@ fn ensure_leave_cursor(settings: &mut Settings, msg_log: &mut MsgLog) {
     }
 }
 
-fn use_dir(dir: Direction, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
-    let player_id = level.find_by_name(EntityName::Player).unwrap();
+fn log_use_result_messages(use_result: UseResult, dir: Direction, settings: &mut Settings, msg_log: &mut MsgLog) {
+    msg_log.log(Msg::UseDirClear);
 
-    if let UseAction::Item(item_class) = settings.use_action {
-        if let Some(item_index) = level.find_item(item_class) {
-            let use_result = level.calculate_use_move(player_id, item_index as usize, dir, settings.move_mode);
-
-            msg_log.log(Msg::UseDirClear);
-            if let Some(use_pos) = use_result.pos {
-                settings.use_dir = Some(dir);
-                msg_log.log(Msg::UseDir(dir));
-                msg_log.log(Msg::UsePos(use_pos));
-            }
-
-            msg_log.log(Msg::UseHitPosClear);
-            for pos in use_result.hit_positions.iter() {
-                msg_log.log(Msg::UseHitPos(*pos));
-            }
-        }
-    } else if settings.use_action == UseAction::Interact {
-        settings.use_dir = Some(dir);
+    if let Some(use_pos) = use_result.pos {
         msg_log.log(Msg::UseDir(dir));
-    } else {
-        panic!("Using an item, but no such item in inventory!");
+        msg_log.log(Msg::UsePos(use_pos));
+        settings.use_dir = Some(dir);
+    }
+
+    msg_log.log(Msg::UseHitPosClear);
+    for pos in use_result.hit_positions.iter() {
+        msg_log.log(Msg::UseHitPos(*pos));
     }
 }
 
-fn finalize_use_item(level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
+fn use_dir(dir: Direction, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
+
+    let use_action = settings.use_action;
+    if let UseAction::Item(item_class) = use_action {
+        if let Some(item_index) = level.find_item(item_class) {
+            let use_result = level.calculate_use_item(player_id, item_index as usize, dir, settings.move_mode);
+            log_use_result_messages(use_result, dir, settings, msg_log);
+        }
+    } else if use_action == UseAction::Interact {
+        settings.use_dir = Some(dir);
+        msg_log.log(Msg::UseDir(dir));
+    } else if let UseAction::Skill(skill, _action_mode) = use_action {
+        let use_result = level.calculate_use_skill(player_id, skill, dir, settings.move_mode);
+        log_use_result_messages(use_result, dir, settings, msg_log);
+    }
+}
+
+fn finalize_use_skill(skill: Skill, action_mode: ActionMode, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
+
+    let dir = settings.use_dir.expect("Finalizing use mode for an skill with no direction to take!");
+    let use_result = level.calculate_use_skill(player_id, skill, dir, settings.move_mode);
+
+    if use_result.hit_positions.len() > 0 {
+        let hit_pos = use_result.hit_positions[0];
+        handle_skill(skill, ActionLoc::Place(hit_pos), action_mode, level, settings, msg_log);
+    }
+}
+
+fn finalize_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
+    let player_pos = level.entities.pos[&player_id];
+
+    if let Some(item_index) = level.find_item(item_class) {
+        let item_id = level.entities.inventory[&player_id][item_index];
+        let item = level.entities.item[&item_id];
+
+        // NOTE there should be no way to get here without a direction
+        let dir = settings.use_dir.expect("Finalizing use mode for an item with no direction to take!");
+
+        let use_result = level.calculate_use_item(player_id, item_index, dir, settings.move_mode);
+
+        // determine action to take based on weapon type
+        if item == Item::Hammer {
+            msg_log.log(Msg::HammerRaise(player_id, item_index, dir));
+        } else if item == Item::SpikeTrap || item == Item::SoundTrap || item == Item::BlinkTrap || item == Item::FreezeTrap {
+            let place_pos = dir.offset_pos(player_pos, 1);
+            msg_log.log(Msg::PlaceTrap(player_id, place_pos, item_id));
+        } else if item == Item::Stone || item == Item::Lantern || 
+                  item == Item::SeedOfStone ||item == Item::SeedCache || 
+                  item == Item::Herb || item == Item::GlassEye ||
+                  item == Item::SmokeBomb || item == Item::LookingGlass ||
+                  item == Item::Thumper {
+            let throw_pos = dir.offset_pos(player_pos, PLAYER_THROW_DIST as i32);
+            msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos, false));
+        } else if item == Item::Sling {
+            let throw_pos = dir.offset_pos(player_pos, SLING_THROW_DIST as i32);
+            if let Some(stone_id) = level.has_item_in_inventory(player_id, Item::Stone) {
+                msg_log.log(Msg::ItemThrow(player_id, stone_id, player_pos, throw_pos, true));
+            }
+        } else {
+            // It is possible to select a direction, then press shift, causing the move to be
+            // invalid. In this case we just suppress the action, and return to playing.
+            // Otherwise, process the move below.
+            if let Some(move_pos) = use_result.pos {
+                let player_pos = level.entities.pos[&player_id];
+                if move_pos != player_pos {
+                    let move_dir = Direction::from_positions(player_pos, move_pos).unwrap();
+                    let dist = distance(move_pos, player_pos) as usize;
+                    msg_log.log(Msg::TryMove(player_id, move_dir, dist, settings.move_mode));
+                }
+
+                let weapon_type = item.weapon_type().expect("This item does not have a weapon type!");
+                let mut attack_type = AttackStyle::Normal;
+                if item == Item::Spear && settings.move_mode == MoveMode::Run {
+                    attack_type = AttackStyle::Strong;
+                } else if item == Item::Dagger {
+                    attack_type = AttackStyle::Stealth;
+                }
+
+                for hit_pos in use_result.hit_positions {
+                    msg_log.log(Msg::Hit(player_id, hit_pos, weapon_type, attack_type));
+                }
+            }
+        }
+    }
+}
+
+fn finalize_use(level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
     let player_pos = level.entities.pos[&player_id];
 
@@ -839,59 +765,7 @@ fn finalize_use_item(level: &Level, settings: &mut Settings, msg_log: &mut MsgLo
     }
 
     if let UseAction::Item(item_class) = settings.use_action {
-        // NOTE there should be no way to get here without a direction
-        let dir = settings.use_dir.expect("Finalizing use mode for an item with no direction to take!");
-
-        if let Some(item_index) = level.find_item(item_class) {
-            let item_id = level.entities.inventory[&player_id][item_index];
-            let item = level.entities.item[&item_id];
-
-            let use_result = level.calculate_use_move(player_id, item_index, dir, settings.move_mode);
-
-            // determine action to take based on weapon type
-            if item == Item::Hammer {
-                msg_log.log(Msg::HammerRaise(player_id, item_index, dir));
-            } else if item == Item::SpikeTrap || item == Item::SoundTrap || item == Item::BlinkTrap || item == Item::FreezeTrap {
-                let place_pos = dir.offset_pos(player_pos, 1);
-                msg_log.log(Msg::PlaceTrap(player_id, place_pos, item_id));
-            } else if item == Item::Stone || item == Item::Lantern || 
-                      item == Item::SeedOfStone ||item == Item::SeedCache || 
-                      item == Item::Herb || item == Item::GlassEye ||
-                      item == Item::SmokeBomb || item == Item::LookingGlass ||
-                      item == Item::Thumper {
-                let throw_pos = dir.offset_pos(player_pos, PLAYER_THROW_DIST as i32);
-                msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos, false));
-            } else if item == Item::Sling {
-                let throw_pos = dir.offset_pos(player_pos, SLING_THROW_DIST as i32);
-                if let Some(stone_id) = level.has_item_in_inventory(player_id, Item::Stone) {
-                    msg_log.log(Msg::ItemThrow(player_id, stone_id, player_pos, throw_pos, true));
-                }
-            } else {
-                // It is possible to select a direction, then press shift, causing the move to be
-                // invalid. In this case we just suppress the action, and return to playing.
-                // Otherwise, process the move below.
-                if let Some(move_pos) = use_result.pos {
-                    let player_pos = level.entities.pos[&player_id];
-                    if move_pos != player_pos {
-                        let move_dir = Direction::from_positions(player_pos, move_pos).unwrap();
-                        let dist = distance(move_pos, player_pos) as usize;
-                        msg_log.log(Msg::TryMove(player_id, move_dir, dist, settings.move_mode));
-                    }
-
-                    let weapon_type = item.weapon_type().expect("This item does not have a weapon type!");
-                    let mut attack_type = AttackStyle::Normal;
-                    if item == Item::Spear && settings.move_mode == MoveMode::Run {
-                        attack_type = AttackStyle::Strong;
-                    } else if item == Item::Dagger {
-                        attack_type = AttackStyle::Stealth;
-                    }
-
-                    for hit_pos in use_result.hit_positions {
-                        msg_log.log(Msg::Hit(player_id, hit_pos, weapon_type, attack_type));
-                    }
-                }
-            }
-        }
+        finalize_use_item(item_class, level, settings, msg_log);
     } else if settings.use_action == UseAction::Interact {
         if let Some(dir) = settings.use_dir {
             let target_pos = dir.offset_pos(player_pos, 1);
@@ -905,41 +779,99 @@ fn finalize_use_item(level: &Level, settings: &mut Settings, msg_log: &mut MsgLo
                     msg_log.log(Msg::PickUp(player_id));
                 }
             } else {
-                // if there is no item, just try to interact
+                // If there is no item, just try to interact.
                 msg_log.log(Msg::Interact(player_id, target_pos));
             }
         } else {
-            // if there is no direction, apply to current tile
+            // If there is no direction, apply to current tile.
             msg_log.log(Msg::PickUp(player_id));
         }
+    } else if let UseAction::Skill(skill, action_mode) = settings.use_action {
+        finalize_use_skill(skill, action_mode, level, settings, msg_log);
     } else {
-        panic!("Using an item, but no such item in inventory!");
+        panic!("How did we get here? UseAction = '{}'", settings.use_action);
+    }
+}
+
+fn start_use_interact(settings: &mut Settings, msg_log: &mut MsgLog) {
+    settings.use_action = UseAction::Interact;
+    msg_log.log(Msg::UseAction(settings.use_action));
+
+    settings.use_dir = None;
+    msg_log.log(Msg::UseDirClear);
+
+    ensure_leave_cursor(settings, msg_log);
+    change_state(settings, GameState::Use, msg_log);
+    msg_log.log(Msg::StartUseInteract);
+}
+
+fn initialize_use_mode(use_action: UseAction, settings: &mut Settings, msg_log: &mut MsgLog) {
+    ensure_leave_cursor(settings, msg_log);
+
+    settings.use_action = use_action;
+    msg_log.log(Msg::UseAction(settings.use_action));
+
+    settings.use_dir = None;
+    msg_log.log(Msg::UseDirClear);
+    msg_log.log(Msg::UseHitPosClear);
+}
+
+fn start_use_skill(index: usize, action_mode: ActionMode, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
+
+    if let Some(skill) = level.find_skill(index) {
+        match skill.mode() {
+            SkillMode::Direction => {
+                initialize_use_mode(UseAction::Skill(skill, action_mode), settings, msg_log);
+
+                for dir in Direction::move_actions().iter() {
+                    let use_result = 
+                        level.calculate_use_skill(player_id, skill, *dir, settings.move_mode);
+
+                    if let Some(hit_pos) = use_result.pos {
+                        msg_log.log(Msg::UseHitPos(hit_pos));
+                        msg_log.log(Msg::UseOption(hit_pos, *dir));
+                    }
+
+                    // TODO this will highlight in red all tiles hittable from any chose of direction.
+                    //for hit_pos in use_result.hit_positions.iter() {
+                    //    msg_log.log(Msg::UseHitPos(*hit_pos));
+                    //}
+                }
+
+                change_state(settings, GameState::Use, msg_log);
+
+                msg_log.log(Msg::StartUseSkill(player_id));
+            }
+
+            SkillMode::Immediate => {
+                // Handle the skill immediately, with no action location as the skill should not be
+                // directional or based on a position.
+                handle_skill_index(index, ActionLoc::None, action_mode, level, settings, msg_log);
+            }
+
+            SkillMode::Cursor => {
+                // Record skill somewhere, and on exit cursor mode apply using handle_skill and the
+                // cursor location.
+                unimplemented!();
+            }
+        }
     }
 }
 
 fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
 
-    ensure_leave_cursor(settings, msg_log);
-
-    //if let Some(item_index) = level.entities.item_by_class(player_id, item_class) {
     if let Some(item_index) = level.find_item(item_class) {
         let item_id = level.entities.inventory[&player_id][item_index as usize];
 
         if level.entities.item[&item_id] == Item::Herb {
             msg_log.log(Msg::EatHerb(player_id, item_id));
         } else {
-            // Allow entering use-mode even if there are no places to move
-            // in case the player wants to check pressing shift or ctrl
-            // for additional spaces.
-            settings.use_action = UseAction::Item(item_class);
-            msg_log.log(Msg::UseAction(settings.use_action));
-
-            settings.use_dir = None;
-            msg_log.log(Msg::UseDirClear);
+            initialize_use_mode(UseAction::Item(item_class), settings, msg_log);
 
             for dir in Direction::move_actions().iter() {
-                let use_result = level.calculate_use_move(player_id,
+                let use_result = level.calculate_use_item(player_id,
                                                          item_index,
                                                          *dir,
                                                          settings.move_mode);
@@ -947,6 +879,11 @@ fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings,
                     msg_log.log(Msg::UseHitPos(hit_pos));
                     msg_log.log(Msg::UseOption(hit_pos, *dir));
                 }
+
+                // TODO this will highlight in red all tiles hittable from any chose of direction.
+                //for hit_pos in use_result.hit_positions.iter() {
+                //    msg_log.log(Msg::UseHitPos(*hit_pos));
+                //}
             }
 
             change_state(settings, GameState::Use, msg_log);
@@ -956,24 +893,36 @@ fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings,
     }
 }
 
-pub fn handle_skill(skill_index: usize,
-                    action_loc: ActionLoc,
-                    action_mode: ActionMode,
-                    level: &Level, 
-                    msg_log: &mut MsgLog) {
+pub fn handle_skill_index(skill_index: usize,
+                          action_loc: ActionLoc,
+                          action_mode: ActionMode,
+                          level: &Level, 
+                          settings: &mut Settings,
+                          msg_log: &mut MsgLog) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     /* Check for Valid Skill Use */
-    // Fet the skill in the player's list of skills.
+    // Get the skill in the player's list of skills.
     if skill_index >= level.entities.skills[&player_id].len() {
         // NOTE we may want a message indicating that the skill index was invalid
         return;
     }
 
+    let skill = level.entities.skills[&player_id][skill_index];
+    handle_skill(skill, action_loc, action_mode, level, settings, msg_log);
+}
+
+pub fn handle_skill(skill: Skill,
+                    action_loc: ActionLoc,
+                    action_mode: ActionMode,
+                    level: &Level, 
+                    _settings: &mut Settings,
+                    msg_log: &mut MsgLog) {
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
+
     let reach = Reach::single(1);
 
     /* Determine Position Effected */
-    // NOTE we may want a message indicating that the skill was invalid
     let skill_pos;
     match action_loc {
         ActionLoc::Dir(dir) => {
@@ -1005,13 +954,12 @@ pub fn handle_skill(skill_index: usize,
         }
     }
 
-    let player_id = level.find_by_name(EntityName::Player).unwrap();
     let player_pos = level.entities.pos[&player_id];
     let dxy = sub_pos(skill_pos, player_pos);
     let direction: Option<Direction> = Direction::from_dxy(dxy.x, dxy.y);
 
     /* Carry Out Skill */
-    match level.entities.skills[&player_id][skill_index] {
+    match skill {
         Skill::GrassThrow => {
             if let Some(direction) = Direction::from_dxy(dxy.x, dxy.y) {
                 msg_log.log(Msg::GrassThrow(player_id, direction));
@@ -1033,6 +981,14 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::GrassWall => {
+            // TODO should this stay here, or go to StartUseSkill?
+            //settings.use_action = UseAction::Skill(skill, action_mode);
+            //msg_log.log(Msg::UseAction(settings.use_action));
+            //settings.use_dir = None;
+            //msg_log.log(Msg::UseDirClear);
+            //change_state(settings, GameState::Use, msg_log);
+            // TODO remove when GrassWall is fully implemented with use-mode.
+            // Unless skill use is left as-is in which case remove the code above.
             if let Some(direction) = Direction::from_dxy(dxy.x, dxy.y) {
                 msg_log.log(Msg::GrassWall(player_id, direction));
             }
@@ -1133,7 +1089,7 @@ pub fn handle_skill(skill_index: usize,
         }
 
         Skill::FarSight => {
-            msg_log.log(Msg::FarSight(player_id, SKILL_FARSIGHT_FOV_AMOUNT));
+            msg_log.log(Msg::TryFarSight(player_id, SKILL_FARSIGHT_FOV_AMOUNT));
         }
 
         Skill::Sprint => {

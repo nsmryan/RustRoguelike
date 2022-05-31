@@ -5,7 +5,9 @@ use sdl2::render::{Texture, RenderTarget, WindowCanvas, BlendMode, Canvas};
 use sdl2::rect::Rect;
 use sdl2::pixels::{Color as Sdl2Color};
 
-use roguelike_map::{Pos, Direction};
+use roguelike_utils::math::*;
+
+use roguelike_map::Direction;
 
 use roguelike_core::types::*;
 use roguelike_core::constants::*;
