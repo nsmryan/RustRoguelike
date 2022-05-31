@@ -5,6 +5,7 @@ use std::str::FromStr;
 use serde::{Serialize, Deserialize};
 
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 
@@ -631,6 +632,7 @@ impl Item {
             Item::Spear => Some(WeaponType::Pierce),
             Item::GreatSword => Some(WeaponType::Slash),
             Item::Sword => Some(WeaponType::Slash),
+            
             Item::Sling => Some(WeaponType::Blunt),
             Item::Axe => Some(WeaponType::Slash),
             Item::Khopesh => Some(WeaponType::Slash),

@@ -3,6 +3,8 @@ use std::fmt;
 
 use serde::{Serialize, Deserialize};
 
+use roguelike_utils::math::*;
+
 use roguelike_map::*;
 
 use roguelike_core::movement::{Reach, MoveMode};
@@ -670,7 +672,7 @@ pub fn handle_input_playing(input_action: InputAction,
         }
 
         (InputAction::StartUseInteract, true) => {
-            start_use_interact(level, settings, msg_log);
+            start_use_interact(settings, msg_log);
         }
 
         (InputAction::StartUseItem(item_class), true) => {
@@ -834,7 +836,7 @@ fn use_dir(dir: Direction, level: &Level, settings: &mut Settings, msg_log: &mut
     } else if use_action == UseAction::Interact {
         settings.use_dir = Some(dir);
         msg_log.log(Msg::UseDir(dir));
-    } else if let UseAction::Skill(skill, action_mode) = use_action {
+    } else if let UseAction::Skill(skill, _action_mode) = use_action {
         let use_result = level.calculate_use_skill(player_id, skill, dir, settings.move_mode);
         log_use_result_messages(use_result, dir, settings, msg_log);
     }
@@ -950,7 +952,7 @@ fn finalize_use(level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
     }
 }
 
-fn start_use_interact(level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
+fn start_use_interact(settings: &mut Settings, msg_log: &mut MsgLog) {
     settings.use_action = UseAction::Interact;
     msg_log.log(Msg::UseAction(settings.use_action));
 
@@ -1073,7 +1075,7 @@ pub fn handle_skill(skill: Skill,
                     action_loc: ActionLoc,
                     action_mode: ActionMode,
                     level: &Level, 
-                    settings: &mut Settings,
+                    _settings: &mut Settings,
                     msg_log: &mut MsgLog) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
 

@@ -6,11 +6,10 @@ use itertools::Itertools;
 
 use pathfinding::directed::astar::astar;
 
-use euclid::*;
-
 use serde_derive::*;
 
 use roguelike_utils::line::*;
+use roguelike_utils::math::Pos;
 
 use crate::utils::*;
 use crate::map::*;
@@ -182,7 +181,7 @@ impl Map {
         }
 
         let (x, y) = (start_pos.x, start_pos.y);
-        let move_dir = end_pos - Vector2D::new(x, y);
+        let move_dir = sub_pos(end_pos, Pos::new(x, y));
 
         // used for diagonal movement checks
         let x_moved = Pos::new(end_pos.x, y);

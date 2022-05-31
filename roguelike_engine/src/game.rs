@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 use logging_timer::timer;
 
 use roguelike_utils::rng::Rand32;
+use roguelike_utils::math::*;
 use roguelike_utils::comp::*;
 
 use roguelike_map::*;
@@ -371,7 +372,7 @@ impl Game {
                     self.emit_use_result(use_result);
                 }
             }
-        } else if let UseAction::Skill(skill, action_mode) = self.settings.use_action {
+        } else if let UseAction::Skill(skill, _action_mode) = self.settings.use_action {
             if let Some(use_dir) = self.settings.use_dir {
                 let use_result = self.level.calculate_use_skill(player_id,
                                                                skill,

@@ -2,6 +2,8 @@ use std::str::FromStr;
 
 use serde::{Serialize, Deserialize};
 
+use roguelike_utils::math::*;
+
 use roguelike_map::*;
 
 use roguelike_core::messaging::*;

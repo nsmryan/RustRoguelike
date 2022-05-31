@@ -54,16 +54,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
-name = "euclid"
-version = "0.20.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bb7ef65b3777a325d1eeefefab5b6d4959da54747e33bd6258e789640f307ad"
-dependencies = [
- "num-traits",
- "serde",
-]
-
-[[package]]
 name = "fixedbitset"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -301,7 +291,6 @@ dependencies = [
 name = "roguelike_core"
 version = "0.1.0"
 dependencies = [
- "euclid",
  "log",
  "logging_timer",
  "pathfinding",
@@ -358,7 +347,6 @@ dependencies = [
 name = "roguelike_engine"
 version = "0.1.0"
 dependencies = [
- "euclid",
  "libc",
  "log",
  "logging_timer",
@@ -417,7 +405,6 @@ dependencies = [
 name = "roguelike_map"
 version = "0.1.0"
 dependencies = [
- "euclid",
  "itertools",
  "pathfinding",
  "roguelike_utils",
@@ -431,7 +418,6 @@ dependencies = [
 name = "roguelike_utils"
 version = "0.1.0"
 dependencies = [
- "euclid",
  "serde",
  "serde_derive",
  "serde_yaml",

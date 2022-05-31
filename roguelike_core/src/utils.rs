@@ -137,7 +137,7 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut Level, msg_log: &mu
     } else if data.using(target, Item::Shield).is_some() {
         let pos = data.entities.pos[&entity];
         let other_pos = data.entities.pos[&target];
-        let diff = other_pos - pos;
+        let diff = sub_pos(other_pos, pos);
 
         let x_diff = diff.x.signum();
         let y_diff = diff.y.signum();

@@ -1,6 +1,5 @@
 //! NOTE this code comes from the oorandom crate, modified
 //! to support serde.
-
 // The oorandom crate copyright is copied below:
 // The MIT License (MIT)
 // 
@@ -48,7 +47,7 @@ use core::ops::Range;
 
 use serde::{Serialize, Deserialize};
 
-use euclid::Point2D;
+use crate::math::Pos;
 
 /// A PRNG producing a 32-bit output.
 ///
@@ -308,10 +307,10 @@ pub fn rng_range(rng: &mut Rand32, low: f32, high: f32) -> f32 {
     return low + r * (high - low);
 }
 
-pub fn rng_pos(rng: &mut Rand32, bounds: (i32, i32)) -> Point2D<i32, ()> {
+pub fn rng_pos(rng: &mut Rand32, bounds: (i32, i32)) -> Pos {
     let x = rng_range_i32(rng, 0, bounds.0);
     let y = rng_range_i32(rng, 0, bounds.1);
-    return Point2D::<i32, ()>::new(x, y);
+    return Pos::new(x, y);
 }
 
 pub fn rng_range_i32(rng: &mut Rand32, low: i32, high: i32) -> i32 {

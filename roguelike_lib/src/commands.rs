@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 

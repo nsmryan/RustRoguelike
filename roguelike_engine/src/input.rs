@@ -4,7 +4,9 @@ use std::str::FromStr;
 
 use serde::{Serialize, Deserialize};
 
-use roguelike_map::{Pos, Direction};
+use roguelike_utils::math::*;
+
+use roguelike_map::Direction;
 
 use roguelike_core::types::*;
 use roguelike_core::config::Config;
@@ -517,17 +519,18 @@ impl Input {
         return action;
     }
 
-    fn use_skill(&mut self, skill_index: usize, settings: &Settings) -> InputAction {
-        if self.cursor {
-            if let Some(cursor_pos) = settings.cursor {
-                return InputAction::SkillPos(cursor_pos, self.action_mode(), skill_index);
-            } else {
-                panic!("No cursor position while in cursor mode!");
-            }
-        } else {
-            return InputAction::SkillFacing(self.action_mode(), skill_index);
-        }
-    }
+    // TODO probably not needed anymore
+    //fn use_skill(&mut self, skill_index: usize, settings: &Settings) -> InputAction {
+    //    if self.cursor {
+    //        if let Some(cursor_pos) = settings.cursor {
+    //            return InputAction::SkillPos(cursor_pos, self.action_mode(), skill_index);
+    //        } else {
+    //            panic!("No cursor position while in cursor mode!");
+    //        }
+    //    } else {
+    //        return InputAction::SkillFacing(self.action_mode(), skill_index);
+    //    }
+    //}
 }
 
 pub fn menu_alpha_up_to_action(chr: char, shift: bool) -> InputAction {

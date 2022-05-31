@@ -2,12 +2,11 @@ use std::iter::Iterator;
 use std::fmt;
 use std::str::FromStr;
 
-use euclid::*;
-
 use serde::{Serialize, Deserialize};
 
 use roguelike_utils::line::*;
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 
@@ -321,7 +320,7 @@ impl Reach {
 
         if let Some(pos) = self.move_with_reach(move_action) {
             for pos in line_inclusive(Pos::new(0, 0), pos) {
-                positions.push(Pos::from(pos));
+                positions.push(pos);
             }
         }
 
@@ -427,7 +426,7 @@ impl Reach {
         for end in end_points {
             for pos in line_inclusive(Pos::new(0, 0), end) {
                 if !offsets.contains(&pos) {
-                    offsets.push(Pos::from(pos));
+                    offsets.push(pos);
                 }
             }
         }
@@ -443,7 +442,6 @@ pub fn test_reach_offsets_horiz() {
 
     let expected_pos =
         vec!((1, 0), (-1, 0), (0, 1), (0, -1)).iter()
-                                              .map(|p| Pos::from(*p))
                                               .collect::<Vec<Pos>>();
     assert!(offsets.iter().all(|p| expected_pos.iter().any(|other| other == p)));
 }
@@ -517,7 +515,7 @@ pub fn check_collision(pos: Pos,
                        level: &Level) -> MoveResult {
     let mut last_pos = pos;
     let mut result: MoveResult =
-        MoveResult::with_pos(pos + Vector2D::new(dx, dy));
+        MoveResult::with_pos(add_pos(pos, Pos::new(dx, dy)));
 
     // if no movement occurs, no need to check walls and entities.
     if !(dx == 0 && dy == 0) {
@@ -529,9 +527,7 @@ pub fn check_collision(pos: Pos,
         // check for collision with an enitity
         let move_line = line_inclusive(pos, Pos::new(pos.x + dx, pos.y + dy));
 
-        for line_tuple in move_line {
-            let line_pos = Pos::from(line_tuple);
-
+        for line_pos in move_line {
             if let Some(key) = level.has_blocking_entity(line_pos) {
                 result.move_pos = last_pos;
                 result.entity = Some(key);

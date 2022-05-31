@@ -2,16 +2,14 @@ use std::str::FromStr;
 use std::fmt;
 use std::hash::Hash;
 
-use euclid::*;
-
 use serde_derive::*;
+
+use roguelike_utils::math::Pos;
 
 use crate::pathing::*;
 use crate::utils::*;
 use crate::map::*;
 
-
-pub type Pos = Point2D<i32, ()>;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum Direction {

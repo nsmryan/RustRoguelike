@@ -9,10 +9,9 @@ use smallvec::SmallVec;
 
 use itertools::Itertools;
 
-use euclid::*;
-
 use serde_derive::*;
 
+use roguelike_utils::math::Pos;
 use roguelike_utils::line::*;
 
 use crate::pathing::*;
@@ -180,7 +179,7 @@ impl Map {
         let line = line(start, end);
 
         let path_blocked =
-            line.into_iter().any(|point| self.tile_is_blocking(Pos::from(point)));
+            line.into_iter().any(|point| self.tile_is_blocking(point));
 
         return !path_blocked;
     }
@@ -201,9 +200,8 @@ impl Map {
 
                 // get points to the edge of square, filtering for points within the given radius
                 for point in line.into_iter() {
-                    let point = Pos::from(point);
                     if distance(start, point) < radius {
-                        circle_positions.insert(Pos::from(point));
+                        circle_positions.insert(point);
                     }
                 }
             }
@@ -219,7 +217,7 @@ impl Map {
 
         let mut result = SmallVec::new();
         for delta in neighbors.iter() {
-            let new_pos = pos + Vector2D::new(delta.0, delta.1);
+            let new_pos = add_pos(pos, Pos::new(delta.0, delta.1));
             if self.is_within_bounds(new_pos) {
                 result.push(new_pos);
             }
@@ -233,7 +231,7 @@ impl Map {
 
         let mut result = SmallVec::new();
         for delta in neighbors.iter() {
-            let new_pos = pos + Vector2D::new(delta.0, delta.1);
+            let new_pos = add_pos(pos, Pos::new(delta.0, delta.1));
             if self.is_within_bounds(new_pos) {
                 result.push(new_pos);
             }
@@ -252,7 +250,7 @@ impl Map {
         for delta in neighbors.iter() {
             let end_pos = Pos::new(pos.x + delta.0, pos.y + delta.1);
             if self.path_blocked_move(pos, end_pos).is_none() {
-                result.push(pos + Vector2D::new(delta.0, delta.1));
+                result.push(add_pos(pos, Pos::new(delta.0, delta.1)));
             }
         }
 

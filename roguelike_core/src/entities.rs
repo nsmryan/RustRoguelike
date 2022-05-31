@@ -4,6 +4,7 @@ use std::default::Default;
 use serde::{Serialize, Deserialize};
 
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 use crate::ai::{Ai, Behavior};
 use crate::movement::*;

@@ -4,6 +4,7 @@ use std::mem;
 use roguelike_utils::line::*;
 use roguelike_utils::rng::*;
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 
@@ -472,13 +473,11 @@ fn resolve_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attac
 
 fn resolve_attack(entity_id: EntityId,
                   attack_info: Attack,
-                  attack_pos: Pos,
+                  _attack_pos: Pos,
                   level: &mut Level,
                   msg_log: &mut MsgLog,
                   _config: &Config) {
-    let entity_pos = level.entities.pos[&entity_id];
-
-    // any time an entity attacks, they change to standing stance
+    // Any time an entity attacks, they change to standing stance.
     level.entities.stance[&entity_id] = Stance::Standing;
     msg_log.log(Msg::Stance(entity_id, level.entities.stance[&entity_id]));
 
@@ -487,7 +486,7 @@ fn resolve_attack(entity_id: EntityId,
             attack(entity_id, target_id, level, msg_log);
         }
 
-        Attack::Stab(target_id, move_into) => {
+        Attack::Stab(_target_id, _move_into) => {
             panic!("Stabbing through an attack should no longer be possible!");
         }
 
@@ -860,7 +859,7 @@ fn resolve_throw_item(player_id: EntityId,
 
     // get target position in direction of player click
     let end_pos =
-        Pos::from(throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap());
+        throw_line.into_iter().take(PLAYER_THROW_DIST).last().unwrap();
 
     let hit_pos = level.throw_towards(start_pos, end_pos);
 

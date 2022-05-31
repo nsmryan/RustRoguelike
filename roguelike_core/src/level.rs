@@ -4,6 +4,7 @@ use pathfinding::directed::astar::astar;
 
 use roguelike_utils::line::*;
 use roguelike_utils::comp::*;
+use roguelike_utils::math::*;
 
 use roguelike_map::*;
 
@@ -441,8 +442,7 @@ impl Level {
         let line = line_inclusive(start, end);
 
         let path_blocked =
-            line.into_iter().any(|point| {
-                let pos = Pos::from(point);
+            line.into_iter().any(|pos| {
                 return self.has_blocking_entity(pos).is_some() || (traps_block && self.has_trap(pos).is_some());
             });
 

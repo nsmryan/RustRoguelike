@@ -1,3 +1,48 @@
+use std::str::FromStr;
+use std::fmt;
+
+use serde::{Serialize, Deserialize};
+
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+pub struct Pos {
+    pub x: i32,
+    pub y: i32,
+}
+
+impl Pos {
+    pub fn new(x: i32, y: i32) -> Pos {
+        return Pos { x, y };
+    }
+
+    pub fn from(pair: (i32, i32)) -> Pos {
+        return Pos::new(pair.0, pair.1);
+    }
+
+    pub fn to_tuple(&self) -> (i32, i32) {
+        return (self.x, self.y);
+    }
+}
+
+
+impl fmt::Display for Pos {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {}", self.x, self.y)
+    }
+}
+
+impl FromStr for Pos {
+    type Err = String;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let s: &mut str = &mut string.to_string();
+        let mut args = s.split(" ");
+        let x = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
+        let y = args.next().ok_or("no arg")?.parse::<i32>().map_err(|err| format!("{}", err))?;
+
+        return Ok(Pos::new(x, y));
+    }
+}
 
 pub fn lerp(first: f32, second: f32, scale: f32) -> f32 {
     return first + ((second - first) * scale);
