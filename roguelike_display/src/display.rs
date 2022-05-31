@@ -155,6 +155,11 @@ impl Display {
         };
     }
 
+    pub fn load_atlas(&mut self) {
+        self.sprites = parse_atlas_file("resources/spriteAtlas.txt");
+        self.atlas_texture = self.texture_creator.load_texture("resources/spriteAtlas.png").expect("Could not load sprite atlas!");
+    }
+
     pub fn add_string(&mut self, string: &str) -> usize {
         if let Some(key) = self.intern.get(string) {
             return *key;

@@ -134,6 +134,7 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
         if let Some((game_loaded, display_loaded)) = load_save(GAME_SAVE_FILE) {
             game = game_loaded;
             display.state = display_loaded;
+            display.load_atlas();
             game_from_file = true;
         }
     }
