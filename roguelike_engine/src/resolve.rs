@@ -24,394 +24,398 @@ use crate::actions::InputAction;
 use crate::generation::*;
 
 use crate::generation::{make_energy, make_light, ensure_grass, make_smoke, make_magnifier};
-use crate::game::{Game};
+use crate::game::Game;
 use crate::map_construct::map_construct;
 
 
 pub fn resolve_messages(game: &mut Game) {
-    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
-
     /* Handle Message Log */
     while let Some(msg) = game.msg_log.pop() {
-        match msg {
-            Msg::Moved(entity_id, move_type, move_mode, pos) => {
-               resolve_moved_message(entity_id, move_type, move_mode, pos, &mut game.level, &mut game.msg_log, &mut game.rng, &game.config);
-            }
-
-            Msg::Interact(entity_id, pos) => {
-               resolve_interaction(entity_id, pos, &mut game.level, &mut game.msg_log, &game.config);
-            }
-
-            Msg::Crushed(entity_id, pos) => {
-                resolve_crushed(entity_id, pos, &mut game.level, &mut game.msg_log, &game.config);
-            }
-
-            Msg::Sound(cause_id, source_pos, radius) => {
-                let sound_aoe =
-                    aoe_fill(&game.level.map, AoeEffect::Sound, source_pos, radius, &game.config);
-
-                for sound_pos in sound_aoe.positions() {
-                    game.msg_log.log_front(Msg::SoundHitTile(cause_id, source_pos, radius, sound_pos));
-                }
-            }
-
-            Msg::ReactToSound(entity_id, sound_pos) => {
-                if game.level.is_in_fov(entity_id, player_id) == FovResult::Inside {
-                    let player_pos = game.level.entities.pos[&player_id];
-                    game.msg_log.log(Msg::StateChange(entity_id, Behavior::Alert(player_pos)));
-                    game.level.entities.took_turn[&entity_id] = true;
-                } else {
-                    game.msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(sound_pos)));
-                }
-            }
-
-            Msg::SoundHitTile(cause_id, source_pos, _radius, tile_pos) => {
-                resolve_sound_hit_tile(cause_id, source_pos, tile_pos, game);
-            }
-
-            Msg::ItemThrow(entity_id, item_id, start, end, hard) => {
-                resolve_throw_item(entity_id, item_id, start, end, hard, &mut game.level, &mut game.rng, &mut game.msg_log, &game.config);
-            }
-
-            Msg::JumpWall(entity_id, _start, end) => {
-                game.msg_log.log_front(Msg::Sound(entity_id, end, game.config.sound_radius_run));
-            }
-
-            Msg::Blink(entity_id) => {
-                if try_use_energy(entity_id, Skill::Blink, &mut game.level, &mut game.msg_log) {
-                    resolve_blink(entity_id, &mut game.level, &mut game.rng, &mut game.msg_log);
-                }
-            }
-
-            Msg::Pushed(pusher, pushed, direction, push_amount, move_into) => {
-                resolve_pushed_entity(pusher, pushed, direction, push_amount, move_into, &mut game.level, &game.config, &mut game.msg_log);
-            }
-
-            Msg::Yell(entity_id) => {
-                resolve_yell(entity_id, &mut game.level, &mut game.msg_log, &game.config);
-            }
-
-            Msg::Remove(entity_id) => {
-                remove_entity(entity_id, &mut game.level);
-            }
-
-            Msg::Killed(_attacker, attacked, _damage) => {
-                resolve_killed_entity(attacked, &mut game.level, &mut game.msg_log, &game.config);
-            }
-
-            Msg::Attack(attacker, attacked, _damage) => {
-                let pos = game.level.entities.pos[&attacked];
-                game.msg_log.log_front(Msg::Sound(attacker, pos, game.config.sound_radius_attack)); 
-            }
-
-            Msg::HammerRaise(entity_id, item_index, dir) => {
-                let item_id = game.level.entities.inventory[&entity_id][item_index];
-                game.level.entities.status[&entity_id].hammer_raised = Some((item_id, dir, 1));
-                game.level.entities.took_turn[&entity_id] = true;
-            }
-
-            Msg::HammerSwing(entity_id, item_id, pos) => {
-                hammer_swing(entity_id, item_id, pos, &mut game.level, &mut game.msg_log);
-            }
-
-            // TODO Consider making this a Push message, splitting out that code from Action as well
-            Msg::HammerHitEntity(entity_id, hit_entity) => {
-                hammer_hit_entity(entity_id, hit_entity, &mut game.level, &mut game.msg_log, &game.config);
-            }
-
-            Msg::HammerHitWall(entity_id, blocked) => {
-                resolve_hammer_hit_wall(entity_id, blocked, &mut game.level, &mut game.msg_log, &game.config);
-            }
-
-            Msg::TryAttack(entity_id, attack_info, attack_pos) => {
-                resolve_attack(entity_id, attack_info, attack_pos, &mut game.level, &mut game.msg_log, &game.config);
-            }
-
-            Msg::TryMove(entity_id, direction, amount, move_mode) => {
-                resolve_try_move(entity_id, direction, amount, move_mode, &mut game.level, &mut game.msg_log);
-            }
-
-            Msg::PickUp(entity_id) => {
-                resolve_pick_item_up(entity_id, &mut game.level, &mut game.msg_log);
-
-                // this is necessary to re-emit entity information about the item being picked up
-                game.settings.map_changed = true;
-            }
-
-            Msg::StateChange(entity_id, behavior) => {
-                resolve_state_change(entity_id, behavior, &mut game.level, &mut game.msg_log, &game.config);
-            }
-
-            Msg::SpikeTrapTriggered(trap, entity_id) => {
-                game.level.entities.take_damage(entity_id, SPIKE_DAMAGE);
-
-                if game.level.entities.hp[&entity_id].hp <= 0 {
-                    game.level.entities.status[&entity_id].alive = false;
-                    game.level.entities.blocks[&entity_id] = false;
-
-                    game.msg_log.log(Msg::Killed(trap, entity_id, SPIKE_DAMAGE));
-                }
-            }
-
-            Msg::SoundTrapTriggered(trap, entity_id) => {
-                let source_pos = game.level.entities.pos[&trap];
-
-                // the triggering entity is considered the source of the sound
-                game.msg_log.log(Msg::Sound(entity_id, source_pos, game.config.sound_radius_trap));
-            }
-
-            Msg::BlinkTrapTriggered(trap, entity_id) => {
-                let source_pos = game.level.entities.pos[&trap];
-
-                if let Some(blink_pos) = find_blink_pos(source_pos, &mut game.rng, &mut game.level) {
-                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, blink_pos));
-                }
-            }
-
-            Msg::Froze(entity_id, num_turns) => {
-                if entity_id == player_id || game.level.entities.ai.get(&entity_id).is_some() {
-                    game.level.entities.status[&entity_id].frozen = num_turns;
-
-                    // If attacking, change to investigating the current target position.
-                    if let Some(Behavior::Attacking(target_id)) = game.level.entities.behavior.get(&entity_id) {
-                        let target_pos = game.level.entities.pos[&target_id];
-                        game.msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
-                    }
-
-                    game.msg_log.log(Msg::Frozen(entity_id, true));
-                }
-            }
-
-            Msg::Thaw(entity_id, _amount) => {
-                if let Some(mut status) = game.level.entities.status.get_mut(&entity_id) {
-                    if status.frozen > 0 {
-                        status.frozen -= 1;
-                    }
-
-                    if status.frozen == 0 {
-                        game.msg_log.log(Msg::Frozen(entity_id, false));
-                    }
-                }
-            }
-
-            Msg::FreezeTrapTriggered(trap, cause_id) => {
-                freeze_trap_triggered(trap, cause_id, &mut game.level, &mut game.msg_log, &game.config);
-            }
-
-            Msg::Untriggered(_trigger, _entity_id) => {
-                // NOTE nothing untriggers yet
-                //untriggered(trigger, level, &mut game.msg_log);
-            }
-
-            Msg::Triggered(trigger, entity_id) => {
-                resolve_triggered(trigger, entity_id, &mut game.level, &mut game.msg_log);
-            }
-
-            Msg::AddClass(class) => {
-                resolve_add_class(class, game);
-            }
-
-            Msg::MoveMode(entity_id, new_move_mode) => {
-                game.level.entities.move_mode[&entity_id] = new_move_mode;
-
-                // update entities movement reach with their new move mode
-                game.level.entities.movement[&entity_id] = reach_by_mode(game.level.entities.move_mode[&entity_id]);
-            }
-
-            Msg::Hit(entity_id, pos, weapon_type, attack_style) => {
-                resolve_hit(entity_id, pos, weapon_type, attack_style, &mut game.level, &mut game.msg_log, &game.config);
-            }
-
-            Msg::ChangeMoveMode(entity_id, increase) => {
-                change_move_mode(entity_id, increase, &mut game.level, &mut game.msg_log);
-            }
-
-            Msg::DropItem(entity_id, item_index) => {
-                inventory_drop_item(entity_id, item_index as usize, &mut game.level, &mut game.msg_log);
-            }
-
-            Msg::GrassWall(entity_id, direction) => {
-                if try_use_energy(entity_id, Skill::GrassWall, &mut game.level, &mut game.msg_log) {
-                    resolve_grass_wall(entity_id, direction, game);
-                }
-            }
-
-            Msg::GrassThrow(entity_id, direction) => {
-                if try_use_energy(entity_id, Skill::GrassThrow, &mut game.level, &mut game.msg_log) {
-                    resolve_grass_throw(entity_id, direction, game);
-                }
-            }
-
-            Msg::GrassShoes(entity_id, _action_mode) => {
-                if try_use_energy(entity_id, Skill::GrassShoes, &mut game.level, &mut game.msg_log) {
-                    game.level.entities.status[&entity_id].soft_steps = SKILL_GRASS_SHOES_TURNS;
-                    game.level.entities.took_turn[&entity_id] = true;
-                }
-            }
-
-            Msg::GrassCover(entity_id, _action_mode) => {
-                if try_use_energy(entity_id, Skill::GrassCover, &mut game.level, &mut game.msg_log) {
-                    resolve_grass_cover(entity_id, game);
-                }
-            }
-
-            Msg::Illuminate(entity_id, pos, amount) => {
-                if try_use_energy(entity_id, Skill::Illuminate, &mut game.level, &mut game.msg_log) {
-                    resolve_illuminate(entity_id, pos, amount, game);
-                }
-            }
-
-            Msg::HealSkill(entity_id, amount) => {
-                if try_use_energy(entity_id, Skill::Heal, &mut game.level, &mut game.msg_log) {
-                    resolve_heal(entity_id, amount, game);
-                }
-            }
-
-            Msg::EatHerb(entity_id, item_id) => {
-                resolve_eat_herb(entity_id, item_id, game);
-            }
-
-            Msg::TryFarSight(entity_id, amount) => {
-                if try_use_energy(entity_id, Skill::FarSight, &mut game.level, &mut game.msg_log) {
-                    game.level.entities.status[&entity_id].extra_fov += amount;
-                    game.level.entities.took_turn[&entity_id] = true;
-                    game.msg_log.log(Msg::FarSight(entity_id, amount));
-                }
-            }
-
-            Msg::Ping(entity_id, pos) => {
-                if try_use_energy(entity_id, Skill::Ping, &mut game.level, &mut game.msg_log) {
-                    game.msg_log.log_front(Msg::Sound(entity_id, pos, game.config.ping_sound_radius));
-                    game.level.entities.took_turn[&entity_id] = true;
-                }
-            }
-
-            Msg::Sprint(entity_id, direction, amount) => {
-                if try_use_energy(entity_id, Skill::Sprint, &mut game.level, &mut game.msg_log) {
-                    game.msg_log.log(Msg::TryMove(entity_id, direction, amount, MoveMode::Run));
-                    game.level.entities.took_turn[&entity_id] = true;
-                }
-            }
-
-            Msg::Roll(entity_id, direction, amount) => {
-                if try_use_energy(entity_id, Skill::Roll, &mut game.level, &mut game.msg_log) {
-                    game.msg_log.log(Msg::TryMove(entity_id, direction, amount, MoveMode::Sneak));
-                    game.level.entities.took_turn[&entity_id] = true;
-                }
-            }
-
-            Msg::Rubble(entity_id, rubble_pos) => {
-                if try_use_energy(entity_id, Skill::Rubble, &mut game.level, &mut game.msg_log) {
-                    resolve_rubble_skill(entity_id, rubble_pos, game);
-                }
-            }
-
-            Msg::StoneThrow(entity_id, target_pos) => {
-                resolve_stone_thrown(entity_id, target_pos, game);
-            }
-
-            Msg::GrassBlade(entity_id, action_mode, direction) => {
-                if try_use_energy(entity_id, Skill::GrassBlade, &mut game.level, &mut game.msg_log) {
-                    resolve_grass_blade(entity_id, action_mode, direction, game);
-                }
-            }
-
-            Msg::Reform(entity_id, pos) => {
-                if game.level.map[pos].surface == Surface::Rubble &&
-                   game.level.has_blocking_entity(pos).is_none() {
-                    if try_use_energy(entity_id, Skill::Reform, &mut game.level, &mut game.msg_log) {
-                        game.level.map[pos].surface = Surface::Floor;
-                        game.level.map[pos].block_move = true;
-                        game.level.entities.took_turn[&entity_id] = true;
-                    }
-                }
-            }
-
-            Msg::StoneSkin(entity_id) => {
-                game.level.entities.status[&entity_id].stone = SKILL_STONE_SKIN_TURNS;
-                game.level.entities.took_turn[&entity_id] = true;
-            }
-
-            Msg::Swap(entity_id, target_id) => {
-                if try_use_energy(entity_id, Skill::Swap, &mut game.level, &mut game.msg_log) {
-                    resolve_swap(entity_id, target_id, game);
-                }
-            }
-
-            Msg::PassWall(entity_id, pos) => {
-                if try_use_energy(entity_id, Skill::PassWall, &mut game.level, &mut game.msg_log) {
-                    //game.level.entities.set_pos(entity_id, pos);
-                    game.msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, pos));
-
-                    game.level.entities.took_turn[&entity_id] = true;
-                }
-            }
-
-            Msg::ArmDisarmTrap(entity_id, trap_id) => {
-                game.level.entities.armed[&trap_id] = !game.level.entities.armed[&trap_id];
-                game.level.entities.took_turn[&entity_id] = true;
-            }
-
-            Msg::PlaceTrap(entity_id, place_pos, trap_id) => {
-                game.level.entities.set_pos(trap_id, place_pos);
-                game.level.entities.armed[&trap_id] = true;
-
-                game.level.entities.remove_from_inventory(entity_id, trap_id);
-                game.level.entities.took_turn[&entity_id] = true;
-            }
-
-
-            Msg::Push(entity_id, direction, amount) => {
-                if try_use_energy(entity_id, Skill::Push, &mut game.level, &mut game.msg_log) {
-                    resolve_push_skill(entity_id, direction, amount, &mut game.level, &mut game.msg_log);
-                }
-            }
-
-            Msg::FaceTowards(entity_id, pos) => {
-                game.level.entities.face(entity_id, pos);
-                game.msg_log.log(Msg::Facing(entity_id, game.level.entities.direction[&entity_id]));
-            }
-
-            Msg::SetFacing(entity_id, direction) => {
-                game.level.entities.direction[&entity_id] = direction;
-                game.msg_log.log(Msg::Facing(entity_id, direction));
-            }
-
-            Msg::AiAttack(entity_id) => {
-                if let Behavior::Attacking(target_id) = game.level.entities.behavior[&entity_id] {
-                    resolve_ai_attack(entity_id, target_id, &mut game.level, &mut game.msg_log, &mut game.rng, &game.config);
-                } else {
-                    panic!("ai attacking but not in attack state!");
-                }
-            }
-
-            Msg::Restart => {
-                resolve_restart(game);
-            }
-
-            Msg::TryPassThrough(entity_id, direction) => {
-                resolve_passthrough(entity_id, direction, game);
-            }
-
-            Msg::WhirlWind(entity_id, pos) => {
-                resolve_whirlwind(entity_id, pos, game);
-            }
-
-            Msg::TrySwift(entity_id, direction) => {
-                resolve_swift(entity_id, direction, game);
-            }
-
-            Msg::Forget(entity_id) => {
-                game.msg_log.log(Msg::StateChange(entity_id, Behavior::Idle));
-            }
-
-            _ => {
-            }
-        }
+        resolve_message(game, msg);
     }
 
     /* Process Player Messages */
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     game.level.entities.messages[&player_id].clear();
+}
+
+pub fn resolve_message(game: &mut Game, msg: Msg) {
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+    match msg {
+        Msg::Moved(entity_id, move_type, move_mode, pos) => {
+           resolve_moved_message(entity_id, move_type, move_mode, pos, &mut game.level, &mut game.msg_log, &mut game.rng, &game.config);
+        }
+
+        Msg::Interact(entity_id, pos) => {
+           resolve_interaction(entity_id, pos, &mut game.level, &mut game.msg_log, &game.config);
+        }
+
+        Msg::Crushed(entity_id, pos) => {
+            resolve_crushed(entity_id, pos, &mut game.level, &mut game.msg_log, &game.config);
+        }
+
+        Msg::Sound(cause_id, source_pos, radius) => {
+            let sound_aoe =
+                aoe_fill(&game.level.map, AoeEffect::Sound, source_pos, radius, &game.config);
+
+            for sound_pos in sound_aoe.positions() {
+                game.msg_log.log_front(Msg::SoundHitTile(cause_id, source_pos, radius, sound_pos));
+            }
+        }
+
+        Msg::ReactToSound(entity_id, sound_pos) => {
+            if game.level.is_in_fov(entity_id, player_id) == FovResult::Inside {
+                let player_pos = game.level.entities.pos[&player_id];
+                game.msg_log.log(Msg::StateChange(entity_id, Behavior::Alert(player_pos)));
+                game.level.entities.took_turn[&entity_id] = true;
+            } else {
+                game.msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(sound_pos)));
+            }
+        }
+
+        Msg::SoundHitTile(cause_id, source_pos, _radius, tile_pos) => {
+            resolve_sound_hit_tile(cause_id, source_pos, tile_pos, game);
+        }
+
+        Msg::ItemThrow(entity_id, item_id, start, end, hard) => {
+            resolve_throw_item(entity_id, item_id, start, end, hard, &mut game.level, &mut game.rng, &mut game.msg_log, &game.config);
+        }
+
+        Msg::JumpWall(entity_id, _start, end) => {
+            game.msg_log.log_front(Msg::Sound(entity_id, end, game.config.sound_radius_run));
+        }
+
+        Msg::Blink(entity_id) => {
+            if try_use_energy(entity_id, Skill::Blink, &mut game.level, &mut game.msg_log) {
+                resolve_blink(entity_id, &mut game.level, &mut game.rng, &mut game.msg_log);
+            }
+        }
+
+        Msg::Pushed(pusher, pushed, direction, push_amount, move_into) => {
+            resolve_pushed_entity(pusher, pushed, direction, push_amount, move_into, &mut game.level, &game.config, &mut game.msg_log);
+        }
+
+        Msg::Yell(entity_id) => {
+            resolve_yell(entity_id, &mut game.level, &mut game.msg_log, &game.config);
+        }
+
+        Msg::Remove(entity_id) => {
+            remove_entity(entity_id, &mut game.level);
+        }
+
+        Msg::Killed(_attacker, attacked, _damage) => {
+            resolve_killed_entity(attacked, &mut game.level, &mut game.msg_log, &game.config);
+        }
+
+        Msg::Attack(attacker, attacked, _damage) => {
+            let pos = game.level.entities.pos[&attacked];
+            game.msg_log.log_front(Msg::Sound(attacker, pos, game.config.sound_radius_attack)); 
+        }
+
+        Msg::HammerRaise(entity_id, item_index, dir) => {
+            let item_id = game.level.entities.inventory[&entity_id][item_index];
+            game.level.entities.status[&entity_id].hammer_raised = Some((item_id, dir, 1));
+            game.level.entities.took_turn[&entity_id] = true;
+        }
+
+        Msg::HammerSwing(entity_id, item_id, pos) => {
+            hammer_swing(entity_id, item_id, pos, &mut game.level, &mut game.msg_log);
+        }
+
+        // TODO Consider making this a Push message, splitting out that code from Action as well
+        Msg::HammerHitEntity(entity_id, hit_entity) => {
+            hammer_hit_entity(entity_id, hit_entity, &mut game.level, &mut game.msg_log, &game.config);
+        }
+
+        Msg::HammerHitWall(entity_id, blocked) => {
+            resolve_hammer_hit_wall(entity_id, blocked, &mut game.level, &mut game.msg_log, &game.config);
+        }
+
+        Msg::TryAttack(entity_id, attack_info, attack_pos) => {
+            resolve_attack(entity_id, attack_info, attack_pos, &mut game.level, &mut game.msg_log, &game.config);
+        }
+
+        Msg::TryMove(entity_id, direction, amount, move_mode) => {
+            resolve_try_move(entity_id, direction, amount, move_mode, &mut game.level, &mut game.msg_log);
+        }
+
+        Msg::PickUp(entity_id) => {
+            resolve_pick_item_up(entity_id, &mut game.level, &mut game.msg_log);
+
+            // this is necessary to re-emit entity information about the item being picked up
+            game.settings.map_changed = true;
+        }
+
+        Msg::StateChange(entity_id, behavior) => {
+            resolve_state_change(entity_id, behavior, &mut game.level, &mut game.msg_log, &game.config);
+        }
+
+        Msg::SpikeTrapTriggered(trap, entity_id) => {
+            game.level.entities.take_damage(entity_id, SPIKE_DAMAGE);
+
+            if game.level.entities.hp[&entity_id].hp <= 0 {
+                game.level.entities.status[&entity_id].alive = false;
+                game.level.entities.blocks[&entity_id] = false;
+
+                game.msg_log.log(Msg::Killed(trap, entity_id, SPIKE_DAMAGE));
+            }
+        }
+
+        Msg::SoundTrapTriggered(trap, entity_id) => {
+            let source_pos = game.level.entities.pos[&trap];
+
+            // the triggering entity is considered the source of the sound
+            game.msg_log.log(Msg::Sound(entity_id, source_pos, game.config.sound_radius_trap));
+        }
+
+        Msg::BlinkTrapTriggered(trap, entity_id) => {
+            let source_pos = game.level.entities.pos[&trap];
+
+            if let Some(blink_pos) = find_blink_pos(source_pos, &mut game.rng, &mut game.level) {
+                game.msg_log.log(Msg::Moved(entity_id, MoveType::Blink, MoveMode::Walk, blink_pos));
+            }
+        }
+
+        Msg::Froze(entity_id, num_turns) => {
+            if entity_id == player_id || game.level.entities.ai.get(&entity_id).is_some() {
+                game.level.entities.status[&entity_id].frozen = num_turns;
+
+                // If attacking, change to investigating the current target position.
+                if let Some(Behavior::Attacking(target_id)) = game.level.entities.behavior.get(&entity_id) {
+                    let target_pos = game.level.entities.pos[&target_id];
+                    game.msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
+                }
+
+                game.msg_log.log(Msg::Frozen(entity_id, true));
+            }
+        }
+
+        Msg::Thaw(entity_id, _amount) => {
+            if let Some(mut status) = game.level.entities.status.get_mut(&entity_id) {
+                if status.frozen > 0 {
+                    status.frozen -= 1;
+                }
+
+                if status.frozen == 0 {
+                    game.msg_log.log(Msg::Frozen(entity_id, false));
+                }
+            }
+        }
+
+        Msg::FreezeTrapTriggered(trap, cause_id) => {
+            freeze_trap_triggered(trap, cause_id, &mut game.level, &mut game.msg_log, &game.config);
+        }
+
+        Msg::Untriggered(_trigger, _entity_id) => {
+            // NOTE nothing untriggers yet
+            //untriggered(trigger, level, &mut game.msg_log);
+        }
+
+        Msg::Triggered(trigger, entity_id) => {
+            resolve_triggered(trigger, entity_id, &mut game.level, &mut game.msg_log);
+        }
+
+        Msg::AddClass(class) => {
+            resolve_add_class(class, game);
+        }
+
+        Msg::MoveMode(entity_id, new_move_mode) => {
+            game.level.entities.move_mode[&entity_id] = new_move_mode;
+
+            // update entities movement reach with their new move mode
+            game.level.entities.movement[&entity_id] = reach_by_mode(game.level.entities.move_mode[&entity_id]);
+        }
+
+        Msg::Hit(entity_id, pos, weapon_type, attack_style) => {
+            resolve_hit(entity_id, pos, weapon_type, attack_style, &mut game.level, &mut game.msg_log, &game.config);
+        }
+
+        Msg::ChangeMoveMode(entity_id, increase) => {
+            change_move_mode(entity_id, increase, &mut game.level, &mut game.msg_log);
+        }
+
+        Msg::DropItem(entity_id, item_index) => {
+            inventory_drop_item(entity_id, item_index as usize, &mut game.level, &mut game.msg_log);
+        }
+
+        Msg::GrassWall(entity_id, direction) => {
+            if try_use_energy(entity_id, Skill::GrassWall, &mut game.level, &mut game.msg_log) {
+                resolve_grass_wall(entity_id, direction, game);
+            }
+        }
+
+        Msg::GrassThrow(entity_id, direction) => {
+            if try_use_energy(entity_id, Skill::GrassThrow, &mut game.level, &mut game.msg_log) {
+                resolve_grass_throw(entity_id, direction, game);
+            }
+        }
+
+        Msg::GrassShoes(entity_id, _action_mode) => {
+            if try_use_energy(entity_id, Skill::GrassShoes, &mut game.level, &mut game.msg_log) {
+                game.level.entities.status[&entity_id].soft_steps = SKILL_GRASS_SHOES_TURNS;
+                game.level.entities.took_turn[&entity_id] = true;
+            }
+        }
+
+        Msg::GrassCover(entity_id, _action_mode) => {
+            if try_use_energy(entity_id, Skill::GrassCover, &mut game.level, &mut game.msg_log) {
+                resolve_grass_cover(entity_id, game);
+            }
+        }
+
+        Msg::Illuminate(entity_id, pos, amount) => {
+            if try_use_energy(entity_id, Skill::Illuminate, &mut game.level, &mut game.msg_log) {
+                resolve_illuminate(entity_id, pos, amount, game);
+            }
+        }
+
+        Msg::HealSkill(entity_id, amount) => {
+            if try_use_energy(entity_id, Skill::Heal, &mut game.level, &mut game.msg_log) {
+                resolve_heal(entity_id, amount, game);
+            }
+        }
+
+        Msg::EatHerb(entity_id, item_id) => {
+            resolve_eat_herb(entity_id, item_id, game);
+        }
+
+        Msg::TryFarSight(entity_id, amount) => {
+            if try_use_energy(entity_id, Skill::FarSight, &mut game.level, &mut game.msg_log) {
+                game.level.entities.status[&entity_id].extra_fov += amount;
+                game.level.entities.took_turn[&entity_id] = true;
+                game.msg_log.log(Msg::FarSight(entity_id, amount));
+            }
+        }
+
+        Msg::Ping(entity_id, pos) => {
+            if try_use_energy(entity_id, Skill::Ping, &mut game.level, &mut game.msg_log) {
+                game.msg_log.log_front(Msg::Sound(entity_id, pos, game.config.ping_sound_radius));
+                game.level.entities.took_turn[&entity_id] = true;
+            }
+        }
+
+        Msg::Sprint(entity_id, direction, amount) => {
+            if try_use_energy(entity_id, Skill::Sprint, &mut game.level, &mut game.msg_log) {
+                game.msg_log.log(Msg::TryMove(entity_id, direction, amount, MoveMode::Run));
+                game.level.entities.took_turn[&entity_id] = true;
+            }
+        }
+
+        Msg::Roll(entity_id, direction, amount) => {
+            if try_use_energy(entity_id, Skill::Roll, &mut game.level, &mut game.msg_log) {
+                game.msg_log.log(Msg::TryMove(entity_id, direction, amount, MoveMode::Sneak));
+                game.level.entities.took_turn[&entity_id] = true;
+            }
+        }
+
+        Msg::Rubble(entity_id, rubble_pos) => {
+            if try_use_energy(entity_id, Skill::Rubble, &mut game.level, &mut game.msg_log) {
+                resolve_rubble_skill(entity_id, rubble_pos, game);
+            }
+        }
+
+        Msg::StoneThrow(entity_id, target_pos) => {
+            resolve_stone_thrown(entity_id, target_pos, game);
+        }
+
+        Msg::GrassBlade(entity_id, action_mode, direction) => {
+            if try_use_energy(entity_id, Skill::GrassBlade, &mut game.level, &mut game.msg_log) {
+                resolve_grass_blade(entity_id, action_mode, direction, game);
+            }
+        }
+
+        Msg::Reform(entity_id, pos) => {
+            if game.level.map[pos].surface == Surface::Rubble &&
+               game.level.has_blocking_entity(pos).is_none() {
+                if try_use_energy(entity_id, Skill::Reform, &mut game.level, &mut game.msg_log) {
+                    game.level.map[pos].surface = Surface::Floor;
+                    game.level.map[pos].block_move = true;
+                    game.level.entities.took_turn[&entity_id] = true;
+                }
+            }
+        }
+
+        Msg::StoneSkin(entity_id) => {
+            game.level.entities.status[&entity_id].stone = SKILL_STONE_SKIN_TURNS;
+            game.level.entities.took_turn[&entity_id] = true;
+        }
+
+        Msg::Swap(entity_id, target_id) => {
+            if try_use_energy(entity_id, Skill::Swap, &mut game.level, &mut game.msg_log) {
+                resolve_swap(entity_id, target_id, game);
+            }
+        }
+
+        Msg::PassWall(entity_id, pos) => {
+            if try_use_energy(entity_id, Skill::PassWall, &mut game.level, &mut game.msg_log) {
+                //game.level.entities.set_pos(entity_id, pos);
+                game.msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, pos));
+
+                game.level.entities.took_turn[&entity_id] = true;
+            }
+        }
+
+        Msg::ArmDisarmTrap(entity_id, trap_id) => {
+            game.level.entities.armed[&trap_id] = !game.level.entities.armed[&trap_id];
+            game.level.entities.took_turn[&entity_id] = true;
+        }
+
+        Msg::PlaceTrap(entity_id, place_pos, trap_id) => {
+            game.level.entities.set_pos(trap_id, place_pos);
+            game.level.entities.armed[&trap_id] = true;
+
+            game.level.entities.remove_from_inventory(entity_id, trap_id);
+            game.level.entities.took_turn[&entity_id] = true;
+        }
+
+
+        Msg::Push(entity_id, direction, amount) => {
+            if try_use_energy(entity_id, Skill::Push, &mut game.level, &mut game.msg_log) {
+                resolve_push_skill(entity_id, direction, amount, &mut game.level, &mut game.msg_log);
+            }
+        }
+
+        Msg::FaceTowards(entity_id, pos) => {
+            game.level.entities.face(entity_id, pos);
+            game.msg_log.log(Msg::Facing(entity_id, game.level.entities.direction[&entity_id]));
+        }
+
+        Msg::SetFacing(entity_id, direction) => {
+            game.level.entities.direction[&entity_id] = direction;
+            game.msg_log.log(Msg::Facing(entity_id, direction));
+        }
+
+        Msg::AiAttack(entity_id) => {
+            if let Behavior::Attacking(target_id) = game.level.entities.behavior[&entity_id] {
+                resolve_ai_attack(entity_id, target_id, &mut game.level, &mut game.msg_log, &mut game.rng, &game.config);
+            } else {
+                panic!("ai attacking but not in attack state!");
+            }
+        }
+
+        Msg::Restart => {
+            resolve_restart(game);
+        }
+
+        Msg::TryPassThrough(entity_id, direction) => {
+            resolve_passthrough(entity_id, direction, game);
+        }
+
+        Msg::WhirlWind(entity_id, pos) => {
+            resolve_whirlwind(entity_id, pos, game);
+        }
+
+        Msg::TrySwift(entity_id, direction) => {
+            resolve_swift(entity_id, direction, game);
+        }
+
+        Msg::Forget(entity_id) => {
+            game.msg_log.log(Msg::StateChange(entity_id, Behavior::Idle));
+        }
+
+        _ => {
+        }
+    }
 }
 
 fn resolve_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
