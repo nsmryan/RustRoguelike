@@ -601,19 +601,19 @@ pub fn handle_input_playing(input_action: InputAction,
             msg_log.log(Msg::Overlay(settings.overlay));
         }
 
-        (InputAction::Inventory, true) => {
+        (InputAction::Inventory, _) => {
             change_state(settings, GameState::Inventory, msg_log);
         }
 
-        (InputAction::SkillMenu, true) => {
+        (InputAction::SkillMenu, _) => {
             change_state(settings, GameState::SkillMenu, msg_log);
         }
 
-        (InputAction::ClassMenu, true) => {
+        (InputAction::ClassMenu, _) => {
             change_state(settings, GameState::ClassMenu, msg_log);
         }
 
-        (InputAction::HelpMenu, true) => {
+        (InputAction::HelpMenu, _) => {
             change_state(settings, GameState::HelpMenu, msg_log);
         }
 
@@ -630,7 +630,7 @@ pub fn handle_input_playing(input_action: InputAction,
                 msg_log.log(Msg::Interact(player_id, interact_pos));
         }
 
-        (InputAction::Esc, true) => {
+        (InputAction::Esc, _) => {
             if settings.cursor.is_none() {
                 change_state(settings, GameState::ConfirmQuit, msg_log);
             }
