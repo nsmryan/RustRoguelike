@@ -29,12 +29,18 @@ use crate::map_construct::map_construct;
 
 
 pub fn resolve_messages(game: &mut Game) {
-    /* Handle Message Log */
+    // Resolve turn messages.
     while let Some(msg) = game.msg_log.pop() {
         resolve_message(game, msg);
     }
 
-    /* Process Player Messages */
+    // Now resolve the post-turn messages.
+    game.msg_log.messages.extend(game.msg_log.post_messages.iter());
+    while let Some(msg) = game.msg_log.pop() {
+        resolve_message(game, msg);
+    }
+
+    // Process Player Messages
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     game.level.entities.messages[&player_id].clear();
 }

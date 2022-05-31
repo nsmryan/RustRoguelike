@@ -776,7 +776,7 @@ fn finalize_use(level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
                 } else {
                     // move to the item and pick it up
                     msg_log.log(Msg::TryMove(player_id, dir, 1, MoveMode::Walk));
-                    msg_log.log(Msg::PickUp(player_id));
+                    msg_log.post_log(Msg::PickUp(player_id));
                 }
             } else {
                 // If there is no item, just try to interact.

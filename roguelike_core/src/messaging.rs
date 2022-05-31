@@ -622,6 +622,7 @@ pub enum MsgLogDir {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MsgLog {
     pub messages: VecDeque<Msg>,
+    pub post_messages: VecDeque<Msg>,
     pub turn_messages: VecDeque<Msg>,
 }
 
@@ -630,6 +631,7 @@ impl MsgLog {
         return MsgLog {
             messages: VecDeque::new(),
             turn_messages: VecDeque::new(),
+            post_messages: VecDeque::new(),
         };
     }
 
@@ -641,6 +643,10 @@ impl MsgLog {
     pub fn log(&mut self, msg: Msg) {
         self.messages.push_back(msg);
         self.turn_messages.push_back(msg);
+    }
+
+    pub fn post_log(&mut self, msg: Msg) {
+        self.post_messages.push_back(msg);
     }
 
     pub fn log_front(&mut self, msg: Msg) {
