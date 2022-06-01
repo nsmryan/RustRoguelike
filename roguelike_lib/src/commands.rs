@@ -325,6 +325,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         }
 
         GameCmd::Energy(amount) => {
+            game.level.entities.energy[&player_id] += amount;
             game.msg_log.log(Msg::GainEnergy(player_id, *amount));
             return format!("{} {}", name, amount);
         }

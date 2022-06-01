@@ -244,10 +244,13 @@ pub fn sound_dampening(map: &Map, start_pos: Pos, end_pos: Pos, config: &Config)
     let mut dampen = 0;
     if let Some(blocked) = map.path_blocked_move(start_pos, end_pos) {
         if blocked.blocked_tile {
+            // Full tile wall.
             dampen += config.dampen_blocked_tile;
         } else if blocked.wall_type == Wall::TallWall {
+            // Tall inter-tile wall.
             dampen += config.dampen_tall_wall;
         } else if blocked.wall_type == Wall::ShortWall {
+            // Short inter-tile wall.
             dampen += config.dampen_short_wall;
         }
     }
