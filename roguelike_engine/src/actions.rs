@@ -579,6 +579,17 @@ pub fn handle_input_playing(input_action: InputAction,
                                      msg_log);
                     }
 
+                    Some(UseAction::Item(item_class)) => {
+                        if let Some(item_index) = level.find_item(item_class) { 
+                            let player_pos = level.entities.pos[&player_id];
+                            let item_id = level.entities.inventory[&player_id][item_index];
+                            let throw_pos = cursor_pos;
+                            msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos, false));
+                        } else {
+                            panic!("Throwing an item, but no item available of that type!");
+                        }
+                    }
+
                     None => {},
 
                     _ => {
@@ -593,12 +604,8 @@ pub fn handle_input_playing(input_action: InputAction,
             msg_log.log(Msg::TryMove(player_id, direction, 0, settings.move_mode));
         }
 
-        (InputAction::ThrowItem(throw_pos, item_class), true) => {
-            if let Some(item_index) = level.find_item(item_class) { 
-                let player_pos = level.entities.pos[&player_id];
-                let item_id = level.entities.inventory[&player_id][item_index];
-                msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos, false));
-            }
+        (InputAction::ThrowItem(_throw_pos, item_class), true) => {
+            handle_throw_item(item_class, level, msg_log, settings);
         }
 
         (InputAction::Pickup, true) => {
@@ -662,6 +669,25 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (_, _) => {
         }
+    }
+}
+
+fn handle_throw_item(item_class: ItemClass, level: &Level, msg_log: &mut MsgLog, settings: &mut Settings) {
+    if let Some(item_index) = level.find_item(item_class) { 
+        //let player_id = level.find_by_name(EntityName::Player).unwrap();
+        //let player_pos = level.entities.pos[&player_id];
+        //let item_id = level.entities.inventory[&player_id][item_index];
+        //msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos, false));
+
+        if settings.cursor == None {
+            let player_id = level.find_by_name(EntityName::Player).unwrap();
+            let player_pos = level.entities.pos[&player_id];
+            settings.cursor = Some(player_pos);
+            msg_log.log(Msg::CursorState(true, player_pos));
+        }
+
+        // Record skill as a use_action.
+        settings.cursor_action = Some(UseAction::Item(item_class));
     }
 }
 
@@ -898,6 +924,8 @@ fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings,
 
         if level.entities.item[&item_id] == Item::Herb {
             msg_log.log(Msg::EatHerb(player_id, item_id));
+        } else if level.entities.item[&item_id] == Item::Stone {
+            handle_throw_item(item_class, level, msg_log, settings);
         } else {
             initialize_use_mode(UseAction::Item(item_class), settings, msg_log);
 

@@ -461,7 +461,6 @@ impl Input {
             // if releasing a key that is directional, but not the last directional key
             // pressed, then do nothing, waiting for the last key to be released instead.
         } else {
-            // Item release can only throw outside in cursor mode
             if settings.is_cursor_mode() {
                 if let Some(index) = get_item_index(chr) {
                     let item_class = CLASSES[index];
@@ -473,13 +472,6 @@ impl Input {
             // If we are not releasing a direction, skill, or item then try other keys.
             if action == InputAction::None {
                 action = alpha_up_to_action(chr, self.shift);
-                
-                // TODO remove if cursor field is removed from Input
-                // Slightly hacky, but if we are going to restart we need to clear
-                // the cursor state.
-                //if action == InputAction::Restart {
-                //    self.cursor = false;
-                //}
             }
         }
 
