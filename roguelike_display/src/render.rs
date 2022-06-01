@@ -749,7 +749,10 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, config: &Co
                 let wall_color = Color::white();
 
                 // Lower walls
-                if tile.bottom_wall == Wall::ShortWall {
+                if tile.bottom_wall == Wall::ShortWall && tile.bottom_material == Surface::Grass {
+                    let sprite = Sprite::new(GRASS_INTERTILE_DOWN as u32, sprite_key);
+                    panel.sprite_cmd(sprite, wall_color, pos);
+                } else if tile.bottom_wall == Wall::ShortWall {
                     let sprite = Sprite::new(MAP_THIN_WALL_BOTTOM as u32, sprite_key);
                     panel.sprite_cmd(sprite, wall_color, pos);
                 } else if tile.bottom_wall == Wall::TallWall {
@@ -880,10 +883,9 @@ fn render_map(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
 }
 
 fn render_intertile_walls(panel: &mut Panel,
-                                map: &Map,
-                                sprite_key: SpriteKey,
-                                pos: Pos) {
-    let (x, y) = pos.to_tuple();
+                          map: &Map,
+                          sprite_key: SpriteKey,
+                          pos: Pos) {
     let tile = map[pos];
     let wall_color = Color::white();
 
@@ -895,13 +897,13 @@ fn render_intertile_walls(panel: &mut Panel,
         let sprite = Sprite::new(MAP_THIN_WALL_LEFT as u32, sprite_key);
         panel.sprite_cmd(sprite, wall_color, pos);
     } else if tile.left_wall == Wall::TallWall {
-        let sprite = Sprite::new(MAP_THIN_WALL_LEFT as u32, sprite_key);
+        let sprite = Sprite::new(MAP_THICK_WALL_LEFT as u32, sprite_key);
         panel.sprite_cmd(sprite, wall_color, pos);
     }
 
     // Right walls
-    if x + 1 < map.width() {
-        let right_pos = Pos::new(pos.x + 1, pos.y);
+    if pos.x + 1 < map.width() {
+        let right_pos = move_x(pos, 1);
         let right_tile = &map[right_pos];
         if right_tile.left_wall == Wall::ShortWall && right_tile.left_material == Surface::Grass {
             let sprite = Sprite::new(GRASS_INTERTILE_RIGHT as u32, sprite_key);
@@ -915,9 +917,11 @@ fn render_intertile_walls(panel: &mut Panel,
         }
     }
 
+    // Lower walls not handled as they are drawn above other tiles in render_map_above
+
     // Upper walls
-    if y - 1 >= 0 {
-        let up_pos = Pos::new(pos.x, pos.y - 1);
+    if pos.y - 1 >= 0 {
+        let up_pos = move_y(pos, -1);
         let up_tile = &map[up_pos];
         if up_tile.bottom_wall == Wall::ShortWall && up_tile.bottom_material == Surface::Grass {
             let sprite = Sprite::new(GRASS_INTERTILE_UP as u32, sprite_key);
