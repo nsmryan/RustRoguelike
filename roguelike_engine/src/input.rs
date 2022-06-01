@@ -307,6 +307,42 @@ impl Input {
         }
     }
 
+    fn handle_char_down_use_mode(&mut self, chr: char, settings: &Settings) -> InputAction {
+        let mut action = InputAction::None;
+
+        if let Some(input_dir) = InputDirection::from_chr(chr) {
+            if let InputDirection::Dir(dir) = input_dir {
+                // directions are now applied immediately
+                action = InputAction::UseDir(dir);
+                self.direction = Some(input_dir);
+            }
+        } else if chr == ' ' {
+            action = InputAction::AbortUse;
+        } else if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
+            let item_class = CLASSES[index];
+
+            // check if you press down the same item again, aborting use-mode
+            if self.target == Some(Target::item(item_class)) {
+                action = InputAction::AbortUse;
+                self.target = None;
+            } else {
+                self.target = Some(Target::item(item_class));
+                action = InputAction::StartUseItem(item_class);
+            }
+        } else if let Some(index) = get_skill_index(chr) {
+            // check if you press down the same item again, aborting use-mode
+            if self.target == Some(Target::Skill(index)) {
+                action = InputAction::AbortUse;
+                self.target = None;
+            } else {
+                self.target = Some(Target::skill(index));
+                action = InputAction::StartUseSkill(index, self.action_mode());
+            }
+        }
+
+        return action;
+    }
+
     fn handle_char_down(&mut self, chr: char, settings: &Settings) -> InputAction {
         // intercept debug toggle so it is not part of the regular control flow.
         if chr == DEBUG_TOGGLE_KEY {
@@ -318,35 +354,7 @@ impl Input {
         self.char_down_order.push(chr);
 
         if settings.state == GameState::Use {
-            if let Some(input_dir) = InputDirection::from_chr(chr) {
-                if let InputDirection::Dir(dir) = input_dir {
-                    // directions are now applied immediately
-                    action = InputAction::UseDir(dir);
-                    self.direction = Some(input_dir);
-                }
-            } else if chr == ' ' {
-                action = InputAction::AbortUse;
-            } else if let Some(index) = ITEM_KEYS.iter().position(|key| *key == chr) {
-                let item_class = CLASSES[index];
-
-                // check if you press down the same item again, aborting use-mode
-                if self.target == Some(Target::item(item_class)) {
-                    action = InputAction::AbortUse;
-                    self.target = None;
-                } else {
-                    self.target = Some(Target::item(item_class));
-                    action = InputAction::StartUseItem(item_class);
-                }
-            } else if let Some(index) = get_skill_index(chr) {
-                // check if you press down the same item again, aborting use-mode
-                if self.target == Some(Target::Skill(index)) {
-                    action = InputAction::AbortUse;
-                    self.target = None;
-                } else {
-                    self.target = Some(Target::skill(index));
-                    action = InputAction::StartUseSkill(index, self.action_mode());
-                }
-            }
+            action = self.handle_char_down_use_mode(chr, settings);
         } else if !settings.state.is_menu() {
             if chr == 'o' {
                 action = InputAction::OverlayToggle;
@@ -448,10 +456,7 @@ impl Input {
                     }
 
                     InputDirection::Current => {
-                        // TODO clean up these conditions.
-                        if !self.cursor && self.ctrl {
-                            action = InputAction::Pass;
-                        } else if self.cursor && self.ctrl {
+                        if self.cursor && self.ctrl {
                            action = InputAction::CursorReturn;
                         } else {
                             action = InputAction::Pass;
