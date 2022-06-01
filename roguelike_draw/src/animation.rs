@@ -115,10 +115,6 @@ impl SpriteAnim {
                max_index: SpriteIndex,
                speed: f32) -> SpriteAnim {
 
-        if sprite_key == 35 {
-            panic!("sprite anim!");
-        }
-
         let flip_vert = false;
         let flip_horiz = false;
         let rotation = 0.0;
@@ -196,23 +192,14 @@ impl Animation {
     pub fn step(&mut self, dt: f32, rng: &mut Rand32, config: &Config) {
         match self {
             Animation::Between(_sprite_anim, _start, _end, ref mut dist, blocks_per_sec) => {
-                if _sprite_anim.sprite_key == 35 {
-                    panic!("between");
-                }
                *dist = *dist + (*blocks_per_sec / config.frame_rate as f32); 
             }
 
             Animation::Loop(ref mut sprite_anim) => {
-                if sprite_anim.sprite_key == 35 {
-                    panic!("loop");
-                }
                 sprite_anim.step(dt);
             }
 
             Animation::RandomLoop(ref mut sprite_anim) => {
-                if sprite_anim.sprite_key == 35 {
-                    panic!("random loop");
-                }
                 let last_index = sprite_anim.index;
                 sprite_anim.index += dt * sprite_anim.speed;
                 if last_index as u32 != sprite_anim.index as u32 {
