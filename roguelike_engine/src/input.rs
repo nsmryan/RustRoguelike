@@ -119,7 +119,6 @@ pub struct Input {
     pub target: Option<Target>,
     pub direction: Option<InputDirection>,
     pub char_down_order: Vec<char>,
-    pub cursor: bool,
     pub char_held: HashMap<char, HeldState>,
     pub mouse: MouseState,
 }
@@ -132,7 +131,6 @@ impl Input {
                        target: None,
                        direction: None,
                        char_down_order: Vec::new(),
-                       cursor: false,
                        char_held: HashMap::new(),
                        mouse: Default::default(),
         };
@@ -180,7 +178,6 @@ impl Input {
 
             InputEvent::Esc => {
                 action = InputAction::Esc;
-                self.cursor = false;
             }
 
             InputEvent::Tab => {
@@ -359,25 +356,22 @@ impl Input {
             if chr == 'o' {
                 action = InputAction::OverlayToggle;
             } else if chr == ' ' {
-                self.cursor = !self.cursor;
                 action = InputAction::CursorToggle;
             } else if chr == 'e' {
                 action = InputAction::StartUseInteract;
             } else if let Some(input_dir) = InputDirection::from_chr(chr) {
                 self.direction = Some(input_dir);
-            } else if !(self.cursor && self.ctrl) {
+            } else if !(settings.is_cursor_mode() && self.ctrl) {
                 if let Some(index) = get_item_index(chr) {
                     let item_class = CLASSES[index];
                     self.target = Some(Target::item(item_class));
 
-                    self.cursor = false;
                     action = InputAction::StartUseItem(item_class);
                     // directions are cleared when entering use-mode
                     self.direction = None;
                 } else if let Some(index) = get_skill_index(chr) {
                     self.target = Some(Target::skill(index));
 
-                    self.cursor = false;
                     action = InputAction::StartUseSkill(index, self.action_mode());
                     // directions are cleared when entering use-mode
                     self.direction = None;
@@ -448,7 +442,7 @@ impl Input {
             if self.direction == Some(input_dir) {
                 match input_dir {
                     InputDirection::Dir(dir) => {
-                        if self.cursor {
+                        if settings.is_cursor_mode() {
                            action = InputAction::CursorMove(dir, self.ctrl, self.shift);
                         } else {
                             action = InputAction::Move(dir);
@@ -456,7 +450,7 @@ impl Input {
                     }
 
                     InputDirection::Current => {
-                        if self.cursor && self.ctrl {
+                        if settings.is_cursor_mode() && self.ctrl {
                            action = InputAction::CursorReturn;
                         } else {
                             action = InputAction::Pass;
@@ -468,7 +462,7 @@ impl Input {
             // pressed, then do nothing, waiting for the last key to be released instead.
         } else {
             // Item release can only throw outside in cursor mode
-            if self.cursor {
+            if settings.is_cursor_mode() {
                 if let Some(index) = get_item_index(chr) {
                     let item_class = CLASSES[index];
                     let cursor_pos = settings.cursor.unwrap();
@@ -480,11 +474,12 @@ impl Input {
             if action == InputAction::None {
                 action = alpha_up_to_action(chr, self.shift);
                 
+                // TODO remove if cursor field is removed from Input
                 // Slightly hacky, but if we are going to restart we need to clear
                 // the cursor state.
-                if action == InputAction::Restart {
-                    self.cursor = false;
-                }
+                //if action == InputAction::Restart {
+                //    self.cursor = false;
+                //}
             }
         }
 

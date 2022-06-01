@@ -407,7 +407,7 @@ impl Game {
                     let direction = Direction::from_dxy(dxy.x, dxy.y).unwrap();
 
                     let mut reach = reach_by_mode(MoveMode::Sneak);
-                    if !self.input.cursor && self.input.shift {
+                    if !self.settings.is_cursor_mode() && self.input.shift {
                         reach = reach_by_mode(MoveMode::Run);
                     }
 
@@ -439,6 +439,7 @@ pub struct Settings {
     pub running: bool,
     pub cursor: Option<Pos>,
     pub use_action: UseAction,
+    pub cursor_action: Option<UseAction>,
     pub use_dir: Option<Direction>,
     pub move_mode: MoveMode,
     pub debug_enabled: bool,
@@ -458,12 +459,17 @@ impl Settings {
             running: true,
             cursor: None,
             use_action: UseAction::Interact,
+            cursor_action: None,
             use_dir: None,
             move_mode: MoveMode::Walk,
             debug_enabled: false,
             map_load_config: MapLoadConfig::Empty,
             map_changed: false,
         };
+    }
+
+    pub fn is_cursor_mode(&self) -> bool {
+        return self.cursor.is_some();
     }
 }
 

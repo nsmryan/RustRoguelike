@@ -564,7 +564,28 @@ pub fn handle_input_playing(input_action: InputAction,
                 settings.cursor = Some(player_pos);
                 cursor_pos = player_pos;
             }
-            msg_log.log(Msg::CursorState(settings.cursor.is_some(), cursor_pos));
+            let entering_cursor_mode = settings.cursor.is_some();
+            msg_log.log(Msg::CursorState(entering_cursor_mode, cursor_pos));
+
+            // If exiting cursor mode, and there is a registered UseAction, apply it.
+            if !entering_cursor_mode {
+                match settings.cursor_action {
+                    Some(UseAction::Skill(skill, action_mode)) => {
+                        handle_skill(skill,
+                                     ActionLoc::Place(cursor_pos),
+                                     action_mode,
+                                     level,
+                                     settings,
+                                     msg_log);
+                    }
+
+                    None => {},
+
+                    _ => {
+                        panic!("Cursor mode are not supported for this action!");
+                    }
+                }
+            }
         }
 
         (InputAction::Pass, true) => {
@@ -628,6 +649,7 @@ pub fn handle_input_playing(input_action: InputAction,
                 };
 
                 msg_log.log(Msg::Interact(player_id, interact_pos));
+
         }
 
         (InputAction::Esc, _) => {
@@ -647,6 +669,7 @@ fn ensure_leave_cursor(settings: &mut Settings, msg_log: &mut MsgLog) {
     if let Some(pos) = settings.cursor {
         msg_log.log(Msg::CursorState(false, pos));
         settings.cursor = None;
+        settings.cursor_action = None;
     }
 }
 
@@ -794,13 +817,14 @@ fn finalize_use(level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
 }
 
 fn start_use_interact(settings: &mut Settings, msg_log: &mut MsgLog) {
+    ensure_leave_cursor(settings, msg_log);
+
     settings.use_action = UseAction::Interact;
     msg_log.log(Msg::UseAction(settings.use_action));
 
     settings.use_dir = None;
     msg_log.log(Msg::UseDirClear);
 
-    ensure_leave_cursor(settings, msg_log);
     change_state(settings, GameState::Use, msg_log);
     msg_log.log(Msg::StartUseInteract);
 }
@@ -820,9 +844,11 @@ fn start_use_skill(index: usize, action_mode: ActionMode, level: &Level, setting
     let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     if let Some(skill) = level.find_skill(index) {
+        let use_action = UseAction::Skill(skill, action_mode);
+
         match skill.mode() {
             SkillMode::Direction => {
-                initialize_use_mode(UseAction::Skill(skill, action_mode), settings, msg_log);
+                initialize_use_mode(use_action, settings, msg_log);
 
                 for dir in Direction::move_actions().iter() {
                     let use_result = 
@@ -851,9 +877,14 @@ fn start_use_skill(index: usize, action_mode: ActionMode, level: &Level, setting
             }
 
             SkillMode::Cursor => {
-                // Record skill somewhere, and on exit cursor mode apply using handle_skill and the
-                // cursor location.
-                unimplemented!();
+                if settings.cursor == None {
+                    let player_pos = level.entities.pos[&player_id];
+                    settings.cursor = Some(player_pos);
+                    msg_log.log(Msg::CursorState(true, player_pos));
+                }
+
+                // Record skill as a use_action.
+                settings.cursor_action = Some(use_action);
             }
         }
     }
