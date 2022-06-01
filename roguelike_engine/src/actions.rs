@@ -935,11 +935,9 @@ fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings,
                                                          *dir,
                                                          settings.move_mode);
                 if let Some(hit_pos) = use_result.pos {
-                    msg_log.log(Msg::UseHitPos(hit_pos));
                     msg_log.log(Msg::UseOption(hit_pos, *dir));
                 }
 
-                // TODO this will highlight in red all tiles hittable from any chose of direction.
                 for hit_pos in use_result.hit_positions.iter() {
                     msg_log.log(Msg::UseHitPos(*hit_pos));
                 }
