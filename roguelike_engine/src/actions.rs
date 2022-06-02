@@ -488,7 +488,6 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::Move(direction), true) => {
             let move_amount = move_amount(settings.move_mode, config);
-            //let move_amount = settings.move_mode.move_amount();
             msg_log.log(Msg::TryMove(player_id, direction, move_amount, settings.move_mode));
         }
 
