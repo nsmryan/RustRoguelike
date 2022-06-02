@@ -1286,7 +1286,7 @@ fn create_texture(texture_creator: &mut TextureCreator<WindowContext>, pixel_for
 fn create_panels(screen_areas: &HashMap<PanelName, Area>) -> HashMap<PanelName, Panel> {
     let mut panels = HashMap::new();
 
-    let over_sample = 5;
+    let over_sample = 16;
 
     let pip_pixels = (over_sample * PIP_WIDTH as u32 * FONT_WIDTH as u32, over_sample * PIP_HEIGHT as u32 * FONT_HEIGHT as u32);
     let pip_dims = screen_areas[&PanelName::Pip].dims();
