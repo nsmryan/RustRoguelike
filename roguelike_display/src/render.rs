@@ -814,8 +814,6 @@ fn render_pip(panel: &mut Panel, display_state: &DisplayState) {
     if let Some(hp) = display_state.hp.get(&player_id) {
         let health_color = Color::new(0x96, 0x54, 0x56, 255);
 
-        //let max_hp = display_state.max_hp[&player_id];
-
         let bar_width = MAP_WIDTH as f32 / 8.0;
 
         let current_hp = if *hp > 0 {
@@ -844,6 +842,21 @@ fn render_pip(panel: &mut Panel, display_state: &DisplayState) {
             let bar_y = 1.0 + y_offset;
             let filled = energy_index <= *energy;
             panel.rect_float_cmd(bar_x, bar_y, (bar_width as f32 - x_offset * 2.0, 1.0 - y_offset * 2.0), filled, energy_color);
+        }
+    }
+
+    if let Some(stamina) = display_state.stamina.get(&player_id) {
+        let stamina_color = Color::new(130, 140, 102, 255);
+            
+        let bar_width = MAP_WIDTH as f32 / 8.0;
+
+        for stamina_index in 0..*stamina {
+            let x_offset = 0.3;
+            let y_offset = 0.2;
+            let bar_x = stamina_index as f32 * bar_width + x_offset;
+            let bar_y = 2.0 + y_offset;
+            let filled = stamina_index <= *stamina;
+            panel.rect_float_cmd(bar_x, bar_y, (bar_width as f32 - x_offset * 2.0, 1.0 - y_offset * 2.0), filled, stamina_color);
         }
     }
 }
@@ -1084,21 +1097,14 @@ fn render_effects(panel: &mut Panel,
                 effect_complete = time_taken >= seconds;
             }
 
-            Effect::HpChange(change, pos, count) => {
+            Effect::NumberChange(change, pos, color, count) => {
                 let percent_done = *count as f32 / config.hp_render_duration as f32;
-
-                let mut color;
-                if *change >= 0 {
-                    color = config.color_mint_green;
-                } else {
-                    color = config.color_light_red;
-                }
 
                 color.a = 255 - (255.0 * percent_done) as u8;
 
                 let x = pos.x as f32 + 0.5;
                 let y = pos.y as f32 - 0.5 - (percent_done);
-                panel.text_float_cmd(&format!("{}", *change), color, x, y, 0.7);
+                panel.text_float_cmd(&format!("{}", *change), *color, x, y, 0.7);
 
                 *count += 1;
 

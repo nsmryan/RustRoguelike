@@ -519,7 +519,7 @@ impl Display {
                 self.state.max_hp[&entity_id] = max_hp;
 
                 let entity_pos = self.state.pos[&entity_id];
-                let heal_num = Effect::hp_change(amount, entity_pos);
+                let heal_num = Effect::number_change(amount, entity_pos, config.color_mint_green);
                 self.state.play_effect(heal_num);
             }
 
@@ -538,6 +538,26 @@ impl Display {
             Msg::UsedEnergy(entity_id) => {
                 if !self.state.test_mode {
                     self.state.energy[&entity_id] -= 1;
+                }
+            }
+
+            Msg::GainStamina(entity_id, amount) => {
+                if self.state.stamina.get(&entity_id).is_none() {
+                    self.state.stamina.insert(entity_id, 0);
+                }
+                self.state.stamina[&entity_id] += amount;
+                let entity_pos = self.state.pos[&entity_id];
+                let effect = Effect::number_change(amount as i32, entity_pos, config.color_mint_green);
+                self.state.play_effect(effect);
+            }
+
+            Msg::UsedStamina(entity_id, amount) => {
+                if !self.state.test_mode {
+                    self.state.stamina[&entity_id] -= amount;
+
+                    let entity_pos = self.state.pos[&entity_id];
+                    let effect = Effect::number_change(-(amount as i32), entity_pos, config.color_mint_green);
+                    self.state.play_effect(effect);
                 }
             }
 
@@ -626,7 +646,7 @@ impl Display {
 
             Msg::Attack(attacker, attacked, damage) => {
                 let attacked_pos = self.state.pos[&attacked];
-                let hit_nums = Effect::hp_change(-damage, attacked_pos);
+                let hit_nums = Effect::number_change(-damage, attacked_pos, config.color_light_red);
                 self.state.play_effect(hit_nums);
 
                 if self.state.typ[&attacker] == EntityType::Player {
@@ -1017,6 +1037,7 @@ pub struct DisplayState {
     pub direction: Comp<Direction>,
     pub stance: Comp<Stance>,
     pub energy: Comp<u32>,
+    pub stamina: Comp<u32>,
     pub hp: Comp<i32>,
     pub max_hp: Comp<i32>,
     pub behavior: Comp<Behavior>,
@@ -1091,6 +1112,7 @@ impl DisplayState {
             direction: Comp::new(),
             stance: Comp::new(),
             energy: Comp::new(),
+            stamina: Comp::new(),
             hp: Comp::new(),
             max_hp: Comp::new(),
             behavior: Comp::new(),

@@ -178,6 +178,8 @@ fog_of_war: true
 
 # initial player health
 player_health: 3
+player_stamina: 5
+player_stamina_cooldown: 3
 # initial player energy
 player_energy: 3
 # alpha of explored but not visible tiles
@@ -221,8 +223,12 @@ overlay_floodfill: false
 
 fov_radius_monster: 4
 fov_radius_player: 4
+
+# sound dampening per full-tile wall
 dampen_blocked_tile: 3
+# sound dampening per short inter-tile wall
 dampen_short_wall: 1
+# sound dampening per tall inter-tile wall
 dampen_tall_wall: 2
 
 # how far to move cursor when shift is held
@@ -237,6 +243,7 @@ write_map_distribution: false
 # print each key that is pressed
 print_key_log: false
 
+# record actions in an action_log.txt file
 recording: true
 
 # golem beam visual duration in frames
@@ -286,6 +293,7 @@ smoke_turns: 6
 # Magification of a thrown looking glass
 looking_glass_magnify_amount: 2
 
+# number of frames to render hp numbers
 hp_render_duration: 20
 
 x_offset_buttons: 0.05
