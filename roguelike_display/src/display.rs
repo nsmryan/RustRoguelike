@@ -533,11 +533,21 @@ impl Display {
                     self.state.energy.insert(entity_id, 0);
                 }
                 self.state.energy[&entity_id] += amount;
+
+                let entity_pos = self.state.pos[&entity_id];
+                let energy_color = Color::new(176, 132, 87, 255);
+                let effect = Effect::number_change(amount as i32, entity_pos, energy_color);
+                self.state.play_effect(effect);
             }
 
             Msg::UsedEnergy(entity_id) => {
                 if !self.state.test_mode {
                     self.state.energy[&entity_id] -= 1;
+
+                    let entity_pos = self.state.pos[&entity_id];
+                    let energy_color = Color::new(176, 132, 87, 255);
+                    let effect = Effect::number_change(-1, entity_pos, energy_color);
+                    self.state.play_effect(effect);
                 }
             }
 
@@ -546,9 +556,9 @@ impl Display {
                     self.state.stamina.insert(entity_id, 0);
                 }
                 self.state.stamina[&entity_id] += amount;
-                let entity_pos = self.state.pos[&entity_id];
-                let effect = Effect::number_change(amount as i32, entity_pos, config.color_mint_green);
-                self.state.play_effect(effect);
+                //let entity_pos = self.state.pos[&entity_id];
+                //let effect = Effect::number_change(amount as i32, entity_pos, config.color_mint_green);
+                //self.state.play_effect(effect);
             }
 
             Msg::UsedStamina(entity_id, amount) => {
@@ -556,8 +566,8 @@ impl Display {
                     self.state.stamina[&entity_id] -= amount;
 
                     let entity_pos = self.state.pos[&entity_id];
-                    let effect = Effect::number_change(-(amount as i32), entity_pos, config.color_mint_green);
-                    self.state.play_effect(effect);
+                    //let effect = Effect::number_change(-(amount as i32), entity_pos, config.color_mint_green);
+                    //self.state.play_effect(effect);
                 }
             }
 
