@@ -312,18 +312,18 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
         /* Display */
         {
             let logic_time = Instant::now().duration_since(frame_start_time).as_secs_f32();
-            display.state.show_debug("lt", format!("{}", logic_time));
+            display.state.show_debug("logic  ", format!("{:.6}", logic_time));
 
             let _display_timer = timer!("DISPLAY");
             let dt = Instant::now().duration_since(frame_time).as_secs_f32();
             frame_time = Instant::now();
 
-            display.state.show_debug("dt", format!("{}", dt));
+            display.state.show_debug("frame  ", format!("{:.6}", dt));
 
             update_display(&mut game, &mut display, dt)?;
 
             let disp_time = Instant::now().duration_since(frame_time).as_secs_f32();
-            display.state.show_debug("dr", format!("{}", disp_time));
+            display.state.show_debug("display", format!("{:.6}", disp_time));
         }
 
         game.msg_log.clear();
@@ -355,7 +355,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
         /* Wait until the next tick to loop */
         {
             let frame_time = Instant::now().duration_since(frame_start_time).as_secs_f32();
-            display.state.show_debug("ft", format!("{}", frame_time));
+            display.state.show_debug("inframe", format!("{:.6}", frame_time));
 
             let _wait_timer = timer!("WAIT");
             fps_throttler.wait();
@@ -424,7 +424,7 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
         let _render_timer = timer!("RENDER");
         render_all(&mut display.panels, &mut display.state, &display.sprites, &game.config, dt)?;
         let ct = Instant::now().duration_since(command_time).as_secs_f32();
-        display.state.show_debug("ct", format!("{}", ct));
+        display.state.show_debug("render ", format!("{:.6}", ct));
     }
 
     {
@@ -436,7 +436,7 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
             let _present_timer = timer!("PRESENT");
             display.update_display();
             let ut = Instant::now().duration_since(update_time).as_secs_f32();
-            display.state.show_debug("ut", format!("{}", ut));
+            display.state.show_debug("update ", format!("{:.6}", ut));
         }
     }
 
