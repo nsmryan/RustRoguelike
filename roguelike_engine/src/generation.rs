@@ -45,7 +45,7 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
     entities.stance.insert(entity_id,  Stance::Standing);
     entities.fov_radius.insert(entity_id,  config.fov_radius_player);
     entities.passive.insert(entity_id,  Passive::new());
-    entities.stamina.insert(entity_id,  Stamina::new(config.player_stamina, config.player_stamina_cooldown));
+    entities.stamina.insert(entity_id,  Stamina::new(0, config.player_stamina_cooldown));
 
     let skill_set = Vec::new();
     entities.skills.insert(entity_id,  skill_set);

@@ -589,6 +589,8 @@ fn resolve_try_movement(entity_id: EntityId,
                 // NOTE may need to set facing
                 // NOTE could check for enemy and attack
                 msg_log.log(Msg::WallKick(entity_id, movement.pos));
+            } else {
+                msg_log.log(Msg::NotEnoughStamina(entity_id));
             }
         }
 
@@ -604,7 +606,10 @@ fn resolve_try_movement(entity_id: EntityId,
             let traps_block = false;
             if level.clear_path(entity_pos, movement.pos, traps_block) {
                 if movement.typ == MoveType::Move {
-                    if move_mode != MoveMode::Run || level.entities.has_enough_stamina(entity_id, 1) {
+                    let enough_stamina = level.entities.has_enough_stamina(entity_id, 1);
+                    let run_move = move_mode == MoveMode::Run;
+                    if !run_move || enough_stamina {
+                        dbg!(run_move, enough_stamina, level.entities.stamina[&entity_id]);
                         msg_log.log(Msg::Moved(entity_id, movement.typ, move_mode, movement.pos));
 
                         if amount > 1 {
@@ -612,11 +617,15 @@ fn resolve_try_movement(entity_id: EntityId,
                         } else if move_mode == MoveMode::Run {
                             msg_log.log_front(Msg::UsedStamina(entity_id, 1));
                         }
+                    } else if run_move && !enough_stamina {
+                        msg_log.log(Msg::NotEnoughStamina(entity_id));
                     }
                 } else {
                     if level.entities.has_enough_stamina(entity_id, 1) {
                         msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
                         panic!("Can we even get here? No clear path, but didn't decide to jump a wall?");
+                    } else {
+                        msg_log.log(Msg::NotEnoughStamina(entity_id));
                     }
                 }
             } else if movement.typ == MoveType::JumpWall {
@@ -638,11 +647,13 @@ fn resolve_try_movement(entity_id: EntityId,
                         if after_wall_pos != movement.pos {
                             msg_log.log(Msg::Moved(entity_id, movement.typ, move_mode, movement.pos));
                         }
+
+                        msg_log.log_front(Msg::UsedStamina(entity_id, 1));
                     } else {
                         panic!("Wall jump with no recorded wall position!");
                     }
                 } else {
-                    panic!("Why would we not have a clear path, but have received this movement?");
+                    msg_log.log(Msg::NotEnoughStamina(entity_id));
                 }
             }
         }

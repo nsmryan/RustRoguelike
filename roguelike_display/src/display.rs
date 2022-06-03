@@ -565,7 +565,7 @@ impl Display {
                 if !self.state.test_mode {
                     self.state.stamina[&entity_id] -= amount;
 
-                    let entity_pos = self.state.pos[&entity_id];
+                    //let entity_pos = self.state.pos[&entity_id];
                     //let effect = Effect::number_change(-(amount as i32), entity_pos, config.color_mint_green);
                     //self.state.play_effect(effect);
                 }
