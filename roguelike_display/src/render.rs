@@ -545,6 +545,69 @@ fn render_skill(skill: Skill, x_offset: f32, y_offset: f32, color: Color, panel:
     }
 }
 
+fn render_inventory_skill(chr: char, index: usize, x_offset: f32, y_offset: f32, panel: &mut Panel, display_state: &DisplayState, sprites: &Vec<SpriteSheet>, config: &Config) {
+    let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
+    let highlight_ui_color = Color::new(0, 0, 0, 255);
+
+    let mut text_color = ui_color;
+    let mut button_name = format!("{}_Button_Base", chr);
+    if display_state.state == GameState::Use {
+        if let UseAction::Skill(skill, action_mode) = display_state.use_action {
+            if display_state.skills.iter().position(|sk| *sk == skill) == Some(index) {
+                button_name = format!("{}_Button_Highlight", chr);
+                text_color = highlight_ui_color;
+            }
+        }
+    } else if display_state.cursor_pos.is_some() {
+        if let Some(UseAction::Skill(skill, action_mode)) = display_state.cursor_action {
+            if display_state.skills.iter().position(|sk| *sk == skill) == Some(index) {
+                button_name = format!("{}_Button_Highlight", chr);
+                text_color = highlight_ui_color;
+            }
+        }
+    }
+    render_button(&button_name, x_offset, y_offset, panel, sprites, config);
+    if let Some(skill) = display_state.skills.get(index) {
+        render_skill(*skill, x_offset, y_offset, text_color, panel, config);
+    }
+}
+
+fn should_highlight_item(display_state: &DisplayState, use_action: UseAction) -> bool {
+    if display_state.state == GameState::Use && display_state.use_action == use_action {
+        return true;
+    } else if display_state.cursor_pos.is_some() && display_state.cursor_action == Some(use_action) {
+        return true;
+    } else {
+        return false
+    }
+}
+
+fn render_inventory_item(chr: char, item_class: ItemClass, x_offset: f32, y_offset: f32, panel: &mut Panel, display_state: &DisplayState, sprites: &Vec<SpriteSheet>, config: &Config) {
+    let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
+    let highlight_ui_color = Color::new(0, 0, 0, 255);
+
+    let text_color;
+    let button_name;
+    if should_highlight_item(display_state, UseAction::Item(item_class)) {
+        button_name = format!("{}_Button_Highlight", chr);
+        text_color = highlight_ui_color;
+    } else {
+        button_name = format!("{}_Button_Base", chr);
+        text_color = ui_color;
+    }
+    render_button(&button_name, x_offset, y_offset, panel, sprites, config);
+
+    let text_x_offset = x_offset + config.ui_inv_name_x_offset;
+    let text_y_offset = y_offset + config.ui_inv_name_y_offset;
+    for (item, cur_item_class) in display_state.inventory.iter() {
+        if *cur_item_class == item_class {
+            let item_text = format!("{:?}", item);
+            panel.text_float_cmd(&item_text, text_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
+            break;
+        }
+    }
+}
+
 /// Render an inventory section within the given area
 fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &Vec<SpriteSheet>, config: &Config) {
     let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
@@ -553,119 +616,27 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
     let mut x_offset = config.x_offset_buttons;
     let mut y_offset = config.y_offset_buttons;
 
-    let mut text_color = ui_color;
-    let mut button_name = &"A_Button_Base";
-    if display_state.state == GameState::Use {
-        if let UseAction::Skill(skill, action_mode) = display_state.use_action {
-            if display_state.skills.iter().position(|sk| *sk == skill) == Some(0) {
-                button_name = &"A_Button_Highlight";
-                text_color = highlight_ui_color;
-            }
-        }
-    } else if display_state.cursor_pos.is_some() {
-        if let Some(UseAction::Skill(skill, action_mode)) = display_state.cursor_action {
-            if display_state.skills.iter().position(|sk| *sk == skill) == Some(0) {
-                button_name = &"A_Button_Highlight";
-                text_color = highlight_ui_color;
-            }
-        }
-    }
-    render_button(button_name, x_offset, y_offset, panel, sprites, config);
-    if let Some(skill) = display_state.skills.get(0) {
-        render_skill(*skill, x_offset, y_offset, text_color, panel, config);
-    }
+    /* Skills */
+    render_inventory_skill('A', 0, x_offset, y_offset, panel, display_state, sprites, config);
 
     x_offset += config.x_spacing_buttons;
-    let mut text_color = ui_color;
-    let mut button_name = &"S_Button_Base";
-    if display_state.state == GameState::Use {
-        if let UseAction::Skill(skill, action_mode) = display_state.use_action {
-            if display_state.skills.iter().position(|sk| *sk == skill) == Some(1) {
-                button_name = &"S_Button_Highlight";
-                text_color = highlight_ui_color;
-            }
-        }
-    } else if display_state.cursor_pos.is_some() {
-        if let Some(UseAction::Skill(skill, action_mode)) = display_state.cursor_action {
-            if display_state.skills.iter().position(|sk| *sk == skill) == Some(1) {
-                button_name = &"S_Button_Highlight";
-                text_color = highlight_ui_color;
-            }
-        }
-    }
-    render_button(button_name, x_offset, y_offset, panel, sprites, config);
-    if let Some(skill) = display_state.skills.get(1) {
-        render_skill(*skill, x_offset, y_offset, text_color, panel, config);
-    }
+    render_inventory_skill('S', 1, x_offset, y_offset, panel, display_state, sprites, config);
 
     x_offset += config.x_spacing_buttons;
-    let mut text_color = ui_color;
-    let mut button_name = &"D_Button_Base";
-    if display_state.state == GameState::Use {
-        if let UseAction::Skill(skill, action_mode) = display_state.use_action {
-            if display_state.skills.iter().position(|sk| *sk == skill) == Some(2) {
-                button_name = &"D_Button_Highlight";
-                text_color = highlight_ui_color;
-            }
-        }
-    } else if display_state.cursor_pos.is_some() {
-        if let Some(UseAction::Skill(skill, action_mode)) = display_state.cursor_action {
-            if display_state.skills.iter().position(|sk| *sk == skill) == Some(2) {
-                button_name = &"D_Button_Highlight";
-                text_color = highlight_ui_color;
-            }
-        }
-    }
-    render_button(button_name, x_offset, y_offset, panel, sprites, config);
-    if let Some(skill) = display_state.skills.get(2) {
-        render_skill(*skill, x_offset, y_offset, text_color, panel, config);
-    }
+    render_inventory_skill('D', 2, x_offset, y_offset, panel, display_state, sprites, config);
+
+    /* Items */
+    y_offset += config.y_spacing_buttons;
 
     x_offset = config.x_offset_buttons;
-    y_offset += config.y_spacing_buttons;
-    let text_color;
-    if display_state.state == GameState::Use && display_state.use_action == UseAction::Item(ItemClass::Primary) {
-        render_button("Z_Button_Highlight", x_offset, y_offset, panel, sprites, config);
-        text_color = highlight_ui_color;
-    } else {
-        render_button("Z_Button_Base", x_offset, y_offset, panel, sprites, config);
-        text_color = ui_color;
-    }
-    let text_x_offset = x_offset + config.ui_inv_name_x_offset;
-    let text_y_offset = y_offset + config.ui_inv_name_y_offset;
-    for (item, item_class) in display_state.inventory.iter() {
-        if *item_class == ItemClass::Primary {
-            let item_text = format!("{:?}", item);
-            panel.text_float_cmd(&item_text, text_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
-            break;
-        }
-    }
+    render_inventory_item('Z', ItemClass::Primary, x_offset, y_offset, panel, display_state, sprites, config);
+
+    x_offset += config.x_spacing_buttons;
+    render_inventory_item('X', ItemClass::Consumable, x_offset, y_offset, panel, display_state, sprites, config);
 
     x_offset += config.x_spacing_buttons;
     let text_color;
-    if display_state.state == GameState::Use && display_state.use_action == UseAction::Item(ItemClass::Consumable) {
-        render_button("X_Button_Highlight", x_offset, y_offset, panel, sprites, config);
-        text_color = highlight_ui_color;
-    } else {
-        render_button("X_Button_Base", x_offset, y_offset, panel, sprites, config);
-        text_color = ui_color;
-    }
-    let text_x_offset = x_offset + config.ui_inv_name_x_offset;
-    let text_y_offset = y_offset + config.ui_inv_name_y_offset;
-    for (item, item_class) in display_state.inventory.iter() {
-        if *item_class == ItemClass::Consumable {
-            let item_text = format!("{:?}", item);
-            panel.text_float_cmd(&item_text, text_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
-            break;
-        }
-    }
-
-    x_offset += config.x_spacing_buttons;
-    let text_color;
-    if display_state.state == GameState::Use && display_state.use_action == UseAction::Item(ItemClass::Misc) {
-        render_button("C_Button_Highlight", x_offset, y_offset, panel, sprites, config);
-        text_color = highlight_ui_color;
-    } else if display_state.cursor_pos.is_some() && display_state.cursor_action == Some(UseAction::Item(ItemClass::Misc)) {
+    if should_highlight_item(display_state, UseAction::Item(ItemClass::Misc)) {
         render_button("C_Button_Highlight", x_offset, y_offset, panel, sprites, config);
         text_color = highlight_ui_color;
     } else {
