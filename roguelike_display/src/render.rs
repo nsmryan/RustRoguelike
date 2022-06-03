@@ -573,13 +573,9 @@ fn render_inventory_skill(chr: char, index: usize, x_offset: f32, y_offset: f32,
 }
 
 fn should_highlight_item(display_state: &DisplayState, use_action: UseAction) -> bool {
-    if display_state.state == GameState::Use && display_state.use_action == use_action {
-        return true;
-    } else if display_state.cursor_pos.is_some() && display_state.cursor_action == Some(use_action) {
-        return true;
-    } else {
-        return false
-    }
+    let use_mode_action = display_state.state == GameState::Use && display_state.use_action == use_action;
+    let cursor_mode_action = display_state.cursor_pos.is_some() && display_state.cursor_action == Some(use_action);
+    return use_mode_action || cursor_mode_action;
 }
 
 fn render_inventory_item(chr: char, item_class: ItemClass, x_offset: f32, y_offset: f32, panel: &mut Panel, display_state: &DisplayState, sprites: &Vec<SpriteSheet>, config: &Config) {
