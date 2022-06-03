@@ -466,9 +466,7 @@ fn render_button(name: &str, x_offset: f32, y_offset: f32, panel: &mut Panel, sp
     panel.sprite_float_scaled_cmd(button, ui_color, x_offset, y_offset, config.x_scale_buttons, config.y_scale_buttons);
 }
 
-fn render_skill(skill: Skill, x_offset: f32, y_offset: f32, panel: &mut Panel, config: &Config) {
-    let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
-
+fn render_skill(skill: Skill, x_offset: f32, y_offset: f32, color: Color, panel: &mut Panel, config: &Config) {
     let first_word: String;
     let mut second_word = "";
     match skill {
@@ -535,69 +533,124 @@ fn render_skill(skill: Skill, x_offset: f32, y_offset: f32, panel: &mut Panel, c
     if second_word.len() > 0 {
         let first_x_offset = x_offset + config.ui_inv_name_0_x_offset;
         let first_y_offset = y_offset + config.ui_inv_name_0_y_offset;
-        panel.text_float_cmd(&first_word, ui_color, first_x_offset, first_y_offset, config.ui_inv_name_0_scale);
+        panel.text_float_cmd(&first_word, color, first_x_offset, first_y_offset, config.ui_inv_name_0_scale);
 
         let second_x_offset = x_offset + config.ui_inv_name_1_x_offset;
         let second_y_offset = y_offset + config.ui_inv_name_1_y_offset;
-        panel.text_float_cmd(&second_word, ui_color, second_x_offset, second_y_offset, config.ui_inv_name_1_scale);
+        panel.text_float_cmd(&second_word, color, second_x_offset, second_y_offset, config.ui_inv_name_1_scale);
     } else {
         let text_x_offset = x_offset + config.ui_inv_name_x_offset;
         let text_y_offset = y_offset + config.ui_inv_name_y_offset;
-        panel.text_float_cmd(&first_word, ui_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
+        panel.text_float_cmd(&first_word, color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
     }
 }
 
 /// Render an inventory section within the given area
 fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &Vec<SpriteSheet>, config: &Config) {
     let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
+    let highlight_ui_color = Color::new(0, 0, 0, 255);
 
     let mut x_offset = config.x_offset_buttons;
     let mut y_offset = config.y_offset_buttons;
 
-    render_button("A_Button_Base", x_offset, y_offset, panel, sprites, config);
+    let mut text_color = ui_color;
+    let mut button_name = &"A_Button_Base";
+    if display_state.state == GameState::Use {
+        if let UseAction::Skill(skill, action_mode) = display_state.use_action {
+            if display_state.skills.iter().position(|sk| *sk == skill) == Some(0) {
+                button_name = &"A_Button_Highlight";
+                text_color = highlight_ui_color;
+            }
+        }
+    }
+    render_button(button_name, x_offset, y_offset, panel, sprites, config);
     if let Some(skill) = display_state.skills.get(0) {
-        render_skill(*skill, x_offset, y_offset, panel, config);
+        render_skill(*skill, x_offset, y_offset, text_color, panel, config);
     }
 
     x_offset += config.x_spacing_buttons;
-    render_button("S_Button_Base", x_offset, y_offset, panel, sprites, config);
+    let mut text_color = ui_color;
+    let mut button_name = &"S_Button_Base";
+    if display_state.state == GameState::Use {
+        if let UseAction::Skill(skill, action_mode) = display_state.use_action {
+            if display_state.skills.iter().position(|sk| *sk == skill) == Some(1) {
+                button_name = &"S_Button_Highlight";
+                text_color = highlight_ui_color;
+            }
+        }
+    }
+    render_button(button_name, x_offset, y_offset, panel, sprites, config);
     if let Some(skill) = display_state.skills.get(1) {
-        render_skill(*skill, x_offset, y_offset, panel, config);
+        render_skill(*skill, x_offset, y_offset, text_color, panel, config);
     }
 
     x_offset += config.x_spacing_buttons;
-    render_button("D_Button_Base", x_offset, y_offset, panel, sprites, config);
+    let mut text_color = ui_color;
+    let mut button_name = &"D_Button_Base";
+    if display_state.state == GameState::Use {
+        if let UseAction::Skill(skill, action_mode) = display_state.use_action {
+            if display_state.skills.iter().position(|sk| *sk == skill) == Some(2) {
+                button_name = &"D_Button_Highlight";
+                text_color = highlight_ui_color;
+            }
+        }
+    }
+    render_button(button_name, x_offset, y_offset, panel, sprites, config);
     if let Some(skill) = display_state.skills.get(2) {
-        render_skill(*skill, x_offset, y_offset, panel, config);
+        render_skill(*skill, x_offset, y_offset, text_color, panel, config);
     }
 
     x_offset = config.x_offset_buttons;
     y_offset += config.y_spacing_buttons;
-    render_button("Z_Button_Base", x_offset, y_offset, panel, sprites, config);
+    let text_color;
+    if display_state.state == GameState::Use && display_state.use_action == UseAction::Item(ItemClass::Primary) {
+        render_button("Z_Button_Highlight", x_offset, y_offset, panel, sprites, config);
+        text_color = highlight_ui_color;
+    } else {
+        render_button("Z_Button_Base", x_offset, y_offset, panel, sprites, config);
+        text_color = ui_color;
+    }
     let text_x_offset = x_offset + config.ui_inv_name_x_offset;
     let text_y_offset = y_offset + config.ui_inv_name_y_offset;
     for (item, item_class) in display_state.inventory.iter() {
         if *item_class == ItemClass::Primary {
             let item_text = format!("{:?}", item);
-            panel.text_float_cmd(&item_text, ui_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
+            panel.text_float_cmd(&item_text, text_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
             break;
         }
     }
 
     x_offset += config.x_spacing_buttons;
-    render_button("X_Button_Base", x_offset, y_offset, panel, sprites, config);
+    let text_color;
+    if display_state.state == GameState::Use && display_state.use_action == UseAction::Item(ItemClass::Consumable) {
+        render_button("X_Button_Highlight", x_offset, y_offset, panel, sprites, config);
+        text_color = highlight_ui_color;
+    } else {
+        render_button("X_Button_Base", x_offset, y_offset, panel, sprites, config);
+        text_color = ui_color;
+    }
     let text_x_offset = x_offset + config.ui_inv_name_x_offset;
     let text_y_offset = y_offset + config.ui_inv_name_y_offset;
     for (item, item_class) in display_state.inventory.iter() {
         if *item_class == ItemClass::Consumable {
             let item_text = format!("{:?}", item);
-            panel.text_float_cmd(&item_text, ui_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
+            panel.text_float_cmd(&item_text, text_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
             break;
         }
     }
 
     x_offset += config.x_spacing_buttons;
-    render_button("C_Button_Base", x_offset, y_offset, panel, sprites, config);
+    let text_color;
+    if display_state.state == GameState::Use && display_state.use_action == UseAction::Item(ItemClass::Misc) {
+        render_button("C_Button_Highlight", x_offset, y_offset, panel, sprites, config);
+        text_color = highlight_ui_color;
+    } else if display_state.cursor_pos.is_some() && display_state.cursor_action == Some(UseAction::Item(ItemClass::Misc)) {
+        render_button("C_Button_Highlight", x_offset, y_offset, panel, sprites, config);
+        text_color = highlight_ui_color;
+    } else {
+        render_button("C_Button_Base", x_offset, y_offset, panel, sprites, config);
+        text_color = ui_color;
+    }
     let text_x_offset = x_offset + config.ui_inv_name_x_offset;
     let text_y_offset = y_offset + config.ui_inv_name_y_offset;
     let mut num_stones = 0;
@@ -608,7 +661,7 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
     }
     if num_stones > 0 {
         let item_text = format!("Stone x{}", num_stones);
-        panel.text_float_cmd(&item_text, ui_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
+        panel.text_float_cmd(&item_text, text_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
     }
 }
 

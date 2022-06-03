@@ -583,7 +583,11 @@ pub fn handle_input_playing(input_action: InputAction,
                             let player_pos = level.entities.pos[&player_id];
                             let item_id = level.entities.inventory[&player_id][item_index];
                             let throw_pos = cursor_pos;
-                            msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos, false));
+
+                            // Throwing to the current tile does nothing.
+                            if player_pos != throw_pos {
+                                msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos, false));
+                            }
                         } else {
                             panic!("Throwing an item, but no item available of that type!");
                         }
@@ -673,11 +677,6 @@ pub fn handle_input_playing(input_action: InputAction,
 
 fn handle_throw_item(item_class: ItemClass, level: &Level, msg_log: &mut MsgLog, settings: &mut Settings) {
     if let Some(item_index) = level.find_item(item_class) { 
-        //let player_id = level.find_by_name(EntityName::Player).unwrap();
-        //let player_pos = level.entities.pos[&player_id];
-        //let item_id = level.entities.inventory[&player_id][item_index];
-        //msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos, false));
-
         if settings.cursor == None {
             let player_id = level.find_by_name(EntityName::Player).unwrap();
             let player_pos = level.entities.pos[&player_id];
@@ -686,7 +685,9 @@ fn handle_throw_item(item_class: ItemClass, level: &Level, msg_log: &mut MsgLog,
         }
 
         // Record skill as a use_action.
-        settings.cursor_action = Some(UseAction::Item(item_class));
+        let use_action = UseAction::Item(item_class);
+        settings.cursor_action = Some(use_action);
+        msg_log.log(Msg::CursorAction(use_action));
     }
 }
 
@@ -913,6 +914,7 @@ fn start_use_skill(index: usize, action_mode: ActionMode, level: &Level, setting
 
                 // Record skill as a use_action.
                 settings.cursor_action = Some(use_action);
+                msg_log.log(Msg::CursorAction(use_action));
             }
         }
     }

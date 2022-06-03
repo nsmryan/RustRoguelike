@@ -893,7 +893,6 @@ fn resolve_throw_item(player_id: EntityId,
                       rng: &mut Rand32,
                       msg_log: &mut MsgLog,
                       config: &Config) {
-
     if start_pos == end_pos {
         panic!("Is it possible to throw an item and have it end where it started? Apparently yes")
     }

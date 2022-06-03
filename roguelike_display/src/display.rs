@@ -418,6 +418,7 @@ impl Display {
                     self.state.cursor_pos = Some(pos);
                 } else {
                     self.state.cursor_pos = None;
+                    self.state.cursor_action = None;
 
                     let tiles = lookup_spritekey(&self.sprites, "rustrogueliketiles");
                     let cursor_sprite = Sprite::new(ENTITY_CURSOR as u32, tiles);
@@ -877,6 +878,10 @@ impl Display {
                 self.state.use_action = use_action;
             }
 
+            Msg::CursorAction(use_action) => {
+                self.state.cursor_action = Some(use_action);
+            }
+
             Msg::SpikeTrapTriggered(trap, _entity_id) |
             Msg::SoundTrapTriggered(trap, _entity_id) |
             Msg::BlinkTrapTriggered(trap, _entity_id) |
@@ -1064,6 +1069,7 @@ pub struct DisplayState {
     pub overlay: bool,
     pub move_mode: MoveMode,
     pub use_action: UseAction,
+    pub cursor_action: Option<UseAction>,
 
     pub turn_count: usize,
 
@@ -1136,6 +1142,7 @@ impl DisplayState {
             overlay: false,
             move_mode: MoveMode::Walk,
             use_action: UseAction::Interact,
+            cursor_action: None,
             turn_count: 0,
             state: GameState::Playing,
             impressions: Vec::new(),
