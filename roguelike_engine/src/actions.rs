@@ -797,6 +797,9 @@ fn finalize_use_item(item_class: ItemClass, level: &Level, settings: &mut Settin
                 for hit_pos in use_result.hit_positions {
                     msg_log.log(Msg::Hit(player_id, hit_pos, weapon_type, attack_type));
                 }
+
+                // Attacking uses stamina.
+                msg_log.log_front(Msg::UsedStamina(player_id, 1));
             }
         }
     }

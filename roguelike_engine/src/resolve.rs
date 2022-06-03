@@ -419,6 +419,14 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
             game.msg_log.log(Msg::StateChange(entity_id, Behavior::Idle));
         }
 
+        Msg::UsedStamina(entity_id, amount) => {
+            game.level.entities.stamina[&entity_id].amount -= amount;
+        }
+
+        Msg::GainStamina(entity_id, amount) => {
+            game.level.entities.stamina[&entity_id].amount += amount;
+        }
+
         _ => {
         }
     }
@@ -461,12 +469,6 @@ fn resolve_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attac
     } else {
         // no entity- check for a wall. if blunt and strong, crush the wall.
         // TODO message for hitting a wall, use for hammer as well
-    }
-
-    // Attacking uses stamina.
-    if let Some(stamina) = level.entities.stamina.get_mut(&entity_id) {
-        stamina.amount -= 1;
-        msg_log.log(Msg::UsedStamina(entity_id, 1));
     }
 
     match weapon_type {
@@ -580,8 +582,7 @@ fn resolve_try_movement(entity_id: EntityId,
 
         MoveType::WallKick => {
             if level.entities.has_enough_stamina(entity_id, 1) {
-                msg_log.log(Msg::UsedStamina(entity_id, 1));
-                level.entities.stamina[&entity_id].amount -= 1;
+                msg_log.log_front(Msg::UsedStamina(entity_id, 1));
 
                 level.entities.set_pos(entity_id, movement.pos);
 
@@ -609,8 +610,7 @@ fn resolve_try_movement(entity_id: EntityId,
                         if amount > 1 {
                             msg_log.log(Msg::TryMove(entity_id, direction, amount - 1, move_mode));
                         } else if move_mode == MoveMode::Run {
-                            msg_log.log(Msg::UsedStamina(entity_id, 1));
-                            level.entities.stamina[&entity_id].amount -= 1;
+                            msg_log.log_front(Msg::UsedStamina(entity_id, 1));
                         }
                     }
                 } else {
@@ -1075,8 +1075,7 @@ fn resolve_moved_message(entity_id: EntityId,
     if let Some(stamina) = level.entities.stamina.get_mut(&entity_id) {
         if move_type == MoveType::Pass {
             if stamina.amount < config.player_stamina {
-                msg_log.log(Msg::GainStamina(entity_id, 1));
-                stamina.amount += 1;
+                msg_log.log_front(Msg::GainStamina(entity_id, 1));
             }
         }
     }
