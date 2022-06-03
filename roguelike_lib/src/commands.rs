@@ -7,6 +7,7 @@ use roguelike_map::*;
 
 use roguelike_core::types::*;
 use roguelike_core::messaging::*;
+use roguelike_core::movement::*;
 
 use roguelike_engine::input::*;
 use roguelike_engine::game::*;
@@ -311,7 +312,7 @@ pub fn execute_game_command(command: &GameCmd, game: &mut Game) -> String {
         GameCmd::SetPos(id, x, y) => {
             // TODO this could return an error if id not found instead of failing silently
             if game.level.entities.pos.contains_key(id) {
-                game.level.entities.pos[id] = Pos::new(*x, *y);
+                game.msg_log.log(Msg::Moved(*id, MoveType::Blink, MoveMode::Walk, Pos::new(*x, *y)));
             }
             return format!("{}", name);
         }

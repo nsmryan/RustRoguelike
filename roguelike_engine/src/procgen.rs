@@ -635,7 +635,7 @@ pub fn place_vault_with(level: &mut Level, vault: &Vault, offset: Pos, rotation:
     }
 
     for remove_id in vault_entities_to_remove {
-        level.entities.mark_for_removal(remove_id);
+        entities.mark_for_removal(remove_id);
     }
 
     for remove_id in entities_to_remove {
