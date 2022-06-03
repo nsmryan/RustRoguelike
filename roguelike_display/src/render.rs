@@ -636,13 +636,16 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
 
     x_offset += config.x_spacing_buttons;
     let text_color;
+    let button_name;
     if should_highlight_item(display_state, UseAction::Item(ItemClass::Misc)) {
-        render_button("C_Button_Highlight", x_offset, y_offset, panel, sprites, config);
+        button_name = &"C_Button_Highlight";
         text_color = highlight_ui_color;
     } else {
-        render_button("C_Button_Base", x_offset, y_offset, panel, sprites, config);
+        button_name = &"C_Button_Base";
         text_color = ui_color;
     }
+    render_button(button_name, x_offset, y_offset, panel, sprites, config);
+
     let text_x_offset = x_offset + config.ui_inv_name_x_offset;
     let text_y_offset = y_offset + config.ui_inv_name_y_offset;
     let mut num_stones = 0;
