@@ -49,7 +49,7 @@ pub struct Entities {
     pub fov_block: Comp<FovBlock>,
 
     // NOTE not sure about keeping these ones, or packaging into larger ones
-    pub sound: Comp<Pos>, // source position
+    pub sound: Comp<Pos>,
     pub typ: Comp<EntityType>,
     pub blocks: Comp<bool>,
     pub needs_removal: Comp<bool>,
@@ -409,6 +409,9 @@ impl Entities {
         self.blocks.remove(&id);
         self.needs_removal.remove(&id);
         self.messages.remove(&id);
+        self.modifier.remove(&id);
+        self.passive.remove(&id);
+        self.stamina.remove(&id);
     }
 }
 

@@ -48,8 +48,11 @@ impl<T> Comp<T> {
     }
 
     pub fn lookup(&self, entity_id: EntityId) -> usize {
-        let index = self.ids.binary_search(&entity_id).expect("Component not found for entity!");
-        return index;
+        if let Ok(index) = self.ids.binary_search(&entity_id) {
+            return index;
+        } else {
+            panic!("Component not found for entity!");
+        }
     }
 
     pub fn get(&self, entity_id: &EntityId) -> Option<&T> {
