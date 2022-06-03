@@ -580,6 +580,9 @@ fn resolve_try_movement(entity_id: EntityId,
 
         MoveType::WallKick => {
             if level.entities.has_enough_stamina(entity_id, 1) {
+                msg_log.log(Msg::UsedStamina(entity_id, 1));
+                level.entities.stamina[&entity_id].amount -= 1;
+
                 level.entities.set_pos(entity_id, movement.pos);
 
                 // NOTE may need to set facing
@@ -605,6 +608,9 @@ fn resolve_try_movement(entity_id: EntityId,
 
                         if amount > 1 {
                             msg_log.log(Msg::TryMove(entity_id, direction, amount - 1, move_mode));
+                        } else if move_mode == MoveMode::Run {
+                            msg_log.log(Msg::UsedStamina(entity_id, 1));
+                            level.entities.stamina[&entity_id].amount -= 1;
                         }
                     }
                 } else {
@@ -1072,12 +1078,6 @@ fn resolve_moved_message(entity_id: EntityId,
                 msg_log.log(Msg::GainStamina(entity_id, 1));
                 stamina.amount += 1;
             }
-        } else if move_type == MoveType::JumpWall || move_type == MoveType::WallKick {
-            msg_log.log(Msg::UsedStamina(entity_id, 1));
-            stamina.amount -= 1;
-        } else if move_mode == MoveMode::Run {
-            msg_log.log(Msg::UsedStamina(entity_id, 1));
-            stamina.amount -= 1;
         }
     }
 
