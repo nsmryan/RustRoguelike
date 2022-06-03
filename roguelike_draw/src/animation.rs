@@ -36,7 +36,7 @@ pub enum Effect {
     Particles(f32, Vec<Particle>), // spawn rate, current particles
     Attack(Pos, Pos, SpriteAnim),
     Fade(Sprite, Color, u8, u8, Pos, f32, f32), // sprite, color, start alpha, end alpha, position, seconds, time taken
-    HpChange(i32, Pos, usize), // Change amount, tile position, frame count
+    NumberChange(i32, Pos, Color, usize), // Change amount, tile position, color, frame count
 }
 
 impl Effect {
@@ -60,8 +60,8 @@ impl Effect {
         return Effect::Fade(sprite, color, start, end, pos, seconds, 0.0);
     }
 
-    pub fn hp_change(change: i32, pos: Pos) -> Effect {
-        return Effect::HpChange(change, pos, 0);
+    pub fn number_change(change: i32, pos: Pos, color: Color) -> Effect {
+        return Effect::NumberChange(change, pos, color, 0);
     }
 }
 

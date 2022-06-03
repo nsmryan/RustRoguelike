@@ -94,6 +94,17 @@ pub fn step_logic(game: &mut Game) -> bool {
                 game.level.entities.status[&player_id].hammer_raised = Some((item_id, dir, turns - 1));
             }
         }
+
+        if game.level.entities.stamina[&player_id].cooldown == 0 {
+            game.level.entities.stamina[&player_id].cooldown = game.config.player_stamina_cooldown;
+
+            if game.level.entities.stamina[&player_id].amount < game.config.player_stamina {
+                game.level.entities.stamina[&player_id].amount += 1;
+                game.msg_log.log(Msg::GainStamina(player_id, 1));
+            }
+        } else {
+            game.level.entities.stamina[&player_id].cooldown -= 1;
+        }
     }
 
     // perform count down of entities waiting to be removed

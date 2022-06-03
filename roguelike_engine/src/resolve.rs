@@ -463,6 +463,12 @@ fn resolve_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attac
         // TODO message for hitting a wall, use for hammer as well
     }
 
+    // Attacking uses stamina.
+    if let Some(stamina) = level.entities.stamina.get_mut(&entity_id) {
+        stamina.amount -= 1;
+        msg_log.log(Msg::UsedStamina(entity_id, 1));
+    }
+
     match weapon_type {
         WeaponType::Blunt => {
             msg_log.log(Msg::Blunt(entity_pos, hit_pos));
@@ -573,11 +579,13 @@ fn resolve_try_movement(entity_id: EntityId,
         }
 
         MoveType::WallKick => {
-            level.entities.set_pos(entity_id, movement.pos);
+            if level.entities.has_enough_stamina(entity_id, 1) {
+                level.entities.set_pos(entity_id, movement.pos);
 
-            // NOTE may need to set facing
-            // NOTE could check for enemy and attack
-            msg_log.log(Msg::WallKick(entity_id, movement.pos));
+                // NOTE may need to set facing
+                // NOTE could check for enemy and attack
+                msg_log.log(Msg::WallKick(entity_id, movement.pos));
+            }
         }
 
         MoveType::Move | MoveType::JumpWall => {
@@ -592,38 +600,44 @@ fn resolve_try_movement(entity_id: EntityId,
             let traps_block = false;
             if level.clear_path(entity_pos, movement.pos, traps_block) {
                 if movement.typ == MoveType::Move {
-                    msg_log.log(Msg::Moved(entity_id, movement.typ, move_mode, movement.pos));
+                    if move_mode != MoveMode::Run || level.entities.has_enough_stamina(entity_id, 1) {
+                        msg_log.log(Msg::Moved(entity_id, movement.typ, move_mode, movement.pos));
 
-                    if amount > 1 {
-                        msg_log.log(Msg::TryMove(entity_id, direction, amount - 1, move_mode));
+                        if amount > 1 {
+                            msg_log.log(Msg::TryMove(entity_id, direction, amount - 1, move_mode));
+                        }
                     }
                 } else {
-                    msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
-                    panic!("Can we even get here? No clear path, but didn't decide to jump a wall?");
+                    if level.entities.has_enough_stamina(entity_id, 1) {
+                        msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
+                        panic!("Can we even get here? No clear path, but didn't decide to jump a wall?");
+                    }
                 }
             } else if movement.typ == MoveType::JumpWall {
-                if let Some(wall_pos) = movement.wall {
-                    // If the entity is not next to the wall, move them next to the wall.
-                    if entity_pos != wall_pos {
-                        msg_log.log(Msg::Moved(entity_id, MoveType::Move, move_mode, wall_pos));
-                    }
+                if level.entities.has_enough_stamina(entity_id, 1) {
+                    if let Some(wall_pos) = movement.wall {
+                        // If the entity is not next to the wall, move them next to the wall.
+                        if entity_pos != wall_pos {
+                            msg_log.log(Msg::Moved(entity_id, MoveType::Move, move_mode, wall_pos));
+                        }
 
-                    // Jump over the wall
-                    let after_wall_pos = direction.offset_pos(wall_pos, 1);
-                    msg_log.log(Msg::JumpWall(entity_id, wall_pos, after_wall_pos));
-                    // Actually move over the wall with a JumpWall move_type.
-                    msg_log.log(Msg::Moved(entity_id, movement.typ, move_mode, movement.pos));
-
-                    // If the wall jump does not end next to the wall, emit another message
-                    // indicating the move from the other end of the wall to the final location.
-                    if after_wall_pos != movement.pos {
+                        // Jump over the wall
+                        let after_wall_pos = direction.offset_pos(wall_pos, 1);
+                        msg_log.log(Msg::JumpWall(entity_id, wall_pos, after_wall_pos));
+                        // Actually move over the wall with a JumpWall move_type.
                         msg_log.log(Msg::Moved(entity_id, movement.typ, move_mode, movement.pos));
+
+                        // If the wall jump does not end next to the wall, emit another message
+                        // indicating the move from the other end of the wall to the final location.
+                        if after_wall_pos != movement.pos {
+                            msg_log.log(Msg::Moved(entity_id, movement.typ, move_mode, movement.pos));
+                        }
+                    } else {
+                        panic!("Wall jump with no recorded wall position!");
                     }
                 } else {
-                    panic!("Wall jump with no recorded wall position!");
+                    panic!("Why would we not have a clear path, but have received this movement?");
                 }
-            } else {
-                panic!("Why would we not have a clear path, but have received this movement?");
             }
         }
 
@@ -1048,6 +1062,22 @@ fn resolve_moved_message(entity_id: EntityId,
                 msg_log.log(Msg::HammerSwing(entity_id, item_id, hit_pos));
                 level.entities.status[&entity_id].hammer_raised = None;
             }
+        }
+    }
+
+    // Passing a turn increases stamina by 1
+    if let Some(stamina) = level.entities.stamina.get_mut(&entity_id) {
+        if move_type == MoveType::Pass {
+            if stamina.amount < config.player_stamina {
+                msg_log.log(Msg::GainStamina(entity_id, 1));
+                stamina.amount += 1;
+            }
+        } else if move_type == MoveType::JumpWall || move_type == MoveType::WallKick {
+            msg_log.log(Msg::UsedStamina(entity_id, 1));
+            stamina.amount -= 1;
+        } else if move_mode == MoveMode::Run {
+            msg_log.log(Msg::UsedStamina(entity_id, 1));
+            stamina.amount -= 1;
         }
     }
 

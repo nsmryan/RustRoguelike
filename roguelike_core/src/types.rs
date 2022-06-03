@@ -217,6 +217,18 @@ impl Color {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+pub struct Stamina {
+    pub amount: u32,
+    pub cooldown: u32,
+}
+
+impl Stamina {
+    pub fn new(amount: u32, cooldown: u32) -> Stamina {
+        return Stamina { amount, cooldown };
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
 #[display(style="lowercase")]
 pub enum GameState {
