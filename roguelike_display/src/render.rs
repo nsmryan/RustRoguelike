@@ -562,6 +562,13 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
                 text_color = highlight_ui_color;
             }
         }
+    } else if display_state.cursor_pos.is_some() {
+        if let Some(UseAction::Skill(skill, action_mode)) = display_state.cursor_action {
+            if display_state.skills.iter().position(|sk| *sk == skill) == Some(0) {
+                button_name = &"A_Button_Highlight";
+                text_color = highlight_ui_color;
+            }
+        }
     }
     render_button(button_name, x_offset, y_offset, panel, sprites, config);
     if let Some(skill) = display_state.skills.get(0) {
@@ -578,6 +585,13 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
                 text_color = highlight_ui_color;
             }
         }
+    } else if display_state.cursor_pos.is_some() {
+        if let Some(UseAction::Skill(skill, action_mode)) = display_state.cursor_action {
+            if display_state.skills.iter().position(|sk| *sk == skill) == Some(1) {
+                button_name = &"S_Button_Highlight";
+                text_color = highlight_ui_color;
+            }
+        }
     }
     render_button(button_name, x_offset, y_offset, panel, sprites, config);
     if let Some(skill) = display_state.skills.get(1) {
@@ -589,6 +603,13 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
     let mut button_name = &"D_Button_Base";
     if display_state.state == GameState::Use {
         if let UseAction::Skill(skill, action_mode) = display_state.use_action {
+            if display_state.skills.iter().position(|sk| *sk == skill) == Some(2) {
+                button_name = &"D_Button_Highlight";
+                text_color = highlight_ui_color;
+            }
+        }
+    } else if display_state.cursor_pos.is_some() {
+        if let Some(UseAction::Skill(skill, action_mode)) = display_state.cursor_action {
             if display_state.skills.iter().position(|sk| *sk == skill) == Some(2) {
                 button_name = &"D_Button_Highlight";
                 text_color = highlight_ui_color;
