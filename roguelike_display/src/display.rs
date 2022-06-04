@@ -184,8 +184,7 @@ impl Display {
                                       canvas,
                                       &mut self.atlas_texture,
                                       &mut self.sprites,
-                                      &mut self.font_texture,
-                                      &mut self.font);
+                                      &mut self.font_texture);
         }
     }
 
@@ -989,8 +988,7 @@ impl Display {
                                   &mut self.canvas,
                                   &mut self.atlas_texture,
                                   &mut self.sprites,
-                                  &mut self.font_texture,
-                                  &mut self.font);
+                                  &mut self.font_texture);
 
         // Render the menus last to ensure that they display on top of everything.
         self.canvas.with_texture_canvas(&mut self.screen_texture, |canvas| {

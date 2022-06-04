@@ -67,7 +67,6 @@ fn process_draw_cmd(panel: &Panel,
                     sprite_texture: &mut Texture,
                     sprites: &mut Vec<SpriteSheet>,
                     font_texture: &mut Texture,
-                    _font: &mut SpriteSheet,
                     cmd: &DrawCmd) {
     match cmd {
         DrawCmd::Sprite(sprite, color, pos) => {
@@ -774,8 +773,7 @@ impl Panel {
                                canvas: &mut WindowCanvas,
                                sprite_texture: &mut Texture,
                                sprites: &mut Vec<SpriteSheet>,
-                               font_texture: &mut Texture,
-                               font: &mut SpriteSheet) {
+                               font_texture: &mut Texture) {
         // If there are no commands, just clear the panel with black.
         if self.draw_cmds.len() == 0 {
             canvas.with_texture_canvas(texture, |canvas| {
@@ -790,8 +788,7 @@ impl Panel {
                               canvas,
                               sprite_texture,
                               sprites,
-                              font_texture,
-                              font);
+                              font_texture);
 
             self.old_draw_cmds.clear();
             std::mem::swap(&mut self.draw_cmds, &mut self.old_draw_cmds);
@@ -804,8 +801,7 @@ impl Panel {
                         canvas: &mut WindowCanvas,
                         sprite_texture: &mut Texture,
                         sprites: &mut Vec<SpriteSheet>,
-                        font_texture: &mut Texture,
-                        font: &mut SpriteSheet) {
+                        font_texture: &mut Texture) {
         // Collect a map of positions which are going to be filled, to avoid drawing
         // aligned sprites below those tiles.
         let mut fill_map = HashMap::<Pos, u32>::new();
@@ -843,7 +839,7 @@ impl Panel {
                         }
                     }
                 }
-                process_draw_cmd(self, canvas, sprite_texture, sprites, font_texture, font, cmd);
+                process_draw_cmd(self, canvas, sprite_texture, sprites, font_texture, cmd);
             }
         }).unwrap();
 
