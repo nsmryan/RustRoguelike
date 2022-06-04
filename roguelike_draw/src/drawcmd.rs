@@ -985,8 +985,16 @@ impl FromStr for SpriteSheet {
         let y = args.next().ok_or("no arg")?.parse::<u32>().map_err(|err| format!("{}", err))?;
         let width = args.next().ok_or("no arg")?.parse::<usize>().map_err(|err| format!("{}", err))?;
         let height = args.next().ok_or("no arg")?.parse::<usize>().map_err(|err| format!("{}", err))?;
-        
-        return Ok(SpriteSheet::with_offset(name, x, y, width, height));
+
+        let is_button = name.contains("Button");
+        let mut sheet = SpriteSheet::with_offset(name, x, y, width, height);
+        if is_button {
+            sheet.rows = 1;
+            sheet.cols = 1;
+            sheet.num_sprites = 1;
+        }
+
+        return Ok(sheet);
     }
 }
 

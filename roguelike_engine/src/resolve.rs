@@ -609,7 +609,6 @@ fn resolve_try_movement(entity_id: EntityId,
                     let enough_stamina = level.entities.has_enough_stamina(entity_id, 1);
                     let run_move = move_mode == MoveMode::Run;
                     if !run_move || enough_stamina {
-                        dbg!(run_move, enough_stamina, level.entities.stamina[&entity_id]);
                         msg_log.log(Msg::Moved(entity_id, movement.typ, move_mode, movement.pos));
 
                         if amount > 1 {
