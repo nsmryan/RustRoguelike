@@ -18,4 +18,4 @@ roguelike_engine = { path = "../roguelike_engine" }
 
 [[bin]]
 name = "rl_engine"
-path = "src/main.rs"
+path = "src/rl_engine.rs"
