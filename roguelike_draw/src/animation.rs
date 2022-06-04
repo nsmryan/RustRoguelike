@@ -64,7 +64,7 @@ impl Effect {
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Sprite {
-    pub index: Option<u32>, 
+    pub index: u32, 
     pub key: SpriteKey,
     pub flip_horiz: bool,
     pub flip_vert: bool,
@@ -76,17 +76,17 @@ impl Sprite {
         let flip_vert = false;
         let flip_horiz = false;
         let rotation = 0.0;
-        return Sprite { index: Some(index), key, flip_horiz, flip_vert, rotation };
+        return Sprite { index: index, key, flip_horiz, flip_vert, rotation };
     }
 
     pub fn from_key(key: SpriteKey) -> Sprite {
         let flip_vert = false;
         let flip_horiz = false;
         let rotation = 0.0;
-        return Sprite { index: None, key, flip_horiz, flip_vert, rotation };
+        return Sprite { index: 0, key, flip_horiz, flip_vert, rotation };
     }
 
-    pub fn with_flip(index: Option<u32>, key: SpriteKey, flip_horiz: bool, flip_vert: bool) -> Sprite {
+    pub fn with_flip(index: u32, key: SpriteKey, flip_horiz: bool, flip_vert: bool) -> Sprite {
         return Sprite { index, key, flip_horiz, flip_vert, rotation: 0.0 };
     }
 }
@@ -143,7 +143,7 @@ impl SpriteAnim {
     }
 
     pub fn sprite(&self) -> Sprite {
-        let mut sprite = Sprite::with_flip(Some(self.index as u32), self.sprite_key, self.flip_horiz, self.flip_vert);
+        let mut sprite = Sprite::with_flip(self.index as u32, self.sprite_key, self.flip_horiz, self.flip_vert);
         sprite.rotation = self.rotation;
         return sprite;
     }

@@ -614,7 +614,7 @@ impl Level {
         return hit_pos;
     }
 
-    pub fn calculate_use_skill(&self, entity_id: EntityId, skill: Skill, dir: Direction, move_mode: MoveMode) -> UseResult {
+    pub fn calculate_use_skill(&self, entity_id: EntityId, _skill: Skill, dir: Direction, _move_mode: MoveMode) -> UseResult {
         let entity_pos = self.entities.pos[&entity_id];
 
         let mut result = UseResult::new();

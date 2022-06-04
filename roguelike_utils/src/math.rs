@@ -1,6 +1,7 @@
 use std::str::FromStr;
 use std::fmt;
 
+use parse_display::{Display, FromStr};
 use serde::{Serialize, Deserialize};
 
 
@@ -44,7 +45,8 @@ impl FromStr for Pos {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Default)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Display, FromStr, Serialize, Deserialize, Default)]
+#[display("color {r} {g} {b} {a}")]
 pub struct Color {
     pub r: u8,
     pub g: u8,

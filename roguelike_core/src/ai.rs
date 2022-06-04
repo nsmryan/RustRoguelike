@@ -1,4 +1,3 @@
-use std::fmt;
 use serde::{Serialize, Deserialize};
 use parse_display::{Display, FromStr};
 

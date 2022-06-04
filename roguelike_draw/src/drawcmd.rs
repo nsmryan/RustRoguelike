@@ -5,9 +5,11 @@ use sdl2::render::{Texture, RenderTarget, WindowCanvas, BlendMode, Canvas};
 use sdl2::rect::Rect;
 use sdl2::pixels::{Color as Sdl2Color};
 
+use parse_display::{Display, FromStr};
+
 use roguelike_utils::math::*;
 
-use roguelike_map::Direction;
+use roguelike_map::{Direction, PlayerDirection};
 
 use crate::animation::{Sprite, SpriteKey};
 
@@ -27,18 +29,31 @@ pub enum Justify {
 }
 
 // NOTE use of String prevents Copy trait
+//#[derive(Clone, Display, FromStr, Debug, PartialEq)]
+//#[display(style = "snake_case")]
 #[derive(Clone, Debug, PartialEq)]
 pub enum DrawCmd {
+    //#[display("sprite {0} {1} {2}")]
     Sprite(Sprite, Color, Pos),
-    SpriteScaled(Sprite, f32, Option<Direction>, Color, Pos),
+    //#[display("sprite_scaled {0} {1} {2} {3} {4}")]
+    SpriteScaled(Sprite, f32, PlayerDirection, Color, Pos),
+    //#[display("sprite_float {0} {1} {2} {3} {4} {5}")]
     SpriteFloat(Sprite, Color, f32, f32, f32, f32), // sprite, color, x, y, x scale, y scale
+    //#[display("highlight_tile {0} {1}")]
     HighlightTile(Color, Pos),
+    //#[display("outline_tile {0} {1}")]
     OutlineTile(Color, Pos),
+    //#[display("text {0} {1} {2} {3}")]
     Text(String, Color, Pos, f32), // text, color, tile position, scale
+    //#[display("text_float {0} {1} {2} {3} {4}")]
     TextFloat(String, Color, f32, f32, f32), // text, color, x, y, scale
+    //#[display("text_justify {0} {1} {2} {3} {4} {5} {6}")]
     TextJustify(String, Justify, Color, Color, Pos, u32, f32), // text, justify, fg color, bg color, tile pos, width in cells, scale
+    //#[display("rect {0} {1} {2} {3} {4}")]
     Rect(Pos, (u32, u32), f32, bool, Color), // start cell, num cells width/height, offset percent into cell, color
+    //#[display("rect_float {0} {1} {2} {3} {4}")]
     RectFloat(f32, f32, (f32, f32), bool, Color), // x, y, width/height, color
+    //#[display("fill {0} {1}")]
     Fill(Pos, Color),
 }
 
@@ -120,42 +135,43 @@ fn process_draw_cmd(panel: &Panel,
             let mut dst_x = pos.x * cell_width as i32;
             let mut dst_y = pos.y * cell_height as i32;
             match direction {
-                None => {
+                PlayerDirection::Center => {
                     dst_x += x_margin;
                     dst_y += y_margin;
                 }
                 
-                Some(Direction::Left) => {
+                PlayerDirection::Left => {
                     dst_y += y_margin;
                 }
 
-                Some(Direction::Right) => {
+                PlayerDirection::Right => {
                     dst_x += cell_width as i32 - dst_width as i32;
                     dst_y += y_margin;
                 }
 
-                Some(Direction::Up) => {
+                PlayerDirection::Up => {
                     dst_x += x_margin;
                 }
 
-                Some(Direction::Down) => {
+                PlayerDirection::Down => {
                     dst_x += x_margin;
                     dst_y += cell_height as i32 - dst_height as i32;
                 }
 
-                Some(Direction::DownLeft) => {
+                PlayerDirection::DownLeft => {
                     dst_y += cell_height as i32 - dst_height as i32;
                 }
 
-                Some(Direction::DownRight) => {
+                PlayerDirection::DownRight => {
                     dst_x += cell_width as i32 - dst_width as i32;
                     dst_y += cell_height as i32 - dst_height as i32;
                 }
 
-                Some(Direction::UpLeft) => {
+                PlayerDirection::UpLeft => {
+                    // Already in the upper left corner by default.
                 }
 
-                Some(Direction::UpRight) => {
+                PlayerDirection::UpRight => {
                     dst_x += cell_width as i32  - dst_width as i32;
                 }
             }
@@ -703,7 +719,7 @@ impl Panel {
         self.draw_cmd(cmd);
     }
 
-    pub fn sprite_scaled_cmd(&mut self, sprite: Sprite, scale: f32, direction: Option<Direction>, color: Color, pos: Pos) {
+    pub fn sprite_scaled_cmd(&mut self, sprite: Sprite, scale: f32, direction: PlayerDirection, color: Color, pos: Pos) {
         let cmd = DrawCmd::SpriteScaled(sprite, scale, direction, color, pos);
         self.draw_cmd(cmd);
     }
@@ -932,27 +948,20 @@ impl SpriteSheet {
 
     // Get the source rectangle for a particular sprite
     // given by its index into the sprite sheet.
-    fn sprite_src(&mut self, index: Option<u32>) -> Rect {
+    fn sprite_src(&mut self, index: u32) -> Rect {
         let sprite_x;
         let sprite_y;
         let sprite_width;
         let sprite_height;
 
-        if let Some(index) = index {
-            let (num_cells_x, _num_cells_y) = self.num_cells();
-            let index = index as usize;
-            sprite_x = index % num_cells_x;
-            sprite_y = index / num_cells_x;
+        let (num_cells_x, _num_cells_y) = self.num_cells();
+        let index = index as usize;
+        sprite_x = index % num_cells_x;
+        sprite_y = index / num_cells_x;
 
-            let dims = self.sprite_dims();
-            sprite_width = dims.0;
-            sprite_height = dims.1;
-        } else {
-            sprite_x = 0;
-            sprite_y = 0;
-            sprite_width = self.width;
-            sprite_height = self.height;
-        }
+        let dims = self.sprite_dims();
+        sprite_width = dims.0;
+        sprite_height = dims.1;
 
         let src = Rect::new(self.x_offset as i32 + (sprite_x * sprite_width) as i32,
                             self.y_offset as i32 + (sprite_y * sprite_height) as i32,

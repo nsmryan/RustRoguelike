@@ -485,6 +485,7 @@ dependencies = [
 name = "roguelike_utils"
 version = "0.1.0"
 dependencies = [
+ "parse-display",
  "serde",
  "serde_derive",
  "serde_yaml",

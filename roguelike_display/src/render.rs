@@ -1703,7 +1703,7 @@ fn render_overlay_alertness(panel: &mut Panel,
                     Behavior::Alert(_) => {
                         let sprite = Sprite::new(EXCLAMATION_POINT as u32, sprite_key);
                         panel.sprite_scaled_cmd(sprite, scale,
-                                                Some(Direction::UpRight),
+                                                PlayerDirection::UpRight,
                                                 alertness_color,
                                                 pos);
                     }
@@ -1711,7 +1711,7 @@ fn render_overlay_alertness(panel: &mut Panel,
                     Behavior::Investigating(_) => {
                         let sprite = Sprite::new(QUESTION_MARK as u32, sprite_key);
                         panel.sprite_scaled_cmd(sprite, scale,
-                                                Some(Direction::UpRight),
+                                                PlayerDirection::UpRight,
                                                 alertness_color,
                                                 pos);
                     }
@@ -1719,7 +1719,7 @@ fn render_overlay_alertness(panel: &mut Panel,
                     Behavior::Attacking(_) => {
                         let sprite = Sprite::new(EXCLAMATION_POINT as u32, sprite_key);
                         panel.sprite_scaled_cmd(sprite, scale,
-                                                Some(Direction::UpRight),
+                                                PlayerDirection::UpRight,
                                                 alertness_color,
                                                 pos);
                     }
