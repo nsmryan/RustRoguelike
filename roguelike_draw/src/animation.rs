@@ -1,5 +1,7 @@
 use serde::{Serialize, Deserialize};
 
+use parse_display::{Display, FromStr};
+
 use roguelike_utils::math::*;
 use roguelike_utils::rng::*;
 
@@ -62,7 +64,8 @@ impl Effect {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Display, FromStr, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[display("sprite {index} {key} {flip_horiz} {flip_vert} {rotation}")]
 pub struct Sprite {
     pub index: u32, 
     pub key: SpriteKey,

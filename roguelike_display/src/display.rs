@@ -115,24 +115,8 @@ impl Display {
         let sprites = parse_atlas_file("resources/spriteAtlas.txt");
         let atlas_texture = texture_creator.load_texture("resources/spriteAtlas.png").expect("Could not load sprite atlas!");
 
-        let ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
-        let font_name = "Inconsolata-Bold.ttf";
-        let font_size = 24;
-        let mut font = ttf_context.load_font(format!("resources/fonts/{}", font_name), font_size).expect("Could not load font file!");
-        font.set_style(sdl2::ttf::FontStyle::BOLD);
-
-        let mut chrs: [u8; 256] = [0; 256];
-        for chr_ix in 0..256 {
-            chrs[chr_ix] = chr_ix as u8;
-        }
-
-        let text_surface = font.render_latin1(&chrs[ASCII_START as usize .. ASCII_END as usize])
-                               .blended(sdl2::pixels::Color::RGB(255, 255, 255))
-                               .unwrap();
-
-        let font_texture = texture_creator
-            .create_texture_from_surface(&text_surface)
-            .expect(&format!("Could not load font {}", font_name));
+        let mut ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
+        let font_texture = load_font("Inconsolata-Bold.ttf", 24, &mut texture_creator, &mut ttf_context);
 
         let font_query = font_texture.query();
         let num_chars = (ASCII_END - ASCII_START + 1) as usize;
@@ -1008,24 +992,6 @@ impl Display {
     }
 }
 
-pub fn parse_atlas_file(atlas_file: &str) -> Vec<SpriteSheet> {
-    let file =
-        std::fs::File::open(&atlas_file).expect(&format!("Could not open atlas file '{}'", atlas_file));
-
-    let mut sheets: Vec<SpriteSheet> = Vec::new();
-
-    for line in std::io::BufReader::new(file).lines() {
-        let line = line.unwrap();
-        let line = line.to_string();
-
-        if let Ok(sheet) = SpriteSheet::from_str(&line) { 
-            sheets.push(sheet);
-        }
-    }
-
-    return sheets;
-}
-
 pub type Panels = HashMap<PanelName, Panel>;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -1314,10 +1280,6 @@ fn entity_name_to_chr(name: EntityName) -> char {
         _ => {},
     }
     return chr as char;
-}
-
-fn create_texture(texture_creator: &mut TextureCreator<WindowContext>, pixel_format: PixelFormatEnum, num_pixels: (u32, u32)) -> Texture {
-    return texture_creator.create_texture_target(pixel_format, num_pixels.0, num_pixels.1).unwrap();
 }
 
 fn create_panels(screen_areas: &HashMap<PanelName, Area>) -> HashMap<PanelName, Panel> {

@@ -24,3 +24,6 @@ parse-display = "0.5.5"
 roguelike_utils = { path = "../roguelike_utils" }
 roguelike_map = { path = "../roguelike_map" }
 
+[[bin]]
+name = "rl_draw"
+path = "src/rl_draw.rs"

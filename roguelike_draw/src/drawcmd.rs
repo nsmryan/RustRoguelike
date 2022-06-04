@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::io::BufRead;
 
-use sdl2::render::{Texture, RenderTarget, WindowCanvas, BlendMode, Canvas};
+use sdl2::render::{Texture, TextureCreator, RenderTarget, WindowCanvas, BlendMode, Canvas};
 use sdl2::rect::Rect;
-use sdl2::pixels::{Color as Sdl2Color};
+use sdl2::video::WindowContext;
+use sdl2::pixels::{PixelFormatEnum, Color as Sdl2Color};
+use sdl2::ttf::Sdl2TtfContext;
 
 use parse_display::{Display, FromStr};
 
@@ -21,7 +24,8 @@ pub const ASCII_START: u32 = 32;
 pub const ASCII_END: u32 = 127;
 
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Display, FromStr)]
+#[display(style = "snake_case")]
 pub enum Justify {
     Right,
     Center,
@@ -29,31 +33,30 @@ pub enum Justify {
 }
 
 // NOTE use of String prevents Copy trait
-//#[derive(Clone, Display, FromStr, Debug, PartialEq)]
-//#[display(style = "snake_case")]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Display, FromStr, Debug, PartialEq)]
+#[display(style = "snake_case")]
 pub enum DrawCmd {
-    //#[display("sprite {0} {1} {2}")]
+    #[display("sprite {0} {1} {2}")]
     Sprite(Sprite, Color, Pos),
-    //#[display("sprite_scaled {0} {1} {2} {3} {4}")]
+    #[display("sprite_scaled {0} {1} {2} {3} {4}")]
     SpriteScaled(Sprite, f32, PlayerDirection, Color, Pos),
-    //#[display("sprite_float {0} {1} {2} {3} {4} {5}")]
+    #[display("sprite_float {0} {1} {2} {3} {4} {5}")]
     SpriteFloat(Sprite, Color, f32, f32, f32, f32), // sprite, color, x, y, x scale, y scale
-    //#[display("highlight_tile {0} {1}")]
+    #[display("highlight_tile {0} {1}")]
     HighlightTile(Color, Pos),
-    //#[display("outline_tile {0} {1}")]
+    #[display("outline_tile {0} {1}")]
     OutlineTile(Color, Pos),
-    //#[display("text {0} {1} {2} {3}")]
+    #[display("text {0} {1} {2} {3}")]
     Text(String, Color, Pos, f32), // text, color, tile position, scale
-    //#[display("text_float {0} {1} {2} {3} {4}")]
+    #[display("text_float {0} {1} {2} {3} {4}")]
     TextFloat(String, Color, f32, f32, f32), // text, color, x, y, scale
-    //#[display("text_justify {0} {1} {2} {3} {4} {5} {6}")]
+    #[display("text_justify {0} {1} {2} {3} {4} {5} {6}")]
     TextJustify(String, Justify, Color, Color, Pos, u32, f32), // text, justify, fg color, bg color, tile pos, width in cells, scale
-    //#[display("rect {0} {1} {2} {3} {4}")]
-    Rect(Pos, (u32, u32), f32, bool, Color), // start cell, num cells width/height, offset percent into cell, color
-    //#[display("rect_float {0} {1} {2} {3} {4}")]
-    RectFloat(f32, f32, (f32, f32), bool, Color), // x, y, width/height, color
-    //#[display("fill {0} {1}")]
+    #[display("rect {0} {1} {2} {3} {4} {5}")]
+    Rect(Pos, u32, u32, f32, bool, Color), // start cell, num cells width/height, offset percent into cell, color
+    #[display("rect_float {0} {1} {2} {3} {4} {5}")]
+    RectFloat(f32, f32, f32, f32, bool, Color), // x, y, width/height, color
+    #[display("fill {0} {1}")]
     Fill(Pos, Color),
 }
 
@@ -74,8 +77,8 @@ impl DrawCmd {
             DrawCmd::Text(_, _, pos, _) => *pos,
             DrawCmd::TextFloat(_, _, x, y, _) => Pos::new(*x as i32, *y as i32),
             DrawCmd::TextJustify(_, _, _, _, pos, _, _) => *pos,
-            DrawCmd::Rect(pos, _, _, _, _) => *pos,
-            DrawCmd::RectFloat(x, y, _, _, _) => Pos::new(*x as i32, *y as i32),
+            DrawCmd::Rect(pos, _, _, _, _, _) => *pos,
+            DrawCmd::RectFloat(x, y, _, _, _, _) => Pos::new(*x as i32, *y as i32),
             DrawCmd::Fill(pos, _) => *pos,
         }
     }
@@ -399,7 +402,7 @@ fn process_draw_cmd(panel: &Panel,
             }
         }
 
-        DrawCmd::Rect(pos, dims, offset, filled, color) => {
+        DrawCmd::Rect(pos, width, height, offset, filled, color) => {
             assert!(*offset < 1.0, "offset >= 1 misaligns the starting cell!");
 
             let (cell_width, cell_height) = panel.cell_dims();
@@ -412,8 +415,8 @@ fn process_draw_cmd(panel: &Panel,
             let offset_y = (cell_height as f32 * offset) as i32;
             let y: i32 = cell_height as i32 * pos.y + offset_y as i32;
 
-            let width = cell_width * dims.0 - (2 * offset_x as u32);
-            let height = cell_height * dims.1 - (2 * offset_y as u32);
+            let width = cell_width * width - (2 * offset_x as u32);
+            let height = cell_height * height - (2 * offset_y as u32);
 
             let size = (panel.num_pixels.0 / panel.cells.0) / 10;
             if *filled {
@@ -426,7 +429,7 @@ fn process_draw_cmd(panel: &Panel,
             }
         }
 
-        DrawCmd::RectFloat(x, y, dims, filled, color) => {
+        DrawCmd::RectFloat(x, y, width, height, filled, color) => {
             let (cell_width, cell_height) = panel.cell_dims();
 
             canvas.set_draw_color(sdl2_color(*color));
@@ -434,8 +437,8 @@ fn process_draw_cmd(panel: &Panel,
             let x_offset = (*x * cell_width as f32) as i32;
             let y_offset = (*y * cell_height as f32) as i32;
 
-            let width = (dims.0 * cell_width as f32) as u32;
-            let height = (dims.1 * cell_height as f32) as u32;
+            let width = (width * cell_width as f32) as u32;
+            let height = (height * cell_height as f32) as u32;
 
             let size = (panel.num_pixels.0 / panel.cells.0) / 5;
             if *filled {
@@ -769,12 +772,12 @@ impl Panel {
     }
 
     pub fn rect_cmd(&mut self, pos: Pos, dims: (u32, u32), offset: f32, filled: bool, color: Color) {
-        let cmd = DrawCmd::Rect(pos, dims, offset, filled, color);
+        let cmd = DrawCmd::Rect(pos, dims.0, dims.1, offset, filled, color);
         self.draw_cmd(cmd);
     }
 
     pub fn rect_float_cmd(&mut self, x: f32, y: f32, dims: (f32, f32), filled: bool, color: Color) {
-        let cmd = DrawCmd::RectFloat(x, y, dims, filled, color);
+        let cmd = DrawCmd::RectFloat(x, y, dims.0, dims.1, filled, color);
         self.draw_cmd(cmd);
     }
 
@@ -998,6 +1001,23 @@ impl FromStr for SpriteSheet {
     }
 }
 
+pub fn parse_atlas_file(atlas_file: &str) -> Vec<SpriteSheet> {
+    let file =
+        std::fs::File::open(&atlas_file).expect(&format!("Could not open atlas file '{}'", atlas_file));
+
+    let mut sheets: Vec<SpriteSheet> = Vec::new();
+
+    for line in std::io::BufReader::new(file).lines() {
+        let line = line.unwrap();
+        let line = line.to_string();
+
+        if let Ok(sheet) = SpriteSheet::from_str(&line) { 
+            sheets.push(sheet);
+        }
+    }
+
+    return sheets;
+}
 
 fn draw_outline_tile<T>(panel: &Panel,
                         canvas: &mut Canvas<T>,
@@ -1046,5 +1066,30 @@ pub fn lookup_spritekey(sprites: &Vec<SpriteSheet>, name: &str) -> SpriteKey {
 
 fn sdl2_color(color: Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
+}
+
+pub fn load_font(font_name: &str, font_size: u32, texture_creator: &mut TextureCreator<WindowContext>, ttf_context: &mut Sdl2TtfContext) -> Texture {
+    let font_size = 24;
+    let mut font = ttf_context.load_font(format!("resources/fonts/{}", font_name), font_size).expect("Could not load font file!");
+    font.set_style(sdl2::ttf::FontStyle::BOLD);
+
+    let mut chrs: [u8; 256] = [0; 256];
+    for chr_ix in 0..256 {
+        chrs[chr_ix] = chr_ix as u8;
+    }
+
+    let text_surface = font.render_latin1(&chrs[ASCII_START as usize .. ASCII_END as usize])
+                           .blended(sdl2::pixels::Color::RGB(255, 255, 255))
+                           .unwrap();
+
+    let font_texture = texture_creator
+        .create_texture_from_surface(&text_surface)
+        .expect(&format!("Could not load font {}", font_name));
+
+    return font_texture;
+}
+
+pub fn create_texture(texture_creator: &mut TextureCreator<WindowContext>, pixel_format: PixelFormatEnum, num_pixels: (u32, u32)) -> Texture {
+    return texture_creator.create_texture_target(pixel_format, num_pixels.0, num_pixels.1).unwrap();
 }
 
