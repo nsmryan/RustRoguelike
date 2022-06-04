@@ -2,9 +2,7 @@ use std::fs::File;
 use std::io::Read;
 
 use roguelike_map::MapLoadConfig;
-
-use crate::types::*;
-
+use roguelike_utils::math::Color;
 
 use serde_derive::*;
 use serde_yaml;

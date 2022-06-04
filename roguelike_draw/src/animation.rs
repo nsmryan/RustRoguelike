@@ -5,9 +5,6 @@ use roguelike_utils::rng::*;
 
 use roguelike_map::*;
 
-use roguelike_core::types::Color;
-use roguelike_core::config::Config;
-
 
 pub type SpriteKey = usize;
 
@@ -189,10 +186,10 @@ impl Animation {
         }
     }
 
-    pub fn step(&mut self, dt: f32, rng: &mut Rand32, config: &Config) {
+    pub fn step(&mut self, dt: f32, rng: &mut Rand32, frame_rate: f32) {
         match self {
             Animation::Between(_sprite_anim, _start, _end, ref mut dist, blocks_per_sec) => {
-               *dist = *dist + (*blocks_per_sec / config.frame_rate as f32); 
+               *dist = *dist + (*blocks_per_sec / frame_rate); 
             }
 
             Animation::Loop(ref mut sprite_anim) => {

@@ -191,32 +191,6 @@ pub enum SkillMode {
 }
 
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Default)]
-pub struct Color {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-    pub a: u8,
-}
-
-impl Color {
-    pub fn white() -> Color {
-        return Color::new(255, 255, 255, 255);
-    }
-
-    pub fn black() -> Color {
-        return Color::new(0, 0, 0, 255);
-    }
-
-    pub fn new(r: u8, g: u8, b: u8, a: u8) -> Color {
-        return Color {r,
-                      g,
-                      b,
-                      a,
-        };
-    }
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct Stamina {
     pub amount: u32,

@@ -44,6 +44,32 @@ impl FromStr for Pos {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Default)]
+pub struct Color {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
+}
+
+impl Color {
+    pub fn white() -> Color {
+        return Color::new(255, 255, 255, 255);
+    }
+
+    pub fn black() -> Color {
+        return Color::new(0, 0, 0, 255);
+    }
+
+    pub fn new(r: u8, g: u8, b: u8, a: u8) -> Color {
+        return Color {r,
+                      g,
+                      b,
+                      a,
+        };
+    }
+}
+
 pub fn lerp(first: f32, second: f32, scale: f32) -> f32 {
     return first + ((second - first) * scale);
 }

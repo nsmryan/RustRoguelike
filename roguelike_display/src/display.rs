@@ -1170,7 +1170,7 @@ impl DisplayState {
     pub fn update_animations(&mut self, rng: &mut Rand32, config: &Config) {
         for anims in self.animations.store.iter_mut() {
             if let Some(anim) = anims.get_mut(0) {
-                anim.step(self.dt, rng, config);
+                anim.step(self.dt, rng, config.frame_rate as f32);
             }
         }
 

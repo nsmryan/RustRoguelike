@@ -9,10 +9,14 @@ use roguelike_utils::math::*;
 
 use roguelike_map::Direction;
 
-use roguelike_core::types::*;
-use roguelike_core::constants::*;
-
 use crate::animation::{Sprite, SpriteKey};
+
+
+pub const FONT_WIDTH: i32 = 16;
+pub const FONT_HEIGHT: i32 = 16;
+
+pub const ASCII_START: u32 = 32;
+pub const ASCII_END: u32 = 127;
 
 
 #[derive(Clone, Copy, Debug, PartialEq)]

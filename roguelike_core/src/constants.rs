@@ -1,17 +1,11 @@
 pub const CONFIG_FILE_NAME: &str = &"config.json";
 
 /* Screen and font */
-pub const FONT_WIDTH: i32 = 16;
-pub const FONT_HEIGHT: i32 = 16;
-
 pub const SCREEN_WIDTH: u32 = 800;
 pub const SCREEN_HEIGHT: u32 = 960;
 
 pub const INVENTORY_WIDTH: usize = 300;
 pub const INVENTORY_HEIGHT: usize = 500;
-
-pub const ASCII_START: u32 = 32;
-pub const ASCII_END: u32 = 127;
 
 /* General Settings */
 pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
