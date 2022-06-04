@@ -399,7 +399,6 @@ dependencies = [
  "parse-display",
  "rmp",
  "rmp-serde",
- "roguelike_core",
  "roguelike_map",
  "roguelike_utils",
  "sdl2",
