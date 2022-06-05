@@ -225,6 +225,10 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
             resolve_add_class(class, game);
         }
 
+        Msg::RefillStamina(entity_id) => {
+            resolve_refill_stamina(entity_id, game);
+        }
+
         Msg::MoveMode(entity_id, new_move_mode) => {
             game.level.entities.move_mode[&entity_id] = new_move_mode;
 
@@ -1661,6 +1665,15 @@ fn resolve_triggered(trigger: EntityId, entity_id: EntityId, level: &mut Level, 
         }
 
         msg_log.log(Msg::GateTriggered(trigger, entity_id));
+    }
+}
+
+fn resolve_refill_stamina(entity_id: EntityId, game: &mut Game) {
+    if let Some(stamina) = game.level.entities.stamina.get(&entity_id) {
+        let diff = game.config.player_stamina - stamina.amount;
+        if diff > 0 {
+            game.msg_log.log(Msg::GainStamina(entity_id, diff));
+        }
     }
 }
 

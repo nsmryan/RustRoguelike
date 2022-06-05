@@ -16,6 +16,7 @@ use crate::game::*;
 use crate::actions::*;
 
 
+const TALENT_KEYS: &[char] = &['q', 'w', 'e', 'r'];
 const SKILL_KEYS: &[char] = &['a', 's', 'd', 'f'];
 const ITEM_KEYS: &[char] = &['z', 'x', 'c'];
 const CLASSES: &[ItemClass] = &[ItemClass::Primary, ItemClass::Consumable, ItemClass::Misc];
@@ -51,16 +52,7 @@ impl InputDirection {
 pub enum Target {
     Item(ItemClass),
     Skill(usize),
-}
-
-impl Target {
-    pub fn item(item_class: ItemClass) -> Target {
-        return Target::Item(item_class);
-    }
-
-    pub fn skill(index: usize) -> Target {
-        return Target::Skill(index);
-    }
+    Talent(usize),
 }
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
@@ -280,6 +272,8 @@ impl Input {
                         return InputAction::DropItem;
                     }
                 }
+            } else if let Some(_index) = get_talent_index(chr) {
+                // Releasing the talent does not take you out of use-mode.
             } else if let Some(_index) = get_item_index(chr) {
                 // Releasing the item does not take you out of use-mode.
             } else if let Some(_index) = get_skill_index(chr) {
@@ -319,11 +313,11 @@ impl Input {
             let item_class = CLASSES[index];
 
             // check if you press down the same item again, aborting use-mode
-            if self.target == Some(Target::item(item_class)) {
+            if self.target == Some(Target::Item(item_class)) {
                 action = InputAction::AbortUse;
                 self.target = None;
             } else {
-                self.target = Some(Target::item(item_class));
+                self.target = Some(Target::Item(item_class));
                 action = InputAction::StartUseItem(item_class);
             }
         } else if let Some(index) = get_skill_index(chr) {
@@ -332,7 +326,7 @@ impl Input {
                 action = InputAction::AbortUse;
                 self.target = None;
             } else {
-                self.target = Some(Target::skill(index));
+                self.target = Some(Target::Skill(index));
                 action = InputAction::StartUseSkill(index, self.action_mode());
             }
         }
@@ -364,15 +358,21 @@ impl Input {
             } else if !(settings.is_cursor_mode() && self.ctrl) {
                 if let Some(index) = get_item_index(chr) {
                     let item_class = CLASSES[index];
-                    self.target = Some(Target::item(item_class));
+                    self.target = Some(Target::Item(item_class));
 
                     action = InputAction::StartUseItem(item_class);
                     // directions are cleared when entering use-mode
                     self.direction = None;
                 } else if let Some(index) = get_skill_index(chr) {
-                    self.target = Some(Target::skill(index));
+                    self.target = Some(Target::Skill(index));
 
                     action = InputAction::StartUseSkill(index, self.action_mode());
+                    // directions are cleared when entering use-mode
+                    self.direction = None;
+                } else if let Some(index) = get_talent_index(chr) {
+                    self.target = Some(Target::Talent(index));
+
+                    action = InputAction::StartUseTalent(index);
                     // directions are cleared when entering use-mode
                     self.direction = None;
                 }
@@ -423,6 +423,10 @@ impl Input {
     fn clear_char_state(&mut self, chr: char) {
         if let Some(_input_dir) = InputDirection::from_chr(chr) {
             self.direction = None;
+        }
+
+        if let Some(_index) = get_talent_index(chr) {
+            self.target = None;
         }
 
         if let Some(_index) = get_skill_index(chr) {
@@ -564,14 +568,6 @@ pub fn alpha_up_to_action(chr: char, shift: bool) -> InputAction {
             input_action = InputAction::RegenerateMap;
         }
 
-        'e' => {
-            input_action = InputAction::IncreaseMoveMode;
-        }
-
-        'w' => {
-            input_action = InputAction::DecreaseMoveMode;
-        }
-
         'j' => {
             input_action = InputAction::SkillMenu;
         }
@@ -609,6 +605,10 @@ fn direction_from_digit(chr: char) -> Option<Direction> {
         '9' => Some(Direction::UpRight),
         _ => None,
     }
+}
+
+fn get_talent_index(chr: char) -> Option<usize> {
+    return  TALENT_KEYS.iter().position(|key| *key == chr);
 }
 
 fn get_item_index(chr: char) -> Option<usize> {

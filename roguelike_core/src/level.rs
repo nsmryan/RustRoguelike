@@ -70,11 +70,12 @@ impl Level {
 
     pub fn find_skill(&self, index: usize) -> Option<Skill> {
         let player_id = self.find_by_name(EntityName::Player).unwrap();
+        return self.entities.skills[&player_id].get(index).map(|skill| *skill);;
+    }
 
-        if let Some(skill) = self.entities.skills[&player_id].get(index) {
-            return Some(*skill);
-        }
-        return None;
+    pub fn find_talent(&self, index: usize) -> Option<Talent> {
+        let player_id = self.find_by_name(EntityName::Player).unwrap();
+        return self.entities.talents[&player_id].get(index).map(|talent| *talent);
     }
 
     /// Find a path between positions while accounting for movement style (Reach),

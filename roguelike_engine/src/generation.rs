@@ -50,6 +50,12 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
     let skill_set = Vec::new();
     entities.skills.insert(entity_id,  skill_set);
 
+    let talents = vec!(Talent::Invigorate, Talent::StrongAttack, Talent::Sprint, Talent::Push, Talent::EnergyShield);
+    for talent in talents.iter() {
+        msg_log.log(Msg::AddTalent(*talent));
+    }
+    entities.talents.insert(entity_id,  talents);
+
     entities.class.insert(entity_id, EntityClass::General);
 
     entities.energy.insert(entity_id, config.player_energy);

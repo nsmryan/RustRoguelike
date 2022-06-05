@@ -38,6 +38,7 @@ pub struct Entities {
     pub selected_item: Comp<EntityId>,
     pub class: Comp<EntityClass>,
     pub skills: Comp<Vec<Skill>>,
+    pub talents: Comp<Vec<Talent>>,
     pub status: Comp<StatusEffect>,
     pub passive: Comp<Passive>,
     pub illuminate: Comp<usize>,

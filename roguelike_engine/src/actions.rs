@@ -47,6 +47,8 @@ pub enum InputAction {
     StartUseItem(ItemClass),
     #[display("startuseskill {0} {1}")]
     StartUseSkill(usize, ActionMode),
+    #[display("startusetalent {0}")]
+    StartUseTalent(usize),
     StartUseInteract,
     #[display("usedir {0}")]
     UseDir(Direction),
@@ -78,8 +80,6 @@ pub enum InputAction {
     ExploreAll,
     RegenerateMap,
     TestMode,
-    IncreaseMoveMode,
-    DecreaseMoveMode,
     OverlayToggle,
     #[display("selectentry {0}")]
     SelectEntry(usize),
@@ -410,6 +410,10 @@ pub fn handle_input_use(input_action: InputAction,
             start_use_skill(index, action_mode, level, settings, msg_log);
         }
 
+        (InputAction::StartUseTalent(index), true) => {
+            start_use_talent(index, level, settings, msg_log);
+        }
+
         (InputAction::UseDir(dir), true) => {
             use_dir(dir, level, settings, msg_log);
         }
@@ -452,24 +456,6 @@ pub fn handle_input_playing(input_action: InputAction,
     let player_alive = level.entities.status[&player_id].alive;
 
     match (input_action, player_alive) {
-        // TODO remove if removing old input system with held state...
-        //(InputAction::Run, true) => {
-        //    if settings.move_mode == MoveMode::Run {
-        //        settings.move_mode = MoveMode::Walk;
-        //    } else {
-        //        settings.move_mode = MoveMode::Run;
-        //    }
-        //    msg_log.log(Msg::NextMoveMode(settings.move_mode));
-        //}
-
-        //(InputAction::Sneak, true) => {
-        //    if settings.move_mode == MoveMode::Sneak {
-        //        settings.move_mode = MoveMode::Walk;
-        //    } else {
-        //        settings.move_mode = MoveMode::Sneak;
-        //    }
-        //    msg_log.log(Msg::NextMoveMode(settings.move_mode));
-        //}
         (InputAction::Run, true) => {
             settings.move_mode = MoveMode::Run;
             msg_log.log(Msg::NextMoveMode(settings.move_mode));
@@ -617,14 +603,6 @@ pub fn handle_input_playing(input_action: InputAction,
 
         (InputAction::Yell, true) => {
             msg_log.log(Msg::Yell(player_id));
-        }
-
-        (InputAction::IncreaseMoveMode, true) => {
-            msg_log.log(Msg::ChangeMoveMode(player_id, true));
-        }
-
-        (InputAction::DecreaseMoveMode, true) => {
-            msg_log.log(Msg::ChangeMoveMode(player_id, false));
         }
 
         (InputAction::OverlayToggle, _) => {
@@ -867,6 +845,35 @@ fn initialize_use_mode(use_action: UseAction, settings: &mut Settings, msg_log: 
     settings.use_dir = None;
     msg_log.log(Msg::UseDirClear);
     msg_log.log(Msg::UseHitPosClear);
+}
+
+fn start_use_talent(index: usize, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
+    let player_id = level.find_by_name(EntityName::Player).unwrap();
+
+    if let Some(talent) = level.find_talent(index) {
+        match talent {
+            Talent::Invigorate => {
+                msg_log.log(Msg::RefillStamina(player_id));
+            }
+
+            Talent::StrongAttack => {
+                // TODO extra attack, perhaps as a status checked later?
+            }
+
+            Talent::Sprint => {
+                // TODO extra sprint, perhaps as a status checked later?
+            }
+
+            Talent::Push => {
+                // TODO push, but with some extra rules. Start with push message from use-mode
+            }
+
+            Talent::EnergyShield => {
+                // TODO add blue health concept. Likely a status effect used when reducing
+                // hp, and get it into the display.
+            }
+        }
+    }
 }
 
 fn start_use_skill(index: usize, action_mode: ActionMode, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {

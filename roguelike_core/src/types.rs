@@ -102,6 +102,16 @@ pub enum Trap {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Display, FromStr, Serialize, Deserialize)]
 #[display(style = "snake_case")]
+pub enum Talent {
+    Invigorate,
+    StrongAttack,
+    Sprint,
+    Push,
+    EnergyShield,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Display, FromStr, Serialize, Deserialize)]
+#[display(style = "snake_case")]
 pub enum Skill {
     GrassWall,
     GrassThrow,
