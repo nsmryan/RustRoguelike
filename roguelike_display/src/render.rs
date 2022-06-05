@@ -466,8 +466,57 @@ fn render_button(name: &str, x_offset: f32, y_offset: f32, panel: &mut Panel, sp
     panel.sprite_float_scaled_cmd(button, ui_color, x_offset, y_offset, config.x_scale_buttons, config.y_scale_buttons);
 }
 
+fn render_name(first_word: &str, second_word: &str, x_offset: f32, y_offset: f32, color: Color, panel: &mut Panel, config: &Config) {
+    if second_word.len() > 0 {
+        let first_x_offset = x_offset + config.ui_inv_name_0_x_offset;
+        let first_y_offset = y_offset + config.ui_inv_name_0_y_offset;
+        panel.text_float_cmd(first_word, color, first_x_offset, first_y_offset, config.ui_inv_name_0_scale);
+
+        let second_x_offset = x_offset + config.ui_inv_name_1_x_offset;
+        let second_y_offset = y_offset + config.ui_inv_name_1_y_offset;
+        panel.text_float_cmd(second_word, color, second_x_offset, second_y_offset, config.ui_inv_name_1_scale);
+    } else {
+        let text_x_offset = x_offset + config.ui_inv_name_x_offset;
+        let text_y_offset = y_offset + config.ui_inv_name_y_offset;
+
+        let scale;
+        if first_word.len() >= 10 {
+            scale = config.ui_long_name_scale;
+        } else {
+            scale = config.ui_inv_name_scale;
+        }
+        panel.text_float_cmd(first_word, color, text_x_offset, text_y_offset, scale);
+    }
+}
+
 fn render_talent(talent: Talent, x_offset: f32, y_offset: f32, color: Color, panel: &mut Panel, config: &Config) {
-    // TODO render talent word.
+    let first_word: &str;
+    let mut second_word = &"";
+    match talent {
+        Talent::Invigorate => {
+            first_word = &"invigorate";
+        }
+
+        Talent::StrongAttack => {
+            first_word = &"strong";
+            second_word = &"attack";
+        }
+
+        Talent::Sprint => {
+            first_word = &"sprint";
+        }
+
+        Talent::Push => {
+            first_word = &"push";
+        }
+
+        Talent::EnergyShield => {
+            first_word = &"energy";
+            second_word = &"shield";
+        }
+    }
+
+    render_name(first_word, second_word, x_offset, y_offset, color, panel, config);
 }
 
 fn render_skill(skill: Skill, x_offset: f32, y_offset: f32, color: Color, panel: &mut Panel, config: &Config) {
@@ -534,19 +583,7 @@ fn render_skill(skill: Skill, x_offset: f32, y_offset: f32, color: Color, panel:
         }
     }
 
-    if second_word.len() > 0 {
-        let first_x_offset = x_offset + config.ui_inv_name_0_x_offset;
-        let first_y_offset = y_offset + config.ui_inv_name_0_y_offset;
-        panel.text_float_cmd(&first_word, color, first_x_offset, first_y_offset, config.ui_inv_name_0_scale);
-
-        let second_x_offset = x_offset + config.ui_inv_name_1_x_offset;
-        let second_y_offset = y_offset + config.ui_inv_name_1_y_offset;
-        panel.text_float_cmd(&second_word, color, second_x_offset, second_y_offset, config.ui_inv_name_1_scale);
-    } else {
-        let text_x_offset = x_offset + config.ui_inv_name_x_offset;
-        let text_y_offset = y_offset + config.ui_inv_name_y_offset;
-        panel.text_float_cmd(&first_word, color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
-    }
+    render_name(&first_word, second_word, x_offset, y_offset, color, panel, config);
 }
 
 fn render_inventory_talent(chr: char, index: usize, x_offset: f32, y_offset: f32, panel: &mut Panel, display_state: &DisplayState, sprites: &Vec<SpriteSheet>, config: &Config) {

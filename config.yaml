@@ -319,5 +319,7 @@ ui_inv_name_1_x_offset: 4.5
 ui_inv_name_1_y_offset: 0.8
 ui_inv_name_1_scale: 1.0
 
+ui_long_name_scale: 0.95
+
 # How many lines of message output to display in info panel
 display_console_lines: 8
