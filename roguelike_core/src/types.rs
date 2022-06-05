@@ -407,6 +407,8 @@ pub enum UseAction {
     Item(ItemClass),
     #[display("skill {0} {1}")]
     Skill(Skill, ActionMode),
+    #[display("talent {0}")]
+    Talent(Talent),
     Interact,
 }
 

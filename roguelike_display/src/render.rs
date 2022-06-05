@@ -466,6 +466,10 @@ fn render_button(name: &str, x_offset: f32, y_offset: f32, panel: &mut Panel, sp
     panel.sprite_float_scaled_cmd(button, ui_color, x_offset, y_offset, config.x_scale_buttons, config.y_scale_buttons);
 }
 
+fn render_talent(talent: Talent, x_offset: f32, y_offset: f32, color: Color, panel: &mut Panel, config: &Config) {
+    // TODO render talent word.
+}
+
 fn render_skill(skill: Skill, x_offset: f32, y_offset: f32, color: Color, panel: &mut Panel, config: &Config) {
     let first_word: String;
     let mut second_word = "";
@@ -545,6 +549,33 @@ fn render_skill(skill: Skill, x_offset: f32, y_offset: f32, color: Color, panel:
     }
 }
 
+fn render_inventory_talent(chr: char, index: usize, x_offset: f32, y_offset: f32, panel: &mut Panel, display_state: &DisplayState, sprites: &Vec<SpriteSheet>, config: &Config) {
+    let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
+    let highlight_ui_color = Color::new(0, 0, 0, 255);
+
+    let mut text_color = ui_color;
+    let mut button_name = format!("{}_Button_Base", chr);
+    if display_state.state == GameState::Use {
+        if let UseAction::Talent(talent) = display_state.use_action {
+            if display_state.talents.iter().position(|tal| *tal == talent) == Some(index) {
+                button_name = format!("{}_Button_Highlight", chr);
+                text_color = highlight_ui_color;
+            }
+        }
+    } else if display_state.cursor_pos.is_some() {
+        if let Some(UseAction::Talent(talent)) = display_state.cursor_action {
+            if display_state.talents.iter().position(|tal| *tal == talent) == Some(index) {
+                button_name = format!("{}_Button_Highlight", chr);
+                text_color = highlight_ui_color;
+            }
+        }
+    }
+    render_button(&button_name, x_offset, y_offset, panel, sprites, config);
+    if let Some(talent) = display_state.talents.get(index) {
+        render_talent(*talent, x_offset, y_offset, text_color, panel, config);
+    }
+}
+
 fn render_inventory_skill(chr: char, index: usize, x_offset: f32, y_offset: f32, panel: &mut Panel, display_state: &DisplayState, sprites: &Vec<SpriteSheet>, config: &Config) {
     let ui_color = Color::new(0xcd, 0xb4, 0x96, 255);
     let highlight_ui_color = Color::new(0, 0, 0, 255);
@@ -612,7 +643,19 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
     let mut x_offset = config.x_offset_buttons;
     let mut y_offset = config.y_offset_buttons;
 
+    /* Talents */
+    // TODO replace with qwe when available.
+    render_inventory_talent('A', 0, x_offset, y_offset, panel, display_state, sprites, config);
+
+    x_offset += config.x_spacing_buttons;
+    render_inventory_talent('S', 1, x_offset, y_offset, panel, display_state, sprites, config);
+
+    x_offset += config.x_spacing_buttons;
+    render_inventory_talent('D', 2, x_offset, y_offset, panel, display_state, sprites, config);
+
     /* Skills */
+    y_offset += config.y_spacing_buttons;
+    x_offset = config.x_offset_buttons;
     render_inventory_skill('A', 0, x_offset, y_offset, panel, display_state, sprites, config);
 
     x_offset += config.x_spacing_buttons;
@@ -623,7 +666,6 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
 
     /* Items */
     y_offset += config.y_spacing_buttons;
-
     x_offset = config.x_offset_buttons;
     render_inventory_item('Z', ItemClass::Primary, x_offset, y_offset, panel, display_state, sprites, config);
 

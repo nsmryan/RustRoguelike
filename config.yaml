@@ -296,10 +296,10 @@ looking_glass_magnify_amount: 2
 # number of frames to render hp numbers
 hp_render_duration: 20
 
-x_offset_buttons: 0.05
-y_offset_buttons: 2.5
+x_offset_buttons: 0.07
+y_offset_buttons: 1.6
 x_spacing_buttons: 6.7
-y_spacing_buttons: 2.5
+y_spacing_buttons: 2.6
 x_scale_buttons: 6.5
 y_scale_buttons: 2.0
 

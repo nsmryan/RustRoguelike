@@ -456,6 +456,7 @@ impl Display {
 
             Msg::Restart => {
                 self.state.skills.clear();
+                self.state.talents.clear();
                 self.state.turn_count = 0;
                 self.clear_level_state();
                 self.clear_console_messages();
@@ -829,6 +830,10 @@ impl Display {
                 self.state.skills.push(skill);
             }
 
+            Msg::AddTalent(talent) => {
+                self.state.talents.push(talent);
+            }
+
             Msg::GatePos(entity_id, pos) => {
                 self.state.gate_pos.insert(entity_id, pos);
             }
@@ -1022,6 +1027,7 @@ pub struct DisplayState {
     pub behavior: Comp<Behavior>,
     pub inventory: Vec<(Item, ItemClass)>,
     pub skills: Vec<Skill>,
+    pub talents: Vec<Talent>,
     pub gate_pos: Comp<Pos>,
     pub frozen: Comp<usize>,
     pub player_ghost: Option<Pos>,
@@ -1098,6 +1104,7 @@ impl DisplayState {
             behavior: Comp::new(),
             inventory: Vec::new(),
             skills: Vec::new(),
+            talents: Vec::new(),
             gate_pos: Comp::new(),
             frozen: Comp::new(),
             player_ghost: None,

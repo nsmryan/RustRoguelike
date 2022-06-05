@@ -509,6 +509,10 @@ pub fn handle_input_playing(input_action: InputAction,
             start_use_skill(index, action_mode, level, settings, msg_log);
         }
 
+        (InputAction::StartUseTalent(index), true) => {
+            start_use_talent(index, level, settings, msg_log);
+        }
+
         (InputAction::CursorReturn, _) => {
             if settings.cursor.is_some() {
                 settings.cursor = Some(player_pos);
