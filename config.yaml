@@ -323,3 +323,7 @@ ui_long_name_scale: 0.95
 
 # How many lines of message output to display in info panel
 display_console_lines: 8
+
+# If false, display the whole map.
+# If true, center the map around the player.
+display_center_map_on_player: true

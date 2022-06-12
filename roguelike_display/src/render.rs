@@ -1070,8 +1070,8 @@ fn render_effects(panel: &mut Panel,
         match &mut effect {
             Effect::Particles(rate, particles) => {
                 if particles.len() < config.max_particles && rng_trial(&mut display_state.rng, *rate) {
-                    let x = rng_range(&mut display_state.rng, 0.0, panel.cells.0 as f32);
-                    let y = rng_range(&mut display_state.rng, 0.0, panel.cells.1 as f32);
+                    let x = rng_range(&mut display_state.rng, 0.0, panel.cells.0 as f32 - 1.0);
+                    let y = rng_range(&mut display_state.rng, 0.0, panel.cells.1 as f32 - 1.0);
                     particles.push(Particle::new(config.particle_duration, x, y));
                 }
 
@@ -1088,8 +1088,8 @@ fn render_effects(panel: &mut Panel,
                     } else {
                         // offset the particle according to how long it has been running.
                         let x_offset = config.particle_speed * (config.particle_duration - particles[index].duration);
-                        let new_x = particles[index].x +  x_offset;
-                        let new_cell = Pos::new(new_x as i32, particles[index].y as i32);
+                        let new_x = particles[index].x + x_offset;
+                        let new_cell = Pos::new(new_x.ceil() as i32, particles[index].y.ceil() as i32);
 
                         if display_state.map.is_within_bounds(new_cell) && 
                            display_state.pos_is_in_fov(new_cell) == FovResult::Inside {

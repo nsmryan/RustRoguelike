@@ -909,6 +909,8 @@ impl Display {
 
         let section_name_scale = 1.35;
         let in_cursor_mode = self.state.cursor_pos.is_some();
+        let map_width = self.state.map.width();
+        let map_height = self.state.map.height();
 
         self.canvas.with_texture_canvas(&mut self.screen_texture, |canvas| {
             let dims = (dims.0 as u32, dims.1 as u32);
@@ -918,14 +920,30 @@ impl Display {
             /* Draw Screen in Sections */
             let pip_cell_dims = panels[&PanelName::Pip].cell_dims();
             let (pip_width, pip_height) = (pip_cell_dims.0 * dims.0, pip_cell_dims.1 * dims.1);
-            //let pip_src = Rect::new(0, 0, pip_width, pip_height);
             let pip_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Pip]);
             canvas.copy(&textures[&PanelName::Pip], None, pip_rect).unwrap();
 
             let map_cell_dims = panels[&PanelName::Map].cell_dims();
-            let (map_width, map_height) = (map_cell_dims.0 * dims.0, map_cell_dims.1 * dims.1);
-            let map_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Map]);
-            canvas.copy(&textures[&PanelName::Map], None, map_rect).unwrap();
+            let mut map_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Map]);
+            let mut map_src = None;
+
+            // Handle maps that are smaller then the maximum size by trying to center them.
+            if map_width < MAP_WIDTH || map_height < MAP_HEIGHT {
+                let map_width_pixels = map_width as u32 * MAP_CELLS_TO_PIXELS;
+                let map_height_pixels = map_height as u32 * MAP_CELLS_TO_PIXELS;
+                // Source map is from 0, 0 to the extents currently used.
+                map_src = Some(Rect::new(0, 0, map_width_pixels, map_height_pixels));
+                
+                // Destination is centered and the same size as the smaller map area above.
+                let x_offset = ((MAP_WIDTH / 2) - (map_width / 2)) * MAP_CELLS_TO_PIXELS as i32;
+                let y_offset = ((MAP_HEIGHT / 2) - (map_height / 2)) * MAP_CELLS_TO_PIXELS as i32;
+                map_rect.x += x_offset;
+                map_rect.y += y_offset;
+                map_rect.w = map_width_pixels as i32;
+                map_rect.h = map_height_pixels as i32;
+            }
+
+            canvas.copy(&textures[&PanelName::Map], map_src, map_rect).unwrap();
 
             let player_area = screen_areas[&PanelName::Player];
             let map_area = screen_areas[&PanelName::Map];
@@ -1309,7 +1327,7 @@ fn entity_name_to_chr(name: EntityName) -> char {
 fn create_panels(screen_areas: &HashMap<PanelName, Area>) -> HashMap<PanelName, Panel> {
     let mut panels = HashMap::new();
 
-    let pip_pixels = (CELL_MULTIPLIER * SCREEN_WIDTH, CELL_MULTIPLIER * UI_PIXELS_TOP);
+    let pip_pixels = (SCREEN_WIDTH, CELL_MULTIPLIER * UI_PIXELS_TOP);
     let pip_dims = screen_areas[&PanelName::Pip].dims();
     let pip_dims = (pip_dims.0 as u32, pip_dims.1 as u32);
     let pip_panel = Panel::new(pip_pixels, pip_dims);

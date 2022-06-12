@@ -144,6 +144,8 @@ pub struct Config {
     pub ui_long_name_scale: f32,
 
     pub display_console_lines: usize,
+
+    pub display_center_map_on_player: bool,
 }
 
 impl Config {
