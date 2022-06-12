@@ -682,13 +682,16 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
 
     /* Talents */
     // TODO replace with qwe when available.
-    render_inventory_talent('A', 0, x_offset, y_offset, panel, display_state, sprites, config);
+    render_inventory_talent('Q', 0, x_offset, y_offset, panel, display_state, sprites, config);
 
     x_offset += config.x_spacing_buttons;
-    render_inventory_talent('S', 1, x_offset, y_offset, panel, display_state, sprites, config);
+    render_inventory_talent('W', 1, x_offset, y_offset, panel, display_state, sprites, config);
 
     x_offset += config.x_spacing_buttons;
-    render_inventory_talent('D', 2, x_offset, y_offset, panel, display_state, sprites, config);
+    render_inventory_talent('E', 2, x_offset, y_offset, panel, display_state, sprites, config);
+
+    x_offset += config.x_spacing_buttons;
+    render_inventory_talent('R', 3, x_offset, y_offset, panel, display_state, sprites, config);
 
     /* Skills */
     y_offset += config.y_spacing_buttons;
@@ -700,6 +703,9 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
 
     x_offset += config.x_spacing_buttons;
     render_inventory_skill('D', 2, x_offset, y_offset, panel, display_state, sprites, config);
+
+    x_offset += config.x_spacing_buttons;
+    render_inventory_skill('F', 3, x_offset, y_offset, panel, display_state, sprites, config);
 
     /* Items */
     y_offset += config.y_spacing_buttons;
@@ -733,6 +739,10 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
         let item_text = format!("Stone x{}", num_stones);
         panel.text_float_cmd(&item_text, text_color, text_x_offset, text_y_offset, config.ui_inv_name_scale);
     }
+
+    // TODO need another item class to use for this location.
+    //x_offset += config.x_spacing_buttons;
+    //render_inventory_item('V', ItemClass::Consumable, x_offset, y_offset, panel, display_state, sprites, config);
 }
 
 /// render the background files, including water tiles

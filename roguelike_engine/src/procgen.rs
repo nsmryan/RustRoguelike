@@ -178,9 +178,9 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
             return None;
     }).map(|r| *r).next().unwrap_or(0);
 
-    place_vaults(game, cmds);
-
     clear_island(game, island_radius);
+
+    place_vaults(game, cmds);
 
     /* detect structures left */
     let mut structures = find_structures(&game.level.map);
@@ -605,24 +605,25 @@ pub fn place_vault_with(level: &mut Level, vault: &Vault, offset: Pos, rotation:
     let mut entities_to_remove: Vec<EntityId> = Vec::new();
     let mut vault_entities_to_remove: Vec<EntityId> = Vec::new();
 
-    // move entities to their new place in the map
+    // Move entities to their new place in the map.
     let mut entities = actual_vault.level.entities.clone();
     for id in actual_vault.level.entities.ids.iter() {
-        let mut entity_pos = entities.pos[id];
+        let mut entity_pos_in_map = entities.pos[id];
         if mirror {
-            entity_pos = mirror_in_x(entity_pos, width);
+            entity_pos_in_map = mirror_in_x(entity_pos_in_map, width);
         }
-        entity_pos = rotation.rotate(entity_pos, width, height);
-        entity_pos = add_pos(offset, entity_pos);
-        if level.map.is_within_bounds(entity_pos) && !level.map[entity_pos].block_move {
-            entities.pos[id] = entity_pos;
+        entity_pos_in_map = rotation.rotate(entity_pos_in_map, width, height);
+        entity_pos_in_map = add_pos(offset, entity_pos_in_map);
+
+        if level.map.is_within_bounds(entity_pos_in_map) && !level.map[entity_pos_in_map].block_move {
+            entities.pos[id] = entity_pos_in_map;
         } else {
             vault_entities_to_remove.push(*id);
             continue;
         }
 
-        // look for entities already at this position
-        for entity_id in level.get_entities_at_pos(entity_pos) {
+        // Look for entities already at this position.
+        for entity_id in level.get_entities_at_pos(entity_pos_in_map) {
             if level.entities.typ[&entity_id] == EntityType::Player {
                 // Remove vault entity to avoid removing player.
                 vault_entities_to_remove.push(*id);

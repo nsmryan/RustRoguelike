@@ -115,6 +115,12 @@ pub fn step_logic(game: &mut Game) -> bool {
     // perform count down of entities waiting to be removed
     game.level.entities.count_down();
 
+    for id in game.level.entities.ids.iter() {
+        if game.level.entities.needs_removal[id] {
+            game.msg_log.log(Msg::MarkedForRemoval(*id));
+        }
+    }
+
     return level_exit_condition_met(&game.level);
 }
 

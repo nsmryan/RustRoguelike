@@ -736,7 +736,8 @@ impl Display {
                 }
             }
 
-            Msg::RemovedEntity(entity_id) => {
+            Msg::MarkedForRemoval(entity_id) => {
+            //Msg::RemovedEntity(entity_id) => {
                 self.state.animations.remove(&entity_id);
                 self.state.chr.remove(&entity_id);
                 self.state.pos.remove(&entity_id);
