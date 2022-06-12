@@ -907,7 +907,8 @@ impl Display {
         let state = self.state.state;
         let screen_areas = &self.screen_areas;
 
-        let section_name_scale = 1.2;
+        let section_name_scale = 1.35;
+        let in_cursor_mode = self.state.cursor_pos.is_some();
 
         self.canvas.with_texture_canvas(&mut self.screen_texture, |canvas| {
             let dims = (dims.0 as u32, dims.1 as u32);
@@ -921,12 +922,8 @@ impl Display {
             let pip_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Pip]);
             canvas.copy(&textures[&PanelName::Pip], None, pip_rect).unwrap();
 
-            //let map_area = &screen_areas[&PanelName::Map];
-            //canvas_panel.outline_area(map_area, 0.05);
             let map_cell_dims = panels[&PanelName::Map].cell_dims();
             let (map_width, map_height) = (map_cell_dims.0 * dims.0, map_cell_dims.1 * dims.1);
-            //let map_src = Rect::new(0, 0, map_width, map_height);
-            //let map_src = Rect::new(0, 0, MAP_WIDTH as u32 * FONT_LENGTH, MAP_HEIGHT as u32 * FONT_LENGTH);
             let map_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Map]);
             canvas.copy(&textures[&PanelName::Map], None, map_rect).unwrap();
 
@@ -962,7 +959,12 @@ impl Display {
 
             let info_area = &screen_areas[&PanelName::Info];
             canvas_panel.outline_area(info_area, 0.5);
-            canvas_panel.justify_cmd("Info",
+            let info_name = if in_cursor_mode {
+                "Selection"
+            } else {
+                "Message Log"
+            };
+            canvas_panel.justify_cmd(info_name,
                                      Justify::Center,
                                      text_color,
                                      highlight_color,

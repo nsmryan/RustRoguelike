@@ -182,9 +182,8 @@ fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
 
     let stance = display_state.stance[&player_id];
     list.push(format!("{}", stance));
-    list.push("next move".to_string());
     let stance = display_state.move_mode;
-    list.push(format!("{}", stance));
+    list.push(format!("next move {}", stance));
 
     list.push(format!("turn {}", display_state.turn_count));
 
