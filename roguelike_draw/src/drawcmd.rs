@@ -12,7 +12,7 @@ use parse_display::{Display, FromStr};
 
 use roguelike_utils::math::*;
 
-use roguelike_map::{Direction, PlayerDirection};
+use roguelike_map::{PlayerDirection};
 
 use crate::animation::{Sprite, SpriteKey};
 
@@ -1068,8 +1068,7 @@ fn sdl2_color(color: Color) -> Sdl2Color {
     return Sdl2Color::RGBA(color.r, color.g, color.b, color.a);
 }
 
-pub fn load_font(font_name: &str, font_size: u32, texture_creator: &mut TextureCreator<WindowContext>, ttf_context: &mut Sdl2TtfContext) -> Texture {
-    let font_size = 24;
+pub fn load_font(font_name: &str, font_size: u16, texture_creator: &mut TextureCreator<WindowContext>, ttf_context: &mut Sdl2TtfContext) -> Texture {
     let mut font = ttf_context.load_font(format!("resources/fonts/{}", font_name), font_size).expect("Could not load font file!");
     font.set_style(sdl2::ttf::FontStyle::BOLD);
 

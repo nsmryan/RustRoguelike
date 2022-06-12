@@ -70,7 +70,7 @@ impl Level {
 
     pub fn find_skill(&self, index: usize) -> Option<Skill> {
         let player_id = self.find_by_name(EntityName::Player).unwrap();
-        return self.entities.skills[&player_id].get(index).map(|skill| *skill);;
+        return self.entities.skills[&player_id].get(index).map(|skill| *skill);
     }
 
     pub fn find_talent(&self, index: usize) -> Option<Talent> {

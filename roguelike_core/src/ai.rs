@@ -29,6 +29,8 @@ pub enum Behavior {
     Investigating(Pos),
     #[display("attacking {0}")]
     Attacking(EntityId),
+    #[display("armed {0}")]
+    Armed(usize), // countdown
 }
 
 impl Default for Behavior {
@@ -44,6 +46,7 @@ impl Behavior {
             Behavior::Alert(_pos) => "alert",
             Behavior::Investigating(_position) => "investigating",
             Behavior::Attacking(_entity_id) => "attacking",
+            Behavior::Armed(_turns) => "armed",
         }
     }
 
@@ -93,6 +96,10 @@ pub fn basic_ai_take_turn(monster_id: EntityId,
                 Behavior::Attacking(entity_id) => {
                     ai_attack(monster_id, entity_id, level, msg_log, config);
                 }
+
+                Behavior::Armed(turns) => {
+                    ai_armed(monster_id, turns, level, msg_log, config);
+                }
             }
         }
     }
@@ -127,6 +134,18 @@ pub fn ai_attack(monster_id: EntityId,
     // rest of the processing is done in the AIAttack message
     msg_log.log(Msg::FaceTowards(monster_id, target_pos));
     msg_log.log(Msg::AiAttack(monster_id));
+}
+
+pub fn ai_armed(monster_id: EntityId,
+                turns: usize,
+                _level: &mut Level,
+                msg_log: &mut MsgLog,
+                _config: &Config) {
+    if turns == 0 {
+        msg_log.log(Msg::AiExplode(monster_id));
+    } else {
+        msg_log.log(Msg::StateChange(monster_id, Behavior::Armed(turns - 1)));
+    }
 }
 
 pub fn ai_idle(monster_id: EntityId,

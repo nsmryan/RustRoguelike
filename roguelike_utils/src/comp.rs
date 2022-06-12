@@ -51,7 +51,7 @@ impl<T> Comp<T> {
         if let Ok(index) = self.ids.binary_search(&entity_id) {
             return index;
         } else {
-            panic!(format!("Component not found for entity {}!", entity_id));
+            panic!("Component not found for entity!");
         }
     }
 

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::cmp::Ord;
-use std::str::FromStr;
 
 use serde::{Serialize, Deserialize};
 use parse_display::{Display, FromStr};
@@ -298,7 +297,7 @@ impl Input {
         }
     }
 
-    fn handle_char_down_use_mode(&mut self, chr: char, settings: &Settings) -> InputAction {
+    fn handle_char_down_use_mode(&mut self, chr: char, _settings: &Settings) -> InputAction {
         let mut action = InputAction::None;
 
         if let Some(input_dir) = InputDirection::from_chr(chr) {
@@ -709,33 +708,6 @@ fn test_input_use_mode_abort() {
     settings.state = GameState::Playing;
 
     let event = InputEvent::Char('4', KeyDir::Up);
-    let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::None, input_action);
-}
-
-#[test]
-fn test_input_cursor_problem() {
-    let mut input = Input::new();
-    let mut settings = Settings::new();
-    let time = 0;
-    let config = Config::from_file("../config.yaml");
-
-    let event = InputEvent::Char(' ', KeyDir::Down);
-    let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::CursorToggle, input_action);
-
-    input.cursor = true;
-    settings.cursor = Some(Pos::new(0, 0));
-
-    let event = InputEvent::Char('4', KeyDir::Down);
-    let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::None, input_action);
-
-    let event = InputEvent::Char('4', KeyDir::Up);
-    let input_action = input.handle_event(&mut settings, event, time, &config);
-    assert_eq!(InputAction::CursorMove(Direction::Left, false, false), input_action);
-
-    let event = InputEvent::Char(' ', KeyDir::Up);
     let input_action = input.handle_event(&mut settings, event, time, &config);
     assert_eq!(InputAction::None, input_action);
 }

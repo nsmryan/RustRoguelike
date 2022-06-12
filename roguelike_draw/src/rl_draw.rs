@@ -3,15 +3,9 @@ use std::sync::mpsc::{self, Receiver};
 use std::thread;
 use std::time::Duration;
 
-use sdl2::render::{Texture, TextureCreator, RenderTarget, WindowCanvas, BlendMode, Canvas};
-use sdl2::rect::Rect;
-use sdl2::video::WindowContext;
-use sdl2::pixels::{Color as Sdl2Color};
-use sdl2::ttf::Sdl2TtfContext;
 use sdl2::image::LoadTexture;
 
 use roguelike_draw::drawcmd::*;
-use roguelike_draw::animation::*;
 
 
 pub fn main() {
@@ -45,9 +39,9 @@ pub fn main() {
 
     let mut screen_texture = create_texture(&mut texture_creator, pixel_format, (width, height));
 
-    while true {
+    loop {
         if let Ok(msg) = io_recv.recv_timeout(Duration::from_millis(100)) {
-            if let Ok(cmd) = msg.parse::<DrawCmd>() {
+            if let Ok(_cmd) = msg.parse::<DrawCmd>() {
                 panel.process_cmds(false, 
                                    &mut screen_texture,
                                    &mut canvas,

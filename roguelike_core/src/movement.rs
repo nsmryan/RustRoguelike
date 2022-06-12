@@ -1,5 +1,4 @@
 use std::iter::Iterator;
-use std::fmt;
 
 use parse_display::{Display, FromStr};
 use serde::{Serialize, Deserialize};

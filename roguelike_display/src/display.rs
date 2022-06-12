@@ -1,8 +1,6 @@
 use std::collections::VecDeque;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::str::FromStr;
-use std::io::BufRead;
 
 use bmp::Image;
 

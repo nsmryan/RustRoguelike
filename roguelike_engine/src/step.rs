@@ -1,7 +1,9 @@
 use logging_timer::timer;
 
 use roguelike_utils::comp::*;
-use roguelike_utils::math::*;
+
+#[cfg(test)]
+use roguelike_utils::math::Pos;
 
 #[cfg(test)]
 use roguelike_map::*;
@@ -462,36 +464,6 @@ fn test_pick_up_misc() {
 }
 
 #[test]
-fn test_use_mode_stone() {
-    let mut game = Game::new(0, Config::from_file("../config.yaml"));
-    map_construct(&MapLoadConfig::Empty, &mut game);
-
-    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
-    let start_pos = game.level.entities.pos[&player_id];
-
-    // make sure there is a key in the inventory, just to show that it is not
-    // used when throwing a stone despite being a 'Misc' item class.
-    let _key = make_key(&mut game.level.entities, &game.config, start_pos, &mut game.msg_log);
-    game.step_game(InputAction::Pickup);
-
-    let stone = make_stone(&mut game.level.entities, &game.config, start_pos, &mut game.msg_log);
-    game.step_game(InputAction::Pickup);
-
-    let gol_pos = move_x(start_pos, PLAYER_THROW_DIST as i32);
-    let gol = make_gol(&mut game.level.entities, &game.config, gol_pos, &mut game.msg_log);
-
-    game.step_game(InputAction::StartUseItem(ItemClass::Misc));
-    game.step_game(InputAction::UseDir(Direction::Right));
-    game.step_game(InputAction::FinalizeUse);
-
-    // the stone lands on the gol
-    assert_eq!(gol_pos, game.level.entities.pos[&stone]);
-
-    // The gol remains in its starting position because it was stunned by the stone.
-    assert_eq!(gol_pos, game.level.entities.pos[&gol]);
-}
-
-#[test]
 fn test_use_mode_drop() {
     let mut game = Game::new(0, Config::from_file("../config.yaml"));
     map_construct(&MapLoadConfig::Empty, &mut game);
@@ -510,17 +482,13 @@ fn test_use_mode_drop() {
 
     assert_eq!(3, game.level.entities.inventory[&player_id].len());
 
-    game.step_game(InputAction::StartUseItem(ItemClass::Misc));
+    game.step_game(InputAction::StartUseItem(ItemClass::Consumable));
     game.step_game(InputAction::DropItem);
     assert_eq!(2, game.level.entities.inventory[&player_id].len());
 
-    game.step_game(InputAction::StartUseItem(ItemClass::Consumable));
-    game.step_game(InputAction::DropItem);
-    assert_eq!(1, game.level.entities.inventory[&player_id].len());
-
     game.step_game(InputAction::StartUseItem(ItemClass::Primary));
     game.step_game(InputAction::DropItem);
-    assert_eq!(0, game.level.entities.inventory[&player_id].len());
+    assert_eq!(1, game.level.entities.inventory[&player_id].len());
 
     assert_eq!(GameState::Playing, game.settings.state);
 }
@@ -542,8 +510,11 @@ fn test_throw_stone() {
     let col = make_column(&mut game.level.entities, &game.config, col_pos, &mut game.msg_log);
 
     game.step_game(InputAction::StartUseItem(ItemClass::Misc));
-    game.step_game(InputAction::UseDir(Direction::Right));
-    game.step_game(InputAction::FinalizeUse);
+    assert_eq!(Some(start_pos), game.settings.cursor);
+    for _ in 0..PLAYER_THROW_DIST {
+        game.step_game(InputAction::CursorMove(Direction::Right, false, false));
+    }
+    game.step_game(InputAction::CursorToggle);
 
     // the stone lands before the column
     let land_pos = move_x(start_pos, PLAYER_THROW_DIST as i32 - 1);
@@ -558,8 +529,11 @@ fn test_throw_stone() {
     game.level.map[wall_pos] = Tile::wall();
 
     game.step_game(InputAction::StartUseItem(ItemClass::Misc));
-    game.step_game(InputAction::UseDir(Direction::Down));
-    game.step_game(InputAction::FinalizeUse);
+    assert_eq!(Some(start_pos), game.settings.cursor);
+    for _ in 0..3 {
+        game.step_game(InputAction::CursorMove(Direction::Down, false, false));
+    }
+    game.step_game(InputAction::CursorToggle);
 
     // throwing the stone down at the wall lands it just before the wall.
     let land_pos = move_y(start_pos, 2);
@@ -572,8 +546,11 @@ fn test_throw_stone() {
     let floor_pos = Direction::DownRight.offset_pos(start_pos, PLAYER_THROW_DIST as i32);
 
     game.step_game(InputAction::StartUseItem(ItemClass::Misc));
-    game.step_game(InputAction::UseDir(Direction::DownRight));
-    game.step_game(InputAction::FinalizeUse);
+    assert_eq!(Some(start_pos), game.settings.cursor);
+    for _ in 0..PLAYER_THROW_DIST {
+        game.step_game(InputAction::CursorMove(Direction::DownRight, false, false));
+    }
+    game.step_game(InputAction::CursorToggle);
 
     // throwing the stone into an empty area lands it where it is thrown
     assert_eq!(floor_pos, game.level.entities.pos[&stone]);

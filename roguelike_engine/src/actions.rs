@@ -1,6 +1,3 @@
-use std::str::FromStr;
-use std::fmt;
-
 use parse_display::{Display, FromStr};
 
 use serde::{Serialize, Deserialize};
@@ -658,7 +655,7 @@ pub fn handle_input_playing(input_action: InputAction,
 }
 
 fn handle_throw_item(item_class: ItemClass, level: &Level, msg_log: &mut MsgLog, settings: &mut Settings) {
-    if let Some(item_index) = level.find_item(item_class) { 
+    if let Some(_item_index) = level.find_item(item_class) { 
         if settings.cursor == None {
             let player_id = level.find_by_name(EntityName::Player).unwrap();
             let player_pos = level.entities.pos[&player_id];
@@ -851,7 +848,7 @@ fn initialize_use_mode(use_action: UseAction, settings: &mut Settings, msg_log: 
     msg_log.log(Msg::UseHitPosClear);
 }
 
-fn start_use_talent(index: usize, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
+fn start_use_talent(index: usize, level: &Level, _settings: &mut Settings, msg_log: &mut MsgLog) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
 
     if let Some(talent) = level.find_talent(index) {

@@ -620,14 +620,14 @@ fn render_inventory_skill(chr: char, index: usize, x_offset: f32, y_offset: f32,
     let mut text_color = ui_color;
     let mut button_name = format!("{}_Button_Base", chr);
     if display_state.state == GameState::Use {
-        if let UseAction::Skill(skill, action_mode) = display_state.use_action {
+        if let UseAction::Skill(skill, _action_mode) = display_state.use_action {
             if display_state.skills.iter().position(|sk| *sk == skill) == Some(index) {
                 button_name = format!("{}_Button_Highlight", chr);
                 text_color = highlight_ui_color;
             }
         }
     } else if display_state.cursor_pos.is_some() {
-        if let Some(UseAction::Skill(skill, action_mode)) = display_state.cursor_action {
+        if let Some(UseAction::Skill(skill, _action_mode)) = display_state.cursor_action {
             if display_state.skills.iter().position(|sk| *sk == skill) == Some(index) {
                 button_name = format!("{}_Button_Highlight", chr);
                 text_color = highlight_ui_color;
@@ -1802,56 +1802,19 @@ fn render_overlay_alertness(panel: &mut Panel,
                                                 alertness_color,
                                                 pos);
                     }
+
+                    Behavior::Armed(_) => {
+                        let sprite = Sprite::new(ARMED_SYMBOL as u32, sprite_key);
+                        panel.sprite_scaled_cmd(sprite, scale,
+                                                PlayerDirection::UpRight,
+                                                alertness_color,
+                                                pos);
+                    }
                 }
             }
         }
     }
 }
-
-/*
-fn empty_tile_color(config: &Config, pos: Pos, visible: bool, rng: &mut Rand32) -> Color {
-    let low_color;
-    let high_color;
-    if visible {
-        low_color = config.color_medium_grey;
-        high_color = config.color_light_grey;
-    } else {
-        low_color = config.color_medium_grey;
-        high_color = config.color_light_grey;
-    }
-
-    let simplex = Perlin::new(rng);
-    let color =
-        lerp_color(low_color,
-                   high_color,
-                   simplex.noise2d(pos.x as f64 / config.tile_noise_scaler,
-                                   pos.y as f64 / config.tile_noise_scaler) as f32);
-
-   return color;
-}
-
-fn tile_color(config: &Config, _x: i32, _y: i32, tile: &Tile, visible: bool) -> Color {
-    let color = match (tile.tile_type, visible) {
-        (TileType::Wall, true) => config.color_light_brown,
-        (TileType::Wall, false) => config.color_dark_brown,
-
-        (TileType::Empty, true) => config.color_light_brown,
-
-        (TileType::Empty, false) => config.color_dark_brown,
-
-        (TileType::Water, true) => config.color_blueish_grey,
-        (TileType::Water, false) => config.color_blueish_grey,
-
-        (TileType::ShortWall, true) => config.color_light_brown,
-        (TileType::ShortWall, false) => config.color_dark_brown,
-
-        (TileType::Exit, true) => config.color_orange,
-        (TileType::Exit, false) => config.color_red,
-    };
-
-    return color;
-}
-*/
 
 fn render_attack_overlay(panel: &mut Panel,
                          config: &Config,

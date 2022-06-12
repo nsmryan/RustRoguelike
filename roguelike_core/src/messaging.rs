@@ -102,6 +102,7 @@ pub enum Msg {
     SetFacing(EntityId, Direction), // set the facing to a direction
     Facing(EntityId, Direction), // facing was modified for an entity
     AiAttack(EntityId),
+    AiExplode(EntityId),
     RemovedEntity(EntityId),
     StartUseItem(EntityId),
     StartUseSkill(EntityId),
@@ -198,6 +199,7 @@ impl fmt::Display for Msg {
                     Behavior::Alert(entity_id) => write!(f, "state_change_alert {}", entity_id),
                     Behavior::Investigating(pos) => write!(f, "state_change_investigating {} {} {}", entity_id, pos.x, pos.y),
                     Behavior::Attacking(target_id) => write!(f, "state_change_attacking {} {}", entity_id, target_id),
+                    Behavior::Armed(turns) => write!(f, "state_change_armed {}", turns),
                 }
             }
             Msg::BehaviorChanged(entity_id, behavior) => {
@@ -206,6 +208,7 @@ impl fmt::Display for Msg {
                     Behavior::Alert(entity_id) => write!(f, "behavior_changed_alert {}", entity_id),
                     Behavior::Investigating(pos) => write!(f, "behavior_changed_investigating {} {} {}", entity_id, pos.x, pos.y),
                     Behavior::Attacking(target_id) => write!(f, "behavior_changed_attacking {} {}", entity_id, target_id),
+                    Behavior::Armed(turns) => write!(f, "behavior_changed_armed {}", turns),
                 }
             }
             Msg::Collided(entity_id, pos) => write!(f, "collided {} {} {}", entity_id, pos.x, pos.y),
@@ -259,6 +262,7 @@ impl fmt::Display for Msg {
             Msg::SetFacing(entity_id, direction) => write!(f, "set_facing {} {}", entity_id, direction),
             Msg::Facing(entity_id, direction) => write!(f, "facing {} {}", entity_id, direction),
             Msg::AiAttack(entity_id) => write!(f, "ai_attack {}", entity_id),
+            Msg::AiExplode(entity_id) => write!(f, "ai_explode {}", entity_id),
             Msg::RemovedEntity(entity_id) => write!(f, "removed {}", entity_id),
             Msg::StartUseItem(entity_id) => write!(f, "startuseitem {}", entity_id),
             Msg::StartUseSkill(entity_id) => write!(f, "startuseskill {}", entity_id),
@@ -620,6 +624,10 @@ impl Msg {
 
             Msg::TestMode(state) => {
                 return format!("Test mode {}", state);
+            }
+
+            Msg::AiExplode(entity_id) => {
+                return format!("{:?} exploded!", data.entities.name[entity_id]);
             }
 
             _ => {

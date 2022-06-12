@@ -1,6 +1,4 @@
 use std::default::Default;
-use std::fmt;
-use std::str::FromStr;
 
 use parse_display::{Display, FromStr};
 use serde::{Serialize, Deserialize};
