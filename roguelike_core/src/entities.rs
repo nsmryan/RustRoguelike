@@ -206,18 +206,25 @@ impl Entities {
         }
     }
 
-    pub fn take_damage(&mut self, entity_id: EntityId, damage: i32) {
-        if let Some(hp) = self.hp.get_mut(&entity_id) {
-            if damage > 0 && !self.status[&entity_id].test_mode {
-                hp.hp -= damage;
+    pub fn take_damage(&mut self, entity_id: EntityId, damage: i32) -> bool {
+        let mut was_hit = false;
+
+        if damage > 0 && self.status[&entity_id].alive && self.status[&entity_id].stone == 0 {
+            if let Some(hp) = self.hp.get_mut(&entity_id) {
+                if !self.status[&entity_id].test_mode {
+                    hp.hp -= damage;
+
+                    if hp.hp <= 0 {
+                        self.status[&entity_id].alive = false;
+                        self.blocks[&entity_id] = false;
+                    }
+
+                    was_hit = true;
+                }
             }
         }
 
-        if let Some(hp) = self.hp.get(&entity_id) {
-            if hp.hp <= 0 {
-                self.status[&entity_id].alive = false;
-            }
-        }
+        return was_hit;
     }
 
     pub fn triggered_traps(&self, pos: Pos) -> Vec<EntityId> {

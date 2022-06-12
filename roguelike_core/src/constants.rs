@@ -235,3 +235,6 @@ pub const ASTERISK: u8 = 239; // NOTE there is no asterisk currently, so this is
 pub const AT_SYMBOL: u8 = 64;
 pub const ARMED_SYMBOL: u8 = 50; // NOTE armed is just a sprite that looks related to explosions
 
+/* Golems */
+pub const AI_EXPLODE_RADIUS: usize = 3;
+pub const ARMIL_TURNS_ARMED: usize = 1;

@@ -103,6 +103,7 @@ pub enum Msg {
     Facing(EntityId, Direction), // facing was modified for an entity
     AiAttack(EntityId),
     AiExplode(EntityId),
+    ExplosionHit(EntityId, EntityId), // source id, hit id
     RemovedEntity(EntityId),
     StartUseItem(EntityId),
     StartUseSkill(EntityId),
@@ -263,6 +264,7 @@ impl fmt::Display for Msg {
             Msg::Facing(entity_id, direction) => write!(f, "facing {} {}", entity_id, direction),
             Msg::AiAttack(entity_id) => write!(f, "ai_attack {}", entity_id),
             Msg::AiExplode(entity_id) => write!(f, "ai_explode {}", entity_id),
+            Msg::ExplosionHit(entity_id, hit_id) => write!(f, "explosion_hit {} {}", entity_id, hit_id),
             Msg::RemovedEntity(entity_id) => write!(f, "removed {}", entity_id),
             Msg::StartUseItem(entity_id) => write!(f, "startuseitem {}", entity_id),
             Msg::StartUseSkill(entity_id) => write!(f, "startuseskill {}", entity_id),
@@ -628,6 +630,10 @@ impl Msg {
 
             Msg::AiExplode(entity_id) => {
                 return format!("{:?} exploded!", data.entities.name[entity_id]);
+            }
+
+            Msg::ExplosionHit(_source_id, hit_entity) => {
+                return format!("{:?} hit by explosion!", data.entities.name[hit_entity]);
             }
 
             _ => {

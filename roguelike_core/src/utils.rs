@@ -157,15 +157,10 @@ pub fn attack(entity: EntityId, target: EntityId, data: &mut Level, msg_log: &mu
     } else {
         // NOTE could add another section for the sword- currently the same as normal attacks
         let damage = 1;
-        if damage > 0 && data.entities.status[&target].alive && data.entities.status[&target].stone == 0 {
-            data.entities.take_damage(target, damage);
-
+        if data.entities.take_damage(target, damage) {
             msg_log.log(Msg::Attack(entity, target, damage));
             // TODO consider moving this to the Attack msg
             if data.entities.hp[&target].hp <= 0 {
-                data.entities.status[&target].alive = false;
-                data.entities.blocks[&target] = false;
-
                 msg_log.log(Msg::Killed(entity, target, damage));
             }
 

@@ -220,8 +220,17 @@ pub fn ai_investigate(target_pos: Pos,
             level.entities.took_turn[&monster_id] = true;
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(player_pos)));
         }
-    } else { // the monster can't see the player
-        if let Some(Message::Attack(entity_id)) = level.entities.was_attacked(monster_id) {
+    } else { // The monster can't see the player.
+        // Handle Armils separately
+        if level.entities.name[&monster_id] == EntityName::Armil {
+            let player_pos = level.entities.pos[&player_id];
+            if distance(player_pos, monster_pos) == 1 {
+                level.entities.took_turn[&monster_id] = true;
+                msg_log.log(Msg::StateChange(monster_id, Behavior::Armed(ARMIL_TURNS_ARMED)));
+            } else {
+                ai_move_towards_target(player_pos, monster_id, level, msg_log);
+            }
+        } else if let Some(Message::Attack(entity_id)) = level.entities.was_attacked(monster_id) {
             let entity_pos = level.entities.pos[&entity_id];
             // Just face towards the attacker. We can act on this on the next turn.
             msg_log.log(Msg::FaceTowards(monster_id, entity_pos));

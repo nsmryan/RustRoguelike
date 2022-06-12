@@ -662,6 +662,17 @@ impl Display {
                     self.state.hp[&attacked] -= damage;
                 }
             }
+            
+            Msg::ExplosionHit(_source_id, hit_entity) => {
+                let damage = 1;
+                let hit_pos = self.state.pos[&hit_entity];
+                let hit_nums = Effect::number_change(-damage, hit_pos, config.color_light_red);
+                self.state.play_effect(hit_nums);
+
+                if !self.state.test_mode {
+                    self.state.hp[&hit_entity] -= damage;
+                }
+            }
 
             Msg::JumpWall(jumper, start, end) => {
                 let jump_anim = self.between_sprite("playerjump_right", start, end, config.idle_speed);

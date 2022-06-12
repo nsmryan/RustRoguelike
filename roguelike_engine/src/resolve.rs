@@ -403,6 +403,38 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
             }
         }
 
+        Msg::AiExplode(entity_id) => {
+            let ai_pos = game.level.entities.pos[&entity_id];
+            let explode_aoe = aoe_fill(&game.level.map, AoeEffect::Freeze, ai_pos, AI_EXPLODE_RADIUS, &game.config);
+
+            game.level.entities.mark_for_removal(entity_id);
+            game.level.entities.took_turn[&entity_id] = true;
+
+            for explode_pos in explode_aoe.positions() {
+                for hit_id in game.level.get_entities_at_pos(explode_pos) {
+                    if game.level.entities.typ[&hit_id] == EntityType::Player ||
+                       game.level.entities.typ[&hit_id] == EntityType::Enemy {
+                        game.msg_log.log_front(Msg::ExplosionHit(entity_id, hit_id));
+                    }
+                }
+            }
+        }
+
+        Msg::ExplosionHit(source_id, hit_entity) => {
+            if game.level.entities.typ[&hit_entity] == EntityType::Player {
+                let damage_amount = 1;
+                if game.level.entities.take_damage(hit_entity, damage_amount) {
+                    if game.level.entities.hp[&hit_entity].hp <= 0 {
+                        game.msg_log.log(Msg::Killed(source_id, hit_entity, damage_amount));
+                    }
+                }
+            } else if game.level.entities.typ[&hit_entity] == EntityType::Enemy {
+                game.msg_log.log(Msg::Froze(hit_entity, 2));
+            } else {
+                panic!("What else can be hit by explosions?");
+            }
+        }
+
         Msg::Restart => {
             resolve_restart(game);
         }

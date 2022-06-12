@@ -422,7 +422,7 @@ impl Level {
             let pos = self.entities.pos[key];
             let is_mouse = self.entities.name[key] == EntityName::Mouse;
 
-            if !is_mouse && check_pos == pos {
+            if !is_mouse && check_pos == pos && !self.entities.needs_removal[key] {
                 entity_ids.push(*key);
             }
         }
