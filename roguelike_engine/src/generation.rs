@@ -226,17 +226,25 @@ pub fn make_cursor(entities: &mut Entities, _config: &Config, pos: Pos, msg_log:
     return entity_id;
 }
 
-pub fn ensure_grass(entities: &mut Entities, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+pub fn ensure_grass(level: &mut Level, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    level.map[pos].surface = Surface::Grass;
+
     let entity_id;
-    if let Some(grass_entity) = entities.get_names_at_pos(pos, EntityName::Grass).get(0) {
+    if let Some(grass_entity) = level.entities.get_names_at_pos(pos, EntityName::Grass).get(0) {
         entity_id = *grass_entity;
     } else {
-        entity_id = entities.create_entity(pos.x, pos.y, EntityType::Environment, EntityName::Grass, false);
+        entity_id = level.entities.create_entity(pos.x, pos.y, EntityType::Environment, EntityName::Grass, false);
 
-        msg_log.log(Msg::SpawnedObject(entity_id, entities.typ[&entity_id], pos, EntityName::Grass, entities.direction[&entity_id]));
+        msg_log.log(Msg::SpawnedObject(entity_id, level.entities.typ[&entity_id], pos, EntityName::Grass, level.entities.direction[&entity_id]));
     }
 
     return entity_id;
+}
+
+pub fn ensure_tall_grass(level: &mut Level, pos: Pos, msg_log: &mut MsgLog) -> EntityId {
+    let id = ensure_grass(level, pos, msg_log);
+    level.map[pos] = Tile::tall_grass();
+    return id;
 }
 
 pub fn make_gol(entities: &mut Entities, config: &Config, pos: Pos, msg_log: &mut MsgLog) -> EntityId {

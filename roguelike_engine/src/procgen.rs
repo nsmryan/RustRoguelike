@@ -50,7 +50,7 @@ impl Structure {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Ord, PartialOrd, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, PartialOrd, Debug, Serialize, Deserialize)]
 pub enum ProcCmd {
     Island(i32), // radius
     Entities(EntityName, usize, usize),
@@ -59,7 +59,7 @@ pub enum ProcCmd {
     MaxGates(usize),
     Traps(Trap, usize, usize),
     MaxTraps(usize),
-    Grass((usize, usize), i32), // (min, max), disperse distance
+    Grass((usize, usize), i32, f32), // (min, max), disperse distance, percent tall
     Rubble(usize),
     Columns(usize),
     SeedFile(String),
@@ -219,15 +219,15 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     // lay down grass with a given dispersion and range from the found tile
     let range_disperse =
         cmds.iter().filter_map(|cmd| {
-            if let ProcCmd::Grass(range, disperse) = cmd {
-                return Some((range, disperse)) 
+            if let ProcCmd::Grass(range, disperse, percent_tall_grass) = cmd {
+                return Some((range, disperse, percent_tall_grass)) 
             };
             return None;
-    }).next().unwrap_or((&(0, 0), &0));
+    }).next().unwrap_or((&(0, 0), &0, &0.0));
     let high = (range_disperse.0).1 as u32;
     let low = (range_disperse.0).0 as u32;
     let num_grass_to_place = rng_range_u32(&mut game.rng, low, high) as usize;
-    place_grass(game, num_grass_to_place, *range_disperse.1);
+    place_grass(game, num_grass_to_place, *range_disperse.1, *range_disperse.2);
 
     // clear the island once more just in case
     clear_island(game, island_radius);
@@ -648,7 +648,7 @@ pub fn place_vault_with(level: &mut Level, vault: &Vault, offset: Pos, rotation:
     }
 }
 
-fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
+fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32, tall_grass_percent: f32) {
     let (width, height) = game.level.map.size();
 
     let mut potential_grass_pos = Vec::new();
@@ -670,15 +670,19 @@ fn place_grass(game: &mut Game, num_grass_to_place: usize, disperse: i32) {
     for pos_index in 0..num_grass_to_place {
         let pos = potential_grass_pos[pos_index];
         game.level.map[pos].surface = Surface::Grass;
-        ensure_grass(&mut game.level.entities, pos, &mut game.msg_log);
+        ensure_grass(&mut game.level, pos, &mut game.msg_log);
 
         for _ in 0..4 {
             let offset_pos = Pos::new(pos.x + rng_range_i32(&mut game.rng, 0, disperse),
                                       pos.y + rng_range_i32(&mut game.rng, 0, disperse));
             if game.level.map.is_within_bounds(offset_pos) &&
                !game.level.map[offset_pos].block_move {
-                game.level.map[offset_pos].surface = Surface::Grass;
-                ensure_grass(&mut game.level.entities, offset_pos, &mut game.msg_log);
+
+                if rng_trial(&mut game.rng, tall_grass_percent) {
+                    ensure_tall_grass(&mut game.level, offset_pos, &mut game.msg_log);
+                } else {
+                    ensure_grass(&mut game.level, offset_pos, &mut game.msg_log);
+                }
             }
         }
     }

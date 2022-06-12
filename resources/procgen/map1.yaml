@@ -84,10 +84,12 @@
 
 # Grass takes a min and max number of grassed locations.
 # it also takes the dispersion (the distance from the center that the grass can lay)
+# and the percent of grass tiles that are tall.
 - Grass: 
     - - 4
       - 13
     - 5
+    - 0.5
 # Columns indicates that some walls should be replaced with columns
 - Columns: 5
 

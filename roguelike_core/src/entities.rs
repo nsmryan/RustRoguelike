@@ -219,8 +219,9 @@ impl Entities {
                         self.blocks[&entity_id] = false;
                     }
 
-                    was_hit = true;
                 }
+
+                was_hit = true;
             }
         }
 

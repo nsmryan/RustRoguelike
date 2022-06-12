@@ -429,6 +429,12 @@ impl Game {
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+pub enum LevelExitCondition {
+    RightEdge,
+    KeyAndGoal,
+}
+
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Settings {
     pub turn_count: usize,
     pub test_mode: bool,
@@ -445,6 +451,7 @@ pub struct Settings {
     pub debug_enabled: bool,
     pub map_load_config: MapLoadConfig,
     pub map_changed: bool,
+    pub exit_condition: LevelExitCondition,
 }
 
 impl Settings {
@@ -465,6 +472,7 @@ impl Settings {
             debug_enabled: false,
             map_load_config: MapLoadConfig::Empty,
             map_changed: false,
+            exit_condition: LevelExitCondition::RightEdge,
         };
     }
 

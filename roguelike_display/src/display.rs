@@ -894,15 +894,14 @@ impl Display {
         }
     }
 
-    pub fn draw_all(&mut self, dims: (i32, i32), rng: &mut Rand32, config: &Config) {
+    pub fn draw_all(&mut self, rng: &mut Rand32, config: &Config) {
         self.process_draw_commands();
-        self.copy_panels(dims);
+        self.copy_panels();
         self.state.update_animations(rng, config);
     }
 
-    pub fn copy_panels(&mut self, dims: (i32, i32)) {
+    pub fn copy_panels(&mut self) {
         let canvas_panel = &mut self.canvas_panel;
-        let panels = &mut self.panels;
         let textures = &mut self.textures;
         let state = self.state.state;
         let screen_areas = &self.screen_areas;
@@ -913,17 +912,15 @@ impl Display {
         let map_height = self.state.map.height();
 
         self.canvas.with_texture_canvas(&mut self.screen_texture, |canvas| {
-            let dims = (dims.0 as u32, dims.1 as u32);
-
             canvas.set_blend_mode(BlendMode::None);
 
             /* Draw Screen in Sections */
-            let pip_cell_dims = panels[&PanelName::Pip].cell_dims();
-            let (pip_width, pip_height) = (pip_cell_dims.0 * dims.0, pip_cell_dims.1 * dims.1);
+            //let pip_cell_dims = panels[&PanelName::Pip].cell_dims();
+            //let (pip_width, pip_height) = (pip_cell_dims.0 * dims.0, pip_cell_dims.1 * dims.1);
             let pip_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Pip]);
             canvas.copy(&textures[&PanelName::Pip], None, pip_rect).unwrap();
 
-            let map_cell_dims = panels[&PanelName::Map].cell_dims();
+            //let map_cell_dims = panels[&PanelName::Map].cell_dims();
             let mut map_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Map]);
             let mut map_src = None;
 

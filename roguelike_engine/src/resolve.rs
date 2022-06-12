@@ -23,7 +23,7 @@ use crate::actions::InputAction;
 #[cfg(test)]
 use crate::generation::*;
 
-use crate::generation::{make_energy, make_light, ensure_grass, make_smoke, make_magnifier};
+use crate::generation::{make_energy, make_light, ensure_grass, ensure_tall_grass, make_smoke, make_magnifier};
 use crate::game::Game;
 use crate::map_construct::map_construct;
 
@@ -986,7 +986,7 @@ fn resolve_throw_item(player_id: EntityId,
     } else if level.entities.item[&item_id] == Item::SeedCache {
         for seed_pos in floodfill(&level.map, hit_pos, SEED_CACHE_RADIUS) {
             if rng_trial(rng, 0.70) {
-                ensure_grass(&mut level.entities, seed_pos, msg_log);
+                ensure_grass(level, seed_pos, msg_log);
             }
         }
     } else if level.entities.item[&item_id] == Item::SmokeBomb {
@@ -1396,7 +1396,7 @@ fn resolve_grass_throw(entity_id: EntityId, direction: Direction, game: &mut Gam
         if rng_trial(&mut game.rng, 0.75) {
             if game.level.map.is_within_bounds(grass_pos) && game.level.map[grass_pos].tile_type == TileType::Empty {
                 game.level.map[grass_pos].surface = Surface::Grass;
-                ensure_grass(&mut game.level.entities, grass_pos, &mut game.msg_log);
+                ensure_grass(&mut game.level, grass_pos, &mut game.msg_log);
             }
         }
 
@@ -1411,7 +1411,7 @@ fn resolve_grass_throw(entity_id: EntityId, direction: Direction, game: &mut Gam
 
             if game.level.map.is_within_bounds(other_pos) && game.level.map[other_pos].tile_type == TileType::Empty {
                 game.level.map[other_pos].surface = Surface::Grass;
-                ensure_grass(&mut game.level.entities, other_pos, &mut game.msg_log);
+                ensure_grass(&mut game.level, other_pos, &mut game.msg_log);
             }
         }
     }
@@ -1419,7 +1419,7 @@ fn resolve_grass_throw(entity_id: EntityId, direction: Direction, game: &mut Gam
     //for grass_pos in Cone::new(pos, direction, SKILL_GRASS_THROW_RADIUS as i32) {
     //    if game.level.map.is_within_bounds(grass_pos) && game.level.map[grass_pos].tile_type == TileType::Empty {
     //        game.level.map[grass_pos].surface = Surface::Grass;
-    //        ensure_grass(&mut game.level.entities, grass_pos, &mut game.msg_log);
+    //        ensure_grass(&mut game.level, grass_pos, &mut game.msg_log);
     //    }
     //}
     game.level.entities.took_turn[&entity_id] = true;
@@ -1430,7 +1430,7 @@ fn resolve_grass_cover(entity_id: EntityId, game: &mut Game) {
     let facing = game.level.entities.direction[&entity_id];
     let next_pos = facing.offset_pos(entity_pos, 1);
     game.level.map[next_pos] = Tile::tall_grass();
-    ensure_grass(&mut game.level.entities, next_pos, &mut game.msg_log);
+    ensure_tall_grass(&mut game.level, next_pos, &mut game.msg_log);
     game.level.entities.took_turn[&entity_id] = true;
 }
 

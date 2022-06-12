@@ -157,6 +157,8 @@ pub fn map_construct(map_load_config: &MapLoadConfig, game: &mut Game) {
         write_map_distribution(game);
     }
 
+    game.settings.exit_condition = LevelExitCondition::RightEdge;
+
     game.msg_log.log(Msg::NewLevel);
     game.settings.map_changed = true;
 }
