@@ -6,7 +6,7 @@ use bmp::Image;
 
 use serde::{Serialize, Deserialize};
 
-use sdl2::render::{Texture, WindowCanvas, TextureCreator};
+use sdl2::render::{Texture, WindowCanvas, TextureCreator, BlendMode};
 use sdl2::video::WindowContext;
 use sdl2::rect::{Rect};
 use sdl2::pixels::{PixelFormatEnum};
@@ -28,6 +28,7 @@ use roguelike_core::movement::{MoveMode};
 
 use roguelike_draw::animation::{Str, Sprite, Effect, Animation, SpriteAnim, SpriteIndex};
 use roguelike_draw::drawcmd::*;
+
 
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -77,16 +78,16 @@ impl Display {
         let mut texture_creator = canvas.texture_creator();
         let pixel_format = texture_creator.default_pixel_format();
 
-        let canvas_cell_dims = (SCREEN_WIDTH / (FONT_WIDTH as u32 * 1), SCREEN_HEIGHT / (FONT_HEIGHT as u32 * 1));
+        let canvas_cell_dims = (MAP_WIDTH as u32 * CELL_MULTIPLIER, (MAP_HEIGHT as u32 * CELL_MULTIPLIER) + UI_CELLS_TOP + UI_CELLS_BOTTOM);
         let canvas_panel = Panel::new((SCREEN_WIDTH, SCREEN_HEIGHT), canvas_cell_dims);
         
         /* Lay out screen areas */
         let screen_area = canvas_panel.area();
-        let (top_area, rest_area) = screen_area.split_top(canvas_panel.cells.0 as usize - 2);
-        let (pip_area, map_area) = top_area.split_top(PIP_HEIGHT as usize);
-        let (player_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 6);
-        let (inventory_area, rest_area) = rest_area.split_left(canvas_panel.cells.0 as usize / 2);
-        let info_area = rest_area;
+        let (top_area, bottom_area) = screen_area.split_top(canvas_panel.cells.1 as usize - UI_CELLS_BOTTOM as usize);
+        let (pip_area, map_area) = top_area.split_top(UI_CELLS_TOP as usize);
+        let (player_area, right_area) = bottom_area.split_left(canvas_panel.cells.0 as usize / 6);
+        let (inventory_area, right_area) = right_area.split_left(canvas_panel.cells.0 as usize / 2);
+        let info_area = right_area;
         let menu_area = screen_area.centered((info_area.width as f32 * 1.5) as usize, (info_area.height as f32 * 1.5) as usize);
         let help_area = screen_area.centered((screen_area.width as f32 * 0.8) as usize, (screen_area.height as f32 * 0.9) as usize);
 
@@ -114,7 +115,7 @@ impl Display {
         let atlas_texture = texture_creator.load_texture("resources/spriteAtlas.png").expect("Could not load sprite atlas!");
 
         let mut ttf_context = sdl2::ttf::init().expect("Could not init SDL2 TTF!");
-        let font_texture = load_font("Inconsolata-Bold.ttf", 24, &mut texture_creator, &mut ttf_context);
+        let font_texture = load_font("Inconsolata-Bold.ttf", 32, &mut texture_creator, &mut ttf_context);
 
         let font_query = font_texture.query();
         let num_chars = (ASCII_END - ASCII_START + 1) as usize;
@@ -736,8 +737,9 @@ impl Display {
                 }
             }
 
-            Msg::MarkedForRemoval(entity_id) => {
+            // NOTE this should be a valid change. Remove the next line if no visual problems occur.
             //Msg::RemovedEntity(entity_id) => {
+            Msg::MarkedForRemoval(entity_id) => {
                 self.state.animations.remove(&entity_id);
                 self.state.chr.remove(&entity_id);
                 self.state.pos.remove(&entity_id);
@@ -910,20 +912,23 @@ impl Display {
         self.canvas.with_texture_canvas(&mut self.screen_texture, |canvas| {
             let dims = (dims.0 as u32, dims.1 as u32);
 
+            canvas.set_blend_mode(BlendMode::None);
+
             /* Draw Screen in Sections */
             let pip_cell_dims = panels[&PanelName::Pip].cell_dims();
             let (pip_width, pip_height) = (pip_cell_dims.0 * dims.0, pip_cell_dims.1 * dims.1);
-            let pip_src = Rect::new(0, 0, pip_width, pip_height);
+            //let pip_src = Rect::new(0, 0, pip_width, pip_height);
             let pip_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Pip]);
-            canvas.copy(&textures[&PanelName::Pip], pip_src, pip_rect).unwrap();
+            canvas.copy(&textures[&PanelName::Pip], None, pip_rect).unwrap();
 
             //let map_area = &screen_areas[&PanelName::Map];
             //canvas_panel.outline_area(map_area, 0.05);
             let map_cell_dims = panels[&PanelName::Map].cell_dims();
             let (map_width, map_height) = (map_cell_dims.0 * dims.0, map_cell_dims.1 * dims.1);
-            let map_src = Rect::new(0, 0, map_width, map_height);
+            //let map_src = Rect::new(0, 0, map_width, map_height);
+            //let map_src = Rect::new(0, 0, MAP_WIDTH as u32 * FONT_LENGTH, MAP_HEIGHT as u32 * FONT_LENGTH);
             let map_rect = canvas_panel.get_rect_from_area(&screen_areas[&PanelName::Map]);
-            canvas.copy(&textures[&PanelName::Map], map_src, map_rect).unwrap();
+            canvas.copy(&textures[&PanelName::Map], None, map_rect).unwrap();
 
             let player_area = screen_areas[&PanelName::Player];
             let map_area = screen_areas[&PanelName::Map];
@@ -1302,47 +1307,44 @@ fn entity_name_to_chr(name: EntityName) -> char {
 fn create_panels(screen_areas: &HashMap<PanelName, Area>) -> HashMap<PanelName, Panel> {
     let mut panels = HashMap::new();
 
-    let over_sample = 16;
-
-    let pip_pixels = (over_sample * PIP_WIDTH as u32 * FONT_WIDTH as u32, over_sample * PIP_HEIGHT as u32 * FONT_HEIGHT as u32);
+    let pip_pixels = (CELL_MULTIPLIER * SCREEN_WIDTH, CELL_MULTIPLIER * UI_PIXELS_TOP);
     let pip_dims = screen_areas[&PanelName::Pip].dims();
     let pip_dims = (pip_dims.0 as u32, pip_dims.1 as u32);
     let pip_panel = Panel::new(pip_pixels, pip_dims);
     panels.insert(PanelName::Pip, pip_panel);
 
-    let map_pixels = (over_sample * MAP_WIDTH as u32 * FONT_WIDTH as u32, over_sample * MAP_HEIGHT as u32 * FONT_HEIGHT as u32);
+    let map_pixels = (CELL_MULTIPLIER * MAP_WIDTH as u32 * FONT_LENGTH as u32, CELL_MULTIPLIER * MAP_HEIGHT as u32 * FONT_HEIGHT as u32);
     let map_dims = screen_areas[&PanelName::Map].dims();
-    let map_dims = (map_dims.0 as u32, map_dims.1 as u32);
+    let map_dims = (map_dims.0 as u32 / CELL_MULTIPLIER, map_dims.1 as u32 / CELL_MULTIPLIER);
     let map_panel = Panel::new(map_pixels, map_dims);
     panels.insert(PanelName::Map, map_panel);
 
-    let over_sample = 10;
     let multiplier = 1.2;
 
     let info_dims = screen_areas[&PanelName::Info].dims();
     let info_dims = ((info_dims.0 as f32 / multiplier) as u32, (info_dims.1 as f32 / multiplier) as u32);
-    let info_pixels = (over_sample * info_dims.0 * FONT_WIDTH as u32, over_sample * info_dims.1 * FONT_HEIGHT as u32);
+    let info_pixels = (CELL_MULTIPLIER * info_dims.0 * FONT_LENGTH as u32, CELL_MULTIPLIER * info_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Info, Panel::new(info_pixels, info_dims));
 
     let inventory_dims = screen_areas[&PanelName::Inventory].dims();
     let inventory_dims = ((inventory_dims.0 as f32 / multiplier) as u32, (inventory_dims.1 as f32 / multiplier) as u32);
-    let inventory_pixels = (over_sample * inventory_dims.0 * FONT_WIDTH as u32, over_sample * inventory_dims.1 * FONT_HEIGHT as u32);
+    let inventory_pixels = (CELL_MULTIPLIER * inventory_dims.0 * FONT_LENGTH as u32, CELL_MULTIPLIER * inventory_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Inventory, Panel::new(inventory_pixels, inventory_dims));
 
     let player_dims = screen_areas[&PanelName::Player].dims();
     let player_dims = ((player_dims.0 as f32 / multiplier) as u32, (player_dims.1 as f32 / multiplier) as u32);
-    let player_pixels = (over_sample * player_dims.0 * FONT_WIDTH as u32, over_sample * player_dims.1 * FONT_HEIGHT as u32);
-    panels.insert(PanelName::Player, Panel::new(player_pixels, player_dims));
+    let player_pixels = (CELL_MULTIPLIER * player_dims.0 * FONT_LENGTH as u32, CELL_MULTIPLIER * player_dims.1 * FONT_HEIGHT as u32);
+    let player_panel = Panel::new(player_pixels, player_dims);
+    panels.insert(PanelName::Player, player_panel);
 
-    //let menu_dims = info_dims;
     let menu_dims = screen_areas[&PanelName::Menu].dims();
     let menu_dims = ((menu_dims.0 as f32 / multiplier) as u32, (menu_dims.1 as f32 / multiplier) as u32);
-    let menu_pixels = (over_sample * menu_dims.0 * FONT_WIDTH as u32, over_sample * menu_dims.1 * FONT_HEIGHT as u32);
+    let menu_pixels = (CELL_MULTIPLIER * menu_dims.0 * FONT_LENGTH as u32, CELL_MULTIPLIER * menu_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Menu, Panel::new(menu_pixels, menu_dims));
 
     let help_dims = screen_areas[&PanelName::Help].dims();
     let help_dims = ((help_dims.0 as f32 / multiplier) as u32, (help_dims.1 as f32 / multiplier) as u32);
-    let help_pixels = (over_sample * help_dims.0 * FONT_WIDTH as u32, over_sample * help_dims.1 * FONT_HEIGHT as u32);
+    let help_pixels = (CELL_MULTIPLIER * help_dims.0 * FONT_LENGTH as u32, CELL_MULTIPLIER * help_dims.1 * FONT_HEIGHT as u32);
     panels.insert(PanelName::Help, Panel::new(help_pixels, help_dims));
 
     return panels;
@@ -1504,3 +1506,4 @@ fn chr_bool(chr: char) -> bool {
         _ => panic!("unexpected bool char!"),
     }
 }
+

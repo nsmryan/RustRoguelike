@@ -23,7 +23,7 @@ use roguelike_map::MapLoadConfig;
 
 use roguelike_core::types::*;
 use roguelike_core::config::Config;
-use roguelike_core::constants::*;
+use roguelike_core::constants::{SCREEN_WIDTH, SCREEN_HEIGHT};
 
 use roguelike_engine::game::*;
 use roguelike_engine::actions::*;

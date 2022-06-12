@@ -97,10 +97,6 @@ fn process_draw_cmd(panel: &Panel,
 
             let pos = Pos::new(pos.x * cell_width as i32, pos.y * cell_height as i32);
 
-            let cell_dims = panel.cell_dims();
-
-            let (cell_width, cell_height) = cell_dims;
-
             let dst_rect = Rect::new(pos.x as i32,
                                      pos.y as i32,
                                      cell_width as u32,

@@ -1,14 +1,23 @@
 pub const CONFIG_FILE_NAME: &str = &"config.json";
 
-/* Screen and font */
-pub const SCREEN_WIDTH: u32 = 800;
-pub const SCREEN_HEIGHT: u32 = 960;
+/* Screen */
+pub const UI_CELLS_TOP: u32 = 3;
+pub const UI_CELLS_BOTTOM: u32 = 12;
 
-pub const INVENTORY_WIDTH: usize = 300;
-pub const INVENTORY_HEIGHT: usize = 500;
+pub const CELL_MULTIPLIER: u32 = 3;
+
+pub const FONT_LENGTH: u32 = 16;
+
+pub const MAP_CELLS_TO_PIXELS: u32 = CELL_MULTIPLIER * FONT_LENGTH;
+pub const UI_CELLS_TO_PIXELS: u32 = FONT_LENGTH;
+
+pub const SCREEN_WIDTH: u32 = MAP_WIDTH as u32 * MAP_CELLS_TO_PIXELS;
+pub const SCREEN_HEIGHT: u32 = (MAP_HEIGHT as u32 * MAP_CELLS_TO_PIXELS) + (UI_CELLS_TOP + UI_CELLS_BOTTOM) * UI_CELLS_TO_PIXELS;
+
+pub const UI_PIXELS_TOP: u32 = UI_CELLS_TOP * UI_CELLS_TO_PIXELS;
+pub const UI_PIXELS_BOTTOM: u32 = UI_CELLS_BOTTOM * UI_CELLS_TO_PIXELS;
 
 /* General Settings */
-pub const INITIAL_OBJECT_CAPACITY: usize = 1000;
 pub const BLINK_RADIUS: usize = 4;
 pub const TILE_FILL_METRIC_DIST: usize = 3;
 pub const ILLUMINATE_FOV_RADIUS: i32 = 1000;
@@ -78,21 +87,9 @@ pub const SLING_THROW_DIST: usize = 7;
 
 pub const PLAYER_MAX_ITEMS: usize = 3;
 
-/* UI */
-pub const BAR_WIDTH: u32 = 20;
-pub const PANEL_HEIGHT: u32 = 7;
-pub const PANEL_Y: u32 = SCREEN_HEIGHT - PANEL_HEIGHT;
-
-pub const MSG_X: u32 = BAR_WIDTH + 2;
-pub const MSG_WIDTH: u32 = SCREEN_WIDTH - BAR_WIDTH - 2;
-pub const MSG_HEIGHT: u32 = PANEL_HEIGHT - 1;
-
 /* Map and View */
-pub const MAP_WIDTH: i32 = 20;
-pub const MAP_HEIGHT: i32 = 20;
-
-pub const PIP_WIDTH: i32 = MAP_WIDTH;
-pub const PIP_HEIGHT: i32 = 3;
+pub const MAP_WIDTH: i32 = 22;
+pub const MAP_HEIGHT: i32 = 15;
 
 pub const ISLAND_DISTANCE: i32 = 7;
 

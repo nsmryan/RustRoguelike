@@ -152,34 +152,6 @@ fn render_placard(panel: &mut Panel, text: &str) {
                       1.0);
 }
 
-//fn render_pips(panel: &mut Panel,
-//               num_pips: u32,
-//               pos: Pos,
-//               color: Color) {
-//    if num_pips > 0 {
-//        for pip_index in 0..num_pips as i32 {
-//            let filled = true;
-//            let pip_pos = move_x(pos, pip_index);
-//            panel.rect_cmd(pip_pos, (1, 1), 0.12, filled, color);
-//        }
-//    }
-//}
-//
-//fn render_bar(panel: &mut Panel,
-//              full: i32,
-//              current: i32,
-//              pos: Pos,
-//              fg_color: Color,
-//              bg_color: Color,
-//              draw_outline: bool) {
-//    let filled = true;
-//    panel.rect_cmd(pos, (current as u32, 1), 0.0, filled, fg_color);
-//
-//    if draw_outline {
-//        let filled = false;
-//        panel.rect_cmd(pos, (full as u32, 1), 0.0, filled, bg_color);
-//    }
-//}
 
 fn render_player_info(panel: &mut Panel, display_state: &DisplayState) {
     //render_placard(panel, "Player");
@@ -947,7 +919,7 @@ fn render_pip(panel: &mut Panel, display_state: &DisplayState) {
     if let Some(hp) = display_state.hp.get(&player_id) {
         let health_color = Color::new(0x96, 0x54, 0x56, 255);
 
-        let bar_width = MAP_WIDTH as f32 / 8.0;
+        let bar_width = panel.cells.0 as f32 / 8.0;
 
         let current_hp = if *hp > 0 {
             *hp
@@ -955,7 +927,7 @@ fn render_pip(panel: &mut Panel, display_state: &DisplayState) {
             0
         };
         for hp_index in 0..current_hp {
-            let offset = 0.1;
+            let offset = 0.15;
             let bar_x = hp_index as f32 * bar_width + offset;
             let bar_y = offset;
             let filled = hp_index <= *hp;
@@ -966,7 +938,7 @@ fn render_pip(panel: &mut Panel, display_state: &DisplayState) {
     if let Some(energy) = display_state.energy.get(&player_id) {
         let energy_color = Color::new(176, 132, 87, 255);
             
-        let bar_width = MAP_WIDTH as f32 / 8.0;
+        let bar_width = panel.cells.0 as f32 / 8.0;
 
         for energy_index in 0..*energy {
             let x_offset = 0.3;
@@ -981,7 +953,7 @@ fn render_pip(panel: &mut Panel, display_state: &DisplayState) {
     if let Some(stamina) = display_state.stamina.get(&player_id) {
         let stamina_color = Color::new(130, 140, 102, 255);
             
-        let bar_width = MAP_WIDTH as f32 / 8.0;
+        let bar_width = panel.cells.0 as f32 / 8.0;
 
         for stamina_index in 0..*stamina {
             let x_offset = 0.3;
