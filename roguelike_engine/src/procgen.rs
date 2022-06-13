@@ -327,6 +327,14 @@ fn ensure_iter_and_full_walls(map: &mut Map) {
             }
         }
     }
+
+    for y in 0..(height - 1) {
+        map[(0, y)].left_wall = Wall::Empty;
+    }
+
+    for x in 0..(width - 1) {
+        map[(x, height - 1)].bottom_wall = Wall::Empty;
+    }
 }
 
 /// Ensure that diagonal full tile walls do not occur.
