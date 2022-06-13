@@ -976,9 +976,9 @@ fn render_map(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
 
             // draw an outline around the tile
             {
-                let mut outline_color = Color::white();
-                outline_color.a /= 8;
-                panel.outline_cmd(outline_color, pos);
+                //let mut outline_color = Color::white();
+                //outline_color.a /= 8;
+                //panel.outline_cmd(outline_color, pos);
             }
 
             // Render game stuff

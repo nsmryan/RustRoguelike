@@ -3,7 +3,7 @@ ATLAS_SRC = $(ATLAS)/main.c $(ATLAS)/util.c $(ATLAS)/bitmap.c $(ATLAS)/lib/stb/s
 
 all: run
 
-.PHONY: exe run rerun debug release test retest check recheck sloc sloc_crates atlas clean
+.PHONY: exe run rerun debug release test retest check recheck sloc sloc_crates atlas clean unsave
 run:
 	cargo run
 
@@ -59,8 +59,12 @@ atlas:
 	@rm collectImages -rf
 	@echo "done"
 
+unsave:
+	@rm game.save
+
 clean:
 	@rm atlas
 	@cargo clean
 	@rm collectImages -rf
+	@rm game.save
 

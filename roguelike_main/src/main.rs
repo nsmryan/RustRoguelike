@@ -120,6 +120,8 @@ pub fn run(seed: u64, opts: GameOptions) -> Result<(), String> {
                        .build()
                        .map_err(|e| e.to_string())?;
 
+        //sdl2::hint::set("SDL_HINT_RENDER_SCALE_QUALITY", "linear");
+
         /* Create Display Structures */
         display = Display::new(canvas);
     }
