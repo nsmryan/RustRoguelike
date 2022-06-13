@@ -316,7 +316,12 @@ impl Display {
                 let sprite = self.static_sprite("rustrogueliketiles", ENTITY_TELEPORTER as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Grass {
-                return Some(self.random_sprite("GrassAnim", config.grass_idle_speed));
+                let pos = self.state.pos[&entity_id];
+                if self.state.map.is_within_bounds(pos) && self.state.map[pos].block_sight {
+                    return Some(self.random_sprite("TallGrassAnim", config.grass_idle_speed));
+                } else {
+                    return Some(self.random_sprite("GrassAnim", config.grass_idle_speed));
+                }
             } else if name == EntityName::Statue {
                 let statues = vec!(MAP_STATUE_1, MAP_STATUE_2, MAP_STATUE_3, MAP_STATUE_4, MAP_STATUE_5, MAP_STATUE_6);
                 let index = roguelike_utils::rng::choose(&mut self.rng, &statues).unwrap();
