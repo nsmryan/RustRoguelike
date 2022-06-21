@@ -861,8 +861,7 @@ pub fn hammer_swing(entity_id: EntityId, item_id: EntityId, pos: Pos, level: &mu
         level.used_up_item(entity_id, item_id);
     }
 
-    msg_log.log_front(Msg::UsedStamina(entity_id, 1));
-    level.entities.took_turn[&entity_id] = Some(Turn::Attack);
+    level.entities.took_turn[&entity_id] |= Turn::Attack.turn();
 }
 
 pub fn hammer_hit_entity(entity_id: EntityId, hit_entity: EntityId, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {

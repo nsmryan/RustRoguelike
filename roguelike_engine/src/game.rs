@@ -142,7 +142,7 @@ impl Game {
                 }
             }
 
-            if self.level.entities.took_turn[&player_id].is_some() {
+            if self.level.entities.took_turn[&player_id] != 0 {
                 self.msg_log.log(Msg::StartTurn);
             }
         }
@@ -151,7 +151,7 @@ impl Game {
             self.emit_any_action_state();
         }
 
-        if self.level.entities.took_turn[&player_id].is_some() || self.settings.map_changed {
+        if self.level.entities.took_turn[&player_id] != 0 || self.settings.map_changed {
             self.emit_took_turn_state();
         }
 
@@ -159,7 +159,7 @@ impl Game {
 
         // send PlayerTurn action in case there is cleanup to perform, or another system
         // needs to know that the turn is finished.
-        if self.level.entities.took_turn[&player_id].is_some() {
+        if self.level.entities.took_turn[&player_id] != 0 {
             self.msg_log.log(Msg::PlayerTurn);
         }
 

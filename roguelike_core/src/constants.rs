@@ -87,7 +87,7 @@ pub const SLING_THROW_DIST: usize = 7;
 
 pub const PLAYER_MAX_ITEMS: usize = 3;
 
-pub const MAX_STAMINA: u32 = 5;
+pub const MAX_STAMINA: u32 = 3;
 
 /* Map and View */
 pub const MAP_WIDTH: i32 = 22;

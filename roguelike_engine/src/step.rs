@@ -43,7 +43,7 @@ pub fn step_logic(game: &mut Game) -> bool {
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
     for id in game.level.entities.ids.iter() {
-        game.level.entities.took_turn[id] = None;
+        game.level.entities.took_turn[id] = 0;
         game.level.entities.status[id].blinked = false;
 
         // Slowly thaw any frozen entities.
@@ -62,9 +62,10 @@ pub fn step_logic(game: &mut Game) -> bool {
     let monster = timer!("MONSTER");
 
     if game.level.entities.status[&player_id].alive && !won_level {
-        if let Some(turn) = game.level.entities.took_turn[&player_id] {
+        let turn = game.level.entities.took_turn[&player_id];
+        if turn != 0 {
             // Handle player stamina change if they took a turn
-            if turn == Turn::Run || turn == Turn::Jump || turn == Turn::Attack {
+            if turn & (Turn::Run.turn() | Turn::Jump.turn() | Turn::Attack.turn()) != 0 {
                 if game.level.entities.stamina[&player_id] > 0 {
                     game.msg_log.log(Msg::UsedStamina(player_id, 1));
                 }
@@ -97,7 +98,7 @@ pub fn step_logic(game: &mut Game) -> bool {
         }
     }
 
-    if game.level.entities.took_turn[&player_id].is_some() {
+    if game.level.entities.took_turn[&player_id] != 0 {
         game.settings.turn_count += 1;
 
         // check on whether the player has their hammer raised
@@ -196,12 +197,12 @@ fn step_ai(game: &mut Game) {
     let ai_ids: Vec<EntityId> = game.level.entities.active_ais();
 
     for entity_id in ai_ids.iter() {
-        while game.level.entities.took_turn[entity_id].is_none() {
+        while game.level.entities.took_turn[entity_id] == 0 {
             ai_take_turn(*entity_id, &mut game.level, &game.config, &mut game.msg_log);
 
             // If the AI has nothing to do, end its turn
             if game.msg_log.messages.len() == 0 {
-                game.level.entities.took_turn[entity_id] = Some(Turn::Pass);
+                game.level.entities.took_turn[entity_id] |= Turn::Pass.turn();
             } else {
                 resolve_messages(game);
             }

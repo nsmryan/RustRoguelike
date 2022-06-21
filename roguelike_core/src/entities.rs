@@ -44,7 +44,7 @@ pub struct Entities {
     pub illuminate: Comp<usize>,
     pub gate_pos: Comp<Pos>,
     pub stance: Comp<Stance>,
-    pub took_turn: Comp<Option<Turn>>,
+    pub took_turn: Comp<u8>,
     pub durability: Comp<usize>,
     pub modifier: Comp<ItemModifier>,
     pub fov_block: Comp<FovBlock>,
@@ -151,7 +151,7 @@ impl Entities {
         self.messages.insert(id,  Vec::new());
         self.needs_removal.insert(id,  false);
         self.status.insert(id,  StatusEffect::default());
-        self.took_turn.insert(id,  None);
+        self.took_turn.insert(id,  0);
 
         return id;
     }

@@ -73,7 +73,7 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
             if game.level.is_in_fov(entity_id, player_id) == FovResult::Inside {
                 let player_pos = game.level.entities.pos[&player_id];
                 game.msg_log.log(Msg::StateChange(entity_id, Behavior::Alert(player_pos)));
-                game.level.entities.took_turn[&entity_id] = Some(Turn::Pass);
+                game.level.entities.took_turn[&entity_id] |= Turn::Pass.turn();
             } else {
                 game.msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(sound_pos)));
             }
@@ -121,7 +121,7 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
         Msg::HammerRaise(entity_id, item_index, dir) => {
             let item_id = game.level.entities.inventory[&entity_id][item_index];
             game.level.entities.status[&entity_id].hammer_raised = Some((item_id, dir, 1));
-            game.level.entities.took_turn[&entity_id] = Some(Turn::Pass);
+            game.level.entities.took_turn[&entity_id] |= Turn::Pass.turn();
         }
 
         Msg::HammerSwing(entity_id, item_id, pos) => {
@@ -263,7 +263,7 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
         Msg::GrassShoes(entity_id, _action_mode) => {
             if try_use_energy(entity_id, Skill::GrassShoes, &mut game.level, &mut game.msg_log) {
                 game.level.entities.status[&entity_id].soft_steps = SKILL_GRASS_SHOES_TURNS;
-                game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+                game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
             }
         }
 
@@ -292,7 +292,7 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
         Msg::TryFarSight(entity_id, amount) => {
             if try_use_energy(entity_id, Skill::FarSight, &mut game.level, &mut game.msg_log) {
                 game.level.entities.status[&entity_id].extra_fov += amount;
-                game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+                game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
                 game.msg_log.log(Msg::FarSight(entity_id, amount));
             }
         }
@@ -300,21 +300,21 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
         Msg::Ping(entity_id, pos) => {
             if try_use_energy(entity_id, Skill::Ping, &mut game.level, &mut game.msg_log) {
                 game.msg_log.log_front(Msg::Sound(entity_id, pos, game.config.ping_sound_radius));
-                game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+                game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
             }
         }
 
         Msg::Sprint(entity_id, direction, amount) => {
             if try_use_energy(entity_id, Skill::Sprint, &mut game.level, &mut game.msg_log) {
                 game.msg_log.log(Msg::TryMove(entity_id, direction, amount, MoveMode::Run));
-                game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+                game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
             }
         }
 
         Msg::Roll(entity_id, direction, amount) => {
             if try_use_energy(entity_id, Skill::Roll, &mut game.level, &mut game.msg_log) {
                 game.msg_log.log(Msg::TryMove(entity_id, direction, amount, MoveMode::Sneak));
-                game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+                game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
             }
         }
 
@@ -340,14 +340,14 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
                 if try_use_energy(entity_id, Skill::Reform, &mut game.level, &mut game.msg_log) {
                     game.level.map[pos].surface = Surface::Floor;
                     game.level.map[pos].block_move = true;
-                    game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+                    game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
                 }
             }
         }
 
         Msg::StoneSkin(entity_id) => {
             game.level.entities.status[&entity_id].stone = SKILL_STONE_SKIN_TURNS;
-            game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+            game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
         }
 
         Msg::Swap(entity_id, target_id) => {
@@ -361,13 +361,13 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
                 //game.level.entities.set_pos(entity_id, pos);
                 game.msg_log.log(Msg::Moved(entity_id, MoveType::Misc, MoveMode::Walk, pos));
 
-                game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+                game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
             }
         }
 
         Msg::ArmDisarmTrap(entity_id, trap_id) => {
             game.level.entities.armed[&trap_id] = !game.level.entities.armed[&trap_id];
-            game.level.entities.took_turn[&entity_id] = Some(Turn::InteractTrap);
+            game.level.entities.took_turn[&entity_id] |= Turn::InteractTrap.turn();
         }
 
         Msg::PlaceTrap(entity_id, place_pos, trap_id) => {
@@ -375,7 +375,7 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
             game.level.entities.armed[&trap_id] = true;
 
             game.level.entities.remove_from_inventory(entity_id, trap_id);
-            game.level.entities.took_turn[&entity_id] = Some(Turn::InteractTrap);
+            game.level.entities.took_turn[&entity_id] |= Turn::InteractTrap.turn();
         }
 
 
@@ -408,7 +408,7 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
             let explode_aoe = aoe_fill(&game.level.map, AoeEffect::Freeze, ai_pos, AI_EXPLODE_RADIUS, &game.config);
 
             game.level.entities.mark_for_removal(entity_id);
-            game.level.entities.took_turn[&entity_id] = Some(Turn::Pass);
+            game.level.entities.took_turn[&entity_id] |= Turn::Pass.turn();
 
             for explode_pos in explode_aoe.positions() {
                 for hit_id in game.level.get_entities_at_pos(explode_pos) {
@@ -461,6 +461,9 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
 
         Msg::GainStamina(entity_id, amount) => {
             game.level.entities.stamina[&entity_id] += amount;
+            if game.level.entities.stamina[&entity_id] > MAX_STAMINA {
+                game.level.entities.stamina[&entity_id] = MAX_STAMINA;
+            }
         }
 
         _ => {
@@ -470,7 +473,7 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
 
 fn resolve_hit(entity_id: EntityId, hit_pos: Pos, weapon_type: WeaponType, attack_style: AttackStyle, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
     // Hitting always takes a turn currently.
-    level.entities.took_turn[&entity_id] = Some(Turn::Attack);
+    level.entities.took_turn[&entity_id] |= Turn::Attack.turn();
 
     let entity_pos = level.entities.pos[&entity_id];
 
@@ -549,7 +552,7 @@ fn resolve_attack(entity_id: EntityId,
         }
     }
 
-    level.entities.took_turn[&entity_id] = Some(Turn::Attack);
+    level.entities.took_turn[&entity_id] |= Turn::Attack.turn();
 }
 
 fn resolve_try_move(entity_id: EntityId,
@@ -589,7 +592,7 @@ fn resolve_try_move(entity_id: EntityId,
         if level.entities.behavior.get(&entity_id) != None &&
            level.entities.behavior.get(&entity_id) != Some(&Behavior::Idle) {
             // this takes up the monster's turn, as they already committed to this movement
-            level.entities.took_turn[&entity_id] = Some(Turn::Pass);
+            level.entities.took_turn[&entity_id] |= Turn::Pass.turn();
             msg_log.log(Msg::StateChange(entity_id, Behavior::Idle));
         }
     }
@@ -723,7 +726,7 @@ fn resolve_push_skill(entity_id: EntityId,
             msg_log.log(Msg::Froze(other_id, SKILL_PUSH_STUN_TURNS));
         }
     }
-    level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+    level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
 }
 
 fn resolve_rubble(blocked: Blocked, map: &mut Map) {
@@ -880,7 +883,7 @@ fn resolve_pushed_entity(pusher: EntityId,
         panic!("Tried to push entity {:?}, alive = {}!",
                level.entities.typ[&pushed], level.entities.status[&pushed].alive);
     }
-    level.entities.took_turn[&pusher] = Some(Turn::Attack);
+    level.entities.took_turn[&pusher] |= Turn::Attack.turn();
 }
 
 fn resolve_crushed(entity_id: EntityId, pos: Pos, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
@@ -963,7 +966,7 @@ fn resolve_throw_item(player_id: EntityId,
     msg_log.log(Msg::Moved(item_id, MoveType::Misc, MoveMode::Walk, hit_pos));
 
     level.entities.remove_item(player_id, item_id);
-    level.entities.took_turn[&player_id] = Some(Turn::Attack);
+    level.entities.took_turn[&player_id] |= Turn::Attack.turn();
 
     // NOTE the radius here is the stone radius, regardless of item type
     msg_log.log_front(Msg::Sound(player_id, hit_pos, config.sound_radius_stone));
@@ -1056,9 +1059,9 @@ fn resolve_moved_message(entity_id: EntityId,
     level.entities.set_pos(entity_id, pos);
 
     if move_mode == MoveMode::Run {
-        level.entities.took_turn[&entity_id] = Some(Turn::Run);
+        level.entities.took_turn[&entity_id] |= Turn::Run.turn();
     } else {
-        level.entities.took_turn[&entity_id] = Some(Turn::Walk);
+        level.entities.took_turn[&entity_id] |= Turn::Walk.turn();
     }
 
     if move_type != MoveType::Blink {
@@ -1222,7 +1225,7 @@ fn resolve_ai_attack(entity_id: EntityId,
         ai_can_hit_target(level, entity_id, target_pos, &attack_reach, config);
 
     if level.entities.is_dead(target_id) {
-        level.entities.took_turn[&entity_id] = Some(Turn::Pass);
+        level.entities.took_turn[&entity_id] |= Turn::Pass.turn();
         msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(target_pos)));
     } else if let Some(_hit_pos) = can_hit_target {
         let mut can_attack = true;
@@ -1247,7 +1250,7 @@ fn resolve_ai_attack(entity_id: EntityId,
             // If we lose the target, end the turn and investigate their current position.
             // This allows the golem to 'see' a player move behind a wall and still investigate
             // them instead of losing track of their position.
-            level.entities.took_turn[&entity_id] = Some(Turn::Pass);
+            level.entities.took_turn[&entity_id] |= Turn::Pass.turn();
             let current_target_pos = level.entities.pos[&target_id];
             msg_log.log(Msg::StateChange(entity_id, Behavior::Investigating(current_target_pos)));
         }
@@ -1262,7 +1265,7 @@ fn resolve_ai_attack(entity_id: EntityId,
             msg_log.log(Msg::TryMove(entity_id, direction, 1, MoveMode::Walk));
         } else {
             // if we can't move anywhere, we just end our turn
-            level.entities.took_turn[&entity_id] = Some(Turn::Pass);
+            level.entities.took_turn[&entity_id] |= Turn::Pass.turn();
         }
     }
 }
@@ -1270,7 +1273,7 @@ fn resolve_ai_attack(entity_id: EntityId,
 fn resolve_yell(entity_id: EntityId, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
     let pos = level.entities.pos[&entity_id];
     msg_log.log_front(Msg::Sound(entity_id, pos, config.yell_radius));
-    level.entities.took_turn[&entity_id] = Some(Turn::Pass);
+    level.entities.took_turn[&entity_id] |= Turn::Pass.turn();
 }
 
 fn resolve_blink(entity_id: EntityId, level: &mut Level, rng: &mut Rand32, msg_log: &mut MsgLog) {
@@ -1282,14 +1285,14 @@ fn resolve_blink(entity_id: EntityId, level: &mut Level, rng: &mut Rand32, msg_l
         msg_log.log(Msg::FailedBlink(entity_id));
     }
 
-    level.entities.took_turn[&entity_id] = Some(Turn::Pass);
+    level.entities.took_turn[&entity_id] |= Turn::Pass.turn();
 }
 
 fn resolve_state_change(entity_id: EntityId, behavior: Behavior, level: &mut Level, msg_log: &mut MsgLog, config: &Config) {
     let original_behavior = level.entities.behavior[&entity_id];
 
     // If the entity hasn't completed a turn, the state change continues their turn.
-    if level.entities.took_turn[&entity_id].is_none() &&
+    if level.entities.took_turn[&entity_id] != 0 &&
        level.entities.behavior[&entity_id] != original_behavior &&
         !matches!(behavior, Behavior::Investigating(_)) {
        ai_take_turn(entity_id, level, config, msg_log);
@@ -1358,7 +1361,7 @@ fn resolve_add_class(class: EntityClass, game: &mut Game) {
 fn resolve_grass_wall(entity_id: EntityId, direction: Direction, game: &mut Game) {
     let entity_pos = game.level.entities.pos[&entity_id];
 
-    game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+    game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
 
     match direction {
         Direction::Left | Direction::Right | Direction::Up | Direction::Down => {
@@ -1413,7 +1416,7 @@ fn resolve_grass_throw(entity_id: EntityId, direction: Direction, game: &mut Gam
     //        ensure_grass(&mut game.level, grass_pos, &mut game.msg_log);
     //    }
     //}
-    game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+    game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
 }
 
 fn resolve_grass_cover(entity_id: EntityId, game: &mut Game) {
@@ -1422,14 +1425,14 @@ fn resolve_grass_cover(entity_id: EntityId, game: &mut Game) {
     let next_pos = facing.offset_pos(entity_pos, 1);
     game.level.map[next_pos] = Tile::tall_grass();
     ensure_tall_grass(&mut game.level, next_pos, &mut game.msg_log);
-    game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+    game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
 }
 
 fn resolve_illuminate(entity_id: EntityId, pos: Pos, amount: usize, game: &mut Game) {
     let light = make_light(&mut game.level.entities, &game.config, pos, &mut game.msg_log);
     game.level.entities.illuminate[&light] = amount;
 
-    game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+    game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
 }
 
 fn resolve_heal(entity_id: EntityId, amount: usize, game: &mut Game) {
@@ -1438,7 +1441,7 @@ fn resolve_heal(entity_id: EntityId, amount: usize, game: &mut Game) {
         std::cmp::min(game.level.entities.hp[&entity_id].max_hp,
                       game.level.entities.hp[&entity_id].hp + amount as i32);
 
-    game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+    game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
 
     let amount = game.level.entities.hp[&entity_id].hp - old_hp;
     if amount > 0 {
@@ -1456,7 +1459,7 @@ fn resolve_eat_herb(entity_id: EntityId, item_id: EntityId, game: &mut Game) {
     game.level.entities.remove_item(entity_id, item_id);
     game.msg_log.log(Msg::Remove(item_id));
 
-    game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+    game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
 }
 
 fn resolve_rubble_skill(entity_id: EntityId, rubble_pos: Pos, game: &mut Game) {
@@ -1473,7 +1476,7 @@ fn resolve_rubble_skill(entity_id: EntityId, rubble_pos: Pos, game: &mut Game) {
         }
     }
 
-    game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+    game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
 }
 
 fn resolve_stone_thrown(entity_id: EntityId, target_pos: Pos, game: &mut Game) {
@@ -1505,7 +1508,7 @@ fn resolve_stone_thrown(entity_id: EntityId, target_pos: Pos, game: &mut Game) {
 
         game.level.map[rubble_pos].surface = Surface::Floor;
 
-        game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+        game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
     }
 }
 
@@ -1515,7 +1518,7 @@ fn resolve_grass_blade(entity_id: EntityId, _action_mode: ActionMode, direction:
     let attack_pos = direction.offset_pos(pos, 1);
     game.msg_log.log(Msg::Hit(entity_id, attack_pos, Item::Dagger.weapon_type().unwrap(), AttackStyle::Stealth));
 
-    game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+    game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
 }
 
 fn resolve_swap(entity_id: EntityId, target_id: EntityId, game: &mut Game) {
@@ -1530,7 +1533,7 @@ fn resolve_swap(entity_id: EntityId, target_id: EntityId, game: &mut Game) {
     game.msg_log.log(Msg::SetFacing(entity_id, target_dir));
     game.msg_log.log(Msg::SetFacing(target_id, entity_dir));
 
-    game.level.entities.took_turn[&entity_id] = Some(Turn::Skill);
+    game.level.entities.took_turn[&entity_id] |= Turn::Skill.turn();
 }
 
 fn resolve_restart(game: &mut Game) {

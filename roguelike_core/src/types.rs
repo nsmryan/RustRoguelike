@@ -30,16 +30,19 @@ impl UseResult {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Turn {
-    Pass,
-    Walk,
-    Run,
-    Jump,
-    Attack,
-    Skill,
-    InteractTrap,
+    Pass = 0x01,
+    Walk = 0x02,
+    Run = 0x04,
+    Jump = 0x08,
+    Attack = 0x10,
+    Skill = 0x20,
+    InteractTrap = 0x40,
 }
 
 impl Turn {
+    pub fn turn(&self) -> u8 {
+        return *self as u8;
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
