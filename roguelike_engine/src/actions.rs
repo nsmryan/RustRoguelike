@@ -723,6 +723,12 @@ fn finalize_use_skill(skill: Skill, action_mode: ActionMode, level: &Level, sett
     }
 }
 
+fn use_item_throwable(item: Item) -> bool {
+    return item == Item::Stone || item == Item::Lantern || item == Item::SeedOfStone || item == Item::SeedCache || 
+           item == Item::Herb || item == Item::GlassEye || item == Item::SmokeBomb || item == Item::LookingGlass || 
+           item == Item::Thumper;
+}
+
 fn finalize_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
     let player_pos = level.entities.pos[&player_id];
@@ -738,15 +744,16 @@ fn finalize_use_item(item_class: ItemClass, level: &Level, settings: &mut Settin
 
         // determine action to take based on weapon type
         if item == Item::Hammer {
-            msg_log.log(Msg::HammerRaise(player_id, item_index, dir));
+            if level.entities.has_enough_stamina(player_id, 1) {
+                // Stamina is used on hammer strike
+                msg_log.log(Msg::HammerRaise(player_id, item_index, dir));
+            } else {
+                msg_log.log(Msg::NotEnoughStamina(player_id));
+            }
         } else if item == Item::SpikeTrap || item == Item::SoundTrap || item == Item::BlinkTrap || item == Item::FreezeTrap {
             let place_pos = dir.offset_pos(player_pos, 1);
             msg_log.log(Msg::PlaceTrap(player_id, place_pos, item_id));
-        } else if item == Item::Stone || item == Item::Lantern || 
-                  item == Item::SeedOfStone ||item == Item::SeedCache || 
-                  item == Item::Herb || item == Item::GlassEye ||
-                  item == Item::SmokeBomb || item == Item::LookingGlass ||
-                  item == Item::Thumper {
+        } else if use_item_throwable(item) {
             let throw_pos = dir.offset_pos(player_pos, PLAYER_THROW_DIST as i32);
             msg_log.log(Msg::ItemThrow(player_id, item_id, player_pos, throw_pos, false));
         } else if item == Item::Sling {
@@ -759,27 +766,31 @@ fn finalize_use_item(item_class: ItemClass, level: &Level, settings: &mut Settin
             // invalid. In this case we just suppress the action, and return to playing.
             // Otherwise, process the move below.
             if let Some(move_pos) = use_result.pos {
-                let player_pos = level.entities.pos[&player_id];
-                if move_pos != player_pos {
-                    let move_dir = Direction::from_positions(player_pos, move_pos).unwrap();
-                    let dist = distance(move_pos, player_pos) as usize;
-                    msg_log.log(Msg::TryMove(player_id, move_dir, dist, settings.move_mode));
-                }
+                if level.entities.has_enough_stamina(player_id, 1) {
+                    let player_pos = level.entities.pos[&player_id];
+                    if move_pos != player_pos {
+                        let move_dir = Direction::from_positions(player_pos, move_pos).unwrap();
+                        let dist = distance(move_pos, player_pos) as usize;
+                        msg_log.log(Msg::TryMove(player_id, move_dir, dist, settings.move_mode));
+                    }
 
-                let weapon_type = item.weapon_type().expect("This item does not have a weapon type!");
-                let mut attack_type = AttackStyle::Normal;
-                if item == Item::Spear && settings.move_mode == MoveMode::Run {
-                    attack_type = AttackStyle::Strong;
-                } else if item == Item::Dagger {
-                    attack_type = AttackStyle::Stealth;
-                }
+                    let weapon_type = item.weapon_type().expect("This item does not have a weapon type!");
+                    let mut attack_type = AttackStyle::Normal;
+                    if item == Item::Spear && settings.move_mode == MoveMode::Run {
+                        attack_type = AttackStyle::Strong;
+                    } else if item == Item::Dagger {
+                        attack_type = AttackStyle::Stealth;
+                    }
 
-                for hit_pos in use_result.hit_positions {
-                    msg_log.log(Msg::Hit(player_id, hit_pos, weapon_type, attack_type));
-                }
+                    for hit_pos in use_result.hit_positions {
+                        msg_log.log(Msg::Hit(player_id, hit_pos, weapon_type, attack_type));
+                    }
 
-                // Attacking uses stamina.
-                msg_log.log_front(Msg::UsedStamina(player_id, 1));
+                    // Attacking uses stamina.
+                    msg_log.log_front(Msg::UsedStamina(player_id, 1));
+                } else {
+                    msg_log.log(Msg::NotEnoughStamina(player_id));
+                }
             }
         }
     }

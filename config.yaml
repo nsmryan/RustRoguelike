@@ -179,7 +179,6 @@ fog_of_war: true
 # initial player health
 player_health: 3
 player_stamina: 5
-player_stamina_cooldown: 3
 # initial player energy
 player_energy: 3
 # alpha of explored but not visible tiles

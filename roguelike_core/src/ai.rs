@@ -165,7 +165,7 @@ pub fn ai_idle(monster_id: EntityId,
 
         if level.entities.attack.get(&monster_id).is_some() {
             msg_log.log(Msg::StateChange(monster_id, Behavior::Alert(player_pos)));
-            level.entities.took_turn[&monster_id] = true;
+            level.entities.took_turn[&monster_id] = Some(Turn::Pass);
         } else {
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(player_pos)));
         }
@@ -217,7 +217,7 @@ pub fn ai_investigate(target_pos: Pos,
             // if the monster cannot attack, just keep walking towards the target.
             ai_move_towards_target(player_pos, monster_id, level, msg_log);
 
-            level.entities.took_turn[&monster_id] = true;
+            level.entities.took_turn[&monster_id] = Some(Turn::Pass);
             msg_log.log(Msg::StateChange(monster_id, Behavior::Investigating(player_pos)));
         }
     } else { // The monster can't see the player.
@@ -225,7 +225,7 @@ pub fn ai_investigate(target_pos: Pos,
         if level.entities.name[&monster_id] == EntityName::Armil {
             let player_pos = level.entities.pos[&player_id];
             if distance(player_pos, monster_pos) == 1 {
-                level.entities.took_turn[&monster_id] = true;
+                level.entities.took_turn[&monster_id] = Some(Turn::Pass);
                 msg_log.log(Msg::StateChange(monster_id, Behavior::Armed(ARMIL_TURNS_ARMED)));
             } else {
                 ai_move_towards_target(player_pos, monster_id, level, msg_log);
@@ -270,7 +270,7 @@ pub fn ai_investigate(target_pos: Pos,
                 }
 
                 // monster reached their target position
-                level.entities.took_turn[&monster_id] = true;
+                level.entities.took_turn[&monster_id] = Some(Turn::Pass);
                 msg_log.log(Msg::StateChange(monster_id, Behavior::Idle));
             } else {
                 ai_move_towards_target(target_pos, monster_id, level, msg_log);

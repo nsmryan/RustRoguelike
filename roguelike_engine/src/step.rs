@@ -43,7 +43,7 @@ pub fn step_logic(game: &mut Game) -> bool {
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
     for id in game.level.entities.ids.iter() {
-        game.level.entities.took_turn[id] = false;
+        game.level.entities.took_turn[id] = None;
         game.level.entities.status[id].blinked = false;
 
         // Slowly thaw any frozen entities.
@@ -56,15 +56,27 @@ pub fn step_logic(game: &mut Game) -> bool {
 
     resolve_messages(game);
 
-    let won_level = level_exit_condition_met(&game.level);
+    let won_level = level_exit_condition_met(&game.level, game.settings.exit_condition);
 
     // resolve enemy action
     let monster = timer!("MONSTER");
-    if game.level.entities.took_turn[&player_id] &&
-       game.level.entities.status[&player_id].alive &&
-       !won_level {
-        step_ai(game);
-        run_thumpers(game);
+
+    if game.level.entities.status[&player_id].alive && !won_level {
+        if let Some(turn) = game.level.entities.took_turn[&player_id] {
+            // Handle player stamina change if they took a turn
+            if turn == Turn::Run || turn == Turn::Jump || turn == Turn::Attack {
+                if game.level.entities.stamina[&player_id] > 0 {
+                    game.msg_log.log(Msg::UsedStamina(player_id, 1));
+                }
+            } else {
+                if game.level.entities.stamina[&player_id] < MAX_STAMINA {
+                    game.msg_log.log(Msg::GainStamina(player_id, 1));
+                }
+            }
+
+            step_ai(game);
+            run_thumpers(game);
+        }
     }
     drop(monster);
 
@@ -85,7 +97,7 @@ pub fn step_logic(game: &mut Game) -> bool {
         }
     }
 
-    if game.level.entities.took_turn[&player_id] {
+    if game.level.entities.took_turn[&player_id].is_some() {
         game.settings.turn_count += 1;
 
         // check on whether the player has their hammer raised
@@ -95,16 +107,6 @@ pub fn step_logic(game: &mut Game) -> bool {
             } else {
                 game.level.entities.status[&player_id].hammer_raised = Some((item_id, dir, turns - 1));
             }
-        }
-
-        if game.level.entities.stamina[&player_id].cooldown == 0 {
-            game.level.entities.stamina[&player_id].cooldown = game.config.player_stamina_cooldown;
-
-            if game.level.entities.stamina[&player_id].amount < game.config.player_stamina {
-                game.msg_log.log(Msg::GainStamina(player_id, 1));
-            }
-        } else {
-            game.level.entities.stamina[&player_id].cooldown -= 1;
         }
     }
 
@@ -121,35 +123,40 @@ pub fn step_logic(game: &mut Game) -> bool {
         }
     }
 
-    return level_exit_condition_met(&game.level);
+    return level_exit_condition_met(&game.level, game.settings.exit_condition);
 }
 
 /// Check whether the exit condition for the game is met.
-fn level_exit_condition_met(level: &Level) -> bool {
+fn level_exit_condition_met(level: &Level, exit_condition: LevelExitCondition) -> bool {
     // loop over objects in inventory, and check whether any
     // are the key object.
     let player_id = level.find_by_name(EntityName::Player).unwrap();
     let player_pos = level.entities.pos[&player_id];
 
-    let mut exit_condition = false;
+    let mut exit_condition_met = false;
 
-    if (player_pos.x + 1) == level.map.width() {
-        exit_condition = true;
+    match exit_condition {
+        LevelExitCondition::RightEdge => {
+            if (player_pos.x + 1) == level.map.width() {
+                exit_condition_met = true;
+            }
+        }
+
+        LevelExitCondition::KeyAndGoal => {
+            // Have Key, On exit tile
+            if let Some(exit_id) = level.find_by_name(EntityName::Exit) {
+                let exit_pos = level.entities.pos[&exit_id];
+
+                let has_key = level.is_in_inventory(player_id, Item::Key).is_some();
+
+                let on_exit_tile = exit_pos == player_pos;
+
+                exit_condition_met = has_key && on_exit_tile;
+            }
+        }
     }
-    // Have Key, On exit tile
-    /*
-    if let Some(exit_id) = level.find_by_name(EntityName::Exit) {
-        let exit_pos = level.entities.pos[&exit_id];
 
-        let has_key = level.is_in_inventory(player_id, Item::Key).is_some();
-
-        let on_exit_tile = exit_pos == player_pos;
-
-        exit_condition = has_key && on_exit_tile;
-    }
-    */
-
-    return exit_condition;
+    return exit_condition_met;
 }
 
 #[test]
@@ -189,12 +196,12 @@ fn step_ai(game: &mut Game) {
     let ai_ids: Vec<EntityId> = game.level.entities.active_ais();
 
     for entity_id in ai_ids.iter() {
-        while !game.level.entities.took_turn[entity_id] {
+        while game.level.entities.took_turn[entity_id].is_none() {
             ai_take_turn(*entity_id, &mut game.level, &game.config, &mut game.msg_log);
 
             // If the AI has nothing to do, end its turn
             if game.msg_log.messages.len() == 0 {
-                game.level.entities.took_turn[entity_id] = true;
+                game.level.entities.took_turn[entity_id] = Some(Turn::Pass);
             } else {
                 resolve_messages(game);
             }

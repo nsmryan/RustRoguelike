@@ -31,7 +31,7 @@ pub struct Entities {
     pub trap: Comp<Trap>,
     pub armed: Comp<bool>,
     pub energy: Comp<u32>,
-    pub stamina: Comp<Stamina>,
+    pub stamina: Comp<u32>,
     pub count_down: Comp<usize>,
     pub move_mode: Comp<MoveMode>,
     pub direction: Comp<Direction>,
@@ -44,7 +44,7 @@ pub struct Entities {
     pub illuminate: Comp<usize>,
     pub gate_pos: Comp<Pos>,
     pub stance: Comp<Stance>,
-    pub took_turn: Comp<bool>,
+    pub took_turn: Comp<Option<Turn>>,
     pub durability: Comp<usize>,
     pub modifier: Comp<ItemModifier>,
     pub fov_block: Comp<FovBlock>,
@@ -151,7 +151,7 @@ impl Entities {
         self.messages.insert(id,  Vec::new());
         self.needs_removal.insert(id,  false);
         self.status.insert(id,  StatusEffect::default());
-        self.took_turn.insert(id,  false);
+        self.took_turn.insert(id,  None);
 
         return id;
     }
@@ -192,12 +192,12 @@ impl Entities {
         return ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
     }
 
-    pub fn has_enough_stamina(&mut self, entity_id: EntityId, amount: u32) -> bool {
+    pub fn has_enough_stamina(&self, entity_id: EntityId, amount: u32) -> bool {
         if self.status[&entity_id].test_mode || self.stamina.get(&entity_id).is_none() {
             return true;
         }
 
-        return self.stamina[&entity_id].amount >= amount;
+        return self.stamina[&entity_id] >= amount;
     }
 
     pub fn use_energy(&mut self, entity_id: EntityId) {

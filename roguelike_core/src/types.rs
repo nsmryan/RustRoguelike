@@ -29,6 +29,20 @@ impl UseResult {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum Turn {
+    Pass,
+    Walk,
+    Run,
+    Jump,
+    Attack,
+    Skill,
+    InteractTrap,
+}
+
+impl Turn {
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum FovBlock {
     Block,
     Transparent,
@@ -196,19 +210,6 @@ pub enum SkillMode {
     Direction,
     Cursor,
     Immediate,
-}
-
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
-pub struct Stamina {
-    pub amount: u32,
-    pub cooldown: u32,
-}
-
-impl Stamina {
-    pub fn new(amount: u32, cooldown: u32) -> Stamina {
-        return Stamina { amount, cooldown };
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]

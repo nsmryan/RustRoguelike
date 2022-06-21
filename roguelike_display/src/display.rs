@@ -894,7 +894,7 @@ impl Display {
                 self.state.pos[&trap] = Pos::new(-1, -1);
             }
 
-            Msg::PlaceTrap(entity_id, pos, trap_id) => {
+            Msg::PlaceTrap(_entity_id, pos, trap_id) => {
                 self.state.pos[&trap_id] = pos;
             }
 
