@@ -48,6 +48,10 @@ pub fn resolve_messages(game: &mut Game) {
 pub fn resolve_message(game: &mut Game, msg: Msg) {
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
     match msg {
+        Msg::NewLevel => {
+            resolve_new_level(game);
+        }
+
         Msg::Moved(entity_id, move_type, move_mode, pos) => {
            resolve_moved_message(entity_id, move_type, move_mode, pos, &mut game.level, &mut game.msg_log, &mut game.rng, &game.config);
         }
@@ -461,8 +465,8 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
 
         Msg::GainStamina(entity_id, amount) => {
             game.level.entities.stamina[&entity_id] += amount;
-            if game.level.entities.stamina[&entity_id] > MAX_STAMINA {
-                game.level.entities.stamina[&entity_id] = MAX_STAMINA;
+            if game.level.entities.stamina[&entity_id] > game.config.player_stamina_max {
+                game.level.entities.stamina[&entity_id] = game.config.player_stamina_max;
             }
         }
 
@@ -1541,19 +1545,6 @@ fn resolve_restart(game: &mut Game) {
 
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
-    if game.level.entities.hp[&player_id].hp != game.level.entities.hp[&player_id].max_hp {
-        let hp_diff = game.level.entities.hp[&player_id].max_hp - game.level.entities.hp[&player_id].hp;
-        game.level.entities.hp[&player_id].hp = 
-            game.level.entities.hp[&player_id].max_hp;
-        game.msg_log.log(Msg::Healed(player_id, hp_diff, game.level.entities.hp[&player_id].max_hp));
-    }
-
-    if game.config.player_energy > game.level.entities.energy[&player_id] {
-        let energy_diff = game.config.player_energy - game.level.entities.energy[&player_id];
-        game.level.entities.energy[&player_id] = game.config.player_energy;
-        game.msg_log.log(Msg::GainEnergy(player_id, energy_diff));
-    }
-
     game.level.entities.skills[&player_id].clear();
     game.level.entities.inventory[&player_id].clear();
     game.level.entities.class[&player_id] = EntityClass::General;
@@ -1691,6 +1682,26 @@ fn resolve_triggered(trigger: EntityId, entity_id: EntityId, level: &mut Level, 
         }
 
         msg_log.log(Msg::GateTriggered(trigger, entity_id));
+    }
+}
+
+fn resolve_new_level(game: &mut Game) {
+    let player_id = game.level.find_by_name(EntityName::Player).unwrap();
+
+    /* Restore Player Health/Energy/Stamina to base levels */
+    if game.level.entities.hp[&player_id].hp < (game.config.player_health_max / 2) {
+        let health_deficit = (game.config.player_health_max / 2) - game.level.entities.hp[&player_id].hp;
+        game.msg_log.log(Msg::Healed(player_id, health_deficit, game.config.player_health_max));
+    }
+
+    if game.level.entities.energy[&player_id] < (game.config.player_energy_max / 2) {
+        let energy_deficit = (game.config.player_energy_max / 2) - game.level.entities.energy[&player_id];
+        game.msg_log.log(Msg::GainEnergy(player_id, energy_deficit));
+    }
+
+    if game.level.entities.stamina[&player_id] < game.config.player_stamina_max {
+        let stamina_deficit = game.config.player_stamina_max - game.level.entities.stamina[&player_id];
+        game.msg_log.log(Msg::GainStamina(player_id, stamina_deficit));
     }
 }
 

@@ -113,7 +113,7 @@ impl Game {
             let finished_level = step_logic(self);
 
             if finished_level {
-                // NOTE this is not a very general way to handle ending a level.
+                // Remove key from inventory if present..
                 let player_id = self.level.find_by_name(EntityName::Player).unwrap();
                 if let Some(key_id) = self.level.is_in_inventory(player_id, Item::Key) {
                     self.level.entities.remove_item(player_id, key_id);

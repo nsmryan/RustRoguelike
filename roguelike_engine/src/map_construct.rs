@@ -153,6 +153,7 @@ pub fn map_construct(map_load_config: &MapLoadConfig, game: &mut Game) {
     game.msg_log.log(Msg::SetPos(player_id, player_position));
     game.level.entities.set_pos(player_id, player_position);
 
+    /* Create a file measuring the emptyness of the generated level */
     if game.config.write_map_distribution {
         write_map_distribution(game);
     }

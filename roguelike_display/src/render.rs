@@ -60,7 +60,7 @@ fn render_panels(panels: &mut Panels,
     {
         let pip_panel = &mut panels.get_mut(&PanelName::Pip).unwrap();
         let _pip = timer!("PIP");
-        render_pip(pip_panel, display_state);
+        render_pip(pip_panel, display_state, config);
     }
 
     let panel = &mut panels.get_mut(&PanelName::Map).unwrap();
@@ -912,13 +912,13 @@ fn render_map_middle(panel: &mut Panel, map: &Map, config: &Config, sprites: &Ve
     }
 }
 
-fn render_pip(panel: &mut Panel, display_state: &DisplayState) {
+fn render_pip(panel: &mut Panel, display_state: &DisplayState, config: &Config) {
     let player_id = display_state.player_id();
 
     if let Some(hp) = display_state.hp.get(&player_id) {
         let health_color = Color::new(0x96, 0x54, 0x56, 255);
 
-        let bar_width = panel.cells.0 as f32 / 8.0;
+        let bar_width = panel.cells.0 as f32 / config.player_health_max as f32;
 
         let current_hp = if *hp > 0 {
             *hp
@@ -937,7 +937,7 @@ fn render_pip(panel: &mut Panel, display_state: &DisplayState) {
     if let Some(energy) = display_state.energy.get(&player_id) {
         let energy_color = Color::new(176, 132, 87, 255);
             
-        let bar_width = panel.cells.0 as f32 / 8.0;
+        let bar_width = panel.cells.0 as f32 / config.player_energy_max as f32;
 
         for energy_index in 0..*energy {
             let x_offset = 0.3;
@@ -952,7 +952,7 @@ fn render_pip(panel: &mut Panel, display_state: &DisplayState) {
     if let Some(stamina) = display_state.stamina.get(&player_id) {
         let stamina_color = Color::new(130, 140, 102, 255);
             
-        let bar_width = panel.cells.0 as f32 / 8.0;
+        let bar_width = panel.cells.0 as f32 / config.player_stamina_max as f32;
 
         for stamina_index in 0..*stamina {
             let x_offset = 0.3;

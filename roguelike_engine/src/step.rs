@@ -70,7 +70,7 @@ pub fn step_logic(game: &mut Game) -> bool {
                     game.msg_log.log(Msg::UsedStamina(player_id, 1));
                 }
             } else {
-                if game.level.entities.stamina[&player_id] < MAX_STAMINA {
+                if game.level.entities.stamina[&player_id] < game.config.player_stamina_max {
                     game.msg_log.log(Msg::GainStamina(player_id, 1));
                 }
             }
