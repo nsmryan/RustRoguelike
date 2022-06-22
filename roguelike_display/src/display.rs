@@ -285,7 +285,11 @@ impl Display {
                 let sprite = self.static_sprite("rustrogueliketiles", ENTITY_SPIKE_TRAP as char);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Armil {
-                return Some(self.loop_sprite("armil_idle", config.idle_speed));
+                if matches!(self.state.behavior.get(&entity_id), Some(Behavior::Armed(_))) {
+                    return Some(self.loop_sprite("armil_readytoexplode", config.idle_speed));
+                } else {
+                    return Some(self.loop_sprite("armil_idle", config.idle_speed));
+                }
             } else if name == EntityName::Lantern {
                 return Some(self.loop_sprite("Lantern_Idle", config.fire_speed));
             } else if name == EntityName::Smoke {
@@ -423,6 +427,7 @@ impl Display {
                 } else {
                     self.state.behavior[&entity_id] = behavior;
                 }
+                self.play_idle_animation(entity_id, config);
             }
 
             Msg::SoundHitTile(cause_id, source_pos, radius, hit_pos) => {
