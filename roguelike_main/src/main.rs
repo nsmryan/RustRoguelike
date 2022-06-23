@@ -432,7 +432,7 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
     }
 
     for msg in game.msg_log.info_messages.iter() {
-        display.process_info_message(*msg, &game.config);
+        display.process_info_message(*msg);
     }
 
     let map_str = game.level.map.compact_chrs();

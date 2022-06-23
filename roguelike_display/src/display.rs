@@ -382,7 +382,7 @@ impl Display {
         self.state.msg_lines.clear();
     }
 
-    pub fn process_info_message(&mut self, msg: InfoMsg, config: &Config) {
+    pub fn process_info_message(&mut self, msg: InfoMsg) {
         match msg {
             InfoMsg::TileFov(pos, fov_result) => {
                 self.state.fov.insert(pos, fov_result);
