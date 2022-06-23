@@ -288,17 +288,27 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
                     recording.action(&game, &display.state, input_action);
                 }
 
+                // Output messages
                 log.console_output_only = !game.config.minimal_output;
                 for msg_index in 0..game.msg_log.turn_messages.len() {
                     let msg = game.msg_log.turn_messages[msg_index];
+
+                    // If the message has a console line, print it for the player.
                     let msg_line = &msg.msg_line(&game.level);
                     if msg_line.len() > 0 {
                         log.log_console(msg_line);
                     }
 
+                    // If not minimal output, print all messages
                     if !game.config.minimal_output {
                         log.log_msg(&format!("{}", msg));
                     }
+                }
+
+                // Output informational messages (FoV, inventory, etc)
+                for msg_index in 0..game.msg_log.info_messages.len() {
+                    let msg = game.msg_log.info_messages[msg_index];
+                    log.log_info(&format!("{}", msg));
                 }
 
                 if game.settings.state == GameState::Win {
@@ -415,6 +425,10 @@ fn update_display(game: &mut Game, display: &mut Display, dt: f32) -> Result<(),
     for msg in game.msg_log.turn_messages.iter() {
         display.process_message(*msg, &game.level.map, &game.config);
         display.console_message(msg.msg_line(&game.level), &game.config);
+    }
+
+    for msg in game.msg_log.info_messages.iter() {
+        display.process_info_message(*msg, &game.config);
     }
 
     let map_str = game.level.map.compact_chrs();

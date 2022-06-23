@@ -8,7 +8,7 @@ use roguelike_map::*;
 
 use roguelike_core::movement::{Reach, MoveMode};
 use roguelike_core::types::*;
-use roguelike_core::messaging::{Msg, MsgLog};
+use roguelike_core::messaging::{Msg, InfoMsg, MsgLog};
 use roguelike_core::constants::*;
 use roguelike_core::config::Config;
 use roguelike_core::level::*;
@@ -389,7 +389,7 @@ pub fn handle_input_use(input_action: InputAction,
                     msg_log.log(Msg::DropItem(player_id, item_index as u64));
 
                     settings.use_dir = None;
-                    msg_log.log(Msg::UseDirClear);
+                    msg_log.log_info(InfoMsg::UseDirClear);
 
                     change_state(settings, GameState::Playing, msg_log);
                 }
@@ -420,7 +420,7 @@ pub fn handle_input_use(input_action: InputAction,
 
         (InputAction::AbortUse, true) => {
             settings.use_dir = None;
-            msg_log.log(Msg::UseDirClear);
+            msg_log.log_info(InfoMsg::UseDirClear);
 
             change_state(settings, GameState::Playing, msg_log);
         }
@@ -659,17 +659,17 @@ fn ensure_leave_cursor(settings: &mut Settings, msg_log: &mut MsgLog) {
 }
 
 fn log_use_result_messages(use_result: UseResult, dir: Direction, settings: &mut Settings, msg_log: &mut MsgLog) {
-    msg_log.log(Msg::UseDirClear);
+    msg_log.log_info(InfoMsg::UseDirClear);
 
     if let Some(use_pos) = use_result.pos {
-        msg_log.log(Msg::UseDir(dir));
-        msg_log.log(Msg::UsePos(use_pos));
+        msg_log.log_info(InfoMsg::UseDir(dir));
+        msg_log.log_info(InfoMsg::UsePos(use_pos));
         settings.use_dir = Some(dir);
     }
 
-    msg_log.log(Msg::UseHitPosClear);
+    msg_log.log_info(InfoMsg::UseHitPosClear);
     for pos in use_result.hit_positions.iter() {
-        msg_log.log(Msg::UseHitPos(*pos));
+        msg_log.log_info(InfoMsg::UseHitPos(*pos));
     }
 }
 
@@ -792,11 +792,11 @@ fn initialize_use_mode(use_action: UseAction, settings: &mut Settings, msg_log: 
     ensure_leave_cursor(settings, msg_log);
 
     settings.use_action = use_action;
-    msg_log.log(Msg::UseAction(settings.use_action));
+    msg_log.log_info(InfoMsg::UseAction(settings.use_action));
 
     settings.use_dir = None;
-    msg_log.log(Msg::UseDirClear);
-    msg_log.log(Msg::UseHitPosClear);
+    msg_log.log_info(InfoMsg::UseDirClear);
+    msg_log.log_info(InfoMsg::UseHitPosClear);
 }
 
 fn start_use_talent(index: usize, level: &Level, _settings: &mut Settings, msg_log: &mut MsgLog) {
@@ -843,13 +843,13 @@ fn start_use_skill(index: usize, action_mode: ActionMode, level: &Level, setting
                         level.calculate_use_skill(player_id, skill, *dir, settings.move_mode);
 
                     if let Some(hit_pos) = use_result.pos {
-                        msg_log.log(Msg::UseHitPos(hit_pos));
-                        msg_log.log(Msg::UseOption(hit_pos, *dir));
+                        msg_log.log_info(InfoMsg::UseHitPos(hit_pos));
+                        msg_log.log_info(InfoMsg::UseOption(hit_pos, *dir));
                     }
 
                     // TODO this will highlight in red all tiles hittable from any chose of direction.
                     for hit_pos in use_result.hit_positions.iter() {
-                        msg_log.log(Msg::UseHitPos(*hit_pos));
+                        msg_log.log_info(InfoMsg::UseHitPos(*hit_pos));
                     }
                 }
 
@@ -898,11 +898,11 @@ fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings,
                                                          *dir,
                                                          settings.move_mode);
                 if let Some(hit_pos) = use_result.pos {
-                    msg_log.log(Msg::UseOption(hit_pos, *dir));
+                    msg_log.log_info(InfoMsg::UseOption(hit_pos, *dir));
                 }
 
                 for hit_pos in use_result.hit_positions.iter() {
-                    msg_log.log(Msg::UseHitPos(*hit_pos));
+                    msg_log.log_info(InfoMsg::UseHitPos(*hit_pos));
                 }
             }
 
@@ -1003,9 +1003,9 @@ pub fn handle_skill(skill: Skill,
         Skill::GrassWall => {
             // TODO should this stay here, or go to StartUseSkill?
             //settings.use_action = UseAction::Skill(skill, action_mode);
-            //msg_log.log(Msg::UseAction(settings.use_action));
+            //msg_log.log_info(InfoMsg::UseAction(settings.use_action));
             //settings.use_dir = None;
-            //msg_log.log(Msg::UseDirClear);
+            //msg_log.log_info(InfoMsg::UseDirClear);
             //change_state(settings, GameState::Use, msg_log);
             // TODO remove when GrassWall is fully implemented with use-mode.
             // Unless skill use is left as-is in which case remove the code above.

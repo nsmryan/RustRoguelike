@@ -115,18 +115,6 @@ pub enum Msg {
     Restart,
     Forget(EntityId),
     Dodged(EntityId),
-    TileFov(Pos, FovResult),
-    EntityInFov(EntityId, FovResult),
-    UsePos(Pos),
-    UseDir(Direction),
-    UseDirClear,
-    UseHitPos(Pos),
-    UseHitPosClear,
-    UseOption(Pos, Direction),
-    EntityAtCursor(EntityId),
-    EntityMovement(EntityId, Pos),
-    EntityAttack(EntityId, Pos),
-    EntityFov(EntityId, Pos),
     Stance(EntityId, Stance),
     GainEnergy(EntityId, u32),
     UsedEnergy(EntityId),
@@ -138,20 +126,15 @@ pub enum Msg {
     SetPos(EntityId, Pos),
     GameState(GameState),
     CursorMove(Pos),
-    InventoryItem(Item, ItemClass),
     AddSkill(Skill),
     AddTalent(Talent),
     GatePos(EntityId, Pos),
     Frozen(EntityId, bool),
     Thaw(EntityId, usize),
-    PlayerGhost(Pos),
     Overlay(bool),
     DebugEnabled(bool),
     NextMoveMode(MoveMode),
-    UseAction(UseAction),
     CursorAction(UseAction),
-    PlayerAction,
-    Impression(Pos),
     TestMode(bool),
 }
 
@@ -278,18 +261,6 @@ impl fmt::Display for Msg {
             Msg::Restart => write!(f, "restart"),
             Msg::Forget(entity_id) => write!(f, "forget {}", entity_id),
             Msg::Dodged(entity_id) => write!(f, "dodged {}", entity_id),
-            Msg::TileFov(pos, fov_result) => write!(f, "fov_result {} {} {}", pos.x, pos.y, fov_result),
-            Msg::EntityInFov(entity_id, in_fov) => write!(f, "entity_in_fov {} {}", entity_id, in_fov),
-            Msg::UsePos(pos) => write!(f, "use_pos {} {}", pos.x, pos.y),
-            Msg::UseDir(dir) => write!(f, "use_dir {}", dir),
-            Msg::UseDirClear => write!(f, "use_dir_clear"),
-            Msg::UseHitPos(pos) => write!(f, "use_hit_pos {} {}", pos.x, pos.y),
-            Msg::UseHitPosClear => write!(f, "use_hit_clear"),
-            Msg::UseOption(pos, dir) => write!(f, "use_option {} {} {}", pos.x, pos.y, dir),
-            Msg::EntityAtCursor(entity_id) => write!(f, "entity_at_cursor {}", entity_id),
-            Msg::EntityMovement(entity_id, pos) => write!(f, "entity_movement {} {} {}", entity_id, pos.x, pos.y),
-            Msg::EntityAttack(entity_id, pos) => write!(f, "entity_attack {} {} {}", entity_id, pos.x, pos.y),
-            Msg::EntityFov(entity_id, pos) => write!(f, "entity_fov {} {} {}", entity_id, pos.x, pos.y),
             Msg::Stance(entity_id, stance) => write!(f, "stance {} {}", entity_id, stance),
             Msg::GainEnergy(entity_id, amount) => write!(f, "gain_energy {} {}", entity_id, amount),
             Msg::UsedEnergy(entity_id) => write!(f, "used_energy {}", entity_id),
@@ -301,20 +272,15 @@ impl fmt::Display for Msg {
             Msg::SetPos(entity_id, pos) => write!(f, "set_pos {} {} {}", entity_id, pos.x, pos.y),
             Msg::GameState(state) => write!(f, "game_state {}", state),
             Msg::CursorMove(pos) => write!(f, "cursor_move {} {}", pos.x, pos.y),
-            Msg::InventoryItem(item, item_class) => write!(f, "inventory_item {} {}", item, item_class),
             Msg::AddSkill(skill) => write!(f, "add_skill {}", skill),
             Msg::AddTalent(talent) => write!(f, "add_talent {}", talent),
             Msg::GatePos(entity_id, pos) => write!(f, "gate_pos {} {} {}", entity_id, pos.x, pos.y),
             Msg::Frozen(entity_id, state) => write!(f, "frozen {} {}", entity_id, state),
             Msg::Thaw(entity_id, amount) => write!(f, "thaw {} {}", entity_id, amount),
-            Msg::PlayerGhost(pos) => write!(f, "player_ghost {} {}", pos.x, pos.y),
             Msg::Overlay(state) => write!(f, "overlay {}", state),
             Msg::DebugEnabled(state) => write!(f, "debug_enabled {}", state),
             Msg::NextMoveMode(move_mode) => write!(f, "next_move_mode {}", move_mode),
-            Msg::UseAction(use_action) => write!(f, "use_action {}", use_action),
             Msg::CursorAction(use_action) => write!(f, "cursor_action {}", use_action),
-            Msg::PlayerAction => write!(f, "player_action"),
-            Msg::Impression(pos) => write!(f, "impression {} {}", pos.x, pos.y),
             Msg::TestMode(state) => write!(f, "test_mode {}", state),
         }
     }
@@ -647,6 +613,51 @@ impl Msg {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Debug, Deserialize, Serialize)]
+pub enum InfoMsg {
+    EntityInFov(EntityId, FovResult),
+    EntityAtCursor(EntityId),
+    EntityMovement(EntityId, Pos),
+    EntityAttack(EntityId, Pos),
+    EntityFov(EntityId, Pos),
+    UsePos(Pos),
+    UseDir(Direction),
+    UseDirClear,
+    UseHitPos(Pos),
+    UseHitPosClear,
+    UseOption(Pos, Direction),
+    TileFov(Pos, FovResult),
+    Impression(Pos),
+    InventoryItem(Item, ItemClass),
+    PlayerGhost(Pos),
+    PlayerAction,
+    UseAction(UseAction),
+}
+
+impl fmt::Display for InfoMsg {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            InfoMsg::EntityInFov(entity_id, in_fov) => write!(f, "entity_in_fov {} {}", entity_id, in_fov),
+            InfoMsg::EntityAtCursor(entity_id) => write!(f, "entity_at_cursor {}", entity_id),
+            InfoMsg::EntityMovement(entity_id, pos) => write!(f, "entity_movement {} {} {}", entity_id, pos.x, pos.y),
+            InfoMsg::EntityAttack(entity_id, pos) => write!(f, "entity_attack {} {} {}", entity_id, pos.x, pos.y),
+            InfoMsg::EntityFov(entity_id, pos) => write!(f, "entity_fov {} {} {}", entity_id, pos.x, pos.y),
+            InfoMsg::UsePos(pos) => write!(f, "use_pos {} {}", pos.x, pos.y),
+            InfoMsg::UseDir(dir) => write!(f, "use_dir {}", dir),
+            InfoMsg::UseDirClear => write!(f, "use_dir_clear"),
+            InfoMsg::UseHitPos(pos) => write!(f, "use_hit_pos {} {}", pos.x, pos.y),
+            InfoMsg::UseHitPosClear => write!(f, "use_hit_clear"),
+            InfoMsg::UseOption(pos, dir) => write!(f, "use_option {} {} {}", pos.x, pos.y, dir),
+            InfoMsg::TileFov(pos, fov_result) => write!(f, "fov_result {} {} {}", pos.x, pos.y, fov_result),
+            InfoMsg::Impression(pos) => write!(f, "impression {} {}", pos.x, pos.y),
+            InfoMsg::InventoryItem(item, item_class) => write!(f, "inventory_item {} {}", item, item_class),
+            InfoMsg::PlayerGhost(pos) => write!(f, "player_ghost {} {}", pos.x, pos.y),
+            InfoMsg::PlayerAction => write!(f, "player_action"),
+            InfoMsg::UseAction(use_action) => write!(f, "use_action {}", use_action),
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Hash, Debug, Serialize, Deserialize)]
 pub enum MsgLogDir {
     Front,
@@ -658,6 +669,7 @@ pub struct MsgLog {
     pub messages: VecDeque<Msg>,
     pub post_messages: VecDeque<Msg>,
     pub turn_messages: VecDeque<Msg>,
+    pub info_messages: VecDeque<InfoMsg>,
 }
 
 impl MsgLog {
@@ -666,6 +678,7 @@ impl MsgLog {
             messages: VecDeque::new(),
             turn_messages: VecDeque::new(),
             post_messages: VecDeque::new(),
+            info_messages: VecDeque::new(),
         };
     }
 
@@ -677,6 +690,10 @@ impl MsgLog {
     pub fn log(&mut self, msg: Msg) {
         self.messages.push_back(msg);
         self.turn_messages.push_back(msg);
+    }
+
+    pub fn log_info(&mut self, msg: InfoMsg) {
+        self.info_messages.push_back(msg);
     }
 
     pub fn post_log(&mut self, msg: Msg) {
@@ -698,6 +715,8 @@ impl MsgLog {
     pub fn clear(&mut self) {
         self.messages.clear();
         self.turn_messages.clear();
+        self.post_messages.clear();
+        self.info_messages.clear();
     }
 }
 

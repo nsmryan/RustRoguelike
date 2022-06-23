@@ -382,16 +382,95 @@ impl Display {
         self.state.msg_lines.clear();
     }
 
+    pub fn process_info_message(&mut self, msg: InfoMsg, config: &Config) {
+        match msg {
+            InfoMsg::TileFov(pos, fov_result) => {
+                self.state.fov.insert(pos, fov_result);
+            }
+
+            InfoMsg::EntityInFov(entity_id, in_fov) => {
+                self.state.entities_in_fov.insert(entity_id, in_fov);
+            }
+
+            InfoMsg::UsePos(pos) => {
+                self.state.use_pos = Some(pos);
+            }
+
+            InfoMsg::UseDir(dir) => {
+                self.state.use_dir = Some(dir);
+            }
+
+            InfoMsg::UseOption(pos, dir) => {
+                self.state.use_dirs.insert((pos, dir));
+            }
+
+            InfoMsg::UseDirClear => {
+                self.state.use_dir = None;
+            }
+
+            InfoMsg::UseHitPosClear => {
+                self.state.hit_positions.clear();
+            }
+
+            InfoMsg::UseHitPos(pos) => {
+                self.state.hit_positions.insert(pos);
+            }
+
+            InfoMsg::EntityAtCursor(entity_id) => {
+                self.state.entities_at_cursor.push(entity_id);
+            }
+
+            InfoMsg::EntityMovement(entity_id, pos) => {
+                if self.state.entity_movements.get(&entity_id).is_none() {
+                    self.state.entity_movements.insert(entity_id, Vec::new());
+                }
+                self.state.entity_movements.get_mut(&entity_id).unwrap().push(pos);
+            }
+
+            InfoMsg::EntityAttack(entity_id, pos) => {
+                if self.state.entity_attacks.get(&entity_id).is_none() {
+                    self.state.entity_attacks.insert(entity_id, Vec::new());
+                }
+                self.state.entity_attacks.get_mut(&entity_id).unwrap().push(pos);
+            }
+
+            InfoMsg::EntityFov(entity_id, pos) => {
+                if self.state.entity_fov.get(&entity_id).is_none() {
+                    self.state.entity_fov.insert(entity_id, Vec::new());
+                }
+                self.state.entity_fov.get_mut(&entity_id).unwrap().push(pos);
+            }
+
+            InfoMsg::InventoryItem(item, item_class) => {
+                self.state.inventory.push((item, item_class));
+            }
+
+            InfoMsg::PlayerGhost(player_ghost) => {
+                self.state.player_ghost = Some(player_ghost);
+            }
+
+            InfoMsg::Impression(pos) => {
+                let tiles = lookup_spritekey(&self.sprites, "rustrogueliketiles");
+                let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
+                self.state.impressions.push(Impression::new(impression_sprite, pos));
+            }
+
+            InfoMsg::PlayerAction => {
+                // inventory is re-emitted after every action, so clear it first
+                self.state.inventory.clear();
+            }
+
+            InfoMsg::UseAction(use_action) => {
+                self.state.use_action = use_action;
+            }
+        }
+    }
+
     pub fn process_message(&mut self, msg: Msg, map: &Map, config: &Config) {
         match msg {
             Msg::StartTurn => {
                 self.clear_turn_state();
                 self.state.turn_count += 1;
-            }
-
-            Msg::PlayerAction => {
-                // inventory is re-emitted after every action, so clear it first
-                self.state.inventory.clear();
             }
 
             Msg::GameState(new_state) => {
@@ -469,12 +548,6 @@ impl Display {
                 self.state.turn_count = 0;
                 self.clear_level_state();
                 self.clear_console_messages();
-            }
-
-            Msg::Impression(pos) => {
-                let tiles = lookup_spritekey(&self.sprites, "rustrogueliketiles");
-                let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
-                self.state.impressions.push(Impression::new(impression_sprite, pos));
             }
 
             Msg::ItemLanded(item_id, start, end) => {
@@ -785,67 +858,6 @@ impl Display {
                 self.state.pos[&entity_id] = pos;
             }
 
-            Msg::TileFov(pos, fov_result) => {
-                self.state.fov.insert(pos, fov_result);
-            }
-
-            Msg::EntityInFov(entity_id, in_fov) => {
-                self.state.entities_in_fov.insert(entity_id, in_fov);
-            }
-
-            Msg::UsePos(pos) => {
-                self.state.use_pos = Some(pos);
-            }
-
-            Msg::UseDir(dir) => {
-                self.state.use_dir = Some(dir);
-            }
-
-            Msg::UseOption(pos, dir) => {
-                self.state.use_dirs.insert((pos, dir));
-            }
-
-            Msg::UseDirClear => {
-                self.state.use_dir = None;
-            }
-
-            Msg::UseHitPosClear => {
-                self.state.hit_positions.clear();
-            }
-
-            Msg::UseHitPos(pos) => {
-                self.state.hit_positions.insert(pos);
-            }
-
-            Msg::EntityAtCursor(entity_id) => {
-                self.state.entities_at_cursor.push(entity_id);
-            }
-
-            Msg::EntityMovement(entity_id, pos) => {
-                if self.state.entity_movements.get(&entity_id).is_none() {
-                    self.state.entity_movements.insert(entity_id, Vec::new());
-                }
-                self.state.entity_movements.get_mut(&entity_id).unwrap().push(pos);
-            }
-
-            Msg::EntityAttack(entity_id, pos) => {
-                if self.state.entity_attacks.get(&entity_id).is_none() {
-                    self.state.entity_attacks.insert(entity_id, Vec::new());
-                }
-                self.state.entity_attacks.get_mut(&entity_id).unwrap().push(pos);
-            }
-
-            Msg::EntityFov(entity_id, pos) => {
-                if self.state.entity_fov.get(&entity_id).is_none() {
-                    self.state.entity_fov.insert(entity_id, Vec::new());
-                }
-                self.state.entity_fov.get_mut(&entity_id).unwrap().push(pos);
-            }
-
-            Msg::InventoryItem(item, item_class) => {
-                self.state.inventory.push((item, item_class));
-            }
-
             Msg::AddClass(_class) => {
                 self.state.skills.clear();
             }
@@ -870,10 +882,6 @@ impl Display {
                 self.state.frozen[&entity_id] -= num_turns;
             }
 
-            Msg::PlayerGhost(player_ghost) => {
-                self.state.player_ghost = Some(player_ghost);
-            }
-
             Msg::NextMoveMode(move_mode) => {
                 self.state.move_mode = move_mode;
             }
@@ -884,10 +892,6 @@ impl Display {
 
             Msg::DebugEnabled(state) => {
                 self.state.debug_enabled = state;
-            }
-
-            Msg::UseAction(use_action) => {
-                self.state.use_action = use_action;
             }
 
             Msg::CursorAction(use_action) => {

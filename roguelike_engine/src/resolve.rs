@@ -10,7 +10,7 @@ use roguelike_map::*;
 
 use roguelike_core::types::*;
 use roguelike_core::ai::{Behavior, ai_move_to_attack_pos, ai_can_hit_target, ai_take_turn};
-use roguelike_core::messaging::{MsgLog, Msg};
+use roguelike_core::messaging::{MsgLog, InfoMsg, Msg};
 use roguelike_core::constants::*;
 use roguelike_core::movement::{MoveMode, MoveType, Attack, Movement};
 use roguelike_core::movement;
@@ -1017,7 +1017,7 @@ fn resolve_throw_item(player_id: EntityId,
                 // we don't need to make one here.
                 if level.entities.typ[&eyed_id] == EntityType::Enemy &&
                    level.is_in_fov(player_id, eyed_id) == FovResult::Outside {
-                    msg_log.log(Msg::Impression(pos));
+                    msg_log.log_info(InfoMsg::Impression(pos));
                 }
             }
         }

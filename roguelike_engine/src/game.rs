@@ -10,7 +10,7 @@ use roguelike_map::*;
 use roguelike_core::utils::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
-use roguelike_core::messaging::MsgLog;
+use roguelike_core::messaging::{MsgLog, InfoMsg};
 use roguelike_core::movement::{MoveMode, Reach};
 use roguelike_core::entities::*;
 use roguelike_core::messaging::*;
@@ -191,7 +191,7 @@ impl Game {
                 // only send if inside or on edge- outside is most common, so it is assumed
                 // if no message is sent.
                 if fov_result != FovResult::Outside {
-                    self.msg_log.log(Msg::TileFov(pos, fov_result));
+                    self.msg_log.log_info(InfoMsg::TileFov(pos, fov_result));
                 }
 
                 // TODO should this be != Outside, to include Edge?
@@ -216,7 +216,7 @@ impl Game {
 
         // outside is the most common fov result, so it is assumed if no entry is sent.
         if in_fov != FovResult::Outside {
-            self.msg_log.log(Msg::EntityInFov(entity_id, in_fov));
+            self.msg_log.log_info(InfoMsg::EntityInFov(entity_id, in_fov));
         }
 
         // Only report movement and attack information for the player and golems.
@@ -242,7 +242,7 @@ impl Game {
                     }
 
                     if self.level.pos_in_fov(player_id, move_pos) {
-                        self.msg_log.log(Msg::EntityMovement(entity_id, move_pos));
+                        self.msg_log.log_info(InfoMsg::EntityMovement(entity_id, move_pos));
                     }
                 }
             }
@@ -258,7 +258,7 @@ impl Game {
 
                     if self.level.pos_in_fov(entity_id, attack_pos) &&
                        (self.level.clear_path(entity_pos, attack_pos, false) || attack_pos == player_pos) {
-                        self.msg_log.log(Msg::EntityAttack(entity_id, attack_pos));
+                        self.msg_log.log_info(InfoMsg::EntityAttack(entity_id, attack_pos));
                     }
                 }
             }
@@ -268,7 +268,7 @@ impl Game {
         if in_fov == FovResult::Inside && entity_id != player_id {
             for pos in player_fov.iter() {
                 if self.level.pos_in_fov(entity_id, *pos) {
-                    self.msg_log.log(Msg::EntityFov(entity_id, *pos));
+                    self.msg_log.log_info(InfoMsg::EntityFov(entity_id, *pos));
                 }
             }
         }
@@ -289,7 +289,7 @@ impl Game {
     }
 
     fn emit_any_action_state(self: &mut Game) {
-        self.msg_log.log(Msg::PlayerAction);
+        self.msg_log.log_info(InfoMsg::PlayerAction);
 
         if self.settings.state == GameState::Use {
             self.emit_use_mode_messages();
@@ -316,7 +316,7 @@ impl Game {
             }
 
             if self.level.pos_in_fov(player_id, move_pos) {
-                self.msg_log.log(Msg::EntityMovement(player_id, move_pos));
+                self.msg_log.log_info(InfoMsg::EntityMovement(player_id, move_pos));
             }
         }
     }
@@ -327,7 +327,7 @@ impl Game {
         for item_id in self.level.entities.inventory[&player_id].iter() {
             let item = self.level.entities.item[&item_id];
             let item_class = item.class();
-            self.msg_log.log(Msg::InventoryItem(item, item_class));
+            self.msg_log.log_info(InfoMsg::InventoryItem(item, item_class));
         }
     }
 
@@ -335,23 +335,23 @@ impl Game {
         if let Some(cursor_pos) = self.settings.cursor {
             let entities = self.level.get_entities_at_pos(cursor_pos);
             for entity in entities {
-                self.msg_log.log(Msg::EntityAtCursor(entity));
+                self.msg_log.log_info(InfoMsg::EntityAtCursor(entity));
             }
         }
     }
 
     fn emit_use_result(self: &mut Game, use_result: UseResult) {
         if let Some(pos) = use_result.pos {
-            self.msg_log.log(Msg::UsePos(pos));
+            self.msg_log.log_info(InfoMsg::UsePos(pos));
         }
 
         if let Some(dir) = self.settings.use_dir {
-            self.msg_log.log(Msg::UseDir(dir));
+            self.msg_log.log_info(InfoMsg::UseDir(dir));
         }
 
-        self.msg_log.log(Msg::UseHitPosClear);
+        self.msg_log.log_info(InfoMsg::UseHitPosClear);
         for pos in use_result.hit_positions {
-            self.msg_log.log(Msg::UseHitPos(pos));
+            self.msg_log.log_info(InfoMsg::UseHitPos(pos));
         }
     }
 
@@ -382,15 +382,15 @@ impl Game {
             }
         } else if self.settings.use_action == UseAction::Interact {
             if let Some(dir) = self.settings.use_dir {
-                self.msg_log.log(Msg::UseDir(dir));
+                self.msg_log.log_info(InfoMsg::UseDir(dir));
             }
 
             let player_pos = self.level.entities.pos[&player_id];
             for pos in Reach::Single(1).reachables(player_pos) {
-                //self.msg_log.log(Msg::UseHitPos(pos));
-                //self.msg_log.log(Msg::UsePos(pos));
+                //self.msg_log.log_info(InfoMsg::UseHitPos(pos));
+                //self.msg_log.log_info(InfoMsg::UsePos(pos));
                 let dir = Direction::from_positions(player_pos, pos).unwrap();
-                self.msg_log.log(Msg::UseOption(pos, dir));
+                self.msg_log.log_info(InfoMsg::UseOption(pos, dir));
             }
         }
     }
@@ -412,7 +412,7 @@ impl Game {
                     }
 
                     if let Some(player_ghost_pos) = reach.furthest_in_direction(player_pos, direction) {
-                        self.msg_log.log(Msg::PlayerGhost(player_ghost_pos));
+                        self.msg_log.log_info(InfoMsg::PlayerGhost(player_ghost_pos));
                     }
                 }
             }

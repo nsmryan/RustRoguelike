@@ -58,6 +58,10 @@ impl Log {
         self.log(LogMsgType::Map, log_message);
     }
 
+    pub fn log_info(&mut self, log_message: &str) {
+        self.log(LogMsgType::Info, log_message);
+    }
+
     pub fn log(&mut self, typ: LogMsgType, log_message: &str) {
         if typ == LogMsgType::Console || typ == LogMsgType::Output || !self.console_output_only {
             let log_msg = format!("{}: {}\n", typ, log_message);
@@ -70,11 +74,12 @@ impl Log {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum LogMsgType {
-    Output,
-    Console,
-    Msg,
-    Key,
-    Map,
+    Output, // Player command output
+    Console, // Player console output
+    Msg, // Internal message
+    Key, // Keyboard input
+    Map, // Map description
+    Info, // Informational messages
 }
 
 impl fmt::Display for LogMsgType {
@@ -85,6 +90,7 @@ impl fmt::Display for LogMsgType {
             LogMsgType::Msg => write!(f, "MSG"),
             LogMsgType::Key => write!(f, "KEY"),
             LogMsgType::Map => write!(f, "MAP"),
+            LogMsgType::Info => write!(f, "INFO"),
         }
     }
 }
