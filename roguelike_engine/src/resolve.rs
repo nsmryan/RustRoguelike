@@ -369,6 +369,13 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
             }
         }
 
+        Msg::InteractTrap(entity_id, dir) => {
+            let interact_pos = dir.offset_pos(game.level.entities.pos[&entity_id], 1);
+            for id in game.level.get_entities_at_pos(interact_pos) {
+                game.msg_log.log(Msg::ArmDisarmTrap(entity_id, id));
+            }
+        }
+
         Msg::ArmDisarmTrap(entity_id, trap_id) => {
             game.level.entities.armed[&trap_id] = !game.level.entities.armed[&trap_id];
             game.level.entities.took_turn[&entity_id] |= Turn::InteractTrap.turn();
@@ -1345,6 +1352,7 @@ fn resolve_add_class(class: EntityClass, game: &mut Game) {
 
         EntityClass::Clockwork => {
             add_skill(game, player_id, Skill::Push);
+            add_skill(game, player_id, Skill::Traps);
         }
 
         EntityClass::Hierophant => {

@@ -143,6 +143,7 @@ pub enum Skill {
     StoneSkin,
     Reform,
     Push,
+    Traps,
     Illuminate,
     Heal,
     FarSight,
@@ -170,6 +171,7 @@ impl Skill {
             Skill::StoneSkin => EntityClass::Monolith,
             Skill::Reform => EntityClass::Monolith,
             Skill::Push => EntityClass::Clockwork,
+            Skill::Traps => EntityClass::Clockwork,
             Skill::Illuminate => EntityClass::Hierophant,
             Skill::Heal => EntityClass::Hierophant,
             Skill::FarSight => EntityClass::Hierophant,
@@ -197,6 +199,7 @@ impl Skill {
             Skill::StoneSkin => SkillMode::Immediate,
             Skill::Reform => SkillMode::Direction,
             Skill::Push => SkillMode::Direction,
+            Skill::Traps => SkillMode::Direction,
             Skill::Illuminate => SkillMode::Direction,
             Skill::Heal => SkillMode::Immediate,
             Skill::FarSight => SkillMode::Immediate,
@@ -382,6 +385,13 @@ impl Item {
             Item::SoundTrap => None,
             Item::BlinkTrap => None,
             Item::FreezeTrap => None,
+        }
+    }
+
+    pub fn is_trap(&self) -> bool {
+        match self {
+            Item::SpikeTrap | Item::SoundTrap | Item::BlinkTrap | Item::FreezeTrap => true,
+            _ => false,
         }
     }
 

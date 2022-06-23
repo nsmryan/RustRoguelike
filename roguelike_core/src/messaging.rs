@@ -48,6 +48,7 @@ pub enum Msg {
     TryMove(EntityId, Direction, usize, MoveMode),
     Moved(EntityId, MoveType, MoveMode, Pos),
     Interact(EntityId, Pos),
+    InteractTrap(EntityId, Direction),
     JumpWall(EntityId, Pos, Pos), // current pos, new pos
     WallKick(EntityId, Pos),
     StateChange(EntityId, Behavior),
@@ -194,6 +195,7 @@ impl fmt::Display for Msg {
             Msg::TryMove(entity_id, direction, amount, move_mode) => write!(f, "try_move {} {} {} {}", entity_id, direction, amount, move_mode),
             Msg::Moved(entity_id, move_type, move_mode, pos) => write!(f, "moved {} {} {} {} {}", entity_id, move_type, move_mode, pos.x, pos.y),
             Msg::Interact(entity_id, pos) => write!(f, "interact {} {} {}", entity_id, pos.x, pos.y),
+            Msg::InteractTrap(entity_id, dir) => write!(f, "interact_trap {} {}", entity_id, dir),
             Msg::JumpWall(entity_id, pos, new_pos) => write!(f, "jump_wall {} {} {} {} {}", entity_id, pos.x, pos.y, new_pos.x, new_pos.y),
             Msg::WallKick(entity_id, pos) => write!(f, "wall_kick {} {} {}", entity_id, pos.y, pos.y),
             Msg::StateChange(entity_id, behavior) => {

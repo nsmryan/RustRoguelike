@@ -46,7 +46,6 @@ pub enum InputAction {
     StartUseSkill(usize, ActionMode),
     #[display("startusetalent {0}")]
     StartUseTalent(usize),
-    StartUseInteract,
     #[display("usedir {0}")]
     UseDir(Direction),
     FinalizeUse,
@@ -57,8 +56,6 @@ pub enum InputAction {
     Pickup,
     DropItem,
     Yell,
-    #[display("interact {0}")]
-    Interact(PlayerDirection),
     #[display("cursormove {0} {1} {2}")]
     CursorMove(Direction, bool, bool), // move direction, is relative, is long
     CursorReturn,
@@ -494,9 +491,6 @@ pub fn handle_input_playing(input_action: InputAction,
             handle_skill_index(skill_index, ActionLoc::Facing, action_mode, level, settings, msg_log);
         }
 
-        (InputAction::StartUseInteract, true) => {
-            start_use_interact(settings, msg_log);
-        }
 
         (InputAction::StartUseItem(item_class), true) => {
             start_use_item(item_class, level, settings, msg_log);
@@ -627,20 +621,6 @@ pub fn handle_input_playing(input_action: InputAction,
             change_state(settings, GameState::HelpMenu, msg_log);
         }
 
-        (InputAction::Interact(dir), _) => {
-            let pos = level.entities.pos[&player_id];
-
-            let interact_pos = 
-                if let Some(dir) = dir.to_direction() {
-                    dir.offset_pos(pos, 1)
-                } else {
-                    pos
-                };
-
-                msg_log.log(Msg::Interact(player_id, interact_pos));
-
-        }
-
         (InputAction::Esc, _) => {
             if settings.cursor.is_none() {
                 change_state(settings, GameState::ConfirmQuit, msg_log);
@@ -702,9 +682,6 @@ fn use_dir(dir: Direction, level: &Level, settings: &mut Settings, msg_log: &mut
             let use_result = level.calculate_use_item(player_id, item_index as usize, dir, settings.move_mode);
             log_use_result_messages(use_result, dir, settings, msg_log);
         }
-    } else if use_action == UseAction::Interact {
-        settings.use_dir = Some(dir);
-        msg_log.log(Msg::UseDir(dir));
     } else if let UseAction::Skill(skill, _action_mode) = use_action {
         let use_result = level.calculate_use_skill(player_id, skill, dir, settings.move_mode);
         log_use_result_messages(use_result, dir, settings, msg_log);
@@ -795,7 +772,6 @@ fn finalize_use_item(item_class: ItemClass, level: &Level, settings: &mut Settin
 
 fn finalize_use(level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
     let player_id = level.find_by_name(EntityName::Player).unwrap();
-    let player_pos = level.entities.pos[&player_id];
 
     // If there is no direction, the user tried an invalid movement.
     // Returning here will just end use-mode.
@@ -805,44 +781,11 @@ fn finalize_use(level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
 
     if let UseAction::Item(item_class) = settings.use_action {
         finalize_use_item(item_class, level, settings, msg_log);
-    } else if settings.use_action == UseAction::Interact {
-        if let Some(dir) = settings.use_dir {
-            let target_pos = dir.offset_pos(player_pos, 1);
-            if let Some(item_id) = level.item_at_pos(target_pos) {
-                if level.entities.trap.get(&item_id).is_some() {
-                    // if there is a trap, interact with it
-                    msg_log.log(Msg::Interact(player_id, target_pos));
-                } else {
-                    // move to the item and pick it up
-                    msg_log.log(Msg::TryMove(player_id, dir, 1, MoveMode::Walk));
-                    msg_log.post_log(Msg::PickUp(player_id));
-                }
-            } else {
-                // If there is no item, just try to interact.
-                msg_log.log(Msg::Interact(player_id, target_pos));
-            }
-        } else {
-            // If there is no direction, apply to current tile.
-            msg_log.log(Msg::PickUp(player_id));
-        }
     } else if let UseAction::Skill(skill, action_mode) = settings.use_action {
         finalize_use_skill(skill, action_mode, level, settings, msg_log);
     } else {
         panic!("How did we get here? UseAction = '{}'", settings.use_action);
     }
-}
-
-fn start_use_interact(settings: &mut Settings, msg_log: &mut MsgLog) {
-    ensure_leave_cursor(settings, msg_log);
-
-    settings.use_action = UseAction::Interact;
-    msg_log.log(Msg::UseAction(settings.use_action));
-
-    settings.use_dir = None;
-    msg_log.log(Msg::UseDirClear);
-
-    change_state(settings, GameState::Use, msg_log);
-    msg_log.log(Msg::StartUseInteract);
 }
 
 fn initialize_use_mode(use_action: UseAction, settings: &mut Settings, msg_log: &mut MsgLog) {
@@ -1150,6 +1093,12 @@ pub fn handle_skill(skill: Skill,
             let push_amount = 1;
             if let Some(direction) = direction {
                 msg_log.log(Msg::Push(player_id, direction, push_amount));
+            }
+        }
+
+        Skill::Traps => {
+            if let Some(direction) = direction {
+                msg_log.log(Msg::InteractTrap(player_id, direction));
             }
         }
 

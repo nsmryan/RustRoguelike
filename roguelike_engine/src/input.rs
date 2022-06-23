@@ -264,12 +264,7 @@ impl Input {
                         return InputAction::FinalizeUse;
                     }
                 } else {
-                    if settings.use_action == UseAction::Interact {
-                        // in interaction mode, '5' ends use mode and interacts with current tile.
-                        return InputAction::FinalizeUse;
-                    } else {
-                        return InputAction::DropItem;
-                    }
+                    return InputAction::DropItem;
                 }
             } else if let Some(_index) = get_talent_index(chr) {
                 // Releasing the talent does not take you out of use-mode.
@@ -350,8 +345,6 @@ impl Input {
                 action = InputAction::OverlayToggle;
             } else if chr == ' ' {
                 action = InputAction::CursorToggle;
-            } else if chr == 'e' {
-                action = InputAction::StartUseInteract;
             } else if let Some(input_dir) = InputDirection::from_chr(chr) {
                 self.direction = Some(input_dir);
             } else if !(settings.is_cursor_mode() && self.ctrl) {
