@@ -288,36 +288,7 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
                     recording.action(&game, &display.state, input_action);
                 }
 
-                // Output messages
-                log.console_output_only = !game.config.minimal_output;
-                for msg_index in 0..game.msg_log.turn_messages.len() {
-                    let msg = game.msg_log.turn_messages[msg_index];
-
-                    // If the message has a console line, print it for the player.
-                    let msg_line = &msg.msg_line(&game.level);
-                    if msg_line.len() > 0 {
-                        log.log_console(msg_line);
-                    }
-
-                    // If not minimal output, print all messages
-                    if !game.config.minimal_output {
-                        log.log_msg(&format!("{}", msg));
-                    }
-                }
-
-                // Output informational messages (FoV, inventory, etc)
-                for msg_index in 0..game.msg_log.info_messages.len() {
-                    let msg = game.msg_log.info_messages[msg_index];
-                    log.log_info(&format!("{}", msg));
-                }
-
-                if game.settings.state == GameState::Win {
-                    // TODO probably not necessary, given level messaging
-                    display.clear_level_state();
-                    recording.clear();
-                } else if game.settings.state == GameState::Exit {
-                    game.settings.running = false;
-                }
+                output_messages(&mut game, &mut display, &mut recording, &mut log);
             }
         }
 
@@ -381,6 +352,39 @@ pub fn game_loop(mut game: Game, mut display: Display, opts: GameOptions, timer:
     }
 
     return Ok(());
+}
+
+fn output_messages(game: &mut Game, display: &mut Display, recording: &mut Recording, log: &mut Log) {
+    // Output messages
+    log.console_output_only = !game.config.minimal_output;
+    for msg_index in 0..game.msg_log.turn_messages.len() {
+        let msg = game.msg_log.turn_messages[msg_index];
+
+        // If the message has a console line, print it for the player.
+        let msg_line = &msg.msg_line(&game.level);
+        if msg_line.len() > 0 {
+            log.log_console(msg_line);
+        }
+
+        // If not minimal output, print all messages
+        if !game.config.minimal_output {
+            log.log_msg(&format!("{}", msg));
+        }
+    }
+
+    // Output informational messages (FoV, inventory, etc)
+    for msg_index in 0..game.msg_log.info_messages.len() {
+        let msg = game.msg_log.info_messages[msg_index];
+        log.log_info(&format!("{}", msg));
+    }
+
+    if game.settings.state == GameState::Win {
+        // TODO probably not necessary, given level messaging
+        display.clear_level_state();
+        recording.clear();
+    } else if game.settings.state == GameState::Exit {
+        game.settings.running = false;
+    }
 }
 
 fn save_record(record_name: &str) {

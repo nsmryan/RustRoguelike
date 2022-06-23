@@ -7,6 +7,8 @@ use roguelike_utils::comp::*;
 
 use roguelike_map::*;
 
+use roguelike_core::constants::*;
+use roguelike_core::ai::Behavior;
 use roguelike_core::utils::*;
 use roguelike_core::types::*;
 use roguelike_core::config::*;
@@ -250,7 +252,13 @@ impl Game {
 
         // emit visible attack positions
         if in_fov == FovResult::Inside {
-            if let Some(reach) = self.level.entities.attack.get(&entity_id) {
+            if let Some(Behavior::Armed(turns)) = self.level.entities.behavior.get(&entity_id) {
+                let start_pos = self.level.entities.pos[&entity_id];
+                let explode_aoe = aoe_fill(&self.level.map, AoeEffect::Freeze, start_pos, AI_EXPLODE_RADIUS, &self.config);
+                for explode_pos in explode_aoe.positions() {
+                    self.msg_log.log_info(InfoMsg::EntityAttack(entity_id, explode_pos));
+                }
+            } else if let Some(reach) = self.level.entities.attack.get(&entity_id) {
                 for attack_pos in reach.reachables(entity_pos) {
                     if !self.level.map.is_within_bounds(attack_pos) {
                         continue;
