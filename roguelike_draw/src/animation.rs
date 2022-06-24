@@ -36,6 +36,7 @@ pub enum Effect {
     Attack(Pos, Pos, SpriteAnim),
     Fade(Sprite, Color, u8, u8, Pos, f32, f32), // sprite, color, start alpha, end alpha, position, seconds, time taken
     NumberChange(i32, Pos, Color, usize), // Change amount, tile position, color, frame count
+    Highlight(Color, Pos, bool, f32, f32), // color, tile, fade, duration, seconds
 }
 
 impl Effect {
@@ -57,6 +58,10 @@ impl Effect {
 
     pub fn fade(sprite: Sprite, color: Color, start: u8, end: u8, pos: Pos, seconds: f32) -> Effect {
         return Effect::Fade(sprite, color, start, end, pos, seconds, 0.0);
+    }
+
+    pub fn highlight(color: Color, pos: Pos, fade: bool, seconds: f32) -> Effect {
+        return Effect::Highlight(color, pos, fade, seconds, 0.0);
     }
 
     pub fn number_change(change: i32, pos: Pos, color: Color) -> Effect {

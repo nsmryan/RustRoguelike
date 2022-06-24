@@ -428,7 +428,9 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
                         game.msg_log.log_front(Msg::ExplosionHit(entity_id, hit_id));
                     }
                 }
+                game.msg_log.log_front(Msg::ExplosionHitTile(explode_pos));
             }
+            game.msg_log.log(Msg::Sound(entity_id, ai_pos, EXPLODE_SOUND_RADIUS));
         }
 
         Msg::ExplosionHit(source_id, hit_entity) => {

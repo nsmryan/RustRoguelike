@@ -106,6 +106,7 @@ pub enum Msg {
     AiAttack(EntityId),
     AiExplode(EntityId),
     ExplosionHit(EntityId, EntityId), // source id, hit id
+    ExplosionHitTile(Pos),
     RemovedEntity(EntityId),
     StartUseItem(EntityId),
     StartUseSkill(EntityId),
@@ -252,6 +253,7 @@ impl fmt::Display for Msg {
             Msg::AiAttack(entity_id) => write!(f, "ai_attack {}", entity_id),
             Msg::AiExplode(entity_id) => write!(f, "ai_explode {}", entity_id),
             Msg::ExplosionHit(entity_id, hit_id) => write!(f, "explosion_hit {} {}", entity_id, hit_id),
+            Msg::ExplosionHitTile(pos) => write!(f, "explosion_hit_tile {} {}", pos.x, pos.y),
             Msg::RemovedEntity(entity_id) => write!(f, "removed {}", entity_id),
             Msg::StartUseItem(entity_id) => write!(f, "startuseitem {}", entity_id),
             Msg::StartUseSkill(entity_id) => write!(f, "startuseskill {}", entity_id),

@@ -1214,6 +1214,17 @@ fn render_effects(panel: &mut Panel,
 
                 effect_complete = *count == config.hp_render_duration;
             }
+
+            Effect::Highlight(color, pos, fade, seconds, time_taken) => {
+                let mut highlight_color = *color;
+                if *fade {
+                    let percent = (*seconds - *time_taken) / *seconds;
+                    highlight_color.a = (highlight_color.a as f32 * percent) as u8;
+                }
+                panel.highlight_cmd(highlight_color, *pos);
+                *time_taken += display_state.dt;
+                effect_complete = time_taken >= seconds;
+            }
         }
         display_state.effects[index] = effect;
 

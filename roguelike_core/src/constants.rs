@@ -234,4 +234,5 @@ pub const ARMED_SYMBOL: u8 = 50; // NOTE armed is just a sprite that looks relat
 
 /* Golems */
 pub const AI_EXPLODE_RADIUS: usize = 2;
+pub const EXPLODE_SOUND_RADIUS: usize = 4;
 pub const ARMIL_TURNS_ARMED: usize = 1;

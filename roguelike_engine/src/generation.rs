@@ -855,9 +855,9 @@ pub fn make_wall_test_map(entities: &mut Entities,
     return (map, Pos::from(position));
 }
 
-pub fn make_wall_test_armil(entities: &mut Entities,
-                            config: &Config,
-                            msg_log: &mut MsgLog) -> (Map, Pos) {
+pub fn make_test_armil(entities: &mut Entities,
+                       config: &Config,
+                       msg_log: &mut MsgLog) -> (Map, Pos) {
     let map = Map::from_dims(11, 11);
     let position = (1, 5);
 
@@ -908,4 +908,3 @@ pub fn make_trap_test_map(entities: &mut Entities,
 
     return (map, Pos::from(position));
 }
-

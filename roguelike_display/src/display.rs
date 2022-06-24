@@ -337,6 +337,40 @@ impl Display {
         return None;
     }
 
+    fn attack_effect(&mut self, weapon_type: WeaponType, from: Pos, to: Pos, config: &Config) -> Effect {
+        let sprite_name;
+        if from == to || Direction::from_positions(from, to).unwrap().horiz() {
+            if weapon_type == WeaponType::Blunt {
+                sprite_name = "player_blunt_cardinal";
+            } else if weapon_type == WeaponType::Pierce {
+                sprite_name = "player_pierce_cardinal";
+            } else {
+                sprite_name = "player_slash_cardinal";
+            }
+        } else {
+            if weapon_type == WeaponType::Blunt {
+                sprite_name = "player_blunt_diagonal";
+            } else if weapon_type == WeaponType::Pierce {
+                sprite_name = "player_pierce_diagonal";
+            } else {
+                sprite_name = "player_slash_diagonal";
+            }
+        }
+        let mut sprite_anim = self.new_sprite(sprite_name, config.attack_animation_speed);
+        if let Some(dir) = Direction::from_positions(from, to) {
+            let turns;
+            if dir.horiz() {
+                turns = Direction::Up.turn_amount(dir);
+            } else {
+                turns = Direction::UpRight.turn_amount(dir);
+            }
+            sprite_anim.rotation = turns as f64 * 45.0;
+        }
+
+        let attack_effect = Effect::attack(from, to, sprite_anim);
+        return attack_effect;
+    }
+
     pub fn clear_level_state(&mut self) {
         self.state.impressions.clear();
         self.state.prev_turn_fov.clear();
@@ -662,36 +696,14 @@ impl Display {
             }
 
             Msg::Blunt(from, to) | Msg::Pierce(from, to) | Msg::Slash(from, to) => {
-                let sprite_name;
-                if from == to || Direction::from_positions(from, to).unwrap().horiz() {
-                    if matches!(msg, Msg::Blunt(_, _)) {
-                        sprite_name = "player_blunt_cardinal";
-                    } else if matches!(msg, Msg::Pierce(_, _)) {
-                        sprite_name = "player_pierce_cardinal";
-                    } else {
-                        sprite_name = "player_slash_cardinal";
-                    }
-                } else {
-                    if matches!(msg, Msg::Blunt(_, _)) {
-                        sprite_name = "player_blunt_diagonal";
-                    } else if matches!(msg, Msg::Pierce(_, _)) {
-                        sprite_name = "player_pierce_diagonal";
-                    } else {
-                        sprite_name = "player_slash_diagonal";
-                    }
+                let weapon_type;
+                match msg {
+                    Msg::Blunt(_, _) => weapon_type = WeaponType::Blunt,
+                    Msg::Pierce(_, _) => weapon_type = WeaponType::Pierce,
+                    Msg::Slash(_, _) => weapon_type = WeaponType::Slash,
+                    _ => panic!("This should not be possible"),
                 }
-                let mut sprite_anim = self.new_sprite(sprite_name, config.attack_animation_speed);
-                if let Some(dir) = Direction::from_positions(from, to) {
-                    let turns;
-                    if dir.horiz() {
-                        turns = Direction::Up.turn_amount(dir);
-                    } else {
-                        turns = Direction::UpRight.turn_amount(dir);
-                    }
-                    sprite_anim.rotation = turns as f64 * 45.0;
-                }
-
-                let attack_effect = Effect::attack(from, to, sprite_anim);
+                let attack_effect = self.attack_effect(weapon_type, from, to, config);
                 self.state.play_effect(attack_effect);
             }
 
@@ -749,7 +761,14 @@ impl Display {
                 }
             }
             
-            Msg::ExplosionHit(_source_id, hit_entity) => {
+            Msg::ExplosionHitTile(pos) => {
+                let mut color = config.color_light_red;
+                color.a = 100;
+                let effect = Effect::highlight(color, pos, true, 1.0);
+                self.state.play_effect(effect);
+            }
+
+            Msg::ExplosionHit(source_id, hit_entity) => {
                 let damage = 1;
                 let hit_pos = self.state.pos[&hit_entity];
                 let hit_nums = Effect::number_change(-damage, hit_pos, config.color_light_red);
@@ -758,6 +777,12 @@ impl Display {
                 if !self.state.test_mode {
                     self.state.hp[&hit_entity] -= damage;
                 }
+
+                // play explosion
+                let start_pos = self.state.pos[&source_id];
+                let end_pos = self.state.pos[&hit_entity];
+                let attack_effect = self.attack_effect(WeaponType::Blunt, start_pos, end_pos, config);
+                self.state.play_effect(attack_effect);
             }
 
             Msg::JumpWall(jumper, start, end) => {
