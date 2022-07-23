@@ -131,7 +131,10 @@ fn check_map(game: &mut Game) {
     }
 
     fn count_entities(game: &Game, typ: EntityType, entities: &Vec<EntityId>) -> usize {
-        return entities.iter().filter(|id| game.level.entities.typ[id] == typ).count();
+        return entities.iter()
+                       .filter(|id| game.level.entities.typ[id] == typ)
+                       .filter(|id| !game.level.entities.needs_removal[id])
+                       .count();
     }
 
     for pos in game.level.map.get_all_pos() {
@@ -165,7 +168,7 @@ fn check_map(game: &mut Game) {
     }
 }
 
-pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
+pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> (Pos, bool) {
     // this is problematic for movement, so ensure they don't occur
     handle_diagonal_full_tile_walls(&mut game.level.map);
 
@@ -180,7 +183,9 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     clear_island(game, island_radius);
 
+    check_map(game);
     place_vaults(game, cmds);
+    check_map(game);
 
     /* detect structures left */
     let mut structures = find_structures(&game.level.map);
@@ -192,6 +197,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     /* modify structures with rubble, columns, etc */
     modify_structures(game, cmds, &mut structures);
+    check_map(game);
 
     // clear about the island again to ensure tiles haven't been placed outside
     clear_island(game, island_radius);
@@ -214,7 +220,10 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
     place_triggers(game, cmds);
 
     // find a place to put the key and goal, ensuring that they are reachable
-    place_key_and_goal(game, player_pos);
+    let mut exit_flag = false;
+    if place_key_and_goal(game, player_pos) {
+        exit_flag = true;
+    }
 
     // lay down grass with a given dispersion and range from the found tile
     let range_disperse =
@@ -237,7 +246,7 @@ pub fn saturate_map(game: &mut Game, cmds: &Vec<ProcCmd>) -> Pos {
 
     check_map(game);
 
-    return player_pos;
+    return (player_pos, exit_flag);
 }
 
 fn modify_structures(game: &mut Game, cmds: &Vec<ProcCmd>, structures: &mut Vec<Structure>) {
@@ -429,12 +438,12 @@ fn place_triggers(game: &mut Game, cmds: &Vec<ProcCmd>) {
     let width = game.level.map.width();
     gate_positions.sort_unstable_by(|p1, p2| (p1.x + p1.y * width).cmp(&(p2.x + p2.y * width)));
 
-    // if there are no possible positions, exit early
-    if gate_positions.len() == 0 {
-        return;
-    }
-
     for _ in 0..max_gates {
+        // If there are no possible positions, or just none left, exit early.
+        if gate_positions.len() == 0 {
+            return;
+        }
+
         let gate_pos_index = rng_range_u32(&mut game.rng, 0, gate_positions.len() as u32) as usize;
         let gate_pos = gate_positions[gate_pos_index];
         gate_positions.swap_remove(gate_pos_index);
@@ -702,30 +711,29 @@ fn find_available_on_side(game: &mut Game, left: bool) -> Option<Pos> {
 
     let potential_pos = game.level.get_no_entity_pos();
     let mut index = 1.0;
+    dbg!(potential_pos.len());
     for pos in potential_pos {
-        if !game.level.map[pos].block_move && game.level.has_blocking_entity(pos).is_none() {
-            let x_more;
-            let x_more_strict;
-            if left {
-                x_more = pos.x <= x_most;
-                x_more_strict = pos.x < x_most;
-                x_most = std::cmp::min(x_most, pos.x);
-            } else {
-                x_more = pos.x >= x_most;
-                x_more_strict = pos.x > x_most;
-                x_most = std::cmp::max(x_most, pos.x);
-            }
-
-            let rng_choice = rng_range(&mut game.rng, 0.0, 1.0) < (1.0 / index);
-
-            if x_more {
-                if rng_choice || x_more_strict {
-                    avail_pos = Some(pos);
-                }
-            }
-
-            index += 1.0;
+        let x_more;
+        let x_more_strict;
+        if left {
+            x_more = pos.x <= x_most;
+            x_more_strict = pos.x < x_most;
+            x_most = std::cmp::min(x_most, pos.x);
+        } else {
+            x_more = pos.x >= x_most;
+            x_more_strict = pos.x > x_most;
+            x_most = std::cmp::max(x_most, pos.x);
         }
+
+        let rng_choice = rng_range(&mut game.rng, 0.0, 1.0) < (1.0 / index);
+
+        if x_more {
+            if avail_pos == None || rng_choice || x_more_strict {
+                avail_pos = Some(pos);
+            }
+        }
+
+        index += 1.0;
     }
 
     return avail_pos;
@@ -795,7 +803,7 @@ fn clear_path_to(game: &mut Game, start_pos: Pos, target_pos: Pos) {
     }
 }
 
-fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
+fn place_key_and_goal(game: &mut Game, player_pos: Pos) -> bool {
     // place goal and key
     let key_pos = find_available_tile(game).unwrap();
     game.level.map[key_pos] = Tile::empty();
@@ -806,17 +814,21 @@ fn place_key_and_goal(game: &mut Game, player_pos: Pos) {
     clear_path_to(game, player_pos, key_pos);
 
     // Find the goal position, ensuring it is not too close to the key
-    let mut goal_pos = find_available_on_side(game, false).unwrap();
-    while distance(key_pos, goal_pos) < 4 {
-        goal_pos = find_available_tile(game).unwrap();
-    }
+    if let Some(mut goal_pos) = find_available_on_side(game, false) {
+        while distance(key_pos, goal_pos) < 4 {
+            goal_pos = find_available_tile(game).unwrap();
+        }
 
-    game.level.map[goal_pos] = Tile::empty();
-    for entity_id in game.level.get_entities_at_pos(goal_pos) {
-        game.level.entities.mark_for_removal(entity_id);
+        game.level.map[goal_pos] = Tile::empty();
+        for entity_id in game.level.get_entities_at_pos(goal_pos) {
+            game.level.entities.mark_for_removal(entity_id);
+        }
+        make_exit(&mut game.level.entities, &game.config, goal_pos, &mut game.msg_log);
+        clear_path_to(game, player_pos, goal_pos);
+        return false;
+    } else {
+        return true;
     }
-    make_exit(&mut game.level.entities, &game.config, goal_pos, &mut game.msg_log);
-    clear_path_to(game, player_pos, goal_pos);
 }
 
 fn clear_island(game: &mut Game, island_radius: i32) {

@@ -334,6 +334,8 @@ pub enum MapLoadConfig {
     VaultFile(String),
     #[display("procgen {0}")]
     ProcGen(String),
+    #[display("test_gen {0}")]
+    TestGen(String),
 }
 
 impl Default for MapLoadConfig {

@@ -48,18 +48,8 @@ pub fn map_construct(map_load_config: &MapLoadConfig, game: &mut Game) {
         }
 
         MapLoadConfig::ProcGen(procgen_params) => {
-            let file_name = format!("resources/procgen/{}", procgen_params);
-            let cmds = ProcCmd::from_file(&file_name);
-
-            let mut template_file = "resources/wfc/wfc_seed_2.png".to_string();
-            for param in cmds.iter() {
-                if let ProcCmd::SeedFile(file_name) = param {
-                    template_file = format!("resources/wfc/{}", file_name);
-                }
-            }
-
-            game.level.map = generate_bare_map(MAP_WIDTH as u32, MAP_HEIGHT as u32, &template_file, &mut game.rng);
-            player_position = saturate_map(game, &cmds);
+            let (player_pos, _) = procgen(procgen_params, game);
+            player_position = player_pos;
         }
 
         MapLoadConfig::TestVaults => {
@@ -147,6 +137,18 @@ pub fn map_construct(map_load_config: &MapLoadConfig, game: &mut Game) {
             game.level.map = new_map;
             player_position = position;
         }
+
+        MapLoadConfig::TestGen(procgen_file) => {
+            player_position = Pos::new(0, 0);
+            for index in 0..1000 {
+                let (_, exit_cond) = procgen(procgen_file, game);
+                if exit_cond {
+                    break;
+                }
+                game.clear_level_except_player();
+                dbg!(index);
+            }
+        }
     }
 
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
@@ -162,6 +164,21 @@ pub fn map_construct(map_load_config: &MapLoadConfig, game: &mut Game) {
 
     game.msg_log.log(Msg::NewLevel);
     game.settings.map_changed = true;
+}
+
+fn procgen(procgen_file: &str, game: &mut Game) -> (Pos, bool) {
+    let file_name = format!("resources/procgen/{}", procgen_file);
+    let cmds = ProcCmd::from_file(&file_name);
+
+    let mut template_file = "resources/wfc/wfc_seed_2.png".to_string();
+    for param in cmds.iter() {
+        if let ProcCmd::SeedFile(file_name) = param {
+            template_file = format!("resources/wfc/{}", file_name);
+        }
+    }
+
+    game.level.map = generate_bare_map(MAP_WIDTH as u32, MAP_HEIGHT as u32, &template_file, &mut game.rng);
+    return saturate_map(game, &cmds);
 }
 
 fn write_map_distribution(game: &mut Game) {
