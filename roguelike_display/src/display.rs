@@ -28,6 +28,7 @@ use roguelike_core::movement::{MoveMode};
 
 use roguelike_draw::animation::{Str, Sprite, Effect, Animation, SpriteAnim, SpriteIndex};
 use roguelike_draw::drawcmd::*;
+use roguelike_draw::area::{Area};
 
 
 
