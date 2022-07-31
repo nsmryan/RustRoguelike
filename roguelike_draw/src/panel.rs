@@ -10,7 +10,8 @@ use roguelike_map::{PlayerDirection};
 
 use crate::animation::{Sprite};
 use crate::area::{Area};
-use crate::drawcmd::{SpriteSheet, process_draw_cmd, DrawCmd, Justify};
+use crate::drawcmd::{process_draw_cmd, DrawCmd, Justify};
+use crate::spritesheet::{SpriteSheet};
 
 
 #[derive(Clone, Debug, PartialEq)]
