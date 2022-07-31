@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::str::FromStr;
 use std::io::BufRead;
 
@@ -15,7 +14,6 @@ use roguelike_utils::math::*;
 use roguelike_map::{PlayerDirection};
 
 use crate::animation::{Sprite, SpriteKey};
-use crate::area::{Area};
 use crate::panel::{Panel};
 
 

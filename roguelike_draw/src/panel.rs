@@ -1,16 +1,14 @@
 use std::collections::HashMap;
-use std::str::FromStr;
 
 use sdl2::render::{Texture, WindowCanvas};
 use sdl2::rect::Rect;
-use sdl2::video::WindowContext;
-use sdl2::pixels::{PixelFormatEnum, Color as Sdl2Color};
+use sdl2::pixels::{Color as Sdl2Color};
 
 use roguelike_utils::math::*;
 
 use roguelike_map::{PlayerDirection};
 
-use crate::animation::{Sprite, SpriteKey};
+use crate::animation::{Sprite};
 use crate::area::{Area};
 use crate::drawcmd::{SpriteSheet, process_draw_cmd, DrawCmd, Justify};
 
