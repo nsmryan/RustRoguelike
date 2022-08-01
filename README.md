@@ -21,8 +21,8 @@ This game is in development. It is not in a playable state- if you run the game 
 to play through levels by finding the goal object, picking it up, and carrying it to the exit,
 but there is no larger goal or game beyond this.
 
-![Image](resources/background.png)
-![Screenshot](resources/screenshot.png)
+![Image](resources/doc/background.png)
+![Screenshot](resources/doc/screenshot.png)
 
 ## Building
 

@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::io::BufRead;
 
 use bmp::Image;
 
@@ -124,7 +125,10 @@ impl Display {
         let num_chars = (ASCII_END - ASCII_START + 1) as usize;
         let font = SpriteSheet::new("font".to_string(), num_chars, 1, num_chars, font_query.width as usize, font_query.height as usize, 0, 0);
 
-        return Display { state: DisplayState::new(),
+        let mut display_state = DisplayState::new();
+        parse_tileset_names("resources/tileset/TileLocations.txt", &mut display_state.tileset_names);
+
+        return Display { state: display_state,
                          canvas,
                          texture_creator,
                          textures, 
@@ -1086,6 +1090,8 @@ pub struct DisplayState {
 
     pub ids: Vec<EntityId>,
 
+    pub tileset_names: HashMap<String, char>,
+
     // animation information
     pub animations: Comp<VecDeque<Animation>>,
     pub next_anim_key: i64,
@@ -1169,6 +1175,7 @@ impl DisplayState {
             effects: Vec::new(),
             ids: Vec::new(),
             animations: Comp::<VecDeque<Animation>>::new(),
+            tileset_names: HashMap::new(),
             next_anim_key: 0,
             drawn_sprites: Comp::new(),
             chr: Comp::new(),
@@ -1218,6 +1225,47 @@ impl DisplayState {
             debug_entries: HashMap::<String, String>::new(),
             rng: Rand32::new(0),
         };
+    }
+
+    pub fn entity_name_to_chr(&self, name: EntityName) -> char {
+        let mut chr = ' ' as u8;
+        match name {
+            EntityName::Player => chr = self.ENTITY_PLAYER,
+            EntityName::Gol => chr = '\u{98}' as u8,
+            EntityName::Pawn => chr = '\u{A5}' as u8,
+            EntityName::Rook => chr = '\u{A5}' as u8,
+            EntityName::Column => chr = MAP_COLUMN,
+            EntityName::Key => chr = ENTITY_KEY,
+            EntityName::Exit => chr = ENTITY_EXIT,
+            EntityName::Dagger => chr = ENTITY_DAGGER,
+            EntityName::Hammer => chr = ENTITY_HAMMER,
+            EntityName::Spear => chr = ENTITY_SPEAR,
+            EntityName::GreatSword => chr = ENTITY_GREATSWORD,
+            EntityName::Sword => chr = ENTITY_SWORD,
+            EntityName::Shield => chr = ENTITY_SHIELD,
+            EntityName::Lantern => chr = ENTITY_LANTERN,
+            EntityName::SeedOfStone => chr = ENTITY_SEED_OF_STONE,
+            EntityName::GlassEye => chr = ENTITY_GLASS_EYE,
+            EntityName::Teleporter => chr = ENTITY_TELEPORTER,
+            EntityName::Spire => chr = '\u{15}' as u8,
+            EntityName::Armil => chr = '\u{98}' as u8,
+            EntityName::SpikeTrap => chr = MAP_TALL_SPIKES,
+            EntityName::BlinkTrap => chr = ENTITY_BLINK_TRAP,
+            EntityName::FreezeTrap => chr = ENTITY_FREEZE_TRAP,
+            EntityName::SoundTrap => chr = ENTITY_TRAP_SOUND,
+            EntityName::GateTrigger => chr = ENTITY_GATE_TRIGGER,
+            EntityName::Stone => chr = ENTITY_STONE,
+            EntityName::Energy => chr = ENTITY_ENERGY,
+            EntityName::Herb => chr = ENTITY_HERB,
+            EntityName::Statue => chr = MAP_STATUE_1,
+            //Mouse, Cursor, Grass, Other
+            _ => {},
+        }
+        return chr as char;
+    }
+
+    pub fn tileset_index(&self, name: &str) -> usize {
+        return self.tileset_names.get(name).expect("Name not in tileset!");
     }
 
     pub fn update_animations(&mut self, rng: &mut Rand32, config: &Config) {
@@ -1330,43 +1378,6 @@ fn needs_flip_horiz(direction: Direction) -> bool {
         Direction::DownRight => return false,
         Direction::DownLeft => return true,
     }
-}
-
-fn entity_name_to_chr(name: EntityName) -> char {
-    let mut chr = ' ' as u8;
-    match name {
-        EntityName::Player => chr = ENTITY_PLAYER,
-        EntityName::Gol => chr = '\u{98}' as u8,
-        EntityName::Pawn => chr = '\u{A5}' as u8,
-        EntityName::Rook => chr = '\u{A5}' as u8,
-        EntityName::Column => chr = MAP_COLUMN,
-        EntityName::Key => chr = ENTITY_KEY,
-        EntityName::Exit => chr = ENTITY_EXIT,
-        EntityName::Dagger => chr = ENTITY_DAGGER,
-        EntityName::Hammer => chr = ENTITY_HAMMER,
-        EntityName::Spear => chr = ENTITY_SPEAR,
-        EntityName::GreatSword => chr = ENTITY_GREATSWORD,
-        EntityName::Sword => chr = ENTITY_SWORD,
-        EntityName::Shield => chr = ENTITY_SHIELD,
-        EntityName::Lantern => chr = ENTITY_LANTERN,
-        EntityName::SeedOfStone => chr = ENTITY_SEED_OF_STONE,
-        EntityName::GlassEye => chr = ENTITY_GLASS_EYE,
-        EntityName::Teleporter => chr = ENTITY_TELEPORTER,
-        EntityName::Spire => chr = '\u{15}' as u8,
-        EntityName::Armil => chr = '\u{98}' as u8,
-        EntityName::SpikeTrap => chr = MAP_TALL_SPIKES,
-        EntityName::BlinkTrap => chr = ENTITY_BLINK_TRAP,
-        EntityName::FreezeTrap => chr = ENTITY_FREEZE_TRAP,
-        EntityName::SoundTrap => chr = ENTITY_TRAP_SOUND,
-        EntityName::GateTrigger => chr = ENTITY_GATE_TRIGGER,
-        EntityName::Stone => chr = ENTITY_STONE,
-        EntityName::Energy => chr = ENTITY_ENERGY,
-        EntityName::Herb => chr = ENTITY_HERB,
-        EntityName::Statue => chr = MAP_STATUE_1,
-        //Mouse, Cursor, Grass, Other
-        _ => {},
-    }
-    return chr as char;
 }
 
 fn create_panels(screen_areas: &HashMap<PanelName, Area>) -> HashMap<PanelName, Panel> {
@@ -1572,3 +1583,21 @@ fn chr_bool(chr: char) -> bool {
     }
 }
 
+pub fn parse_tileset_names(tileset_names_file: &str, tileset_names: &mut HashMap<String, char>) {
+    let file =
+        std::fs::File::open(&tileset_names_file).expect(&format!("Could not open tileset names file '{}'", tileset_names_file));
+
+    let mut sheets: Vec<SpriteSheet> = Vec::new();
+
+    for line in std::io::BufReader::new(file).lines() {
+        let line = line.unwrap();
+        let line = line.to_string();
+
+        let s: &mut str = &mut line.to_string();
+
+        let mut args = s.split(" ");
+
+        let index = args.next().unwrap().parse::<usize>().map_err(|err| format!("{}", err)).unwrap();
+        let name = args.next().unwrap().to_string();
+    }
+}

@@ -1,97 +1,85 @@
-1 horizontal wall
-2 vertical wall
+1 horizontal_wall
+2 vertical_wall
 3 rubble
 4 grass
 5 portal
 6 column
-7 energy bit
-8 armillary sphere
-9 up intertile wall
-10 down intertile wall
-11 left intertile wall
-12 right intertile wall
-13 statue 1
-14 statue 2
-15 pottery 1
-16 pottery 2
-17 right arrow
-18 upright arrow
+7 energy_bit
+8 armillary_sphere
+9 up_intertile_wall
+10 down_intertile_wall
+11 left_intertile_wall
+12 right_intertile_wall
+13 statue_1
+14 statue_2
+15 pottery_1
+16 pottery_2
+17 right_arrow
+18 upright_arrow
 19 darkness
-20 right fulltile shadow
-21 up fulltile shadow
-22 up intertile shadow
-23 right intertile shadow
-24 golem impression
-25 up intertile grass wall
-26 down intertile grass wall
-27 left intertile grass wall
-28 right intertile grass wall
+20 right_fulltile_shadow
+21 up_fulltile_shadow
+22 up_intertile_shadow
+23 right_intertile_shadow
+24 golem_impression
+25 up_intertile_grass_wall
+26 down_intertile_grass_wall
+27 left_intertile_grass_wall
+28 right_intertile_grass_wall
 29 thorns
 30 sandstorm
-31 open tile
+31 open_tile
 32 anomaly
 33 stone
-34 exclamation mark
-35 stunned mark
-36 question mark
-37 blink trap
-38 mechanism trap cardinal
-39 unused trap 1
-40 freeze trap
-41 sound trap
-42 unused trap 2
-43 mechanism trap diagonal
-44 unused trap 3
-45 unused trap 4
-46 unused trap 5
+34 exclamation_mark
+35 stunned_mark
+36 question_mark
+37 blink_trap
+38 mechanism_trap_cardinal
+39 unused_trap_1
+40 freeze_trap
+41 sound_trap
+42 unused_trap_2
+43 mechanism_trap_diagonal
+44 unused_trap_3
+45 unused_trap_4
+46 unused_trap_5
 47 smoke
-48 red wall
-49 special spear
-50 unnamed artifact 1
-51 unnamed artifact 2
-52 unnamed artifact 3
-53 beam leftup to downright
-54 beam downleft to upright
+48 red_wall
+49 special_spear
+50 unnamed_artifact_1
+51 unnamed_artifact_2
+52 unnamed_artifact_3
+53 beam_leftup_to_downright
+54 beam_downleft_to_upright
 55 horizontal
 56 vertical
-57 illusionary player
-58 illusionary fulltile wall
-59 illusionary up intertile wall
-60 illusionary down intertile wall
-61 illusionary left intertile wall
-62 illusionary right intertile wall
+57 illusionary_player
+58 illusionary_fulltile_wall
+59 illusionary_up_intertile_wall
+60 illusionary_down_intertile_wall
+61 illusionary_left_intertile_wall
+62 illusionary_right_intertile_wall
 63 herb
-64 seed pouch
-65 spike trap
+64 seed_pouch
+65 spike_trap
 66 torch
 67 seed
-68 energy bit 2
+68 energy_bit_2
 69 khopesh
-70 smoke bomb
+70 smoke_bomb
 71 shield
 72 lens
-73 crystal ball
-74 targeting 
-75 tall grass
+73 crystal_ball
+74 targeting_
+75 tall_grass
 76 sling
 77 doorway
-78 tall shield
+78 tall_shield
 79 axe
 80 glaive
 81 dagger
 82 sword
-83 great ax
+83 great_ax
 84 spear
 85 hammer
-
-
-
-
-
-
-
-
-
-
-
-
