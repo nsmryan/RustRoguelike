@@ -1,6 +1,8 @@
 ATLAS = "tools/atlas"
 ATLAS_SRC = $(ATLAS)/main.c $(ATLAS)/util.c $(ATLAS)/bitmap.c $(ATLAS)/lib/stb/stb_image.c $(ATLAS)/lib/stb/stb_image_write.c $(ATLAS)/lib/stb/stb_rect_pack.c $(ATLAS)/lib/stb/stb_truetype.c
 
+CC ?= gcc
+
 all: run
 
 .PHONY: exe run rerun debug release test retest check recheck sloc sloc_crates atlas clean unsave
@@ -46,14 +48,15 @@ sloc_crates:
 
 atlas:
 	@echo "building atlas executable"
-	@gcc -std=gnu99 -O0 -o atlas $(ATLAS_SRC) -lm
+	@$(CC) -std=gnu99 -O0 -o atlas $(ATLAS_SRC) -lm
 	@echo "collecting images"
 	@rm collectImages -rf
 	@mkdir collectImages
 	@find resources/animations -name "*.png" | xargs -I{} cp {} collectImages/
 	@find resources/UI -name "*.png" | xargs -I{} cp {} collectImages/
 	@find resources/misc -name "*.png" | xargs -I{} cp {} collectImages/
-	@cp resources/rustrogueliketiles.png collectImages/
+	@find resources/tileset -name "*.png" | xargs -I{} cp {} collectImages/
+	#@cp resources/rustrogueliketiles.png collectImages/
 	@echo "building atlas image"
 	@./atlas collectImages/ --imageout resources/spriteAtlas.png --textout resources/spriteAtlas.txt
 	@rm collectImages -rf
