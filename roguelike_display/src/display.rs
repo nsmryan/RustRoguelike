@@ -49,6 +49,8 @@ impl PanelName {
     }
 }
 
+type TileMap = HashMap<String, u8>; 
+
 pub struct Display {
     pub state: DisplayState,
 
@@ -1087,7 +1089,7 @@ pub struct DisplayState {
 
     pub ids: Vec<EntityId>,
 
-    pub tileset_names: HashMap<String, u8>,
+    pub tileset_names: TileMap,
 
     // animation information
     pub animations: Comp<VecDeque<Animation>>,

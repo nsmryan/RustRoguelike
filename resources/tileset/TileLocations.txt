@@ -71,7 +71,7 @@
 71 shield
 72 lens
 73 crystal_ball
-74 targeting_
+74 targeting
 75 tall_grass
 76 sling
 77 doorway

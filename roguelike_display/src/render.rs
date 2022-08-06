@@ -67,7 +67,7 @@ fn render_panels(panels: &mut Panels,
 
     {
         let _map = timer!("MAP");
-        render_map(panel, &display_state.map, sprites);
+        render_map(display_state, panel, sprites);
     }
 
     {
@@ -831,14 +831,18 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, config: &Co
 
                 // Lower walls
                 if tile.bottom_wall == Wall::ShortWall && tile.bottom_material == Surface::Grass {
+                    let index = display_state.tileset_index(&"down_intertile_grass_wall");
                     let sprite = Sprite::new(GRASS_INTERTILE_DOWN as u32, sprite_key);
                     panel.sprite_cmd(sprite, wall_color, pos);
                 } else if tile.bottom_wall == Wall::ShortWall {
-                    let sprite = Sprite::new(MAP_THIN_WALL_BOTTOM as u32, sprite_key);
+                    let index = display_state.tileset_index(&"down_intertile_wall");
+                    let sprite = Sprite::new(index as u32, sprite_key);
                     panel.sprite_cmd(sprite, wall_color, pos);
                 } else if tile.bottom_wall == Wall::TallWall {
-                    let sprite = Sprite::new(MAP_THICK_WALL_BOTTOM as u32, sprite_key);
-                    panel.sprite_cmd(sprite, wall_color, pos);
+                    // TODO this is no longer represented in the tile set
+                    unreachable!();
+                    //let sprite = Sprite::new(MAP_THICK_WALL_BOTTOM as u32, sprite_key);
+                    //panel.sprite_cmd(sprite, wall_color, pos);
                 }
             }
 
@@ -943,8 +947,8 @@ fn render_pip(panel: &mut Panel, display_state: &DisplayState, config: &Config) 
 }
 
 /// Render the map, with environment and walls
-fn render_map(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
-    let (map_width, map_height) = map.size();
+fn render_map(display_state: &mut DisplayState, panel: &mut Panel, sprites: &Vec<SpriteSheet>) {
+    let (map_width, map_height) = display_state.map.size();
 
     let sprite_key = lookup_spritekey(sprites, "rustrogueliketiles");
     for y in 0..map_height {
@@ -959,7 +963,7 @@ fn render_map(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
             }
 
             // Render game stuff
-            let tile = map[pos];
+            let tile = display_state.map[pos];
 
             // if the tile is not empty or water, draw it
             if tile.tile_type == TileType::Water {
@@ -968,24 +972,24 @@ fn render_map(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
                 panel.sprite_cmd(sprite, Color::white(), pos);
             }
 
-            if let Some(chr) = surface_chr(tile.surface, tile.block_sight) {
-                let sprite = Sprite::new(chr as u32, sprite_key);
+            if let Some(index) = surface_index(display_state, tile.surface, tile.block_sight) {
+                let sprite = Sprite::new(index as u32, sprite_key);
                 panel.sprite_cmd(sprite, Color::white(), pos);
             }
         }
     }
 }
 
-fn surface_chr(surface: Surface, block_sight: bool) -> Option<u8> {
+fn surface_index(display_state: &DisplayState, surface: Surface, block_sight: bool) -> Option<u8> {
     match surface {
         Surface::Rubble => {
-            return Some(MAP_RUBBLE);
+            return Some(display_state.tileset_index(&"rubble"));
         }
 
         Surface::Grass => {
             if block_sight {
                 // tall grass sprite (not animated)
-                return Some(ENTITY_TALL_GRASS);
+                return Some(display_state.tileset_index(&"tall_grass"));
             } else {
                 // Grass is animated now
                 return None;
@@ -1290,6 +1294,7 @@ fn render_entity(panel: &mut Panel,
             if display_state.entity_is_in_fov(entity_id) == FovResult::Edge {
                 if display_state.impressions.iter().all(|impresssion| impresssion.pos != pos) {
                     let tiles = lookup_spritekey(sprites, "rustrogueliketiles");
+                    //let index = display_state.tileset_index(
                     let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
                     display_state.impressions.push(Impression::new(impression_sprite, pos));
                 }
@@ -1591,7 +1596,8 @@ fn render_overlay_cursor(panel: &mut Panel, display_state: &mut DisplayState, co
         let percent = time_since_toggle / config.cursor_fade_seconds;
         color.a = (config.cursor_alpha as f32 * percent) as u8;
 
-        let sprite = Sprite::new(ENTITY_CURSOR as u32, tiles_key);
+        let index = display_state.tileset_index(&"targeting");
+        let sprite = Sprite::new(index as u32, tiles_key);
         panel.sprite_cmd(sprite, color, cursor_pos);
 
         // render player ghost
@@ -1612,7 +1618,8 @@ fn render_overlay_fov(panel: &mut Panel,
             let pos = Pos::new(x, y);
 
             if display_state.pos_is_in_fov(pos) == FovResult::Inside {
-                let sprite = Sprite::new(MAP_GROUND as u32, tiles_key);
+                let index = display_state.tileset_index(&"open_tile");
+                let sprite = Sprite::new(index as u32, tiles_key);
                 panel.sprite_cmd(sprite, config.color_light_green, pos);
             }
         }
@@ -1653,6 +1660,8 @@ fn render_overlay_floodfill(panel: &mut Panel,
         let adj_color = lerp_color(config.color_ice_blue, config.color_red, amount);
 
         //tile_sprite.draw_char(panel, , pos, adj_color);
+        //let index = display_state.tileset_index(&"open_tile");
+        // TODO not sure which one to use here.
         let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
         panel.sprite_cmd(sprite, adj_color, pos);
 
