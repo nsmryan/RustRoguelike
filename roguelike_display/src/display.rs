@@ -126,7 +126,7 @@ impl Display {
         let font = SpriteSheet::new("font".to_string(), num_chars, 1, num_chars, font_query.width as usize, font_query.height as usize, 0, 0);
 
         let mut display_state = DisplayState::new();
-        parse_tileset_names("resources/tileset/TileLocations.txt", &mut display_state.tileset_names);
+        display_state.tileset_names = parse_tileset_names("resources/tileset/TileLocations.txt");
 
         return Display { state: display_state,
                          canvas,
@@ -227,13 +227,13 @@ impl Display {
         return SpriteAnim::new(name_str, sprite_key, 0.0, max_index as f32, speed);
     }
 
-    pub fn static_sprite(&mut self, sprite_sheet: &str, chr: char) -> SpriteAnim {
+    pub fn static_sprite(&mut self, sprite_sheet: &str, tile_index: u8) -> SpriteAnim {
         let sprite_key = lookup_spritekey(&self.sprites, sprite_sheet);
-        let name_str = self.add_string(&format!("{}", chr));
+        let name_str = self.add_string(&format!("{}", tile_index as char));
         return SpriteAnim::new(name_str,
                                sprite_key,
-                               chr as i32 as SpriteIndex,
-                               chr as i32 as SpriteIndex,
+                               tile_index as i32 as SpriteIndex,
+                               tile_index as i32 as SpriteIndex,
                                0.0);
     }
 
@@ -594,8 +594,8 @@ impl Display {
             Msg::ItemLanded(item_id, start, end) => {
                 let sound_aoe = aoe_fill(map, AoeEffect::Sound, end, config.sound_radius_stone, config);
 
-                let chr = self.state.chr[&item_id];
-                let item_sprite = self.static_sprite("rustrogueliketiles", chr);
+                let tile_index = self.state.tile_index[&item_id];
+                let item_sprite = self.static_sprite("rustrogueliketiles", tile_index);
 
                 let move_anim = Animation::Between(item_sprite, start, end, 0.0, config.item_throw_speed);
                 let item_anim = Animation::PlayEffect(Effect::Sound(sound_aoe, 0.0));
@@ -798,8 +798,8 @@ impl Display {
             }
 
             Msg::SpawnedObject(entity_id, typ, pos, name, facing) => {
-                let chr = entity_name_to_chr(name);
-                self.state.chr.insert(entity_id, chr as char);
+                let tile_index = self.state.entity_name_to_tile_index(name);
+                self.state.tile_index.insert(entity_id, tile_index);
                 self.state.pos.insert(entity_id, pos);
                 self.state.typ.insert(entity_id, typ);
                 self.state.name.insert(entity_id, name);
@@ -858,7 +858,7 @@ impl Display {
             //Msg::RemovedEntity(entity_id) => {
             Msg::MarkedForRemoval(entity_id) => {
                 self.state.animations.remove(&entity_id);
-                self.state.chr.remove(&entity_id);
+                self.state.tile_index.remove(&entity_id);
                 self.state.pos.remove(&entity_id);
                 self.state.typ.remove(&entity_id);
                 self.state.name.remove(&entity_id);
@@ -1090,7 +1090,7 @@ pub struct DisplayState {
 
     pub ids: Vec<EntityId>,
 
-    pub tileset_names: HashMap<String, char>,
+    pub tileset_names: HashMap<String, u8>,
 
     // animation information
     pub animations: Comp<VecDeque<Animation>>,
@@ -1100,7 +1100,7 @@ pub struct DisplayState {
     pub drawn_sprites: Comp<Sprite>,
 
     // entity information
-    pub chr: Comp<char>,
+    pub tile_index: Comp<u8>,
     pub pos: Comp<Pos>,
     pub typ: Comp<EntityType>,
     pub name: Comp<EntityName>,
@@ -1178,7 +1178,7 @@ impl DisplayState {
             tileset_names: HashMap::new(),
             next_anim_key: 0,
             drawn_sprites: Comp::new(),
-            chr: Comp::new(),
+            tile_index: Comp::new(),
             pos: Comp::new(),
             typ: Comp::new(),
             name: Comp::new(),
@@ -1227,45 +1227,51 @@ impl DisplayState {
         };
     }
 
-    pub fn entity_name_to_chr(&self, name: EntityName) -> char {
-        let mut chr = ' ' as u8;
+    pub fn entity_name_to_tile_index(&self, name: EntityName) -> u8 {
+        let mut index = 255;
+        let entity_name_str = format!("{}", name);
+        // TODO are there ever entities without tiles? If so, tileset_index
+        // will have to return an option which is unpacked here.
+        index = self.tileset_index(&entity_name_str),
+        /*
         match name {
-            EntityName::Player => chr = self.ENTITY_PLAYER,
-            EntityName::Gol => chr = '\u{98}' as u8,
-            EntityName::Pawn => chr = '\u{A5}' as u8,
-            EntityName::Rook => chr = '\u{A5}' as u8,
-            EntityName::Column => chr = MAP_COLUMN,
-            EntityName::Key => chr = ENTITY_KEY,
-            EntityName::Exit => chr = ENTITY_EXIT,
-            EntityName::Dagger => chr = ENTITY_DAGGER,
-            EntityName::Hammer => chr = ENTITY_HAMMER,
-            EntityName::Spear => chr = ENTITY_SPEAR,
-            EntityName::GreatSword => chr = ENTITY_GREATSWORD,
-            EntityName::Sword => chr = ENTITY_SWORD,
-            EntityName::Shield => chr = ENTITY_SHIELD,
-            EntityName::Lantern => chr = ENTITY_LANTERN,
-            EntityName::SeedOfStone => chr = ENTITY_SEED_OF_STONE,
-            EntityName::GlassEye => chr = ENTITY_GLASS_EYE,
-            EntityName::Teleporter => chr = ENTITY_TELEPORTER,
-            EntityName::Spire => chr = '\u{15}' as u8,
-            EntityName::Armil => chr = '\u{98}' as u8,
-            EntityName::SpikeTrap => chr = MAP_TALL_SPIKES,
-            EntityName::BlinkTrap => chr = ENTITY_BLINK_TRAP,
-            EntityName::FreezeTrap => chr = ENTITY_FREEZE_TRAP,
-            EntityName::SoundTrap => chr = ENTITY_TRAP_SOUND,
-            EntityName::GateTrigger => chr = ENTITY_GATE_TRIGGER,
-            EntityName::Stone => chr = ENTITY_STONE,
-            EntityName::Energy => chr = ENTITY_ENERGY,
-            EntityName::Herb => chr = ENTITY_HERB,
-            EntityName::Statue => chr = MAP_STATUE_1,
+            EntityName::Player => index = self.tileset_index(&entity_name_str),
+            EntityName::Gol => index = '\u{98}' as u8,
+            EntityName::Pawn => index = '\u{A5}' as u8,
+            EntityName::Rook => index = '\u{A5}' as u8,
+            EntityName::Column => index = MAP_COLUMN,
+            EntityName::Key => index = ENTITY_KEY,
+            EntityName::Exit => index = ENTITY_EXIT,
+            EntityName::Dagger => index = ENTITY_DAGGER,
+            EntityName::Hammer => index = ENTITY_HAMMER,
+            EntityName::Spear => index = ENTITY_SPEAR,
+            EntityName::GreatSword => index = ENTITY_GREATSWORD,
+            EntityName::Sword => index = ENTITY_SWORD,
+            EntityName::Shield => index = ENTITY_SHIELD,
+            EntityName::Lantern => index = ENTITY_LANTERN,
+            EntityName::SeedOfStone => index = ENTITY_SEED_OF_STONE,
+            EntityName::GlassEye => index = ENTITY_GLASS_EYE,
+            EntityName::Teleporter => index = ENTITY_TELEPORTER,
+            EntityName::Spire => index = '\u{15}' as u8,
+            EntityName::Armil => index = '\u{98}' as u8,
+            EntityName::SpikeTrap => index = MAP_TALL_SPIKES,
+            EntityName::BlinkTrap => index = ENTITY_BLINK_TRAP,
+            EntityName::FreezeTrap => index = ENTITY_FREEZE_TRAP,
+            EntityName::SoundTrap => index = ENTITY_TRAP_SOUND,
+            EntityName::GateTrigger => index = ENTITY_GATE_TRIGGER,
+            EntityName::Stone => index = ENTITY_STONE,
+            EntityName::Energy => index = ENTITY_ENERGY,
+            EntityName::Herb => index = ENTITY_HERB,
+            EntityName::Statue => index = MAP_STATUE_1,
             //Mouse, Cursor, Grass, Other
             _ => {},
         }
-        return chr as char;
+        */
+        return index;
     }
 
-    pub fn tileset_index(&self, name: &str) -> usize {
-        return self.tileset_names.get(name).expect("Name not in tileset!");
+    pub fn tileset_index(&self, name: &str) -> u8 {
+        return *self.tileset_names.get(name).expect("Name not in tileset!");
     }
 
     pub fn update_animations(&mut self, rng: &mut Rand32, config: &Config) {
@@ -1583,11 +1589,11 @@ fn chr_bool(chr: char) -> bool {
     }
 }
 
-pub fn parse_tileset_names(tileset_names_file: &str, tileset_names: &mut HashMap<String, char>) {
+pub fn parse_tileset_names(tileset_names_file: &str) -> HashMap<String, u8> {
     let file =
         std::fs::File::open(&tileset_names_file).expect(&format!("Could not open tileset names file '{}'", tileset_names_file));
 
-    let mut sheets: Vec<SpriteSheet> = Vec::new();
+    let mut tileset_names = HashMap::new();
 
     for line in std::io::BufReader::new(file).lines() {
         let line = line.unwrap();
@@ -1597,7 +1603,11 @@ pub fn parse_tileset_names(tileset_names_file: &str, tileset_names: &mut HashMap
 
         let mut args = s.split(" ");
 
-        let index = args.next().unwrap().parse::<usize>().map_err(|err| format!("{}", err)).unwrap();
+        let index = args.next().unwrap().parse::<u8>().map_err(|err| format!("{}", err)).unwrap();
         let name = args.next().unwrap().to_string();
+
+        tileset_names.insert(name, index);
     }
+
+    return tileset_names;
 }
