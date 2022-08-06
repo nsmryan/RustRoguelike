@@ -739,29 +739,6 @@ fn render_background(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
     }
 }
 
-fn surface_chr(surface: Surface, block_sight: bool) -> Option<u8> {
-    match surface {
-        Surface::Rubble => {
-            return Some(MAP_RUBBLE);
-        }
-
-        Surface::Grass => {
-            if block_sight {
-                // tall grass sprite (not animated)
-                return Some(ENTITY_TALL_GRASS);
-            } else {
-                // Grass is animated now
-                return None;
-            }
-        }
-
-        Surface::Floor => {
-            // Nothing to draw
-            return None;
-        }
-    }
-}
-
 /// Render Wall Shadows (full tile and intertile walls, left and down)
 fn render_wall_shadow(panel: &mut Panel, pos: Pos, map: &Map, sprites: &Vec<SpriteSheet>, shadow_color: Color) {
     let shadow_sprite_key = lookup_spritekey(sprites, "shadowtiles");
@@ -995,6 +972,29 @@ fn render_map(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
                 let sprite = Sprite::new(chr as u32, sprite_key);
                 panel.sprite_cmd(sprite, Color::white(), pos);
             }
+        }
+    }
+}
+
+fn surface_chr(surface: Surface, block_sight: bool) -> Option<u8> {
+    match surface {
+        Surface::Rubble => {
+            return Some(MAP_RUBBLE);
+        }
+
+        Surface::Grass => {
+            if block_sight {
+                // tall grass sprite (not animated)
+                return Some(ENTITY_TALL_GRASS);
+            } else {
+                // Grass is animated now
+                return None;
+            }
+        }
+
+        Surface::Floor => {
+            // Nothing to draw
+            return None;
         }
     }
 }

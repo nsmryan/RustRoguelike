@@ -252,7 +252,7 @@ impl Game {
 
         // emit visible attack positions
         if in_fov == FovResult::Inside {
-            if let Some(Behavior::Armed(turns)) = self.level.entities.behavior.get(&entity_id) {
+            if let Some(Behavior::Armed(_turns)) = self.level.entities.behavior.get(&entity_id) {
                 let start_pos = self.level.entities.pos[&entity_id];
                 let explode_aoe = aoe_fill(&self.level.map, AoeEffect::Freeze, start_pos, AI_EXPLODE_RADIUS, &self.config);
                 for explode_pos in explode_aoe.positions() {

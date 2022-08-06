@@ -771,8 +771,6 @@ fn finalize_use_item(item_class: ItemClass, level: &Level, settings: &mut Settin
 }
 
 fn finalize_use(level: &Level, settings: &mut Settings, msg_log: &mut MsgLog) {
-    let player_id = level.find_by_name(EntityName::Player).unwrap();
-
     // If there is no direction, the user tried an invalid movement.
     // Returning here will just end use-mode.
     if settings.use_dir.is_none() {
