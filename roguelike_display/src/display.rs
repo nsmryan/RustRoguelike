@@ -544,6 +544,7 @@ impl Display {
                 } else {
                     self.state.cursor_pos = None;
                     self.state.cursor_action = None;
+                    self.state.entities_at_cursor.clear();
 
                     let tiles = lookup_spritekey(&self.sprites, "rustrogueliketiles");
 
