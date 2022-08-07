@@ -4,7 +4,7 @@
 4 grass
 5 portal
 6 column
-7 energy_bit
+7 energy
 8 armillary_sphere
 9 up_intertile_wall
 10 down_intertile_wall
@@ -14,8 +14,8 @@
 14 statue_2
 15 pottery_1
 16 pottery_2
-17 right_arrow
-18 upright_arrow
+17 arrow_horiz
+18 arrow_diag
 19 darkness
 20 right_fulltile_shadow
 21 up_fulltile_shadow
@@ -52,8 +52,8 @@
 52 unnamed_artifact_3
 53 beam_leftup_to_downright
 54 beam_downleft_to_upright
-55 horizontal
-56 vertical
+55 beam_horizontal
+56 beam_vertical
 57 illusionary_player
 58 illusionary_fulltile_wall
 59 illusionary_up_intertile_wall
@@ -65,7 +65,7 @@
 65 spike_trap
 66 torch
 67 seed
-68 energy_bit_2
+68 energy_2
 69 khopesh
 70 smoke_bomb
 71 shield
