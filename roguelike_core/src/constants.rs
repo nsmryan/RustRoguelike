@@ -197,33 +197,33 @@ pub const ENTITY_TRIGGER_5: u8 = 228;
 pub const ENTITY_CURSOR: u8 = 231;
 pub const ENTITY_UNKNOWN_GOLEM_MARKER: u8 = 239;
 
-pub const SHADOW_FULLTILE_LEFT: u8 = 2;
-pub const SHADOW_FULLTILE_LEFT_DOWN: u8 = 6;
-pub const SHADOW_FULLTILE_DOWN: u8 = 1;
-pub const SHADOW_FULLTILE_DOWN_LEFT: u8 = 0;
+//pub const SHADOW_FULLTILE_LEFT: u8 = 2;
+//pub const SHADOW_FULLTILE_LEFT_DOWN: u8 = 6;
+//pub const SHADOW_FULLTILE_DOWN: u8 = 1;
+//pub const SHADOW_FULLTILE_DOWN_LEFT: u8 = 0;
+//
+//pub const SHADOW_INTERTILE_LEFT: u8 = 3;
+//pub const SHADOW_INTERTILE_LEFT_DOWN: u8 = 7;
+//pub const SHADOW_INTERTILE_DOWN: u8 = 5;
+//pub const SHADOW_INTERTILE_DOWN_LEFT: u8 = 4;
 
-pub const SHADOW_INTERTILE_LEFT: u8 = 3;
-pub const SHADOW_INTERTILE_LEFT_DOWN: u8 = 7;
-pub const SHADOW_INTERTILE_DOWN: u8 = 5;
-pub const SHADOW_INTERTILE_DOWN_LEFT: u8 = 4;
-
-pub const GRASS_INTERTILE_UP: u8 = 105;
-pub const GRASS_INTERTILE_DOWN: u8 = 106;
-pub const GRASS_INTERTILE_LEFT: u8 = 107;
-pub const GRASS_INTERTILE_RIGHT: u8 = 108;
+//pub const GRASS_INTERTILE_UP: u8 = 105;
+//pub const GRASS_INTERTILE_DOWN: u8 = 106;
+//pub const GRASS_INTERTILE_LEFT: u8 = 107;
+//pub const GRASS_INTERTILE_RIGHT: u8 = 108;
 
 /* Triggers */
-pub const ENTITY_GATE_TRIGGER: u8 = ENTITY_TRIGGER_2;
+//pub const ENTITY_GATE_TRIGGER: u8 = ENTITY_TRIGGER_2;
 
 /* Traps */
-pub const ENTITY_SPIKE_TRAP: u8 = 119;
-pub const ENTITY_BLINK_TRAP: u8 = ENTITY_TRIGGER_1;
-pub const ENTITY_TRAP_SOUND: u8 = ENTITY_TRIGGER_5;
-pub const ENTITY_FREEZE_TRAP: u8 = ENTITY_TRIGGER_4;
+//pub const ENTITY_SPIKE_TRAP: u8 = 119;
+//pub const ENTITY_BLINK_TRAP: u8 = ENTITY_TRIGGER_1;
+//pub const ENTITY_TRAP_SOUND: u8 = ENTITY_TRIGGER_5;
+//pub const ENTITY_FREEZE_TRAP: u8 = ENTITY_TRIGGER_4;
 
 /* Arrows */
-pub const ARROW_HORIZ: u8 = 16;
-pub const ARROW_DIAG: u8 = 17;
+//pub const ARROW_HORIZ: u8 = 16;
+//pub const ARROW_DIAG: u8 = 17;
 
 /* Characters */
 pub const EXCLAMATION_POINT: u8 = 33 as u8;

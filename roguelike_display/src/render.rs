@@ -24,7 +24,7 @@ pub fn render_all(panels: &mut Panels, display_state: &mut DisplayState, sprites
     display_state.time += dt;
 
     /* Draw Background */
-    render_background(panels.get_mut(&PanelName::Map).unwrap(), &display_state.map, sprites);
+    render_background(panels.get_mut(&PanelName::Map).unwrap(), display_state, sprites);
 
     /* Draw Map */
     render_panels(panels, display_state, config, sprites);
@@ -76,7 +76,7 @@ fn render_panels(panels: &mut Panels,
         render_entity_type(panel, EntityType::Trigger, display_state, config, sprites);
         render_entity_type(panel, EntityType::Item, display_state, config, sprites);
 
-        render_map_middle(panel, &display_state.map, config, sprites);
+        render_map_middle(panel, display_state, config, sprites);
     }
 
     {
@@ -717,8 +717,8 @@ fn render_inventory(panel: &mut Panel, display_state: &DisplayState, sprites: &V
 }
 
 /// render the background files, including water tiles
-fn render_background(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
-    let (map_width, map_height) = map.size();
+fn render_background(panel: &mut Panel, display_state: &mut DisplayState, sprites: &Vec<SpriteSheet>) {
+    let (map_width, map_height) = display_state.map.size();
 
     let sprite_key = lookup_spritekey(sprites, "rustrogueliketiles");
 
@@ -726,13 +726,14 @@ fn render_background(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
         for x in 0..map_width {
             let map_pos = Pos::new(x, y);
 
-            let tile = &map[(x, y)];
+            let tile = &display_state.map[(x, y)];
             // TODO why are these branches identical?
+            let index = display_state.tileset_index(&"open_tile").unwrap();
             if tile.tile_type != TileType::Water {
-                let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
+                let sprite = Sprite::new(index as u32, sprite_key);
                 panel.sprite_cmd(sprite, Color::white(), map_pos);
             } else {
-                let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
+                let sprite = Sprite::new(index as u32, sprite_key);
                 panel.sprite_cmd(sprite, Color::white(), map_pos);
             }
         }
@@ -740,45 +741,49 @@ fn render_background(panel: &mut Panel, map: &Map, sprites: &Vec<SpriteSheet>) {
 }
 
 /// Render Wall Shadows (full tile and intertile walls, left and down)
-fn render_wall_shadow(panel: &mut Panel, pos: Pos, map: &Map, sprites: &Vec<SpriteSheet>, shadow_color: Color) {
+fn render_wall_shadow(panel: &mut Panel, pos: Pos, display_state: &mut DisplayState, sprites: &Vec<SpriteSheet>, shadow_color: Color) {
     let shadow_sprite_key = lookup_spritekey(sprites, "shadowtiles");
 
-    let tile = map[pos];
+    let tile = display_state.map[pos];
 
-    let (_map_width, map_height) = map.size();
+    let (_map_width, map_height) = display_state.map.size();
     let (x, y) = pos.to_tuple();
 
     let left_valid = x - 1 > 0;
     let down_valid = y + 1 < map_height;
     let down_left_valid = left_valid && down_valid;
-    let left_wall = left_valid && map[(x - 1, y)].tile_type == TileType::Wall;
-    let down_wall = down_valid && map[(x, y + 1)].tile_type == TileType::Wall;
-    let down_left_wall = down_left_valid && map[(x - 1, y + 1)].tile_type == TileType::Wall;
+    let left_wall = left_valid && display_state.map[(x - 1, y)].tile_type == TileType::Wall;
+    let down_wall = down_valid && display_state.map[(x, y + 1)].tile_type == TileType::Wall;
+    let down_left_wall = down_left_valid && display_state.map[(x - 1, y + 1)].tile_type == TileType::Wall;
 
     /* render full tile wall shadows */
     if tile.tile_type == TileType::Wall {
         if left_valid && !left_wall {
             // left
             let shadow_pos = Pos::new(x - 1, y);
-            let shadow_left_upper = Sprite::new(SHADOW_FULLTILE_LEFT as u32, shadow_sprite_key);
+            let index = display_state.tileset_index(&"right_fulltile_shadow").unwrap();
+            let shadow_left_upper = Sprite::new(index as u32, shadow_sprite_key);
             panel.sprite_cmd(shadow_left_upper, shadow_color, shadow_pos);
         }
 
         if down_left_valid && !down_left_wall {
             let shadow_pos = Pos::new(x - 1, y + 1);
-            let shadow_left_lower = Sprite::new(SHADOW_FULLTILE_LEFT_DOWN as u32, shadow_sprite_key);
+            let index = display_state.tileset_index(&"up_fulltile_shadow").unwrap();
+            let shadow_left_lower = Sprite::new(index as u32, shadow_sprite_key);
             panel.sprite_cmd(shadow_left_lower, shadow_color, shadow_pos);
         }
 
         if down_valid && !down_wall {
             // lower
-            let shadow_lower_right = Sprite::new(SHADOW_FULLTILE_DOWN as u32, shadow_sprite_key);
+            let index = display_state.tileset_index(&"up_fulltile_shadow").unwrap();
+            let shadow_lower_right = Sprite::new(index as u32, shadow_sprite_key);
             let shadow_pos = Pos::new(x, y + 1);
             panel.sprite_cmd(shadow_lower_right, shadow_color, shadow_pos);
         }
 
         if down_left_valid && !down_left_wall {
-            let shadow_lower_left = Sprite::new(SHADOW_FULLTILE_DOWN_LEFT as u32, shadow_sprite_key);
+            let index = display_state.tileset_index(&"right_fulltile_shadow").unwrap();
+            let shadow_lower_left = Sprite::new(index as u32, shadow_sprite_key);
             let shadow_pos = Pos::new(x - 1, y + 1);
             panel.sprite_cmd(shadow_lower_left, shadow_color, shadow_pos);
         }
@@ -788,14 +793,16 @@ fn render_wall_shadow(panel: &mut Panel, pos: Pos, map: &Map, sprites: &Vec<Spri
         // left
         if left_valid {
             let shadow_pos = Pos::new(x - 1, y);
-            let shadow_left_upper = Sprite::new(SHADOW_INTERTILE_LEFT as u32, shadow_sprite_key);
+            let index = display_state.tileset_index(&"right_intertile_shadow").unwrap();
+            let shadow_left_upper = Sprite::new(index as u32, shadow_sprite_key);
             panel.sprite_cmd(shadow_left_upper, shadow_color, shadow_pos);
         }
 
         // left down
         if down_left_valid {
             let shadow_pos = Pos::new(x - 1, y + 1);
-            let shadow_left_lower = Sprite::new(SHADOW_INTERTILE_LEFT_DOWN as u32, shadow_sprite_key);
+            let index = display_state.tileset_index(&"up_intertile_shadow").unwrap();
+            let shadow_left_lower = Sprite::new(index as u32, shadow_sprite_key);
             panel.sprite_cmd(shadow_left_lower, shadow_color, shadow_pos);
         }
     } 
@@ -803,14 +810,16 @@ fn render_wall_shadow(panel: &mut Panel, pos: Pos, map: &Map, sprites: &Vec<Spri
     if tile.bottom_wall == Wall::ShortWall {
         // lower
         if down_valid {
-            let shadow_lower_right = Sprite::new(SHADOW_INTERTILE_DOWN as u32, shadow_sprite_key);
+            let index = display_state.tileset_index(&"up_intertile_shadow").unwrap();
+            let shadow_lower_right = Sprite::new(index as u32, shadow_sprite_key);
             let shadow_pos = Pos::new(x, y + 1);
             panel.sprite_cmd(shadow_lower_right, shadow_color, shadow_pos);
         }
 
         // left down
         if down_left_valid {
-            let shadow_lower_left = Sprite::new(SHADOW_INTERTILE_DOWN_LEFT as u32, shadow_sprite_key);
+            let index = display_state.tileset_index(&"right_intertile_shadow").unwrap();
+            let shadow_lower_left = Sprite::new(index as u32, shadow_sprite_key);
             let shadow_pos = Pos::new(x - 1, y + 1);
             panel.sprite_cmd(shadow_lower_left, shadow_color, shadow_pos);
         }
@@ -831,11 +840,11 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, config: &Co
 
                 // Lower walls
                 if tile.bottom_wall == Wall::ShortWall && tile.bottom_material == Surface::Grass {
-                    let index = display_state.tileset_index(&"down_intertile_grass_wall");
-                    let sprite = Sprite::new(GRASS_INTERTILE_DOWN as u32, sprite_key);
+                    let index = display_state.tileset_index(&"down_intertile_grass_wall").unwrap();
+                    let sprite = Sprite::new(index as u32, sprite_key);
                     panel.sprite_cmd(sprite, wall_color, pos);
                 } else if tile.bottom_wall == Wall::ShortWall {
-                    let index = display_state.tileset_index(&"down_intertile_wall");
+                    let index = display_state.tileset_index(&"down_intertile_wall").unwrap();
                     let sprite = Sprite::new(index as u32, sprite_key);
                     panel.sprite_cmd(sprite, wall_color, pos);
                 } else if tile.bottom_wall == Wall::TallWall {
@@ -868,8 +877,8 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, config: &Co
     }
 }
 
-fn render_map_middle(panel: &mut Panel, map: &Map, config: &Config, sprites: &Vec<SpriteSheet>) {
-    let (map_width, map_height) = map.size();
+fn render_map_middle(panel: &mut Panel, display_state: &mut DisplayState, config: &Config, sprites: &Vec<SpriteSheet>) {
+    let (map_width, map_height) = display_state.map.size();
 
     let sprite_key = lookup_spritekey(sprites, "rustrogueliketiles");
     for y in 0..map_height {
@@ -877,18 +886,18 @@ fn render_map_middle(panel: &mut Panel, map: &Map, config: &Config, sprites: &Ve
             let pos = Pos::new(x, y);
 
             let shadow_color = config.color_shadow;
-            render_wall_shadow(panel, pos, map, sprites, shadow_color);
+            render_wall_shadow(panel, pos, display_state, sprites, shadow_color);
 
-            let tile = map[pos];
+            let tile = display_state.map[pos];
 
             if tile.tile_type == TileType::Wall {
-                let chr = MAP_WALL;
-                let sprite = Sprite::new(chr as u32, sprite_key);
+                let index = display_state.tileset_index(&"horizontal_wall").unwrap();
+                let sprite = Sprite::new(index as u32, sprite_key);
                 panel.sprite_cmd(sprite, Color::white(), pos);
             }
 
             /* draw the between-tile walls appropriate to this tile */
-            render_intertile_walls(panel, map, sprite_key, pos);
+            render_intertile_walls(panel, sprite_key, pos, display_state);
         }
     }
 }
@@ -967,8 +976,8 @@ fn render_map(display_state: &mut DisplayState, panel: &mut Panel, sprites: &Vec
 
             // if the tile is not empty or water, draw it
             if tile.tile_type == TileType::Water {
-                let chr = MAP_WATER;
-                let sprite = Sprite::new(chr as u32, sprite_key);
+                let index = display_state.tileset_index(&"darkness").unwrap();
+                let sprite = Sprite::new(index as u32, sprite_key);
                 panel.sprite_cmd(sprite, Color::white(), pos);
             }
 
@@ -983,13 +992,13 @@ fn render_map(display_state: &mut DisplayState, panel: &mut Panel, sprites: &Vec
 fn surface_index(display_state: &DisplayState, surface: Surface, block_sight: bool) -> Option<u8> {
     match surface {
         Surface::Rubble => {
-            return Some(display_state.tileset_index(&"rubble"));
+            return Some(display_state.tileset_index(&"rubble")).unwrap();
         }
 
         Surface::Grass => {
             if block_sight {
                 // tall grass sprite (not animated)
-                return Some(display_state.tileset_index(&"tall_grass"));
+                return Some(display_state.tileset_index(&"tall_grass")).unwrap();
             } else {
                 // Grass is animated now
                 return None;
@@ -1004,37 +1013,45 @@ fn surface_index(display_state: &DisplayState, surface: Surface, block_sight: bo
 }
 
 fn render_intertile_walls(panel: &mut Panel,
-                          map: &Map,
                           sprite_key: SpriteKey,
-                          pos: Pos) {
-    let tile = map[pos];
+                          pos: Pos,
+                          display_state: &mut DisplayState) {
+    let tile = display_state.map[pos];
     let wall_color = Color::white();
 
     // Left walls
     if tile.left_wall == Wall::ShortWall && tile.left_material == Surface::Grass {
-        let sprite = Sprite::new(GRASS_INTERTILE_LEFT as u32, sprite_key);
+        let index = display_state.tileset_index(&"left_intertile_grass_wall").unwrap();
+        let sprite = Sprite::new(index as u32, sprite_key);
         panel.sprite_cmd(sprite, wall_color, pos);
     } else if tile.left_wall == Wall::ShortWall {
-        let sprite = Sprite::new(MAP_THIN_WALL_LEFT as u32, sprite_key);
+        let index = display_state.tileset_index(&"left_intertile_wall").unwrap();
+        let sprite = Sprite::new(index as u32, sprite_key);
         panel.sprite_cmd(sprite, wall_color, pos);
     } else if tile.left_wall == Wall::TallWall {
-        let sprite = Sprite::new(MAP_THICK_WALL_LEFT as u32, sprite_key);
-        panel.sprite_cmd(sprite, wall_color, pos);
+        // TODO these are no longer represented in the tile set.
+        unreachable!();
+        //let sprite = Sprite::new(MAP_THICK_WALL_LEFT as u32, sprite_key);
+        //panel.sprite_cmd(sprite, wall_color, pos);
     }
 
     // Right walls
-    if pos.x + 1 < map.width() {
+    if pos.x + 1 < display_state.map.width() {
         let right_pos = move_x(pos, 1);
-        let right_tile = &map[right_pos];
+        let right_tile = &display_state.map[right_pos];
         if right_tile.left_wall == Wall::ShortWall && right_tile.left_material == Surface::Grass {
-            let sprite = Sprite::new(GRASS_INTERTILE_RIGHT as u32, sprite_key);
+            let index = display_state.tileset_index(&"right_intertile_grass_wall").unwrap();
+            let sprite = Sprite::new(index as u32, sprite_key);
             panel.sprite_cmd(sprite, wall_color, pos);
         } else if right_tile.left_wall == Wall::ShortWall {
-            let sprite = Sprite::new(MAP_THIN_WALL_RIGHT as u32, sprite_key);
+            let index = display_state.tileset_index(&"right_intertile_wall").unwrap();
+            let sprite = Sprite::new(index as u32, sprite_key);
             panel.sprite_cmd(sprite, wall_color, pos);
         } else if right_tile.left_wall == Wall::TallWall {
-            let sprite = Sprite::new(MAP_THICK_WALL_RIGHT as u32, sprite_key);
-            panel.sprite_cmd(sprite, wall_color, pos);
+            // TODO these are no longer represented in the tile set.
+            unreachable!();
+            //let sprite = Sprite::new(MAP_THICK_WALL_RIGHT as u32, sprite_key);
+            //panel.sprite_cmd(sprite, wall_color, pos);
         }
     }
 
@@ -1043,16 +1060,20 @@ fn render_intertile_walls(panel: &mut Panel,
     // Upper walls
     if pos.y - 1 >= 0 {
         let up_pos = move_y(pos, -1);
-        let up_tile = &map[up_pos];
+        let up_tile = &display_state.map[up_pos];
         if up_tile.bottom_wall == Wall::ShortWall && up_tile.bottom_material == Surface::Grass {
-            let sprite = Sprite::new(GRASS_INTERTILE_UP as u32, sprite_key);
+            let index = display_state.tileset_index(&"up_intertile_grass_wall").unwrap();
+            let sprite = Sprite::new(index as u32, sprite_key);
             panel.sprite_cmd(sprite, wall_color, pos);
         } else if up_tile.bottom_wall == Wall::ShortWall {
-            let sprite = Sprite::new(MAP_THIN_WALL_TOP as u32, sprite_key);
+            let index = display_state.tileset_index(&"up_intertile_wall").unwrap();
+            let sprite = Sprite::new(index as u32, sprite_key);
             panel.sprite_cmd(sprite, wall_color, pos);
         } else if up_tile.bottom_wall == Wall::TallWall {
-            let sprite = Sprite::new(MAP_THICK_WALL_TOP as u32, sprite_key);
-            panel.sprite_cmd(sprite, wall_color, pos);
+            // TODO these are no longer represented in the tile set.
+            unreachable!();
+            //let sprite = Sprite::new(MAP_THICK_WALL_TOP as u32, sprite_key);
+            //panel.sprite_cmd(sprite, wall_color, pos);
         }
     }
 }
@@ -1146,23 +1167,25 @@ fn render_effects(panel: &mut Panel,
                 let sprite_index;
                 match dir {
                     Direction::Right | Direction::Left => {
-                        sprite_index = GOLEM_ATTACK_HORIZ;
+                        sprite_index = display_state.tileset_index(&"beam_horizontal").unwrap();
                         rotation = 0.0;
                     }
 
                     Direction::Up | Direction::Down => {
-                        sprite_index = GOLEM_ATTACK_HORIZ;
+                        sprite_index = display_state.tileset_index(&"beam_horizontal").unwrap();
                         rotation = 90.0;
                     }
 
                     Direction::UpRight | Direction::DownLeft => {
                         rotation = 0.0;
-                        sprite_index = GOLEM_ATTACK_DIAG;
+                        // TODO is this correct, or beam_leftup_to_downright?
+                        sprite_index = display_state.tileset_index(&"beam_downleft_to_upright").unwrap();
                     }
 
                     Direction::DownRight | Direction::UpLeft => {
                         rotation = 90.0;
-                        sprite_index = GOLEM_ATTACK_DIAG;
+                        // TODO is this correct, or beam_leftup_to_downright?
+                        sprite_index = display_state.tileset_index(&"beam_downleft_to_upright").unwrap();
                     }
                 };
 
@@ -1282,8 +1305,8 @@ fn render_entity(panel: &mut Panel,
             }
         } else {
             let tiles = lookup_spritekey(sprites, "rustrogueliketiles");
-            let chr = display_state.chr[&entity_id];
-            let sprite = Sprite::new(chr as u32, tiles);
+            let index = display_state.tile_index[&entity_id];
+            let sprite = Sprite::new(index as u32, tiles);
 
             panel.sprite_cmd(sprite, color, pos);
             animation_result.sprite = Some(sprite);
@@ -1294,8 +1317,8 @@ fn render_entity(panel: &mut Panel,
             if display_state.entity_is_in_fov(entity_id) == FovResult::Edge {
                 if display_state.impressions.iter().all(|impresssion| impresssion.pos != pos) {
                     let tiles = lookup_spritekey(sprites, "rustrogueliketiles");
-                    //let index = display_state.tileset_index(
-                    let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
+                    let index = display_state.tileset_index(&"golem_impression").unwrap();
+                    let impression_sprite = Sprite::new(index as u32, tiles);
                     display_state.impressions.push(Impression::new(impression_sprite, pos));
                 }
             }
@@ -1373,10 +1396,12 @@ fn render_overlay_use(panel: &mut Panel,
 
     let sprite_key = lookup_spritekey(sprites, "rustrogueliketiles");
 
+    let arrow_horiz = display_state.tileset_index(&"arrow_horiz").unwrap();
+    let arrow_diag = display_state.tileset_index(&"arrow_diag").unwrap();
     if let Some(use_dir) = display_state.use_dir {
         if let Some(_use_pos) = display_state.use_pos {
             let arrow_pos = use_dir.offset_pos(player_pos, 1);
-            render_arrow(panel, sprite_key, use_dir, arrow_pos, direction_color);
+            render_arrow(panel, sprite_key, use_dir, arrow_pos, direction_color, arrow_horiz, arrow_diag);
 
             for hit_pos in display_state.hit_positions.iter() {
                panel.highlight_cmd(attack_highlight_color, *hit_pos);
@@ -1390,7 +1415,7 @@ fn render_overlay_use(panel: &mut Panel,
             }
 
             let arrow_pos = use_dir.offset_pos(player_pos, 1);
-            render_arrow(panel, sprite_key, *use_dir, arrow_pos, direction_color);
+            render_arrow(panel, sprite_key, *use_dir, arrow_pos, direction_color, arrow_horiz, arrow_diag);
         }
 
         for hit_pos in display_state.hit_positions.iter() {
@@ -1453,6 +1478,10 @@ fn render_game_overlays(panel: &mut Panel,
         }
     }
 
+
+    let arrow_horiz = display_state.tileset_index(&"arrow_horiz").unwrap();
+    let arrow_diag = display_state.tileset_index(&"arrow_diag").unwrap();
+
     // Draw use-mode overlay
     if display_state.state == GameState::Use {
         let mut highlight_color = config.color_light_grey;
@@ -1467,12 +1496,12 @@ fn render_game_overlays(panel: &mut Panel,
         if UseAction::Interact == display_state.use_action {
             if let Some(use_dir) = display_state.use_dir {
                 let arrow_pos = use_dir.offset_pos(player_pos, 1);
-                render_arrow(panel, sprite_key, use_dir, arrow_pos, direction_color);
+                render_arrow(panel, sprite_key, use_dir, arrow_pos, direction_color, arrow_horiz, arrow_diag);
             } else {
                 for (use_pos, use_dir) in display_state.use_dirs.iter() {
                     panel.highlight_cmd(highlight_color, *use_pos);
 
-                    render_arrow(panel, tiles_key, *use_dir, *use_pos, direction_color);
+                    render_arrow(panel, tiles_key, *use_dir, *use_pos, direction_color, arrow_horiz, arrow_diag);
                 }
             }
         } else if let UseAction::Item(_item_class) = display_state.use_action {
@@ -1497,7 +1526,7 @@ fn render_game_overlays(panel: &mut Panel,
             }
 
             if let Some(dir) = display_state.direction.get(&entity_id) {
-                render_arrow(panel, tiles_key, *dir, pos, direction_color);
+                render_arrow(panel, tiles_key, *dir, pos, direction_color, arrow_horiz, arrow_diag);
             }
         }
     }
@@ -1570,10 +1599,12 @@ fn render_overlay_direction(panel: &mut Panel,
             if x_diff.abs() < 5 && y_diff.abs() < 5 {
                 let res: i8 = x_diff as i8 - y_diff as i8;
                 if res <= 0 {
-                    let sprite = Sprite::new(MAP_GROUND as u32, tiles_key);
+                    let index = display_state.tileset_index(&"open_tile").unwrap();
+                    let sprite = Sprite::new(index as u32, tiles_key);
                     panel.sprite_cmd(sprite, config.color_light_green, pos);
                 } else {
-                    let sprite = Sprite::new(MAP_GROUND as u32, tiles_key);
+                    let index = display_state.tileset_index(&"open_tile").unwrap();
+                    let sprite = Sprite::new(index as u32, tiles_key);
                     panel.sprite_cmd(sprite, config.color_light_grey, pos);
                 }
                 let sprite = Sprite::new(('0' as u8 + res.abs() as u8) as u32, tiles_key);
@@ -1596,7 +1627,7 @@ fn render_overlay_cursor(panel: &mut Panel, display_state: &mut DisplayState, co
         let percent = time_since_toggle / config.cursor_fade_seconds;
         color.a = (config.cursor_alpha as f32 * percent) as u8;
 
-        let index = display_state.tileset_index(&"targeting");
+        let index = display_state.tileset_index(&"targeting").unwrap();
         let sprite = Sprite::new(index as u32, tiles_key);
         panel.sprite_cmd(sprite, color, cursor_pos);
 
@@ -1618,7 +1649,7 @@ fn render_overlay_fov(panel: &mut Panel,
             let pos = Pos::new(x, y);
 
             if display_state.pos_is_in_fov(pos) == FovResult::Inside {
-                let index = display_state.tileset_index(&"open_tile");
+                let index = display_state.tileset_index(&"open_tile").unwrap();
                 let sprite = Sprite::new(index as u32, tiles_key);
                 panel.sprite_cmd(sprite, config.color_light_green, pos);
             }
@@ -1647,22 +1678,22 @@ fn render_overlay_attack(panel: &mut Panel,
 }
 
 fn render_overlay_floodfill(panel: &mut Panel,
-                            map: &Map,
+                            display_state: &mut DisplayState,
                             config: &Config,
                             tiles_key: SpriteKey) {
     let mut highlight_color = config.color_light_orange;
 
     highlight_color.a = 50;
-    let fill_metric = map_fill_metric(map);
+    let fill_metric = map_fill_metric(&display_state.map);
 
     for (pos, near_count) in fill_metric {
         let amount = near_count as f32 / 50.0;
         let adj_color = lerp_color(config.color_ice_blue, config.color_red, amount);
 
         //tile_sprite.draw_char(panel, , pos, adj_color);
-        //let index = display_state.tileset_index(&"open_tile");
+        let index = display_state.tileset_index(&"open_tile").unwrap();
         // TODO not sure which one to use here.
-        let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, tiles_key);
+        let sprite = Sprite::new(index as u32, tiles_key);
         panel.sprite_cmd(sprite, adj_color, pos);
 
         panel.text_cmd(&format!("{}", near_count), highlight_color, pos, 1.0);
@@ -1718,7 +1749,7 @@ fn render_overlays(panel: &mut Panel,
     // 40 are nearly fully open
     // 49 may be fully open
     if config.overlay_floodfill {
-        render_overlay_floodfill(panel, &display_state.map, config, tiles_key);
+        render_overlay_floodfill(panel, display_state, config, tiles_key);
     }
 }
 
@@ -1867,9 +1898,13 @@ fn render_movement_overlay(panel: &mut Panel,
     if let Some(move_positions) = display_state.entity_movements.get(&entity_id) {
         let current_pos = display_state.pos[&entity_id];
         let sprite_key = lookup_spritekey(sprites, "rustrogueliketiles");
+
+        let arrow_horiz = display_state.tileset_index(&"arrow_horiz").unwrap();
+        let arrow_diag = display_state.tileset_index(&"arrow_diag").unwrap();
+
         for move_pos in move_positions.iter() {
             if let Some(dir) = Direction::from_positions(current_pos, *move_pos) {
-                render_arrow(panel, sprite_key, dir, *move_pos, highlight_color);
+                render_arrow(panel, sprite_key, dir, *move_pos, highlight_color, arrow_horiz, arrow_diag);
             }
         }
     }
@@ -1900,41 +1935,43 @@ fn render_arrow(panel: &mut Panel,
                 sprite_key: SpriteKey,
                 dir: Direction,
                 pos: Pos,
-                direction_color: Color) {
+                direction_color: Color,
+                arrow_horiz: u8,
+                arrow_diag: u8) {
     let sprite_index;
     let rotation: f64;
     match dir {
         Direction::Up => {
             rotation = -90.0;
-            sprite_index = ARROW_HORIZ;
+            sprite_index = arrow_horiz;
         }
         Direction::Down => {
             rotation = 90.0;
-            sprite_index = ARROW_HORIZ;
+            sprite_index = arrow_horiz;
         }
         Direction::Right => {
             rotation = 0.0;
-            sprite_index = ARROW_HORIZ;
+            sprite_index = arrow_horiz;
         }
         Direction::Left => {
             rotation = 180.0;
-            sprite_index = ARROW_HORIZ;
+            sprite_index = arrow_horiz;
         }
         Direction::DownLeft => {
             rotation = -180.0;
-            sprite_index = ARROW_DIAG;
+            sprite_index = arrow_diag;
         }
         Direction::DownRight => {
             rotation = 90.0;
-            sprite_index = ARROW_DIAG;
+            sprite_index = arrow_diag;
         }
         Direction::UpLeft => {
             rotation = -90.0;
-            sprite_index = ARROW_DIAG;
+            sprite_index = arrow_diag;
         }
         Direction::UpRight => {
             rotation = 0.0;
-            sprite_index = ARROW_DIAG;
+            sprite_index = arrow_diag;
         }
     };
 

@@ -288,7 +288,8 @@ impl Display {
             if name == EntityName::Key {
                 return Some(self.loop_sprite("key", config.idle_speed));
             } else if name == EntityName::SpikeTrap {
-                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_SPIKE_TRAP as char);
+                let index = self.state.tileset_index(&"spike_trap").unwrap();
+                let sprite = self.static_sprite("rustrogueliketiles", index);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Armil {
                 if matches!(self.state.behavior.get(&entity_id), Some(Behavior::Armed(_))) {
@@ -299,32 +300,42 @@ impl Display {
             } else if name == EntityName::Lantern {
                 return Some(self.loop_sprite("Lantern_Idle", config.fire_speed));
             } else if name == EntityName::Smoke {
-                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_SMOKE as char);
+                let index = self.state.tileset_index(&"smoke").unwrap();
+                let sprite = self.static_sprite("rustrogueliketiles", index);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Khopesh {
-                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_KHOPESH as char);
+                let index = self.state.tileset_index(&"khopesh").unwrap();
+                let sprite = self.static_sprite("rustrogueliketiles", index);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Magnifier {
-                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_MAGNIFIER as char);
+                let index = self.state.tileset_index(&"lens").unwrap();
+                let sprite = self.static_sprite("rustrogueliketiles", index);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Sling {
-                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_SLING as char);
+                let index = self.state.tileset_index(&"sling").unwrap();
+                let sprite = self.static_sprite("rustrogueliketiles", index);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::GlassEye {
-                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_GLASS_EYE as char);
+                let index = self.state.tileset_index(&"crystal_ball").unwrap();
+                let sprite = self.static_sprite("rustrogueliketiles", index);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Herb {
-                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_HERB as char);
+                let index = self.state.tileset_index(&"herb").unwrap();
+                let sprite = self.static_sprite("rustrogueliketiles", index);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::SeedOfStone {
-                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_SEED_OF_STONE as char);
+                let index = self.state.tileset_index(&"seed").unwrap();
+                let sprite = self.static_sprite("rustrogueliketiles", index);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::SeedCache {
-                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_SEED_CACHE as char);
+                let index = self.state.tileset_index(&"seed_pouch").unwrap();
+                let sprite = self.static_sprite("rustrogueliketiles", index);
                 return Some(Animation::Loop(sprite));
             } else if name == EntityName::Teleporter {
-                let sprite = self.static_sprite("rustrogueliketiles", ENTITY_TELEPORTER as char);
-                return Some(Animation::Loop(sprite));
+                // TODO do we still have a sprite for this?
+                //let index = self.state.tileset_index(&"seed_pouch").unwrap();
+                //let sprite = self.static_sprite("rustrogueliketiles", ENTITY_TELEPORTER as char);
+                //return Some(Animation::Loop(sprite));
             } else if name == EntityName::Grass {
                 let pos = self.state.pos[&entity_id];
                 if self.state.map.is_within_bounds(pos) && self.state.map[pos].block_sight {
@@ -333,9 +344,12 @@ impl Display {
                     return Some(self.random_sprite("GrassAnim", config.grass_idle_speed));
                 }
             } else if name == EntityName::Statue {
-                let statues = vec!(MAP_STATUE_1, MAP_STATUE_2, MAP_STATUE_3, MAP_STATUE_4, MAP_STATUE_5, MAP_STATUE_6);
+                let statue_1 = self.state.tileset_index(&"statue_1").unwrap();
+                let statue_2 = self.state.tileset_index(&"statue_2").unwrap();
+                // TODO there were previously more statues used.
+                let statues = vec!(statue_1, statue_2);
                 let index = roguelike_utils::rng::choose(&mut self.rng, &statues).unwrap();
-                let sprite = self.static_sprite("rustrogueliketiles", index as char);
+                let sprite = self.static_sprite("rustrogueliketiles", index);
                 return Some(Animation::Loop(sprite));
             }
         }
@@ -1227,11 +1241,10 @@ impl DisplayState {
     }
 
     pub fn entity_name_to_tile_index(&self, name: EntityName) -> u8 {
-        let mut index = 255;
+        let index;
         let entity_name_str = format!("{}", name);
-        // TODO are there ever entities without tiles? If so, tileset_index
-        // will have to return an option which is unpacked here.
-        index = self.tileset_index(&entity_name_str),
+        // Use 255 as an empty tile.
+        index = self.tileset_index(&entity_name_str).unwrap_or(255);
         /*
         match name {
             EntityName::Player => index = self.tileset_index(&entity_name_str),
@@ -1269,8 +1282,8 @@ impl DisplayState {
         return index;
     }
 
-    pub fn tileset_index(&self, name: &str) -> u8 {
-        return *self.tileset_names.get(name).expect("Name not in tileset!");
+    pub fn tileset_index(&self, name: &str) -> Option<u8> {
+        return self.tileset_names.get(name).map(|index| *index - 1);
     }
 
     pub fn update_animations(&mut self, rng: &mut Rand32, config: &Config) {
