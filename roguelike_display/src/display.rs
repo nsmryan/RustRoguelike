@@ -508,7 +508,8 @@ impl Display {
 
             InfoMsg::Impression(pos) => {
                 let tiles = lookup_spritekey(&self.sprites, "rustrogueliketiles");
-                let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
+                let index = self.state.tileset_index(&"golem_impression").unwrap();
+                let impression_sprite = Sprite::new(index as u32, tiles);
                 self.state.impressions.push(Impression::new(impression_sprite, pos));
             }
 
@@ -548,7 +549,9 @@ impl Display {
                     self.state.cursor_action = None;
 
                     let tiles = lookup_spritekey(&self.sprites, "rustrogueliketiles");
-                    let cursor_sprite = Sprite::new(ENTITY_CURSOR as u32, tiles);
+
+                    let index = self.state.tileset_index(&"targeting").unwrap();
+                    let cursor_sprite = Sprite::new(index as u32, tiles);
                     let color = config.color_mint_green;
                     let fade_effect = Effect::fade(cursor_sprite, color, config.cursor_alpha, 0, pos, config.cursor_fade_seconds);
                     self.state.play_effect(fade_effect);
@@ -593,7 +596,8 @@ impl Display {
                         // NOTE it is slightly odd to look up this sprite sheet here and not in
                         // render.rs.
                         let tiles = lookup_spritekey(&self.sprites, "rustrogueliketiles");
-                        let impression_sprite = Sprite::new(ENTITY_UNKNOWN as u32, tiles);
+                        let index = self.state.tileset_index(&"golem_impression").unwrap();
+                        let impression_sprite = Sprite::new(index as u32, tiles);
                         self.state.impressions.push(Impression::new(impression_sprite, pos));
                     }
                 }

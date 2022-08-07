@@ -98,104 +98,104 @@ pub const ISLAND_NUM_OBSTACLES: i32 = 15;
 pub const ISLAND_NUM_SUBTRACTIONS_ATTEMPTS: i32 = 50;
 pub const ISLAND_NUM_ADDITION_ATTEMPTS: i32 = 50;
 
-pub const MAP_LAYER_GROUND: usize = 0;
-pub const MAP_LAYER_ENVIRONMENT: usize = 1;
-pub const MAP_LAYER_ENTITIES: usize = 2;
+//pub const MAP_LAYER_GROUND: usize = 0;
+//pub const MAP_LAYER_ENVIRONMENT: usize = 1;
+//pub const MAP_LAYER_ENTITIES: usize = 2;
 
-pub const MAP_GROUND: u8 = 154;
-pub const MAP_WATER: u8 = 171;
-pub const MAP_EMPTY: u8 = 32;
-pub const MAP_EMPTY_CHAR: u8 = 219; // all white square
+//pub const MAP_GROUND: u8 = 154;
+//pub const MAP_WATER: u8 = 171;
+//pub const MAP_EMPTY: u8 = 32;
+//pub const MAP_EMPTY_CHAR: u8 = 219; // all white square
 
-pub const MAP_STATUE_1: u8 = 148;
-pub const MAP_STATUE_2: u8 = 149;
-pub const MAP_STATUE_3: u8 = 140;
-pub const MAP_STATUE_4: u8 = 133;
-pub const MAP_STATUE_5: u8 = 132;
-pub const MAP_STATUE_6: u8 = 151;
+//pub const MAP_STATUE_1: u8 = 148;
+//pub const MAP_STATUE_2: u8 = 149;
+//pub const MAP_STATUE_3: u8 = 140;
+//pub const MAP_STATUE_4: u8 = 133;
+//pub const MAP_STATUE_5: u8 = 132;
+//pub const MAP_STATUE_6: u8 = 151;
 
-pub const MAP_COLUMN: u8 = 42;
-pub const MAP_RUBBLE: u8 = 233;
-pub const MAP_GRASS: u8 = 234;
+//pub const MAP_COLUMN: u8 = 42;
+//pub const MAP_RUBBLE: u8 = 233;
+//pub const MAP_GRASS: u8 = 234;
 
-pub const MAP_TALL_SPIKES: u8 = 136;
-pub const MAP_WIDE_SPIKES: u8 = 137;
+//pub const MAP_TALL_SPIKES: u8 = 136;
+//pub const MAP_WIDE_SPIKES: u8 = 137;
 
-pub const MAP_THIN_WALL_TOP: u8 = 0x9c;
-pub const MAP_THIN_WALL_BOTTOM: u8 = 0x9D;
-pub const MAP_THIN_WALL_LEFT: u8 = 0x9E;
-pub const MAP_THIN_WALL_RIGHT: u8 = 0x9F;
+//pub const MAP_THIN_WALL_TOP: u8 = 0x9c;
+//pub const MAP_THIN_WALL_BOTTOM: u8 = 0x9D;
+//pub const MAP_THIN_WALL_LEFT: u8 = 0x9E;
+//pub const MAP_THIN_WALL_RIGHT: u8 = 0x9F;
 
-pub const MAP_THIN_WALL_TOP_LEFT: u8 = 24;
-pub const MAP_THIN_WALL_BOTTOM_LEFT: u8 = 25;
-pub const MAP_THIN_WALL_TOP_RIGHT: u8 = 26;
-pub const MAP_THIN_WALL_BOTTOM_RIGHT: u8 = 27;
+//pub const MAP_THIN_WALL_TOP_LEFT: u8 = 24;
+//pub const MAP_THIN_WALL_BOTTOM_LEFT: u8 = 25;
+//pub const MAP_THIN_WALL_TOP_RIGHT: u8 = 26;
+//pub const MAP_THIN_WALL_BOTTOM_RIGHT: u8 = 27;
 
-pub const MAP_THICK_WALL_RIGHT: u8 = 175;
-pub const MAP_THICK_WALL_LEFT: u8 = 174;
-pub const MAP_THICK_WALL_TOP: u8 = 172;
-pub const MAP_THICK_WALL_BOTTOM: u8 =  173;
+//pub const MAP_THICK_WALL_RIGHT: u8 = 175;
+//pub const MAP_THICK_WALL_LEFT: u8 = 174;
+//pub const MAP_THICK_WALL_TOP: u8 = 172;
+//pub const MAP_THICK_WALL_BOTTOM: u8 =  173;
 
-pub const MAP_THICK_WALL_TOP_LEFT: u8 = 240;
-pub const MAP_THICK_WALL_BOTTOM_LEFT: u8 = 241;
-pub const MAP_THICK_WALL_TOP_RIGHT: u8 = 242;
-pub const MAP_THICK_WALL_BOTTOM_RIGHT: u8 = 243;
+//pub const MAP_THICK_WALL_TOP_LEFT: u8 = 240;
+//pub const MAP_THICK_WALL_BOTTOM_LEFT: u8 = 241;
+//pub const MAP_THICK_WALL_TOP_RIGHT: u8 = 242;
+//pub const MAP_THICK_WALL_BOTTOM_RIGHT: u8 = 243;
 
-pub const MAP_DOT_TOP_LEFT: u8 = 145;
-pub const MAP_DOT_TOP_RIGHT: u8 = 146;
-pub const MAP_DOT_BOTTOM_LEFT: u8 = 161;
-pub const MAP_DOT_BOTTOM_RIGHT: u8 = 162;
+//pub const MAP_DOT_TOP_LEFT: u8 = 145;
+//pub const MAP_DOT_TOP_RIGHT: u8 = 146;
+//pub const MAP_DOT_BOTTOM_LEFT: u8 = 161;
+//pub const MAP_DOT_BOTTOM_RIGHT: u8 = 162;
 
-pub const MAP_SMALL_DOT_MIDDLE: u8 = 250;
-pub const MAP_FULL: u8 = 13;
-pub const MAP_STAR: u8 = 15;
-pub const MAP_ORB: u8 = 135;
-pub const MAP_WALL: u8 = 150;
+//pub const MAP_SMALL_DOT_MIDDLE: u8 = 250;
+//pub const MAP_FULL: u8 = 13;
+//pub const MAP_STAR: u8 = 15;
+//pub const MAP_ORB: u8 = 135;
+//pub const MAP_WALL: u8 = 150;
 
-pub const MAP_ROOK: u8 = 130;
+//pub const MAP_ROOK: u8 = 130;
 
 /* Items */
-pub const ENTITY_POLAXE: u8 = 0x8C;
-pub const ENTITY_CASTLE: u8 = 0x85;
-pub const ENTITY_ORB: u8 = 135;
-pub const ENTITY_KEY: u8 = 235;
-pub const ENTITY_STONE: u8 = 244;
-pub const ENTITY_DAGGER: u8 = 247;
-pub const ENTITY_SWORD: u8 = 248;
-pub const ENTITY_SHIELD: u8 = 255;
-pub const ENTITY_HAMMER: u8 = 251;
-pub const ENTITY_SPEAR: u8 = 250;
-pub const ENTITY_GREATSWORD: u8 = 254;
-pub const ENTITY_LANTERN: u8 = 134;
-pub const ENTITY_SLING: u8 = 143;
-pub const ENTITY_GLASS_EYE: u8 = 127;
-pub const ENTITY_SEED_CACHE: u8 = 109;
-pub const ENTITY_HERB: u8 = 111;
-pub const ENTITY_SEED_OF_STONE: u8 = 122;
-pub const ENTITY_TELEPORTER: u8 = 110;
-pub const ENTITY_ENERGY_BALL: u8 = 123;
+//pub const ENTITY_POLAXE: u8 = 0x8C;
+//pub const ENTITY_CASTLE: u8 = 0x85;
+//pub const ENTITY_ORB: u8 = 135;
+//pub const ENTITY_KEY: u8 = 235;
+//pub const ENTITY_STONE: u8 = 244;
+//pub const ENTITY_DAGGER: u8 = 247;
+//pub const ENTITY_SWORD: u8 = 248;
+//pub const ENTITY_SHIELD: u8 = 255;
+//pub const ENTITY_HAMMER: u8 = 251;
+//pub const ENTITY_SPEAR: u8 = 250;
+//pub const ENTITY_GREATSWORD: u8 = 254;
+//pub const ENTITY_LANTERN: u8 = 134;
+//pub const ENTITY_SLING: u8 = 143;
+//pub const ENTITY_GLASS_EYE: u8 = 127;
+//pub const ENTITY_SEED_CACHE: u8 = 109;
+//pub const ENTITY_HERB: u8 = 111;
+//pub const ENTITY_SEED_OF_STONE: u8 = 122;
+//pub const ENTITY_TELEPORTER: u8 = 110;
+//pub const ENTITY_ENERGY_BALL: u8 = 123;
 
 /* Entities */
-pub const ENTITY_GOL: u8 = 152;
-pub const ENTITY_PLAYER: u8 = 139;
-pub const ENTITY_CLOAK_GUY: u8 = 141;
-pub const ENTITY_ELF: u8 = 165;
-pub const ENTITY_UNKNOWN: u8 = 239;
-pub const ENTITY_ENERGY: u8 = 6;
-pub const ENTITY_SMOKE: u8 = 124;
-pub const ENTITY_KHOPESH: u8 = 123;
-pub const ENTITY_MAGNIFIER: u8 = 127;
+//pub const ENTITY_GOL: u8 = 152;
+//pub const ENTITY_PLAYER: u8 = 139;
+//pub const ENTITY_CLOAK_GUY: u8 = 141;
+//pub const ENTITY_ELF: u8 = 165;
+//pub const ENTITY_UNKNOWN: u8 = 239;
+//pub const ENTITY_ENERGY: u8 = 6;
+//pub const ENTITY_SMOKE: u8 = 124;
+//pub const ENTITY_KHOPESH: u8 = 123;
+//pub const ENTITY_MAGNIFIER: u8 = 127;
 
 /* Map Objects */
-pub const ENTITY_EXIT: u8 = 135;
-pub const ENTITY_TALL_GRASS: u8 = 223;
-pub const ENTITY_TRIGGER_1: u8 = 224;
-pub const ENTITY_TRIGGER_2: u8 = 225;
-pub const ENTITY_TRIGGER_3: u8 = 226;
-pub const ENTITY_TRIGGER_4: u8 = 227;
-pub const ENTITY_TRIGGER_5: u8 = 228;
-pub const ENTITY_CURSOR: u8 = 231;
-pub const ENTITY_UNKNOWN_GOLEM_MARKER: u8 = 239;
+//pub const ENTITY_EXIT: u8 = 135;
+//pub const ENTITY_TALL_GRASS: u8 = 223;
+//pub const ENTITY_TRIGGER_1: u8 = 224;
+//pub const ENTITY_TRIGGER_2: u8 = 225;
+//pub const ENTITY_TRIGGER_3: u8 = 226;
+//pub const ENTITY_TRIGGER_4: u8 = 227;
+//pub const ENTITY_TRIGGER_5: u8 = 228;
+//pub const ENTITY_CURSOR: u8 = 231;
+//pub const ENTITY_UNKNOWN_GOLEM_MARKER: u8 = 239;
 
 //pub const SHADOW_FULLTILE_LEFT: u8 = 2;
 //pub const SHADOW_FULLTILE_LEFT_DOWN: u8 = 6;
@@ -226,11 +226,11 @@ pub const ENTITY_UNKNOWN_GOLEM_MARKER: u8 = 239;
 //pub const ARROW_DIAG: u8 = 17;
 
 /* Characters */
-pub const EXCLAMATION_POINT: u8 = 33 as u8;
-pub const QUESTION_MARK: u8 = 63 as u8;
-pub const ASTERISK: u8 = 239; // NOTE there is no asterisk currently, so this is a marker
-pub const AT_SYMBOL: u8 = 64;
-pub const ARMED_SYMBOL: u8 = 50; // NOTE armed is just a sprite that looks related to explosions
+//pub const EXCLAMATION_POINT: u8 = 33 as u8;
+//pub const QUESTION_MARK: u8 = 63 as u8;
+//pub const ASTERISK: u8 = 239; // NOTE there is no asterisk currently, so this is a marker
+//pub const AT_SYMBOL: u8 = 64;
+//pub const ARMED_SYMBOL: u8 = 50; // NOTE armed is just a sprite that looks related to explosions
 
 /* Golems */
 pub const AI_EXPLODE_RADIUS: usize = 2;

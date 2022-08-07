@@ -864,7 +864,8 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, config: &Co
                 let is_in_fov_ext = fov_result == FovResult::Edge;
 
                 let mut blackout_color = Color::black();
-                let sprite = Sprite::new(MAP_EMPTY_CHAR as u32, sprite_key);
+                // TODO need an all white character here
+                let sprite = Sprite::new(254 as u32, sprite_key);
                 if is_in_fov_ext {
                     blackout_color.a = config.fov_edge_alpha;
                     panel.sprite_cmd(sprite, blackout_color, pos);
@@ -1790,7 +1791,8 @@ fn render_overlay_alertness(panel: &mut Panel,
         if let Some(num_turns) = display_state.frozen.get(entity_id) {
             if *num_turns > 0 {
                 status_drawn = true;
-                let sprite = Sprite::new(ASTERISK as u32, sprite_key);
+                let index = display_state.tileset_index(&"stunned_mark").unwrap();
+                let sprite = Sprite::new(index as u32, sprite_key);
                 let scale = 0.2;
 
                 let row_width = 4;
@@ -1814,7 +1816,8 @@ fn render_overlay_alertness(panel: &mut Panel,
                     }
 
                     Behavior::Alert(_) => {
-                        let sprite = Sprite::new(EXCLAMATION_POINT as u32, sprite_key);
+                        let index = display_state.tileset_index(&"exclamation_mark").unwrap();
+                        let sprite = Sprite::new(index as u32, sprite_key);
                         panel.sprite_scaled_cmd(sprite, scale,
                                                 PlayerDirection::UpRight,
                                                 alertness_color,
@@ -1822,7 +1825,8 @@ fn render_overlay_alertness(panel: &mut Panel,
                     }
 
                     Behavior::Investigating(_) => {
-                        let sprite = Sprite::new(QUESTION_MARK as u32, sprite_key);
+                        let index = display_state.tileset_index(&"question_mark").unwrap();
+                        let sprite = Sprite::new(index as u32, sprite_key);
                         panel.sprite_scaled_cmd(sprite, scale,
                                                 PlayerDirection::UpRight,
                                                 alertness_color,
@@ -1830,7 +1834,8 @@ fn render_overlay_alertness(panel: &mut Panel,
                     }
 
                     Behavior::Attacking(_) => {
-                        let sprite = Sprite::new(EXCLAMATION_POINT as u32, sprite_key);
+                        let index = display_state.tileset_index(&"stunned_mark").unwrap();
+                        let sprite = Sprite::new(index as u32, sprite_key);
                         panel.sprite_scaled_cmd(sprite, scale,
                                                 PlayerDirection::UpRight,
                                                 alertness_color,
@@ -1838,7 +1843,9 @@ fn render_overlay_alertness(panel: &mut Panel,
                     }
 
                     Behavior::Armed(_) => {
-                        let sprite = Sprite::new(ARMED_SYMBOL as u32, sprite_key);
+                        // TODO maybe need another symbol here.
+                        let index = display_state.tileset_index(&"stunned_mark").unwrap();
+                        let sprite = Sprite::new(index as u32, sprite_key);
                         panel.sprite_scaled_cmd(sprite, scale,
                                                 PlayerDirection::UpRight,
                                                 alertness_color,
