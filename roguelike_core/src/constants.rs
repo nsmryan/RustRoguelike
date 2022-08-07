@@ -98,6 +98,7 @@ pub const ISLAND_NUM_OBSTACLES: i32 = 15;
 pub const ISLAND_NUM_SUBTRACTIONS_ATTEMPTS: i32 = 50;
 pub const ISLAND_NUM_ADDITION_ATTEMPTS: i32 = 50;
 
+// TODO detele these
 //pub const MAP_LAYER_GROUND: usize = 0;
 //pub const MAP_LAYER_ENVIRONMENT: usize = 1;
 //pub const MAP_LAYER_ENTITIES: usize = 2;
@@ -197,15 +198,15 @@ pub const ISLAND_NUM_ADDITION_ATTEMPTS: i32 = 50;
 //pub const ENTITY_CURSOR: u8 = 231;
 //pub const ENTITY_UNKNOWN_GOLEM_MARKER: u8 = 239;
 
-//pub const SHADOW_FULLTILE_LEFT: u8 = 2;
-//pub const SHADOW_FULLTILE_LEFT_DOWN: u8 = 6;
-//pub const SHADOW_FULLTILE_DOWN: u8 = 1;
-//pub const SHADOW_FULLTILE_DOWN_LEFT: u8 = 0;
-//
-//pub const SHADOW_INTERTILE_LEFT: u8 = 3;
-//pub const SHADOW_INTERTILE_LEFT_DOWN: u8 = 7;
-//pub const SHADOW_INTERTILE_DOWN: u8 = 5;
-//pub const SHADOW_INTERTILE_DOWN_LEFT: u8 = 4;
+pub const SHADOW_FULLTILE_LEFT: u8 = 2;
+pub const SHADOW_FULLTILE_LEFT_DOWN: u8 = 6;
+pub const SHADOW_FULLTILE_DOWN: u8 = 1;
+pub const SHADOW_FULLTILE_DOWN_LEFT: u8 = 0;
+
+pub const SHADOW_INTERTILE_LEFT: u8 = 3;
+pub const SHADOW_INTERTILE_LEFT_DOWN: u8 = 7;
+pub const SHADOW_INTERTILE_DOWN: u8 = 5;
+pub const SHADOW_INTERTILE_DOWN_LEFT: u8 = 4;
 
 //pub const GRASS_INTERTILE_UP: u8 = 105;
 //pub const GRASS_INTERTILE_DOWN: u8 = 106;

@@ -761,48 +761,43 @@ fn render_wall_shadow(panel: &mut Panel, pos: Pos, display_state: &mut DisplaySt
         if left_valid && !left_wall {
             // left
             let shadow_pos = Pos::new(x - 1, y);
-            let index = display_state.tileset_index(&"right_fulltile_shadow").unwrap();
-            let shadow_left_upper = Sprite::new(index as u32, shadow_sprite_key);
+            let shadow_left_upper = Sprite::new(SHADOW_FULLTILE_LEFT as u32, shadow_sprite_key);
             panel.sprite_cmd(shadow_left_upper, shadow_color, shadow_pos);
         }
 
         if down_left_valid && !down_left_wall {
             let shadow_pos = Pos::new(x - 1, y + 1);
-            let index = display_state.tileset_index(&"up_fulltile_shadow").unwrap();
-            let shadow_left_lower = Sprite::new(index as u32, shadow_sprite_key);
+            let shadow_left_lower = Sprite::new(SHADOW_FULLTILE_LEFT_DOWN as u32, shadow_sprite_key);
             panel.sprite_cmd(shadow_left_lower, shadow_color, shadow_pos);
         }
 
         if down_valid && !down_wall {
             // lower
-            let index = display_state.tileset_index(&"up_fulltile_shadow").unwrap();
-            let shadow_lower_right = Sprite::new(index as u32, shadow_sprite_key);
+            let shadow_lower_right = Sprite::new(SHADOW_FULLTILE_DOWN as u32, shadow_sprite_key);
             let shadow_pos = Pos::new(x, y + 1);
             panel.sprite_cmd(shadow_lower_right, shadow_color, shadow_pos);
         }
 
         if down_left_valid && !down_left_wall {
-            let index = display_state.tileset_index(&"right_fulltile_shadow").unwrap();
-            let shadow_lower_left = Sprite::new(index as u32, shadow_sprite_key);
+            let shadow_lower_left = Sprite::new(SHADOW_FULLTILE_DOWN_LEFT as u32, shadow_sprite_key);
             let shadow_pos = Pos::new(x - 1, y + 1);
             panel.sprite_cmd(shadow_lower_left, shadow_color, shadow_pos);
         }
     } 
 
+    /* render inter-tile wall shadows */
     if tile.left_wall == Wall::ShortWall {
         // left
         if left_valid {
             let shadow_pos = Pos::new(x - 1, y);
-            let index = display_state.tileset_index(&"right_intertile_shadow").unwrap();
-            let shadow_left_upper = Sprite::new(index as u32, shadow_sprite_key);
+            let shadow_left_upper = Sprite::new(SHADOW_INTERTILE_LEFT as u32, shadow_sprite_key);
             panel.sprite_cmd(shadow_left_upper, shadow_color, shadow_pos);
         }
 
         // left down
         if down_left_valid {
             let shadow_pos = Pos::new(x - 1, y + 1);
-            let index = display_state.tileset_index(&"up_intertile_shadow").unwrap();
-            let shadow_left_lower = Sprite::new(index as u32, shadow_sprite_key);
+            let shadow_left_lower = Sprite::new(SHADOW_INTERTILE_LEFT_DOWN as u32, shadow_sprite_key);
             panel.sprite_cmd(shadow_left_lower, shadow_color, shadow_pos);
         }
     } 
@@ -810,16 +805,14 @@ fn render_wall_shadow(panel: &mut Panel, pos: Pos, display_state: &mut DisplaySt
     if tile.bottom_wall == Wall::ShortWall {
         // lower
         if down_valid {
-            let index = display_state.tileset_index(&"up_intertile_shadow").unwrap();
-            let shadow_lower_right = Sprite::new(index as u32, shadow_sprite_key);
+            let shadow_lower_right = Sprite::new(SHADOW_INTERTILE_DOWN as u32, shadow_sprite_key);
             let shadow_pos = Pos::new(x, y + 1);
             panel.sprite_cmd(shadow_lower_right, shadow_color, shadow_pos);
         }
 
         // left down
         if down_left_valid {
-            let index = display_state.tileset_index(&"right_intertile_shadow").unwrap();
-            let shadow_lower_left = Sprite::new(index as u32, shadow_sprite_key);
+            let shadow_lower_left = Sprite::new(SHADOW_INTERTILE_DOWN_LEFT as u32, shadow_sprite_key);
             let shadow_pos = Pos::new(x - 1, y + 1);
             panel.sprite_cmd(shadow_lower_left, shadow_color, shadow_pos);
         }
