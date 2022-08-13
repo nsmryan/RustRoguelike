@@ -857,14 +857,15 @@ fn render_map_above(panel: &mut Panel, display_state: &DisplayState, config: &Co
                 let is_in_fov_ext = fov_result == FovResult::Edge;
 
                 let mut blackout_color = Color::black();
-                // TODO need an all white character here
-                let sprite = Sprite::new(254 as u32, sprite_key);
+                //let sprite = Sprite::new(254 as u32, sprite_key);
                 if is_in_fov_ext {
                     blackout_color.a = config.fov_edge_alpha;
-                    panel.sprite_cmd(sprite, blackout_color, pos);
+                    //panel.sprite_cmd(sprite, blackout_color, pos);
+                    panel.highlight_cmd(blackout_color, pos);
                 } else if display_state.map[pos].explored {
                     blackout_color.a = config.explored_alpha;
-                    panel.sprite_cmd(sprite, blackout_color, pos);
+                    //panel.sprite_cmd(sprite, blackout_color, pos);
+                    panel.highlight_cmd(blackout_color, pos);
                 } else {
                     panel.fill_cmd(pos, blackout_color);
                 }
@@ -1174,13 +1175,11 @@ fn render_effects(panel: &mut Panel,
 
                     Direction::UpRight | Direction::DownLeft => {
                         rotation = 0.0;
-                        // TODO is this correct, or beam_leftup_to_downright?
                         sprite_index = display_state.tileset_index(&"beam_downleft_to_upright").unwrap();
                     }
 
                     Direction::DownRight | Direction::UpLeft => {
                         rotation = 90.0;
-                        // TODO is this correct, or beam_leftup_to_downright?
                         sprite_index = display_state.tileset_index(&"beam_downleft_to_upright").unwrap();
                     }
                 };
