@@ -43,6 +43,9 @@ cargo run --release
 to get a smoother experience, but note that it will take some time the first time it is
 run (several minutes).
 
+
+The make file has some convenience commands as well.
+
 ## Gameplay
 
 ### Key Map
@@ -53,6 +56,7 @@ There are three gameplay modes: cursor mode, direct mode, and use mode.
 Direct mode is the usual input mode- the movement keys move the player. In
 this mode the player can run, walk, and sneak.
 
+
 Cursor mode is entered using the 'space' key. In cursor mode the movement keys
 move a cursor around the map. This cursor can be used to inspect tiles, use skills,
 and throw items. Throwing items is accomplished by holding 'alt' and pressing the 
@@ -60,8 +64,8 @@ item's key.
 
 
 Use mode is entered by pressing an item's key. Once in use mode the player can
-move to any of the highlighted tiles. Each item provides different movements, and
-there may be no tiles available until the player is in a particular situation.
+select any of the highlighted tiles. Each item provides different effects and/or movements.
+There may be no tiles available until the player is in a particular situation.
 
 #### Movement
 
