@@ -45,7 +45,6 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
     entities.stance.insert(entity_id,  Stance::Standing);
     entities.fov_radius.insert(entity_id,  config.fov_radius_player);
     entities.passive.insert(entity_id,  Passive::new());
-    entities.stamina.insert(entity_id,  0);
 
     let skill_set = Vec::new();
     entities.skills.insert(entity_id,  skill_set);
@@ -65,7 +64,6 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
     // Indicate initial player information in messaging system.
     msg_log.log(Msg::Stance(entity_id, entities.stance[&entity_id]));
     msg_log.log(Msg::GainEnergy(entity_id, config.player_energy));
-    msg_log.log(Msg::GainStamina(entity_id, config.player_stamina));
     msg_log.log(Msg::Healed(entity_id, config.player_health, config.player_health));
 
     return entity_id;

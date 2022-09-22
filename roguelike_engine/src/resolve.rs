@@ -123,9 +123,14 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
         }
 
         Msg::HammerRaise(entity_id, item_index, dir) => {
-            let item_id = game.level.entities.inventory[&entity_id][item_index];
-            game.level.entities.status[&entity_id].hammer_raised = Some((item_id, dir, 1));
-            game.level.entities.took_turn[&entity_id] |= Turn::Pass.turn();
+            if game.level.entities.has_enough_energy(entity_id, 1) {
+
+                let item_id = game.level.entities.inventory[&entity_id][item_index];
+                game.level.entities.status[&entity_id].hammer_raised = Some((item_id, dir, 1));
+                game.level.entities.took_turn[&entity_id] |= Turn::Pass.turn();
+            } else {
+                game.msg_log.log(Msg::NotEnoughEnergy(entity_id));
+            }
         }
 
         Msg::HammerSwing(entity_id, item_id, pos) => {
@@ -227,10 +232,6 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
 
         Msg::AddClass(class) => {
             resolve_add_class(class, game);
-        }
-
-        Msg::RefillStamina(entity_id) => {
-            resolve_refill_stamina(entity_id, game);
         }
 
         Msg::MoveMode(entity_id, new_move_mode) => {
@@ -468,17 +469,6 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
             game.msg_log.log(Msg::StateChange(entity_id, Behavior::Idle));
         }
 
-        Msg::UsedStamina(entity_id, amount) => {
-            game.level.entities.stamina[&entity_id] -= amount;
-        }
-
-        Msg::GainStamina(entity_id, amount) => {
-            game.level.entities.stamina[&entity_id] += amount;
-            if game.level.entities.stamina[&entity_id] > game.config.player_stamina_max {
-                game.level.entities.stamina[&entity_id] = game.config.player_stamina_max;
-            }
-        }
-
         _ => {
         }
     }
@@ -633,15 +623,16 @@ fn resolve_try_movement(entity_id: EntityId,
         }
 
         MoveType::WallKick => {
-            if level.entities.has_enough_stamina(entity_id, 1) {
-
+            if level.entities.has_enough_energy(entity_id, 1) {
                 level.entities.set_pos(entity_id, movement.pos);
 
                 // NOTE may need to set facing
                 // NOTE could check for enemy and attack
                 msg_log.log(Msg::WallKick(entity_id, movement.pos));
+                level.entities.use_energy(entity_id);
+                msg_log.log(Msg::UsedEnergy(entity_id));
             } else {
-                msg_log.log(Msg::NotEnoughStamina(entity_id));
+                msg_log.log(Msg::NotEnoughEnergy(entity_id));
             }
         }
 
@@ -657,32 +648,39 @@ fn resolve_try_movement(entity_id: EntityId,
             let traps_block = false;
             if level.clear_path(entity_pos, movement.pos, traps_block) {
                 if movement.typ == MoveType::Move {
-                    let enough_stamina = level.entities.has_enough_stamina(entity_id, 1);
+                    let enough_energy = level.entities.has_enough_energy(entity_id, 1);
                     let run_move = move_mode == MoveMode::Run;
-                    if !run_move || enough_stamina {
+                    if !run_move || enough_energy {
+                        // NOTE previously this used stamina. The following line ends up using two energy.
+                        //msg_log.log(Msg::UsedEnergy(entity_id));
                         msg_log.log(Msg::Moved(entity_id, movement.typ, move_mode, movement.pos));
 
                         if amount > 1 {
                             msg_log.log(Msg::TryMove(entity_id, direction, amount - 1, move_mode));
                         }
-                    } else if run_move && !enough_stamina {
-                        msg_log.log(Msg::NotEnoughStamina(entity_id));
+                    } else if run_move && !enough_energy {
+                        msg_log.log(Msg::NotEnoughEnergy(entity_id));
                     }
                 } else {
-                    if level.entities.has_enough_stamina(entity_id, 1) {
+                    if level.entities.has_enough_energy(entity_id, 1) {
+                        level.entities.use_energy(entity_id);
+                        msg_log.log(Msg::UsedEnergy(entity_id));
                         msg_log.log(Msg::JumpWall(entity_id, entity_pos, movement.pos));
                         panic!("Can we even get here? No clear path, but didn't decide to jump a wall?");
                     } else {
-                        msg_log.log(Msg::NotEnoughStamina(entity_id));
+                        msg_log.log(Msg::NotEnoughEnergy(entity_id));
                     }
                 }
             } else if movement.typ == MoveType::JumpWall {
-                if level.entities.has_enough_stamina(entity_id, 1) {
+                if level.entities.has_enough_energy(entity_id, 1) {
                     if let Some(wall_pos) = movement.wall {
                         // If the entity is not next to the wall, move them next to the wall.
                         if entity_pos != wall_pos {
                             msg_log.log(Msg::Moved(entity_id, MoveType::Move, move_mode, wall_pos));
                         }
+
+                        level.entities.use_energy(entity_id);
+                        msg_log.log(Msg::UsedEnergy(entity_id));
 
                         // Jump over the wall
                         let after_wall_pos = direction.offset_pos(wall_pos, 1);
@@ -699,7 +697,7 @@ fn resolve_try_movement(entity_id: EntityId,
                         panic!("Wall jump with no recorded wall position!");
                     }
                 } else {
-                    msg_log.log(Msg::NotEnoughStamina(entity_id));
+                    msg_log.log(Msg::NotEnoughEnergy(entity_id));
                 }
             }
         }
@@ -1698,29 +1696,15 @@ fn resolve_triggered(trigger: EntityId, entity_id: EntityId, level: &mut Level, 
 fn resolve_new_level(game: &mut Game) {
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
-    /* Restore Player Health/Energy/Stamina to base levels */
+    /* Restore Player Health and Energy to base levels */
     if game.level.entities.hp[&player_id].hp < (game.config.player_health_max / 2) {
         let health_deficit = (game.config.player_health_max / 2) - game.level.entities.hp[&player_id].hp;
         game.msg_log.log(Msg::Healed(player_id, health_deficit, game.config.player_health_max));
     }
 
-    if game.level.entities.energy[&player_id] < (game.config.player_energy_max / 2) {
-        let energy_deficit = (game.config.player_energy_max / 2) - game.level.entities.energy[&player_id];
+    if game.level.entities.energy[&player_id] < (game.config.player_energy) {
+        let energy_deficit = game.config.player_energy_max - game.level.entities.energy[&player_id];
         game.msg_log.log(Msg::GainEnergy(player_id, energy_deficit));
-    }
-
-    if game.level.entities.stamina[&player_id] < game.config.player_stamina_max {
-        let stamina_deficit = game.config.player_stamina_max - game.level.entities.stamina[&player_id];
-        game.msg_log.log(Msg::GainStamina(player_id, stamina_deficit));
-    }
-}
-
-fn resolve_refill_stamina(entity_id: EntityId, game: &mut Game) {
-    if let Some(stamina) = game.level.entities.stamina.get(&entity_id) {
-        let diff = game.config.player_stamina - stamina;
-        if diff > 0 {
-            game.msg_log.log(Msg::GainStamina(entity_id, diff));
-        }
     }
 }
 

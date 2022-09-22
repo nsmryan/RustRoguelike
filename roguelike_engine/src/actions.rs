@@ -721,11 +721,11 @@ fn finalize_use_item(item_class: ItemClass, level: &Level, settings: &mut Settin
 
         // determine action to take based on weapon type
         if item == Item::Hammer {
-            if level.entities.has_enough_stamina(player_id, 1) {
-                // Stamina is used on hammer strike
+            if level.entities.has_enough_energy(player_id, 1) {
+                // Energy is used on hammer strike
                 msg_log.log(Msg::HammerRaise(player_id, item_index, dir));
             } else {
-                msg_log.log(Msg::NotEnoughStamina(player_id));
+                msg_log.log(Msg::NotEnoughEnergy(player_id));
             }
         } else if item == Item::SpikeTrap || item == Item::SoundTrap || item == Item::BlinkTrap || item == Item::FreezeTrap {
             let place_pos = dir.offset_pos(player_pos, 1);
@@ -743,7 +743,7 @@ fn finalize_use_item(item_class: ItemClass, level: &Level, settings: &mut Settin
             // invalid. In this case we just suppress the action, and return to playing.
             // Otherwise, process the move below.
             if let Some(move_pos) = use_result.pos {
-                if level.entities.has_enough_stamina(player_id, 1) {
+                if level.entities.has_enough_energy(player_id, 1) {
                     let player_pos = level.entities.pos[&player_id];
                     if move_pos != player_pos {
                         let move_dir = Direction::from_positions(player_pos, move_pos).unwrap();
@@ -763,7 +763,7 @@ fn finalize_use_item(item_class: ItemClass, level: &Level, settings: &mut Settin
                         msg_log.log(Msg::Hit(player_id, hit_pos, weapon_type, attack_type));
                     }
                 } else {
-                    msg_log.log(Msg::NotEnoughStamina(player_id));
+                    msg_log.log(Msg::NotEnoughEnergy(player_id));
                 }
             }
         }

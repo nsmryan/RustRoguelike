@@ -31,7 +31,6 @@ pub struct Entities {
     pub trap: Comp<Trap>,
     pub armed: Comp<bool>,
     pub energy: Comp<u32>,
-    pub stamina: Comp<u32>,
     pub count_down: Comp<usize>,
     pub move_mode: Comp<MoveMode>,
     pub direction: Comp<Direction>,
@@ -192,12 +191,12 @@ impl Entities {
         return ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
     }
 
-    pub fn has_enough_stamina(&self, entity_id: EntityId, amount: u32) -> bool {
-        if self.status[&entity_id].test_mode || self.stamina.get(&entity_id).is_none() {
+    pub fn has_enough_energy(&self, entity_id: EntityId, amount: u32) -> bool {
+        if self.status[&entity_id].test_mode || self.energy.get(&entity_id).is_none() {
             return true;
         }
 
-        return self.stamina[&entity_id] >= amount;
+        return self.energy[&entity_id] >= amount;
     }
 
     pub fn use_energy(&mut self, entity_id: EntityId) {
@@ -420,7 +419,6 @@ impl Entities {
         self.messages.remove(&id);
         self.modifier.remove(&id);
         self.passive.remove(&id);
-        self.stamina.remove(&id);
     }
 }
 

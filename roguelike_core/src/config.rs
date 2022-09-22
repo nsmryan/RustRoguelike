@@ -59,8 +59,6 @@ pub struct Config {
     pub fog_of_war: bool,
     pub player_health: i32,
     pub player_health_max: i32,
-    pub player_stamina: u32,
-    pub player_stamina_max: u32,
     pub player_energy: u32,
     pub player_energy_max: u32,
     pub explored_alpha: u8,

@@ -680,28 +680,6 @@ impl Display {
                 }
             }
 
-            Msg::GainStamina(entity_id, amount) => {
-                if self.state.stamina.get(&entity_id).is_none() {
-                    self.state.stamina.insert(entity_id, 0);
-                }
-                dbg!(amount);
-                self.state.stamina[&entity_id] += amount;
-                //let entity_pos = self.state.pos[&entity_id];
-                //let effect = Effect::number_change(amount as i32, entity_pos, config.color_mint_green);
-                //self.state.play_effect(effect);
-            }
-
-            Msg::UsedStamina(entity_id, amount) => {
-                if !self.state.test_mode {
-                    dbg!(amount);
-                    self.state.stamina[&entity_id] -= amount;
-
-                    //let entity_pos = self.state.pos[&entity_id];
-                    //let effect = Effect::number_change(-(amount as i32), entity_pos, config.color_mint_green);
-                    //self.state.play_effect(effect);
-                }
-            }
-
             Msg::TestMode(state) => {
                 self.state.test_mode = state;
             }

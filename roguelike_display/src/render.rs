@@ -936,6 +936,7 @@ fn render_pip(panel: &mut Panel, display_state: &DisplayState, config: &Config) 
         }
     }
 
+    /*
     if let Some(stamina) = display_state.stamina.get(&player_id) {
         let stamina_color = Color::new(130, 140, 102, 255);
             
@@ -950,6 +951,7 @@ fn render_pip(panel: &mut Panel, display_state: &DisplayState, config: &Config) 
             panel.rect_float_cmd(bar_x, bar_y, (bar_width as f32 - x_offset * 2.0, 1.0 - y_offset * 2.0), filled, stamina_color);
         }
     }
+    */
 }
 
 /// Render the map, with environment and walls

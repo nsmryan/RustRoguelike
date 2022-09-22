@@ -64,13 +64,13 @@ pub fn step_logic(game: &mut Game) -> bool {
     if game.level.entities.status[&player_id].alive && !won_level {
         let turn = game.level.entities.took_turn[&player_id];
         if turn != 0 {
-            // Handle player stamina change if they took a turn
+            // Handle player energy change if they took a turn
             if turn & (Turn::Run.turn() | Turn::Jump.turn() | Turn::Attack.turn()) != 0 {
-                if game.level.entities.stamina[&player_id] > 0 {
+                if game.level.entities.energy[&player_id] > 0 {
                     game.msg_log.log(Msg::UsedStamina(player_id, 1));
                 }
             } else {
-                if game.level.entities.stamina[&player_id] < game.config.player_stamina_max {
+                if game.level.entities.energy[&player_id] < game.config.player_energy_max {
                     game.msg_log.log(Msg::GainStamina(player_id, 1));
                 }
             }

@@ -121,7 +121,6 @@ pub enum Msg {
     UsedEnergy(EntityId),
     GainStamina(EntityId, u32),
     RefillStamina(EntityId),
-    NotEnoughStamina(EntityId),
     UsedStamina(EntityId, u32),
     Healed(EntityId, i32, i32),
     SetPos(EntityId, Pos),
@@ -268,7 +267,6 @@ impl fmt::Display for Msg {
             Msg::UsedEnergy(entity_id) => write!(f, "used_energy {}", entity_id),
             Msg::GainStamina(entity_id, amount) => write!(f, "gain_stamina {} {}", entity_id, amount),
             Msg::RefillStamina(entity_id) => write!(f, "refill_stamina {}", entity_id),
-            Msg::NotEnoughStamina(entity_id) => write!(f, "not_enough_stamina {}", entity_id),
             Msg::UsedStamina(entity_id, amount) => write!(f, "used_stamina {} {}", entity_id, amount),
             Msg::Healed(entity_id, amount, max_hp) => write!(f, "healed {} {} {}", entity_id, amount, max_hp),
             Msg::SetPos(entity_id, pos) => write!(f, "set_pos {} {} {}", entity_id, pos.x, pos.y),
@@ -558,10 +556,6 @@ impl Msg {
 
             Msg::StoneThrow(entity_id, _pos) => { 
                  return format!("{:?} throws stone", data.entities.name[entity_id]);
-            }
-
-            Msg::NotEnoughStamina(entity_id) => {
-                 return format!("{:?} not enough stamina", data.entities.name[entity_id]);
             }
 
             Msg::PassThrough(entity_id) => { 

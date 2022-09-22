@@ -181,15 +181,10 @@ player_health: 3
 # max player health
 player_health_max: 6
 
-# initial player stamina
-player_stamina: 3
-# max player stamina
-player_stamina_max: 3
-
 # initial player energy
-player_energy: 3
+player_energy: 9
 # max player energy
-player_energy_max: 6
+player_energy_max: 14
 
 # alpha of explored but not visible tiles
 explored_alpha: 160
