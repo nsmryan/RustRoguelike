@@ -737,6 +737,7 @@ fn finalize_use_item(item_class: ItemClass, level: &Level, settings: &mut Settin
             let throw_pos = dir.offset_pos(player_pos, SLING_THROW_DIST as i32);
             if let Some(stone_id) = level.has_item_in_inventory(player_id, Item::Stone) {
                 msg_log.log(Msg::ItemThrow(player_id, stone_id, player_pos, throw_pos, true));
+                msg_log.log(Msg::UsedItem(player_id));
             }
         } else {
             // It is possible to select a direction, then press shift, causing the move to be
@@ -762,6 +763,8 @@ fn finalize_use_item(item_class: ItemClass, level: &Level, settings: &mut Settin
                     for hit_pos in use_result.hit_positions {
                         msg_log.log(Msg::Hit(player_id, hit_pos, weapon_type, attack_type));
                     }
+
+                    msg_log.log(Msg::UsedItem(player_id));
                 } else {
                     msg_log.log(Msg::NotEnoughEnergy(player_id));
                 }

@@ -469,6 +469,11 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
             game.msg_log.log(Msg::StateChange(entity_id, Behavior::Idle));
         }
 
+        Msg::UsedItem(entity_id) => {
+            game.level.entities.use_energy(entity_id);
+            game.msg_log.log(Msg::UsedEnergy(entity_id));
+        }
+
         _ => {
         }
     }
