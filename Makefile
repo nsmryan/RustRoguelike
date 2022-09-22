@@ -63,7 +63,7 @@ atlas:
 	@echo "done"
 
 unsave:
-	@rm game.save
+	-@rm game.save
 
 clean:
 	@rm atlas

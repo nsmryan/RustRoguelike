@@ -6,6 +6,8 @@ use std::time::Duration;
 use sdl2::image::LoadTexture;
 
 use roguelike_draw::drawcmd::*;
+use roguelike_draw::panel::{Panel};
+use roguelike_draw::spritesheet::*;
 
 
 pub fn main() {

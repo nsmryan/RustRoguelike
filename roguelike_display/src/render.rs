@@ -14,6 +14,8 @@ use roguelike_core::utils::*;
 use roguelike_core::ai::*;
 
 use roguelike_draw::drawcmd::*;
+use roguelike_draw::spritesheet::*;
+use roguelike_draw::panel::{Panel};
 use roguelike_draw::animation::{Sprite, SpriteKey, Effect, Animation, AnimationResult, Particle};
 
 use crate::display::*;
