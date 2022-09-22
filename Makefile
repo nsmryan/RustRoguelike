@@ -6,8 +6,13 @@ CC ?= gcc
 all: run
 
 .PHONY: exe run rerun debug release test retest check recheck sloc sloc_crates atlas clean unsave
-run:
+
+run: resources/spriteAtlas.png resources/spriteAtlas.txt
 	cargo run
+
+resources/spriteAtlas.png: atlas
+
+resources/spriteAtlas.txt: atlas
 
 exe:
 	./target/debug/rl.exe
