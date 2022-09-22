@@ -890,7 +890,7 @@ fn start_use_item(item_class: ItemClass, level: &Level, settings: &mut Settings,
             msg_log.log(Msg::EatHerb(player_id, item_id));
         } else if level.entities.item[&item_id] == Item::Stone {
             handle_throw_item(item_class, level, msg_log, settings);
-        } else {
+        } else if level.entities.has_enough_energy(player_id, 1) {
             initialize_use_mode(UseAction::Item(item_class), settings, msg_log);
 
             for dir in Direction::move_actions().iter() {
