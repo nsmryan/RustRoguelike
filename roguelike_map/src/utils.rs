@@ -210,7 +210,7 @@ pub fn visible_in_direction(start_pos: Pos, end_pos: Pos, dir: Direction) -> boo
             }
         }
         Direction::DownLeft => {
-            if pos_diff.x - pos_diff.y < 0 {
+            if pos_diff.x - pos_diff.y <= 0 {
                 return true;
             }
         }
@@ -228,7 +228,7 @@ pub fn visible_in_direction(start_pos: Pos, end_pos: Pos, dir: Direction) -> boo
         }
 
         Direction::UpRight => {
-            if pos_diff.x - pos_diff.y > 0 {
+            if pos_diff.x - pos_diff.y >= 0 {
                 return true;
             }
         }
