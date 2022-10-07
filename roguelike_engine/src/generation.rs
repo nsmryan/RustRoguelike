@@ -56,7 +56,7 @@ pub fn make_player(entities: &mut Entities, config: &Config, msg_log: &mut MsgLo
     }
     entities.talents.insert(entity_id,  talents);
 
-    entities.class.insert(entity_id, EntityClass::General);
+    entities.class.insert(entity_id, EntityClass::Body);
 
     entities.energy.insert(entity_id, config.player_energy);
 

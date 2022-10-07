@@ -917,7 +917,7 @@ pub fn try_use_energy(entity_id: EntityId, skill: Skill, level: &mut Level, msg_
     let mut enough_energy: bool = false;
     let mut used_energy: bool = false;
     match class {
-        EntityClass::General => {
+        EntityClass::Body => {
             if has_energy {
                 enough_energy = true;
                 used_energy = true;
@@ -952,22 +952,6 @@ pub fn try_use_energy(entity_id: EntityId, skill: Skill, level: &mut Level, msg_
 
                 enough_energy = true;
                 level.map[pos].surface = Surface::Floor;
-            }
-        }
-
-        EntityClass::Clockwork => {
-            if has_energy {
-                enough_energy = true;
-                used_energy = true;
-                level.entities.use_energy(entity_id);
-            }
-        }
-
-        EntityClass::Hierophant => {
-            if has_energy {
-                enough_energy = true;
-                used_energy = true;
-                level.entities.use_energy(entity_id);
             }
         }
 

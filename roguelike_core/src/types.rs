@@ -161,21 +161,21 @@ impl Skill {
             Skill::GrassBlade => EntityClass::Grass,
             Skill::GrassShoes => EntityClass::Grass,
             Skill::GrassCover => EntityClass::Grass,
-            Skill::Blink => EntityClass::General,
-            Skill::Swap => EntityClass::General,
-            Skill::Sprint => EntityClass::General,
-            Skill::Roll => EntityClass::General,
+            Skill::Blink => EntityClass::Body,
+            Skill::Swap => EntityClass::Body,
+            Skill::Sprint => EntityClass::Body,
+            Skill::Roll => EntityClass::Body,
             Skill::PassWall => EntityClass::Monolith,
             Skill::Rubble => EntityClass::Monolith,
             Skill::StoneThrow => EntityClass::Monolith,
             Skill::StoneSkin => EntityClass::Monolith,
             Skill::Reform => EntityClass::Monolith,
-            Skill::Push => EntityClass::Clockwork,
-            Skill::Traps => EntityClass::Clockwork,
-            Skill::Illuminate => EntityClass::Hierophant,
-            Skill::Heal => EntityClass::Hierophant,
-            Skill::FarSight => EntityClass::Hierophant,
-            Skill::Ping => EntityClass::Hierophant,
+            Skill::Push => EntityClass::Monolith,
+            Skill::Traps => EntityClass::Monolith,
+            Skill::Illuminate => EntityClass::Body,
+            Skill::Heal => EntityClass::Body,
+            Skill::FarSight => EntityClass::Body,
+            Skill::Ping => EntityClass::Body,
             Skill::PassThrough => EntityClass::Wind,
             Skill::WhirlWind => EntityClass::Wind,
             Skill::Swift => EntityClass::Wind,
@@ -536,24 +536,22 @@ impl Default for EntityType {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Display, FromStr, Serialize, Deserialize)]
 #[display(style="snake_case")]
 pub enum EntityClass {
-    General,
+    Body,
     Grass,
     Monolith,
-    Clockwork,
-    Hierophant,
     Wind,
 }
 
 impl Default for EntityClass {
     fn default() -> EntityClass {
-        return EntityClass::General;
+        return EntityClass::Body;
     }
 }
 
 impl EntityClass {
     pub fn classes() -> Vec<EntityClass> {
         use EntityClass::*;
-        return vec!(General, Grass, Monolith, Clockwork, Hierophant, Wind);
+        return vec!(Body, Grass, Monolith, Wind);
     }
 }
 

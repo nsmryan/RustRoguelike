@@ -1330,7 +1330,7 @@ fn resolve_add_class(class: EntityClass, game: &mut Game) {
     }
 
     match class {
-        EntityClass::General => {
+        EntityClass::Body => {
             add_skill(game, player_id, Skill::Blink);
             add_skill(game, player_id, Skill::Sprint);
             add_skill(game, player_id, Skill::Roll);
@@ -1350,18 +1350,6 @@ fn resolve_add_class(class: EntityClass, game: &mut Game) {
             add_skill(game, player_id, Skill::GrassBlade);
             add_skill(game, player_id, Skill::GrassCover);
             add_skill(game, player_id, Skill::GrassShoes);
-        }
-
-        EntityClass::Clockwork => {
-            add_skill(game, player_id, Skill::Push);
-            add_skill(game, player_id, Skill::Traps);
-        }
-
-        EntityClass::Hierophant => {
-            add_skill(game, player_id, Skill::Illuminate);
-            add_skill(game, player_id, Skill::Heal);
-            add_skill(game, player_id, Skill::FarSight);
-            add_skill(game, player_id, Skill::Ping);
         }
 
         EntityClass::Wind => {
@@ -1557,7 +1545,7 @@ fn resolve_restart(game: &mut Game) {
 
     game.level.entities.skills[&player_id].clear();
     game.level.entities.inventory[&player_id].clear();
-    game.level.entities.class[&player_id] = EntityClass::General;
+    game.level.entities.class[&player_id] = EntityClass::Body;
     game.level.entities.status[&player_id] = StatusEffect::default();
     game.level.entities.status[&player_id].alive = true;
 
