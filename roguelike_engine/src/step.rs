@@ -42,14 +42,17 @@ pub fn step_logic(game: &mut Game) -> bool {
 
     let player_id = game.level.find_by_name(EntityName::Player).unwrap();
 
-    for id in game.level.entities.ids.iter() {
-        game.level.entities.took_turn[id] = 0;
-        game.level.entities.status[id].blinked = false;
+    // Thaw entities at the start of the player's turn.
+    if game.level.entities.took_turn[&player_id] != 0 {
+        for id in game.level.entities.ids.iter() {
+            game.level.entities.took_turn[id] = 0;
+            game.level.entities.status[id].blinked = false;
 
-        // Slowly thaw any frozen entities.
-        if let Some(status) = game.level.entities.status.get_mut(id) {
-            if status.frozen > 0 {
-                game.msg_log.log(Msg::Thaw(*id, 1));
+            // Slowly thaw any frozen entities.
+            if let Some(status) = game.level.entities.status.get_mut(id) {
+                if status.frozen > 0 {
+                    game.msg_log.log(Msg::Thaw(*id, 1));
+                }
             }
         }
     }

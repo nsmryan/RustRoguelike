@@ -205,6 +205,7 @@ pub fn resolve_message(game: &mut Game, msg: Msg) {
                 if status.frozen > 0 {
                     status.frozen -= 1;
                 }
+                dbg!("thawing", entity_id, status.frozen);
 
                 if status.frozen == 0 {
                     game.msg_log.log(Msg::Frozen(entity_id, false));
