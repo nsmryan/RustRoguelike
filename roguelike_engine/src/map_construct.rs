@@ -146,7 +146,6 @@ pub fn map_construct(map_load_config: &MapLoadConfig, game: &mut Game) {
                     break;
                 }
                 game.clear_level_except_player();
-                dbg!(index);
             }
         }
     }

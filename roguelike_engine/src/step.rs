@@ -260,7 +260,6 @@ fn test_ai_idle_was_attacked() {
 
     // check that no messages are created as the monster can't see the player
     ai_idle(gol, &mut game.level, &mut game.msg_log, &game.config);
-    dbg!(&game.msg_log.messages);
     assert_eq!(0, game.msg_log.messages.len());
 
     // if the player attacks, the monster turns and state changes to attacking
@@ -295,7 +294,6 @@ fn test_ai_idle_heard_sound() {
 
     // check that no messages are created as the monster can't see the player
     ai_idle(gol, &mut game.level, &mut game.msg_log, &game.config);
-    dbg!(&game.msg_log.messages);
     assert_eq!(0, game.msg_log.messages.len());
 
     // if the monster hears a sound, they investigate

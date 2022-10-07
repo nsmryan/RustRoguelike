@@ -711,7 +711,6 @@ fn find_available_on_side(game: &mut Game, left: bool) -> Option<Pos> {
 
     let potential_pos = game.level.get_no_entity_pos();
     let mut index = 1.0;
-    dbg!(potential_pos.len());
     for pos in potential_pos {
         let x_more;
         let x_more_strict;
