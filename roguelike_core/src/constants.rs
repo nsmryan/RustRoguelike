@@ -6,7 +6,7 @@ pub const UI_CELLS_BOTTOM: u32 = 12;
 
 pub const CELL_MULTIPLIER: u32 = 3;
 
-pub const FONT_LENGTH: u32 = 16;
+pub const FONT_LENGTH: u32 = 12;
 
 pub const MAP_CELLS_TO_PIXELS: u32 = CELL_MULTIPLIER * FONT_LENGTH;
 pub const UI_CELLS_TO_PIXELS: u32 = FONT_LENGTH;
@@ -88,7 +88,7 @@ pub const SLING_THROW_DIST: usize = 7;
 pub const PLAYER_MAX_ITEMS: usize = 3;
 
 /* Map and View */
-pub const MAP_WIDTH: i32 = 22;
+pub const MAP_WIDTH: i32 = 44;
 pub const MAP_HEIGHT: i32 = 15;
 
 pub const ISLAND_DISTANCE: i32 = 7;

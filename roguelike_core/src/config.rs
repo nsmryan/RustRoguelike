@@ -42,7 +42,6 @@ pub struct Config {
     pub grid_alpha_visible: u8,
     pub grid_alpha_overlay: u8,
     pub map_load: MapLoadConfig,
-    pub map_file: String,
     pub idle_speed: f32,
     pub grass_idle_speed: f32,
     pub frame_rate: usize,

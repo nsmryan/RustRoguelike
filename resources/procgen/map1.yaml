@@ -1,6 +1,6 @@
 ---
 # Island creates an island with a given radius
-- Island: 11
+- Island: 100
 # Entities takes a entity type,
 # a min number, and a max number of entities of that type
 # entity types: Player, Gol, Pawn, Column, Key, Sound, Exit,
